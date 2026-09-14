@@ -325,6 +325,12 @@ List<LocalTaskAgentEvalScenario> defaultMeliousTaskAgentEvalScenarios({
   ];
 }
 
+const _inferenceProfileCleanupTerms = [
+  'profile seeding',
+  'empty profile',
+  'inference profile',
+];
+
 LocalTaskAgentEvalScenario _implicitWorkflowPlanScenario(
   LocalTaskAgentEvalPromptVariant variant,
 ) {
@@ -339,7 +345,7 @@ LocalTaskAgentEvalScenario _implicitWorkflowPlanScenario(
     ],
     promptVariant: variant,
     requiredReportTermGroups: const [
-      ['profile seeding'],
+      _inferenceProfileCleanupTerms,
       ['pull request', 'pr'],
       ['review'],
       ['release'],
@@ -355,7 +361,7 @@ LocalTaskAgentEvalScenario _implicitWorkflowPlanScenario(
         // "empty inference profiles are no longer selectable" says the same
         // thing as "empty profile"; the item has to be about the profiles,
         // not phrased a particular way.
-        ['profile seeding', 'empty profile', 'inference profile'],
+        _inferenceProfileCleanupTerms,
         // "Fix the seeding so empty profiles are no longer selectable" is the
         // implementation step; demanding the literal verb passed only because
         // an earlier fixture happened to say "implementation".

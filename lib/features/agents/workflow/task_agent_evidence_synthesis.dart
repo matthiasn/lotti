@@ -285,7 +285,8 @@ after a pending investigation.
   }
 
   /// Evidence scope and publication-content boundaries attached to the tool.
-  static const updateReportDescriptionSuffix = '''
+  static const updateReportDescriptionSuffix =
+      '''
 
 Call this only after every explicit requested mutation has a matching successful
 tool call. Use current active evidence rather than stale report claims, and omit
@@ -305,10 +306,7 @@ reason for replacing them in observations; publish the currently adopted values.
 Express pending steps as direct actions in the
 task language (imperative or infinitive); avoid hypothetical completion prose.
 
-Before publishing, test each conditional section in the active report directive
-against the evidence. Include its exact heading when its condition is true;
-an inline link elsewhere does not replace a requested evidence section. Omit
-the entire section when the condition is false, including headings with "None".
+${TaskAgentReportPolicy.conditionalSectionRule}
 ${TaskAgentReportPolicy.decisionSectionRule}''';
 
   /// Builds the evidence-first `update_report` description.
@@ -346,12 +344,9 @@ ${TaskAgentReportPolicy.decisionSectionRule}''';
       ...properties['content']! as Map<String, dynamic>,
       'description':
           'A free-form Markdown current-state report in the task language. '
-          'Follow the active report directive. Before submitting, check each '
-          'required and conditional section against the source evidence and '
-          'include its exact heading when required. An inline link elsewhere '
-          'does not replace a requested evidence section: put the link under '
-          'that heading. Use the following stock headings only when the active '
-          'directive requests them. '
+          '${TaskAgentReportPolicy.conditionalSectionRule} '
+          'Use the following stock headings only when the active directive '
+          'requests them. '
           'Include only evidence-backed outcomes, active constraints, and '
           'remaining actions. If no real-world progress is recorded, omit '
           'Progress or Achieved entirely. Omit Blockers or Links when empty. '

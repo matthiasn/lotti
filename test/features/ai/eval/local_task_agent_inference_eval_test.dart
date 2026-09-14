@@ -1773,6 +1773,62 @@ void main() {
     );
   });
 
+  group('implicit workflow report subject', () {
+    for (final entry in <String, LocalTaskAgentEvalFailureCategory>{
+      'Profile seeding cleanup: open a pull request, review, merge and release.':
+          LocalTaskAgentEvalFailureCategory.none,
+      'Empty inference profiles remain selectable: open a pull request, review, merge and release.':
+          LocalTaskAgentEvalFailureCategory.none,
+      'Empty profiles remain selectable: open a pull request, review, merge and release.':
+          LocalTaskAgentEvalFailureCategory.none,
+      'Open a pull request, review, merge and release.':
+          LocalTaskAgentEvalFailureCategory.missingRequiredContent,
+      'Empty inference profiles remain selectable: open a pull request and release.':
+          LocalTaskAgentEvalFailureCategory.missingRequiredContent,
+    }.entries) {
+      test(entry.key, () async {
+        final scenario = defaultMeliousTaskAgentEvalScenarios().firstWhere(
+          (scenario) => scenario.id == 'implicit_workflow_plan_production',
+        );
+        final runner = _createRunner(
+          provider: provider,
+          inferenceRepository: _QueuedInferenceRepository([
+            [
+              _toolCalls([
+                (
+                  name: TaskAgentToolNames.addMultipleChecklistItems,
+                  argumentsJson: jsonEncode({
+                    'items': [
+                      {'title': 'Fix empty inference profiles'},
+                      {'title': 'Create pull request'},
+                      {'title': 'Address Gemini review comments'},
+                      {'title': 'Address code review comments'},
+                      {'title': 'Merge the pull request'},
+                      {'title': 'Create a release on all platforms'},
+                    ],
+                  }),
+                ),
+                (
+                  name: TaskAgentToolNames.updateReport,
+                  argumentsJson: jsonEncode({
+                    'oneLiner': 'Cleanup pending',
+                    'tldr': 'Implementation remains to be done.',
+                    'content': entry.key,
+                  }),
+                ),
+              ]),
+            ],
+          ]),
+        );
+        final report = await runner.run(
+          profiles: const [profile],
+          scenarios: [scenario],
+        );
+        expect(report.results.single.failureCategory, entry.value);
+      });
+    }
+  });
+
   group('resurfaced checklist override contract', () {
     const justifiedReason =
         'QA at 11:20 reported duplicate sync events reappeared after '

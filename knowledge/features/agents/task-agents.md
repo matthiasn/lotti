@@ -431,12 +431,13 @@ Common changes across the path:
   the user can provide now before drafting an optional decision section. It
   selects the required and evidence-triggered headings before drafting prose;
   information elsewhere does not replace a requested conditional section.
-  The report content field repeats the active-directive requirement beside the
-  value being generated; stock headings apply only when that directive asks
-  for them.
-  Custom report instructions finish either scaffold, adjacent to their
-  precedence statement, so the requested layout follows the general evidence
-  protocol. Built-in report instructions retain their existing position.
+  A shared section rule follows the custom directive and also appears in the
+  report tool and its content field. It explains that conditional additions
+  extend a base heading list, even when the base list says "exactly"; a URL
+  activating a requested source section requires that additional heading.
+  Custom instructions remain verbatim, after the general evidence protocol,
+  between the precedence statement and this final structure check. Built-in
+  report instructions retain their existing position.
   Optional headings
   do not justify inventing acceptance criteria or requesting confirmation of
   criteria the user has already stated.

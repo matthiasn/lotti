@@ -204,20 +204,64 @@ Use the task language and omit empty sections.
       }
     });
 
-    test('custom report instructions finish both scaffolds', () {
-      const directive = 'Use the requested evidence heading when a URL exists.';
-      for (final model in <String?>[null, 'glm-5.3-flash']) {
+    test(
+      'custom directives finish with conditional-section interpretation',
+      () {
+        const directive =
+            'Use the requested evidence heading when a URL exists.';
+        for (final model in <String?>[null, 'glm-5.3-flash']) {
+          final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
+            version: makeTestTemplateVersion(reportDirective: directive),
+            soulVersion: null,
+            modelId: model,
+          );
+          expect(prompt, contains(directive));
+          expect(
+            prompt,
+            endsWith('Never invent headings for a directive requesting none.'),
+          );
+          expect(
+            prompt.lastIndexOf('First select the required headings'),
+            greaterThan(prompt.indexOf(directive)),
+          );
+          expect(
+            prompt.indexOf(TaskAgentPromptBuilder.reportDirectivePrecedence),
+            greaterThan(prompt.indexOf('## Evidence-First Synthesis Protocol')),
+          );
+          expect(prompt.split(directive), hasLength(2));
+        }
+      },
+    );
+
+    test('conditional additions survive an exact base heading list', () {
+      const directive =
+          'Use exactly ## Summary and ## Next. '
+          'Add ## Sources only when a real external URL exists.';
+      for (final model in <String?>[
+        null,
+        'deepseek-v4.1-flash',
+        'glm-5.3-flash',
+      ]) {
         final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
           version: makeTestTemplateVersion(reportDirective: directive),
           soulVersion: null,
           modelId: model,
         );
-        expect(prompt, endsWith(directive));
-        expect(
-          prompt.indexOf(TaskAgentPromptBuilder.reportDirectivePrecedence),
-          greaterThan(prompt.indexOf('## Evidence-First Synthesis Protocol')),
+        final afterDirective = prompt.substring(
+          prompt.indexOf(directive) + directive.length,
         );
-        expect(prompt.split(directive), hasLength(2));
+        expect(
+          afterDirective,
+          contains('does not cancel a later conditional addition'),
+        );
+        expect(
+          afterDirective,
+          contains('three sections when a URL is present'),
+        );
+        expect(
+          afterDirective,
+          contains('Never invent headings for a directive requesting none'),
+        );
       }
     });
 

@@ -195,6 +195,10 @@ title changes and archiving fail. These lexical checks do not independently
 prove temporal reasoning or exercise the stricter human-approved chat guard.
 Planner reservations remain forbidden in this case because the evidence gives
 no scheduling request or timing urgency.
+The implicit-workflow report accepts the same profile-cleanup vocabulary as
+its checklist gate, including empty inference profiles. It still requires the
+subject, pull request, review and release; the exact phrase "profile seeding"
+is not itself evidence of correctness.
 
 The task conversation driver rethrows inference errors from both its initial
 conversation and forced report pass. A provider failure cannot trigger report
