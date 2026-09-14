@@ -13,12 +13,31 @@ class InvalidArtifact(ValueError):
 
 
 def _sum_known(values):
-    values = [
-        v
-        for v in values
-        if isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
-    ]
-    return sum(values) if values else None
+    known = []
+    for value in values:
+        if value is None:
+            continue
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(value)
+            or value < 0
+        ):
+            raise InvalidArtifact("Invalid cost observation")
+        known.append(value)
+    return sum(known) if known else None
+
+
+def _object(value):
+    if not isinstance(value, dict):
+        raise InvalidArtifact("Expected a JSON object")
+    return value
+
+
+def _objects(value):
+    if not isinstance(value, list):
+        raise InvalidArtifact("Expected a JSON array of objects")
+    return [_object(row) for row in value]
 
 
 def normalize(suite, artifact, expected, model, *, test_passed):
@@ -27,9 +46,10 @@ def normalize(suite, artifact, expected, model, *, test_passed):
     Wake/workflow harnesses assert quality after writing their raw artifacts, so
     their machine-reporter outcome is part of the result, never a console grep.
     """
+    artifact = _object(artifact)
     adapter = suite["adapter"]
     if adapter == "preparation":
-        reports = artifact.get("reports", [])
+        reports = _objects(artifact.get("reports", []))
         if (
             artifact.get("model") != model
             or not artifact.get("sourceHash")
@@ -64,7 +84,7 @@ def normalize(suite, artifact, expected, model, *, test_passed):
     if not isinstance(rows, list) or not rows:
         raise InvalidArtifact(f"Missing non-empty {key}")
     results = []
-    for row in rows:
+    for row in _objects(rows):
         error = row.get("errorMessage") or row.get("error")
         passed = row.get("passed")
         review = False
@@ -84,18 +104,23 @@ def normalize(suite, artifact, expected, model, *, test_passed):
             passed = row.get("success") is True and test_passed
         elif adapter == "workflow":
             case = "workflow"
-            actual_model = row.get("model", {}).get("providerModelId")
-            passed = row.get("wakeResult", {}).get("success") is True and test_passed
-            error = row.get("wakeResult", {}).get("error")
+            actual_model = _object(row.get("model", {})).get("providerModelId")
+            passed = (
+                _object(row.get("wakeResult", {})).get("success") is True
+                and test_passed
+            )
+            error = _object(row.get("wakeResult", {})).get("error")
             credits = _sum_known(
-                e.get("credits") for e in row.get("consumptionEvents", [])
+                e.get("credits") for e in _objects(row.get("consumptionEvents", []))
             )
         elif adapter == "planning":
-            case = row.get("scenario", {}).get("id")
+            case = _object(row.get("scenario", {})).get("id")
             if row.get("cell") != f"{case}/{model}/baseline#1":
                 raise InvalidArtifact("Unexpected planning model, variant or sample")
             actual_model = model
-            constraints = row.get("constraints", {})
+            constraints = _object(row.get("constraints", {}))
+            for constraint in constraints.values():
+                _object(constraint)
             objective = [
                 c.get("passed")
                 for c in constraints.values()
@@ -103,9 +128,9 @@ def normalize(suite, artifact, expected, model, *, test_passed):
             ]
             passed = bool(objective) and all(v is True for v in objective)
             review = not objective
-            error = row.get("job", {}).get("error")
-            latency = row.get("job", {}).get("latencyMs")
-            credits = row.get("cost", {}).get("credits")
+            error = _object(row.get("job", {})).get("error")
+            latency = _object(row.get("job", {})).get("latencyMs")
+            credits = _object(row.get("cost", {})).get("credits")
             detail = ", ".join(
                 k
                 for k, c in constraints.items()
@@ -121,7 +146,7 @@ def normalize(suite, artifact, expected, model, *, test_passed):
             detail = "Journey metrics require review; no complete quality grader."
         elif adapter == "compaction":
             case = f"{row.get('fixtureId')}/{row.get('strategyId')}"
-            passed = row.get("wake", {}).get("statusCorrect") is True
+            passed = _object(row.get("wake", {})).get("statusCorrect") is True
             review = passed
             detail = "Fact recall and recommendation consistency require judging."
         elif adapter in ("query", "actions"):
@@ -132,7 +157,9 @@ def normalize(suite, artifact, expected, model, *, test_passed):
                 latency = row.get("timeToReviewMs")
                 if row.get("status") != "complete":
                     error = "Action inference or harness error"
-            credits = _sum_known(e.get("credits") for e in row.get("providerUsage", []))
+            credits = _sum_known(
+                e.get("credits") for e in _objects(row.get("providerUsage", []))
+            )
             if adapter == "query" and artifact.get("revisionUnchanged") is not True:
                 raise InvalidArtifact("Query revision was not verified unchanged")
         if actual_model != model or not isinstance(case, str):

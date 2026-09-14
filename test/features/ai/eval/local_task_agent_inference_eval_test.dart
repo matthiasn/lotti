@@ -367,7 +367,7 @@ void main() {
     expect(
       scenarios.every(
         (scenario) => scenario.systemPrompt.contains(
-          scenario.reportDirective!,
+          scenario.reportDirective!.trim(),
         ),
       ),
       isTrue,

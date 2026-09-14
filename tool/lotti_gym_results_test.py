@@ -29,6 +29,64 @@ class ResultsTest(unittest.TestCase):
                     ]
                 )
 
+    def test_each_usage_observation_is_validated_before_summing(self):
+        for adapter in ("query", "workflow"):
+            for invalid in (-0.75, True, "0.25", float("nan"), float("inf")):
+                with self.subTest(adapter=adapter, invalid=invalid):
+                    usage = [{"credits": 1.0}, {"credits": invalid}]
+                    if adapter == "query":
+                        artifact = {
+                            "model": "candidate",
+                            "revisionUnchanged": True,
+                            "results": [{
+                                "case": "quiet", "passed": True,
+                                "providerUsage": usage,
+                            }],
+                        }
+                    else:
+                        artifact = {
+                            "model": {"providerModelId": "candidate"},
+                            "wakeResult": {"success": True},
+                            "consumptionEvents": usage,
+                        }
+                    with self.assertRaises(InvalidArtifact):
+                        normalize(
+                            {"adapter": adapter}, artifact,
+                            ["quiet" if adapter == "query" else "workflow"],
+                            "candidate", test_passed=True,
+                        )
+
+    def test_malformed_json_containers_raise_artifact_errors(self):
+        cases = [
+            ("planning", {"judgeBundle": ["bad-row"]}),
+            ("agent", {"results": [None]}),
+            ("agent", []),
+            ("preparation", {
+                "model": "candidate", "sourceHash": "hash",
+                "reports": ["bad-report"],
+            }),
+            ("workflow", {"model": None}),
+            ("query", {
+                "model": "candidate", "revisionUnchanged": True,
+                "results": [{
+                    "case": "quiet", "passed": True,
+                    "providerUsage": ["bad-event"],
+                }],
+            }),
+            ("planning", {"judgeBundle": [{
+                "scenario": {"id": "quiet"},
+                "cell": "quiet/candidate/baseline#1",
+                "constraints": {"check": None},
+            }]}),
+        ]
+        for adapter, artifact in cases:
+            with self.subTest(adapter=adapter, artifact=artifact):
+                with self.assertRaises(InvalidArtifact):
+                    normalize(
+                        {"adapter": adapter}, artifact, ["quiet"],
+                        "candidate", test_passed=True,
+                    )
+
     def test_task_artifact_uses_failure_category_not_a_nonexistent_passed_field(self):
         for category, expected in [("none", "passed"), ("forbiddenToolCall", "failed")]:
             result = normalize(
