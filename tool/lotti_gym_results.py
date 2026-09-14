@@ -102,6 +102,9 @@ def normalize(suite, artifact, expected, model, *, test_passed):
         elif adapter == "wake":
             case, actual_model = row.get("scenario"), row.get("model")
             passed = row.get("success") is True and test_passed
+            credits = _sum_known(
+                e.get("credits") for e in _objects(row.get("consumptionEvents", []))
+            )
         elif adapter == "workflow":
             case = "workflow"
             actual_model = _object(row.get("model", {})).get("providerModelId")
@@ -401,8 +404,26 @@ def write_report(directory, summary, jobs):
         '<!doctype html><html lang="en"><meta charset="utf-8"><title>LottiGym</title>',
         f"<h1>LottiGym: {esc(summary['model'])}</h1><p>Verdict: <strong>{esc(summary['verdict'])}</strong>. Scope: {esc(summary['scope'])}.</p>",
         "<p>Automated checks do not certify unrestricted fitness. Missing cost is unknown. P95 requires at least 20 measurements. Latency includes production retries.</p>",
-        "<table><thead><tr><th>Suite</th><th>Verdict</th><th>Passed / expected</th><th>Failures</th><th>Errors / missing</th><th>Mean ms</th><th>Reported credits / observations</th></tr></thead><tbody>",
     ]
+    cost = summary.get("cost")
+    if cost:
+        label = "Full run price" if summary["verdict"] != "incomplete" else "Run spend so far"
+        amount = cost["totalCostEur"]
+        parts.append(
+            f"<h2>{label}</h2><p>"
+            + (f"EUR {esc(amount)}" if amount is not None else
+               f"Incomplete — known EUR {esc(cost['knownCostEur'])}")
+            + f" (EUR equivalent). {cost['requests']} provider requests, including retries, "
+              "report preparation, helper models and judging.</p>"
+            + f"<p>Unpriced requests: {cost['requestsWithUnknownCost']}; "
+              f"untracked attempts: {cost['untrackedAttempts']}; "
+              f"open billing sessions: {cost['openSessions']}. "
+              f"Invalid billing records: {cost['invalidRecords']}. "
+              f"Charged credits: {esc(cost['chargedCredits'])}; "
+              f"charged energy: {esc(cost['chargedEnergy'])}. "
+              f"Unknown payment source: {cost['requestsWithUnknownPaymentSource']} request(s).</p>"
+        )
+    parts.append("<table><thead><tr><th>Suite</th><th>Verdict</th><th>Passed / expected</th><th>Failures</th><th>Errors / missing</th><th>Mean ms</th><th>Reported credits / observations</th></tr></thead><tbody>")
     for suite in summary["suites"]:
         c = suite["counts"]
         values = [

@@ -98,6 +98,9 @@ class GymTest(unittest.TestCase):
         temp = tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)
         self.output = Path(temp.name)
+        history_patch = patch.object(gym, "record_history")
+        self.record_history = history_patch.start()
+        self.addCleanup(history_patch.stop)
         project_patch = patch.object(gym, "worker_project", side_effect=lambda slot: self.output / f"worker-{slot}")
         project_patch.start()
         self.addCleanup(project_patch.stop)
@@ -629,9 +632,10 @@ class GymTest(unittest.TestCase):
             with patch.dict(os.environ, env, clear=True):
                 self.assertEqual(
                     judge_cli._validate_judge_url(env["MELIOUS_BASE_URL"]),
-                    self.manifest["baseUrl"],
+                    env["MELIOUS_BASE_URL"],
                 )
-            self.assertEqual(env["TASK_AGENT_EVAL_ALLOWED_JUDGE_HOSTS"], "example.invalid")
+            self.assertRegex(env["MELIOUS_BASE_URL"], r"^http://127\.0\.0\.1:\d+/v1$")
+            self.assertEqual(env["TASK_AGENT_EVAL_ALLOWED_JUDGE_HOSTS"], "127.0.0.1")
             return 0
 
         processes.run.side_effect = run_judge
@@ -703,6 +707,11 @@ class GymTest(unittest.TestCase):
             status = gym.main(["resume", str(directory), "--workers", "1"])
             self.assertEqual(status, 1)
             self.assertEqual(run.call_count, calls)
+            self.assertEqual(self.record_history.call_count, 2)
+            recorded = self.record_history.call_args.args[1]
+            self.assertEqual(recorded["runId"], directory.name)
+            self.assertEqual(recorded["duration"]["invocations"], 2)
+            self.assertIsNotNone(recorded["duration"]["activeWallSeconds"])
 
     def test_invalidated_run_cannot_look_like_a_successful_baseline(self):
         gym.atomic_json(self.output / "invalidated.json", {"reason": "source changed"})

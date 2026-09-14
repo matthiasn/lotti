@@ -306,6 +306,16 @@ class ResultsTest(unittest.TestCase):
         self.assertNotIn("<script>", text)
         self.assertIn("&lt;script&gt;", text)
 
+    def test_wake_keeps_all_turn_costs_even_when_the_exercise_fails(self):
+        result = normalize(
+            {"adapter": "wake"},
+            {"scenario": "noOp", "model": "candidate", "success": True,
+             "consumptionEvents": [{"credits": 0.25}, {"credits": 0.75}]},
+            ["noOp"], "candidate", test_passed=False,
+        )
+        self.assertEqual(result[0]["status"], "failed")
+        self.assertEqual(result[0]["credits"], 1)
+
     def test_query_uses_provider_usage_and_requires_stable_revision(self):
         artifact = {
             "model": "candidate",
