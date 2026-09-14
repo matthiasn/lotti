@@ -219,6 +219,7 @@ void main() {
     int totalTokens = 0,
     String? disclosureProviderName,
     bool setupUnavailable = false,
+    TextScaler textScaler = TextScaler.noScaling,
     bool realDisclosure = false,
     List<Override> additionalOverrides = const [],
     TaskAgentSetupOptions setupOptions = const TaskAgentSetupOptions(
@@ -232,6 +233,7 @@ void main() {
     await withClock(Clock.fixed(now), () async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
+          mediaQueryData: MediaQueryData(textScaler: textScaler),
           entryNotifier == null
               ? RelationshipBriefingCard(
                   relationship: entry ?? relationship(),
@@ -458,6 +460,23 @@ void main() {
         find.text('Only what you start yourself uses AI'),
         findsOneWidget,
       );
+    });
+
+    testWidgets('at large text the footer stacks the privacy note above the '
+        'primary, so neither squeezes the other', (tester) async {
+      await pump(
+        tester,
+        entry: relationship(important: false),
+        textScaler: const TextScaler.linear(1.6),
+      );
+      final note = tester.getRect(
+        find.byKey(const ValueKey('relationship-agent-meta')),
+      );
+      final action = tester.getRect(
+        find.byKey(const ValueKey('relationship-agent-mark-important')),
+      );
+      expect(action.top, greaterThanOrEqualTo(note.bottom));
+      expect(find.text('Only what you start yourself uses AI'), findsOneWidget);
     });
 
     testWidgets('Mark important switches the person on through the '
