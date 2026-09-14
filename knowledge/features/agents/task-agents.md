@@ -435,6 +435,10 @@ Common changes across the path:
   report tool and its content field. It explains that conditional additions
   extend a base heading list, even when the base list says "exactly"; a URL
   activating a requested source section requires that additional heading.
+  The model builds the heading outline before drafting and checks the final
+  content against it before publishing. Checklist updates require copying the
+  existing item's exact ID from current context, never deriving it from a title;
+  an item that cannot be found must not receive an update.
   Custom instructions remain verbatim, after the general evidence protocol,
   between the precedence statement and this final structure check. Built-in
   report instructions retain their existing position.

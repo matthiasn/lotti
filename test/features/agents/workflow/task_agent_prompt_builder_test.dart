@@ -260,6 +260,14 @@ Use the task language and omit empty sections.
         );
         expect(
           afterDirective,
+          contains('Build this heading outline before writing the prose'),
+        );
+        expect(
+          afterDirective,
+          contains('check the content against that outline'),
+        );
+        expect(
+          afterDirective,
           contains('Never invent headings for a directive requesting none'),
         );
       }

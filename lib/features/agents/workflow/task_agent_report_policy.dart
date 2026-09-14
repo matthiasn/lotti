@@ -29,14 +29,17 @@ A report already exists. Before publishing, identify a new or corrected task fac
       'wake, skip routine language initialization. Honor an explicit language '
       'request.';
 
-  /// Conditional additions extend a custom report's required section list.
+  /// Resolve conditional additions before drafting, then verify the outline.
   static const conditionalSectionRule =
       'First select the required headings from the active report directive, '
       'then test each conditional section against current evidence. A '
       'conditional addition extends the required heading list: "use exactly" '
       'for that list does not cancel a later conditional addition. For example, '
       'two required sections plus a source section when a URL exists means '
-      'three sections when a URL is present. Include each exact heading. '
+      'three sections when a URL is present. Build this heading outline before '
+      'writing the prose, then fill each section. Before calling update_report, '
+      'check the content against that outline: every required and activated '
+      'conditional heading must be present with its exact spelling. '
       'Evidence activating a section must appear under its requested heading; '
       'an inline link elsewhere does not replace a requested evidence section. '
       'Omit the entire conditional section when its condition is false. Never '

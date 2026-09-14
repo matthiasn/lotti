@@ -140,11 +140,15 @@ and memory use; inference uses the full `--workers` value. Cancellation stops
 warmup children before waiting for the compilation pool. Released slots retain
 their build caches for reuse, and allocation grows with peak concurrency.
 
-When the provider supports greater concurrency, `--workers 8 --batch-size 1`
-keeps eight independent task cases in flight and avoids a slow response holding
-up a sequential batch. It starts more Flutter processes than the default batch
-size; record these settings when comparing latency. Two assessments can each
-lease eight slots in the same checkout without sharing mutable build files.
+For two simultaneous model assessments, start with `--workers 4 --batch-size 1`
+per model. This keeps eight independent task cases in flight and avoids a slow
+response holding up a sequential batch. Provider capacity is only one limit:
+each resident Flutter compiler consumed roughly 1.8 GB in the September 2026
+Linux assessment, before its test process. Eight workers per model exhausted a
+32 GB machine plus swap; four per model stayed within available memory. Slots
+isolate mutable build files, but do not bound RAM. Record worker and batch
+settings when comparing latency and increase concurrency only with local
+memory headroom.
 
 ```mermaid
 stateDiagram-v2
