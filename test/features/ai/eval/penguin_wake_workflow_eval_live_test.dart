@@ -623,7 +623,12 @@ Future<String> _writeArtifact({
   required List<String> calledTools,
   required String reportText,
 }) async {
-  final directory = Directory('eval_artifacts');
+  // A gym worker owns a unique directory outside the checkout. Preserve the
+  // standalone runner's default when no explicit artifact path was supplied.
+  final outputPath = Platform.environment['PENGUIN_WAKE_EVAL_OUTPUT'];
+  final directory = outputPath == null
+      ? Directory('eval_artifacts')
+      : File(outputPath).parent;
   if (!directory.existsSync()) {
     directory.createSync(recursive: true);
   }
@@ -638,7 +643,7 @@ Future<String> _writeArtifact({
       ? ''
       : '_${label.replaceAll(RegExp('[^a-zA-Z0-9._-]'), '_')}';
   final file = File(
-    '${directory.path}/${safeScenario}_$safeModel$safeLabel.json',
+    outputPath ?? '${directory.path}/${safeScenario}_$safeModel$safeLabel.json',
   );
   await file.writeAsString(
     const JsonEncoder.withIndent('  ').convert({

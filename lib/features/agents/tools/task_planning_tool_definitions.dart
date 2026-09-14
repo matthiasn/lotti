@@ -1,4 +1,5 @@
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 
 /// Tools for planning, attention negotiation, reporting, and observations:
 /// related-task lookups, attention requests, report publishing, suggestion
@@ -29,9 +30,15 @@ const taskPlanningTools = <AgentToolDefinition>[
     name: TaskAgentToolNames.requestAttention,
     description:
         'Ask the day planner to reserve attention/time for this task. '
-        'Use this when the task needs scheduled work soon, has a deadline, '
-        'or should compete for planner attention. Do not use it for vague '
-        'interest; make a concrete evidence-backed claim. Check the '
+        'Use a specific scheduling request or concrete evidence that work '
+        'needs planner time soon. A priority, estimate, or deadline field '
+        'and edits to those fields are not by themselves scheduling intent. '
+        'Do not expand a metadata-only request into a time reservation. '
+        'For example, "Set P1, due Friday, estimate two hours" requests '
+        'field edits only; it does not request this tool. "Reserve two hours '
+        'on Friday" is a separate scheduling request that does. '
+        'Make a concrete evidence-backed claim, not a generic bid for every '
+        'open task. Check the '
         'Attention Requests section in the task context first and do not '
         'repeat an equivalent active request.',
     parameters: {
@@ -164,8 +171,7 @@ const taskPlanningTools = <AgentToolDefinition>[
   AgentToolDefinition(
     name: TaskAgentToolNames.updateReport,
     description:
-        'Publish the updated task report. You MUST call this tool exactly '
-        'once at the end of every wake. Provide a compact one-liner '
+        '${TaskAgentReportPolicy.publicationRule} Provide a compact one-liner '
         'tagline, a short TLDR summary, and the full report content as '
         'markdown. Follow the report structure defined in your report '
         'directive. Write in the task content language. Express your '

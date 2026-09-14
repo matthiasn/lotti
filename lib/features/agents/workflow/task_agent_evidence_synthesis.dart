@@ -1,4 +1,5 @@
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 
 /// Shared prompt and tool-description adjustments for the validated
@@ -7,13 +8,12 @@ abstract final class TaskAgentEvidenceSynthesis {
   /// Compact Markdown report contract used in place of Lotti's built-in
   /// decorative report template. Explicitly customized template directives
   /// remain authoritative.
-  static const reportDirective = '''
+  static const reportDirective =
+      '''
 ## Final report
 
-When no report exists yet or the report materially changed, call
-`update_report` exactly once as the final action. Otherwise finish with a brief
-plain-text note and do not republish unchanged content. Never describe tool
-calls in the report.
+${TaskAgentReportPolicy.publicationRule}
+Never describe tool calls in the report.
 
 ### `oneLiner`
 
@@ -45,13 +45,12 @@ evidence-backed and describe the current active task state.
 ''';
 
   /// Tighter content guidance retained for Mistral's compact active path.
-  static const mistralReportDirective = '''
+  static const mistralReportDirective =
+      '''
 ## Final report
 
-When no report exists yet or the report materially changed, call
-`update_report` exactly once as the final action. Otherwise finish with a brief
-plain-text note and do not republish unchanged content. Never describe tool
-calls in the report.
+${TaskAgentReportPolicy.publicationRule}
+Never describe tool calls in the report.
 
 ### `oneLiner`
 
@@ -108,6 +107,10 @@ left blocked after its blocker cleared misrepresents the work.
 Preserve stated dependencies and action order instead of reordering work for
 narrative flow.
 
+When a goal is followed by concrete steps that carry it out, create each
+distinct step once; do not add the umbrella goal as another checklist item or
+repeat a step under a synonymous title. Preserve separately executable actions.
+
 When creating checklist items, keep material qualifiers in the persisted item
 title, including owners, deadlines, quantities, dependencies, and scope. Do not
 move a qualifier only into the report. A date inside an action or checklist
@@ -118,6 +121,12 @@ A checked item proves only that the user marked it complete. Do not infer that
 it was deployed, validated, or root-cause-resolved unless the evidence says so.
 A previous report is a projection, not proof; discard its stale claims when
 newer evidence contradicts them.
+
+Praise or a positive reaction alone does not establish completion or approval.
+Keep incidental compliments in private observations. Do not infer that a check,
+validation, or release gate is complete from favorable wording. When the task's
+actions, constraints, and outcome are unchanged, praise alone does not make its
+existing report stale.
 
 Run this preflight in order before submitting the report:
 1. Mutation coverage: match every explicit requested task change to a successful
@@ -186,7 +195,7 @@ Write every field idiomatically in `languageCode`. The examples illustrate
 evidence selection, not required wording or report structure.
 ''';
 
-  /// Qwen-specific guard against explanatory scope leakage.
+  /// Grounding first tuned for Qwen, shared with the compact Flash profiles.
   static const qwenSystemDirective = '''
 
 
@@ -228,17 +237,23 @@ after a pending investigation.
     if (normalizedModelId == meliousMistralSmall4119BInstructModelId) {
       return mistralSystemDirective;
     }
-    if (normalizedModelId == meliousQwen35122BA10BModelId) {
+    if (_groundedCompactModels.contains(normalizedModelId)) {
       return '$systemDirective$qwenSystemDirective';
     }
     return systemDirective;
   }
 
-  /// Whether the opt-in should use the compact task-agent scaffold.
+  static const Set<String> _groundedCompactModels = {
+    meliousQwen35122BA10BModelId,
+    meliousDeepseekV41FlashModelId,
+    meliousGlm53FlashModelId,
+  };
+
+  /// Selects the compact scaffold and the workflow's temperature-zero profile.
   static bool usesCompactScaffold(String? modelId) {
     final normalizedModelId = modelId?.toLowerCase() ?? '';
     return normalizedModelId == meliousMistralSmall4119BInstructModelId ||
-        normalizedModelId == meliousQwen35122BA10BModelId;
+        _groundedCompactModels.contains(normalizedModelId);
   }
 
   /// Applies flag-gated authority guidance to mutation tool descriptions.
@@ -248,7 +263,12 @@ after a pending investigation.
         '$baseDescription Use this proactively when the user commits to a '
             'concrete multi-step plan, even without saying "create a '
             'checklist". Do not convert speculation or current-state '
-            'description into checklist items.',
+            'description into checklist items. Resolve references such as '
+            '"implement it" or "fix this" to the stated goal before making '
+            'the list: the goal and its implementation are one implementation '
+            'action, not two. Use the goal to give that action a concrete '
+            'title. Keep distinct reviews, approvals, and delivery actions '
+            'separate even if they mention the same artifact.',
       TaskAgentToolNames.updateTaskDueDate =>
         '$baseDescription Only call when the user explicitly asks to set or '
             'move the task due date. A date inside an action remains an item '
@@ -264,12 +284,32 @@ after a pending investigation.
     };
   }
 
-  /// Scope contract added directly to the `update_report` tool description.
+  /// Evidence scope and publication-content boundaries attached to the tool.
   static const updateReportDescriptionSuffix = '''
 
 Call this only after every explicit requested mutation has a matching successful
 tool call. Use current active evidence rather than stale report claims, and omit
-out-of-scope concepts completely.''';
+out-of-scope concepts completely.
+
+Tool receipts are private execution evidence. In every report field, omit
+narration about creating, proposing, queuing, or confirming checklist items and
+metadata. Describe the actual work and its remaining actions directly.
+Do not turn proposal confirmation into the task's next action or blocker unless the
+user's task itself is to review that proposal.
+
+Preserve current dates and estimates, including their units and purpose, in the
+full report even under a custom layout. Stating these task facts is different
+from narrating metadata edits. Omit retired or superseded metadata values from
+the current-state report, even when describing them as historical. Keep the
+reason for replacing them in observations; publish the currently adopted values.
+Express pending steps as direct actions in the
+task language (imperative or infinitive); avoid hypothetical completion prose.
+
+Before publishing, test each conditional section in the active report directive
+against the evidence. Include its exact heading when its condition is true;
+an inline link elsewhere does not replace a requested evidence section. Omit
+the entire section when the condition is false, including headings with "None".
+${TaskAgentReportPolicy.decisionSectionRule}''';
 
   /// Builds the evidence-first `update_report` description.
   static String updateReportDescription(String baseDescription) =>

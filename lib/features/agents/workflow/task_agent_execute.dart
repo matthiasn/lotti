@@ -609,15 +609,16 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         rethrowInferenceErrors: true,
       );
 
-      // 7b. Forced-report retry. A first wake needs an initial report, and a
-      // wake that successfully changed task state needs a fresh report. With
-      // no successful mutation, an existing report remains authoritative and
-      // avoiding a retry preserves the no-op wake path.
+      // 7b. First reports and material mutations require publication. Label
+      // and language housekeeping alone preserve an existing report.
       final reportMissing = strategy.extractReportContent().isEmpty;
-      final hasSuccessfulMutations = strategy
-          .extractSuccessfulMutations()
-          .isNotEmpty;
-      if (reportMissing && (lastReport == null || hasSuccessfulMutations)) {
+      final reportWasRequired = TaskAgentReportPolicy.requiresReport(
+        hasExistingReport: lastReport != null,
+        successfulToolNames: strategy.extractSuccessfulMutations().map(
+          (mutation) => mutation.toolName,
+        ),
+      );
+      if (reportMissing && reportWasRequired) {
         final retryUsage = await _forceUpdateReportIfMissing(
           conversationId: conversationId,
           modelId: modelId,
@@ -709,7 +710,6 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         );
       }
       if (reportEditorRouteEligible && effectiveReport == null) {
-        final reportWasRequired = lastReport == null || hasSuccessfulMutations;
         await strategy.recordWorkflowResult(
           toolName: reportWasRequired
               ? '${TaskAgentReportEditor.auditToolPrefix}_failed'
@@ -833,9 +833,8 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       final reportTldr = effectiveReport?.tldr ?? strategy.extractReportTldr();
       final reportOneLiner =
           effectiveReport?.oneLiner ?? strategy.extractReportOneLiner();
-      if (reportContent.isEmpty &&
-          (lastReport == null || hasSuccessfulMutations)) {
-        // Initial wakes and successful mutations require a current report.
+      if (reportContent.isEmpty && reportWasRequired) {
+        // Initial wakes and material mutations require a current report.
         // An empty report is valid only when an existing projection remains
         // authoritative because the wake applied no material change.
         _log(

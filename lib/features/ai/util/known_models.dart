@@ -134,6 +134,10 @@ const String meliousMistralSmall4119BInstructModelId =
 const String meliousDeepseekV4FlashModelId = 'deepseek-v4-flash-0731';
 const String meliousQwen35122BA10BModelId = 'qwen3.5-122b-a10b';
 
+/// Flash candidates with explicitly evaluated task-agent prompt profiles.
+const String meliousDeepseekV41FlashModelId = 'deepseek-v4.1-flash';
+const String meliousGlm53FlashModelId = 'glm-5.3-flash';
+
 /// Qwen 3.8 flagships.
 ///
 /// Both reject a chat completion unless `reasoning_effort` is present, and

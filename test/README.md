@@ -100,6 +100,15 @@ every file after it — and the painting binding's `imageCache` carries
 whatever earlier files decoded, so assert a *delta* on its size, never an
 absolute.
 
+## Model assessment
+
+LottiGym's offline orchestration checks run with
+`python3 -m unittest tool.lotti_gym_test tool.lotti_gym_results_test`.
+Its Dart catalog is checked by `test/tool/lotti_gym_catalog_test.dart`.
+These checks make no model calls. Live assessment, resume and artifact
+interpretation are documented in
+[LottiGym and model evaluation](../knowledge/features/ai/model-evaluation.md).
+
 ## Aged-history cost gates
 
 Daily OS cost regressions live under

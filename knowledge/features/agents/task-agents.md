@@ -5,9 +5,29 @@ description: The primary agent workflow — inference setup resolution, the auto
 resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
 tags: [agents, task-agent, tools, proposals, inference]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-13T07:18:59Z }
+generated: { by: codex/gpt-6, at: 2026-09-14T00:00:00Z }
 stale_after: 2026-10-12
 sources:
+  - id: report-policy
+    resource: ../../../lib/features/agents/workflow/task_agent_report_policy.dart
+    title: Shared publication policy for prompts and execution
+    last_modified: 2026-09-14
+  - id: planning-tools
+    resource: ../../../lib/features/agents/tools/task_planning_tool_definitions.dart
+    title: Evidence-backed requests for planner attention
+    last_modified: 2026-09-14
+  - id: prompt-builder
+    resource: ../../../lib/features/agents/workflow/task_agent_prompt_builder.dart
+    title: Stock and compact task-agent scaffolds
+    last_modified: 2026-09-14
+  - id: evidence-synthesis
+    resource: ../../../lib/features/agents/workflow/task_agent_evidence_synthesis.dart
+    title: Evidence-first task and report tool contracts
+    last_modified: 2026-09-14
+  - id: context-builder
+    resource: ../../../lib/features/agents/workflow/task_agent_context_builder.dart
+    title: Task wake context and report publication state
+    last_modified: 2026-09-14
   - id: checklist-provenance
     resource: ../../../lib/classes/checklist_item_data.dart
     title: Durable checklist approval receipts
@@ -273,14 +293,28 @@ flowchart LR
   Drill -.-> FullSibling["Full sibling task JSON + latest task-agent report"]
 ```
 
-The wake prompt is assembled from current task JSON, the latest persisted report,
+The wake prompt is assembled from current task JSON, report existence,
 prior observations, linked-task context, pending change sets, active
 `AttentionRequestEntity` claims (loaded through
 `getAttentionClaimsForTarget` so the prompt never scans the append-only source
 table), the active running timer, and editable historical time entries.
 
-Two context details are load-bearing:
+Three context details are load-bearing:
 
+- **Report existence is explicit on every wake.** A missing report requires an
+  initial publication. With an existing report, the context asks for a new or
+  corrected task fact before republishing: repeated status, different wording,
+  and housekeeping alone are not material progress. Trigger ids identify what
+  to inspect, not proof that the situation changed. The prior report's prose is
+  deliberately omitted so stale conclusions cannot feed back as evidence.
+  No-change wakes skip optional label/language tidying while honoring explicit
+  requests. Both scaffolds initialize a missing language when a report is
+  required; they do not require that write on an otherwise unchanged wake.
+  The raw report-tool description has the same first-report/material-change
+  gate; it does not require publication on every wake. The scaffold, tool
+  descriptions and context use `TaskAgentReportPolicy` for publication,
+  language and decision-section wording. The executor uses the same policy
+  to exclude label/language-only housekeeping from forced publication.
 - **Parent project context** carries only the project agent's latest `oneLiner`
   and `tldr` — the full report body is omitted to keep wake prefill small.
   Linked-task context does the same via `agent_task` links and `agentReportHead`.
@@ -378,16 +412,53 @@ Common changes across the path:
   speculation or a description of current state as authority.
 - Owners and dates inside an action stay **in that checklist item** — they do not
   authorize owner or task-due-date field mutations without an explicit request.
+- The common evidence protocol distinguishes a goal from its concrete steps:
+  each distinct action appears once, without an extra umbrella-goal item.
+  The batch tool resolves references such as "implement it" into that goal's
+  concrete action before separating distinct review and delivery steps.
 - `TaskAgentContextBuilder` adds evidence requirements to `update_report` and
   explicit authority boundaries to checklist, due-date and status mutation
-  descriptions.
-- A required report omitted after a successful mutation gets a forced report
-  call; a true no-op wake does not.
+  descriptions. Report-tool guidance treats tool receipts as private execution
+  evidence: creating or confirming checklist/metadata proposals is omitted from
+  report fields. Proposal confirmation is not a task blocker or next action
+  unless reviewing that proposal is itself the user's task.
+  Current dates and estimates remain report facts under custom layouts. The
+  report tool asks the model to evaluate conditional sections explicitly:
+  retain a requested evidence heading when a URL exists; omit decision sections
+  unless the user has an unresolved choice they can make now. External approvals
+  and decisions dependent on future results belong with pending work.
+  Custom-directive guidance requires evidence of a specific missing input only
+  the user can provide now before drafting an optional decision section. It
+  selects the required and evidence-triggered headings before drafting prose;
+  information elsewhere does not replace a requested conditional section.
+  Custom report instructions finish either scaffold, adjacent to their
+  precedence statement, so the requested layout follows the general evidence
+  protocol. Built-in report instructions retain their existing position.
+  Optional headings
+  do not justify inventing acceptance criteria or requesting confirmation of
+  criteria the user has already stated.
+  Praise alone belongs in observations and does not establish completion,
+  approval, or a material report change. Current-state reports retain current
+  metadata values; retired estimates and superseded dates stay in observations.
+- Planner attention requires a specific scheduling request or evidence of a
+  near-term need for planner time. Metadata edits and the mere presence of a
+  deadline, estimate, or priority do not establish that need.
+  The tool contrasts a metadata-only request with an explicit reservation
+  request to make that boundary concrete.
+- A first report or a report omitted after a successful material mutation gets
+  a forced report call. An existing report with only label/language housekeeping
+  is preserved, as is a true no-op. The same gate controls retry, report-editor
+  audit and missing-report diagnostics.
 
-**Routing is exact at the model/provider boundary.** Compact scaffolds,
-model-specific directives and temperature `0.0` apply only to the two evaluated
-ids — `qwen3.5-122b-a10b` and `mistral-small-4-119b-instruct`. Other Mistral or
-Qwen models keep the common scaffold and `0.3` until evaluated explicitly.
+**Scaffold routing matches exact model IDs.** Compact scaffolds,
+model-specific directives and temperature `0.0` apply to the exact evaluated
+ids `qwen3.5-122b-a10b`, `mistral-small-4-119b-instruct`,
+`deepseek-v4.1-flash`, and `glm-5.3-flash`. The Flash profiles share Qwen's
+stricter report grounding: task status and checkmarks do not establish an
+outcome, and absent metadata and excluded scope stay out of the report.
+Custom report directives remain verbatim. Other model IDs keep the common
+scaffold and `0.3` until evaluated explicitly. This profile selection does not
+override reasoning effort.
 
 ## The isolated report editor
 

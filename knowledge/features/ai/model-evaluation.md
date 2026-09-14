@@ -1,188 +1,253 @@
 ---
 type: Feature Module
-title: Model evaluation
-description: The four eval harnesses, what each can and cannot catch, and the measured findings behind the shipped task-agent routing.
-resource: ../../../tool
-tags: [ai, evaluation, benchmarking, model-selection]
+title: LottiGym and model evaluation
+description: One-call model assessment over Lotti's live harnesses, with explicit coverage, resumable work and separate execution and quality outcomes.
+resource: ../../../tool/lotti_gym.py
+tags: [ai, evaluation, benchmarking, model-selection, lotti-gym]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-19T00:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-13T20:00:00Z }
 stale_after: 2026-10-19
 sources:
-  - id: tools
-    resource: ../../../tool
-    title: Eval shell entry points
-    last_modified: 2026-07-26
+  - id: gym
+    resource: ../../../tool/lotti_gym.py
+    title: CLI, worker scheduling, provenance and resume
+    last_modified: 2026-09-13
+  - id: catalog
+    resource: ../../../tool/lotti_gym_catalog.dart
+    title: Authoritative exercise inventory
+    last_modified: 2026-09-13
+  - id: results
+    resource: ../../../tool/lotti_gym_results.py
+    title: Artifact adapters and consolidated report
+    last_modified: 2026-09-13
   - id: judge
     resource: ../../../tool/task_agent_model_eval_judge.py
-    title: Rubric judge
+    title: Diagnostic task-report rubric
     last_modified: 2026-07-12
-  - id: eval-docs
-    resource: ../../../docs/evaluations/task_agent_models/README.md
-    title: Task-agent model evaluations
-    last_modified: 2026-08-19
-  - id: real-wake
-    resource: ../../../test/features/ai/eval/penguin_wake_workflow_eval_live_test.dart
-    title: Penguin real-wake eval — the tier that scores persisted outcomes
-    last_modified: 2026-08-19
 ---
 
-Four harnesses sit at increasing levels of fidelity. Each catches a failure the
-one below it cannot.
+# Assessing a model
 
-| Harness | Exercises | Catches |
-|---------|-----------|---------|
-| `tool/qwen_local_inference_eval.sh` | `CloudInferenceWrapper` + real task-agent tool definitions | Whether a model emits the right function call with the right arguments |
-| `tool/local_task_agent_inference_eval.sh` | `ConversationRepository`, the real system-prompt scaffold, the full tool surface, the same continuation loop | A model that emits isolated calls but **cannot complete the wake contract** |
-| `tool/local_task_agent_workflow_eval.sh` | `TaskAgentWorkflow.execute` with seeded Laura directives | Whether production persistence outputs actually appear — a `ChangeSetEntity` with the expected suggestions and an `AgentReportEntity` from `update_report` |
-| `tool/melious_task_agent_model_eval.sh` | The conversation-level evaluator as a Melious model × prompt matrix | Cross-model comparison on app-shaped scenarios |
-| `scripts/penguin_wake_eval_matrix.sh` | `TaskAgentWorkflow` over **seeded real databases** — journal, agent and FTS5 — carrying the penguin demo world | What a wake actually persisted, including churn the inference tiers cannot see |
+From the repository root, with dependencies installed and Melious credentials
+exported or in `.env`:
 
-The last one is the only tier that reaches `TaskAgentContextBuilder`. Every
-scenario in the tiers above authors its own `userMessage`, so none of them
-exercises the 853 lines of production logic that decide what the model is
-actually shown; a field dropped there, a log window mis-truncated or an id
-leaked passes all of them. It is also the only tier that scores persisted
-`ChangeSetEntity` and `AgentReportEntity` rather than attempted tool calls.
-
-That difference is not theoretical. On 2026-08-19 the same four models scored
-41/42 on the inference matrix and 30/48 on this one, and the gap was entirely
-restraint: every model republishes an unchanged standing report on a wake whose
-note reports no movement.
-
-None of the first four replays a real user database or renders UI. The workflow
-eval uses test doubles with deterministic task/project context, but exercises
-the same workflow, strategy, change-set, report-writing and forced-report retry
-mechanics an in-app wake uses.
-
-```mermaid
-flowchart LR
-  Fixtures["Synthetic Lotti wakes"] --> Matrix["Model x prompt matrix"]
-  Matrix --> Conversation["ConversationRepository"]
-  Conversation --> Tools["Production task-agent tool schema"]
-  Tools --> Deterministic["Tool + report checks"]
-  Tools --> Judge["Optional rubric diagnostic"]
-  Tools --> Review["Direct report-quality review"]
-  Deterministic --> Artifacts["Unique local run directory"]
-  Judge --> Artifacts
-  Review --> Artifacts
-  Artifacts --> Archive["Optional private archive"]
+```sh
+python3 tool/lotti_gym.py assess --model MODEL_ID
 ```
 
-# The Melious matrix
+This discovers the complete exercise inventory, writes an immutable manifest,
+warms the Flutter builds without enabling inference, runs the candidate and
+then runs the existing task-report rubric. It writes `report.html`,
+`summary.json`, `jobs.json` and retained per-attempt evidence under a unique
+run directory in `~/.local/share/lotti-gym/runs/`. Model output stays outside
+the application repository. The command prints the directory and final verdict.
 
-The default production-prompt suite is fourteen synthetic but app-shaped wakes:
-twelve core scenarios covering explicit and implicit-plan mutations, noisy
-multilingual transcripts, prior reports, no-op background refreshes, stale
-evidence, user overrides, checklist deduplication, external links and long
-timelines; plus two held-out scenarios for deferred scope and active deployment
-constraints.
+Only the Melious transport is supported by this first orchestrator. This uses
+production routing through the existing harnesses, rather than treating an
+arbitrary OpenAI-compatible endpoint as equivalent. `--base-url` selects an
+endpoint; HTTPS is required except for explicit loopback addresses. The task
+judge authorizes exactly the hostname selected by this endpoint; ambient judge
+host overrides do not expand that authorization.
 
-Deterministic checks validate required mutations and report facts, and forbidden
-tools, speculative checklist content, report churn and internal-id leakage.
-Missing first reports go through the same report-only forced retry
-`TaskAgentWorkflow` uses, and each result records whether that recovery was
-needed.
+`--env-file` selects another local credential file. Only Melious connection
+keys and their existing upstream aliases are read; dotenv text is never
+executed. Empty placeholders are accepted. Exported values take precedence. API keys are passed in child
+environments, never command arguments or the manifest. Ambient eval selectors,
+live gates and experimental overrides are cleared before constructing the
+worker environment.
 
-**The live test is deliberately non-gating** unless
-`LOCAL_TASK_AGENT_EVAL_STRICT=1`, because a comparison run must persist weak
-outputs instead of aborting before the other candidates run.
+The first independent batch acts as provider preflight. If it cannot complete
+inference, the remaining matrix stays unassessed instead of repeating an
+authentication, unavailable-model or transport failure across every exercise.
+Behavioral failures still allow the complete matrix to run.
 
-Artifacts land in a unique run directory under `build/task_agent_model_eval/`.
-Set `LOCAL_TASK_AGENT_EVAL_OUTPUT_ROOT` to a local clone of the private
-evaluation archive when a run should be retained — **generated reports are not
-committed to this repository.**
+Useful variations:
 
-## Orchestration modes
+```sh
+# Compile/discover the inventory and write the plan; no inference or judging.
+python3 tool/lotti_gym.py assess --model MODEL_ID --dry-run
 
-`LOCAL_TASK_AGENT_EVAL_EXECUTION_MODE` selects:
+# A deliberately partial assessment, clearly labelled in the report.
+python3 tool/lotti_gym.py assess --model MODEL_ID --suites goals,goal-outcomes
 
-| Mode | Behaviour |
-|------|-----------|
-| `twoPass` | Removes `update_report` from the mutation pass, then forces a report-only pass |
-| `reportRevision` | Asks the same model to revise its first report against the source context |
-| `reportEditing` | Always sends a draft through the configured editor — a historical control |
-| `productionRouting` | Mirrors the shipped path: Mistral always uses the isolated Qwen editor, clean direct-Qwen reports stay single-pass, and reports matching the narrow known-regression detector get a bounded Qwen repair |
+# Reuse a previous query-neutral report artifact and compare a matched run.
+python3 tool/lotti_gym.py assess --model MODEL_ID \
+  --summary-reports /path/to/frozen-reports.json --baseline /path/to/baseline-run
 
-Scenario metadata supplies existing material due dates, estimates and priorities
-to the editor, just as production supplies current task anchors.
+# Resume missing/error work, preserving measured behavioral failures.
+python3 tool/lotti_gym.py resume /path/to/run
+```
 
-## The judge is a diagnostic, not a gate
+Defaults are three samples, two workers and batches of up to eight cases.
+`--samples`, `--workers` and `--batch-size` change those dimensions. More workers
+can increase provider contention, so concurrency is recorded as part of the
+comparison contract. Temperature is not a uniform Gym control: harnesses that
+consume their temperature override receive zero; the others retain their
+production routing or harness defaults. Inspect the suite artifacts for effective
+settings. Costs are observations, not automatic spend caps.
+`--judge-model` chooses the diagnostic task judge; `--no-judge` explicitly
+leaves that assessment unperformed. Neither setting changes deterministic gates.
 
-`tool/task_agent_model_eval_judge.py` sends the synthetic context and captured
-tool calls to a separate rubric pass (`qwen3.5-122b-a10b` by default), rating
-grounding, coverage, checklist quality, summary quality and format compliance.
+# Inventory and fidelity
 
-**This automated score is a diagnostic only.** It is not an acceptance signal,
-and a candidate is not accepted from a score produced by the same model family.
-Deterministic checks establish mutation safety; report-quality decisions require
-direct review of the candidate text. Malformed judge JSON gets one bounded repair
-turn, and the artifact retains and aggregates accounting for every paid attempt.
+`buildLottiGymCatalog()` imports the same scenario collections used by the live
+tests. Python never parses Dart enum text or maintains a second scenario list.
+The catalog test checks that every live entry point is registered or explicitly
+excluded, that IDs are unique and that dependencies resolve.
 
-# What the runs established
+| Exercise | What is exercised |
+|---|---|
+| Task conversation | Production prompt variant, conversation/tool orchestration and production report routing |
+| Task penguin | The current English penguin inference fixture; the old environment switch name is not a multilingual-coverage claim |
+| Task directives | Synthetic evolved report directives |
+| Task workflow | `TaskAgentWorkflow` with seeded context and captured persisted proposals/reports |
+| Task wake | Real task-agent context construction over seeded journal, agent and FTS databases, including restraint cases |
+| Goals | Goal inference contract and tool checks |
+| Goal outcomes | Goal workflow persistence and outcome checks |
+| Relationships | Production-rendered facts and the relationship inference contract |
+| Query reports | Query-neutral synthetic report preparation, a dependency rather than a scored exercise |
+| Query | Production query pipeline, baseline and held-out questions, including follow-ups |
+| Query actions | Production action planning and proposals; actions are never applied |
+| Day planning | Production planning pipeline and its existing objective constraints |
+| Day journey | Capture-to-plan journey metrics, retained for review |
+| Compaction | Full-context and hierarchical arms paired per fixture; truncation remains a standalone experiment |
 
-These are **one-sample synthetic comparisons**, retained for reproduction rather
-than treated as universal model rankings.
+The oMLX-only Qwen compatibility harness is explicitly excluded from a Melious
+assessment. Vision, audio transcription, relationship persistence and query
+action application remain visible coverage gaps. A text transcript does not
+measure speech recognition. Historical prompt/editor experiments remain
+available through the individual harnesses; they are not multiplied into the
+default production assessment.
 
-- **Reasoning effort did not justify a production default.** An explicit Mistral
-  `reasoning_effort=high` experiment passed 3/4 in a matched four-scenario screen
-  — the same as model-default — while being 13–15% slower. The full high-effort
-  run at Mistral's recommended temperature `0.7` passed 7/11 versus 10/11 in the
-  archived provider-default run, and was 56% slower with nearly identical output
-  volume.
-- **Qwen exposes thinking as on/off, not tiers.** Requesting OpenAI-compatible
-  `high` effort left the same three failures while adding 11% input tokens, 6%
-  output tokens and 6% latency. Production therefore leaves reasoning at the model
-  or profile default.
-- **DeepSeek V4 Flash did not advance past the screen**: 2/4 cases, an
-  unauthorized status change, 2.6× the input tokens, about twice the latency of
-  the Mistral baseline.
-- **Two-pass modes were not adopted.** The corrected temperature-0 Mistral
-  two-pass rerun improved judge-rated summary prose but passed only 8 of 11
-  scenarios and used 135,147 candidate tokens — 52% above the single-pass
-  baseline.
-- **Prompt additions alone could not remove Qwen's report defects.** Repeated
-  synthetic suites at temperature `0.0` showed strong mutation handling but
-  recurring defects: pending work described as underway, checklist-process
-  narration, deferred-scope leakage, and causal claims inferred from user
-  checkmarks. Production therefore runs a **narrow local detector** for these
-  captured regressions — a clean draft stays single-pass, a matching draft gets a
-  bounded isolated Qwen repair. Standalone directive-controlled headings and words
-  such as `Goal`, `Checklist` and `No blockers` are not failures. The detector
-  does not establish semantic correctness, score prose quality, or enforce
-  arbitrary custom report structure.
-- **The final matched production-routing run** (commit `8d34a3088`, 14 scenarios
-  per route): direct Qwen and Mistral-plus-isolated-Qwen-editor each passed 14/14
-  scenarios and 112/112 deterministic checks. Mistral used 232,322 tokens and
-  145.458 s; direct Qwen 233,490 tokens and 157.180 s. Of twelve direct-Qwen
-  report cases, five passed local preflight and seven received repair; one repair
-  used all three allowed attempts.
+# Worker lifecycle and recovery
 
-Direct review found Qwen's final reports **richer and more natural**, while the
-Mistral route stayed more compact and conservative. These results supported the
-Qwen default at the time of the run. They do **not** prove GLM 5.2 parity or
-unrestricted reliability on arbitrary user histories.
+A job is a bounded batch of cases for one suite and sample. Wake scenarios and
+compaction fixtures each get their own job. Query cases stay together because
+follow-ups depend on earlier answers. Each worker has its own process and
+artifact directory; GetIt state is not shared between simultaneous workers.
+Kernel locks lease stable compiler slots from
+`build/test_cache/lotti_gym_leases/`. Each slot is warmed for every selected
+entry point before paid jobs begin. An unused `LOTTI_GYM_COMPILER_SLOT` Dart
+define selects the same incremental cache for warmup and inference; Flutter
+includes Dart defines in the cache path. Concurrent assessments lease disjoint
+slots, and subsequent assessments reuse released slots, including catalog
+compilation. Cache allocation grows with peak concurrency rather than the
+number of assessments. The define does not alter eval behavior.
 
-`qwen3.5-122b-a10b` is part of the curated Melious catalog. The shipped
-thinking default has since moved to **GLM 5.2**, with **Kimi K3** for high-end
-thinking and image recognition, and Whisper Large v3 for transcription (see
-[seeding and lifecycle](seeding-and-lifecycle.md) for the current seed and the
-generation-2 migration). Existing untouched Melious profiles migrate through
-that generation boundary; the profile stores the applied seed generation, so
-each migration runs once and a later deliberate switch is preserved. The Qwen
-evaluation remains the record of why the task-agent report contract was shaped
-this way; it is no longer a statement about the shipped model.
+```mermaid
+stateDiagram-v2
+  [*] --> pending
+  pending --> running: dependencies ready
+  pending --> blocked: prerequisite failed
+  running --> complete: objective checks passed
+  running --> failed: behavioral violation
+  running --> review_required: quality needs review
+  running --> prepared: fixture completed
+  running --> error: inference or worker failure
+  error --> pending: resume
+  blocked --> pending: resume
+  running --> pending: interrupted before checkpoint
+```
 
-The resulting shipped routing is described in
-[task agents](../agents/task-agents.md).
+Resume rebuilds the job inventory from the manifest and reads completed attempt
+records, rather than trusting a potentially stale scheduler checkpoint. It
+verifies manifest provenance and artifact hashes. Interrupted attempt directories
+are retained, and the replacement attempt gets a new directory. Completed
+behavioral failures are evidence and are not rerolled. Failed or missing task
+judgments can resume without repeating candidate inference. Cancelled workers,
+including negative signal exits after writing an artifact, remain retriable
+errors. Both task `inferenceFailed` and agent `inferenceError` categories remain
+infrastructure errors. Query failures retain measured rows: blocked follow-ups
+are errors, and an unwritten tail after an infrastructure failure is marked
+unassessed. Resume reruns the grouped query conversation because later answers
+depend on earlier ones; prior attempts remain available.
 
-# Scope limits
+A kernel lock prevents two coordinators writing one run. Cancellation and
+worker timeouts stop the owned process group, including compiler descendants.
+Atomic JSON replacement keeps the preceding checkpoint intact if a write is
+interrupted. Resume currently requires the same host, calendar day, source
+revision and worker count. This conservative restriction avoids silently mixing
+latency conditions or the planning suite's day-dependent fixtures.
 
-The narrow Qwen helper does not write prompts, full responses, API keys, release
-gates, attestations or decision ledgers. Its comparison targets are
-`Qwen3.6-35B-A3B-TurboQuant-MLX-4bit`, `Qwen3.6-35B-A3B-4bit` and
-`Qwen3.6-35B-A3B-MLX-8bit`; set `QWEN_EVAL_BASE_URL` or `OMLX_BASE_URL` when oMLX
-is not at the local default.
+# Results and comparison
 
-The app-shaped eval does not mutate the database, execute write dispatchers,
-render UI, or validate image input. It validates model behaviour inside the app's
-conversation and tool-call orchestration layer.
+Adapters validate exact model and case identity, including missing, extra and
+duplicate rows. Flutter's machine reporter establishes whether a worker actually
+ran; a display string such as `All tests passed` is not an assessment. Task
+inference uses `failureCategory`; goal inference uses its explicit `passed`
+field. Wake/workflow artifacts are written before assertions, so their worker
+outcome is also required to establish quality.
+
+Live drivers clear Flutter's mock HTTP override before constructing clients;
+otherwise the binding returns HTTP 400 without contacting the provider. The
+task-workflow driver restores the previous override at teardown. Compilation
+with live gates disabled cannot detect this transport trap.
+
+Synthetic follow-up task cases use the production `TaskAgentReportPolicy`
+publication state, changed-entity guidance and closing instruction. Like the
+production context builder, they omit prior report prose. The real workflow
+suites additionally exercise publication enforcement after successful tools.
+
+The task conversation driver rethrows inference errors from both its initial
+conversation and forced report pass. A provider failure cannot trigger report
+recovery and become a successful or behaviorally failed assessment. When a
+later request fails, the failed result retains completed-call token usage, the
+forced-retry flag and consumption events already recorded for the wake.
+
+Inference errors remain separate from behavioral failures. Missing cases remain
+in the expected denominator. Day-planning heuristics cannot earn objective
+credit. Journey metrics and compaction fact/recommendation quality retain their
+review requirements. The task-specific rubric is not applied to unrelated
+workloads. Judging remains diagnostic, including when a candidate and judge
+share a model family; it never promotes a deterministic failure into a pass.
+
+Suite verdicts distinguish checks passed, failed, incomplete, prepared and review
+required. The overall result never automatically certifies unrestricted model
+fitness. Exit codes are `1` for behavioral failure, `2` for incomplete/setup
+failure, `3` for completed work requiring review, and `130` for interruption.
+Dry-run completion exits `0`.
+
+The report retains observed latency and cost, with missing telemetry marked
+unknown. Candidate costs include retained attempts; cost per passed case is
+only computed when all attempted rows reported cost. Judge accounting stays in
+the diagnostic artifacts. P95 is omitted below twenty observations. Detailed artifacts preserve
+production retry/editor behavior and the task judge's accounting. Do not read
+one small sample as a stable model ranking.
+
+Baseline comparison requires matching source revision, suite definitions,
+endpoint, sample count, batch size, concurrency and host. Day-planning comparisons
+also require the same evaluation date. Query comparisons additionally require the same explicitly frozen report
+fixture; candidate-generated summaries otherwise confound the comparison.
+Incompatible baselines are reported as incompatible, not silently compared.
+
+# Standalone task harnesses
+
+The existing entry points remain available for focused diagnostics:
+
+| Entry point | Scope |
+|---|---|
+| `tool/qwen_local_inference_eval.sh` | Local oMLX tool-call compatibility |
+| `tool/local_task_agent_inference_eval.sh` | Task conversation and tool orchestration |
+| `tool/local_task_agent_workflow_eval.sh` | Seeded production workflow persistence |
+| `tool/melious_task_agent_model_eval.sh` | Melious model and prompt matrix |
+| `scripts/penguin_wake_eval_matrix.sh` | Production context over seeded penguin databases |
+
+For the standalone conversation harness, `LOCAL_TASK_AGENT_EVAL_STRICT=1`
+makes deterministic failures fail the test; its diagnostic default still writes
+weak results. `LOCAL_TASK_AGENT_EVAL_OUTPUT_ROOT` relocates retained artifacts
+outside the repository. Gym supplies explicit selectors and output paths, so
+ambient standalone switches do not alter a Gym run.
+
+# Historical findings and related contracts
+
+The archived comparisons and their methodological corrections remain in
+[task-agent evaluations](../../../docs/evaluations/task_agent_models/README.md),
+[goal evaluations](../../../docs/evaluations/goal_agent_models/README.md),
+[relationship evaluations](../../../docs/evaluations/relationship_agent_models/README.md)
+and [compaction evaluations](../../../docs/evaluations/goal_agent_models/compaction.md).
+They describe the measured runs, not a current universal model ranking.
+
+Production routing is documented in [task agents](../agents/task-agents.md).
+Planning graders and their objective/heuristic distinction are documented in
+[Daily OS evaluation](../daily_os_next/evaluation.md). Current model seeding is
+owned by [seeding and lifecycle](seeding-and-lifecycle.md).

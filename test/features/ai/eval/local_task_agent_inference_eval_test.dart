@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_editor.dart';
+import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
@@ -13,8 +14,10 @@ import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../helpers/fallbacks.dart';
 import 'support/local_task_agent_inference_eval.dart';
 
 void main() {
@@ -334,6 +337,32 @@ void main() {
     expect(defaultLocalTaskAgentWakeScenario().languageCode, 'en');
   });
 
+  test(
+    'follow-up fixtures use production publication context without prior prose',
+    () {
+      final followUps = defaultMeliousTaskAgentEvalScenarios().where(
+        (scenario) => !scenario.isFirstWake,
+      );
+      expect(followUps, hasLength(3));
+      for (final scenario in followUps) {
+        expect(
+          scenario.userMessage,
+          contains(TaskAgentReportPolicy.existingReportContext),
+        );
+        expect(
+          scenario.userMessage,
+          contains(TaskAgentReportPolicy.changedEntitiesRule),
+        );
+        expect(
+          scenario.userMessage,
+          endsWith('${TaskAgentReportPolicy.closingInstruction}\n'),
+        );
+        expect(scenario.userMessage, isNot(contains('Previous Agent Report')));
+        expect(scenario.userMessage, isNot(contains('## Achieved')));
+      }
+    },
+  );
+
   test('evolved-directive suite covers realistic reporting contracts', () {
     final scenarios = evolvedReportDirectiveTaskAgentEvalScenarios();
 
@@ -367,7 +396,7 @@ void main() {
     expect(
       scenarios.every(
         (scenario) => scenario.systemPrompt.contains(
-          scenario.reportDirective!,
+          scenario.reportDirective!.trim(),
         ),
       ),
       isTrue,
@@ -1340,6 +1369,92 @@ void main() {
     },
   );
 
+  test(
+    'provider errors cannot become successful forced report retries',
+    () async {
+      for (final mode in [
+        LocalTaskAgentEvalExecutionMode.singlePass,
+        LocalTaskAgentEvalExecutionMode.productionRouting,
+      ]) {
+        final inference = _FailThenSucceedInferenceRepository();
+        final runner = _createRunner(
+          provider: provider,
+          inferenceRepository: inference,
+          executionMode: mode,
+        );
+        final report = await runner.run(
+          profiles: const [profile],
+          scenarios: [defaultLocalTaskAgentWakeScenario()],
+        );
+        final result = report.results.single;
+        expect(
+          result.failureCategory,
+          LocalTaskAgentEvalFailureCategory.inferenceFailed,
+        );
+        expect(result.errorMessage, contains('connection refused'));
+        expect(result.usedForcedReportRetry, isFalse);
+        expect(result.toolCalls, isEmpty);
+        expect(inference.requests, hasLength(1));
+      }
+    },
+  );
+
+  test(
+    'provider errors during forced report recovery remain inference failures',
+    () async {
+      final inference = _QueuedInferenceRepository(
+        [
+          [
+            _usage(
+              inputTokens: 100,
+              outputTokens: 20,
+              thoughtsTokens: 5,
+              cachedInputTokens: 10,
+            ),
+            _content('No report was produced.'),
+          ],
+        ],
+        failedRequest: 2,
+      );
+      final consumption = fallbackAiConsumptionEvent.copyWith(credits: 0.25);
+      String? capturedWakeRunKey;
+      final runner = _createRunner(
+        provider: provider,
+        inferenceRepository: inference,
+        executionMode: LocalTaskAgentEvalExecutionMode.productionRouting,
+        consumptionForWakeRunKey: (key) {
+          capturedWakeRunKey = key;
+          return [consumption];
+        },
+      );
+      final report = await runner.run(
+        profiles: const [profile],
+        scenarios: [defaultLocalTaskAgentWakeScenario()],
+      );
+      final result = report.results.single;
+      expect(
+        result.failureCategory,
+        LocalTaskAgentEvalFailureCategory.inferenceFailed,
+      );
+      expect(result.errorMessage, contains('connection refused'));
+      expect(result.usedForcedReportRetry, isTrue);
+      expect(result.inputTokens, 100);
+      expect(result.outputTokens, 20);
+      expect(result.thoughtsTokens, 5);
+      expect(result.cachedInputTokens, 10);
+      expect(result.consumption, [consumption]);
+      expect(result.credits, 0.25);
+      expect(
+        capturedWakeRunKey,
+        localTaskAgentEvalWakeRunKey(profile.name, result.scenario.id),
+      );
+      expect(inference.requests, hasLength(2));
+      expect(inference.requests.last.toolNames, [
+        TaskAgentToolNames.updateReport,
+      ]);
+    },
+  );
+
   test('runner records inference failure and continues the matrix', () async {
     const secondProfile = LocalTaskAgentEvalProfile(
       name: 'second-local-model',
@@ -1365,7 +1480,7 @@ void main() {
     );
     expect(
       report.results.first.finalContent,
-      'Bad state: connection refused',
+      'Inference failed with exception: Bad state: connection refused',
     );
     expect(
       report.results.last.failureCategory,
@@ -2620,6 +2735,7 @@ LocalTaskAgentInferenceEvalRunner _createRunner({
       LocalTaskAgentEvalExecutionMode.singlePass,
   String? reportEditorModelId,
   int reportEditorMaxAttempts = 1,
+  List<AiConsumptionEvent> Function(String)? consumptionForWakeRunKey,
 }) {
   final container = ProviderContainer();
   addTearDown(container.dispose);
@@ -2635,6 +2751,7 @@ LocalTaskAgentInferenceEvalRunner _createRunner({
     executionMode: executionMode,
     reportEditorModelId: reportEditorModelId,
     reportEditorMaxAttempts: reportEditorMaxAttempts,
+    consumptionForWakeRunKey: consumptionForWakeRunKey,
   );
 }
 
@@ -2773,7 +2890,9 @@ class _ThrowingConversationRepository extends ConversationRepository {
 }
 
 class _QueuedInferenceRepository extends InferenceRepositoryInterface {
-  _QueuedInferenceRepository(this.responsesByRequest);
+  _QueuedInferenceRepository(this.responsesByRequest, {this.failedRequest});
+
+  final int? failedRequest;
 
   final List<List<CreateChatCompletionStreamResponse>> responsesByRequest;
   final requests = <_RecordedRequest>[];
@@ -2801,6 +2920,9 @@ class _QueuedInferenceRepository extends InferenceRepositoryInterface {
         temperature: temperature,
       ),
     );
+    if (requests.length == failedRequest) {
+      throw StateError('connection refused');
+    }
     final responses = _requestIndex < responsesByRequest.length
         ? responsesByRequest[_requestIndex]
         : const <CreateChatCompletionStreamResponse>[];

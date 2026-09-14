@@ -20,6 +20,7 @@ import 'package:lotti/features/agents/tools/task_label_handler.dart';
 import 'package:lotti/features/agents/workflow/project_agent_context_builder.dart'
     show LogErrorCallback;
 import 'package:lotti/features/agents/workflow/task_agent_evidence_synthesis.dart';
+import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/tasks/model/directed_relation.dart';
@@ -520,9 +521,9 @@ class TaskAgentContextBuilder {
 
   /// Builds the user message for a wake cycle. [taskDetails] is the compact
   /// markdown task state when the read-flip succeeds, or the full JSON header
-  /// (inline log included) for fallback prompts. [hasReport] gates the
-  /// first-wake report bootstrap section; the prior report's prose is never
-  /// injected.
+  /// (inline log included) for fallback prompts. [hasReport] makes report
+  /// existence explicit and selects first-publication or material-change
+  /// guidance; the prior report's prose is never injected.
   ///
   /// Returns the full text plus the offsets of the embedded (derivable) log
   /// block, so the persisted prompt record can store only the non-derivable
@@ -731,38 +732,25 @@ class TaskAgentContextBuilder {
     // conclusions as ground truth creates a feedback loop (a wrong "learning"
     // re-published verbatim every wake), and everything report-worthy is
     // already in the log, the observations, and the task state.
-    if (!hasReport) {
-      buffer
-        ..writeln(
-          '## First Wake — No prior report exists. '
-          'Produce an initial report.',
-        )
-        ..writeln();
-    }
-
-    if (triggerTokens.isNotEmpty) {
-      final sortedTriggerTokens = triggerTokens.toList()..sort();
-      buffer
-        ..writeln('## Changed Since Last Wake')
-        ..writeln(
-          'The following entity IDs changed: '
-          '${sortedTriggerTokens.join(", ")}',
-        )
-        ..writeln();
-    }
+    buffer
+      ..write(
+        hasReport
+            ? TaskAgentReportPolicy.existingReportContext
+            : TaskAgentReportPolicy.firstReportContext,
+      )
+      ..write(
+        TaskAgentReportPolicy.changedEntitiesContext(
+          triggerTokens: triggerTokens,
+          hasReport: hasReport,
+        ),
+      );
 
     final openProposalGuard = _formatOpenProposalGuard(ledger);
     if (openProposalGuard.isNotEmpty) {
       buffer.write(openProposalGuard);
     }
 
-    buffer.writeln(
-      'Analyze the current state, maintain any attention requests, and call '
-      'tools if needed. If the report '
-      'would materially change, call `update_report` with the full updated '
-      'report; otherwise finish with a brief plain-text note. '
-      'Add observations if warranted.',
-    );
+    buffer.writeln(TaskAgentReportPolicy.closingInstruction);
 
     return (text: buffer.toString(), logStart: logStart, logEnd: logEnd);
   }

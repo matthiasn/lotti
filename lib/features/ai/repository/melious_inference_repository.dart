@@ -133,7 +133,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? requested,
   ) {
-    if (model.trim() == 'deepseek-v4.1-flash' &&
+    if (model.trim() == meliousDeepseekV41FlashModelId &&
         tools != null &&
         tools.length == 1 &&
         requested

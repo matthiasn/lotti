@@ -45,6 +45,12 @@ void main() {
   test(
     'executes the real task-agent workflow against the configured provider',
     () async {
+      // Live evaluation must bypass Flutter's HTTP 400 test client, just as
+      // the inference and penguin wake drivers do.
+      final previousHttpOverrides = HttpOverrides.current;
+      HttpOverrides.global = null;
+      addTearDown(() => HttpOverrides.global = previousHttpOverrides);
+
       final attribution = AiInteractionCaptureTestBench.create();
       await setUpTestGetIt(
         additionalSetup: () {

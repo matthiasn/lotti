@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_evidence_synthesis.dart';
 import 'package:lotti/features/agents/workflow/task_agent_prompt_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_editor.dart';
+import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -1519,7 +1520,8 @@ Apply only the explicit checklist and deadline changes. Preserve the legal
 review as pending and report Dana's retention-clause blocker.
 ''';
 
-const _noOpRefreshUserMessage = '''
+final _noOpRefreshUserMessage =
+    '''
 ## Current Task Context
 ```json
 {
@@ -1539,21 +1541,7 @@ const _noOpRefreshUserMessage = '''
 }
 ```
 
-## Previous Agent Report
-```json
-{
-  "oneLiner": "2025 return filed and receipt confirmed",
-  "tldr": "The signed return was submitted and the receipt is on file.",
-  "content": "## Achieved\n- Return filed\n- Submission receipt confirmed"
-}
-```
-
-## Changed Since Last Wake
-The sync engine reported label-tax as changed. The task, checklist, and log are
-identical to the previous wake.
-
-Check whether the report or task needs any action. Do not republish unchanged
-content.
+${TaskAgentReportPolicy.existingReportContext}${TaskAgentReportPolicy.changedEntitiesContext(triggerTokens: const ['label-tax'], hasReport: true)}${TaskAgentReportPolicy.closingInstruction}
 ''';
 
 const _duplicateChecklistUserMessage = '''
@@ -1583,7 +1571,8 @@ Add only genuinely missing checklist work. Preserve the two existing items and
 finish with the full report.
 ''';
 
-const _staleDeadlineUserMessage = '''
+final _staleDeadlineUserMessage =
+    '''
 ## Current Task Context
 ```json
 {
@@ -1606,20 +1595,7 @@ const _staleDeadlineUserMessage = '''
 }
 ```
 
-## Previous Agent Report
-```json
-{
-  "oneLiner": "Release QA underway for October 31",
-  "tldr": "The release remains targeted for October 31; release QA is pending.",
-  "content": "## What is left to do\n- Complete release QA"
-}
-```
-
-## Changed Since Last Wake
-Only the latest app-icon note is new.
-
-Respect the user's latest manual deadline and avoid republishing an unchanged
-report.
+${TaskAgentReportPolicy.existingReportContext}${TaskAgentReportPolicy.changedEntitiesContext(triggerTokens: const ['app-icon-note'], hasReport: true)}${TaskAgentReportPolicy.closingInstruction}
 ''';
 
 const _messyGermanTranscriptUserMessage = '''
@@ -1697,7 +1673,8 @@ Apply the explicit completion while preserving deployment as pending. The Legal
 approval gate is an active constraint and must remain visible in the report.
 ''';
 
-const _userCompletedItemUserMessage = '''
+final _userCompletedItemUserMessage =
+    '''
 ## Current Task Context
 ```json
 {
@@ -1721,20 +1698,7 @@ const _userCompletedItemUserMessage = '''
 }
 ```
 
-## Previous Agent Report
-```json
-{
-  "oneLiner": "Duplicate sync fix completed, monitoring remains",
-  "tldr": "The duplicate-event fix is complete and awaiting validation.",
-  "content": "## Achieved\n- Fixed duplicate sync events"
-}
-```
-
-## Changed Since Last Wake
-The QA note at 11:20 is new.
-
-Do not override the user's checked state without an explicit request. Update the
-report to surface the renewed sync risk and need for investigation.
+${TaskAgentReportPolicy.existingReportContext}${TaskAgentReportPolicy.changedEntitiesContext(triggerTokens: const ['qa-note'], hasReport: true)}${TaskAgentReportPolicy.closingInstruction}
 ''';
 
 const _spanishMixedContextUserMessage = '''
@@ -2562,6 +2526,8 @@ class LocalTaskAgentInferenceEvalRunner {
           (executionMode == LocalTaskAgentEvalExecutionMode.singlePass ? 0 : 1),
     );
     final manager = conversationRepository.getConversation(conversationId);
+    InferenceUsage? usage;
+    var usedForcedReportRetry = false;
 
     try {
       try {
@@ -2577,12 +2543,15 @@ class LocalTaskAgentInferenceEvalRunner {
                   )
                   .toList(growable: false)
             : allTools;
-        var usage = await conversationRepository.sendMessage(
+        usage = await conversationRepository.sendMessage(
           conversationId: conversationId,
           message: scenario.userMessage,
           model: profile.providerModelId,
           provider: provider,
           inferenceRepo: inferenceRepository,
+          // The eval owns failure classification and resumption. A transport
+          // error must not fall through to report recovery as a normal stop.
+          rethrowInferenceErrors: true,
           tools: mutationTools,
           temperature: temperature,
           strategy: strategy,
@@ -2590,7 +2559,6 @@ class LocalTaskAgentInferenceEvalRunner {
           consumptionWakeRunKey: wakeRunKey,
           consumptionThreadId: scenario.id,
         );
-        var usedForcedReportRetry = false;
         var reportRevisionCompleted = true;
         var reportRevisionValid = true;
         var reportEditorAttempts = 0;
@@ -2620,6 +2588,7 @@ class LocalTaskAgentInferenceEvalRunner {
             model: profile.providerModelId,
             provider: provider,
             inferenceRepo: inferenceRepository,
+            rethrowInferenceErrors: true,
             // Same key: a forced retry is part of what the case cost, not a
             // separate wake. Billing it elsewhere would understate the price
             // of the models that need the retry most.
@@ -2792,6 +2761,9 @@ class LocalTaskAgentInferenceEvalRunner {
           latencyMs: stopwatch.elapsedMilliseconds,
           toolCalls: strategy.toolCalls,
           error: error,
+          usage: usage,
+          usedForcedReportRetry: usedForcedReportRetry,
+          consumption: consumptionForWakeRunKey?.call(wakeRunKey) ?? const [],
         );
       }
     } finally {
@@ -2853,18 +2825,28 @@ class LocalTaskAgentInferenceEvalRunner {
     );
   }
 
+  /// Preserve completed-call telemetry when a later inference request fails.
   LocalTaskAgentEvalCaseResult _inferenceFailedResult({
     required LocalTaskAgentEvalProfile profile,
     required LocalTaskAgentEvalScenario scenario,
     required int latencyMs,
     required List<LocalTaskAgentEvalToolCall> toolCalls,
     required Object error,
+    InferenceUsage? usage,
+    bool usedForcedReportRetry = false,
+    List<AiConsumptionEvent> consumption = const [],
   }) {
     return LocalTaskAgentEvalCaseResult(
       profile: profile,
       scenario: scenario,
       provider: provider,
       latencyMs: latencyMs,
+      inputTokens: usage?.inputTokens,
+      outputTokens: usage?.outputTokens,
+      thoughtsTokens: usage?.thoughtsTokens,
+      cachedInputTokens: usage?.cachedInputTokens,
+      usedForcedReportRetry: usedForcedReportRetry,
+      consumption: consumption,
       finalContent: 'Inference failed with exception: $error',
       errorMessage: error.toString(),
       toolCalls: toolCalls,

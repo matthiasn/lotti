@@ -3,6 +3,27 @@ import 'package:lotti/features/agents/workflow/task_agent_evidence_synthesis.dar
 
 void main() {
   group('TaskAgentEvidenceSynthesis', () {
+    test('uses compact grounding for the exact Flash candidates', () {
+      for (final model in ['deepseek-v4.1-flash', 'GLM-5.3-Flash']) {
+        expect(TaskAgentEvidenceSynthesis.usesCompactScaffold(model), isTrue);
+        expect(
+          TaskAgentEvidenceSynthesis.systemDirectiveForModel(model),
+          contains('A task\nstatus, action list, or user checkmark is not'),
+        );
+        expect(
+          TaskAgentEvidenceSynthesis.systemDirectiveForModel(model),
+          contains('Omit absent\nmetadata completely'),
+        );
+      }
+      for (final model in ['deepseek-v4-flash-0731', 'glm-5.3', 'glm-5.2']) {
+        expect(TaskAgentEvidenceSynthesis.usesCompactScaffold(model), isFalse);
+        expect(
+          TaskAgentEvidenceSynthesis.systemDirectiveForModel(model),
+          TaskAgentEvidenceSynthesis.systemDirective,
+        );
+      }
+    });
+
     test('keeps report layout flexible while enforcing grounding', () {
       const directive =
           '${TaskAgentEvidenceSynthesis.reportDirective}'
@@ -17,8 +38,11 @@ void main() {
           contains('A checked item proves only'),
           contains('previous report'),
           contains('Report prose is not a substitute'),
+          contains('do not add the umbrella goal'),
         ),
       );
+      expect(directive, contains('Praise or a positive reaction alone'));
+      expect(directive, contains('does not establish completion or approval'));
       expect(
         directive,
         allOf(
@@ -45,7 +69,33 @@ void main() {
       expect(description, contains('tool call'));
       expect(description, contains('stale report claims'));
       expect(description, contains('out-of-scope concepts completely'));
+      expect(description, contains('Tool receipts'));
+      expect(description, contains('Do not turn proposal confirmation'));
+      expect(description, contains('Preserve current dates and estimates'));
+      expect(
+        description,
+        contains('Omit retired or superseded metadata values'),
+      );
+      expect(description, contains('test each conditional section'));
+      expect(description, contains('decision the user can make now'));
     });
+
+    test(
+      'resolves implementation references before adding checklist steps',
+      () {
+        final description = TaskAgentEvidenceSynthesis.toolDescription(
+          'add_multiple_checklist_items',
+          'Add checklist actions.',
+        );
+        expect(description, startsWith('Add checklist actions.'));
+        expect(
+          description,
+          contains('Resolve references such as "implement it"'),
+        );
+        expect(description, contains('one implementation action'));
+        expect(description, contains('Keep distinct reviews'));
+      },
+    );
 
     test('aligns field guidance without changing or mutating schema shape', () {
       final base = <String, dynamic>{
