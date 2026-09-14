@@ -1,4 +1,5 @@
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 
 /// Shared prompt and tool-description adjustments for the validated
@@ -7,13 +8,12 @@ abstract final class TaskAgentEvidenceSynthesis {
   /// Compact Markdown report contract used in place of Lotti's built-in
   /// decorative report template. Explicitly customized template directives
   /// remain authoritative.
-  static const reportDirective = '''
+  static const reportDirective =
+      '''
 ## Final report
 
-When no report exists yet or the report materially changed, call
-`update_report` exactly once as the final action. Otherwise finish with a brief
-plain-text note and do not republish unchanged content. Never describe tool
-calls in the report.
+${TaskAgentReportPolicy.publicationRule}
+Never describe tool calls in the report.
 
 ### `oneLiner`
 
@@ -45,13 +45,12 @@ evidence-backed and describe the current active task state.
 ''';
 
   /// Tighter content guidance retained for Mistral's compact active path.
-  static const mistralReportDirective = '''
+  static const mistralReportDirective =
+      '''
 ## Final report
 
-When no report exists yet or the report materially changed, call
-`update_report` exactly once as the final action. Otherwise finish with a brief
-plain-text note and do not republish unchanged content. Never describe tool
-calls in the report.
+${TaskAgentReportPolicy.publicationRule}
+Never describe tool calls in the report.
 
 ### `oneLiner`
 
@@ -310,9 +309,7 @@ Before publishing, test each conditional section in the active report directive
 against the evidence. Include its exact heading when its condition is true;
 an inline link elsewhere does not replace a requested evidence section. Omit
 the entire section when the condition is false, including headings with "None".
-A decision section requires an unresolved decision the user can make now.
-Someone else's approval, a future evaluation result, or a routine next step is
-not a current user decision. Report such dependencies with the pending work.''';
+${TaskAgentReportPolicy.decisionSectionRule}''';
 
   /// Builds the evidence-first `update_report` description.
   static String updateReportDescription(String baseDescription) =>

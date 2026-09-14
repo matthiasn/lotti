@@ -1616,69 +1616,100 @@ not describe task configuration or tool activity as progress.
         );
       });
 
-      test(
-        'keeps the prior report without retrying when no mutation succeeds',
-        () async {
-          final previousReport =
-              AgentDomainEntity.agentReport(
-                    id: 'previous-report',
-                    agentId: agentId,
-                    scope: 'current',
-                    createdAt: testDate,
-                    vectorClock: null,
-                    content: 'Current report.',
-                    tldr: 'Current state.',
-                    oneLiner: 'Current state',
-                  )
-                  as AgentReportEntity;
-          when(
-            () => mockAgentRepository.getLatestReport(agentId, 'current'),
-          ).thenAnswer((_) async => previousReport);
+      for (final languageProposal in [false, true]) {
+        test(
+          'keeps the prior report without retrying: '
+          '${languageProposal ? "language housekeeping" : "no mutation"}',
+          () async {
+            when(() => mockJournalDb.journalEntityById(taskId)).thenAnswer(
+              (_) async => makeWorkflowTestTask(taskId, languageCode: 'en'),
+            );
+            final previousReport =
+                AgentDomainEntity.agentReport(
+                      id: 'previous-report',
+                      agentId: agentId,
+                      scope: 'current',
+                      createdAt: testDate,
+                      vectorClock: null,
+                      content: 'Current report.',
+                      tldr: 'Current state.',
+                      oneLiner: 'Current state',
+                    )
+                    as AgentReportEntity;
+            when(
+              () => mockAgentRepository.getLatestReport(agentId, 'current'),
+            ).thenAnswer((_) async => previousReport);
 
-          final calls = <ChatCompletionToolChoiceOption?>[];
-          mockConversationRepository
-            ..maxDelegateCalls = 2
-            ..sendMessageDelegate =
-                ({
-                  required conversationId,
-                  required message,
-                  required model,
-                  required provider,
-                  required inferenceRepo,
-                  tools,
-                  toolChoice,
-                  temperature = 0.7,
-                  strategy,
-                }) async {
-                  calls.add(toolChoice);
-                  return null;
-                };
+            final calls = <ChatCompletionToolChoiceOption?>[];
+            mockConversationRepository
+              ..maxDelegateCalls = 2
+              ..sendMessageDelegate =
+                  ({
+                    required conversationId,
+                    required message,
+                    required model,
+                    required provider,
+                    required inferenceRepo,
+                    tools,
+                    toolChoice,
+                    temperature = 0.7,
+                    strategy,
+                  }) async {
+                    calls.add(toolChoice);
+                    if (languageProposal &&
+                        toolChoice == null &&
+                        strategy is TaskAgentStrategy) {
+                      await strategy.processToolCalls(
+                        toolCalls: const [
+                          ChatCompletionMessageToolCall(
+                            id: 'language-housekeeping',
+                            type: ChatCompletionMessageToolCallType.function,
+                            function: ChatCompletionMessageFunctionCall(
+                              name: TaskAgentToolNames.setTaskLanguage,
+                              arguments: '{"languageCode":"de"}',
+                            ),
+                          ),
+                        ],
+                        manager: mockConversationManager,
+                      );
+                      expect(strategy.extractSuccessfulMutations(), isNotEmpty);
+                    }
+                    return null;
+                  };
 
-          final evidenceWorkflow = createTestWorkflow(
-            agentRepository: mockAgentRepository,
-            conversationRepository: mockConversationRepository,
-            aiInputRepository: mockAiInputRepository,
-            aiConfigRepository: mockAiConfigRepository,
-            journalDb: mockJournalDb,
-            cloudInferenceRepository: mockCloudInferenceRepository,
-            journalRepository: mockJournalRepository,
-            checklistRepository: mockChecklistRepository,
-            labelsRepository: mockLabelsRepository,
-            syncService: mockSyncService,
-            templateService: mockTemplateService,
-          );
+            final evidenceWorkflow = createTestWorkflow(
+              agentRepository: mockAgentRepository,
+              conversationRepository: mockConversationRepository,
+              aiInputRepository: mockAiInputRepository,
+              aiConfigRepository: mockAiConfigRepository,
+              journalDb: mockJournalDb,
+              cloudInferenceRepository: mockCloudInferenceRepository,
+              journalRepository: mockJournalRepository,
+              checklistRepository: mockChecklistRepository,
+              labelsRepository: mockLabelsRepository,
+              syncService: mockSyncService,
+              templateService: mockTemplateService,
+            );
 
-          final result = await evidenceWorkflow.execute(
-            agentIdentity: testAgentIdentity,
-            runKey: runKey,
-            triggerTokens: {'entity-a'},
-            threadId: threadId,
-          );
+            final result = await evidenceWorkflow.execute(
+              agentIdentity: testAgentIdentity,
+              runKey: runKey,
+              triggerTokens: {'entity-a'},
+              threadId: threadId,
+            );
 
-          expect(result.success, isTrue);
-          expect(calls, [isNull]);
-        },
-      );
+            expect(result.success, isTrue);
+            expect(calls, [isNull]);
+            final captured = verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured;
+            expect(
+              capturedEntitiesOfType<AgentReportEntity>(captured),
+              isEmpty,
+            );
+          },
+        );
+      }
 
       test('swallows retry failures so the main-pass observations and metadata '
           'still reach the transaction', () async {

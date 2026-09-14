@@ -1,4 +1,5 @@
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 
 /// Tools for planning, attention negotiation, reporting, and observations:
 /// related-task lookups, attention requests, report publishing, suggestion
@@ -170,10 +171,7 @@ const taskPlanningTools = <AgentToolDefinition>[
   AgentToolDefinition(
     name: TaskAgentToolNames.updateReport,
     description:
-        'Publish once when no report exists or a material task change '
-        'makes the existing report stale. Otherwise finish with a brief '
-        'plain-text note and leave the report unchanged. Make publication '
-        'the final action after justified tools. Provide a compact one-liner '
+        '${TaskAgentReportPolicy.publicationRule} Provide a compact one-liner '
         'tagline, a short TLDR summary, and the full report content as '
         'markdown. Follow the report structure defined in your report '
         'directive. Write in the task content language. Express your '

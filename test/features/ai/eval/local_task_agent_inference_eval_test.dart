@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_editor.dart';
+import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
@@ -333,6 +334,32 @@ void main() {
     );
     expect(defaultLocalTaskAgentWakeScenario().languageCode, 'en');
   });
+
+  test(
+    'follow-up fixtures use production publication context without prior prose',
+    () {
+      final followUps = defaultMeliousTaskAgentEvalScenarios().where(
+        (scenario) => !scenario.isFirstWake,
+      );
+      expect(followUps, hasLength(3));
+      for (final scenario in followUps) {
+        expect(
+          scenario.userMessage,
+          contains(TaskAgentReportPolicy.existingReportContext),
+        );
+        expect(
+          scenario.userMessage,
+          contains(TaskAgentReportPolicy.changedEntitiesRule),
+        );
+        expect(
+          scenario.userMessage,
+          endsWith('${TaskAgentReportPolicy.closingInstruction}\n'),
+        );
+        expect(scenario.userMessage, isNot(contains('Previous Agent Report')));
+        expect(scenario.userMessage, isNot(contains('## Achieved')));
+      }
+    },
+  );
 
   test('evolved-directive suite covers realistic reporting contracts', () {
     final scenarios = evolvedReportDirectiveTaskAgentEvalScenarios();

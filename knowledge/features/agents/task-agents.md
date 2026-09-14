@@ -8,6 +8,10 @@ status: stable
 generated: { by: codex/gpt-6, at: 2026-09-14T00:00:00Z }
 stale_after: 2026-10-12
 sources:
+  - id: report-policy
+    resource: ../../../lib/features/agents/workflow/task_agent_report_policy.dart
+    title: Shared publication policy for prompts and execution
+    last_modified: 2026-09-14
   - id: planning-tools
     resource: ../../../lib/features/agents/tools/task_planning_tool_definitions.dart
     title: Evidence-backed requests for planner attention
@@ -307,7 +311,10 @@ Three context details are load-bearing:
   requests. Both scaffolds initialize a missing language when a report is
   required; they do not require that write on an otherwise unchanged wake.
   The raw report-tool description has the same first-report/material-change
-  gate; it does not require publication on every wake.
+  gate; it does not require publication on every wake. The scaffold, tool
+  descriptions and context use `TaskAgentReportPolicy` for publication,
+  language and decision-section wording. The executor uses the same policy
+  to exclude label/language-only housekeeping from forced publication.
 - **Parent project context** carries only the project agent's latest `oneLiner`
   and `tldr` — the full report body is omitted to keep wake prefill small.
   Linked-task context does the same via `agent_task` links and `agentReportHead`.
@@ -438,8 +445,10 @@ Common changes across the path:
   deadline, estimate, or priority do not establish that need.
   The tool contrasts a metadata-only request with an explicit reservation
   request to make that boundary concrete.
-- A required report omitted after a successful mutation gets a forced report
-  call; a true no-op wake does not.
+- A first report or a report omitted after a successful material mutation gets
+  a forced report call. An existing report with only label/language housekeeping
+  is preserved, as is a true no-op. The same gate controls retry, report-editor
+  audit and missing-report diagnostics.
 
 **Scaffold routing matches exact model IDs.** Compact scaffolds,
 model-specific directives and temperature `0.0` apply to the exact evaluated

@@ -2,6 +2,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/seeded_directive_content.dart';
 import 'package:lotti/features/agents/workflow/task_agent_evidence_synthesis.dart';
+import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 
 /// Pure system-prompt assembly for the Task Agent.
 ///
@@ -283,26 +284,16 @@ abstract final class TaskAgentPromptBuilder {
   /// scenario measures.
   static const reportDirectivePrecedence =
       'This directive governs the shape and voice of the report only. It does '
-      'not change when to publish one: a wake with nothing material to add '
-      'still ends with a brief plain-text note rather than republishing '
-      'unchanged content. First select the required headings from the directive '
-      'below, evaluating each conditional heading against current evidence. '
+      'not change when to publish one. '
+      '${TaskAgentReportPolicy.publicationRule} '
+      'First select the required headings from the directive below, '
+      'evaluating each conditional heading against current evidence. '
       'Then write the content within that structure. Evidence that activates '
       'a conditional section must appear under its requested heading; placing '
       'the same information elsewhere does not satisfy that section. For '
       'example, when a directive requests a links section if URLs exist, put '
       'the URLs in that section rather than only inline in a progress sentence. '
-      'An optional heading does not create a new '
-      'obligation for the user. Before drafting an optional decision section, identify '
-      'source evidence of a specific missing input only the user can provide now. '
-      'Do not invent missing criteria or ask the user to reconfirm criteria '
-      'that are already stated. Work awaiting an external owner or a future '
-      'result belongs with pending actions, not in a decision section. '
-      'For example: a supplier-owned review still pending means list that '
-      'dependency under next actions and omit the optional decision heading; '
-      'a comparison not yet run means run the comparison first. Include a '
-      'decision section when the source actually asks the user to choose '
-      'between available options or supply a currently missing authorization.';
+      '${TaskAgentReportPolicy.decisionSectionRule}';
 
   /// Finishes either scaffold with the custom presentation contract.
   ///
@@ -357,7 +348,8 @@ abstract final class TaskAgentPromptBuilder {
   }
 
   /// Reduced scaffold for the efficient-model profiles.
-  static const taskAgentCompactScaffold = '''
+  static const taskAgentCompactScaffold =
+      '''
 You are a persistent Task Agent responsible for one task. Maintain task state,
 propose only justified changes, keep private memory in observations, and keep a
 user-facing report current.
@@ -373,9 +365,7 @@ user-facing report current.
   dependency, or the word "blocked" belongs in the report but does not authorize
   `set_task_status`. Only an explicit request to transition status authorizes
   that tool; DONE and REJECTED remain user-only statuses.
-- Respect `languageCode` for every public report field. Detect and set language
-  only when it is currently absent and when a report is required. On a no-change
-  wake, skip routine language initialization. Honor an explicit language request.
+- ${TaskAgentReportPolicy.languageRule}
 
 ## Wake Protocol
 
@@ -393,8 +383,7 @@ user-facing report current.
    critical `excellence`; requested behavior change is critical
    `template_improvement`; recurring patterns are `notable`; routine notes are
    `operational`.
-4. On a first report or material change, call `update_report` once, separately
-   and last. Otherwise end with a brief plain-text note and do not republish.
+4. ${TaskAgentReportPolicy.publicationRule}
 
 ## Tool Discipline
 
@@ -428,22 +417,14 @@ Dedicated Links sections contain only real external URLs.
 ''';
 
   /// Core scaffold: role description and job responsibilities.
-  static const taskAgentScaffoldCore = '''
+  static const taskAgentScaffoldCore =
+      '''
 You are a Task Agent — a persistent assistant that maintains a summary report
 for a single task.
 
 ## Finishing a Wake
 
-A wake ends in exactly one of two ways:
-- the task changed materially since the last published report → end with a
-  single `update_report` tool call carrying the full updated report
-  (`oneLiner`, `tldr`, and `content`); or
-- nothing report-worthy changed → end with a brief plain-text note of what
-  you checked or did. Do NOT call `update_report` just to re-publish
-  unchanged content — the report is derived from the task log, not per-wake
-  ceremony, and re-publishing identical content wastes the user's attention.
-
-If no report has ever been published for this task, publish the first one.
+${TaskAgentReportPolicy.publicationRule}
 
 Your job each wake is to:
 
@@ -457,20 +438,17 @@ Your job each wake is to:
    starts with "I noticed...", "I tried...", "I decided...", or describes a
    tool failure — it is an observation, not report content. Skipping this
    tool means that context is lost forever on the next wake.
-4. FINAL STEP — publish the full updated report via `update_report` when it
-   would materially change (always last), or finish with a brief plain-text
-   note when it would not.''';
+4. FINAL STEP — ${TaskAgentReportPolicy.publicationRule}''';
 
   /// Default report section of the scaffold, used when the template version
   /// does not provide its own `reportDirective`.
-  static const taskAgentScaffoldReport = '''
+  static const taskAgentScaffoldReport =
+      '''
 
 
 ## Report
 
-When the report would materially change (and always when none exists yet),
-call `update_report` exactly once, last, with the full updated report as
-markdown. Provide `oneLiner`, `tldr`, and `content`. The report must follow
+${TaskAgentReportPolicy.publicationRule} Provide `oneLiner`, `tldr`, and `content`. The report must follow
 this standardized structure with emojis for visual consistency:
 
 ### Required Sections
@@ -597,7 +575,8 @@ linked task's own agent does not push updates to you.
 ''';
 
   /// Trailing scaffold: tool usage guidelines and important constraints.
-  static const taskAgentScaffoldTrailing = '''
+  static const taskAgentScaffoldTrailing =
+      '''
 
 
 ## Tool Usage Guidelines
@@ -625,10 +604,7 @@ linked task's own agent does not push updates to you.
   clearly wrong — and say which evidence in your reasoning. When you disagree
   and have no such evidence, surface the discrepancy in the report or an
   observation and leave the field alone.
-- **Language**: write the report and TLDR in the task's `languageCode`. If it
-  is null, detect it and call `set_task_language` when a report is required;
-  if it is already set, do not. On a no-change wake, skip routine language
-  initialization. Honor an explicit language request.
+- **Language**: ${TaskAgentReportPolicy.languageRule}
 - **Checklist sovereignty**: items record who last toggled them and when.
   - Items you last set, you may change freely.
   - Items the USER last set keep their checked state unless you have evidence

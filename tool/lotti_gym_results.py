@@ -151,7 +151,7 @@ def normalize(suite, artifact, expected, model, *, test_passed):
             detail = "Fact recall and recommendation consistency require judging."
         elif adapter in ("query", "actions"):
             actual_model = artifact.get("model")
-            if row.get("status") == "error":
+            if row.get("status") in ("error", "blocked"):
                 error = row.get("errorType") or "inference error"
             if adapter == "actions":
                 latency = row.get("timeToReviewMs")
@@ -164,7 +164,7 @@ def normalize(suite, artifact, expected, model, *, test_passed):
                 raise InvalidArtifact("Query revision was not verified unchanged")
         if actual_model != model or not isinstance(case, str):
             raise InvalidArtifact("Missing or mismatched model/case identity")
-        if error or detail == "inferenceError":
+        if error or detail in ("inferenceError", "inferenceFailed"):
             status = "error"
             # Do not copy raw provider errors into the consolidated report.
             detail = "Inference or harness error; inspect the local artifact."
@@ -194,10 +194,26 @@ def normalize(suite, artifact, expected, model, *, test_passed):
             }
         )
     actual = [r["case"] for r in results]
-    if Counter(actual) != Counter(expected) or len(set(actual)) != len(actual):
-        raise InvalidArtifact(
-            f"Case inventory mismatch: expected {expected}, received {actual}"
-        )
+    if len(set(actual)) != len(actual) or set(actual) - set(expected):
+        raise InvalidArtifact("Duplicate or unexpected case identity")
+    if Counter(actual) != Counter(expected):
+        if adapter == "query" and any(r["status"] == "error" for r in results):
+            # The grouped query driver stops after authorization failures.
+            # Preserve measured rows and account for the unattempted tail.
+            results.extend(
+                {
+                    "case": case,
+                    "status": "not_assessed",
+                    "latencyMs": None,
+                    "credits": None,
+                    "detail": "Not attempted after an inference or dependency failure.",
+                }
+                for case in expected if case not in actual
+            )
+        else:
+            raise InvalidArtifact(
+                f"Case inventory mismatch: expected {expected}, received {actual}"
+            )
     if not test_passed and all(
         r["status"] in ("passed", "review_required") for r in results
     ):

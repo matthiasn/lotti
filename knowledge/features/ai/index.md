@@ -15,7 +15,7 @@ conversation state and embeddings. It does not own agent lifecycles.
 * [AI work attribution](attribution.md) - how every call becomes an auditable, costed record.
 * [Activity visualization](activity-visualization.md) - the shader-driven activity surfaces.
 * [AI settings UI](settings-ui.md) - the single-scroll layout, three tabs, and the first-run path.
-* [Model evaluation](model-evaluation.md) - the eval harnesses and what they established.
+* [Model evaluation](model-evaluation.md) - LottiGym assessment, harness fidelity, recovery and evidence limits.
 
 # Related
 

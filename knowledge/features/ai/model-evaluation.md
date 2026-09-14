@@ -46,11 +46,12 @@ Only the Melious transport is supported by this first orchestrator. This uses
 production routing through the existing harnesses, rather than treating an
 arbitrary OpenAI-compatible endpoint as equivalent. `--base-url` selects an
 endpoint; HTTPS is required except for explicit loopback addresses. The task
-judge retains its own endpoint allowlist.
+judge authorizes exactly the hostname selected by this endpoint; ambient judge
+host overrides do not expand that authorization.
 
 `--env-file` selects another local credential file. Only Melious connection
 keys and their existing upstream aliases are read; dotenv text is never
-executed. Exported values take precedence. API keys are passed in child
+executed. Empty placeholders are accepted. Exported values take precedence. API keys are passed in child
 environments, never command arguments or the manifest. Ambient eval selectors,
 live gates and experimental overrides are cleared before constructing the
 worker environment.
@@ -80,7 +81,10 @@ python3 tool/lotti_gym.py resume /path/to/run
 Defaults are three samples, two workers and batches of up to eight cases.
 `--samples`, `--workers` and `--batch-size` change those dimensions. More workers
 can increase provider contention, so concurrency is recorded as part of the
-comparison contract. Costs are observations, not automatic spend caps.
+comparison contract. Temperature is not a uniform Gym control: harnesses that
+consume their temperature override receive zero; the others retain their
+production routing or harness defaults. Inspect the suite artifacts for effective
+settings. Costs are observations, not automatic spend caps.
 `--judge-model` chooses the diagnostic task judge; `--no-judge` explicitly
 leaves that assessment unperformed. Neither setting changes deterministic gates.
 
@@ -121,10 +125,14 @@ A job is a bounded batch of cases for one suite and sample. Wake scenarios and
 compaction fixtures each get their own job. Query cases stay together because
 follow-ups depend on earlier answers. Each worker has its own process and
 artifact directory; GetIt state is not shared between simultaneous workers.
-An unused `LOTTI_GYM_COMPILER_SLOT` Dart define gives each run and worker its
-own incremental compiler cache. Flutter includes Dart defines in the kernel
-cache path; workers can reuse their own cache without concurrently reading and
-overwriting another worker's kernel. The define does not alter eval behavior.
+Kernel locks lease stable compiler slots from
+`build/test_cache/lotti_gym_leases/`. Each slot is warmed for every selected
+entry point before paid jobs begin. An unused `LOTTI_GYM_COMPILER_SLOT` Dart
+define selects the same incremental cache for warmup and inference; Flutter
+includes Dart defines in the cache path. Concurrent assessments lease disjoint
+slots, and subsequent assessments reuse released slots, including catalog
+compilation. Cache allocation grows with peak concurrency rather than the
+number of assessments. The define does not alter eval behavior.
 
 ```mermaid
 stateDiagram-v2
@@ -146,7 +154,13 @@ records, rather than trusting a potentially stale scheduler checkpoint. It
 verifies manifest provenance and artifact hashes. Interrupted attempt directories
 are retained, and the replacement attempt gets a new directory. Completed
 behavioral failures are evidence and are not rerolled. Failed or missing task
-judgments can resume without repeating candidate inference.
+judgments can resume without repeating candidate inference. Cancelled workers,
+including negative signal exits after writing an artifact, remain retriable
+errors. Both task `inferenceFailed` and agent `inferenceError` categories remain
+infrastructure errors. Query failures retain measured rows: blocked follow-ups
+are errors, and an unwritten tail after an infrastructure failure is marked
+unassessed. Resume reruns the grouped query conversation because later answers
+depend on earlier ones; prior attempts remain available.
 
 A kernel lock prevents two coordinators writing one run. Cancellation and
 worker timeouts stop the owned process group, including compiler descendants.
@@ -168,6 +182,11 @@ Live drivers clear Flutter's mock HTTP override before constructing clients;
 otherwise the binding returns HTTP 400 without contacting the provider. The
 task-workflow driver restores the previous override at teardown. Compilation
 with live gates disabled cannot detect this transport trap.
+
+Synthetic follow-up task cases use the production `TaskAgentReportPolicy`
+publication state, changed-entity guidance and closing instruction. Like the
+production context builder, they omit prior report prose. The real workflow
+suites additionally exercise publication enforcement after successful tools.
 
 The task conversation driver rethrows inference errors from both its initial
 conversation and forced report pass. A provider failure cannot trigger report
@@ -198,6 +217,24 @@ endpoint, sample count, batch size, concurrency and host. Day-planning compariso
 also require the same evaluation date. Query comparisons additionally require the same explicitly frozen report
 fixture; candidate-generated summaries otherwise confound the comparison.
 Incompatible baselines are reported as incompatible, not silently compared.
+
+# Standalone task harnesses
+
+The existing entry points remain available for focused diagnostics:
+
+| Entry point | Scope |
+|---|---|
+| `tool/qwen_local_inference_eval.sh` | Local oMLX tool-call compatibility |
+| `tool/local_task_agent_inference_eval.sh` | Task conversation and tool orchestration |
+| `tool/local_task_agent_workflow_eval.sh` | Seeded production workflow persistence |
+| `tool/melious_task_agent_model_eval.sh` | Melious model and prompt matrix |
+| `scripts/penguin_wake_eval_matrix.sh` | Production context over seeded penguin databases |
+
+For the standalone conversation harness, `LOCAL_TASK_AGENT_EVAL_STRICT=1`
+makes deterministic failures fail the test; its diagnostic default still writes
+weak results. `LOCAL_TASK_AGENT_EVAL_OUTPUT_ROOT` relocates retained artifacts
+outside the repository. Gym supplies explicit selectors and output paths, so
+ambient standalone switches do not alter a Gym run.
 
 # Historical findings and related contracts
 

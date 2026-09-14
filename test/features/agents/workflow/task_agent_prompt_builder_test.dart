@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/seeded_directive_content.dart';
+import 'package:lotti/features/agents/workflow/task_agent_evidence_synthesis.dart';
 import 'package:lotti/features/agents/workflow/task_agent_prompt_builder.dart';
+import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 
 import '../test_utils.dart';
 
@@ -18,9 +20,11 @@ void main() {
           soulVersion: null,
           modelId: modelId,
         );
-        expect(prompt, contains('when a report is required'), reason: modelId);
-        expect(prompt, contains('skip routine language'), reason: modelId);
-        expect(prompt, contains('explicit language request'), reason: modelId);
+        expect(
+          prompt,
+          contains(TaskAgentReportPolicy.languageRule),
+          reason: modelId,
+        );
       }
     });
 
@@ -599,12 +603,10 @@ Lead with the decision. Keep it to three sentences.''';
         prompt,
         contains(TaskAgentPromptBuilder.reportDirectivePrecedence),
       );
-      expect(prompt, contains('An optional heading does not create a new'));
-      expect(prompt, contains('input only the user can provide now'));
-      expect(prompt, contains('Do not invent missing criteria'));
+      expect(prompt, contains(TaskAgentReportPolicy.decisionSectionRule));
+      expect(prompt, contains(TaskAgentReportPolicy.publicationRule));
       expect(prompt, contains('First select the required headings'));
       expect(prompt, contains('must appear under its requested heading'));
-      expect(prompt, contains('Before drafting an optional decision section'));
       expect(
         prompt.indexOf(TaskAgentPromptBuilder.reportDirectivePrecedence),
         lessThan(prompt.indexOf('Lead the report with a risk callout.')),
@@ -704,10 +706,10 @@ Lead with the decision. Keep it to three sentences.''';
         modelId: 'glm-5.2',
       );
 
-      expect(prompt, contains('Always include a haiku.'));
+      expect(prompt, contains(custom));
       expect(
         prompt,
-        isNot(contains('do not republish unchanged content')),
+        isNot(contains(TaskAgentEvidenceSynthesis.reportDirective.trim())),
         reason: 'substitution must not override an evolved directive',
       );
     });

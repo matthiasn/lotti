@@ -17,7 +17,7 @@ import sys
 import threading
 import uuid
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
@@ -76,9 +76,9 @@ def connection(environment, env_file):
             key, sep, value = line.removeprefix("export ").partition("=")
             if sep and key.strip() in allowed:
                 tokens = shlex.split(value, comments=True)
-                if len(tokens) != 1:
+                if len(tokens) > 1:
                     raise ValueError(f"Invalid dotenv value for {key.strip()}")
-                values[key.strip()] = tokens[0]
+                values[key.strip()] = tokens[0] if tokens else ""
     return {
         canonical: environment.get(canonical)
         or environment.get(alias)
@@ -269,7 +269,9 @@ class Processes:
                 )
                 self.active.add(process)
             try:
-                return process.wait(timeout=timeout)
+                code = process.wait(timeout=timeout)
+                with self.lock:
+                    return 130 if self.cancelled else code
             except subprocess.TimeoutExpired:
                 stop_process_tree(process)
                 return 124
@@ -314,14 +316,37 @@ def machine_outcome(log):
     )
 
 
-def flutter_test_command(entry_point, output):
-    """Keep Flutter's incremental kernel cache private to a run and worker.
+@contextmanager
+def compiler_slot_pool(workers, directory=None):
+    """Lease reusable kernel caches exclusively across concurrent assessments."""
+    if os.name != "posix":
+        raise ValueError("LottiGym currently requires Linux or macOS")
+    import fcntl
 
-    Flutter hashes Dart defines into its cache path. The unused define avoids
-    simultaneous compilers reading and overwriting one shared kernel while
-    allowing a worker to reuse its cache across jobs and warmup targets.
+    directory = directory or ROOT / "build/test_cache/lotti_gym_leases"
+    directory.mkdir(parents=True, exist_ok=True)
+    with ExitStack() as leases:
+        slots = []
+        index = 0
+        while len(slots) < workers:
+            lock = (directory / f"{index}.lock").open("a")
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                lock.close()
+            else:
+                leases.enter_context(lock)
+                slots.append(str(index))
+            index += 1
+        yield slots
+
+
+def flutter_test_command(entry_point, compiler_slot):
+    """Select the leased cache used by both warmup and live inference.
+
+    Flutter hashes Dart defines into its cache path. The unused define isolates
+    concurrent compilers while permitting subsequent assessments to reuse it.
     """
-    slot = fingerprint([str(output.resolve()), threading.current_thread().name])[:16]
     return [
         "fvm",
         "flutter",
@@ -329,12 +354,12 @@ def flutter_test_command(entry_point, output):
         "--no-pub",
         "--reporter",
         "json",
-        f"--dart-define=LOTTI_GYM_COMPILER_SLOT={slot}",
+        f"--dart-define=LOTTI_GYM_COMPILER_SLOT={compiler_slot}",
         entry_point,
     ]
 
 
-def run_job(suite, job, manifest, output, api_key, processes, summary_path):
+def run_job(suite, job, manifest, output, api_key, processes, summary_path, compiler_slot):
     number = len(job["attempts"]) + 1
     directory = output / "jobs" / job["directory"] / f"attempt-{number}"
     while directory.exists():
@@ -352,7 +377,7 @@ def run_job(suite, job, manifest, output, api_key, processes, summary_path):
     }
     try:
         exit_code = processes.run(
-            flutter_test_command(suite["entryPoint"], output),
+            flutter_test_command(suite["entryPoint"], compiler_slot),
             env,
             log,
             5400 if suite["adapter"] == "compaction" else 1200,
@@ -364,7 +389,7 @@ def run_job(suite, job, manifest, output, api_key, processes, summary_path):
             if len(files) == 1:
                 artifact_path = files[0]
         result["artifact"] = str(artifact_path)
-        if exit_code in (124, 130) or not artifact_path.is_file():
+        if exit_code < 0 or exit_code in (124, 130) or not artifact_path.is_file():
             raise InvalidArtifact(
                 "Worker timed out, was cancelled, or produced no artifact"
             )
@@ -489,7 +514,12 @@ def judge_jobs(output, manifest, jobs, api_key, workers, processes):
         result = job["attempts"][-1]
         directory = Path(result["directory"])
         env = clean_environment(os.environ)
-        env.update(MELIOUS_API_KEY=api_key, MELIOUS_BASE_URL=manifest["baseUrl"])
+        env.update(
+            MELIOUS_API_KEY=api_key,
+            MELIOUS_BASE_URL=manifest["baseUrl"],
+            # Authorize only the endpoint explicitly recorded for this run.
+            TASK_AGENT_EVAL_ALLOWED_JUDGE_HOSTS=urlparse(manifest["baseUrl"]).hostname,
+        )
         command = [
             sys.executable,
             "tool/task_agent_model_eval_judge.py",
@@ -580,26 +610,25 @@ def use_frozen_reports(output, manifest, jobs, bundle):
     job["state"] = "prepared"
 
 
-def execute(output, manifest, jobs, api_key, workers, processes):
+def execute(output, manifest, jobs, api_key, workers, processes, compiler_slots):
     """Run independent exercises; preserve failures and dependency diagnostics."""
     suites = {s["id"]: s for s in manifest["suites"]}
     pending = [j for j in jobs if j["state"] not in TERMINAL]
     for job in pending:
         job["state"] = "pending"
-    # Build each target once without enabling live inference. Never overlap
-    # Flutter build warmup with workers materializing the same native assets.
+    # Warm every leased cache before starting paid work. Build sequentially to
+    # avoid overlapping native asset materialization in this checkout.
     for entry in sorted({suites[j["suite"]]["entryPoint"] for j in pending}):
-        warm = output / f"warm-{uuid.uuid4().hex}.jsonl"
-        if (
-            processes.run(
-                flutter_test_command(entry, output),
+        for slot in compiler_slots:
+            warm = output / f"warm-{uuid.uuid4().hex}.jsonl"
+            if processes.run(
+                flutter_test_command(entry, slot),
                 clean_environment(os.environ),
                 warm,
                 600,
-            )
-            != 0
-        ):
-            raise ValueError(f"Could not compile {entry}; see {warm.name}")
+            ) != 0:
+                raise ValueError(f"Could not compile {entry}; see {warm.name}")
+    idle_slots = list(compiler_slots)
     active = {}
     if pending and not any(
         j["state"] in TERMINAL and j["state"] != "prepared" for j in jobs
@@ -616,6 +645,7 @@ def execute(output, manifest, jobs, api_key, workers, processes):
                 api_key,
                 processes,
                 None,
+                compiler_slots[0],
             )
             probe["attempts"].append(result)
             probe["state"] = result["state"]
@@ -656,6 +686,7 @@ def execute(output, manifest, jobs, api_key, workers, processes):
                 )
                 job["state"] = "running"
                 checkpoint(output, manifest, jobs)
+                slot = idle_slots.pop()
                 future = pool.submit(
                     run_job,
                     suites[job["suite"]],
@@ -665,12 +696,14 @@ def execute(output, manifest, jobs, api_key, workers, processes):
                     api_key,
                     processes,
                     summary_path,
+                    slot,
                 )
-                active[future] = job
+                active[future] = (job, slot)
             if active:
                 finished, _ = wait(active, return_when=FIRST_COMPLETED)
                 for future in finished:
-                    job = active.pop(future)
+                    job, slot = active.pop(future)
+                    idle_slots.append(slot)
                     result = future.result()
                     job["attempts"].append(result)
                     job["state"] = result["state"]
@@ -685,7 +718,7 @@ def execute(output, manifest, jobs, api_key, workers, processes):
         pool.shutdown(wait=True, cancel_futures=True)
         # A completed future is durable even if cancellation arrived before
         # the scheduler consumed it. Recover it on this or the next resume.
-        for future, job in active.items():
+        for future, (job, _) in active.items():
             if future.done() and not future.cancelled() and future.exception() is None:
                 result = future.result()
                 job["attempts"].append(result)
@@ -693,12 +726,12 @@ def execute(output, manifest, jobs, api_key, workers, processes):
         checkpoint(output, manifest, jobs)
 
 
-def discover(directory, processes):
+def discover(directory, processes, compiler_slot):
     path = directory / "catalog.json"
     env = clean_environment(os.environ)
     env["LOTTI_GYM_CATALOG"] = str(path)
     status = processes.run(
-        flutter_test_command("tool/lotti_gym_catalog.dart", directory),
+        flutter_test_command("tool/lotti_gym_catalog.dart", compiler_slot),
         env,
         directory / "catalog.log",
         600,
@@ -775,165 +808,168 @@ def main(argv=None):
     args = parser.parse_args(argv)
     processes = Processes()
     output = None
-    try:
-        conn = connection(os.environ, args.env_file)
-        if args.command == "assess":
-            if not args.model.strip() or any(
-                c.isspace() or c == "," for c in args.model
-            ):
-                raise ValueError("Model must be one explicit provider model ID")
-            base_url = (
-                args.base_url or conn["MELIOUS_BASE_URL"] or "https://api.melious.ai/v1"
-            )
-            parsed = urlparse(base_url)
-            if (
-                parsed.scheme not in ("http", "https")
-                or not parsed.hostname
-                or parsed.username
-                or parsed.password
-                or parsed.query
-                or parsed.fragment
-                or (
-                    parsed.scheme == "http"
-                    and parsed.hostname not in ("localhost", "127.0.0.1", "::1")
+    with ExitStack() as resources:
+        try:
+            compiler_slots = resources.enter_context(compiler_slot_pool(args.workers))
+            conn = connection(os.environ, args.env_file)
+            if args.command == "assess":
+                if not args.model.strip() or any(
+                    c.isspace() or c == "," for c in args.model
+                ):
+                    raise ValueError("Model must be one explicit provider model ID")
+                base_url = (
+                    args.base_url or conn["MELIOUS_BASE_URL"] or "https://api.melious.ai/v1"
                 )
-            ):
-                raise ValueError(
-                    "Base URL must be an HTTP endpoint without credentials, query or fragment"
+                parsed = urlparse(base_url)
+                if (
+                    parsed.scheme not in ("http", "https")
+                    or not parsed.hostname
+                    or parsed.username
+                    or parsed.password
+                    or parsed.query
+                    or parsed.fragment
+                    or (
+                        parsed.scheme == "http"
+                        and parsed.hostname not in ("localhost", "127.0.0.1", "::1")
+                    )
+                ):
+                    raise ValueError(
+                        "Base URL must be an HTTP endpoint without credentials, query or fragment"
+                    )
+                if not args.dry_run and not conn["MELIOUS_API_KEY"]:
+                    raise ValueError("Set MELIOUS_API_KEY or use --env-file")
+                root = args.output_root.expanduser().resolve()
+                if root.is_relative_to(ROOT):
+                    raise ValueError(
+                        "Generated model output must remain outside the repository"
+                    )
+                output = root / (
+                    datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ-")
+                    + uuid.uuid4().hex[:12]
                 )
-            if not args.dry_run and not conn["MELIOUS_API_KEY"]:
-                raise ValueError("Set MELIOUS_API_KEY or use --env-file")
-            root = args.output_root.expanduser().resolve()
-            if root.is_relative_to(ROOT):
-                raise ValueError(
-                    "Generated model output must remain outside the repository"
+                output.mkdir(parents=True)
+                catalog = discover(output, processes, compiler_slots[0])
+                bundle = (
+                    read_json(args.summary_reports.expanduser().resolve())
+                    if args.summary_reports
+                    else None
                 )
-            output = root / (
-                datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ-")
-                + uuid.uuid4().hex[:12]
-            )
-            output.mkdir(parents=True)
-            catalog = discover(output, processes)
-            bundle = (
-                read_json(args.summary_reports.expanduser().resolve())
-                if args.summary_reports
-                else None
-            )
-            requested = (
-                set(args.suites.split(","))
-                if args.suites
-                else {s["id"] for s in catalog["suites"]}
-            )
-            if not requested or requested - {s["id"] for s in catalog["suites"]}:
-                raise ValueError("Unknown or empty suite selection")
-            for suite in reversed(catalog["suites"]):
-                if suite["id"] in requested:
-                    requested.update(suite["dependencies"])
-            suites = [s for s in catalog["suites"] if s["id"] in requested]
-            manifest = {
-                "schemaVersion": 1,
-                "model": args.model,
-                "provider": args.provider,
-                "baseUrl": base_url,
-                "samples": args.samples,
-                "workers": args.workers,
-                "batchSize": args.batch_size,
-                "revision": repository_revision(ROOT),
-                "evaluationDate": datetime.now().astimezone().date().isoformat(),
-                "host": platform.node(),
-                "suites": suites,
-                "coverageGaps": catalog["coverageGaps"],
-                "excludedEntryPoints": catalog["excludedEntryPoints"],
-                "scope": "full" if len(suites) == len(catalog["suites"]) else "partial",
-                "baseline": str(args.baseline.expanduser().resolve())
-                if args.baseline
-                else None,
-                "judgeModel": None if args.no_judge else args.judge_model,
-                "summaryFixtureHash": fingerprint(bundle) if bundle else None,
-                "summarySourceHash": catalog["summarySourceHash"],
-                "summaryOwnerIds": catalog["summaryOwnerIds"],
-                "omittedSuites": [
-                    s["id"] for s in catalog["suites"] if s["id"] not in requested
-                ],
-            }
-            atomic_json(output / "manifest.json", manifest)
-            jobs = make_jobs(suites, args.samples, args.batch_size)
-            if bundle is not None:
-                use_frozen_reports(output, manifest, jobs, bundle)
-            checkpoint(output, manifest, jobs)
+                requested = (
+                    set(args.suites.split(","))
+                    if args.suites
+                    else {s["id"] for s in catalog["suites"]}
+                )
+                if not requested or requested - {s["id"] for s in catalog["suites"]}:
+                    raise ValueError("Unknown or empty suite selection")
+                for suite in reversed(catalog["suites"]):
+                    if suite["id"] in requested:
+                        requested.update(suite["dependencies"])
+                suites = [s for s in catalog["suites"] if s["id"] in requested]
+                manifest = {
+                    "schemaVersion": 1,
+                    "model": args.model,
+                    "provider": args.provider,
+                    "baseUrl": base_url,
+                    "samples": args.samples,
+                    "workers": args.workers,
+                    "batchSize": args.batch_size,
+                    "revision": repository_revision(ROOT),
+                    "evaluationDate": datetime.now().astimezone().date().isoformat(),
+                    "host": platform.node(),
+                    "suites": suites,
+                    "coverageGaps": catalog["coverageGaps"],
+                    "excludedEntryPoints": catalog["excludedEntryPoints"],
+                    "scope": "full" if len(suites) == len(catalog["suites"]) else "partial",
+                    "baseline": str(args.baseline.expanduser().resolve())
+                    if args.baseline
+                    else None,
+                    "judgeModel": None if args.no_judge else args.judge_model,
+                    "summaryFixtureHash": fingerprint(bundle) if bundle else None,
+                    "summarySourceHash": catalog["summarySourceHash"],
+                    "summaryOwnerIds": catalog["summaryOwnerIds"],
+                    "omittedSuites": [
+                        s["id"] for s in catalog["suites"] if s["id"] not in requested
+                    ],
+                }
+                atomic_json(output / "manifest.json", manifest)
+                jobs = make_jobs(suites, args.samples, args.batch_size)
+                if bundle is not None:
+                    use_frozen_reports(output, manifest, jobs, bundle)
+                checkpoint(output, manifest, jobs)
+                print(
+                    f"LottiGym: {len(suites)} suites, {len(jobs)} jobs, {sum(len(j['expected']) for j in jobs)} expected results.\nRun: {output}",
+                    flush=True,
+                )
+                if args.dry_run:
+                    return 0
+            else:
+                output = args.directory.expanduser().resolve()
+                if output.is_relative_to(ROOT):
+                    raise ValueError("Run must be outside the repository")
+                manifest = read_json(output / "manifest.json")
+                jobs = []  # Reconstructed from the immutable plan after acquiring the lock.
+                if manifest.get("schemaVersion") != 1 or manifest[
+                    "revision"
+                ] != repository_revision(ROOT):
+                    raise ValueError(
+                        "Source revision changed; start a new assessment instead of mixing results"
+                    )
+                if manifest["workers"] != args.workers:
+                    raise ValueError(
+                        "Resume must use the original --workers for comparable latency"
+                    )
+                if (
+                    manifest.get("evaluationDate")
+                    != datetime.now().astimezone().date().isoformat()
+                    or manifest.get("host") != platform.node()
+                ):
+                    raise ValueError(
+                        "Resume must use the original host and calendar day; start a new run"
+                    )
+                if not conn["MELIOUS_API_KEY"]:
+                    raise ValueError("Set MELIOUS_API_KEY or use --env-file")
+            with run_lock(output):
+                if (output / "invalidated.json").exists():
+                    raise ValueError(
+                        "Run was invalidated by a source change; start a new assessment"
+                    )
+                if args.command == "resume":
+                    jobs = recover_jobs(output, manifest)
+                execute(
+                    output, manifest, jobs, conn["MELIOUS_API_KEY"],
+                    args.workers, processes, compiler_slots,
+                )
+                judge_jobs(
+                    output, manifest, jobs, conn["MELIOUS_API_KEY"], args.workers, processes
+                )
+                if manifest["revision"] != repository_revision(ROOT):
+                    atomic_json(
+                        output / "invalidated.json",
+                        {"reason": "Checkout changed during assessment"},
+                    )
+                    checkpoint(output, manifest, jobs)
+                    raise ValueError(
+                        "Checkout changed during assessment; results are not comparable"
+                    )
+                summary = checkpoint(output, manifest, jobs)
             print(
-                f"LottiGym: {len(suites)} suites, {len(jobs)} jobs, {sum(len(j['expected']) for j in jobs)} expected results.\nRun: {output}",
+                f"Verdict: {summary['verdict']}. Report: {output / 'report.html'}",
                 flush=True,
             )
-            if args.dry_run:
-                return 0
-        else:
-            output = args.directory.expanduser().resolve()
-            if output.is_relative_to(ROOT):
-                raise ValueError("Run must be outside the repository")
-            manifest = read_json(output / "manifest.json")
-            jobs = []  # Reconstructed from the immutable plan after acquiring the lock.
-            if manifest.get("schemaVersion") != 1 or manifest[
-                "revision"
-            ] != repository_revision(ROOT):
-                raise ValueError(
-                    "Source revision changed; start a new assessment instead of mixing results"
-                )
-            if manifest["workers"] != args.workers:
-                raise ValueError(
-                    "Resume must use the original --workers for comparable latency"
-                )
-            if (
-                manifest.get("evaluationDate")
-                != datetime.now().astimezone().date().isoformat()
-                or manifest.get("host") != platform.node()
-            ):
-                raise ValueError(
-                    "Resume must use the original host and calendar day; start a new run"
-                )
-            if not conn["MELIOUS_API_KEY"]:
-                raise ValueError("Set MELIOUS_API_KEY or use --env-file")
-        with run_lock(output):
-            if (output / "invalidated.json").exists():
-                raise ValueError(
-                    "Run was invalidated by a source change; start a new assessment"
-                )
-            if args.command == "resume":
-                jobs = recover_jobs(output, manifest)
-            execute(
-                output, manifest, jobs, conn["MELIOUS_API_KEY"], args.workers, processes
+            return {"incomplete": 2, "failed": 1, "review_required": 3}.get(
+                summary["verdict"], 0
             )
-            judge_jobs(
-                output, manifest, jobs, conn["MELIOUS_API_KEY"], args.workers, processes
+        except KeyboardInterrupt:
+            processes.cancel()
+            print(
+                f"Interrupted; resume with: python3 tool/lotti_gym.py resume {output}",
+                file=sys.stderr,
             )
-            if manifest["revision"] != repository_revision(ROOT):
-                atomic_json(
-                    output / "invalidated.json",
-                    {"reason": "Checkout changed during assessment"},
-                )
-                checkpoint(output, manifest, jobs)
-                raise ValueError(
-                    "Checkout changed during assessment; results are not comparable"
-                )
-            summary = checkpoint(output, manifest, jobs)
-        print(
-            f"Verdict: {summary['verdict']}. Report: {output / 'report.html'}",
-            flush=True,
-        )
-        return {"incomplete": 2, "failed": 1, "review_required": 3}.get(
-            summary["verdict"], 0
-        )
-    except KeyboardInterrupt:
-        processes.cancel()
-        print(
-            f"Interrupted; resume with: python3 tool/lotti_gym.py resume {output}",
-            file=sys.stderr,
-        )
-        return 130
-    except (ValueError, OSError, KeyError) as error:
-        processes.cancel()
-        print(f"LottiGym: {error}", file=sys.stderr)
-        return 2
+            return 130
+        except (ValueError, OSError, KeyError) as error:
+            processes.cancel()
+            print(f"LottiGym: {error}", file=sys.stderr)
+            return 2
 
 
 if __name__ == "__main__":

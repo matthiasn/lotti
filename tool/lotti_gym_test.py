@@ -11,6 +11,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 from tool import lotti_gym as gym
+from tool import task_agent_model_eval_judge as judge_cli
 
 
 def suite(id="goals", adapter="agent", cases=None, dependencies=None, grouped=False):
@@ -61,38 +62,34 @@ class GymTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             gym.make_jobs([self.suite], 0)
 
-    def test_workers_reuse_private_compiler_caches_without_cross_run_collisions(self):
-        cases = suite(cases=["one", "two", "three", "four"])
-        jobs = gym.make_jobs([cases], 1, batch_size=1)
+    def test_every_live_worker_uses_a_cache_prepared_during_warmup(self):
+        self.suite = suite(cases=["one", "two", "three", "four"])
+        self.manifest["suites"] = [self.suite]
+        jobs = gym.make_jobs([self.suite], 1, batch_size=1)
         processes = Mock()
         processes.run.side_effect = self.fake_worker
-        other_run = self.output / "another-run"
-        other_run.mkdir()
-        configurations = [
-            ("worker-0", self.output),
-            ("worker-0", self.output),
-            ("worker-1", self.output),
-            ("worker-0", other_run),
-        ]
-        flags = []
-        for job, (worker, output) in zip(jobs, configurations):
-            thread = Mock()
-            thread.name = worker
-            with patch.object(gym.threading, "current_thread", return_value=thread):
-                gym.run_job(
-                    cases, job, self.manifest, output, "synthetic-key", processes, None
-                )
-            command = processes.run.call_args.args[0]
-            slot = [
-                arg
-                for arg in command
+        gym.execute(self.output, self.manifest, jobs, "key", 2, processes, ["0", "1"])
+        warmed = set()
+        live = set()
+        for call in processes.run.call_args_list:
+            command, env = call.args[:2]
+            flag = next(
+                arg for arg in command
                 if arg.startswith("--dart-define=LOTTI_GYM_COMPILER_SLOT=")
-            ]
-            self.assertEqual(len(slot), 1)
-            flags.append(slot[0])
-        self.assertEqual(flags[0], flags[1])
-        self.assertNotEqual(flags[0], flags[2])
-        self.assertNotEqual(flags[0], flags[3])
+            )
+            (live if self.suite["gate"] in env else warmed).add(flag)
+        self.assertTrue(live)
+        self.assertTrue(live.issubset(warmed), (live, warmed))
+
+    def test_compiler_leases_isolate_active_runs_and_reuse_released_caches(self):
+        leases = self.output / "leases"
+        with gym.compiler_slot_pool(2, leases) as first:
+            with gym.compiler_slot_pool(2, leases) as second:
+                self.assertTrue(set(first).isdisjoint(second))
+            with gym.compiler_slot_pool(2, leases) as reused:
+                self.assertEqual(reused, second)
+        with gym.compiler_slot_pool(2, leases) as released:
+            self.assertEqual(released, first)
 
     def test_query_dependency_runs_once_and_followups_share_a_worker(self):
         prep = suite("query-reports", "preparation", ["reports"])
@@ -134,6 +131,51 @@ class GymTest(unittest.TestCase):
         conn = gym.connection({"UP_UPSTREAM_API_KEY": "exported key"}, dotenv)
         self.assertEqual(conn["MELIOUS_API_KEY"], "exported key")
         self.assertEqual(set(conn), {"MELIOUS_API_KEY", "MELIOUS_BASE_URL"})
+
+    def test_empty_connection_placeholders_do_not_override_exported_values(self):
+        dotenv = self.output / ".env"
+        dotenv.write_text('MELIOUS_API_KEY=\nMELIOUS_BASE_URL= # optional\n')
+        self.assertEqual(
+            gym.connection({"MELIOUS_API_KEY": "exported"}, dotenv),
+            {"MELIOUS_API_KEY": "exported", "MELIOUS_BASE_URL": None},
+        )
+        self.assertIsNone(gym.connection({}, dotenv)["MELIOUS_API_KEY"])
+
+    def test_signal_exit_after_artifact_is_resumable_not_a_model_failure(self):
+        wake = suite("task-wake", "wake", ["quiet"])
+        self.manifest["suites"] = [wake]
+        job = gym.make_jobs([wake], 1)[0]
+        processes = Mock()
+
+        def interrupted(command, env, log, timeout):
+            gym.atomic_json(log.parent / "artifact.json", {
+                "model": self.manifest["model"], "scenario": "quiet", "success": True,
+            })
+            log.write_text('{"type":"testStart"}\n')
+            return -15
+
+        processes.run.side_effect = interrupted
+        result = gym.run_job(wake, job, self.manifest, self.output, "key", processes, None, "0")
+        self.assertEqual(result["state"], "error")
+        self.assertEqual(result["results"], [])
+        self.assertEqual(gym.recover_jobs(self.output, self.manifest)[0]["state"], "error")
+
+    def test_cancellation_normalizes_child_signal_status(self):
+        processes = gym.Processes()
+        child = Mock()
+
+        def finish(timeout):
+            processes.cancel()
+            return -15
+
+        child.wait.side_effect = finish
+        with (
+            patch.object(gym.subprocess, "Popen", return_value=child),
+            patch.object(gym, "stop_process_tree"),
+        ):
+            status = processes.run(["worker"], {}, self.output / "cancel.log", 10)
+        self.assertEqual(status, 130)
+        self.assertFalse(processes.active)
 
     def test_invalid_catalog_rejects_empty_cases_and_unknown_dependencies(self):
         for bad in (
@@ -213,14 +255,14 @@ class GymTest(unittest.TestCase):
         processes = Mock()
         processes.run.side_effect = self.fake_worker
         with contextlib.redirect_stdout(io.StringIO()):
-            gym.execute(self.output, self.manifest, jobs, "key", 1, processes)
+            gym.execute(self.output, self.manifest, jobs, "key", 1, processes, ["0"])
         self.assertEqual([j["state"] for j in jobs], ["failed", "failed"])
         self.assertEqual(
             gym.read_json(self.output / "summary.json")["verdict"], "failed"
         )
         self.assertTrue((self.output / "report.html").is_file())
         calls = processes.run.call_count
-        gym.execute(self.output, self.manifest, jobs, "key", 1, processes)
+        gym.execute(self.output, self.manifest, jobs, "key", 1, processes, ["0"])
         self.assertEqual(processes.run.call_count, calls)
 
     def test_missing_artifact_is_error_and_retry_keeps_prior_attempt(self):
@@ -230,13 +272,13 @@ class GymTest(unittest.TestCase):
             log.write_text("") and 0
         )
         result = gym.run_job(
-            self.suite, job, self.manifest, self.output, "key", processes, None
+            self.suite, job, self.manifest, self.output, "key", processes, None, "0"
         )
         self.assertEqual(result["state"], "error")
         job["attempts"].append(result)
         processes.run.side_effect = self.fake_worker
         second = gym.run_job(
-            self.suite, job, self.manifest, self.output, "key", processes, None
+            self.suite, job, self.manifest, self.output, "key", processes, None, "0"
         )
         self.assertEqual(second["number"], 2)
         self.assertTrue(Path(result["directory"]).is_dir())
@@ -259,7 +301,7 @@ class GymTest(unittest.TestCase):
             0,
         )[1]
         with contextlib.redirect_stdout(io.StringIO()):
-            gym.execute(self.output, self.manifest, jobs, "key", 1, processes)
+            gym.execute(self.output, self.manifest, jobs, "key", 1, processes, ["0"])
         self.assertEqual([j["state"] for j in jobs], ["error", "blocked"])
         self.assertEqual(processes.run.call_count, 2)  # one build + preparation
 
@@ -292,7 +334,7 @@ class GymTest(unittest.TestCase):
         processes = Mock()
         processes.run.side_effect = self.fake_worker
         result = gym.run_job(
-            self.suite, job, self.manifest, self.output, "key", processes, None
+            self.suite, job, self.manifest, self.output, "key", processes, None, "0"
         )
         recovered = gym.recover_jobs(self.output, self.manifest)
         self.assertEqual(recovered[0]["state"], "failed")
@@ -309,7 +351,7 @@ class GymTest(unittest.TestCase):
         processes = Mock()
         processes.run.side_effect = self.fake_worker
         result = gym.run_job(
-            self.suite, job, self.manifest, self.output, "key", processes, None
+            self.suite, job, self.manifest, self.output, "key", processes, None, "0"
         )
         self.assertEqual(result["number"], 2)
         self.assertEqual((interrupted / "worker.jsonl").read_text(), "partial evidence")
@@ -467,7 +509,16 @@ class GymTest(unittest.TestCase):
             ],
         )
         processes = Mock()
-        processes.run.return_value = 0
+        def run_judge(command, env, log, timeout):
+            with patch.dict(os.environ, env, clear=True):
+                self.assertEqual(
+                    judge_cli._validate_judge_url(env["MELIOUS_BASE_URL"]),
+                    self.manifest["baseUrl"],
+                )
+            self.assertEqual(env["TASK_AGENT_EVAL_ALLOWED_JUDGE_HOSTS"], "example.invalid")
+            return 0
+
+        processes.run.side_effect = run_judge
         gym.judge_jobs(self.output, self.manifest, jobs, "key", 1, processes)
         self.assertEqual(jobs[0]["attempts"][0]["judge"]["state"], "error")
         judgment = {

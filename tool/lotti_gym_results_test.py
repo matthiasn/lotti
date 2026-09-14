@@ -162,6 +162,50 @@ class ResultsTest(unittest.TestCase):
         self.assertEqual(result[0]["status"], "error")
         self.assertNotIn("secret", repr(result))
 
+    def test_task_inference_failed_without_an_exception_is_resumable(self):
+        rows = normalize(
+            {"adapter": "task"},
+            {"results": [{
+                "providerModelId": "candidate",
+                "scenarioId": "quiet",
+                "failureCategory": "inferenceFailed",
+                "errorMessage": None,
+            }]},
+            ["quiet"],
+            "candidate",
+            test_passed=True,
+        )
+        self.assertEqual(rows[0]["status"], "error")
+
+    def test_query_dependency_and_auth_failures_preserve_completed_rows(self):
+        completed = {"case": "first", "passed": False, "status": "complete"}
+        error = {"case": "second", "status": "error", "errorType": "authorization"}
+        blocked = {"case": "follow-up", "status": "blocked", "reason": "No prior answer"}
+        artifact = {
+            "model": "candidate",
+            "revisionUnchanged": True,
+            "results": [completed, error, blocked],
+        }
+        rows = normalize(
+            {"adapter": "query"},
+            artifact,
+            ["first", "second", "follow-up", "unattempted"],
+            "candidate",
+            test_passed=False,
+        )
+        self.assertEqual(
+            [r["status"] for r in rows],
+            ["failed", "error", "error", "not_assessed"],
+        )
+        self.assertEqual(rows[0]["case"], "first")
+        # Missing rows without an explicit infrastructure failure are still invalid.
+        artifact["results"] = [completed]
+        with self.assertRaises(InvalidArtifact):
+            normalize(
+                {"adapter": "query"}, artifact,
+                ["first", "second"], "candidate", test_passed=True,
+            )
+
     def test_wake_assertions_matter_even_when_workflow_succeeds(self):
         result = normalize(
             {"adapter": "wake"},
