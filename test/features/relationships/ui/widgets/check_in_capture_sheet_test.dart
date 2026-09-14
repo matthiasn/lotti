@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -1273,6 +1274,32 @@ void main() {
       expect(recorder.recordCalls, isEmpty);
       expect(recorder.stopCalls, 0);
       expect(recorder.modalVisibleLog, isEmpty);
+    });
+
+    testWidgets('a landed transcript is announced once: an edit undone back '
+        'to the exact words is not a second landing', (tester) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await startDictation(tester);
+      await stopRecording(tester);
+      expect(narrativeText(tester), 'Spoken.');
+      SemanticsNode caption() => tester.getSemantics(
+        find.byKey(const ValueKey('check-in-word-count')),
+      );
+      expect(caption().flagsCollection.isLiveRegion, isTrue);
+
+      await type(tester, 'Spoken, edited.');
+      expect(caption().flagsCollection.isLiveRegion, isFalse);
+
+      // Undone to the very words that landed: still old news.
+      await type(tester, 'Spoken.');
+      expect(caption().flagsCollection.isLiveRegion, isFalse);
+
+      // A new take is a new landing, and is announced again.
+      await tester.tap(find.byKey(const ValueKey('check-in-add-more')));
+      await tester.pumpAndSettle();
+      await stopRecording(tester);
+      expect(caption().flagsCollection.isLiveRegion, isTrue);
     });
 
     testWidgets('Re-record keeps the words until the new take exists: a '

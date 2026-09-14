@@ -1122,6 +1122,67 @@ void main() {
       });
     });
 
+    testWidgets('a briefing finishing is announced as it arrives, and the '
+        'age ticking afterwards is not', (tester) async {
+      var current = now;
+      final running = StreamController<bool>();
+      addTearDown(running.close);
+      final written = now.subtract(const Duration(seconds: 58));
+      await withClock(Clock(() => current), () async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            RelationshipBriefingCard(
+              relationship: relationship(),
+              checkIns: onTrackCheckIns,
+            ),
+            overrides: [
+              agentReportProvider(agentId).overrideWith(
+                (ref) async => report(createdAt: written),
+              ),
+              agentStateProvider(agentId).overrideWith((ref) async => null),
+              agentIsRunningProvider(
+                agentId,
+              ).overrideWith((ref) => running.stream),
+              agentIdentityProvider(agentId).overrideWith((ref) async => null),
+              taskAgentResolvedSetupProvider(
+                agentId,
+              ).overrideWith((ref) async => resolvedSetup()),
+              agentTokenUsageSummariesProvider(
+                agentId,
+              ).overrideWith((ref) async => const []),
+              relationshipAgentServiceProvider.overrideWithValue(agentService),
+              relationshipBriefingDisclosureProvider(
+                relationshipId,
+              ).overrideWith((ref) async => null),
+              relationshipRepositoryProvider.overrideWithValue(repository),
+              contactLauncherProvider.overrideWithValue(
+                _FakeContactLauncher(launchable: const {}),
+              ),
+              pendingInteractionStoreProvider.overrideWithValue(store),
+            ],
+          ),
+        );
+        running.add(true);
+        await tester.pump();
+        await tester.pump();
+        expect(statusText(tester), 'Writing the briefing…');
+        expect(statusNode(tester).flagsCollection.isLiveRegion, isTrue);
+
+        // The run finishes: the current face arrives, and that is news.
+        running.add(false);
+        await tester.pump();
+        await tester.pump();
+        expect(statusText(tester), 'Thriving · as of just now');
+        expect(statusNode(tester).flagsCollection.isLiveRegion, isTrue);
+
+        // The age ticks over on its own: the same face, not news.
+        current = now.add(const Duration(seconds: 5));
+        await tester.pump(const Duration(seconds: 5));
+        expect(statusText(tester), 'Thriving · as of 1 min ago');
+        expect(statusNode(tester).flagsCollection.isLiveRegion, isFalse);
+      });
+    });
+
     testWidgets('the failed face ages from its last wake, not from a '
         'briefing it does not have', (tester) async {
       var current = now;

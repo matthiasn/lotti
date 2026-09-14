@@ -195,6 +195,16 @@ class _RelationshipBriefingCardState
   /// label for hours. One wake per visible change, not a per-second tick.
   Timer? _ageTick;
 
+  /// The face last rendered, so a change of face can be told from a rebuild
+  /// of the same one.
+  RelationshipAgentCardState? _shownState;
+
+  /// Whether the current face has just arrived from a running or failed
+  /// one — a briefing finishing, a failure clearing — and should be
+  /// announced. Cleared when
+  /// the age next ticks, so "as of 3 h ago" becoming "4 h ago" stays quiet.
+  bool _arrivedCurrent = false;
+
   String get _agentId => relationshipAgentIdFor(widget.relationship.meta.id);
 
   @override
@@ -212,7 +222,7 @@ class _RelationshipBriefingCardState
   void _armAgeTick(DateTime writtenAt) {
     _ageTick?.cancel();
     _ageTick = Timer(untilNextAgeBucket(clock.now().difference(writtenAt)), () {
-      if (mounted) setState(() {});
+      if (mounted) setState(() => _arrivedCurrent = false);
     });
   }
 
@@ -421,6 +431,15 @@ class _RelationshipBriefingCardState
       report: report,
       state: state,
     );
+    if (cardState != _shownState) {
+      // Only from a wake's own faces: the providers' first load passes
+      // through noBriefing, and that is a card appearing, not news.
+      _arrivedCurrent =
+          cardState == RelationshipAgentCardState.current &&
+          (_shownState == RelationshipAgentCardState.running ||
+              _shownState == RelationshipAgentCardState.failed);
+      _shownState = cardState;
+    }
 
     if (cardState == RelationshipAgentCardState.notEnrolled) {
       return _NotEnrolledCard(
@@ -472,6 +491,7 @@ class _RelationshipBriefingCardState
         peopleCadencePillOf(item).kind == PeopleCadencePillKind.overdue;
     return _AgentCard(
       state: cardState,
+      announceArrival: _arrivedCurrent,
       item: item,
       checkInCount: widget.checkIns.length,
       checkIns: widget.checkIns,
@@ -606,6 +626,7 @@ class _NotEnrolledCard extends StatelessWidget {
 class _AgentCard extends StatelessWidget {
   const _AgentCard({
     required this.state,
+    required this.announceArrival,
     required this.item,
     required this.checkInCount,
     required this.checkIns,
@@ -628,6 +649,10 @@ class _AgentCard extends StatelessWidget {
   });
 
   final RelationshipAgentCardState state;
+
+  /// The current face has just replaced another, so its status line is
+  /// news this once.
+  final bool announceArrival;
   final RelationshipListItem item;
   final int checkInCount;
   final List<CheckInEntry> checkIns;
@@ -715,6 +740,9 @@ class _AgentCard extends StatelessWidget {
           },
         ],
         color: ai.metaText,
+        // Live only as it arrives: a briefing finishing or a failure
+        // clearing is news; the age ticking afterwards is not.
+        liveRegion: announceArrival,
       ),
       // One line beside the age pill: the date is the tier that goes, so
       // the status never orphans a date under itself next to a pill.

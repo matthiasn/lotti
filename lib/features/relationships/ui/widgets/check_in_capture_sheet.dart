@@ -737,6 +737,12 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   /// open from the start when a check-in being edited already has any of it.
   late bool _moreOpen;
 
+  /// Whether the landed transcript has stopped being news: set the first
+  /// time the field is edited away from it, and kept even if the edit is
+  /// undone back to the exact words — the landing was announced once, and
+  /// matching text again is not a second landing. A new take clears it.
+  bool _landingHeard = false;
+
   /// The folded More row's caption from what is set: a field's name until it
   /// has a value, then the value itself.
   String _moreCaption(AppLocalizations messages) {
@@ -946,6 +952,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     final text = _narrativeController.text;
     final typed = text != _lastNarrative;
     _lastNarrative = text;
+    if (typed && _transcriptEdited) _landingHeard = true;
     // Typing under a failure card is choosing to type instead: the card
     // goes — folding into its retry row when a recording is waiting.
     if (_phase case CheckInSpeechFailed(
@@ -1333,13 +1340,14 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
         existing: textBefore,
         transcript: transcript,
       );
-      setState(
-        () => _phase = CheckInSpeechReady(
+      setState(() {
+        _landingHeard = false;
+        _phase = CheckInSpeechReady(
           transcript: transcript,
           textBefore: textBefore,
           length: length,
-        ),
-      );
+        );
+      });
     } finally {
       if (identical(_transcriptWait, wait)) _transcriptWait = null;
       _closeTranscriptFailureSubscription();
@@ -1638,7 +1646,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
           phase: _phase,
           wordCount: checkInWordCount(_narrativeController.text),
           shortcutHint: shortcut?.label,
-          transcriptEdited: _transcriptEdited,
+          transcriptEdited: _transcriptEdited || _landingHeard,
           restMinLines: widget.dialog ? 2 : 3,
           recorder: recording
               ? CheckInInlineRecorder(
