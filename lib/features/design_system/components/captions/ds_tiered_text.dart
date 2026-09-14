@@ -15,6 +15,7 @@ class DsTieredText extends StatelessWidget {
     this.maxLines = 1,
     this.semanticsLabel,
     this.textKey,
+    this.textAlign,
     super.key,
   }) : assert(tiers.length > 0, 'a ladder needs at least one wording');
 
@@ -30,6 +31,9 @@ class DsTieredText extends StatelessWidget {
 
   /// On the rendered [Text], so a test reads the wording that was chosen.
   final Key? textKey;
+
+  /// Where the chosen wording sits in the width it was given.
+  final TextAlign? textAlign;
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +59,7 @@ class DsTieredText extends StatelessWidget {
           key: textKey,
           maxLines: chosen == tiers.last ? maxLines : 1,
           overflow: TextOverflow.ellipsis,
+          textAlign: textAlign,
           semanticsLabel: semanticsLabel ?? tiers.first,
           style: style,
         );

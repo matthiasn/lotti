@@ -26,6 +26,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
+import '../../../../test_utils/screenshot_harness.dart' show loadAppFonts;
 import '../../../../widget_test_utils.dart';
 import '../../helpers/check_in_speech_fakes.dart';
 
@@ -153,6 +154,9 @@ void main() {
     data: data,
   );
 
+  // Pinned fonts: the bar's rects are asserted to the pixel, and the CI
+  // bundle shares fonts loaded by any earlier file (test/README.md).
+  setUpAll(loadAppFonts);
   setUpAll(registerAllFallbackValues);
 
   setUp(() {
@@ -229,6 +233,13 @@ void main() {
     await tester.ensureVisible(save);
     await tester.tap(save);
     await tester.pumpAndSettle();
+  }
+
+  /// The harness prefers twelve hours, so a chip reads `2:05 PM`.
+  String clock12(DateTime t) {
+    final hour = t.hour % 12 == 0 ? 12 : t.hour % 12;
+    final minute = t.minute.toString().padLeft(2, '0');
+    return '$hour:$minute ${t.hour < 12 ? 'AM' : 'PM'}';
   }
 
   bool saveEnabled(WidgetTester tester) =>
@@ -546,7 +557,8 @@ void main() {
       await withClock(Clock.fixed(fixedNow), () async {
         await tester.pumpWidget(buildForm());
         await tester.pumpAndSettle();
-        expect(find.text('Now · 10:30'), findsOneWidget);
+        // The device's clock format: the test harness prefers twelve hours.
+        expect(find.text('Now · 10:30 AM'), findsOneWidget);
         await type(tester, 'Words.');
         await tapSave(tester);
       });
@@ -751,7 +763,7 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('check-in-time-done')));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('08:15'), findsOneWidget);
+      expect(find.textContaining('8:15 AM'), findsOneWidget);
       await tapSave(tester);
 
       final updated =
@@ -1788,8 +1800,7 @@ void main() {
       expect(summary, findsOneWidget);
       expect(
         tester.widget<DesignSystemChip>(summary).label,
-        'In person · Now · ${clock.now().hour.toString().padLeft(2, '0')}:'
-        '${clock.now().minute.toString().padLeft(2, '0')} · No duration',
+        'In person · Now · ${clock12(clock.now())} · No duration',
       );
       expect(find.text('Save'), findsOneWidget);
       expect(find.text('Save check-in'), findsNothing);

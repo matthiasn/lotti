@@ -71,7 +71,8 @@ recording too; an untouched draft closes at once. A failure card offers
 its own Try again, and typing under one that has nothing to retry
 dismisses it; choosing to type instead of waiting for a missing
 transcript keeps its retry on one line. Re-record is offered only while
-the transcript is unedited. At a large text setting the header keeps its whole title and
+the transcript is unedited. The started chip shows the time in the
+device's own clock format, the same one its picker uses. At a large text setting the header keeps its whole title and
 shortens its status line word by word, keeping the person's name, rather
 than cutting it off.
 

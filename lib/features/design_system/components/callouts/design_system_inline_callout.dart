@@ -22,6 +22,8 @@ class DesignSystemInlineCallout extends StatelessWidget {
     super.key,
     this.tone,
     this.trailing,
+    this.title,
+    this.actions = const [],
   });
 
   /// Leading glyph, drawn in the callout's tone.
@@ -37,6 +39,14 @@ class DesignSystemInlineCallout extends StatelessWidget {
   /// asking for, where it asks for something (the goal cards' "Mark done").
   /// Null keeps the read-only band this component started as.
   final Widget? trailing;
+
+  /// A one-line heading above [text], for a callout that names a failure
+  /// and then explains it.
+  final String? title;
+
+  /// Buttons under the text, on the trailing edge — quietest first, so the
+  /// filled one sits on the rail every primary action shares.
+  final List<Widget> actions;
 
   @override
   Widget build(BuildContext context) {
@@ -61,11 +71,36 @@ class DesignSystemInlineCallout extends StatelessWidget {
             Icon(icon, size: IconSizes.l, color: color),
             SizedBox(width: tokens.spacing.step3),
             Expanded(
-              child: Text(
-                text,
-                style: tokens.typography.styles.body.bodySmall.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                ),
+              // Stretched, so the actions row has the full column to end on.
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (title case final title?) ...[
+                    Text(
+                      title,
+                      style: tokens.typography.styles.subtitle.subtitle1
+                          .copyWith(color: tokens.colors.text.highEmphasis),
+                    ),
+                    SizedBox(height: tokens.spacing.step2),
+                  ],
+                  Text(
+                    text,
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: tokens.colors.text.highEmphasis,
+                    ),
+                  ),
+                  if (actions.isNotEmpty) ...[
+                    SizedBox(height: tokens.spacing.step4),
+                    Wrap(
+                      alignment: WrapAlignment.end,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: tokens.spacing.step3,
+                      runSpacing: tokens.spacing.step3,
+                      children: actions,
+                    ),
+                  ],
+                ],
               ),
             ),
             if (trailing case final trailing?) ...[

@@ -153,7 +153,7 @@ void main() {
       final meta = tester.widget<Text>(
         find.byKey(const ValueKey('person-post-call-meta')),
       );
-      expect(meta.data, 'started 11:30 · about 11 min');
+      expect(meta.data, 'started 11:30 AM · about 11 min');
       expect(meta.style?.fontFamily, 'Inconsolata');
     });
 
@@ -188,7 +188,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.text('started 11:40 · under a minute'), findsOneWidget);
+      expect(find.text('started 11:40 AM · under a minute'), findsOneWidget);
     });
 
     testWidgets('a single minute reads in the singular on the meta line too', (
@@ -200,7 +200,7 @@ void main() {
         resolves: person(),
       );
 
-      expect(find.text('started 11:40 · about 1 min'), findsOneWidget);
+      expect(find.text('started 11:40 AM · about 1 min'), findsOneWidget);
     });
 
     testWidgets('a message reads as writing, not calling', (tester) async {

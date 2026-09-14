@@ -349,6 +349,12 @@ control that reads as one and keeps the shared hover fill. Reach for
 `DsQuietInk` only when a hover fill would manufacture a button shape the
 resting design deliberately does not have.
 
+`DesignSystemInlineCallout` also takes an optional `title` (subtitle above
+the message) and `actions` (buttons in a trailing-aligned wrap under the
+text, quietest first so the filled one sits on the rail every primary
+shares) — the shape the check-in composer's failure cards wear, so a
+failure reads as one system's callout rather than a bespoke box.
+
 ## One line that sheds words, not letters: `DsTieredText`
 
 `DsTieredText`

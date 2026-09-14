@@ -880,7 +880,8 @@ void main() {
         state: agentState(failures: 1, lastWakeAt: failedAt),
       );
 
-      expect(statusText(tester), 'Last run failed · 13:41');
+      // The device's own clock format, as the started chip and the wheel.
+      expect(statusText(tester), 'Last run failed · 1:41 PM');
       expect(
         find.textContaining('No model is set up for briefings.'),
         findsOneWidget,
@@ -1049,6 +1050,22 @@ void main() {
 
         expect(statusText(tester), 'Thriving · as of 1 min ago');
       });
+    });
+
+    testWidgets('the band wears its colour as a dot beside its word', (
+      tester,
+    ) async {
+      await pump(tester, checkIns: onTrackCheckIns, current: report());
+      final dot = tester.widget<Container>(
+        find.byKey(const ValueKey('relationship-agent-band-dot')),
+      );
+      final tokens = tester
+          .element(find.byType(RelationshipBriefingCard))
+          .designTokens;
+      expect(
+        (dot.decoration! as BoxDecoration).color,
+        relationshipHealthBandColor(tokens, RelationshipHealthBand.thriving),
+      );
     });
 
     testWidgets('with nothing to expand, the sources line is not hidden '

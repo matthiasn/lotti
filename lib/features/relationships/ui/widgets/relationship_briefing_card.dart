@@ -552,6 +552,7 @@ class _NotEnrolledCard extends StatelessWidget {
                 ? null
                 : DesignSystemButton(
                     key: const ValueKey('relationship-agent-mark-important'),
+                    tapTargetSize: MaterialTapTargetSize.padded,
                     label: messages.relationshipAgentMarkImportant,
                     leadingIcon: LottiIcons.star,
                     isLoading: marking,
@@ -653,13 +654,21 @@ class _AgentCard extends StatelessWidget {
         tiers: [
           if (lastWake != null)
             messages.relationshipAgentLastRunFailed(
-              relationshipTimeLabel(lastWake),
+              relationshipTimeLabelOf(context, lastWake),
             ),
           messages.relationshipAgentFailedPlain,
         ],
         color: tokens.colors.alert.error.ink,
       ),
+      // The band as a colour as well as a word — a dot in the glyph slot,
+      // in the band's own accent, the one status the card said only in text.
       RelationshipAgentCardState.current => _StatusLine(
+        leading: switch (health?.band) {
+          null => null,
+          final band => _BandDot(
+            color: relationshipHealthBandColor(tokens, band),
+          ),
+        },
         tiers: [
           switch (health) {
             null => messages.goalDetailReadAsOf(_age(messages)),
@@ -709,10 +718,14 @@ class _AgentCard extends StatelessWidget {
     if (state != RelationshipAgentCardState.outOfDate) return null;
     final days = clock.now().difference(report!.createdAt).inDays;
     if (days < 1) return null;
+    final ai = context.designTokens.colors.aiCard;
     return DsPill(
       key: const ValueKey('relationship-briefing-age'),
-      variant: DsPillVariant.filled,
+      // Outlined in the meta ink: a fact beside the status line, never a
+      // second thing competing with it for the first read.
+      variant: DsPillVariant.outline,
       shape: DsPillShape.tag,
+      color: ai.metaText,
       label: messages.relationshipBriefingAge(days),
     );
   }
@@ -747,7 +760,7 @@ class _AgentCard extends StatelessWidget {
             : messages.relationshipAgentFailedBody,
         key: const ValueKey('relationship-agent-body'),
         style: tokens.typography.styles.body.bodyMedium.copyWith(
-          color: tokens.colors.text.highEmphasis,
+          color: ai.bodyText,
         ),
       ),
       RelationshipAgentCardState.current ||
@@ -789,6 +802,7 @@ class _AgentCard extends StatelessWidget {
     );
     final updateNow = DesignSystemButton(
       key: const ValueKey('relationship-brief-me'),
+      tapTargetSize: MaterialTapTargetSize.padded,
       label: messages.taskAgentUpdateNow,
       leadingIcon: LottiIcons.refresh,
       variant: state == RelationshipAgentCardState.outOfDate
@@ -803,6 +817,7 @@ class _AgentCard extends StatelessWidget {
         leading: logCheckIn,
         action: DesignSystemButton(
           key: const ValueKey('relationship-brief-me'),
+          tapTargetSize: MaterialTapTargetSize.padded,
           label: messages.relationshipAgentBriefNow,
           leadingIcon: LottiIcons.aiSpark,
           onPressed: onBrief,
@@ -817,11 +832,13 @@ class _AgentCard extends StatelessWidget {
         action: modelMissing
             ? DesignSystemButton(
                 key: const ValueKey('relationship-agent-choose-model'),
+                tapTargetSize: MaterialTapTargetSize.padded,
                 label: messages.inferenceProfileChooseModelTitle,
                 onPressed: onChooseModel,
               )
             : DesignSystemButton(
                 key: const ValueKey('relationship-brief-me'),
+                tapTargetSize: MaterialTapTargetSize.padded,
                 label: messages.relationshipAgentTryAgain,
                 leadingIcon: LottiIcons.refresh,
                 onPressed: onBrief,
@@ -832,12 +849,14 @@ class _AgentCard extends StatelessWidget {
         action: onCall == null
             ? DesignSystemButton(
                 key: const ValueKey('relationship-agent-log-check-in-primary'),
+                tapTargetSize: MaterialTapTargetSize.padded,
                 label: messages.relationshipLogCheckIn,
                 leadingIcon: LottiIcons.greeting,
                 onPressed: onLogCheckIn,
               )
             : DesignSystemButton(
                 key: const ValueKey('relationship-agent-call'),
+                tapTargetSize: MaterialTapTargetSize.padded,
                 label: messages.relationshipAgentCall(name),
                 leadingIcon: contactActionIcon(reachable!.action),
                 onPressed: onCall,
@@ -1112,7 +1131,9 @@ class _AgentCardFooter extends StatelessWidget {
         children: [
           if (leading != null || action != null)
             ConstrainedBox(
-              constraints: BoxConstraints(minHeight: tokens.spacing.step8),
+              constraints: const BoxConstraints(
+                minHeight: TapTargets.minimum,
+              ),
               child: Row(
                 children: [
                   Expanded(
@@ -1134,4 +1155,19 @@ class _AgentCardFooter extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The health band's colour beside its word on the status line.
+class _BandDot extends StatelessWidget {
+  const _BandDot({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    key: const ValueKey('relationship-agent-band-dot'),
+    width: IconSizes.xs,
+    height: IconSizes.xs,
+    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+  );
 }

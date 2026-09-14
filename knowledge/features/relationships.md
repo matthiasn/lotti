@@ -802,10 +802,12 @@ The health band no longer has a pill on the card (design 2026-09-13): it is
 the first word on the header's status line — `Thriving · as of 3 h ago`,
 the judgement before its timestamp — and the
 person header directly above the card already carries the tinted band pill
-and the cadence pill, so the card repeats neither. The header's trailing
-rail holds only an out-of-date briefing's age (`6 days old`, a neutral
-filled tag, so the status line's warning ink is the one orange thing on the
-face), which is what that rail — capped at half the header width,
+and the cadence pill, so the card repeats neither — but the band's colour
+rides a dot in the status line's glyph slot, so the judgement is carried by
+more than its word. The header's trailing rail holds only an out-of-date
+briefing's age (`6 days old`, an outlined tag in the meta ink, so the status
+line's warning ink is the one orange thing on the face and the tag never
+competes for the first read), which is what that rail — capped at half the header width,
 ellipsizing — can carry without truncating a judgement. The status line is
 a `DsTieredText` in a live region: it sheds its date or time before it
 wraps (`Out of date · new check-in Thursday` → `Out of date · new check-in`
@@ -1037,18 +1039,27 @@ The composer's parts, top to bottom:
   field that starts short and says *Or type it here…*. A card offers its
   own way back to the microphone (*Try again* — also on the refused
   microphone, whose body says exactly that), so the field's *Dictate* steps
-  aside rather than sit beside it dead; and typing a word under a card
-  that has no recording to retry is choosing to type instead, so the card
-  goes on its own (the form's `_onNarrativeChanged`). *Type instead* on a
+  aside rather than sit beside it dead; and typing a word under a card is
+  choosing to type instead, so the card goes on its own (the form's
+  `_onNarrativeChanged`) — folding into its retry row when a recording is
+  waiting. The cards are the design system's `DesignSystemInlineCallout`
+  with a title and an actions row, the filled action last on the trailing
+  rail like Save, Stop and Add more. *Type instead* on a
   **missing transcript** does not forget the take: the phase becomes
   `CheckInSpeechFailed(cardDismissed: true)`, the card folds into one
   caption row — `0:23 of audio saved · Try again` — and the retry survives
   until Save or dismiss. *Re-record* is offered only while the field still
   holds exactly what landed (`_canReRecord`, checked against
   `mergeCheckInNarrative`): once the transcript is edited, taking it back
-  out would take the edits with it. The caption and its actions share one
-  corner across phases: beside each other when they fit a line, else the
-  actions on their own line at the trailing edge (`_CaptionAndActions`).
+  out would take the edits with it, and it wears the `quiet` variant with a
+  refresh glyph so it never reads as Add more's twin. The caption row is a
+  `DsTieredText` ladder (`Transcript added · 26 words · ⌘↩ to save` sheds
+  the hint, then the count), and the caption and its actions share one
+  corner across phases — transcribing included: beside each other when they
+  fit a line, else the actions on their own line at the trailing edge
+  (`_CaptionAndActions`), always so above `TextScales.large`. The *More*
+  row's caption is a ladder too (`Feeling · topics · next time` sheds a
+  segment at a time), so large text never slices a word.
 * [`CheckInContextChips`](../../lib/features/relationships/ui/widgets/check_in_context_chips.dart):
   type · started · duration as one wrapping chip row, each chip opening its
   picker (the type through a `DsActionModal`), quiet while the recorder or
@@ -1112,6 +1123,12 @@ sequenceDiagram
   B->>H: save() / delete() / dismiss() / unfocus() on tap
   H->>F: the published callback runs
 ```
+
+The *started* chip reads its time through `relationshipTimeLabelOf`, which
+resolves the device's twelve- or twenty-four-hour preference exactly as
+`DesignSystemTimeWheel` does, so the chip and the wheel that edits it never
+disagree; the post-call offer and the card's last-failed-run time go
+through the same helper.
 
 **Save waits for words, and only words.** The rule is one pure function,
 `checkInSaveBlockOf` in

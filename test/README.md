@@ -574,6 +574,32 @@ survive the reset by design, and stubs live on mock instances, so
 matches in isolation but fails in a bundled run, suspect a matcher leak in a
 test that ran earlier in the bundle — or the mixin-default pitfall below.
 
+## GetIt and view state leak across files in a bundle too
+
+`getIt` and the test view (`physicalSize`, `devicePixelRatio`) are shared by
+every file the optimizer bundles into a shard, so a `setUp` that registers a
+service — including through `ensureThemingServicesRegistered()`, which adds
+`UpdateNotifications` and `SettingsDb` — must clear it again in `tearDown`
+(`await getIt.reset()` or the matching `unregister`), and a view resized in
+`setUp` goes back with `view.reset()`, never by writing a size you believe
+is the default. The symptom of a leak is a file that passes alone and fails
+in CI with `Type X is already registered inside GetIt` or a pixel-shifted
+layout, with the victim named and the culprit not.
+
+To find the culprit, reproduce CI's order locally — the shard, the same
+`--test-randomize-ordering-seed` the job log prints, and the FVM SDK:
+
+```bash
+fvm dart run tool/ci/run_tests.dart --exclude-tags 'glados || performance || eval-live' \
+  --total-shards=10 --shard-index=7 --test-randomize-ordering-seed=0 --no-pub
+```
+
+Then bisect the files that ran before the victim with a hand-made bundle —
+a throwaway `test/.leak_bisect_test.dart` that imports a prefix of them as
+`c0…cN` plus the victim and calls each `main` inside a `group`, exactly as
+the optimizer does — halving the prefix until one file leaks against the
+victim on its own.
+
 ## Stubbing mixin-declared methods: mirror the production call shape
 
 `JournalDb` and `SyncDatabase` get their query members from private mixins in
