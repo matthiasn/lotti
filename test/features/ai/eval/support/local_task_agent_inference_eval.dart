@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/workflow/task_agent_report_editor.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/functions/lotti_checklist_update_handler.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
@@ -213,6 +214,7 @@ class LocalTaskAgentEvalScenario {
     this.requiredToolArgumentTermGroups = const {},
     this.forbiddenToolNames = const {},
     this.forbiddenToolArgumentTerms = const {},
+    this.checklistReopeningEvidence = const {},
   });
 
   final String id;
@@ -259,6 +261,12 @@ class LocalTaskAgentEvalScenario {
   /// Terms that must not appear in a specific tool's arguments.
   final Map<String, List<String>> forbiddenToolArgumentTerms;
 
+  /// Optional reopening of these user-checked items must cite the specified
+  /// newer evidence in a substantive reason. Every reason term group must
+  /// match; unrelated items, title edits and archiving remain disallowed.
+  /// This tests ordinary user toggles, never human-approved chat state.
+  final Map<String, List<List<String>>> checklistReopeningEvidence;
+
   Map<String, Object?> toJson() {
     return {
       'id': id,
@@ -281,6 +289,7 @@ class LocalTaskAgentEvalScenario {
       'requiredToolArgumentTermGroups': requiredToolArgumentTermGroups,
       'forbiddenToolNames': forbiddenToolNames.toList()..sort(),
       'forbiddenToolArgumentTerms': forbiddenToolArgumentTerms,
+      'checklistReopeningEvidence': checklistReopeningEvidence,
       'systemPromptChars': systemPrompt.length,
       'userMessageChars': userMessage.length,
       'userMessage': userMessage,
@@ -365,16 +374,14 @@ LocalTaskAgentEvalScenario _implicitWorkflowPlanScenario(
 /// agent-evolution workflow rather than Lotti's seeded report contract.
 List<LocalTaskAgentEvalScenario>
 evolvedReportDirectiveTaskAgentEvalScenarios() {
-  final base = defaultMeliousTaskAgentEvalScenarios(
-    variants: const [LocalTaskAgentEvalPromptVariant.evidenceSynthesis],
-  );
+  final base = defaultMeliousTaskAgentEvalScenarios();
 
   LocalTaskAgentEvalScenario find(String id) =>
       base.firstWhere((scenario) => scenario.id == id);
 
   return [
     _withEvolvedReportDirective(
-      find('metadata_explicit_evidenceSynthesis'),
+      find('metadata_explicit_production'),
       id: 'metadata_explicit_evolved_decision_memo',
       reportDirective: _evolvedDecisionMemoDirective,
       requiredDirectiveTerms: const [
@@ -388,7 +395,7 @@ evolvedReportDirectiveTaskAgentEvalScenarios() {
       ],
     ),
     _withEvolvedReportDirective(
-      find('german_voice_plan_evidenceSynthesis'),
+      find('german_voice_plan_production'),
       id: 'german_voice_plan_evolved_delivery_coach',
       reportDirective: _evolvedGermanDeliveryCoachDirective,
       requiredDirectiveTerms: const [
@@ -401,7 +408,7 @@ evolvedReportDirectiveTaskAgentEvalScenarios() {
       ],
     ),
     _withEvolvedReportDirective(
-      find('progress_update_evidenceSynthesis'),
+      find('progress_update_production'),
       id: 'progress_update_evolved_risk_brief',
       reportDirective: _evolvedRiskBriefDirective,
       requiredDirectiveTerms: const [
@@ -411,13 +418,13 @@ evolvedReportDirectiveTaskAgentEvalScenarios() {
       forbiddenDirectiveTerms: const ['no blockers'],
     ),
     _withEvolvedReportDirective(
-      find('messy_german_transcript_evidenceSynthesis'),
+      find('messy_german_transcript_production'),
       id: 'messy_german_transcript_evolved_plain_language',
       reportDirective: _evolvedPlainLanguageDirective,
       forbiddenDirectiveTerms: const ['##', '|---'],
     ),
     _withEvolvedReportDirective(
-      find('active_deployment_constraint_evidenceSynthesis'),
+      find('active_deployment_constraint_production'),
       id: 'active_deployment_constraint_evolved_decision_memo',
       reportDirective: _evolvedDecisionMemoDirective,
       requiredDirectiveTerms: const [
@@ -427,7 +434,7 @@ evolvedReportDirectiveTaskAgentEvalScenarios() {
       forbiddenDirectiveTerms: const ['## decision needed'],
     ),
     _withEvolvedReportDirective(
-      find('spanish_mixed_context_evidenceSynthesis'),
+      find('spanish_mixed_context_production'),
       id: 'spanish_mixed_context_evolved_localized_partner',
       reportDirective: _evolvedLocalizedPartnerDirective,
       requiredDirectiveTerms: const [
@@ -440,7 +447,7 @@ evolvedReportDirectiveTaskAgentEvalScenarios() {
       ],
     ),
     _withEvolvedReportDirective(
-      find('external_link_and_completion_evidenceSynthesis'),
+      find('external_link_and_completion_production'),
       id: 'external_link_and_completion_evolved_release_evidence',
       reportDirective: _evolvedReleaseEvidenceDirective,
       requiredDirectiveTerms: const [
@@ -487,6 +494,7 @@ LocalTaskAgentEvalScenario _withEvolvedReportDirective(
     requiredToolArgumentTermGroups: source.requiredToolArgumentTermGroups,
     forbiddenToolNames: source.forbiddenToolNames,
     forbiddenToolArgumentTerms: source.forbiddenToolArgumentTerms,
+    checklistReopeningEvidence: source.checklistReopeningEvidence,
   );
 }
 
@@ -1046,15 +1054,21 @@ LocalTaskAgentEvalScenario _userCompletedItemScenario(
     systemPrompt: _buildEvalSystemPrompt(variant),
     userMessage: _userCompletedItemUserMessage,
     expectedToolCalls: const [],
-    // The invariant is that the user's checked item survives, which is what
-    // updateChecklistItems would violate. Adding a new investigation item is
-    // the context's own request — "Investigation is needed; no root cause
-    // yet" — so it must not count against the model.
-    forbiddenToolNames: const {TaskAgentToolNames.updateChecklistItems},
+    // Production permits a reasoned override when evidence is newer than the
+    // user's toggle. Preserving completion and adding investigation work is
+    // also valid. Neither path establishes scheduling intent.
+    checklistReopeningEvidence: const {
+      'item-sync-fix': [
+        ['qa', '11:20'],
+        ['duplicate', 'sync'],
+        ['reappeared', 'resurfaced', 'again', 'recurrence', 'recurred'],
+      ],
+    },
     allowedExtraToolNames: const {
       TaskAgentToolNames.updateReport,
       TaskAgentToolNames.recordObservations,
       TaskAgentToolNames.addMultipleChecklistItems,
+      TaskAgentToolNames.updateChecklistItems,
     },
     isFirstWake: false,
     promptVariant: variant,
@@ -1687,8 +1701,8 @@ final _userCompletedItemUserMessage =
       "id": "item-sync-fix",
       "title": "Fix duplicate sync events",
       "isChecked": true,
-      "lastModifiedBy": "user",
-      "lastModifiedAt": "2026-07-10T08:00:00Z"
+      "checkedBy": "user",
+      "checkedAt": "2026-07-10T08:00:00Z"
     }
   ],
   "log": [
@@ -3001,6 +3015,10 @@ LocalTaskAgentEvalFailureCategory _classifyResult({
     return LocalTaskAgentEvalFailureCategory.unexpectedToolCall;
   }
 
+  if (!_hasValidChecklistReopenings(scenario, toolCalls)) {
+    return LocalTaskAgentEvalFailureCategory.forbiddenToolArguments;
+  }
+
   for (final expected in scenario.expectedToolCalls) {
     final matchingCalls = toolCalls
         .where((call) => call.name == expected.name)
@@ -3034,13 +3052,8 @@ LocalTaskAgentEvalFailureCategory _classifyResult({
   )) {
     return LocalTaskAgentEvalFailureCategory.forbiddenReportContent;
   }
-  // Separate from the term blacklist above, and separately named, because it
-  // fails for a different reason: the term list catches leaked internal ids,
-  // while this catches a report ASSERTING work that did not happen. It is the
-  // whole point of the scenarios that declare it — `user_completed_item_
-  // resurfaced` expects no tool calls at all, so "did the model claim the fix
-  // was verified?" is the only question it really asks. Until this was gated,
-  // those claims were counted in `qualityScore` and could not fail a run.
+  // Internal IDs are forbidden terms; unsupported completion claims are
+  // checked separately so a report may legitimately negate them.
   if (scenario.forbiddenReportClaims.any(
     (claim) => containsAffirmativeReportClaim(reportText, claim),
   )) {
@@ -3068,6 +3081,39 @@ LocalTaskAgentEvalFailureCategory _classifyResult({
   }
 
   return LocalTaskAgentEvalFailureCategory.none;
+}
+
+bool _hasValidChecklistReopenings(
+  LocalTaskAgentEvalScenario scenario,
+  List<LocalTaskAgentEvalToolCall> toolCalls,
+) {
+  if (scenario.checklistReopeningEvidence.isEmpty) return true;
+  for (final call in toolCalls.where(
+    (call) => call.name == TaskAgentToolNames.updateChecklistItems,
+  )) {
+    final items = call.jsonObjectArguments?['items'];
+    if (items is! List || items.isEmpty) return false;
+    for (final item in items) {
+      if (item is! Map<String, dynamic> ||
+          item['isChecked'] != false ||
+          item.keys.any(
+            (key) => !const {'id', 'isChecked', 'reason'}.contains(key),
+          )) {
+        return false;
+      }
+      final evidenceGroups = scenario.checklistReopeningEvidence[item['id']];
+      final reason = item['reason'];
+      if (evidenceGroups == null ||
+          reason is! String ||
+          reason.trim().length < LottiChecklistUpdateHandler.minReasonLength ||
+          evidenceGroups.any(
+            (group) => !containsAnyEvalTerm(reason.toLowerCase(), group),
+          )) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 LocalTaskAgentEvalToolCall? _latestReportCall(

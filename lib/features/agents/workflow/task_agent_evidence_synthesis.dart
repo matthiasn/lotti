@@ -346,6 +346,12 @@ ${TaskAgentReportPolicy.decisionSectionRule}''';
       ...properties['content']! as Map<String, dynamic>,
       'description':
           'A free-form Markdown current-state report in the task language. '
+          'Follow the active report directive. Before submitting, check each '
+          'required and conditional section against the source evidence and '
+          'include its exact heading when required. An inline link elsewhere '
+          'does not replace a requested evidence section: put the link under '
+          'that heading. Use the following stock headings only when the active '
+          'directive requests them. '
           'Include only evidence-backed outcomes, active constraints, and '
           'remaining actions. If no real-world progress is recorded, omit '
           'Progress or Achieved entirely. Omit Blockers or Links when empty. '

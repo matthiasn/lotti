@@ -99,7 +99,7 @@ excluded, that IDs are unique and that dependencies resolve.
 |---|---|
 | Task conversation | Production prompt variant, conversation/tool orchestration and production report routing |
 | Task penguin | The current English penguin inference fixture; the old environment switch name is not a multilingual-coverage claim |
-| Task directives | Synthetic evolved report directives |
+| Task directives | Production prompt builder with synthetic evolved report directives |
 | Task workflow | `TaskAgentWorkflow` with seeded context and captured persisted proposals/reports |
 | Task wake | Real task-agent context construction over seeded journal, agent and FTS databases, including restraint cases |
 | Goals | Goal inference contract and tool checks |
@@ -187,6 +187,14 @@ Synthetic follow-up task cases use the production `TaskAgentReportPolicy`
 publication state, changed-entity guidance and closing instruction. Like the
 production context builder, they omit prior report prose. The real workflow
 suites additionally exercise publication enforcement after successful tools.
+The resurfaced-checklist case uses ordinary user-toggle provenance (`checkedBy`
+and `checkedAt`). It accepts preserving completion or reopening with a
+substantive reason referencing the newer QA recurrence. Its per-item evidence
+term groups are retained in scenario metadata; missing reasons, unrelated items,
+title changes and archiving fail. These lexical checks do not independently
+prove temporal reasoning or exercise the stricter human-approved chat guard.
+Planner reservations remain forbidden in this case because the evidence gives
+no scheduling request or timing urgency.
 
 The task conversation driver rethrows inference errors from both its initial
 conversation and forced report pass. A provider failure cannot trigger report

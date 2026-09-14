@@ -51,6 +51,15 @@ void main() {
         );
       });
 
+      test('keeps unscheduled follow-up work out of the planner', () {
+        expect(
+          tool.description,
+          contains('investigation or checklist follow-up'),
+        );
+        expect(tool.description, contains('leave that work on the task'));
+        expect(tool.description, contains('Never invent a deadline'));
+      });
+
       test('requires bounded claim fields', () {
         final required = tool.parameters['required'] as List;
         expect(

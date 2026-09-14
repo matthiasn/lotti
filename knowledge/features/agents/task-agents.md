@@ -431,6 +431,9 @@ Common changes across the path:
   the user can provide now before drafting an optional decision section. It
   selects the required and evidence-triggered headings before drafting prose;
   information elsewhere does not replace a requested conditional section.
+  The report content field repeats the active-directive requirement beside the
+  value being generated; stock headings apply only when that directive asks
+  for them.
   Custom report instructions finish either scaffold, adjacent to their
   precedence statement, so the requested layout follows the general evidence
   protocol. Built-in report instructions retain their existing position.
@@ -444,7 +447,9 @@ Common changes across the path:
   near-term need for planner time. Metadata edits and the mere presence of a
   deadline, estimate, or priority do not establish that need.
   The tool contrasts a metadata-only request with an explicit reservation
-  request to make that boundary concrete.
+  request to make that boundary concrete. Investigation and checklist follow-up
+  alone stay on the task without timing urgency or a reservation request; the
+  model must not invent a deadline or time window to justify planner attention.
 - A first report or a report omitted after a successful material mutation gets
   a forced report call. An existing report with only label/language housekeeping
   is preserved, as is a true no-op. The same gate controls retry, report-editor
