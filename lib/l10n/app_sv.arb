@@ -1592,6 +1592,10 @@
   "checkInRecordingNotSavedBody": "Inspelningen kunde inte sparas. Försök igen eller skriv avstämningen.",
   "checkInRecordingNotSavedTitle": "Inspelningen kunde inte sparas",
   "checkInReRecordButton": "Spela in igen",
+  "checkInReRecordReplaceMessage": "Ersätta dina redigerade ord med en ny inspelning?",
+  "@checkInReRecordReplaceMessage": {
+    "description": "Confirmation before Re-record when the transcript has been edited since it landed."
+  },
   "checkInSaveBlockedEmpty": "Lägg till några ord för att spara",
   "checkInSaveBlockedRecording": "Stoppa inspelningen för att spara",
   "checkInSaveBlockedRetry": "Skriv eller försök igen för att spara",
@@ -1621,6 +1625,10 @@
   "checkInTimeChipSemantics": "Start: {time}. Ändra",
   "checkInTopicsHint": "Kommaseparerade, t.ex. jobb, resor",
   "checkInTopicsLabel": "Ämnen",
+  "checkInTranscribingEta": "oftast under en minut",
+  "@checkInTranscribingEta": {
+    "description": "The last, first-shed tier of the transcribing caption: a time expectation for the wait."
+  },
   "checkInTranscribingLabel": "Transkriberar…",
   "checkInTranscriptAdded": "Transkription tillagd",
   "checkInTranscriptionUnavailableTitle": "Ingen transkriptionsmodell inställd",

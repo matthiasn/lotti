@@ -1591,6 +1591,10 @@
   "checkInRecordingNotSavedBody": "A gravação não pôde ser guardada. Tenta de novo ou escreve o check-in.",
   "checkInRecordingNotSavedTitle": "Não foi possível guardar a gravação",
   "checkInReRecordButton": "Gravar de novo",
+  "checkInReRecordReplaceMessage": "Substituir as tuas palavras editadas por uma nova gravação?",
+  "@checkInReRecordReplaceMessage": {
+    "description": "Confirmation before Re-record when the transcript has been edited since it landed."
+  },
   "checkInSaveBlockedEmpty": "Acrescenta algumas palavras para guardar",
   "checkInSaveBlockedRecording": "Para a gravação para guardar",
   "checkInSaveBlockedRetry": "Escreve ou tenta de novo para guardar",
@@ -1620,6 +1624,10 @@
   "checkInTimeChipSemantics": "Início: {time}. Alterar",
   "checkInTopicsHint": "Separados por vírgulas, ex.: trabalho, viagens",
   "checkInTopicsLabel": "Assuntos",
+  "checkInTranscribingEta": "normalmente menos de um minuto",
+  "@checkInTranscribingEta": {
+    "description": "The last, first-shed tier of the transcribing caption: a time expectation for the wait."
+  },
   "checkInTranscribingLabel": "Transcrevendo…",
   "checkInTranscriptAdded": "Transcrição adicionada",
   "checkInTranscriptionUnavailableTitle": "Sem modelo de transcrição configurado",

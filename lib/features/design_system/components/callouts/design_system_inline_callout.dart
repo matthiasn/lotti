@@ -24,6 +24,7 @@ class DesignSystemInlineCallout extends StatelessWidget {
     this.trailing,
     this.title,
     this.actions = const [],
+    this.announce = false,
   });
 
   /// Leading glyph, drawn in the callout's tone.
@@ -47,6 +48,11 @@ class DesignSystemInlineCallout extends StatelessWidget {
   /// Buttons under the text, on the trailing edge — quietest first, so the
   /// filled one sits on the rail every primary action shares.
   final List<Widget> actions;
+
+  /// Whether the title and message are one live node: a callout that
+  /// arrives to report a failure announces itself once, whole, rather than
+  /// waiting for a swipe to find it.
+  final bool announce;
 
   @override
   Widget build(BuildContext context) {
@@ -76,18 +82,32 @@ class DesignSystemInlineCallout extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (title case final title?) ...[
-                    Text(
-                      title,
-                      style: tokens.typography.styles.subtitle.subtitle1
-                          .copyWith(color: tokens.colors.text.highEmphasis),
-                    ),
-                    SizedBox(height: tokens.spacing.step2),
-                  ],
-                  Text(
-                    text,
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: tokens.colors.text.highEmphasis,
+                  MergeSemantics(
+                    child: Semantics(
+                      liveRegion: announce,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (title case final title?) ...[
+                            Text(
+                              title,
+                              style: tokens.typography.styles.subtitle.subtitle1
+                                  .copyWith(
+                                    color: tokens.colors.text.highEmphasis,
+                                  ),
+                            ),
+                            SizedBox(height: tokens.spacing.step2),
+                          ],
+                          Text(
+                            text,
+                            style: tokens.typography.styles.body.bodySmall
+                                .copyWith(
+                                  color: tokens.colors.text.highEmphasis,
+                                ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   if (actions.isNotEmpty) ...[

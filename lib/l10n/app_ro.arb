@@ -1414,6 +1414,10 @@
   "checkInRecordingNotSavedBody": "Înregistrarea nu a putut fi salvată. Încercați din nou sau scrieți check-in-ul.",
   "checkInRecordingNotSavedTitle": "Înregistrarea nu a putut fi salvată",
   "checkInReRecordButton": "Reînregistrați",
+  "checkInReRecordReplaceMessage": "Înlocuiți cuvintele editate cu o înregistrare nouă?",
+  "@checkInReRecordReplaceMessage": {
+    "description": "Confirmation before Re-record when the transcript has been edited since it landed."
+  },
   "checkInSaveBlockedEmpty": "Adăugați câteva cuvinte pentru a salva",
   "checkInSaveBlockedRecording": "Opriți înregistrarea pentru a salva",
   "checkInSaveBlockedRetry": "Scrieți sau reîncercați pentru a salva",
@@ -1443,6 +1447,10 @@
   "checkInTimeChipSemantics": "Început: {time}. Schimbați",
   "checkInTopicsHint": "Separate prin virgulă, de ex. muncă, călătorii",
   "checkInTopicsLabel": "Subiecte",
+  "checkInTranscribingEta": "de obicei sub un minut",
+  "@checkInTranscribingEta": {
+    "description": "The last, first-shed tier of the transcribing caption: a time expectation for the wait."
+  },
   "checkInTranscribingLabel": "Se transcrie…",
   "checkInTranscriptAdded": "Transcriere adăugată",
   "checkInTranscriptionUnavailableTitle": "Niciun model de transcriere configurat",

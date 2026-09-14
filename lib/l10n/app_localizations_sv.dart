@@ -3247,6 +3247,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInReRecordButton => 'Spela in igen';
 
   @override
+  String get checkInReRecordReplaceMessage =>
+      'Ersätta dina redigerade ord med en ny inspelning?';
+
+  @override
   String get checkInSaveBlockedEmpty => 'Lägg till några ord för att spara';
 
   @override
@@ -3339,6 +3343,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get checkInTopicsLabel => 'Ämnen';
+
+  @override
+  String get checkInTranscribingEta => 'oftast under en minut';
 
   @override
   String get checkInTranscribingLabel => 'Transkriberar…';

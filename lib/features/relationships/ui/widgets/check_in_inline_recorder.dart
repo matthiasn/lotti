@@ -235,15 +235,15 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
         Wrap(
           alignment: WrapAlignment.center,
           crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: tokens.spacing.step4,
+          spacing: tokens.spacing.step3,
           runSpacing: tokens.spacing.step3,
           children: [
-            // Destructive ink, like the edit sheet's delete: the accent is
-            // for the way forward, never for throwing a take away.
+            // Quiet, furthest from Stop: red on this surface is the live dot
+            // alone, and the accent is for the way forward.
             DesignSystemButton(
               key: const ValueKey('check-in-recorder-discard'),
               label: messages.checkInDiscardRecording,
-              variant: DesignSystemButtonVariant.dangerTertiary,
+              variant: DesignSystemButtonVariant.quiet,
               size: DesignSystemButtonSize.medium,
               tapTargetSize: MaterialTapTargetSize.padded,
               onPressed: _busy ? null : _discard,

@@ -3277,6 +3277,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get checkInReRecordButton => 'Registra di nuovo';
 
   @override
+  String get checkInReRecordReplaceMessage =>
+      'Sostituire le parole modificate con una nuova registrazione?';
+
+  @override
   String get checkInSaveBlockedEmpty => 'Aggiungi qualche parola per salvare';
 
   @override
@@ -3371,6 +3375,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get checkInTopicsLabel => 'Argomenti';
+
+  @override
+  String get checkInTranscribingEta => 'di solito meno di un minuto';
 
   @override
   String get checkInTranscribingLabel => 'Trascrizione in corso…';

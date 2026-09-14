@@ -3237,6 +3237,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInReRecordButton => 'Optag igen';
 
   @override
+  String get checkInReRecordReplaceMessage =>
+      'Erstat dine redigerede ord med en ny optagelse?';
+
+  @override
   String get checkInSaveBlockedEmpty => 'Tilføj et par ord for at gemme';
 
   @override
@@ -3330,6 +3334,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get checkInTopicsLabel => 'Emner';
+
+  @override
+  String get checkInTranscribingEta => 'som regel under et minut';
 
   @override
   String get checkInTranscribingLabel => 'Transskriberer…';

@@ -272,6 +272,7 @@ Future<CheckInEntry?> showCheckInEditSheet({
   context: context,
   relationshipId: checkIn.data.relationshipId,
   title: context.messages.checkInEditTitle,
+  editing: true,
   form: (handle, {required dialog}) => CheckInCaptureForm(
     dialog: dialog,
     relationshipId: checkIn.data.relationshipId,
@@ -289,6 +290,7 @@ Future<CheckInEntry?> _showComposer({
     required bool dialog,
   })
   form,
+  bool editing = false,
 }) async {
   final handle = CheckInFormHandle();
   final tokens = context.designTokens;
@@ -324,6 +326,7 @@ Future<CheckInEntry?> _showComposer({
         handle: handle,
         title: title,
         titleLines: titleLines,
+        editing: editing,
       ),
       padding: _formPadding(context),
       stickyActionBarBuilder: (_) =>
@@ -395,10 +398,14 @@ class CheckInStickyActions extends StatelessWidget {
         _line(tokens.typography.styles.subtitle.subtitle1, scaler) +
         tokens.spacing.step4 * 2;
     final actions = stacked ? button * 2 + tokens.spacing.step3 : button;
-    final reason = reasonLineHeight(tokens, scaler);
+    final reason = reasonLineHeight(tokens, scaler) * reasonLines(scaler);
     final reasonRow = dialog && !stacked ? 0 : reason + tokens.spacing.step3;
     return tokens.spacing.step5 * 2 + actions + reasonRow;
   }
+
+  /// Lines the reason may take: one, or two above the large-text bar.
+  static int reasonLines(TextScaler scaler) =>
+      scaler.scale(1) > TextScales.large ? 2 : 1;
 
   /// The reason slot's fixed height: one caption line as the text engine
   /// lays it out. Fixed, because an empty line and a worded one can differ
@@ -515,15 +522,16 @@ class CheckInStickyActions extends StatelessWidget {
           // the header speaks for the recorder and the transcript wait.
           final reasonText = Semantics(
             liveRegion: handle.block == CheckInSaveBlock.emptyNarrative,
+            // Two lines above the large-text bar, where a stacked bar has
+            // the room and a one-line reason would lose its end.
             child: SizedBox(
-              height: reasonLineHeight(
-                tokens,
-                MediaQuery.textScalerOf(context),
-              ),
+              height:
+                  reasonLineHeight(tokens, MediaQuery.textScalerOf(context)) *
+                  reasonLines(MediaQuery.textScalerOf(context)),
               child: Text(
                 reason ?? '',
                 key: const ValueKey('check-in-save-reason'),
-                maxLines: 1,
+                maxLines: reasonLines(MediaQuery.textScalerOf(context)),
                 overflow: TextOverflow.ellipsis,
                 style: reasonStyle,
               ),
@@ -1040,12 +1048,19 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     return ModalUtils.showSinglePageModal<TimeOfDay>(
       context: context,
       title: context.messages.checkInStartedLabel,
-      builder: (modalContext) => DesignSystemTimeWheel(
-        key: const ValueKey('check-in-time-picker'),
-        initialDateTime: _interactionTime,
-        use24hFormat: MediaQuery.alwaysUse24HourFormatOf(modalContext),
-        semanticsLabel: modalContext.messages.checkInStartedLabel,
-        onDateTimeChanged: (time) => chosen = TimeOfDay.fromDateTime(time),
+      // A step of air above and below, so the wheel's outer rows are not
+      // sliced by the sheet's top bar and its pinned Done.
+      builder: (modalContext) => Padding(
+        padding: EdgeInsets.symmetric(
+          vertical: modalContext.designTokens.spacing.step4,
+        ),
+        child: DesignSystemTimeWheel(
+          key: const ValueKey('check-in-time-picker'),
+          initialDateTime: _interactionTime,
+          use24hFormat: MediaQuery.alwaysUse24HourFormatOf(modalContext),
+          semanticsLabel: modalContext.messages.checkInStartedLabel,
+          onDateTimeChanged: (time) => chosen = TimeOfDay.fromDateTime(time),
+        ),
       ),
       stickyActionBarBuilder: (modalContext) => DesignSystemModalActionBar(
         glass: true,
@@ -1091,9 +1106,13 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   /// *Re-record* only while the transcript is exactly what landed: once it
   /// has been edited, taking it back out would take the edits with it, and
   /// a button that says one thing and does another is worse than none.
-  bool get _canReRecord => switch (_phase) {
+  bool get _canReRecord => _phase is CheckInSpeechReady;
+
+  /// Whether the field still holds exactly what landed: once edited, taking
+  /// the take back out would take the edits with it, so *Re-record* asks.
+  bool get _transcriptEdited => switch (_phase) {
     CheckInSpeechReady(:final transcript, :final textBefore) =>
-      _narrativeController.text ==
+      _narrativeController.text !=
           mergeCheckInNarrative(existing: textBefore, transcript: transcript),
     _ => false,
   };
@@ -1176,6 +1195,14 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   /// *Re-record*: the recorder returns, and the last transcript comes back
   /// out of the field the moment the new take exists.
   Future<void> _reRecord() async {
+    if (_transcriptEdited) {
+      final confirmed = await showConfirmationModal(
+        context: context,
+        message: context.messages.checkInReRecordReplaceMessage,
+        confirmLabel: context.messages.checkInReRecordButton,
+      );
+      if (!confirmed || !mounted) return;
+    }
     if (_phase case final CheckInSpeechReady ready) {
       _transcriptToReplace = ready;
     }
@@ -1667,24 +1694,29 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
 
           // The design system's own input, so the folded details wear the
           // same chrome as the rest of the sheet.
+          // Every section under More wears the same heading, one level
+          // under the fold trigger, so the inputs read as its children.
+          sectionLabel(messages.checkInTopicsLabel),
           DesignSystemTextInput(
             key: const ValueKey('check-in-topics'),
             controller: _topicsController,
-            label: messages.checkInTopicsLabel,
+            semanticsLabel: messages.checkInTopicsLabel,
             hintText: messages.checkInTopicsHint,
           ),
           SizedBox(height: tokens.spacing.step5),
+          sectionLabel(messages.checkInPayAttentionLabel),
           DesignSystemTextInput(
             key: const ValueKey('check-in-pay-attention'),
             controller: _payAttentionController,
-            label: messages.checkInPayAttentionLabel,
+            semanticsLabel: messages.checkInPayAttentionLabel,
             textCapitalization: TextCapitalization.sentences,
           ),
           SizedBox(height: tokens.spacing.step5),
+          sectionLabel(messages.checkInAvoidLabel),
           DesignSystemTextInput(
             key: const ValueKey('check-in-avoid'),
             controller: _avoidController,
-            label: messages.checkInAvoidLabel,
+            semanticsLabel: messages.checkInAvoidLabel,
             textCapitalization: TextCapitalization.sentences,
           ),
         ],
@@ -1748,7 +1780,7 @@ class _MoreHeader extends StatelessWidget {
             children: [
               Text(
                 messages.checkInMoreSection,
-                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                style: tokens.typography.styles.subtitle.subtitle1.copyWith(
                   color: tokens.colors.text.highEmphasis,
                 ),
               ),

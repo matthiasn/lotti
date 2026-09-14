@@ -422,7 +422,12 @@ void main() {
     test('above the large-text bar both layouts stack the two actions and '
         'carry the reason on its own line', () {
       const scaler = TextScaler.linear(1.6);
-      final stacked = button(1.6) * 2 + tokens.spacing.step3 + reason(1.6);
+      // Stacked bars give the reason two lines.
+      final stacked =
+          button(1.6) * 2 +
+          tokens.spacing.step3 +
+          line(tokens.typography.styles.others.caption, 1.6) * 2 +
+          tokens.spacing.step3;
       expect(
         CheckInStickyActions.height(tokens, scaler, dialog: true),
         inset + stacked,
@@ -1051,7 +1056,9 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.text('0:23 of audio saved · Whisper large v3 · via Groq'),
+        find.textContaining(
+          '0:23 of audio saved · Whisper large v3 · via Groq',
+        ),
         findsOneWidget,
       );
       expect(saveReason(tester), 'Waiting for the transcript');
@@ -1108,12 +1115,17 @@ void main() {
       );
       expect(recorder.recordCalls, hasLength(3));
 
-      // Once the text is edited, Re-record is no longer offered: taking the
-      // last take back out would take the edit with it. Add more still
-      // appends, and nothing is stripped.
+      // Once the text is edited, Re-record stays but asks first: taking the
+      // last take back out would take the edit with it. Confirmed, nothing
+      // is stripped from the edited text and the new take appends.
       await type(tester, 'Edited. Typed.\n\nSpoken.\n\nSpoken.');
-      expect(find.byKey(const ValueKey('check-in-re-record')), findsNothing);
-      await tester.tap(find.byKey(const ValueKey('check-in-add-more')));
+      await tester.tap(find.byKey(const ValueKey('check-in-re-record')));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Replace your edited words with a new take?'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Re-record').last);
       await tester.pumpAndSettle();
       await stopRecording(tester);
       expect(
@@ -1161,11 +1173,12 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('check-in-open-settings')));
       await tester.pump();
       expect(openedSettings, hasLength(1));
-      // The card's Try again is the one recorder door; the field's Dictate
-      // steps aside rather than sit there dead.
-      expect(dictate, findsNothing);
+      // The field's own Dictate is the retry; the card carries typing and
+      // the settings door, like every other card carries two.
+      expect(dictate, findsOneWidget);
+      expect(find.byKey(const ValueKey('check-in-retry-audio')), findsNothing);
       expect(
-        find.byKey(const ValueKey('check-in-retry-audio')),
+        find.byKey(const ValueKey('check-in-type-instead-denied')),
         findsOneWidget,
       );
 
@@ -1261,7 +1274,7 @@ void main() {
       recorder.tick(progress: const Duration(seconds: 5));
       await tester.pump();
       await stopRecording(tester);
-      expect(find.text('0:05 of audio saved'), findsOneWidget);
+      expect(find.textContaining('0:05 of audio saved'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
       gate.complete('Landed anyway.');
@@ -1499,7 +1512,7 @@ void main() {
       recorder.tick(progress: const Duration(seconds: 5));
       await tester.pump();
       await stopRecording(tester);
-      expect(find.text('0:05 of audio saved'), findsOneWidget);
+      expect(find.textContaining('0:05 of audio saved'), findsOneWidget);
       gate.complete('x');
       await tester.pumpAndSettle();
     });

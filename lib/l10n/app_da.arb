@@ -1592,6 +1592,10 @@
   "checkInRecordingNotSavedBody": "Optagelsen kunne ikke gemmes. Prøv igen, eller skriv check-in’et.",
   "checkInRecordingNotSavedTitle": "Optagelsen kunne ikke gemmes",
   "checkInReRecordButton": "Optag igen",
+  "checkInReRecordReplaceMessage": "Erstat dine redigerede ord med en ny optagelse?",
+  "@checkInReRecordReplaceMessage": {
+    "description": "Confirmation before Re-record when the transcript has been edited since it landed."
+  },
   "checkInSaveBlockedEmpty": "Tilføj et par ord for at gemme",
   "checkInSaveBlockedRecording": "Stop optagelsen for at gemme",
   "checkInSaveBlockedRetry": "Skriv eller prøv igen for at gemme",
@@ -1621,6 +1625,10 @@
   "checkInTimeChipSemantics": "Start: {time}. Skift",
   "checkInTopicsHint": "Kommasepareret, f.eks. arbejde, rejser",
   "checkInTopicsLabel": "Emner",
+  "checkInTranscribingEta": "som regel under et minut",
+  "@checkInTranscribingEta": {
+    "description": "The last, first-shed tier of the transcribing caption: a time expectation for the wait."
+  },
   "checkInTranscribingLabel": "Transskriberer…",
   "checkInTranscriptAdded": "Transskription tilføjet",
   "checkInTranscriptionUnavailableTitle": "Ingen transskriptionsmodel sat op",

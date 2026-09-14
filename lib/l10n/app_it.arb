@@ -1592,6 +1592,10 @@
   "checkInRecordingNotSavedBody": "La registrazione non è stata salvata. Riprova o scrivi il check-in.",
   "checkInRecordingNotSavedTitle": "Impossibile salvare la registrazione",
   "checkInReRecordButton": "Registra di nuovo",
+  "checkInReRecordReplaceMessage": "Sostituire le parole modificate con una nuova registrazione?",
+  "@checkInReRecordReplaceMessage": {
+    "description": "Confirmation before Re-record when the transcript has been edited since it landed."
+  },
   "checkInSaveBlockedEmpty": "Aggiungi qualche parola per salvare",
   "checkInSaveBlockedRecording": "Ferma la registrazione per salvare",
   "checkInSaveBlockedRetry": "Scrivi o riprova per salvare",
@@ -1621,6 +1625,10 @@
   "checkInTimeChipSemantics": "Inizio: {time}. Cambia",
   "checkInTopicsHint": "Separati da virgole, ad es. lavoro, viaggi",
   "checkInTopicsLabel": "Argomenti",
+  "checkInTranscribingEta": "di solito meno di un minuto",
+  "@checkInTranscribingEta": {
+    "description": "The last, first-shed tier of the transcribing caption: a time expectation for the wait."
+  },
   "checkInTranscribingLabel": "Trascrizione in corso…",
   "checkInTranscriptAdded": "Trascrizione aggiunta",
   "checkInTranscriptionUnavailableTitle": "Nessun modello di trascrizione configurato",

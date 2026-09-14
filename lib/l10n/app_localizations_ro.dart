@@ -3292,6 +3292,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkInReRecordButton => 'Reînregistrați';
 
   @override
+  String get checkInReRecordReplaceMessage =>
+      'Înlocuiți cuvintele editate cu o înregistrare nouă?';
+
+  @override
   String get checkInSaveBlockedEmpty =>
       'Adăugați câteva cuvinte pentru a salva';
 
@@ -3389,6 +3393,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get checkInTopicsLabel => 'Subiecte';
+
+  @override
+  String get checkInTranscribingEta => 'de obicei sub un minut';
 
   @override
   String get checkInTranscribingLabel => 'Se transcrie…';

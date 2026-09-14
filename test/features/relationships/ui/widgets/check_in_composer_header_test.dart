@@ -1,3 +1,4 @@
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -67,6 +68,7 @@ void main() {
     WidgetTester tester, {
     TextScaler textScaler = TextScaler.noScaling,
     double width = 390,
+    bool editing = false,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -77,6 +79,7 @@ void main() {
                 SizedBox(
                   width: width,
                   child: CheckInComposerHeader(
+                    editing: editing,
                     relationshipId: testRelationship.meta.id,
                     handle: handle,
                     title: 'Log check-in',
@@ -165,7 +168,7 @@ void main() {
     publish(CheckInComposerStatus.transcriptMissing);
     await tester.pump();
     expect(status(tester), 'Transcript not received');
-    expect(statusColor(tester), tokens.colors.alert.warning.ink);
+    expect(statusColor(tester), tokens.colors.text.mediumEmphasis);
 
     publish(CheckInComposerStatus.transcriptionUnavailable);
     await tester.pump();
@@ -174,7 +177,7 @@ void main() {
     publish(CheckInComposerStatus.microphoneDenied);
     await tester.pump();
     expect(status(tester), 'Microphone unavailable');
-    expect(statusColor(tester), tokens.colors.alert.error.ink);
+    expect(statusColor(tester), tokens.colors.text.mediumEmphasis);
 
     publish(CheckInComposerStatus.recordingFailed);
     await tester.pump();
@@ -187,7 +190,7 @@ void main() {
     publish(CheckInComposerStatus.recorderBusy);
     await tester.pump();
     expect(status(tester), 'Recorder busy');
-    expect(statusColor(tester), tokens.colors.alert.warning.ink);
+    expect(statusColor(tester), tokens.colors.text.mediumEmphasis);
 
     publish(CheckInComposerStatus.idle);
     await tester.pump();
@@ -209,6 +212,24 @@ void main() {
           .semanticsLabel,
       'with Anna · last spoke Sat 1 Aug',
     );
+  });
+
+  testWidgets('editing an existing check-in, the ladder starts at the name: '
+      'the chip row is the one source of its date', (tester) async {
+    await pump(tester, editing: true);
+    expect(status(tester), 'with Anna');
+  });
+
+  testWidgets('the status line is live for news, not for the resting '
+      'subtitle', (tester) async {
+    await pump(tester);
+    SemanticsNode node() => tester.getSemantics(
+      find.byKey(const ValueKey('check-in-composer-status')),
+    );
+    expect(node().flagsCollection.isLiveRegion, isFalse);
+    publish(CheckInComposerStatus.recording);
+    await tester.pump();
+    expect(node().flagsCollection.isLiveRegion, isTrue);
   });
 
   testWidgets('on a narrow header the status keeps the name, not the date — '

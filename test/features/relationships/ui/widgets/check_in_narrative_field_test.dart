@@ -162,7 +162,9 @@ void main() {
     );
     expect(find.byKey(const ValueKey('check-in-dictate')), findsNothing);
     // The accent, not the error tone: a live take is not an error.
-    expect(borderColor(tester), tokens(tester).colors.interactive.enabled);
+    // The accent hairline means focus only; the dot, the waveform and Stop
+    // say live.
+    expect(borderColor(tester), tokens(tester).colors.decorative.level01);
   });
 
   group('transcribing', () {
@@ -192,11 +194,15 @@ void main() {
       expect(
         saved.data,
         anyOf(
+          '0:23 of audio saved · Whisper · via Groq · usually under a minute',
           '0:23 of audio saved · Whisper · via Groq',
           '0:23 of audio saved',
         ),
       );
-      expect(saved.semanticsLabel, '0:23 of audio saved · Whisper · via Groq');
+      expect(
+        saved.semanticsLabel,
+        '0:23 of audio saved · Whisper · via Groq · usually under a minute',
+      );
       expect(find.byKey(const ValueKey('check-in-narrative')), findsNothing);
       await tester.tap(find.byKey(const ValueKey('check-in-type-instead')));
       expect(calls, ['type-instead']);
@@ -357,11 +363,11 @@ void main() {
         DesignSystemButtonVariant.secondary,
       );
       await tester.tap(find.byKey(const ValueKey('check-in-open-settings')));
-      await tester.tap(find.byKey(const ValueKey('check-in-retry-audio')));
+      // Two actions like every card; the field's own Dictate beneath is the
+      // retry.
+      expect(find.byKey(const ValueKey('check-in-retry-audio')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('check-in-dictate')));
       expect(calls, ['dismiss', 'open-settings', 'dictate']);
-      // The card's Try again is the way to record again: the field does not
-      // offer a second, dead Dictate beside it.
-      expect(find.byKey(const ValueKey('check-in-dictate')), findsNothing);
       // Nor a "0 words" count under a card that already says nothing was
       // recorded.
       expect(find.byKey(const ValueKey('check-in-word-count')), findsNothing);

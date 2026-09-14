@@ -148,6 +148,31 @@ void main() {
     });
   });
 
+  group('TldrHeader semantics', () {
+    testWidgets('the badge and title are one labelled node; the subtitle '
+        'speaks for itself, live region included', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          TldrHeader(
+            title: 'Briefing',
+            agentName: 'Writing the briefing…',
+            subtitle: Semantics(
+              liveRegion: true,
+              child: const Text('Writing the briefing…'),
+            ),
+            onAgentTap: () {},
+          ),
+        ),
+      );
+      // Excluded from the header's own node, the subtitle would be silent;
+      // here it is findable — and live — on its own.
+      expect(find.bySemanticsLabel('Writing the briefing…'), findsOneWidget);
+      final node = tester.getSemantics(find.text('Writing the briefing…'));
+      expect(node.flagsCollection.isLiveRegion, isTrue);
+      expect(find.bySemanticsLabel(RegExp('^Briefing')), findsOneWidget);
+    });
+  });
+
   group('TldrBody.bodyStyle', () {
     testWidgets('reads at the compact summary size unless the host sets its '
         'own tier', (tester) async {

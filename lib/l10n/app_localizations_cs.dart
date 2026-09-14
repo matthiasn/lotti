@@ -3279,6 +3279,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInReRecordButton => 'Nahrát znovu';
 
   @override
+  String get checkInReRecordReplaceMessage =>
+      'Nahradit upravená slova novou nahrávkou?';
+
+  @override
   String get checkInSaveBlockedEmpty => 'Napiš pár slov, aby šlo uložit';
 
   @override
@@ -3372,6 +3376,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get checkInTopicsLabel => 'Témata';
+
+  @override
+  String get checkInTranscribingEta => 'obvykle do minuty';
 
   @override
   String get checkInTranscribingLabel => 'Přepisuje se…';

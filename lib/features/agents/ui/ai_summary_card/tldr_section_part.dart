@@ -109,10 +109,15 @@ class TldrHeader extends StatelessWidget {
             Expanded(
               child: Align(
                 alignment: AlignmentDirectional.centerStart,
+                // One node for the badge + title (their visible text may be
+                // tiered or truncated), with the subtitle left to speak for
+                // itself: it is the card's status line, and its live region
+                // must survive here or the running → current change is
+                // never announced.
                 child: Semantics(
                   button: onAgentTap != null,
                   label: hasName ? '$cardTitle. $displayName' : cardTitle,
-                  excludeSemantics: true,
+                  explicitChildNodes: true,
                   // No hover fill: a rectangle washing over the badge + title
                   // block made the card's identity read as a phantom button.
                   // Hover/focus/press answers on the block's own ink — the
@@ -147,12 +152,14 @@ class TldrHeader extends StatelessWidget {
                                     : ai.border,
                               ),
                             ),
-                            child: Icon(
-                              icon ?? LottiIcons.aiSpark,
-                              size: IconSizes.l,
-                              color: plain
-                                  ? tokens.colors.text.mediumEmphasis
-                                  : ai.accent,
+                            child: ExcludeSemantics(
+                              child: Icon(
+                                icon ?? LottiIcons.aiSpark,
+                                size: IconSizes.l,
+                                color: plain
+                                    ? tokens.colors.text.mediumEmphasis
+                                    : ai.accent,
+                              ),
                             ),
                           ),
                           SizedBox(width: tokens.spacing.step3),
@@ -165,32 +172,36 @@ class TldrHeader extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                _HeaderTitle(
-                                  text: cardTitle,
-                                  style: tokens
-                                      .typography
-                                      .styles
-                                      .subtitle
-                                      .subtitle1
-                                      .copyWith(color: ai.titleText),
+                                ExcludeSemantics(
+                                  child: _HeaderTitle(
+                                    text: cardTitle,
+                                    style: tokens
+                                        .typography
+                                        .styles
+                                        .subtitle
+                                        .subtitle1
+                                        .copyWith(color: ai.titleText),
+                                  ),
                                 ),
                                 if (subtitle case final subtitle?)
                                   subtitle
                                 else if (hasName)
-                                  Text(
-                                    displayName,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: tokens
-                                        .typography
-                                        .styles
-                                        .others
-                                        .caption
-                                        .copyWith(
-                                          color: highlighted
-                                              ? ai.bodyText
-                                              : ai.metaText,
-                                        ),
+                                  ExcludeSemantics(
+                                    child: Text(
+                                      displayName,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: tokens
+                                          .typography
+                                          .styles
+                                          .others
+                                          .caption
+                                          .copyWith(
+                                            color: highlighted
+                                                ? ai.bodyText
+                                                : ai.metaText,
+                                          ),
+                                    ),
                                   ),
                               ],
                             ),

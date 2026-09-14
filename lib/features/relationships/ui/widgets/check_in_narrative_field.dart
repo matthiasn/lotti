@@ -72,17 +72,12 @@ class CheckInNarrativeField extends StatelessWidget {
     return ListenableBuilder(
       listenable: focusNode,
       builder: (context, _) {
-        // The recorder wears the accent: a live take is not an error, and
-        // red on the field stays reserved for one. A landed transcript is
-        // ordinary text again — the caption row says it landed, the filled
-        // Save says what is next — so it rests like any other field.
-        final border = switch (phase) {
-          CheckInSpeechRecording() => tokens.colors.interactive.enabled,
-          _ =>
-            focusNode.hasFocus
-                ? tokens.colors.interactive.enabled
-                : tokens.colors.decorative.level01,
-        };
+        // The accent hairline means one thing on the field: keyboard focus,
+        // the app-wide convention. The red dot, the waveform and the filled
+        // Stop already say "live"; a landed transcript is ordinary text.
+        final border = focusNode.hasFocus
+            ? tokens.colors.interactive.enabled
+            : tokens.colors.decorative.level01;
         return AnimatedContainer(
           key: const ValueKey('check-in-narrative-field'),
           duration: MotionDurations.short4,
@@ -152,8 +147,10 @@ class CheckInNarrativeField extends StatelessWidget {
   }) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    // The medium tier, like the More row and the footer reason: low
+    // emphasis is for placeholders only.
     final caption = tokens.typography.styles.others.caption.copyWith(
-      color: tokens.colors.text.lowEmphasis,
+      color: tokens.colors.text.mediumEmphasis,
     );
     // *Type instead* on a missing transcript folds the card into one
     // caption row that keeps the retry.
@@ -183,10 +180,7 @@ class CheckInNarrativeField extends StatelessWidget {
       for (var n = parts.length; n >= 1; n--) parts.take(n).join(' · '),
     ];
     final meta = ladder.isEmpty ? '' : ladder.first;
-    // What landed reads at the medium tier; a bare count or hint stays low.
-    final captionStyle = status == null
-        ? caption
-        : caption.copyWith(color: tokens.colors.text.mediumEmphasis);
+    final captionStyle = caption;
     final actions = <Widget>[
       if (ready) ...[
         // Only while the transcript is exactly what landed: once it is
@@ -267,7 +261,7 @@ class CheckInNarrativeField extends StatelessWidget {
               ? messages.checkInOrTypeHint
               : messages.checkInNarrativeHint,
           // "One line is enough": the box says so by not asking for five.
-          minLines: underCard ? 2 : 3,
+          minLines: underCard ? 1 : 3,
         ),
         if (meta.isNotEmpty || actions.isNotEmpty)
           SizedBox(height: tokens.spacing.step4),
@@ -320,8 +314,8 @@ class CheckInNarrativeField extends StatelessWidget {
   /// Whether the field keeps its own *Dictate* under a failure card of
   /// [kind]: not when the card's own retry is the way to record again.
   static bool _dictatesUnder(CheckInSpeechFailureKind kind) => switch (kind) {
-    CheckInSpeechFailureKind.transcriptMissing ||
-    CheckInSpeechFailureKind.microphoneDenied => false,
+    CheckInSpeechFailureKind.transcriptMissing => false,
+    CheckInSpeechFailureKind.microphoneDenied ||
     CheckInSpeechFailureKind.recordingFailed ||
     CheckInSpeechFailureKind.recordingNotSaved ||
     CheckInSpeechFailureKind.recorderBusy ||
@@ -363,6 +357,11 @@ class CheckInNarrativeField extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final clock = checkInClockLabel(length);
+    final saved = messages.checkInAudioSaved(clock);
+    final savedWithRoute = route == null
+        ? saved
+        : messages.checkInAudioSavedRoute(clock, route);
+    final eta = messages.checkInTranscribingEta;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -393,10 +392,12 @@ class CheckInNarrativeField extends StatelessWidget {
               SizedBox(width: tokens.spacing.step2),
               Flexible(
                 child: DsTieredText(
+                  // The time expectation is the first tier to go, the
+                  // route the second; the saved length is the fact.
                   tiers: [
-                    if (route != null)
-                      messages.checkInAudioSavedRoute(clock, route),
-                    messages.checkInAudioSaved(clock),
+                    if (route != null) '$savedWithRoute · $eta',
+                    if (route != null) savedWithRoute else '$saved · $eta',
+                    saved,
                   ],
                   style: tokens.typography.styles.others.caption.copyWith(
                     color: tokens.colors.text.mediumEmphasis,
@@ -407,10 +408,11 @@ class CheckInNarrativeField extends StatelessWidget {
             ],
           ),
           actions: [
+            // Quiet: the wait is the thing to read, not the exit.
             DesignSystemButton(
               key: const ValueKey('check-in-type-instead'),
               label: messages.checkInTypeInstead,
-              variant: DesignSystemButtonVariant.tertiary,
+              variant: DesignSystemButtonVariant.quiet,
               size: DesignSystemButtonSize.medium,
               tapTargetSize: MaterialTapTargetSize.padded,
               onPressed: onTypeInstead,
@@ -534,12 +536,13 @@ class _FailureCard extends StatelessWidget {
           icon: LottiIcons.settings,
           onPressed: onOpenSettings,
         ),
-        // The body says "then try again", so the card offers exactly that;
-        // typing a word instead lets the card go on its own.
+        // Typing is the recovery that always works, so it is a button; the
+        // field's own Dictate beneath is the retry, so the card carries the
+        // same two actions as every other.
         (
-          key: const ValueKey('check-in-retry-audio'),
-          label: messages.relationshipAgentTryAgain,
-          onPressed: onDictate,
+          key: const ValueKey('check-in-type-instead-denied'),
+          label: messages.checkInTypeInstead,
+          onPressed: onTypeInstead,
         ),
       ),
       CheckInSpeechFailureKind.recordingFailed => (
@@ -636,20 +639,10 @@ class _FailureCard extends StatelessWidget {
       tone: tone,
       title: title,
       text: body,
+      announce: true,
       // The recommended action is the secondary pill: the alert tone is the
       // card's one colour, and the filled accent stays Save's alone.
       actions: [
-        // Typing is the recovery that always works, so the refused
-        // microphone offers it as a button rather than as placeholder ink.
-        if (failure.kind == CheckInSpeechFailureKind.microphoneDenied)
-          DesignSystemButton(
-            key: const ValueKey('check-in-type-instead-denied'),
-            label: messages.checkInTypeInstead,
-            variant: DesignSystemButtonVariant.tertiary,
-            size: DesignSystemButtonSize.medium,
-            tapTargetSize: MaterialTapTargetSize.padded,
-            onPressed: onTypeInstead,
-          ),
         DesignSystemButton(
           key: secondary.key,
           label: secondary.label,

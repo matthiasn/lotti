@@ -66,7 +66,8 @@ Color relationshipHealthBandColor(
   RelationshipHealthBand band,
 ) => switch (band) {
   RelationshipHealthBand.thriving => tokens.colors.alert.success.defaultColor,
-  RelationshipHealthBand.steady => tokens.colors.aiCard.accent,
+  // Neutral: the accent means pressable on the same card.
+  RelationshipHealthBand.steady => tokens.colors.text.mediumEmphasis,
   RelationshipHealthBand.needsAttention =>
     tokens.colors.alert.warning.defaultColor,
   RelationshipHealthBand.strained => tokens.colors.alert.error.defaultColor,
@@ -647,10 +648,9 @@ class _AgentCard extends StatelessWidget {
         color: ai.metaText,
       ),
       RelationshipAgentCardState.running => _StatusLine(
-        leading: DesignSystemSpinner(
+        leading: const DesignSystemSpinner(
           style: DesignSystemSpinnerStyle.plain,
           size: IconSizes.s,
-          strokeWidth: tokens.spacing.step1,
         ),
         tiers: [messages.relationshipAgentWriting],
         // The spinner says busy; the words stay in the meta ink.
@@ -1141,9 +1141,11 @@ class _AgentCardFooter extends StatelessWidget {
       ),
       // A step more above than below: the action row sits off the divider,
       // and the meta rows close the card without a matching band.
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.cardPadding,
-        vertical: tokens.spacing.step3,
+      padding: EdgeInsets.fromLTRB(
+        tokens.spacing.cardPadding,
+        tokens.spacing.step4,
+        tokens.spacing.cardPadding,
+        tokens.spacing.step3,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

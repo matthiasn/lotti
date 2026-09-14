@@ -3250,6 +3250,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get checkInReRecordButton => 'Opnieuw opnemen';
 
   @override
+  String get checkInReRecordReplaceMessage =>
+      'Je bewerkte woorden vervangen door een nieuwe opname?';
+
+  @override
   String get checkInSaveBlockedEmpty =>
       'Voeg een paar woorden toe om op te slaan';
 
@@ -3343,6 +3347,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get checkInTopicsLabel => 'Onderwerpen';
+
+  @override
+  String get checkInTranscribingEta => 'meestal binnen een minuut';
 
   @override
   String get checkInTranscribingLabel => 'Bezig met transcriberen…';

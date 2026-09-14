@@ -1414,6 +1414,10 @@
   "checkInRecordingNotSavedBody": "Die Aufnahme konnte nicht gespeichert werden. Versuch es erneut oder tippe den Check-in ein.",
   "checkInRecordingNotSavedTitle": "Aufnahme konnte nicht gespeichert werden",
   "checkInReRecordButton": "Neu aufnehmen",
+  "checkInReRecordReplaceMessage": "Deine bearbeiteten Worte durch eine neue Aufnahme ersetzen?",
+  "@checkInReRecordReplaceMessage": {
+    "description": "Confirmation before Re-record when the transcript has been edited since it landed."
+  },
   "checkInSaveBlockedEmpty": "Ein paar Worte genügen zum Speichern",
   "checkInSaveBlockedRecording": "Zum Speichern Aufnahme stoppen",
   "checkInSaveBlockedRetry": "Tippen oder erneut versuchen, um zu speichern",
@@ -1443,6 +1447,10 @@
   "checkInTimeChipSemantics": "Beginn: {time}. Ändern",
   "checkInTopicsHint": "Kommagetrennt, z. B. Arbeit, Reisen",
   "checkInTopicsLabel": "Themen",
+  "checkInTranscribingEta": "normalerweise unter einer Minute",
+  "@checkInTranscribingEta": {
+    "description": "The last, first-shed tier of the transcribing caption: a time expectation for the wait."
+  },
   "checkInTranscribingLabel": "Wird transkribiert…",
   "checkInTranscriptAdded": "Transkript eingefügt",
   "checkInTranscriptionUnavailableTitle": "Kein Transkriptionsmodell eingerichtet",
