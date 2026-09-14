@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
+import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
@@ -284,7 +285,14 @@ void main() {
           expect(message, isNot(contains('# My Report')));
           expect(message, isNot(contains('## First Wake')));
           // The closing instruction states the conditional-report contract.
-          expect(message, contains('If the report would materially change'));
+          expect(
+            message,
+            contains(TaskAgentReportPolicy.existingReportContext),
+          );
+          expect(
+            message,
+            endsWith('${TaskAgentReportPolicy.closingInstruction}\n'),
+          );
         },
       );
 
