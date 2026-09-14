@@ -539,6 +539,92 @@ void main() {
       expect(failureLine, findsNothing);
     });
 
+    testWidgets('the freshness word follows the report refresh, not the '
+        'agent-wide running flag — a chat reply must not read Out of date', (
+      tester,
+    ) async {
+      final running = StreamController<bool>.broadcast();
+      addTearDown(running.close);
+      final refreshRunning = StreamController<bool>.broadcast();
+      addTearDown(refreshRunning.close);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const GoalAgentDetailPage(agentId: 'goal-1'),
+          overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(
+                HabitsState.initial(now: DateTime(2026, 8, 11)),
+              ),
+            ),
+            agentIdentityProvider(
+              'goal-1',
+            ).overrideWith((ref) async => goalIdentity),
+            goalReportWakeOutcomeProvider(
+              'goal-1',
+            ).overrideWith((ref) => const Stream<WakeRunCompletion>.empty()),
+            agentIsRunningProvider(
+              'goal-1',
+            ).overrideWith((ref) => running.stream),
+            goalReportWakeInFlightProvider(
+              'goal-1',
+            ).overrideWith((ref) => refreshRunning.stream),
+            goalAgentHealthProvider('goal-1').overrideWith(
+              (ref) async => (
+                trackStatus: GoalTrackStatus.onTrack,
+                attainment: 1.0,
+                reportOneLiner: 'Seven for seven.',
+                pendingProposals: 0,
+                spec: null,
+                direction: null,
+                deficit: null,
+                buffer: null,
+              ),
+            ),
+            selfTargetedPendingChangeSetsProvider(
+              'goal-1',
+            ).overrideWith((ref) async => []),
+            agentMessagesByThreadProvider(
+              'goal-1',
+            ).overrideWith((ref) async => {}),
+            agentReportProvider('goal-1').overrideWith((ref) async => null),
+            agentStateProvider('goal-1').overrideWith((ref) async => null),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      final thinking = find.descendant(
+        of: find.byKey(const ValueKey('taskAgentWakeButton')),
+        matching: find.text('Thinking…'),
+      );
+      expect(find.text('Up to date'), findsOneWidget);
+
+      // An UNRELATED wake — a chat reply, a Phase A subscription tick —
+      // holds the agent lock. The trigger is rightly busy, but the read on
+      // screen is not being replaced, so it must not be declared out of
+      // date. Bounded pumps: the trigger's progress affordance animates.
+      running.add(true);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(thinking, findsOneWidget);
+      expect(find.text('Up to date'), findsOneWidget);
+      expect(find.text('Out of date'), findsNothing);
+
+      // A report refresh: now the read IS being replaced.
+      refreshRunning.add(true);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(thinking, findsOneWidget);
+      expect(find.text('Out of date'), findsOneWidget);
+      expect(find.text('Up to date'), findsNothing);
+
+      // It lands with nothing stale: fresh again, and only now.
+      running.add(false);
+      refreshRunning.add(false);
+      await tester.pumpAndSettle();
+      expect(thinking, findsNothing);
+      expect(find.text('Up to date'), findsOneWidget);
+    });
+
     testWidgets('a timed-out run that publishes LATE clears its own timeout '
         'error — the displayed report outranks the aborted outcome', (
       tester,

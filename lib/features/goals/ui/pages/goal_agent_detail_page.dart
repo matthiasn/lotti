@@ -1599,6 +1599,11 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
                       automationBusy: _automationBusy,
                       inferenceAvailable: true,
                       isRunning: isRefreshing,
+                      // The agent-wide flag keeps the trigger busy while ANY
+                      // run holds the lock — a chat reply, a Phase A tick —
+                      // but only a report refresh replaces the read, so only
+                      // that one may call it out of date.
+                      isRefreshingReport: reportRefreshInFlight,
                       showCountdown: showCountdown,
                       nextWakeAt: nextWakeAt,
                       hasReportContent: hasReadContent,
