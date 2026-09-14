@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,6 +17,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/agents/ui/task_agent_identity_region.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -307,9 +309,18 @@ void main() {
     return launcher;
   }
 
-  String statusText(WidgetTester tester) => tester
-      .widget<Text>(find.byKey(const ValueKey('relationship-agent-status')))
-      .data!;
+  Text statusWidget(WidgetTester tester) => tester.widget<Text>(
+    find.byKey(const ValueKey('relationship-agent-status')),
+  );
+  // A two-ink status renders as rich text; either way, the words.
+  String statusText(WidgetTester tester) {
+    final text = statusWidget(tester);
+    return text.data ?? text.textSpan!.toPlainText();
+  }
+
+  SemanticsNode statusNode(WidgetTester tester) => tester.getSemantics(
+    find.byKey(const ValueKey('relationship-agent-status')),
+  );
   final briefMe = find.byKey(const ValueKey('relationship-brief-me'));
 
   group('relationshipAgentCardStateOf', () {
@@ -453,8 +464,30 @@ void main() {
         reason: 'the header above the card already carries the pills',
       );
       expect(
-        find.textContaining('Mark Pip as important to get a briefing'),
+        find.textContaining('Mark Pip as important to get a chat'),
         findsOneWidget,
+      );
+      // Prose in the prose ink, like the enrolled faces.
+      final tokens = tester
+          .element(find.byType(RelationshipBriefingCard))
+          .designTokens;
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('relationship-agent-body')))
+            .style
+            ?.color,
+        tokens.colors.text.highEmphasis,
+      );
+      // Nothing under the action row: the footer closes symmetric.
+      expect(
+        tester
+            .widget<Container>(
+              find.byKey(const ValueKey('relationship-agent-footer')),
+            )
+            .padding!
+            .resolve(TextDirection.ltr)
+            .bottom,
+        tokens.spacing.step4,
       );
       expect(find.text('Mark important'), findsOneWidget);
       expect(
@@ -901,8 +934,22 @@ void main() {
       );
 
       // A past event in the "as of" grammar: how long ago, not a clock
-      // time that reads as an appointment.
+      // time that reads as an appointment — and the alert ink is the
+      // state's alone: the age reads in the meta ink.
       expect(statusText(tester), 'Last run failed · 19 min ago');
+      final tokens = tester
+          .element(find.byType(RelationshipBriefingCard))
+          .designTokens;
+      final spans = (statusWidget(tester).textSpan! as TextSpan).children!;
+      expect((spans.first as TextSpan).text, 'Last run failed');
+      expect((spans.last as TextSpan).text, ' · 19 min ago');
+      expect(
+        (spans.last as TextSpan).style?.color,
+        tokens.colors.aiCard.metaText,
+      );
+      // Announced as the state, not the age.
+      expect(statusNode(tester).flagsCollection.isLiveRegion, isTrue);
+      expect(statusNode(tester).label, 'Last run failed');
       expect(
         find.textContaining('No model is set up for briefings.'),
         findsOneWidget,
@@ -1064,6 +1111,8 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(statusText(tester), 'Thriving · as of just now');
+        // A resting age is not news: the line is not a live region here.
+        expect(statusNode(tester).flagsCollection.isLiveRegion, isFalse);
 
         // Nobody rebuilds the card; the clock crosses the minute.
         current = now.add(const Duration(seconds: 5));
@@ -1118,6 +1167,28 @@ void main() {
         await tester.pump(const Duration(seconds: 5));
         expect(statusText(tester), 'Last run failed · 1 min ago');
       });
+    });
+
+    testWidgets('the footer keeps a designed gap between its actions and the '
+        'model row, at every text size', (tester) async {
+      for (final scale in [1.0, 1.6]) {
+        await pump(
+          tester,
+          checkIns: onTrackCheckIns,
+          current: report(),
+          textScaler: TextScaler.linear(scale),
+        );
+        final tokens = tester
+            .element(find.byType(RelationshipBriefingCard))
+            .designTokens;
+        final action = tester.getRect(briefMe);
+        final identity = tester.getRect(find.byType(TaskAgentIdentityRegion));
+        expect(
+          identity.top - action.bottom,
+          greaterThanOrEqualTo(tokens.spacing.step3),
+          reason: 'scale $scale: the primary must not touch the model row',
+        );
+      }
     });
 
     testWidgets('the band wears its colour as a dot beside its word, centred '

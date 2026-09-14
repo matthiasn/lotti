@@ -11,6 +11,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -424,6 +425,46 @@ void main() {
   });
 
   group('the composer at rest', () {
+    testWidgets('the folded More row says what is set, not the field names', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      List<String> caption() => tester
+          .widget<DsTieredText>(
+            find.descendant(
+              of: find.byKey(const ValueKey('check-in-more')),
+              matching: find.byType(DsTieredText),
+            ),
+          )
+          .tiers;
+      expect(caption().first, 'Feeling · topics · next time');
+
+      await openMore(tester);
+      await tester.tap(find.byKey(const ValueKey('check-in-sentiment-good')));
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const ValueKey('check-in-topics')),
+        'launch window, krill',
+      );
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(const ValueKey('check-in-more')));
+      await tester.tap(find.byKey(const ValueKey('check-in-more')));
+      await tester.pumpAndSettle();
+      expect(caption().first, 'Good · 2 topics · next time');
+
+      await openMore(tester);
+      await tester.enterText(
+        find.byKey(const ValueKey('check-in-pay-attention')),
+        'the freeze',
+      );
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(const ValueKey('check-in-more')));
+      await tester.tap(find.byKey(const ValueKey('check-in-more')));
+      await tester.pumpAndSettle();
+      expect(caption().first, 'Good · 2 topics · next time noted');
+    });
+
     testWidgets('the narrative leads, the chips follow, More starts folded, '
         'and Save waits for words and says so', (tester) async {
       await tester.pumpWidget(buildForm());
@@ -438,7 +479,10 @@ void main() {
       expect(find.text('Delightful'), findsNothing);
       expect(saveEnabled(tester), isFalse);
       expect(saveReason(tester), 'Add a few words to save');
-      expect(find.text('Ctrl+Enter to save'), findsOneWidget);
+      // The reason is the one save-related line while Save is held: the
+      // shortcut waits for words, and the held button says why it waits.
+      expect(find.text('Ctrl+Enter to save'), findsNothing);
+      expect(tester.getSemantics(save).hint, 'Add a few words to save');
       final barBefore = tester.getRect(save);
 
       await type(tester, 'One line.');
@@ -447,6 +491,7 @@ void main() {
       expect(saveReason(tester), '');
       expect(tester.getRect(save), barBefore);
       expect(find.text('2 words · Ctrl+Enter to save'), findsOneWidget);
+      expect(tester.getSemantics(save).hint, isEmpty);
 
       await openMore(tester);
       expect(find.text('Delightful'), findsOne);
@@ -1911,6 +1956,13 @@ void main() {
       expect(
         tester.widget<DesignSystemButton>(cancel).alignsLabelToLeadingEdge,
         isFalse,
+      );
+      // And the empty field rests two lines tall beside a working keyboard.
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const ValueKey('check-in-narrative')))
+            .minLines,
+        2,
       );
       expect(
         tester.getCenter(reason).dx,

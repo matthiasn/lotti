@@ -561,8 +561,10 @@ class _NotEnrolledCard extends StatelessWidget {
                       data.nickname ?? data.title,
                     ),
               key: const ValueKey('relationship-agent-body'),
+              // Prose in the prose ink, like the six enrolled faces: only
+              // the privacy caption beneath it is metadata.
               style: tokens.typography.styles.body.bodyMedium.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
+                color: tokens.colors.text.highEmphasis,
               ),
             ),
           ),
@@ -674,6 +676,7 @@ class _AgentCard extends StatelessWidget {
         tiers: [messages.relationshipAgentWriting],
         // The spinner says busy; the words stay in the meta ink.
         color: ai.metaText,
+        liveRegion: true,
       ),
       // A past event in the same grammar as "as of": how long ago, not a
       // clock time that reads as an appointment.
@@ -687,6 +690,8 @@ class _AgentCard extends StatelessWidget {
           messages.relationshipAgentFailedPlain,
         ],
         color: tokens.colors.alert.error.ink,
+        metaColor: ai.metaText,
+        liveRegion: true,
       ),
       // The band as a colour as well as a word — a dot in the glyph slot,
       // in the band's own accent, the one status the card said only in text.
@@ -725,6 +730,8 @@ class _AgentCard extends StatelessWidget {
           messages.taskAgentStatusOutOfDate,
         ],
         color: tokens.colors.alert.warning.ink,
+        metaColor: ai.metaText,
+        liveRegion: true,
       ),
       // Unreachable by construction: the card returns the plain
       // _NotEnrolledCard before this widget is ever built.
@@ -1011,7 +1018,17 @@ class _StatusLine extends StatelessWidget {
     this.icon,
     this.leading,
     this.leadingSize = IconSizes.s,
+    this.metaColor,
+    this.liveRegion = false,
   });
+
+  /// The ink for the detail after the state word (`· 20 min ago`): the
+  /// alert colour is the state's alone, and the age is metadata.
+  final Color? metaColor;
+
+  /// Whether a change here is news a reader must hear — the card going
+  /// running → current or → failed — rather than an age ticking over.
+  final bool liveRegion;
 
   /// The state's wordings, widest first: the line sheds a date or a time
   /// before it wraps, and a phone beside a pill is narrow.
@@ -1044,10 +1061,11 @@ class _StatusLine extends StatelessWidget {
       context,
     ).scale(style.fontSize! * (style.height ?? 1));
     final glyphTop = ((line - glyphSize) / 2).clamp(0.0, double.infinity);
-    // A live region: running → current, or → failed, is the card's one
-    // sentence changing, and a reader who cannot see the colour hears it.
+    // A live region for the transitions only: running → current, or →
+    // failed, is the card's one sentence changing, and a reader who cannot
+    // see the colour hears it — the state word, not the age behind it.
     return Semantics(
-      liveRegion: true,
+      liveRegion: liveRegion,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         // Top-aligned, so a status that wraps keeps its glyph on the first
@@ -1068,7 +1086,11 @@ class _StatusLine extends StatelessWidget {
               // The narrowest wording may still wrap once: this line is the
               // state's non-colour carrier and must not clip.
               maxLines: 2,
+              semanticsLabel: liveRegion ? tiers.last : null,
               style: style,
+              tailStyle: metaColor == null
+                  ? null
+                  : style.copyWith(color: metaColor),
             ),
           ),
         ],
@@ -1162,13 +1184,15 @@ class _AgentCardFooter extends StatelessWidget {
           ),
         ),
       ),
-      // A step more above than below: the action row sits off the divider,
-      // and the meta rows close the card without a matching band.
+      // A step more above than below when meta rows close the card; with
+      // nothing under the action row the inset is symmetric.
       padding: EdgeInsets.fromLTRB(
         tokens.spacing.cardPadding,
         tokens.spacing.step4,
         tokens.spacing.cardPadding,
-        tokens.spacing.step3,
+        identity == null && meta == null
+            ? tokens.spacing.step4
+            : tokens.spacing.step3,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1210,6 +1234,11 @@ class _AgentCardFooter extends StatelessWidget {
                 ],
               ),
             ),
+          // A designed gap under the action row: the 48pt floor gives no
+          // slack once a large-text pill outgrows it.
+          if ((leading != null || action != null) &&
+              (identity != null || meta != null))
+            SizedBox(height: tokens.spacing.step3),
           ?identity,
           ?meta,
         ],

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_inline_recorder.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
@@ -240,6 +241,20 @@ void main() {
     final strip = tester.widget<LiveWaveform>(find.byType(LiveWaveform));
     expect(strip.amplitudes.length, CheckInInlineRecorder.amplitudeWindow);
     expect(strip.amplitudes.every((a) => a >= 0 && a <= 1), isTrue);
+    // The prose ink, not the accent: a meter is not pressable.
+    final tokens = tester
+        .element(find.byType(CheckInInlineRecorder))
+        .designTokens;
+    expect(strip.color, tokens.colors.text.highEmphasis);
+  });
+
+  testWidgets('the clock reads to a screen reader in words', (tester) async {
+    await pump(tester);
+    recorder.tick(progress: const Duration(seconds: 83));
+    await tester.pump();
+    final clock = tester.widget<Text>(key('check-in-recorder-clock'));
+    expect(clock.data, '1:23');
+    expect(clock.semanticsLabel, '1 minute 23 seconds');
   });
 
   // The sheet brings the indicator back once it has closed; the recorder

@@ -27,6 +27,10 @@ class _TieredTextOverviewPage extends StatelessWidget {
     'with Pip',
     'Pip',
   ];
+  static const _statusTiers = [
+    'Last run failed · 20 min ago',
+    'Last run failed',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +56,24 @@ class _TieredTextOverviewPage extends StatelessWidget {
               ),
               padding: EdgeInsets.all(tokens.spacing.step2),
               child: DsTieredText(tiers: _tiers, style: style),
+            ),
+            SizedBox(height: tokens.spacing.step3),
+          ],
+          // Two inks on one wording: the state word in its alert colour,
+          // the detail after the separator in the meta ink.
+          SizedBox(height: tokens.spacing.step4),
+          for (final width in const [480.0, 120.0]) ...[
+            Container(
+              width: width,
+              decoration: BoxDecoration(
+                border: Border.all(color: tokens.colors.decorative.level01),
+              ),
+              padding: EdgeInsets.all(tokens.spacing.step2),
+              child: DsTieredText(
+                tiers: _statusTiers,
+                style: style.copyWith(color: tokens.colors.alert.error.ink),
+                tailStyle: style.copyWith(color: tokens.colors.aiCard.metaText),
+              ),
             ),
             SizedBox(height: tokens.spacing.step3),
           ],

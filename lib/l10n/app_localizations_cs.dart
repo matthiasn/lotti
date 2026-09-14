@@ -3230,7 +3230,28 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInMicrophoneDeniedCalloutTitle => 'Povol přístup k mikrofonu';
 
   @override
-  String get checkInMoreCaption => 'Pocit · témata · příště';
+  String get checkInMoreCaptionFeeling => 'Pocit';
+
+  @override
+  String get checkInMoreCaptionNextTime => 'příště';
+
+  @override
+  String get checkInMoreCaptionNextTimeSet => 'příště poznamenáno';
+
+  @override
+  String get checkInMoreCaptionTopics => 'témata';
+
+  @override
+  String checkInMoreCaptionTopicsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count témat',
+      few: '$count témata',
+      one: '1 téma',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get checkInMoreSection => 'Více';
@@ -3341,6 +3362,30 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get checkInSpeakButton => 'Namluvit kontakt';
+
+  @override
+  String checkInSpokenMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count minut',
+      few: '$count minuty',
+      one: '1 minuta',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String checkInSpokenSeconds(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sekund',
+      few: '$count sekundy',
+      one: '1 sekunda',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get checkInStartedLabel => 'Začátek';
@@ -11928,7 +11973,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Označ $name jako důležitou osobu a získáš briefing, připomínky po delší odmlce a chat.';
+    return 'Označ $name jako důležitou osobu a získáš chat, připomínky po delší odmlce a briefing.';
   }
 
   @override

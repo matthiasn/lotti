@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 
 /// Where a spoken check-in is, rendered *in place of* the narrative text
 /// (design 2026-09-13, options 1a–1f): the composer never leaves the thing
@@ -215,6 +216,18 @@ int checkInWordCount(String text) =>
 /// `m:ss` under an hour and `h:mm:ss` from there — one clock shape for the
 /// recorder's timer, the saved-audio line and the duration chip, so `0:23`
 /// on the chip is the `0:23` the timer stopped on.
+/// The same length in words, for assistive technology: `0:23` reads as
+/// "zero colon twenty-three" and says nothing; "23 seconds" does.
+String checkInSpokenClockLabel(AppLocalizations messages, Duration length) {
+  final total = length.inSeconds.clamp(0, 1 << 31);
+  final minutes = total ~/ 60;
+  final seconds = total % 60;
+  return [
+    if (minutes > 0) messages.checkInSpokenMinutes(minutes),
+    if (seconds > 0 || minutes == 0) messages.checkInSpokenSeconds(seconds),
+  ].join(' ');
+}
+
 String checkInClockLabel(Duration length) {
   final total = length.inSeconds.clamp(0, 1 << 31);
   final hours = total ~/ 3600;

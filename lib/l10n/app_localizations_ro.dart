@@ -3242,7 +3242,28 @@ class AppLocalizationsRo extends AppLocalizations {
       'Permiteți accesul la microfon';
 
   @override
-  String get checkInMoreCaption => 'Stare · subiecte · data viitoare';
+  String get checkInMoreCaptionFeeling => 'Impresie';
+
+  @override
+  String get checkInMoreCaptionNextTime => 'data viitoare';
+
+  @override
+  String get checkInMoreCaptionNextTimeSet => 'data viitoare notată';
+
+  @override
+  String get checkInMoreCaptionTopics => 'subiecte';
+
+  @override
+  String checkInMoreCaptionTopicsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de subiecte',
+      few: '$count subiecte',
+      one: '1 subiect',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get checkInMoreSection => 'Mai mult';
@@ -3357,6 +3378,30 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get checkInSpeakButton => 'Dictați contactul';
+
+  @override
+  String checkInSpokenMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de minute',
+      few: '$count minute',
+      one: '1 minut',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String checkInSpokenSeconds(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de secunde',
+      few: '$count secunde',
+      one: '1 secundă',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get checkInStartedLabel => 'Început';
@@ -11994,7 +12039,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Marcați $name ca important(ă) pentru a primi un briefing, notificări când a trecut ceva timp și un chat.';
+    return 'Marcați $name ca important(ă) pentru a primi un chat, notificări când a trecut ceva timp și un briefing.';
   }
 
   @override

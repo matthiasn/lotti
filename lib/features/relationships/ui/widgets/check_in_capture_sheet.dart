@@ -499,12 +499,19 @@ class CheckInStickyActions extends StatelessWidget {
                 MediaQuery.textScalerOf(context).scale(1) <= TextScales.large,
             onPressed: handle.dismiss,
           );
-          final save = DesignSystemButton(
-            key: const ValueKey('check-in-save'),
-            label: messages.checkInSaveButton,
-            size: DesignSystemButtonSize.large,
-            fullWidth: !wide,
-            onPressed: handle.canSave ? handle.save : null,
+          // A held Save says why on the control itself: a reader who lands
+          // on it hears the next step, not only "dimmed".
+          final save = MergeSemantics(
+            child: Semantics(
+              hint: handle.canSave ? null : reason,
+              child: DesignSystemButton(
+                key: const ValueKey('check-in-save'),
+                label: messages.checkInSaveButton,
+                size: DesignSystemButtonSize.large,
+                fullWidth: !wide,
+                onPressed: handle.canSave ? handle.save : null,
+              ),
+            ),
           );
           // The slot is always laid out, even with nothing to say, so the
           // bar keeps one height as Save goes from held to free and the
@@ -729,6 +736,31 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   /// Optional sentiment, topics and next-time guidance, folded by default;
   /// open from the start when a check-in being edited already has any of it.
   late bool _moreOpen;
+
+  /// The folded More row's caption from what is set: a field's name until it
+  /// has a value, then the value itself.
+  String _moreCaption(AppLocalizations messages) {
+    final topics = _topicsController.text
+        .split(',')
+        .map((topic) => topic.trim())
+        .where((topic) => topic.isNotEmpty)
+        .length;
+    final nextTime =
+        _payAttentionController.text.trim().isNotEmpty ||
+        _avoidController.text.trim().isNotEmpty;
+    final feeling = switch (_sentiment) {
+      null => messages.checkInMoreCaptionFeeling,
+      final sentiment => checkInSentimentLabel(context, sentiment),
+    };
+    final topicsCaption = topics == 0
+        ? messages.checkInMoreCaptionTopics
+        : messages.checkInMoreCaptionTopicsCount(topics);
+    final nextTimeCaption = nextTime
+        ? messages.checkInMoreCaptionNextTimeSet
+        : messages.checkInMoreCaptionNextTime;
+    return [feeling, topicsCaption, nextTimeCaption].join(' · ');
+  }
+
   bool _isSaving = false;
 
   /// The narrative as last seen, so a focus change is not mistaken for typing.
@@ -1606,6 +1638,8 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
           phase: _phase,
           wordCount: checkInWordCount(_narrativeController.text),
           shortcutHint: shortcut?.label,
+          transcriptEdited: _transcriptEdited,
+          restMinLines: widget.dialog ? 2 : 3,
           recorder: recording
               ? CheckInInlineRecorder(
                   linkedId: widget.relationshipId,
@@ -1653,6 +1687,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
         SizedBox(height: tokens.spacing.step3),
         _MoreHeader(
           open: _moreOpen,
+          caption: _moreCaption(messages),
           onToggle: () => setState(() => _moreOpen = !_moreOpen),
         ),
         if (_moreOpen) ...[
@@ -1684,7 +1719,9 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
           ),
           SizedBox(height: tokens.spacing.step3),
           caption(messages.checkInSentimentOptional),
-          SizedBox(height: tokens.spacing.step6),
+          // One section gap between the folded sections, whatever each
+          // holds: the edit sheet opens on all of them at once.
+          SizedBox(height: tokens.spacing.sectionGap),
 
           // The design system's own input, so the folded details wear the
           // same chrome as the rest of the sheet.
@@ -1697,7 +1734,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
             semanticsLabel: messages.checkInTopicsLabel,
             hintText: messages.checkInTopicsHint,
           ),
-          SizedBox(height: tokens.spacing.step5),
+          SizedBox(height: tokens.spacing.sectionGap),
           sectionLabel(messages.checkInPayAttentionLabel),
           DesignSystemTextInput(
             key: const ValueKey('check-in-pay-attention'),
@@ -1705,7 +1742,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
             semanticsLabel: messages.checkInPayAttentionLabel,
             textCapitalization: TextCapitalization.sentences,
           ),
-          SizedBox(height: tokens.spacing.step5),
+          SizedBox(height: tokens.spacing.sectionGap),
           sectionLabel(messages.checkInAvoidLabel),
           DesignSystemTextInput(
             key: const ValueKey('check-in-avoid'),
@@ -1750,9 +1787,18 @@ List<String> _captionLadder(String caption) {
 }
 
 class _MoreHeader extends StatelessWidget {
-  const _MoreHeader({required this.open, required this.onToggle});
+  const _MoreHeader({
+    required this.open,
+    required this.caption,
+    required this.onToggle,
+  });
 
   final bool open;
+
+  /// What is folded — the field names until a value is set, then the value
+  /// (`Good · 2 topics · next time noted`), so the row never says less than
+  /// it holds.
+  final String caption;
   final VoidCallback onToggle;
 
   @override
@@ -1786,7 +1832,7 @@ class _MoreHeader extends StatelessWidget {
                   child: DsTieredText(
                     // `Feeling · topics · next time` sheds a segment at a
                     // time, so large text never slices a word in half.
-                    tiers: _captionLadder(messages.checkInMoreCaption),
+                    tiers: _captionLadder(caption),
                     textAlign: TextAlign.end,
                     style: tokens.typography.styles.others.caption.copyWith(
                       color: tokens.colors.text.mediumEmphasis,

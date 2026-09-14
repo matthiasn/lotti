@@ -5382,11 +5382,35 @@ abstract class AppLocalizations {
   /// **'Allow microphone access'**
   String get checkInMicrophoneDeniedCalloutTitle;
 
-  /// No description provided for @checkInMoreCaption.
+  /// Folded More row caption segment while no feeling is chosen.
   ///
   /// In en, this message translates to:
-  /// **'Feeling · topics · next time'**
-  String get checkInMoreCaption;
+  /// **'Feeling'**
+  String get checkInMoreCaptionFeeling;
+
+  /// Folded More row caption segment while nothing is noted for next time.
+  ///
+  /// In en, this message translates to:
+  /// **'next time'**
+  String get checkInMoreCaptionNextTime;
+
+  /// Folded More row caption segment once something is noted for next time.
+  ///
+  /// In en, this message translates to:
+  /// **'next time noted'**
+  String get checkInMoreCaptionNextTimeSet;
+
+  /// Folded More row caption segment while no topics are entered.
+  ///
+  /// In en, this message translates to:
+  /// **'topics'**
+  String get checkInMoreCaptionTopics;
+
+  /// Folded More row caption segment: how many topics are entered.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 topic} other{{count} topics}}'**
+  String checkInMoreCaptionTopicsCount(int count);
 
   /// No description provided for @checkInMoreSection.
   ///
@@ -5585,6 +5609,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Speak check-in'**
   String get checkInSpeakButton;
+
+  /// Minutes of a recording length, read by assistive technology.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 minute} other{{count} minutes}}'**
+  String checkInSpokenMinutes(int count);
+
+  /// Seconds of a recording length, read by assistive technology.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 second} other{{count} seconds}}'**
+  String checkInSpokenSeconds(int count);
 
   /// No description provided for @checkInStartedLabel.
   ///
@@ -19684,7 +19720,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipAgentNotEnrolledBody.
   ///
   /// In en, this message translates to:
-  /// **'Mark {name} as important to get a briefing, nudges when it has been a while, and a chat.'**
+  /// **'Mark {name} as important to get a chat, nudges when it has been a while, and a briefing.'**
   String relationshipAgentNotEnrolledBody(String name);
 
   /// No description provided for @relationshipAgentOnlyYourStartsUseAi.

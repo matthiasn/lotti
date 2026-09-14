@@ -8,6 +8,12 @@ import 'package:flutter/widgets.dart';
 ///
 /// Assistive technology always hears [semanticsLabel] — the full first tier
 /// unless told otherwise — so what the screen shortens the reader keeps.
+///
+/// A wording built as `state · detail` can wear two inks: with [tailStyle]
+/// set, whatever follows the first [tailSeparator] takes that style, so a
+/// status line keeps its alert colour on the state word and its detail in
+/// the meta ink. The rendered widget is then a rich text, so a test reads
+/// the wording through the span rather than `Text.data`.
 class DsTieredText extends StatelessWidget {
   const DsTieredText({
     required this.tiers,
@@ -16,6 +22,8 @@ class DsTieredText extends StatelessWidget {
     this.semanticsLabel,
     this.textKey,
     this.textAlign,
+    this.tailStyle,
+    this.tailSeparator = ' · ',
     super.key,
   }) : assert(tiers.length > 0, 'a ladder needs at least one wording');
 
@@ -35,6 +43,26 @@ class DsTieredText extends StatelessWidget {
   /// Where the chosen wording sits in the width it was given.
   final TextAlign? textAlign;
 
+  /// The ink for everything after the first [tailSeparator]; null keeps the
+  /// whole wording in [style].
+  final TextStyle? tailStyle;
+
+  /// Where [tailStyle] begins, the separator itself included.
+  final String tailSeparator;
+
+  TextSpan _span(String wording) {
+    final tail = tailStyle;
+    final cut = tail == null ? -1 : wording.indexOf(tailSeparator);
+    if (tail == null || cut < 0) return TextSpan(text: wording, style: style);
+    return TextSpan(
+      style: style,
+      children: [
+        TextSpan(text: wording.substring(0, cut)),
+        TextSpan(text: wording.substring(cut), style: tail),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final direction = Directionality.of(context);
@@ -44,7 +72,7 @@ class DsTieredText extends StatelessWidget {
         var chosen = tiers.last;
         for (final tier in tiers) {
           final painter = TextPainter(
-            text: TextSpan(text: tier, style: style),
+            text: _span(tier),
             textDirection: direction,
             textScaler: scaler,
             maxLines: 1,
@@ -54,13 +82,26 @@ class DsTieredText extends StatelessWidget {
             break;
           }
         }
-        return Text(
-          chosen,
+        final lines = chosen == tiers.last ? maxLines : 1;
+        final label = semanticsLabel ?? tiers.first;
+        if (tailStyle == null) {
+          return Text(
+            chosen,
+            key: textKey,
+            maxLines: lines,
+            overflow: TextOverflow.ellipsis,
+            textAlign: textAlign,
+            semanticsLabel: label,
+            style: style,
+          );
+        }
+        return Text.rich(
+          _span(chosen),
           key: textKey,
-          maxLines: chosen == tiers.last ? maxLines : 1,
+          maxLines: lines,
           overflow: TextOverflow.ellipsis,
           textAlign: textAlign,
-          semanticsLabel: semanticsLabel ?? tiers.first,
+          semanticsLabel: label,
           style: style,
         );
       },
