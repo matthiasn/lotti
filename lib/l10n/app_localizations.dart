@@ -5280,6 +5280,12 @@ abstract class AppLocalizations {
   /// **'Discard'**
   String get checkInDiscardRecording;
 
+  /// Body of the confirmation before discarding a check-in recording: the audio is deleted, the composer stays open.
+  ///
+  /// In en, this message translates to:
+  /// **'The audio is deleted. Your check-in stays open.'**
+  String get checkInDiscardRecordingBody;
+
   /// No description provided for @checkInDismissButton.
   ///
   /// In en, this message translates to:
@@ -5367,13 +5373,13 @@ abstract class AppLocalizations {
   /// No description provided for @checkInMicrophoneDeniedBody.
   ///
   /// In en, this message translates to:
-  /// **'Allow microphone access for Lotti in system settings, then try again. Nothing was recorded.'**
+  /// **'Turn it on for Lotti in system settings, then tap Dictate. Nothing was recorded.'**
   String get checkInMicrophoneDeniedBody;
 
   /// The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable.
   ///
   /// In en, this message translates to:
-  /// **'Allow microphone access to dictate'**
+  /// **'Allow microphone access'**
   String get checkInMicrophoneDeniedCalloutTitle;
 
   /// No description provided for @checkInMoreCaption.
@@ -5685,7 +5691,7 @@ abstract class AppLocalizations {
   /// The transcript-not-received card's title: the next step, since the header status already names the state.
   ///
   /// In en, this message translates to:
-  /// **'Try again, or type what you remember'**
+  /// **'Try again, or type it'**
   String get checkInTranscriptMissingCalloutTitle;
 
   /// Shown when a spoken check-in cannot run at all because no transcription is configured for the person or their category.

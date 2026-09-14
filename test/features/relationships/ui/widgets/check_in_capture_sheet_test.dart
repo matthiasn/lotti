@@ -395,6 +395,32 @@ void main() {
         inset + stacked,
       );
     });
+
+    testWidgets("the phone bar puts Cancel's label on the content column — "
+        'except when it stacks, where Cancel is centred under Save and keeps '
+        'both insets', (tester) async {
+      Future<bool> alignsLeading(TextScaler scaler) async {
+        final handle = CheckInFormHandle();
+        addTearDown(handle.dispose);
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            CheckInStickyActions(handle: handle),
+            mediaQueryData: MediaQueryData(
+              size: const Size(402, 874),
+              textScaler: scaler,
+            ),
+          ),
+        );
+        return tester
+            .widget<DesignSystemButton>(
+              find.byKey(const ValueKey('check-in-cancel')),
+            )
+            .alignsLabelToLeadingEdge;
+      }
+
+      expect(await alignsLeading(TextScaler.noScaling), isTrue);
+      expect(await alignsLeading(const TextScaler.linear(1.6)), isFalse);
+    });
   });
 
   group('the composer at rest', () {
@@ -1130,7 +1156,7 @@ void main() {
       await startDictation(tester);
 
       expect(inlineRecorder, findsNothing);
-      expect(find.text('Allow microphone access to dictate'), findsOneWidget);
+      expect(find.text('Allow microphone access'), findsOneWidget);
       expect(saveReason(tester), 'Add a few words to save');
       expect(
         recorder.modalVisibleLog,
@@ -1154,7 +1180,7 @@ void main() {
       // the field's Dictate comes back with it.
       await tester.enterText(narrative, 'Typed it instead');
       await tester.pumpAndSettle();
-      expect(find.text('Allow microphone access to dictate'), findsNothing);
+      expect(find.text('Allow microphone access'), findsNothing);
       expect(dictate, findsOneWidget);
       expect(saveEnabled(tester), isTrue);
     });
@@ -1292,7 +1318,7 @@ void main() {
       await stopRecording(tester);
 
       expect(
-        find.text('Try again, or type what you remember'),
+        find.text('Try again, or type it'),
         findsOneWidget,
       );
       expect(
@@ -1611,6 +1637,15 @@ void main() {
     testWidgets("Cancel, and the header's close, dismiss an untouched "
         'composer without saving or asking', (tester) async {
       await openSheet(tester);
+      // On the phone Cancel's label sits on the content column.
+      expect(
+        tester
+            .widget<DesignSystemButton>(
+              find.byKey(const ValueKey('check-in-cancel')),
+            )
+            .alignsLabelToLeadingEdge,
+        isTrue,
+      );
       await tester.tap(find.byKey(const ValueKey('check-in-cancel')));
       await tester.pumpAndSettle();
       expect(find.byType(CheckInCaptureForm), findsNothing);
@@ -1671,7 +1706,7 @@ void main() {
       await stopRecording(tester);
       expect(find.text('Transcript not received'), findsOneWidget);
       expect(
-        find.text('Try again, or type what you remember'),
+        find.text('Try again, or type it'),
         findsOneWidget,
       );
 
@@ -1872,6 +1907,11 @@ void main() {
       final reason = find.byKey(const ValueKey('check-in-save-reason'));
       final cancel = find.byKey(const ValueKey('check-in-cancel'));
       expect(reason, findsOneWidget);
+      // In the dialog Cancel trails beside Save, an ordinary button.
+      expect(
+        tester.widget<DesignSystemButton>(cancel).alignsLabelToLeadingEdge,
+        isFalse,
+      );
       expect(
         tester.getCenter(reason).dx,
         lessThan(tester.getCenter(cancel).dx),

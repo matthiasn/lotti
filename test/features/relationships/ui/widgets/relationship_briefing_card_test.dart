@@ -21,6 +21,7 @@ import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
@@ -899,8 +900,9 @@ void main() {
         state: agentState(failures: 1, lastWakeAt: failedAt),
       );
 
-      // The device's own clock format, as the started chip and the wheel.
-      expect(statusText(tester), 'Last run failed · 1:41 PM');
+      // A past event in the "as of" grammar: how long ago, not a clock
+      // time that reads as an appointment.
+      expect(statusText(tester), 'Last run failed · 19 min ago');
       expect(
         find.textContaining('No model is set up for briefings.'),
         findsOneWidget,
@@ -1077,13 +1079,15 @@ void main() {
       final dotFinder = find.byKey(
         const ValueKey('relationship-agent-band-dot'),
       );
-      final dot = tester.widget<Container>(dotFinder);
+      // The design system's own presence dot, in the band's tone.
+      final dot = tester.widget<DesignSystemBadge>(dotFinder);
       final tokens = tester
           .element(find.byType(RelationshipBriefingCard))
           .designTokens;
+      expect(dot.tone, DesignSystemBadgeTone.success);
       expect(
-        (dot.decoration! as BoxDecoration).color,
-        relationshipHealthBandColor(tokens, RelationshipHealthBand.thriving),
+        relationshipHealthBandTone(RelationshipHealthBand.steady),
+        DesignSystemBadgeTone.neutral,
       );
       // The dot's offset is the text line less the dot, halved — computed,
       // not a fixed step, so it scales with the text.
@@ -1095,7 +1099,10 @@ void main() {
           .padding
           .resolve(TextDirection.ltr)
           .top;
-      expect(offset, (line.fontSize! * line.height! - IconSizes.xs) / 2);
+      expect(
+        offset,
+        (line.fontSize! * line.height! - tokens.spacing.step3) / 2,
+      );
     });
 
     testWidgets('with nothing to expand, the sources line is not hidden '

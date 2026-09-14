@@ -4,7 +4,6 @@ import 'package:lotti/features/design_system/components/captions/ds_tiered_text.
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The composer's one field (design 2026-09-13): the narrative, with
@@ -160,9 +159,10 @@ class CheckInNarrativeField extends StatelessWidget {
     // "0 words" count says nothing the card and the held Save do not.
     final underCard = failure != null && !collapsed;
     // One caption row: what just landed, how much there is, how to save —
-    // a ladder, so a narrow line sheds the hint, then the count, and never
-    // wraps on a separator. A zero count adds nothing the empty field does
-    // not already say.
+    // a ladder, so a narrow line sheds the count before the shortcut and
+    // never wraps on a separator: the desktop dialog, where the hint pays
+    // off, is exactly where the actions leave the caption least room. A
+    // zero count adds nothing the empty field does not already say.
     final status = collapsed
         ? messages.checkInAudioSaved(checkInClockLabel(failure.length!))
         : ready
@@ -170,15 +170,22 @@ class CheckInNarrativeField extends StatelessWidget {
         : null;
     // Under a card with nothing typed, the field carries no caption at all:
     // the card is the message, and a lone shortcut hint only competes.
-    final parts = [
-      ?status,
-      if (ready || wordCount > 0) messages.checkInWordCount(wordCount),
-      if (shortcutHint case final hint? when !underCard || wordCount > 0)
+    final count = ready || wordCount > 0
+        ? messages.checkInWordCount(wordCount)
+        : null;
+    final hint = switch (shortcutHint) {
+      final hint? when !underCard || wordCount > 0 =>
         messages.checkInSaveShortcutHint(hint),
-    ];
-    final ladder = [
-      for (var n = parts.length; n >= 1; n--) parts.take(n).join(' · '),
-    ];
+      _ => null,
+    };
+    final ladder = <String>{
+      for (final keep in [
+        [status, count, hint],
+        if (count != null && hint != null) [status, hint],
+        if (count != null || hint != null) [status],
+      ])
+        keep.nonNulls.join(' · '),
+    }.where((tier) => tier.isNotEmpty).toList();
     final meta = ladder.isEmpty ? '' : ladder.first;
     final captionStyle = caption;
     final actions = <Widget>[
@@ -232,13 +239,13 @@ class CheckInNarrativeField extends StatelessWidget {
     ];
     // The actions sit in one corner across every phase: beside the caption
     // when both fit a line, else on their own line at the trailing edge —
-    // always at large text, where even a lone button can crowd the caption.
+    // always at large text, where even a lone button can crowd the caption,
+    // and always once a transcript has landed: Re-record · Add more beside
+    // the caption leave it no room for the shortcut even in the dialog, and
+    // the hint pays off exactly there.
     final largeText =
         MediaQuery.textScalerOf(context).scale(1) > TextScales.large;
-    final stacked =
-        largeText ||
-        (ready &&
-            MediaQuery.sizeOf(context).width < WoltModalConfig.pageBreakpoint);
+    final stacked = largeText || ready;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -372,7 +379,9 @@ class CheckInNarrativeField extends StatelessWidget {
           label: messages.checkInTranscribingLabel,
           child: const ExcludeSemantics(child: _TranscriptSkeleton()),
         ),
-        SizedBox(height: tokens.spacing.step6),
+        // The same step the recorder keeps between its rows: one rhythm
+        // across the field's phases.
+        SizedBox(height: tokens.spacing.step4),
         // A caption row, like the transcript-added line it precedes — not
         // a second box inside the field.
         // One caption row, like every other phase's: the saved line leading
@@ -641,12 +650,14 @@ class _FailureCard extends StatelessWidget {
       text: body,
       announce: true,
       // The recommended action is the secondary pill: the alert tone is the
-      // card's one colour, and the filled accent stays Save's alone.
+      // card's one colour, and the filled accent stays Save's alone. The
+      // way out beside it is quiet, as it is while transcribing — accent on
+      // the escape hatch would make colour and shape point at two buttons.
       actions: [
         DesignSystemButton(
           key: secondary.key,
           label: secondary.label,
-          variant: DesignSystemButtonVariant.tertiary,
+          variant: DesignSystemButtonVariant.quiet,
           size: DesignSystemButtonSize.medium,
           tapTargetSize: MaterialTapTargetSize.padded,
           onPressed: secondary.onPressed,

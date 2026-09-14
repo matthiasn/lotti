@@ -1386,6 +1386,10 @@
   "checkInDiscardDraftMessage": "Zahodit tento check-in? Nic se neuložilo.",
   "checkInDiscardDraftRecordingMessage": "Zahodit tento check-in i nahrávku? Nahrávka se smaže.",
   "checkInDiscardRecording": "Zahodit",
+  "checkInDiscardRecordingBody": "Zvuk se smaže. Tvůj check-in zůstane otevřený.",
+  "@checkInDiscardRecordingBody": {
+    "description": "Body of the confirmation before discarding a check-in recording: the audio is deleted, the composer stays open."
+  },
   "checkInDismissButton": "Zavřít",
   "checkInDurationChip": "Délka",
   "checkInDurationChipSemantics": "Délka: {duration}. Změnit",
@@ -1400,8 +1404,8 @@
   "checkInInteractionMessage": "Zpráva",
   "checkInInteractionOther": "Jinak",
   "checkInInteractionVideoCall": "Videohovor",
-  "checkInMicrophoneDeniedBody": "Povol Lotti přístup k mikrofonu v nastavení systému a zkus to znovu. Nic se nenahrálo.",
-  "checkInMicrophoneDeniedCalloutTitle": "Povol přístup k mikrofonu, abys mohl diktovat",
+  "checkInMicrophoneDeniedBody": "Zapni ho pro Lotti v nastavení systému a pak klepni na Diktovat. Nic se nenahrálo.",
+  "checkInMicrophoneDeniedCalloutTitle": "Povol přístup k mikrofonu",
   "@checkInMicrophoneDeniedCalloutTitle": {
     "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
   },
@@ -1462,7 +1466,7 @@
   "checkInTranscriptAdded": "Přepis přidán",
   "checkInTranscriptionUnavailableTitle": "Není nastavený žádný model pro přepis",
   "checkInTranscriptMissingBody": "Tvoje nahrávka ({length}) zůstane uložená v deníku, i když tento check-in zahodíš. Zkus to za chvíli znovu.",
-  "checkInTranscriptMissingCalloutTitle": "Zkus to znovu, nebo napiš, co si pamatuješ",
+  "checkInTranscriptMissingCalloutTitle": "Zkus to znovu, nebo to napiš",
   "@checkInTranscriptMissingCalloutTitle": {
     "description": "The transcript-not-received card's title: the next step, since the header status already names the state."
   },

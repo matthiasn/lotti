@@ -3181,6 +3181,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkInDiscardRecording => 'Renunțați';
 
   @override
+  String get checkInDiscardRecordingBody =>
+      'Înregistrarea audio este ștearsă. Check-in-ul dvs. rămâne deschis.';
+
+  @override
   String get checkInDismissButton => 'Închideți';
 
   @override
@@ -3231,11 +3235,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get checkInMicrophoneDeniedBody =>
-      'Permiteți accesul la microfon pentru Lotti în setările sistemului, apoi încercați din nou. Nu s-a înregistrat nimic.';
+      'Activați-l pentru Lotti în setările de sistem, apoi atingeți Dictează. Nu s-a înregistrat nimic.';
 
   @override
   String get checkInMicrophoneDeniedCalloutTitle =>
-      'Permiteți accesul la microfon pentru a dicta';
+      'Permiteți accesul la microfon';
 
   @override
   String get checkInMoreCaption => 'Stare · subiecte · data viitoare';
@@ -3414,7 +3418,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get checkInTranscriptMissingCalloutTitle =>
-      'Încercați din nou sau scrieți ce vă amintiți';
+      'Încercați din nou sau scrieți';
 
   @override
   String get checkInTranscriptUnavailable =>

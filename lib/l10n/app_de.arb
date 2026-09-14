@@ -1379,6 +1379,10 @@
   "checkInDiscardDraftMessage": "Diesen Check-in verwerfen? Es wurde nichts gespeichert.",
   "checkInDiscardDraftRecordingMessage": "Diesen Check-in und die Aufnahme verwerfen? Die Aufnahme wird gelöscht.",
   "checkInDiscardRecording": "Verwerfen",
+  "checkInDiscardRecordingBody": "Die Aufnahme wird gelöscht. Dein Check-in bleibt offen.",
+  "@checkInDiscardRecordingBody": {
+    "description": "Body of the confirmation before discarding a check-in recording: the audio is deleted, the composer stays open."
+  },
   "checkInDismissButton": "Schließen",
   "checkInDurationChip": "Dauer",
   "checkInDurationChipSemantics": "Dauer: {duration}. Ändern",
@@ -1393,8 +1397,8 @@
   "checkInInteractionMessage": "Nachricht",
   "checkInInteractionOther": "Anderes",
   "checkInInteractionVideoCall": "Videoanruf",
-  "checkInMicrophoneDeniedBody": "Erlaube Lotti in den Systemeinstellungen den Mikrofonzugriff und versuch es dann erneut. Es wurde nichts aufgenommen.",
-  "checkInMicrophoneDeniedCalloutTitle": "Mikrofonzugriff erlauben, um zu diktieren",
+  "checkInMicrophoneDeniedBody": "Schalte ihn für Lotti in den Systemeinstellungen ein und tippe dann auf Diktieren. Es wurde nichts aufgenommen.",
+  "checkInMicrophoneDeniedCalloutTitle": "Mikrofonzugriff erlauben",
   "@checkInMicrophoneDeniedCalloutTitle": {
     "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
   },
@@ -1455,7 +1459,7 @@
   "checkInTranscriptAdded": "Transkript eingefügt",
   "checkInTranscriptionUnavailableTitle": "Kein Transkriptionsmodell eingerichtet",
   "checkInTranscriptMissingBody": "Deine Aufnahme ({length}) bleibt im Journal gespeichert, auch wenn du diesen Check-in abbrichst. Versuch es gleich noch einmal.",
-  "checkInTranscriptMissingCalloutTitle": "Versuch es noch einmal oder tippe, woran du dich erinnerst",
+  "checkInTranscriptMissingCalloutTitle": "Noch mal versuchen oder tippen",
   "@checkInTranscriptMissingCalloutTitle": {
     "description": "The transcript-not-received card's title: the next step, since the header status already names the state."
   },

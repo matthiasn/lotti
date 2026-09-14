@@ -1557,6 +1557,10 @@
   "checkInDiscardDraftMessage": "Släng den här avstämningen? Inget har sparats.",
   "checkInDiscardDraftRecordingMessage": "Släng den här avstämningen och inspelningen? Inspelningen tas bort.",
   "checkInDiscardRecording": "Släng",
+  "checkInDiscardRecordingBody": "Ljudet raderas. Din avstämning förblir öppen.",
+  "@checkInDiscardRecordingBody": {
+    "description": "Body of the confirmation before discarding a check-in recording: the audio is deleted, the composer stays open."
+  },
   "checkInDismissButton": "Stäng",
   "checkInDurationChip": "Längd",
   "checkInDurationChipSemantics": "Längd: {duration}. Ändra",
@@ -1571,8 +1575,8 @@
   "checkInInteractionMessage": "Meddelande",
   "checkInInteractionOther": "Annat",
   "checkInInteractionVideoCall": "Videosamtal",
-  "checkInMicrophoneDeniedBody": "Tillåt mikrofonåtkomst för Lotti i systeminställningarna och försök igen. Inget spelades in.",
-  "checkInMicrophoneDeniedCalloutTitle": "Tillåt mikrofonåtkomst för diktering",
+  "checkInMicrophoneDeniedBody": "Slå på den för Lotti i systeminställningarna och tryck sedan på Diktera. Inget spelades in.",
+  "checkInMicrophoneDeniedCalloutTitle": "Tillåt mikrofonåtkomst",
   "@checkInMicrophoneDeniedCalloutTitle": {
     "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
   },
@@ -1633,7 +1637,7 @@
   "checkInTranscriptAdded": "Transkription tillagd",
   "checkInTranscriptionUnavailableTitle": "Ingen transkriptionsmodell inställd",
   "checkInTranscriptMissingBody": "Din inspelning på {length} finns kvar i journalen, även om du slänger den här avstämningen. Försök igen om en stund.",
-  "checkInTranscriptMissingCalloutTitle": "Försök igen, eller skriv det du minns",
+  "checkInTranscriptMissingCalloutTitle": "Försök igen, eller skriv",
   "@checkInTranscriptMissingCalloutTitle": {
     "description": "The transcript-not-received card's title: the next step, since the header status already names the state."
   },

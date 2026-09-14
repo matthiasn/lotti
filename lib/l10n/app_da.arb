@@ -1557,6 +1557,10 @@
   "checkInDiscardDraftMessage": "Kassér dette check-in? Intet er gemt.",
   "checkInDiscardDraftRecordingMessage": "Kassér dette check-in og optagelsen? Optagelsen bliver slettet.",
   "checkInDiscardRecording": "Kassér",
+  "checkInDiscardRecordingBody": "Lyden slettes. Dit check-in forbliver åbent.",
+  "@checkInDiscardRecordingBody": {
+    "description": "Body of the confirmation before discarding a check-in recording: the audio is deleted, the composer stays open."
+  },
   "checkInDismissButton": "Luk",
   "checkInDurationChip": "Varighed",
   "checkInDurationChipSemantics": "Varighed: {duration}. Skift",
@@ -1571,8 +1575,8 @@
   "checkInInteractionMessage": "Besked",
   "checkInInteractionOther": "Andet",
   "checkInInteractionVideoCall": "Videoopkald",
-  "checkInMicrophoneDeniedBody": "Giv Lotti adgang til mikrofonen i systemindstillingerne, og prøv igen. Intet blev optaget.",
-  "checkInMicrophoneDeniedCalloutTitle": "Tillad mikrofonadgang for at diktere",
+  "checkInMicrophoneDeniedBody": "Slå den til for Lotti i systemindstillingerne, og tryk så på Dikter. Intet blev optaget.",
+  "checkInMicrophoneDeniedCalloutTitle": "Tillad mikrofonadgang",
   "@checkInMicrophoneDeniedCalloutTitle": {
     "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
   },
@@ -1633,7 +1637,7 @@
   "checkInTranscriptAdded": "Transskription tilføjet",
   "checkInTranscriptionUnavailableTitle": "Ingen transskriptionsmodel sat op",
   "checkInTranscriptMissingBody": "Din optagelse på {length} er gemt i journalen, også hvis du kasserer dette check-in. Prøv igen om lidt.",
-  "checkInTranscriptMissingCalloutTitle": "Prøv igen, eller skriv det du husker",
+  "checkInTranscriptMissingCalloutTitle": "Prøv igen, eller skriv det",
   "@checkInTranscriptMissingCalloutTitle": {
     "description": "The transcript-not-received card's title: the next step, since the header status already names the state."
   },

@@ -165,32 +165,38 @@ void main() {
     // pressable everywhere.
     expect(statusColor(tester), tokens.colors.text.mediumEmphasis);
 
+    // A failure wears its tone on the word as well as the glyph — the
+    // briefing card's rule for its status line, so the two surfaces read
+    // one way.
     publish(CheckInComposerStatus.transcriptMissing);
     await tester.pump();
     expect(status(tester), 'Transcript not received');
-    expect(statusColor(tester), tokens.colors.text.mediumEmphasis);
+    expect(statusColor(tester), tokens.colors.alert.warning.ink);
 
     publish(CheckInComposerStatus.transcriptionUnavailable);
     await tester.pump();
     expect(status(tester), 'No transcription model');
+    expect(statusColor(tester), tokens.colors.alert.warning.ink);
 
     publish(CheckInComposerStatus.microphoneDenied);
     await tester.pump();
     expect(status(tester), 'Microphone unavailable');
-    expect(statusColor(tester), tokens.colors.text.mediumEmphasis);
+    expect(statusColor(tester), tokens.colors.alert.error.ink);
 
     publish(CheckInComposerStatus.recordingFailed);
     await tester.pump();
     expect(status(tester), "Recording didn't start");
+    expect(statusColor(tester), tokens.colors.alert.error.ink);
 
     publish(CheckInComposerStatus.recordingNotSaved);
     await tester.pump();
     expect(status(tester), 'Recording not saved');
+    expect(statusColor(tester), tokens.colors.alert.error.ink);
 
     publish(CheckInComposerStatus.recorderBusy);
     await tester.pump();
     expect(status(tester), 'Recorder busy');
-    expect(statusColor(tester), tokens.colors.text.mediumEmphasis);
+    expect(statusColor(tester), tokens.colors.alert.warning.ink);
 
     publish(CheckInComposerStatus.idle);
     await tester.pump();
@@ -230,6 +236,17 @@ void main() {
     publish(CheckInComposerStatus.recording);
     await tester.pump();
     expect(node().flagsCollection.isLiveRegion, isTrue);
+    publish(CheckInComposerStatus.transcribing);
+    await tester.pump();
+    expect(node().flagsCollection.isLiveRegion, isTrue);
+    // A failure is the card's to announce — its title is the next step —
+    // so the header goes quiet and one region speaks per event.
+    publish(CheckInComposerStatus.microphoneDenied);
+    await tester.pump();
+    expect(node().flagsCollection.isLiveRegion, isFalse);
+    publish(CheckInComposerStatus.transcriptMissing);
+    await tester.pump();
+    expect(node().flagsCollection.isLiveRegion, isFalse);
   });
 
   testWidgets('on a narrow header the status keeps the name, not the date — '

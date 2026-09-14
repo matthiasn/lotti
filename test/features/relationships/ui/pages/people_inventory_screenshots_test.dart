@@ -326,9 +326,15 @@ Widget _app({
       child: MaterialApp(
         builder: LegacyMaterialBridge.builder,
         debugShowCheckedModeBanner: false,
-        theme: brightness == Brightness.dark
-            ? DesignSystemTheme.dark()
-            : DesignSystemTheme.light(),
+        // The platform the capture claims, in the theme as well as the
+        // command host: text fields pick their selection controls from it,
+        // and the test host's default would put a phone's drag handle on a
+        // desktop dialog.
+        theme:
+            (brightness == Brightness.dark
+                    ? DesignSystemTheme.dark()
+                    : DesignSystemTheme.light())
+                .copyWith(platform: platform),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           ...GlobalMaterialLocalizations.delegates,
@@ -1497,7 +1503,14 @@ void main() {
           find.byKey(const ValueKey('check-in-transcript-added')),
           findsOne,
         );
+        // The caption keeps its whole ladder on the landed face: Re-record
+        // · Add more take their own line, so the desktop dialog shows the
+        // shortcut it is the one place to use — macOS's, as the theme's
+        // platform now says.
         expect(find.textContaining('26 words'), findsOne);
+        if (viewport == 'desktop') {
+          expect(find.textContaining('⌘Enter to save'), findsOne);
+        }
         await captureScreenshot(
           tester,
           'check_in_transcript_ready_${viewport}_dark',
@@ -1531,7 +1544,7 @@ void main() {
       await withClock(Clock.fixed(_now), () async {
         await tester.tap(find.byKey(const ValueKey('check-in-dictate')));
         await tester.pumpAndSettle();
-        expect(find.text('Allow microphone access to dictate'), findsOne);
+        expect(find.text('Allow microphone access'), findsOne);
         expect(find.text('Microphone unavailable'), findsOne);
         await captureScreenshot(
           tester,
@@ -1552,7 +1565,7 @@ void main() {
         // The header's status line and the card's title say the same thing.
         expect(find.text('Transcript not received'), findsOneWidget);
         expect(
-          find.text('Try again, or type what you remember'),
+          find.text('Try again, or type it'),
           findsOneWidget,
         );
         expect(find.text('Type or retry to save'), findsOne);

@@ -3138,6 +3138,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInDiscardRecording => 'Släng';
 
   @override
+  String get checkInDiscardRecordingBody =>
+      'Ljudet raderas. Din avstämning förblir öppen.';
+
+  @override
   String get checkInDismissButton => 'Stäng';
 
   @override
@@ -3188,11 +3192,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get checkInMicrophoneDeniedBody =>
-      'Tillåt mikrofonåtkomst för Lotti i systeminställningarna och försök igen. Inget spelades in.';
+      'Slå på den för Lotti i systeminställningarna och tryck sedan på Diktera. Inget spelades in.';
 
   @override
-  String get checkInMicrophoneDeniedCalloutTitle =>
-      'Tillåt mikrofonåtkomst för diktering';
+  String get checkInMicrophoneDeniedCalloutTitle => 'Tillåt mikrofonåtkomst';
 
   @override
   String get checkInMoreCaption => 'Känsla · ämnen · nästa gång';
@@ -3363,8 +3366,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get checkInTranscriptMissingCalloutTitle =>
-      'Försök igen, eller skriv det du minns';
+  String get checkInTranscriptMissingCalloutTitle => 'Försök igen, eller skriv';
 
   @override
   String get checkInTranscriptUnavailable =>

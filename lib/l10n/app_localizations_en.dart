@@ -3113,6 +3113,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkInDiscardRecording => 'Discard';
 
   @override
+  String get checkInDiscardRecordingBody =>
+      'The audio is deleted. Your check-in stays open.';
+
+  @override
   String get checkInDismissButton => 'Dismiss';
 
   @override
@@ -3163,11 +3167,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get checkInMicrophoneDeniedBody =>
-      'Allow microphone access for Lotti in system settings, then try again. Nothing was recorded.';
+      'Turn it on for Lotti in system settings, then tap Dictate. Nothing was recorded.';
 
   @override
-  String get checkInMicrophoneDeniedCalloutTitle =>
-      'Allow microphone access to dictate';
+  String get checkInMicrophoneDeniedCalloutTitle => 'Allow microphone access';
 
   @override
   String get checkInMoreCaption => 'Feeling · topics · next time';
@@ -3339,8 +3342,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get checkInTranscriptMissingCalloutTitle =>
-      'Try again, or type what you remember';
+  String get checkInTranscriptMissingCalloutTitle => 'Try again, or type it';
 
   @override
   String get checkInTranscriptUnavailable =>

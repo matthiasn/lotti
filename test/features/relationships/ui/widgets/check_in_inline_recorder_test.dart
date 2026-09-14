@@ -170,6 +170,12 @@ void main() {
     await tester.tap(key('check-in-recorder-discard'));
     await tester.pumpAndSettle();
     expect(find.text('Discard recording?'), findsOneWidget);
+    // This surface's own words, not the journal recorder's: the audio goes,
+    // the check-in stays.
+    expect(
+      find.text('The audio is deleted. Your check-in stays open.'),
+      findsOneWidget,
+    );
 
     await tester.tap(find.text('Keep recording'));
     await tester.pumpAndSettle();
@@ -245,5 +251,17 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     expect(recorder.stopCalls, 0);
     expect(recorder.cancelCalls, 0);
+  });
+
+  testWidgets('the controls sit on the trailing rail, where Dictate, Try '
+      'again and Add more live in every other phase', (tester) async {
+    await pump(tester);
+    final wrap = tester.widget<Wrap>(
+      find.ancestor(
+        of: key('check-in-recorder-discard'),
+        matching: find.byType(Wrap),
+      ),
+    );
+    expect(wrap.alignment, WrapAlignment.end);
   });
 }

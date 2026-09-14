@@ -110,6 +110,47 @@ void main() {
       expect(find.text('1 word · ⌘Enter to save'), findsOneWidget);
     });
 
+    testWidgets('the caption ladder sheds the count before the shortcut: '
+        'the hint pays off where the actions leave the least room', (
+      tester,
+    ) async {
+      List<String> tiers() => tester
+          .widget<DsTieredText>(
+            find.ancestor(
+              of: find.byKey(const ValueKey('check-in-word-count')),
+              matching: find.byType(DsTieredText),
+            ),
+          )
+          .tiers;
+      await pump(
+        tester,
+        phase: const CheckInSpeechReady(
+          transcript: 'The words that landed.',
+          textBefore: '',
+          length: Duration(seconds: 23),
+        ),
+        wordCount: 26,
+        shortcutHint: '⌘Enter',
+      );
+      expect(tiers(), [
+        'Transcript added · 26 words · ⌘Enter to save',
+        'Transcript added · ⌘Enter to save',
+        'Transcript added',
+      ]);
+
+      // Without a shortcut (the phone), the count is the only thing to shed.
+      await pump(
+        tester,
+        phase: const CheckInSpeechReady(
+          transcript: 'The words that landed.',
+          textBefore: '',
+          length: Duration(seconds: 23),
+        ),
+        wordCount: 26,
+      );
+      expect(tiers(), ['Transcript added · 26 words', 'Transcript added']);
+    });
+
     testWidgets('focus lifts the border to the interactive accent', (
       tester,
     ) async {
@@ -303,9 +344,8 @@ void main() {
   });
 
   testWidgets('the actions keep one corner: beside the caption on a wide '
-      'field, on their own line at the trailing edge on a phone', (
-    tester,
-  ) async {
+      'field, on their own line at the trailing edge on a phone — and on '
+      'every width once a transcript has landed', (tester) async {
     const phase = CheckInSpeechReady(
       transcript: 'The words that landed.',
       textBefore: '',
@@ -315,12 +355,38 @@ void main() {
     final count = find.byKey(const ValueKey('check-in-word-count'));
     final field = find.byKey(const ValueKey('check-in-narrative-field'));
 
-    await pump(tester, phase: phase, wordCount: 4, width: 1200);
+    // Wide, transcribing: one caption row with Type instead beside it.
+    await pump(
+      tester,
+      phase: const CheckInSpeechTranscribing(
+        audioEntryId: 'audio-1',
+        length: Duration(seconds: 23),
+      ),
+      width: 1200,
+    );
+    final typeInstead = find.byKey(const ValueKey('check-in-type-instead'));
+    final saved = find.textContaining('0:23 of audio saved');
     expect(
-      tester.getRect(addMore).top,
-      lessThan(tester.getRect(count).bottom),
+      tester.getRect(typeInstead).top,
+      lessThan(tester.getRect(saved).bottom),
       reason: 'wide: caption and actions share a line',
     );
+
+    // Wide, transcript landed: Re-record · Add more take their own line so
+    // the caption keeps its shortcut.
+    await pump(
+      tester,
+      phase: phase,
+      wordCount: 4,
+      shortcutHint: '⌘Enter',
+      width: 1200,
+    );
+    expect(
+      tester.getRect(addMore).top,
+      greaterThanOrEqualTo(tester.getRect(count).bottom),
+      reason: 'ready: the actions drop under the caption at any width',
+    );
+    expect(find.text('Transcript added · 4 words · ⌘Enter to save'), findsOne);
 
     await pump(tester, phase: phase, wordCount: 4, width: 402);
     expect(
@@ -369,10 +435,19 @@ void main() {
           CheckInSpeechFailure(CheckInSpeechFailureKind.microphoneDenied),
         ),
       );
-      expect(find.text('Allow microphone access to dictate'), findsOneWidget);
+      expect(find.text('Allow microphone access'), findsOneWidget);
       expect(find.text('Or type it here…'), findsOneWidget);
-      // The card offers typing as a button, and its recommended action is
-      // the secondary pill: the alert tone is the card's one colour.
+      // The card offers typing as a quiet button — the way out, not a
+      // second accent — and its recommended action is the secondary pill:
+      // the alert tone is the card's one colour.
+      expect(
+        tester
+            .widget<DesignSystemButton>(
+              find.byKey(const ValueKey('check-in-type-instead-denied')),
+            )
+            .variant,
+        DesignSystemButtonVariant.quiet,
+      );
       await tester.tap(
         find.byKey(const ValueKey('check-in-type-instead-denied')),
       );
@@ -477,7 +552,7 @@ void main() {
       // The header names the state; the card's title is the next step, not
       // a cause the service cannot tell apart. The body says the audio stays.
       expect(
-        find.text('Try again, or type what you remember'),
+        find.text('Try again, or type it'),
         findsOneWidget,
       );
       expect(

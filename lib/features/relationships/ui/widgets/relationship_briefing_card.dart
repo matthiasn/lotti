@@ -18,6 +18,7 @@ import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart'
 import 'package:lotti/features/agents/ui/task_agent_identity_region.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
+import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
@@ -72,6 +73,17 @@ Color relationshipHealthBandColor(
     tokens.colors.alert.warning.defaultColor,
   RelationshipHealthBand.strained => tokens.colors.alert.error.defaultColor,
 };
+
+/// The band as the design system's presence dot: the same hues as
+/// [relationshipHealthBandColor], through the badge's own tone ramp.
+DesignSystemBadgeTone relationshipHealthBandTone(RelationshipHealthBand band) =>
+    switch (band) {
+      RelationshipHealthBand.thriving => DesignSystemBadgeTone.success,
+      // Hueless: the accent means pressable on the same card.
+      RelationshipHealthBand.steady => DesignSystemBadgeTone.neutral,
+      RelationshipHealthBand.needsAttention => DesignSystemBadgeTone.warning,
+      RelationshipHealthBand.strained => DesignSystemBadgeTone.danger,
+    };
 
 /// The agent's standing briefing, if [report] is one: the `current`-scope
 /// report entity that has not been deleted. Anything else — no report yet,
@@ -656,12 +668,14 @@ class _AgentCard extends StatelessWidget {
         // The spinner says busy; the words stay in the meta ink.
         color: ai.metaText,
       ),
+      // A past event in the same grammar as "as of": how long ago, not a
+      // clock time that reads as an appointment.
       RelationshipAgentCardState.failed => _StatusLine(
         icon: LottiIcons.error,
         tiers: [
           if (lastWake != null)
             messages.relationshipAgentLastRunFailed(
-              relationshipTimeLabelOf(context, lastWake),
+              relativeAgoLabel(messages, clock.now().difference(lastWake)),
             ),
           messages.relationshipAgentFailedPlain,
         ],
@@ -672,11 +686,13 @@ class _AgentCard extends StatelessWidget {
       RelationshipAgentCardState.current => _StatusLine(
         leading: switch (health?.band) {
           null => null,
-          final band => _BandDot(
-            color: relationshipHealthBandColor(tokens, band),
+          final band => DesignSystemBadge.dot(
+            key: const ValueKey('relationship-agent-band-dot'),
+            tone: relationshipHealthBandTone(band),
+            excludeFromSemantics: true,
           ),
         },
-        leadingSize: IconSizes.xs,
+        leadingSize: tokens.spacing.step3,
         tiers: [
           switch (health) {
             null => messages.goalDetailReadAsOf(_age(messages)),
@@ -1156,7 +1172,17 @@ class _AgentCardFooter extends StatelessWidget {
           if (stacked && leading != null && action != null) ...[
             leading!,
             SizedBox(height: tokens.spacing.step3),
-            Align(alignment: AlignmentDirectional.centerEnd, child: action),
+            // The same row height as the side-by-side branch, so the
+            // stacked footer keeps its rhythm below the primary too.
+            ConstrainedBox(
+              constraints: const BoxConstraints(
+                minHeight: TapTargets.minimum,
+              ),
+              child: Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: action,
+              ),
+            ),
           ] else if (leading != null || action != null)
             ConstrainedBox(
               constraints: const BoxConstraints(
@@ -1183,19 +1209,4 @@ class _AgentCardFooter extends StatelessWidget {
       ),
     );
   }
-}
-
-/// The health band's colour beside its word on the status line.
-class _BandDot extends StatelessWidget {
-  const _BandDot({required this.color});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    key: const ValueKey('relationship-agent-band-dot'),
-    width: IconSizes.xs,
-    height: IconSizes.xs,
-    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-  );
 }
