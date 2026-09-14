@@ -187,7 +187,7 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
               builder: (context, constraints) => LiveWaveform(
                 amplitudes: _amplitudes,
                 width: constraints.maxWidth,
-                height: tokens.spacing.step8,
+                height: tokens.spacing.step7,
                 barCount: CheckInInlineRecorder.amplitudeWindow ~/ 2,
                 color: paused
                     ? tokens.colors.text.lowEmphasis
@@ -206,7 +206,7 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
           style: monoMetaStyle(
             tokens,
             tokens.colors,
-            base: tokens.typography.styles.heading.heading1,
+            base: tokens.typography.styles.heading.heading3,
             color: tokens.colors.text.highEmphasis,
           ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
         ),
@@ -223,8 +223,9 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
             Flexible(
               child: Text(
                 messages.checkInAudioSavedAsYouGo,
-                style: tokens.typography.styles.body.bodySmall.copyWith(
+                style: tokens.typography.styles.others.caption.copyWith(
                   color: tokens.colors.text.mediumEmphasis,
+                  fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
             ),

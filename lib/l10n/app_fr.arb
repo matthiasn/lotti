@@ -1394,7 +1394,10 @@
   "checkInInteractionOther": "Autre",
   "checkInInteractionVideoCall": "Visio",
   "checkInMicrophoneDeniedBody": "Autorise l’accès au micro pour Lotti dans les réglages système, puis réessaie. Rien n’a été enregistré.",
-  "checkInMicrophoneDeniedTitle": "Lotti ne peut pas utiliser le micro",
+  "checkInMicrophoneDeniedCalloutTitle": "Autorise l’accès au micro pour dicter",
+  "@checkInMicrophoneDeniedCalloutTitle": {
+    "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
+  },
   "checkInMoreCaption": "Ressenti · sujets · prochaine fois",
   "checkInMoreSection": "Plus",
   "checkInNarrativeHint": "De quoi avez-vous parlé ? Une ligne suffit.",
@@ -1444,6 +1447,10 @@
   "checkInTranscriptAdded": "Transcription ajoutée",
   "checkInTranscriptionUnavailableTitle": "Aucun modèle de transcription configuré",
   "checkInTranscriptMissingBody": "Ton enregistrement de {length} reste conservé dans le journal, même si tu abandonnes ce point. Réessaie dans un instant.",
+  "checkInTranscriptMissingCalloutTitle": "Réessaie, ou écris ce dont tu te souviens",
+  "@checkInTranscriptMissingCalloutTitle": {
+    "description": "The transcript-not-received card's title: the next step, since the header status already names the state."
+  },
   "checkInTranscriptUnavailable": "Choisis un profil d’inférence par défaut avec un modèle de transcription dans les réglages IA, ou écris ton suivi de contact.",
   "checkInTypeChipSemantics": "Type : {type}. Modifier",
   "checkInTypeInstead": "Écrire plutôt",

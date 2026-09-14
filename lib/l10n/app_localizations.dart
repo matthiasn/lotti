@@ -5370,11 +5370,11 @@ abstract class AppLocalizations {
   /// **'Allow microphone access for Lotti in system settings, then try again. Nothing was recorded.'**
   String get checkInMicrophoneDeniedBody;
 
-  /// No description provided for @checkInMicrophoneDeniedTitle.
+  /// The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable.
   ///
   /// In en, this message translates to:
-  /// **'Lotti can\'t use the microphone'**
-  String get checkInMicrophoneDeniedTitle;
+  /// **'Allow microphone access to dictate'**
+  String get checkInMicrophoneDeniedCalloutTitle;
 
   /// No description provided for @checkInMoreCaption.
   ///
@@ -5669,6 +5669,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your {length} recording is saved in the journal, even if you cancel this check-in. Try again in a moment.'**
   String checkInTranscriptMissingBody(String length);
+
+  /// The transcript-not-received card's title: the next step, since the header status already names the state.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again, or type what you remember'**
+  String get checkInTranscriptMissingCalloutTitle;
 
   /// Shown when a spoken check-in cannot run at all because no transcription is configured for the person or their category.
   ///

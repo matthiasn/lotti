@@ -585,9 +585,10 @@ void main() {
         textScale: 2,
       );
 
+      // The primary leads the stack; the exit sits centred beneath it.
       expect(
         tester.getCenter(btn('Done')).dy,
-        greaterThan(tester.getCenter(btn('Cancel')).dy),
+        lessThan(tester.getCenter(btn('Cancel')).dy),
       );
       expect(widthOf(tester, 'Done'), 600);
     });
@@ -611,7 +612,7 @@ void main() {
 
       expect(
         tester.getCenter(btn('Aplică filtrele')).dy,
-        greaterThan(tester.getCenter(btn('Șterge filtrele')).dy),
+        lessThan(tester.getCenter(btn('Șterge filtrele')).dy),
       );
       expect(widthOf(tester, 'Aplică filtrele'), 320);
       expect(tester.takeException(), isNull);

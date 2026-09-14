@@ -3192,8 +3192,8 @@ class AppLocalizationsNl extends AppLocalizations {
       'Geef Lotti in de systeeminstellingen toegang tot de microfoon en probeer het opnieuw. Er is niets opgenomen.';
 
   @override
-  String get checkInMicrophoneDeniedTitle =>
-      'Lotti kan de microfoon niet gebruiken';
+  String get checkInMicrophoneDeniedCalloutTitle =>
+      'Sta microfoontoegang toe om te dicteren';
 
   @override
   String get checkInMoreCaption => 'Gevoel · onderwerpen · volgende keer';
@@ -3358,6 +3358,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String checkInTranscriptMissingBody(String length) {
     return 'Je opname van $length blijft in het journaal bewaard, ook als je deze check-in weggooit. Probeer het zo nog eens.';
   }
+
+  @override
+  String get checkInTranscriptMissingCalloutTitle =>
+      'Probeer het opnieuw, of typ wat je nog weet';
 
   @override
   String get checkInTranscriptUnavailable =>

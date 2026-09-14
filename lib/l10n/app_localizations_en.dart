@@ -3166,7 +3166,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Allow microphone access for Lotti in system settings, then try again. Nothing was recorded.';
 
   @override
-  String get checkInMicrophoneDeniedTitle => 'Lotti can\'t use the microphone';
+  String get checkInMicrophoneDeniedCalloutTitle =>
+      'Allow microphone access to dictate';
 
   @override
   String get checkInMoreCaption => 'Feeling · topics · next time';
@@ -3329,6 +3330,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String checkInTranscriptMissingBody(String length) {
     return 'Your $length recording is saved in the journal, even if you cancel this check-in. Try again in a moment.';
   }
+
+  @override
+  String get checkInTranscriptMissingCalloutTitle =>
+      'Try again, or type what you remember';
 
   @override
   String get checkInTranscriptUnavailable =>

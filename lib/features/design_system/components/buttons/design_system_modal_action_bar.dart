@@ -24,8 +24,9 @@ enum DesignSystemModalActionBarLayout {
 /// pattern): while the rendered labels fit, [secondary] actions keep their
 /// intrinsic width on the leading edge and the [primary] action flexes to fill
 /// the trailing width. When they do not fit — or on large-text layouts — the
-/// secondaries wrap above a full-width primary so translations never squeeze or
-/// clip the actions.
+/// bar stacks: the primary leads at full width and the secondaries sit centred
+/// beneath it, so translations never squeeze or truncate and an exit is never
+/// the heading above its one filled action.
 ///
 /// The fit is decided by measuring the actions themselves, not by comparing the
 /// available width against a breakpoint: a long translated label must wrap the
@@ -460,18 +461,25 @@ class _StackedActionLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    // The primary leads the stack and the secondaries sit centred beneath
+    // it: a stacked bar must not put its exit above its one filled action,
+    // where a bold Cancel would read as the heading of a held Save.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (secondary.isNotEmpty) ...[
-          Wrap(
-            spacing: tokens.spacing.step3,
-            runSpacing: tokens.spacing.step3,
-            children: secondary,
-          ),
-          SizedBox(height: tokens.spacing.step3),
-        ],
         primary,
+        if (secondary.isNotEmpty) ...[
+          SizedBox(height: tokens.spacing.step3),
+          Center(
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: tokens.spacing.step3,
+              runSpacing: tokens.spacing.step3,
+              children: secondary,
+            ),
+          ),
+        ],
       ],
     );
   }

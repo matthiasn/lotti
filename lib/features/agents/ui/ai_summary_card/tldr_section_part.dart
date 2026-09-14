@@ -50,11 +50,17 @@ class TldrHeader extends StatelessWidget {
     this.subtitle,
     this.trailing,
     this.icon,
+    this.plain = false,
     super.key,
   });
 
   final String? agentName;
   final VoidCallback? onAgentTap;
+
+  /// A neutral badge tile — surface fill, hairline border, medium-emphasis
+  /// glyph — for a card that is not an AI surface yet, so it does not wear
+  /// the accent it disclaims.
+  final bool plain;
 
   /// A widget on the second line instead of the [agentName] caption — the
   /// relationship briefing's status line, which carries a glyph and a
@@ -127,18 +133,26 @@ class TldrHeader extends StatelessWidget {
                             height: tokens.spacing.step8,
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              color: ai.accentSoft,
+                              color: plain
+                                  ? tokens.colors.background.level03
+                                  : ai.accentSoft,
                               borderRadius: BorderRadius.circular(
                                 tokens.radii.m,
                               ),
                               border: Border.all(
-                                color: highlighted ? ai.accent : ai.border,
+                                color: plain
+                                    ? tokens.colors.decorative.level01
+                                    : highlighted
+                                    ? ai.accent
+                                    : ai.border,
                               ),
                             ),
                             child: Icon(
                               icon ?? LottiIcons.aiSpark,
-                              size: tokens.spacing.step6,
-                              color: ai.accent,
+                              size: IconSizes.l,
+                              color: plain
+                                  ? tokens.colors.text.mediumEmphasis
+                                  : ai.accent,
                             ),
                           ),
                           SizedBox(width: tokens.spacing.step3),

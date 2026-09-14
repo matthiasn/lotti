@@ -1571,7 +1571,10 @@
   "checkInInteractionOther": "Anders",
   "checkInInteractionVideoCall": "Videogesprek",
   "checkInMicrophoneDeniedBody": "Geef Lotti in de systeeminstellingen toegang tot de microfoon en probeer het opnieuw. Er is niets opgenomen.",
-  "checkInMicrophoneDeniedTitle": "Lotti kan de microfoon niet gebruiken",
+  "checkInMicrophoneDeniedCalloutTitle": "Sta microfoontoegang toe om te dicteren",
+  "@checkInMicrophoneDeniedCalloutTitle": {
+    "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
+  },
   "checkInMoreCaption": "Gevoel · onderwerpen · volgende keer",
   "checkInMoreSection": "Meer",
   "checkInNarrativeHint": "Waar hebben jullie het over gehad? Eén regel is genoeg.",
@@ -1621,6 +1624,10 @@
   "checkInTranscriptAdded": "Transcript toegevoegd",
   "checkInTranscriptionUnavailableTitle": "Geen transcriptiemodel ingesteld",
   "checkInTranscriptMissingBody": "Je opname van {length} blijft in het journaal bewaard, ook als je deze check-in weggooit. Probeer het zo nog eens.",
+  "checkInTranscriptMissingCalloutTitle": "Probeer het opnieuw, of typ wat je nog weet",
+  "@checkInTranscriptMissingCalloutTitle": {
+    "description": "The transcript-not-received card's title: the next step, since the header status already names the state."
+  },
   "checkInTranscriptUnavailable": "Kies in de AI-instellingen een standaard inferentieprofiel met een transcriptiemodel, of schrijf je contactmoment op.",
   "checkInTypeChipSemantics": "Soort: {type}. Wijzigen",
   "checkInTypeInstead": "Liever typen",

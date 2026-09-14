@@ -804,7 +804,10 @@ the judgement before its timestamp — and the
 person header directly above the card already carries the tinted band pill
 and the cadence pill, so the card repeats neither — but the band's colour
 rides a dot in the status line's glyph slot, so the judgement is carried by
-more than its word. The header's trailing rail holds only an out-of-date
+more than its word; every status glyph is centred on the first line by a
+computed offset, so at 1.6× it still sits on the words. The not-enrolled
+face wears `TldrHeader`'s plain badge — a neutral tile, not the AI accent it
+disclaims — and its privacy note rides the action row's leading slot. The header's trailing rail holds only an out-of-date
 briefing's age (`6 days old`, an outlined tag in the meta ink, so the status
 line's warning ink is the one orange thing on the face and the tag never
 competes for the first read), which is what that rail — capped at half the header width,
@@ -1017,8 +1020,11 @@ The composer's parts, top to bottom:
   `relationshipDetailControllerProvider`, and while speech is in flight what
   the field is doing (`● Recording`, `Paused`, `Transcribing…`, `Transcript
   not received`, `Microphone unavailable`) in that phase's colour — except
-  that *Recording* keeps the quiet ink beside its red dot, so error red on
-  this surface means only a failure, and *Paused* wears a pause glyph. The
+  that *Recording* and *Transcribing…* keep the quiet ink beside their red
+  dot and spinner, so error red means only a failure and accent on text
+  means only pressable, and *Paused* wears a pause glyph. The close control
+  is a `DesignSystemIconAction`, as is the edit sheet's delete (in the error
+  tone). The
   status line is **tiered**, not truncated: a `DsTieredText` shows the
   widest of its wordings that fits (`with Pip · last spoke Sat 1 Aug` →
   `with Pip`), so a narrow phone or a large text scale sheds the date before
@@ -1043,8 +1049,13 @@ The composer's parts, top to bottom:
   choosing to type instead, so the card goes on its own (the form's
   `_onNarrativeChanged`) — folding into its retry row when a recording is
   waiting. The cards are the design system's `DesignSystemInlineCallout`
-  with a title and an actions row, the filled action last on the trailing
-  rail like Save, Stop and Add more. *Type instead* on a
+  with a title and an actions row on the trailing rail, quietest first; the
+  recommended action is the secondary pill, so the alert tone is the card's
+  one colour and the filled accent stays Save's. The header already names
+  the state, so a card's title is the *next step* (`Try again, or type what
+  you remember`; `Allow the microphone to dictate`), and the refused
+  microphone offers *Type instead* as a button. Under a card with nothing
+  typed the field carries no caption at all. *Type instead* on a
   **missing transcript** does not forget the take: the phase becomes
   `CheckInSpeechFailed(cardDismissed: true)`, the card folds into one
   caption row — `0:23 of audio saved · Try again` — and the retry survives
@@ -1059,7 +1070,10 @@ The composer's parts, top to bottom:
   fit a line, else the actions on their own line at the trailing edge
   (`_CaptionAndActions`), always so above `TextScales.large`. The *More*
   row's caption is a ladder too (`Feeling · topics · next time` sheds a
-  segment at a time), so large text never slices a word.
+  segment at a time), so large text never slices a word. The phases swap in
+  place rather than through an `AnimatedSize`: the tiered captions lay
+  themselves out with a `LayoutBuilder`, which re-dirties an animating size
+  box in its own layout pass.
 * [`CheckInContextChips`](../../lib/features/relationships/ui/widgets/check_in_context_chips.dart):
   type · started · duration as one wrapping chip row, each chip opening its
   picker (the type through a `DsActionModal`), quiet while the recorder or
@@ -1070,7 +1084,12 @@ The composer's parts, top to bottom:
 * [`CheckInStickyActions`](../../lib/features/relationships/ui/widgets/check_in_capture_sheet.dart)
   in the modal's sticky bar: *Save check-in* always visible, and when it is
   held, why. Cancel is the button's `quiet` variant on both viewports, so
-  the one bright shape in the bar is Save's even while Save is held. On a
+  the one bright shape in the bar is Save's even while Save is held — and
+  when the bar stacks above `TextScales.large`, Save leads and Cancel sits
+  centred beneath it, the design system's rule for every stacked bar. On the
+  desktop dialog the field takes focus as the composer opens (the form's
+  `dialog` flag), so the typed common case is open → type → ⌘↩; a phone
+  waits for the first tap rather than raise its keyboard over the sheet. On a
   phone the reason sits under the bar; on the desktop dialog it takes the
   leading edge with Cancel and Save together on the trailing edge. The form
   reserves the bar's predicted height for its layout

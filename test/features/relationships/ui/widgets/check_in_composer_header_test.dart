@@ -158,7 +158,9 @@ void main() {
     publish(CheckInComposerStatus.transcribing);
     await tester.pump();
     expect(status(tester), 'Transcribing…');
-    expect(statusColor(tester), tokens.colors.interactive.enabled);
+    // The spinner says busy; the words stay quiet, so accent on text means
+    // pressable everywhere.
+    expect(statusColor(tester), tokens.colors.text.mediumEmphasis);
 
     publish(CheckInComposerStatus.transcriptMissing);
     await tester.pump();

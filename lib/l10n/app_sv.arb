@@ -1572,7 +1572,10 @@
   "checkInInteractionOther": "Annat",
   "checkInInteractionVideoCall": "Videosamtal",
   "checkInMicrophoneDeniedBody": "Tillåt mikrofonåtkomst för Lotti i systeminställningarna och försök igen. Inget spelades in.",
-  "checkInMicrophoneDeniedTitle": "Lotti kan inte använda mikrofonen",
+  "checkInMicrophoneDeniedCalloutTitle": "Tillåt mikrofonåtkomst för diktering",
+  "@checkInMicrophoneDeniedCalloutTitle": {
+    "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
+  },
   "checkInMoreCaption": "Känsla · ämnen · nästa gång",
   "checkInMoreSection": "Mer",
   "checkInNarrativeHint": "Vad pratade ni om? En rad räcker.",
@@ -1622,6 +1625,10 @@
   "checkInTranscriptAdded": "Transkription tillagd",
   "checkInTranscriptionUnavailableTitle": "Ingen transkriptionsmodell inställd",
   "checkInTranscriptMissingBody": "Din inspelning på {length} finns kvar i journalen, även om du slänger den här avstämningen. Försök igen om en stund.",
+  "checkInTranscriptMissingCalloutTitle": "Försök igen, eller skriv det du minns",
+  "@checkInTranscriptMissingCalloutTitle": {
+    "description": "The transcript-not-received card's title: the next step, since the header status already names the state."
+  },
   "checkInTranscriptUnavailable": "Välj en standardprofil för inferens med en transkriptionsmodell i AI-inställningarna, eller skriv din kontaktanteckning.",
   "checkInTypeChipSemantics": "Typ: {type}. Ändra",
   "checkInTypeInstead": "Skriv istället",

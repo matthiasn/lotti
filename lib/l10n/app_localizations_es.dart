@@ -3222,7 +3222,8 @@ class AppLocalizationsEs extends AppLocalizations {
       'Permite el acceso al micrófono para Lotti en los ajustes del sistema y vuelve a intentarlo. No se grabó nada.';
 
   @override
-  String get checkInMicrophoneDeniedTitle => 'Lotti no puede usar el micrófono';
+  String get checkInMicrophoneDeniedCalloutTitle =>
+      'Permite el acceso al micrófono para dictar';
 
   @override
   String get checkInMoreCaption => 'Sensación · temas · próxima vez';
@@ -3385,6 +3386,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String checkInTranscriptMissingBody(String length) {
     return 'Tu grabación de $length queda guardada en el diario, aunque descartes este check-in. Inténtalo de nuevo en un momento.';
   }
+
+  @override
+  String get checkInTranscriptMissingCalloutTitle =>
+      'Inténtalo de nuevo o escribe lo que recuerdes';
 
   @override
   String get checkInTranscriptUnavailable =>

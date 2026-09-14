@@ -1394,7 +1394,10 @@
   "checkInInteractionOther": "Anderes",
   "checkInInteractionVideoCall": "Videoanruf",
   "checkInMicrophoneDeniedBody": "Erlaube Lotti in den Systemeinstellungen den Mikrofonzugriff und versuch es dann erneut. Es wurde nichts aufgenommen.",
-  "checkInMicrophoneDeniedTitle": "Lotti kann das Mikrofon nicht verwenden",
+  "checkInMicrophoneDeniedCalloutTitle": "Mikrofonzugriff erlauben, um zu diktieren",
+  "@checkInMicrophoneDeniedCalloutTitle": {
+    "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
+  },
   "checkInMoreCaption": "Stimmung · Themen · nächstes Mal",
   "checkInMoreSection": "Mehr",
   "checkInNarrativeHint": "Worüber habt ihr gesprochen? Eine Zeile reicht.",
@@ -1444,6 +1447,10 @@
   "checkInTranscriptAdded": "Transkript eingefügt",
   "checkInTranscriptionUnavailableTitle": "Kein Transkriptionsmodell eingerichtet",
   "checkInTranscriptMissingBody": "Deine Aufnahme ({length}) bleibt im Journal gespeichert, auch wenn du diesen Check-in abbrichst. Versuch es gleich noch einmal.",
+  "checkInTranscriptMissingCalloutTitle": "Versuch es noch einmal oder tippe, woran du dich erinnerst",
+  "@checkInTranscriptMissingCalloutTitle": {
+    "description": "The transcript-not-received card's title: the next step, since the header status already names the state."
+  },
   "checkInTranscriptUnavailable": "Wähle in den KI-Einstellungen ein Standard-Inferenzprofil mit einem Transkriptionsmodell oder schreibe deinen Check-in.",
   "checkInTypeChipSemantics": "Kontaktart: {type}. Ändern",
   "checkInTypeInstead": "Stattdessen tippen",

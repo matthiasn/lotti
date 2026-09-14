@@ -219,6 +219,7 @@ void main() {
     int totalTokens = 0,
     String? disclosureProviderName,
     bool setupUnavailable = false,
+    TextScaler textScaler = TextScaler.noScaling,
     bool realDisclosure = false,
     List<Override> additionalOverrides = const [],
     TaskAgentSetupOptions setupOptions = const TaskAgentSetupOptions(
@@ -232,6 +233,7 @@ void main() {
     await withClock(Clock.fixed(now), () async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
+          mediaQueryData: MediaQueryData(textScaler: textScaler),
           entryNotifier == null
               ? RelationshipBriefingCard(
                   relationship: entry ?? relationship(),
@@ -458,6 +460,23 @@ void main() {
         find.text('Only what you start yourself uses AI'),
         findsOneWidget,
       );
+    });
+
+    testWidgets('at large text the footer stacks the privacy note above the '
+        'primary, so neither squeezes the other', (tester) async {
+      await pump(
+        tester,
+        entry: relationship(important: false),
+        textScaler: const TextScaler.linear(1.6),
+      );
+      final note = tester.getRect(
+        find.byKey(const ValueKey('relationship-agent-meta')),
+      );
+      final action = tester.getRect(
+        find.byKey(const ValueKey('relationship-agent-mark-important')),
+      );
+      expect(action.top, greaterThanOrEqualTo(note.bottom));
+      expect(find.text('Only what you start yourself uses AI'), findsOneWidget);
     });
 
     testWidgets('Mark important switches the person on through the '
@@ -1052,13 +1071,13 @@ void main() {
       });
     });
 
-    testWidgets('the band wears its colour as a dot beside its word', (
-      tester,
-    ) async {
+    testWidgets('the band wears its colour as a dot beside its word, centred '
+        'on the first line', (tester) async {
       await pump(tester, checkIns: onTrackCheckIns, current: report());
-      final dot = tester.widget<Container>(
-        find.byKey(const ValueKey('relationship-agent-band-dot')),
+      final dotFinder = find.byKey(
+        const ValueKey('relationship-agent-band-dot'),
       );
+      final dot = tester.widget<Container>(dotFinder);
       final tokens = tester
           .element(find.byType(RelationshipBriefingCard))
           .designTokens;
@@ -1066,6 +1085,17 @@ void main() {
         (dot.decoration! as BoxDecoration).color,
         relationshipHealthBandColor(tokens, RelationshipHealthBand.thriving),
       );
+      // The dot's offset is the text line less the dot, halved — computed,
+      // not a fixed step, so it scales with the text.
+      final line = tokens.typography.styles.body.bodySmall;
+      final offset = tester
+          .widget<Padding>(
+            find.ancestor(of: dotFinder, matching: find.byType(Padding)).first,
+          )
+          .padding
+          .resolve(TextDirection.ltr)
+          .top;
+      expect(offset, (line.fontSize! * line.height! - IconSizes.xs) / 2);
     });
 
     testWidgets('with nothing to expand, the sources line is not hidden '

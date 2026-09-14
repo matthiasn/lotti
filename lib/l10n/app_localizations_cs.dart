@@ -3223,7 +3223,8 @@ class AppLocalizationsCs extends AppLocalizations {
       'Povol Lotti přístup k mikrofonu v nastavení systému a zkus to znovu. Nic se nenahrálo.';
 
   @override
-  String get checkInMicrophoneDeniedTitle => 'Lotti nemůže použít mikrofon';
+  String get checkInMicrophoneDeniedCalloutTitle =>
+      'Povol přístup k mikrofonu, abys mohl diktovat';
 
   @override
   String get checkInMoreCaption => 'Pocit · témata · příště';
@@ -3386,6 +3387,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String checkInTranscriptMissingBody(String length) {
     return 'Tvoje nahrávka ($length) zůstane uložená v deníku, i když tento check-in zahodíš. Zkus to za chvíli znovu.';
   }
+
+  @override
+  String get checkInTranscriptMissingCalloutTitle =>
+      'Zkus to znovu, nebo napiš, co si pamatuješ';
 
   @override
   String get checkInTranscriptUnavailable =>

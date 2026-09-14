@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_collapse.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
@@ -304,26 +305,18 @@ class _PendingPill extends StatelessWidget {
         opacity: count > 0 ? 1 : 0,
         duration: duration,
         curve: MotionCurves.standard,
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.step3,
-            vertical: tokens.spacing.step1,
-          ),
-          decoration: BoxDecoration(
-            color: ai.subtleWashStrong,
-            borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-          ),
-          child: AnimatedSwitcher(
-            duration: duration,
-            switchInCurve: MotionCurves.standard,
-            switchOutCurve: MotionCurves.standard,
-            child: Text(
-              context.messages.changeSetPendingCount(count),
-              key: ValueKey(count),
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: ai.metaText,
-              ),
-            ),
+        // The design system's tag in the meta ink — the shape every count on
+        // a card shares — with the number still cross-fading as it changes.
+        child: AnimatedSwitcher(
+          duration: duration,
+          switchInCurve: MotionCurves.standard,
+          switchOutCurve: MotionCurves.standard,
+          child: DsPill(
+            key: ValueKey(count),
+            variant: DsPillVariant.outline,
+            shape: DsPillShape.tag,
+            color: ai.metaText,
+            label: context.messages.changeSetPendingCount(count),
           ),
         ),
       ),

@@ -1394,7 +1394,10 @@
   "checkInInteractionOther": "Altfel",
   "checkInInteractionVideoCall": "Apel video",
   "checkInMicrophoneDeniedBody": "Permiteți accesul la microfon pentru Lotti în setările sistemului, apoi încercați din nou. Nu s-a înregistrat nimic.",
-  "checkInMicrophoneDeniedTitle": "Lotti nu poate folosi microfonul",
+  "checkInMicrophoneDeniedCalloutTitle": "Permiteți accesul la microfon pentru a dicta",
+  "@checkInMicrophoneDeniedCalloutTitle": {
+    "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
+  },
   "checkInMoreCaption": "Stare · subiecte · data viitoare",
   "checkInMoreSection": "Mai mult",
   "checkInNarrativeHint": "Despre ce ați vorbit? O linie este de ajuns.",
@@ -1444,6 +1447,10 @@
   "checkInTranscriptAdded": "Transcriere adăugată",
   "checkInTranscriptionUnavailableTitle": "Niciun model de transcriere configurat",
   "checkInTranscriptMissingBody": "Înregistrarea dvs. de {length} rămâne salvată în jurnal, chiar dacă renunțați la acest check-in. Încercați din nou în scurt timp.",
+  "checkInTranscriptMissingCalloutTitle": "Încercați din nou sau scrieți ce vă amintiți",
+  "@checkInTranscriptMissingCalloutTitle": {
+    "description": "The transcript-not-received card's title: the next step, since the header status already names the state."
+  },
   "checkInTranscriptUnavailable": "Selectați un profil de inferență implicit cu un model de transcriere în setările AI sau scrieți înregistrarea de contact.",
   "checkInTypeChipSemantics": "Tip: {type}. Schimbați",
   "checkInTypeInstead": "Scrieți în schimb",

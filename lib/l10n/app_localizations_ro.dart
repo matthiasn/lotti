@@ -3234,7 +3234,8 @@ class AppLocalizationsRo extends AppLocalizations {
       'Permiteți accesul la microfon pentru Lotti în setările sistemului, apoi încercați din nou. Nu s-a înregistrat nimic.';
 
   @override
-  String get checkInMicrophoneDeniedTitle => 'Lotti nu poate folosi microfonul';
+  String get checkInMicrophoneDeniedCalloutTitle =>
+      'Permiteți accesul la microfon pentru a dicta';
 
   @override
   String get checkInMoreCaption => 'Stare · subiecte · data viitoare';
@@ -3403,6 +3404,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String checkInTranscriptMissingBody(String length) {
     return 'Înregistrarea dvs. de $length rămâne salvată în jurnal, chiar dacă renunțați la acest check-in. Încercați din nou în scurt timp.';
   }
+
+  @override
+  String get checkInTranscriptMissingCalloutTitle =>
+      'Încercați din nou sau scrieți ce vă amintiți';
 
   @override
   String get checkInTranscriptUnavailable =>

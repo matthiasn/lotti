@@ -1979,7 +1979,10 @@
   "checkInInteractionOther": "Other",
   "checkInInteractionVideoCall": "Video call",
   "checkInMicrophoneDeniedBody": "Allow microphone access for Lotti in system settings, then try again. Nothing was recorded.",
-  "checkInMicrophoneDeniedTitle": "Lotti can't use the microphone",
+  "checkInMicrophoneDeniedCalloutTitle": "Allow microphone access to dictate",
+  "@checkInMicrophoneDeniedCalloutTitle": {
+    "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
+  },
   "checkInMoreCaption": "Feeling · topics · next time",
   "checkInMoreSection": "More",
   "checkInNarrativeHint": "What did you talk about? One line is enough.",
@@ -2055,6 +2058,10 @@
         "type": "String"
       }
     }
+  },
+  "checkInTranscriptMissingCalloutTitle": "Try again, or type what you remember",
+  "@checkInTranscriptMissingCalloutTitle": {
+    "description": "The transcript-not-received card's title: the next step, since the header status already names the state."
   },
   "checkInTranscriptUnavailable": "Choose a default inference profile with a transcription model in AI settings, or write your check-in.",
   "@checkInTranscriptUnavailable": {

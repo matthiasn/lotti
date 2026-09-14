@@ -102,6 +102,52 @@ void main() {
     });
   });
 
+  group('TldrHeader.plain', () {
+    testWidgets('a plain header wears a neutral tile, not the AI accent', (
+      tester,
+    ) async {
+      Future<Container> badgeFor({required bool plain}) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            TldrHeader(
+              agentName: 'No agent for this person',
+              icon: LottiIcons.people,
+              plain: plain,
+            ),
+          ),
+        );
+        return tester.widget<Container>(
+          find
+              .descendant(
+                of: find.byType(TldrHeader),
+                matching: find.byType(Container),
+              )
+              .first,
+        );
+      }
+
+      DsTokens tokens() => tester.element(find.byType(TldrHeader)).designTokens;
+      final plain = await badgeFor(plain: true);
+      expect(
+        (plain.decoration! as BoxDecoration).color,
+        tokens().colors.background.level03,
+      );
+      expect(
+        tester.widget<Icon>(find.byIcon(LottiIcons.people)).color,
+        tokens().colors.text.mediumEmphasis,
+      );
+      final accented = await badgeFor(plain: false);
+      expect(
+        (accented.decoration! as BoxDecoration).color,
+        tokens().colors.aiCard.accentSoft,
+      );
+      expect(
+        tester.widget<Icon>(find.byIcon(LottiIcons.people)).color,
+        tokens().colors.aiCard.accent,
+      );
+    });
+  });
+
   group('TldrBody.bodyStyle', () {
     testWidgets('reads at the compact summary size unless the host sets its '
         'own tier', (tester) async {

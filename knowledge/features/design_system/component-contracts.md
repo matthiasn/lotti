@@ -349,6 +349,15 @@ control that reads as one and keeps the shared hover fill. Reach for
 `DsQuietInk` only when a hover fill would manufacture a button shape the
 resting design deliberately does not have.
 
+`DesignSystemIconAction` takes an optional `tone` — the glyph's ink while
+live, the error ink for a destructive delete — and always drops to the
+low-emphasis step when disabled. `TldrHeader` takes `plain` for a card that
+is not an AI surface yet: a neutral badge tile, hairline border and
+medium-emphasis glyph instead of the accent it would otherwise disclaim.
+`DesignSystemModalActionBar`'s stacked layout (above `TextScales.large`)
+leads with the primary and centres the secondaries beneath it: a stacked
+bar must never put its exit above its one filled action.
+
 `DesignSystemInlineCallout` also takes an optional `title` (subtitle above
 the message) and `actions` (buttons in a trailing-aligned wrap under the
 text, quietest first so the filled one sits on the rail every primary
