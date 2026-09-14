@@ -516,6 +516,11 @@ See [profile resolution](ai/profile-resolution.md) for failure and precedence ru
   Policy rows P16 and
   P17 regress this distinction with the six-dimensional BP fixture; model
   results and context-shape experiments live in the goal-agent eval run book.
+  After retiring a stale banner, the prompt asks the model to re-evaluate
+  eligibility in the same wake, excluding the retired banner. If replacement
+  is still required, reuse an eligible top-rated banner before generating one.
+  The inference eval measures compliance before workflow recovery; the
+  outcome eval exercises the production workflow, including its forced retry.
   A wake with zero tool calls is legal (the no-op policy row) — the
   strategy never nags for output. Two deterministic exceptions are forced
   with one pinned retry each: a wake missing its report where the status

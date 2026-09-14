@@ -436,7 +436,8 @@ void main() {
       // The vague-musing scenario wants the agent to ASK something. A loose
       // "contains ?" credited pep talk with a rhetorical question buried in
       // the middle: over 40 samples the loose form scored 0.525 where the
-      // question actually landed at the end only 0.375 of the time.
+      // question actually landed at the end only 0.375 of the time. Neither
+      // punctuation presence nor position establishes a clarifying question.
       final scenario = scenarioById('evo_ambiguous');
       expect(
         classifyGoalAgentResult(
@@ -453,7 +454,7 @@ void main() {
         ),
         GoalAgentEvalFailureCategory.missingAssistantContent,
       );
-      // Ending on the question is what the policy asks for.
+      // A direct request for the user to explain the difficulty qualifies.
       expect(
         classifyGoalAgentResult(
           scenario: scenario,
@@ -467,6 +468,47 @@ void main() {
           assistantContent: '',
         ),
         GoalAgentEvalFailureCategory.none,
+      );
+    });
+
+    test('a clarifying choice can be followed by reassurance', () {
+      final scenario = scenarioById('evo_ambiguous');
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenario,
+          toolCalls: [
+            call(
+              GoalAgentToolNames.replyToUser,
+              jsonEncode({
+                'message':
+                    'Do you want to keep the goal as it is, or change the '
+                    'target or window? If you want a change, tell me roughly '
+                    'what would fit better and I will put it to you for '
+                    'approval. There is no pressure to decide today.',
+              }),
+            ),
+          ],
+          assistantContent: '',
+        ),
+        GoalAgentEvalFailureCategory.none,
+      );
+    });
+
+    test('a rhetorical question at the end still is not clarification', () {
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenarioById('evo_ambiguous'),
+          toolCalls: [
+            call(
+              GoalAgentToolNames.replyToUser,
+              jsonEncode({
+                'message': 'Some days the win is just getting out the door?',
+              }),
+            ),
+          ],
+          assistantContent: '',
+        ),
+        GoalAgentEvalFailureCategory.missingAssistantContent,
       );
     });
 

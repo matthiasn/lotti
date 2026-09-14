@@ -636,12 +636,17 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
       GoalAgentToolNames.proposeGoalRevision,
       ..._adCreationToolNames,
     ],
-    // A question at the END of the reply, not any question mark anywhere: the
-    // loose check credited "Some days the win is just getting out the door?"
-    // inside a pep talk. Measured over 40 samples the two differ sharply —
-    // 0.525 loose against 0.375 strict — so the loose form was overstating
-    // how often the agent actually asks.
-    requiredAssistantContentPatterns: const [r'\?[^?]{0,60}$'],
+    // English question-form heuristic for this English fixture: ask for the
+    // user's difficulty or preference, rather than a rhetorical pep-talk
+    // aside. Reassurance after a real question must not turn it into a miss.
+    requiredAssistantContentPatterns: const [
+      // Regex fragments join without literal spaces.
+      // ignore: no_adjacent_strings_in_list, missing_whitespace_between_adjacent_strings
+      r"\b(?:what(?: is|'s|’s| feels| makes| would)|which (?:part|aspect|option)|"
+          // ignore: missing_whitespace_between_adjacent_strings
+          'how (?:can|could|would)|(?:do|would|could|can) you|is it|are you)'
+          r'\b[^?!.]*\?',
+    ],
   ),
   GoalAgentEvalScenario(
     id: 'evo_withdrawn',
