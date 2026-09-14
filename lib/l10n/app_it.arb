@@ -1557,6 +1557,10 @@
   "checkInDiscardDraftMessage": "Scartare questo check-in? Non è stato salvato nulla.",
   "checkInDiscardDraftRecordingMessage": "Scartare questo check-in e la registrazione? La registrazione verrà eliminata.",
   "checkInDiscardRecording": "Scarta",
+  "checkInDiscardRecordingBody": "L’audio viene eliminato. Il tuo check-in resta aperto.",
+  "@checkInDiscardRecordingBody": {
+    "description": "Body of the confirmation before discarding a check-in recording: the audio is deleted, the composer stays open."
+  },
   "checkInDismissButton": "Chiudi",
   "checkInDurationChip": "Durata",
   "checkInDurationChipSemantics": "Durata: {duration}. Cambia",
@@ -1571,8 +1575,8 @@
   "checkInInteractionMessage": "Messaggio",
   "checkInInteractionOther": "Altro",
   "checkInInteractionVideoCall": "Videochiamata",
-  "checkInMicrophoneDeniedBody": "Consenti a Lotti l’accesso al microfono nelle impostazioni di sistema, poi riprova. Non è stato registrato nulla.",
-  "checkInMicrophoneDeniedCalloutTitle": "Consenti l’accesso al microfono per dettare",
+  "checkInMicrophoneDeniedBody": "Attivalo per Lotti nelle impostazioni di sistema, poi tocca Detta. Non è stato registrato nulla.",
+  "checkInMicrophoneDeniedCalloutTitle": "Consenti l’accesso al microfono",
   "@checkInMicrophoneDeniedCalloutTitle": {
     "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
   },
@@ -1633,7 +1637,7 @@
   "checkInTranscriptAdded": "Trascrizione aggiunta",
   "checkInTranscriptionUnavailableTitle": "Nessun modello di trascrizione configurato",
   "checkInTranscriptMissingBody": "La tua registrazione di {length} resta salvata nel diario, anche se scarti questo check-in. Riprova tra un momento.",
-  "checkInTranscriptMissingCalloutTitle": "Riprova, oppure scrivi quello che ricordi",
+  "checkInTranscriptMissingCalloutTitle": "Riprova, o scrivilo",
   "@checkInTranscriptMissingCalloutTitle": {
     "description": "The transcript-not-received card's title: the next step, since the header status already names the state."
   },

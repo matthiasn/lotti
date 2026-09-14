@@ -21,6 +21,7 @@ import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
@@ -899,8 +900,9 @@ void main() {
         state: agentState(failures: 1, lastWakeAt: failedAt),
       );
 
-      // The device's own clock format, as the started chip and the wheel.
-      expect(statusText(tester), 'Last run failed · 1:41 PM');
+      // A past event in the "as of" grammar: how long ago, not a clock
+      // time that reads as an appointment.
+      expect(statusText(tester), 'Last run failed · 19 min ago');
       expect(
         find.textContaining('No model is set up for briefings.'),
         findsOneWidget,
@@ -1071,19 +1073,68 @@ void main() {
       });
     });
 
+    testWidgets('the failed face ages from its last wake, not from a '
+        'briefing it does not have', (tester) async {
+      var current = now;
+      final failedAt = now.subtract(const Duration(seconds: 58));
+      await withClock(Clock(() => current), () async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            RelationshipBriefingCard(
+              relationship: relationship(),
+              checkIns: onTrackCheckIns,
+            ),
+            overrides: [
+              agentReportProvider(agentId).overrideWith((ref) async => null),
+              agentStateProvider(agentId).overrideWith(
+                (ref) async => agentState(failures: 1, lastWakeAt: failedAt),
+              ),
+              agentIsRunningProvider(
+                agentId,
+              ).overrideWith((ref) => Stream.value(false)),
+              agentIdentityProvider(agentId).overrideWith((ref) async => null),
+              taskAgentResolvedSetupProvider(
+                agentId,
+              ).overrideWith((ref) async => resolvedSetup()),
+              agentTokenUsageSummariesProvider(
+                agentId,
+              ).overrideWith((ref) async => const []),
+              relationshipAgentServiceProvider.overrideWithValue(agentService),
+              relationshipBriefingDisclosureProvider(
+                relationshipId,
+              ).overrideWith((ref) async => null),
+              relationshipRepositoryProvider.overrideWithValue(repository),
+              contactLauncherProvider.overrideWithValue(
+                _FakeContactLauncher(launchable: const {}),
+              ),
+              pendingInteractionStoreProvider.overrideWithValue(store),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(statusText(tester), 'Last run failed · just now');
+
+        current = now.add(const Duration(seconds: 5));
+        await tester.pump(const Duration(seconds: 5));
+        expect(statusText(tester), 'Last run failed · 1 min ago');
+      });
+    });
+
     testWidgets('the band wears its colour as a dot beside its word, centred '
         'on the first line', (tester) async {
       await pump(tester, checkIns: onTrackCheckIns, current: report());
       final dotFinder = find.byKey(
         const ValueKey('relationship-agent-band-dot'),
       );
-      final dot = tester.widget<Container>(dotFinder);
+      // The design system's own presence dot, in the band's tone.
+      final dot = tester.widget<DesignSystemBadge>(dotFinder);
       final tokens = tester
           .element(find.byType(RelationshipBriefingCard))
           .designTokens;
+      expect(dot.tone, DesignSystemBadgeTone.success);
       expect(
-        (dot.decoration! as BoxDecoration).color,
-        relationshipHealthBandColor(tokens, RelationshipHealthBand.thriving),
+        relationshipHealthBandTone(RelationshipHealthBand.steady),
+        DesignSystemBadgeTone.neutral,
       );
       // The dot's offset is the text line less the dot, halved — computed,
       // not a fixed step, so it scales with the text.
@@ -1095,7 +1146,10 @@ void main() {
           .padding
           .resolve(TextDirection.ltr)
           .top;
-      expect(offset, (line.fontSize! * line.height! - IconSizes.xs) / 2);
+      expect(
+        offset,
+        (line.fontSize! * line.height! - tokens.spacing.step3) / 2,
+      );
     });
 
     testWidgets('with nothing to expand, the sources line is not hidden '

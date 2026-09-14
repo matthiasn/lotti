@@ -490,6 +490,13 @@ class CheckInStickyActions extends StatelessWidget {
             label: messages.cancelButton,
             variant: DesignSystemButtonVariant.quiet,
             size: DesignSystemButtonSize.large,
+            // On the phone its label sits on the content column, like the
+            // card's quiet actions; in the dialog it trails beside Save, and
+            // centred under Save in the stacked large-text bar it keeps both
+            // insets, or it would sit off-centre.
+            alignsLabelToLeadingEdge:
+                !wide &&
+                MediaQuery.textScalerOf(context).scale(1) <= TextScales.large,
             onPressed: handle.dismiss,
           );
           final save = DesignSystemButton(

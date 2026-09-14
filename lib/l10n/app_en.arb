@@ -1950,6 +1950,10 @@
   "checkInDiscardDraftMessage": "Discard this check-in? Nothing has been saved.",
   "checkInDiscardDraftRecordingMessage": "Discard this check-in and the recording? The recording will be deleted.",
   "checkInDiscardRecording": "Discard",
+  "checkInDiscardRecordingBody": "The audio is deleted. Your check-in stays open.",
+  "@checkInDiscardRecordingBody": {
+    "description": "Body of the confirmation before discarding a check-in recording: the audio is deleted, the composer stays open."
+  },
   "checkInDismissButton": "Dismiss",
   "checkInDurationChip": "Duration",
   "checkInDurationChipSemantics": "Duration: {duration}. Change",
@@ -1978,8 +1982,8 @@
   "checkInInteractionMessage": "Message",
   "checkInInteractionOther": "Other",
   "checkInInteractionVideoCall": "Video call",
-  "checkInMicrophoneDeniedBody": "Allow microphone access for Lotti in system settings, then try again. Nothing was recorded.",
-  "checkInMicrophoneDeniedCalloutTitle": "Allow microphone access to dictate",
+  "checkInMicrophoneDeniedBody": "Turn it on for Lotti in system settings, then tap Dictate. Nothing was recorded.",
+  "checkInMicrophoneDeniedCalloutTitle": "Allow microphone access",
   "@checkInMicrophoneDeniedCalloutTitle": {
     "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
   },
@@ -2067,7 +2071,7 @@
       }
     }
   },
-  "checkInTranscriptMissingCalloutTitle": "Try again, or type what you remember",
+  "checkInTranscriptMissingCalloutTitle": "Try again, or type it",
   "@checkInTranscriptMissingCalloutTitle": {
     "description": "The transcript-not-received card's title: the next step, since the header status already names the state."
   },

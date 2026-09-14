@@ -3170,6 +3170,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInDiscardRecording => 'Zahodit';
 
   @override
+  String get checkInDiscardRecordingBody =>
+      'Zvuk se smaže. Tvůj check-in zůstane otevřený.';
+
+  @override
   String get checkInDismissButton => 'Zavřít';
 
   @override
@@ -3220,11 +3224,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get checkInMicrophoneDeniedBody =>
-      'Povol Lotti přístup k mikrofonu v nastavení systému a zkus to znovu. Nic se nenahrálo.';
+      'Zapni ho pro Lotti v nastavení systému a pak klepni na Diktovat. Nic se nenahrálo.';
 
   @override
-  String get checkInMicrophoneDeniedCalloutTitle =>
-      'Povol přístup k mikrofonu, abys mohl diktovat';
+  String get checkInMicrophoneDeniedCalloutTitle => 'Povol přístup k mikrofonu';
 
   @override
   String get checkInMoreCaption => 'Pocit · témata · příště';
@@ -3397,7 +3400,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get checkInTranscriptMissingCalloutTitle =>
-      'Zkus to znovu, nebo napiš, co si pamatuješ';
+      'Zkus to znovu, nebo to napiš';
 
   @override
   String get checkInTranscriptUnavailable =>

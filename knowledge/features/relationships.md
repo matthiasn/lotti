@@ -803,10 +803,12 @@ the first word on the header's status line — `Thriving · as of 3 h ago`,
 the judgement before its timestamp — and the
 person header directly above the card already carries the tinted band pill
 and the cadence pill, so the card repeats neither — but the band's colour
-rides a dot in the status line's glyph slot, so the judgement is carried by
-more than its word (*steady* is the neutral medium-emphasis ink, never the
-accent that means pressable on the same card); every status glyph is centred on the first line by a
-computed offset, so at 1.6× it still sits on the words. The not-enrolled
+rides the design system's presence dot (`DesignSystemBadge.dot`, toned by
+`relationshipHealthBandTone`) in the status line's glyph slot, so the
+judgement is carried by more than its word (*steady* is the hueless
+`neutral` tone, never the accent that means pressable on the same card);
+every status glyph is centred on the first line by a computed offset, so at
+1.6× it still sits on the words. The not-enrolled
 face wears `TldrHeader`'s plain badge — a neutral tile, not the AI accent it
 disclaims — and its privacy note rides the action row's leading slot. The header's trailing rail holds only an out-of-date
 briefing's age (`6 days old`, an outlined tag in the meta ink, so the status
@@ -817,7 +819,9 @@ a `DsTieredText` in a live region — one that survives the shared header,
 which excludes only its badge and title from semantics so the status can
 speak for itself: it sheds its date or time before it
 wraps (`Out of date · new check-in Thursday` → `Out of date · new check-in`
-→ `Out of date`; `Last run failed · 14:05` → `Last run failed`), and only
+→ `Out of date`; `Last run failed · 19 min ago` → `Last run failed` — a past
+event in the same relative grammar as *as of*, never a clock time that
+reads as an appointment), and only
 the narrowest wording may take a second line, glyph top-aligned, so the
 state's non-colour carrier never clips.
 
@@ -865,7 +869,7 @@ so the decision is a table rather than a widget tree:
 | Not enrolled | not `important`, or dormant/archived | plain section card, people glyph · `No agent for this person` (or the status word while paused) · what *important* turns on · **Mark important** · meta `Only what you start yourself uses AI` |
 | No briefing | enrolled, no current report | `Agent watching · next look {day}` · how many check-ins *Brief now* would read, and that it never sees a channel · *Log check-in* · **Brief now** |
 | Running | `agentIsRunningProvider` | spinner · `Writing the briefing…` · `Reading N check-ins. Usually under a minute.` · *See activity* · no primary |
-| Failed | `consecutiveFailureCount > 0` and the last wake is newer than the report | `Last run failed · HH:mm` in error ink · the provider returned an error, your check-ins are unchanged (or that no model is set up) · *See activity* · **Choose a model** when no route resolves, **Try again** otherwise |
+| Failed | `consecutiveFailureCount > 0` and the last wake is newer than the report | `Last run failed · {ago}` in error ink · the provider returned an error, your check-ins are unchanged (or that no model is set up) · *See activity* · **Choose a model** when no route resolves, **Try again** otherwise |
 | Current | report, not stale | `{band} · as of {ago}` · TL;DR + Read more · *Log check-in* · **Update now** (secondary) · sources line once *Read more* is open |
 | Out of date | `AgentStateEntity.isReportStale` | `Out of date · new check-in {day}` in warning ink, `{n} days old` pill once a day old · body · *Log check-in* · **Update now** (primary) — no sources line, since the count would include the check-in it missed |
 | Due | the current face while the cadence is lapsed | same status · body · *Log check-in* · **Call {name}** (the first channel the platform can open, resolved like the action bar's), or **Log check-in** as the primary without one |
@@ -911,9 +915,10 @@ and above the footer, including when a later wake fails. Their scope and
 confirmation path are described below.
 
 The pills are the header block's own: [`relationshipCadencePill`](../../lib/features/relationships/ui/widgets/person_header.dart)
-renders the list model's cadence fact, and the health band pill shares
+renders the list model's cadence fact, and the health band pill takes
 `relationshipHealthBandColor`; the card names the band on its status line
-and draws neither pill. The token cost sums
+(its dot through the badge tones of `relationshipHealthBandTone`) and
+draws neither pill. The token cost sums
 `agentTokenUsageSummariesProvider` onto the model row; the "as of" status
 uses the shared [`relativeAgoLabel`](../../lib/utils/relative_age_label.dart).
 
@@ -1022,12 +1027,16 @@ The composer's parts, top to bottom:
   status line — `with Pip · last spoke Sat 1 Aug` at rest, read through
   `relationshipDetailControllerProvider`, and while speech is in flight what
   the field is doing (`● Recording`, `Paused`, `Transcribing…`, `Transcript
-  not received`, `Microphone unavailable`) — the glyph in the phase's tone
-  and the words in the quiet ink, so the callout beneath owns the alert
-  colour and accent on text means only pressable; *Paused* wears a pause
-  glyph. The line is a live region for the news only — never for the
+  not received`, `Microphone unavailable`) — while a take is live the
+  glyph alone carries the tone (the red dot is the design system's
+  `danger` presence dot) and the words stay in the quiet ink, so accent on
+  text means only pressable; a failure wears its alert ink on the words as
+  well, the briefing card's rule for its own status line, so the two
+  surfaces read one way; *Paused* wears a pause glyph. The line is a live
+  region for the recorder and the transcript wait only — never for the
   resting subtitle, which would otherwise be re-read before a landing
-  transcript. Editing an existing check-in, the ladder starts at `with Pip`:
+  transcript, and never for a failure, which the callout beneath announces
+  (its title is the next step), so one region speaks per event. Editing an existing check-in, the ladder starts at `with Pip`:
   the chip row is the one source of its date. The close control
   is a `DesignSystemIconAction`, as is the edit sheet's delete (in the error
   tone). The
@@ -1056,12 +1065,15 @@ The composer's parts, top to bottom:
   `_onNarrativeChanged`) — folding into its retry row when a recording is
   waiting. The cards are the design system's `DesignSystemInlineCallout`
   with a title and two actions on the trailing rail, quietest first —
-  *Type instead* and the recommended secondary pill, so the alert tone is
-  the card's one colour and the filled accent stays Save's — and they
-  announce themselves once, whole (`announce: true`). The header already
-  names the state, so a card's title is the *next step* (`Try again, or
-  type what you remember`; `Allow the microphone to dictate`); under the
-  refused microphone the field's own *Dictate* is the retry. Under a card
+  *Type instead* in the `quiet` variant (as while transcribing: the way
+  out, not a second accent) and the recommended secondary pill, so the
+  alert tone is the card's one colour, the pill its one shape, and the
+  filled accent stays Save's — and they announce themselves once, whole
+  (`announce: true`). The header already names the state, so a card's
+  title is the *next step*, short enough for one phone line (`Try again, or
+  type it`; `Allow microphone access`); under the refused microphone the
+  field's own *Dictate* is the retry, and the body says so (`…then tap
+  Dictate`). Under a card
   with nothing typed the field is one line and carries no caption. *Type instead* on a
   **missing transcript** does not forget the take: the phase becomes
   `CheckInSpeechFailed(cardDismissed: true)`, the card folds into one
@@ -1073,10 +1085,14 @@ The composer's parts, top to bottom:
   back out would take the edits with it. It wears the `quiet` variant with
   a refresh glyph so it never reads as Add more's twin. The caption row is a
   `DsTieredText` ladder (`Transcript added · 26 words · ⌘↩ to save` sheds
-  the hint, then the count), and the caption and its actions share one
-  corner across phases — transcribing included: beside each other when they
-  fit a line, else the actions on their own line at the trailing edge
-  (`_CaptionAndActions`), always so above `TextScales.large`. The
+  the count before the shortcut: the desktop dialog, where the hint pays
+  off, is where Re-record · Add more leave the caption least room), and the
+  caption and its actions share one corner across phases — transcribing
+  included: beside each other when they fit a line, else the actions on
+  their own line at the trailing edge (`_CaptionAndActions`), always so
+  above `TextScales.large` and always once a transcript has landed, where
+  Re-record · Add more beside the caption would leave it no room for the
+  shortcut even in the dialog. The
   transcribing caption ends on a time expectation (`· usually under a
   minute`), the first tier to go, and its *Type instead* is quiet so the
   wait is what the eye finds. The *More* row's caption is a ladder too
@@ -1102,8 +1118,13 @@ The composer's parts, top to bottom:
   the button's `quiet` variant on both viewports, so the one bright shape in
   the bar is Save's even while Save is held — and when the bar stacks, Save
   leads and Cancel sits centred beneath it, the design system's rule for
-  every stacked bar. The recorder's Discard is quiet too: red on this
-  surface is the live dot alone. On the
+  every stacked bar; on the phone Cancel's label sits on the content column
+  (`alignsLabelToLeadingEdge`), like the card's quiet actions. The
+  recorder's Discard · Pause · Stop sit on the trailing rail, where Dictate,
+  Try again and Add more live in every other phase, and Discard is quiet
+  too: red on this surface is the live dot alone. Discarding asks in this
+  composer's own words (`checkInDiscardRecordingBody`: the audio is
+  deleted, the check-in stays open). On the
   desktop dialog the field takes focus as the composer opens (the form's
   `dialog` flag), so the typed common case is open → type → ⌘↩; a phone
   waits for the first tap rather than raise its keyboard over the sheet. On a

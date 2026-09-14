@@ -3128,6 +3128,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInDiscardRecording => 'Kassér';
 
   @override
+  String get checkInDiscardRecordingBody =>
+      'Lyden slettes. Dit check-in forbliver åbent.';
+
+  @override
   String get checkInDismissButton => 'Luk';
 
   @override
@@ -3178,11 +3182,10 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get checkInMicrophoneDeniedBody =>
-      'Giv Lotti adgang til mikrofonen i systemindstillingerne, og prøv igen. Intet blev optaget.';
+      'Slå den til for Lotti i systemindstillingerne, og tryk så på Dikter. Intet blev optaget.';
 
   @override
-  String get checkInMicrophoneDeniedCalloutTitle =>
-      'Tillad mikrofonadgang for at diktere';
+  String get checkInMicrophoneDeniedCalloutTitle => 'Tillad mikrofonadgang';
 
   @override
   String get checkInMoreCaption => 'Følelse · emner · næste gang';
@@ -3355,7 +3358,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get checkInTranscriptMissingCalloutTitle =>
-      'Prøv igen, eller skriv det du husker';
+      'Prøv igen, eller skriv det';
 
   @override
   String get checkInTranscriptUnavailable =>

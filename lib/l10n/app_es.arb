@@ -1379,6 +1379,10 @@
   "checkInDiscardDraftMessage": "¿Descartar este check-in? No se ha guardado nada.",
   "checkInDiscardDraftRecordingMessage": "¿Descartar este check-in y la grabación? La grabación se eliminará.",
   "checkInDiscardRecording": "Descartar",
+  "checkInDiscardRecordingBody": "El audio se elimina. Tu check-in sigue abierto.",
+  "@checkInDiscardRecordingBody": {
+    "description": "Body of the confirmation before discarding a check-in recording: the audio is deleted, the composer stays open."
+  },
   "checkInDismissButton": "Cerrar",
   "checkInDurationChip": "Duración",
   "checkInDurationChipSemantics": "Duración: {duration}. Cambiar",
@@ -1393,8 +1397,8 @@
   "checkInInteractionMessage": "Mensaje",
   "checkInInteractionOther": "Otro",
   "checkInInteractionVideoCall": "Videollamada",
-  "checkInMicrophoneDeniedBody": "Permite el acceso al micrófono para Lotti en los ajustes del sistema y vuelve a intentarlo. No se grabó nada.",
-  "checkInMicrophoneDeniedCalloutTitle": "Permite el acceso al micrófono para dictar",
+  "checkInMicrophoneDeniedBody": "Actívalo para Lotti en los ajustes del sistema y luego toca Dictar. No se grabó nada.",
+  "checkInMicrophoneDeniedCalloutTitle": "Permite el acceso al micrófono",
   "@checkInMicrophoneDeniedCalloutTitle": {
     "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
   },
@@ -1455,7 +1459,7 @@
   "checkInTranscriptAdded": "Transcripción añadida",
   "checkInTranscriptionUnavailableTitle": "Sin modelo de transcripción configurado",
   "checkInTranscriptMissingBody": "Tu grabación de {length} queda guardada en el diario, aunque descartes este check-in. Inténtalo de nuevo en un momento.",
-  "checkInTranscriptMissingCalloutTitle": "Inténtalo de nuevo o escribe lo que recuerdes",
+  "checkInTranscriptMissingCalloutTitle": "Inténtalo de nuevo o escríbelo",
   "@checkInTranscriptMissingCalloutTitle": {
     "description": "The transcript-not-received card's title: the next step, since the header status already names the state."
   },

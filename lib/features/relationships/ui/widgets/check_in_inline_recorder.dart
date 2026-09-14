@@ -127,7 +127,8 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
     final confirmed = await showConfirmationModal(
       context: context,
       title: messages.audioRecordingDiscardDialogTitle,
-      message: messages.audioRecordingDiscardDialogBody,
+      // This surface's own words: the audio goes, the check-in stays.
+      message: messages.checkInDiscardRecordingBody,
       cancelLabel: messages.audioRecordingDiscardDialogCancel,
       confirmLabel: messages.audioRecordingDiscardDialogConfirm,
     );
@@ -225,15 +226,16 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
                 messages.checkInAudioSavedAsYouGo,
                 style: tokens.typography.styles.others.caption.copyWith(
                   color: tokens.colors.text.mediumEmphasis,
-                  fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
             ),
           ],
         ),
         SizedBox(height: tokens.spacing.step4),
+        // On the trailing rail, like Dictate, Try again and Add more: the
+        // accent action keeps one home from the first word to Save.
         Wrap(
-          alignment: WrapAlignment.center,
+          alignment: WrapAlignment.end,
           crossAxisAlignment: WrapCrossAlignment.center,
           spacing: tokens.spacing.step3,
           runSpacing: tokens.spacing.step3,

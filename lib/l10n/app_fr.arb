@@ -1379,6 +1379,10 @@
   "checkInDiscardDraftMessage": "Abandonner ce point ? Rien n’a été enregistré.",
   "checkInDiscardDraftRecordingMessage": "Abandonner ce point et l’enregistrement ? L’enregistrement sera supprimé.",
   "checkInDiscardRecording": "Abandonner",
+  "checkInDiscardRecordingBody": "L’audio est supprimé. Ton check-in reste ouvert.",
+  "@checkInDiscardRecordingBody": {
+    "description": "Body of the confirmation before discarding a check-in recording: the audio is deleted, the composer stays open."
+  },
   "checkInDismissButton": "Fermer",
   "checkInDurationChip": "Durée",
   "checkInDurationChipSemantics": "Durée : {duration}. Modifier",
@@ -1393,8 +1397,8 @@
   "checkInInteractionMessage": "Message",
   "checkInInteractionOther": "Autre",
   "checkInInteractionVideoCall": "Visio",
-  "checkInMicrophoneDeniedBody": "Autorise l’accès au micro pour Lotti dans les réglages système, puis réessaie. Rien n’a été enregistré.",
-  "checkInMicrophoneDeniedCalloutTitle": "Autorise l’accès au micro pour dicter",
+  "checkInMicrophoneDeniedBody": "Active-le pour Lotti dans les réglages système, puis touche Dicter. Rien n’a été enregistré.",
+  "checkInMicrophoneDeniedCalloutTitle": "Autorise l’accès au micro",
   "@checkInMicrophoneDeniedCalloutTitle": {
     "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
   },
@@ -1455,7 +1459,7 @@
   "checkInTranscriptAdded": "Transcription ajoutée",
   "checkInTranscriptionUnavailableTitle": "Aucun modèle de transcription configuré",
   "checkInTranscriptMissingBody": "Ton enregistrement de {length} reste conservé dans le journal, même si tu abandonnes ce point. Réessaie dans un instant.",
-  "checkInTranscriptMissingCalloutTitle": "Réessaie, ou écris ce dont tu te souviens",
+  "checkInTranscriptMissingCalloutTitle": "Réessaie, ou écris-le",
   "@checkInTranscriptMissingCalloutTitle": {
     "description": "The transcript-not-received card's title: the next step, since the header status already names the state."
   },

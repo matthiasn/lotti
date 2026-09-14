@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
@@ -243,7 +244,10 @@ class _StatusLine extends StatelessWidget {
       // The red dot alone says "live": error ink on the word would make a
       // take read as a failure, and red on this surface means only that.
       CheckInComposerStatus.recording => (
-        _Dot(color: tokens.colors.alert.error.defaultColor),
+        const DesignSystemBadge.dot(
+          tone: DesignSystemBadgeTone.danger,
+          excludeFromSemantics: true,
+        ),
         [messages.checkInStatusRecording],
         quiet,
       ),
@@ -269,7 +273,7 @@ class _StatusLine extends StatelessWidget {
           color: tokens.colors.alert.warning.defaultColor,
         ),
         [messages.checkInStatusTranscriptMissing],
-        quiet,
+        tokens.colors.alert.warning.ink,
       ),
       CheckInComposerStatus.transcriptionUnavailable => (
         Icon(
@@ -278,7 +282,7 @@ class _StatusLine extends StatelessWidget {
           color: tokens.colors.alert.warning.defaultColor,
         ),
         [messages.checkInStatusTranscriptionUnavailable],
-        quiet,
+        tokens.colors.alert.warning.ink,
       ),
       CheckInComposerStatus.microphoneDenied => (
         Icon(
@@ -287,7 +291,7 @@ class _StatusLine extends StatelessWidget {
           color: tokens.colors.alert.error.defaultColor,
         ),
         [messages.checkInStatusMicrophoneDenied],
-        quiet,
+        tokens.colors.alert.error.ink,
       ),
       CheckInComposerStatus.recordingFailed => (
         Icon(
@@ -296,7 +300,7 @@ class _StatusLine extends StatelessWidget {
           color: tokens.colors.alert.error.defaultColor,
         ),
         [messages.checkInStatusRecordingFailed],
-        quiet,
+        tokens.colors.alert.error.ink,
       ),
       CheckInComposerStatus.recordingNotSaved => (
         Icon(
@@ -305,7 +309,7 @@ class _StatusLine extends StatelessWidget {
           color: tokens.colors.alert.error.defaultColor,
         ),
         [messages.checkInStatusRecordingNotSaved],
-        quiet,
+        tokens.colors.alert.error.ink,
       ),
       CheckInComposerStatus.recorderBusy => (
         Icon(
@@ -314,16 +318,20 @@ class _StatusLine extends StatelessWidget {
           color: tokens.colors.alert.warning.defaultColor,
         ),
         [messages.checkInStatusRecorderBusy],
-        quiet,
+        tokens.colors.alert.warning.ink,
       ),
     };
 
     // Live for the news only: the resting subtitle is not an announcement,
-    // and a transcript landing must not re-read it first.
+    // a transcript landing must not re-read it first, and a failure is the
+    // card's to announce — its title is the next step, so one region
+    // speaks per event, not two.
     return Semantics(
       liveRegion: switch (status) {
-        CheckInComposerStatus.idle || CheckInComposerStatus.preparing => false,
-        _ => true,
+        CheckInComposerStatus.recording ||
+        CheckInComposerStatus.paused ||
+        CheckInComposerStatus.transcribing => true,
+        _ => false,
       },
       child: Row(
         children: [
@@ -344,17 +352,4 @@ class _StatusLine extends StatelessWidget {
       ),
     );
   }
-}
-
-class _Dot extends StatelessWidget {
-  const _Dot({required this.color});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: IconSizes.xs,
-    height: IconSizes.xs,
-    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-  );
 }
