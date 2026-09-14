@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_narrative_field.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
@@ -218,14 +219,28 @@ void main() {
     testWidgets('without a route the saved line is the length alone', (
       tester,
     ) async {
+      // A phone's width, so the time expectation cannot fit beside Type
+      // instead in any font the bundle may have loaded — the ladder is the
+      // contract; the rendered tier only confirms which rung it took.
       await pump(
         tester,
         phase: const CheckInSpeechTranscribing(
           audioEntryId: 'audio-1',
           length: Duration(minutes: 1, seconds: 5),
         ),
+        width: 360,
       );
-      expect(find.text('1:05 of audio saved'), findsOneWidget);
+      expect(
+        tester
+            .widget<DsTieredText>(
+              find.ancestor(
+                of: find.text('1:05 of audio saved'),
+                matching: find.byType(DsTieredText),
+              ),
+            )
+            .tiers,
+        ['1:05 of audio saved · usually under a minute', '1:05 of audio saved'],
+      );
     });
 
     testWidgets('the skeleton breathes, and holds still under reduced motion', (
