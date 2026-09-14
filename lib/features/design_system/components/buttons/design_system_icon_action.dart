@@ -28,11 +28,17 @@ class DesignSystemIconAction extends StatelessWidget {
     required this.tooltip,
     required this.onPressed,
     this.isBusy = false,
+    this.tone,
     super.key,
   });
 
   final IconData icon;
   final String tooltip;
+
+  /// The glyph's ink while the control is live — the error ink for a
+  /// destructive action such as delete. Null keeps the medium-emphasis
+  /// default; a disabled control always drops to the low-emphasis step.
+  final Color? tone;
 
   /// A null callback disables the control and drops its glyph to the
   /// low-emphasis step.
@@ -53,7 +59,7 @@ class DesignSystemIconAction extends StatelessWidget {
     // ever colours the icon of a control that is disabled for want of a
     // callback.
     final foreground = onPressed != null
-        ? tokens.colors.text.mediumEmphasis
+        ? tone ?? tokens.colors.text.mediumEmphasis
         : tokens.colors.text.lowEmphasis;
 
     void handleTap() {

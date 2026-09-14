@@ -22,6 +22,7 @@ void main() {
     WidgetTester tester, {
     VoidCallback? onPressed,
     bool isBusy = false,
+    Color? tone,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -31,6 +32,7 @@ void main() {
           tooltip: 'Refresh',
           onPressed: onPressed,
           isBusy: isBusy,
+          tone: tone,
         ),
       ),
     );
@@ -69,6 +71,26 @@ void main() {
       final icon = tester.widget<Icon>(find.byIcon(LottiIcons.refresh));
       expect(icon.color, tokens.colors.text.mediumEmphasis);
       expect(icon.color, isNot(tokens.colors.text.lowEmphasis));
+    });
+
+    testWidgets('a tone colours the live glyph, never the disabled one', (
+      tester,
+    ) async {
+      var tokens = await pump(
+        tester,
+        onPressed: () {},
+        tone: const Color(0xFFAA0000),
+      );
+      expect(
+        tester.widget<Icon>(find.byIcon(LottiIcons.refresh)).color,
+        const Color(0xFFAA0000),
+      );
+      tokens = await pump(tester, tone: const Color(0xFFAA0000));
+      expect(
+        tester.widget<Icon>(find.byIcon(LottiIcons.refresh)).color,
+        tokens.colors.text.lowEmphasis,
+        reason: 'disabled always drops to the low-emphasis step',
+      );
     });
 
     testWidgets('busy swaps the glyph for a spinner of the same size', (

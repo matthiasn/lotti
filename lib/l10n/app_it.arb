@@ -1572,7 +1572,6 @@
   "checkInInteractionOther": "Altro",
   "checkInInteractionVideoCall": "Videochiamata",
   "checkInMicrophoneDeniedBody": "Consenti a Lotti l’accesso al microfono nelle impostazioni di sistema, poi riprova. Non è stato registrato nulla.",
-  "checkInMicrophoneDeniedTitle": "Lotti non può usare il microfono",
   "checkInMoreCaption": "Sensazioni · argomenti · prossima volta",
   "checkInMoreSection": "Altro",
   "checkInNarrativeHint": "Di cosa avete parlato? Basta una riga.",
@@ -6714,5 +6713,13 @@
     "description": "Badge displayed on the newest release in the What's New view."
   },
   "whatsNewDoneButton": "Fatto",
-  "whatsNewSkipButton": "Salta!"
+  "whatsNewSkipButton": "Salta!",
+  "checkInTranscriptMissingCalloutTitle": "Riprova, oppure scrivi quello che ricordi",
+  "@checkInTranscriptMissingCalloutTitle": {
+    "description": "The transcript-not-received card's title: the next step, since the header status already names the state."
+  },
+  "checkInMicrophoneDeniedCalloutTitle": "Consenti il microfono per dettare",
+  "@checkInMicrophoneDeniedCalloutTitle": {
+    "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
+  }
 }

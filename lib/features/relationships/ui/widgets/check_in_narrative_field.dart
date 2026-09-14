@@ -93,6 +93,9 @@ class CheckInNarrativeField extends StatelessWidget {
             border: Border.all(color: border),
           ),
           padding: EdgeInsets.all(tokens.spacing.step5),
+          // Not an AnimatedSize: the tiered captions lay themselves out with
+          // a LayoutBuilder, which re-dirties an animating size box in its
+          // own layout pass. The phases swap in place instead.
           child: switch (phase) {
             CheckInSpeechIdle() => _typing(context),
             CheckInSpeechPreparing() => _typing(context, preparing: true),
@@ -168,10 +171,13 @@ class CheckInNarrativeField extends StatelessWidget {
         : ready
         ? messages.checkInTranscriptAdded
         : null;
+    // Under a card with nothing typed, the field carries no caption at all:
+    // the card is the message, and a lone shortcut hint only competes.
     final parts = [
       ?status,
       if (ready || wordCount > 0) messages.checkInWordCount(wordCount),
-      if (shortcutHint case final hint?) messages.checkInSaveShortcutHint(hint),
+      if (shortcutHint case final hint? when !underCard || wordCount > 0)
+        messages.checkInSaveShortcutHint(hint),
     ];
     final ladder = [
       for (var n = parts.length; n >= 1; n--) parts.take(n).join(' · '),
@@ -181,6 +187,55 @@ class CheckInNarrativeField extends StatelessWidget {
     final captionStyle = status == null
         ? caption
         : caption.copyWith(color: tokens.colors.text.mediumEmphasis);
+    final actions = <Widget>[
+      if (ready) ...[
+        // Only while the transcript is exactly what landed: once it is
+        // edited, taking it back out would take the edits with it.
+        // Quiet, with its own glyph: the accent is for the way
+        // forward, and Re-record must not read as a twin of Add more.
+        if (onReRecord != null)
+          DesignSystemButton(
+            key: const ValueKey('check-in-re-record'),
+            label: messages.checkInReRecordButton,
+            leadingIcon: LottiIcons.refresh,
+            variant: DesignSystemButtonVariant.quiet,
+            size: DesignSystemButtonSize.medium,
+            tapTargetSize: MaterialTapTargetSize.padded,
+            onPressed: onReRecord,
+          ),
+        DesignSystemButton(
+          key: const ValueKey('check-in-add-more'),
+          label: messages.checkInAddMoreButton,
+          leadingIcon: LottiIcons.mic,
+          variant: DesignSystemButtonVariant.outlined,
+          size: DesignSystemButtonSize.medium,
+          tapTargetSize: MaterialTapTargetSize.padded,
+          onPressed: onAddMore,
+        ),
+      ] else if (collapsed)
+        DesignSystemButton(
+          key: const ValueKey('check-in-retry-transcript'),
+          label: messages.relationshipAgentTryAgain,
+          leadingIcon: LottiIcons.refresh,
+          variant: DesignSystemButtonVariant.tertiary,
+          size: DesignSystemButtonSize.medium,
+          tapTargetSize: MaterialTapTargetSize.padded,
+          onPressed: onRetryTranscript,
+        )
+      // A take waiting for *Try again*, or a microphone the OS refused,
+      // has its way forward on the card; a second recorder button in
+      // the field would be a dead door beside a live one.
+      else if (failure == null || _dictatesUnder(failure.kind))
+        DesignSystemButton(
+          key: const ValueKey('check-in-dictate'),
+          label: messages.checkInDictateButton,
+          leadingIcon: LottiIcons.mic,
+          variant: DesignSystemButtonVariant.outlined,
+          size: DesignSystemButtonSize.medium,
+          isLoading: preparing,
+          onPressed: preparing ? null : onDictate,
+        ),
+    ];
     // The actions sit in one corner across every phase: beside the caption
     // when both fit a line, else on their own line at the trailing edge —
     // always at large text, where even a lone button can crowd the caption.
@@ -214,7 +269,8 @@ class CheckInNarrativeField extends StatelessWidget {
           // "One line is enough": the box says so by not asking for five.
           minLines: underCard ? 2 : 3,
         ),
-        SizedBox(height: tokens.spacing.step4),
+        if (meta.isNotEmpty || actions.isNotEmpty)
+          SizedBox(height: tokens.spacing.step4),
         if (preparing)
           Semantics(
             liveRegion: true,
@@ -224,86 +280,39 @@ class CheckInNarrativeField extends StatelessWidget {
               style: caption,
             ),
           ),
-        _CaptionAndActions(
-          stacked: stacked,
-          caption: meta.isEmpty
-              ? null
-              : Semantics(
-                  liveRegion: ready,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (ready || collapsed) ...[
-                        Icon(
-                          LottiIcons.confirmCircled,
-                          key: ready
-                              ? const ValueKey('check-in-transcript-added')
-                              : const ValueKey('check-in-audio-saved'),
-                          size: IconSizes.s,
-                          color: tokens.colors.text.mediumEmphasis,
+        if (meta.isNotEmpty || actions.isNotEmpty)
+          _CaptionAndActions(
+            stacked: stacked,
+            caption: meta.isEmpty
+                ? null
+                : Semantics(
+                    liveRegion: ready,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (ready || collapsed) ...[
+                          Icon(
+                            LottiIcons.confirmCircled,
+                            key: ready
+                                ? const ValueKey('check-in-transcript-added')
+                                : const ValueKey('check-in-audio-saved'),
+                            size: IconSizes.s,
+                            color: tokens.colors.text.mediumEmphasis,
+                          ),
+                          SizedBox(width: tokens.spacing.step2),
+                        ],
+                        Flexible(
+                          child: DsTieredText(
+                            textKey: const ValueKey('check-in-word-count'),
+                            tiers: ladder,
+                            style: captionStyle,
+                          ),
                         ),
-                        SizedBox(width: tokens.spacing.step2),
                       ],
-                      Flexible(
-                        child: DsTieredText(
-                          textKey: const ValueKey('check-in-word-count'),
-                          tiers: ladder,
-                          style: captionStyle,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-          actions: [
-            if (ready) ...[
-              // Only while the transcript is exactly what landed: once it is
-              // edited, taking it back out would take the edits with it.
-              // Quiet, with its own glyph: the accent is for the way
-              // forward, and Re-record must not read as a twin of Add more.
-              if (onReRecord != null)
-                DesignSystemButton(
-                  key: const ValueKey('check-in-re-record'),
-                  label: messages.checkInReRecordButton,
-                  leadingIcon: LottiIcons.refresh,
-                  variant: DesignSystemButtonVariant.quiet,
-                  size: DesignSystemButtonSize.medium,
-                  tapTargetSize: MaterialTapTargetSize.padded,
-                  onPressed: onReRecord,
-                ),
-              DesignSystemButton(
-                key: const ValueKey('check-in-add-more'),
-                label: messages.checkInAddMoreButton,
-                leadingIcon: LottiIcons.mic,
-                variant: DesignSystemButtonVariant.outlined,
-                size: DesignSystemButtonSize.medium,
-                tapTargetSize: MaterialTapTargetSize.padded,
-                onPressed: onAddMore,
-              ),
-            ] else if (collapsed)
-              DesignSystemButton(
-                key: const ValueKey('check-in-retry-transcript'),
-                label: messages.relationshipAgentTryAgain,
-                leadingIcon: LottiIcons.refresh,
-                variant: DesignSystemButtonVariant.tertiary,
-                size: DesignSystemButtonSize.medium,
-                tapTargetSize: MaterialTapTargetSize.padded,
-                onPressed: onRetryTranscript,
-              )
-            // A take waiting for *Try again*, or a microphone the OS refused,
-            // has its way forward on the card; a second recorder button in
-            // the field would be a dead door beside a live one.
-            else if (failure == null || _dictatesUnder(failure.kind))
-              DesignSystemButton(
-                key: const ValueKey('check-in-dictate'),
-                label: messages.checkInDictateButton,
-                leadingIcon: LottiIcons.mic,
-                variant: DesignSystemButtonVariant.outlined,
-                size: DesignSystemButtonSize.medium,
-                isLoading: preparing,
-                onPressed: preparing ? null : onDictate,
-              ),
-          ],
-        ),
+            actions: actions,
+          ),
       ],
     );
   }
@@ -338,7 +347,7 @@ class CheckInNarrativeField extends StatelessWidget {
             color: tokens.colors.text.mediumEmphasis,
           ),
         ),
-        SizedBox(height: tokens.spacing.step6),
+        SizedBox(height: tokens.spacing.step4),
         ?recorder,
       ],
     );
@@ -391,6 +400,7 @@ class CheckInNarrativeField extends StatelessWidget {
                   ],
                   style: tokens.typography.styles.others.caption.copyWith(
                     color: tokens.colors.text.mediumEmphasis,
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ),
@@ -516,7 +526,7 @@ class _FailureCard extends StatelessWidget {
       CheckInSpeechFailureKind.microphoneDenied => (
         alert.error.defaultColor,
         LottiIcons.micIdle,
-        messages.checkInMicrophoneDeniedTitle,
+        messages.checkInMicrophoneDeniedCalloutTitle,
         messages.checkInMicrophoneDeniedBody,
         (
           key: const ValueKey('check-in-open-settings'),
@@ -598,10 +608,10 @@ class _FailureCard extends StatelessWidget {
       CheckInSpeechFailureKind.transcriptMissing => (
         alert.warning.defaultColor,
         LottiIcons.cloudOff,
-        // The title says what is known — no words came — not a cause the
-        // service cannot tell apart; the provider's own detail, when it
-        // left any, is the body.
-        messages.checkInStatusTranscriptMissing,
+        // The header already names the state; the card's title is the next
+        // step. The provider's own detail, when it left any, is the body —
+        // never a cause the service cannot tell apart.
+        messages.checkInTranscriptMissingCalloutTitle,
         failure.detail ?? messages.checkInTranscriptMissingBody(length ?? ''),
         (
           key: const ValueKey('check-in-retry-transcript'),
@@ -626,7 +636,20 @@ class _FailureCard extends StatelessWidget {
       tone: tone,
       title: title,
       text: body,
+      // The recommended action is the secondary pill: the alert tone is the
+      // card's one colour, and the filled accent stays Save's alone.
       actions: [
+        // Typing is the recovery that always works, so the refused
+        // microphone offers it as a button rather than as placeholder ink.
+        if (failure.kind == CheckInSpeechFailureKind.microphoneDenied)
+          DesignSystemButton(
+            key: const ValueKey('check-in-type-instead-denied'),
+            label: messages.checkInTypeInstead,
+            variant: DesignSystemButtonVariant.tertiary,
+            size: DesignSystemButtonSize.medium,
+            tapTargetSize: MaterialTapTargetSize.padded,
+            onPressed: onTypeInstead,
+          ),
         DesignSystemButton(
           key: secondary.key,
           label: secondary.label,
@@ -640,6 +663,7 @@ class _FailureCard extends StatelessWidget {
             key: primary.key,
             label: primary.label,
             leadingIcon: primary.icon,
+            variant: DesignSystemButtonVariant.secondary,
             size: DesignSystemButtonSize.medium,
             tapTargetSize: MaterialTapTargetSize.padded,
             onPressed: primary.onPressed,

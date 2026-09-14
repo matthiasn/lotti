@@ -1052,13 +1052,13 @@ void main() {
       });
     });
 
-    testWidgets('the band wears its colour as a dot beside its word', (
-      tester,
-    ) async {
+    testWidgets('the band wears its colour as a dot beside its word, centred '
+        'on the first line', (tester) async {
       await pump(tester, checkIns: onTrackCheckIns, current: report());
-      final dot = tester.widget<Container>(
-        find.byKey(const ValueKey('relationship-agent-band-dot')),
+      final dotFinder = find.byKey(
+        const ValueKey('relationship-agent-band-dot'),
       );
+      final dot = tester.widget<Container>(dotFinder);
       final tokens = tester
           .element(find.byType(RelationshipBriefingCard))
           .designTokens;
@@ -1066,6 +1066,17 @@ void main() {
         (dot.decoration! as BoxDecoration).color,
         relationshipHealthBandColor(tokens, RelationshipHealthBand.thriving),
       );
+      // The dot's offset is the text line less the dot, halved — computed,
+      // not a fixed step, so it scales with the text.
+      final line = tokens.typography.styles.body.bodySmall;
+      final offset = tester
+          .widget<Padding>(
+            find.ancestor(of: dotFinder, matching: find.byType(Padding)).first,
+          )
+          .padding
+          .resolve(TextDirection.ltr)
+          .top;
+      expect(offset, (line.fontSize! * line.height! - IconSizes.xs) / 2);
     });
 
     testWidgets('with nothing to expand, the sources line is not hidden '

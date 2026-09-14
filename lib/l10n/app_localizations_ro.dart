@@ -3234,9 +3234,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Permiteți accesul la microfon pentru Lotti în setările sistemului, apoi încercați din nou. Nu s-a înregistrat nimic.';
 
   @override
-  String get checkInMicrophoneDeniedTitle => 'Lotti nu poate folosi microfonul';
-
-  @override
   String get checkInMoreCaption => 'Stare · subiecte · data viitoare';
 
   @override
@@ -16133,4 +16130,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
+
+  @override
+  String get checkInTranscriptMissingCalloutTitle =>
+      'Încercați din nou sau scrieți ce vă amintiți';
+
+  @override
+  String get checkInMicrophoneDeniedCalloutTitle =>
+      'Permiteți microfonul pentru a dicta';
 }

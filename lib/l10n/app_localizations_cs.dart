@@ -3223,9 +3223,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Povol Lotti přístup k mikrofonu v nastavení systému a zkus to znovu. Nic se nenahrálo.';
 
   @override
-  String get checkInMicrophoneDeniedTitle => 'Lotti nemůže použít mikrofon';
-
-  @override
   String get checkInMoreCaption => 'Pocit · témata · příště';
 
   @override
@@ -16020,4 +16017,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
+
+  @override
+  String get checkInTranscriptMissingCalloutTitle =>
+      'Zkus to znovu, nebo napiš, co si pamatuješ';
+
+  @override
+  String get checkInMicrophoneDeniedCalloutTitle =>
+      'Povol mikrofon, abys mohl diktovat';
 }

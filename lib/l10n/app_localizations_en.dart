@@ -3166,9 +3166,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Allow microphone access for Lotti in system settings, then try again. Nothing was recorded.';
 
   @override
-  String get checkInMicrophoneDeniedTitle => 'Lotti can\'t use the microphone';
-
-  @override
   String get checkInMoreCaption => 'Feeling · topics · next time';
 
   @override
@@ -15724,6 +15721,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
+
+  @override
+  String get checkInTranscriptMissingCalloutTitle =>
+      'Try again, or type what you remember';
+
+  @override
+  String get checkInMicrophoneDeniedCalloutTitle =>
+      'Allow the microphone to dictate';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

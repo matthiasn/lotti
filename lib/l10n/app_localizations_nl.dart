@@ -3192,10 +3192,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Geef Lotti in de systeeminstellingen toegang tot de microfoon en probeer het opnieuw. Er is niets opgenomen.';
 
   @override
-  String get checkInMicrophoneDeniedTitle =>
-      'Lotti kan de microfoon niet gebruiken';
-
-  @override
   String get checkInMoreCaption => 'Gevoel · onderwerpen · volgende keer';
 
   @override
@@ -15862,4 +15858,12 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
+
+  @override
+  String get checkInTranscriptMissingCalloutTitle =>
+      'Probeer het opnieuw, of typ wat je nog weet';
+
+  @override
+  String get checkInMicrophoneDeniedCalloutTitle =>
+      'Sta de microfoon toe om te dicteren';
 }

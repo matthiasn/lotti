@@ -5370,12 +5370,6 @@ abstract class AppLocalizations {
   /// **'Allow microphone access for Lotti in system settings, then try again. Nothing was recorded.'**
   String get checkInMicrophoneDeniedBody;
 
-  /// No description provided for @checkInMicrophoneDeniedTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Lotti can\'t use the microphone'**
-  String get checkInMicrophoneDeniedTitle;
-
   /// No description provided for @checkInMoreCaption.
   ///
   /// In en, this message translates to:
@@ -26338,6 +26332,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
+
+  /// The transcript-not-received card's title: the next step, since the header status already names the state.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again, or type what you remember'**
+  String get checkInTranscriptMissingCalloutTitle;
+
+  /// The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow the microphone to dictate'**
+  String get checkInMicrophoneDeniedCalloutTitle;
 }
 
 class _AppLocalizationsDelegate

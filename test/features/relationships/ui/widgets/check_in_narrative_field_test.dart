@@ -341,11 +341,24 @@ void main() {
           CheckInSpeechFailure(CheckInSpeechFailureKind.microphoneDenied),
         ),
       );
-      expect(find.text("Lotti can't use the microphone"), findsOneWidget);
+      expect(find.text('Allow the microphone to dictate'), findsOneWidget);
       expect(find.text('Or type it here…'), findsOneWidget);
+      // The card offers typing as a button, and its recommended action is
+      // the secondary pill: the alert tone is the card's one colour.
+      await tester.tap(
+        find.byKey(const ValueKey('check-in-type-instead-denied')),
+      );
+      expect(
+        tester
+            .widget<DesignSystemButton>(
+              find.byKey(const ValueKey('check-in-open-settings')),
+            )
+            .variant,
+        DesignSystemButtonVariant.secondary,
+      );
       await tester.tap(find.byKey(const ValueKey('check-in-open-settings')));
       await tester.tap(find.byKey(const ValueKey('check-in-retry-audio')));
-      expect(calls, ['open-settings', 'dictate']);
+      expect(calls, ['dismiss', 'open-settings', 'dictate']);
       // The card's Try again is the way to record again: the field does not
       // offer a second, dead Dictate beside it.
       expect(find.byKey(const ValueKey('check-in-dictate')), findsNothing);
@@ -433,9 +446,12 @@ void main() {
           ),
         ),
       );
-      // The title says what is known — no words came — not a cause the
-      // service cannot tell apart; the body folds in that the audio stays.
-      expect(find.text('Transcript not received'), findsOneWidget);
+      // The header names the state; the card's title is the next step, not
+      // a cause the service cannot tell apart. The body says the audio stays.
+      expect(
+        find.text('Try again, or type what you remember'),
+        findsOneWidget,
+      );
       expect(
         find.textContaining(
           'Your 0:23 recording is saved in the journal, even if you cancel',

@@ -460,18 +460,25 @@ class _StackedActionLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    // The primary leads the stack and the secondaries sit centred beneath
+    // it: a stacked bar must not put its exit above its one filled action,
+    // where a bold Cancel would read as the heading of a held Save.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (secondary.isNotEmpty) ...[
-          Wrap(
-            spacing: tokens.spacing.step3,
-            runSpacing: tokens.spacing.step3,
-            children: secondary,
-          ),
-          SizedBox(height: tokens.spacing.step3),
-        ],
         primary,
+        if (secondary.isNotEmpty) ...[
+          SizedBox(height: tokens.spacing.step3),
+          Center(
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: tokens.spacing.step3,
+              runSpacing: tokens.spacing.step3,
+              children: secondary,
+            ),
+          ),
+        ],
       ],
     );
   }

@@ -11,6 +11,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
@@ -251,7 +252,8 @@ Future<CheckInEntry?> showCheckInCaptureSheet({
   context: context,
   relationshipId: relationshipId,
   title: context.messages.relationshipLogCheckIn,
-  form: (handle) => CheckInCaptureForm(
+  form: (handle, {required dialog}) => CheckInCaptureForm(
+    dialog: dialog,
     relationshipId: relationshipId,
     prefilledInteractionType: prefilledInteractionType,
     prefilledTime: prefilledTime,
@@ -270,7 +272,8 @@ Future<CheckInEntry?> showCheckInEditSheet({
   context: context,
   relationshipId: checkIn.data.relationshipId,
   title: context.messages.checkInEditTitle,
-  form: (handle) => CheckInCaptureForm(
+  form: (handle, {required dialog}) => CheckInCaptureForm(
+    dialog: dialog,
     relationshipId: checkIn.data.relationshipId,
     initial: checkIn,
     handle: handle,
@@ -281,7 +284,11 @@ Future<CheckInEntry?> _showComposer({
   required BuildContext context,
   required String relationshipId,
   required String title,
-  required CheckInCaptureForm Function(CheckInFormHandle handle) form,
+  required CheckInCaptureForm Function(
+    CheckInFormHandle handle, {
+    required bool dialog,
+  })
+  form,
 }) async {
   final handle = CheckInFormHandle();
   final tokens = context.designTokens;
@@ -321,7 +328,7 @@ Future<CheckInEntry?> _showComposer({
       padding: _formPadding(context),
       stickyActionBarBuilder: (_) =>
           CheckInStickyActions(handle: handle, dialog: dialog),
-      builder: (modalContext) => form(handle),
+      builder: (modalContext) => form(handle, dialog: dialog),
     );
   } finally {
     // The inline recorder hides the floating indicator while it is up. A
@@ -475,14 +482,12 @@ class CheckInStickyActions extends StatelessWidget {
           }
 
           final delete = handle.canDelete
-              ? IconButton(
+              ? DesignSystemIconAction(
                   key: const ValueKey('check-in-delete'),
+                  icon: LottiIcons.delete,
                   tooltip: messages.deleteButton,
+                  tone: tokens.colors.alert.error.ink,
                   onPressed: handle.delete,
-                  icon: Icon(
-                    LottiIcons.delete,
-                    color: tokens.colors.alert.error.ink,
-                  ),
                 )
               : null;
           // Cancel is quiet text on both viewports: the header's close
@@ -656,10 +661,16 @@ class CheckInCaptureForm extends ConsumerStatefulWidget {
     this.prefilledTime,
     this.prefilledDuration,
     this.startSpeaking = false,
+    this.dialog = false,
     super.key,
   });
 
   final String relationshipId;
+
+  /// Whether the composer is the desktop dialog: the field then takes
+  /// focus at once, since the typed common case is open → type → ⌘↩ and
+  /// no keyboard rises over the form.
+  final bool dialog;
 
   /// When set, the form edits this check-in instead of creating one.
   final CheckInEntry? initial;
@@ -857,6 +868,14 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
         _topicsController.text.isNotEmpty ||
         _payAttentionController.text.isNotEmpty ||
         _avoidController.text.isNotEmpty;
+    // On the desktop dialog the typed common case is open → type → ⌘↩,
+    // so the field takes focus at once; a phone would raise its keyboard
+    // over the sheet, so there the first tap still chooses.
+    if (widget.dialog && !widget.startSpeaking) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _narrativeFocus.requestFocus();
+      });
+    }
     if (widget.startSpeaking) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) unawaited(_dictate());
@@ -1523,12 +1542,13 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
         );
     _publish(context, recorderPaused: recorderPaused);
 
+    // One level under the fold trigger: the same size, the quieter ink.
     Widget sectionLabel(String text) => Padding(
       padding: EdgeInsets.only(bottom: tokens.spacing.step3),
       child: Text(
         text,
         style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-          color: tokens.colors.text.highEmphasis,
+          color: tokens.colors.text.mediumEmphasis,
         ),
       ),
     );

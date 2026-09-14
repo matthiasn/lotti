@@ -1571,7 +1571,6 @@
   "checkInInteractionOther": "Outro",
   "checkInInteractionVideoCall": "Videochamada",
   "checkInMicrophoneDeniedBody": "Permite o acesso ao microfone para o Lotti nas definições do sistema e tenta de novo. Nada foi gravado.",
-  "checkInMicrophoneDeniedTitle": "O Lotti não consegue usar o microfone",
   "checkInMoreCaption": "Sentimento · temas · próxima vez",
   "checkInMoreSection": "Mais",
   "checkInNarrativeHint": "Sobre o que falaram? Uma linha chega.",
@@ -6713,5 +6712,13 @@
     "description": "Badge displayed on the newest release in the What's New view."
   },
   "whatsNewDoneButton": "Concluído",
-  "whatsNewSkipButton": "Pular"
+  "whatsNewSkipButton": "Pular",
+  "checkInTranscriptMissingCalloutTitle": "Tenta de novo, ou escreve o que te lembras",
+  "@checkInTranscriptMissingCalloutTitle": {
+    "description": "The transcript-not-received card's title: the next step, since the header status already names the state."
+  },
+  "checkInMicrophoneDeniedCalloutTitle": "Permite o microfone para ditar",
+  "@checkInMicrophoneDeniedCalloutTitle": {
+    "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
+  }
 }

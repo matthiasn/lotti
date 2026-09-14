@@ -1150,7 +1150,7 @@ void main() {
       await startDictation(tester);
 
       expect(inlineRecorder, findsNothing);
-      expect(find.text("Lotti can't use the microphone"), findsOneWidget);
+      expect(find.text('Allow the microphone to dictate'), findsOneWidget);
       expect(saveReason(tester), 'Add a few words to save');
       expect(
         recorder.modalVisibleLog,
@@ -1173,7 +1173,7 @@ void main() {
       // the field's Dictate comes back with it.
       await tester.enterText(narrative, 'Typed it instead');
       await tester.pumpAndSettle();
-      expect(find.text("Lotti can't use the microphone"), findsNothing);
+      expect(find.text('Allow the microphone to dictate'), findsNothing);
       expect(dictate, findsOneWidget);
       expect(saveEnabled(tester), isTrue);
     });
@@ -1283,7 +1283,10 @@ void main() {
       await tester.pump();
       await stopRecording(tester);
 
-      expect(find.text('Transcript not received'), findsOneWidget);
+      expect(
+        find.text('Try again, or type what you remember'),
+        findsOneWidget,
+      );
       expect(
         find.textContaining('Your 0:23 recording is saved in the journal'),
         findsOneWidget,
@@ -1658,7 +1661,11 @@ void main() {
       recorder.tick(progress: const Duration(seconds: 23));
       await tester.pump();
       await stopRecording(tester);
-      expect(find.text('Transcript not received'), findsNWidgets(2));
+      expect(find.text('Transcript not received'), findsOneWidget);
+      expect(
+        find.text('Try again, or type what you remember'),
+        findsOneWidget,
+      );
 
       await tester.tap(find.byKey(const ValueKey('check-in-close')));
       await tester.pumpAndSettle();
@@ -1671,6 +1678,29 @@ void main() {
       expect(find.byType(CheckInCaptureForm), findsNothing);
       expect(recorder.cancelCalls, 0, reason: 'nothing left to cancel');
       verifyNoSave();
+    });
+
+    testWidgets('the desktop dialog focuses the field at once; the phone '
+        'sheet waits for the first tap', (tester) async {
+      await openSheet(tester);
+      expect(
+        tester.widget<TextField>(narrative).focusNode!.hasFocus,
+        isFalse,
+        reason: 'a phone would raise its keyboard over the sheet',
+      );
+      await tester.tap(find.byKey(const ValueKey('check-in-close')));
+      await tester.pumpAndSettle();
+
+      await openSheet(
+        tester,
+        physicalSize: const Size(2880, 1800),
+        devicePixelRatio: 2,
+      );
+      expect(
+        tester.widget<TextField>(narrative).focusNode!.hasFocus,
+        isTrue,
+        reason: 'open → type → Ctrl+Enter, with no dead first keystroke',
+      );
     });
 
     testWidgets('the back gesture is guarded the same way', (tester) async {

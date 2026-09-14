@@ -3226,10 +3226,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Autorise l’accès au micro pour Lotti dans les réglages système, puis réessaie. Rien n’a été enregistré.';
 
   @override
-  String get checkInMicrophoneDeniedTitle =>
-      'Lotti ne peut pas utiliser le micro';
-
-  @override
   String get checkInMoreCaption => 'Ressenti · sujets · prochaine fois';
 
   @override
@@ -16084,4 +16080,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Ignorer';
+
+  @override
+  String get checkInTranscriptMissingCalloutTitle =>
+      'Réessaie, ou écris ce dont tu te souviens';
+
+  @override
+  String get checkInMicrophoneDeniedCalloutTitle =>
+      'Autorise le micro pour dicter';
 }

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -62,7 +63,7 @@ class CheckInComposerHeader extends ConsumerWidget {
     final available =
         width -
         tokens.spacing.step5 * 2 -
-        (tokens.spacing.step3 * 2 + IconSizes.l) -
+        TapTargets.minimum -
         tokens.spacing.step4;
     final painter = TextPainter(
       text: TextSpan(text: title, style: style),
@@ -175,15 +176,10 @@ class CheckInComposerHeader extends ConsumerWidget {
             ),
           ),
           SizedBox(width: tokens.spacing.step4),
-          IconButton(
+          DesignSystemIconAction(
             key: const ValueKey('check-in-close'),
+            icon: LottiIcons.close,
             tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-            padding: EdgeInsets.all(tokens.spacing.step3),
-            icon: Icon(
-              LottiIcons.close,
-              size: IconSizes.l,
-              color: tokens.colors.text.mediumEmphasis,
-            ),
             onPressed: handle.dismiss,
           ),
         ],
@@ -210,7 +206,6 @@ class _StatusLine extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final quiet = tokens.colors.text.mediumEmphasis;
-    final accent = tokens.colors.interactive.enabled;
 
     // At rest the line is a ladder of wordings, widest first, so a narrow
     // phone or large text sheds the date before the person: a check-in is
@@ -254,8 +249,10 @@ class _StatusLine extends StatelessWidget {
           size: IconSizes.s,
           strokeWidth: tokens.spacing.step1,
         ),
+        // The spinner says busy; the word stays in the quiet ink, so accent
+        // on text means pressable everywhere.
         [messages.checkInTranscribingLabel],
-        accent,
+        quiet,
       ),
       CheckInComposerStatus.transcriptMissing => (
         Icon(

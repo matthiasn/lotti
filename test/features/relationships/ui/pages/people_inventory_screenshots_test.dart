@@ -1531,7 +1531,7 @@ void main() {
       await withClock(Clock.fixed(_now), () async {
         await tester.tap(find.byKey(const ValueKey('check-in-dictate')));
         await tester.pumpAndSettle();
-        expect(find.text("Lotti can't use the microphone"), findsOne);
+        expect(find.text('Allow the microphone to dictate'), findsOne);
         expect(find.text('Microphone unavailable'), findsOne);
         await captureScreenshot(
           tester,
@@ -1550,7 +1550,11 @@ void main() {
         await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
         await tester.pumpAndSettle();
         // The header's status line and the card's title say the same thing.
-        expect(find.text('Transcript not received'), findsNWidgets(2));
+        expect(find.text('Transcript not received'), findsOneWidget);
+        expect(
+          find.text('Try again, or type what you remember'),
+          findsOneWidget,
+        );
         expect(find.text('Type or retry to save'), findsOne);
         await captureScreenshot(
           tester,

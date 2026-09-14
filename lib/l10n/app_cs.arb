@@ -1401,7 +1401,6 @@
   "checkInInteractionOther": "Jinak",
   "checkInInteractionVideoCall": "Videohovor",
   "checkInMicrophoneDeniedBody": "Povol Lotti přístup k mikrofonu v nastavení systému a zkus to znovu. Nic se nenahrálo.",
-  "checkInMicrophoneDeniedTitle": "Lotti nemůže použít mikrofon",
   "checkInMoreCaption": "Pocit · témata · příště",
   "checkInMoreSection": "Více",
   "checkInNarrativeHint": "O čem jste mluvili? Stačí jeden řádek.",
@@ -6123,5 +6122,13 @@
   "viewMenuZoomReset": "Skutečná velikost",
   "whatsNewBadgeNew": "NOVÉ",
   "whatsNewDoneButton": "Hotovo",
-  "whatsNewSkipButton": "Přeskočit"
+  "whatsNewSkipButton": "Přeskočit",
+  "checkInTranscriptMissingCalloutTitle": "Zkus to znovu, nebo napiš, co si pamatuješ",
+  "@checkInTranscriptMissingCalloutTitle": {
+    "description": "The transcript-not-received card's title: the next step, since the header status already names the state."
+  },
+  "checkInMicrophoneDeniedCalloutTitle": "Povol mikrofon, abys mohl diktovat",
+  "@checkInMicrophoneDeniedCalloutTitle": {
+    "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
+  }
 }

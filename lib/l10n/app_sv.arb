@@ -1572,7 +1572,6 @@
   "checkInInteractionOther": "Annat",
   "checkInInteractionVideoCall": "Videosamtal",
   "checkInMicrophoneDeniedBody": "Tillåt mikrofonåtkomst för Lotti i systeminställningarna och försök igen. Inget spelades in.",
-  "checkInMicrophoneDeniedTitle": "Lotti kan inte använda mikrofonen",
   "checkInMoreCaption": "Känsla · ämnen · nästa gång",
   "checkInMoreSection": "Mer",
   "checkInNarrativeHint": "Vad pratade ni om? En rad räcker.",
@@ -6714,5 +6713,13 @@
     "description": "Badge displayed on the newest release in the What's New view."
   },
   "whatsNewDoneButton": "Klart",
-  "whatsNewSkipButton": "Hoppa över"
+  "whatsNewSkipButton": "Hoppa över",
+  "checkInTranscriptMissingCalloutTitle": "Försök igen, eller skriv det du minns",
+  "@checkInTranscriptMissingCalloutTitle": {
+    "description": "The transcript-not-received card's title: the next step, since the header status already names the state."
+  },
+  "checkInMicrophoneDeniedCalloutTitle": "Tillåt mikrofonen för att diktera",
+  "@checkInMicrophoneDeniedCalloutTitle": {
+    "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
+  }
 }

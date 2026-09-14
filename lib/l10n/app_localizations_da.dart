@@ -3181,9 +3181,6 @@ class AppLocalizationsDa extends AppLocalizations {
       'Giv Lotti adgang til mikrofonen i systemindstillingerne, og prøv igen. Intet blev optaget.';
 
   @override
-  String get checkInMicrophoneDeniedTitle => 'Lotti kan ikke bruge mikrofonen';
-
-  @override
   String get checkInMoreCaption => 'Følelse · emner · næste gang';
 
   @override
@@ -15813,4 +15810,12 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
+
+  @override
+  String get checkInTranscriptMissingCalloutTitle =>
+      'Prøv igen, eller skriv det du husker';
+
+  @override
+  String get checkInMicrophoneDeniedCalloutTitle =>
+      'Tillad mikrofonen for at diktere';
 }

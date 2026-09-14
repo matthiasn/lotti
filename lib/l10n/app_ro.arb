@@ -1394,7 +1394,6 @@
   "checkInInteractionOther": "Altfel",
   "checkInInteractionVideoCall": "Apel video",
   "checkInMicrophoneDeniedBody": "Permiteți accesul la microfon pentru Lotti în setările sistemului, apoi încercați din nou. Nu s-a înregistrat nimic.",
-  "checkInMicrophoneDeniedTitle": "Lotti nu poate folosi microfonul",
   "checkInMoreCaption": "Stare · subiecte · data viitoare",
   "checkInMoreSection": "Mai mult",
   "checkInNarrativeHint": "Despre ce ați vorbit? O linie este de ajuns.",
@@ -6116,5 +6115,13 @@
   "viewMenuZoomReset": "Dimensiune reală",
   "whatsNewBadgeNew": "NOU",
   "whatsNewDoneButton": "Gata",
-  "whatsNewSkipButton": "Omite"
+  "whatsNewSkipButton": "Omite",
+  "checkInTranscriptMissingCalloutTitle": "Încercați din nou sau scrieți ce vă amintiți",
+  "@checkInTranscriptMissingCalloutTitle": {
+    "description": "The transcript-not-received card's title: the next step, since the header status already names the state."
+  },
+  "checkInMicrophoneDeniedCalloutTitle": "Permiteți microfonul pentru a dicta",
+  "@checkInMicrophoneDeniedCalloutTitle": {
+    "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
+  }
 }

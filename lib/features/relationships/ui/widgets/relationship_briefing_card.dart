@@ -546,8 +546,19 @@ class _NotEnrolledCard extends StatelessWidget {
               ),
             ),
           ),
+          // The privacy fact rides the action row's leading slot: one row,
+          // not a footer and then a meta line under it.
           _AgentCardFooter(
             plain: true,
+            leading: Text(
+              messages.relationshipAgentOnlyYourStartsUseAi,
+              key: const ValueKey('relationship-agent-meta'),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ),
             action: paused
                 ? null
                 : DesignSystemButton(
@@ -558,11 +569,6 @@ class _NotEnrolledCard extends StatelessWidget {
                     isLoading: marking,
                     onPressed: marking ? null : onMarkImportant,
                   ),
-            meta: _MetaLine(
-              icon: LottiIcons.reasoning,
-              label: messages.relationshipAgentOnlyYourStartsUseAi,
-              color: tokens.colors.text.lowEmphasis,
-            ),
           ),
         ],
       ),
@@ -647,7 +653,8 @@ class _AgentCard extends StatelessWidget {
           strokeWidth: tokens.spacing.step1,
         ),
         tiers: [messages.relationshipAgentWriting],
-        color: ai.accent,
+        // The spinner says busy; the words stay in the meta ink.
+        color: ai.metaText,
       ),
       RelationshipAgentCardState.failed => _StatusLine(
         icon: LottiIcons.error,
@@ -669,6 +676,7 @@ class _AgentCard extends StatelessWidget {
             color: relationshipHealthBandColor(tokens, band),
           ),
         },
+        leadingSize: IconSizes.xs,
         tiers: [
           switch (health) {
             null => messages.goalDetailReadAsOf(_age(messages)),
@@ -964,6 +972,7 @@ class _BriefingHeader extends StatelessWidget {
       title: messages.relationshipBriefingTitle,
       agentName: status.tiers.first,
       subtitle: status,
+      plain: plain,
       trailing: trailing,
       icon: icon,
       onAgentTap: plain ? null : onTap,
@@ -978,6 +987,7 @@ class _StatusLine extends StatelessWidget {
     required this.color,
     this.icon,
     this.leading,
+    this.leadingSize = IconSizes.s,
   });
 
   /// The state's wordings, widest first: the line sheds a date or a time
@@ -986,15 +996,31 @@ class _StatusLine extends StatelessWidget {
   final Color color;
   final IconData? icon;
 
-  /// A widget in the glyph slot — the running state's spinner.
+  /// A widget in the glyph slot — the running state's spinner, the band's
+  /// dot.
   final Widget? leading;
+
+  /// The glyph's height, so it can be centred on the first line of text at
+  /// any text scale rather than pinned a fixed step from the top.
+  final double leadingSize;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final style = tokens.typography.styles.body.bodySmall.copyWith(
+      color: color,
+    );
+    final glyphSize = icon == null ? leadingSize : IconSizes.s;
     final glyph =
         leading ??
         (icon == null ? null : Icon(icon, size: IconSizes.s, color: color));
+    // Centred on the first line: the line as the text engine lays it out at
+    // the reader's scale, less the glyph, halved — so at 1.6× the dot still
+    // sits on the words rather than above them.
+    final line = MediaQuery.textScalerOf(
+      context,
+    ).scale(style.fontSize! * (style.height ?? 1));
+    final glyphTop = ((line - glyphSize) / 2).clamp(0.0, double.infinity);
     // A live region: running → current, or → failed, is the card's one
     // sentence changing, and a reader who cannot see the colour hears it.
     return Semantics(
@@ -1007,7 +1033,7 @@ class _StatusLine extends StatelessWidget {
         children: [
           if (glyph != null) ...[
             Padding(
-              padding: EdgeInsets.only(top: tokens.spacing.step1),
+              padding: EdgeInsets.only(top: glyphTop),
               child: glyph,
             ),
             SizedBox(width: tokens.spacing.step2),
@@ -1019,9 +1045,7 @@ class _StatusLine extends StatelessWidget {
               // The narrowest wording may still wrap once: this line is the
               // state's non-colour carrier and must not clip.
               maxLines: 2,
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: color,
-              ),
+              style: style,
             ),
           ),
         ],
@@ -1033,11 +1057,10 @@ class _StatusLine extends StatelessWidget {
 /// A quiet caption row under the footer's actions: the sources line on a
 /// briefing, the AI note on the plain card.
 class _MetaLine extends StatelessWidget {
-  const _MetaLine({required this.label, required this.color, this.icon});
+  const _MetaLine({required this.label, required this.color});
 
   final String label;
   final Color color;
-  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -1048,10 +1071,6 @@ class _MetaLine extends StatelessWidget {
         constraints: BoxConstraints(minHeight: tokens.spacing.step6),
         child: Row(
           children: [
-            if (icon case final icon?) ...[
-              Icon(icon, size: IconSizes.s, color: color),
-              SizedBox(width: tokens.spacing.step2),
-            ],
             Flexible(
               child: Text(
                 label,
@@ -1120,11 +1139,9 @@ class _AgentCardFooter extends StatelessWidget {
       ),
       // A step more above than below: the action row sits off the divider,
       // and the meta rows close the card without a matching band.
-      padding: EdgeInsets.fromLTRB(
-        tokens.spacing.cardPadding,
-        tokens.spacing.step3,
-        tokens.spacing.cardPadding,
-        tokens.spacing.step2,
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.cardPadding,
+        vertical: tokens.spacing.step3,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

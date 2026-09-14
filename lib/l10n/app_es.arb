@@ -1394,7 +1394,6 @@
   "checkInInteractionOther": "Otro",
   "checkInInteractionVideoCall": "Videollamada",
   "checkInMicrophoneDeniedBody": "Permite el acceso al micrófono para Lotti en los ajustes del sistema y vuelve a intentarlo. No se grabó nada.",
-  "checkInMicrophoneDeniedTitle": "Lotti no puede usar el micrófono",
   "checkInMoreCaption": "Sensación · temas · próxima vez",
   "checkInMoreSection": "Más",
   "checkInNarrativeHint": "¿De qué hablasteis? Con una línea basta.",
@@ -6116,5 +6115,13 @@
   "viewMenuZoomReset": "Tamaño real",
   "whatsNewBadgeNew": "NUEVO",
   "whatsNewDoneButton": "Listo",
-  "whatsNewSkipButton": "Omitir"
+  "whatsNewSkipButton": "Omitir",
+  "checkInTranscriptMissingCalloutTitle": "Inténtalo de nuevo o escribe lo que recuerdes",
+  "@checkInTranscriptMissingCalloutTitle": {
+    "description": "The transcript-not-received card's title: the next step, since the header status already names the state."
+  },
+  "checkInMicrophoneDeniedCalloutTitle": "Permite el micrófono para dictar",
+  "@checkInMicrophoneDeniedCalloutTitle": {
+    "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
+  }
 }

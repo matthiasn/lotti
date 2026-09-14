@@ -3222,9 +3222,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Permite el acceso al micrófono para Lotti en los ajustes del sistema y vuelve a intentarlo. No se grabó nada.';
 
   @override
-  String get checkInMicrophoneDeniedTitle => 'Lotti no puede usar el micrófono';
-
-  @override
   String get checkInMoreCaption => 'Sensación · temas · próxima vez';
 
   @override
@@ -16024,4 +16021,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omitir';
+
+  @override
+  String get checkInTranscriptMissingCalloutTitle =>
+      'Inténtalo de nuevo o escribe lo que recuerdes';
+
+  @override
+  String get checkInMicrophoneDeniedCalloutTitle =>
+      'Permite el micrófono para dictar';
 }
