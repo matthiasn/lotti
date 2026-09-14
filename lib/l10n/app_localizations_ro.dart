@@ -3235,7 +3235,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get checkInMicrophoneDeniedBody =>
-      'Activați-l pentru Lotti în setările de sistem, apoi atingeți Dictează. Nu s-a înregistrat nimic.';
+      'Activați-l pentru Lotti în setările de sistem, apoi atingeți Dictați. Nu s-a înregistrat nimic.';
 
   @override
   String get checkInMicrophoneDeniedCalloutTitle =>

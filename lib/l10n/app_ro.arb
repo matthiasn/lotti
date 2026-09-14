@@ -1397,7 +1397,7 @@
   "checkInInteractionMessage": "Mesaj",
   "checkInInteractionOther": "Altfel",
   "checkInInteractionVideoCall": "Apel video",
-  "checkInMicrophoneDeniedBody": "Activați-l pentru Lotti în setările de sistem, apoi atingeți Dictează. Nu s-a înregistrat nimic.",
+  "checkInMicrophoneDeniedBody": "Activați-l pentru Lotti în setările de sistem, apoi atingeți Dictați. Nu s-a înregistrat nimic.",
   "checkInMicrophoneDeniedCalloutTitle": "Permiteți accesul la microfon",
   "@checkInMicrophoneDeniedCalloutTitle": {
     "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
