@@ -49,15 +49,15 @@ abstract final class TaskAgentPromptBuilder {
 
     final buf = StringBuffer()..write(taskAgentScaffoldCore);
 
-    if (trimmedReportDirective.isNotEmpty) {
+    if (usesBuiltInReportContract(version) &&
+        trimmedReportDirective.isNotEmpty) {
       buf
         ..writeln()
         ..writeln()
         ..writeln('## Report Directive')
-        ..writeln();
-      _appendReportDirectivePrecedence(buf, version);
-      buf.write(trimmedReportDirective);
-    } else {
+        ..writeln()
+        ..write(trimmedReportDirective);
+    } else if (trimmedReportDirective.isEmpty) {
       buf.write(taskAgentScaffoldReport);
     }
 
@@ -96,6 +96,7 @@ abstract final class TaskAgentPromptBuilder {
     }
 
     buf.write(TaskAgentEvidenceSynthesis.systemDirectiveForModel(modelId));
+    _appendCustomReportDirective(buf, version, trimmedReportDirective);
     return buf.toString();
   }
 
@@ -209,17 +210,17 @@ abstract final class TaskAgentPromptBuilder {
       }
     }
 
-    if (reportDirective.isNotEmpty) {
+    if (usesBuiltInReportContract(version) && reportDirective.isNotEmpty) {
       buf
         ..writeln()
         ..writeln()
         ..writeln('## Report Directive')
-        ..writeln();
-      _appendReportDirectivePrecedence(buf, version);
-      buf.write(reportDirective);
+        ..writeln()
+        ..write(reportDirective);
     }
 
     buf.write(TaskAgentEvidenceSynthesis.systemDirectiveForModel(modelId));
+    _appendCustomReportDirective(buf, version, reportDirective);
     return buf.toString();
   }
 
@@ -284,22 +285,43 @@ abstract final class TaskAgentPromptBuilder {
       'This directive governs the shape and voice of the report only. It does '
       'not change when to publish one: a wake with nothing material to add '
       'still ends with a brief plain-text note rather than republishing '
-      'unchanged content.';
+      'unchanged content. First select the required headings from the directive '
+      'below, evaluating each conditional heading against current evidence. '
+      'Then write the content within that structure. Evidence that activates '
+      'a conditional section must appear under its requested heading; placing '
+      'the same information elsewhere does not satisfy that section. For '
+      'example, when a directive requests a links section if URLs exist, put '
+      'the URLs in that section rather than only inline in a progress sentence. '
+      'An optional heading does not create a new '
+      'obligation for the user. Before drafting an optional decision section, identify '
+      'source evidence of a specific missing input only the user can provide now. '
+      'Do not invent missing criteria or ask the user to reconfirm criteria '
+      'that are already stated. Work awaiting an external owner or a future '
+      'result belongs with pending actions, not in a decision section. '
+      'For example: a supplier-owned review still pending means list that '
+      'dependency under next actions and omit the optional decision heading; '
+      'a comparison not yet run means run the comparison first. Include a '
+      'decision section when the source actually asks the user to choose '
+      'between available options or supply a currently missing authorization.';
 
-  /// Writes [reportDirectivePrecedence] only ahead of a *customised* report
-  /// directive.
+  /// Finishes either scaffold with the custom presentation contract.
   ///
-  /// A stock template renders the substituted model-tuned contract here, which
-  /// is code-owned — telling it that it does not override itself would be
-  /// noise, and would change a measured prompt.
-  static void _appendReportDirectivePrecedence(
+  /// Custom headings and their conditions stay adjacent to their precedence
+  /// guidance, after the general evidence protocol. Stock templates retain
+  /// their existing placement and do not receive a precedence statement.
+  static void _appendCustomReportDirective(
     StringBuffer buf,
     AgentTemplateVersionEntity version,
+    String reportDirective,
   ) {
     if (usesBuiltInReportContract(version)) return;
     buf
+      ..writeln()
+      ..writeln('## Report Directive')
+      ..writeln()
       ..writeln(reportDirectivePrecedence)
-      ..writeln();
+      ..writeln()
+      ..write(reportDirective);
   }
 
   /// Appends soul personality fields to the prompt buffer.
@@ -352,7 +374,8 @@ user-facing report current.
   `set_task_status`. Only an explicit request to transition status authorizes
   that tool; DONE and REJECTED remain user-only statuses.
 - Respect `languageCode` for every public report field. Detect and set language
-  only when it is currently absent.
+  only when it is currently absent and when a report is required. On a no-change
+  wake, skip routine language initialization. Honor an explicit language request.
 
 ## Wake Protocol
 
@@ -603,7 +626,9 @@ linked task's own agent does not push updates to you.
   and have no such evidence, surface the discrepancy in the report or an
   observation and leave the field alone.
 - **Language**: write the report and TLDR in the task's `languageCode`. If it
-  is null, detect it and call `set_task_language`; if it is already set, do not.
+  is null, detect it and call `set_task_language` when a report is required;
+  if it is already set, do not. On a no-change wake, skip routine language
+  initialization. Honor an explicit language request.
 - **Checklist sovereignty**: items record who last toggled them and when.
   - Items you last set, you may change freely.
   - Items the USER last set keep their checked state unless you have evidence

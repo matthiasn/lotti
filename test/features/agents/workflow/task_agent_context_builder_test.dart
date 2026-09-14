@@ -577,12 +577,34 @@ void main() {
       );
 
       expect(result.text, contains('## First Wake'));
+      expect(result.text, isNot(contains('A report already exists')));
       expect(result.text, contains('## Changed Since Last Wake'));
       expect(
         result.text,
         contains('The following entity IDs changed: tok-1, tok-2'),
       );
     });
+
+    for (final compacted in [false, true]) {
+      test('distinguishes existing reports from new evidence '
+          '(compacted: $compacted)', () async {
+        final result = await build(
+          compactedTaskLog: compacted
+              ? 'The blocker is still unresolved.'
+              : null,
+          triggerTokens: const {'new-status-note'},
+        );
+
+        expect(result.text, isNot(contains('## First Wake')));
+        expect(result.text, contains('A report already exists'));
+        expect(result.text, contains('new or corrected task fact'));
+        expect(result.text, contains('Different wording'));
+        expect(result.text, contains('Skip optional label/language tidying'));
+        expect(result.text, contains('do not call `update_report`'));
+        expect(result.text, contains('new-status-note'));
+        expect(result.text, contains('not proof of material progress'));
+      });
+    }
 
     test('renders each open proposal detail only in the guard', () async {
       final ledger = makeProposalLedger(

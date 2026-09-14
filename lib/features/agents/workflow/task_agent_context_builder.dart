@@ -520,9 +520,9 @@ class TaskAgentContextBuilder {
 
   /// Builds the user message for a wake cycle. [taskDetails] is the compact
   /// markdown task state when the read-flip succeeds, or the full JSON header
-  /// (inline log included) for fallback prompts. [hasReport] gates the
-  /// first-wake report bootstrap section; the prior report's prose is never
-  /// injected.
+  /// (inline log included) for fallback prompts. [hasReport] makes report
+  /// existence explicit and selects first-publication or material-change
+  /// guidance; the prior report's prose is never injected.
   ///
   /// Returns the full text plus the offsets of the embedded (derivable) log
   /// block, so the persisted prompt record can store only the non-derivable
@@ -738,6 +738,23 @@ class TaskAgentContextBuilder {
           'Produce an initial report.',
         )
         ..writeln();
+    } else {
+      buffer
+        ..writeln('## Report Publication State')
+        ..writeln(
+          'A report already exists. Before publishing, identify a new or '
+          'corrected task fact that changes the situation, outcome, next '
+          'action, deadline, or blocker. A note confirming that things are '
+          'still the same is not such a change. Different wording, another '
+          'wake, or a housekeeping label/language proposal does not warrant '
+          'a new report. Skip optional label/language tidying on a no-change '
+          'wake; still honor explicit user requests. If no material fact '
+          'changed, do not call '
+          '`update_report`; finish with a brief plain-text note. If evidence '
+          'does change the task or correct a stale claim, publish the updated '
+          'report after any justified tool calls.',
+        )
+        ..writeln();
     }
 
     if (triggerTokens.isNotEmpty) {
@@ -747,8 +764,14 @@ class TaskAgentContextBuilder {
         ..writeln(
           'The following entity IDs changed: '
           '${sortedTriggerTokens.join(", ")}',
-        )
-        ..writeln();
+        );
+      if (hasReport) {
+        buffer.writeln(
+          'These are triggers to inspect, not proof of material progress. '
+          'Read what changed before deciding whether to publish a report.',
+        );
+      }
+      buffer.writeln();
     }
 
     final openProposalGuard = _formatOpenProposalGuard(ledger);

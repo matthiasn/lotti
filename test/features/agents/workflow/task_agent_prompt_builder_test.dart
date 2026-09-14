@@ -6,6 +6,24 @@ import '../test_utils.dart';
 
 void main() {
   group('TaskAgentPromptBuilder.buildSystemPrompt', () {
+    test('both scaffolds defer routine language writes on no-change wakes', () {
+      for (final modelId in const [
+        'glm-5.3-flash',
+        'deepseek-v4.1-flash',
+        'qwen3.5-122b-a10b',
+        'mistral-small-4-119b-instruct',
+      ]) {
+        final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
+          version: makeTestTemplateVersion(),
+          soulVersion: null,
+          modelId: modelId,
+        );
+        expect(prompt, contains('when a report is required'), reason: modelId);
+        expect(prompt, contains('skip routine language'), reason: modelId);
+        expect(prompt, contains('explicit language request'), reason: modelId);
+      }
+    });
+
     test('identifies only empty and seeded report directives as built in', () {
       for (final scenario in [
         (directive: '', expected: true),
@@ -153,6 +171,50 @@ Use the task language and omit empty sections.
       expect(prompt, contains('Custom report.'));
       expect(prompt, contains('## Your Personality & Directives'));
       expect(prompt, contains('Legacy voice.'));
+    });
+
+    test('Flash profiles keep custom reports within compact authority', () {
+      for (final model in ['deepseek-v4.1-flash', 'glm-5.3-flash']) {
+        final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
+          version: makeTestTemplateVersion(
+            reportDirective:
+                'Write a brief delivery memo in the task language.',
+          ),
+          soulVersion: null,
+          modelId: model,
+        );
+        expect(
+          prompt,
+          contains(TaskAgentPromptBuilder.taskAgentCompactScaffold),
+        );
+        expect(
+          prompt,
+          isNot(contains(TaskAgentPromptBuilder.taskAgentScaffoldCore)),
+        );
+        expect(
+          prompt,
+          contains('Write a brief delivery memo in the task language.'),
+        );
+        expect(prompt, contains('User actions are sovereign'));
+        expect(prompt, contains('Omit absent\nmetadata completely'));
+      }
+    });
+
+    test('custom report instructions finish both scaffolds', () {
+      const directive = 'Use the requested evidence heading when a URL exists.';
+      for (final model in <String?>[null, 'glm-5.3-flash']) {
+        final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
+          version: makeTestTemplateVersion(reportDirective: directive),
+          soulVersion: null,
+          modelId: model,
+        );
+        expect(prompt, endsWith(directive));
+        expect(
+          prompt.indexOf(TaskAgentPromptBuilder.reportDirectivePrecedence),
+          greaterThan(prompt.indexOf('## Evidence-First Synthesis Protocol')),
+        );
+        expect(prompt.split(directive), hasLength(2));
+      }
     });
 
     test('appends evidence synthesis after the active template directives', () {
@@ -537,6 +599,12 @@ Lead with the decision. Keep it to three sentences.''';
         prompt,
         contains(TaskAgentPromptBuilder.reportDirectivePrecedence),
       );
+      expect(prompt, contains('An optional heading does not create a new'));
+      expect(prompt, contains('input only the user can provide now'));
+      expect(prompt, contains('Do not invent missing criteria'));
+      expect(prompt, contains('First select the required headings'));
+      expect(prompt, contains('must appear under its requested heading'));
+      expect(prompt, contains('Before drafting an optional decision section'));
       expect(
         prompt.indexOf(TaskAgentPromptBuilder.reportDirectivePrecedence),
         lessThan(prompt.indexOf('Lead the report with a risk callout.')),

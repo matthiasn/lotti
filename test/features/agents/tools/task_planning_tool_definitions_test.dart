@@ -39,6 +39,16 @@ void main() {
         expect(tool.name, equals(TaskAgentToolNames.requestAttention));
         expect(tool.description, contains('day planner'));
         expect(tool.description, contains('Attention Requests'));
+        expect(tool.description, contains('specific scheduling request'));
+        expect(
+          tool.description,
+          contains('Set P1, due Friday, estimate two hours'),
+        );
+        expect(tool.description, contains('Reserve two hours on Friday'));
+        expect(
+          tool.description,
+          contains('not by themselves scheduling intent'),
+        );
       });
 
       test('requires bounded claim fields', () {
@@ -143,7 +153,10 @@ void main() {
 
       test('has correct name and description', () {
         expect(tool.name, equals('update_report'));
-        expect(tool.description, contains('report'));
+        expect(tool.description, contains('no report exists'));
+        expect(tool.description, contains('material task change'));
+        expect(tool.description, contains('plain-text note'));
+        expect(tool.description, isNot(contains('end of every wake')));
       });
 
       test('requires oneLiner, tldr, and content parameters', () {
