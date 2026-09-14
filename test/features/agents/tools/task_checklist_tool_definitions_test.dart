@@ -44,6 +44,17 @@ void main() {
         expect(tool.name, equals('update_checklist_items'));
       });
 
+      test('requires copying the current item ID instead of deriving one', () {
+        final properties = tool.parameters['properties'] as Map;
+        final items = properties['items'] as Map;
+        final schema = items['items'] as Map;
+        final fields = schema['properties'] as Map;
+        final description = (fields['id'] as Map)['description'] as String;
+        expect(description, contains('Copy the exact id'));
+        expect(description, contains('current checklist context'));
+        expect(description, contains('Never derive an ID from its title'));
+      });
+
       test('requires an array items parameter with object items', () {
         final properties = tool.parameters['properties'] as Map;
         final itemsProp = properties['items'] as Map;

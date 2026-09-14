@@ -286,20 +286,13 @@ abstract final class TaskAgentPromptBuilder {
       'This directive governs the shape and voice of the report only. It does '
       'not change when to publish one. '
       '${TaskAgentReportPolicy.publicationRule} '
-      'First select the required headings from the directive below, '
-      'evaluating each conditional heading against current evidence. '
-      'Then write the content within that structure. Evidence that activates '
-      'a conditional section must appear under its requested heading; placing '
-      'the same information elsewhere does not satisfy that section. For '
-      'example, when a directive requests a links section if URLs exist, put '
-      'the URLs in that section rather than only inline in a progress sentence. '
       '${TaskAgentReportPolicy.decisionSectionRule}';
 
   /// Finishes either scaffold with the custom presentation contract.
   ///
-  /// Custom headings and their conditions stay adjacent to their precedence
-  /// guidance, after the general evidence protocol. Stock templates retain
-  /// their existing placement and do not receive a precedence statement.
+  /// Custom headings follow their precedence guidance, after the general
+  /// evidence protocol. A final check resolves conditional additions. Stock
+  /// templates retain their placement without a precedence statement.
   static void _appendCustomReportDirective(
     StringBuffer buf,
     AgentTemplateVersionEntity version,
@@ -312,7 +305,10 @@ abstract final class TaskAgentPromptBuilder {
       ..writeln()
       ..writeln(reportDirectivePrecedence)
       ..writeln()
-      ..write(reportDirective);
+      ..write(reportDirective)
+      ..writeln()
+      ..writeln()
+      ..write(TaskAgentReportPolicy.conditionalSectionRule);
   }
 
   /// Appends soul personality fields to the prompt buffer.

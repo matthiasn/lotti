@@ -5,13 +5,13 @@ description: One-call model assessment over Lotti's live harnesses, with explici
 resource: ../../../tool/lotti_gym.py
 tags: [ai, evaluation, benchmarking, model-selection, lotti-gym]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-13T20:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-14T20:00:00Z }
 stale_after: 2026-10-19
 sources:
   - id: gym
     resource: ../../../tool/lotti_gym.py
     title: CLI, worker scheduling, provenance and resume
-    last_modified: 2026-09-13
+    last_modified: 2026-09-14
   - id: catalog
     resource: ../../../tool/lotti_gym_catalog.dart
     title: Authoritative exercise inventory
@@ -99,7 +99,7 @@ excluded, that IDs are unique and that dependencies resolve.
 |---|---|
 | Task conversation | Production prompt variant, conversation/tool orchestration and production report routing |
 | Task penguin | The current English penguin inference fixture; the old environment switch name is not a multilingual-coverage claim |
-| Task directives | Synthetic evolved report directives |
+| Task directives | Production prompt builder with synthetic evolved report directives |
 | Task workflow | `TaskAgentWorkflow` with seeded context and captured persisted proposals/reports |
 | Task wake | Real task-agent context construction over seeded journal, agent and FTS databases, including restraint cases |
 | Goals | Goal inference contract and tool checks |
@@ -126,13 +126,30 @@ compaction fixtures each get their own job. Query cases stay together because
 follow-ups depend on earlier answers. Each worker has its own process and
 artifact directory; GetIt state is not shared between simultaneous workers.
 Kernel locks lease stable compiler slots from
-`build/test_cache/lotti_gym_leases/`. Each slot is warmed for every selected
-entry point before paid jobs begin. An unused `LOTTI_GYM_COMPILER_SLOT` Dart
-define selects the same incremental cache for warmup and inference; Flutter
-includes Dart defines in the cache path. Concurrent assessments lease disjoint
-slots, and subsequent assessments reuse released slots, including catalog
-compilation. Cache allocation grows with peak concurrency rather than the
-number of assessments. The define does not alter eval behavior.
+`build/test_cache/lotti_gym_leases/`. Each slot has a private Flutter project
+under `build/lotti_gym_workers/`: source entries link to this checkout, while
+`.dart_tool/` and `build/` are private. The copied package configuration keeps
+external dependency locations absolute and points the app package at the
+worker's source links. No source copy, Git checkout or credential-file link is
+created. This also isolates Flutter's native libraries and test asset manifests,
+which otherwise race even when kernel caches have distinct Dart defines.
+
+Catalog discovery, warmup and paid jobs all use the leased project. Warmup
+compiles at most two projects concurrently per assessment to bound local CPU
+and memory use; inference uses the full `--workers` value. Cancellation stops
+warmup children before waiting for the compilation pool; failures are observed
+in completion order so a blocked earlier slot cannot delay cancellation. Released slots retain
+their build caches for reuse, and allocation grows with peak concurrency.
+
+For two simultaneous model assessments, start with `--workers 4 --batch-size 1`
+per model. This keeps eight independent task cases in flight and avoids a slow
+response holding up a sequential batch. Provider capacity is only one limit:
+each resident Flutter compiler consumed roughly 1.8 GB in the September 2026
+Linux assessment, before its test process. Eight workers per model exhausted a
+32 GB machine plus swap; four per model stayed within available memory. Slots
+isolate mutable build files, but do not bound RAM. Record worker and batch
+settings when comparing latency and increase concurrency only with local
+memory headroom.
 
 ```mermaid
 stateDiagram-v2
@@ -187,6 +204,21 @@ Synthetic follow-up task cases use the production `TaskAgentReportPolicy`
 publication state, changed-entity guidance and closing instruction. Like the
 production context builder, they omit prior report prose. The real workflow
 suites additionally exercise publication enforcement after successful tools.
+The resurfaced-checklist case uses ordinary user-toggle provenance (`checkedBy`
+and `checkedAt`). It accepts preserving completion or reopening with a
+substantive reason referencing the QA source and its newer 11:20 timestamp.
+Its per-item evidence
+term groups are retained in scenario metadata; missing reasons, unrelated items,
+title changes and archiving fail. These lexical checks do not independently
+prove temporal reasoning or exercise the stricter human-approved chat guard.
+The same reopening validation contributes one deterministic quality check,
+including when preserving completion is the correct no-mutation choice.
+Planner reservations remain forbidden in this case because the evidence gives
+no scheduling request or timing urgency.
+The implicit-workflow report accepts the same profile-cleanup vocabulary as
+its checklist gate, including empty inference profiles. It still requires the
+subject, a cleanup action, pull request, review and release; the exact phrase "profile seeding"
+is not itself evidence of correctness.
 
 The task conversation driver rethrows inference errors from both its initial
 conversation and forced report pass. A provider failure cannot trigger report

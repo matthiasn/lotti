@@ -381,7 +381,7 @@ void main() {
     );
     expect(
       scenarios.map((scenario) => scenario.promptVariant).toSet(),
-      {LocalTaskAgentEvalPromptVariant.evidenceSynthesis},
+      {LocalTaskAgentEvalPromptVariant.production},
     );
     expect(
       scenarios.map((scenario) => scenario.reportDirective).toSet(),
@@ -859,7 +859,7 @@ void main() {
     test('adding the investigation the context asks for is allowed', () {
       // Verbatim from the 2026-08-08 Kimi K3 run. The QA note says
       // "Investigation is needed; no root cause yet", so creating that item is
-      // the requested behaviour; only undoing the user's checkmark is banned.
+      // the requested behaviour; reopening separately requires newer evidence.
       final scenario = defaultMeliousTaskAgentEvalScenarios().firstWhere(
         (scenario) => scenario.id.startsWith('user_completed_item_resurfaced'),
       );
@@ -868,13 +868,22 @@ void main() {
         contains(TaskAgentToolNames.addMultipleChecklistItems),
       );
       expect(
-        scenario.forbiddenToolNames,
-        contains(TaskAgentToolNames.updateChecklistItems),
+        scenario.checklistReopeningEvidence,
+        contains('item-sync-fix'),
       );
       expect(
         scenario.expectedToolCalls,
         isEmpty,
         reason: 'The investigation item is permitted, never required',
+      );
+      expect(
+        scenario.toJson()['checklistReopeningEvidence'],
+        scenario.checklistReopeningEvidence,
+      );
+      expect(scenario.userMessage, contains('"checkedBy": "user"'));
+      expect(
+        scenario.userMessage,
+        contains('"checkedAt": "2026-07-10T08:00:00Z"'),
       );
     });
 
@@ -1764,9 +1773,185 @@ void main() {
     );
   });
 
+  group('implicit workflow report subject', () {
+    for (final entry in <String, LocalTaskAgentEvalFailureCategory>{
+      'Profile seeding cleanup: open a pull request, review, merge and release.':
+          LocalTaskAgentEvalFailureCategory.none,
+      'Fix empty inference profiles remaining selectable: open a pull request, review, merge and release.':
+          LocalTaskAgentEvalFailureCategory.none,
+      'Prevent empty profiles from remaining selectable: open a pull request, review, merge and release.':
+          LocalTaskAgentEvalFailureCategory.none,
+      'Document the inference profile, then open a pull request, review, merge and release.':
+          LocalTaskAgentEvalFailureCategory.missingRequiredContent,
+      'Open a pull request, review, merge and release.':
+          LocalTaskAgentEvalFailureCategory.missingRequiredContent,
+      'Fix empty inference profiles remaining selectable: open a pull request and release.':
+          LocalTaskAgentEvalFailureCategory.missingRequiredContent,
+    }.entries) {
+      test(entry.key, () async {
+        final scenario = defaultMeliousTaskAgentEvalScenarios().firstWhere(
+          (scenario) => scenario.id == 'implicit_workflow_plan_production',
+        );
+        final runner = _createRunner(
+          provider: provider,
+          inferenceRepository: _QueuedInferenceRepository([
+            [
+              _toolCalls([
+                (
+                  name: TaskAgentToolNames.addMultipleChecklistItems,
+                  argumentsJson: jsonEncode({
+                    'items': [
+                      {'title': 'Fix empty inference profiles'},
+                      {'title': 'Create pull request'},
+                      {'title': 'Address Gemini review comments'},
+                      {'title': 'Address code review comments'},
+                      {'title': 'Merge the pull request'},
+                      {'title': 'Create a release on all platforms'},
+                    ],
+                  }),
+                ),
+                (
+                  name: TaskAgentToolNames.updateReport,
+                  argumentsJson: jsonEncode({
+                    'oneLiner': 'Workflow pending',
+                    'tldr': 'Next steps remain to be done.',
+                    'content': entry.key,
+                  }),
+                ),
+              ]),
+            ],
+          ]),
+        );
+        final report = await runner.run(
+          profiles: const [profile],
+          scenarios: [scenario],
+        );
+        expect(report.results.single.failureCategory, entry.value);
+      });
+    }
+  });
+
+  group('resurfaced checklist override contract', () {
+    const justifiedReason =
+        'QA at 11:20 reported duplicate sync events reappeared after '
+        'reconnecting, after the user checked the item at 08:00.';
+    final validItem = <String, Object?>{
+      'id': 'item-sync-fix',
+      'isChecked': false,
+      'reason': justifiedReason,
+    };
+    final cases = <String, Object?>{
+      'preserve user completion': null,
+      'cite newer QA recurrence': [validItem],
+      'missing reason': [
+        {'id': 'item-sync-fix', 'isChecked': false},
+      ],
+      'short reason': [
+        {...validItem, 'reason': 'QA sync again'},
+      ],
+      'unrelated reason': [
+        {
+          ...validItem,
+          'reason': 'A general cleanup would make this task easier to read.',
+        },
+      ],
+      'no evidence citation': [
+        {
+          ...validItem,
+          'reason': 'Duplicate sync events could reappear someday.',
+        },
+      ],
+      'older QA evidence': [
+        {
+          ...validItem,
+          'reason':
+              'QA reported duplicate sync events recurred before the user '
+              'completed the item at 08:00.',
+        },
+      ],
+      'timestamp without QA source': [
+        {
+          ...validItem,
+          'reason': 'At 11:20 I guessed duplicate sync events recurred.',
+        },
+      ],
+      'wrong item': [
+        {...validItem, 'id': 'another-item'},
+      ],
+      'wrong state': [
+        {...validItem, 'isChecked': true},
+      ],
+      'archive item': [
+        {...validItem, 'isArchived': true},
+      ],
+      'rewrite title': [
+        {...validItem, 'title': 'Ship the fix'},
+      ],
+      'empty update': <Object?>[],
+      'malformed update': ['item-sync-fix'],
+      'mixed valid and invalid': [
+        validItem,
+        {...validItem, 'id': 'another-item'},
+      ],
+    };
+    for (final entry in cases.entries) {
+      test(entry.key, () async {
+        final scenario = defaultMeliousTaskAgentEvalScenarios().firstWhere(
+          (scenario) =>
+              scenario.id == 'user_completed_item_resurfaced_production',
+        );
+        final runner = _createRunner(
+          provider: provider,
+          inferenceRepository: _QueuedInferenceRepository([
+            [
+              _toolCalls([
+                if (entry.value != null)
+                  (
+                    name: TaskAgentToolNames.updateChecklistItems,
+                    argumentsJson: jsonEncode({'items': entry.value}),
+                  ),
+                (
+                  name: TaskAgentToolNames.updateReport,
+                  argumentsJson: jsonEncode({
+                    'oneLiner': 'Duplicate sync events reappeared',
+                    'tldr': 'QA saw recurrence after reconnecting two devices.',
+                    'content':
+                        'Investigate the sync root cause; the risk remains open.',
+                  }),
+                ),
+              ]),
+            ],
+          ]),
+        );
+        final report = await runner.run(
+          profiles: const [profile],
+          scenarios: [scenario],
+        );
+        final result = report.results.single;
+        final valid =
+            entry.key == 'preserve user completion' ||
+            entry.key == 'cite newer QA recurrence';
+        expect(
+          result.failureCategory,
+          valid
+              ? LocalTaskAgentEvalFailureCategory.none
+              : LocalTaskAgentEvalFailureCategory.forbiddenToolArguments,
+        );
+        expect(result.qualityScore, valid ? equals(1) : lessThan(1));
+        expect(
+          result.passedQualityCheckCount,
+          result.qualityCheckCount - (valid ? 0 : 1),
+        );
+        expect(
+          result.toJson()['qualityScore'],
+          valid ? equals(1) : lessThan(1),
+        );
+      });
+    }
+  });
+
   test('runner fails a report asserting work that did not happen', () async {
-    // `user_completed_item_resurfaced` expects NO tool calls, so "did the
-    // model claim the fix was verified?" is the only question it really asks.
+    // A justified checklist reopening does not establish that the fix works.
     // Those claims were counted in `qualityScore` and never gated, which made
     // the scenario pass on the strength of its incidental checks alone.
     final scenario = defaultMeliousTaskAgentEvalScenarios().firstWhere(

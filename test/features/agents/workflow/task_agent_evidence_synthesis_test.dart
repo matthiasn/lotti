@@ -146,6 +146,13 @@ void main() {
             as Map<String, dynamic>)['description'],
         contains('omit Progress or Achieved entirely'),
       );
+      final contentDescription =
+          (optimizedProperties['content']!
+              as Map<String, dynamic>)['description'];
+      expect(contentDescription, contains('active report directive'));
+      expect(contentDescription, contains('heading must be present'));
+      expect(contentDescription, contains('with its exact spelling'));
+      expect(contentDescription, contains('inline link elsewhere'));
       expect(
         (baseProperties['content']! as Map<String, dynamic>)['description'],
         'Original content.',

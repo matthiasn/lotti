@@ -56,7 +56,11 @@ const taskChecklistTools = <AgentToolDefinition>[
             'properties': {
               'id': {
                 'type': 'string',
-                'description': 'The checklist item ID.',
+                'description':
+                    'Copy the exact id of the existing item from the current '
+                    'checklist context. Never derive an ID from its title or '
+                    'invent a replacement. If the item cannot be found, do '
+                    'not submit an update for it.',
               },
               'isChecked': {
                 'type': 'boolean',

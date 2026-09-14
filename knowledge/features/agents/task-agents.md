@@ -431,9 +431,17 @@ Common changes across the path:
   the user can provide now before drafting an optional decision section. It
   selects the required and evidence-triggered headings before drafting prose;
   information elsewhere does not replace a requested conditional section.
-  Custom report instructions finish either scaffold, adjacent to their
-  precedence statement, so the requested layout follows the general evidence
-  protocol. Built-in report instructions retain their existing position.
+  A shared section rule follows the custom directive and also appears in the
+  report tool and its content field. It explains that conditional additions
+  extend a base heading list, even when the base list says "exactly"; a URL
+  activating a requested source section requires that additional heading.
+  The model builds the heading outline before drafting and checks the final
+  content against it before publishing. Checklist updates require copying the
+  existing item's exact ID from current context, never deriving it from a title;
+  an item that cannot be found must not receive an update.
+  Custom instructions remain verbatim, after the general evidence protocol,
+  between the precedence statement and this final structure check. Built-in
+  report instructions retain their existing position.
   Optional headings
   do not justify inventing acceptance criteria or requesting confirmation of
   criteria the user has already stated.
@@ -444,7 +452,9 @@ Common changes across the path:
   near-term need for planner time. Metadata edits and the mere presence of a
   deadline, estimate, or priority do not establish that need.
   The tool contrasts a metadata-only request with an explicit reservation
-  request to make that boundary concrete.
+  request to make that boundary concrete. Investigation and checklist follow-up
+  alone stay on the task without timing urgency or a reservation request; the
+  model must not invent a deadline or time window to justify planner attention.
 - A first report or a report omitted after a successful material mutation gets
   a forced report call. An existing report with only label/language housekeeping
   is preserved, as is a true no-op. The same gate controls retry, report-editor

@@ -4,7 +4,9 @@ import contextlib
 import io
 import json
 import os
+import shutil
 import tempfile
+import threading
 import unittest
 from datetime import UTC, datetime
 from pathlib import Path
@@ -28,6 +30,64 @@ def suite(id="goals", adapter="agent", cases=None, dependencies=None, grouped=Fa
     }
 
 
+class WorkerProjectTest(unittest.TestCase):
+    def setUp(self):
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        self.root = Path(temp.name) / "repo"
+        self.root.mkdir()
+        root_patch = patch.object(gym, "ROOT", self.root)
+        root_patch.start()
+        self.addCleanup(root_patch.stop)
+        (self.root / "lib").mkdir()
+        (self.root / "lib/source.dart").write_text("same production source")
+        (self.root / "pubspec.yaml").write_text("name: lotti\n")
+        (self.root / ".env").write_text("PRIVATE_PLACEHOLDER=unused")
+        (self.root / ".dart_tool").mkdir()
+        self.config = self.root / ".dart_tool/package_config.json"
+        self.config.write_text(json.dumps({"configVersion": 2, "packages": [
+            {"name": "lotti", "rootUri": "../", "packageUri": "lib/"},
+            {"name": "dependency", "rootUri": "../../dependency/", "packageUri": "lib/"},
+        ]}))
+
+    def test_workers_share_source_but_isolate_native_assets_and_package_state(self):
+        first, second = gym.worker_project("0"), gym.worker_project("1")
+        self.assertNotEqual(first, second)
+        self.assertTrue((first / "lib").is_symlink())
+        (self.root / "lib/source.dart").write_text("updated production source")
+        for worker in [first, second]:
+            self.assertEqual((worker / "lib/source.dart").read_text(), "updated production source")
+            self.assertFalse((worker / ".env").exists())
+            self.assertFalse((worker / ".dart_tool").is_symlink())
+            native = worker / "build/native_assets/linux"
+            native.mkdir(parents=True, exist_ok=True)
+            (native / "native_assets.json").write_text(worker.name)
+        shutil.rmtree(first / "build/native_assets")
+        self.assertEqual((second / "build/native_assets/linux/native_assets.json").read_text(), "1")
+        self.assertFalse((self.root / "build/native_assets").exists())
+        config = gym.read_json(first / ".dart_tool/package_config.json")
+        self.assertEqual(config["packages"][0]["rootUri"], "../")
+        self.assertEqual(config["packages"][1]["rootUri"], (self.root.parent / "dependency").as_uri() + "/")
+        self.assertEqual(gym.read_json(self.config)["packages"][1]["rootUri"], "../../dependency/")
+
+    def test_reuse_preserves_build_cache_and_refreshes_package_resolution(self):
+        worker = gym.worker_project("0")
+        cache = worker / "build/cached-kernel"
+        cache.parent.mkdir()
+        cache.write_text("compiled")
+        config = gym.read_json(self.config)
+        config["packages"][1]["rootUri"] = "../../new-dependency/"
+        self.config.write_text(json.dumps(config))
+        self.assertEqual(gym.worker_project("0"), worker)
+        self.assertEqual(cache.read_text(), "compiled")
+        self.assertEqual(gym.read_json(worker / ".dart_tool/package_config.json")["packages"][1]["rootUri"], (self.root.parent / "new-dependency").as_uri() + "/")
+
+    def test_slot_cannot_escape_build_directory(self):
+        for slot in ["../lib", "", "/tmp", "name"]:
+            with self.subTest(slot=slot), self.assertRaises(ValueError):
+                gym.worker_project(slot)
+
+
 class GymTest(unittest.TestCase):
     def setUp(self):
         fixed_datetime = Mock(wraps=datetime)
@@ -38,6 +98,9 @@ class GymTest(unittest.TestCase):
         temp = tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)
         self.output = Path(temp.name)
+        project_patch = patch.object(gym, "worker_project", side_effect=lambda slot: self.output / f"worker-{slot}")
+        project_patch.start()
+        self.addCleanup(project_patch.stop)
         self.suite = suite()
         self.manifest = {
             "schemaVersion": 1,
@@ -78,8 +141,61 @@ class GymTest(unittest.TestCase):
                 if arg.startswith("--dart-define=LOTTI_GYM_COMPILER_SLOT=")
             )
             (live if self.suite["gate"] in env else warmed).add(flag)
+            self.assertEqual(call.kwargs["cwd"], self.output / f"worker-{flag.split('=')[-1]}")
         self.assertTrue(live)
         self.assertTrue(live.issubset(warmed), (live, warmed))
+
+    def test_warmup_interrupt_cancels_owned_processes_before_waiting(self):
+        jobs = gym.make_jobs([self.suite], 1, batch_size=1)
+        processes = Mock()
+        processes.run.side_effect = KeyboardInterrupt
+        with self.assertRaises(KeyboardInterrupt):
+            gym.execute(self.output, self.manifest, jobs, "key", 2, processes, ["0", "1"])
+        processes.cancel.assert_called_once_with()
+
+    def test_later_warmup_failure_cancels_a_blocked_earlier_slot(self):
+        jobs = gym.make_jobs([self.suite], 1, batch_size=1)
+        first_started = threading.Event()
+        cancelled = threading.Event()
+        processes = Mock()
+        processes.cancel.side_effect = cancelled.set
+
+        def warmup(command, env, log, timeout, **kwargs):
+            self.assertNotIn(self.suite["gate"], env)
+            if kwargs["cwd"] == self.output / "worker-0":
+                first_started.set()
+                self.assertTrue(cancelled.wait(5), "Earlier slot waited instead of being cancelled")
+                return 130
+            self.assertTrue(first_started.wait(5))
+            return 1
+
+        processes.run.side_effect = warmup
+        with self.assertRaisesRegex(ValueError, "Could not compile"):
+            gym.execute(self.output, self.manifest, jobs, "key", 2, processes, ["0", "1"])
+        processes.cancel.assert_called_once_with()
+
+    def test_eight_paid_workers_run_concurrently_after_preflight(self):
+        self.suite = suite(cases=[str(i) for i in range(9)])
+        self.manifest.update(suites=[self.suite], workers=8)
+        jobs = gym.make_jobs([self.suite], 1, batch_size=1)
+        barrier = threading.Barrier(8, timeout=5)
+        preflight_done = threading.Event()
+        processes = Mock()
+
+        def worker(command, env, log, timeout, **kwargs):
+            if self.suite["gate"] in env:
+                if preflight_done.is_set():
+                    barrier.wait()
+                else:
+                    preflight_done.set()
+            return self.fake_worker(command, env, log, timeout, **kwargs)
+
+        processes.run.side_effect = worker
+        gym.execute(self.output, self.manifest, jobs, "key", 8, processes, [str(i) for i in range(8)])
+        self.assertTrue(preflight_done.is_set())
+        self.assertFalse(barrier.broken)
+        self.assertTrue(all(job["state"] == "failed" for job in jobs), jobs)
+        self.assertEqual(sum(len(job["attempts"]) for job in jobs), 9)
 
     def test_compiler_leases_isolate_active_runs_and_reuse_released_caches(self):
         leases = self.output / "leases"
@@ -147,7 +263,7 @@ class GymTest(unittest.TestCase):
         job = gym.make_jobs([wake], 1)[0]
         processes = Mock()
 
-        def interrupted(command, env, log, timeout):
+        def interrupted(command, env, log, timeout, **kwargs):
             gym.atomic_json(log.parent / "artifact.json", {
                 "model": self.manifest["model"], "scenario": "quiet", "success": True,
             })
@@ -216,7 +332,7 @@ class GymTest(unittest.TestCase):
         )
         self.assertTrue(gym.machine_outcome(log))
 
-    def fake_worker(self, command, env, log, timeout):
+    def fake_worker(self, command, env, log, timeout, **kwargs):
         log.write_text(
             "\n".join(
                 json.dumps(e)
@@ -268,7 +384,7 @@ class GymTest(unittest.TestCase):
     def test_missing_artifact_is_error_and_retry_keeps_prior_attempt(self):
         job = gym.make_jobs([self.suite], 1)[0]
         processes = Mock()
-        processes.run.side_effect = lambda command, env, log, timeout: (
+        processes.run.side_effect = lambda command, env, log, timeout, **kwargs: (
             log.write_text("") and 0
         )
         result = gym.run_job(
@@ -296,7 +412,7 @@ class GymTest(unittest.TestCase):
         self.manifest["suites"] = [prep, query]
         jobs = gym.make_jobs([prep, query], 1)
         processes = Mock()
-        processes.run.side_effect = lambda command, env, log, timeout: (
+        processes.run.side_effect = lambda command, env, log, timeout, **kwargs: (
             log.write_text(""),
             0,
         )[1]
