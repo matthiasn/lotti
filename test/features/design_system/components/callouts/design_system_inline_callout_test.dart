@@ -73,6 +73,25 @@ void main() {
       expect(primary.right, closeTo(callout.right - inset, 1));
     });
 
+    testWidgets('announce reads the title and message as one live node', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          const DesignSystemInlineCallout(
+            icon: LottiIcons.pauseCircled,
+            title: 'Transcript not received',
+            text: 'Your recording is saved.',
+            announce: true,
+          ),
+        ),
+      );
+      final node = tester.getSemantics(find.text('Transcript not received'));
+      expect(node.flagsCollection.isLiveRegion, isTrue);
+      expect(node.label, contains('Transcript not received'));
+      expect(node.label, contains('Your recording is saved.'));
+    });
+
     testWidgets('carries the warning tone by default', (tester) async {
       await tester.pumpWidget(
         makeTestableWidget(

@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_narrative_field.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
@@ -30,6 +31,13 @@ void main() {
     focusNode = FocusNode();
     addTearDown(controller.dispose);
     addTearDown(focusNode.dispose);
+    // The view is the field's real width — the tiered captions measure
+    // against layout, not the media query — pinned here so the bundle's
+    // previous test cannot hand this one a wider or narrower window.
+    tester.view
+      ..physicalSize = Size(width, 1200)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         SingleChildScrollView(
@@ -162,7 +170,9 @@ void main() {
     );
     expect(find.byKey(const ValueKey('check-in-dictate')), findsNothing);
     // The accent, not the error tone: a live take is not an error.
-    expect(borderColor(tester), tokens(tester).colors.interactive.enabled);
+    // The accent hairline means focus only; the dot, the waveform and Stop
+    // say live.
+    expect(borderColor(tester), tokens(tester).colors.decorative.level01);
   });
 
   group('transcribing', () {
@@ -192,11 +202,15 @@ void main() {
       expect(
         saved.data,
         anyOf(
+          '0:23 of audio saved · Whisper · via Groq · usually under a minute',
           '0:23 of audio saved · Whisper · via Groq',
           '0:23 of audio saved',
         ),
       );
-      expect(saved.semanticsLabel, '0:23 of audio saved · Whisper · via Groq');
+      expect(
+        saved.semanticsLabel,
+        '0:23 of audio saved · Whisper · via Groq · usually under a minute',
+      );
       expect(find.byKey(const ValueKey('check-in-narrative')), findsNothing);
       await tester.tap(find.byKey(const ValueKey('check-in-type-instead')));
       expect(calls, ['type-instead']);
@@ -205,14 +219,28 @@ void main() {
     testWidgets('without a route the saved line is the length alone', (
       tester,
     ) async {
+      // A phone's width, so the time expectation cannot fit beside Type
+      // instead in any font the bundle may have loaded — the ladder is the
+      // contract; the rendered tier only confirms which rung it took.
       await pump(
         tester,
         phase: const CheckInSpeechTranscribing(
           audioEntryId: 'audio-1',
           length: Duration(minutes: 1, seconds: 5),
         ),
+        width: 360,
       );
-      expect(find.text('1:05 of audio saved'), findsOneWidget);
+      expect(
+        tester
+            .widget<DsTieredText>(
+              find.ancestor(
+                of: find.text('1:05 of audio saved'),
+                matching: find.byType(DsTieredText),
+              ),
+            )
+            .tiers,
+        ['1:05 of audio saved · usually under a minute', '1:05 of audio saved'],
+      );
     });
 
     testWidgets('the skeleton breathes, and holds still under reduced motion', (
@@ -357,11 +385,11 @@ void main() {
         DesignSystemButtonVariant.secondary,
       );
       await tester.tap(find.byKey(const ValueKey('check-in-open-settings')));
-      await tester.tap(find.byKey(const ValueKey('check-in-retry-audio')));
+      // Two actions like every card; the field's own Dictate beneath is the
+      // retry.
+      expect(find.byKey(const ValueKey('check-in-retry-audio')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('check-in-dictate')));
       expect(calls, ['dismiss', 'open-settings', 'dictate']);
-      // The card's Try again is the way to record again: the field does not
-      // offer a second, dead Dictate beside it.
-      expect(find.byKey(const ValueKey('check-in-dictate')), findsNothing);
       // Nor a "0 words" count under a card that already says nothing was
       // recorded.
       expect(find.byKey(const ValueKey('check-in-word-count')), findsNothing);

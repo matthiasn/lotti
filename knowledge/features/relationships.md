@@ -804,7 +804,8 @@ the judgement before its timestamp — and the
 person header directly above the card already carries the tinted band pill
 and the cadence pill, so the card repeats neither — but the band's colour
 rides a dot in the status line's glyph slot, so the judgement is carried by
-more than its word; every status glyph is centred on the first line by a
+more than its word (*steady* is the neutral medium-emphasis ink, never the
+accent that means pressable on the same card); every status glyph is centred on the first line by a
 computed offset, so at 1.6× it still sits on the words. The not-enrolled
 face wears `TldrHeader`'s plain badge — a neutral tile, not the AI accent it
 disclaims — and its privacy note rides the action row's leading slot. The header's trailing rail holds only an out-of-date
@@ -812,7 +813,9 @@ briefing's age (`6 days old`, an outlined tag in the meta ink, so the status
 line's warning ink is the one orange thing on the face and the tag never
 competes for the first read), which is what that rail — capped at half the header width,
 ellipsizing — can carry without truncating a judgement. The status line is
-a `DsTieredText` in a live region: it sheds its date or time before it
+a `DsTieredText` in a live region — one that survives the shared header,
+which excludes only its badge and title from semantics so the status can
+speak for itself: it sheds its date or time before it
 wraps (`Out of date · new check-in Thursday` → `Out of date · new check-in`
 → `Out of date`; `Last run failed · 14:05` → `Last run failed`), and only
 the narrowest wording may take a second line, glyph top-aligned, so the
@@ -1019,10 +1022,13 @@ The composer's parts, top to bottom:
   status line — `with Pip · last spoke Sat 1 Aug` at rest, read through
   `relationshipDetailControllerProvider`, and while speech is in flight what
   the field is doing (`● Recording`, `Paused`, `Transcribing…`, `Transcript
-  not received`, `Microphone unavailable`) in that phase's colour — except
-  that *Recording* and *Transcribing…* keep the quiet ink beside their red
-  dot and spinner, so error red means only a failure and accent on text
-  means only pressable, and *Paused* wears a pause glyph. The close control
+  not received`, `Microphone unavailable`) — the glyph in the phase's tone
+  and the words in the quiet ink, so the callout beneath owns the alert
+  colour and accent on text means only pressable; *Paused* wears a pause
+  glyph. The line is a live region for the news only — never for the
+  resting subtitle, which would otherwise be re-read before a landing
+  transcript. Editing an existing check-in, the ladder starts at `with Pip`:
+  the chip row is the one source of its date. The close control
   is a `DesignSystemIconAction`, as is the edit sheet's delete (in the error
   tone). The
   status line is **tiered**, not truncated: a `DsTieredText` shows the
@@ -1049,28 +1055,36 @@ The composer's parts, top to bottom:
   choosing to type instead, so the card goes on its own (the form's
   `_onNarrativeChanged`) — folding into its retry row when a recording is
   waiting. The cards are the design system's `DesignSystemInlineCallout`
-  with a title and an actions row on the trailing rail, quietest first; the
-  recommended action is the secondary pill, so the alert tone is the card's
-  one colour and the filled accent stays Save's. The header already names
-  the state, so a card's title is the *next step* (`Try again, or type what
-  you remember`; `Allow the microphone to dictate`), and the refused
-  microphone offers *Type instead* as a button. Under a card with nothing
-  typed the field carries no caption at all. *Type instead* on a
+  with a title and two actions on the trailing rail, quietest first —
+  *Type instead* and the recommended secondary pill, so the alert tone is
+  the card's one colour and the filled accent stays Save's — and they
+  announce themselves once, whole (`announce: true`). The header already
+  names the state, so a card's title is the *next step* (`Try again, or
+  type what you remember`; `Allow the microphone to dictate`); under the
+  refused microphone the field's own *Dictate* is the retry. Under a card
+  with nothing typed the field is one line and carries no caption. *Type instead* on a
   **missing transcript** does not forget the take: the phase becomes
   `CheckInSpeechFailed(cardDismissed: true)`, the card folds into one
   caption row — `0:23 of audio saved · Try again` — and the retry survives
   until Save or dismiss. *Re-record* is offered only while the field still
   holds exactly what landed (`_canReRecord`, checked against
-  `mergeCheckInNarrative`): once the transcript is edited, taking it back
-  out would take the edits with it, and it wears the `quiet` variant with a
-  refresh glyph so it never reads as Add more's twin. The caption row is a
+  `mergeCheckInNarrative`); once the transcript is edited *Re-record* stays
+  but asks first (`checkInReRecordReplaceMessage`), because taking the take
+  back out would take the edits with it. It wears the `quiet` variant with
+  a refresh glyph so it never reads as Add more's twin. The caption row is a
   `DsTieredText` ladder (`Transcript added · 26 words · ⌘↩ to save` sheds
   the hint, then the count), and the caption and its actions share one
   corner across phases — transcribing included: beside each other when they
   fit a line, else the actions on their own line at the trailing edge
-  (`_CaptionAndActions`), always so above `TextScales.large`. The *More*
-  row's caption is a ladder too (`Feeling · topics · next time` sheds a
-  segment at a time), so large text never slices a word. The phases swap in
+  (`_CaptionAndActions`), always so above `TextScales.large`. The
+  transcribing caption ends on a time expectation (`· usually under a
+  minute`), the first tier to go, and its *Type instead* is quiet so the
+  wait is what the eye finds. The *More* row's caption is a ladder too
+  (`Feeling · topics · next time` sheds a segment at a time), so large text
+  never slices a word; unfolded, *More* is `subtitle1` and every section —
+  the feeling, and the three inputs — carries the same `subtitle2` heading
+  one level under it. The field's accent hairline means keyboard focus and
+  nothing else: the red dot, the waveform and the filled Stop say "live". The phases swap in
   place rather than through an `AnimatedSize`: the tiered captions lay
   themselves out with a `LayoutBuilder`, which re-dirties an animating size
   box in its own layout pass.
@@ -1083,10 +1097,13 @@ The composer's parts, top to bottom:
   the edited check-in already carries any of them.
 * [`CheckInStickyActions`](../../lib/features/relationships/ui/widgets/check_in_capture_sheet.dart)
   in the modal's sticky bar: *Save check-in* always visible, and when it is
-  held, why. Cancel is the button's `quiet` variant on both viewports, so
-  the one bright shape in the bar is Save's even while Save is held — and
-  when the bar stacks above `TextScales.large`, Save leads and Cancel sits
-  centred beneath it, the design system's rule for every stacked bar. On the
+  held, why — on two lines when the bar is stacked above
+  `TextScales.large`, reserved by `CheckInStickyActions.height`. Cancel is
+  the button's `quiet` variant on both viewports, so the one bright shape in
+  the bar is Save's even while Save is held — and when the bar stacks, Save
+  leads and Cancel sits centred beneath it, the design system's rule for
+  every stacked bar. The recorder's Discard is quiet too: red on this
+  surface is the live dot alone. On the
   desktop dialog the field takes focus as the composer opens (the form's
   `dialog` flag), so the typed common case is open → type → ⌘↩; a phone
   waits for the first tap rather than raise its keyboard over the sheet. On a
@@ -1378,12 +1395,13 @@ Three invariants hold regardless of what comes back:
 * **Speaking never destroys typing.** `mergeCheckInNarrative` appends below
   existing text, blank-line separated, including text entered while the
   transcript was still arriving.
-* **Re-record takes back only what it added.** `removeCheckInTranscript`
-  gives back the text the field held before the last merge, and only when
-  the field is still exactly that merge — not a suffix match, which would
-  strip `Spoken.` out of `Actually Spoken.` — so an edited field is left
-  alone: an edit is the user's. And it does so once the new take exists,
-  never on the way in, so a discarded or failed retake keeps the words.
+* **Re-record takes back only what it added.** The form remembers what the
+  field held before the last take (`CheckInSpeechReady.textBefore`) and
+  restores exactly that once the new take exists — never on the way in, so
+  a discarded or failed retake keeps the words. Edits made on top of the
+  take go with it, which is why a field that no longer matches the merge
+  asks first, in those words ("Replace your edited words with a new take?"),
+  and a declined dialog moves nothing.
 
 Name accuracy comes from the **category's `speechDictionary`**, not from
 anything relationship-specific: the recording is created with the person's

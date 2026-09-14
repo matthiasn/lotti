@@ -3223,6 +3223,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkInReRecordButton => 'Re-record';
 
   @override
+  String get checkInReRecordReplaceMessage =>
+      'Replace your edited words with a new take?';
+
+  @override
   String get checkInSaveBlockedEmpty => 'Add a few words to save';
 
   @override
@@ -3315,6 +3319,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get checkInTopicsLabel => 'Topics';
+
+  @override
+  String get checkInTranscribingEta => 'usually under a minute';
 
   @override
   String get checkInTranscribingLabel => 'Transcribing…';

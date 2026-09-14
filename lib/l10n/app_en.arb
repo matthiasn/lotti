@@ -1999,6 +1999,10 @@
   "checkInRecordingNotSavedBody": "The recording could not be saved. Try again, or type the check-in.",
   "checkInRecordingNotSavedTitle": "Recording couldn't be saved",
   "checkInReRecordButton": "Re-record",
+  "checkInReRecordReplaceMessage": "Replace your edited words with a new take?",
+  "@checkInReRecordReplaceMessage": {
+    "description": "Confirmation before Re-record when the transcript has been edited since it landed."
+  },
   "checkInSaveBlockedEmpty": "Add a few words to save",
   "checkInSaveBlockedRecording": "Stop recording to save",
   "checkInSaveBlockedRetry": "Type or retry to save",
@@ -2045,6 +2049,10 @@
   },
   "checkInTopicsHint": "Comma-separated, e.g. work, travel",
   "checkInTopicsLabel": "Topics",
+  "checkInTranscribingEta": "usually under a minute",
+  "@checkInTranscribingEta": {
+    "description": "The last, first-shed tier of the transcribing caption: a time expectation for the wait."
+  },
   "checkInTranscribingLabel": "Transcribing…",
   "@checkInTranscribingLabel": {
     "description": "Progress label shown on the check-in sheet while a spoken check-in is being transcribed."

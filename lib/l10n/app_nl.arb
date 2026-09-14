@@ -1591,6 +1591,10 @@
   "checkInRecordingNotSavedBody": "De opname kon niet worden opgeslagen. Probeer het opnieuw of typ de check-in.",
   "checkInRecordingNotSavedTitle": "Opname kon niet worden opgeslagen",
   "checkInReRecordButton": "Opnieuw opnemen",
+  "checkInReRecordReplaceMessage": "Je bewerkte woorden vervangen door een nieuwe opname?",
+  "@checkInReRecordReplaceMessage": {
+    "description": "Confirmation before Re-record when the transcript has been edited since it landed."
+  },
   "checkInSaveBlockedEmpty": "Voeg een paar woorden toe om op te slaan",
   "checkInSaveBlockedRecording": "Stop de opname om op te slaan",
   "checkInSaveBlockedRetry": "Typ of probeer opnieuw om op te slaan",
@@ -1620,6 +1624,10 @@
   "checkInTimeChipSemantics": "Begin: {time}. Wijzigen",
   "checkInTopicsHint": "Kommagescheiden, bijv. werk, reizen",
   "checkInTopicsLabel": "Onderwerpen",
+  "checkInTranscribingEta": "meestal binnen een minuut",
+  "@checkInTranscribingEta": {
+    "description": "The last, first-shed tier of the transcribing caption: a time expectation for the wait."
+  },
   "checkInTranscribingLabel": "Bezig met transcriberen…",
   "checkInTranscriptAdded": "Transcript toegevoegd",
   "checkInTranscriptionUnavailableTitle": "Geen transcriptiemodel ingesteld",

@@ -1543,7 +1543,7 @@ void main() {
         // records again — and then the transcript never comes: the
         // recording is kept, the retry asks for its words again.
         recorder.recordFailure = null;
-        await tester.tap(find.byKey(const ValueKey('check-in-retry-audio')));
+        await tester.tap(find.byKey(const ValueKey('check-in-dictate')));
         await tester.pumpAndSettle();
         recorder.tick(progress: const Duration(seconds: 23));
         await tester.pump();

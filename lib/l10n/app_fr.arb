@@ -1414,6 +1414,10 @@
   "checkInRecordingNotSavedBody": "L’enregistrement n’a pas pu être sauvegardé. Réessaie, ou écris le point.",
   "checkInRecordingNotSavedTitle": "L’enregistrement n’a pas pu être sauvegardé",
   "checkInReRecordButton": "Réenregistrer",
+  "checkInReRecordReplaceMessage": "Remplacer tes mots modifiés par une nouvelle prise ?",
+  "@checkInReRecordReplaceMessage": {
+    "description": "Confirmation before Re-record when the transcript has been edited since it landed."
+  },
   "checkInSaveBlockedEmpty": "Ajoute quelques mots pour enregistrer",
   "checkInSaveBlockedRecording": "Arrête l’enregistrement pour sauvegarder",
   "checkInSaveBlockedRetry": "Écris ou réessaie pour sauvegarder",
@@ -1443,6 +1447,10 @@
   "checkInTimeChipSemantics": "Début : {time}. Modifier",
   "checkInTopicsHint": "Séparés par des virgules, p. ex. travail, voyages",
   "checkInTopicsLabel": "Sujets",
+  "checkInTranscribingEta": "généralement moins d’une minute",
+  "@checkInTranscribingEta": {
+    "description": "The last, first-shed tier of the transcribing caption: a time expectation for the wait."
+  },
   "checkInTranscribingLabel": "Transcription en cours…",
   "checkInTranscriptAdded": "Transcription ajoutée",
   "checkInTranscriptionUnavailableTitle": "Aucun modèle de transcription configuré",

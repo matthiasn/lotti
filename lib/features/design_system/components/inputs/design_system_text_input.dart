@@ -384,7 +384,7 @@ class _TextInputSpec {
 
     return _TextInputSpec(
       fieldHeight: isSmall ? tokens.spacing.step8 : tokens.spacing.step9,
-      borderRadius: tokens.spacing.step5,
+      borderRadius: tokens.radii.l,
       contentPadding: EdgeInsets.symmetric(
         horizontal: tokens.spacing.step4,
         vertical: tokens.spacing.step2,

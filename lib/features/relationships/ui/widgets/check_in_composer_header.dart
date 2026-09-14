@@ -30,12 +30,17 @@ class CheckInComposerHeader extends ConsumerWidget {
     required this.handle,
     required this.title,
     this.titleLines = 1,
+    this.editing = false,
     super.key,
   });
 
   final String relationshipId;
   final CheckInFormHandle handle;
   final String title;
+
+  /// Editing an existing check-in: the chip row is the one source of its
+  /// date, so the status line says only who it is with.
+  final bool editing;
 
   /// How many lines the title takes, measured by the sheet with
   /// [titleLinesFor] against the modal's real width — the same number it
@@ -169,6 +174,7 @@ class CheckInComposerHeader extends ConsumerWidget {
                       status: handle.status,
                       name: name,
                       lastSpoke: lastSpoke,
+                      editing: editing,
                     ),
                   ),
                 ],
@@ -195,11 +201,13 @@ class _StatusLine extends StatelessWidget {
     required this.status,
     required this.name,
     required this.lastSpoke,
+    required this.editing,
   });
 
   final CheckInComposerStatus status;
   final String? name;
   final DateTime? lastSpoke;
+  final bool editing;
 
   @override
   Widget build(BuildContext context) {
@@ -221,10 +229,11 @@ class _StatusLine extends StatelessWidget {
             name,
           ],
           (final name?, final at?) => [
-            messages.checkInComposerSubtitle(
-              name,
-              relationshipDayLabelOf(context, at),
-            ),
+            if (!editing)
+              messages.checkInComposerSubtitle(
+                name,
+                relationshipDayLabelOf(context, at),
+              ),
             messages.checkInComposerWithName(name),
             name,
           ],
@@ -244,10 +253,9 @@ class _StatusLine extends StatelessWidget {
         quiet,
       ),
       CheckInComposerStatus.transcribing => (
-        DesignSystemSpinner(
+        const DesignSystemSpinner(
           style: DesignSystemSpinnerStyle.plain,
           size: IconSizes.s,
-          strokeWidth: tokens.spacing.step1,
         ),
         // The spinner says busy; the word stays in the quiet ink, so accent
         // on text means pressable everywhere.
@@ -261,7 +269,7 @@ class _StatusLine extends StatelessWidget {
           color: tokens.colors.alert.warning.defaultColor,
         ),
         [messages.checkInStatusTranscriptMissing],
-        tokens.colors.alert.warning.ink,
+        quiet,
       ),
       CheckInComposerStatus.transcriptionUnavailable => (
         Icon(
@@ -270,7 +278,7 @@ class _StatusLine extends StatelessWidget {
           color: tokens.colors.alert.warning.defaultColor,
         ),
         [messages.checkInStatusTranscriptionUnavailable],
-        tokens.colors.alert.warning.ink,
+        quiet,
       ),
       CheckInComposerStatus.microphoneDenied => (
         Icon(
@@ -279,7 +287,7 @@ class _StatusLine extends StatelessWidget {
           color: tokens.colors.alert.error.defaultColor,
         ),
         [messages.checkInStatusMicrophoneDenied],
-        tokens.colors.alert.error.ink,
+        quiet,
       ),
       CheckInComposerStatus.recordingFailed => (
         Icon(
@@ -288,7 +296,7 @@ class _StatusLine extends StatelessWidget {
           color: tokens.colors.alert.error.defaultColor,
         ),
         [messages.checkInStatusRecordingFailed],
-        tokens.colors.alert.error.ink,
+        quiet,
       ),
       CheckInComposerStatus.recordingNotSaved => (
         Icon(
@@ -297,7 +305,7 @@ class _StatusLine extends StatelessWidget {
           color: tokens.colors.alert.error.defaultColor,
         ),
         [messages.checkInStatusRecordingNotSaved],
-        tokens.colors.alert.error.ink,
+        quiet,
       ),
       CheckInComposerStatus.recorderBusy => (
         Icon(
@@ -306,12 +314,17 @@ class _StatusLine extends StatelessWidget {
           color: tokens.colors.alert.warning.defaultColor,
         ),
         [messages.checkInStatusRecorderBusy],
-        tokens.colors.alert.warning.ink,
+        quiet,
       ),
     };
 
+    // Live for the news only: the resting subtitle is not an announcement,
+    // and a transcript landing must not re-read it first.
     return Semantics(
-      liveRegion: true,
+      liveRegion: switch (status) {
+        CheckInComposerStatus.idle || CheckInComposerStatus.preparing => false,
+        _ => true,
+      },
       child: Row(
         children: [
           if (leading != null) ...[

@@ -358,11 +358,21 @@ medium-emphasis glyph instead of the accent it would otherwise disclaim.
 leads with the primary and centres the secondaries beneath it: a stacked
 bar must never put its exit above its one filled action.
 
+`DesignSystemSpinner`'s stroke is keyed on its size when not given —
+`BorderWidths.emphasis` for a glyph-sized spinner, the wide default for the
+standalone one — so no call site reaches for a spacing step as a stroke;
+`DesignSystemTextInput`'s rounded shell is `radii.l`, the narrative field's
+own radius. `TldrHeader` excludes only its badge and title from semantics
+and leaves the `subtitle` slot to speak for itself, so a host's status line
+can be a live region.
+
 `DesignSystemInlineCallout` also takes an optional `title` (subtitle above
 the message) and `actions` (buttons in a trailing-aligned wrap under the
 text, quietest first so the filled one sits on the rail every primary
-shares) — the shape the check-in composer's failure cards wear, so a
-failure reads as one system's callout rather than a bespoke box.
+shares) and `announce`, which merges the title and message into one live
+node so a callout that arrives to report a failure is read once, whole —
+the shape the check-in composer's failure cards wear, so a failure reads as
+one system's callout rather than a bespoke box.
 
 ## One line that sheds words, not letters: `DsTieredText`
 

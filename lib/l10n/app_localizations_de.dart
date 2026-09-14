@@ -3266,6 +3266,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checkInReRecordButton => 'Neu aufnehmen';
 
   @override
+  String get checkInReRecordReplaceMessage =>
+      'Deine bearbeiteten Worte durch eine neue Aufnahme ersetzen?';
+
+  @override
   String get checkInSaveBlockedEmpty => 'Ein paar Worte genügen zum Speichern';
 
   @override
@@ -3360,6 +3364,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get checkInTopicsLabel => 'Themen';
+
+  @override
+  String get checkInTranscribingEta => 'normalerweise unter einer Minute';
 
   @override
   String get checkInTranscribingLabel => 'Wird transkribiert…';

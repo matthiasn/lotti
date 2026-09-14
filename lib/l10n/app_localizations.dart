@@ -5472,6 +5472,12 @@ abstract class AppLocalizations {
   /// **'Re-record'**
   String get checkInReRecordButton;
 
+  /// Confirmation before Re-record when the transcript has been edited since it landed.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace your edited words with a new take?'**
+  String get checkInReRecordReplaceMessage;
+
   /// No description provided for @checkInSaveBlockedEmpty.
   ///
   /// In en, this message translates to:
@@ -5645,6 +5651,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Topics'**
   String get checkInTopicsLabel;
+
+  /// The last, first-shed tier of the transcribing caption: a time expectation for the wait.
+  ///
+  /// In en, this message translates to:
+  /// **'usually under a minute'**
+  String get checkInTranscribingEta;
 
   /// Progress label shown on the check-in sheet while a spoken check-in is being transcribed.
   ///
