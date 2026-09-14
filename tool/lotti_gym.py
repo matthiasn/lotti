@@ -519,19 +519,20 @@ def judge_jobs(output, manifest, jobs, api_key, workers, processes):
             )
         except (ValueError, OSError, KeyError, TypeError):
             pass
-        result["judge"] = {
+        record = {
             "model": manifest["judgeModel"],
             "state": "complete" if code == 0 and valid else "error",
             "exitCode": code,
         }
-        atomic_json(directory / "result.json", result)
+        atomic_json(directory / "result.json", {**result, "judge": record})
+        return record
 
     pool = ThreadPoolExecutor(max_workers=workers)
     futures = []
     try:
-        futures = [pool.submit(judge, job) for job in eligible]
-        for future in futures:
-            future.result()
+        futures = [(job, pool.submit(judge, job)) for job in eligible]
+        for job, future in futures:
+            job["attempts"][-1]["judge"] = future.result()
             checkpoint(output, manifest, jobs)
     except BaseException:
         processes.cancel()

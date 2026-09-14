@@ -405,6 +405,48 @@ class GymTest(unittest.TestCase):
         stop.assert_called_once_with(process)
         self.assertEqual(processes.active, set())
 
+    def test_judge_workers_publish_copies_before_coordinator_updates_jobs(self):
+        task = suite("tasks", "task", ["quiet", "change"])
+        self.manifest.update(suites=[task], judgeModel="independent-judge")
+        jobs = gym.make_jobs([task], 1, batch_size=1)
+        attempts = {}
+        for job in jobs:
+            directory = self.output / "jobs" / job["directory"] / "attempt-1"
+            directory.mkdir(parents=True)
+            attempt = {
+                "directory": str(directory),
+                "artifact": str(directory / "artifact.json"),
+                "number": 1,
+                "results": [{"case": job["cases"][0], "status": "passed"}],
+            }
+            job.update(state="complete", attempts=[attempt])
+            attempts[directory] = attempt
+        original_write = gym.atomic_json
+        published = []
+
+        def check_ownership(path, value):
+            if path.name == "result.json":
+                # Judge subprocesses complete on worker threads. Until their
+                # durable record is written, the coordinator-owned attempt
+                # must remain unchanged so checkpoint can safely iterate it.
+                self.assertNotIn("judge", attempts[path.parent])
+                self.assertIsNot(value, attempts[path.parent])
+                published.append(path)
+            original_write(path, value)
+
+        processes = Mock()
+        processes.run.return_value = 1
+        with patch.object(gym, "atomic_json", side_effect=check_ownership):
+            gym.judge_jobs(self.output, self.manifest, jobs, "key", 2, processes)
+        self.assertEqual(len(published), 2)
+        for job in jobs:
+            attempt = job["attempts"][0]
+            self.assertEqual(attempt["judge"]["state"], "error")
+            self.assertEqual(job["state"], "complete")
+            self.assertEqual(
+                gym.read_json(Path(attempt["directory"]) / "result.json"), attempt,
+            )
+
     def test_judge_failure_resumes_without_repeating_candidate_or_changing_verdict(
         self,
     ):
