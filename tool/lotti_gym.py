@@ -20,7 +20,7 @@ from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from contextlib import ExitStack, contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -254,14 +254,15 @@ class Processes:
         self.active = set()
         self.cancelled = False
 
-    def run(self, command, env, log, timeout):
+    def run(self, command, env, log, timeout, *, cwd=None):
+        """Run an owned process, optionally in a private Flutter project."""
         with log.open("x", encoding="utf-8") as output:
             with self.lock:
                 if self.cancelled:
                     return 130
                 process = subprocess.Popen(
                     command,
-                    cwd=ROOT,
+                    cwd=cwd or ROOT,
                     env=env,
                     stdout=output,
                     stderr=subprocess.STDOUT,
@@ -341,6 +342,46 @@ def compiler_slot_pool(workers, directory=None):
         yield slots
 
 
+def worker_project(compiler_slot):
+    """Reuse private Flutter build state while reading this checkout's source.
+
+    Flutter hardcodes native and test asset output paths beneath its project
+    directory, independently of kernel cache defines. Source links plus a
+    private package config give each leased worker separate mutable outputs.
+    No repository checkout or source copy is created.
+    """
+    if not compiler_slot.isdecimal():
+        raise ValueError("Compiler slot must be a numeric lease identifier")
+    directory = ROOT / "build/lotti_gym_workers" / compiler_slot
+    directory.mkdir(parents=True, exist_ok=True)
+    excluded = {"build", ".dart_tool", ".git", "coverage"}
+    sources = {
+        entry.name: entry for entry in ROOT.iterdir()
+        if entry.name not in excluded and not entry.name.startswith(".env")
+    }
+    for link in directory.iterdir():
+        if link.is_symlink() and link.name not in sources:
+            link.unlink()
+    for name, source in sources.items():
+        link = directory / name
+        if not link.is_symlink():
+            link.symlink_to(source, target_is_directory=source.is_dir())
+    config_path = ROOT / ".dart_tool/package_config.json"
+    if not config_path.is_file():
+        raise ValueError("Install repository dependencies before running LottiGym")
+    config = read_json(config_path)
+    for package in config["packages"]:
+        resolved = urljoin(config_path.as_uri(), package["rootUri"])
+        package["rootUri"] = (
+            "../" if resolved.rstrip("/") == ROOT.as_uri() else resolved
+        )
+    atomic_json(directory / ".dart_tool/package_config.json", config)
+    graph = ROOT / ".dart_tool/package_graph.json"
+    if graph.is_file():
+        atomic_json(directory / ".dart_tool/package_graph.json", read_json(graph))
+    return directory
+
+
 def flutter_test_command(entry_point, compiler_slot):
     """Select the leased cache used by both warmup and live inference.
 
@@ -381,6 +422,7 @@ def run_job(suite, job, manifest, output, api_key, processes, summary_path, comp
             env,
             log,
             5400 if suite["adapter"] == "compaction" else 1200,
+            cwd=worker_project(compiler_slot),
         )
         result["exitCode"] = exit_code
         artifact_path = directory / "artifact.json"
@@ -616,18 +658,30 @@ def execute(output, manifest, jobs, api_key, workers, processes, compiler_slots)
     pending = [j for j in jobs if j["state"] not in TERMINAL]
     for job in pending:
         job["state"] = "pending"
-    # Warm every leased cache before starting paid work. Build sequentially to
-    # avoid overlapping native asset materialization in this checkout.
-    for entry in sorted({suites[j["suite"]]["entryPoint"] for j in pending}):
-        for slot in compiler_slots:
+    # Compile at most two private projects at once per assessment. Inference
+    # concurrency is independent of this local CPU/memory warmup limit.
+    entries = sorted({suites[j["suite"]]["entryPoint"] for j in pending})
+
+    def warm_slot(slot):
+        directory = worker_project(slot)
+        for entry in entries:
             warm = output / f"warm-{uuid.uuid4().hex}.jsonl"
             if processes.run(
                 flutter_test_command(entry, slot),
                 clean_environment(os.environ),
                 warm,
                 600,
+                cwd=directory,
             ) != 0:
                 raise ValueError(f"Could not compile {entry}; see {warm.name}")
+
+    with ThreadPoolExecutor(max_workers=min(workers, 2)) as warmers:
+        try:
+            list(warmers.map(warm_slot, compiler_slots))
+        except BaseException:
+            # Stop children before the executor waits for active warmups.
+            processes.cancel()
+            raise
     idle_slots = list(compiler_slots)
     active = {}
     if pending and not any(
@@ -727,6 +781,7 @@ def execute(output, manifest, jobs, api_key, workers, processes, compiler_slots)
 
 
 def discover(directory, processes, compiler_slot):
+    """Discover using the same private Flutter project as live workers."""
     path = directory / "catalog.json"
     env = clean_environment(os.environ)
     env["LOTTI_GYM_CATALOG"] = str(path)
@@ -735,6 +790,7 @@ def discover(directory, processes, compiler_slot):
         env,
         directory / "catalog.log",
         600,
+        cwd=worker_project(compiler_slot),
     )
     if status != 0 or not path.is_file():
         raise ValueError(
