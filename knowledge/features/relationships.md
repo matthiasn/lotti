@@ -1395,12 +1395,13 @@ Three invariants hold regardless of what comes back:
 * **Speaking never destroys typing.** `mergeCheckInNarrative` appends below
   existing text, blank-line separated, including text entered while the
   transcript was still arriving.
-* **Re-record takes back only what it added.** `removeCheckInTranscript`
-  gives back the text the field held before the last merge, and only when
-  the field is still exactly that merge — not a suffix match, which would
-  strip `Spoken.` out of `Actually Spoken.` — so an edited field is left
-  alone: an edit is the user's. And it does so once the new take exists,
-  never on the way in, so a discarded or failed retake keeps the words.
+* **Re-record takes back only what it added.** The form remembers what the
+  field held before the last take (`CheckInSpeechReady.textBefore`) and
+  restores exactly that once the new take exists — never on the way in, so
+  a discarded or failed retake keeps the words. Edits made on top of the
+  take go with it, which is why a field that no longer matches the merge
+  asks first, in those words ("Replace your edited words with a new take?"),
+  and a declined dialog moves nothing.
 
 Name accuracy comes from the **category's `speechDictionary`**, not from
 anything relationship-specific: the recording is created with the person's

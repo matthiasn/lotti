@@ -169,7 +169,13 @@ void main() {
       expect(find.bySemanticsLabel('Writing the briefing…'), findsOneWidget);
       final node = tester.getSemantics(find.text('Writing the briefing…'));
       expect(node.flagsCollection.isLiveRegion, isTrue);
-      expect(find.bySemanticsLabel(RegExp('^Briefing')), findsOneWidget);
+      // The header's own node is the title alone: the name is the subtitle's
+      // to speak, and folding it into the label would read the status twice.
+      expect(find.bySemanticsLabel('Briefing'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Briefing. Writing the briefing…'),
+        findsNothing,
+      );
     });
   });
 
@@ -218,7 +224,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(
           TldrHeader(
-            agentName: 'Only for semantics',
+            agentName: 'Not shown, not announced',
             title: 'Briefing',
             subtitle: const Text('as of 3 h ago', key: ValueKey('subtitle')),
             icon: LottiIcons.people,
@@ -228,12 +234,13 @@ void main() {
       );
 
       expect(find.byKey(const ValueKey('subtitle')), findsOneWidget);
-      expect(find.text('Only for semantics'), findsNothing);
+      expect(find.text('Not shown, not announced'), findsNothing);
       expect(find.byIcon(LottiIcons.people), findsOneWidget);
       expect(find.byIcon(LottiIcons.aiSpark), findsNothing);
+      expect(find.bySemanticsLabel('Briefing'), findsOneWidget);
       expect(
         find.bySemanticsLabel('Briefing. Only for semantics'),
-        findsOneWidget,
+        findsNothing,
       );
     });
 

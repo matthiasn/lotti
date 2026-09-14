@@ -94,48 +94,6 @@ void main() {
     });
   });
 
-  group('removeCheckInTranscript', () {
-    test('gives back what the field held before an unedited merge', () {
-      expect(
-        removeCheckInTranscript(
-          existing: 'Typed.\n\nSpoken.',
-          textBefore: 'Typed.',
-          transcript: 'Spoken.',
-        ),
-        'Typed.',
-      );
-      expect(
-        removeCheckInTranscript(
-          existing: 'Spoken.',
-          textBefore: '',
-          transcript: 'Spoken.',
-        ),
-        '',
-      );
-    });
-
-    test("leaves an edited field alone — the edit is the user's", () {
-      expect(
-        removeCheckInTranscript(
-          existing: 'Typed.\n\nSpoken, then edited.',
-          textBefore: 'Typed.',
-          transcript: 'Spoken.',
-        ),
-        'Typed.\n\nSpoken, then edited.',
-      );
-      // A prefix edit still ends with the transcript; a suffix match would
-      // have stripped it and left "Actually".
-      expect(
-        removeCheckInTranscript(
-          existing: 'Actually Spoken.',
-          textBefore: '',
-          transcript: 'Spoken.',
-        ),
-        'Actually Spoken.',
-      );
-    });
-  });
-
   final testDate = DateTime(2026, 8, 13, 10, 30);
 
   late MockRelationshipRepository mockRepository;
@@ -1115,9 +1073,10 @@ void main() {
       );
       expect(recorder.recordCalls, hasLength(3));
 
-      // Once the text is edited, Re-record stays but asks first: taking the
-      // last take back out would take the edit with it. Confirmed, nothing
-      // is stripped from the edited text and the new take appends.
+      // Once the text is edited, Re-record stays but asks first, because
+      // taking the last take back out takes the edit with it. Declined,
+      // nothing moves; confirmed, the field is what it held before that
+      // take and the new one goes in — the words the dialog promised.
       await type(tester, 'Edited. Typed.\n\nSpoken.\n\nSpoken.');
       await tester.tap(find.byKey(const ValueKey('check-in-re-record')));
       await tester.pumpAndSettle();
@@ -1125,13 +1084,22 @@ void main() {
         find.text('Replace your edited words with a new take?'),
         findsOneWidget,
       );
+      await tester.tap(find.text('Cancel').last);
+      await tester.pumpAndSettle();
+      expect(inlineRecorder, findsNothing);
+      expect(narrativeText(tester), 'Edited. Typed.\n\nSpoken.\n\nSpoken.');
+
+      await tester.tap(find.byKey(const ValueKey('check-in-re-record')));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Re-record').last);
       await tester.pumpAndSettle();
       await stopRecording(tester);
       expect(
         narrativeText(tester),
-        'Edited. Typed.\n\nSpoken.\n\nSpoken.\n\nSpoken.',
+        'Typed.\n\nSpoken.\n\nSpoken.',
+        reason: 'the edited take was replaced, not appended to',
       );
+      expect(recorder.recordCalls, hasLength(4));
     });
 
     testWidgets('a discarded recording leaves the narrative alone', (

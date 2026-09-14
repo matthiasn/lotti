@@ -970,7 +970,7 @@ class _BriefingHeader extends StatelessWidget {
     final messages = context.messages;
     return TldrHeader(
       title: messages.relationshipBriefingTitle,
-      agentName: status.tiers.first,
+      agentName: null,
       subtitle: status,
       plain: plain,
       trailing: trailing,

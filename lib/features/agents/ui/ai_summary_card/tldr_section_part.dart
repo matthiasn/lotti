@@ -65,7 +65,8 @@ class TldrHeader extends StatelessWidget {
   /// A widget on the second line instead of the [agentName] caption — the
   /// relationship briefing's status line, which carries a glyph and a
   /// semantic colour the plain caption cannot. When set, [agentName] is
-  /// only what the semantics announce.
+  /// neither shown nor announced: the subtitle is its own semantics node,
+  /// and a name folded into the header's label would be read twice.
   final Widget? subtitle;
 
   /// The badge glyph; the sparkle by default. A card that is not an AI
@@ -90,7 +91,8 @@ class TldrHeader extends StatelessWidget {
     final messages = context.messages;
     final cardTitle = title ?? messages.aiCardTitle;
     final displayName = agentName?.trim();
-    final hasName = displayName != null && displayName.isNotEmpty;
+    final hasName =
+        subtitle == null && displayName != null && displayName.isNotEmpty;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(

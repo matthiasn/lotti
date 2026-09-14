@@ -214,21 +214,6 @@ String mergeCheckInNarrative({
   return '$kept\n\n$addition';
 }
 
-/// The inverse of [mergeCheckInNarrative] for *Re-record*: gives back
-/// [textBefore] when [existing] is still exactly what merging [transcript]
-/// into it produced — and leaves the text alone the moment the user has
-/// changed anything, because an edit is theirs to keep. A suffix match
-/// would not do: `Actually Spoken.` still ends with `Spoken.`.
-String removeCheckInTranscript({
-  required String existing,
-  required String textBefore,
-  required String transcript,
-}) =>
-    existing ==
-        mergeCheckInNarrative(existing: textBefore, transcript: transcript)
-    ? textBefore
-    : existing;
-
 /// Opens the check-in composer for a person (design 2026-09-13): one
 /// surface that opens on the narrative, with *Dictate* inside the field.
 /// Resolves to the created [CheckInEntry], or `null` when dismissed.
@@ -1192,8 +1177,10 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     }
   }
 
-  /// *Re-record*: the recorder returns, and the last transcript comes back
-  /// out of the field the moment the new take exists.
+  /// *Re-record*: the recorder returns, and the field goes back to what it
+  /// held before the last take the moment the new one exists. Edits made
+  /// on top of that take go with it — which is why an edited field asks
+  /// first, in those words.
   Future<void> _reRecord() async {
     if (_transcriptEdited) {
       final confirmed = await showConfirmationModal(
@@ -1212,11 +1199,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   void _onRecorded(String audioEntryId, Duration length) {
     if (_transcriptToReplace case final take?) {
       _transcriptToReplace = null;
-      _narrativeController.text = removeCheckInTranscript(
-        existing: _narrativeController.text,
-        textBefore: take.textBefore,
-        transcript: take.transcript,
-      );
+      _narrativeController.text = take.textBefore;
     }
     unawaited(_transcribe(audioEntryId: audioEntryId, length: length));
   }
