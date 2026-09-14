@@ -3226,6 +3226,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Autorise l’accès au micro pour Lotti dans les réglages système, puis réessaie. Rien n’a été enregistré.';
 
   @override
+  String get checkInMicrophoneDeniedCalloutTitle =>
+      'Autorise l’accès au micro pour dicter';
+
+  @override
   String get checkInMoreCaption => 'Ressenti · sujets · prochaine fois';
 
   @override
@@ -3390,6 +3394,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String checkInTranscriptMissingBody(String length) {
     return 'Ton enregistrement de $length reste conservé dans le journal, même si tu abandonnes ce point. Réessaie dans un instant.';
   }
+
+  @override
+  String get checkInTranscriptMissingCalloutTitle =>
+      'Réessaie, ou écris ce dont tu te souviens';
 
   @override
   String get checkInTranscriptUnavailable =>
@@ -16080,12 +16088,4 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Ignorer';
-
-  @override
-  String get checkInTranscriptMissingCalloutTitle =>
-      'Réessaie, ou écris ce dont tu te souviens';
-
-  @override
-  String get checkInMicrophoneDeniedCalloutTitle =>
-      'Autorise le micro pour dicter';
 }

@@ -3181,6 +3181,10 @@ class AppLocalizationsDa extends AppLocalizations {
       'Giv Lotti adgang til mikrofonen i systemindstillingerne, og prøv igen. Intet blev optaget.';
 
   @override
+  String get checkInMicrophoneDeniedCalloutTitle =>
+      'Tillad mikrofonadgang for at diktere';
+
+  @override
   String get checkInMoreCaption => 'Følelse · emner · næste gang';
 
   @override
@@ -3341,6 +3345,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String checkInTranscriptMissingBody(String length) {
     return 'Din optagelse på $length er gemt i journalen, også hvis du kasserer dette check-in. Prøv igen om lidt.';
   }
+
+  @override
+  String get checkInTranscriptMissingCalloutTitle =>
+      'Prøv igen, eller skriv det du husker';
 
   @override
   String get checkInTranscriptUnavailable =>
@@ -15810,12 +15818,4 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
-
-  @override
-  String get checkInTranscriptMissingCalloutTitle =>
-      'Prøv igen, eller skriv det du husker';
-
-  @override
-  String get checkInMicrophoneDeniedCalloutTitle =>
-      'Tillad mikrofonen for at diktere';
 }

@@ -3220,6 +3220,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Consenti a Lotti l’accesso al microfono nelle impostazioni di sistema, poi riprova. Non è stato registrato nulla.';
 
   @override
+  String get checkInMicrophoneDeniedCalloutTitle =>
+      'Consenti l’accesso al microfono per dettare';
+
+  @override
   String get checkInMoreCaption => 'Sensazioni · argomenti · prossima volta';
 
   @override
@@ -3382,6 +3386,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String checkInTranscriptMissingBody(String length) {
     return 'La tua registrazione di $length resta salvata nel diario, anche se scarti questo check-in. Riprova tra un momento.';
   }
+
+  @override
+  String get checkInTranscriptMissingCalloutTitle =>
+      'Riprova, oppure scrivi quello che ricordi';
 
   @override
   String get checkInTranscriptUnavailable =>
@@ -16011,12 +16019,4 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Salta!';
-
-  @override
-  String get checkInTranscriptMissingCalloutTitle =>
-      'Riprova, oppure scrivi quello che ricordi';
-
-  @override
-  String get checkInMicrophoneDeniedCalloutTitle =>
-      'Consenti il microfono per dettare';
 }

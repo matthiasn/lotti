@@ -24,8 +24,9 @@ enum DesignSystemModalActionBarLayout {
 /// pattern): while the rendered labels fit, [secondary] actions keep their
 /// intrinsic width on the leading edge and the [primary] action flexes to fill
 /// the trailing width. When they do not fit — or on large-text layouts — the
-/// secondaries wrap above a full-width primary so translations never squeeze or
-/// clip the actions.
+/// bar stacks: the primary leads at full width and the secondaries sit centred
+/// beneath it, so translations never squeeze or truncate and an exit is never
+/// the heading above its one filled action.
 ///
 /// The fit is decided by measuring the actions themselves, not by comparing the
 /// available width against a breakpoint: a long translated label must wrap the

@@ -1115,6 +1115,8 @@ class _AgentCardFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final stacked =
+        MediaQuery.textScalerOf(context).scale(1) > TextScales.large;
     final ai = tokens.colors.aiCard;
 
     // The plain band is a faint neutral wash over the card surface — the
@@ -1146,7 +1148,14 @@ class _AgentCardFooter extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (leading != null || action != null)
+          // Above the large-text bar the leading slot — a quiet action, or
+          // the not-enrolled face's privacy note — takes its own full-width
+          // line above the primary, so neither is squeezed by the other.
+          if (stacked && leading != null && action != null) ...[
+            leading!,
+            SizedBox(height: tokens.spacing.step3),
+            Align(alignment: AlignmentDirectional.centerEnd, child: action),
+          ] else if (leading != null || action != null)
             ConstrainedBox(
               constraints: const BoxConstraints(
                 minHeight: TapTargets.minimum,

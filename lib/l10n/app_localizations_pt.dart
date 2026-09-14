@@ -3211,6 +3211,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Permite o acesso ao microfone para o Lotti nas definições do sistema e tenta de novo. Nada foi gravado.';
 
   @override
+  String get checkInMicrophoneDeniedCalloutTitle =>
+      'Permite o acesso ao microfone para ditar';
+
+  @override
   String get checkInMoreCaption => 'Sentimento · temas · próxima vez';
 
   @override
@@ -3374,6 +3378,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String checkInTranscriptMissingBody(String length) {
     return 'A tua gravação de $length fica guardada no diário, mesmo que descartes este check-in. Tenta de novo daqui a pouco.';
   }
+
+  @override
+  String get checkInTranscriptMissingCalloutTitle =>
+      'Tenta de novo, ou escreve o que te lembras';
 
   @override
   String get checkInTranscriptUnavailable =>
@@ -15957,12 +15965,4 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Pular';
-
-  @override
-  String get checkInTranscriptMissingCalloutTitle =>
-      'Tenta de novo, ou escreve o que te lembras';
-
-  @override
-  String get checkInMicrophoneDeniedCalloutTitle =>
-      'Permite o microfone para ditar';
 }

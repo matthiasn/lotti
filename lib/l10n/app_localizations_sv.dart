@@ -3191,6 +3191,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Tillåt mikrofonåtkomst för Lotti i systeminställningarna och försök igen. Inget spelades in.';
 
   @override
+  String get checkInMicrophoneDeniedCalloutTitle =>
+      'Tillåt mikrofonåtkomst för diktering';
+
+  @override
   String get checkInMoreCaption => 'Känsla · ämnen · nästa gång';
 
   @override
@@ -3350,6 +3354,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String checkInTranscriptMissingBody(String length) {
     return 'Din inspelning på $length finns kvar i journalen, även om du slänger den här avstämningen. Försök igen om en stund.';
   }
+
+  @override
+  String get checkInTranscriptMissingCalloutTitle =>
+      'Försök igen, eller skriv det du minns';
 
   @override
   String get checkInTranscriptUnavailable =>
@@ -15831,12 +15839,4 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
-
-  @override
-  String get checkInTranscriptMissingCalloutTitle =>
-      'Försök igen, eller skriv det du minns';
-
-  @override
-  String get checkInMicrophoneDeniedCalloutTitle =>
-      'Tillåt mikrofonen för att diktera';
 }

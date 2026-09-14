@@ -341,7 +341,7 @@ void main() {
           CheckInSpeechFailure(CheckInSpeechFailureKind.microphoneDenied),
         ),
       );
-      expect(find.text('Allow the microphone to dictate'), findsOneWidget);
+      expect(find.text('Allow microphone access to dictate'), findsOneWidget);
       expect(find.text('Or type it here…'), findsOneWidget);
       // The card offers typing as a button, and its recommended action is
       // the secondary pill: the alert tone is the card's one colour.

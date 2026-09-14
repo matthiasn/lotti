@@ -1531,7 +1531,7 @@ void main() {
       await withClock(Clock.fixed(_now), () async {
         await tester.tap(find.byKey(const ValueKey('check-in-dictate')));
         await tester.pumpAndSettle();
-        expect(find.text('Allow the microphone to dictate'), findsOne);
+        expect(find.text('Allow microphone access to dictate'), findsOne);
         expect(find.text('Microphone unavailable'), findsOne);
         await captureScreenshot(
           tester,

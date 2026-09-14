@@ -1150,7 +1150,7 @@ void main() {
       await startDictation(tester);
 
       expect(inlineRecorder, findsNothing);
-      expect(find.text('Allow the microphone to dictate'), findsOneWidget);
+      expect(find.text('Allow microphone access to dictate'), findsOneWidget);
       expect(saveReason(tester), 'Add a few words to save');
       expect(
         recorder.modalVisibleLog,
@@ -1173,7 +1173,7 @@ void main() {
       // the field's Dictate comes back with it.
       await tester.enterText(narrative, 'Typed it instead');
       await tester.pumpAndSettle();
-      expect(find.text('Allow the microphone to dictate'), findsNothing);
+      expect(find.text('Allow microphone access to dictate'), findsNothing);
       expect(dictate, findsOneWidget);
       expect(saveEnabled(tester), isTrue);
     });
@@ -1819,34 +1819,39 @@ void main() {
     // what slims the bar.
     testWidgets('with the keyboard up the bar slims to the summary and a '
         'short Save; the summary drops the keyboard', (tester) async {
-      await openSheet(tester);
-      final summary = find.byKey(const ValueKey('check-in-context-summary'));
-      expect(summary, findsNothing);
-      expect(find.text('Save check-in'), findsOneWidget);
+      // Pinned: "Now" is the current minute, and a real clock can tick
+      // over between opening the sheet and reading the chip.
+      final now = DateTime(2026, 8, 13, 10, 30);
+      await withClock(Clock.fixed(now), () async {
+        await openSheet(tester);
+        final summary = find.byKey(const ValueKey('check-in-context-summary'));
+        expect(summary, findsNothing);
+        expect(find.text('Save check-in'), findsOneWidget);
 
-      await tester.tap(narrative);
-      await tester.pumpAndSettle();
+        await tester.tap(narrative);
+        await tester.pumpAndSettle();
 
-      expect(summary, findsOneWidget);
-      expect(
-        tester.widget<DesignSystemChip>(summary).label,
-        'In person · Now · ${clock12(clock.now())} · No duration',
-      );
-      expect(find.text('Save'), findsOneWidget);
-      expect(find.text('Save check-in'), findsNothing);
-      expect(
-        tester.widget<TextField>(narrative).focusNode!.hasFocus,
-        isTrue,
-      );
+        expect(summary, findsOneWidget);
+        expect(
+          tester.widget<DesignSystemChip>(summary).label,
+          'In person · Now · ${clock12(clock.now())} · No duration',
+        );
+        expect(find.text('Save'), findsOneWidget);
+        expect(find.text('Save check-in'), findsNothing);
+        expect(
+          tester.widget<TextField>(narrative).focusNode!.hasFocus,
+          isTrue,
+        );
 
-      await tester.tap(summary);
-      await tester.pumpAndSettle();
-      expect(
-        tester.widget<TextField>(narrative).focusNode!.hasFocus,
-        isFalse,
-      );
-      expect(summary, findsNothing);
-      expect(find.text('Save check-in'), findsOneWidget);
+        await tester.tap(summary);
+        await tester.pumpAndSettle();
+        expect(
+          tester.widget<TextField>(narrative).focusNode!.hasFocus,
+          isFalse,
+        );
+        expect(summary, findsNothing);
+        expect(find.text('Save check-in'), findsOneWidget);
+      });
     });
 
     testWidgets('on a desktop-wide window the footer puts the reason on the '

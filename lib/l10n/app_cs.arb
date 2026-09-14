@@ -1401,6 +1401,10 @@
   "checkInInteractionOther": "Jinak",
   "checkInInteractionVideoCall": "Videohovor",
   "checkInMicrophoneDeniedBody": "Povol Lotti přístup k mikrofonu v nastavení systému a zkus to znovu. Nic se nenahrálo.",
+  "checkInMicrophoneDeniedCalloutTitle": "Povol přístup k mikrofonu, abys mohl diktovat",
+  "@checkInMicrophoneDeniedCalloutTitle": {
+    "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
+  },
   "checkInMoreCaption": "Pocit · témata · příště",
   "checkInMoreSection": "Více",
   "checkInNarrativeHint": "O čem jste mluvili? Stačí jeden řádek.",
@@ -1450,6 +1454,10 @@
   "checkInTranscriptAdded": "Přepis přidán",
   "checkInTranscriptionUnavailableTitle": "Není nastavený žádný model pro přepis",
   "checkInTranscriptMissingBody": "Tvoje nahrávka ({length}) zůstane uložená v deníku, i když tento check-in zahodíš. Zkus to za chvíli znovu.",
+  "checkInTranscriptMissingCalloutTitle": "Zkus to znovu, nebo napiš, co si pamatuješ",
+  "@checkInTranscriptMissingCalloutTitle": {
+    "description": "The transcript-not-received card's title: the next step, since the header status already names the state."
+  },
   "checkInTranscriptUnavailable": "V nastavení AI vyber výchozí inferenční profil s modelem pro přepis, nebo svůj kontakt zapiš.",
   "checkInTypeChipSemantics": "Typ: {type}. Změnit",
   "checkInTypeInstead": "Raději napsat",
@@ -6122,13 +6130,5 @@
   "viewMenuZoomReset": "Skutečná velikost",
   "whatsNewBadgeNew": "NOVÉ",
   "whatsNewDoneButton": "Hotovo",
-  "whatsNewSkipButton": "Přeskočit",
-  "checkInTranscriptMissingCalloutTitle": "Zkus to znovu, nebo napiš, co si pamatuješ",
-  "@checkInTranscriptMissingCalloutTitle": {
-    "description": "The transcript-not-received card's title: the next step, since the header status already names the state."
-  },
-  "checkInMicrophoneDeniedCalloutTitle": "Povol mikrofon, abys mohl diktovat",
-  "@checkInMicrophoneDeniedCalloutTitle": {
-    "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
-  }
+  "whatsNewSkipButton": "Přeskočit"
 }
