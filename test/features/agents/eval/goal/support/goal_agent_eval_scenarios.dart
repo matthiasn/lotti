@@ -296,12 +296,20 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
   GoalAgentEvalScenario(
     id: 'gp_slightly_off',
     policyRuleId: 'P3',
-    description: 'Slightly behind, flat trend: report atRisk, no ad yet.',
+    description:
+        'Established goal, slightly behind with a flat trend: report atRisk, '
+        'no ad yet.',
     facts: buildStepsFacts(
       dailySteps: gSlightlyOffSteps,
       attainment: gSlightlyOffAttainment,
+      // Empty history means a first evaluation, which requires a welcome ad.
+      // Keep this reporting case established and flat so restraint is valid.
+      priorPeriodAttainments: const [
+        gSlightlyOffAttainment,
+        gSlightlyOffAttainment,
+      ],
       trackStatus: GoalTrackStatus.atRisk,
-      lastReportStatus: GoalTrackStatus.onTrack.name,
+      lastReportStatus: GoalTrackStatus.atRisk.name,
     ),
     expectedToolCalls: const [
       GoalAgentExpectedToolCall(

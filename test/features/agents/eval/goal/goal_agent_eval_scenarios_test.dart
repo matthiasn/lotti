@@ -8,6 +8,7 @@ import 'package:lotti/features/goals/evaluation/goal_progress_evaluator.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/evaluation/goal_track_policy.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
+import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 
 import 'support/goal_agent_eval_fixtures.dart';
 import 'support/goal_agent_eval_scenarios.dart';
@@ -630,6 +631,38 @@ void main() {
           reason: '${scenario.id} expects an ad tool the wake withholds',
         );
       }
+    });
+
+    test('slightly-off restraint uses an established, non-worsening goal', () {
+      final scenario = goalAgentEvalScenarios.singleWhere(
+        (scenario) => scenario.id == 'gp_slightly_off',
+      );
+      final facts = decodedFacts(scenario);
+      final evaluation = facts['evaluation'] as Map<String, dynamic>;
+      final priors = (evaluation['priorPeriodAttainments'] as List)
+          .cast<double>();
+
+      expect(
+        priors,
+        isNotEmpty,
+        reason: 'a first evaluation requires a banner',
+      );
+      expect(
+        goalTrendWorsening(evaluation['attainment'] as double, priors),
+        isFalse,
+      );
+      expect(scenario.adToolsOffered, isFalse);
+      expect(
+        scenario.expectedToolCalls.map((call) => call.name),
+        [GoalAgentToolNames.updateGoalReport],
+      );
+      expect(
+        scenario.forbiddenToolNames,
+        containsAll([
+          GoalAgentToolNames.createGoalAd,
+          GoalAgentToolNames.rerunGoalAd,
+        ]),
+      );
     });
 
     test('a first at-risk evaluation still earns its welcome banner', () {
