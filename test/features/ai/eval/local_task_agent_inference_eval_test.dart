@@ -1777,13 +1777,15 @@ void main() {
     for (final entry in <String, LocalTaskAgentEvalFailureCategory>{
       'Profile seeding cleanup: open a pull request, review, merge and release.':
           LocalTaskAgentEvalFailureCategory.none,
-      'Empty inference profiles remain selectable: open a pull request, review, merge and release.':
+      'Fix empty inference profiles remaining selectable: open a pull request, review, merge and release.':
           LocalTaskAgentEvalFailureCategory.none,
-      'Empty profiles remain selectable: open a pull request, review, merge and release.':
+      'Prevent empty profiles from remaining selectable: open a pull request, review, merge and release.':
           LocalTaskAgentEvalFailureCategory.none,
+      'Document the inference profile, then open a pull request, review, merge and release.':
+          LocalTaskAgentEvalFailureCategory.missingRequiredContent,
       'Open a pull request, review, merge and release.':
           LocalTaskAgentEvalFailureCategory.missingRequiredContent,
-      'Empty inference profiles remain selectable: open a pull request and release.':
+      'Fix empty inference profiles remaining selectable: open a pull request and release.':
           LocalTaskAgentEvalFailureCategory.missingRequiredContent,
     }.entries) {
       test(entry.key, () async {
@@ -1811,8 +1813,8 @@ void main() {
                 (
                   name: TaskAgentToolNames.updateReport,
                   argumentsJson: jsonEncode({
-                    'oneLiner': 'Cleanup pending',
-                    'tldr': 'Implementation remains to be done.',
+                    'oneLiner': 'Workflow pending',
+                    'tldr': 'Next steps remain to be done.',
                     'content': entry.key,
                   }),
                 ),
@@ -1857,6 +1859,20 @@ void main() {
         {
           ...validItem,
           'reason': 'Duplicate sync events could reappear someday.',
+        },
+      ],
+      'older QA evidence': [
+        {
+          ...validItem,
+          'reason':
+              'QA reported duplicate sync events recurred before the user '
+              'completed the item at 08:00.',
+        },
+      ],
+      'timestamp without QA source': [
+        {
+          ...validItem,
+          'reason': 'At 11:20 I guessed duplicate sync events recurred.',
         },
       ],
       'wrong item': [
@@ -1911,12 +1927,24 @@ void main() {
           profiles: const [profile],
           scenarios: [scenario],
         );
+        final result = report.results.single;
+        final valid =
+            entry.key == 'preserve user completion' ||
+            entry.key == 'cite newer QA recurrence';
         expect(
-          report.results.single.failureCategory,
-          entry.key == 'preserve user completion' ||
-                  entry.key == 'cite newer QA recurrence'
+          result.failureCategory,
+          valid
               ? LocalTaskAgentEvalFailureCategory.none
               : LocalTaskAgentEvalFailureCategory.forbiddenToolArguments,
+        );
+        expect(result.qualityScore, valid ? equals(1) : lessThan(1));
+        expect(
+          result.passedQualityCheckCount,
+          result.qualityCheckCount - (valid ? 0 : 1),
+        );
+        expect(
+          result.toJson()['qualityScore'],
+          valid ? equals(1) : lessThan(1),
         );
       });
     }

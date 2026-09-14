@@ -137,7 +137,8 @@ which otherwise race even when kernel caches have distinct Dart defines.
 Catalog discovery, warmup and paid jobs all use the leased project. Warmup
 compiles at most two projects concurrently per assessment to bound local CPU
 and memory use; inference uses the full `--workers` value. Cancellation stops
-warmup children before waiting for the compilation pool. Released slots retain
+warmup children before waiting for the compilation pool; failures are observed
+in completion order so a blocked earlier slot cannot delay cancellation. Released slots retain
 their build caches for reuse, and allocation grows with peak concurrency.
 
 For two simultaneous model assessments, start with `--workers 4 --batch-size 1`
@@ -205,15 +206,18 @@ production context builder, they omit prior report prose. The real workflow
 suites additionally exercise publication enforcement after successful tools.
 The resurfaced-checklist case uses ordinary user-toggle provenance (`checkedBy`
 and `checkedAt`). It accepts preserving completion or reopening with a
-substantive reason referencing the newer QA recurrence. Its per-item evidence
+substantive reason referencing the QA source and its newer 11:20 timestamp.
+Its per-item evidence
 term groups are retained in scenario metadata; missing reasons, unrelated items,
 title changes and archiving fail. These lexical checks do not independently
 prove temporal reasoning or exercise the stricter human-approved chat guard.
+The same reopening validation contributes one deterministic quality check,
+including when preserving completion is the correct no-mutation choice.
 Planner reservations remain forbidden in this case because the evidence gives
 no scheduling request or timing urgency.
 The implicit-workflow report accepts the same profile-cleanup vocabulary as
 its checklist gate, including empty inference profiles. It still requires the
-subject, pull request, review and release; the exact phrase "profile seeding"
+subject, a cleanup action, pull request, review and release; the exact phrase "profile seeding"
 is not itself evidence of correctness.
 
 The task conversation driver rethrows inference errors from both its initial

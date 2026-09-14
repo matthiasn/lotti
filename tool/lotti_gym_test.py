@@ -153,6 +153,27 @@ class GymTest(unittest.TestCase):
             gym.execute(self.output, self.manifest, jobs, "key", 2, processes, ["0", "1"])
         processes.cancel.assert_called_once_with()
 
+    def test_later_warmup_failure_cancels_a_blocked_earlier_slot(self):
+        jobs = gym.make_jobs([self.suite], 1, batch_size=1)
+        first_started = threading.Event()
+        cancelled = threading.Event()
+        processes = Mock()
+        processes.cancel.side_effect = cancelled.set
+
+        def warmup(command, env, log, timeout, **kwargs):
+            self.assertNotIn(self.suite["gate"], env)
+            if kwargs["cwd"] == self.output / "worker-0":
+                first_started.set()
+                self.assertTrue(cancelled.wait(5), "Earlier slot waited instead of being cancelled")
+                return 130
+            self.assertTrue(first_started.wait(5))
+            return 1
+
+        processes.run.side_effect = warmup
+        with self.assertRaisesRegex(ValueError, "Could not compile"):
+            gym.execute(self.output, self.manifest, jobs, "key", 2, processes, ["0", "1"])
+        processes.cancel.assert_called_once_with()
+
     def test_eight_paid_workers_run_concurrently_after_preflight(self):
         self.suite = suite(cases=[str(i) for i in range(9)])
         self.manifest.update(suites=[self.suite], workers=8)

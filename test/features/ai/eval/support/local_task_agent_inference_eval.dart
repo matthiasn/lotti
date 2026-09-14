@@ -346,6 +346,7 @@ LocalTaskAgentEvalScenario _implicitWorkflowPlanScenario(
     promptVariant: variant,
     requiredReportTermGroups: const [
       _inferenceProfileCleanupTerms,
+      ['fix', 'clean', 'remove', 'prevent', 'no longer selectable', 'exclude'],
       ['pull request', 'pr'],
       ['review'],
       ['release'],
@@ -1065,7 +1066,8 @@ LocalTaskAgentEvalScenario _userCompletedItemScenario(
     // also valid. Neither path establishes scheduling intent.
     checklistReopeningEvidence: const {
       'item-sync-fix': [
-        ['qa', '11:20'],
+        ['qa'],
+        ['11:20'],
         ['duplicate', 'sync'],
         ['reappeared', 'resurfaced', 'again', 'recurrence', 'recurred'],
       ],
@@ -2152,7 +2154,8 @@ class LocalTaskAgentEvalCaseResult {
       scenario.forbiddenToolArgumentTerms.values.fold<int>(
         0,
         (sum, terms) => sum + terms.length,
-      );
+      ) +
+      (scenario.checklistReopeningEvidence.isEmpty ? 0 : 1);
 
   int get passedQualityCheckCount {
     if (scenario.requiresReport && reportToolCall == null) return 0;
@@ -2190,6 +2193,10 @@ class LocalTaskAgentEvalCaseResult {
       passed += entry.value
           .where((term) => !arguments.contains(term.toLowerCase()))
           .length;
+    }
+    if (scenario.checklistReopeningEvidence.isNotEmpty &&
+        _hasValidChecklistReopenings(scenario, toolCalls)) {
+      passed++;
     }
     return passed;
   }

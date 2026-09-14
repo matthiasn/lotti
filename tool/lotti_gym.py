@@ -16,7 +16,7 @@ import subprocess
 import sys
 import threading
 import uuid
-from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, as_completed, wait
 from contextlib import ExitStack, contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -677,7 +677,9 @@ def execute(output, manifest, jobs, api_key, workers, processes, compiler_slots)
 
     with ThreadPoolExecutor(max_workers=min(workers, 2)) as warmers:
         try:
-            list(warmers.map(warm_slot, compiler_slots))
+            futures = [warmers.submit(warm_slot, slot) for slot in compiler_slots]
+            for future in as_completed(futures):
+                future.result()
         except BaseException:
             # Stop children before the executor waits for active warmups.
             processes.cancel()
