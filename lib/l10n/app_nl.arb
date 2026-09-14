@@ -1579,7 +1579,31 @@
   "@checkInMicrophoneDeniedCalloutTitle": {
     "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
   },
-  "checkInMoreCaption": "Gevoel · onderwerpen · volgende keer",
+  "checkInMoreCaptionFeeling": "Gevoel",
+  "@checkInMoreCaptionFeeling": {
+    "description": "Folded More row caption segment while no feeling is chosen."
+  },
+  "checkInMoreCaptionNextTime": "volgende keer",
+  "@checkInMoreCaptionNextTime": {
+    "description": "Folded More row caption segment while nothing is noted for next time."
+  },
+  "checkInMoreCaptionNextTimeSet": "volgende keer genoteerd",
+  "@checkInMoreCaptionNextTimeSet": {
+    "description": "Folded More row caption segment once something is noted for next time."
+  },
+  "checkInMoreCaptionTopics": "onderwerpen",
+  "@checkInMoreCaptionTopics": {
+    "description": "Folded More row caption segment while no topics are entered."
+  },
+  "checkInMoreCaptionTopicsCount": "{count, plural, =1{1 onderwerp} other{{count} onderwerpen}}",
+  "@checkInMoreCaptionTopicsCount": {
+    "description": "Folded More row caption segment: how many topics are entered.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "checkInMoreSection": "Meer",
   "checkInNarrativeHint": "Waar hebben jullie het over gehad? Eén regel is genoeg.",
   "checkInNoDuration": "Geen duur",
@@ -1616,6 +1640,24 @@
   "checkInSourceCall": "Van het gesprek dat je vanaf deze pagina begon. Alles is aan te passen.",
   "checkInSourceMessage": "Van het bericht dat je vanaf deze pagina stuurde. Alles is aan te passen.",
   "checkInSpeakButton": "Check-in inspreken",
+  "checkInSpokenMinutes": "{count, plural, =1{1 minuut} other{{count} minuten}}",
+  "@checkInSpokenMinutes": {
+    "description": "Minutes of a recording length, read by assistive technology.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "checkInSpokenSeconds": "{count, plural, =1{1 seconde} other{{count} seconden}}",
+  "@checkInSpokenSeconds": {
+    "description": "Seconds of a recording length, read by assistive technology.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "checkInStartedLabel": "Begonnen",
   "checkInStatusMicrophoneDenied": "Microfoon niet beschikbaar",
   "checkInStatusPaused": "Gepauzeerd",
@@ -5005,7 +5047,7 @@
   "relationshipAgentMarkImportant": "Als belangrijk markeren",
   "relationshipAgentNoAgent": "Geen agent voor deze persoon",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Nog geen briefing. „Nu briefen“ schrijft er een zodra je een check-in hebt gelogd; het ziet nooit het telefoonnummer of het e-mailadres.} =1{Nog geen briefing. „Nu briefen“ schrijft er een op basis van je check-in; het ziet nooit het telefoonnummer of het e-mailadres.} other{Nog geen briefing. „Nu briefen“ schrijft er een op basis van je {count} check-ins; het ziet nooit het telefoonnummer of het e-mailadres.}}",
-  "relationshipAgentNotEnrolledBody": "Markeer {name} als belangrijk voor een briefing, een seintje als het even geleden is, en een chat.",
+  "relationshipAgentNotEnrolledBody": "Markeer {name} als belangrijk voor een chat, een seintje als het even geleden is, en een briefing.",
   "relationshipAgentOnlyYourStartsUseAi": "Alleen wat je zelf start gebruikt AI",
   "relationshipAgentOutOfDateNewCheckIn": "Verouderd · nieuwe check-in {day}",
   "relationshipAgentOutOfDateNewCheckInShort": "Verouderd · nieuwe check-in",

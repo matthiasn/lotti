@@ -1409,7 +1409,31 @@
   "@checkInMicrophoneDeniedCalloutTitle": {
     "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
   },
-  "checkInMoreCaption": "Pocit · témata · příště",
+  "checkInMoreCaptionFeeling": "Pocit",
+  "@checkInMoreCaptionFeeling": {
+    "description": "Folded More row caption segment while no feeling is chosen."
+  },
+  "checkInMoreCaptionNextTime": "příště",
+  "@checkInMoreCaptionNextTime": {
+    "description": "Folded More row caption segment while nothing is noted for next time."
+  },
+  "checkInMoreCaptionNextTimeSet": "příště poznamenáno",
+  "@checkInMoreCaptionNextTimeSet": {
+    "description": "Folded More row caption segment once something is noted for next time."
+  },
+  "checkInMoreCaptionTopics": "témata",
+  "@checkInMoreCaptionTopics": {
+    "description": "Folded More row caption segment while no topics are entered."
+  },
+  "checkInMoreCaptionTopicsCount": "{count, plural, =1{1 téma} few{{count} témata} other{{count} témat}}",
+  "@checkInMoreCaptionTopicsCount": {
+    "description": "Folded More row caption segment: how many topics are entered.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "checkInMoreSection": "Více",
   "checkInNarrativeHint": "O čem jste mluvili? Stačí jeden řádek.",
   "checkInNoDuration": "Bez délky",
@@ -1446,6 +1470,24 @@
   "checkInSourceCall": "Z hovoru, který jsi zahájil/a z této stránky. Vše jde upravit.",
   "checkInSourceMessage": "Ze zprávy, kterou jsi poslal/a z této stránky. Vše jde upravit.",
   "checkInSpeakButton": "Namluvit kontakt",
+  "checkInSpokenMinutes": "{count, plural, =1{1 minuta} few{{count} minuty} other{{count} minut}}",
+  "@checkInSpokenMinutes": {
+    "description": "Minutes of a recording length, read by assistive technology.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "checkInSpokenSeconds": "{count, plural, =1{1 sekunda} few{{count} sekundy} other{{count} sekund}}",
+  "@checkInSpokenSeconds": {
+    "description": "Seconds of a recording length, read by assistive technology.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "checkInStartedLabel": "Začátek",
   "checkInStatusMicrophoneDenied": "Mikrofon není k dispozici",
   "checkInStatusPaused": "Pozastaveno",
@@ -4510,7 +4552,7 @@
   "relationshipAgentMarkImportant": "Označit jako důležité",
   "relationshipAgentNoAgent": "Pro tuto osobu není žádný agent",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Zatím žádný briefing. „Vytvořit briefing teď“ ho napíše, jakmile zaznamenáš check-in; telefon ani e-mail nikdy nevidí.} =1{Zatím žádný briefing. „Vytvořit briefing teď“ ho napíše z tvého check-inu; telefon ani e-mail nikdy nevidí.} few{Zatím žádný briefing. „Vytvořit briefing teď“ ho napíše z tvých {count} check-inů; telefon ani e-mail nikdy nevidí.} other{Zatím žádný briefing. „Vytvořit briefing teď“ ho napíše z tvých {count} check-inů; telefon ani e-mail nikdy nevidí.}}",
-  "relationshipAgentNotEnrolledBody": "Označ {name} jako důležitou osobu a získáš briefing, připomínky po delší odmlce a chat.",
+  "relationshipAgentNotEnrolledBody": "Označ {name} jako důležitou osobu a získáš chat, připomínky po delší odmlce a briefing.",
   "relationshipAgentOnlyYourStartsUseAi": "AI používá jen to, co spustíš sám",
   "relationshipAgentOutOfDateNewCheckIn": "Zastaralé · nový check-in {day}",
   "relationshipAgentOutOfDateNewCheckInShort": "Zastaralé · nový check-in",

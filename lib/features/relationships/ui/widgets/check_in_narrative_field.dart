@@ -29,6 +29,8 @@ class CheckInNarrativeField extends StatelessWidget {
     required this.onOpenSettings,
     required this.onDismissFailure,
     this.shortcutHint,
+    this.transcriptEdited = false,
+    this.restMinLines = 3,
     super.key,
   });
 
@@ -64,6 +66,14 @@ class CheckInNarrativeField extends StatelessWidget {
 
   /// `⌘↩ to save`, on a desktop with a keyboard; null elsewhere.
   final String? shortcutHint;
+
+  /// Whether the landed transcript has been edited since: the landing is
+  /// announced once, and never again on top of the user's own typing.
+  final bool transcriptEdited;
+
+  /// The empty field's height at rest — shorter in the desktop dialog,
+  /// where a tall empty box is dead space beside a working keyboard.
+  final int restMinLines;
 
   @override
   Widget build(BuildContext context) {
@@ -113,8 +123,15 @@ class CheckInNarrativeField extends StatelessWidget {
     BuildContext context, {
     required String hint,
     int minLines = 5,
+    bool quietHint = false,
   }) {
     final tokens = context.designTokens;
+    // Under a failure card the placeholder steps down a tier: the card's
+    // title is the thing to read, and a bodyLarge hint beneath a bodySmall
+    // card body would invert the field's own ladder.
+    final hintTier = quietHint
+        ? tokens.typography.styles.body.bodyMedium
+        : tokens.typography.styles.body.bodyLarge;
     return TextField(
       key: const ValueKey('check-in-narrative'),
       controller: controller,
@@ -127,9 +144,7 @@ class CheckInNarrativeField extends StatelessWidget {
       ),
       decoration: InputDecoration.collapsed(
         hintText: hint,
-        hintStyle: tokens.typography.styles.body.bodyLarge.copyWith(
-          color: tokens.colors.text.lowEmphasis,
-        ),
+        hintStyle: hintTier.copyWith(color: tokens.colors.text.lowEmphasis),
       ),
     );
   }
@@ -173,8 +188,10 @@ class CheckInNarrativeField extends StatelessWidget {
     final count = ready || wordCount > 0
         ? messages.checkInWordCount(wordCount)
         : null;
+    // The shortcut only once there are words to save with it: beside a held
+    // Save, a working shortcut is a promise the footer contradicts.
     final hint = switch (shortcutHint) {
-      final hint? when !underCard || wordCount > 0 =>
+      final hint? when ready || wordCount > 0 =>
         messages.checkInSaveShortcutHint(hint),
       _ => null,
     };
@@ -223,15 +240,18 @@ class CheckInNarrativeField extends StatelessWidget {
           tapTargetSize: MaterialTapTargetSize.padded,
           onPressed: onRetryTranscript,
         )
-      // A take waiting for *Try again*, or a microphone the OS refused,
-      // has its way forward on the card; a second recorder button in
-      // the field would be a dead door beside a live one.
+      // A take waiting for *Try again* has its way forward on the card; a
+      // second recorder button in the field would be a dead door beside a
+      // live one. Under the refused microphone the field's Dictate is the
+      // retry, one tier down: the card's pill is the face's one shape.
       else if (failure == null || _dictatesUnder(failure.kind))
         DesignSystemButton(
           key: const ValueKey('check-in-dictate'),
           label: messages.checkInDictateButton,
           leadingIcon: LottiIcons.mic,
-          variant: DesignSystemButtonVariant.outlined,
+          variant: underCard
+              ? DesignSystemButtonVariant.tertiary
+              : DesignSystemButtonVariant.outlined,
           size: DesignSystemButtonSize.medium,
           isLoading: preparing,
           onPressed: preparing ? null : onDictate,
@@ -268,7 +288,8 @@ class CheckInNarrativeField extends StatelessWidget {
               ? messages.checkInOrTypeHint
               : messages.checkInNarrativeHint,
           // "One line is enough": the box says so by not asking for five.
-          minLines: underCard ? 1 : 3,
+          minLines: underCard ? 1 : restMinLines,
+          quietHint: underCard,
         ),
         if (meta.isNotEmpty || actions.isNotEmpty)
           SizedBox(height: tokens.spacing.step4),
@@ -284,10 +305,13 @@ class CheckInNarrativeField extends StatelessWidget {
         if (meta.isNotEmpty || actions.isNotEmpty)
           _CaptionAndActions(
             stacked: stacked,
+            // Live once, as the transcript lands — pinned to that sentence,
+            // so a word count that follows every keystroke is not re-read
+            // each time; once the text is edited the landing is old news.
             caption: meta.isEmpty
                 ? null
                 : Semantics(
-                    liveRegion: ready,
+                    liveRegion: ready && !transcriptEdited,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -306,6 +330,16 @@ class CheckInNarrativeField extends StatelessWidget {
                           child: DsTieredText(
                             textKey: const ValueKey('check-in-word-count'),
                             tiers: ladder,
+                            semanticsLabel: ready && !transcriptEdited
+                                ? messages.checkInTranscriptAdded
+                                : collapsed
+                                ? messages.checkInAudioSaved(
+                                    checkInSpokenClockLabel(
+                                      messages,
+                                      failure.length!,
+                                    ),
+                                  )
+                                : null,
                             style: captionStyle,
                           ),
                         ),
@@ -408,6 +442,13 @@ class CheckInNarrativeField extends StatelessWidget {
                     if (route != null) savedWithRoute else '$saved · $eta',
                     saved,
                   ],
+                  semanticsLabel: [
+                    messages.checkInAudioSaved(
+                      checkInSpokenClockLabel(messages, length),
+                    ),
+                    ?route,
+                    eta,
+                  ].join(' · '),
                   style: tokens.typography.styles.others.caption.copyWith(
                     color: tokens.colors.text.mediumEmphasis,
                     fontFeatures: const [FontFeature.tabularFigures()],
@@ -417,12 +458,13 @@ class CheckInNarrativeField extends StatelessWidget {
             ],
           ),
           actions: [
-            // Quiet: the wait is the thing to read, not the exit.
+            // Quiet and caption-sized: the wait is the thing to read, not
+            // the exit — the 48pt target stays.
             DesignSystemButton(
               key: const ValueKey('check-in-type-instead'),
               label: messages.checkInTypeInstead,
               variant: DesignSystemButtonVariant.quiet,
-              size: DesignSystemButtonSize.medium,
+              size: DesignSystemButtonSize.dense,
               tapTargetSize: MaterialTapTargetSize.padded,
               onPressed: onTypeInstead,
             ),

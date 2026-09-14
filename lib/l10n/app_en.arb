@@ -1987,7 +1987,31 @@
   "@checkInMicrophoneDeniedCalloutTitle": {
     "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
   },
-  "checkInMoreCaption": "Feeling · topics · next time",
+  "checkInMoreCaptionFeeling": "Feeling",
+  "@checkInMoreCaptionFeeling": {
+    "description": "Folded More row caption segment while no feeling is chosen."
+  },
+  "checkInMoreCaptionNextTime": "next time",
+  "@checkInMoreCaptionNextTime": {
+    "description": "Folded More row caption segment while nothing is noted for next time."
+  },
+  "checkInMoreCaptionNextTimeSet": "next time noted",
+  "@checkInMoreCaptionNextTimeSet": {
+    "description": "Folded More row caption segment once something is noted for next time."
+  },
+  "checkInMoreCaptionTopics": "topics",
+  "@checkInMoreCaptionTopics": {
+    "description": "Folded More row caption segment while no topics are entered."
+  },
+  "checkInMoreCaptionTopicsCount": "{count, plural, =1{1 topic} other{{count} topics}}",
+  "@checkInMoreCaptionTopicsCount": {
+    "description": "Folded More row caption segment: how many topics are entered.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "checkInMoreSection": "More",
   "checkInNarrativeHint": "What did you talk about? One line is enough.",
   "checkInNoDuration": "No duration",
@@ -2033,6 +2057,24 @@
   "checkInSpeakButton": "Speak check-in",
   "@checkInSpeakButton": {
     "description": "Button on the check-in sheet that records a spoken check-in and prefills the narrative with its transcript."
+  },
+  "checkInSpokenMinutes": "{count, plural, =1{1 minute} other{{count} minutes}}",
+  "@checkInSpokenMinutes": {
+    "description": "Minutes of a recording length, read by assistive technology.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "checkInSpokenSeconds": "{count, plural, =1{1 second} other{{count} seconds}}",
+  "@checkInSpokenSeconds": {
+    "description": "Seconds of a recording length, read by assistive technology.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "checkInStartedLabel": "Started",
   "checkInStatusMicrophoneDenied": "Microphone unavailable",
@@ -6852,7 +6894,7 @@
       }
     }
   },
-  "relationshipAgentNotEnrolledBody": "Mark {name} as important to get a briefing, nudges when it has been a while, and a chat.",
+  "relationshipAgentNotEnrolledBody": "Mark {name} as important to get a chat, nudges when it has been a while, and a briefing.",
   "@relationshipAgentNotEnrolledBody": {
     "placeholders": {
       "name": {

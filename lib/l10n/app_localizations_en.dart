@@ -3173,7 +3173,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkInMicrophoneDeniedCalloutTitle => 'Allow microphone access';
 
   @override
-  String get checkInMoreCaption => 'Feeling · topics · next time';
+  String get checkInMoreCaptionFeeling => 'Feeling';
+
+  @override
+  String get checkInMoreCaptionNextTime => 'next time';
+
+  @override
+  String get checkInMoreCaptionNextTimeSet => 'next time noted';
+
+  @override
+  String get checkInMoreCaptionTopics => 'topics';
+
+  @override
+  String checkInMoreCaptionTopicsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count topics',
+      one: '1 topic',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get checkInMoreSection => 'More';
@@ -3284,6 +3304,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get checkInSpeakButton => 'Speak check-in';
+
+  @override
+  String checkInSpokenMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count minutes',
+      one: '1 minute',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String checkInSpokenSeconds(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count seconds',
+      one: '1 second',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get checkInStartedLabel => 'Started';
@@ -11701,7 +11743,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Mark $name as important to get a briefing, nudges when it has been a while, and a chat.';
+    return 'Mark $name as important to get a chat, nudges when it has been a while, and a briefing.';
   }
 
   @override

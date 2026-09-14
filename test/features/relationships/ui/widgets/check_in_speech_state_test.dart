@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/l10n/app_localizations_en.dart';
 
 void main() {
   const missing = CheckInSpeechFailure(
@@ -123,6 +124,25 @@ void main() {
       },
       tags: 'glados',
     );
+  });
+
+  group('checkInSpokenClockLabel', () {
+    final messages = AppLocalizationsEn();
+    test('says the length in words, minutes first, nothing that is zero', () {
+      expect(
+        checkInSpokenClockLabel(messages, const Duration(seconds: 23)),
+        '23 seconds',
+      );
+      expect(
+        checkInSpokenClockLabel(messages, const Duration(seconds: 83)),
+        '1 minute 23 seconds',
+      );
+      expect(
+        checkInSpokenClockLabel(messages, const Duration(minutes: 2)),
+        '2 minutes',
+      );
+      expect(checkInSpokenClockLabel(messages, Duration.zero), '0 seconds');
+    });
   });
 
   group('checkInClockLabel', () {

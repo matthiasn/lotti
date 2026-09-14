@@ -195,6 +195,16 @@ class _RelationshipBriefingCardState
   /// label for hours. One wake per visible change, not a per-second tick.
   Timer? _ageTick;
 
+  /// The face last rendered, so a change of face can be told from a rebuild
+  /// of the same one.
+  RelationshipAgentCardState? _shownState;
+
+  /// Whether the current face has just arrived from a running or failed
+  /// one — a briefing finishing, a failure clearing — and should be
+  /// announced. Cleared when
+  /// the age next ticks, so "as of 3 h ago" becoming "4 h ago" stays quiet.
+  bool _arrivedCurrent = false;
+
   String get _agentId => relationshipAgentIdFor(widget.relationship.meta.id);
 
   @override
@@ -212,7 +222,7 @@ class _RelationshipBriefingCardState
   void _armAgeTick(DateTime writtenAt) {
     _ageTick?.cancel();
     _ageTick = Timer(untilNextAgeBucket(clock.now().difference(writtenAt)), () {
-      if (mounted) setState(() {});
+      if (mounted) setState(() => _arrivedCurrent = false);
     });
   }
 
@@ -421,6 +431,15 @@ class _RelationshipBriefingCardState
       report: report,
       state: state,
     );
+    if (cardState != _shownState) {
+      // Only from a wake's own faces: the providers' first load passes
+      // through noBriefing, and that is a card appearing, not news.
+      _arrivedCurrent =
+          cardState == RelationshipAgentCardState.current &&
+          (_shownState == RelationshipAgentCardState.running ||
+              _shownState == RelationshipAgentCardState.failed);
+      _shownState = cardState;
+    }
 
     if (cardState == RelationshipAgentCardState.notEnrolled) {
       return _NotEnrolledCard(
@@ -472,6 +491,7 @@ class _RelationshipBriefingCardState
         peopleCadencePillOf(item).kind == PeopleCadencePillKind.overdue;
     return _AgentCard(
       state: cardState,
+      announceArrival: _arrivedCurrent,
       item: item,
       checkInCount: widget.checkIns.length,
       checkIns: widget.checkIns,
@@ -561,8 +581,10 @@ class _NotEnrolledCard extends StatelessWidget {
                       data.nickname ?? data.title,
                     ),
               key: const ValueKey('relationship-agent-body'),
+              // Prose in the prose ink, like the six enrolled faces: only
+              // the privacy caption beneath it is metadata.
               style: tokens.typography.styles.body.bodyMedium.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
+                color: tokens.colors.text.highEmphasis,
               ),
             ),
           ),
@@ -604,6 +626,7 @@ class _NotEnrolledCard extends StatelessWidget {
 class _AgentCard extends StatelessWidget {
   const _AgentCard({
     required this.state,
+    required this.announceArrival,
     required this.item,
     required this.checkInCount,
     required this.checkIns,
@@ -626,6 +649,10 @@ class _AgentCard extends StatelessWidget {
   });
 
   final RelationshipAgentCardState state;
+
+  /// The current face has just replaced another, so its status line is
+  /// news this once.
+  final bool announceArrival;
   final RelationshipListItem item;
   final int checkInCount;
   final List<CheckInEntry> checkIns;
@@ -674,6 +701,7 @@ class _AgentCard extends StatelessWidget {
         tiers: [messages.relationshipAgentWriting],
         // The spinner says busy; the words stay in the meta ink.
         color: ai.metaText,
+        liveRegion: true,
       ),
       // A past event in the same grammar as "as of": how long ago, not a
       // clock time that reads as an appointment.
@@ -687,6 +715,8 @@ class _AgentCard extends StatelessWidget {
           messages.relationshipAgentFailedPlain,
         ],
         color: tokens.colors.alert.error.ink,
+        metaColor: ai.metaText,
+        liveRegion: true,
       ),
       // The band as a colour as well as a word — a dot in the glyph slot,
       // in the band's own accent, the one status the card said only in text.
@@ -710,6 +740,9 @@ class _AgentCard extends StatelessWidget {
           },
         ],
         color: ai.metaText,
+        // Live only as it arrives: a briefing finishing or a failure
+        // clearing is news; the age ticking afterwards is not.
+        liveRegion: announceArrival,
       ),
       // One line beside the age pill: the date is the tier that goes, so
       // the status never orphans a date under itself next to a pill.
@@ -725,6 +758,8 @@ class _AgentCard extends StatelessWidget {
           messages.taskAgentStatusOutOfDate,
         ],
         color: tokens.colors.alert.warning.ink,
+        metaColor: ai.metaText,
+        liveRegion: true,
       ),
       // Unreachable by construction: the card returns the plain
       // _NotEnrolledCard before this widget is ever built.
@@ -1011,7 +1046,17 @@ class _StatusLine extends StatelessWidget {
     this.icon,
     this.leading,
     this.leadingSize = IconSizes.s,
+    this.metaColor,
+    this.liveRegion = false,
   });
+
+  /// The ink for the detail after the state word (`· 20 min ago`): the
+  /// alert colour is the state's alone, and the age is metadata.
+  final Color? metaColor;
+
+  /// Whether a change here is news a reader must hear — the card going
+  /// running → current or → failed — rather than an age ticking over.
+  final bool liveRegion;
 
   /// The state's wordings, widest first: the line sheds a date or a time
   /// before it wraps, and a phone beside a pill is narrow.
@@ -1044,10 +1089,11 @@ class _StatusLine extends StatelessWidget {
       context,
     ).scale(style.fontSize! * (style.height ?? 1));
     final glyphTop = ((line - glyphSize) / 2).clamp(0.0, double.infinity);
-    // A live region: running → current, or → failed, is the card's one
-    // sentence changing, and a reader who cannot see the colour hears it.
+    // A live region for the transitions only: running → current, or →
+    // failed, is the card's one sentence changing, and a reader who cannot
+    // see the colour hears it — the state word, not the age behind it.
     return Semantics(
-      liveRegion: true,
+      liveRegion: liveRegion,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         // Top-aligned, so a status that wraps keeps its glyph on the first
@@ -1068,7 +1114,11 @@ class _StatusLine extends StatelessWidget {
               // The narrowest wording may still wrap once: this line is the
               // state's non-colour carrier and must not clip.
               maxLines: 2,
+              semanticsLabel: liveRegion ? tiers.last : null,
               style: style,
+              tailStyle: metaColor == null
+                  ? null
+                  : style.copyWith(color: metaColor),
             ),
           ),
         ],
@@ -1162,13 +1212,15 @@ class _AgentCardFooter extends StatelessWidget {
           ),
         ),
       ),
-      // A step more above than below: the action row sits off the divider,
-      // and the meta rows close the card without a matching band.
+      // A step more above than below when meta rows close the card; with
+      // nothing under the action row the inset is symmetric.
       padding: EdgeInsets.fromLTRB(
         tokens.spacing.cardPadding,
         tokens.spacing.step4,
         tokens.spacing.cardPadding,
-        tokens.spacing.step3,
+        identity == null && meta == null
+            ? tokens.spacing.step4
+            : tokens.spacing.step3,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1210,6 +1262,11 @@ class _AgentCardFooter extends StatelessWidget {
                 ],
               ),
             ),
+          // A designed gap under the action row: the 48pt floor gives no
+          // slack once a large-text pill outgrows it.
+          if ((leading != null || action != null) &&
+              (identity != null || meta != null))
+            SizedBox(height: tokens.spacing.step3),
           ?identity,
           ?meta,
         ],

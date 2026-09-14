@@ -1,3 +1,4 @@
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
@@ -26,6 +27,8 @@ void main() {
     bool reRecordEnabled = true,
     String text = '',
     double width = 600,
+    bool transcriptEdited = false,
+    int restMinLines = 3,
   }) async {
     controller = TextEditingController(text: text);
     focusNode = FocusNode();
@@ -48,6 +51,8 @@ void main() {
             wordCount: wordCount,
             recorder: recorder,
             shortcutHint: shortcutHint,
+            transcriptEdited: transcriptEdited,
+            restMinLines: restMinLines,
             onDictate: dictateEnabled ? () => calls.add('dictate') : null,
             onAddMore: () => calls.add('add-more'),
             onReRecord: reRecordEnabled ? () => calls.add('re-record') : null,
@@ -108,6 +113,35 @@ void main() {
         shortcutHint: '⌘Enter',
       );
       expect(find.text('1 word · ⌘Enter to save'), findsOneWidget);
+    });
+
+    testWidgets('the shortcut waits for words: beside a held Save it would '
+        'promise what the footer denies', (tester) async {
+      await pump(
+        tester,
+        phase: const CheckInSpeechIdle(),
+        shortcutHint: '⌘Enter',
+      );
+      expect(find.textContaining('⌘Enter to save'), findsNothing);
+      expect(find.byKey(const ValueKey('check-in-word-count')), findsNothing);
+    });
+
+    testWidgets('the empty field rests as tall as its host asks: two lines '
+        'in the dialog, three on the phone', (tester) async {
+      await pump(tester, phase: const CheckInSpeechIdle(), restMinLines: 2);
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const ValueKey('check-in-narrative')))
+            .minLines,
+        2,
+      );
+      await pump(tester, phase: const CheckInSpeechIdle());
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const ValueKey('check-in-narrative')))
+            .minLines,
+        3,
+      );
     });
 
     testWidgets('the caption ladder sheds the count before the shortcut: '
@@ -248,11 +282,18 @@ void main() {
           '0:23 of audio saved',
         ),
       );
+      // In words for a reader: the clock is a shape, not a number.
       expect(
         saved.semanticsLabel,
-        '0:23 of audio saved · Whisper · via Groq · usually under a minute',
+        '23 seconds of audio saved · Whisper · via Groq · usually under a minute',
       );
       expect(find.byKey(const ValueKey('check-in-narrative')), findsNothing);
+      // Caption-sized: the wait outranks the exit; the target keeps 48pt.
+      final typeInstead = tester.widget<DesignSystemButton>(
+        find.byKey(const ValueKey('check-in-type-instead')),
+      );
+      expect(typeInstead.size, DesignSystemButtonSize.dense);
+      expect(typeInstead.tapTargetSize, MaterialTapTargetSize.padded);
       await tester.tap(find.byKey(const ValueKey('check-in-type-instead')));
       expect(calls, ['type-instead']);
     });
@@ -323,6 +364,33 @@ void main() {
       await tester.pump(const Duration(milliseconds: 250));
       expect(opacity(), still, reason: 'no motion for a reduced-motion user');
     });
+  });
+
+  testWidgets('a landed transcript is announced once: live until it is '
+      'edited, and always as "Transcript added", never as the count', (
+    tester,
+  ) async {
+    const phase = CheckInSpeechReady(
+      transcript: 'The words that landed.',
+      textBefore: '',
+      length: Duration(seconds: 23),
+    );
+    SemanticsNode caption() => tester.getSemantics(
+      find.byKey(const ValueKey('check-in-word-count')),
+    );
+    await pump(tester, phase: phase, wordCount: 4, shortcutHint: '⌘Enter');
+    expect(caption().flagsCollection.isLiveRegion, isTrue);
+    expect(caption().label, 'Transcript added');
+
+    await pump(
+      tester,
+      phase: phase,
+      wordCount: 5,
+      shortcutHint: '⌘Enter',
+      transcriptEdited: true,
+    );
+    expect(caption().flagsCollection.isLiveRegion, isFalse);
+    expect(caption().label, 'Transcript added · 5 words · ⌘Enter to save');
   });
 
   testWidgets('Re-record is not offered once the transcript has been edited', (
@@ -437,6 +505,28 @@ void main() {
       );
       expect(find.text('Allow microphone access'), findsOneWidget);
       expect(find.text('Or type it here…'), findsOneWidget);
+      // The field's own ladder holds under the card: the placeholder steps
+      // down a size and the retry is a quiet text action, so the card's
+      // pill is the face's one shape.
+      final tokens = tester
+          .element(find.byKey(const ValueKey('check-in-narrative')))
+          .designTokens;
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const ValueKey('check-in-narrative')))
+            .decoration!
+            .hintStyle!
+            .fontSize,
+        tokens.typography.styles.body.bodyMedium.fontSize,
+      );
+      expect(
+        tester
+            .widget<DesignSystemButton>(
+              find.byKey(const ValueKey('check-in-dictate')),
+            )
+            .variant,
+        DesignSystemButtonVariant.tertiary,
+      );
       // The card offers typing as a quiet button — the way out, not a
       // second accent — and its recommended action is the secondary pill:
       // the alert tone is the card's one colour.

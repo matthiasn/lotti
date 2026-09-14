@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 
+import '../../../../widget_test_utils.dart';
+
 void main() {
   const style = TextStyle(fontSize: 14);
   const tiers = [
@@ -68,5 +70,43 @@ void main() {
     expect(rendered(tester).semanticsLabel, tiers.first);
     await pump(tester, width: 60, semanticsLabel: 'Status: with Pip');
     expect(rendered(tester).semanticsLabel, 'Status: with Pip');
+  });
+
+  testWidgets('a tail style inks the detail after the separator, and the '
+      'measurement still picks the widest wording that fits', (tester) async {
+    const head = TextStyle(fontSize: 14, color: Color(0xFFFF0000));
+    const tail = TextStyle(color: Color(0xFF888888));
+    const tiers = ['Last run failed · 20 min ago', 'Last run failed'];
+    Future<Text> pumpAt(double width) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Center(
+            child: SizedBox(
+              width: width,
+              child: DsTieredText(
+                tiers: tiers,
+                style: head,
+                tailStyle: tail,
+                textKey: const ValueKey('tiered'),
+              ),
+            ),
+          ),
+        ),
+      );
+      return tester.widget<Text>(find.byKey(const ValueKey('tiered')));
+    }
+
+    final wide = await pumpAt(600);
+    final spans = (wide.textSpan! as TextSpan).children!.cast<TextSpan>();
+    expect(
+      spans.map((TextSpan span) => span.text),
+      ['Last run failed', ' · 20 min ago'],
+    );
+    expect(spans.last.style?.color, tail.color);
+    expect(wide.textSpan!.style, head);
+
+    final narrow = await pumpAt(120);
+    expect(narrow.textSpan!.toPlainText(), 'Last run failed');
+    expect((narrow.textSpan! as TextSpan).children, isNull);
   });
 }

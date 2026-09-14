@@ -386,9 +386,13 @@ the one fact the line exists for. Only the narrowest tier may take
 `maxLines` (default one) before it ellipsizes, as the honest end of the
 ladder; every other tier is one line or not chosen. The rendered `Text`
 carries `semanticsLabel` — the full first tier unless given — so assistive
-technology hears what the screen shortened. Hosts: the check-in composer
-header, the briefing card's status line, and the agent identity region's
-model route and attribution rows.
+technology hears what the screen shortened. A wording shaped `state ·
+detail` can wear two inks: with `tailStyle` set, everything from the first
+`tailSeparator` (`· ` by default) on takes that style, so a status line
+keeps its alert colour on the state word and its age in the meta ink; the
+widget is then a `Text.rich`, and a test reads the chosen wording through
+its span. Hosts: the check-in composer header, the briefing card's status
+line, and the agent identity region's model route and attribution rows.
 
 ## The floating readout: `DsTooltip`
 

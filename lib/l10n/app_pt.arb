@@ -1579,7 +1579,31 @@
   "@checkInMicrophoneDeniedCalloutTitle": {
     "description": "The refused-microphone card's title: the next step, since the header status already says the microphone is unavailable."
   },
-  "checkInMoreCaption": "Sentimento · temas · próxima vez",
+  "checkInMoreCaptionFeeling": "Sensação",
+  "@checkInMoreCaptionFeeling": {
+    "description": "Folded More row caption segment while no feeling is chosen."
+  },
+  "checkInMoreCaptionNextTime": "da próxima vez",
+  "@checkInMoreCaptionNextTime": {
+    "description": "Folded More row caption segment while nothing is noted for next time."
+  },
+  "checkInMoreCaptionNextTimeSet": "próxima vez anotada",
+  "@checkInMoreCaptionNextTimeSet": {
+    "description": "Folded More row caption segment once something is noted for next time."
+  },
+  "checkInMoreCaptionTopics": "temas",
+  "@checkInMoreCaptionTopics": {
+    "description": "Folded More row caption segment while no topics are entered."
+  },
+  "checkInMoreCaptionTopicsCount": "{count, plural, =1{1 tema} other{{count} temas}}",
+  "@checkInMoreCaptionTopicsCount": {
+    "description": "Folded More row caption segment: how many topics are entered.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "checkInMoreSection": "Mais",
   "checkInNarrativeHint": "Sobre o que falaram? Uma linha chega.",
   "checkInNoDuration": "Sem duração",
@@ -1616,6 +1640,24 @@
   "checkInSourceCall": "Da chamada que fizeste a partir desta página. Tudo é editável.",
   "checkInSourceMessage": "Da mensagem que enviaste a partir desta página. Tudo é editável.",
   "checkInSpeakButton": "Ditar o contato",
+  "checkInSpokenMinutes": "{count, plural, =1{1 minuto} other{{count} minutos}}",
+  "@checkInSpokenMinutes": {
+    "description": "Minutes of a recording length, read by assistive technology.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "checkInSpokenSeconds": "{count, plural, =1{1 segundo} other{{count} segundos}}",
+  "@checkInSpokenSeconds": {
+    "description": "Seconds of a recording length, read by assistive technology.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "checkInStartedLabel": "Começou",
   "checkInStatusMicrophoneDenied": "Microfone indisponível",
   "checkInStatusPaused": "Em pausa",
@@ -5005,7 +5047,7 @@
   "relationshipAgentMarkImportant": "Marcar como importante",
   "relationshipAgentNoAgent": "Sem agente para esta pessoa",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Ainda sem briefing. „Criar briefing agora“ escreve um assim que registares um check-in; nunca vê o telefone nem o e-mail.} =1{Ainda sem briefing. „Criar briefing agora“ escreve um a partir do teu check-in; nunca vê o telefone nem o e-mail.} other{Ainda sem briefing. „Criar briefing agora“ escreve um a partir dos teus {count} check-ins; nunca vê o telefone nem o e-mail.}}",
-  "relationshipAgentNotEnrolledBody": "Marca {name} como importante para receber um briefing, lembretes quando já passou algum tempo e um chat.",
+  "relationshipAgentNotEnrolledBody": "Marca {name} como importante para ter um chat, lembretes quando já passou algum tempo e um briefing.",
   "relationshipAgentOnlyYourStartsUseAi": "Só o que tu próprio inicias usa IA",
   "relationshipAgentOutOfDateNewCheckIn": "Desatualizado · novo check-in {day}",
   "relationshipAgentOutOfDateNewCheckInShort": "Desatualizado · novo check-in",

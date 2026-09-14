@@ -815,9 +815,14 @@ briefing's age (`6 days old`, an outlined tag in the meta ink, so the status
 line's warning ink is the one orange thing on the face and the tag never
 competes for the first read), which is what that rail — capped at half the header width,
 ellipsizing — can carry without truncating a judgement. The status line is
-a `DsTieredText` in a live region — one that survives the shared header,
-which excludes only its badge and title from semantics so the status can
-speak for itself: it sheds its date or time before it
+a `DsTieredText` that is a live region on the transitions only — running,
+failed and out of date, announced as the state word without the age behind
+it, so a resting "as of" never re-reads its own ticking — and one that
+survives the shared header, which excludes only its badge and title from
+semantics so the status can speak for itself. The alert ink is the state
+word's alone: the detail after the separator (`· 20 min ago`, `· new
+check-in Thursday`) reads in the meta ink through `DsTieredText.tailStyle`.
+It sheds its date or time before it
 wraps (`Out of date · new check-in Thursday` → `Out of date · new check-in`
 → `Out of date`; `Last run failed · 19 min ago` → `Last run failed` — a past
 event in the same relative grammar as *as of*, never a clock time that
@@ -1072,8 +1077,12 @@ The composer's parts, top to bottom:
   (`announce: true`). The header already names the state, so a card's
   title is the *next step*, short enough for one phone line (`Try again, or
   type it`; `Allow microphone access`); under the refused microphone the
-  field's own *Dictate* is the retry, and the body says so (`…then tap
-  Dictate`). Under a card
+  field's own *Dictate* is the retry — one tier down, `tertiary`, with the
+  placeholder at `bodyMedium`, so the card's pill is the face's one shape
+  and the field's ladder does not invert beneath it — and the body says so
+  (`…then tap Dictate`). A landed transcript's caption is a live region once,
+  as it lands, pinned to "Transcript added"; edited since, it is old news,
+  and the word count that follows every keystroke is never re-read. Under a card
   with nothing typed the field is one line and carries no caption. *Type instead* on a
   **missing transcript** does not forget the take: the phase becomes
   `CheckInSpeechFailed(cardDismissed: true)`, the card folds into one
@@ -1094,12 +1103,18 @@ The composer's parts, top to bottom:
   Re-record · Add more beside the caption would leave it no room for the
   shortcut even in the dialog. The
   transcribing caption ends on a time expectation (`· usually under a
-  minute`), the first tier to go, and its *Type instead* is quiet so the
-  wait is what the eye finds. The *More* row's caption is a ladder too
-  (`Feeling · topics · next time` sheds a segment at a time), so large text
-  never slices a word; unfolded, *More* is `subtitle1` and every section —
-  the feeling, and the three inputs — carries the same `subtitle2` heading
-  one level under it. The field's accent hairline means keyboard focus and
+  minute`), the first tier to go, and its *Type instead* is quiet and
+  caption-sized (`dense`, the 48pt target kept) so the wait is what the eye
+  finds. The keyboard-shortcut hint joins the caption only once there are
+  words to save with it — beside a held Save it would be a promise the
+  footer contradicts. The *More* row's caption says what is set — a field's
+  name until it has a value, then the value (`Good · 2 topics · next time
+  noted`, from the form's `_moreCaption`) — and is a ladder too, shedding a
+  segment at a time so large text never slices a word; unfolded, *More* is
+  `subtitle1` and every section — the feeling, and the three inputs —
+  carries the same `subtitle2` heading one level under it, one `sectionGap`
+  apart. The empty field rests two lines tall in the desktop dialog and
+  three on the phone (`restMinLines`). The field's accent hairline means keyboard focus and
   nothing else: the red dot, the waveform and the filled Stop say "live". The phases swap in
   place rather than through an `AnimatedSize`: the tiered captions lay
   themselves out with a `LayoutBuilder`, which re-dirties an animating size
@@ -1122,7 +1137,12 @@ The composer's parts, top to bottom:
   (`alignsLabelToLeadingEdge`), like the card's quiet actions. The
   recorder's Discard · Pause · Stop sit on the trailing rail, where Dictate,
   Try again and Add more live in every other phase, and Discard is quiet
-  too: red on this surface is the live dot alone. Discarding asks in this
+  too: red on this surface is the live dot alone, and the level meter is
+  the prose ink rather than the accent, which means pressable. The clock
+  reads to assistive technology in words (`checkInSpokenClockLabel`: "23
+  seconds"), as do the saved-audio captions. A held Save carries its reason
+  as a semantics hint, so a reader landing on the control hears the next
+  step. Discarding asks in this
   composer's own words (`checkInDiscardRecordingBody`: the audio is
   deleted, the check-in stays open). On the
   desktop dialog the field takes focus as the composer opens (the form's

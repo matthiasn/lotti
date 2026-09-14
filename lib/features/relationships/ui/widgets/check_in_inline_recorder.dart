@@ -190,9 +190,11 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
                 width: constraints.maxWidth,
                 height: tokens.spacing.step7,
                 barCount: CheckInInlineRecorder.amplitudeWindow ~/ 2,
+                // The prose ink, not the accent: on this surface the accent
+                // means pressable, and a meter is not.
                 color: paused
                     ? tokens.colors.text.lowEmphasis
-                    : tokens.colors.interactive.enabled,
+                    : tokens.colors.text.highEmphasis,
               ),
             ),
           ),
@@ -203,6 +205,8 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
         Text(
           checkInClockLabel(state.progress),
           key: const ValueKey('check-in-recorder-clock'),
+          // In words for a reader: "23 seconds", not "zero colon two three".
+          semanticsLabel: checkInSpokenClockLabel(messages, state.progress),
           textAlign: TextAlign.center,
           style: monoMetaStyle(
             tokens,

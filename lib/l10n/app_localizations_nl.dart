@@ -3199,7 +3199,27 @@ class AppLocalizationsNl extends AppLocalizations {
   String get checkInMicrophoneDeniedCalloutTitle => 'Sta microfoontoegang toe';
 
   @override
-  String get checkInMoreCaption => 'Gevoel · onderwerpen · volgende keer';
+  String get checkInMoreCaptionFeeling => 'Gevoel';
+
+  @override
+  String get checkInMoreCaptionNextTime => 'volgende keer';
+
+  @override
+  String get checkInMoreCaptionNextTimeSet => 'volgende keer genoteerd';
+
+  @override
+  String get checkInMoreCaptionTopics => 'onderwerpen';
+
+  @override
+  String checkInMoreCaptionTopicsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count onderwerpen',
+      one: '1 onderwerp',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get checkInMoreSection => 'Meer';
@@ -3312,6 +3332,28 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get checkInSpeakButton => 'Check-in inspreken';
+
+  @override
+  String checkInSpokenMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count minuten',
+      one: '1 minuut',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String checkInSpokenSeconds(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count seconden',
+      one: '1 seconde',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get checkInStartedLabel => 'Begonnen';
@@ -11783,7 +11825,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Markeer $name als belangrijk voor een briefing, een seintje als het even geleden is, en een chat.';
+    return 'Markeer $name als belangrijk voor een chat, een seintje als het even geleden is, en een briefing.';
   }
 
   @override
