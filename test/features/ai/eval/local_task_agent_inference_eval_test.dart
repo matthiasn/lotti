@@ -14,8 +14,10 @@ import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../helpers/fallbacks.dart';
 import 'support/local_task_agent_inference_eval.dart';
 
 void main() {
@@ -1402,14 +1404,28 @@ void main() {
     () async {
       final inference = _QueuedInferenceRepository(
         [
-          [_content('No report was produced.')],
+          [
+            _usage(
+              inputTokens: 100,
+              outputTokens: 20,
+              thoughtsTokens: 5,
+              cachedInputTokens: 10,
+            ),
+            _content('No report was produced.'),
+          ],
         ],
         failedRequest: 2,
       );
+      final consumption = fallbackAiConsumptionEvent.copyWith(credits: 0.25);
+      String? capturedWakeRunKey;
       final runner = _createRunner(
         provider: provider,
         inferenceRepository: inference,
         executionMode: LocalTaskAgentEvalExecutionMode.productionRouting,
+        consumptionForWakeRunKey: (key) {
+          capturedWakeRunKey = key;
+          return [consumption];
+        },
       );
       final report = await runner.run(
         profiles: const [profile],
@@ -1421,6 +1437,17 @@ void main() {
         LocalTaskAgentEvalFailureCategory.inferenceFailed,
       );
       expect(result.errorMessage, contains('connection refused'));
+      expect(result.usedForcedReportRetry, isTrue);
+      expect(result.inputTokens, 100);
+      expect(result.outputTokens, 20);
+      expect(result.thoughtsTokens, 5);
+      expect(result.cachedInputTokens, 10);
+      expect(result.consumption, [consumption]);
+      expect(result.credits, 0.25);
+      expect(
+        capturedWakeRunKey,
+        localTaskAgentEvalWakeRunKey(profile.name, result.scenario.id),
+      );
       expect(inference.requests, hasLength(2));
       expect(inference.requests.last.toolNames, [
         TaskAgentToolNames.updateReport,
@@ -2708,6 +2735,7 @@ LocalTaskAgentInferenceEvalRunner _createRunner({
       LocalTaskAgentEvalExecutionMode.singlePass,
   String? reportEditorModelId,
   int reportEditorMaxAttempts = 1,
+  List<AiConsumptionEvent> Function(String)? consumptionForWakeRunKey,
 }) {
   final container = ProviderContainer();
   addTearDown(container.dispose);
@@ -2723,6 +2751,7 @@ LocalTaskAgentInferenceEvalRunner _createRunner({
     executionMode: executionMode,
     reportEditorModelId: reportEditorModelId,
     reportEditorMaxAttempts: reportEditorMaxAttempts,
+    consumptionForWakeRunKey: consumptionForWakeRunKey,
   );
 }
 

@@ -190,7 +190,9 @@ suites additionally exercise publication enforcement after successful tools.
 
 The task conversation driver rethrows inference errors from both its initial
 conversation and forced report pass. A provider failure cannot trigger report
-recovery and become a successful or behaviorally failed assessment.
+recovery and become a successful or behaviorally failed assessment. When a
+later request fails, the failed result retains completed-call token usage, the
+forced-retry flag and consumption events already recorded for the wake.
 
 Inference errors remain separate from behavioral failures. Missing cases remain
 in the expected denominator. Day-planning heuristics cannot earn objective

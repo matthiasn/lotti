@@ -2526,6 +2526,8 @@ class LocalTaskAgentInferenceEvalRunner {
           (executionMode == LocalTaskAgentEvalExecutionMode.singlePass ? 0 : 1),
     );
     final manager = conversationRepository.getConversation(conversationId);
+    InferenceUsage? usage;
+    var usedForcedReportRetry = false;
 
     try {
       try {
@@ -2541,7 +2543,7 @@ class LocalTaskAgentInferenceEvalRunner {
                   )
                   .toList(growable: false)
             : allTools;
-        var usage = await conversationRepository.sendMessage(
+        usage = await conversationRepository.sendMessage(
           conversationId: conversationId,
           message: scenario.userMessage,
           model: profile.providerModelId,
@@ -2557,7 +2559,6 @@ class LocalTaskAgentInferenceEvalRunner {
           consumptionWakeRunKey: wakeRunKey,
           consumptionThreadId: scenario.id,
         );
-        var usedForcedReportRetry = false;
         var reportRevisionCompleted = true;
         var reportRevisionValid = true;
         var reportEditorAttempts = 0;
@@ -2760,6 +2761,9 @@ class LocalTaskAgentInferenceEvalRunner {
           latencyMs: stopwatch.elapsedMilliseconds,
           toolCalls: strategy.toolCalls,
           error: error,
+          usage: usage,
+          usedForcedReportRetry: usedForcedReportRetry,
+          consumption: consumptionForWakeRunKey?.call(wakeRunKey) ?? const [],
         );
       }
     } finally {
@@ -2821,18 +2825,28 @@ class LocalTaskAgentInferenceEvalRunner {
     );
   }
 
+  /// Preserve completed-call telemetry when a later inference request fails.
   LocalTaskAgentEvalCaseResult _inferenceFailedResult({
     required LocalTaskAgentEvalProfile profile,
     required LocalTaskAgentEvalScenario scenario,
     required int latencyMs,
     required List<LocalTaskAgentEvalToolCall> toolCalls,
     required Object error,
+    InferenceUsage? usage,
+    bool usedForcedReportRetry = false,
+    List<AiConsumptionEvent> consumption = const [],
   }) {
     return LocalTaskAgentEvalCaseResult(
       profile: profile,
       scenario: scenario,
       provider: provider,
       latencyMs: latencyMs,
+      inputTokens: usage?.inputTokens,
+      outputTokens: usage?.outputTokens,
+      thoughtsTokens: usage?.thoughtsTokens,
+      cachedInputTokens: usage?.cachedInputTokens,
+      usedForcedReportRetry: usedForcedReportRetry,
+      consumption: consumption,
       finalContent: 'Inference failed with exception: $error',
       errorMessage: error.toString(),
       toolCalls: toolCalls,
