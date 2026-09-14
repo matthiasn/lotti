@@ -2583,6 +2583,9 @@ class LocalTaskAgentInferenceEvalRunner {
           model: profile.providerModelId,
           provider: provider,
           inferenceRepo: inferenceRepository,
+          // The eval owns failure classification and resumption. A transport
+          // error must not fall through to report recovery as a normal stop.
+          rethrowInferenceErrors: true,
           tools: mutationTools,
           temperature: temperature,
           strategy: strategy,
@@ -2620,6 +2623,7 @@ class LocalTaskAgentInferenceEvalRunner {
             model: profile.providerModelId,
             provider: provider,
             inferenceRepo: inferenceRepository,
+            rethrowInferenceErrors: true,
             // Same key: a forced retry is part of what the case cost, not a
             // separate wake. Billing it elsewhere would understate the price
             // of the models that need the retry most.

@@ -169,6 +169,10 @@ otherwise the binding returns HTTP 400 without contacting the provider. The
 task-workflow driver restores the previous override at teardown. Compilation
 with live gates disabled cannot detect this transport trap.
 
+The task conversation driver rethrows inference errors from both its initial
+conversation and forced report pass. A provider failure cannot trigger report
+recovery and become a successful or behaviorally failed assessment.
+
 Inference errors remain separate from behavioral failures. Missing cases remain
 in the expected denominator. Day-planning heuristics cannot earn objective
 credit. Journey metrics and compaction fact/recommendation quality retain their

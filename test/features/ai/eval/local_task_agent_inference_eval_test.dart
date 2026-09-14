@@ -1340,6 +1340,67 @@ void main() {
     },
   );
 
+  test(
+    'provider errors cannot become successful forced report retries',
+    () async {
+      for (final mode in [
+        LocalTaskAgentEvalExecutionMode.singlePass,
+        LocalTaskAgentEvalExecutionMode.productionRouting,
+      ]) {
+        final inference = _FailThenSucceedInferenceRepository();
+        final runner = _createRunner(
+          provider: provider,
+          inferenceRepository: inference,
+          executionMode: mode,
+        );
+        final report = await runner.run(
+          profiles: const [profile],
+          scenarios: [defaultLocalTaskAgentWakeScenario()],
+        );
+        final result = report.results.single;
+        expect(
+          result.failureCategory,
+          LocalTaskAgentEvalFailureCategory.inferenceFailed,
+        );
+        expect(result.errorMessage, contains('connection refused'));
+        expect(result.usedForcedReportRetry, isFalse);
+        expect(result.toolCalls, isEmpty);
+        expect(inference.requests, hasLength(1));
+      }
+    },
+  );
+
+  test(
+    'provider errors during forced report recovery remain inference failures',
+    () async {
+      final inference = _QueuedInferenceRepository(
+        [
+          [_content('No report was produced.')],
+        ],
+        failedRequest: 2,
+      );
+      final runner = _createRunner(
+        provider: provider,
+        inferenceRepository: inference,
+        executionMode: LocalTaskAgentEvalExecutionMode.productionRouting,
+      );
+      final report = await runner.run(
+        profiles: const [profile],
+        scenarios: [defaultLocalTaskAgentWakeScenario()],
+      );
+      final result = report.results.single;
+      expect(
+        result.failureCategory,
+        LocalTaskAgentEvalFailureCategory.inferenceFailed,
+      );
+      expect(result.errorMessage, contains('connection refused'));
+      expect(inference.requests, hasLength(2));
+      expect(inference.requests.last.toolNames, [
+        TaskAgentToolNames.updateReport,
+      ]);
+    },
+  );
+
   test('runner records inference failure and continues the matrix', () async {
     const secondProfile = LocalTaskAgentEvalProfile(
       name: 'second-local-model',
@@ -1365,7 +1426,7 @@ void main() {
     );
     expect(
       report.results.first.finalContent,
-      'Bad state: connection refused',
+      'Inference failed with exception: Bad state: connection refused',
     );
     expect(
       report.results.last.failureCategory,
@@ -2773,7 +2834,9 @@ class _ThrowingConversationRepository extends ConversationRepository {
 }
 
 class _QueuedInferenceRepository extends InferenceRepositoryInterface {
-  _QueuedInferenceRepository(this.responsesByRequest);
+  _QueuedInferenceRepository(this.responsesByRequest, {this.failedRequest});
+
+  final int? failedRequest;
 
   final List<List<CreateChatCompletionStreamResponse>> responsesByRequest;
   final requests = <_RecordedRequest>[];
@@ -2801,6 +2864,9 @@ class _QueuedInferenceRepository extends InferenceRepositoryInterface {
         temperature: temperature,
       ),
     );
+    if (requests.length == failedRequest) {
+      throw StateError('connection refused');
+    }
     final responses = _requestIndex < responsesByRequest.length
         ? responsesByRequest[_requestIndex]
         : const <CreateChatCompletionStreamResponse>[];
