@@ -30,6 +30,13 @@ void main() {
     focusNode = FocusNode();
     addTearDown(controller.dispose);
     addTearDown(focusNode.dispose);
+    // The view is the field's real width — the tiered captions measure
+    // against layout, not the media query — pinned here so the bundle's
+    // previous test cannot hand this one a wider or narrower window.
+    tester.view
+      ..physicalSize = Size(width, 1200)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         SingleChildScrollView(

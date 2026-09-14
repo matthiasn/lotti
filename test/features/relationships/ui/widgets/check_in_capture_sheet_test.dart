@@ -1228,6 +1228,33 @@ void main() {
       expect(narrativeText(tester), 'Spoken.');
     });
 
+    testWidgets('a Re-record refused at the preflight forgets the take it '
+        'meant to replace, so a later Dictate keeps the words typed since', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await startDictation(tester);
+      await stopRecording(tester);
+      expect(narrativeText(tester), 'Spoken.');
+
+      stubTranscription.canTranscribeResult = false;
+      await tester.tap(find.byKey(const ValueKey('check-in-re-record')));
+      await tester.pumpAndSettle();
+      expect(find.text('No transcription model set up'), findsOneWidget);
+      expect(recorder.recordCalls, hasLength(1), reason: 'nothing recorded');
+
+      // The user types on, a model turns up, and they dictate afresh: the
+      // fresh take appends to everything, the abandoned replacement never
+      // restores the text from before the first take.
+      await type(tester, 'Spoken. And typed since.');
+      stubTranscription.canTranscribeResult = true;
+      await tester.tap(find.byKey(const ValueKey('check-in-dictate')));
+      await tester.pumpAndSettle();
+      await stopRecording(tester);
+      expect(narrativeText(tester), 'Spoken. And typed since.\n\nSpoken.');
+    });
+
     testWidgets('a route lookup that throws never touches the wait', (
       tester,
     ) async {

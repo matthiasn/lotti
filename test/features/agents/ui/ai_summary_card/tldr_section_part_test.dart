@@ -239,7 +239,7 @@ void main() {
       expect(find.byIcon(LottiIcons.aiSpark), findsNothing);
       expect(find.bySemanticsLabel('Briefing'), findsOneWidget);
       expect(
-        find.bySemanticsLabel('Briefing. Only for semantics'),
+        find.bySemanticsLabel('Briefing. Not shown, not announced'),
         findsNothing,
       );
     });

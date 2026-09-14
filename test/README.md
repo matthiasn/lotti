@@ -586,6 +586,14 @@ is the default. The symptom of a leak is a file that passes alone and fails
 in CI with `Type X is already registered inside GetIt` or a pixel-shifted
 layout, with the victim named and the culprit not.
 
+The other half of the defence is the victim's: a test whose assertion
+depends on layout width — a `DsTieredText` picking a tier, a `Wrap`
+folding, a `LayoutBuilder` branch — pins the view itself in its pump helper
+(`tester.view..physicalSize = Size(width, h)..devicePixelRatio = 1` with
+`addTearDown(tester.view.reset)`), rather than trusting the default it
+inherited from whatever ran before. A `MediaQueryData(size:)` override does
+not do this: layout measures the view, not the media query.
+
 To find the culprit, reproduce CI's order locally — the shard, the same
 `--test-randomize-ordering-seed` the job log prints, and the FVM SDK:
 

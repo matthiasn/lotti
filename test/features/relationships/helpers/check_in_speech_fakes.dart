@@ -16,7 +16,8 @@ class StubCheckInTranscriptionService implements CheckInTranscriptionService {
     this.routeThrows = false,
   });
 
-  final bool canTranscribeResult;
+  /// Mutable, so a test can take the route away between two takes.
+  bool canTranscribeResult;
   final String? transcript;
 
   /// When set, the transcript wait resolves only when this completes.

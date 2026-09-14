@@ -1129,6 +1129,10 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
       ).wait.timeout(const Duration(seconds: 15));
       if (!mounted) return;
       if (!canTranscribe) {
+        // A Re-record that never started must not wait for a later take:
+        // the next Dictate is a fresh one, and restoring the abandoned
+        // take's text before it would overwrite what was typed since.
+        _transcriptToReplace = null;
         setState(
           () => _phase = const CheckInSpeechFailed(
             CheckInSpeechFailure(
