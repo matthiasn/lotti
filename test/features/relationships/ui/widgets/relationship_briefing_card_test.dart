@@ -1073,6 +1073,53 @@ void main() {
       });
     });
 
+    testWidgets('the failed face ages from its last wake, not from a '
+        'briefing it does not have', (tester) async {
+      var current = now;
+      final failedAt = now.subtract(const Duration(seconds: 58));
+      await withClock(Clock(() => current), () async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            RelationshipBriefingCard(
+              relationship: relationship(),
+              checkIns: onTrackCheckIns,
+            ),
+            overrides: [
+              agentReportProvider(agentId).overrideWith((ref) async => null),
+              agentStateProvider(agentId).overrideWith(
+                (ref) async => agentState(failures: 1, lastWakeAt: failedAt),
+              ),
+              agentIsRunningProvider(
+                agentId,
+              ).overrideWith((ref) => Stream.value(false)),
+              agentIdentityProvider(agentId).overrideWith((ref) async => null),
+              taskAgentResolvedSetupProvider(
+                agentId,
+              ).overrideWith((ref) async => resolvedSetup()),
+              agentTokenUsageSummariesProvider(
+                agentId,
+              ).overrideWith((ref) async => const []),
+              relationshipAgentServiceProvider.overrideWithValue(agentService),
+              relationshipBriefingDisclosureProvider(
+                relationshipId,
+              ).overrideWith((ref) async => null),
+              relationshipRepositoryProvider.overrideWithValue(repository),
+              contactLauncherProvider.overrideWithValue(
+                _FakeContactLauncher(launchable: const {}),
+              ),
+              pendingInteractionStoreProvider.overrideWithValue(store),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(statusText(tester), 'Last run failed · just now');
+
+        current = now.add(const Duration(seconds: 5));
+        await tester.pump(const Duration(seconds: 5));
+        expect(statusText(tester), 'Last run failed · 1 min ago');
+      });
+    });
+
     testWidgets('the band wears its colour as a dot beside its word, centred '
         'on the first line', (tester) async {
       await pump(tester, checkIns: onTrackCheckIns, current: report());

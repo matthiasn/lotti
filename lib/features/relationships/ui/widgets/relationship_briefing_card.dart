@@ -433,8 +433,15 @@ class _RelationshipBriefingCardState
     final health = report == null
         ? null
         : relationshipHealthMetricsFromReport(report);
-    if (report != null) {
-      _armAgeTick(report.createdAt);
+    // The status line ages from whichever timestamp it is showing: the
+    // briefing's on the reading faces, the last wake's on the failed face —
+    // armed from the other one, "just now" would outlive its minute.
+    final aged = switch (cardState) {
+      RelationshipAgentCardState.failed => state?.lastWakeAt,
+      _ => report?.createdAt,
+    };
+    if (aged != null) {
+      _armAgeTick(aged);
     } else {
       _ageTick?.cancel();
     }
