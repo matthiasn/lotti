@@ -4,6 +4,104 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.13]
+
+### Added
+
+- **Prepare chat audio automatically.** An optional checkbox in Speech settings
+  prepares replies locally, so they can be ready sooner when you tap play.
+- **The check-in composer asks before throwing away unsaved words.** Closing
+  it — with Cancel, the close button or the back gesture — while it holds
+  text you have not saved, or while a recording is still running, now asks
+  first and names what would be lost. Confirming discards the recording as
+  well, instead of leaving it running behind the closed sheet. An untouched
+  composer still closes at once.
+
+### Changed
+
+- **Logging a check-in with someone is one screen now, and dictating happens
+  inside it.** The People page used to ask "write or record?" first, open a
+  form, push a separate recorder over it, and only then show the words. The
+  new composer opens straight on "What did you talk about?" with a Dictate
+  button inside the field. Recording, transcribing, the finished transcript,
+  and the two things that can go wrong — a refused microphone, or a
+  transcript that never arrived — all appear in place of the text, so you
+  never leave what you are writing. Each failure card is titled with the
+  next step ("Allow microphone access", "Try again, or type it") and offers
+  Type instead beside one retry; a missing transcript can be asked for again
+  without recording again, and the audio stays in the journal either way.
+  Re-record asks before replacing a transcript you have edited. How you
+  connected, when (in your clock format) and for how long are one row of
+  chips; feeling, topics and "next time" wait under More, whose row says
+  what is set ("Good · 2 topics · next time noted"). Save is always in view,
+  and when it is held it says why. On a phone with the keyboard up, the bar
+  slims to a summary and a short Save. On a desktop the field is focused as
+  the composer opens, and ⌘↩ (Ctrl+↩ elsewhere) saves.
+- **The person page's Briefing card has one status line and one clear next
+  step.** What the agent is doing now reads on the line under the title —
+  "Thriving · as of 3 h ago" with the health band's colour dot, "Writing the
+  briefing…", "Last run failed · 19 min ago", "Out of date" beside the
+  briefing's age — with the state's colour on the state word alone, instead
+  of being spread across pills and the footer. The footer keeps one quiet
+  action on the left (Log check-in, or See activity while writing or after a
+  failure) and one primary on the right, every button a full touch target.
+  An expanded briefing says what it was written from: your check-ins, never
+  a phone number or an email. The cadence and health pills already shown in
+  the page header are no longer repeated on the card, and a person without
+  an agent gets a neutral badge instead of the AI sparkle.
+- **The check-in composer and the Briefing card work better with screen
+  readers and large text.** At large text sizes the composer's header keeps
+  its whole title and shortens its status line a word at a time, keeping the
+  person's name; captions shed a segment at a time instead of slicing a
+  word; and when the footer buttons stack, Save leads. A failure is
+  announced once, by its card; a landed transcript is announced once, not on
+  every keystroke; the recorder's clock reads as "23 seconds"; a held Save
+  says why it is held; the chosen feeling carries a check mark as well as
+  its colour. The Briefing card announces its state changes — including a
+  briefing that is being written, which was previously never announced —
+  and stays quiet while its age ticks on.
+- **The system health report can now say why transactions waited.** Slow
+  statements are listed per database instead of merged across all of them,
+  each is attributed to the code that issued it rather than to the shared
+  transaction wrapper, and a statement that queued behind others shows how
+  deep the queue was when it started. A failed agent wake is also logged with
+  its kind and the workflow's own reason instead of a bare error type, so the
+  report can tell a missing template from a network error.
+- **The sync log no longer reports leftover sequence reservations as errors on
+  every launch.** The start-up audit still records them, at informational
+  level, so real sync failures are no longer buried under the same line
+  repeated once per app start.
+
+### Fixed
+
+- **Task agents respect checkmarks you approve in chat.** Approved changes now
+  retain their human approval history, so background updates no longer propose
+  reversing them just because the task notes lack matching evidence.
+- **Task agents distinguish unchanged updates from real progress more clearly.**
+  Reports focus on the work itself, with less narration about agent proposals,
+  and checklist guidance avoids repeating a goal alongside its concrete steps.
+- **Relationship briefings wait for AI settings to load.** Requesting a
+  briefing no longer fails while its default profile or relationship data is
+  still loading.
+- **Spoken check-ins no longer start overlapping recordings.** Transcription
+  uses your default inference profile without choosing another model or
+  falling back to a different provider.
+- **Person photos can be dragged vertically while zoomed.** The crop surface
+  keeps the surrounding sheet from stealing the pan gesture.
+- **Scheduled agent wakes could silently skip a scan after a relationship
+  came due.** When the relationship agent armed a check-in reminder it nudged
+  the wake scheduler from inside its own database write, and the scan that
+  followed ran against a transaction that had already closed. Every
+  maintenance step in that scan then failed at once and the due wake waited
+  for the next hourly poll. The nudge now fires after the write has committed,
+  and the scheduler runs every scan on its own footing so no caller can trip it
+  this way again.
+- **A stalled screenshot tool no longer leaves the app minimized indefinitely.**
+  Screenshot capture on Linux and macOS now times out even when the tool keeps
+  its output streams open, and restores the app window.
+- **Loading spinners and placeholder shimmers hold still under the system's
+  reduced-motion setting.**
+
 ## [1.1.12]
 
 ### Added
