@@ -406,12 +406,16 @@ Future<RelationshipCadenceDerivation> deriveEvalCadence(
 }
 
 /// Renders the world's FACTS block through the production renderer.
+///
+/// Pass [derivation] when the caller already derived the cadence for [now],
+/// so both reads describe the same wake.
 Future<String> renderEvalFacts(
   RelationshipEvalWorld world, {
   DateTime? now,
+  RelationshipCadenceDerivation? derivation,
 }) async {
   final at = now ?? relationshipEvalNow;
-  final derivation = await deriveEvalCadence(world, now: at);
+  derivation ??= await deriveEvalCadence(world, now: at);
   return const RelationshipFactsRenderer().render(
     relationship: world.relationship,
     derivation: derivation,

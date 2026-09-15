@@ -375,6 +375,7 @@ RelationshipAgentEvalFailureCategory classifyRelationshipAgentResult({
   required RelationshipAgentEvalScenario scenario,
   required List<RelationshipAgentEvalToolCall> toolCalls,
   required String assistantContent,
+  Set<int> plainReplyFallbackExchanges = const {},
 }) {
   if (scenario.expectsNoToolCalls && toolCalls.isNotEmpty) {
     return RelationshipAgentEvalFailureCategory.noOpViolated;
@@ -414,6 +415,13 @@ RelationshipAgentEvalFailureCategory classifyRelationshipAgentResult({
         );
         if (!validBand || !validTexts) {
           return RelationshipAgentEvalFailureCategory.invalidToolArguments;
+        }
+        // The strategy rejects a band outside the wake's sentiment bound,
+        // which drops the briefing — a verdict production would not publish.
+        final allowedBands = scenario.allowedHealthBands;
+        if (allowedBands != null &&
+            !allowedBands.any((allowed) => allowed.name == band)) {
+          return RelationshipAgentEvalFailureCategory.healthBandMismatch;
         }
         // Band names are field values, never prose. The strategy bans only
         // the UNMISTAKABLE camelCase identifiers — `steady` or `strained`
@@ -534,14 +542,33 @@ RelationshipAgentEvalFailureCategory classifyRelationshipAgentResult({
     return RelationshipAgentEvalFailureCategory.unexpectedToolCall;
   }
 
+  final interactiveExchanges = <int>{
+    if (scenario.pendingUserMessage != null) 0,
+    for (final (index, _) in scenario.followUpUserMessages.indexed) index + 1,
+  };
+  for (final exchangeIndex in interactiveExchanges) {
+    final hasReply = toolCalls.any(
+      (call) =>
+          call.exchangeIndex == exchangeIndex &&
+          call.name == RelationshipAgentToolNames.replyToUser,
+    );
+    if (!hasReply && !plainReplyFallbackExchanges.contains(exchangeIndex)) {
+      return RelationshipAgentEvalFailureCategory.missingExpectedToolCall;
+    }
+  }
+
   for (final expected in scenario.expectedToolCalls) {
     final matching = toolCalls
         .where((call) => call.name == expected.name)
         .toList();
-    if (matching.isEmpty) {
+    final coveredByInteractiveReplyCheck =
+        expected.name == RelationshipAgentToolNames.replyToUser &&
+        expected.expectedArgumentsSubset.isEmpty;
+    if (matching.isEmpty && !coveredByInteractiveReplyCheck) {
       return RelationshipAgentEvalFailureCategory.missingExpectedToolCall;
     }
-    if (expected.expectedArgumentsSubset.isNotEmpty &&
+    if (matching.isNotEmpty &&
+        expected.expectedArgumentsSubset.isNotEmpty &&
         !matching.any(
           (call) => _containsExpectedValues(
             call.jsonObjectArguments ?? const {},
@@ -715,6 +742,29 @@ bool _matchesExpectedValue(Object? actual, Object? expected) {
 String relationshipAgentEvalWakeRunKey(String modelId, String scenarioId) =>
     'relationship-eval:$scenarioId:$modelId';
 
+/// Whether production would issue its focused reply recovery for this
+/// interactive exchange.
+bool relationshipAgentEvalNeedsForcedReply({
+  required RelationshipAgentEvalScenario scenario,
+  required List<RelationshipAgentEvalToolCall> toolCalls,
+  required String assistantContent,
+  required int exchangeIndex,
+}) {
+  final isInteractiveExchange = exchangeIndex == 0
+      ? scenario.pendingUserMessage != null
+      : exchangeIndex <= scenario.followUpUserMessages.length;
+  if (!isInteractiveExchange || assistantContent.trim().isNotEmpty) {
+    return false;
+  }
+  return !toolCalls.any((call) {
+    final message = call.jsonObjectArguments?['message'];
+    return call.exchangeIndex == exchangeIndex &&
+        call.name == RelationshipAgentToolNames.replyToUser &&
+        message is String &&
+        message.trim().isNotEmpty;
+  });
+}
+
 class RelationshipAgentInferenceEvalRunner {
   RelationshipAgentInferenceEvalRunner({
     required this.provider,
@@ -781,6 +831,7 @@ class RelationshipAgentInferenceEvalRunner {
 
     try {
       InferenceUsage? usage;
+      final plainReplyFallbackExchanges = <int>{};
       Future<void> exchange(String message) async {
         final turnUsage = await conversationRepository.sendMessage(
           conversationId: conversationId,
@@ -816,11 +867,41 @@ class RelationshipAgentInferenceEvalRunner {
         }
       }
 
-      strategy.beginExchange(0);
-      await exchange(scenario.facts);
+      Future<void> runExchange({
+        required int exchangeIndex,
+        required String message,
+      }) async {
+        strategy.beginExchange(exchangeIndex);
+        final messagesBefore = manager?.messages.length ?? 0;
+        await exchange(message);
+        final assistantContent = _assistantContent(
+          manager,
+          startAt: messagesBefore,
+        );
+        final hasReply = strategy.toolCalls.any(
+          (call) =>
+              call.exchangeIndex == exchangeIndex &&
+              call.name == RelationshipAgentToolNames.replyToUser,
+        );
+        if (!hasReply && assistantContent.trim().isNotEmpty) {
+          plainReplyFallbackExchanges.add(exchangeIndex);
+        }
+        if (relationshipAgentEvalNeedsForcedReply(
+          scenario: scenario,
+          toolCalls: strategy.toolCalls,
+          assistantContent: assistantContent,
+          exchangeIndex: exchangeIndex,
+        )) {
+          await exchange(relationshipReplyRequiredInstruction);
+        }
+      }
+
+      await runExchange(exchangeIndex: 0, message: scenario.facts);
       for (final (index, followUp) in scenario.followUpUserMessages.indexed) {
-        strategy.beginExchange(index + 1);
-        await exchange(followUp);
+        await runExchange(
+          exchangeIndex: index + 1,
+          message: composeRelationshipPendingUserMessage(followUp),
+        );
       }
 
       final assistantContent = _assistantContent(manager);
@@ -834,6 +915,7 @@ class RelationshipAgentInferenceEvalRunner {
           scenario: scenario,
           toolCalls: strategy.toolCalls,
           assistantContent: assistantContent,
+          plainReplyFallbackExchanges: plainReplyFallbackExchanges,
         ),
         inputTokens: usage?.inputTokens,
         outputTokens: usage?.outputTokens,
@@ -857,9 +939,10 @@ class RelationshipAgentInferenceEvalRunner {
     }
   }
 
-  String _assistantContent(ConversationManager? manager) {
+  String _assistantContent(ConversationManager? manager, {int startAt = 0}) {
     if (manager == null) return '';
     return manager.messages
+        .skip(startAt)
         .map(
           (message) => message.mapOrNull(assistant: (m) => m.content) ?? '',
         )

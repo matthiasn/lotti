@@ -18,6 +18,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
+import 'package:lotti/features/relationships/workflow/relationship_facts_renderer.dart';
 
 import 'relationship_agent_eval_fixtures.dart';
 import 'relationship_agent_spec.dart';
@@ -57,6 +58,7 @@ class RelationshipAgentEvalScenario {
     this.forbiddenToolNames = const [],
     this.expectsNoToolCalls = false,
     this.expectedHealthBands = const {},
+    this.allowedHealthBands,
     this.expectedAdTones = const {},
     this.forbiddenAdTones = const {},
     this.requiredReportTermGroups = const [],
@@ -98,6 +100,11 @@ class RelationshipAgentEvalScenario {
   /// Bands the FACTS can defensibly support. Empty means unconstrained.
   final Set<RelationshipHealthBand> expectedHealthBands;
 
+  /// The sentiment bound production enforces on this wake, computed by the
+  /// production `relationshipHealthBandConstraint`. Null when no check-in in
+  /// the window carries a user-set sentiment.
+  final Set<RelationshipHealthBand>? allowedHealthBands;
+
   /// Tones the banner must / must not use.
   final Set<NudgeTone> expectedAdTones;
   final Set<NudgeTone> forbiddenAdTones;
@@ -133,8 +140,8 @@ String composeRelationshipWakeMessage({
   var message = facts;
   if (pendingUserMessage != null) {
     message =
-        '$message\n\n$relationshipPendingUserMessageHeader\n'
-        '$pendingUserMessage';
+        '$message\n\n'
+        '${composeRelationshipPendingUserMessage(pendingUserMessage)}';
   }
   if (reportRefresh) {
     message = '$message\n\n$relationshipReportRefreshInstruction';
@@ -263,13 +270,14 @@ buildRelationshipAgentEvalScenarios() async {
     List<String> forbiddenAssistantContentTerms = const [],
     List<String> forbiddenAssistantContentClaims = const [],
   }) async {
+    final derivation = await deriveEvalCadence(world);
     scenarios.add(
       RelationshipAgentEvalScenario(
         id: id,
         policyRuleId: policyRuleId,
         description: description,
         facts: composeRelationshipWakeMessage(
-          facts: await renderEvalFacts(world),
+          facts: await renderEvalFacts(world, derivation: derivation),
           pendingUserMessage: pendingUserMessage,
           reportRefresh: reportRefresh,
         ),
@@ -281,6 +289,10 @@ buildRelationshipAgentEvalScenarios() async {
         forbiddenToolNames: forbiddenToolNames,
         expectsNoToolCalls: expectsNoToolCalls,
         expectedHealthBands: expectedHealthBands,
+        allowedHealthBands: relationshipHealthBandConstraint(
+          checkIns: world.checkIns,
+          cadenceStatus: derivation.status,
+        )?.bands,
         expectedAdTones: expectedAdTones,
         forbiddenAdTones: forbiddenAdTones,
         requiredReportTermGroups: requiredReportTermGroups,

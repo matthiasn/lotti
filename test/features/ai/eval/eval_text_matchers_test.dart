@@ -52,6 +52,42 @@ void main() {
       final text = 'we cannot say it was ${'y' * 20} delivered';
       expect(containsAffirmativeReportClaim(text, 'delivered'), isFalse);
     });
+
+    test('thin-evidence disclaimers do not become invented history', () {
+      expect(
+        containsAffirmativeReportClaim(
+          'There is nothing concrete to reference about what you discussed.',
+          'you discussed',
+        ),
+        isFalse,
+      );
+      expect(
+        containsAffirmativeReportClaim(
+          'The notes say you discussed the station repairs.',
+          'you discussed',
+        ),
+        isTrue,
+      );
+      expect(
+        containsAffirmativeReportClaim(
+          'Avoid assuming context: nothing was recorded about what you '
+              'discussed, so let him set the agenda.',
+          'you discussed',
+        ),
+        isFalse,
+      );
+    });
+
+    test('an unrelated nothing-concrete clause does not negate a claim', () {
+      expect(
+        containsAffirmativeReportClaim(
+          'Nothing concrete blocks this, but you discussed the station '
+              'repairs.',
+          'you discussed',
+        ),
+        isTrue,
+      );
+    });
   });
 
   group('negation is clipped to the claim sentence', () {

@@ -97,11 +97,16 @@ void main() {
     ),
   );
 
-  CheckInEntry checkIn(String id, DateTime at) => CheckInEntry(
+  CheckInEntry checkIn(
+    String id,
+    DateTime at, {
+    CheckInSentiment? sentiment,
+  }) => CheckInEntry(
     meta: meta(id, dateFrom: at),
-    data: const CheckInData(
+    data: CheckInData(
       relationshipId: relationshipId,
       interactionType: CheckInInteractionType.call,
+      sentiment: sentiment,
     ),
   );
 
@@ -572,6 +577,147 @@ void main() {
       contains('test-conv-id'),
     );
   });
+
+  test(
+    'the workflow rejects a report above the newest user sentiment',
+    () async {
+      stubGlmResolution();
+      when(
+        () => relationshipRepository.getAllCheckInsForRelationship(
+          relationshipId,
+        ),
+      ).thenAnswer(
+        (_) async => [
+          checkIn(
+            'c-1',
+            DateTime(2026, 8, 1, 18),
+            sentiment: CheckInSentiment.difficult,
+          ),
+        ],
+      );
+      // Recorded, not asserted inside the delegate: the pinned retry swallows
+      // every error, so an `expect` there could fail without failing the test.
+      final messages = <String>[];
+      var processedCalls = 0;
+      conversationRepository
+        ..maxDelegateCalls = 2
+        ..sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0,
+              strategy,
+            }) async {
+              messages.add(message);
+              final calls = messages.length;
+              await strategy!.processToolCalls(
+                toolCalls: [
+                  toolCall(
+                    RelationshipAgentToolNames.updateRelationshipReport,
+                    {...briefingArgs(), 'healthBand': 'thriving'},
+                  ),
+                  if (calls == 1)
+                    toolCall(
+                      RelationshipAgentToolNames.createRelationshipAd,
+                      adArgs(),
+                      id: 'call-2',
+                    ),
+                ],
+                manager: conversationManager,
+              );
+              processedCalls++;
+              return null;
+            };
+
+      final result = await run(
+        tokens: {relationshipEscalationWorkspaceKey('2026-08-08')},
+      );
+
+      expect(result.success, isTrue);
+      expect(result.reportUpdated, isFalse);
+      expect(upserts.whereType<AgentReportEntity>(), isEmpty);
+      expect(messages, hasLength(2));
+      // The wake's FACTS carry the bound; the retry is the bare pinned
+      // briefing instruction, and its out-of-range report is rejected too.
+      expect(messages.first, contains('needs attention, strained'));
+      expect(messages.last, contains('Call update_relationship_report now'));
+      expect(messages.last, isNot(contains('HEALTH BAND CONSTRAINT')));
+      expect(processedCalls, 2);
+    },
+  );
+
+  test(
+    'a lapsed cadence keeps needs attention publishable after a good rating',
+    () async {
+      stubGlmResolution();
+      when(
+        () => relationshipRepository.getAllCheckInsForRelationship(
+          relationshipId,
+        ),
+      ).thenAnswer(
+        (_) async => [
+          checkIn(
+            'c-1',
+            DateTime(2026, 8, 1, 18),
+            sentiment: CheckInSentiment.good,
+          ),
+        ],
+      );
+      final messages = <String>[];
+      conversationRepository
+        ..maxDelegateCalls = 1
+        ..sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0,
+              strategy,
+            }) async {
+              messages.add(message);
+              await strategy!.processToolCalls(
+                toolCalls: [
+                  toolCall(
+                    RelationshipAgentToolNames.updateRelationshipReport,
+                    {...briefingArgs(), 'healthBand': 'needsAttention'},
+                  ),
+                  toolCall(
+                    RelationshipAgentToolNames.createRelationshipAd,
+                    adArgs(),
+                    id: 'call-2',
+                  ),
+                ],
+                manager: conversationManager,
+              );
+              return null;
+            };
+
+      final result = await run(
+        tokens: {relationshipEscalationWorkspaceKey('2026-08-08')},
+      );
+
+      expect(messages.single, contains('- status: due'));
+      expect(messages.single, contains('thriving, steady, needs attention'));
+      expect(result.success, isTrue);
+      expect(result.reportUpdated, isTrue);
+      expect(
+        upserts
+            .whereType<AgentReportEntity>()
+            .single
+            .provenance[RelationshipReportProvenanceKeys.healthBand],
+        'needsAttention',
+      );
+    },
+  );
 
   group('the standing report head', () {
     /// One wake that publishes a briefing for the 2026-08-08 due day.

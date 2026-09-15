@@ -191,6 +191,33 @@ void main() {
       expect(lastResponse(), contains('healthBand'));
     });
 
+    test('rejects a valid band outside the rendered sentiment bound', () async {
+      final constrained = RelationshipAgentStrategy(
+        syncService: syncService,
+        agentId: 'relationship_agent:person-1',
+        threadId: 'thread-1',
+        runKey: 'run-1',
+        activeAdIds: const {},
+        allowedHealthBands: const {
+          RelationshipHealthBand.needsAttention,
+          RelationshipHealthBand.strained,
+        },
+      );
+
+      await constrained.processToolCalls(
+        toolCalls: [
+          _call(
+            name: RelationshipAgentToolNames.updateRelationshipReport,
+            args: _reportArgs(band: 'thriving'),
+          ),
+        ],
+        manager: manager,
+      );
+
+      expect(constrained.hasBriefing, isFalse);
+      expect(lastResponse(), contains('needsAttention|strained'));
+    });
+
     test('the camelCase band token is banned from prose, while ordinary '
         'English band words stay legal', () async {
       await strategy.processToolCalls(

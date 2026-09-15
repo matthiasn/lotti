@@ -663,13 +663,53 @@ removed:
 - **`RelationshipFactsRenderer` is the whole ground truth.** Bounded (last
   10 check-ins, 400-char narrative excerpts) and — the ADR 0041 §5 boundary
   — its `render` signature has **no channel parameter**, so contact
-  channels are structurally absent from model context, not filtered out.
-- **Four tools, accumulated then persisted once.** `reply_to_user`,
-  `update_relationship_report`, `create_relationship_ad`,
-  `snooze_relationship_ad` accumulate in the strategy; `persistOutputs`
-  writes one transaction, fenced on the person still existing and still
-  important. The briefing lands as an `AgentReportEntity` whose provenance
-  carries the health band + rationale + confidence
+  channels are structurally absent from model context, not filtered out. The
+  user-set sentiments in that window also emit the allowed health verdicts in
+  plain language (`relationshipHealthBandConstraint`): the newest rating sets
+  the bound — good/delightful allow thriving or steady, neutral allows steady
+  or needs attention, strained/difficult allow needs attention or strained —
+  and a positive newest rating additionally allows needs attention when the
+  cadence is due or an older rating in the window was strained or difficult.
+  Narrative may explain the verdict but cannot improve that deterministic
+  bound. The workflow passes the same allowed set into
+  `RelationshipAgentStrategy`, which rejects an out-of-range report call before
+  it can persist. The exact enum stays confined to the `healthBand` tool field
+  so it cannot leak into user-facing prose.
+- **Outputs accumulate, then persist once.** The contract requires visible
+  chat through `reply_to_user`. On an interactive wake, the workflow accepts
+  plain assistant content as a defensive visible-reply fallback and forces one
+  more inference when neither carrier contains an answer. On a scheduled wake,
+  plain assistant content remains an internal thought. Only the exact
+  `PENDING USER MESSAGE:` header, followed by its explicit reply requirement,
+  marks an interactive request; the rendered facts block is data and is never
+  itself a user request. Multi-turn eval follow-ups carry that same header and
+  each exchange must independently produce its own visible reply.
+  A pending message requires exactly one reply, and the same assistant
+  response must also carry every briefing, banner, snooze, and deferred task
+  proposal the rendered facts explicitly trigger. The conversation loop does
+  not continue after tool results (`getContinuationPrompt` returns null), so a
+  rejected call is not retried in-conversation; the workflow's only extra
+  inferences are its pinned retries for a required briefing, a required
+  banner, and a missing interactive reply. When nothing is triggered, no tool
+  runs; any plain completion is persisted only as an internal thought, never
+  as a user reply. The contract never creates work merely because a tool is
+  available.
+  A briefing is triggered when it is missing, a check-in is newer, cadence is
+  due, or the user explicitly requests a refresh.
+  `reply_to_user`, `update_relationship_report`, `create_relationship_ad`,
+  `snooze_relationship_ad`, and `create_and_link_task` accumulate in the
+  strategy; `persistOutputs` writes one transaction. Deletion is always fenced;
+  `important` and active status are fenced for automatic wakes, while chat and
+  explicit briefing requests may still persist their reply, briefing and
+  banner after unmarking because the user directly requested them. Deferred
+  task proposals are written only while the person is still important and
+  active, on every wake. Briefings cite relevant linked tasks with their
+  stored status. The health band follows the user's sentiment labels;
+  positive narrative cannot improve that verdict. Private narrative details
+  may inform a briefing, while banner copy excludes contact details, addresses,
+  diagnoses, health details, and third-party names. The briefing lands as an
+  `AgentReportEntity` whose
+  provenance carries the health band + rationale + confidence
   (`RelationshipReportProvenanceKeys`, parsed fail-closed by
   `relationship_health_metrics.dart`).
 - **The standing head advances by DUE DAY, not by wall clock.** Report rows

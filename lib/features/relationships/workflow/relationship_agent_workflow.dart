@@ -377,8 +377,8 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
     );
     if (interactive) {
       factsBlock =
-          '$factsBlock\n\n$relationshipPendingUserMessageHeader\n'
-          '$pendingUserMessage';
+          '$factsBlock\n\n'
+          '${composeRelationshipPendingUserMessage(pendingUserMessage)}';
     }
     if (reportRefresh) {
       factsBlock = '$factsBlock\n\n$relationshipReportRefreshInstruction';
@@ -434,6 +434,10 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       sourceCheckInIds: {
         for (final entry in relationshipCheckInWindow(checkIns)) entry.id,
       },
+      allowedHealthBands: relationshipHealthBandConstraint(
+        checkIns: checkIns,
+        cadenceStatus: derivation.status,
+      )?.bands,
     );
     final tools = [
       for (final tool in relationshipAgentTools)
@@ -568,9 +572,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
               agentId: agentId,
               runKey: runKey,
               threadId: threadId,
-              instruction:
-                  'The pending user message is still unanswered. Call '
-                  'reply_to_user now with your complete answer.',
+              instruction: relationshipReplyRequiredInstruction,
             ),
           );
         }

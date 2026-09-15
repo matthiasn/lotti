@@ -178,6 +178,142 @@ void main() {
     expect(facts, contains('sentiment(user-set)=good'));
   });
 
+  test('the newest negative user rating bounds the health band', () {
+    final facts = render(
+      checkIns: [
+        checkIn(
+          'newest',
+          DateTime(2026, 8, 14),
+          sentiment: CheckInSentiment.difficult,
+        ),
+        checkIn(
+          'older',
+          DateTime(2026, 8, 13),
+          sentiment: CheckInSentiment.good,
+        ),
+      ],
+    );
+
+    expect(
+      facts,
+      contains('HEALTH BAND CONSTRAINT (newest user-set sentiment=difficult)'),
+    );
+    expect(
+      facts,
+      contains('allowed health verdicts: needs attention, strained'),
+    );
+    expect(
+      facts,
+      contains('exact enum only in healthBand; never copy it into prose'),
+    );
+    expect(facts, isNot(contains('allowed FIELD VALUES: needsAttention')));
+    expect(facts, contains('narrative cannot improve this constraint'));
+  });
+
+  test('the newest positive user rating bounds the health band upward', () {
+    final facts = render(
+      checkIns: [
+        checkIn(
+          'newest',
+          DateTime(2026, 8, 14),
+          sentiment: CheckInSentiment.delightful,
+        ),
+        checkIn(
+          'older',
+          DateTime(2026, 8, 13),
+          sentiment: CheckInSentiment.good,
+        ),
+      ],
+    );
+
+    expect(
+      facts,
+      contains('HEALTH BAND CONSTRAINT (newest user-set sentiment=delightful)'),
+    );
+    expect(facts, contains('allowed health verdicts: thriving, steady\n'));
+  });
+
+  group('a positive newest rating keeps needs attention reachable', () {
+    CheckInEntry good(String id, DateTime at) =>
+        checkIn(id, at, sentiment: CheckInSentiment.good);
+
+    test('when the cadence has lapsed', () {
+      final facts = render(
+        checkIns: [good('newest', DateTime(2026, 6, 2))],
+        d: derivation(status: RelationshipCadenceStatus.due),
+      );
+
+      expect(
+        facts,
+        contains('allowed health verdicts: thriving, steady, needs attention'),
+      );
+    });
+
+    test('when an older rating in the window was strained or difficult', () {
+      final facts = render(
+        checkIns: [
+          good('newest', DateTime(2026, 8, 14)),
+          checkIn(
+            'hard',
+            DateTime(2026, 7, 31),
+            sentiment: CheckInSentiment.difficult,
+          ),
+        ],
+      );
+
+      expect(
+        facts,
+        contains('allowed health verdicts: thriving, steady, needs attention'),
+      );
+    });
+
+    test('but not for a hard rating that fell out of the window', () {
+      final facts = render(
+        checkIns: [
+          for (var day = 1; day <= relationshipCheckInLookback; day++)
+            good('good-$day', DateTime(2026, 8, day + 1)),
+          checkIn(
+            'outside-window',
+            DateTime(2026, 7, 31),
+            sentiment: CheckInSentiment.strained,
+          ),
+        ],
+      );
+
+      expect(facts, contains('allowed health verdicts: thriving, steady\n'));
+    });
+  });
+
+  test('an unrated check-in does not invent a health-band constraint', () {
+    final facts = render(
+      checkIns: [checkIn('unrated', DateTime(2026, 8, 14))],
+    );
+
+    expect(facts, isNot(contains('HEALTH BAND CONSTRAINT')));
+  });
+
+  test('an unrated newest check-in preserves the newest explicit rating', () {
+    final facts = render(
+      checkIns: [
+        checkIn('unrated', DateTime(2026, 8, 14)),
+        checkIn(
+          'rated',
+          DateTime(2026, 8, 13),
+          sentiment: CheckInSentiment.strained,
+        ),
+      ],
+    );
+
+    expect(
+      facts,
+      contains('HEALTH BAND CONSTRAINT (newest user-set sentiment=strained)'),
+    );
+    expect(
+      facts,
+      contains('allowed health verdicts: needs attention, strained'),
+    );
+  });
+
   test('guidance fields and the narrative excerpt ride each check-in', () {
     final facts = render(
       checkIns: [
