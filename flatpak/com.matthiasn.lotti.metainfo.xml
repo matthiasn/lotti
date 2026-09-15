@@ -40,6 +40,16 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.1.15" date="2026-09-15">
+      <description>
+        <p>Changed: the running-timer and recording indicators on the phone now float as one glass capsule above the navigation. They used to be two square-bottomed tabs drawn to sit on the old full-width bar; over the new floating navigation they hung in mid-air above the chips, in colours the rest of the bar no longer uses. A timer shows as a red dot with its elapsed time, a recording as the live level orb with its elapsed time, and both at once share the capsule. Tapping the timer opens its entry and tapping the recording reopens it, exactly as before, and the capsule reads the same over the classic tab bar. Nothing shows while nothing runs.</p>
+        <p>Changed: editing a saved check-in no longer offers Dictate. Once a check-in is text, it is edited as text, and the button no longer raises the question of what a recording would do to the words already there. A new check-in still offers Dictate, and a recording is added below anything already typed.</p>
+        <p>Changed: "Ask about this task" is now a compact Chat button beside Read more on the task's AI summary card, instead of a wide button on its own row below.</p>
+        <p>Fixed: calls and meetings logged as check-ins now show up on the Day view. A check-in is time spent with someone, but the Day timeline never asked for check-ins, so a tracked 1 h 15 call was missing however long it ran. A check-in with a length now sits on the recorded lane under the person's name, in their category's colour. One saved with No duration stays off it, like any instant note.</p>
+        <p>Fixed: the check-in text field drew two frames while typing. A second outline appeared inside the field's own border as soon as the cursor was in it. The field now shows one.</p>
+        <p>Fixed: generating a coding prompt no longer stalls for seconds the first time after the app starts. When an on-device speech provider was configured, tapping a text skill such as Generate coding prompt first waited while the app verified every downloaded speech model on disk, a check that reads the whole model file and can take several seconds for Whisper-sized models. The picker now only waits for that check when a speech model is actually among the choices, so text and image skills open immediately.</p>
+      </description>
+    </release>
     <release version="1.1.14" date="2026-09-15">
       <description>
         <p>Changed: task agents get clearer instructions for reports and checklist updates. Custom report layouts now explicitly account for conditional sections, and checklist updates must use the item's existing ID. Routine investigation follow-ups no longer imply a need to reserve planner time.</p>
