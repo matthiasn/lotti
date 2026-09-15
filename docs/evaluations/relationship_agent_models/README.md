@@ -8,14 +8,9 @@ the production contract itself:
 `test/features/agents/eval/relationship/support/relationship_agent_spec.dart`
 re-exports it and keeps the policy matrix the scenarios are derived from.
 
-**The target model is `deepseek-v4-flash-0731`.** It is the viable option
-on cost for an agent that may run for many tracked people every day, so
-the contract is tuned until it works well there — stronger models are the
-control group, not the goal. Use the **dated snapshot**, never the
-floating `deepseek-v4-flash` alias: the goal matrix caught that alias
-returning five consecutive `HTTP 503`, and a run against a dead alias is
-indistinguishable from a model that fails every case. Pinning carries a
-staleness cost, and that is the cheaper of the two.
+The current candidates are `deepseek-v4.1-flash:speed` and
+`glm-5.3-flash:speed`. The routing suffix is part of the evaluated model id:
+the checked-in results below use Melious's `speed` flavor throughout.
 
 ## What is measured
 
@@ -68,13 +63,15 @@ world (due vs ok, the REQUIRED-banner line, the quiet window, staleness,
 the baseline lapse line) so drift breaks offline before a live run burns
 money on stale expectations.
 
-The classifier mirrors `RelationshipAgentStrategy` exactly — every shape
-rule it enforces is one the runtime rejects in-conversation (band enum,
+The classifier mirrors the shape rules `RelationshipAgentStrategy` rejects
+in-conversation (band enum,
 required briefing fields, banner tone/animation catalogs, the
 explicit-offset snooze instant, the active-adId allow-list, one reply and
 one banner per wake, evidence IDs and the three-task limit), and where the runtime is lenient the classifier is
 too (an unknown accent defaults to `calm`). Stricter than the code under
-test is the same defect as looser: both measure the harness.
+test is the same defect as looser: both measure the harness. Interactive
+wakes also use production's visible plain-response fallback and its focused
+retry when the first response leaves the pending user message unanswered.
 
 ## Fixture world
 
@@ -92,18 +89,37 @@ pressure the banner scenarios measure restraint under.
 
 ## Running
 
-Offline (free, runs in CI like any test):
+The single-call LottiGym command compiles the catalog, runs all 28 scenarios
+three times with four concurrent workers, writes the HTML report, and appends
+the complete run accounting to `docs/evaluations/lotti-gym-runs.jsonl`:
+
+```bash
+python3 tool/lotti_gym.py assess \
+  --model deepseek-v4.1-flash:speed \
+  --suites relationships \
+  --samples 3 \
+  --batch-size 1 \
+  --workers 4 \
+  --no-judge
+```
+
+Replace the model id with `glm-5.3-flash:speed` for GLM. The overall report
+uses `review_required` because the command intentionally selects one suite;
+the relationship suite's own `checks_passed` verdict is the fitness result.
+
+Offline contract tests are free and run in CI like any test:
 
 ```bash
 fvm flutter test test/features/agents/eval/relationship/
 ```
 
-Live (costs money; everything is manual, no CI runs these):
+The lower-level live Flutter entry point remains available for a filtered
+scenario probe:
 
 ```bash
 LOTTI_RELATIONSHIP_AGENT_EVAL_LIVE=1 \
 RELATIONSHIP_AGENT_EVAL_API_KEY=$RELATIONSHIP_EVALS_MELIOUS_KEY \
-RELATIONSHIP_AGENT_EVAL_MODELS=deepseek-v4-flash-0731 \
+RELATIONSHIP_AGENT_EVAL_MODELS=deepseek-v4.1-flash:speed \
 fvm flutter test test/features/agents/eval/relationship/ \
   --tags eval-live --plain-name 'relationship-agent inference report'
 ```
@@ -120,8 +136,7 @@ RELATIONSHIP_AGENT_EVAL_API_KEY=$RELATIONSHIP_EVALS_MELIOUS_KEY \
 scripts/relationship_agent_eval_matrix.sh 5 4    # 5 samples, 4 at a time
 ```
 
-It defaults to `deepseek-v4-flash-0731` (the target) plus `glm-5.2` (the
-control group), and writes
+It writes
 `eval_artifacts/relationship_agent_<stamp>/relationship_agent_merged_report.md`
 with the leaderboard, the scenario x model matrix, every failure and the
 cost table. The merge is `tool/agent_eval_report.dart`, shared with the goal
@@ -132,8 +147,8 @@ artifact `kind`, and refuses to merge two suites into one table.
 deliberately: relationship-eval spend runs on its own key so it bills
 separately from other eval work. Optional knobs:
 `RELATIONSHIP_AGENT_EVAL_MODELS` (comma-separated; defaults to
-`deepseek-v4-flash-0731`), `RELATIONSHIP_AGENT_EVAL_SCENARIOS` (id
-filter),
+`deepseek-v4.1-flash:speed,glm-5.3-flash:speed`),
+`RELATIONSHIP_AGENT_EVAL_SCENARIOS` (id filter),
 `RELATIONSHIP_AGENT_EVAL_TEMPERATURE` (default 0, the workflow's own
 setting), `RELATIONSHIP_AGENT_EVAL_WAKES_PER_DAY` (default 1),
 `RELATIONSHIP_AGENT_EVAL_JSON` / `RELATIONSHIP_AGENT_EVAL_MARKDOWN`
@@ -150,9 +165,21 @@ return empty content with `finish_reason: length`, indistinguishable from
 a broken one. A 401 is an authentication failure (missing, invalid or
 expired key), never throttling — that arrives as a 429.
 
-The task-proposal policy rows were added after the historical live reports
-below. Offline tests cover their classifier and production contract; these
-changes have not yet been measured in a new live model matrix.
+## Current full relationship results — 2026-09-15
+
+Both models passed every exercise using the production system prompt, tool
+definitions, facts renderer, pending-message marker, and focused reply
+recovery. Each run covers 28 scenarios with three samples, for 84 exercises.
+
+| Model | Result | Failures | Requests | Full price | Wall time | Summed exercise time |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `deepseek-v4.1-flash:speed` | 84 passed of 84 exercises | 0 | 87 | €0.19392938 | 367.854 s | 804.017 s |
+| `glm-5.3-flash:speed` | 84 passed of 84 exercises | 0 | 91 | €0.0489125 | 412.887 s | 1,017.196 s |
+
+The DeepSeek run is `20260915T195324Z-47a90c3ce0fd` at source commit
+`47b34f2931`. The GLM run is `20260915T200045Z-8e860162990f` at source
+commit `08b5de047b`; the only intervening commit records the DeepSeek ledger
+row, so both runs use the same production prompt and context code.
 
 ## Cost (observed, not a target)
 
@@ -176,6 +203,3 @@ real monthly figure is bounded above by the extrapolation.
 - **Multi-language scenarios** — the contract requires visible text in
   the user's language; the matchers already carry German and Spanish
   negation cues, but every scenario here speaks English.
-- **No model results yet.** The first `deepseek-v4-flash-0731` matrix run
-  is pending a dedicated API key; record results here the way the goal
-  README does, with pass matrices and the cost table per run.

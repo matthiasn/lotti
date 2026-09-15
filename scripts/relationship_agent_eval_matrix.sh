@@ -42,11 +42,9 @@ TEST_PATH="test/features/agents/eval/relationship/relationship_agent_eval_live_t
 # the name still reads as a date while collisions are impossible.
 RUN_STAMP="$(date +%Y%m%d-%H%M%S)"
 
-# The target model first, then the control group. Both are PINNED dated
-# snapshots: the floating `deepseek-v4-flash` alias returned five
-# consecutive HTTP 503 during the goal matrix, and a run against a dead
-# alias looks like a model that fails every case.
-MODELS="${RELATIONSHIP_AGENT_EVAL_MODELS:-deepseek-v4-flash-0731 glm-5.2}"
+# Keep the default matrix aligned with the candidates and routing flavor used
+# by LottiGym. The suffix is part of the Melious model id.
+MODELS="${RELATIONSHIP_AGENT_EVAL_MODELS:-deepseek-v4.1-flash:speed glm-5.3-flash:speed}"
 # Empty fields are dropped rather than passed on: a comma is a non-whitespace
 # separator, so "a,,b" splits into three, and the Dart runner's `_envList`
 # discards the blank one too.
