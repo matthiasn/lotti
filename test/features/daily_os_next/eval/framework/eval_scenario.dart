@@ -602,10 +602,13 @@ const _blockedChain = EvalScenario(
 /// What it measures now is the residual gap. ADR 0043 resolves **one hop**, so
 /// the decided leaf arrives naming `task-b-middle` as its blocker — and
 /// nothing reveals that *that* task is itself blocked by `task-a-root`, whose
-/// id never reaches the prompt. Keeping the twin's ground truth means this
-/// scenario still fails `requiredWorkPlaced`, and that failure is the finding:
-/// it is the measured cost of hiding the corpus, not a model defect. Weakening
-/// it to match what the model can see would delete the signal.
+/// id never reaches the prompt. The twin's ground truth is kept, but
+/// `requiredWorkPlaced` is not applicable here: the root is unreferenceable, so
+/// placing it would fail `noFabricatedTaskIds`, and scoring its absence failed
+/// every sample of every model for the fixture's blind spot rather than theirs.
+/// The detail still names the unshown root, so the cost of hiding the corpus
+/// stays visible as the gap between the pair — scored on the twin, unscored
+/// here — without being charged to the model.
 const _blockedWithoutCorpus = EvalScenario(
   id: 'blockedWithoutCorpus',
   intent:
@@ -620,7 +623,8 @@ const _blockedWithoutCorpus = EvalScenario(
   // visibility: if this scenario asked less of the model, an identical plan
   // would be graded differently in the two reports and the rate gap could no
   // longer be attributed to the corpus being hidden — which is the entire
-  // point of the pair.
+  // point of the pair. The scorer, not the fixture, decides that an unshown id
+  // cannot be required of the model.
   requiredTaskIds: {'task-a-root'},
   includeCapture: false,
 );

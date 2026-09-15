@@ -369,8 +369,12 @@ Closed does not skip the drafting wake. That wake may still need to create an
 approved task and must still raise a typed status for selected work that no
 longer fits. Its coherent terminal result is therefore an empty persisted plan,
 not an absent plan and not a forced retry. Empty plans remain invalid while the
-window is open. After the window closes they are valid only over an empty
-baseline; a non-empty baseline must be preserved block-for-block.
+window is open, and the drafting rules and the `draft_day_plan` `blocks` schema
+both say so: with nothing responsibly placeable (no work asked for, or all of it
+blocked or over capacity) the model sends one `buffer` block whose `note` says
+why. Before that was stated, models sent `blocks: []`, took the rejection, and
+retried with invented work. After the window closes empty plans are valid only
+over an empty baseline; a non-empty baseline must be preserved block-for-block.
 
 The rules pair it with what to do when the work does not fit: decide visibly —
 leave work out and name it, or place a task for less than its estimate and say

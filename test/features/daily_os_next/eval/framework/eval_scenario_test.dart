@@ -1,8 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 
+import 'eval_constraints.dart';
+import 'eval_models.dart';
 import 'eval_scenario.dart';
 
 /// A fixture that lies about what it contains is worse than no fixture: it
@@ -273,6 +276,31 @@ void main() {
       isNull,
       reason: 'a scenario with a capture shows the model everything',
     );
+  });
+
+  test('the hidden root is not scored as ignored on the capture-less twin', () {
+    // task-a-root never reaches the blockedWithoutCorpus prompt, so placing
+    // it would read as a fabricated id. Scoring its absence as a model miss
+    // failed every sample of every model for the fixture's own blind spot.
+    // The twin, which renders the corpus, must still hold the model to it.
+    final plan = [
+      PlannedBlock(
+        id: 'buffer',
+        categoryId: 'cat-work',
+        startTime: DateTime(2026, 7, 18, 9),
+        endTime: DateTime(2026, 7, 18, 10),
+        title: 'Nothing here can start yet',
+        type: PlannedBlockType.buffer,
+      ),
+    ];
+    EvalConstraintResult score(String id) => scoreRequiredWorkPlaced(
+      EvalRunOutcome(inputs: byId(id).inputsFor(planDate), blocks: plan),
+    );
+
+    final hidden = score('blockedWithoutCorpus');
+    expect(hidden.isApplicable, isFalse);
+    expect(hidden.detail, contains('task-a-root'));
+    expect(score('blockedChain').passed, isFalse);
   });
 
   test('overCommitted genuinely does not fit', () {
