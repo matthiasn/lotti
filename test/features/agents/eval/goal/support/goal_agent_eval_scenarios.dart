@@ -813,7 +813,17 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
     requiredToolArgumentTermGroups: const {
       GoalAgentToolNames.createGoalAd: [
         // The failing dimension is steps: the copy must sell movement.
-        ['walk', 'stride', 'trail', 'path', 'step', 'hike', 'move', 'lace'],
+        [
+          'walk',
+          'stride',
+          'trail',
+          'path',
+          'step',
+          'hike',
+          'move',
+          'lace',
+          'lap',
+        ],
       ],
     },
     // Only the leakage inventory is banned. The satisfied dimension MAY

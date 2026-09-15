@@ -43,7 +43,11 @@ void main() {
     );
     expect(
       goalAgentSystemPrompt,
-      contains('cover every criterion in each applicable report section'),
+      contains('write exact FACTS values in their sections'),
+    );
+    expect(
+      goalAgentSystemPrompt,
+      contains('Before stopping, complete every REQUIRED action above'),
     );
   });
 
