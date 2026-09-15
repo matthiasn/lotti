@@ -538,7 +538,14 @@ class GoalCompactionEvalRunner {
         for (var sample = 1; sample <= samples; sample++) {
           log?.call('${fixture.id} × ${strategy.id} × s$sample');
           cases.add(
-            await _runCase(fixture, strategy.id, sample, facts, context),
+            await _runCase(
+              fixture,
+              strategy.id,
+              sample,
+              facts,
+              context,
+              statusTransitioned: derivation.facts.statusTransitioned,
+            ),
           );
         }
       }
@@ -562,8 +569,9 @@ class GoalCompactionEvalRunner {
     String strategyId,
     int sample,
     String facts,
-    GoalUserVoiceContext context,
-  ) async {
+    GoalUserVoiceContext context, {
+    required bool statusTransitioned,
+  }) async {
     final stopwatch = Stopwatch()..start();
     final strategy = GoalAgentEvalStrategy();
     final conversationId = conversationRepository.createConversation(
@@ -589,7 +597,11 @@ class GoalCompactionEvalRunner {
           ),
     ];
 
-    Future<InferenceUsage?> exchange(int index, String message) {
+    Future<InferenceUsage?> exchange(
+      int index,
+      String message, {
+      bool forceReport = false,
+    }) {
       strategy.beginExchange(index);
       return conversationRepository.sendMessage(
         conversationId: conversationId,
@@ -597,7 +609,23 @@ class GoalCompactionEvalRunner {
         model: modelId,
         provider: provider,
         inferenceRepo: inferenceRepository,
-        tools: tools,
+        tools: forceReport
+            ? [
+                for (final tool in tools)
+                  if (tool.function.name == GoalAgentToolNames.updateGoalReport)
+                    tool,
+              ]
+            : tools,
+        toolChoice: forceReport
+            ? const ChatCompletionToolChoiceOption.tool(
+                ChatCompletionNamedToolChoice(
+                  type: ChatCompletionNamedToolChoiceType.function,
+                  function: ChatCompletionFunctionCallOption(
+                    name: GoalAgentToolNames.updateGoalReport,
+                  ),
+                ),
+              )
+            : null,
         temperature: temperature,
         strategy: strategy,
         consumptionAgentId: 'goal_agent:compaction-eval',
@@ -612,6 +640,32 @@ class GoalCompactionEvalRunner {
     InferenceUsage? probeUsage;
     try {
       wakeUsage = await exchange(0, facts);
+      // Production's pinned retry: a status-transition wake whose response
+      // carried no report gets one forced update_goal_report call (named tool
+      // choice, report tool only). Scoring the first response alone failed
+      // wakes the app would have recovered. Like production, a failed retry
+      // leaves the partial wake standing.
+      if (statusTransitioned &&
+          !strategy.toolCalls.any(
+            (call) =>
+                call.exchangeIndex == 0 &&
+                call.name == GoalAgentToolNames.updateGoalReport,
+          )) {
+        try {
+          final retryUsage = await exchange(
+            0,
+            goalStatusTransitionReportInstruction,
+            forceReport: true,
+          );
+          if (retryUsage != null) {
+            wakeUsage = wakeUsage == null
+                ? retryUsage
+                : wakeUsage.merge(retryUsage);
+          }
+        } on Object {
+          // Best-effort, exactly as `GoalAgentWorkflow._forceReport`.
+        }
+      }
       probeUsage = await exchange(
         1,
         goalCompactionProbeMessage(fixture.truth.probes),

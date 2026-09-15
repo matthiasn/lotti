@@ -23,9 +23,18 @@ class _ScriptedInference extends InferenceRepositoryInterface {
     this.reportedStatus = 'offTrack',
     this.failOn,
     this.blankDigest = false,
+    this.replyOnlyWake = false,
   });
 
   final String reportedStatus;
+
+  /// Answer the wake with a reply but no report, leaving the status
+  /// unreported until the forced retry asks for it.
+  final bool replyOnlyWake;
+
+  /// The tool names and tool choice offered on each user turn, in order.
+  final offeredTools = <List<String>>[];
+  final toolChoices = <ChatCompletionToolChoiceOption?>[];
 
   /// A substring of a user message that makes the call throw.
   final String? failOn;
@@ -55,6 +64,11 @@ class _ScriptedInference extends InferenceRepositoryInterface {
     }
     final user = last.mapOrNull(user: (m) => m.content.value)?.toString() ?? '';
     prompts.add(user);
+    offeredTools.add([
+      for (final tool in tools ?? const <ChatCompletionTool>[])
+        tool.function.name,
+    ]);
+    toolChoices.add(toolChoice);
     if (failOn != null && user.contains(failOn!)) {
       return Stream.error(Exception('scripted failure'));
     }
@@ -91,7 +105,29 @@ class _ScriptedInference extends InferenceRepositoryInterface {
         ], promptTokens: 700),
       );
     }
+    // The forced retry answers with the report alone, as a named tool choice
+    // demands.
+    if (user == goalStatusTransitionReportInstruction) {
+      return Stream.value(
+        _tools([
+          (
+            GoalAgentToolNames.updateGoalReport,
+            jsonEncode({'status': reportedStatus, 'oneLiner': 'Retried.'}),
+          ),
+        ], promptTokens: 5100),
+      );
+    }
     // The wake.
+    if (replyOnlyWake) {
+      return Stream.value(
+        _tools([
+          (
+            GoalAgentToolNames.replyToUser,
+            jsonEncode({'message': 'Restore the calendar block.'}),
+          ),
+        ], promptTokens: 5000),
+      );
+    }
     return Stream.value(
       _tools([
         (
@@ -434,6 +470,63 @@ void main() {
         expect((json['userVoice']! as Map)['verbatimCount'], greaterThan(0));
       },
     );
+
+    test(
+      "a transition wake that only replies gets production's forced report",
+      () async {
+        expect(
+          fixture.transitionFrom,
+          isNot(fixture.truth.expectedStatus),
+          reason: 'the retry only applies to a status transition',
+        );
+        final inference = _ScriptedInference(replyOnlyWake: true);
+        final runner = GoalCompactionEvalRunner(
+          provider: provider,
+          modelId: 'm',
+          conversationRepository: _repo(container),
+          inferenceRepository: inference,
+        );
+        final packet = await runner.run(
+          fixtures: [fixture],
+          strategies: const [FullContextCheckInCompaction()],
+          samples: 1,
+        );
+
+        final c = packet.cases.single;
+        expect(c.reportedStatus, 'offTrack');
+        expect(c.wakeReply, 'Restore the calendar block.');
+        final retry = inference.prompts.indexOf(
+          goalStatusTransitionReportInstruction,
+        );
+        expect(retry, greaterThan(0));
+        expect(inference.offeredTools[retry], [
+          GoalAgentToolNames.updateGoalReport,
+        ]);
+        expect(inference.toolChoices[retry], isNotNull);
+        expect(inference.toolChoices[0], isNull);
+        // The retry belongs to the wake, so the probe turn still follows it.
+        expect(inference.prompts.last, startsWith('A few questions'));
+      },
+    );
+
+    test('a wake that reported gets no forced retry', () async {
+      final inference = _ScriptedInference();
+      final runner = GoalCompactionEvalRunner(
+        provider: provider,
+        modelId: 'm',
+        conversationRepository: _repo(container),
+        inferenceRepository: inference,
+      );
+      await runner.run(
+        fixtures: [fixture],
+        strategies: const [FullContextCheckInCompaction()],
+        samples: 1,
+      );
+      expect(
+        inference.prompts,
+        isNot(contains(goalStatusTransitionReportInstruction)),
+      );
+    });
 
     test('a wrong status is recorded as incorrect, not hidden', () async {
       final runner = GoalCompactionEvalRunner(

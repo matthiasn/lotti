@@ -374,6 +374,13 @@ final List<String> goalBannerAccentNames = [
   for (final value in NudgeBannerAccent.values) value.name,
 ];
 
+/// The pinned retry a status-transition wake sends when its first response
+/// carried no report. Shared with the compaction eval, which must score the
+/// same recovery production performs rather than the first response alone.
+const goalStatusTransitionReportInstruction =
+    'The track status changed this wake. Call update_goal_report now with '
+    'the status from the FACTS block.';
+
 final List<AgentToolDefinition> goalAgentTools = [
   const AgentToolDefinition(
     name: GoalAgentToolNames.replyToUser,

@@ -60,7 +60,7 @@ arm. A same-status wake is a no-op by contract and would compare nothing.
 
 | Metric | Source | Judge needed |
 | --- | --- | --- |
-| Status accuracy — `update_goal_report.status` equals the derived status | packet | no |
+| Status accuracy — `update_goal_report.status` equals the derived status, after production's pinned forced-report retry (every fixture is a status transition, so a wake that only replies gets the same one retry `GoalAgentWorkflow` sends; from 2026-09-16, earlier tables scored the first response alone) | packet | no |
 | Tool-set agreement — the wake's tool names equal the full arm's for the same fixture and sample | packet | no |
 | Wake input tokens (provider-reported) and `userVoice` tokens (estimated), per arm | packet | no |
 | Token growth curve — `userVoice` tokens at 3/6/12/18/24 months per arm | packet | no |
