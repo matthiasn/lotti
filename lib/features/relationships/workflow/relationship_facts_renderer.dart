@@ -1,11 +1,13 @@
 import 'dart:convert';
 
+import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/relationship_trigger_tokens.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
+import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 
 /// How many recent check-ins feed the FACTS block (ADR 0040 Decision 4:
@@ -86,9 +88,22 @@ class RelationshipFactsRenderer {
     }
 
     final window = relationshipCheckInWindow(checkIns);
+    final newestSentiment = _newestSentiment(window);
     buffer.writeln(
       'CHECK-INS (newest first, ${window.length} of ${checkIns.length}):',
     );
+    if (newestSentiment != null) {
+      final allowedBands = _allowedHealthBands(newestSentiment);
+      buffer
+        ..writeln(
+          'HEALTH BAND CONSTRAINT '
+          '(newest user-set sentiment=${newestSentiment.name}):',
+        )
+        ..writeln(
+          '- allowed FIELD VALUES: ${allowedBands.map((band) => band.name).join(', ')}',
+        )
+        ..writeln('- narrative cannot improve this constraint');
+    }
     if (window.isEmpty) {
       buffer.writeln('- none recorded');
     }
@@ -207,6 +222,30 @@ class RelationshipFactsRenderer {
     done: (_) => 'done',
     rejected: (_) => 'rejected',
   );
+
+  CheckInSentiment? _newestSentiment(List<CheckInEntry> checkIns) {
+    for (final checkIn in checkIns) {
+      if (checkIn.data.sentiment case final sentiment?) return sentiment;
+    }
+    return null;
+  }
+
+  List<RelationshipHealthBand> _allowedHealthBands(
+    CheckInSentiment sentiment,
+  ) => switch (sentiment) {
+    CheckInSentiment.delightful || CheckInSentiment.good => const [
+      RelationshipHealthBand.thriving,
+      RelationshipHealthBand.steady,
+    ],
+    CheckInSentiment.neutral => const [
+      RelationshipHealthBand.steady,
+      RelationshipHealthBand.needsAttention,
+    ],
+    CheckInSentiment.strained || CheckInSentiment.difficult => const [
+      RelationshipHealthBand.needsAttention,
+      RelationshipHealthBand.strained,
+    ],
+  };
 
   String _day(DateTime value) {
     final local = value.toLocal();

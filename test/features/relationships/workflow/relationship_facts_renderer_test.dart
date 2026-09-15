@@ -178,6 +178,80 @@ void main() {
     expect(facts, contains('sentiment(user-set)=good'));
   });
 
+  test('the newest negative user rating bounds the health band', () {
+    final facts = render(
+      checkIns: [
+        checkIn(
+          'newest',
+          DateTime(2026, 8, 14),
+          sentiment: CheckInSentiment.difficult,
+        ),
+        checkIn(
+          'older',
+          DateTime(2026, 8, 13),
+          sentiment: CheckInSentiment.good,
+        ),
+      ],
+    );
+
+    expect(
+      facts,
+      contains('HEALTH BAND CONSTRAINT (newest user-set sentiment=difficult)'),
+    );
+    expect(facts, contains('allowed FIELD VALUES: needsAttention, strained'));
+    expect(facts, contains('narrative cannot improve this constraint'));
+  });
+
+  test('the newest positive user rating bounds the health band upward', () {
+    final facts = render(
+      checkIns: [
+        checkIn(
+          'newest',
+          DateTime(2026, 8, 14),
+          sentiment: CheckInSentiment.delightful,
+        ),
+        checkIn(
+          'older',
+          DateTime(2026, 8, 13),
+          sentiment: CheckInSentiment.strained,
+        ),
+      ],
+    );
+
+    expect(
+      facts,
+      contains('HEALTH BAND CONSTRAINT (newest user-set sentiment=delightful)'),
+    );
+    expect(facts, contains('allowed FIELD VALUES: thriving, steady'));
+  });
+
+  test('an unrated check-in does not invent a health-band constraint', () {
+    final facts = render(
+      checkIns: [checkIn('unrated', DateTime(2026, 8, 14))],
+    );
+
+    expect(facts, isNot(contains('HEALTH BAND CONSTRAINT')));
+  });
+
+  test('an unrated newest check-in preserves the newest explicit rating', () {
+    final facts = render(
+      checkIns: [
+        checkIn('unrated', DateTime(2026, 8, 14)),
+        checkIn(
+          'rated',
+          DateTime(2026, 8, 13),
+          sentiment: CheckInSentiment.strained,
+        ),
+      ],
+    );
+
+    expect(
+      facts,
+      contains('HEALTH BAND CONSTRAINT (newest user-set sentiment=strained)'),
+    );
+    expect(facts, contains('allowed FIELD VALUES: needsAttention, strained'));
+  });
+
   test('guidance fields and the narrative excerpt ride each check-in', () {
     final facts = render(
       checkIns: [

@@ -196,7 +196,9 @@ void main() {
         if (pending != null) {
           expect(
             scenario.facts,
-            endsWith('\n\nPENDING USER MESSAGE:\n$pending'),
+            endsWith(
+              '\n\n$relationshipPendingUserMessageHeader\n$pending',
+            ),
             reason: scenario.id,
           );
         }

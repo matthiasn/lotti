@@ -538,10 +538,18 @@ RelationshipAgentEvalFailureCategory classifyRelationshipAgentResult({
     final matching = toolCalls
         .where((call) => call.name == expected.name)
         .toList();
-    if (matching.isEmpty) {
+    // Interactive production wakes persist `replyToUser ?? finalResponse`.
+    // Score the same visible fallback while still requiring its content rules.
+    final productionReplyFallback =
+        expected.name == RelationshipAgentToolNames.replyToUser &&
+        expected.expectedArgumentsSubset.isEmpty &&
+        scenario.hasPendingUserMessage &&
+        assistantContent.trim().isNotEmpty;
+    if (matching.isEmpty && !productionReplyFallback) {
       return RelationshipAgentEvalFailureCategory.missingExpectedToolCall;
     }
-    if (expected.expectedArgumentsSubset.isNotEmpty &&
+    if (matching.isNotEmpty &&
+        expected.expectedArgumentsSubset.isNotEmpty &&
         !matching.any(
           (call) => _containsExpectedValues(
             call.jsonObjectArguments ?? const {},

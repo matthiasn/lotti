@@ -98,7 +98,9 @@ Actions:
 /// Header introducing the pending user message appended to an interactive
 /// wake's FACTS block. Shared with the eval suite's wake-message composer,
 /// so the evals measure the exact message shape the workflow sends.
-const relationshipPendingUserMessageHeader = 'PENDING USER MESSAGE:';
+const relationshipPendingUserMessageHeader =
+    'PENDING USER MESSAGE:\n'
+    'REQUIRED: call reply_to_user in this response exactly once.';
 
 /// Instruction appended to the FACTS block when the user explicitly
 /// requested a fresh briefing. Shared with the eval suite for the same

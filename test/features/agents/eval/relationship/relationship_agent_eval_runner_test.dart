@@ -398,6 +398,26 @@ void main() {
         RelationshipAgentEvalFailureCategory.missingExpectedToolCall,
       );
     });
+
+    test('plain content satisfies an interactive reply like production', () {
+      expect(
+        classify(
+          'dl_off_topic',
+          const [],
+          assistantContent:
+              "I can only help with Tove's relationship check-ins. Ask me "
+              'about those instead.',
+        ),
+        RelationshipAgentEvalFailureCategory.none,
+      );
+    });
+
+    test('empty plain content cannot satisfy an interactive reply', () {
+      expect(
+        classify('dl_off_topic', const []),
+        RelationshipAgentEvalFailureCategory.missingExpectedToolCall,
+      );
+    });
   });
 
   group('classifyRelationshipAgentResult — verdicts and tone', () {

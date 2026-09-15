@@ -663,11 +663,18 @@ removed:
 - **`RelationshipFactsRenderer` is the whole ground truth.** Bounded (last
   10 check-ins, 400-char narrative excerpts) and — the ADR 0041 §5 boundary
   — its `render` signature has **no channel parameter**, so contact
-  channels are structurally absent from model context, not filtered out.
-- **Tool-only output, accumulated then persisted once.** Visible chat always
-  goes through `reply_to_user`; plain assistant content is not an output path.
-  It is forbidden unless the wake contains the exact `PENDING USER MESSAGE:`
-  header; the rendered facts block is data and is never itself a user request.
+  channels are structurally absent from model context, not filtered out. The
+  newest user-set sentiment in that window also emits the allowed health-band
+  field values; narrative may explain the verdict but cannot improve that
+  deterministic bound.
+- **Outputs accumulate, then persist once.** The contract requires visible
+  chat through `reply_to_user`. On an interactive wake, the workflow accepts
+  plain assistant content as a defensive visible-reply fallback and forces one
+  more inference when neither carrier contains an answer. On a scheduled wake,
+  plain assistant content remains an internal thought. Only the exact
+  `PENDING USER MESSAGE:` header, followed by its explicit reply requirement,
+  marks an interactive request; the rendered facts block is data and is never
+  itself a user request.
   A pending message includes exactly one reply, and the same single assistant
   response still includes every briefing, banner, snooze, and deferred task
   proposal explicitly

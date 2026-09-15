@@ -124,6 +124,17 @@ void main() {
     },
   );
 
+  test('the pending-message marker carries the reply requirement', () {
+    expect(
+      relationshipPendingUserMessageHeader,
+      contains('PENDING USER MESSAGE:'),
+    );
+    expect(
+      relationshipPendingUserMessageHeader,
+      contains('REQUIRED: call reply_to_user in this response'),
+    );
+  });
+
   test('tool names keep the uniform verb_relationship_noun prefix', () {
     expect(
       RelationshipAgentToolNames.updateRelationshipReport,
