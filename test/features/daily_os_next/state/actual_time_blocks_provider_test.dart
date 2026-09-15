@@ -698,10 +698,11 @@ void main() {
       ).thenAnswer((_) async => const []);
     });
 
-    // The repository ties a check-in to its person with a RelationshipLink,
-    // which the basic-link lookup never returns: the lane has to ask for it.
+    // A check-in's person is its relationshipId. The stored RelationshipLink
+    // is not a BasicLink, and a check-in can outlive a failed link write, so
+    // the block names the person with no stored link at all.
     test(
-      'a check-in is titled by the person its RelationshipLink names',
+      'a check-in is titled by its person with no stored link at all',
       () async {
         final person = testRelationship;
         final call = CheckInEntry(
@@ -718,14 +719,6 @@ void main() {
           ),
           entryText: const EntryText(plainText: 'Talked about the move.'),
         );
-        final link = EntryLink.relationship(
-          id: 'rel-link',
-          fromId: person.meta.id,
-          toId: call.meta.id,
-          createdAt: day,
-          updatedAt: day,
-          vectorClock: null,
-        );
         when(
           () => db.sortedCalendarEntries(
             rangeStart: day,
@@ -735,9 +728,6 @@ void main() {
         when(
           () => db.basicLinksForEntryIds({call.meta.id}),
         ).thenAnswer((_) async => const []);
-        when(
-          () => db.relationshipLinksToIds({call.meta.id}),
-        ).thenAnswer((_) async => [link]);
         when(
           () => db.getJournalEntitiesForIdsUnordered({person.meta.id}),
         ).thenAnswer((_) async => [person]);

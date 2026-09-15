@@ -8,9 +8,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/daily_os_next/logic/recorded_time.dart';
-import 'package:mocktail/mocktail.dart' as mt;
-
-import '../../../mocks/mocks.dart';
 
 final _day = DateTime(2026, 6, 8);
 
@@ -182,7 +179,7 @@ extension _AnyRecordedEntry on Any {
 }
 
 void main() {
-  group('loadRecordedTimeLinks', () {
+  group('checkInOwnerLinks', () {
     final at = DateTime(2026, 9, 6, 12);
     final note = JournalEntity.journalEntry(
       meta: Metadata(
@@ -206,52 +203,36 @@ void main() {
         interactionType: CheckInInteractionType.call,
       ),
     );
-    EntryLink link(String id, String from, String to) => EntryLink.basic(
-      id: id,
-      fromId: from,
-      toId: to,
-      createdAt: at,
-      updatedAt: at,
-      vectorClock: null,
-    );
 
-    test('without check-ins it asks for basic links only', () async {
-      final db = MockJournalDb();
-      final basic = link('b', 'task', 'note');
-      mt
-          .when(
-            () => db.basicLinksForEntryIds({'note'}),
-          )
-          .thenAnswer((_) async => [basic]);
+    test('derives one person → check-in link per check-in, from its '
+        'relationshipId, and none for anything else', () {
+      final links = checkInOwnerLinks([note, call]);
 
-      expect(await loadRecordedTimeLinks(db, [note]), [basic]);
-      mt.verifyNever(() => db.relationshipLinksToIds(mt.any()));
+      expect(links, hasLength(1));
+      expect(links.single, isA<RelationshipLink>());
+      expect(links.single.fromId, 'person');
+      expect(links.single.toId, 'call');
     });
 
-    test('adds the RelationshipLinks pointing at the check-ins, and only '
-        'asks for those', () async {
-      final db = MockJournalDb();
-      final basic = link('b', 'task', 'note');
-      final toPerson = EntryLink.relationship(
-        id: 'r',
-        fromId: 'person',
-        toId: 'call',
-        createdAt: at,
-        updatedAt: at,
-        vectorClock: null,
+    test('resolves the check-in to its person even with no stored link', () {
+      final person = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'person',
+          createdAt: at,
+          updatedAt: at,
+          dateFrom: at,
+          dateTo: at,
+        ),
       );
-      mt
-          .when(
-            () => db.basicLinksForEntryIds({'note', 'call'}),
-          )
-          .thenAnswer((_) async => [basic]);
-      mt
-          .when(
-            () => db.relationshipLinksToIds({'call'}),
-          )
-          .thenAnswer((_) async => [toPerson]);
 
-      expect(await loadRecordedTimeLinks(db, [note, call]), [basic, toPerson]);
+      final resolved = resolveTimeEntries(
+        entries: [call],
+        links: checkInOwnerLinks([call]),
+        linkedFromById: {'person': person},
+        eventsEnabled: true,
+      );
+
+      expect(resolved.single.linkedFrom?.meta.id, 'person');
     });
   });
 

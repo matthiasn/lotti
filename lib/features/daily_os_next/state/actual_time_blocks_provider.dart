@@ -78,7 +78,12 @@ final dailyOsActualTimeBlocksProvider = FutureProvider.autoDispose
         rangeStart: dayStart,
         rangeEnd: dayEnd,
       );
-      final links = await loadRecordedTimeLinks(db, entries);
+      final links = [
+        ...await db.basicLinksForEntryIds(
+          entries.map((entry) => entry.meta.id).toSet(),
+        ),
+        ...checkInOwnerLinks(entries),
+      ];
       return actualTimeBlocksForEntries(
         entries: entries,
         links: links,

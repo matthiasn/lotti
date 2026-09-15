@@ -251,10 +251,12 @@ Day view whatever its length.) No rule of its own is needed in
 `resolveTimeEntries`: a check-in saved with *No duration* is zero-length and
 drops out like any instant note, and the `RelationshipLink` (person →
 check-in) makes the person its linked-from entity, so the block takes the
-person's category. That link is not a `BasicLink`, so
-`basicLinksForEntryIds` never returns it: both consumers load links through
-`loadRecordedTimeLinks`, which adds `relationshipLinksToIds` for the range's
-check-ins (and asks nothing extra on a day without any). `_actualBlockTitle` names the person rather than the
+person's category. The link is derived, not read: `checkInOwnerLinks` builds
+it from `CheckInData.relationshipId`, the field the People feature reads a
+person's check-ins by. The stored `RelationshipLink` is not a `BasicLink`,
+so `basicLinksForEntryIds` never returns it, and `createCheckIn` keeps a
+check-in whose link write failed. Both consumers append the derived links
+to the basic ones, with no extra query. `_actualBlockTitle` names the person rather than the
 first line of the narrative. A check-in block has no task and is not an
 event, so, like an unlinked recording, it has no tap destination; the
 planner's week-context lookback counts its minutes under the person's

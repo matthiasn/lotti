@@ -1,7 +1,6 @@
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 
 /// Shared recorded-time resolution for Daily OS consumers.
@@ -57,25 +56,27 @@ class ResolvedTimeEntry {
   DateTime get start => entry.meta.dateFrom;
 }
 
-/// Loads the links [resolveTimeEntries] needs for [entries]: every entry's
-/// [BasicLink]s, plus — only when the range holds check-ins — the
-/// [RelationshipLink] that ties each check-in to its person. Without it a
-/// check-in resolves to no linked-from entity, and its block loses the
-/// person's name.
-Future<List<EntryLink>> loadRecordedTimeLinks(
-  JournalDb db,
-  List<JournalEntity> entries,
-) async {
-  final basic = await db.basicLinksForEntryIds(
-    entries.map((entry) => entry.meta.id).toSet(),
-  );
-  final checkInIds = {
-    for (final entry in entries)
-      if (entry is CheckInEntry) entry.meta.id,
-  };
-  if (checkInIds.isEmpty) return basic;
-  return [...basic, ...await db.relationshipLinksToIds(checkInIds)];
-}
+/// The person → check-in links [resolveTimeEntries] needs to attribute
+/// each check-in in [entries] to its person, derived from
+/// `CheckInData.relationshipId` rather than read from the journal.
+///
+/// That field is what the People feature reads a person's check-ins by, and
+/// it never changes after creation. The stored `RelationshipLink` is no
+/// substitute: it is not a [BasicLink], so the basic-link lookup never
+/// returns it, and `RelationshipRepository.createCheckIn` keeps a check-in
+/// whose link write failed. The derived links are never persisted.
+List<EntryLink> checkInOwnerLinks(List<JournalEntity> entries) => [
+  for (final entry in entries)
+    if (entry is CheckInEntry)
+      EntryLink.relationship(
+        id: 'check-in-owner:${entry.meta.id}',
+        fromId: entry.data.relationshipId,
+        toId: entry.meta.id,
+        createdAt: entry.meta.createdAt,
+        updatedAt: entry.meta.createdAt,
+        vectorClock: null,
+      ),
+];
 
 /// Whether an [event] took place at the time it carries.
 ///

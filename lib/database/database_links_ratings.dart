@@ -213,20 +213,6 @@ mixin _JournalDbLinksRatings
     return rows.map(entryLinkFromLinkedDbEntry).toList();
   }
 
-  /// The [RelationshipLink]s pointing at [ids] — a person → check-in link
-  /// is how a check-in knows whose it is, and [basicLinksForEntryIds]
-  /// deliberately returns [BasicLink]s only.
-  Future<List<EntryLink>> relationshipLinksToIds(Set<String> ids) async {
-    if (ids.isEmpty) return const <EntryLink>[];
-    final rows =
-        await (select(linkedEntries)..where(
-              (t) =>
-                  t.toId.isIn(ids.toList()) & t.type.equals('RelationshipLink'),
-            ))
-            .get();
-    return rows.map(entryLinkFromLinkedDbEntry).toList();
-  }
-
   Future<List<EntryLink>> _coalesceBasicLinks(Set<String> ids) {
     final wave = _pendingBasicLinksWave ??= _PendingLinksWave();
     wave.mergedIds.addAll(ids);
