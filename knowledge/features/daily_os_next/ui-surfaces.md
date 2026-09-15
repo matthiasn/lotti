@@ -242,6 +242,21 @@ but unchecked; a recording, finished by definition, is always `completed`. A
 multi-day event stays outside the containment query, as a recording crossing
 midnight does.
 
+**Check-ins are recorded time too.** A logged call, meeting or message with
+a person is a `CheckIn` row whose span is when it happened and how long it
+ran — the composer writes `dateTo = dateFrom + duration`. The same
+`sortedCalendarEntries` SQL admits `CheckIn` beside notes, workouts and
+events. (Before this it did not, so a tracked 1 h 15 call never reached the
+Day view whatever its length.) No rule of its own is needed in
+`resolveTimeEntries`: a check-in saved with *No duration* is zero-length and
+drops out like any instant note, and the `RelationshipLink` (person →
+check-in) makes the person its linked-from entity, so the block takes the
+person's category. `_actualBlockTitle` names the person rather than the
+first line of the narrative. A check-in block has no task and is not an
+event, so, like an unlinked recording, it has no tap destination; the
+planner's week-context lookback counts its minutes under the person's
+category.
+
 ## The docked day-view column (desktop shell)
 
 The day timeline has one embed outside the `/calendar` tab:

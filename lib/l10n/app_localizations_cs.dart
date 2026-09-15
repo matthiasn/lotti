@@ -11361,6 +11361,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get queryAskTask => 'Zeptat se na tento úkol';
 
   @override
+  String get queryChat => 'Chat';
+
+  @override
   String get queryAudioFailed =>
       'Zvuk se nepodařilo připravit nebo přehrát. Zkus to znovu.';
 

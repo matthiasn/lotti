@@ -6051,7 +6051,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     DateTime rangeEnd,
   ) {
     return customSelect(
-      'SELECT * FROM journal WHERE type IN (\'JournalEntry\', \'WorkoutEntry\', \'JournalEvent\') AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND date_from >= ?1 AND date_to <= ?2 ORDER BY date_from DESC',
+      'SELECT * FROM journal WHERE type IN (\'JournalEntry\', \'WorkoutEntry\', \'JournalEvent\', \'CheckIn\') AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND date_from >= ?1 AND date_to <= ?2 ORDER BY date_from DESC',
       variables: [Variable<DateTime>(rangeStart), Variable<DateTime>(rangeEnd)],
       readsFrom: {journal, configFlags},
     ).asyncMap(journal.mapFromRow);

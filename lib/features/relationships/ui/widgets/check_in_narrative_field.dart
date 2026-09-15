@@ -31,6 +31,7 @@ class CheckInNarrativeField extends StatelessWidget {
     this.shortcutHint,
     this.transcriptEdited = false,
     this.restMinLines = 3,
+    this.offersDictation = true,
     super.key,
   });
 
@@ -74,6 +75,13 @@ class CheckInNarrativeField extends StatelessWidget {
   /// The empty field's height at rest — shorter in the desktop dialog,
   /// where a tall empty box is dead space beside a working keyboard.
   final int restMinLines;
+
+  /// Whether the field offers *Dictate* at all. Not on a check-in saved
+  /// with words: once it is text it is text, edited by keyboard, and a
+  /// recorder over the record would only raise the question of what it
+  /// does to it. A fresh composer offers it, and a take lands below
+  /// whatever was typed — never over it.
+  final bool offersDictation;
 
   @override
   Widget build(BuildContext context) {
@@ -142,10 +150,21 @@ class CheckInNarrativeField extends StatelessWidget {
       style: tokens.typography.styles.body.bodyLarge.copyWith(
         color: tokens.colors.text.highEmphasis,
       ),
-      decoration: InputDecoration.collapsed(
-        hintText: hint,
-        hintStyle: hintTier.copyWith(color: tokens.colors.text.lowEmphasis),
-      ),
+      // The box above draws the field's one frame. `collapsed` only clears
+      // `border`: the app's InputDecorationTheme would still fill in its
+      // 2.5 px focused outline, a second ring inside the accent hairline.
+      decoration:
+          InputDecoration.collapsed(
+            hintText: hint,
+            hintStyle: hintTier.copyWith(color: tokens.colors.text.lowEmphasis),
+          ).copyWith(
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            disabledBorder: InputBorder.none,
+            errorBorder: InputBorder.none,
+            focusedErrorBorder: InputBorder.none,
+            filled: false,
+          ),
     );
   }
 
@@ -244,7 +263,8 @@ class CheckInNarrativeField extends StatelessWidget {
       // second recorder button in the field would be a dead door beside a
       // live one. Under the refused microphone the field's Dictate is the
       // retry, one tier down: the card's pill is the face's one shape.
-      else if (failure == null || _dictatesUnder(failure.kind))
+      else if (offersDictation &&
+          (failure == null || _dictatesUnder(failure.kind)))
         DesignSystemButton(
           key: const ValueKey('check-in-dictate'),
           label: messages.checkInDictateButton,

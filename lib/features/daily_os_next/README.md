@@ -26,8 +26,8 @@ via the rail's calendar button and resized by its edge; both survive restarts.
 - **Respects what's real.** The plan knows about tasks already tracked today, due
   dates, estimates, and which tasks are blocked by others.
 - **Opens on the calendar.** The Day timeline is the default view, plan or no
-  plan: recorded time, imported workouts and events with a start and end sit on
-  its recorded lane, and an event opens from its block. Agenda and Activity are
+  plan: recorded time, imported workouts, check-ins with a length and events
+  with a start and end sit on its recorded lane, and an event opens from its block. Agenda and Activity are
   a tap away.
 - **Keeps everything even when things fail.** A recording is saved before anything
   is transcribed, and a failed transcription is retried in the background rather

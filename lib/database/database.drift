@@ -462,9 +462,12 @@ SELECT * FROM journal
   LIMIT :limit
   OFFSET :offset;
 
+-- The Daily OS Actual lane and the planner's recorded-time lookback. A
+-- check-in is a time recording too: its span is when the call or meeting
+-- happened and how long it ran (zero-length ones drop out downstream).
 sortedCalenderEntriesInRange:
 SELECT * FROM journal
-  WHERE type in ('JournalEntry', 'WorkoutEntry', 'JournalEvent') AND
+  WHERE type in ('JournalEntry', 'WorkoutEntry', 'JournalEvent', 'CheckIn') AND
   deleted = false
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   AND date_from >= :rangeStart

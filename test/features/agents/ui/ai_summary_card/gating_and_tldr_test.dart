@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 
 import '../../../../test_helper.dart';
 import '../../test_data/entity_factories.dart';
@@ -79,6 +80,38 @@ void main() {
       expect(find.text('AI summary'), findsOneWidget);
       expect(find.text('Card surface is happy.'), findsOneWidget);
       expect(find.text('Read more'), findsOneWidget);
+    });
+
+    testWidgets('Chat shares the Read more row, at its trailing end, and '
+        'is no longer a pill of its own below it', (tester) async {
+      final bench = AgentTestBench(
+        report: makeTestReport(
+          tldr: 'Card surface is happy.',
+          content: '## Goal\nShip the card.\n',
+        ),
+      );
+
+      await tester.pumpWidget(bench.build());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ask about this task'), findsNothing);
+      final chat = find.text('Chat');
+      final readMore = find.text('Read more');
+      expect(chat, findsOneWidget);
+      // One row: both labels on the same line…
+      expect(
+        tester.getCenter(chat).dy,
+        moreOrLessEquals(tester.getCenter(readMore).dy, epsilon: 1),
+      );
+      // …Read more leading, Chat against the card's trailing edge.
+      final card = tester.getRect(find.byType(AiSummaryCard));
+      expect(tester.getCenter(chat).dx, greaterThan(card.center.dx));
+      expect(tester.getCenter(readMore).dx, lessThan(card.center.dx));
+      // Still one TldrBody row: the button is its trailing slot.
+      expect(
+        find.ancestor(of: chat, matching: find.byType(TldrBody)),
+        findsOneWidget,
+      );
     });
 
     testWidgets('Read more toggle expands and collapses the report', (

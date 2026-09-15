@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/day_audio_context.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -705,6 +706,49 @@ void main() {
           expect(results.first, isA<JournalEvent>());
         },
       );
+
+      // Check-ins are time recordings: a logged call has to reach the Daily
+      // OS lane through this query, which once named only notes, workouts
+      // and events.
+      test('sortedCalendarEntries admits check-ins by their span', () async {
+        final call = CheckInEntry(
+          meta: Metadata(
+            id: 'jan-15-call',
+            createdAt: DateTime(2024, 1, 15, 12, 44),
+            updatedAt: DateTime(2024, 1, 15, 12, 44),
+            dateFrom: DateTime(2024, 1, 15, 12, 44),
+            dateTo: DateTime(2024, 1, 15, 13, 59),
+          ),
+          data: const CheckInData(
+            relationshipId: 'rel-1',
+            interactionType: CheckInInteractionType.call,
+          ),
+          entryText: const EntryText(plainText: 'Caught up.'),
+        );
+        final note = buildTextEntry(
+          id: 'jan-05',
+          timestamp: DateTime(2024, 1, 5, 8),
+          text: 'Entry Jan 05',
+        );
+
+        await db!.updateJournalEntity(call);
+        await db!.updateJournalEntity(note);
+
+        final results = await db!.sortedCalendarEntries(
+          rangeStart: DateTime(2024),
+          rangeEnd: DateTime(2024, 1, 31, 23, 59),
+        );
+
+        expect(
+          results.map((e) => e.meta.id),
+          equals(['jan-15-call', 'jan-05']),
+        );
+        final loaded = results.first as CheckInEntry;
+        expect(
+          loaded.meta.dateTo.difference(loaded.meta.dateFrom),
+          const Duration(hours: 1, minutes: 15),
+        );
+      });
     });
 
     group('Vector clock streaming for sequence log population -', () {

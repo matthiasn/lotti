@@ -973,8 +973,38 @@ void main() {
       expect(updated.meta.dateTo, DateTime(2026, 8, 6, 19, 45));
     });
 
-    testWidgets('editing offers Dictate too', (tester) async {
+    testWidgets('a check-in saved with words offers no Dictate: once it is '
+        'text it is edited as text, and a recording can never touch it', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildEditForm());
+      await tester.pumpAndSettle();
+      expect(narrativeText(tester), 'Planned the trip.');
+      expect(dictate, findsNothing);
+
+      // Clearing the field does not bring it back: the saved record decides,
+      // not the keystroke, so the button never flickers under typing.
+      await tester.enterText(
+        find.byKey(const ValueKey('check-in-narrative')),
+        '',
+      );
+      await tester.pumpAndSettle();
+      expect(dictate, findsNothing);
+    });
+
+    testWidgets('a check-in saved without words still offers Dictate', (
+      tester,
+    ) async {
+      final entry = existing();
+      await tester.pumpWidget(
+        buildEditForm(
+          entry: CheckInEntry(
+            meta: entry.meta,
+            data: entry.data,
+            entryText: const EntryText(plainText: '  '),
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
       expect(dictate, findsOneWidget);
     });

@@ -4839,6 +4839,7 @@
   "queryAudioTooLarge": "Du kan förbereda tidsstämplar för inspelningar på upp till 25 MB. Välj en mindre inspelning.",
   "queryAudioUploadNotice": "När tidsstämplar förbereds skickas inspelningen till transkriberingsleverantören som är inställd för den här agenten.",
   "queryCategoryAgent": "Kategoriagent",
+  "queryChat": "Chatta",
   "queryChats": "Chattar",
   "queryChecked": "Kontrollerade källor: {count}",
   "queryCloseChat": "Stäng chatt",

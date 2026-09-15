@@ -801,6 +801,12 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
 
   bool get _isEditing => widget.initial != null;
 
+  /// Whether the composer offers *Dictate*: everywhere but a check-in that
+  /// was saved with words. Keyed to the saved text, not the live field, so
+  /// the button does not come and go under the user's typing.
+  bool get _offersDictation =>
+      (widget.initial?.entryText?.plainText ?? '').trim().isEmpty;
+
   /// Whether leaving now would lose something: text, details or context
   /// that differ from what the composer opened with, or a take in flight.
   bool get _isDirty {
@@ -1648,6 +1654,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
           shortcutHint: shortcut?.label,
           transcriptEdited: _transcriptEdited || _landingHeard,
           restMinLines: widget.dialog ? 2 : 3,
+          offersDictation: _offersDictation,
           recorder: recording
               ? CheckInInlineRecorder(
                   linkedId: widget.relationshipId,

@@ -1023,7 +1023,13 @@ sheet on a phone, a dialog on desktop — straight onto the narrative. There
 is no Write-or-Record choice first: *Dictate* is a button inside the field,
 so audio stays an explicit choice without a detour, and `startSpeaking` (the
 page's microphone) presses it after the first frame. Editing is the same
-composer prefilled.
+composer prefilled, with one difference: a check-in saved with words offers
+no *Dictate* (`offersDictation`, keyed to the saved narrative rather than the
+live field, so the button never comes and goes under typing). Once it is
+text it is edited as text; a recorder over the saved record would only
+raise the question of what it does to it. A fresh composer keeps *Dictate*,
+and a take lands below whatever was typed (`mergeCheckInNarrative`), never
+over it.
 
 The composer's parts, top to bottom:
 
@@ -1115,7 +1121,9 @@ The composer's parts, top to bottom:
   carries the same `subtitle2` heading one level under it, one `sectionGap`
   apart. The empty field rests two lines tall in the desktop dialog and
   three on the phone (`restMinLines`). The field's accent hairline means keyboard focus and
-  nothing else: the red dot, the waveform and the filled Stop say "live". The phases swap in
+  nothing else, and it is the field's only frame: the `TextField` inside
+  silences every border the app's `InputDecorationTheme` would fill in
+  (its 2.5 px focused outline used to ring the text inside the hairline): the red dot, the waveform and the filled Stop say "live". The phases swap in
   place rather than through an `AnimatedSize`: the tiered captions lay
   themselves out with a `LayoutBuilder`, which re-dirties an animating size
   box in its own layout pass.

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_status.dart';
@@ -19,6 +20,7 @@ import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 import 'actual_time_blocks_provider_test_helpers.dart';
 
 void main() {
@@ -190,6 +192,75 @@ void main() {
       // the note's categoryId (since the note is the non-rating fallback).
       expect(blocks.single.taskId, isNull);
       expect(blocks.single.category.id, 'cat-note');
+    });
+
+    test('a check-in with a length is recorded time, titled by the person '
+        'and coloured by their category; one without a length stays off', () {
+      final day = DateTime(2026, 9, 6);
+      final person = testRelationship.copyWith(
+        meta: testRelationship.meta.copyWith(categoryId: 'cat-people'),
+      );
+      CheckInEntry checkIn(String id, DateTime from, Duration length) =>
+          CheckInEntry(
+            meta: Metadata(
+              id: id,
+              createdAt: from,
+              updatedAt: from,
+              dateFrom: from,
+              dateTo: from.add(length),
+              categoryId: 'cat-people',
+            ),
+            data: CheckInData(
+              relationshipId: person.meta.id,
+              interactionType: CheckInInteractionType.call,
+            ),
+            entryText: const EntryText(plainText: 'Talked about the move.'),
+          );
+      final longCall = checkIn(
+        'call-long',
+        day.add(const Duration(hours: 12, minutes: 44)),
+        const Duration(hours: 1, minutes: 15),
+      );
+      final shortCall = checkIn(
+        'call-short',
+        day.add(const Duration(hours: 18)),
+        const Duration(minutes: 15),
+      );
+      final noLength = checkIn(
+        'call-no-length',
+        day.add(const Duration(hours: 20)),
+        Duration.zero,
+      );
+
+      final blocks = actualTimeBlocksForEntries(
+        entries: [shortCall, noLength, longCall],
+        links: [
+          for (final call in [longCall, shortCall, noLength])
+            hLink(
+              'l-${call.meta.id}',
+              from: person.meta.id,
+              to: call.meta.id,
+              day: day,
+            ),
+        ],
+        linkedFromById: {person.meta.id: person},
+        categoryById: (_) => null,
+        eventsEnabled: true,
+      );
+
+      expect(blocks.map((b) => b.id), [
+        'actual:call-long',
+        'actual:call-short',
+      ]);
+      expect(blocks.map((b) => b.end.difference(b.start)), [
+        const Duration(hours: 1, minutes: 15),
+        const Duration(minutes: 15),
+      ]);
+      expect(blocks.map((b) => b.title), ['Anna', 'Anna']);
+      expect(blocks.first.category.id, 'cat-people');
+      expect(blocks.first.type, TimeBlockType.manual);
+      expect(blocks.first.state, TimeBlockState.completed);
+      expect(blocks.first.taskId, isNull);
     });
 
     test('uses entry text → category name → entry id as title fallbacks', () {

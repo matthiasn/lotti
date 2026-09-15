@@ -4365,6 +4365,7 @@
   "queryAudioTooLarge": "Puteți pregăti marcaje temporale pentru înregistrări de până la 25 MB. Alegeți o înregistrare mai mică.",
   "queryAudioUploadNotice": "Pregătirea marcajelor temporale trimite această înregistrare furnizorului de transcriere configurat pentru acest agent.",
   "queryCategoryAgent": "Agent de categorie",
+  "queryChat": "Chat",
   "queryChats": "Conversații",
   "queryChecked": "Surse verificate: {count}",
   "queryCloseChat": "Închideți conversația",

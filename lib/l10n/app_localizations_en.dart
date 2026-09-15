@@ -11157,6 +11157,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get queryAskTask => 'Ask about this task';
 
   @override
+  String get queryChat => 'Chat';
+
+  @override
   String get queryAudioFailed =>
       'Audio could not be prepared or played. Try again.';
 
