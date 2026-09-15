@@ -198,7 +198,15 @@ void main() {
       facts,
       contains('HEALTH BAND CONSTRAINT (newest user-set sentiment=difficult)'),
     );
-    expect(facts, contains('allowed FIELD VALUES: needsAttention, strained'));
+    expect(
+      facts,
+      contains('allowed health verdicts: needs attention, strained'),
+    );
+    expect(
+      facts,
+      contains('exact enum only in healthBand; never copy it into prose'),
+    );
+    expect(facts, isNot(contains('allowed FIELD VALUES: needsAttention')));
     expect(facts, contains('narrative cannot improve this constraint'));
   });
 
@@ -222,7 +230,7 @@ void main() {
       facts,
       contains('HEALTH BAND CONSTRAINT (newest user-set sentiment=delightful)'),
     );
-    expect(facts, contains('allowed FIELD VALUES: thriving, steady'));
+    expect(facts, contains('allowed health verdicts: thriving, steady'));
   });
 
   test('an unrated check-in does not invent a health-band constraint', () {
@@ -249,7 +257,10 @@ void main() {
       facts,
       contains('HEALTH BAND CONSTRAINT (newest user-set sentiment=strained)'),
     );
-    expect(facts, contains('allowed FIELD VALUES: needsAttention, strained'));
+    expect(
+      facts,
+      contains('allowed health verdicts: needs attention, strained'),
+    );
   });
 
   test('guidance fields and the narrative excerpt ride each check-in', () {

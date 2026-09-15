@@ -664,9 +664,10 @@ removed:
   10 check-ins, 400-char narrative excerpts) and — the ADR 0041 §5 boundary
   — its `render` signature has **no channel parameter**, so contact
   channels are structurally absent from model context, not filtered out. The
-  newest user-set sentiment in that window also emits the allowed health-band
-  field values; narrative may explain the verdict but cannot improve that
-  deterministic bound.
+  newest user-set sentiment in that window also emits the allowed health
+  verdicts in plain language; narrative may explain the verdict but cannot
+  improve that deterministic bound. The exact enum stays confined to the
+  `healthBand` tool field so it cannot leak into user-facing prose.
 - **Outputs accumulate, then persist once.** The contract requires visible
   chat through `reply_to_user`. On an interactive wake, the workflow accepts
   plain assistant content as a defensive visible-reply fallback and forces one

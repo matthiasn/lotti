@@ -100,9 +100,14 @@ class RelationshipFactsRenderer {
           '(newest user-set sentiment=${newestSentiment.name}):',
         )
         ..writeln(
-          '- allowed FIELD VALUES: ${allowedBands.map((band) => band.name).join(', ')}',
+          '- allowed health verdicts: '
+          '${allowedBands.map(_healthBandLabel).join(', ')}',
         )
-        ..writeln('- narrative cannot improve this constraint');
+        ..writeln('- narrative cannot improve this constraint')
+        ..writeln(
+          '- use the matching exact enum only in healthBand; never copy it '
+          'into prose or replies',
+        );
     }
     if (window.isEmpty) {
       buffer.writeln('- none recorded');
@@ -245,6 +250,11 @@ class RelationshipFactsRenderer {
       RelationshipHealthBand.needsAttention,
       RelationshipHealthBand.strained,
     ],
+  };
+
+  String _healthBandLabel(RelationshipHealthBand band) => switch (band) {
+    RelationshipHealthBand.needsAttention => 'needs attention',
+    _ => band.name,
   };
 
   String _day(DateTime value) {

@@ -68,6 +68,14 @@ void main() {
         ),
         isTrue,
       );
+      expect(
+        containsAffirmativeReportClaim(
+          'Avoid assuming context: nothing was recorded about what you '
+              'discussed, so let him set the agenda.',
+          'you discussed',
+        ),
+        isFalse,
+      );
     });
   });
 
