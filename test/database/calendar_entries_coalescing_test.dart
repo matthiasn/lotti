@@ -44,9 +44,10 @@ class _CountingJournalDb extends JournalDb {
     List<drift.Variable<Object>> variables = const [],
     Set<drift.ResultSetImplementation<dynamic, dynamic>> readsFrom = const {},
   }) {
-    if (query.contains(
-          "type IN ('JournalEntry', 'WorkoutEntry', 'JournalEvent')",
-        ) &&
+    // Matched by its containment range, not its type list: the list grows
+    // as more entry kinds count as recorded time (events, then check-ins),
+    // and a stale literal silently counts zero round-trips.
+    if (query.startsWith('SELECT * FROM journal WHERE type IN (') &&
         query.contains('date_from >= ?1 AND date_to <= ?2')) {
       calendarQueryCount += 1;
     }
