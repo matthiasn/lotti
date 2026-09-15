@@ -102,8 +102,8 @@ void main() {
       const time = ChangeItem(
         toolName: 'create_time_entry',
         args: {
-          'startTime': '2026-09-12T10:00',
-          'endTime': '2026-09-12T10:30:00.000',
+          'startTime': '2026-09-12T14:00',
+          'endTime': '2026-09-12T14:30:00.000',
           'summary': 'Habitat maintenance.',
         },
         humanSummary: 'Time',
@@ -114,7 +114,7 @@ void main() {
         check.grade(
           answer([
             time.copyWith(
-              args: {...time.args, 'endTime': '2026-09-12T11:30:00'},
+              args: {...time.args, 'endTime': '2026-09-12T15:30:00'},
             ),
           ]),
         ),
@@ -134,7 +134,7 @@ void main() {
         check.grade(
           answer([
             time.copyWith(
-              args: {...time.args, 'startTime': '2026-09-12T10:00:00Z'},
+              args: {...time.args, 'startTime': '2026-09-12T14:00:00Z'},
             ),
           ]),
         ),

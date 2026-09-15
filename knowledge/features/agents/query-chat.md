@@ -267,6 +267,11 @@ The one deterministic tolerance is a backslash before a character JSON cannot
 escape (models write `\-` for markdown list dashes): `QueryTextInference`
 drops such a backslash and retries the decode, in the final parse and the
 streamed answer prefix alike, and anything still invalid fails as before.
+Action planning has one matching tolerance: a proposal naming a target outside
+the scope (`QueryTaskActionTargetUnavailable`) is retried once like any
+validation failure, and if it recurs the planner returns the model's answer
+with no actions instead of failing the reply. A malformed response, or one
+with no readable answer, still fails closed.
 
 Summary answers have no `QueryEvidence` cards and create no shared durable
 conclusion. The answer itself is saved as chat history with owner visibility
