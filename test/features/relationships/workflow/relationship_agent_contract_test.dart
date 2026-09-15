@@ -43,12 +43,12 @@ void main() {
       );
       expect(
         relationshipAgentSystemPrompt,
-        contains('STOP SILENTLY; do not summarize, reassure, or call any tool'),
+        contains('For no-op scheduled wakes, call no tools'),
       );
       expect(
         relationshipAgentSystemPrompt,
         contains(
-          'An empty assistant response with zero tool calls is valid and required',
+          'plain assistant content is an internal note, not a user reply',
         ),
       );
       expect(

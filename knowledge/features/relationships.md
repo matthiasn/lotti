@@ -672,9 +672,10 @@ removed:
   response still includes
   every briefing, banner, snooze, and deferred task proposal explicitly
   triggered by the rendered facts. The workflow does not request a second
-  assistant response after tool results. When nothing is triggered, the agent
-  stays silent instead of summarising the board; the contract never creates
-  work merely because a tool is available.
+  assistant response after tool results. When nothing is triggered, no tool
+  runs; any plain completion is persisted only as an internal thought, never
+  as a user reply. The contract never creates work merely because a tool is
+  available.
   A briefing is triggered when it is missing, a check-in is newer, cadence is
   due, or the user explicitly requests a refresh.
   `reply_to_user`, `update_relationship_report`, `create_relationship_ad`,
