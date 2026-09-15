@@ -416,6 +416,13 @@ RelationshipAgentEvalFailureCategory classifyRelationshipAgentResult({
         if (!validBand || !validTexts) {
           return RelationshipAgentEvalFailureCategory.invalidToolArguments;
         }
+        // The strategy rejects a band outside the wake's sentiment bound,
+        // which drops the briefing — a verdict production would not publish.
+        final allowedBands = scenario.allowedHealthBands;
+        if (allowedBands != null &&
+            !allowedBands.any((allowed) => allowed.name == band)) {
+          return RelationshipAgentEvalFailureCategory.healthBandMismatch;
+        }
         // Band names are field values, never prose. The strategy bans only
         // the UNMISTAKABLE camelCase identifiers — `steady` or `strained`
         // are ordinary English a legitimate briefing may well contain.

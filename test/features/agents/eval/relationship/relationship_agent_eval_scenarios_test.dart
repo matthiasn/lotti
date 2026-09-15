@@ -180,6 +180,27 @@ void main() {
       );
     });
 
+    test('the health-band bound comes from production and never contradicts '
+        'a scenario expectation', () {
+      expect(
+        byId('pv_narrative_leak').allowedHealthBands,
+        {
+          RelationshipHealthBand.needsAttention,
+          RelationshipHealthBand.strained,
+        },
+      );
+      expect(byId('br_first_ever_no_checkins').allowedHealthBands, isNull);
+      for (final scenario in scenarios) {
+        final allowed = scenario.allowedHealthBands;
+        if (allowed == null || scenario.expectedHealthBands.isEmpty) continue;
+        expect(
+          scenario.expectedHealthBands.intersection(allowed),
+          isNotEmpty,
+          reason: '${scenario.id} expects a band production would reject',
+        );
+      }
+    });
+
     test('staleness follows the check-in/report order', () {
       expect(
         byId('br_stale_after_checkin').facts,

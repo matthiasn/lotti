@@ -221,7 +221,7 @@ void main() {
         checkIn(
           'older',
           DateTime(2026, 8, 13),
-          sentiment: CheckInSentiment.strained,
+          sentiment: CheckInSentiment.good,
         ),
       ],
     );
@@ -230,7 +230,58 @@ void main() {
       facts,
       contains('HEALTH BAND CONSTRAINT (newest user-set sentiment=delightful)'),
     );
-    expect(facts, contains('allowed health verdicts: thriving, steady'));
+    expect(facts, contains('allowed health verdicts: thriving, steady\n'));
+  });
+
+  group('a positive newest rating keeps needs attention reachable', () {
+    CheckInEntry good(String id, DateTime at) =>
+        checkIn(id, at, sentiment: CheckInSentiment.good);
+
+    test('when the cadence has lapsed', () {
+      final facts = render(
+        checkIns: [good('newest', DateTime(2026, 6, 2))],
+        d: derivation(status: RelationshipCadenceStatus.due),
+      );
+
+      expect(
+        facts,
+        contains('allowed health verdicts: thriving, steady, needs attention'),
+      );
+    });
+
+    test('when an older rating in the window was strained or difficult', () {
+      final facts = render(
+        checkIns: [
+          good('newest', DateTime(2026, 8, 14)),
+          checkIn(
+            'hard',
+            DateTime(2026, 7, 31),
+            sentiment: CheckInSentiment.difficult,
+          ),
+        ],
+      );
+
+      expect(
+        facts,
+        contains('allowed health verdicts: thriving, steady, needs attention'),
+      );
+    });
+
+    test('but not for a hard rating that fell out of the window', () {
+      final facts = render(
+        checkIns: [
+          for (var day = 1; day <= relationshipCheckInLookback; day++)
+            good('good-$day', DateTime(2026, 8, day + 1)),
+          checkIn(
+            'outside-window',
+            DateTime(2026, 7, 31),
+            sentiment: CheckInSentiment.strained,
+          ),
+        ],
+      );
+
+      expect(facts, contains('allowed health verdicts: thriving, steady\n'));
+    });
   });
 
   test('an unrated check-in does not invent a health-band constraint', () {

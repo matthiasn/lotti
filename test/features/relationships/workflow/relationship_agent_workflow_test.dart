@@ -641,6 +641,72 @@ void main() {
     },
   );
 
+  test(
+    'a lapsed cadence keeps needs attention publishable after a good rating',
+    () async {
+      stubGlmResolution();
+      when(
+        () => relationshipRepository.getAllCheckInsForRelationship(
+          relationshipId,
+        ),
+      ).thenAnswer(
+        (_) async => [
+          checkIn(
+            'c-1',
+            DateTime(2026, 8, 1, 18),
+            sentiment: CheckInSentiment.good,
+          ),
+        ],
+      );
+      conversationRepository
+        ..maxDelegateCalls = 1
+        ..sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0,
+              strategy,
+            }) async {
+              expect(message, contains('- status: due'));
+              expect(message, contains('thriving, steady, needs attention'));
+              await strategy!.processToolCalls(
+                toolCalls: [
+                  toolCall(
+                    RelationshipAgentToolNames.updateRelationshipReport,
+                    {...briefingArgs(), 'healthBand': 'needsAttention'},
+                  ),
+                  toolCall(
+                    RelationshipAgentToolNames.createRelationshipAd,
+                    adArgs(),
+                    id: 'call-2',
+                  ),
+                ],
+                manager: conversationManager,
+              );
+              return null;
+            };
+
+      final result = await run(
+        tokens: {relationshipEscalationWorkspaceKey('2026-08-08')},
+      );
+
+      expect(result.success, isTrue);
+      expect(result.reportUpdated, isTrue);
+      expect(
+        upserts
+            .whereType<AgentReportEntity>()
+            .single
+            .provenance[RelationshipReportProvenanceKeys.healthBand],
+        'needsAttention',
+      );
+    },
+  );
+
   group('the standing report head', () {
     /// One wake that publishes a briefing for the 2026-08-08 due day.
     Future<WakeResult> publishBriefing() {

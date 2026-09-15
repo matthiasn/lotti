@@ -17,30 +17,55 @@ const relationshipCheckInLookback = 10;
 /// Longest check-in narrative excerpt the FACTS block carries per entry.
 const relationshipNarrativeExcerptChars = 400;
 
-/// Returns the health bands allowed by the newest explicit user sentiment in
+/// The health bands one wake may publish, and the newest user-set sentiment
+/// they derive from.
+typedef RelationshipHealthBandConstraint = ({
+  CheckInSentiment sentiment,
+  Set<RelationshipHealthBand> bands,
+});
+
+/// Returns the health bands allowed by the user's own sentiment ratings in
 /// the bounded check-in window, or null when the user supplied no sentiment.
-Set<RelationshipHealthBand>? relationshipHealthBandConstraint(
-  List<CheckInEntry> checkIns,
-) {
-  for (final checkIn in relationshipCheckInWindow(checkIns)) {
-    final sentiment = checkIn.data.sentiment;
-    if (sentiment == null) continue;
-    return switch (sentiment) {
-      CheckInSentiment.delightful || CheckInSentiment.good => const {
-        RelationshipHealthBand.thriving,
-        RelationshipHealthBand.steady,
-      },
-      CheckInSentiment.neutral => const {
-        RelationshipHealthBand.steady,
+///
+/// The newest rating sets the bound, so positive narrative never improves a
+/// negative rating. A positive newest rating still permits `needsAttention`
+/// when [cadenceStatus] is due or an older rating in the window was strained
+/// or difficult: neither a lapse nor a hard stretch is erased by one good
+/// conversation.
+RelationshipHealthBandConstraint? relationshipHealthBandConstraint({
+  required List<CheckInEntry> checkIns,
+  required RelationshipCadenceStatus cadenceStatus,
+}) {
+  final sentiments = relationshipCheckInWindow(checkIns)
+      .map((checkIn) => checkIn.data.sentiment)
+      .whereType<CheckInSentiment>()
+      .toList();
+  if (sentiments.isEmpty) return null;
+  final newest = sentiments.first;
+  final hardStretch = sentiments
+      .skip(1)
+      .any(
+        (sentiment) =>
+            sentiment == CheckInSentiment.strained ||
+            sentiment == CheckInSentiment.difficult,
+      );
+  final bands = switch (newest) {
+    CheckInSentiment.delightful || CheckInSentiment.good => {
+      RelationshipHealthBand.thriving,
+      RelationshipHealthBand.steady,
+      if (cadenceStatus == RelationshipCadenceStatus.due || hardStretch)
         RelationshipHealthBand.needsAttention,
-      },
-      CheckInSentiment.strained || CheckInSentiment.difficult => const {
-        RelationshipHealthBand.needsAttention,
-        RelationshipHealthBand.strained,
-      },
-    };
-  }
-  return null;
+    },
+    CheckInSentiment.neutral => const {
+      RelationshipHealthBand.steady,
+      RelationshipHealthBand.needsAttention,
+    },
+    CheckInSentiment.strained || CheckInSentiment.difficult => const {
+      RelationshipHealthBand.needsAttention,
+      RelationshipHealthBand.strained,
+    },
+  };
+  return (sentiment: newest, bands: bands);
 }
 
 /// Renders the deterministic FACTS block of a relationship-agent Phase B
@@ -114,23 +139,22 @@ class RelationshipFactsRenderer {
     }
 
     final window = relationshipCheckInWindow(checkIns);
-    final newestSentiment = window
-        .map((checkIn) => checkIn.data.sentiment)
-        .whereType<CheckInSentiment>()
-        .firstOrNull;
+    final constraint = relationshipHealthBandConstraint(
+      checkIns: window,
+      cadenceStatus: derivation.status,
+    );
     buffer.writeln(
       'CHECK-INS (newest first, ${window.length} of ${checkIns.length}):',
     );
-    if (newestSentiment != null) {
-      final allowedBands = relationshipHealthBandConstraint(window)!;
+    if (constraint != null) {
       buffer
         ..writeln(
           'HEALTH BAND CONSTRAINT '
-          '(newest user-set sentiment=${newestSentiment.name}):',
+          '(newest user-set sentiment=${constraint.sentiment.name}):',
         )
         ..writeln(
           '- allowed health verdicts: '
-          '${allowedBands.map(_healthBandLabel).join(', ')}',
+          '${RelationshipHealthBand.values.where(constraint.bands.contains).map(_healthBandLabel).join(', ')}',
         )
         ..writeln('- narrative cannot improve this constraint')
         ..writeln(

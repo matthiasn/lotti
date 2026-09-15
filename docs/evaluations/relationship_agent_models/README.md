@@ -64,7 +64,10 @@ the baseline lapse line) so drift breaks offline before a live run burns
 money on stale expectations.
 
 The classifier mirrors the shape rules `RelationshipAgentStrategy` rejects
-in-conversation (band enum,
+in-conversation (band enum, the sentiment-derived band bound — each scenario
+carries production's `relationshipHealthBandConstraint` for its world, so a
+band the strategy would reject scores `healthBandMismatch` even where the
+scenario names no expected band —
 required briefing fields, banner tone/animation catalogs, the
 explicit-offset snooze instant, the active-adId allow-list, one reply and
 one banner per wake, evidence IDs and the three-task limit), and where the runtime is lenient the classifier is

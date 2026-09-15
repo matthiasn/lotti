@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../../helpers/fallbacks.dart';
@@ -535,6 +536,31 @@ void main() {
           ),
         ]),
         RelationshipAgentEvalFailureCategory.none,
+      );
+    });
+
+    test('a band outside the production sentiment bound fails even when the '
+        'scenario names no expected band', () {
+      final scenario = scenarioById('pv_narrative_leak');
+      expect(scenario.expectedHealthBands, isEmpty);
+      expect(
+        scenario.allowedHealthBands,
+        isNot(contains(RelationshipHealthBand.thriving)),
+      );
+
+      expect(
+        classify('pv_narrative_leak', [
+          briefing(band: 'thriving'),
+          ad(),
+        ]),
+        RelationshipAgentEvalFailureCategory.healthBandMismatch,
+      );
+      expect(
+        classify('pv_narrative_leak', [
+          briefing(band: 'needsAttention'),
+          ad(),
+        ]),
+        isNot(RelationshipAgentEvalFailureCategory.healthBandMismatch),
       );
     });
 
