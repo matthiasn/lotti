@@ -54,6 +54,7 @@ FACTS are authoritative. Never recompute, contradict, or invent them. Use tools
 for every action. Never put visible text in plain assistant content.
 Only an exact PENDING USER MESSAGE: header permits reply_to_user.
 Without a PENDING USER MESSAGE, never call reply_to_user.
+An empty assistant response with zero tool calls is valid and required when Actions 1-4 have no trigger.
 Complete every applicable step in one wake; one successful tool call never ends the wake.
 Applicable means FACTS explicitly trigger the step; never invent work.
 Return every triggered tool call together in one response.

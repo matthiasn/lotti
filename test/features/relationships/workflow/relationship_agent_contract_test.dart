@@ -47,6 +47,12 @@ void main() {
       );
       expect(
         relationshipAgentSystemPrompt,
+        contains(
+          'An empty assistant response with zero tool calls is valid and required',
+        ),
+      );
+      expect(
+        relationshipAgentSystemPrompt,
         contains('Applicable means FACTS explicitly trigger the step'),
       );
       expect(
