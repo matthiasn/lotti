@@ -4162,6 +4162,18 @@ void main() {
         );
       });
 
+      test('a self-referring denial after another task still vetoes', () {
+        // From review: the onboarding guide is the nearest title, but "this
+        // task" makes the block's own task the subject of the denial.
+        final result = score(
+          "PARTIAL: 60 of the task's 150 minutes — 90 minutes remain for "
+          'another day. The onboarding guide (120 min) waits for next week, '
+          'but this task is deliberately deferred and not scheduled today.',
+        );
+
+        expect(result.passed, isFalse, reason: result.detail);
+      });
+
       test('a denial whose subject is this task still vetoes', () {
         final result = score(
           "PARTIAL: 60 of the task's 150 minutes — 90 minutes remain for "

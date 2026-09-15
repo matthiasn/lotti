@@ -1054,11 +1054,23 @@ bool _denialSubjectIsAnotherTask(
     return end;
   }
 
-  final current = lastReferenceEnd(taskId, taskTitle);
+  // "this task is not scheduled today" names the block's own task without a
+  // title, so a self-reference counts as the nearest mention of this task.
+  var current = lastReferenceEnd(taskId, taskTitle);
+  for (final reference in _currentTaskSelfReference.allMatches(prefix)) {
+    if (reference.end > current) current = reference.end;
+  }
   return corpus
       .where((task) => task.taskId != taskId)
       .any((task) => lastReferenceEnd(task.taskId, task.title) > current);
 }
+
+/// A reference to the block's own task without naming it: "this task",
+/// "the current task", "this block".
+final RegExp _currentTaskSelfReference = RegExp(
+  r'\b(?:this|the current|the same)\s+(?:task|block|work|item)\b',
+  caseSensitive: false,
+);
 
 /// The object phrase of a verb-led title — "Write the onboarding guide" is
 /// referred to as "onboarding guide". Null when fewer than two words remain,
