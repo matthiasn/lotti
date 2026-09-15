@@ -666,10 +666,13 @@ removed:
   channels are structurally absent from model context, not filtered out.
 - **Tool-only output, accumulated then persisted once.** Visible chat always
   goes through `reply_to_user`; plain assistant content is not an output path.
-  It is forbidden when no pending message exists. A reply is the first action
-  for a pending message, then the same wake still completes every briefing,
-  banner, and deferred task proposal explicitly triggered by the rendered
-  facts; the contract never creates work merely because a tool is available.
+  It is forbidden when no pending message exists. A pending message includes
+  exactly one reply, and the same single assistant response still includes
+  every briefing, banner, snooze, and deferred task proposal explicitly
+  triggered by the rendered facts. The workflow does not request a second
+  assistant response after tool results. When nothing is triggered, the agent
+  stays silent instead of summarising the board; the contract never creates
+  work merely because a tool is available.
   `reply_to_user`, `update_relationship_report`, `create_relationship_ad`,
   `snooze_relationship_ad`, and `create_and_link_task` accumulate in the
   strategy; `persistOutputs` writes one transaction, fenced on the person still

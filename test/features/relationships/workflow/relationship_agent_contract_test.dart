@@ -39,11 +39,31 @@ void main() {
       );
       expect(
         relationshipAgentSystemPrompt,
+        contains('You do not get another assistant response'),
+      );
+      expect(
+        relationshipAgentSystemPrompt,
+        contains('STOP SILENTLY; do not summarize, reassure, or call any tool'),
+      );
+      expect(
+        relationshipAgentSystemPrompt,
         contains('Applicable means FACTS explicitly trigger the step'),
       );
       expect(
         relationshipAgentSystemPrompt,
         contains('Without a PENDING USER MESSAGE, never call reply_to_user'),
+      );
+      expect(
+        relationshipAgentSystemPrompt,
+        contains('A state-changing request is incomplete until its action'),
+      );
+      expect(
+        relationshipAgentSystemPrompt,
+        contains('call snooze_relationship_ad in the same response'),
+      );
+      expect(
+        relationshipAgentSystemPrompt,
+        contains('call create_relationship_ad with tone=roast'),
       );
       expect(
         relationshipAgentSystemPrompt,
@@ -56,6 +76,10 @@ void main() {
       expect(
         relationshipAgentSystemPrompt,
         contains('replace the required banner with a reply'),
+      );
+      expect(
+        relationshipAgentSystemPrompt,
+        contains('Never copy a healthBand value into a visible text field'),
       );
     },
   );
