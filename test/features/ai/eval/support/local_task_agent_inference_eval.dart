@@ -831,8 +831,10 @@ LocalTaskAgentEvalScenario _germanPlanningScenario(
     // NOT `fertig`: it is a stem, and the live run tripped all three models on
     // "Figma-Prototyp fertigstellen" and "soll bis 30. September fertig sein"
     // — an infinitive TODO and a future deadline, neither of them a claim that
-    // anything is done. The remaining three are past participles, which cannot
-    // be read as forward-looking the same way.
+    // anything is done. The remaining three are past participles, but a modal
+    // passive still makes them forward-looking — "kann der Prototyp
+    // abgeschlossen werden" tripped a live run — so the matcher reads German
+    // modals and `sobald` as deferral cues.
     forbiddenReportClaims: const ['erledigt', 'abgeschlossen', 'umgesetzt'],
   );
 }
