@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_action_bar.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -180,16 +181,8 @@ Future<void> showDesignSystemFilterModal({
         0,
         spacing.step5,
       );
-      final isBottomSheet = ModalUtils.shouldUseRootNavigatorForBottomSheet(
-        modalContext,
-      );
-      final hasLargeText =
-          MediaQuery.textScalerOf(modalContext).scale(1) > TextScales.large;
-      final overviewFooterClearance = isBottomSheet
-          ? hasLargeText
-                ? spacing.step13 + spacing.step12
-                : spacing.step13
-          : spacing.step12;
+      final overviewFooterClearance =
+          DesignSystemFilterActionBar.stickyClearance(modalContext);
 
       return [
         ModalUtils.modalSheetPage(

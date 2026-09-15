@@ -133,9 +133,6 @@ class ModalUtils {
     Widget? titleWidget,
     bool isTopBarLayerAlwaysVisible = true,
     bool showCloseButton = false,
-    IconData closeButtonIcon = LottiIcons.close,
-    String? closeButtonTooltip,
-    VoidCallback? onClosePressed,
     void Function()? onTapBack,
     EdgeInsets? padding,
     double? navBarHeight,
@@ -166,14 +163,9 @@ class ModalUtils {
           ? Builder(
               builder: (navigationContext) => _navigationButton(
                 context: navigationContext,
-                tooltip:
-                    closeButtonTooltip ??
-                    materialLocalizations.closeButtonTooltip,
-                icon: closeButtonIcon,
-                onPressed: () {
-                  onClosePressed?.call();
-                  Navigator.of(navigationContext).pop();
-                },
+                tooltip: materialLocalizations.closeButtonTooltip,
+                icon: LottiIcons.close,
+                onPressed: () => Navigator.of(navigationContext).pop(),
               ),
             )
           : null,
@@ -228,9 +220,6 @@ class ModalUtils {
     bool hasTopBarLayer = true,
     Widget Function(Widget)? modalDecorator,
     bool showCloseButton = true,
-    IconData closeButtonIcon = LottiIcons.close,
-    String? closeButtonTooltip,
-    VoidCallback? onClosePressed,
     bool? useRootNavigator,
     Widget? leadingNavBarWidget,
     WoltModalType Function(BuildContext)? modalTypeBuilderOverride,
@@ -255,9 +244,6 @@ class ModalUtils {
             hasTopBarLayer: hasTopBarLayer,
             navBarHeight: navBarHeight,
             showCloseButton: showCloseButton,
-            closeButtonIcon: closeButtonIcon,
-            closeButtonTooltip: closeButtonTooltip,
-            onClosePressed: onClosePressed,
             padding: padding,
             leadingNavBarWidget: leadingNavBarWidget,
             child: builder(modalSheetContext),

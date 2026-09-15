@@ -108,6 +108,18 @@ offered rather than the width it needs; and `RenderWrap` omits its own `spacing`
 from its intrinsic width, which under-measures a multi-action secondary group
 and lets the primary encroach on the gutter.
 
+`DesignSystemFilterActionBar` is the footer every filter modal commits with:
+`DesignSystemModalActionBar` in glass and `compactPrimary`, Clear as the leading
+secondary, Apply as the trailing primary carrying the confirm glyph, and an
+`extraSecondary` slot between them for the task filter's Save. A `null` handler
+disables its button rather than hiding it, so a Clear with nothing to clear
+stays where the hand expects it. Its `stickyClearance` is the scroll allowance
+a body reserves under its last control — the bar's height on a bottom sheet,
+more once large text stacks the bar, less in a dialog — which is why no filter
+modal computes that inset itself. The task list, projects and linked-entries
+filters all commit through it, and the close button on each is a plain close
+that discards the draft; no modal commits through its close button.
+
 The compact `DesignSystemCheckbox` is a 24dp control with no outer inset. A
 feature that needs a mobile-sized option target should not pad seven independent
 checkboxes into a loose stack; it should use

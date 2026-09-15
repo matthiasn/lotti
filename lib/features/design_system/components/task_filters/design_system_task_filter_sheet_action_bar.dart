@@ -1,11 +1,13 @@
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_action_bar.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet_state.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Standard modal action bar for a filter overview.
+/// Standard modal action bar for a task filter overview: the shared
+/// [DesignSystemFilterActionBar] bound to a [DesignSystemTaskFilterState]
+/// draft, with the optional Save action between Clear and Apply.
 ///
 /// Saving is deliberately a navigation action rather than an anchored menu:
 /// the owning modal routes to its token-backed save page, where creating,
@@ -38,32 +40,24 @@ class DesignSystemTaskFilterActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final spacing = context.designTokens.spacing;
     final hasFilters = state.appliedCount > 0;
 
-    return DesignSystemModalActionBar(
-      glass: true,
-      layout: DesignSystemModalActionBarLayout.compactPrimary,
-      padding: EdgeInsets.fromLTRB(
-        spacing.step5,
-        spacing.step4,
-        spacing.step5,
-        spacing.step5,
-      ),
-      secondary: [
-        DesignSystemButton(
-          key: const ValueKey('design-system-task-filter-clear'),
-          label: state.clearAllLabel,
-          variant: DesignSystemButtonVariant.secondary,
-          size: DesignSystemButtonSize.large,
-          onPressed: hasFilters
-              ? () {
-                  final cleared = state.clearAll();
-                  onChanged(cleared);
-                  onClearAllPressed?.call(cleared);
-                }
-              : null,
-        ),
+    return DesignSystemFilterActionBar(
+      clearKey: const ValueKey('design-system-task-filter-clear'),
+      applyKey: const ValueKey('design-system-task-filter-apply'),
+      clearLabel: state.clearAllLabel,
+      applyLabel: state.applyLabel,
+      onClearPressed: hasFilters
+          ? () {
+              final cleared = state.clearAll();
+              onChanged(cleared);
+              onClearAllPressed?.call(cleared);
+            }
+          : null,
+      onApplyPressed: onApplyPressed == null
+          ? null
+          : () => onApplyPressed!(state),
+      extraSecondary: [
         if (onSavePressed != null)
           DesignSystemButton(
             key: saveButtonKey,
@@ -74,13 +68,6 @@ class DesignSystemTaskFilterActionBar extends StatelessWidget {
             onPressed: canSave ? onSavePressed : null,
           ),
       ],
-      primary: DesignSystemButton(
-        key: const ValueKey('design-system-task-filter-apply'),
-        label: state.applyLabel,
-        leadingIcon: LottiIcons.confirm,
-        size: DesignSystemButtonSize.large,
-        onPressed: onApplyPressed == null ? null : () => onApplyPressed!(state),
-      ),
     );
   }
 }

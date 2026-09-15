@@ -48,7 +48,11 @@ The filter button opens **one** adaptive `showDesignSystemFilterModal` route —
 bottom sheet on compact layouts, a dialog on wide. The overview and its status,
 category, label and project pages **share one mutable draft**, so navigating
 deeper never stacks another modal. Child pages return with Back or Done; Apply and
-Save remain overview actions. The transition coordinates the content fade with the
+Save remain overview actions. The overview footer is the shared
+`DesignSystemFilterActionBar`, the same Clear / Apply bar the linked-entries
+filter on a task detail page commits with
+(`lib/features/journal/ui/widgets/linked_entries_filter_modal.dart`), so a
+draft is closed the same way everywhere and never through the close button. The transition coordinates the content fade with the
 Wolt page-size animation, and returning **restores keyboard focus to the field
 that opened the child page**.
 
