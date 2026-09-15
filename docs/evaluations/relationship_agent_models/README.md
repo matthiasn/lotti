@@ -184,6 +184,14 @@ The DeepSeek run is `20260915T195324Z-47a90c3ce0fd` at source commit
 commit `08b5de047b`; the only intervening commit records the DeepSeek ledger
 row, so both runs use the same production prompt and context code.
 
+These results predate three later changes that have not been re-measured
+live: follow-up turns now carry the pending-message marker and each exchange
+must produce its own reply; the strategy rejects a health band outside the
+sentiment bound; and that bound keeps needs attention reachable after a
+positive rating when the cadence is due or an older rating in the window was
+strained or difficult. The classifier scores the bound as well, so a re-run
+may now fail cases these runs passed.
+
 ## Cost (observed, not a target)
 
 Each case records tokens, latency, and — on Melious — billed credits and
