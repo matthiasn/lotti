@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
+import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
@@ -650,6 +651,16 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
         agentId: agentId,
       ),
     );
+    // *Chat* rides the Read more row at its trailing end: a compact pill
+    // beside the quiet links, not a full-width row under them.
+    // Null while query chat is off, so an invisible button never holds the
+    // row open or takes the body's trailing gap.
+    final chatButton = ref.watch(queryChatEnabledProvider)
+        ? QueryAskButton(
+            scope: QueryScope(kind: QueryScopeKind.task, id: widget.taskId),
+            chat: true,
+          )
+        : null;
     final reportBody = TldrBody(
       disclosureKey: const ValueKey('taskAgentReportDisclosure'),
       tldr: tldr,
@@ -657,6 +668,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       additionalReport: additionalReport,
       onToggle: () => setState(() => _expanded = !_expanded),
       onOpenInternals: () => _openInternals(agentName: subtitle),
+      trailing: chatButton,
     );
     // Nothing to propose, no section: an empty "Proposed changes" band cost a
     // divider and two paddings to say what the missing rows already said. A
@@ -779,19 +791,19 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
             ),
             child: reportBody,
           ),
-        Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.cardPadding,
-            vertical: tokens.spacing.step2,
-          ),
-          child: Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: QueryAskButton(
-              scope: QueryScope(kind: QueryScopeKind.task, id: widget.taskId),
-              fullLabel: true,
+        // No summary yet, so no Read more row to share: Chat keeps the same
+        // trailing corner on a row of its own.
+        if (!hasReportContent && chatButton != null)
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.cardPadding,
+              vertical: tokens.spacing.step2,
+            ),
+            child: Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: chatButton,
             ),
           ),
-        ),
         // Both hidden until the first value to avoid flashing empty state.
         ?proposalsBand,
         ?historySection,

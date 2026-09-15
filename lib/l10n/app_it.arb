@@ -4839,6 +4839,7 @@
   "queryAudioTooLarge": "Puoi preparare i timestamp per registrazioni fino a 25 MB. Scegli una registrazione più piccola.",
   "queryAudioUploadNotice": "La preparazione dei riferimenti temporali invia questa registrazione al fornitore di trascrizione configurato per questo agente.",
   "queryCategoryAgent": "Agente di categoria",
+  "queryChat": "Chat",
   "queryChats": "Chat",
   "queryChecked": "Fonti verificate: {count}",
   "queryCloseChat": "Chiudi chat",

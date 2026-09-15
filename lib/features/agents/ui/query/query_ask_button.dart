@@ -14,11 +14,17 @@ class QueryAskButton extends ConsumerWidget {
     required this.scope,
     this.compact = false,
     this.fullLabel = false,
+    this.chat = false,
     super.key,
   });
   final QueryScope scope;
   final bool compact;
   final bool fullLabel;
+
+  /// The short *Chat* pill for a card's action row, beside quiet links: the
+  /// visible word stays short, and the scoped label is what a screen reader
+  /// hears.
+  final bool chat;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (!ref.watch(queryChatEnabledProvider)) return const SizedBox.shrink();
@@ -36,12 +42,16 @@ class QueryAskButton extends ConsumerWidget {
             onPressed: open,
           )
         : DesignSystemButton(
-            label: fullLabel ? label : messages.queryAsk,
+            label: chat
+                ? messages.queryChat
+                : fullLabel
+                ? label
+                : messages.queryAsk,
             semanticsLabel: label,
             leadingIcon: LottiIcons.chat,
             onPressed: open,
             variant: DesignSystemButtonVariant.outlined,
-            size: fullLabel
+            size: chat || fullLabel
                 ? DesignSystemButtonSize.small
                 : DesignSystemButtonSize.large,
           );

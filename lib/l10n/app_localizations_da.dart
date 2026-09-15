@@ -11210,6 +11210,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get queryAskTask => 'Spørg om denne opgave';
 
   @override
+  String get queryChat => 'Chat';
+
+  @override
   String get queryAudioFailed =>
       'Lyden kunne ikke forberedes eller afspilles. Prøv igen.';
 

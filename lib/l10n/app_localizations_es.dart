@@ -11374,6 +11374,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get queryAskTask => 'Preguntar sobre esta tarea';
 
   @override
+  String get queryChat => 'Chat';
+
+  @override
   String get queryAudioFailed =>
       'No se pudo preparar o reproducir el audio. Inténtalo de nuevo.';
 

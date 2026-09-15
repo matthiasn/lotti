@@ -11232,6 +11232,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get queryAskTask => 'Vraag over deze taak';
 
   @override
+  String get queryChat => 'Chat';
+
+  @override
   String get queryAudioFailed =>
       'De audio kon niet worden voorbereid of afgespeeld. Probeer het opnieuw.';
 

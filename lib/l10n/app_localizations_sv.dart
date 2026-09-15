@@ -11220,6 +11220,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get queryAskTask => 'Fråga om den här uppgiften';
 
   @override
+  String get queryChat => 'Chatta';
+
+  @override
   String get queryAudioFailed =>
       'Ljudet kunde inte förberedas eller spelas upp. Försök igen.';
 

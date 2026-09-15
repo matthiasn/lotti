@@ -61,7 +61,9 @@ row of chips, and optional details fold under More. Recording, the
 transcript wait, the finished transcript and both failure cards render in
 place of the text. Voice capture records against the person, transcribes
 with the system default profile and fills the narrative for review; it
-never saves automatically or overwrites existing typed text, and a missing
+never saves automatically or overwrites existing typed text. Editing a
+check-in that was saved with words offers no Dictate: the saved text is
+edited as text. A missing
 transcript can be asked for again without recording again. A missing
 transcription model is explained before recording. Category speech
 dictionaries can improve recognition of names. Save waits for a few words

@@ -4838,6 +4838,7 @@
   "queryAudioTooLarge": "Je kunt tijdstempels voorbereiden voor opnamen tot 25 MB. Kies een kleinere opname.",
   "queryAudioUploadNotice": "Bij het voorbereiden van tijdstempels wordt deze opname naar de transcriptieprovider gestuurd die voor deze agent is ingesteld.",
   "queryCategoryAgent": "Categorie-agent",
+  "queryChat": "Chat",
   "queryChats": "Chats",
   "queryChecked": "Gecontroleerde bronnen: {count}",
   "queryCloseChat": "Chat sluiten",

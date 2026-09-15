@@ -29,6 +29,7 @@ void main() {
     double width = 600,
     bool transcriptEdited = false,
     int restMinLines = 3,
+    bool offersDictation = true,
   }) async {
     controller = TextEditingController(text: text);
     focusNode = FocusNode();
@@ -53,6 +54,7 @@ void main() {
             shortcutHint: shortcutHint,
             transcriptEdited: transcriptEdited,
             restMinLines: restMinLines,
+            offersDictation: offersDictation,
             onDictate: dictateEnabled ? () => calls.add('dictate') : null,
             onAddMore: () => calls.add('add-more'),
             onReRecord: reRecordEnabled ? () => calls.add('re-record') : null,
@@ -195,6 +197,51 @@ void main() {
       await tester.pump();
       await tester.pump();
       expect(borderColor(tester), tokens(tester).colors.interactive.enabled);
+    });
+
+    testWidgets("focus draws one frame: the theme's focused outline never "
+        'rings the text inside the accent hairline', (tester) async {
+      await pump(tester, phase: const CheckInSpeechIdle());
+      focusNode.requestFocus();
+      await tester.pump();
+      await tester.pump();
+      // The decoration the TextField hands its decorator, after the app's
+      // InputDecorationTheme has filled in whatever the field left null.
+      final effective = tester
+          .widget<InputDecorator>(
+            find.descendant(
+              of: find.byKey(const ValueKey('check-in-narrative')),
+              matching: find.byType(InputDecorator),
+            ),
+          )
+          .decoration;
+      expect(effective.focusedBorder, InputBorder.none);
+      expect(effective.enabledBorder, InputBorder.none);
+      expect(effective.focusedErrorBorder, InputBorder.none);
+      expect(effective.filled, isFalse);
+    });
+
+    testWidgets('a field that offers no dictation has no Dictate, and still '
+        'counts the words', (tester) async {
+      await pump(
+        tester,
+        phase: const CheckInSpeechIdle(),
+        wordCount: 3,
+        offersDictation: false,
+      );
+      expect(find.byKey(const ValueKey('check-in-dictate')), findsNothing);
+      expect(find.text('3 words'), findsOneWidget);
+
+      // Nor under a card whose recovery would otherwise be the field's own
+      // Dictate.
+      await pump(
+        tester,
+        phase: const CheckInSpeechFailed(
+          CheckInSpeechFailure(CheckInSpeechFailureKind.microphoneDenied),
+        ),
+        offersDictation: false,
+      );
+      expect(find.byKey(const ValueKey('check-in-dictate')), findsNothing);
     });
 
     testWidgets('a null Dictate disables the button without hiding it', (

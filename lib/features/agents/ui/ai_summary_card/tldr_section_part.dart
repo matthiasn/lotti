@@ -300,6 +300,7 @@ class TldrBody extends StatelessWidget {
     required this.disclosureKey,
     this.onOpenInternals,
     this.bodyStyle,
+    this.trailing,
     super.key,
   });
 
@@ -313,6 +314,12 @@ class TldrBody extends StatelessWidget {
   /// card reads at bodyMedium on every face, so its briefing must too.
   /// Null keeps the compact summary size the task and goal cards use.
   final TextStyle? bodyStyle;
+
+  /// An action at the trailing end of the disclosure row — the task card's
+  /// *Chat* — so it shares the line with *Read more* instead of costing a
+  /// row of its own. The row renders for it even when there is nothing
+  /// further to read.
+  final Widget? trailing;
 
   /// Key on the Read more / Show less control. Required rather than
   /// defaulted: a default would hand a fourth surface the task card's key
@@ -370,33 +377,46 @@ class TldrBody extends StatelessWidget {
         // carries ~12 px of optical padding on each side, so an explicit gap
         // stacked a second one on top and left a dead band under the prose.
         // The target instead reaches up into the last line's descender area.
-        if (hasDisclosure)
-          Wrap(
-            spacing: tokens.spacing.step4,
-            runSpacing: tokens.spacing.step2,
+        if (hasDisclosure || trailing != null)
+          Row(
             children: [
-              if (hasMore)
-                _QuietDisclosureLink(
-                  key: disclosureKey,
-                  label: expanded
-                      ? messages.aiCardShowLess
-                      : messages.aiCardReadMore,
-                  icon: expanded ? LottiIcons.collapse : LottiIcons.expand,
-                  expanded: expanded,
-                  onPressed: onToggle,
+              Expanded(
+                child: Wrap(
+                  spacing: tokens.spacing.step4,
+                  runSpacing: tokens.spacing.step2,
+                  children: [
+                    if (hasMore)
+                      _QuietDisclosureLink(
+                        key: disclosureKey,
+                        label: expanded
+                            ? messages.aiCardShowLess
+                            : messages.aiCardReadMore,
+                        icon: expanded
+                            ? LottiIcons.collapse
+                            : LottiIcons.expand,
+                        expanded: expanded,
+                        onPressed: onToggle,
+                      ),
+                    if (expanded && onOpenInternals != null)
+                      _QuietDisclosureLink(
+                        label: messages.aiCardOpenAgentInternals,
+                        icon: LottiIcons.tune,
+                        onPressed: onOpenInternals!,
+                      ),
+                  ],
                 ),
-              if (expanded && onOpenInternals != null)
-                _QuietDisclosureLink(
-                  label: messages.aiCardOpenAgentInternals,
-                  icon: LottiIcons.tune,
-                  onPressed: onOpenInternals!,
-                ),
+              ),
+              if (trailing case final trailing?) ...[
+                SizedBox(width: tokens.spacing.step4),
+                trailing,
+              ],
             ],
           ),
         // Without a disclosure row there is no tap target to supply the
         // trailing optical gap, so the body pays for it itself. The card gives
         // this block no bottom padding of its own.
-        if (!hasDisclosure) SizedBox(height: tokens.spacing.step3),
+        if (!hasDisclosure && trailing == null)
+          SizedBox(height: tokens.spacing.step3),
       ],
     );
   }
@@ -443,10 +463,16 @@ class _QuietDisclosureLink extends StatelessWidget {
                 children: [
                   Icon(icon, size: IconSizes.s, color: ink),
                   SizedBox(width: tokens.spacing.step2),
-                  Text(
-                    label,
-                    style: tokens.typography.styles.others.caption.copyWith(
-                      color: ink,
+                  // Flexible: beside the trailing action on a 320 px card, a
+                  // long translation ("Deschideți componentele interne ale
+                  // agentului") wraps inside its tap target instead of
+                  // overflowing the row.
+                  Flexible(
+                    child: Text(
+                      label,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: ink,
+                      ),
                     ),
                   ),
                 ],

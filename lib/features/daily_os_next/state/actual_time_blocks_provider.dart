@@ -216,6 +216,13 @@ String _actualBlockTitle({
     if (taskTitle.isNotEmpty) return taskTitle;
   }
 
+  // A check-in is time spent with someone: the block names the person, not
+  // the first line of what was said.
+  if (entry is CheckInEntry && linkedFrom is RelationshipEntry) {
+    final name = linkedFrom.data.title.trim();
+    if (name.isNotEmpty) return name;
+  }
+
   final entryText = entry.entryText?.plainText.trim();
   if (entryText != null && entryText.isNotEmpty) {
     return entryText.split('\n').first.trim();

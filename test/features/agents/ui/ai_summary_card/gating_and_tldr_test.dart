@@ -1,5 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../test_helper.dart';
 import '../../test_data/entity_factories.dart';
@@ -80,6 +83,69 @@ void main() {
       expect(find.text('Card surface is happy.'), findsOneWidget);
       expect(find.text('Read more'), findsOneWidget);
     });
+
+    testWidgets('Chat shares the Read more row, at its trailing end, and '
+        'is no longer a pill of its own below it', (tester) async {
+      final bench = AgentTestBench(
+        report: makeTestReport(
+          tldr: 'Card surface is happy.',
+          content: '## Goal\nShip the card.\n',
+        ),
+      );
+
+      await tester.pumpWidget(bench.build());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ask about this task'), findsNothing);
+      final chat = find.text('Chat');
+      final readMore = find.text('Read more');
+      expect(chat, findsOneWidget);
+      // One row: both labels on the same line…
+      expect(
+        tester.getCenter(chat).dy,
+        moreOrLessEquals(tester.getCenter(readMore).dy, epsilon: 1),
+      );
+      // …Read more leading, Chat against the card's trailing edge.
+      final card = tester.getRect(find.byType(AiSummaryCard));
+      expect(tester.getCenter(chat).dx, greaterThan(card.center.dx));
+      expect(tester.getCenter(readMore).dx, lessThan(card.center.dx));
+      // Still one TldrBody row: the button is its trailing slot.
+      expect(
+        find.ancestor(of: chat, matching: find.byType(TldrBody)),
+        findsOneWidget,
+      );
+    });
+
+    for (final locale in const [Locale('ro'), Locale('fr')]) {
+      testWidgets('on a 320 px card in ${locale.languageCode}, the expanded '
+          'links wrap beside Chat instead of overflowing the row', (
+        tester,
+      ) async {
+        tester.view
+          ..physicalSize = const Size(320, 1400)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final bench = AgentTestBench(
+          report: makeTestReport(
+            tldr: 'Tldr line.',
+            content: '## Goal\nShip the card.\n',
+          ),
+          width: 320,
+          locale: locale,
+        );
+        await tester.pumpWidget(bench.build());
+        await tester.pumpAndSettle();
+        await tester.tap(find.byIcon(LottiIcons.expand).first);
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        final card = tester.getRect(find.byType(AiSummaryCard));
+        final chat = tester.getRect(find.byIcon(LottiIcons.chat));
+        final internals = tester.getRect(find.byIcon(LottiIcons.tune));
+        expect(chat.right, lessThanOrEqualTo(card.right));
+        expect(internals.right, lessThan(chat.left));
+      });
+    }
 
     testWidgets('Read more toggle expands and collapses the report', (
       tester,
