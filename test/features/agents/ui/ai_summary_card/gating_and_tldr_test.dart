@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../test_helper.dart';
 import '../../test_data/entity_factories.dart';
@@ -113,6 +115,37 @@ void main() {
         findsOneWidget,
       );
     });
+
+    for (final locale in const [Locale('ro'), Locale('fr')]) {
+      testWidgets('on a 320 px card in ${locale.languageCode}, the expanded '
+          'links wrap beside Chat instead of overflowing the row', (
+        tester,
+      ) async {
+        tester.view
+          ..physicalSize = const Size(320, 1400)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final bench = AgentTestBench(
+          report: makeTestReport(
+            tldr: 'Tldr line.',
+            content: '## Goal\nShip the card.\n',
+          ),
+          width: 320,
+          locale: locale,
+        );
+        await tester.pumpWidget(bench.build());
+        await tester.pumpAndSettle();
+        await tester.tap(find.byIcon(LottiIcons.expand).first);
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        final card = tester.getRect(find.byType(AiSummaryCard));
+        final chat = tester.getRect(find.byIcon(LottiIcons.chat));
+        final internals = tester.getRect(find.byIcon(LottiIcons.tune));
+        expect(chat.right, lessThanOrEqualTo(card.right));
+        expect(internals.right, lessThan(chat.left));
+      });
+    }
 
     testWidgets('Read more toggle expands and collapses the report', (
       tester,

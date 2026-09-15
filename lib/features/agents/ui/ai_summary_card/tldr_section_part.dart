@@ -463,10 +463,16 @@ class _QuietDisclosureLink extends StatelessWidget {
                 children: [
                   Icon(icon, size: IconSizes.s, color: ink),
                   SizedBox(width: tokens.spacing.step2),
-                  Text(
-                    label,
-                    style: tokens.typography.styles.others.caption.copyWith(
-                      color: ink,
+                  // Flexible: beside the trailing action on a 320 px card, a
+                  // long translation ("Deschideți componentele interne ale
+                  // agentului") wraps inside its tap target instead of
+                  // overflowing the row.
+                  Flexible(
+                    child: Text(
+                      label,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: ink,
+                      ),
                     ),
                   ),
                 ],
