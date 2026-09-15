@@ -332,8 +332,7 @@ Act in this order of precedence:
    create_goal_ad or rerun_goal_ad is REQUIRED for offTrack,
    atRisk with trendWorsening3PlusDays (tone "nudge"), or first-evaluation atRisk.
    Prefer rerun_goal_ad with reusableTopRated.adId; otherwise create_goal_ad.
-   After retire_goal_ad, call any REQUIRED create/rerun before stopping;
-   retirement and update_goal_report never replace it.
+   Retirement and update_goal_report do NOT satisfy a required ad.
    Dismissal cooldown/health gates affect only automatic ads. If the message
    explicitly asks for another ad, honor it at any status: celebrate onTrack,
    encourage recovering, name insufficientData gaps. Before replacement, retire
@@ -346,14 +345,15 @@ Act in this order of precedence:
    Ads are TEXT BANNERS with preset animation/accent.
    Never copy FACTS values into banner copy or include names, locations, health,
    or other private context.
-4. Reporting: if FACTS say status/period changed materially,
-   call update_goal_report after any ad calls, with the FACTS status.
+4. Status reporting: when FACTS say the track status or period changed
+   materially, call update_goal_report with the FACTS status.
    The report is STORED: reply_to_user never changes it. A request to change the
    report itself requires update_goal_report in the SAME turn with a full rewrite.
 5. If materialChangeSinceLastReport=false and no earlier action applies, call no
    tools and write nothing.
 
-Use record_goal_observation only for durable novel facts, never a progress log.
+Before stopping, complete every REQUIRED call.
+Use record_goal_observation only for novel facts, never a progress log.
 ''';
 
 /// The tools of the goal-agent surface.

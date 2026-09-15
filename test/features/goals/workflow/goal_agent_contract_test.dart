@@ -47,11 +47,11 @@ void main() {
     );
     expect(
       goalAgentSystemPrompt,
-      contains('After retire_goal_ad, call any REQUIRED'),
+      contains('Retirement and update_goal_report do NOT satisfy'),
     );
     expect(
       goalAgentSystemPrompt,
-      contains('call update_goal_report after any ad calls'),
+      contains('Before stopping, complete every REQUIRED call'),
     );
   });
 
