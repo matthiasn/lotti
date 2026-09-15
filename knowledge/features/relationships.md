@@ -667,8 +667,9 @@ removed:
 - **Tool-only output, accumulated then persisted once.** Visible chat always
   goes through `reply_to_user`; plain assistant content is not an output path.
   It is forbidden unless the wake contains the exact `PENDING USER MESSAGE:`
-  header. A pending message includes exactly one reply, and the same single
-  assistant response still includes
+  header; the rendered facts block is data and is never itself a user request.
+  A pending message includes exactly one reply, and the same single assistant
+  response still includes
   every briefing, banner, snooze, and deferred task proposal explicitly
   triggered by the rendered facts. The workflow does not request a second
   assistant response after tool results. When nothing is triggered, the agent
