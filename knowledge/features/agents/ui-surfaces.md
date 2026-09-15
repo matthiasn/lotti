@@ -65,7 +65,8 @@ Contents:
   at its trailing end through `TldrBody.trailing`. With no summary yet it
   keeps that trailing corner on a row of its own, and it is absent while
   query chat is off. The subtitle under *AI summary* is the agent's template
-  name (e.g. *Task Laura*), not the task title.
+  name when it has one (e.g. *Task Laura*), otherwise the agent's display
+  name; it is never the task title.
 - **Proposed changes** — rows from `unifiedSuggestionListProvider`, each a
   `PendingSuggestion`, confirmable or rejectable by tap or swipe (`> 70px` →
   confirm, `< -70px` → reject; in between snaps back). All confirms route
