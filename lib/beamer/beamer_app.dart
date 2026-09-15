@@ -60,8 +60,6 @@ import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/sync_queue_counts.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
-import 'package:lotti/features/speech/state/recorder_state.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/incoming_verification_modal.dart';
@@ -84,9 +82,9 @@ import 'package:lotti/utils/uuid.dart';
 import 'package:lotti/widgets/misc/contact_support_row.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/sidebar_activity_summary.dart';
-import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/misc/zoom_wrapper.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
+import 'package:lotti/widgets/nav_bar/mobile_activity_island.dart';
 import 'package:lotti/widgets/nav_bar/mobile_nav_more_sheet.dart';
 import 'package:lotti/widgets/nav_bar/mobile_nav_sheet.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
@@ -1161,10 +1159,9 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     // Visibility is a pure function of the active beamer route. Routes
     // that take over the bottom edge with their own sticky surface
     // (e.g. `/tasks/<uuid>` with TaskActionBar) suppress the nav pill —
-    // including the time/audio recording indicators that ride above it
-    // — so the page-owned bar can dock flush against the home
-    // indicator. The enclosing ListenableBuilder ensures we rebuild on
-    // every route change.
+    // including the activity island that floats above it — so the
+    // page-owned bar can dock flush against the home indicator. The
+    // enclosing ListenableBuilder ensures we rebuild on every route change.
     final showBottomNav = !_isTaskDetailRoute(index);
 
     // Settings *detail* routes — terminal pages you navigate to rather than
@@ -1359,8 +1356,8 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         children: [
           const IncomingVerificationWrapper(),
           // The scope keeps `occupiedHeight` (and every page padding by it)
-          // in sync with the indicator row riding above the bar, so the
-          // indicators never cover scroll content or floating actions.
+          // in sync with the activity island floating above the bar, so the
+          // island never covers scroll content or floating actions.
           _MobileNavOverlayHeightScope(
             navBarVisible: showBottomNav,
             navigationBarHeight: navigationBarHeight,
@@ -1383,11 +1380,12 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                 child: buildBottomNavigationBar(),
               ),
             ),
-            // The time/audio recording indicators ride above the bar but
-            // are deliberately not part of the slide-away subtree: a
-            // running timer or recording must stay visible inside settings
-            // definition surfaces. When the bar slides away they animate
-            // down to the bottom safe-area edge in the same motion.
+            // The activity island (running timer / recording) floats above
+            // the bar but is deliberately not part of the slide-away
+            // subtree: a running timer or recording must stay visible inside
+            // settings definition surfaces. When the bar slides away the
+            // island animates down to the bottom safe-area edge in the same
+            // motion, keeping its gap above whichever edge it lands on.
             AnimatedPositioned(
               duration: reduceMotion
                   ? Duration.zero
@@ -1395,28 +1393,14 @@ class _AppScreenState extends ConsumerState<AppScreen> {
               curve: _SlideAwayBottomNav.slideCurve,
               left: 0,
               right: 0,
-              bottom: slideNavAway
-                  ? MediaQuery.paddingOf(context).bottom
-                  : navigationBarHeight,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const TimeRecordingIndicator(),
-                      // Audio indicator is omitted on Flatpak builds (MediaKit
-                      // compatibility issues). Spacer lives inside the same
-                      // conditional so it doesn't dangle when only the time
-                      // indicator is visible.
-                      if (!_isRunningInFlatpak()) ...[
-                        const SizedBox(width: 4),
-                        const AudioRecordingIndicator(),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
+              bottom:
+                  (slideNavAway
+                      ? MediaQuery.paddingOf(context).bottom
+                      : navigationBarHeight) +
+                  MobileActivityIsland.gapAboveBar(context),
+              // The recording half is omitted on Flatpak builds (MediaKit
+              // compatibility issues).
+              child: MobileActivityIsland(omitAudio: _isRunningInFlatpak()),
             ),
           ],
         ],
@@ -1609,15 +1593,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
   }
 }
 
-/// Feeds [DesignSystemBottomNavigationOverlayHeight] with the rendered
-/// height of the indicator row riding above the mobile nav bar, mirroring
-/// the indicators' own visibility rules: the time indicator shows while
-/// [TimeService] streams a running entry, the audio indicator while a
-/// recording runs outside its modal (and outside the Flatpak sandbox,
-/// which omits the indicator entirely). While the shell hides the bar —
-/// task-detail routes — the overlay is hidden with it, so no height
-/// applies. [child] is a prebuilt subtree; only widgets depending on the
-/// inherited height rebuild when an indicator appears or disappears.
 /// Reserves the top strip of the shell for the goal/relationship agents'
 /// banner dock, above the sidebar and every page.
 ///
@@ -1709,6 +1684,14 @@ class _NudgeBannerTopLane extends ConsumerWidget {
   }
 }
 
+/// Feeds [DesignSystemBottomNavigationOverlayHeight] with the estate the
+/// activity island claims above the mobile nav bar, mirroring the island's
+/// own visibility rules: it shows while [TimeService] streams a running
+/// entry or while a recording runs outside its modal (and outside the
+/// Flatpak sandbox, which omits the recording half). While the shell hides
+/// the bar — task-detail routes — the island is hidden with it, so no
+/// height applies. [child] is a prebuilt subtree; only widgets depending on
+/// the inherited height rebuild when the island appears or disappears.
 class _MobileNavOverlayHeightScope extends ConsumerWidget {
   const _MobileNavOverlayHeightScope({
     required this.navBarVisible,
@@ -1728,41 +1711,36 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Same guard as AudioRecordingIndicator: if the recorder controller
-    // fails to build (MediaKit/audio issues), the indicator renders
-    // nothing, so no height applies either.
-    bool audioIndicatorVisible;
+    // The island's own rule decides which recordings count, so this scope
+    // and the island can never disagree. Same guard as the island: if the
+    // recorder controller fails to build (MediaKit/audio issues), no
+    // recording shows, so no height applies for it either.
+    bool recordingVisible;
     try {
-      audioIndicatorVisible =
-          !_isRunningInFlatpak() &&
-          ref.watch(
-            audioRecorderControllerProvider.select(
-              (state) =>
-                  state.status == AudioRecorderStatus.recording &&
-                  !state.modalVisible,
-            ),
-          );
+      recordingVisible = ref.watch(
+        audioRecorderControllerProvider.select(
+          (state) => MobileActivityIsland.showsRecording(
+            state,
+            omitAudio: _isRunningInFlatpak(),
+          ),
+        ),
+      );
     } catch (_) {
-      audioIndicatorVisible = false;
+      recordingVisible = false;
     }
 
+    final timeService = getIt<TimeService>();
     return StreamBuilder<JournalEntity?>(
-      stream: getIt<TimeService>().getStream(),
+      // Seeded like the island, so a timer already running on the first
+      // frame reserves its room on that frame too.
+      initialData: timeService.getCurrent(),
+      stream: timeService.getStream(),
       builder: (context, snapshot) {
-        final timeIndicatorVisible = snapshot.data != null;
-        var height = 0.0;
-        if (navBarVisible) {
-          // Mirror the rendered indicator heights: the time indicator is
-          // AudioRecordingIndicatorConstants.indicatorHeight tall, the
-          // audio indicator spacing.step6 — the row is as tall as the
-          // tallest visible one.
-          height = math.max(
-            timeIndicatorVisible
-                ? AudioRecordingIndicatorConstants.indicatorHeight
-                : 0,
-            audioIndicatorVisible ? context.designTokens.spacing.step6 : 0,
-          );
-        }
+        final islandVisible =
+            navBarVisible && (snapshot.data != null || recordingVisible);
+        final height = islandVisible
+            ? MobileActivityIsland.reservedHeight(context)
+            : 0.0;
         return DesignSystemBottomNavigationOverlayHeight(
           height: height,
           navigationBarHeight: navigationBarHeight,

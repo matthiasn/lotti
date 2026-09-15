@@ -50,19 +50,3 @@ class TimeRecordingIcon extends StatelessWidget {
     );
   }
 }
-
-/// Standalone, always-visible red dot (an error-coloured [ColorIcon]) marking
-/// active time recording, for callers that have already determined the task is
-/// being tracked and don't need the `TimeService` check in [TimeRecordingIcon].
-class TimeRecordingIndicatorDot extends StatelessWidget {
-  const TimeRecordingIndicatorDot({
-    super.key,
-  });
-  @override
-  Widget build(BuildContext context) {
-    return ColorIcon(
-      context.colorScheme.error,
-      size: 12,
-    );
-  }
-}
