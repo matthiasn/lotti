@@ -329,13 +329,17 @@ void main() {
       },
     },
   ]) {
-    test('rejects unsafe or malformed ${action['name']}', () async {
-      await expectLater(
-        plan([
-          {...action, 'summary': 'Untrusted proposal'},
-        ]),
-        throwsFormatException,
-      );
+    test('never proposes unsafe or malformed ${action['name']}', () async {
+      // A target outside this task's scope degrades to "answer, no actions"
+      // after the one repair attempt; anything malformed still fails closed.
+      final attempt = plan([
+        {...action, 'summary': 'Untrusted proposal'},
+      ]);
+      if (_targetScopeActions.contains(action['name'])) {
+        expect((await attempt).items, isEmpty);
+      } else {
+        await expectLater(attempt, throwsFormatException);
+      }
     });
   }
 
@@ -557,6 +561,97 @@ void main() {
     );
   }
 
+  test('a well-formed label with an unknown id proposes nothing', () async {
+    // The malformed case above omits the schema-required `confidence` and so
+    // fails argument validation; this one is well formed, so the unknown id
+    // is a target-scope failure and degrades to an answer with no actions.
+    final result = await plan([
+      {
+        'name': 'assign_task_labels',
+        'arguments': {
+          'labels': [
+            {'id': 'foreign', 'confidence': 'high'},
+          ],
+        },
+        'summary': 'Untrusted proposal',
+      },
+    ]);
+
+    expect(result.items, isEmpty);
+    expect(result.text, 'Review these changes.');
+  });
+
+  test('an unusable action after the repair keeps the answer', () async {
+    // From a LottiGym control run: the model twice proposed linking a task
+    // from another category. Throwing past the answer retracted the whole
+    // draft in chat and showed an error instead of what it had found.
+    var calls = 0;
+    final planner = QueryTaskActionPlanner(
+      inference: QueryTextInference(
+        generate: (_, _) {
+          calls++;
+          return Stream.value(
+            jsonEncode({
+              'answer': 'That task is in another category, so I left it alone.',
+              'actions': [
+                {
+                  'name': 'link_task',
+                  'arguments': {
+                    'targetTaskId': 'foreign',
+                    'relation': 'blocks',
+                  },
+                  'summary': 'Link',
+                },
+              ],
+            }),
+          );
+        },
+      ),
+    );
+
+    final result = await planner.plan(
+      context: context,
+      question: 'Link the other task.',
+      conversation: [],
+      cancellation: QueryCancellation(),
+    );
+
+    expect(calls, 2, reason: 'the repair attempt still runs first');
+    expect(result.items, isEmpty);
+    expect(
+      result.text,
+      'That task is in another category, so I left it alone.',
+    );
+  });
+
+  test('a repair with no readable answer still fails', () async {
+    final planner = QueryTaskActionPlanner(
+      inference: QueryTextInference(
+        generate: (_, _) => Stream.value(
+          jsonEncode({
+            'answer': '   ',
+            'actions': [
+              {
+                'name': 'link_task',
+                'arguments': {'targetTaskId': 'foreign', 'relation': 'blocks'},
+                'summary': 'Link',
+              },
+            ],
+          }),
+        ),
+      ),
+    );
+    await expectLater(
+      planner.plan(
+        context: context,
+        question: 'Link the other task.',
+        conversation: [],
+        cancellation: QueryCancellation(),
+      ),
+      throwsFormatException,
+    );
+  });
+
   test(
     'stops after one failed repair and never retries transport errors',
     () async {
@@ -651,3 +746,12 @@ void main() {
     },
   );
 }
+
+/// Actions whose failure above is an out-of-scope target rather than a
+/// malformed payload: the planner keeps the answer and proposes nothing.
+const _targetScopeActions = {
+  'update_checklist_items',
+  'update_time_entry',
+  'update_running_timer',
+  'link_task',
+};

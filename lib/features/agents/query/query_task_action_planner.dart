@@ -34,6 +34,25 @@ class QueryTaskActionContext {
 /// The same registry schemas and batch explosion as task wakes are reused;
 /// only a separate, explicit human confirmation can dispatch these items.
 /// Invalid JSON or proposals get one bounded, isolated repair attempt.
+/// The one repair instruction a failed attempt gets, for malformed JSON and
+/// for an unavailable target alike.
+const _repairInstruction =
+    'The previous response failed JSON or task-action validation. '
+    'Return only the specified JSON object, without prose or fences. '
+    'Check required arguments, supplied IDs, time ranges and task '
+    'language restrictions. If the request cannot be fulfilled, '
+    'explain why in answer and return an empty actions array.';
+
+/// A proposed action names something this task's scope does not contain.
+///
+/// Distinct from a malformed response: after the one repair attempt the
+/// planner keeps the model's answer and drops the actions, rather than
+/// failing the whole reply.
+class QueryTaskActionTargetUnavailable extends FormatException {
+  const QueryTaskActionTargetUnavailable()
+    : super('Task action target unavailable');
+}
+
 class QueryTaskActionPlanner {
   const QueryTaskActionPlanner({required this.inference});
 
@@ -124,23 +143,35 @@ class QueryTaskActionPlanner {
       if (QueryTextInference.requestBytes(system, input) > maxInputBytes) {
         throw const FormatException('Task action context exceeds input budget');
       }
+      Map<String, dynamic>? result;
       try {
-        final result = await inference.complete(
+        result = await inference.complete(
           system: system,
           input: input,
           cancellation: cancellation,
         );
         return await _parse(result, context, cancellation);
+      } on QueryTaskActionTargetUnavailable {
+        // The answer survives an unusable target. A model that twice proposes
+        // something outside this task's scope — a foreign task id, say — used
+        // to throw past the whole answer, so the chat retracted the draft and
+        // showed an error instead of what it had found. Keep the answer, drop
+        // the actions; a response with no readable answer still fails, and a
+        // malformed response is still a hard failure below.
+        if (attempt == 1) {
+          if (result?['answer'] case final String answer
+              when answer.trim().isNotEmpty) {
+            return (text: answer.trim(), items: const <ChangeItem>[]);
+          }
+          rethrow;
+        }
+        input['repair'] = _repairInstruction;
+        continue;
       } on FormatException {
         if (attempt == 1) rethrow;
         // One fresh disposable attempt; never echo provider error text or
         // partially built actions. Nothing is persisted or dispatched here.
-        input['repair'] =
-            'The previous response failed JSON or task-action validation. '
-            'Return only the specified JSON object, without prose or fences. '
-            'Check required arguments, supplied IDs, time ranges and task '
-            'language restrictions. If the request cannot be fulfilled, '
-            'explain why in answer and return an empty actions array.';
+        input['repair'] = _repairInstruction;
       }
     }
   }
@@ -304,7 +335,7 @@ class QueryTaskActionPlanner {
                 (allowNewTask && args['targetTaskId'] == 'new-task')),
       _ => true,
     };
-    if (!valid) throw const FormatException('Task action target unavailable');
+    if (!valid) throw const QueryTaskActionTargetUnavailable();
   }
 
   /// Reconstructs the registry's batch schema for an exploded review item.
