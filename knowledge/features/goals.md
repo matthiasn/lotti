@@ -509,7 +509,9 @@ See [profile resolution](ai/profile-resolution.md) for failure and precedence ru
   Evaluated-period and rolling-standing slots must be non-empty. Completeness
   is judged strictly, but the *rules* read a lenient view
   (`GoalStructuredReport.lenient`) so a report the parser refused is still
-  checked for status tokens in prose and for quoting the deterministic
+  checked for status tokens in prose (only the camelCase identifiers —
+  `onTrack`, `atRisk`, `offTrack`, `insufficientData`; `recovering` and
+  `achieved` are ordinary words a report may use) and for quoting the deterministic
   aggregates — a wake gets one forced report retry, and a rejection naming
   only the shape would let those rules ambush it. Structured
   current actions carry a criterion id and survive only when deterministic
