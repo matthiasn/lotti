@@ -132,7 +132,7 @@ class PenguinQueryEvalTest(unittest.TestCase):
         new_source.write_text("synthetic source one")
         responses = {
             ("rev-parse", "HEAD", "HEAD^{tree}"): b"commit-one\ntree-one\n",
-            ("diff", "--no-ext-diff", "--binary", "HEAD"): b"",
+            ("diff", "--no-ext-diff", "--binary", "HEAD", "--", ".", f":(exclude){runner.RUN_HISTORY_PATH}"): b"",
             ("ls-files", "--others", "--exclude-standard", "-z"): b"",
         }
         with patch.object(
@@ -143,7 +143,7 @@ class PenguinQueryEvalTest(unittest.TestCase):
             self.assertEqual(clean["commit"], "commit-one")
             self.assertEqual(clean["committedTree"], "tree-one")
             self.assertFalse(clean["dirty"])
-            responses[("diff", "--no-ext-diff", "--binary", "HEAD")] = b"private patch contents"
+            responses[("diff", "--no-ext-diff", "--binary", "HEAD", "--", ".", f":(exclude){runner.RUN_HISTORY_PATH}")] = b"private patch contents"
             tracked = runner.repository_revision(root)
             self.assertTrue(tracked["dirty"])
             self.assertNotEqual(clean["trackedDiffSha256"], tracked["trackedDiffSha256"])

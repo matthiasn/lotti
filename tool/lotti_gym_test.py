@@ -98,6 +98,9 @@ class GymTest(unittest.TestCase):
         temp = tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)
         self.output = Path(temp.name)
+        history_patch = patch.object(gym, "record_history")
+        self.record_history = history_patch.start()
+        self.addCleanup(history_patch.stop)
         project_patch = patch.object(gym, "worker_project", side_effect=lambda slot: self.output / f"worker-{slot}")
         project_patch.start()
         self.addCleanup(project_patch.stop)
@@ -493,6 +496,10 @@ class GymTest(unittest.TestCase):
         self.assertEqual(
             gym.recover_jobs(self.output, self.manifest)[0]["state"], "prepared"
         )
+        summary = gym.checkpoint(self.output, self.manifest, jobs)
+        self.assertTrue(summary["cost"]["complete"])
+        self.assertEqual(summary["cost"]["untrackedAttempts"], 0)
+        self.assertEqual(summary["cost"]["totalCostEur"], "0")
 
     def test_dry_run_and_resume_use_the_same_manifest_without_live_credentials(self):
         catalog = {
@@ -629,9 +636,10 @@ class GymTest(unittest.TestCase):
             with patch.dict(os.environ, env, clear=True):
                 self.assertEqual(
                     judge_cli._validate_judge_url(env["MELIOUS_BASE_URL"]),
-                    self.manifest["baseUrl"],
+                    env["MELIOUS_BASE_URL"],
                 )
-            self.assertEqual(env["TASK_AGENT_EVAL_ALLOWED_JUDGE_HOSTS"], "example.invalid")
+            self.assertRegex(env["MELIOUS_BASE_URL"], r"^http://127\.0\.0\.1:\d+/v1$")
+            self.assertEqual(env["TASK_AGENT_EVAL_ALLOWED_JUDGE_HOSTS"], "127.0.0.1")
             return 0
 
         processes.run.side_effect = run_judge
@@ -703,12 +711,53 @@ class GymTest(unittest.TestCase):
             status = gym.main(["resume", str(directory), "--workers", "1"])
             self.assertEqual(status, 1)
             self.assertEqual(run.call_count, calls)
+            self.assertEqual(self.record_history.call_count, 2)
+            recorded = self.record_history.call_args.args[1]
+            self.assertEqual(recorded["runId"], directory.name)
+            self.assertEqual(recorded["duration"]["invocations"], 2)
+            self.assertIsNotNone(recorded["duration"]["activeWallSeconds"])
 
     def test_invalidated_run_cannot_look_like_a_successful_baseline(self):
         gym.atomic_json(self.output / "invalidated.json", {"reason": "source changed"})
         summary = gym.checkpoint(self.output, self.manifest, [])
         self.assertFalse(summary["revisionValid"])
         self.assertEqual(summary["verdict"], "incomplete")
+
+    def test_session_finalization_invalidates_changed_source_and_preserves_interrupt(self):
+        with (
+            patch.object(gym, "repository_revision", return_value={"commit": "changed"}),
+            patch.object(gym.time, "monotonic", return_value=10),
+            self.assertRaises(KeyboardInterrupt),
+        ):
+            with gym.assessment_session(
+                self.output,
+                self.manifest,
+                [],
+                "2030-01-15T12:00:00Z",
+                5,
+            ):
+                raise KeyboardInterrupt
+        self.assertTrue((self.output / "invalidated.json").exists())
+        recorded = self.record_history.call_args.args[1]
+        self.assertFalse(recorded["revisionValid"])
+        self.assertEqual(recorded["verdict"], "incomplete")
+
+    def test_session_finalization_reports_changed_source_after_success(self):
+        with (
+            patch.object(gym, "repository_revision", return_value={"commit": "changed"}),
+            patch.object(gym.time, "monotonic", return_value=10),
+            self.assertRaisesRegex(ValueError, "Checkout changed"),
+        ):
+            with gym.assessment_session(
+                self.output,
+                self.manifest,
+                [],
+                "2030-01-15T12:00:00Z",
+                5,
+            ):
+                pass
+        self.assertTrue((self.output / "invalidated.json").exists())
+        self.assertFalse(self.record_history.call_args.args[1]["revisionValid"])
 
     def test_all_adapter_environments_bind_model_and_expected_output(self):
         for adapter in (

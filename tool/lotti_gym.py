@@ -15,6 +15,7 @@ import shlex
 import subprocess
 import sys
 import threading
+import time
 import uuid
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, as_completed, wait
 from contextlib import ExitStack, contextmanager
@@ -32,7 +33,9 @@ from tool.lotti_gym_results import (
     summarize,
     write_report,
 )
-from tool.penguin_query_eval import repository_revision, stop_process_tree
+from tool.lotti_gym_billing import BillingRelay, summarize_billing
+from tool.lotti_gym_history import aggregate_history, duration_summary, history_record, record_history
+from tool.penguin_query_eval import RUN_HISTORY_PATH, repository_revision, stop_process_tree
 from tool.task_agent_model_eval_judge import DEFAULT_JUDGE_MODEL, _valid_judgment
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -44,6 +47,9 @@ def atomic_json(path, value):
     """Replace a checkpoint atomically; a killed writer leaves the old one intact."""
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(path.name + ".tmp")
+    # Connection credentials are excluded before manifests, checkpoints and
+    # aggregate summaries reach this deliberate local artifact sink.
+    # codeql[py/clear-text-storage-sensitive-data]
     temporary.write_text(
         json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
@@ -407,7 +413,6 @@ def run_job(suite, job, manifest, output, api_key, processes, summary_path, comp
         number += 1
         directory = directory.with_name(f"attempt-{number}")
     directory.mkdir(parents=True)
-    env = job_environment(suite, job, manifest, directory, api_key, summary_path)
     log = directory / "worker.jsonl"
     result = {
         "number": number,
@@ -417,13 +422,17 @@ def run_job(suite, job, manifest, output, api_key, processes, summary_path, comp
         "manifestHash": fingerprint(manifest),
     }
     try:
-        exit_code = processes.run(
-            flutter_test_command(suite["entryPoint"], compiler_slot),
-            env,
-            log,
-            5400 if suite["adapter"] == "compaction" else 1200,
-            cwd=worker_project(compiler_slot),
-        )
+        with BillingRelay(manifest["baseUrl"], directory / "billing.jsonl",
+                          stage="preparation" if suite["adapter"] == "preparation" else "candidate") as billing:
+            env = job_environment(suite, job, {**manifest, "baseUrl": billing.base_url},
+                                  directory, api_key, summary_path)
+            exit_code = processes.run(
+                flutter_test_command(suite["entryPoint"], compiler_slot),
+                env,
+                log,
+                5400 if suite["adapter"] == "compaction" else 1200,
+                cwd=worker_project(compiler_slot),
+            )
         result["exitCode"] = exit_code
         artifact_path = directory / "artifact.json"
         if suite["adapter"] == "journey":
@@ -523,6 +532,26 @@ def run_lock(directory):
 def checkpoint(output, manifest, jobs):
     atomic_json(output / "jobs.json", jobs)
     summary = summarize(manifest, jobs)
+    attempts = list((output / "jobs").glob("*/attempt-*"))
+    prepared = {
+        Path(attempt["directory"]).resolve()
+        for job in jobs
+        for attempt in job.get("attempts", [])
+        if attempt.get("state") == "prepared"
+    }
+    untracked = sum(
+        path.resolve() not in prepared and not (path / "billing.jsonl").exists()
+        for path in attempts
+    )
+    untracked += sum(
+        bool(attempt.get("judge")) and not list(Path(attempt["directory"]).glob("billing-judge-*.jsonl"))
+        for job in jobs for attempt in job.get("attempts", [])
+    )
+    summary["cost"] = summarize_billing(
+        sorted((output / "jobs").glob("*/attempt-*/billing*.jsonl")),
+        untracked_attempts=untracked,
+    )
+    summary["duration"] = duration_summary(output, jobs)
     summary["revisionValid"] = not (output / "invalidated.json").exists()
     if not summary["revisionValid"]:
         summary["verdict"] = "incomplete"
@@ -533,6 +562,34 @@ def checkpoint(output, manifest, jobs):
     atomic_json(output / "summary.json", summary)
     write_report(output, summary, jobs)
     return summary
+
+
+@contextmanager
+def assessment_session(output, manifest, jobs, started_at, started_clock):
+    """Finalize elapsed time and the public ledger even after interruption."""
+    path = output / "sessions" / f"{uuid.uuid4().hex}.json"
+    session = {"startedAt": started_at, "finishedAt": None, "durationSeconds": None}
+    atomic_json(path, session)
+    completed = False
+    try:
+        yield
+        completed = True
+    finally:
+        source_changed = manifest["revision"] != repository_revision(ROOT)
+        if source_changed:
+            atomic_json(
+                output / "invalidated.json",
+                {"reason": "Checkout changed during assessment"},
+            )
+        session.update(finishedAt=datetime.now(timezone.utc).isoformat(),
+                       durationSeconds=round(time.monotonic() - started_clock, 6))
+        atomic_json(path, session)
+        summary = checkpoint(output, manifest, jobs)
+        record_history(ROOT, history_record(output, manifest, summary, jobs))
+        if source_changed and completed:
+            raise ValueError(
+                "Checkout changed during assessment; results are not comparable"
+            )
 
 
 def judge_jobs(output, manifest, jobs, api_key, workers, processes):
@@ -573,9 +630,14 @@ def judge_jobs(output, manifest, jobs, api_key, workers, processes):
             "--judge-model",
             manifest["judgeModel"],
         ]
-        code = processes.run(
-            command, env, directory / f"judge-{uuid.uuid4().hex}.log", 3600
-        )
+        with BillingRelay(manifest["baseUrl"],
+                          directory / f"billing-judge-{uuid.uuid4().hex}.jsonl",
+                          stage="judge") as billing:
+            env.update(MELIOUS_BASE_URL=billing.base_url,
+                       TASK_AGENT_EVAL_ALLOWED_JUDGE_HOSTS="127.0.0.1")
+            code = processes.run(
+                command, env, directory / f"judge-{uuid.uuid4().hex}.log", 3600
+            )
         valid = False
         try:
             packet = read_json(directory / "judgments.json")
@@ -860,10 +922,27 @@ def main(argv=None):
         help="Resume missing/error jobs; preserve measured behavioral failures",
     )
     resume.add_argument("directory", type=Path)
+    history = commands.add_parser("history", help="Summarize the checked-in run ledger")
+    history.add_argument("--import-run", type=Path, action="append", default=[],
+                         help="Record an existing run; missing historical prices stay unknown")
+    history.add_argument("--model", help="Show totals for one model")
     for command in (assess, resume):
         command.add_argument("--workers", type=positive, default=2)
         command.add_argument("--env-file", type=Path, default=ROOT / ".env")
     args = parser.parse_args(argv)
+    if args.command == "history":
+        for directory in args.import_run:
+            directory = directory.expanduser().resolve()
+            manifest = read_json(directory / "manifest.json")
+            summary = read_json(directory / "summary.json")
+            record_history(ROOT, history_record(directory, manifest, summary, recover_jobs(directory, manifest)))
+        path = ROOT / RUN_HISTORY_PATH
+        rows = [json.loads(line) for line in path.read_text().splitlines() if line.strip()] if path.exists() else []
+        if args.model:
+            rows = [row for row in rows if row["model"] == args.model]
+        print(json.dumps(aggregate_history(rows), indent=2))
+        return 0
+    started_at, started_clock = datetime.now(timezone.utc).isoformat(), time.monotonic()
     processes = Processes()
     output = None
     with ExitStack() as resources:
@@ -942,6 +1021,7 @@ def main(argv=None):
                     if args.baseline
                     else None,
                     "judgeModel": None if args.no_judge else args.judge_model,
+                    "billing": "provider-response-ledger-v1",
                     "summaryFixtureHash": fingerprint(bundle) if bundle else None,
                     "summarySourceHash": catalog["summarySourceHash"],
                     "summaryOwnerIds": catalog["summaryOwnerIds"],
@@ -993,25 +1073,30 @@ def main(argv=None):
                     )
                 if args.command == "resume":
                     jobs = recover_jobs(output, manifest)
-                execute(
-                    output, manifest, jobs, conn["MELIOUS_API_KEY"],
-                    args.workers, processes, compiler_slots,
-                )
-                judge_jobs(
-                    output, manifest, jobs, conn["MELIOUS_API_KEY"], args.workers, processes
-                )
-                if manifest["revision"] != repository_revision(ROOT):
-                    atomic_json(
-                        output / "invalidated.json",
-                        {"reason": "Checkout changed during assessment"},
+                with assessment_session(output, manifest, jobs, started_at, started_clock):
+                    execute(
+                        output, manifest, jobs, conn["MELIOUS_API_KEY"],
+                        args.workers, processes, compiler_slots,
                     )
-                    checkpoint(output, manifest, jobs)
-                    raise ValueError(
-                        "Checkout changed during assessment; results are not comparable"
+                    judge_jobs(
+                        output, manifest, jobs, conn["MELIOUS_API_KEY"], args.workers, processes
                     )
                 summary = checkpoint(output, manifest, jobs)
             print(
                 f"Verdict: {summary['verdict']}. Report: {output / 'report.html'}",
+                flush=True,
+            )
+            cost = summary["cost"]
+            cost_label = "Run spend so far" if summary["verdict"] == "incomplete" else "Run price"
+            # These fields are validated numeric billing aggregates and public
+            # request counts, so printing them cannot disclose provider content.
+            # codeql[py/clear-text-logging-sensitive-data]
+            print(
+                f"{cost_label} (EUR equivalent): {cost['totalCostEur']}"
+                if cost["complete"] else
+                f"Run price incomplete; known EUR {cost['knownCostEur']}, "
+                f"{cost['requestsWithUnknownCost']} unpriced requests and "
+                f"{cost['untrackedAttempts']} untracked attempts.",
                 flush=True,
             )
             return {"incomplete": 2, "failed": 1, "review_required": 3}.get(

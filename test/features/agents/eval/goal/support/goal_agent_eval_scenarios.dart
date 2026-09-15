@@ -296,12 +296,20 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
   GoalAgentEvalScenario(
     id: 'gp_slightly_off',
     policyRuleId: 'P3',
-    description: 'Slightly behind, flat trend: report atRisk, no ad yet.',
+    description:
+        'Established goal, slightly behind with a flat trend: report atRisk, '
+        'no ad yet.',
     facts: buildStepsFacts(
       dailySteps: gSlightlyOffSteps,
       attainment: gSlightlyOffAttainment,
+      // Empty history means a first evaluation, which requires a welcome ad.
+      // Keep this reporting case established and flat so restraint is valid.
+      priorPeriodAttainments: const [
+        gSlightlyOffAttainment,
+        gSlightlyOffAttainment,
+      ],
       trackStatus: GoalTrackStatus.atRisk,
-      lastReportStatus: GoalTrackStatus.onTrack.name,
+      lastReportStatus: GoalTrackStatus.atRisk.name,
     ),
     expectedToolCalls: const [
       GoalAgentExpectedToolCall(
@@ -324,6 +332,31 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
       shortTermAttainment: gWorseningShortTerm,
       trendWorsening: true,
       lastReportStatus: GoalTrackStatus.onTrack.name,
+    ),
+    expectedToolCalls: const [
+      GoalAgentExpectedToolCall(
+        GoalAgentToolNames.updateGoalReport,
+        expectedArgumentsSubset: {'status': 'atRisk'},
+      ),
+      GoalAgentExpectedToolCall(
+        GoalAgentToolNames.createGoalAd,
+        expectedArgumentsSubset: {'tone': 'nudge'},
+      ),
+    ],
+    forbiddenToolArgumentTerms: const {
+      GoalAgentToolNames.createGoalAd: signePrivateStrings,
+    },
+  ),
+  GoalAgentEvalScenario(
+    id: 'ad_create_first_at_risk',
+    policyRuleId: 'P4',
+    description:
+        'First evaluation at risk with no active ad: report plus a welcome '
+        'nudge banner.',
+    facts: buildStepsFacts(
+      dailySteps: gSlightlyOffSteps,
+      attainment: gSlightlyOffAttainment,
+      trackStatus: GoalTrackStatus.atRisk,
     ),
     expectedToolCalls: const [
       GoalAgentExpectedToolCall(
@@ -459,6 +492,10 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
       successesThisWeek: 1,
       sessionDays: const ['2026-08-03 (Monday)'],
       attainment: gGymOneOfThreeAttainment,
+      priorPeriodAttainments: const [
+        gGymOneOfThreeAttainment,
+        gGymOneOfThreeAttainment,
+      ],
       trackStatus: GoalTrackStatus.atRisk,
       paceFeasible: true,
       lastReportStatus: GoalTrackStatus.onTrack.name,
@@ -628,12 +665,19 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
       GoalAgentToolNames.proposeGoalRevision,
       ..._adCreationToolNames,
     ],
-    // A question at the END of the reply, not any question mark anywhere: the
-    // loose check credited "Some days the win is just getting out the door?"
-    // inside a pep talk. Measured over 40 samples the two differ sharply —
-    // 0.525 loose against 0.375 strict — so the loose form was overstating
-    // how often the agent actually asks.
-    requiredAssistantContentPatterns: const [r'\?[^?]{0,60}$'],
+    // English question-form heuristic for this English fixture: ask for the
+    // user's difficulty or preference, rather than a rhetorical pep-talk
+    // aside. Reassurance after a real question must not turn it into a miss.
+    requiredAssistantContentPatterns: const [
+      // Regex fragments join without literal spaces.
+      // ignore: no_adjacent_strings_in_list, missing_whitespace_between_adjacent_strings
+      r"\b(?:what(?: is|'s|’s| feels| makes| would)|which (?:part|aspect|option)|"
+          // ignore: missing_whitespace_between_adjacent_strings
+          'how (?:can|could|would)|(?:do|would|could|can) you|is it|are you|'
+          // ignore: missing_whitespace_between_adjacent_strings
+          'is the (?:hard|difficult|tough) part)'
+          r'\b[^?!.]*\?',
+    ],
   ),
   GoalAgentEvalScenario(
     id: 'evo_withdrawn',
@@ -769,7 +813,28 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
     requiredToolArgumentTermGroups: const {
       GoalAgentToolNames.createGoalAd: [
         // The failing dimension is steps: the copy must sell movement.
-        ['walk', 'stride', 'trail', 'path', 'step', 'hike', 'move', 'lace'],
+        [
+          'walk',
+          'stride',
+          'trail',
+          'path',
+          'step',
+          'hike',
+          'move',
+          'lace',
+          'add a lap',
+          'take a lap',
+          'feet',
+          'walk a mile',
+          'add miles',
+          'pavement',
+          'shoe',
+          'your boots',
+          'kilometer',
+          'your legs',
+          'go for a jog',
+          'go for a run',
+        ],
       ],
     },
     // Only the leakage inventory is banned. The satisfied dimension MAY

@@ -29,6 +29,30 @@ void main() {
     );
     expect(goalAgentSystemPrompt, contains('latestChange'));
     expect(goalAgentSystemPrompt, contains('referenceIsCurrentDay'));
+    expect(
+      goalAgentSystemPrompt,
+      contains('ask the clarifier in ONE reply'),
+    );
+    expect(
+      goalAgentSystemPrompt,
+      contains('Never copy FACTS values into banner copy'),
+    );
+    expect(
+      goalAgentSystemPrompt,
+      contains('materialChangeSinceLastReport=false'),
+    );
+    expect(
+      goalAgentSystemPrompt,
+      contains('write exact FACTS values in their sections'),
+    );
+    expect(
+      goalAgentSystemPrompt,
+      contains('Retirement and update_goal_report do NOT satisfy'),
+    );
+    expect(
+      goalAgentSystemPrompt,
+      contains('Before stopping, complete every REQUIRED call'),
+    );
   });
 
   test('the tool surface includes the shared reply carrier and seven goal '
@@ -72,6 +96,8 @@ void main() {
     final required = reportTool.parameters['required'] as List<dynamic>;
     final report = properties['report'] as Map<String, dynamic>;
     final reportProperties = report['properties'] as Map<String, dynamic>;
+    expect(reportTool.parameters['additionalProperties'], isFalse);
+    expect(report['additionalProperties'], isFalse);
     expect(
       required,
       containsAll(['status', 'oneLiner', 'report']),
@@ -87,12 +113,17 @@ void main() {
     expect(
       (reportProperties[GoalReportSectionKeys.currentPeriod]
           as Map<String, dynamic>)['description'],
-      contains('todayGuidance'),
+      allOf(contains('todayGuidance'), contains('each exact latest')),
     );
     expect(
       (reportProperties[GoalReportSectionKeys.latestChange]
           as Map<String, dynamic>)['description'],
       contains('exact latest'),
+    );
+    expect(
+      (reportProperties[GoalReportSectionKeys.coverage]
+          as Map<String, dynamic>)['description'],
+      contains("each health series' sample count"),
     );
     expect(
       (reportProperties[GoalReportSectionKeys.nextActions]

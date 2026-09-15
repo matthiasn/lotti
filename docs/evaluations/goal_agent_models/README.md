@@ -31,7 +31,7 @@ are **not comparable** — do not put them in one table.
 | Scored | tool calls attempted | entities persisted |
 | Strategy | records, accepts everything | the real `GoalAgentStrategy`, which rejects |
 | Retries | none | `_forceReport` / `_forceAd` / `_forceReply` all run |
-| Scenarios | 26, P1–P17 | 9, the rows where attempt ≠ outcome |
+| Scenarios | 27, P1–P17 | 9, the rows where attempt ≠ outcome |
 | Cost | ~1 call per case | 1–3 calls per case |
 
 Tier 1 is the workhorse: cheap, broad, and every scenario is legible. But
@@ -88,7 +88,7 @@ their deterministic arithmetic against the real evaluator and use the
 production prompt/tool contract, but the block itself is written by hand and
 can drift from what `GoalFactsRenderer` actually emits. Tier 2 does not
 re-implement any of these — its nine scenarios are new, built from entities —
-so all 26 tier-1 scenarios still run on authored FACTS.
+so all 27 tier-1 scenarios still run on authored FACTS.
 
 ### Tier 2 — what is measured
 

@@ -16,26 +16,29 @@ import signal
 import subprocess
 import sys
 
+RUN_HISTORY_PATH = "docs/evaluations/lotti-gym-runs.jsonl"
+
 
 def repository_revision(root):
-    """Identify committed and dirty inputs without recording file contents."""
+    """Identify source inputs; the aggregate-only run ledger is not an input."""
     def git(*args):
         return subprocess.check_output(
             ["git", *args], cwd=root, stderr=subprocess.DEVNULL,
         )
 
     commit, tree = git("rev-parse", "HEAD", "HEAD^{tree}").decode().splitlines()
-    diff = git("diff", "--no-ext-diff", "--binary", "HEAD")
+    diff = git("diff", "--no-ext-diff", "--binary", "HEAD", "--", ".",
+               f":(exclude){RUN_HISTORY_PATH}")
     untracked = git("ls-files", "--others", "--exclude-standard", "-z")
     untracked_hashes = {
         name: hashlib.sha256((root / name).read_bytes()).hexdigest()
         for name in sorted(filter(None, untracked.decode().split("\0")))
-        if (root / name).is_file()
+        if name != RUN_HISTORY_PATH and (root / name).is_file()
     }
     return {
         "commit": commit,
         "committedTree": tree,
-        "dirty": bool(diff or untracked),
+        "dirty": bool(diff or untracked_hashes),
         "trackedDiffSha256": hashlib.sha256(diff).hexdigest(),
         "untrackedFileHashes": untracked_hashes,
     }

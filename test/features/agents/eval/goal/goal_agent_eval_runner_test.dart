@@ -151,6 +151,59 @@ void main() {
       expect(category, GoalAgentEvalFailureCategory.none);
     });
 
+    test('a lap call to action sells movement in the composite case', () {
+      for (final movementCopy in [
+        'Add a lap',
+        'Let your feet add miles',
+        'Let your legs carry their weight',
+      ]) {
+        final category = classifyGoalAgentResult(
+          scenario: scenarioById('cx_gym_done_steps_collapse'),
+          toolCalls: [
+            call(
+              GoalAgentToolNames.retireGoalAd,
+              '{"adId":"ad-kettlebell-05"}',
+            ),
+            call(
+              GoalAgentToolNames.updateGoalReport,
+              '{"status":"offTrack","oneLiner":"x","tldr":"y"}',
+            ),
+            call(
+              GoalAgentToolNames.createGoalAd,
+              '''{"headline":"Half the target is still a gap","cta":"$movementCopy","tone":"nudge","animation":"pulse"}''',
+            ),
+          ],
+          assistantContent: '',
+        );
+        expect(category, GoalAgentEvalFailureCategory.none);
+      }
+    });
+
+    test('movement terms do not match unrelated word fragments', () {
+      final category = classifyGoalAgentResult(
+        scenario: scenarioById('cx_gym_done_steps_collapse'),
+        toolCalls: [
+          call(
+            GoalAgentToolNames.retireGoalAd,
+            '{"adId":"ad-kettlebell-05"}',
+          ),
+          call(
+            GoalAgentToolNames.updateGoalReport,
+            '{"status":"offTrack","oneLiner":"x","tldr":"y"}',
+          ),
+          call(
+            GoalAgentToolNames.createGoalAd,
+            '''{"headline":"Overlap smiles","cta":"Reboot legendary mode","tone":"nudge","animation":"pulse"}''',
+          ),
+        ],
+        assistantContent: '',
+      );
+      expect(
+        category,
+        GoalAgentEvalFailureCategory.missingRequiredToolArguments,
+      );
+    });
+
     test('banner args that cannot decode fail even when the name matches', () {
       GoalAgentEvalFailureCategory classify(String argumentsJson) =>
           classifyGoalAgentResult(
@@ -436,7 +489,8 @@ void main() {
       // The vague-musing scenario wants the agent to ASK something. A loose
       // "contains ?" credited pep talk with a rhetorical question buried in
       // the middle: over 40 samples the loose form scored 0.525 where the
-      // question actually landed at the end only 0.375 of the time.
+      // question actually landed at the end only 0.375 of the time. Neither
+      // punctuation presence nor position establishes a clarifying question.
       final scenario = scenarioById('evo_ambiguous');
       expect(
         classifyGoalAgentResult(
@@ -453,7 +507,7 @@ void main() {
         ),
         GoalAgentEvalFailureCategory.missingAssistantContent,
       );
-      // Ending on the question is what the policy asks for.
+      // A direct request for the user to explain the difficulty qualifies.
       expect(
         classifyGoalAgentResult(
           scenario: scenario,
@@ -467,6 +521,69 @@ void main() {
           assistantContent: '',
         ),
         GoalAgentEvalFailureCategory.none,
+      );
+    });
+
+    test('a clarifying choice can be followed by reassurance', () {
+      final scenario = scenarioById('evo_ambiguous');
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenario,
+          toolCalls: [
+            call(
+              GoalAgentToolNames.replyToUser,
+              jsonEncode({
+                'message':
+                    'Do you want to keep the goal as it is, or change the '
+                    'target or window? If you want a change, tell me roughly '
+                    'what would fit better and I will put it to you for '
+                    'approval. There is no pressure to decide today.',
+              }),
+            ),
+          ],
+          assistantContent: '',
+        ),
+        GoalAgentEvalFailureCategory.none,
+      );
+    });
+
+    test('a concrete is-the-hard-part choice is clarification', () {
+      final scenario = scenarioById('evo_ambiguous');
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenario,
+          toolCalls: [
+            call(
+              GoalAgentToolNames.replyToUser,
+              jsonEncode({
+                'message':
+                    'Is the hard part the 10,000 target, or keeping it '
+                    'daily? Tell me which feels heavy and I will leave the '
+                    'goal alone until you choose.',
+              }),
+            ),
+          ],
+          assistantContent: '',
+        ),
+        GoalAgentEvalFailureCategory.none,
+      );
+    });
+
+    test('a rhetorical question at the end still is not clarification', () {
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenarioById('evo_ambiguous'),
+          toolCalls: [
+            call(
+              GoalAgentToolNames.replyToUser,
+              jsonEncode({
+                'message': 'Some days the win is just getting out the door?',
+              }),
+            ),
+          ],
+          assistantContent: '',
+        ),
+        GoalAgentEvalFailureCategory.missingAssistantContent,
       );
     });
 
