@@ -275,6 +275,42 @@ void main() {
       );
     });
 
+    test('a negator in another clause excuses nothing', () {
+      // From review: "none is missing, all four are finished".
+      expect(
+        containsAffirmativeReportClaim(
+          'keiner der vier schritte fehlt, alle vier sind abgeschlossen.',
+          'abgeschlossen',
+        ),
+        isTrue,
+      );
+    });
+
+    test('clause scoping keeps a caveat from excusing a short claim', () {
+      const overclaim =
+          'the code location was identified, but implementation remains '
+          'pending.';
+      // Sentence-wide, "remains"/"pending" excuse the claim; clause-scoped
+      // they cannot.
+      expect(containsAffirmativeReportClaim(overclaim, 'identified'), isFalse);
+      expect(
+        containsAffirmativeReportClaim(
+          overclaim,
+          'identified',
+          clauseScoped: true,
+        ),
+        isTrue,
+      );
+      expect(
+        containsAffirmativeReportClaim(
+          'the relevant code location is not yet identified.',
+          'identified',
+          clauseScoped: true,
+        ),
+        isFalse,
+      );
+    });
+
     test('the same words still fire without the deferral', () {
       expect(
         containsAffirmativeReportClaim(

@@ -39,8 +39,7 @@ const _claimNegationCues = [
   // whether to submit" — and none of the negation cues above see that.
   'undecided', 'whether', 'weighing', 'either', 'options', 'open question',
   // German.
-  'nicht', 'kein', 'keine', 'keinen', 'keiner', 'keines', 'keinem', 'ohne',
-  'bevor', 'noch', 'erst', 'außen vor', 'ausgeklammert', 'weggelassen',
+  'nicht', 'kein', 'keine', 'keinen', 'ohne', 'bevor', 'noch', 'erst',
   'zurückgestellt', 'zurückgestellte', 'ausstehend', 'offen', 'später',
   'künftig',
   // Spanish.
@@ -59,6 +58,31 @@ final RegExp _claimNegationPattern = RegExp(
   r')(?![\p{L}])',
   unicode: true,
 );
+
+/// Negators that only count inside the claim's own comma clause.
+///
+/// These came from live reports ("die Newsletter-Idee bleibt bewusst außen
+/// vor", "keiner ist abgeschlossen"), but sentence-wide they excuse too much:
+/// "Keiner der vier Schritte fehlt, alle vier sind abgeschlossen" names a
+/// negative quantifier and still reports every step finished.
+const _clauseNegationCues = [
+  'keiner',
+  'keines',
+  'keinem',
+  'außen vor',
+  'ausgeklammert',
+  'weggelassen',
+];
+
+final RegExp _clauseNegationPattern = RegExp(
+  r'(?<![\p{L}])(?:'
+  '${_clauseNegationCues.map(RegExp.escape).join('|')}'
+  r')(?![\p{L}])',
+  unicode: true,
+);
+
+/// A comma, colon or dash ends a clause as well as a sentence.
+final RegExp _clauseBreakPattern = RegExp(r'[,:\u2013\u2014]');
 
 /// How much text around a match is inspected for a negation cue.
 ///
@@ -110,7 +134,16 @@ final RegExp _sentenceBreakPattern = RegExp(r'[.!?;\n\r]|\\n|\\r');
 /// is how a report may name deferred or unfinished work in order to rule it
 /// out. Exposed so the negation rules can be tested directly rather than
 /// only through a scenario's aggregate score.
-bool containsAffirmativeReportClaim(String text, String claim) {
+///
+/// [clauseScoped] narrows every cue to the claim's own comma clause, for a
+/// check whose claim is short and whose reports routinely pair it with an
+/// unrelated caveat ("the location was identified, but the fix remains
+/// pending").
+bool containsAffirmativeReportClaim(
+  String text,
+  String claim, {
+  bool clauseScoped = false,
+}) {
   final normalizedText = text.toLowerCase();
   final needle = claim.toLowerCase();
   var index = normalizedText.indexOf(needle);
@@ -138,10 +171,25 @@ bool containsAffirmativeReportClaim(String text, String claim) {
       continue;
     }
     // Skip the claim itself so a cue inside it cannot excuse the claim.
-    final context =
-        '${normalizedText.substring(start, index)} '
-        '${normalizedText.substring(end, stop)}';
-    if (!_claimNegationPattern.hasMatch(context)) return true;
+    final before = normalizedText.substring(start, index);
+    final after = normalizedText.substring(end, stop);
+    final clauseBefore = switch (_clauseBreakPattern
+        .allMatches(before)
+        .lastOrNull) {
+      final Match brk => before.substring(brk.end),
+      null => before,
+    };
+    final clauseAfter = switch (_clauseBreakPattern.firstMatch(after)) {
+      final Match brk => after.substring(0, brk.start),
+      null => after,
+    };
+    final clause = '$clauseBefore $clauseAfter';
+    final negated =
+        _claimNegationPattern.hasMatch(
+          clauseScoped ? clause : '$before $after',
+        ) ||
+        _clauseNegationPattern.hasMatch(clause);
+    if (!negated) return true;
     index = normalizedText.indexOf(needle, end);
   }
   return false;

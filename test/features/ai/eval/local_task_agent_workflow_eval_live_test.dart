@@ -265,9 +265,14 @@ void main() {
       expect(normalizedReport, isNot(contains('workflow item')));
       expect(normalizedReport, isNot(contains('checklist')));
       // A claim, not a word: "the relevant code location is not yet
-      // identified" is the honest state and must not fail the run.
+      // identified" is the honest state and must not fail the run. Clause
+      // scoped, so "was identified, but the fix remains pending" still fails.
       expect(
-        containsAffirmativeReportClaim(normalizedReport, 'identified'),
+        containsAffirmativeReportClaim(
+          normalizedReport,
+          'identified',
+          clauseScoped: true,
+        ),
         isFalse,
         reason: 'The report claims something was identified.',
       );
