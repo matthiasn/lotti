@@ -666,6 +666,44 @@ void main() {
         expect(results.single, isA<BasicLink>());
       });
 
+      test('relationshipLinksToIds returns only the RelationshipLinks pointing '
+          'at the ids', () async {
+        final at = DateTime(2024, 8, 2);
+        await db!.upsertEntryLink(
+          EntryLink.relationship(
+            id: 'to-call',
+            fromId: 'person-1',
+            toId: 'call-1',
+            createdAt: at,
+            updatedAt: at,
+            vectorClock: null,
+          ),
+        );
+        await db!.upsertEntryLink(
+          EntryLink.relationship(
+            id: 'to-other',
+            fromId: 'person-1',
+            toId: 'call-2',
+            createdAt: at,
+            updatedAt: at,
+            vectorClock: null,
+          ),
+        );
+        await db!.upsertEntryLink(
+          buildEntryLink(
+            id: 'basic-to-call',
+            fromId: 'task-1',
+            toId: 'call-1',
+            timestamp: at,
+          ),
+        );
+
+        final results = await db!.relationshipLinksToIds({'call-1'});
+        expect(results.map((l) => l.id), ['to-call']);
+        expect(results.single, isA<RelationshipLink>());
+        expect(await db!.relationshipLinksToIds(<String>{}), isEmpty);
+      });
+
       test('upsertEntryLink rejects self-links', () async {
         final link = buildEntryLink(
           id: 'self-link',

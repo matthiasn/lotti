@@ -211,9 +211,7 @@ class DayAgentWeekContextService {
       rangeStart: rangeStart,
       rangeEnd: rangeEnd,
     );
-    final links = await journalDb.basicLinksForEntryIds(
-      entries.map((entry) => entry.meta.id).toSet(),
-    );
+    final links = await loadRecordedTimeLinks(journalDb, entries);
     final linkedFromIds = links.map((link) => link.fromId).toSet();
     final linkedFrom = linkedFromIds.isEmpty
         ? const <JournalEntity>[]
