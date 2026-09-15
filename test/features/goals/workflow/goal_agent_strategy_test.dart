@@ -284,6 +284,40 @@ void main() {
     expect(strategy.reportStatus, GoalTrackStatus.recovering);
   });
 
+  test('every camelCase status name is still rejected in prose', () async {
+    // Pins the whole banned set, so narrowing the rule to identifiers cannot
+    // silently drop one of them.
+    for (final token in ['onTrack', 'atRisk', 'offTrack', 'insufficientData']) {
+      final fresh = GoalAgentStrategy(
+        syncService: syncService,
+        agentId: 'goal-1',
+        threadId: 'thread-1',
+        runKey: 'run-$token',
+        knownAdIds: const {},
+      );
+      await fresh.processToolCalls(
+        toolCalls: [
+          _call(
+            name: GoalAgentToolNames.updateGoalReport,
+            args: {
+              'status': token,
+              'oneLiner': 'This goal is $token right now.',
+              'tldr': 'Steady week.',
+            },
+          ),
+        ],
+        manager: manager,
+      );
+
+      expect(fresh.hasReport, isFalse, reason: token);
+      expect(
+        rejection(),
+        contains('"$token" is a status field value, not prose'),
+        reason: token,
+      );
+    }
+  });
+
   test('a status name is still required in the status FIELD', () async {
     await strategy.processToolCalls(
       toolCalls: [
