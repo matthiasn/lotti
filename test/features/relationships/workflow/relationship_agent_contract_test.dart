@@ -26,6 +26,32 @@ void main() {
     expect(relationshipAgentSystemPrompt, contains('No images'));
   });
 
+  test(
+    'the prompt requires tool-only replies and complete wake follow-through',
+    () {
+      expect(
+        relationshipAgentSystemPrompt,
+        contains('Never put visible text in plain assistant content'),
+      );
+      expect(
+        relationshipAgentSystemPrompt,
+        contains('one successful tool call never ends the wake'),
+      );
+      expect(
+        relationshipAgentSystemPrompt,
+        contains('Cite relevant linked tasks with their exact status'),
+      );
+      expect(
+        relationshipAgentSystemPrompt,
+        contains('A roast request changes the banner tone'),
+      );
+      expect(
+        relationshipAgentSystemPrompt,
+        contains('replace the required banner with a reply'),
+      );
+    },
+  );
+
   test('tool names keep the uniform verb_relationship_noun prefix', () {
     expect(
       RelationshipAgentToolNames.updateRelationshipReport,

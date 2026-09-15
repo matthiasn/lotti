@@ -664,12 +664,18 @@ removed:
   10 check-ins, 400-char narrative excerpts) and — the ADR 0041 §5 boundary
   — its `render` signature has **no channel parameter**, so contact
   channels are structurally absent from model context, not filtered out.
-- **Four tools, accumulated then persisted once.** `reply_to_user`,
-  `update_relationship_report`, `create_relationship_ad`,
-  `snooze_relationship_ad` accumulate in the strategy; `persistOutputs`
-  writes one transaction, fenced on the person still existing and still
-  important. The briefing lands as an `AgentReportEntity` whose provenance
-  carries the health band + rationale + confidence
+- **Tool-only output, accumulated then persisted once.** Visible chat always
+  goes through `reply_to_user`; plain assistant content is not an output path.
+  A reply is the first action for a pending message, then the same wake still
+  completes every applicable briefing, banner, and deferred task proposal.
+  `reply_to_user`, `update_relationship_report`, `create_relationship_ad`,
+  `snooze_relationship_ad`, and `create_and_link_task` accumulate in the
+  strategy; `persistOutputs` writes one transaction, fenced on the person still
+  existing and still important. Briefings cite relevant linked tasks with
+  their stored status. Private narrative details may inform a briefing, while
+  banner copy excludes contact details, addresses, diagnoses, health details,
+  and third-party names. The briefing lands as an `AgentReportEntity` whose
+  provenance carries the health band + rationale + confidence
   (`RelationshipReportProvenanceKeys`, parsed fail-closed by
   `relationship_health_metrics.dart`).
 - **The standing head advances by DUE DAY, not by wall clock.** Report rows

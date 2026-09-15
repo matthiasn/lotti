@@ -33,6 +33,7 @@ const _claimNegationCues = [
   "didn't", 'without', 'before', 'until', 'unless', 'pending', 'remains',
   'remain', 'still', 'yet', 'future', 'later', 'deferred', 'excluded',
   'out of scope', 'outside the scope', 'descoped', 'not in scope',
+  'nothing concrete',
   // Open-question markers. A report can be entirely correct while naming a
   // thing it has NOT committed to — "undecided on March vs. June", "weighing
   // whether to submit" — and none of the negation cues above see that.
