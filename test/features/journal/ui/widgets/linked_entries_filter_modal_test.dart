@@ -187,24 +187,40 @@ void main() {
       );
     });
 
-    testWidgets('the last toggle clears the sticky footer on a phone', (
-      tester,
-    ) async {
-      final modal = await _pumpAndOpenModal(
+    for (final (label, mediaQueryData) in [
+      ('a phone sheet', phoneMediaQueryData),
+      ('a desktop dialog', null),
+    ]) {
+      testWidgets('the footer sits one gap below the last toggle on $label', (
         tester,
-        mediaQueryData: phoneMediaQueryData,
-      );
+      ) async {
+        final modal = await _pumpAndOpenModal(
+          tester,
+          mediaQueryData: mediaQueryData,
+        );
+        final spacing = tester
+            .element(find.byType(DesignSystemFilterActionBar))
+            .designTokens
+            .spacing;
 
-      final lastRow = find.ancestor(
-        of: modal.showFlaggedOnlyToggle,
-        matching: find.byType(DesignSystemFilterToggleRow),
-      );
-      final footer = find.byType(DesignSystemFilterActionBar);
-      expect(
-        tester.getRect(lastRow).bottom,
-        lessThanOrEqualTo(tester.getRect(footer).top),
-      );
-    });
+        final lastRow = find.ancestor(
+          of: modal.showFlaggedOnlyToggle,
+          matching: find.byType(DesignSystemFilterToggleRow),
+        );
+        final footer = find.byType(DesignSystemFilterActionBar);
+        // No dead space: exactly the body's bottom inset, never the
+        // long-list scroll clearance a floating bar would need.
+        expect(
+          tester.getRect(footer).top - tester.getRect(lastRow).bottom,
+          spacing.step4,
+        );
+        expect(
+          tester.getRect(footer).width,
+          tester.getRect(find.byType(DesignSystemFilterToggleRow).first).width +
+              2 * spacing.step5,
+        );
+      });
+    }
   });
 
   group('staging', () {
@@ -265,6 +281,21 @@ void main() {
         includeHidden: true,
         showFlaggedOnly: true,
       ));
+    });
+
+    testWidgets('commits the draft as it is at activation, not as last built', (
+      tester,
+    ) async {
+      final modal = await _pumpAndOpenModal(tester, seed: _seedNonDefault);
+
+      // Clear and Apply land in the same frame: the footer has not rebuilt
+      // with the cleared draft when Apply fires.
+      tester.widget<DesignSystemButton>(modal.clear).onPressed!();
+      tester.widget<DesignSystemButton>(modal.apply).onPressed!();
+      await tester.pumpAndSettle();
+
+      expect(modal.title, findsNothing);
+      expect(modal.committed, _defaultFilter);
     });
 
     testWidgets('reopening after Apply starts from the committed filter', (

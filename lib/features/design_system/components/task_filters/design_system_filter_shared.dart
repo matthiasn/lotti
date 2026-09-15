@@ -11,9 +11,11 @@ String stripTrailingColon(String value) {
 
 /// Full-width boolean filter row used by compact filter and sort sheets.
 ///
-/// The entire row is one hover, focus, tap, and semantics target. The trailing
+/// The entire row is one focus, tap, and semantics target. The trailing
 /// toggle is visual-only, avoiding the cramped inset-card treatment and a
-/// duplicate focus stop.
+/// duplicate focus stop. The row paints no hover or press ink: the toggle's
+/// own animation is the feedback, and a filled row next to the choice pills
+/// read as a selected state rather than a pointer resting on it.
 class DesignSystemFilterToggleRow extends StatefulWidget {
   const DesignSystemFilterToggleRow({
     required this.label,
@@ -61,6 +63,10 @@ class _DesignSystemFilterToggleRowState
           ),
           child: InkWell(
             borderRadius: radius,
+            hoverColor: Colors.transparent,
+            highlightColor: Colors.transparent,
+            splashColor: Colors.transparent,
+            splashFactory: NoSplash.splashFactory,
             onTap: () => widget.onChanged(!widget.value),
             onFocusChange: (value) => setState(() => _focused = value),
             child: ConstrainedBox(

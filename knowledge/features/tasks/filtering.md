@@ -5,8 +5,8 @@ description: The browse page's shared query stack, the adaptive filter modal, sa
 resource: ../../../lib/features/tasks/state/saved_filters
 tags: [tasks, filters, saved-filters, keyboard]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T01:00:00Z }
-stale_after: 2027-01-25
+generated: { by: claude-code/fable-5.1, at: 2026-09-15T17:40:00Z }
+stale_after: 2027-03-15
 sources:
   - id: saved-filters
     resource: ../../../lib/features/tasks/state/saved_filters
@@ -52,9 +52,10 @@ Save remain overview actions. The overview footer is the shared
 `DesignSystemFilterActionBar`, the same Clear / Apply bar the linked-entries
 filter on a task detail page commits with
 (`lib/features/journal/ui/widgets/linked_entries_filter_modal.dart`), so a
-draft is closed the same way everywhere and never through the close button. The transition coordinates the content fade with the
-Wolt page-size animation, and returning **restores keyboard focus to the field
-that opened the child page**.
+draft is committed only through Apply and every other close route — the close
+button, the barrier, Escape, system back — discards it. The transition
+coordinates the content fade with the Wolt page-size animation, and returning
+**restores keyboard focus to the field that opened the child page**.
 
 Project choices use a **stale-while-revalidate catalog**: the route opens from the
 last snapshot immediately, refreshes after its first frame, and updates the draft

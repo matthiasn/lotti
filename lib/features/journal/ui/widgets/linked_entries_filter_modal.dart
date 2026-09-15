@@ -17,9 +17,14 @@ abstract final class LinkedEntriesFilterModalKeys {
 /// Compact single-page filter for linked-entry sort and visibility settings.
 ///
 /// Every choice is staged in a draft and reaches the per-entry controllers
-/// only through the sticky Apply footer — the same Clear / Apply bar the task
-/// list filter commits with. Closing the sheet by any other route (the close
+/// only through the Apply footer — the same Clear / Apply bar the task list
+/// filter commits with. Closing the sheet by any other route (the close
 /// button, the barrier, Escape, system back) discards the draft.
+///
+/// The footer sits in flow under the last toggle rather than floating as a
+/// sticky bar: four controls never scroll, and a floating bar would need the
+/// long-list clearance under them, which reads as dead space on a sheet this
+/// short.
 Future<void> showLinkedEntriesFilterModal({
   required BuildContext context,
   required String entryId,
@@ -34,18 +39,13 @@ Future<void> showLinkedEntriesFilterModal({
       ),
     ),
   );
-  final spacing = context.designTokens.spacing;
   await ModalUtils.showSinglePageModal<void>(
     context: context,
     title: context.messages.journalLinkedEntriesFilterModalTitle,
     modalDecorator: (child) => _DraftLifetime(draft: draft, child: child),
-    padding: EdgeInsets.fromLTRB(
-      spacing.step5,
-      spacing.step2,
-      spacing.step5,
-      spacing.step5,
-    ),
-    stickyActionBarBuilder: (modalContext) => _LinkedEntriesFilterActionBar(
+    // The footer spans edge to edge; the body pads itself.
+    padding: EdgeInsets.zero,
+    builder: (modalContext) => _LinkedEntriesFilterModalBody(
       draft: draft,
       onApply: (value) => _commitDraft(
         container,
@@ -53,7 +53,6 @@ Future<void> showLinkedEntriesFilterModal({
         value: value,
       ),
     ),
-    builder: (modalContext) => _LinkedEntriesFilterModalBody(draft: draft),
   );
 }
 
@@ -129,8 +128,12 @@ class _LinkedEntriesFilterDraft {
   );
 }
 
-/// The sticky footer: Clear is inert while the draft already sits at the
-/// defaults; Apply commits the draft and closes the sheet.
+/// The footer: Clear is inert while the draft already sits at the defaults;
+/// Apply commits the draft and closes the sheet.
+///
+/// Apply reads the notifier at activation rather than the value the footer
+/// was last built with, so a Clear and an Apply that land before the next
+/// frame still commit what the user saw last.
 class _LinkedEntriesFilterActionBar extends StatelessWidget {
   const _LinkedEntriesFilterActionBar({
     required this.draft,
@@ -154,7 +157,7 @@ class _LinkedEntriesFilterActionBar extends StatelessWidget {
             ? null
             : () => draft.value = _LinkedEntriesFilterDraft.defaults,
         onApplyPressed: () {
-          onApply(value);
+          onApply(draft.value);
           Navigator.of(context).pop();
         },
       ),
@@ -163,7 +166,39 @@ class _LinkedEntriesFilterActionBar extends StatelessWidget {
 }
 
 class _LinkedEntriesFilterModalBody extends StatelessWidget {
-  const _LinkedEntriesFilterModalBody({required this.draft});
+  const _LinkedEntriesFilterModalBody({
+    required this.draft,
+    required this.onApply,
+  });
+
+  final ValueNotifier<_LinkedEntriesFilterDraft> draft;
+  final ValueChanged<_LinkedEntriesFilterDraft> onApply;
+
+  @override
+  Widget build(BuildContext context) {
+    final spacing = context.designTokens.spacing;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            spacing.step5,
+            spacing.step2,
+            spacing.step5,
+            spacing.step4,
+          ),
+          child: _LinkedEntriesFilterControls(draft: draft),
+        ),
+        _LinkedEntriesFilterActionBar(draft: draft, onApply: onApply),
+      ],
+    );
+  }
+}
+
+/// The sort pills and the two visibility toggles, editing [draft] in place.
+class _LinkedEntriesFilterControls extends StatelessWidget {
+  const _LinkedEntriesFilterControls({required this.draft});
 
   final ValueNotifier<_LinkedEntriesFilterDraft> draft;
 
@@ -221,10 +256,6 @@ class _LinkedEntriesFilterModalBody extends StatelessWidget {
             onChanged: (next) => draft.value = draft.value.copyWith(
               showFlaggedOnly: next,
             ),
-          ),
-          // Lets the last toggle scroll fully above the sticky footer.
-          SizedBox(
-            height: DesignSystemFilterActionBar.stickyClearance(context),
           ),
         ],
       ),

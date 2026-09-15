@@ -6,4 +6,6 @@
   other filter. The top corner is now a plain close that discards what was
   staged, Apply at the bottom commits the sort order and the hidden and
   flagged toggles together, and Clear resets the sheet to newest first with
-  both toggles off.
+  both toggles off. The footer sits right under the last toggle instead of
+  above an empty band, and the toggle rows no longer flash a grey fill when
+  the pointer rests on them or they are pressed.
