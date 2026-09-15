@@ -20,6 +20,14 @@ void main() {
     );
     expect(
       relationshipAgentSystemPrompt,
+      contains("healthBand MUST follow the user's own judgment"),
+    );
+    expect(
+      relationshipAgentSystemPrompt,
+      contains('positive narrative never improves it'),
+    );
+    expect(
+      relationshipAgentSystemPrompt,
       contains('Never invent contact details'),
       reason: 'ADR 0041 §5 — channels are structurally absent from FACTS',
     );
@@ -72,6 +80,14 @@ void main() {
       expect(
         relationshipAgentSystemPrompt,
         contains('If the marked request is unrelated'),
+      );
+      expect(
+        relationshipAgentSystemPrompt,
+        contains('Every PENDING USER MESSAGE requires reply_to_user'),
+      );
+      expect(
+        relationshipAgentSystemPrompt,
+        contains('plain assistant content never counts'),
       );
       expect(
         relationshipAgentSystemPrompt,

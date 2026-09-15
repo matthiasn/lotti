@@ -669,8 +669,8 @@ removed:
   It is forbidden unless the wake contains the exact `PENDING USER MESSAGE:`
   header; the rendered facts block is data and is never itself a user request.
   A pending message includes exactly one reply, and the same single assistant
-  response still includes
-  every briefing, banner, snooze, and deferred task proposal explicitly
+  response still includes every briefing, banner, snooze, and deferred task
+  proposal explicitly
   triggered by the rendered facts. The workflow does not request a second
   assistant response after tool results. When nothing is triggered, no tool
   runs; any plain completion is persisted only as an internal thought, never
@@ -682,9 +682,11 @@ removed:
   `snooze_relationship_ad`, and `create_and_link_task` accumulate in the
   strategy; `persistOutputs` writes one transaction, fenced on the person still
   existing and still important. Briefings cite relevant linked tasks with
-  their stored status. Private narrative details may inform a briefing, while
-  banner copy excludes contact details, addresses, diagnoses, health details,
-  and third-party names. The briefing lands as an `AgentReportEntity` whose
+  their stored status. The health band follows the user's sentiment labels;
+  positive narrative cannot improve that verdict. Private narrative details
+  may inform a briefing, while banner copy excludes contact details, addresses,
+  diagnoses, health details, and third-party names. The briefing lands as an
+  `AgentReportEntity` whose
   provenance carries the health band + rationale + confidence
   (`RelationshipReportProvenanceKeys`, parsed fail-closed by
   `relationship_health_metrics.dart`).
