@@ -254,6 +254,100 @@ void main() {
     });
   });
 
+  group('German deferrals from live runs', () {
+    // Verbatim from the 2026-09-15 glm-5.3-flash:speed baseline: both are
+    // correct reports that failed as claims.
+    test('"außen vor" and "keiner" negate the claim', () {
+      expect(
+        containsAffirmativeReportClaim(
+          'die newsletter-idee bleibt bewusst außen vor.',
+          'newsletter',
+        ),
+        isFalse,
+      );
+      expect(
+        containsAffirmativeReportClaim(
+          'alle vier schritte stehen jetzt als checkliste bereit, keiner ist '
+              'abgeschlossen.',
+          'abgeschlossen',
+        ),
+        isFalse,
+      );
+    });
+
+    test('a negator in another clause excuses nothing', () {
+      // From review: "none is missing, all four are finished".
+      expect(
+        containsAffirmativeReportClaim(
+          'keiner der vier schritte fehlt, alle vier sind abgeschlossen.',
+          'abgeschlossen',
+        ),
+        isTrue,
+      );
+    });
+
+    test('an "und" that starts a new statement ends the clause', () {
+      // From review: the same sentence without its comma.
+      expect(
+        containsAffirmativeReportClaim(
+          'keiner der vier schritte fehlt und alle vier sind abgeschlossen.',
+          'abgeschlossen',
+        ),
+        isTrue,
+      );
+      // A plain noun conjunction is one statement, and still a deferral.
+      expect(
+        containsAffirmativeReportClaim(
+          'die newsletter-idee und der blog bleiben außen vor.',
+          'newsletter',
+        ),
+        isFalse,
+      );
+    });
+
+    test('clause scoping keeps a caveat from excusing a short claim', () {
+      const overclaim =
+          'the code location was identified, but implementation remains '
+          'pending.';
+      // Sentence-wide, "remains"/"pending" excuse the claim; clause-scoped
+      // they cannot.
+      expect(containsAffirmativeReportClaim(overclaim, 'identified'), isFalse);
+      expect(
+        containsAffirmativeReportClaim(
+          overclaim,
+          'identified',
+          clauseScoped: true,
+        ),
+        isTrue,
+      );
+      expect(
+        containsAffirmativeReportClaim(
+          'the relevant code location is not yet identified.',
+          'identified',
+          clauseScoped: true,
+        ),
+        isFalse,
+      );
+    });
+
+    test('the same words still fire without the deferral', () {
+      expect(
+        containsAffirmativeReportClaim(
+          'die newsletter-idee ist eingeplant.',
+          'newsletter',
+        ),
+        isTrue,
+      );
+      expect(
+        containsAffirmativeReportClaim(
+          'alle vier schritte sind abgeschlossen.',
+          'abgeschlossen',
+        ),
+        isTrue,
+      );
+    });
+  });
+
   group('open-question markers', () {
     // Verbatim from a live run: all three models wrote sentences of this shape
     // and the scenario failed them for naming the options it asked them to

@@ -511,8 +511,9 @@ The one-liner states the current delivery call; the TLDR explains its practical
 consequence without repeating it. Start the full report with
 `## Recommendation` and one short evidence-backed paragraph. Follow with
 `## Next moves`, using one to four concrete bullets and retaining owners and
-dates when known. Add `## Decision needed` only when the user must resolve an
-active choice or dependency. Omit generic status headings, empty sections,
+dates when known. Add `## Decision needed` only when the user themselves must
+make a choice or unblock something; a constraint someone else owns is reported
+under the headings above, never as a decision for the user. Omit generic status headings, empty sections,
 tool narration, and repeated context.
 ''';
 
@@ -554,8 +555,9 @@ or describe task setup and checklist operations as progress.
 const _evolvedReleaseEvidenceDirective = '''
 Write a compact release note grounded only in recorded outcomes. Use exactly
 `## Outcome` for completed real-world work and `## Remaining` for work that is
-still pending. Add `## Evidence` only when a real external URL exists, using a
-descriptive Markdown link. Keep completion separate from deployment readiness.
+still pending. When a recorded real external URL exists you MUST add
+`## Evidence` with that URL as a descriptive Markdown link; omit the section
+entirely when no such URL exists. Keep completion separate from deployment readiness.
 Do not use generic achievement headings, expose internal IDs, or turn task
 state and checklist edits into accomplishments.
 ''';
