@@ -42,6 +42,11 @@ const _claimNegationCues = [
   'nicht', 'kein', 'keine', 'keinen', 'ohne', 'bevor', 'noch', 'erst',
   'zurückgestellt', 'zurückgestellte', 'ausstehend', 'offen', 'später',
   'künftig',
+  // German modals and "as soon as" put a participle into the future or the
+  // conditional: "sobald er geklärt ist, kann der Prototyp abgeschlossen
+  // werden" plans the work, it does not report it done. `wurde`/`ist` are
+  // deliberately absent, so "der Prototyp wurde abgeschlossen" still fires.
+  'kann', 'können', 'soll', 'sollen', 'muss', 'müssen', 'sobald',
   // Spanish.
   'sin', 'antes', 'aún', 'todavía', 'pendiente', 'futuro', 'más',
 ];

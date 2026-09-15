@@ -195,6 +195,47 @@ void main() {
     });
   });
 
+  group('German modal passives plan the work', () {
+    // Verbatim from the 2026-09-15 deepseek-v4.1-flash:speed run: both
+    // sentences describe the plan in german_voice_plan_production correctly
+    // and failed it as completion claims.
+    test('a modal passive after "sobald" is not a completion claim', () {
+      const figma =
+          'sobald er geklärt ist, kann der figma-prototyp abgeschlossen und '
+          'die anmeldung umgesetzt werden.';
+      const api =
+          'sobald der api-umfang mit ben geklärt ist, kann der prototyp final '
+          'abgeschlossen werden.';
+      for (final (text, claim) in [
+        (figma, 'abgeschlossen'),
+        (figma, 'umgesetzt'),
+        (api, 'abgeschlossen'),
+      ]) {
+        expect(
+          containsAffirmativeReportClaim(text, claim),
+          isFalse,
+          reason: '$claim in $text',
+        );
+      }
+    });
+
+    test('a past-tense or stative completion still fires', () {
+      for (final text in [
+        'der prototyp wurde abgeschlossen.',
+        'die anmeldung ist umgesetzt.',
+      ]) {
+        expect(
+          containsAffirmativeReportClaim(
+            text,
+            text.contains('umgesetzt') ? 'umgesetzt' : 'abgeschlossen',
+          ),
+          isTrue,
+          reason: text,
+        );
+      }
+    });
+  });
+
   group('open-question markers', () {
     // Verbatim from a live run: all three models wrote sentences of this shape
     // and the scenario failed them for naming the options it asked them to
