@@ -55,6 +55,12 @@ void main() {
       );
       expect(
         relationshipAgentSystemPrompt,
+        contains(
+          'Only an exact PENDING USER MESSAGE: header permits reply_to_user',
+        ),
+      );
+      expect(
+        relationshipAgentSystemPrompt,
         contains('A state-changing request is incomplete until its action'),
       );
       expect(
@@ -68,6 +74,10 @@ void main() {
       expect(
         relationshipAgentSystemPrompt,
         contains('Cite relevant linked tasks with their exact status'),
+      );
+      expect(
+        relationshipAgentSystemPrompt,
+        contains('missing, a newer check-in, cadence DUE'),
       );
       expect(
         relationshipAgentSystemPrompt,
