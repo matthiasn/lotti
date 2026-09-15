@@ -81,8 +81,22 @@ final RegExp _clauseNegationPattern = RegExp(
   unicode: true,
 );
 
-/// A comma, colon or dash ends a clause as well as a sentence.
-final RegExp _clauseBreakPattern = RegExp(r'[,:\u2013\u2014]');
+/// A comma, colon or dash ends a clause as well as a sentence — and so does
+/// an `und` that starts a new statement.
+///
+/// German coordinates independent clauses without a comma ("keiner der vier
+/// Schritte fehlt und alle vier sind abgeschlossen"), which would otherwise
+/// leave a clause cue and the claim it must not reach in one clause. Only an
+/// `und` followed by a fresh subject pronoun or quantifier counts: "die
+/// Newsletter-Idee und der Blog bleiben außen vor" is one statement about two
+/// things, and splitting it would lose the deferral.
+final RegExp _clauseBreakPattern = RegExp(
+  '[,:–—]|'
+  r'(?<![\p{L}])und\s+(?:alle|beide|keiner|keine|keines|keinem|nichts|jeder|'
+  'jede|jedes|man|es|sie|er|wir|ich)'
+  r'(?![\p{L}])',
+  unicode: true,
+);
 
 /// How much text around a match is inspected for a negation cue.
 ///

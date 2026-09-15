@@ -286,6 +286,25 @@ void main() {
       );
     });
 
+    test('an "und" that starts a new statement ends the clause', () {
+      // From review: the same sentence without its comma.
+      expect(
+        containsAffirmativeReportClaim(
+          'keiner der vier schritte fehlt und alle vier sind abgeschlossen.',
+          'abgeschlossen',
+        ),
+        isTrue,
+      );
+      // A plain noun conjunction is one statement, and still a deferral.
+      expect(
+        containsAffirmativeReportClaim(
+          'die newsletter-idee und der blog bleiben außen vor.',
+          'newsletter',
+        ),
+        isFalse,
+      );
+    });
+
     test('clause scoping keeps a caveat from excusing a short claim', () {
       const overclaim =
           'the code location was identified, but implementation remains '
