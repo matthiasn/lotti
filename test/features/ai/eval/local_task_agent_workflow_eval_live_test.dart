@@ -38,6 +38,7 @@ import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_utils.dart';
 import '../../ai_consumption/test_utils.dart';
+import 'support/eval_text_matchers.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -263,7 +264,13 @@ void main() {
       expect(normalizedReport, contains('release'));
       expect(normalizedReport, isNot(contains('workflow item')));
       expect(normalizedReport, isNot(contains('checklist')));
-      expect(normalizedReport, isNot(contains('identified')));
+      // A claim, not a word: "the relevant code location is not yet
+      // identified" is the honest state and must not fail the run.
+      expect(
+        containsAffirmativeReportClaim(normalizedReport, 'identified'),
+        isFalse,
+        reason: 'The report claims something was identified.',
+      );
       expect(normalizedReport, isNot(contains('root cause')));
       expect(normalizedReport, isNot(contains('automated review')));
       expect(normalizedReport, isNot(contains('human reviewer')));

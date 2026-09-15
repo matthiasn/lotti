@@ -39,7 +39,8 @@ const _claimNegationCues = [
   // whether to submit" — and none of the negation cues above see that.
   'undecided', 'whether', 'weighing', 'either', 'options', 'open question',
   // German.
-  'nicht', 'kein', 'keine', 'keinen', 'ohne', 'bevor', 'noch', 'erst',
+  'nicht', 'kein', 'keine', 'keinen', 'keiner', 'keines', 'keinem', 'ohne',
+  'bevor', 'noch', 'erst', 'außen vor', 'ausgeklammert', 'weggelassen',
   'zurückgestellt', 'zurückgestellte', 'ausstehend', 'offen', 'später',
   'künftig',
   // Spanish.

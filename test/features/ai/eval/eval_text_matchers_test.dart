@@ -254,6 +254,45 @@ void main() {
     });
   });
 
+  group('German deferrals from live runs', () {
+    // Verbatim from the 2026-09-15 glm-5.3-flash:speed baseline: both are
+    // correct reports that failed as claims.
+    test('"außen vor" and "keiner" negate the claim', () {
+      expect(
+        containsAffirmativeReportClaim(
+          'die newsletter-idee bleibt bewusst außen vor.',
+          'newsletter',
+        ),
+        isFalse,
+      );
+      expect(
+        containsAffirmativeReportClaim(
+          'alle vier schritte stehen jetzt als checkliste bereit, keiner ist '
+              'abgeschlossen.',
+          'abgeschlossen',
+        ),
+        isFalse,
+      );
+    });
+
+    test('the same words still fire without the deferral', () {
+      expect(
+        containsAffirmativeReportClaim(
+          'die newsletter-idee ist eingeplant.',
+          'newsletter',
+        ),
+        isTrue,
+      );
+      expect(
+        containsAffirmativeReportClaim(
+          'alle vier schritte sind abgeschlossen.',
+          'abgeschlossen',
+        ),
+        isTrue,
+      );
+    });
+  });
+
   group('open-question markers', () {
     // Verbatim from a live run: all three models wrote sentences of this shape
     // and the scenario failed them for naming the options it asked them to
