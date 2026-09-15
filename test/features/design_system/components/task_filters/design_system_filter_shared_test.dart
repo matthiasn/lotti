@@ -33,6 +33,51 @@ void main() {
   });
 
   group('DesignSystemFilterToggleRow', () {
+    testWidgets('paints no hover or press ink, only the focus ring', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          DesignSystemFilterToggleRow(
+            label: 'Show hidden entries',
+            value: false,
+            onChanged: (_) {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final row = find.byType(DesignSystemFilterToggleRow);
+      // The row's own ink widgets are the outermost; the trailing toggle
+      // carries its own InkWell, so take the first match rather than the
+      // single one.
+      final inkWell = tester.widget<InkWell>(
+        find.descendant(of: row, matching: find.byType(InkWell)).first,
+      );
+      expect(inkWell.hoverColor, Colors.transparent);
+      expect(inkWell.highlightColor, Colors.transparent);
+      expect(inkWell.splashColor, Colors.transparent);
+      expect(inkWell.splashFactory, NoSplash.splashFactory);
+
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer();
+      addTearDown(mouse.removePointer);
+      await mouse.moveTo(tester.getCenter(row));
+      await tester.pump();
+      await mouse.down(tester.getCenter(row));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Hovered and pressed, the row still shows no fill; the focus ring
+      // stays the only decoration the row paints.
+      final ink = tester.widget<Ink>(
+        find.descendant(of: row, matching: find.byType(Ink)).first,
+      );
+      final decoration = ink.decoration! as BoxDecoration;
+      expect(decoration.color, isNull);
+      expect(decoration.boxShadow, isNull);
+      await mouse.up();
+    });
+
     testWidgets(
       'exposes one full-row toggle target and reports the next value',
       (

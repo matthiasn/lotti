@@ -5,8 +5,8 @@ description: The repeating patterns that are contract rather than coincidence �
 resource: ../../../lib/features/design_system/components
 tags: [design-system, components, accessibility, layout]
 status: stable
-generated: { by: claude-code/fable-5.1, at: 2026-09-15T14:00:00Z }
-stale_after: 2027-02-08
+generated: { by: claude-code/fable-5.1, at: 2026-09-15T19:10:00Z }
+stale_after: 2027-03-15
 sources:
   - id: components
     resource: ../../../lib/features/design_system/components
@@ -107,6 +107,26 @@ its content, so laying it out against loose constraints reports the width it was
 offered rather than the width it needs; and `RenderWrap` omits its own `spacing`
 from its intrinsic width, which under-measures a multi-action secondary group
 and lets the primary encroach on the gutter.
+
+`DesignSystemFilterActionBar` is the footer every filter modal commits with:
+`DesignSystemModalActionBar` in glass and `compactPrimary`, Clear as the leading
+secondary, Apply as the trailing primary carrying the confirm glyph, and an
+`extraSecondary` slot between them for the task filter's Save. A `null` handler
+disables its button rather than hiding it, so a Clear with nothing to clear
+stays where the hand expects it. Its `stickyClearance` is the scroll allowance
+a scrolling overview reserves under its last control when the bar floats — the
+bar's height on a bottom sheet, more once large text stacks the bar, less in a
+dialog — which is why no filter modal computes that inset itself. A sheet short
+enough to show everything at once (the linked-entries filter) lays the bar in
+flow under its last control instead, so nothing is reserved and no dead space
+sits above the footer. The task list, projects and linked-entries filters all
+commit through it, and the close button on each is a plain close that discards
+the draft; no modal commits through its close button.
+
+`DesignSystemFilterToggleRow` paints no hover or press ink. Next to the choice
+pills, whose hover *is* a token fill, a filled toggle row read as a selected
+state rather than a pointer resting on it; the toggle's own animation is the
+feedback, and the keyboard focus ring is the only decoration the row draws.
 
 The compact `DesignSystemCheckbox` is a 24dp control with no outer inset. A
 feature that needs a mobile-sized option target should not pad seven independent

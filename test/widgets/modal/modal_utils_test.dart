@@ -503,42 +503,6 @@ void main() {
         expect(find.text('Action Bar'), findsOneWidget);
       });
 
-      testWidgets('runs the close callback before dismissing the modal', (
-        tester,
-      ) async {
-        var closeCalls = 0;
-        await tester.pumpWidget(
-          MaterialApp(
-            builder: LegacyMaterialBridge.builder,
-            home: Scaffold(
-              body: Builder(
-                builder: (context) => ElevatedButton(
-                  onPressed: () {
-                    ModalUtils.showSinglePageModal<void>(
-                      context: context,
-                      title: 'Commit modal',
-                      closeButtonIcon: LottiIcons.confirm,
-                      closeButtonTooltip: 'Commit changes',
-                      onClosePressed: () => closeCalls++,
-                      builder: (context) => const Text('Draft content'),
-                    );
-                  },
-                  child: const Text('Show Modal'),
-                ),
-              ),
-            ),
-          ),
-        );
-
-        await tester.tap(find.text('Show Modal'));
-        await tester.pumpAndSettle();
-        await tester.tap(findMaterialTooltip('Commit changes'));
-        await tester.pumpAndSettle();
-
-        expect(closeCalls, 1);
-        expect(find.text('Draft content'), findsNothing);
-      });
-
       testWidgets('moves focus into the modal and restores its invoker', (
         tester,
       ) async {
