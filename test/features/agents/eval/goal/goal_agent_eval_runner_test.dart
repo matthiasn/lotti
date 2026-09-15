@@ -170,9 +170,7 @@ void main() {
             ),
             call(
               GoalAgentToolNames.createGoalAd,
-              '{"headline":"Half the target is still a gap",'
-              '"cta":"$movementCopy","tone":"nudge",'
-              '"animation":"pulse"}',
+              '''{"headline":"Half the target is still a gap","cta":"$movementCopy","tone":"nudge","animation":"pulse"}''',
             ),
           ],
           assistantContent: '',
