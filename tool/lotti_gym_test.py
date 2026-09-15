@@ -496,6 +496,10 @@ class GymTest(unittest.TestCase):
         self.assertEqual(
             gym.recover_jobs(self.output, self.manifest)[0]["state"], "prepared"
         )
+        summary = gym.checkpoint(self.output, self.manifest, jobs)
+        self.assertTrue(summary["cost"]["complete"])
+        self.assertEqual(summary["cost"]["untrackedAttempts"], 0)
+        self.assertEqual(summary["cost"]["totalCostEur"], "0")
 
     def test_dry_run_and_resume_use_the_same_manifest_without_live_credentials(self):
         catalog = {

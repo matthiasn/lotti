@@ -532,7 +532,16 @@ def checkpoint(output, manifest, jobs):
     atomic_json(output / "jobs.json", jobs)
     summary = summarize(manifest, jobs)
     attempts = list((output / "jobs").glob("*/attempt-*"))
-    untracked = sum(not (path / "billing.jsonl").exists() for path in attempts)
+    prepared = {
+        Path(attempt["directory"]).resolve()
+        for job in jobs
+        for attempt in job.get("attempts", [])
+        if attempt.get("state") == "prepared"
+    }
+    untracked = sum(
+        path.resolve() not in prepared and not (path / "billing.jsonl").exists()
+        for path in attempts
+    )
     untracked += sum(
         bool(attempt.get("judge")) and not list(Path(attempt["directory"]).glob("billing-judge-*.jsonl"))
         for job in jobs for attempt in job.get("attempts", [])

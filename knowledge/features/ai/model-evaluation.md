@@ -277,6 +277,8 @@ balance charged. The report separately shows charged credits and energy; it
 does not add both denominations of the same charge together. Missing prices,
 unfinished requests/sessions, malformed ledger records and older uninstrumented
 attempts prevent the known subtotal from being labelled a complete run price.
+An explicitly frozen report fixture is a zero-request dependency and does not
+count as an untracked paid attempt.
 The task-wake driver installs the shared interaction-capture bench, matching
 the production billing route and retaining its per-turn consumption events.
 
