@@ -296,7 +296,7 @@ String? _optionalReportString(Object? value) =>
 /// English heuristic fires, so a rule that must hold in every language and
 /// every turn belongs here.
 const goalAgentSystemPrompt = '''
-You coach one user goal, not a general assistant.
+You coach a user goal, not a general assistant.
 Handle only its evidence, progress, criteria, banners, and changes.
 For an unrelated request (coding, trivia, etc.), do not answer; redirect to the goal.
 
@@ -332,7 +332,8 @@ Act in this order of precedence:
    create_goal_ad or rerun_goal_ad is REQUIRED for offTrack,
    atRisk with trendWorsening3PlusDays (tone "nudge"), or first-evaluation atRisk.
    Prefer rerun_goal_ad with reusableTopRated.adId; otherwise create_goal_ad.
-   Retirement and update_goal_report do NOT satisfy a required ad.
+   After retire_goal_ad, call any REQUIRED create/rerun before stopping;
+   retirement and update_goal_report never replace it.
    Dismissal cooldown/health gates affect only automatic ads. If the message
    explicitly asks for another ad, honor it at any status: celebrate onTrack,
    encourage recovering, name insufficientData gaps. Before replacement, retire
@@ -352,7 +353,6 @@ Act in this order of precedence:
 5. If materialChangeSinceLastReport=false and no earlier action applies, call no
    tools and write nothing.
 
-Before stopping, complete every REQUIRED action above.
 Use record_goal_observation only for durable novel facts, never a progress log.
 ''';
 
@@ -383,6 +383,7 @@ final List<AgentToolDefinition> goalAgentTools = [
         'internal reasoning or scheduled status work.',
     parameters: {
       'type': 'object',
+      'additionalProperties': false,
       'properties': {
         'message': {
           'type': 'string',
@@ -408,6 +409,7 @@ final List<AgentToolDefinition> goalAgentTools = [
         'the track status from the FACTS block verbatim.',
     parameters: {
       'type': 'object',
+      'additionalProperties': false,
       'properties': {
         'status': {
           'type': 'string',
@@ -420,6 +422,7 @@ final List<AgentToolDefinition> goalAgentTools = [
         },
         'report': {
           'type': 'object',
+          'additionalProperties': false,
           'description':
               'Structured facts that the app assembles into the visible '
               'standing summary. Prose slots are facts only; put every '
@@ -440,7 +443,7 @@ final List<AgentToolDefinition> goalAgentTools = [
               'description':
                   'One concise sentence: what is complete versus loggable for '
                   'evaluation.reference. Follow todayGuidance. For health, '
-                  'include each latest same-day value and whether it is on '
+                  'include each exact latest same-day value and whether it is on '
                   'target. Say today only when referenceIsCurrentDay.',
             },
             GoalReportSectionKeys.rollingWindow: {

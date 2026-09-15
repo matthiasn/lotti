@@ -47,7 +47,7 @@ void main() {
     );
     expect(
       goalAgentSystemPrompt,
-      contains('Before stopping, complete every REQUIRED action above'),
+      contains('After retire_goal_ad, call any REQUIRED'),
     );
   });
 
@@ -92,6 +92,8 @@ void main() {
     final required = reportTool.parameters['required'] as List<dynamic>;
     final report = properties['report'] as Map<String, dynamic>;
     final reportProperties = report['properties'] as Map<String, dynamic>;
+    expect(reportTool.parameters['additionalProperties'], isFalse);
+    expect(report['additionalProperties'], isFalse);
     expect(
       required,
       containsAll(['status', 'oneLiner', 'report']),
@@ -107,7 +109,7 @@ void main() {
     expect(
       (reportProperties[GoalReportSectionKeys.currentPeriod]
           as Map<String, dynamic>)['description'],
-      contains('todayGuidance'),
+      allOf(contains('todayGuidance'), contains('each exact latest')),
     );
     expect(
       (reportProperties[GoalReportSectionKeys.latestChange]
