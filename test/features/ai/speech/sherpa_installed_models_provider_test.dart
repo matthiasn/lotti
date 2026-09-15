@@ -61,6 +61,82 @@ void main() {
     );
   });
 
+  group('needsSherpaAvailability', () {
+    final date = DateTime(2026, 3, 15);
+    AiConfigInferenceProvider provider(String id, InferenceProviderType type) =>
+        AiConfigInferenceProvider(
+          id: id,
+          name: id,
+          baseUrl: '',
+          apiKey: '',
+          createdAt: date,
+          inferenceProviderType: type,
+        );
+    AiConfigModel model(String id, String providerId) => AiConfigModel(
+      id: id,
+      name: id,
+      providerModelId: id,
+      inferenceProviderId: providerId,
+      createdAt: date,
+      inputModalities: const [Modality.audio],
+      outputModalities: const [Modality.text],
+      isReasoningModel: false,
+    );
+    final embedded = provider('embedded', InferenceProviderType.sherpa);
+    final cloud = provider('cloud', InferenceProviderType.openAi);
+
+    final cases =
+        <
+          ({
+            String label,
+            List<AiConfigInferenceProvider> providers,
+            List<AiConfigModel> models,
+            bool expected,
+          })
+        >[
+          (
+            label: 'no sherpa provider configured',
+            providers: [cloud],
+            models: [model('a', 'cloud')],
+            expected: false,
+          ),
+          (
+            label:
+                'a sherpa provider exists but no candidate routes through it',
+            providers: [embedded, cloud],
+            models: [model('a', 'cloud'), model('b', 'cloud')],
+            expected: false,
+          ),
+          (
+            label: 'a candidate routes through a sherpa provider',
+            providers: [embedded, cloud],
+            models: [model('a', 'cloud'), model('local', 'embedded')],
+            expected: true,
+          ),
+          (
+            label: 'a candidate references a provider that no longer exists',
+            providers: [embedded],
+            models: [model('orphan', 'missing')],
+            expected: false,
+          ),
+          (
+            label: 'no candidates at all',
+            providers: [embedded],
+            models: const [],
+            expected: false,
+          ),
+        ];
+
+    for (final c in cases) {
+      test(c.label, () {
+        expect(
+          needsSherpaAvailability(models: c.models, providers: c.providers),
+          c.expected,
+        );
+      });
+    }
+  });
+
   test(
     'readiness follows verified device files and refreshes after removal',
     () async {

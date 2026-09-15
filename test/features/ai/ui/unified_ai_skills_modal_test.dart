@@ -1704,6 +1704,7 @@ void main() {
         inferenceProviderType: InferenceProviderType.sherpa,
       );
       TriggerSkillParams? captured;
+      var probeCount = 0;
       await tester.pumpWidget(
         buildTestWidget(
           UnifiedAiPopUpMenu(journalEntity: fx.entity, linkedFromId: null),
@@ -1715,9 +1716,10 @@ void main() {
               resolver: _NullProfileResolver(),
               configs: [...fx.allModels, provider],
             ),
-            sherpaInstalledModelIdsProvider.overrideWith(
-              (ref) async => {fx.modelB.providerModelId},
-            ),
+            sherpaInstalledModelIdsProvider.overrideWith((ref) async {
+              probeCount++;
+              return {fx.modelB.providerModelId};
+            }),
             triggerSkillProvider.overrideWith((ref, params) async {
               captured = params;
             }),
@@ -1736,7 +1738,143 @@ void main() {
       expect(captured!.overrideModelId, fx.modelB.id);
       expect(captured!.skillId, fx.skill.id);
       expect(find.text(fx.modelA.name), findsNothing);
+      expect(probeCount, 1);
     });
+
+    testWidgets(
+      'a configured sherpa provider without a speech candidate does not '
+      'delay the transcription picker on the device probe',
+      (tester) async {
+        final fx = _OverrideFixture.twoModelsPlusDecoy(
+          _transcriptionOverrideVariant,
+        );
+        final t = DateTime(2024, 3, 15, 10);
+        final emptySherpa = _buildProvider(
+          id: 'p-sherpa',
+          name: 'On device',
+          t: t,
+          type: InferenceProviderType.sherpa,
+        );
+        var probeCount = 0;
+        await tester.pumpWidget(
+          buildTestWidget(
+            UnifiedAiPopUpMenu(journalEntity: fx.entity, linkedFromId: null),
+            overrides: [
+              ..._baseOverrides(
+                entity: fx.entity,
+                skill: fx.skill,
+                models: fx.allModels,
+                resolver: _NullProfileResolver(),
+                configs: [...fx.allModels, ...fx.providers, emptySherpa],
+              ),
+              sherpaInstalledModelIdsProvider.overrideWith((ref) async {
+                probeCount++;
+                return const <String>{};
+              }),
+              triggerSkillProvider.overrideWith((ref, params) async {}),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.byIcon(LottiIcons.assistant));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text(_transcriptionOverrideVariant.skillName));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text(fx.modelA.name), findsOneWidget);
+        expect(find.text(fx.modelB.name), findsOneWidget);
+        expect(probeCount, 0);
+      },
+    );
+
+    testWidgets(
+      'prompt generation opens its picker without probing installed sherpa '
+      'models, even with a speech model configured on a sherpa provider',
+      (tester) async {
+        final now = DateTime(2024, 3, 15, 10);
+        final textProvider = _buildProvider(
+          id: 'p-text',
+          name: 'Text AI',
+          t: now,
+        );
+        final sherpaProvider = _buildProvider(
+          id: 'p-sherpa',
+          name: 'On device',
+          t: now,
+          type: InferenceProviderType.sherpa,
+        );
+        final textModelA = _buildModel(
+          id: 'm-text-a',
+          name: 'Text Model A',
+          providerModelId: 'text-a',
+          providerId: 'p-text',
+          modality: Modality.text,
+          t: now,
+        );
+        final textModelB = _buildModel(
+          id: 'm-text-b',
+          name: 'Text Model B',
+          providerModelId: 'text-b',
+          providerId: 'p-text',
+          modality: Modality.text,
+          t: now,
+        );
+        // Sherpa rows are audio-in only, like the catalog creates them.
+        final speechModel = _buildModel(
+          id: 'm-speech',
+          name: 'Whisper Large v3 (on device)',
+          providerModelId: 'large-v3',
+          providerId: 'p-sherpa',
+          modality: Modality.audio,
+          t: now,
+        ).copyWith(inputModalities: const [Modality.audio]);
+        var probeCount = 0;
+        await tester.pumpWidget(
+          buildTestWidget(
+            UnifiedAiPopUpMenu(
+              journalEntity: testTaskEntity,
+              linkedFromId: null,
+            ),
+            overrides: [
+              ..._baseOverrides(
+                entity: testTaskEntity,
+                skill: testSkills.last,
+                models: [textModelA, textModelB, speechModel],
+                resolver: _NullProfileResolver(),
+                configs: [
+                  textModelA,
+                  textModelB,
+                  speechModel,
+                  textProvider,
+                  sherpaProvider,
+                ],
+              ),
+              sherpaInstalledModelIdsProvider.overrideWith((ref) async {
+                probeCount++;
+                return const <String>{};
+              }),
+              triggerSkillProvider.overrideWith((ref, params) async {}),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.byIcon(LottiIcons.assistant));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Prompt Generation Skill'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text(textModelA.name), findsOneWidget);
+        expect(find.text(textModelB.name), findsOneWidget);
+        expect(find.text(speechModel.name), findsNothing);
+        expect(probeCount, 0);
+      },
+    );
 
     testWidgets(
       'multi-provider override: drilling provider -> model fires the trigger '

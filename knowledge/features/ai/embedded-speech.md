@@ -5,8 +5,8 @@ description: Device-local sherpa-onnx model installation, background multilingua
 resource: ../../../lib/features/ai/speech
 tags: [ai, speech, asr, sherpa, onnx, offline]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-06T12:00:00Z }
-stale_after: 2026-12-06
+generated: { by: claude-code/fable-5.1, at: 2026-09-15T18:30:00Z }
+stale_after: 2026-12-15
 sources:
   - id: models
     resource: ../../../lib/features/ai/speech/sherpa_model_repository.dart
@@ -119,7 +119,10 @@ installed section has no manual model-add or configuration-only delete action;
 local file removal remains in the catalog.
 
 Provider cards, detail headers, installed sections, the Models tab and model
-selection all use verified device availability. Provider identity must be
+selection all use verified device availability. The on-demand skill picker asks
+for it only when a slot-capable candidate routes through a sherpa provider
+(`needsSherpaAvailability`), so a text or image skill never waits on the
+first-per-process verification hash. Provider identity must be
 resolved before admitting a saved row, including while streams load in either
 order. Raw configurations remain available for profile reference mapping and
 sync; a missing local assignment is displayed as unavailable without deleting

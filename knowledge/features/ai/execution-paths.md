@@ -5,8 +5,8 @@ description: The legacy prompt path, the skill/profile path, the category consen
 resource: ../../../lib/features/ai/services/skill_inference_runner.dart
 tags: [ai, skills, automation, consent, overrides, diagnostics]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-12T20:00:00Z }
-stale_after: 2026-10-19
+generated: { by: claude-code/fable-5.1, at: 2026-09-15T18:30:00Z }
+stale_after: 2026-10-22
 sources:
   - id: runner
     resource: ../../../lib/features/ai/services/skill_inference_runner.dart
@@ -461,6 +461,17 @@ Skill types with an override slot — transcription, image analysis, prompt
 generation, image-prompt generation — open the model picker *before* firing
 `triggerSkillProvider`, so a single voice note, photo or prompt run can be routed
 to any modality-capable model without editing the profile.
+
+The candidate list is narrowed to the slot's modality (and, for prompt
+generation, to chat-capable models) **before** device availability is consulted.
+The installed-speech-model probe (`sherpaInstalledModelIdsProvider`) hashes
+every downloaded sherpa model once per process — gigabyte-scale reads with
+Whisper installed — so `needsSherpaAvailability` gates it on a candidate that
+actually routes through a sherpa provider. A text or image skill therefore never
+waits on speech-model verification; only a transcription tap with a sherpa
+candidate pays that first-per-process cost. Merely having a sherpa provider
+configured used to trigger the probe on every slot, which stalled the
+coding-prompt picker for seconds after each app start.
 
 ```mermaid
 stateDiagram-v2
