@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.16]
+
+### Changed
+
+- **The linked-entries "Filter & Sort" sheet on a task now commits with the
+  same Clear / Apply footer as the task list filter.** It used to be the one
+  filter in the app whose choices only took effect after tapping a checkmark
+  in the sheet's top corner, which was easy to miss and looked unlike every
+  other filter. The top corner is now a plain close that discards what was
+  staged, Apply at the bottom commits the sort order and the hidden and
+  flagged toggles together, and Clear resets the sheet to newest first with
+  both toggles off. The footer sits right under the last toggle instead of
+  above an empty band, and the toggle rows no longer flash a grey fill when
+  the pointer rests on them or they are pressed.
+
+### Fixed
+
+- **Relationship agents finish every requested update in the same run.** They
+  keep working after answering a message or refreshing a briefing, use the
+  proper reply channel, preserve linked-task status, and keep private narrative
+  details out of reminder banners.
+
 ## [1.1.15]
 
 ### Changed
