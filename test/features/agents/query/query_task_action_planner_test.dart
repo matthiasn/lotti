@@ -561,6 +561,26 @@ void main() {
     );
   }
 
+  test('a well-formed label with an unknown id proposes nothing', () async {
+    // The malformed case above omits the schema-required `confidence` and so
+    // fails argument validation; this one is well formed, so the unknown id
+    // is a target-scope failure and degrades to an answer with no actions.
+    final result = await plan([
+      {
+        'name': 'assign_task_labels',
+        'arguments': {
+          'labels': [
+            {'id': 'foreign', 'confidence': 'high'},
+          ],
+        },
+        'summary': 'Untrusted proposal',
+      },
+    ]);
+
+    expect(result.items, isEmpty);
+    expect(result.text, 'Review these changes.');
+  });
+
   test('an unusable action after the repair keeps the answer', () async {
     // From a LottiGym control run: the model twice proposed linking a task
     // from another category. Throwing past the answer retracted the whole
