@@ -595,7 +595,10 @@ void main() {
           ),
         ],
       );
-      var calls = 0;
+      // Recorded, not asserted inside the delegate: the pinned retry swallows
+      // every error, so an `expect` there could fail without failing the test.
+      final messages = <String>[];
+      var processedCalls = 0;
       conversationRepository
         ..maxDelegateCalls = 2
         ..sendMessageDelegate =
@@ -610,8 +613,8 @@ void main() {
               temperature = 0,
               strategy,
             }) async {
-              calls++;
-              expect(message, contains('needs attention, strained'));
+              messages.add(message);
+              final calls = messages.length;
               await strategy!.processToolCalls(
                 toolCalls: [
                   toolCall(
@@ -627,6 +630,7 @@ void main() {
                 ],
                 manager: conversationManager,
               );
+              processedCalls++;
               return null;
             };
 
@@ -637,7 +641,13 @@ void main() {
       expect(result.success, isTrue);
       expect(result.reportUpdated, isFalse);
       expect(upserts.whereType<AgentReportEntity>(), isEmpty);
-      expect(calls, 2);
+      expect(messages, hasLength(2));
+      // The wake's FACTS carry the bound; the retry is the bare pinned
+      // briefing instruction, and its out-of-range report is rejected too.
+      expect(messages.first, contains('needs attention, strained'));
+      expect(messages.last, contains('Call update_relationship_report now'));
+      expect(messages.last, isNot(contains('HEALTH BAND CONSTRAINT')));
+      expect(processedCalls, 2);
     },
   );
 
@@ -658,6 +668,7 @@ void main() {
           ),
         ],
       );
+      final messages = <String>[];
       conversationRepository
         ..maxDelegateCalls = 1
         ..sendMessageDelegate =
@@ -672,8 +683,7 @@ void main() {
               temperature = 0,
               strategy,
             }) async {
-              expect(message, contains('- status: due'));
-              expect(message, contains('thriving, steady, needs attention'));
+              messages.add(message);
               await strategy!.processToolCalls(
                 toolCalls: [
                   toolCall(
@@ -695,6 +705,8 @@ void main() {
         tokens: {relationshipEscalationWorkspaceKey('2026-08-08')},
       );
 
+      expect(messages.single, contains('- status: due'));
+      expect(messages.single, contains('thriving, steady, needs attention'));
       expect(result.success, isTrue);
       expect(result.reportUpdated, isTrue);
       expect(
