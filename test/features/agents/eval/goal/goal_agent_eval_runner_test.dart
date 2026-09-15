@@ -152,26 +152,29 @@ void main() {
     });
 
     test('a lap call to action sells movement in the composite case', () {
-      final category = classifyGoalAgentResult(
-        scenario: scenarioById('cx_gym_done_steps_collapse'),
-        toolCalls: [
-          call(
-            GoalAgentToolNames.retireGoalAd,
-            '{"adId":"ad-kettlebell-05"}',
-          ),
-          call(
-            GoalAgentToolNames.updateGoalReport,
-            '{"status":"offTrack","oneLiner":"x","tldr":"y"}',
-          ),
-          call(
-            GoalAgentToolNames.createGoalAd,
-            '{"headline":"Half the target is still a gap",'
-            '"cta":"Add a lap","tone":"nudge","animation":"pulse"}',
-          ),
-        ],
-        assistantContent: '',
-      );
-      expect(category, GoalAgentEvalFailureCategory.none);
+      for (final movementCopy in ['Add a lap', 'Let your feet add miles']) {
+        final category = classifyGoalAgentResult(
+          scenario: scenarioById('cx_gym_done_steps_collapse'),
+          toolCalls: [
+            call(
+              GoalAgentToolNames.retireGoalAd,
+              '{"adId":"ad-kettlebell-05"}',
+            ),
+            call(
+              GoalAgentToolNames.updateGoalReport,
+              '{"status":"offTrack","oneLiner":"x","tldr":"y"}',
+            ),
+            call(
+              GoalAgentToolNames.createGoalAd,
+              '{"headline":"Half the target is still a gap",'
+              '"cta":"$movementCopy","tone":"nudge",'
+              '"animation":"pulse"}',
+            ),
+          ],
+          assistantContent: '',
+        );
+        expect(category, GoalAgentEvalFailureCategory.none);
+      }
     });
 
     test('banner args that cannot decode fail even when the name matches', () {

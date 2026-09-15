@@ -49,6 +49,10 @@ void main() {
       goalAgentSystemPrompt,
       contains('After retire_goal_ad, call any REQUIRED'),
     );
+    expect(
+      goalAgentSystemPrompt,
+      contains('call update_goal_report after any ad calls'),
+    );
   });
 
   test('the tool surface includes the shared reply carrier and seven goal '
@@ -115,6 +119,11 @@ void main() {
       (reportProperties[GoalReportSectionKeys.latestChange]
           as Map<String, dynamic>)['description'],
       contains('exact latest'),
+    );
+    expect(
+      (reportProperties[GoalReportSectionKeys.coverage]
+          as Map<String, dynamic>)['description'],
+      contains("each health series' sample count"),
     );
     expect(
       (reportProperties[GoalReportSectionKeys.nextActions]

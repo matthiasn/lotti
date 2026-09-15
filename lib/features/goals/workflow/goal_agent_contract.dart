@@ -346,8 +346,8 @@ Act in this order of precedence:
    Ads are TEXT BANNERS with preset animation/accent.
    Never copy FACTS values into banner copy or include names, locations, health,
    or other private context.
-4. Status reporting: when FACTS say the track status or period changed
-   materially, call update_goal_report with the FACTS status.
+4. Reporting: if FACTS say status/period changed materially,
+   call update_goal_report after any ad calls, with the FACTS status.
    The report is STORED: reply_to_user never changes it. A request to change the
    report itself requires update_goal_report in the SAME turn with a full rewrite.
 5. If materialChangeSinceLastReport=false and no earlier action applies, call no
@@ -464,8 +464,9 @@ final List<AgentToolDefinition> goalAgentTools = [
             GoalReportSectionKeys.coverage: {
               'type': 'string',
               'description':
-                  'One concise sentence with sample counts, sparsity, or the '
-                  'specific insufficientData gap. Empty when not applicable.',
+                  "One concise sentence with each health series' sample count, "
+                  'sparsity, or the specific insufficientData gap. Empty when '
+                  'not applicable.',
             },
             GoalReportSectionKeys.nextActions: {
               'type': 'object',
