@@ -1,4 +1,5 @@
 import 'package:glados/glados.dart';
+import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
@@ -178,6 +179,63 @@ extension _AnyRecordedEntry on Any {
 }
 
 void main() {
+  group('checkInOwnerLinks', () {
+    final at = DateTime(2026, 9, 6, 12);
+    final note = JournalEntity.journalEntry(
+      meta: Metadata(
+        id: 'note',
+        createdAt: at,
+        updatedAt: at,
+        dateFrom: at,
+        dateTo: at.add(const Duration(hours: 1)),
+      ),
+    );
+    final call = CheckInEntry(
+      meta: Metadata(
+        id: 'call',
+        createdAt: at,
+        updatedAt: at,
+        dateFrom: at,
+        dateTo: at.add(const Duration(minutes: 15)),
+      ),
+      data: const CheckInData(
+        relationshipId: 'person',
+        interactionType: CheckInInteractionType.call,
+      ),
+    );
+
+    test('derives one person → check-in link per check-in, from its '
+        'relationshipId, and none for anything else', () {
+      final links = checkInOwnerLinks([note, call]);
+
+      expect(links, hasLength(1));
+      expect(links.single, isA<RelationshipLink>());
+      expect(links.single.fromId, 'person');
+      expect(links.single.toId, 'call');
+    });
+
+    test('resolves the check-in to its person even with no stored link', () {
+      final person = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'person',
+          createdAt: at,
+          updatedAt: at,
+          dateFrom: at,
+          dateTo: at,
+        ),
+      );
+
+      final resolved = resolveTimeEntries(
+        entries: [call],
+        links: checkInOwnerLinks([call]),
+        linkedFromById: {'person': person},
+        eventsEnabled: true,
+      );
+
+      expect(resolved.single.linkedFrom?.meta.id, 'person');
+    });
+  });
+
   group('resolveTimeEntries', () {
     test('pairs an entry with its linked task and derives projections', () {
       final task = _task(id: 'task-1', categoryId: 'cat-work');

@@ -236,11 +236,13 @@ void main() {
         entries: [shortCall, noLength, longCall],
         links: [
           for (final call in [longCall, shortCall, noLength])
-            hLink(
-              'l-${call.meta.id}',
-              from: person.meta.id,
-              to: call.meta.id,
-              day: day,
+            EntryLink.relationship(
+              id: 'l-${call.meta.id}',
+              fromId: person.meta.id,
+              toId: call.meta.id,
+              createdAt: day,
+              updatedAt: day,
+              vectorClock: null,
             ),
         ],
         linkedFromById: {person.meta.id: person},
@@ -695,6 +697,57 @@ void main() {
         () => db.basicLinksForEntryIds({walk.meta.id}),
       ).thenAnswer((_) async => const []);
     });
+
+    // A check-in's person is its relationshipId. The stored RelationshipLink
+    // is not a BasicLink, and a check-in can outlive a failed link write, so
+    // the block names the person with no stored link at all.
+    test(
+      'a check-in is titled by its person with no stored link at all',
+      () async {
+        final person = testRelationship;
+        final call = CheckInEntry(
+          meta: Metadata(
+            id: 'call',
+            createdAt: day,
+            updatedAt: day,
+            dateFrom: day.add(const Duration(hours: 13)),
+            dateTo: day.add(const Duration(hours: 14, minutes: 15)),
+          ),
+          data: CheckInData(
+            relationshipId: person.meta.id,
+            interactionType: CheckInInteractionType.call,
+          ),
+          entryText: const EntryText(plainText: 'Talked about the move.'),
+        );
+        when(
+          () => db.sortedCalendarEntries(
+            rangeStart: day,
+            rangeEnd: day.add(const Duration(days: 1)),
+          ),
+        ).thenAnswer((_) async => [call]);
+        when(
+          () => db.basicLinksForEntryIds({call.meta.id}),
+        ).thenAnswer((_) async => const []);
+        when(
+          () => db.getJournalEntitiesForIdsUnordered({person.meta.id}),
+        ).thenAnswer((_) async => [person]);
+        final container = ProviderContainer(
+          overrides: [
+            journalDbProvider.overrideWithValue(db),
+            healthSignalRefreshServiceProvider.overrideWithValue(null),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final blocks = await readActualBlocks(container, day);
+
+        expect(blocks.single.title, 'Anna');
+        expect(
+          blocks.single.end.difference(blocks.single.start),
+          const Duration(hours: 1, minutes: 15),
+        );
+      },
+    );
 
     // Workouts reach the journal only through the health import, and this
     // lane used to wait for a dashboard to ask for one.

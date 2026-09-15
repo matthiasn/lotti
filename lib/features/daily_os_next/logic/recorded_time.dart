@@ -56,6 +56,28 @@ class ResolvedTimeEntry {
   DateTime get start => entry.meta.dateFrom;
 }
 
+/// The person → check-in links [resolveTimeEntries] needs to attribute
+/// each check-in in [entries] to its person, derived from
+/// `CheckInData.relationshipId` rather than read from the journal.
+///
+/// That field is what the People feature reads a person's check-ins by, and
+/// it never changes after creation. The stored `RelationshipLink` is no
+/// substitute: it is not a [BasicLink], so the basic-link lookup never
+/// returns it, and `RelationshipRepository.createCheckIn` keeps a check-in
+/// whose link write failed. The derived links are never persisted.
+List<EntryLink> checkInOwnerLinks(List<JournalEntity> entries) => [
+  for (final entry in entries)
+    if (entry is CheckInEntry)
+      EntryLink.relationship(
+        id: 'check-in-owner:${entry.meta.id}',
+        fromId: entry.data.relationshipId,
+        toId: entry.meta.id,
+        createdAt: entry.meta.createdAt,
+        updatedAt: entry.meta.createdAt,
+        vectorClock: null,
+      ),
+];
+
 /// Whether an [event] took place at the time it carries.
 ///
 /// A cancelled or missed event never happened, and a postponed one has left

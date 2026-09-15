@@ -211,9 +211,12 @@ class DayAgentWeekContextService {
       rangeStart: rangeStart,
       rangeEnd: rangeEnd,
     );
-    final links = await journalDb.basicLinksForEntryIds(
-      entries.map((entry) => entry.meta.id).toSet(),
-    );
+    final links = [
+      ...await journalDb.basicLinksForEntryIds(
+        entries.map((entry) => entry.meta.id).toSet(),
+      ),
+      ...checkInOwnerLinks(entries),
+    ];
     final linkedFromIds = links.map((link) => link.fromId).toSet();
     final linkedFrom = linkedFromIds.isEmpty
         ? const <JournalEntity>[]
