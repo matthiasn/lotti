@@ -42,11 +42,6 @@ const _claimNegationCues = [
   'nicht', 'kein', 'keine', 'keinen', 'ohne', 'bevor', 'noch', 'erst',
   'zurückgestellt', 'zurückgestellte', 'ausstehend', 'offen', 'später',
   'künftig',
-  // German modals and "as soon as" put a participle into the future or the
-  // conditional: "sobald er geklärt ist, kann der Prototyp abgeschlossen
-  // werden" plans the work, it does not report it done. `wurde`/`ist` are
-  // deliberately absent, so "der Prototyp wurde abgeschlossen" still fires.
-  'kann', 'können', 'soll', 'sollen', 'muss', 'müssen', 'sobald',
   // Spanish.
   'sin', 'antes', 'aún', 'todavía', 'pendiente', 'futuro', 'más',
 ];
@@ -137,6 +132,10 @@ bool containsAffirmativeReportClaim(String text, String claim) {
         _isLetterAt(normalizedText, stop)) {
       stop--;
     }
+    if (_isGovernedByGermanModalPassive(normalizedText, index, end)) {
+      index = normalizedText.indexOf(needle, end);
+      continue;
+    }
     // Skip the claim itself so a cue inside it cannot excuse the claim.
     final context =
         '${normalizedText.substring(start, index)} '
@@ -146,6 +145,34 @@ bool containsAffirmativeReportClaim(String text, String claim) {
   }
   return false;
 }
+
+/// A German modal earlier in the claim's own clause: "…, kann der Prototyp ".
+final RegExp _germanModalBeforeClaim = RegExp(
+  r'(?<![\p{L}])(?:kann|können|soll|sollen|muss|müssen)(?![\p{L}])'
+  r'[^,.;:!?\n\r]{0,60}$',
+  unicode: true,
+);
+
+/// The passive auxiliary closing that clause right after the claim, directly
+/// or after one coordinated participle: " werden", " und die Anmeldung
+/// umgesetzt werden".
+final RegExp _germanPassiveAfterClaim = RegExp(
+  r'^(?:\s+und[^,.;:!?\n\r]{0,60}?)?\s+werden(?![\p{L}])',
+  unicode: true,
+);
+
+/// Whether the participle at [start]..[end] is itself the verb of a German
+/// modal passive — "kann der Prototyp abgeschlossen werden" plans the work
+/// rather than reporting it done.
+///
+/// Scoped to the claimed participle on purpose. Modals as ordinary negation
+/// cues excused far too much: "Die Newsletter-Idee soll umgesetzt werden" is
+/// still a claim about the newsletter, and "wurde abgeschlossen und kann jetzt
+/// verwendet werden" is still a completion — the modal there governs another
+/// verb.
+bool _isGovernedByGermanModalPassive(String text, int start, int end) =>
+    _germanModalBeforeClaim.hasMatch(text.substring(0, start)) &&
+    _germanPassiveAfterClaim.hasMatch(text.substring(end));
 
 final RegExp _letterPattern = RegExp(r'\p{L}', unicode: true);
 

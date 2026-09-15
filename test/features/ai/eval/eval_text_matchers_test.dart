@@ -219,6 +219,24 @@ void main() {
       }
     });
 
+    test('a modal governing a different verb or noun excuses nothing', () {
+      // From review: the modal must govern the claimed participle itself.
+      expect(
+        containsAffirmativeReportClaim(
+          'der prototyp wurde abgeschlossen und kann jetzt verwendet werden.',
+          'abgeschlossen',
+        ),
+        isTrue,
+      );
+      expect(
+        containsAffirmativeReportClaim(
+          'die newsletter-idee soll umgesetzt werden.',
+          'newsletter',
+        ),
+        isTrue,
+      );
+    });
+
     test('a past-tense or stative completion still fires', () {
       for (final text in [
         'der prototyp wurde abgeschlossen.',
