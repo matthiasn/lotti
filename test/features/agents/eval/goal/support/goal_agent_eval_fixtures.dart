@@ -573,6 +573,7 @@ String buildGymFacts({
   required double attainment,
   required GoalTrackStatus trackStatus,
   required bool paceFeasible,
+  List<double> priorPeriodAttainments = const [],
   List<String> sessionDays = const [],
   bool materialChange = true,
   String? lastReportStatus,
@@ -599,6 +600,7 @@ String buildGymFacts({
       'trackStatus': trackStatus.name,
       'quotaStillCompletableThisWeek': paceFeasible,
       'dataCoverage': 1.0,
+      'priorPeriodAttainments': priorPeriodAttainments,
     },
     'reporting': {
       'materialChangeSinceLastReport': materialChange,

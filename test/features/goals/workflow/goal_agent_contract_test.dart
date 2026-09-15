@@ -29,6 +29,22 @@ void main() {
     );
     expect(goalAgentSystemPrompt, contains('latestChange'));
     expect(goalAgentSystemPrompt, contains('referenceIsCurrentDay'));
+    expect(
+      goalAgentSystemPrompt,
+      contains('ask the clarifier in ONE reply'),
+    );
+    expect(
+      goalAgentSystemPrompt,
+      contains('Never copy FACTS values into banner copy'),
+    );
+    expect(
+      goalAgentSystemPrompt,
+      contains('materialChangeSinceLastReport=false'),
+    );
+    expect(
+      goalAgentSystemPrompt,
+      contains('cover every criterion in each applicable report section'),
+    );
   });
 
   test('the tool surface includes the shared reply carrier and seven goal '

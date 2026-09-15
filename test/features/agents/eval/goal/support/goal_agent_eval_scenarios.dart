@@ -348,6 +348,31 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
     },
   ),
   GoalAgentEvalScenario(
+    id: 'ad_create_first_at_risk',
+    policyRuleId: 'P4',
+    description:
+        'First evaluation at risk with no active ad: report plus a welcome '
+        'nudge banner.',
+    facts: buildStepsFacts(
+      dailySteps: gSlightlyOffSteps,
+      attainment: gSlightlyOffAttainment,
+      trackStatus: GoalTrackStatus.atRisk,
+    ),
+    expectedToolCalls: const [
+      GoalAgentExpectedToolCall(
+        GoalAgentToolNames.updateGoalReport,
+        expectedArgumentsSubset: {'status': 'atRisk'},
+      ),
+      GoalAgentExpectedToolCall(
+        GoalAgentToolNames.createGoalAd,
+        expectedArgumentsSubset: {'tone': 'nudge'},
+      ),
+    ],
+    forbiddenToolArgumentTerms: const {
+      GoalAgentToolNames.createGoalAd: signePrivateStrings,
+    },
+  ),
+  GoalAgentEvalScenario(
     id: 'ad_create_off_track',
     policyRuleId: 'P5',
     description: 'Off track, no active ad: report offTrack + create an ad.',
@@ -467,6 +492,10 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
       successesThisWeek: 1,
       sessionDays: const ['2026-08-03 (Monday)'],
       attainment: gGymOneOfThreeAttainment,
+      priorPeriodAttainments: const [
+        gGymOneOfThreeAttainment,
+        gGymOneOfThreeAttainment,
+      ],
       trackStatus: GoalTrackStatus.atRisk,
       paceFeasible: true,
       lastReportStatus: GoalTrackStatus.onTrack.name,
@@ -644,7 +673,9 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
       // ignore: no_adjacent_strings_in_list, missing_whitespace_between_adjacent_strings
       r"\b(?:what(?: is|'s|’s| feels| makes| would)|which (?:part|aspect|option)|"
           // ignore: missing_whitespace_between_adjacent_strings
-          'how (?:can|could|would)|(?:do|would|could|can) you|is it|are you)'
+          'how (?:can|could|would)|(?:do|would|could|can) you|is it|are you|'
+          // ignore: missing_whitespace_between_adjacent_strings
+          'is the (?:hard|difficult|tough) part)'
           r'\b[^?!.]*\?',
     ],
   ),

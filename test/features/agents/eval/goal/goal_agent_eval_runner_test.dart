@@ -494,6 +494,28 @@ void main() {
       );
     });
 
+    test('a concrete is-the-hard-part choice is clarification', () {
+      final scenario = scenarioById('evo_ambiguous');
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenario,
+          toolCalls: [
+            call(
+              GoalAgentToolNames.replyToUser,
+              jsonEncode({
+                'message':
+                    'Is the hard part the 10,000 target, or keeping it '
+                    'daily? Tell me which feels heavy and I will leave the '
+                    'goal alone until you choose.',
+              }),
+            ),
+          ],
+          assistantContent: '',
+        ),
+        GoalAgentEvalFailureCategory.none,
+      );
+    });
+
     test('a rhetorical question at the end still is not clarification', () {
       expect(
         classifyGoalAgentResult(

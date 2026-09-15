@@ -665,6 +665,27 @@ void main() {
       );
     });
 
+    test('gym-pace restraint uses an established, non-worsening goal', () {
+      final scenario = goalAgentEvalScenarios.singleWhere(
+        (scenario) => scenario.id == 'gh_gym_pace',
+      );
+      final evaluation =
+          decodedFacts(scenario)['evaluation'] as Map<String, dynamic>;
+      final priors = (evaluation['priorPeriodAttainments'] as List)
+          .cast<double>();
+
+      expect(
+        priors,
+        isNotEmpty,
+        reason: 'a first evaluation requires a banner',
+      );
+      expect(
+        goalTrendWorsening(evaluation['attainment'] as double, priors),
+        isFalse,
+      );
+      expect(scenario.adToolsOffered, isFalse);
+    });
+
     test('a first at-risk evaluation still earns its welcome banner', () {
       // `automaticGoalAdEligible` permits an ad for an atRisk goal with no
       // prior periods even absent a worsening trend. An eval gate that

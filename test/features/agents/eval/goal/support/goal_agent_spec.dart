@@ -48,7 +48,7 @@ const goalAgentPolicyMatrix = [
   ),
   GoalAgentPolicyRule(
     id: 'P4',
-    given: 'atRisk, worsening 3+ days, no active ad',
+    given: 'atRisk, first evaluation or worsening 3+ days, no active ad',
     expected: 'update_goal_report + create_goal_ad (tone nudge)',
   ),
   GoalAgentPolicyRule(

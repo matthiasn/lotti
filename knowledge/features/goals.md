@@ -503,6 +503,9 @@ See [profile resolution](ai/profile-resolution.md) for failure and precedence ru
   latest change, coverage, and actions as separate required slots; the strategy
   parses the same complete shape used by the eval classifier and assembles the
   localized model-authored sentences without injecting English headings.
+  For multi-criterion goals, every applicable slot must cover every criterion:
+  current values, rolling aggregates, previous-to-latest changes, and sample
+  counts stay in their corresponding sections instead of being scattered.
   Evaluated-period and rolling-standing slots must be non-empty. Completeness
   is judged strictly, but the *rules* read a lenient view
   (`GoalStructuredReport.lenient`) so a report the parser refused is still
@@ -535,9 +538,11 @@ See [profile resolution](ai/profile-resolution.md) for failure and precedence ru
   offer to rewrite), a matching FACTS-block instruction, and the model's own
   tool call as the language-independent carrier — and an explicit refusal
   ("don't make the report shorter") suppresses it, because forcing a rewrite
-  over a refusal destroys the report the user asked to keep. A first evaluation that lands at risk is
-  also ad-eligible, so a newly created goal does not wait for a three-day trend
-  before receiving its initial banner.
+  over a refusal destroys the report the user asked to keep. A first evaluation
+  that lands at risk is also ad-eligible, so a newly created goal does not wait
+  for a three-day trend before receiving its initial banner. The inference
+  catalog carries a dedicated first-evaluation case; established restraint
+  fixtures carry non-empty, non-worsening prior history.
   Interactive batches have a stricter publication fence: if any tool call is
   rejected, the wake fails before `persistOutputs`, including when the same
   model turn also supplied a plausible `reply_to_user` or a later accepted call
