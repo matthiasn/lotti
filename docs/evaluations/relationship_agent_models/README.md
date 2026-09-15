@@ -170,27 +170,28 @@ expired key), never throttling — that arrives as a 429.
 
 ## Current full relationship results — 2026-09-15
 
-Both models passed every exercise using the production system prompt, tool
-definitions, facts renderer, pending-message marker, and focused reply
-recovery. Each run covers 28 scenarios with three samples, for 84 exercises.
+Both runs are at source commit `ff26fa49c7` (the #4297 head): the production
+system prompt, tool definitions, facts renderer, pending-message marker on
+every interactive turn including follow-ups, focused reply recovery, and the
+sentiment-derived health-band bound that the strategy enforces and the
+classifier scores. Each run covers 28 scenarios with three samples, for 84
+exercises.
 
 | Model | Result | Failures | Requests | Full price | Wall time | Summed exercise time |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `deepseek-v4.1-flash:speed` | 84 passed of 84 exercises | 0 | 87 | €0.19392938 | 367.854 s | 804.017 s |
-| `glm-5.3-flash:speed` | 84 passed of 84 exercises | 0 | 91 | €0.0489125 | 412.887 s | 1,017.196 s |
+| `deepseek-v4.1-flash:speed` | 84 passed of 84 exercises | 0 | 87 | €0.10344280 | 373.846 s | 895.530 s |
+| `glm-5.3-flash:speed` | 83 passed of 84 exercises | 1 | 92 | €0.0501888 | 322.957 s | 752.097 s |
 
-The DeepSeek run is `20260915T195324Z-47a90c3ce0fd` at source commit
-`47b34f2931`. The GLM run is `20260915T200045Z-8e860162990f` at source
-commit `08b5de047b`; the only intervening commit records the DeepSeek ledger
-row, so both runs use the same production prompt and context code.
+The DeepSeek run is `20260915T210248Z-348985206a57`; the GLM run is
+`20260915T210902Z-8cfdeee6afef`. GLM's one failure is a
+`dl_reply_and_brief` sample classified `missingExpectedToolCall`: it
+refreshed the briefing but never called `reply_to_user`, and the focused
+reply recovery did not produce a reply either. The other two samples of that
+scenario passed.
 
-These results predate three later changes that have not been re-measured
-live: follow-up turns now carry the pending-message marker and each exchange
-must produce its own reply; the strategy rejects a health band outside the
-sentiment bound; and that bound keeps needs attention reachable after a
-positive rating when the cadence is due or an older rating in the window was
-strained or difficult. The classifier scores the bound as well, so a re-run
-may now fail cases these runs passed.
+Earlier runs at `47b34f2931` (DeepSeek) and `08b5de047b` (GLM) passed 84 of
+84 before follow-ups carried the pending-message marker and before the
+health-band bound existed; their rows stay in the ledger.
 
 ## Cost (observed, not a target)
 
