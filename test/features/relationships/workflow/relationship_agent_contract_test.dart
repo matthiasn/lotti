@@ -39,6 +39,14 @@ void main() {
       );
       expect(
         relationshipAgentSystemPrompt,
+        contains('Applicable means FACTS explicitly trigger the step'),
+      );
+      expect(
+        relationshipAgentSystemPrompt,
+        contains('Without a PENDING USER MESSAGE, never call reply_to_user'),
+      );
+      expect(
+        relationshipAgentSystemPrompt,
         contains('Cite relevant linked tasks with their exact status'),
       );
       expect(
