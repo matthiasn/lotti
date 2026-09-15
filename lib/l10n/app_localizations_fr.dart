@@ -11410,9 +11410,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get queryAskTask => 'Poser une question sur cette tâche';
 
   @override
-  String get queryChat => 'Discuter';
-
-  @override
   String get queryAudioFailed =>
       'Impossible de préparer ou de lire l’audio. Réessaie.';
 
@@ -11480,6 +11477,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get queryCategoryAgent => 'Agent de catégorie';
+
+  @override
+  String get queryChat => 'Discuter';
 
   @override
   String get queryChats => 'Chats';

@@ -11427,9 +11427,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get queryAskTask => 'Întrebați despre această sarcină';
 
   @override
-  String get queryChat => 'Chat';
-
-  @override
   String get queryAudioFailed =>
       'Fișierul audio nu a putut fi pregătit sau redat. Încercați din nou.';
 
@@ -11497,6 +11494,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get queryCategoryAgent => 'Agent de categorie';
+
+  @override
+  String get queryChat => 'Chat';
 
   @override
   String get queryChats => 'Conversații';

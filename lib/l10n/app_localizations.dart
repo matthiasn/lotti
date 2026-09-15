@@ -18859,12 +18859,6 @@ abstract class AppLocalizations {
   /// **'Ask about this task'**
   String get queryAskTask;
 
-  /// No description provided for @queryChat.
-  ///
-  /// In en, this message translates to:
-  /// **'Chat'**
-  String get queryChat;
-
   /// No description provided for @queryAudioFailed.
   ///
   /// In en, this message translates to:
@@ -18978,6 +18972,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Category agent'**
   String get queryCategoryAgent;
+
+  /// No description provided for @queryChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get queryChat;
 
   /// No description provided for @queryChats.
   ///
