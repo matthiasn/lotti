@@ -1,4 +1,5 @@
 import 'package:glados/glados.dart';
+import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
@@ -7,6 +8,9 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/daily_os_next/logic/recorded_time.dart';
+import 'package:mocktail/mocktail.dart' as mt;
+
+import '../../../mocks/mocks.dart';
 
 final _day = DateTime(2026, 6, 8);
 
@@ -178,6 +182,79 @@ extension _AnyRecordedEntry on Any {
 }
 
 void main() {
+  group('loadRecordedTimeLinks', () {
+    final at = DateTime(2026, 9, 6, 12);
+    final note = JournalEntity.journalEntry(
+      meta: Metadata(
+        id: 'note',
+        createdAt: at,
+        updatedAt: at,
+        dateFrom: at,
+        dateTo: at.add(const Duration(hours: 1)),
+      ),
+    );
+    final call = CheckInEntry(
+      meta: Metadata(
+        id: 'call',
+        createdAt: at,
+        updatedAt: at,
+        dateFrom: at,
+        dateTo: at.add(const Duration(minutes: 15)),
+      ),
+      data: const CheckInData(
+        relationshipId: 'person',
+        interactionType: CheckInInteractionType.call,
+      ),
+    );
+    EntryLink link(String id, String from, String to) => EntryLink.basic(
+      id: id,
+      fromId: from,
+      toId: to,
+      createdAt: at,
+      updatedAt: at,
+      vectorClock: null,
+    );
+
+    test('without check-ins it asks for basic links only', () async {
+      final db = MockJournalDb();
+      final basic = link('b', 'task', 'note');
+      mt
+          .when(
+            () => db.basicLinksForEntryIds({'note'}),
+          )
+          .thenAnswer((_) async => [basic]);
+
+      expect(await loadRecordedTimeLinks(db, [note]), [basic]);
+      mt.verifyNever(() => db.relationshipLinksToIds(mt.any()));
+    });
+
+    test('adds the RelationshipLinks pointing at the check-ins, and only '
+        'asks for those', () async {
+      final db = MockJournalDb();
+      final basic = link('b', 'task', 'note');
+      final toPerson = EntryLink.relationship(
+        id: 'r',
+        fromId: 'person',
+        toId: 'call',
+        createdAt: at,
+        updatedAt: at,
+        vectorClock: null,
+      );
+      mt
+          .when(
+            () => db.basicLinksForEntryIds({'note', 'call'}),
+          )
+          .thenAnswer((_) async => [basic]);
+      mt
+          .when(
+            () => db.relationshipLinksToIds({'call'}),
+          )
+          .thenAnswer((_) async => [toPerson]);
+
+      expect(await loadRecordedTimeLinks(db, [note, call]), [basic, toPerson]);
+    });
+  });
+
   group('resolveTimeEntries', () {
     test('pairs an entry with its linked task and derives projections', () {
       final task = _task(id: 'task-1', categoryId: 'cat-work');

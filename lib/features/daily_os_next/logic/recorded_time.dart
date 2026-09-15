@@ -1,6 +1,7 @@
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 
 /// Shared recorded-time resolution for Daily OS consumers.
@@ -54,6 +55,26 @@ class ResolvedTimeEntry {
 
   /// When the recorded time started.
   DateTime get start => entry.meta.dateFrom;
+}
+
+/// Loads the links [resolveTimeEntries] needs for [entries]: every entry's
+/// [BasicLink]s, plus — only when the range holds check-ins — the
+/// [RelationshipLink] that ties each check-in to its person. Without it a
+/// check-in resolves to no linked-from entity, and its block loses the
+/// person's name.
+Future<List<EntryLink>> loadRecordedTimeLinks(
+  JournalDb db,
+  List<JournalEntity> entries,
+) async {
+  final basic = await db.basicLinksForEntryIds(
+    entries.map((entry) => entry.meta.id).toSet(),
+  );
+  final checkInIds = {
+    for (final entry in entries)
+      if (entry is CheckInEntry) entry.meta.id,
+  };
+  if (checkInIds.isEmpty) return basic;
+  return [...basic, ...await db.relationshipLinksToIds(checkInIds)];
 }
 
 /// Whether an [event] took place at the time it carries.
