@@ -723,6 +723,42 @@ class GymTest(unittest.TestCase):
         self.assertFalse(summary["revisionValid"])
         self.assertEqual(summary["verdict"], "incomplete")
 
+    def test_session_finalization_invalidates_changed_source_and_preserves_interrupt(self):
+        with (
+            patch.object(gym, "repository_revision", return_value={"commit": "changed"}),
+            patch.object(gym.time, "monotonic", return_value=10),
+            self.assertRaises(KeyboardInterrupt),
+        ):
+            with gym.assessment_session(
+                self.output,
+                self.manifest,
+                [],
+                "2030-01-15T12:00:00Z",
+                5,
+            ):
+                raise KeyboardInterrupt
+        self.assertTrue((self.output / "invalidated.json").exists())
+        recorded = self.record_history.call_args.args[1]
+        self.assertFalse(recorded["revisionValid"])
+        self.assertEqual(recorded["verdict"], "incomplete")
+
+    def test_session_finalization_reports_changed_source_after_success(self):
+        with (
+            patch.object(gym, "repository_revision", return_value={"commit": "changed"}),
+            patch.object(gym.time, "monotonic", return_value=10),
+            self.assertRaisesRegex(ValueError, "Checkout changed"),
+        ):
+            with gym.assessment_session(
+                self.output,
+                self.manifest,
+                [],
+                "2030-01-15T12:00:00Z",
+                5,
+            ):
+                pass
+        self.assertTrue((self.output / "invalidated.json").exists())
+        self.assertFalse(self.record_history.call_args.args[1]["revisionValid"])
+
     def test_all_adapter_environments_bind_model_and_expected_output(self):
         for adapter in (
             "task",

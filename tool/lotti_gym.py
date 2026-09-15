@@ -569,14 +569,26 @@ def assessment_session(output, manifest, jobs, started_at, started_clock):
     path = output / "sessions" / f"{uuid.uuid4().hex}.json"
     session = {"startedAt": started_at, "finishedAt": None, "durationSeconds": None}
     atomic_json(path, session)
+    completed = False
     try:
         yield
+        completed = True
     finally:
+        source_changed = manifest["revision"] != repository_revision(ROOT)
+        if source_changed:
+            atomic_json(
+                output / "invalidated.json",
+                {"reason": "Checkout changed during assessment"},
+            )
         session.update(finishedAt=datetime.now(timezone.utc).isoformat(),
                        durationSeconds=round(time.monotonic() - started_clock, 6))
         atomic_json(path, session)
         summary = checkpoint(output, manifest, jobs)
         record_history(ROOT, history_record(output, manifest, summary, jobs))
+        if source_changed and completed:
+            raise ValueError(
+                "Checkout changed during assessment; results are not comparable"
+            )
 
 
 def judge_jobs(output, manifest, jobs, api_key, workers, processes):
@@ -1068,15 +1080,6 @@ def main(argv=None):
                     judge_jobs(
                         output, manifest, jobs, conn["MELIOUS_API_KEY"], args.workers, processes
                     )
-                    if manifest["revision"] != repository_revision(ROOT):
-                        atomic_json(
-                            output / "invalidated.json",
-                            {"reason": "Checkout changed during assessment"},
-                        )
-                        checkpoint(output, manifest, jobs)
-                        raise ValueError(
-                            "Checkout changed during assessment; results are not comparable"
-                        )
                 summary = checkpoint(output, manifest, jobs)
             print(
                 f"Verdict: {summary['verdict']}. Report: {output / 'report.html'}",

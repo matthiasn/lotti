@@ -179,6 +179,31 @@ void main() {
       }
     });
 
+    test('movement terms do not match unrelated word fragments', () {
+      final category = classifyGoalAgentResult(
+        scenario: scenarioById('cx_gym_done_steps_collapse'),
+        toolCalls: [
+          call(
+            GoalAgentToolNames.retireGoalAd,
+            '{"adId":"ad-kettlebell-05"}',
+          ),
+          call(
+            GoalAgentToolNames.updateGoalReport,
+            '{"status":"offTrack","oneLiner":"x","tldr":"y"}',
+          ),
+          call(
+            GoalAgentToolNames.createGoalAd,
+            '''{"headline":"Overlap smiles","cta":"Reboot legendary mode","tone":"nudge","animation":"pulse"}''',
+          ),
+        ],
+        assistantContent: '',
+      );
+      expect(
+        category,
+        GoalAgentEvalFailureCategory.missingRequiredToolArguments,
+      );
+    });
+
     test('banner args that cannot decode fail even when the name matches', () {
       GoalAgentEvalFailureCategory classify(String argumentsJson) =>
           classifyGoalAgentResult(

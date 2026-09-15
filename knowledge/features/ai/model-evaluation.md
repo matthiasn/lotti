@@ -317,8 +317,10 @@ passes into a synthetic assessment. Importing older runs retains their known
 artifact subtotal, not a fabricated full bill. Only the exact aggregate ledger
 path is excluded from dirty-source provenance checks, so one completed model
 can record history without invalidating another running model. Source edits and
-commits still invalidate active assessments. Commit ledger updates after all
-concurrent runs finish; raw evidence remains outside the repository.
+commits still invalidate active assessments. Session finalization performs this
+check even after a worker error or interruption, records the invalid result, and
+then preserves the original failure. Commit ledger updates after all concurrent
+runs finish; raw evidence remains outside the repository.
 
 Baseline comparison requires matching source revision, suite definitions,
 endpoint, sample count, batch size, concurrency and host. Day-planning comparisons

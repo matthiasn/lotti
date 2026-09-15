@@ -153,6 +153,15 @@ class BillingTest(unittest.TestCase):
         result = response_billing(gzip.compress(body), "application/json", "gzip")
         self.assertEqual(result["billingCost"]["credits"], "0.1234567890123456789012345678")
 
+    def test_http_metadata_is_case_insensitive(self):
+        body = b'data: {"billing_cost":{"credits":"0.125","paid_with":"credits"}}\n\n'
+        result = response_billing(
+            gzip.compress(body),
+            "Text/Event-Stream; Charset=UTF-8",
+            "GZip",
+        )
+        self.assertEqual(result["billingCost"]["credits"], "0.125")
+
     def test_response_billing_discards_private_and_unvalidated_metadata(self):
         body = json.dumps({
             "id": "PRIVATE RESPONSE ID",

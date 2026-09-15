@@ -30,10 +30,12 @@ def decimal_amount(value):
 def response_billing(body, content_type, content_encoding=""):
     """Read the final billing record once, including SSE completion chunks."""
     try:
-        if content_encoding == "gzip":
+        encoding = content_encoding.strip().lower()
+        media_type = content_type.partition(";")[0].strip().lower()
+        if encoding == "gzip":
             body = gzip.decompress(body)
         text = body.decode("utf-8")
-        if "text/event-stream" in content_type:
+        if media_type == "text/event-stream":
             packets = []
             for event in text.replace("\r\n", "\n").split("\n\n"):
                 data = "\n".join(
@@ -175,7 +177,10 @@ class BillingRelay:
                     status = response.status
                     self.send_response_only(status, response.reason)
                     for key, value in safe_response_headers(response.getheaders()):
-                        self.send_header(key, value)
+                        self.send_header(
+                            key.replace("\r", "").replace("\n", "").replace(":", ""),
+                            value.replace("\r", "").replace("\n", ""),
+                        )
                     self.end_headers()
                     sent_headers = True
                     chunks = []
