@@ -155,7 +155,9 @@ prefix cache:
   is shown as blocked but *what it is waiting on* was not shown, neither
   exception is reachable — one-hop resolution never renders the `blockedBy` of a
   task reached only as somebody else's blocker. The rule tells the model to
-  leave such a task out rather than schedule work that cannot start. Preferring
+  leave such a task out rather than schedule work that cannot start, saying why
+  in another block's `reason` or, when nothing else is placed, in a lone
+  `buffer` block's `note` (an open-window draft cannot be empty). Preferring
   to place the blocker of a decided task still holds, unless that blocker is
   itself shown as blocked, in which case the same rule applies to it.
 - **A digest-rule bullet**, appended to the digest rules on coordinator wakes

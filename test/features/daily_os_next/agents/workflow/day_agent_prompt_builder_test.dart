@@ -152,4 +152,24 @@ void main() {
     expect(normalized, contains('repeat every baseline block unchanged'));
     expect(normalized, contains('Never erase a non-empty baseline'));
   });
+
+  test('an open drafting window forbids an empty draft and names the '
+      'fallback', () {
+    // draft_day_plan rejects `blocks: []` while the window is open. Without
+    // this rule the only empty-plan guidance was the closed-window one, so
+    // models with nothing placeable sent `[]`, collected a rejection, and
+    // then invented work to get past it.
+    final normalized = dayAgentDraftTerminalRule.replaceAll(
+      RegExp(r'\s+'),
+      ' ',
+    );
+
+    expect(
+      normalized,
+      contains('While `<planning_window>` is open, `blocks` must not be empty'),
+    );
+    expect(normalized, contains('emit a single `buffer` block'));
+    expect(normalized, contains('`note` says why'));
+    expect(normalized, contains('rather than inventing work'));
+  });
 }

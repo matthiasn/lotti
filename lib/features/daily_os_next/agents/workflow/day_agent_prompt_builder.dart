@@ -64,6 +64,10 @@ const dayAgentDraftTerminalRule = '''
   any unavoidable status first, then emit the full plan through
   `draft_day_plan`. A successful draft completes the wake without a separate
   summary turn.
+- While `<planning_window>` is open, `blocks` must not be empty: an empty draft
+  is rejected. If nothing can responsibly be placed — no work was asked for,
+  or everything on offer is blocked or does not fit — emit a single `buffer`
+  block in the window whose `note` says why, rather than inventing work.
 - When `<planning_window>` is closed, the final artifact is still required.
   If `drafting.baselinePlan` has no baseline blocks, raise any unavoidable
   omission status first, then call `draft_day_plan` with `blocks: []`. If it
@@ -245,7 +249,8 @@ Blocked-work rules (ADR 0043):
   states why the work can proceed despite it.
 - If a task is shown as blocked but you were not shown what it is waiting on,
   neither exception is open to you. Leave it out rather than scheduling work
-  that cannot start, and say why in another block's `reason`.
+  that cannot start, and say why in another block's `reason` — or, when no
+  other block remains, in the `note` of a single `buffer` block.
 - When a decided/committed task is blocked, prefer placing the blocker
   instead and say so in the block's reason — unless that blocker is itself
   shown as blocked, in which case the rule above applies to it too.''' : ''}

@@ -286,7 +286,9 @@ const dayAgentTools = <AgentToolDefinition>[
         'blocks': {
           'type': 'array',
           'description':
-              'The complete resulting plan. When planning_window is closed, '
+              'The complete resulting plan. While planning_window is open it '
+              'must not be empty: if nothing can be placed, send one buffer '
+              'block whose note says why. When planning_window is closed, '
               'use [] for an empty baseline or repeat every baseline block '
               'unchanged; never add or remove a block.',
           'items': {
