@@ -204,6 +204,23 @@ void main() {
       expect(shown.last, result['answer']);
     });
 
+    test(
+      'a stray backslash before u without hex digits is dropped too',
+      () async {
+        final result =
+            await QueryTextInference(
+              generate: (_, _) => Stream.value(
+                r'{"answer":"Logs in C:\users\penguin, \u00e9 kept."}',
+              ),
+            ).complete(
+              system: 'answer',
+              input: {},
+              cancellation: QueryCancellation(),
+            );
+        expect(result['answer'], 'Logs in C:userspenguin, é kept.');
+      },
+    );
+
     test('a payload that is broken beyond escapes still throws', () async {
       await expectLater(
         QueryTextInference(

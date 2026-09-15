@@ -5,7 +5,7 @@ description: Task, project and category conversations with isolated source check
 resource: ../../../lib/features/agents/query
 tags: [agents, chat, retrieval, evidence, privacy, sync]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-13T07:18:59Z }
+generated: { by: claude-code/opus-5, at: 2026-09-16T00:00:00Z }
 stale_after: 2026-10-12
 sources:
   - id: controller
@@ -38,8 +38,8 @@ sources:
     last_modified: 2026-09-13
   - id: inference
     resource: ../../../lib/features/agents/query/query_text_inference.dart
-    title: Profile routing and fresh device clock context
-    last_modified: 2026-09-13
+    title: Profile routing, fresh device clock context and lenient JSON escapes
+    last_modified: 2026-09-16
   - id: access
     resource: ../../../lib/features/agents/query/query_source_access.dart
     title: Live visibility gate

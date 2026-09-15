@@ -336,9 +336,10 @@ Object? _decodeModelJson(String text) {
 }
 
 /// Drops each backslash that does not begin a valid JSON escape, walking
-/// escape pairs so an escaped backslash (`\\`) is never split.
+/// escape pairs so an escaped backslash (`\\`) is never split. `\u` counts
+/// only with four hex digits: `C:\users` would otherwise still fail.
 String _withoutInvalidJsonEscapes(String text) {
-  const validEscapes = r'"\/bfnrtu';
+  const validEscapes = r'"\/bfnrt';
   final buffer = StringBuffer();
   for (var i = 0; i < text.length; i++) {
     final char = text[i];
@@ -347,7 +348,11 @@ String _withoutInvalidJsonEscapes(String text) {
       continue;
     }
     final next = text[i + 1];
-    if (validEscapes.contains(next)) {
+    final validUnicode =
+        next == 'u' &&
+        i + 5 < text.length &&
+        RegExp(r'^[0-9a-fA-F]{4}$').hasMatch(text.substring(i + 2, i + 6));
+    if (next == 'u' ? validUnicode : validEscapes.contains(next)) {
       buffer
         ..write(char)
         ..write(next);
