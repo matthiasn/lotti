@@ -829,6 +829,7 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
           'shoe',
           'boot',
           'kilometer',
+          'leg',
         ],
       ],
     },

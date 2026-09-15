@@ -152,7 +152,11 @@ void main() {
     });
 
     test('a lap call to action sells movement in the composite case', () {
-      for (final movementCopy in ['Add a lap', 'Let your feet add miles']) {
+      for (final movementCopy in [
+        'Add a lap',
+        'Let your feet add miles',
+        'Let your legs carry their weight',
+      ]) {
         final category = classifyGoalAgentResult(
           scenario: scenarioById('cx_gym_done_steps_collapse'),
           toolCalls: [
