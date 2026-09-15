@@ -56,7 +56,6 @@ import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/sync_queue_counts.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
@@ -84,9 +83,9 @@ import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/sidebar_activity_summary.dart';
 import 'package:lotti/widgets/misc/sidebar_audio_recording_section.dart';
 import 'package:lotti/widgets/misc/sidebar_timer_section.dart';
-import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/misc/zoom_wrapper.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
+import 'package:lotti/widgets/nav_bar/mobile_activity_island.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:matrix/encryption.dart';
@@ -1487,6 +1486,8 @@ void main() {
       debugIsRunningInFlatpakOverride = null;
     });
 
+    /// Pumps the mobile shell with a live recording, so the island's
+    /// recording half is what the sandbox gate is observed on.
     Future<void> pumpMobileShell(WidgetTester tester) async {
       final mockNavService = MockNavService();
       await _stubNavService(
@@ -1499,17 +1500,39 @@ void main() {
       );
       await _registerAppScreenGetIt(mockNavService);
       addTearDown(tearDownTestGetIt);
-      await _pumpAppScreen(tester, navService: mockNavService);
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+        audioRecorderState: AudioRecorderState(
+          status: AudioRecorderStatus.recording,
+          progress: const Duration(seconds: 30),
+          vu: -8,
+          dBFS: -18,
+          showIndicator: true,
+          modalVisible: false,
+        ),
+      );
     }
 
     testWidgets(
-      'omits the AudioRecordingIndicator from the mobile overlay when '
-      'running inside the Flatpak sandbox',
+      'omits the recording half of the activity island when running inside '
+      'the Flatpak sandbox',
       (tester) async {
         debugIsRunningInFlatpakOverride = true;
         await pumpMobileShell(tester);
 
-        expect(find.byType(AudioRecordingIndicator), findsNothing);
+        final island = tester.widget<MobileActivityIsland>(
+          find.byType(MobileActivityIsland),
+        );
+        expect(island.omitAudio, isTrue);
+        expect(find.byKey(MobileActivityIsland.recordingKey), findsNothing);
+        // Nothing else runs, so no island and no reserved height either.
+        expect(find.byKey(MobileActivityIsland.capsuleKey), findsNothing);
+        final pageContext = tester.element(find.byType(IndexedStack));
+        expect(
+          DesignSystemBottomNavigationOverlayHeight.of(pageContext),
+          0,
+        );
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
@@ -1517,12 +1540,22 @@ void main() {
     );
 
     testWidgets(
-      'mounts the AudioRecordingIndicator outside the Flatpak sandbox',
+      'shows the recording half of the activity island outside the Flatpak '
+      'sandbox',
       (tester) async {
         debugIsRunningInFlatpakOverride = false;
         await pumpMobileShell(tester);
 
-        expect(find.byType(AudioRecordingIndicator), findsOneWidget);
+        final island = tester.widget<MobileActivityIsland>(
+          find.byType(MobileActivityIsland),
+        );
+        expect(island.omitAudio, isFalse);
+        expect(find.byKey(MobileActivityIsland.recordingKey), findsOneWidget);
+        final pageContext = tester.element(find.byType(IndexedStack));
+        expect(
+          DesignSystemBottomNavigationOverlayHeight.of(pageContext),
+          MobileActivityIsland.reservedHeight(pageContext),
+        );
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
@@ -1813,7 +1846,7 @@ void main() {
       },
     );
 
-    testWidgets('renders recording indicators directly above the nav bar', (
+    testWidgets('floats the activity island its gap above the nav bar', (
       tester,
     ) async {
       final mockNavService = MockNavService();
@@ -1826,7 +1859,10 @@ void main() {
         isHabitsEnabled: () => true,
         isDashboardsEnabled: () => true,
       );
-      await _registerAppScreenGetIt(mockNavService);
+      await _registerAppScreenGetIt(
+        mockNavService,
+        runningTimer: _runningTimerEntry,
+      );
       addTearDown(tearDownTestGetIt);
 
       await _pumpAppScreen(
@@ -1834,24 +1870,26 @@ void main() {
         navService: mockNavService,
       );
 
-      // The indicators are shell-owned and live OUTSIDE the bar widget, so
-      // they stay visible when the bar slides away in settings definition
+      // The island is shell-owned and lives OUTSIDE the bar widget, so it
+      // stays visible when the bar slides away in settings definition
       // surfaces.
       expect(
         find.descendant(
           of: find.byType(DesignSystemBottomNavigationBar),
-          matching: find.byType(TimeRecordingIndicator),
+          matching: find.byType(MobileActivityIsland),
         ),
         findsNothing,
       );
-      expect(find.byType(TimeRecordingIndicator), findsOneWidget);
+      expect(find.byType(MobileActivityIsland), findsOneWidget);
+      expect(find.byKey(MobileActivityIsland.capsuleKey), findsOneWidget);
 
-      // They sit in an AnimatedPositioned pinned to the bar's top edge —
-      // the same height contract the bar itself renders with.
+      // It sits in an AnimatedPositioned anchored to the bar's top edge plus
+      // its own gap — the same height contract the bar itself renders with,
+      // so the capsule floats above the bar instead of fusing with it.
       final positioned = tester.widget<AnimatedPositioned>(
         find
             .ancestor(
-              of: find.byType(TimeRecordingIndicator),
+              of: find.byType(MobileActivityIsland),
               matching: find.byType(AnimatedPositioned),
             )
             .first,
@@ -1861,20 +1899,15 @@ void main() {
       );
       expect(
         positioned.bottom,
-        DesignSystemFiveSlotNavBar.barHeight(barContext),
+        DesignSystemFiveSlotNavBar.barHeight(barContext) +
+            MobileActivityIsland.gapAboveBar(barContext),
       );
 
-      // The closest enclosing Row uses center so the indicators meet in
-      // the middle of the bar rather than spreading to its edges.
-      final overlayRow = tester.widget<Row>(
-        find
-            .ancestor(
-              of: find.byType(TimeRecordingIndicator),
-              matching: find.byType(Row),
-            )
-            .first,
+      // Centred over the bar rather than spread to its edges.
+      expect(
+        tester.getCenter(find.byKey(MobileActivityIsland.capsuleKey)).dx,
+        moreOrLessEquals(_phoneViewportSize.width / 2, epsilon: 0.5),
       );
-      expect(overlayRow.mainAxisAlignment, MainAxisAlignment.center);
     });
 
     testWidgets(
@@ -1899,14 +1932,14 @@ void main() {
 
         await _pumpAppScreen(tester, navService: mockNavService);
 
-        // Pages padding by occupiedHeight reserve room for the time
-        // recording indicator riding above the bar, so it never covers
-        // scroll content or floating actions.
+        // Pages padding by occupiedHeight reserve room for the activity
+        // island floating above the bar, so it never covers scroll content
+        // or floating actions.
         final pageContext = tester.element(find.byType(IndexedStack));
         expect(
           DesignSystemBottomNavigationBar.occupiedHeight(pageContext),
           DesignSystemFiveSlotNavBar.barHeight(pageContext) +
-              AudioRecordingIndicatorConstants.indicatorHeight,
+              MobileActivityIsland.reservedHeight(pageContext),
         );
       },
     );
@@ -2679,7 +2712,7 @@ void main() {
     });
 
     testWidgets(
-      'desktop layout has no floating TimeRecordingIndicator and wires the '
+      'desktop layout has no floating activity island and wires the '
       'compact activity summary into the sidebar',
       (tester) async {
         final mockNavService = MockNavService();
@@ -2700,9 +2733,9 @@ void main() {
           viewportSize: _desktopViewportSize,
         );
 
-        // The legacy bottom-anchored TimeRecordingIndicator must not appear in
-        // the desktop layout. Transient systems share the compact summary.
-        expect(find.byType(TimeRecordingIndicator), findsNothing);
+        // The mobile shell's bottom-anchored island must not appear in the
+        // desktop layout. Transient systems share the compact summary.
+        expect(find.byType(MobileActivityIsland), findsNothing);
         expect(
           find.byType(SidebarActivitySummary),
           findsOneWidget,
@@ -3512,10 +3545,10 @@ void main() {
               .first,
         );
 
-        AnimatedPositioned indicators() => tester.widget<AnimatedPositioned>(
+        AnimatedPositioned island() => tester.widget<AnimatedPositioned>(
           find
               .ancestor(
-                of: find.byType(TimeRecordingIndicator),
+                of: find.byType(MobileActivityIsland),
                 matching: find.byType(AnimatedPositioned),
               )
               .first,
@@ -3534,32 +3567,34 @@ void main() {
 
         // Entering a category editor keeps the bar mounted (so the move
         // can animate) but slides it down by its own height and makes it
-        // inert. The recording indicators stay mounted outside the
-        // sliding subtree and drop to the bottom safe-area edge.
+        // inert. The activity island stays mounted outside the sliding
+        // subtree and drops to its gap above the bottom safe-area edge.
         settingsDelegate.beamToNamed('/settings/categories/some-category-id');
         await tester.pump();
         expect(find.byType(DesignSystemBottomNavigationBar), findsOneWidget);
         expect(slide().offset, const Offset(0, 1));
         expect(ignorePointer().ignoring, isTrue);
-        expect(find.byType(TimeRecordingIndicator), findsOneWidget);
+        expect(find.byType(MobileActivityIsland), findsOneWidget);
         final barContext = tester.element(
           find.byType(DesignSystemFiveSlotNavBar),
         );
         expect(
-          indicators().bottom,
-          MediaQuery.paddingOf(barContext).bottom,
+          island().bottom,
+          MediaQuery.paddingOf(barContext).bottom +
+              MobileActivityIsland.gapAboveBar(barContext),
         );
         await tester.pump(const Duration(milliseconds: 450));
 
         // Popping back to the list slides the bar into place and lifts
-        // the indicators back above it.
+        // the island back above it.
         settingsDelegate.beamToNamed('/settings/categories');
         await tester.pump();
         expect(slide().offset, Offset.zero);
         expect(ignorePointer().ignoring, isFalse);
         expect(
-          indicators().bottom,
-          DesignSystemFiveSlotNavBar.barHeight(barContext),
+          island().bottom,
+          DesignSystemFiveSlotNavBar.barHeight(barContext) +
+              MobileActivityIsland.gapAboveBar(barContext),
         );
         await tester.pump(const Duration(milliseconds: 450));
 

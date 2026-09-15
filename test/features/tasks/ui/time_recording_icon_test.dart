@@ -85,15 +85,4 @@ void main() {
       expect(find.byType(ColorIcon), findsNothing);
     });
   });
-
-  group('TimeRecordingIndicatorDot', () {
-    testWidgets('always renders the dot', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(const TimeRecordingIndicatorDot()),
-      );
-      await tester.pump();
-
-      expect(find.byType(ColorIcon), findsOneWidget);
-    });
-  });
 }

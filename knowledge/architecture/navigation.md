@@ -5,7 +5,7 @@ description: Ten independent Beamer stacks behind one IndexedStack, how the acti
 resource: ../../lib/beamer
 tags: [architecture, navigation, beamer, routing, app-shell]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-09T00:27:05Z }
+generated: { by: claude-code/fable-5.1, at: 2026-09-15T14:00:00Z }
 stale_after: 2027-03-02
 sources:
   - id: route-mirror
@@ -15,7 +15,11 @@ sources:
   - id: beamer-app
     resource: ../../lib/beamer/beamer_app.dart
     title: MyBeamerApp and AppScreen
-    last_modified: 2026-09-02
+    last_modified: 2026-09-15
+  - id: activity-island
+    resource: ../../lib/widgets/nav_bar/mobile_activity_island.dart
+    title: The activity island floating above the mobile navigation
+    last_modified: 2026-09-15
   - id: contact-support-row
     resource: ../../lib/widgets/misc/contact_support_row.dart
     title: ContactSupportRow — the Contact Us footer, wired to its destinations
@@ -486,8 +490,8 @@ bug, not a shortcut.
 `DesignSystemBottomNavigationBar.occupiedHeight`, so a hidden bar must also
 stop being reserved, or the page keeps a bar-sized empty gutter exactly where
 its own pinned surface was meant to dock. `_MobileNavOverlayHeightScope`
-therefore publishes `barDocked` alongside the indicator-row height, and
-`occupiedHeight` adds the bar's own height only when it is docked. The flag
+therefore publishes `barDocked` alongside the activity island's reserved
+height, and `occupiedHeight` adds the bar's own height only when it is docked. The flag
 defaults to true when no scope exists, so a page rendered outside the shell
 (previews, widget tests) reserves room exactly as before.
 
@@ -543,13 +547,67 @@ so section flags changing while the sheet is open cannot route to a stale index.
 Changing the flag swaps only the chrome, retaining the current tab and its
 navigation stack. `_MobileNavOverlayHeightScope` publishes the selected bar's
 height through `DesignSystemBottomNavigationOverlayHeight.navigationBarHeight`;
-page/FAB clearance and recording indicators therefore follow the visible
+page/FAB clearance and the activity island therefore follow the visible
 bar. Standalone pages without an explicit height keep the legacy calculation.
 The launcher measures its localized label with `TextPainter`, including
 nonlinear text scaling. Both designs share the existing route-hiding rules.
 
 The new launcher and grid are independent of the legacy slot and More widgets.
 The app shell chooses between them; neither new widget imports the old ones.
+
+## The activity island
+
+While a time recording and/or an audio recording runs somewhere other than
+the page on screen, the mobile shell floats one glass capsule —
+[`MobileActivityIsland`](../../lib/widgets/nav_bar/mobile_activity_island.dart)
+— `spacing.step3` above whichever bar it shows. A running timer is a red dot
+(`alert.error`) and its elapsed time; a live recording is the level orb and its
+elapsed time; both at once share the capsule with a hairline between them.
+Each half is its own button: the timer opens the running entry through
+`navigateToTimerTarget` (the same routing the desktop sidebar's timer card
+uses), the recording reopens its modal. With nothing running the island
+renders nothing and reserves nothing.
+
+It replaced two square-bottomed *tabs* that were drawn to sit flush on the top
+edge of the old full-width bar, in the legacy Material palette. The launcher
+is not a bar, so over it the tabs floated in mid-air above the chips with
+nothing to be an extension of. The island is built from the launcher chips'
+own vocabulary — `DsGlassChipSurface`, `dsGlassChipFill`, `dsGlassChipBorder`,
+`radii.badgesPills`, subtitle2 in tabular figures — at `spacing.step8` tall at
+the default text size, a step under the 48 px chips so it reads as their
+subordinate rather than a third peer, growing with the system text scale the
+way the launcher's chips do (`capsuleHeight`: the scaled subtitle2 line inside
+`spacing.step2` of air, never below `step8`), and it looks the same over the
+classic five-slot bar, where it floats above the bar instead of fusing with it.
+
+Three contracts hold it together:
+
+- **One rule for what counts.** `MobileActivityIsland.showsRecording` decides
+  which recorder states show (a session in flight — recording or paused, which
+  the modal treats as active too — with its modal closed, and not on a Flatpak
+  build, which omits the recording half). Two consumers read that one
+  predicate and the same `TimeService` stream: `MobileActivityIsland`, which
+  decides what to render, and `_MobileNavOverlayHeightScope`, which publishes
+  the height pages pad by (`MobileActivityIsland.reservedHeight`, the capsule
+  plus its gap). Because they share the rule, the space a page reserves and
+  the island it reserves it for can never disagree. Both seed from
+  `TimeService.getCurrent()`, so a timer already running shows, and is
+  reserved for, on the first frame.
+- **Outside the slide-away subtree.** The island is positioned by the shell,
+  not by either bar: on routes that slide the bar away it animates down to
+  its gap above the bottom safe-area edge in the same motion, so a running
+  timer stays visible inside settings editors; on task details the whole
+  bottom stack, island included, yields to the page's own action bar.
+- **A broken recorder never takes it down.** If the recorder controller fails
+  to build (MediaKit on some hosts), the island degrades to its timer half.
+- **Prose degrades before payloads**, as on the launcher beside it.
+  `MobileActivityIsland.bothHalvesFit` measures both elapsed times at the live
+  text scale against the window inside its insets; when they no longer share
+  the capsule (large accessibility text on a narrow phone) the recording half
+  drops to its orb — the orb still says "live", the timer's digits have no
+  glyph-only reading — and its button keeps announcing the time. The halves
+  carry the capsule's insets and the air around the hairline themselves, so
+  every point of the pill is one of the two targets.
 
 ### The launcher's row, and the page action docked on it
 

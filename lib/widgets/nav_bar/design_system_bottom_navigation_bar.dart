@@ -4,9 +4,10 @@ import 'package:material_ui/material_ui.dart';
 
 /// Mobile bottom-navigation container: hosts the five-slot bar
 /// ([DesignSystemFiveSlotNavBar]) docked flush against the screen's bottom
-/// edge. The time/audio recording indicators that ride above the bar are
-/// owned by the mobile shell (`lib/beamer/beamer_app.dart`), not by this
-/// container, so they stay visible when the shell slides the bar away.
+/// edge. The activity island (running timer / recording) that floats above
+/// the bar is owned by the mobile shell (`lib/beamer/beamer_app.dart`), not
+/// by this container, so it stays visible when the shell slides the bar
+/// away.
 class DesignSystemBottomNavigationBar extends StatelessWidget {
   const DesignSystemBottomNavigationBar({
     required this.items,
@@ -19,17 +20,16 @@ class DesignSystemBottomNavigationBar extends StatelessWidget {
 
   /// Vertical screen estate the docked bottom stack occupies: the bar
   /// (including the bottom safe-area inset it absorbs into its surface)
-  /// plus the rendered height of the shell-owned indicator row riding
-  /// above it, published via
-  /// [DesignSystemBottomNavigationOverlayHeight]. Content scrolling
-  /// behind the bar pads by this amount (see
+  /// plus the estate the shell-owned activity island claims above it,
+  /// published via [DesignSystemBottomNavigationOverlayHeight]. Content
+  /// scrolling behind the bar pads by this amount (see
   /// [DesignSystemBottomNavigationFabPadding]).
   static double occupiedHeight(BuildContext context) {
     // In desktop layout the bottom navigation bar is not shown;
     // the sidebar replaces it, so no bottom inset is needed.
     if (isDesktopLayout(context)) return 0;
 
-    // A slid-away bar occupies nothing; the indicator row above it stays,
+    // A slid-away bar occupies nothing; the activity island above it stays,
     // so its height still counts.
     final barHeight =
         DesignSystemBottomNavigationOverlayHeight.barDockedOf(context)
@@ -47,10 +47,10 @@ class DesignSystemBottomNavigationBar extends StatelessWidget {
   }
 }
 
-/// Publishes the rendered height of the shell-owned indicator row (the
-/// time/audio recording indicators) riding above the nav bar to the page
-/// stack. The app shell wraps the pages with this scope and updates
-/// [height] as indicators appear and disappear, so
+/// Publishes the estate the shell-owned activity island (running timer /
+/// recording) claims above the nav bar to the page stack. The app shell
+/// wraps the pages with this scope and updates [height] as the island
+/// appears and disappears, so
 /// [DesignSystemBottomNavigationBar.occupiedHeight] — and everything padding
 /// by it — matches the full rendered bottom stack, not just the bar.
 class DesignSystemBottomNavigationOverlayHeight extends InheritedWidget {
@@ -62,7 +62,7 @@ class DesignSystemBottomNavigationOverlayHeight extends InheritedWidget {
     super.key,
   });
 
-  /// Rendered height of the overlay row; 0 while no indicator is visible.
+  /// Estate the island claims above the bar; 0 while it is not visible.
   final double height;
 
   /// Rendered height of the selected navigation design. Null uses the legacy

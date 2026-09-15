@@ -5,13 +5,13 @@ description: The repeating patterns that are contract rather than coincidence �
 resource: ../../../lib/features/design_system/components
 tags: [design-system, components, accessibility, layout]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-11T23:43:06Z }
+generated: { by: claude-code/fable-5.1, at: 2026-09-15T14:00:00Z }
 stale_after: 2027-02-08
 sources:
   - id: components
     resource: ../../../lib/features/design_system/components
     title: Design-system components
-    last_modified: 2026-08-16
+    last_modified: 2026-09-15
   - id: contact-row
     resource: ../../../lib/features/design_system/components/navigation/design_system_contact_row.dart
     title: DesignSystemContactRow — the support footer both navigation surfaces close with
@@ -31,7 +31,7 @@ sources:
   - id: navbar
     resource: ../../../lib/widgets/nav_bar/design_system_bottom_navigation_bar.dart
     title: Bottom navigation shell
-    last_modified: 2026-08-31
+    last_modified: 2026-09-15
   - id: measurement-capture
     resource: ../../../lib/pages/create/create_measurement_dialog.dart
     title: Measurement capture sheet — the hero value field and the box that focuses it
@@ -640,9 +640,33 @@ The contract:
   collapses to — so a page's clearance never moves as it gains or loses its
   action. The chips are `DsGlassPill` / `DsGlassRoundButton`
   ([glass_action_bar.dart](../../../lib/features/design_system/components/glass_action_bar.dart)):
-  no launcher-local fill, radius or alpha exists. Each translucent chip owns
-  its own `BackdropFilter` inside its clip, never the row, so the transparent
-  gap between chips stays unblurred.
+  no launcher-local fill, radius or alpha exists. Each chip wraps itself in
+  `DsGlassChipSurface`
+  ([glass_chip_surface.dart](../../../lib/features/design_system/components/glass_chip_surface.dart))
+  — the floating-surface shadow, the clip, and for a translucent chip the
+  `BackdropFilter` *inside* that clip, never around the row, so the
+  transparent gap between chips stays unblurred. An opaque chip passes
+  `blurred: false` and skips the filter it could not show through.
+- `MobileActivityIsland`
+  ([mobile_activity_island.dart](../../../lib/widgets/nav_bar/mobile_activity_island.dart))
+  is the one capsule that floats above either bar while a timer or a
+  recording runs. It wears the same `DsGlassChipSurface`, `dsGlassChipFill`
+  and `dsGlassChipBorder` as the launcher chips — one glass dialect, not a
+  third. `capsuleHeight` is `spacing.step8` at the default text size and,
+  like `MobileNavigationLauncher.chipHeight`, grows with
+  `MediaQuery.textScalerOf` (the scaled subtitle2 line inside `spacing.step2`
+  of air, rounded up to the logical pixel) so large-text digits are never
+  clipped; `spacing.step3` of air sits below it, and `reservedHeight` is the
+  sum of the two and is what the shell's overlay scope publishes while the
+  island shows. Its two halves are buttons the
+  full capsule height that meet at the hairline and reach the capsule's ends
+  (they carry its insets), and the elapsed digits sit in `subtitle2` with
+  the tabular numeric features so a ticking clock never changes the
+  capsule's width. Under width pressure `bothHalvesFit` measures both times
+  the way the launcher's `labelsFit` measures its labels, and the recording
+  half drops to its orb before anything truncates. The contract for *when*
+  it shows is in
+  [navigation](../../architecture/navigation.md#the-activity-island).
 - `MobileNavigationLauncher.labelsFit(context, action)` decides between the
   two-label row and the glyph-only companion, budgeting `DsGlassPill.intrinsicWidth`
   against `availableRowWidth` the way the slot bar budgets slots. The pill

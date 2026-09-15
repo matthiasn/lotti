@@ -4,7 +4,7 @@ import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/services/nav_service.dart';
 
 /// Shared navigation behavior for the running-timer surfaces (the
-/// mobile bottom-nav `TimeRecordingIndicator` and the desktop
+/// mobile shell's `MobileActivityIsland` and the desktop
 /// `SidebarTimerSection`). Tapping either should resolve to the same
 /// destination, so the routing is centralised here to keep them in
 /// sync as the route shape evolves.

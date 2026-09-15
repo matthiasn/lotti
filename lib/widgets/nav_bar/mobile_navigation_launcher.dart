@@ -1,10 +1,9 @@
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
-import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/components/glass_chip_surface.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -87,7 +86,8 @@ class MobileNavDockAction {
 /// Navigate control to the centre on its own.
 ///
 /// The surrounding area stays transparent so the page remains visible; the
-/// shell owns the recording indicators riding above the row.
+/// shell owns the activity island (running timer / recording) floating
+/// above the row.
 class MobileNavigationLauncher extends StatelessWidget {
   const MobileNavigationLauncher({
     required this.onNavigate,
@@ -203,7 +203,7 @@ class MobileNavigationLauncher extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Flexible(
-            child: _LauncherGlassChip(
+            child: DsGlassChipSurface(
               radius: BorderRadius.circular(tokens.radii.badgesPills),
               blurred: true,
               child: DsGlassPill(
@@ -254,7 +254,7 @@ class _LauncherPageActionChip extends StatelessWidget {
     final fill = tokens.colors.interactive.enabled;
     final foreground = tokens.colors.text.onInteractiveAlert;
     if (!labeled) {
-      return _LauncherGlassChip(
+      return DsGlassChipSurface(
         radius: BorderRadius.circular(height / 2),
         blurred: false,
         child: DsGlassRoundButton(
@@ -267,7 +267,7 @@ class _LauncherPageActionChip extends StatelessWidget {
         ),
       );
     }
-    return _LauncherGlassChip(
+    return DsGlassChipSurface(
       radius: BorderRadius.circular(tokens.radii.badgesPills),
       blurred: false,
       child: DsGlassPill(
@@ -278,47 +278,6 @@ class _LauncherPageActionChip extends StatelessWidget {
         foregroundColor: foreground,
         semanticLabel: action.semanticLabel,
         height: height,
-      ),
-    );
-  }
-}
-
-/// One chip of the launcher row: the floating-surface shadow every chip
-/// wears, and — for the translucent ones — the backdrop blur that makes the
-/// page visible through the glass.
-///
-/// The blur has to live here rather than around the whole row: a filter
-/// spanning both chips would also blur the transparent gap between them,
-/// smearing the page content the launcher is supposed to leave alone.
-class _LauncherGlassChip extends StatelessWidget {
-  const _LauncherGlassChip({
-    required this.radius,
-    required this.blurred,
-    required this.child,
-  });
-
-  final BorderRadius radius;
-  final bool blurred;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: radius,
-        boxShadow: DsShadows.floatingSurface,
-      ),
-      child: ClipRRect(
-        borderRadius: radius,
-        child: blurred
-            ? BackdropFilter(
-                filter: ui.ImageFilter.blur(
-                  sigmaX: DesignSystemGlassStrip.blurSigma,
-                  sigmaY: DesignSystemGlassStrip.blurSigma,
-                ),
-                child: child,
-              )
-            : child,
       ),
     );
   }
