@@ -678,13 +678,18 @@ class GoalAgentStrategy extends ConversationStrategy
 
   /// The first status token found standing as a word in any visible string.
   ///
-  /// Word-bounded so a legitimate sentence cannot trip it: the tokens are
-  /// camelCase identifiers (`insufficientData`, `offTrack`) that no language
-  /// writes by accident.
+  /// Word-bounded, and limited to the camelCase identifiers (`insufficientData`,
+  /// `offTrack`) that no language writes by accident. `recovering` and
+  /// `achieved` are ordinary English — "you're recovering nicely" is exactly
+  /// the encouragement a recovering goal's report should carry — and banning
+  /// them refused every such report, then lost it on the one forced retry.
   String? _statusTokenIn(List<String> texts) {
+    final unmistakable = goalTrackStatusNames.where(
+      (token) => token != token.toLowerCase(),
+    );
     for (final text in texts) {
       if (text.isEmpty) continue;
-      for (final token in goalTrackStatusNames) {
+      for (final token in unmistakable) {
         if (RegExp('\\b$token\\b').hasMatch(text)) return token;
       }
     }

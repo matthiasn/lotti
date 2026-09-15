@@ -253,6 +253,71 @@ void main() {
     expect(error, contains('not prose'));
   });
 
+  test('status names that are ordinary English stay legal in prose', () async {
+    // `recovering` and `achieved` are words, not identifiers: a recovering
+    // goal's report is supposed to say so. Refusing them lost every such
+    // report in the goal-outcomes eval, including on the forced retry.
+    await strategy.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.updateGoalReport,
+          args: {
+            'status': 'recovering',
+            'oneLiner': "You're recovering nicely this week.",
+            'report': {
+              'tldr': 'Recovering: the last three days are at pace.',
+              'currentPeriod': 'On pace yesterday.',
+              'rollingWindow':
+                  'Still under target, but you achieved it '
+                  'three days running.',
+              'latestChange': 'Up from last week.',
+              'coverage': 'Seven of seven days carry data.',
+              'nextActions': {'now': <Object>[], 'later': <Object>[]},
+            },
+          },
+        ),
+      ],
+      manager: manager,
+    );
+
+    expect(strategy.hasReport, isTrue);
+    expect(strategy.reportStatus, GoalTrackStatus.recovering);
+  });
+
+  test('every camelCase status name is still rejected in prose', () async {
+    // Pins the whole banned set, so narrowing the rule to identifiers cannot
+    // silently drop one of them.
+    for (final token in ['onTrack', 'atRisk', 'offTrack', 'insufficientData']) {
+      final fresh = GoalAgentStrategy(
+        syncService: syncService,
+        agentId: 'goal-1',
+        threadId: 'thread-1',
+        runKey: 'run-$token',
+        knownAdIds: const {},
+      );
+      await fresh.processToolCalls(
+        toolCalls: [
+          _call(
+            name: GoalAgentToolNames.updateGoalReport,
+            args: {
+              'status': token,
+              'oneLiner': 'This goal is $token right now.',
+              'tldr': 'Steady week.',
+            },
+          ),
+        ],
+        manager: manager,
+      );
+
+      expect(fresh.hasReport, isFalse, reason: token);
+      expect(
+        rejection(),
+        contains('"$token" is a status field value, not prose'),
+        reason: token,
+      );
+    }
+  });
+
   test('a status name is still required in the status FIELD', () async {
     await strategy.processToolCalls(
       toolCalls: [
