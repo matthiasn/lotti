@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.14]
+
+### Changed
+
+- **Task agents get clearer instructions for reports and checklist updates.**
+  Custom report layouts now explicitly account for conditional sections, and
+  checklist updates must use the item's existing ID. Routine investigation
+  follow-ups no longer imply a need to reserve planner time.
+- **Clearer goal-coach guidance for uncertain requests and stale banners.**
+  Coaches are prompted to ask for clarification before proposing a goal change
+  and to replace retired banners in the same wake when motivation is still
+  needed.
+
+### Fixed
+
+- **An agent's summary read "Up to date" while it was still being rewritten.**
+  The moment an update started — from the countdown or from *Update now* —
+  the status on the task and goal agent cards flipped to "Up to date", with
+  "Thinking…" spinning right beside it and the old summary still on screen.
+  The status now stays "Out of date" for as long as the update runs, and only
+  changes once the new summary has actually landed. A failed update leaves it
+  reading as it did before.
+
 ## [1.1.13]
 
 ### Added
