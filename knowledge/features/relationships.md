@@ -691,9 +691,11 @@ removed:
   due, or the user explicitly requests a refresh.
   `reply_to_user`, `update_relationship_report`, `create_relationship_ad`,
   `snooze_relationship_ad`, and `create_and_link_task` accumulate in the
-  strategy; `persistOutputs` writes one transaction, fenced on the person still
-  existing and still important. Briefings cite relevant linked tasks with
-  their stored status. The health band follows the user's sentiment labels;
+  strategy; `persistOutputs` writes one transaction. Deletion is always fenced;
+  `important` and active status are fenced for automatic wakes, while chat and
+  explicit briefing requests may still persist after unmarking because the
+  user directly requested them. Briefings cite relevant linked tasks with their
+  stored status. The health band follows the user's sentiment labels;
   positive narrative cannot improve that verdict. Private narrative details
   may inform a briefing, while banner copy excludes contact details, addresses,
   diagnoses, health details, and third-party names. The briefing lands as an

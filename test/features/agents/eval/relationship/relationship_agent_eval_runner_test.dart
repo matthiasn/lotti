@@ -484,6 +484,20 @@ void main() {
           ),
           isFalse,
         );
+        expect(
+          relationshipAgentEvalNeedsForcedReply(
+            scenario: scenario,
+            toolCalls: [
+              call(
+                RelationshipAgentToolNames.replyToUser,
+                '{"message":7}',
+              ),
+            ],
+            assistantContent: '',
+            exchangeIndex: 0,
+          ),
+          isTrue,
+        );
       },
     );
   });

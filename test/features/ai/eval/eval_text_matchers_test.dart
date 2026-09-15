@@ -77,6 +77,17 @@ void main() {
         isFalse,
       );
     });
+
+    test('an unrelated nothing-concrete clause does not negate a claim', () {
+      expect(
+        containsAffirmativeReportClaim(
+          'Nothing concrete blocks this, but you discussed the station '
+              'repairs.',
+          'you discussed',
+        ),
+        isTrue,
+      );
+    });
   });
 
   group('negation is clipped to the claim sentence', () {

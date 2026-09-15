@@ -749,13 +749,13 @@ bool relationshipAgentEvalNeedsForcedReply({
   if (!isInteractiveExchange || assistantContent.trim().isNotEmpty) {
     return false;
   }
-  return !toolCalls.any(
-    (call) =>
-        call.exchangeIndex == exchangeIndex &&
+  return !toolCalls.any((call) {
+    final message = call.jsonObjectArguments?['message'];
+    return call.exchangeIndex == exchangeIndex &&
         call.name == RelationshipAgentToolNames.replyToUser &&
-        (call.jsonObjectArguments?['message'] as String?)?.trim().isNotEmpty ==
-            true,
-  );
+        message is String &&
+        message.trim().isNotEmpty;
+  });
 }
 
 class RelationshipAgentInferenceEvalRunner {
