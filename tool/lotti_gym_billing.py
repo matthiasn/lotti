@@ -45,22 +45,42 @@ def response_billing(body, content_type, content_encoding=""):
         else:
             packets = [json.loads(text, parse_float=Decimal)]
         billing = None
-        response_id = None
         for packet in packets:
             if not isinstance(packet, dict):
                 continue
-            response_id = packet.get("id") or response_id
             candidate = packet.get("billing_cost")
             if isinstance(candidate, dict):
-                billing = {
-                    key: str(value) if isinstance(value, (Decimal, int, float))
-                    and not isinstance(value, bool) else value
-                    for key, value in candidate.items()
-                    if key in ("credits", "energy", "paid_with")
-                }
-        return {"responseId": response_id, "billingCost": billing}
+                credits = decimal_amount(candidate.get("credits"))
+                if credits is None:
+                    continue
+                billing = {"credits": str(credits)}
+                energy = decimal_amount(candidate.get("energy"))
+                if energy is not None:
+                    billing["energy"] = str(energy)
+                if candidate.get("paid_with") in ("credits", "energy"):
+                    billing["paid_with"] = candidate["paid_with"]
+        return {"billingCost": billing}
     except (ValueError, OSError, UnicodeError):
-        return {"responseId": None, "billingCost": None}
+        return {"billingCost": None}
+
+
+def safe_response_headers(headers):
+    """Keep SDK-relevant upstream headers without permitting response splitting."""
+    allowed = {
+        "content-encoding": "Content-Encoding",
+        "content-length": "Content-Length",
+        "content-type": "Content-Type",
+        "retry-after": "Retry-After",
+        "x-request-id": "X-Request-ID",
+        "x-ratelimit-limit-requests": "X-RateLimit-Limit-Requests",
+        "x-ratelimit-remaining-requests": "X-RateLimit-Remaining-Requests",
+        "x-ratelimit-reset-requests": "X-RateLimit-Reset-Requests",
+    }
+    return [
+        (allowed[key.lower()], value)
+        for key, value in headers
+        if key.lower() in allowed and "\r" not in value and "\n" not in value
+    ]
 
 
 class BillingRelay:
@@ -82,6 +102,8 @@ class BillingRelay:
             "timestamp": datetime.now(timezone.utc).isoformat(), **fields,
         }
         with self.lock, self.ledger.open("a", encoding="utf-8") as output:
+            # lgtm[py/clear-text-storage-sensitive-data] Provider payloads are
+            # reduced to validated numeric billing fields and a fixed enum.
             output.write(json.dumps(record, ensure_ascii=False) + "\n")
             output.flush()
 
@@ -122,7 +144,7 @@ class BillingRelay:
                 request_id = uuid.uuid4().hex
                 connection = None
                 sent_headers = False
-                billing = {"responseId": None, "billingCost": None}
+                billing = {"billingCost": None}
                 status = None
                 error = None
                 body = self.read_body()
@@ -152,9 +174,8 @@ class BillingRelay:
                     response = connection.getresponse()
                     status = response.status
                     self.send_response_only(status, response.reason)
-                    for key, value in response.getheaders():
-                        if key.lower() not in {"connection", "transfer-encoding", "keep-alive"}:
-                            self.send_header(key, value)
+                    for key, value in safe_response_headers(response.getheaders()):
+                        self.send_header(key, value)
                     self.end_headers()
                     sent_headers = True
                     chunks = []

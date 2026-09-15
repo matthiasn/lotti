@@ -105,6 +105,8 @@ def record_history(root, record):
         rows.sort(key=lambda row: row["runId"])
         path.parent.mkdir(parents=True, exist_ok=True)
         temporary = root / "build/lotti_gym_history.jsonl.tmp"
+        # lgtm[py/clear-text-storage-sensitive-data] history_record projects
+        # only public aggregate fields; its tests reject private source fields.
         temporary.write_text("".join(json.dumps(row, sort_keys=True, ensure_ascii=False) + "\n" for row in rows))
         temporary.replace(path)
 

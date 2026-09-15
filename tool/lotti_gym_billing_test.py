@@ -13,7 +13,12 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 from tool import lotti_gym as gym
-from tool.lotti_gym_billing import BillingRelay, response_billing, summarize_billing
+from tool.lotti_gym_billing import (
+    BillingRelay,
+    response_billing,
+    safe_response_headers,
+    summarize_billing,
+)
 
 
 @contextlib.contextmanager
@@ -147,6 +152,32 @@ class BillingTest(unittest.TestCase):
         body = b'{"billing_cost":{"credits":0.1234567890123456789012345678,"paid_with":"credits"}}'
         result = response_billing(gzip.compress(body), "application/json", "gzip")
         self.assertEqual(result["billingCost"]["credits"], "0.1234567890123456789012345678")
+
+    def test_response_billing_discards_private_and_unvalidated_metadata(self):
+        body = json.dumps({
+            "id": "PRIVATE RESPONSE ID",
+            "billing_cost": {
+                "credits": "0.25",
+                "energy": "PRIVATE ENERGY",
+                "paid_with": "PRIVATE PAYMENT SOURCE",
+                "memo": "PRIVATE MEMO",
+            },
+        }).encode()
+        result = response_billing(body, "application/json")
+        self.assertEqual(result, {"billingCost": {"credits": "0.25"}})
+        self.assertNotIn("PRIVATE", json.dumps(result))
+
+    def test_response_headers_are_allowlisted_and_reject_line_breaks(self):
+        result = safe_response_headers([
+            ("Content-Type", "application/json"),
+            ("Content-Length", "12"),
+            ("Retry-After", "5\r\nX-Injected: yes"),
+            ("X-Private-Metadata", "secret"),
+        ])
+        self.assertEqual(result, [
+            ("Content-Type", "application/json"),
+            ("Content-Length", "12"),
+        ])
 
     def test_unknown_and_cancelled_calls_never_become_a_full_price(self):
         path = self.directory / "billing.jsonl"

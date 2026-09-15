@@ -263,7 +263,10 @@ instrument, not another inference provider. It observes ordinary JSON and final
 SSE billing packets, independently of artifact parsing or test success. It keeps
 reading an in-flight provider response after a worker disconnects so a returned
 bill is not lost. Each attempt's append-only `billing*.jsonl` records request
-identity and billing metadata, never authorization headers or message content.
+identity and validated numeric billing metadata, never provider response IDs,
+authorization headers, prompts, generated content or arbitrary provider fields.
+The relay forwards only SDK-relevant response headers from a fixed allowlist and
+rejects any header value containing a line break.
 
 The full run price includes failed requests when billed, all retries, report
 preparation, helper-model calls, compaction digests and judge retries. Decimal

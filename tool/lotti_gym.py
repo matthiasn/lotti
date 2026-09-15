@@ -47,6 +47,8 @@ def atomic_json(path, value):
     """Replace a checkpoint atomically; a killed writer leaves the old one intact."""
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(path.name + ".tmp")
+    # lgtm[py/clear-text-storage-sensitive-data] Connection credentials are
+    # excluded before manifests, checkpoints and aggregate summaries reach here.
     temporary.write_text(
         json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
@@ -1073,6 +1075,8 @@ def main(argv=None):
             )
             cost = summary["cost"]
             cost_label = "Run spend so far" if summary["verdict"] == "incomplete" else "Run price"
+            # lgtm[py/clear-text-logging-sensitive-data] These fields are
+            # validated numeric billing aggregates and public request counts.
             print(
                 f"{cost_label} (EUR equivalent): {cost['totalCostEur']}"
                 if cost["complete"] else
