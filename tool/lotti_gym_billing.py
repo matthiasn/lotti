@@ -104,8 +104,9 @@ class BillingRelay:
             "timestamp": datetime.now(timezone.utc).isoformat(), **fields,
         }
         with self.lock, self.ledger.open("a", encoding="utf-8") as output:
-            # lgtm[py/clear-text-storage-sensitive-data] Provider payloads are
-            # reduced to validated numeric billing fields and a fixed enum.
+            # Provider payloads are reduced to validated numeric billing fields
+            # and a fixed enum before this deliberate accounting sink.
+            # codeql[py/clear-text-storage-sensitive-data]
             output.write(json.dumps(record, ensure_ascii=False) + "\n")
             output.flush()
 
