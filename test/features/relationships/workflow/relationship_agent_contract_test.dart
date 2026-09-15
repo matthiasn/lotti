@@ -133,6 +133,14 @@ void main() {
       relationshipPendingUserMessageHeader,
       contains('REQUIRED: call reply_to_user in this response'),
     );
+    expect(
+      relationshipReplyRequiredInstruction,
+      contains('pending user message is still unanswered'),
+    );
+    expect(
+      relationshipReplyRequiredInstruction,
+      contains('Call reply_to_user now with your complete answer'),
+    );
   });
 
   test('tool names keep the uniform verb_relationship_noun prefix', () {

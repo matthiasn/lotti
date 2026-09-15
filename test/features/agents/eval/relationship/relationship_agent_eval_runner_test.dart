@@ -418,6 +418,41 @@ void main() {
         RelationshipAgentEvalFailureCategory.missingExpectedToolCall,
       );
     });
+
+    test(
+      'a report-only interactive turn requires the production reply retry',
+      () {
+        final scenario = scenarioById('dl_reply_and_brief');
+
+        expect(
+          relationshipAgentEvalNeedsForcedReply(
+            scenario: scenario,
+            toolCalls: [briefing()],
+            assistantContent: '',
+            exchangeIndex: 0,
+          ),
+          isTrue,
+        );
+        expect(
+          relationshipAgentEvalNeedsForcedReply(
+            scenario: scenario,
+            toolCalls: [briefing(), reply('Call about the interview.')],
+            assistantContent: '',
+            exchangeIndex: 0,
+          ),
+          isFalse,
+        );
+        expect(
+          relationshipAgentEvalNeedsForcedReply(
+            scenario: scenario,
+            toolCalls: [briefing()],
+            assistantContent: 'Call about the interview.',
+            exchangeIndex: 0,
+          ),
+          isFalse,
+        );
+      },
+    );
   });
 
   group('classifyRelationshipAgentResult — verdicts and tone', () {

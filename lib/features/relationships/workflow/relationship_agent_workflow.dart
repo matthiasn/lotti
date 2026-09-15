@@ -568,9 +568,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
               agentId: agentId,
               runKey: runKey,
               threadId: threadId,
-              instruction:
-                  'The pending user message is still unanswered. Call '
-                  'reply_to_user now with your complete answer.',
+              instruction: relationshipReplyRequiredInstruction,
             ),
           );
         }

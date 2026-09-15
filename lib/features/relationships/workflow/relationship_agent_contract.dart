@@ -102,6 +102,12 @@ const relationshipPendingUserMessageHeader =
     'PENDING USER MESSAGE:\n'
     'REQUIRED: call reply_to_user in this response exactly once.';
 
+/// Focused recovery instruction for an interactive turn with no visible
+/// answer. Shared by the production workflow and its inference eval.
+const relationshipReplyRequiredInstruction =
+    'The pending user message is still unanswered. Call reply_to_user now '
+    'with your complete answer.';
+
 /// Instruction appended to the FACTS block when the user explicitly
 /// requested a fresh briefing. Shared with the eval suite for the same
 /// reason as [relationshipPendingUserMessageHeader].

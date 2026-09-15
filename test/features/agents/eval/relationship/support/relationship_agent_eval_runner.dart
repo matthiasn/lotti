@@ -723,6 +723,29 @@ bool _matchesExpectedValue(Object? actual, Object? expected) {
 String relationshipAgentEvalWakeRunKey(String modelId, String scenarioId) =>
     'relationship-eval:$scenarioId:$modelId';
 
+/// Whether production would issue its focused reply recovery for this
+/// interactive exchange.
+bool relationshipAgentEvalNeedsForcedReply({
+  required RelationshipAgentEvalScenario scenario,
+  required List<RelationshipAgentEvalToolCall> toolCalls,
+  required String assistantContent,
+  required int exchangeIndex,
+}) {
+  final isInteractiveExchange = exchangeIndex == 0
+      ? scenario.pendingUserMessage != null
+      : exchangeIndex <= scenario.followUpUserMessages.length;
+  if (!isInteractiveExchange || assistantContent.trim().isNotEmpty) {
+    return false;
+  }
+  return !toolCalls.any(
+    (call) =>
+        call.exchangeIndex == exchangeIndex &&
+        call.name == RelationshipAgentToolNames.replyToUser &&
+        (call.jsonObjectArguments?['message'] as String?)?.trim().isNotEmpty ==
+            true,
+  );
+}
+
 class RelationshipAgentInferenceEvalRunner {
   RelationshipAgentInferenceEvalRunner({
     required this.provider,
@@ -824,11 +847,30 @@ class RelationshipAgentInferenceEvalRunner {
         }
       }
 
-      strategy.beginExchange(0);
-      await exchange(scenario.facts);
+      Future<void> runExchange({
+        required int exchangeIndex,
+        required String message,
+      }) async {
+        strategy.beginExchange(exchangeIndex);
+        final messagesBefore = manager?.messages.length ?? 0;
+        await exchange(message);
+        final assistantContent = _assistantContent(
+          manager,
+          startAt: messagesBefore,
+        );
+        if (relationshipAgentEvalNeedsForcedReply(
+          scenario: scenario,
+          toolCalls: strategy.toolCalls,
+          assistantContent: assistantContent,
+          exchangeIndex: exchangeIndex,
+        )) {
+          await exchange(relationshipReplyRequiredInstruction);
+        }
+      }
+
+      await runExchange(exchangeIndex: 0, message: scenario.facts);
       for (final (index, followUp) in scenario.followUpUserMessages.indexed) {
-        strategy.beginExchange(index + 1);
-        await exchange(followUp);
+        await runExchange(exchangeIndex: index + 1, message: followUp);
       }
 
       final assistantContent = _assistantContent(manager);
@@ -865,9 +907,10 @@ class RelationshipAgentInferenceEvalRunner {
     }
   }
 
-  String _assistantContent(ConversationManager? manager) {
+  String _assistantContent(ConversationManager? manager, {int startAt = 0}) {
     if (manager == null) return '';
     return manager.messages
+        .skip(startAt)
         .map(
           (message) => message.mapOrNull(assistant: (m) => m.content) ?? '',
         )
