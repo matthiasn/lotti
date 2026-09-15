@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -14,6 +16,13 @@ import 'test_bench.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  /// The manual trigger while a run is in flight — scoped to the button so a
+  /// "Thinking…" elsewhere on the card could never satisfy it.
+  Finder thinkingTrigger() => find.descendant(
+    of: find.byKey(const ValueKey('taskAgentWakeButton')),
+    matching: find.text('Thinking…'),
+  );
 
   group('AiSummaryCard – Wake affordances', () {
     testWidgets('shows the manual wake CTA when the agent is idle', (
@@ -115,6 +124,104 @@ void main() {
         });
       },
     );
+
+    testWidgets(
+      'a running wake reads Out of date, whichever way it was started',
+      (tester) async {
+        // The summary on screen is the one the run is replacing, and the
+        // fresh watermark is written only once the wake succeeds — so a
+        // state that is not (yet) stale must still not read "Up to date"
+        // beside "Thinking…". Both ways a run starts: the countdown firing,
+        // which the card hides while it runs, and Update now on a fresh
+        // report.
+        for (final scheduled in [true, false]) {
+          await withClock(Clock.fixed(DateTime(2026, 5, 4, 12)), () async {
+            final bench = AgentTestBench(
+              identity: makeTestIdentity().copyWith(
+                config: AgentConfig(automaticUpdatesEnabled: scheduled),
+              ),
+              state: makeTestState(
+                nextWakeAt: scheduled ? DateTime(2026, 5, 4, 12, 0, 30) : null,
+              ).copyWith(reportFreshAt: DateTime(2026, 5, 4, 11)),
+              isRunning: true,
+              report: makeTestReport(tldr: 'Old summary.'),
+            );
+
+            await tester.pumpWidget(bench.build());
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
+          });
+
+          final reason = 'scheduled=$scheduled';
+          expect(thinkingTrigger(), findsOneWidget, reason: reason);
+          // Only the scheduled path has a countdown to withdraw.
+          if (scheduled) {
+            expect(find.textContaining('0:30'), findsNothing, reason: reason);
+          }
+          expect(find.text('Out of date'), findsOneWidget, reason: reason);
+          expect(find.text('Up to date'), findsNothing, reason: reason);
+          expect(
+            find.byKey(const ValueKey('taskAgentStaleGlyph')),
+            findsOneWidget,
+            reason: reason,
+          );
+        }
+      },
+    );
+
+    testWidgets('the word flips to Up to date only once the run has ended', (
+      tester,
+    ) async {
+      final runningController = StreamController<bool>.broadcast();
+      addTearDown(runningController.close);
+      final wakeAt = DateTime(2026, 5, 4, 12, 0, 30);
+      var clockNow = DateTime(2026, 5, 4, 12);
+
+      await withClock(Clock(() => clockNow), () async {
+        final bench = AgentTestBench(
+          identity: makeTestIdentity().copyWith(
+            config: const AgentConfig(automaticUpdatesEnabled: true),
+          ),
+          state: makeTestState(
+            nextWakeAt: wakeAt,
+          ).copyWith(reportFreshAt: DateTime(2026, 5, 4, 11)),
+          report: makeTestReport(tldr: 'Old summary.'),
+          isRunningOverride: (ref, agentId) async* {
+            yield false;
+            yield* runningController.stream;
+          },
+        );
+
+        await tester.pumpWidget(bench.build());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Scheduled: the countdown is the evidence, and the word agrees.
+        expect(find.textContaining('0:30'), findsOneWidget);
+        expect(find.text('Out of date'), findsOneWidget);
+
+        // The deadline passes and the wake fires: the card withdraws the
+        // countdown and the trigger spins. This is the frame that used to
+        // read "Up to date".
+        clockNow = wakeAt;
+        runningController.add(true);
+        await tester.pump();
+        await tester.pump();
+        expect(find.textContaining('0:30'), findsNothing);
+        expect(thinkingTrigger(), findsOneWidget);
+        expect(find.text('Out of date'), findsOneWidget);
+        expect(find.text('Up to date'), findsNothing);
+
+        // The run ends with a state that is not stale: only now may the
+        // word say so.
+        runningController.add(false);
+        await tester.pump();
+        await tester.pump();
+        expect(thinkingTrigger(), findsNothing);
+        expect(find.text('Up to date'), findsOneWidget);
+        expect(find.text('Out of date'), findsNothing);
+      });
+    });
 
     testWidgets(
       'automatic updates off stays prominent and keeps manual wake available',

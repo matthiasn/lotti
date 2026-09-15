@@ -5,7 +5,7 @@ description: The AI summary card and its proposal choreography, the internals pa
 resource: ../../../lib/features/agents/ui
 tags: [agents, ui, motion, accessibility]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-13T00:50:11Z }
+generated: { by: claude-code/fable-5.1, at: 2026-09-14T12:00:00Z }
 stale_after: 2026-10-12
 sources:
   - id: ui
@@ -19,7 +19,7 @@ sources:
   - id: automation-row
     resource: ../../../lib/features/agents/ui/agent_automation_row.dart
     title: Shared agent report automation controls
-    last_modified: 2026-08-13
+    last_modified: 2026-09-14
   - id: motion
     resource: ../../../lib/features/design_system/theme/motion_tokens.dart
     title: Motion tokens
@@ -225,13 +225,28 @@ is measured in the *painted* style: tabular figures change digit advance, and
 measuring without them clips the payload.
 
 Freshness is a glyph **and** a word, never colour alone; the full sentence lives
-in the tooltip. **A visible countdown is itself proof the summary is behind**:
-`AgentAutomationRow` derives one outdated flag — the caller's `isStale` OR a
-ticking countdown — and the glyph, word and tooltip all read that flag, so the
-band never says "Up to date" beside "Next update in …", even when the caller's
-staleness watermark has not caught up with the scheduled wake. With automation on and nothing pending the line reads "Updates
-on changes", so flipping the switch never leaves a hole that resizes
-the card. The whole switch row is the interaction target — tapping the label
+in the tooltip. **A visible countdown, or a report refresh in flight, is itself
+proof the summary is behind**: `AgentAutomationRow` derives one outdated flag —
+the caller's `isStale` OR a ticking countdown OR the run in flight — and the
+glyph, word and tooltip all read that flag. So the band never says "Up to date"
+beside "Next update in …", even when the caller's staleness watermark has not
+caught up with the scheduled wake — and never beside "Thinking…" either. The
+summary on screen is the one the run is replacing, and `reportFreshAt` is
+written only once the wake succeeds (see
+[task agents](task-agents.md#freshness-watermarks)), so the word flips to "Up
+to date" only after the run has ended, and a failed run leaves it reading
+whatever the watermark says. Both cards hide the countdown while a run is in
+flight, which is exactly when the caller's flag is most likely still `false`:
+without the running term, that frame read "Up to date" with the spinner beside
+it. Which runs count is the caller's to say: `isRunning` (agent-wide, and what
+keeps the trigger busy) is the default, right for task agents whose every
+completed wake advances the watermark; the goal page passes
+`goalReportWakeInFlightProvider` as `isRefreshingReport`, because a goal
+agent's chat replies and Phase A subscription ticks hold the same lock without
+touching the read, and must not declare a fresh one out of date. With
+automation on and nothing pending
+the line reads "Updates on changes", so flipping the switch never leaves a
+hole that resizes the card. The whole switch row is the interaction target — tapping the label
 toggles the setting — on the band's shared `spacing.step8` minimum; the switch's
 own 40×24 track is too short in one dimension to be the target by itself. When
 setup is missing, the disabled toggle explains itself via an info tooltip and

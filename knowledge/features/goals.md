@@ -5,13 +5,13 @@ description: Goal-driven agents — the deterministic Phase A tier evaluating cr
 resource: ../../lib/features/goals
 tags: [goals, agents, runtime, wake, evaluation]
 status: draft
-generated: { by: codex/gpt-6, at: 2026-09-12T20:00:00Z }
+generated: { by: claude-code/fable-5.1, at: 2026-09-15T09:00:00Z }
 stale_after: 2027-02-22
 sources:
   - id: goals-src
     resource: ../../lib/features/goals
     title: Goals feature source
-    last_modified: 2026-09-12
+    last_modified: 2026-09-15
   - id: phase-a
     resource: ../../lib/features/goals/runtime/goal_agent_phase_a.dart
     title: GoalAgentPhaseA — the deterministic tick
@@ -923,7 +923,11 @@ See [profile resolution](ai/profile-resolution.md) for failure and precedence ru
   last failure's reason in an error line above the automation row. The line
   hides while a report wake runs (`goalReportWakeInFlightProvider`: the
   refresh workspace or any `goal-escalation:` workspace — never the
-  agent-wide flag, which every chat and subscription tick flips), clears on
+  agent-wide flag, which every chat and subscription tick flips). The
+  automation row's freshness word reads that same scoped flag
+  (`AgentAutomationRow.isRefreshingReport`): a report refresh in flight
+  reads *Out of date* until it lands, while a chat reply that keeps the
+  trigger on "Thinking…" leaves a fresh read fresh. The line clears on
   the next completed report wake, and yields to durable evidence newer than
   the failure's start: a `reportFreshAt` watermark (a successful refresh,
   local or synced) or a displayed report published later — a timed-out

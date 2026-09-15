@@ -70,6 +70,7 @@ class AgentAutomationRow extends StatefulWidget {
     required this.onCountdownExpired,
     this.compact = false,
     this.showsIdleScheduleLabel = true,
+    this.isRefreshingReport,
     super.key,
   });
 
@@ -90,7 +91,21 @@ class AgentAutomationRow extends StatefulWidget {
   final bool automaticUpdatesEnabled;
   final bool automationBusy;
   final bool inferenceAvailable;
+
+  /// Whether any run currently holds this agent. The manual trigger reads
+  /// "Thinking…" and is disabled for as long as it does — the runner admits
+  /// one wake per agent at a time, whatever that wake is for.
   final bool isRunning;
+
+  /// Whether the run in flight is rewriting the report this row describes.
+  ///
+  /// `null` means "assume so", which is right for task agents: every one of
+  /// their completed wakes advances the fresh watermark. A surface whose
+  /// agent also runs for other reasons — a goal agent's chat replies and
+  /// subscription ticks hold the same lock without touching the read — passes
+  /// its report-scoped flag here, so the word does not declare a fresh read
+  /// out of date while an unrelated run keeps the trigger busy.
+  final bool? isRefreshingReport;
   final bool showCountdown;
   final DateTime? nextWakeAt;
 
@@ -100,9 +115,10 @@ class AgentAutomationRow extends StatefulWidget {
   final bool hasReportContent;
 
   /// Whether the current report is stale. Only meaningful when
-  /// [hasReportContent] is true. A pending countdown also counts as stale —
-  /// see [_AgentAutomationRowState._isOutdated] — so a caller that passes
-  /// `false` here while a wake is scheduled still gets an honest label.
+  /// [hasReportContent] is true. A pending countdown and a report refresh in
+  /// flight also count as stale — see [_AgentAutomationRowState._isOutdated]
+  /// and [isRefreshingReport] — so a caller that passes `false` here while a
+  /// wake is scheduled or running still gets an honest label.
   final bool isStale;
   final ValueChanged<bool> onAutomaticUpdatesChanged;
   final VoidCallback? onRunNow;
@@ -174,7 +190,20 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
   /// since the last report, so a ticking countdown is itself proof the
   /// summary is behind — the row must never say "Up to date" beside it, even
   /// when the caller's own staleness flag has not caught up.
-  bool get _isOutdated => widget.isStale || _countdownVisible;
+  ///
+  /// A report refresh in flight is the same proof: the summary on screen is
+  /// the one the run is replacing, and the fresh watermark is written only
+  /// once the wake succeeds. The card withdraws the countdown the moment the
+  /// run starts — exactly when the caller's flag is most likely still
+  /// `false` — so without this term that frame read "Up to date" beside
+  /// "Thinking…". The word flips only after the run has ended, and then
+  /// follows the flag alone: a failed run advances nothing and must not read
+  /// as fresh. Which runs count is the caller's to say
+  /// ([AgentAutomationRow.isRefreshingReport]); by default every run does.
+  bool get _isOutdated =>
+      widget.isStale ||
+      _countdownVisible ||
+      (widget.isRefreshingReport ?? widget.isRunning);
 
   /// The schedule wording at each width tier, longest first, rendered against
   /// [seconds]. Empty when there is nothing to say about the next update.
