@@ -806,7 +806,7 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
     )) {
       case PlazaKeyRouting.chrome:
         return KeyEventResult.ignored;
-      case PlazaKeyRouting.dismiss:
+      case PlazaKeyRouting.toolbar:
       case PlazaKeyRouting.world:
         break;
     }
