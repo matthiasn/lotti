@@ -102,6 +102,10 @@ const relationshipPendingUserMessageHeader =
     'PENDING USER MESSAGE:\n'
     'REQUIRED: call reply_to_user in this response exactly once.';
 
+/// Wraps one interactive turn in the exact marker required by the contract.
+String composeRelationshipPendingUserMessage(String message) =>
+    '$relationshipPendingUserMessageHeader\n$message';
+
 /// Focused recovery instruction for an interactive turn with no visible
 /// answer. Shared by the production workflow and its inference eval.
 const relationshipReplyRequiredInstruction =

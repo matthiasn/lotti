@@ -205,6 +205,17 @@ void main() {
       }
     });
 
+    test('follow-ups use the same production pending-message block', () {
+      final followUp = byId(
+        'dl_follow_up_guidance',
+      ).followUpUserMessages.single;
+
+      expect(
+        composeRelationshipPendingUserMessage(followUp),
+        '$relationshipPendingUserMessageHeader\n$followUp',
+      );
+    });
+
     test('the explicit-refresh scenario appends the refresh instruction', () {
       expect(
         byId('dl_brief_me').facts,

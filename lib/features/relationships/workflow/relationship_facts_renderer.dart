@@ -17,6 +17,32 @@ const relationshipCheckInLookback = 10;
 /// Longest check-in narrative excerpt the FACTS block carries per entry.
 const relationshipNarrativeExcerptChars = 400;
 
+/// Returns the health bands allowed by the newest explicit user sentiment in
+/// the bounded check-in window, or null when the user supplied no sentiment.
+Set<RelationshipHealthBand>? relationshipHealthBandConstraint(
+  List<CheckInEntry> checkIns,
+) {
+  for (final checkIn in relationshipCheckInWindow(checkIns)) {
+    final sentiment = checkIn.data.sentiment;
+    if (sentiment == null) continue;
+    return switch (sentiment) {
+      CheckInSentiment.delightful || CheckInSentiment.good => const {
+        RelationshipHealthBand.thriving,
+        RelationshipHealthBand.steady,
+      },
+      CheckInSentiment.neutral => const {
+        RelationshipHealthBand.steady,
+        RelationshipHealthBand.needsAttention,
+      },
+      CheckInSentiment.strained || CheckInSentiment.difficult => const {
+        RelationshipHealthBand.needsAttention,
+        RelationshipHealthBand.strained,
+      },
+    };
+  }
+  return null;
+}
+
 /// Renders the deterministic FACTS block of a relationship-agent Phase B
 /// wake (the goal facts-renderer shape).
 ///
@@ -88,12 +114,15 @@ class RelationshipFactsRenderer {
     }
 
     final window = relationshipCheckInWindow(checkIns);
-    final newestSentiment = _newestSentiment(window);
+    final newestSentiment = window
+        .map((checkIn) => checkIn.data.sentiment)
+        .whereType<CheckInSentiment>()
+        .firstOrNull;
     buffer.writeln(
       'CHECK-INS (newest first, ${window.length} of ${checkIns.length}):',
     );
     if (newestSentiment != null) {
-      final allowedBands = _allowedHealthBands(newestSentiment);
+      final allowedBands = relationshipHealthBandConstraint(window)!;
       buffer
         ..writeln(
           'HEALTH BAND CONSTRAINT '
@@ -227,30 +256,6 @@ class RelationshipFactsRenderer {
     done: (_) => 'done',
     rejected: (_) => 'rejected',
   );
-
-  CheckInSentiment? _newestSentiment(List<CheckInEntry> checkIns) {
-    for (final checkIn in checkIns) {
-      if (checkIn.data.sentiment case final sentiment?) return sentiment;
-    }
-    return null;
-  }
-
-  List<RelationshipHealthBand> _allowedHealthBands(
-    CheckInSentiment sentiment,
-  ) => switch (sentiment) {
-    CheckInSentiment.delightful || CheckInSentiment.good => const [
-      RelationshipHealthBand.thriving,
-      RelationshipHealthBand.steady,
-    ],
-    CheckInSentiment.neutral => const [
-      RelationshipHealthBand.steady,
-      RelationshipHealthBand.needsAttention,
-    ],
-    CheckInSentiment.strained || CheckInSentiment.difficult => const [
-      RelationshipHealthBand.needsAttention,
-      RelationshipHealthBand.strained,
-    ],
-  };
 
   String _healthBandLabel(RelationshipHealthBand band) => switch (band) {
     RelationshipHealthBand.needsAttention => 'needs attention',

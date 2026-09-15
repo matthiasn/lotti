@@ -49,6 +49,7 @@ class RelationshipAgentStrategy extends ConversationStrategy
     required this.runKey,
     required this._activeAdIds,
     this.sourceCheckInIds = const {},
+    this.allowedHealthBands,
   });
 
   @override
@@ -66,6 +67,9 @@ class RelationshipAgentStrategy extends ConversationStrategy
 
   /// Only check-ins actually rendered in this wake may supply evidence.
   final Set<String> sourceCheckInIds;
+
+  /// Sentiment-derived verdict bound rendered into this wake's FACTS.
+  final Set<RelationshipHealthBand>? allowedHealthBands;
   final _deferredItems = <Map<String, dynamic>>[];
 
   /// Deferred mutations; the workflow alone owns their persistence.
@@ -229,6 +233,18 @@ class RelationshipAgentStrategy extends ConversationStrategy
             'Error: update_relationship_report needs healthBand (one of '
             '${relationshipHealthBandNames.join('|')}), a non-empty '
             'healthRationale, oneLiner, tldr and content.',
+      );
+      return;
+    }
+    final allowedBands = allowedHealthBands;
+    if (allowedBands != null && !allowedBands.contains(band)) {
+      await _reject(
+        call: call,
+        manager: manager,
+        error:
+            'Error: healthBand must be one of '
+            '${allowedBands.map((value) => value.name).join('|')} for the '
+            'newest user-set sentiment.',
       );
       return;
     }

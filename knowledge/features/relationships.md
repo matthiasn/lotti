@@ -666,8 +666,10 @@ removed:
   channels are structurally absent from model context, not filtered out. The
   newest user-set sentiment in that window also emits the allowed health
   verdicts in plain language; narrative may explain the verdict but cannot
-  improve that deterministic bound. The exact enum stays confined to the
-  `healthBand` tool field so it cannot leak into user-facing prose.
+  improve that deterministic bound. The workflow passes the same allowed set
+  into `RelationshipAgentStrategy`, which rejects an out-of-range report call
+  before it can persist. The exact enum stays confined to the `healthBand`
+  tool field so it cannot leak into user-facing prose.
 - **Outputs accumulate, then persist once.** The contract requires visible
   chat through `reply_to_user`. On an interactive wake, the workflow accepts
   plain assistant content as a defensive visible-reply fallback and forces one
@@ -675,7 +677,8 @@ removed:
   plain assistant content remains an internal thought. Only the exact
   `PENDING USER MESSAGE:` header, followed by its explicit reply requirement,
   marks an interactive request; the rendered facts block is data and is never
-  itself a user request.
+  itself a user request. Multi-turn eval follow-ups carry that same header and
+  each exchange must independently produce its own visible reply.
   A pending message includes exactly one reply, and the same single assistant
   response still includes every briefing, banner, snooze, and deferred task
   proposal explicitly

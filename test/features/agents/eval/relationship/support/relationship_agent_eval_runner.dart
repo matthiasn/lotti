@@ -375,6 +375,7 @@ RelationshipAgentEvalFailureCategory classifyRelationshipAgentResult({
   required RelationshipAgentEvalScenario scenario,
   required List<RelationshipAgentEvalToolCall> toolCalls,
   required String assistantContent,
+  Set<int> plainReplyFallbackExchanges = const {},
 }) {
   if (scenario.expectsNoToolCalls && toolCalls.isNotEmpty) {
     return RelationshipAgentEvalFailureCategory.noOpViolated;
@@ -534,18 +535,29 @@ RelationshipAgentEvalFailureCategory classifyRelationshipAgentResult({
     return RelationshipAgentEvalFailureCategory.unexpectedToolCall;
   }
 
+  final interactiveExchanges = <int>{
+    if (scenario.pendingUserMessage != null) 0,
+    for (final (index, _) in scenario.followUpUserMessages.indexed) index + 1,
+  };
+  for (final exchangeIndex in interactiveExchanges) {
+    final hasReply = toolCalls.any(
+      (call) =>
+          call.exchangeIndex == exchangeIndex &&
+          call.name == RelationshipAgentToolNames.replyToUser,
+    );
+    if (!hasReply && !plainReplyFallbackExchanges.contains(exchangeIndex)) {
+      return RelationshipAgentEvalFailureCategory.missingExpectedToolCall;
+    }
+  }
+
   for (final expected in scenario.expectedToolCalls) {
     final matching = toolCalls
         .where((call) => call.name == expected.name)
         .toList();
-    // Interactive production wakes persist `replyToUser ?? finalResponse`.
-    // Score the same visible fallback while still requiring its content rules.
-    final productionReplyFallback =
+    final coveredByInteractiveReplyCheck =
         expected.name == RelationshipAgentToolNames.replyToUser &&
-        expected.expectedArgumentsSubset.isEmpty &&
-        scenario.hasPendingUserMessage &&
-        assistantContent.trim().isNotEmpty;
-    if (matching.isEmpty && !productionReplyFallback) {
+        expected.expectedArgumentsSubset.isEmpty;
+    if (matching.isEmpty && !coveredByInteractiveReplyCheck) {
       return RelationshipAgentEvalFailureCategory.missingExpectedToolCall;
     }
     if (matching.isNotEmpty &&
@@ -812,6 +824,7 @@ class RelationshipAgentInferenceEvalRunner {
 
     try {
       InferenceUsage? usage;
+      final plainReplyFallbackExchanges = <int>{};
       Future<void> exchange(String message) async {
         final turnUsage = await conversationRepository.sendMessage(
           conversationId: conversationId,
@@ -858,6 +871,14 @@ class RelationshipAgentInferenceEvalRunner {
           manager,
           startAt: messagesBefore,
         );
+        final hasReply = strategy.toolCalls.any(
+          (call) =>
+              call.exchangeIndex == exchangeIndex &&
+              call.name == RelationshipAgentToolNames.replyToUser,
+        );
+        if (!hasReply && assistantContent.trim().isNotEmpty) {
+          plainReplyFallbackExchanges.add(exchangeIndex);
+        }
         if (relationshipAgentEvalNeedsForcedReply(
           scenario: scenario,
           toolCalls: strategy.toolCalls,
@@ -870,7 +891,10 @@ class RelationshipAgentInferenceEvalRunner {
 
       await runExchange(exchangeIndex: 0, message: scenario.facts);
       for (final (index, followUp) in scenario.followUpUserMessages.indexed) {
-        await runExchange(exchangeIndex: index + 1, message: followUp);
+        await runExchange(
+          exchangeIndex: index + 1,
+          message: composeRelationshipPendingUserMessage(followUp),
+        );
       }
 
       final assistantContent = _assistantContent(manager);
@@ -884,6 +908,7 @@ class RelationshipAgentInferenceEvalRunner {
           scenario: scenario,
           toolCalls: strategy.toolCalls,
           assistantContent: assistantContent,
+          plainReplyFallbackExchanges: plainReplyFallbackExchanges,
         ),
         inputTokens: usage?.inputTokens,
         outputTokens: usage?.outputTokens,

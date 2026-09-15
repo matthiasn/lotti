@@ -377,8 +377,8 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
     );
     if (interactive) {
       factsBlock =
-          '$factsBlock\n\n$relationshipPendingUserMessageHeader\n'
-          '$pendingUserMessage';
+          '$factsBlock\n\n'
+          '${composeRelationshipPendingUserMessage(pendingUserMessage)}';
     }
     if (reportRefresh) {
       factsBlock = '$factsBlock\n\n$relationshipReportRefreshInstruction';
@@ -434,6 +434,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       sourceCheckInIds: {
         for (final entry in relationshipCheckInWindow(checkIns)) entry.id,
       },
+      allowedHealthBands: relationshipHealthBandConstraint(checkIns),
     );
     final tools = [
       for (final tool in relationshipAgentTools)

@@ -100,10 +100,12 @@ void main() {
     String scenarioId,
     List<RelationshipAgentEvalToolCall> toolCalls, {
     String assistantContent = '',
+    Set<int> plainReplyFallbackExchanges = const {},
   }) => classifyRelationshipAgentResult(
     scenario: scenarioById(scenarioId),
     toolCalls: toolCalls,
     assistantContent: assistantContent,
+    plainReplyFallbackExchanges: plainReplyFallbackExchanges,
   );
 
   group('deferred relationship task policy', () {
@@ -176,7 +178,10 @@ void main() {
 
     test('a valid snooze of the FACTS adId passes', () {
       expect(
-        classify('dl_snooze_request', [snooze()]),
+        classify('dl_snooze_request', [
+          snooze(),
+          reply('Okay — I hid the banner until tomorrow evening.'),
+        ]),
         RelationshipAgentEvalFailureCategory.none,
       );
     });
@@ -376,6 +381,18 @@ void main() {
       );
     });
 
+    test('every follow-up exchange requires its own visible reply', () {
+      expect(
+        classify('dl_follow_up_guidance', [
+          reply(
+            'Lead with the interview on the 12th — she was quietly '
+            'hopeful about it.',
+          ),
+        ]),
+        RelationshipAgentEvalFailureCategory.missingExpectedToolCall,
+      );
+    });
+
     test('replies in separate exchanges are separate wakes', () {
       expect(
         classify('dl_band_in_plain_language', [
@@ -407,10 +424,26 @@ void main() {
           assistantContent:
               "I can only help with Tove's relationship check-ins. Ask me "
               'about those instead.',
+          plainReplyFallbackExchanges: const {0},
         ),
         RelationshipAgentEvalFailureCategory.none,
       );
     });
+
+    test(
+      'plain content from the forced retry is not a production fallback',
+      () {
+        expect(
+          classify(
+            'dl_off_topic',
+            const [],
+            assistantContent:
+                "I can only help with Tove's relationship check-ins.",
+          ),
+          RelationshipAgentEvalFailureCategory.missingExpectedToolCall,
+        );
+      },
+    );
 
     test('empty plain content cannot satisfy an interactive reply', () {
       expect(

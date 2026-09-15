@@ -133,8 +133,8 @@ String composeRelationshipWakeMessage({
   var message = facts;
   if (pendingUserMessage != null) {
     message =
-        '$message\n\n$relationshipPendingUserMessageHeader\n'
-        '$pendingUserMessage';
+        '$message\n\n'
+        '${composeRelationshipPendingUserMessage(pendingUserMessage)}';
   }
   if (reportRefresh) {
     message = '$message\n\n$relationshipReportRefreshInstruction';
