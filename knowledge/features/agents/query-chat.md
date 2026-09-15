@@ -263,6 +263,10 @@ checks. Synthesis guidance puts the JSON contract first, requires exact owner
 titles (rendered in bold), and permits an unresolved answer with no owner IDs
 when no factual answer is supported. Malformed JSON or attribution still fails
 validation; the pipeline does not feed errors back for automatic model repair.
+The one deterministic tolerance is a backslash before a character JSON cannot
+escape (models write `\-` for markdown list dashes): `QueryTextInference`
+drops such a backslash and retries the decode, in the final parse and the
+streamed answer prefix alike, and anything still invalid fails as before.
 
 Summary answers have no `QueryEvidence` cards and create no shared durable
 conclusion. The answer itself is saved as chat history with owner visibility

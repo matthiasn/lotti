@@ -263,7 +263,7 @@ class QueryTextInference {
           .replaceFirst(RegExp(r'^```(?:json)?\s*'), '')
           .replaceFirst(RegExp(r'\s*```$'), '');
     }
-    final decoded = jsonDecode(text);
+    final decoded = _decodeModelJson(text);
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException('Expected query object');
     }
@@ -305,7 +305,8 @@ String? _answerPrefix(String response) {
       end++;
     }
   }
-  var answer = jsonDecode('"${text.substring(start.end, end)}"') as String;
+  var answer =
+      _decodeModelJson('"${text.substring(start.end, end)}"')! as String;
   if (answer.isNotEmpty) {
     final last = answer.codeUnitAt(answer.length - 1);
     if (last >= 0xd800 && last <= 0xdbff) {
@@ -313,4 +314,47 @@ String? _answerPrefix(String response) {
     }
   }
   return answer;
+}
+
+/// Decodes model JSON, tolerating the one malformation models keep emitting:
+/// a backslash before a character JSON does not allow escaping.
+///
+/// Models escape markdown punctuation inside string values ("\- Awaiting
+/// re-report"), which strict `jsonDecode` rejects outright — one stray
+/// backslash failed the whole query answer. Valid input decodes unchanged;
+/// only on a [FormatException] are invalid escapes dropped (keeping the
+/// character) and the decode retried, so a genuinely broken payload still
+/// throws.
+Object? _decodeModelJson(String text) {
+  try {
+    return jsonDecode(text);
+  } on FormatException {
+    final repaired = _withoutInvalidJsonEscapes(text);
+    if (repaired == text) rethrow;
+    return jsonDecode(repaired);
+  }
+}
+
+/// Drops each backslash that does not begin a valid JSON escape, walking
+/// escape pairs so an escaped backslash (`\\`) is never split.
+String _withoutInvalidJsonEscapes(String text) {
+  const validEscapes = r'"\/bfnrtu';
+  final buffer = StringBuffer();
+  for (var i = 0; i < text.length; i++) {
+    final char = text[i];
+    if (char != r'\' || i + 1 >= text.length) {
+      buffer.write(char);
+      continue;
+    }
+    final next = text[i + 1];
+    if (validEscapes.contains(next)) {
+      buffer
+        ..write(char)
+        ..write(next);
+    } else {
+      buffer.write(next);
+    }
+    i++;
+  }
+  return buffer.toString();
 }

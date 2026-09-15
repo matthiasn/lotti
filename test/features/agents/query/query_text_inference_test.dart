@@ -162,6 +162,62 @@ void main() {
     );
     expect(shown, ['first']);
   });
+  group('model JSON with an invalid escape', () {
+    // Verbatim shape from a glm-5.3-flash LottiGym run: a markdown list dash
+    // escaped inside a string value failed the whole query preparation.
+    const escaped =
+        r'{"answer":"Verified after two hours of searching.\n\- Awaiting '
+        r're-report from the swapped unit. Path C:\\logs stays."}';
+
+    test('still decodes, keeping the character and valid escapes', () async {
+      final result =
+          await QueryTextInference(
+            generate: (_, _) => Stream.value(escaped),
+          ).complete(
+            system: 'answer',
+            input: {},
+            cancellation: QueryCancellation(),
+          );
+      expect(
+        result['answer'],
+        'Verified after two hours of searching.\n- Awaiting re-report from '
+        r'the swapped unit. Path C:\logs stays.',
+      );
+    });
+
+    test('streams the same answer text while it arrives', () async {
+      final shown = <String>[];
+      final result =
+          await QueryTextInference(
+            generate: (_, _) => Stream.fromIterable([
+              escaped.substring(0, 60),
+              escaped.substring(60),
+            ]),
+          ).complete(
+            system: 'answer',
+            input: {},
+            cancellation: QueryCancellation(),
+            onAnswerText: shown.add,
+          );
+      expect(shown, isNotEmpty);
+      expect(shown.every((text) => text.isNotEmpty), isTrue);
+      expect(shown.last, result['answer']);
+    });
+
+    test('a payload that is broken beyond escapes still throws', () async {
+      await expectLater(
+        QueryTextInference(
+          generate: (_, _) => Stream.value(r'{"answer": "a\- b"'),
+        ).complete(
+          system: 'answer',
+          input: {},
+          cancellation: QueryCancellation(),
+        ),
+        throwsFormatException,
+      );
+    });
+  });
+
   test('synthesis reveals stable answer text before completion', () async {
     final source = StreamController<String>();
     final shown = <String>[];
