@@ -57,6 +57,30 @@ void main() {
       );
     });
 
+    test('keeps the array when the model writes on past its end', () {
+      // Verbatim shape from a glm-5.3-flash gym run: the plan closed its array
+      // and carried straight on with the rest of the arguments in the same
+      // string, so a strict decode stopped at "Extra data".
+      const runOn =
+          '[{"id": "blk-a", "title": "Board deck [draft]", "type": "ai"}, '
+          '{"id": "blk-b", "title": "Buffer", "type": "buffer"}], '
+          '"dayDate": "2026-09-18T00:00:00.000", "dayLabel": "Friday"';
+
+      expect(objectListArg(runOn, 'blocks'), [
+        {'id': 'blk-a', 'title': 'Board deck [draft]', 'type': 'ai'},
+        {'id': 'blk-b', 'title': 'Buffer', 'type': 'buffer'},
+      ]);
+    });
+
+    test('a bracket inside a string value does not end the array', () {
+      const escaped =
+          r'[{"title": "Ship \"v2]\" today", "note": "a ] b"}], "x": 1';
+
+      expect(objectListArg(escaped, 'blocks'), [
+        {'title': 'Ship "v2]" today', 'note': 'a ] b'},
+      ]);
+    });
+
     test('refuses a string that is not a list after all', () {
       // Measured on glm-5.3:speed: the payload opened with `[` and then broke
       // its own quoting (`,start": "...`). Nothing recoverable is in there,

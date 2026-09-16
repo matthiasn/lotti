@@ -654,15 +654,56 @@ List<Object?> objectListArg(Object? raw, String name) {
   if (raw is String) {
     final trimmed = raw.trim();
     if (trimmed.startsWith('[')) {
-      try {
-        final decoded = jsonDecode(trimmed);
-        if (decoded is List) return decoded;
-      } on FormatException {
-        // Falls through to the contract error below.
+      for (final candidate in [trimmed, ?_leadingJsonArray(trimmed)]) {
+        try {
+          final decoded = jsonDecode(candidate);
+          if (decoded is List) return decoded;
+        } on FormatException {
+          // Try the next candidate, then fall through to the contract error.
+        }
       }
     }
   }
   throw DayAgentCaptureException('$name must be an array');
+}
+
+/// The complete JSON array a string opens with, when the string runs on past
+/// it; null when it is the whole string or never closes.
+///
+/// A model can close the array and keep writing the rest of its arguments into
+/// the same string — `"[{…}], \"dayDate\": …"`. The plan itself is intact up
+/// to that bracket, and refusing it cost a finished draft. Brackets inside
+/// string literals are skipped, so a `]` in a block title cannot end the array
+/// early; an array that is itself malformed still fails to decode.
+String? _leadingJsonArray(String text) {
+  var depth = 0;
+  var inString = false;
+  var escaped = false;
+  for (var i = 0; i < text.length; i++) {
+    final char = text[i];
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (char == r'\') {
+        escaped = true;
+      } else if (char == '"') {
+        inString = false;
+      }
+      continue;
+    }
+    switch (char) {
+      case '"':
+        inString = true;
+      case '[' || '{':
+        depth++;
+      case ']' || '}':
+        depth--;
+        if (depth == 0) {
+          return i == text.length - 1 ? null : text.substring(0, i + 1);
+        }
+    }
+  }
+  return null;
 }
 
 /// Whether a raw block is an empty buffer a fresh draft can simply drop.
