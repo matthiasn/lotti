@@ -106,15 +106,28 @@ void main() {
                 'level': 'high',
                 'label': 'morning',
               },
+              // Seconds are part of the form, and anchor to the same day.
+              {
+                'start': '13:15:30',
+                'end': '15:45:05',
+                'level': 'low',
+                'label': 'afternoon',
+              },
             ],
             runKey: _runKey,
           ),
         );
 
-        expect(plan.energyBands, hasLength(1));
-        expect(plan.energyBands.single.start, DateTime(2026, 5, 25, 9));
-        expect(plan.energyBands.single.end, DateTime(2026, 5, 25, 12));
-        expect(plan.energyBands.single.label, 'morning');
+        expect(plan.energyBands, hasLength(2));
+        expect(plan.energyBands.first.start, DateTime(2026, 5, 25, 9));
+        expect(plan.energyBands.first.end, DateTime(2026, 5, 25, 12));
+        expect(plan.energyBands.first.label, 'morning');
+        expect(
+          plan.energyBands.last.start,
+          DateTime(2026, 5, 25, 13, 15, 30),
+        );
+        expect(plan.energyBands.last.end, DateTime(2026, 5, 25, 15, 45, 5));
+        expect(plan.energyBands.last.label, 'afternoon');
       },
     );
 
