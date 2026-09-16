@@ -181,7 +181,16 @@ void main() {
           });
         } catch (error) {
           clock.stop();
-          row.addAll({'passed': false, 'status': error.runtimeType.toString()});
+          // The message, not just the type. Several paths throw a
+          // FormatException — an unparseable payload, a non-object answer, an
+          // oversized response, a streamed draft the final answer contradicts
+          // — and a run recorded only the type, leaving a failed case with no
+          // way to tell which from its artifact.
+          row.addAll({
+            'passed': false,
+            'status': error.runtimeType.toString(),
+            'error': error.toString(),
+          });
         }
         row.addAll({
           'timeToReviewMs': clock.elapsedMicroseconds / 1000,
