@@ -5,13 +5,39 @@ part of 'eval_constraints.dart';
 /// Without this a prioritisation scenario cannot tell a good plan from one
 /// that scheduled the least urgent thing on the list: generic constraints are
 /// all satisfied by a plan containing a single well-formed block.
+///
+/// Only work the model could name is scored. When the wake hides the corpus,
+/// a required id outside [EvalFixtureInputs.referenceableTaskIds] never reached
+/// the prompt — and placing it would fail `noFabricatedTaskIds` — so counting
+/// it as ignored grades an impossible requirement as a model defect. Such ids
+/// stay in the scenario's ground truth and are named in the detail, so the
+/// visibility gap remains readable in the report without polluting the rate.
 EvalConstraintResult scoreRequiredWorkPlaced(EvalRunOutcome outcome) {
   const id = EvalConstraintIds.requiredWorkPlaced;
-  final required = outcome.inputs.requiredTaskIds;
-  if (required.isEmpty) {
+  final inputs = outcome.inputs;
+  if (inputs.requiredTaskIds.isEmpty) {
     return const EvalConstraintResult.notApplicable(
       id,
       'the scenario names no required work',
+    );
+  }
+  final unshown = inputs.visibleTaskIds == null
+      ? const <String>[]
+      : [
+          for (final taskId in inputs.requiredTaskIds)
+            if (!inputs.referenceableTaskIds.contains(taskId)) taskId,
+        ];
+  final required = [
+    for (final taskId in inputs.requiredTaskIds)
+      if (!unshown.contains(taskId)) taskId,
+  ];
+  final unshownNote = unshown.isEmpty
+      ? ''
+      : '; not scored, never shown to the model: ${unshown.join(', ')}';
+  if (required.isEmpty) {
+    return EvalConstraintResult.notApplicable(
+      id,
+      'required work was never shown to the model: ${unshown.join(', ')}',
     );
   }
   final noPlan = _requirePlan(outcome, id);
@@ -21,12 +47,13 @@ EvalConstraintResult scoreRequiredWorkPlaced(EvalRunOutcome outcome) {
     for (final taskId in required)
       if (!placed.contains(taskId)) taskId,
   ];
+  final verdict = missing.isEmpty
+      ? 'placed all ${required.length} task(s) the day turns on'
+      : 'ignored: ${missing.join(', ')}';
   return EvalConstraintResult(
     id: id,
     passed: missing.isEmpty,
-    detail: missing.isEmpty
-        ? 'placed all ${required.length} task(s) the day turns on'
-        : 'ignored: ${missing.join(', ')}',
+    detail: '$verdict$unshownNote',
   );
 }
 

@@ -282,6 +282,59 @@ void main() {
 
       expect(result.passed, isTrue);
     });
+
+    group('with the corpus hidden', () {
+      // The blockedWithoutCorpus shape: the decided leaf and its one-hop
+      // blocker are visible, the root behind that blocker is not.
+      const chain = [
+        EvalCorpusTask(taskId: 'task-a-root', title: 'Root'),
+        EvalCorpusTask(
+          taskId: 'task-b-middle',
+          title: 'Middle',
+          status: 'BLOCKED',
+          blockedBy: ['task-a-root'],
+        ),
+        EvalCorpusTask(
+          taskId: 'task-c-leaf',
+          title: 'Leaf',
+          status: 'BLOCKED',
+          blockedBy: ['task-b-middle'],
+        ),
+      ];
+
+      test('required work the model never saw is not applicable', () {
+        final result = scoreRequiredWorkPlaced(
+          outcome(
+            blocks: [block(id: 'buffer', startHour: 9, endHour: 10)],
+            corpus: chain,
+            decidedTaskIds: const ['task-c-leaf'],
+            visibleTaskIds: const {'task-c-leaf'},
+            requiredTaskIds: const {'task-a-root'},
+          ),
+        );
+
+        expect(result.isApplicable, isFalse);
+        expect(result.detail, contains('never shown to the model'));
+        expect(result.detail, contains('task-a-root'));
+      });
+
+      test('visible required work is still scored beside unshown work', () {
+        final result = scoreRequiredWorkPlaced(
+          outcome(
+            blocks: [block(id: 'buffer', startHour: 9, endHour: 10)],
+            corpus: chain,
+            decidedTaskIds: const ['task-c-leaf'],
+            visibleTaskIds: const {'task-c-leaf'},
+            requiredTaskIds: const {'task-a-root', 'task-b-middle'},
+          ),
+        );
+
+        expect(result.passed, isFalse);
+        expect(result.detail, contains('ignored: task-b-middle'));
+        expect(result.detail, contains('not scored'));
+        expect(result.detail, contains('task-a-root'));
+      });
+    });
   });
 
   group('a run that produced no plan', () {

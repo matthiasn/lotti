@@ -304,10 +304,14 @@ final _omittedAllocationPattern = RegExp(
   caseSensitive: false,
 );
 
+/// Scopes that make a minute count describe something other than the task.
+///
+/// "Only 60 minutes remain inside the working day" is day capacity, not the
+/// task's remainder; reading it as one vetoed a correct partial disclosure.
 final _unrelatedRemainderScopePattern = RegExp(
-  r'\b(?:in|during|for|before|until)\s+'
+  r'\b(?:in|inside|within|during|for|before|until)\s+'
   r'(?:(?:the|a|an|my|our|their|your)\s+)?'
-  r'(?:meeting|workday|calendar|appointment|break)\b',
+  r'(?:meeting|workday|working\s+day|calendar|appointment|break)\b',
   caseSensitive: false,
 );
 
@@ -960,6 +964,15 @@ bool _hasTaskBoundAllocationDenial(
     )) {
       continue;
     }
+    if (_denialSubjectIsAnotherTask(
+      prose,
+      action,
+      taskId: taskId,
+      taskTitle: taskTitle,
+      corpus: corpus,
+    )) {
+      continue;
+    }
     return true;
   }
   final allocationFailurePattern = RegExp(
@@ -1006,6 +1019,73 @@ bool _hasTaskBoundAllocationDenial(
     }
   }
   return false;
+}
+
+/// Whether the task named nearest before a denial, in its sentence, is a
+/// different corpus task.
+///
+/// Models rarely repeat a full title: "Write the onboarding guide" becomes
+/// "so the onboarding guide (120 min, due 2026-09-30) is deliberately deferred
+/// and not scheduled today". The full-title patterns miss that shorthand, and
+/// the comma inside the parenthetical severs the subject from the denial's
+/// comma clause — so the denial fell back to binding the block's own task and
+/// vetoed an honest partial disclosed earlier in the same reason. Matching the
+/// title's object phrase as well keeps a denial whose nearest subject is this
+/// task (by id, title or shorthand) binding.
+bool _denialSubjectIsAnotherTask(
+  String prose,
+  Match action, {
+  required String taskId,
+  required String taskTitle,
+  required List<EvalCorpusTask> corpus,
+}) {
+  final range = _matchClauseRange(prose, action, boundaries: '.;!?\n');
+  final prefix = prose.substring(range.start, action.start);
+  int lastReferenceEnd(String id, String title) {
+    var end = -1;
+    for (final pattern in [
+      ..._taskReferencePatterns(id, title),
+      ?_titleShorthandPattern(title),
+    ]) {
+      for (final reference in pattern.allMatches(prefix)) {
+        if (reference.end > end) end = reference.end;
+      }
+    }
+    return end;
+  }
+
+  // "this task is not scheduled today" names the block's own task without a
+  // title, so a self-reference counts as the nearest mention of this task.
+  var current = lastReferenceEnd(taskId, taskTitle);
+  for (final reference in _currentTaskSelfReference.allMatches(prefix)) {
+    if (reference.end > current) current = reference.end;
+  }
+  return corpus
+      .where((task) => task.taskId != taskId)
+      .any((task) => lastReferenceEnd(task.taskId, task.title) > current);
+}
+
+/// A reference to the block's own task without naming it: "this task",
+/// "the current task", "this block".
+final RegExp _currentTaskSelfReference = RegExp(
+  r'\b(?:this|the current|the same)\s+(?:task|block|work|item)\b',
+  caseSensitive: false,
+);
+
+/// The object phrase of a verb-led title — "Write the onboarding guide" is
+/// referred to as "onboarding guide". Null when fewer than two words remain,
+/// since a single common noun ("expenses") is too weak to bind a subject.
+RegExp? _titleShorthandPattern(String title) {
+  var words = title.trim().split(RegExp(r'\s+')).skip(1).toList();
+  if (words.isNotEmpty &&
+      RegExp(r'^(?:the|a|an)$', caseSensitive: false).hasMatch(words.first)) {
+    words = words.skip(1).toList();
+  }
+  if (words.length < 2) return null;
+  return RegExp(
+    r'(?:^|[^\w-])' + RegExp.escape(words.join(' ')) + r'(?=$|[^\w-])',
+    caseSensitive: false,
+  );
 }
 
 bool _allocationFailureHasExplicitNonTaskScope(

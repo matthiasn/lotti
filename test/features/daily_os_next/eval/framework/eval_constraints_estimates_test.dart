@@ -3905,4 +3905,287 @@ void main() {
       );
     }, tags: 'glados');
   });
+
+  group('withinCapacityByEstimate on measured baseline prose', () {
+    // Verbatim reasons from a deepseek-v4.1-flash day-planning baseline
+    // (2026-09-15). Each plan fits once its honest partial is credited, and
+    // each was charged the full estimate by a pattern misreading the prose.
+    PlannedBlock minuteBlock({
+      required String id,
+      required (int, int) start,
+      required (int, int) end,
+      String? taskId,
+      String? reason,
+      PlannedBlockType type = PlannedBlockType.ai,
+    }) => PlannedBlock(
+      id: id,
+      categoryId: 'cat-1',
+      startTime: DateTime(2026, 7, 18, start.$1, start.$2),
+      endTime: DateTime(2026, 7, 18, end.$1, end.$2),
+      taskId: taskId,
+      reason: reason,
+      title: id,
+      type: type,
+    );
+
+    group('lateStart', () {
+      const corpus = [
+        EvalCorpusTask(
+          taskId: 'task-long-migration',
+          title: 'Finish the database migration',
+          estimateMinutes: 180,
+        ),
+        EvalCorpusTask(
+          taskId: 'task-short-invoice',
+          title: 'Send the overdue client invoice',
+          estimateMinutes: 30,
+        ),
+        EvalCorpusTask(
+          taskId: 'task-short-replies',
+          title: 'Reply to the outstanding emails',
+          estimateMinutes: 25,
+        ),
+      ];
+
+      EvalConstraintResult score(String migrationReason) =>
+          scoreWithinCapacityByEstimate(
+            outcome(
+              blocks: [
+                minuteBlock(
+                  id: 'blk-invoice',
+                  taskId: 'task-short-invoice',
+                  start: (15, 5),
+                  end: (15, 35),
+                  reason:
+                      'Already a day overdue and only 30 minutes — the '
+                      'highest-value thing that can still be closed today in '
+                      'the 115 minutes left after the late start.',
+                ),
+                minuteBlock(
+                  id: 'blk-replies',
+                  taskId: 'task-short-replies',
+                  start: (15, 35),
+                  end: (16, 0),
+                  reason:
+                      '25-minute low-friction task that clears the inbox '
+                      'before the longer focus block; fits the remaining '
+                      'clock alongside the invoice.',
+                ),
+                minuteBlock(
+                  id: 'blk-migration',
+                  taskId: 'task-long-migration',
+                  start: (16, 0),
+                  end: (17, 0),
+                  reason: migrationReason,
+                ),
+              ],
+              corpus: corpus,
+              now: DateTime(2026, 7, 18, 15),
+            ),
+          );
+
+      test('day-scope minutes are not read as the task remainder', () {
+        final result = score(
+          'PARTIAL: the migration is estimated at 180 minutes but only 60 '
+          'minutes remain inside the working day after the invoice and '
+          'replies. Placing the final hour as a focused continuation; roughly '
+          '120 minutes remain unscheduled and need a later slot or a '
+          're-scoped estimate.',
+        );
+
+        expect(result.passed, isTrue, reason: result.detail);
+        expect(
+          result.detail,
+          contains('task-long-migration 60min partial of 180min'),
+        );
+      });
+
+      test('a remainder that contradicts the block still fails', () {
+        final result = score(
+          'PARTIAL: the migration is estimated at 180 minutes but only 60 '
+          'minutes remain inside the working day after the invoice and '
+          'replies. Roughly 30 minutes remain unscheduled.',
+        );
+
+        expect(result.passed, isFalse);
+        expect(result.detail, contains('over by 120'));
+      });
+    });
+
+    group('crowdedDay', () {
+      const corpus = [
+        EvalCorpusTask(
+          taskId: 'task-overdue-invoice',
+          title: 'Send the overdue client invoice',
+          estimateMinutes: 30,
+        ),
+        EvalCorpusTask(
+          taskId: 'task-due-today-review',
+          title: 'Review the security questionnaire',
+          estimateMinutes: 90,
+        ),
+        EvalCorpusTask(
+          taskId: 'task-inprogress-migration',
+          title: 'Finish the database migration',
+          estimateMinutes: 180,
+        ),
+        EvalCorpusTask(
+          taskId: 'task-deep-architecture',
+          title: 'Draft the sync architecture proposal',
+          estimateMinutes: 150,
+        ),
+        EvalCorpusTask(
+          taskId: 'task-small-expenses',
+          title: 'File expenses',
+          estimateMinutes: 20,
+        ),
+        EvalCorpusTask(
+          taskId: 'task-small-replies',
+          title: 'Reply to the three outstanding emails',
+          estimateMinutes: 25,
+        ),
+        EvalCorpusTask(
+          taskId: 'task-small-booking',
+          title: 'Book the conference travel',
+          estimateMinutes: 20,
+        ),
+        EvalCorpusTask(
+          taskId: 'task-later-onboarding',
+          title: 'Write the onboarding guide',
+          estimateMinutes: 120,
+        ),
+      ];
+
+      EvalConstraintResult score(String architectureReason) =>
+          scoreWithinCapacityByEstimate(
+            outcome(
+              blocks: [
+                minuteBlock(
+                  id: 'blk-invoice',
+                  taskId: 'task-overdue-invoice',
+                  start: (9, 0),
+                  end: (9, 30),
+                  reason:
+                      "Overdue and flagged in this morning's capture — first "
+                      'slot of the day so it cannot slip again.',
+                ),
+                minuteBlock(
+                  id: 'blk-questionnaire',
+                  taskId: 'task-due-today-review',
+                  start: (9, 30),
+                  end: (11, 0),
+                  reason:
+                      'Hard due today at 17:00; placed in the high-energy '
+                      'morning band while attention is fresh.',
+                ),
+                minuteBlock(
+                  id: 'blk-buffer-am',
+                  start: (11, 0),
+                  end: (11, 10),
+                  type: PlannedBlockType.buffer,
+                ),
+                minuteBlock(
+                  id: 'blk-migration',
+                  taskId: 'task-inprogress-migration',
+                  start: (11, 10),
+                  end: (14, 10),
+                  reason:
+                      'Already in progress and called out as half done in the '
+                      'capture; a single 180-minute block matches its estimate '
+                      'so it can actually be finished.',
+                ),
+                minuteBlock(
+                  id: 'blk-lunch',
+                  start: (14, 10),
+                  end: (14, 40),
+                  type: PlannedBlockType.buffer,
+                ),
+                minuteBlock(
+                  id: 'blk-expenses',
+                  taskId: 'task-small-expenses',
+                  start: (14, 40),
+                  end: (15, 0),
+                  reason:
+                      '20-minute admin task batched into the low-energy '
+                      'post-lunch band so it does not fragment the deep-work '
+                      'morning.',
+                ),
+                minuteBlock(
+                  id: 'blk-replies',
+                  taskId: 'task-small-replies',
+                  start: (15, 0),
+                  end: (15, 25),
+                  reason:
+                      'Short correspondence task grouped with the other admin '
+                      'work in the afternoon.',
+                ),
+                minuteBlock(
+                  id: 'blk-booking',
+                  taskId: 'task-small-booking',
+                  start: (15, 25),
+                  end: (15, 45),
+                  reason:
+                      '20-minute errand with no due date; cleared today while '
+                      'the admin batch is already open.',
+                ),
+                minuteBlock(
+                  id: 'blk-buffer-pm',
+                  start: (15, 45),
+                  end: (16, 0),
+                  type: PlannedBlockType.buffer,
+                ),
+                minuteBlock(
+                  id: 'blk-architecture',
+                  taskId: 'task-deep-architecture',
+                  start: (16, 0),
+                  end: (17, 0),
+                  reason: architectureReason,
+                ),
+              ],
+              corpus: corpus,
+            ),
+          );
+
+      test('a partial beside a different deferred task is credited', () {
+        final result = score(
+          "PARTIAL: 60 of the task's 150 minutes — 90 minutes remain for "
+          "another day. Today's 480 available minutes are fully committed by "
+          'the overdue invoice, the questionnaire due today, the in-progress '
+          'migration and the admin batch, so the onboarding guide (120 min, '
+          'due 2026-09-30) is deliberately deferred and not scheduled today.',
+        );
+
+        expect(result.passed, isTrue, reason: result.detail);
+        expect(
+          result.detail,
+          contains('task-deep-architecture 60min partial of 150min'),
+        );
+      });
+
+      test('a self-referring denial after another task still vetoes', () {
+        // From review: the onboarding guide is the nearest title, but "this
+        // task" makes the block's own task the subject of the denial.
+        final result = score(
+          "PARTIAL: 60 of the task's 150 minutes — 90 minutes remain for "
+          'another day. The onboarding guide (120 min) waits for next week, '
+          'but this task is deliberately deferred and not scheduled today.',
+        );
+
+        expect(result.passed, isFalse, reason: result.detail);
+      });
+
+      test('a denial whose subject is this task still vetoes', () {
+        final result = score(
+          "PARTIAL: 60 of the task's 150 minutes — 90 minutes remain for "
+          "another day. Today's 480 available minutes are fully committed by "
+          'the overdue invoice and the admin batch, so the sync architecture '
+          'proposal (150 min, due 2026-09-30) is deliberately deferred and not '
+          'scheduled today.',
+        );
+
+        expect(result.passed, isFalse);
+        expect(result.detail, contains('over by 90'));
+      });
+    });
+  });
 }

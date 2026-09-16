@@ -235,7 +235,15 @@ void main() {
       );
       expect(
         (properties['blocks'] as Map<String, dynamic>)['description'],
-        allOf(contains('closed'), contains('baseline'), contains('unchanged')),
+        allOf(
+          contains('closed'),
+          contains('baseline'),
+          contains('unchanged'),
+          // The writer rejects an empty draft while the window is open; the
+          // schema must say so and name the non-inventive way out.
+          contains('While planning_window is open it must not be empty'),
+          contains('one buffer block whose note says why'),
+        ),
       );
       expect(blockSchema['additionalProperties'], isFalse);
       expect(

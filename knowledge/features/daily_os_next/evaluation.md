@@ -570,11 +570,15 @@ one — which is how the missing `blockedBy` on `decidedTasks` was found and fix
 (see [dependency-aware planning](dependency-aware-planning.md)). Post-fix the
 models decline the blocked leaf instead of placing it blindly, and the pair now
 measures the residual one-hop horizon: the leaf names its immediate blocker, and
-nothing reveals the task behind *that*. `blockedWithoutCorpus` therefore still
-fails `requiredWorkPlaced`, and that failure is the finding rather than a defect —
-its ground truth stays identical to the twin's on purpose, so the gap remains
-attributable to the hidden corpus. Weakening it to match what the model can see
-would delete the signal.
+nothing reveals the task behind *that*. Its ground truth stays identical to the
+twin's on purpose, but **`requiredWorkPlaced` only scores required ids the model
+could reference**: on a wake with the corpus hidden, an id outside
+`referenceableTaskIds` is reported as "never shown to the model" and the
+constraint is inapplicable when nothing else is required. Placing that id would
+fail `noFabricatedTaskIds`, so counting its absence as a miss graded an
+impossible requirement as a model defect — every sample of every model failed it.
+The gap between the pair stays readable: scored on the twin, named but unscored
+here.
 
 Variants are a **matrix dimension rather than a separate run**, so one pass yields
 the A/B. A variant transforms the `DayAgentConfig` a scenario asks for, which is
@@ -666,6 +670,32 @@ blocker it was shown; reading dependency visibility off `statusShown` would repo
 the root as something the model ignored rather than never saw; reporting
 referenceability as if it were the row would print `estimateMinutes` next to "the
 model saw this".
+
+## Known issues from a baseline
+
+A LottiGym baseline of `deepseek-v4.1-flash:speed` (2026-09-15, three samples per
+scenario) scored 14 passed, 8 failed and 2 errors. Most failures were the
+harness's, and were fixed:
+
+- **Empty-draft contract gap** (`restraint` and `blockedWithoutCorpus`
+  `compliedWithoutRejection`, 6/6; `restraint` `noInventedWork`, 1/3). The writer
+  rejects an empty open-window draft, but no prompt text said so; models sent
+  `blocks: []`, were rejected, and one retried with invented manual blocks. The
+  drafting rule and tool schema now ask for a single explanatory `buffer` block,
+  which `noInventedWork` already exempts.
+- **Unreachable requirement** (`blockedWithoutCorpus` `requiredWorkPlaced`, 3/3).
+  Now inapplicable, as described under
+  [scenarios and variants](#scenarios-and-variants).
+- **Partial-prose misreads** (`lateStart` and `crowdedDay`
+  `withinCapacityByEstimate`, 1/3 each). "Only 60 minutes remain inside the
+  working day" was read as the task's remainder, and a denial about a different,
+  shorthand-named task vetoed an honest partial. Both reasons are now regression
+  tests.
+
+Still open, and not scorer defects: both `bindingDirective` errors and the
+failed `day-journey` digest were `DayAgentInferenceTimedOutException` — the
+inference deadline expiring on a slow route — and `day-journey` has no
+deterministic grader yet, so its runs report "require review".
 
 # Running it live
 
