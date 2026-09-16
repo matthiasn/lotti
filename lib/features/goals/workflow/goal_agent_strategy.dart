@@ -220,6 +220,26 @@ class GoalAgentStrategy extends ConversationStrategy
   @override
   String? getContinuationPrompt(ConversationManager manager) => null;
 
+  /// The report, with any section the model wrote beside it moved inside.
+  ///
+  /// Models split the report across two levels — `tldr` and `rollingWindow`
+  /// inside `report`, the other sections as siblings of it — with every
+  /// section present and correct. The strict parser refused the whole report
+  /// and nothing persisted: on glm-5.3-flash that was 9 of 30 compaction
+  /// wakes. A section already inside `report` wins, and only one absent there
+  /// is taken from beside it, so this adds nothing the model did not write and
+  /// a section missing from both places is still refused.
+  static Object? _withSectionsLiftedIntoReport(Map<String, dynamic> args) {
+    final report = args['report'];
+    if (report is! Map<String, dynamic>) return report;
+    final lifted = [
+      for (final key in GoalReportSectionKeys.values)
+        if (!report.containsKey(key) && args.containsKey(key)) key,
+    ];
+    if (lifted.isEmpty) return report;
+    return {...report, for (final key in lifted) key: args[key]};
+  }
+
   Future<void> _handleUpdateReport(
     ChatCompletionMessageToolCall call,
     Map<String, dynamic> args,
@@ -232,15 +252,15 @@ class GoalAgentStrategy extends ConversationStrategy
     final oneLiner = _trimmed(args['oneLiner']);
     final content = _trimmed(args['content']);
     final hasStructuredReport = args.containsKey('report');
-    final structured = GoalStructuredReport.tryParse(args['report']);
+    final reportArg = _withSectionsLiftedIntoReport(args);
+    final structured = GoalStructuredReport.tryParse(reportArg);
     // What the RULES read, which is not what gets persisted. A report the
     // strict parser refused still has text in it, and the rules below are the
     // model's only warning about that text — skipping them because a slot was
     // missing spends the one forced retry on the shape and lets the aggregate
     // rule ambush the retry. Completeness is still judged strictly, from
     // `structured`, so nothing here can make an incomplete report acceptable.
-    final checkable =
-        structured ?? GoalStructuredReport.lenient(args['report']);
+    final checkable = structured ?? GoalStructuredReport.lenient(reportArg);
     final tldr = hasStructuredReport
         ? structured?.tldr ?? ''
         : _trimmed(args['tldr']);

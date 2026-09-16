@@ -121,6 +121,74 @@ void main() {
     expect(strategy.reportContent, isNull);
   });
 
+  group('report sections written beside the report', () {
+    // The exact split a glm-5.3-flash compaction run produced: `tldr` and
+    // `rollingWindow` inside `report`, the other four beside it — every
+    // section present and correct, and all of it refused. 9 of 30 wakes.
+    Map<String, dynamic> split({Map<String, dynamic> extraReport = const {}}) =>
+        {
+          'status': 'achieved',
+          'oneLiner': 'Goal achieved: 10,400 against the 10,000 target.',
+          'currentPeriod': 'The rolling week is complete at 10,400 steps.',
+          'latestChange': '',
+          'coverage': 'Full coverage: 7 of 7 days logged.',
+          'nextActions': {
+            'now': <Object?>[],
+            'later': ['Keep the lunch loop.'],
+          },
+          'report': {
+            'tldr': 'The goal is achieved and holding.',
+            'rollingWindow': 'Rolling 7-day average stands at 10,400.',
+            ...extraReport,
+          },
+        };
+
+    test('are read from beside it and the report is accepted', () async {
+      await strategy.processToolCalls(
+        toolCalls: [
+          _call(name: GoalAgentToolNames.updateGoalReport, args: split()),
+        ],
+        manager: manager,
+      );
+
+      expect(strategy.hasReport, isTrue);
+      expect(strategy.reportStatus, GoalTrackStatus.achieved);
+    });
+
+    test(
+      'a section already inside the report wins over one beside it',
+      () async {
+        await strategy.processToolCalls(
+          toolCalls: [
+            _call(
+              name: GoalAgentToolNames.updateGoalReport,
+              args: split(
+                extraReport: {'coverage': 'Inside: 6 of 7 days logged.'},
+              ),
+            ),
+          ],
+          manager: manager,
+        );
+
+        expect(strategy.hasReport, isTrue);
+        expect(strategy.reportContent, contains('Inside: 6 of 7 days logged.'));
+        expect(strategy.reportContent, isNot(contains('Full coverage')));
+      },
+    );
+
+    test('a section missing from both places is still refused', () async {
+      final args = split()..remove('coverage');
+      await strategy.processToolCalls(
+        toolCalls: [
+          _call(name: GoalAgentToolNames.updateGoalReport, args: args),
+        ],
+        manager: manager,
+      );
+
+      expect(strategy.hasReport, isFalse);
+    });
+  });
+
   test(
     'structured report sections become the persisted visible summary',
     () async {
