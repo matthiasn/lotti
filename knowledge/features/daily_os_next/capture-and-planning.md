@@ -267,17 +267,21 @@ are deliberately distinct, because collapsing any two misleads:
 
 | `<planning_window>` | Meaning |
 |---|---|
-| `{"earliestStart": …, "availableMinutes": …}` | today, still plannable — start here, and this is how much is left |
+| `{"earliestStart": …, "latestEnd": …, "availableMinutes": …}` | today, still plannable — start here, stop by there, and this is how much is left |
 | `{"closed": true}` | today, no usable slot left (no five-minute window before midnight, or no working minutes left) — add no block; a fresh draft may persist an empty terminal artifact |
 | `+ {"capacityMinutes": …, "scheduledMinutes": …}` | added on a refine wake — judge your *net* change against these, alongside whichever row above applies |
-| `{"availableMinutes": …}` | neither `earliestStart` nor `closed` — the day has not begun, so no part of it is past |
+| `{"latestEnd": …, "availableMinutes": …}` | neither `earliestStart` nor `closed` — the day has not begun, so no part of it is past |
 
 Open drafts also require unique block IDs. Historical plans that already
 contain duplicate IDs remain preservable in a closed-window no-op by comparing
 the full block multiset, but no new draft can create another ambiguous plan.
 
 `availableMinutes` is absent from the `closed` row deliberately, and absent
-everywhere when the working hours cannot be parsed.
+everywhere when the working hours cannot be parsed. `latestEnd` is the working
+day's end on the plan day, and is absent on the same terms: the writer rejects
+a block that ends after it, so a window that named only where work may *begin*
+left the model to re-derive the other edge — and a late-day wake spent a whole
+draft overrunning it.
 
 Reading `closed` as `{}` would let a wake at 23:58 plan freely from this
 morning, and the guard would reject every block of it.

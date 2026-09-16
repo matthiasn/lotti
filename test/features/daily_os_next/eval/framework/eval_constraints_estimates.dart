@@ -308,10 +308,16 @@ final _omittedAllocationPattern = RegExp(
 ///
 /// "Only 60 minutes remain inside the working day" is day capacity, not the
 /// task's remainder; reading it as one vetoed a correct partial disclosure.
+///
+/// The scope noun may sit behind a clock time and an `end of`: models write
+/// "before the 17:00 end of the working day", which named the day just as
+/// plainly and still vetoed the disclosure beside it.
 final _unrelatedRemainderScopePattern = RegExp(
   r'\b(?:in|inside|within|during|for|before|until)\s+'
   r'(?:(?:the|a|an|my|our|their|your)\s+)?'
-  r'(?:meeting|workday|working\s+day|calendar|appointment|break)\b',
+  r'(?:\d{1,2}(?::\d{2})?\s+)?'
+  r'(?:(?:end|close)\s+of\s+(?:the\s+)?(?:working\s+day|workday|day)|'
+  r'meeting|workday|working\s+day|calendar|appointment|break)\b',
   caseSensitive: false,
 );
 
@@ -1799,12 +1805,24 @@ bool _referenceAttributesEvidence(
   return prepositionAttaches || allocationToAttaches || labelAttaches;
 }
 
+/// A scope cue binds to its own clause, commas included.
+///
+/// Sentence scope let one clause poison another: "only 60 minutes remain
+/// before the end of the working day, so 120 minutes are left unscheduled"
+/// reads both counts as day capacity, and the task's true remainder standing
+/// right beside it lost its credit.
+const _remainderScopeBoundaries = ',.;!?\n';
+
 bool _remainderIsTaskBound(String reason, Match match) {
   if (_evidenceHasExplicitNonTaskObject(reason, match) ||
       _remainderHasExplicitNonTaskSubject(reason, match)) {
     return false;
   }
-  final clause = _matchClause(reason, match);
+  final clause = _matchClause(
+    reason,
+    match,
+    boundaries: _remainderScopeBoundaries,
+  );
   if (_unrelatedRemainderScopePattern.hasMatch(clause)) return false;
   if (_partialRemainderDispositionPattern.hasMatch(clause)) return true;
   return _partialMentionPattern.hasMatch(reason);
@@ -1816,7 +1834,9 @@ bool _remainderIsRelatedToTask(String reason, Match match) {
     return false;
   }
   if (_remainderIsTaskBound(reason, match)) return true;
-  return !_unrelatedRemainderScopePattern.hasMatch(_matchClause(reason, match));
+  return !_unrelatedRemainderScopePattern.hasMatch(
+    _matchClause(reason, match, boundaries: _remainderScopeBoundaries),
+  );
 }
 
 bool _remainderHasExplicitNonTaskSubject(String reason, Match match) {

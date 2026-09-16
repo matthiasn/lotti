@@ -267,7 +267,10 @@ void main() {
       );
     });
 
-    test('draft_day_plan taskId references drafting.decidedTasks', () {
+    test('draft_day_plan taskId covers corpus work, not only decided', () {
+      // A gym run planned three corpus tasks with no taskId at all and read
+      // the old wording fairly: the scenario had no decided tasks, so the
+      // field looked inapplicable. Those blocks persist linked to nothing.
       final properties =
           parametersFor(DayAgentToolNames.draftDayPlan)['properties']
               as Map<String, dynamic>;
@@ -280,8 +283,33 @@ void main() {
       expect(taskIdSchema['description'], isA<String>());
       expect(
         taskIdSchema['description'] as String,
-        contains('drafting.decidedTasks'),
+        allOf(
+          contains('drafting.decidedTasks'),
+          contains('task corpus'),
+          contains('tracks no time'),
+        ),
       );
+    });
+
+    test('draft_day_plan energy bands state the time format', () {
+      // The band fields were the only times in the schema with no format
+      // note, and models wrote "09:00" for them while getting every block
+      // right — which the writer rejects, losing the whole draft.
+      final properties =
+          parametersFor(DayAgentToolNames.draftDayPlan)['properties']
+              as Map<String, dynamic>;
+      final bandProps =
+          ((properties['energyBands'] as Map<String, dynamic>)['items']
+                  as Map<String, dynamic>)['properties']
+              as Map<String, dynamic>;
+
+      for (final key in ['start', 'end']) {
+        expect(
+          (bandProps[key] as Map<String, dynamic>)['description'],
+          contains('ISO-8601'),
+          reason: key,
+        );
+      }
     });
 
     test('propose_plan_diff documents change-shape schema', () {

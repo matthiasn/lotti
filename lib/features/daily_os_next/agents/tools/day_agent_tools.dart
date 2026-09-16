@@ -299,11 +299,12 @@ const dayAgentTools = <AgentToolDefinition>[
               'taskId': {
                 'type': 'string',
                 'description':
-                    'REQUIRED when the block corresponds to one of the '
-                    'tasks listed under drafting.decidedTasks. Omit only '
-                    'for buffer / calendar blocks that have no backing '
-                    'task, or for manual blocks that do not map to a '
-                    'decided task.',
+                    'REQUIRED whenever the block does the work of a task you '
+                    'were shown — whether it came from drafting.decidedTasks '
+                    'or from the task corpus. It is what links the block to '
+                    'that task, so a block without it tracks no time and '
+                    'moves no status. Omit it only for buffer / calendar '
+                    'blocks that have no backing task.',
               },
               'categoryId': {'type': 'string'},
               'start': {
@@ -363,8 +364,18 @@ const dayAgentTools = <AgentToolDefinition>[
           'items': {
             'type': 'object',
             'properties': {
-              'start': {'type': 'string'},
-              'end': {'type': 'string'},
+              'start': {
+                'type': 'string',
+                'description':
+                    'ISO-8601 band start time on the plan day, like the '
+                    'block times — not a bare "09:00".',
+              },
+              'end': {
+                'type': 'string',
+                'description':
+                    'ISO-8601 band end time on the plan day, like the block '
+                    'times — not a bare "17:00".',
+              },
               'level': {
                 'type': 'string',
                 'enum': ['high', 'low', 'secondWind'],

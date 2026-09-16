@@ -46,7 +46,8 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_parse
         advertisedPlanningStart,
         draftPlanningWindowClosed,
         remainingWorkingMinutes,
-        scheduledMinutesFor;
+        scheduledMinutesFor,
+        workingHourOn;
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_week_context_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_audio_entry_context_service.dart';
