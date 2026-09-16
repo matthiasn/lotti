@@ -365,10 +365,11 @@ String _withEscapedStringLiterals(String text) {
         buffer
           ..write(char)
           ..write(next);
-      } else {
-        buffer.write(next);
+        i++;
       }
-      i++;
+      // An invalid escape drops only its backslash: the character after it is
+      // left for the next iteration, so a raw control character there still
+      // reaches the escaping below instead of being written through raw.
       continue;
     }
     if (inString && char.codeUnitAt(0) < 0x20) {
