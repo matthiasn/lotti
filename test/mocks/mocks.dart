@@ -136,6 +136,7 @@ import 'package:lotti/features/journal/state/linked_from_entries_controller.dart
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
+import 'package:lotti/features/notifications/routing/notification_tap_router.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/nudges/service/nudge_interactions.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
@@ -886,6 +887,8 @@ class MockNotificationRepository extends Mock
     implements NotificationRepository {}
 
 class MockNotificationScheduler extends Mock implements NotificationScheduler {}
+
+class MockNotificationTapRouter extends Mock implements NotificationTapRouter {}
 
 class MockOutboxService extends Mock implements OutboxService {}
 

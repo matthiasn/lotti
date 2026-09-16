@@ -10,6 +10,9 @@ restarts and stay consistent across the user's devices.
 
 - **Tells the user when something is waiting.** Task suggestions and check-in
   reminders surface as real notifications.
+- **Opens what it is about.** Tapping an alert takes the user to the task,
+  the person or the page behind it, whether Lotti is already running or the
+  tap is what starts it.
 - **Reaches a closed app.** An alert can be armed days or weeks ahead, so the
   operating system delivers it whether or not Lotti is running.
 - **Clears everywhere at once.** Dismissing or acting on an alert on one device
@@ -27,8 +30,8 @@ restarts and stay consistent across the user's devices.
 
 The notification store and repository; the scheduling of alerts, including
 re-arming them at startup; the sync of notifications and their lifecycle state;
-convergence when devices act in different orders; and which surface a given
-alert leads to.
+convergence when devices act in different orders; which surface a given alert
+leads to; and the tap on the OS alert that takes the user there.
 
 It does **not** decide when an alert is warranted. Producers own that — the
 change-set builder for task suggestions, the relationship agent's deterministic
@@ -40,6 +43,7 @@ tier for check-in reminders.
 lib/features/notifications/
 ├── model/
 ├── repository/
+├── routing/
 ├── scheduler/
 ├── state/
 └── ui/
@@ -52,7 +56,8 @@ itself is `lib/services/notification_service.dart`.
 
 Why the store is separate, why lifecycle state converges through monotonic
 timestamps rather than whole-row last-write-wins, what Android needed before it
-worked at all, and why some variants stay out of the inbox until they are due,
-are documented in the knowledge bundle:
+worked at all, why some variants stay out of the inbox until they are due, and
+how a tap on the OS alert finds its screen, are documented in the knowledge
+bundle:
 
 **→ [knowledge/features/notifications.md](../../../knowledge/features/notifications.md)**

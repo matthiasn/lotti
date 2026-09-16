@@ -5,7 +5,7 @@ description: Durable app-level alerts stored outside the journal, converging acr
 resource: ../../lib/features/notifications
 tags: [notifications, sync, convergence]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-05T18:00:00Z }
+generated: { by: claude-code/fable-5.1, at: 2026-09-16T14:30:00Z }
 stale_after: 2027-03-01
 sources:
   - id: src
@@ -19,11 +19,23 @@ sources:
   - id: os-boundary
     resource: ../../lib/services/notification_service.dart
     title: NotificationService — the OS delivery boundary
-    last_modified: 2026-09-05
+    last_modified: 2026-09-16
   - id: scheduler
     resource: ../../lib/features/notifications/scheduler/notification_scheduler.dart
     title: NotificationScheduler — rows to OS alarms, and reconcile
-    last_modified: 2026-08-18
+    last_modified: 2026-09-16
+  - id: tap-payload
+    resource: ../../lib/features/notifications/model/notification_tap_payload.dart
+    title: NotificationTapPayload — what a tap carries back
+    last_modified: 2026-09-16
+  - id: tap-router
+    resource: ../../lib/features/notifications/routing/notification_tap_router.dart
+    title: NotificationTapRouter — where a tapped OS alert lands
+    last_modified: 2026-09-16
+  - id: launch-routing
+    resource: ../../lib/features/notifications/routing/notification_launch_routing.dart
+    title: routeNotificationLaunch — the cold-start read of the launching tap
+    last_modified: 2026-09-16
   - id: adr-0039
     resource: ../../docs/adr/0039-relationship-check-in-reminders.md
     title: ADR 0039 — Relationship check-in reminders
@@ -323,12 +335,13 @@ intact through startup.
 
 **It re-arms only rows that are still in the future**, and the asymmetry is the
 whole point. Showing a notification does not mark its row — only `markSeen`,
-`actedOnAt` or `deletedAt` do, all of which come from user action in the bell —
-and no tap handler is wired, so an OS alert cannot clear itself. Re-announcing
-already-due rows would therefore fire a banner for each of them on *every*
-launch, permanently, for alerts the user can already see in the inbox on the
-device in their hand. A due row needs no alarm; a future one is the only thing
-standing between a closed app and a missed reminder.
+`actedOnAt` or `deletedAt` do, all of which come from user action: a tap in
+the bell, or a tap on the OS alert itself (below). An alert nobody taps
+therefore never clears itself, and re-announcing already-due rows would fire a
+banner for each of them on *every* launch, permanently, for alerts the user
+can already see in the inbox on the device in their hand. A due row needs no
+alarm; a future one is the only thing standing between a closed app and a
+missed reminder.
 
 # Where a notification leads
 
@@ -352,10 +365,70 @@ what its pageless push does to every exit the shell offers, lives with the
 shell under
 [a pageless push is invisible to the router](../architecture/navigation.md#a-pageless-push-is-invisible-to-the-router).
 
-**The payload is still not consumed anywhere.** `initialize` is called without
-`onDidReceiveNotificationResponse`, and nothing calls
-`getNotificationAppLaunchDetails`, so tapping an OS notification opens the app
-wherever it was. The deep links are correct and inert, on every platform.
+# A tap on the OS alert opens the same place
+
+What the plugin hands back on a tap is the string the alert was armed with,
+so everything a tap needs has to travel in it. `NotificationTapPayload` is
+that string: a JSON object carrying the `route` to open and, for an inbox row,
+the row's `inboxId`, written by the scheduler for every row it projects. The
+producers without a row — the plan-ready alert, the sync-conflict alert, the
+habit reminder — pass a bare route instead, and the decoder accepts both,
+which also keeps every alarm armed before tap routing existed decodable
+rather than turning it into a dead tap on upgrade.
+
+Two paths bring a tap into Dart, and they are disjoint by the plugin's design
+rather than by care:
+
+```mermaid
+flowchart TD
+  Tap["user taps the OS alert"] --> Init{"Dart plugin<br/>already initialised?"}
+  Init -- "yes — app running,<br/>foreground or background" --> CB["onDidReceiveNotificationResponse<br/>Android onNewIntent · Darwin delegate"]
+  Init -- "no — cold start, or a Darwin<br/>process that never initialised" --> Park["parked natively; answered only by<br/>getNotificationAppLaunchDetails"]
+  CB --> Router["NotificationTapRouter.handleTap"]
+  Park --> Boot["routeNotificationLaunch at boot,<br/>after restoreNavigationState,<br/>once per process"]
+  Boot --> Router
+  Router --> Beam["NavService.beamToNamedWhenReady(route)"]
+  Router --> Seen["markSeen(inboxId) — best-effort,<br/>after the beam"]
+  Beam --> Flags{"config flags<br/>received?"}
+  Flags -- yes --> Now["beamToNamed — the bell's own route"]
+  Flags -- "not yet" --> Pending["parked; beamed on the first flag<br/>emission, after the restored tab"]
+```
+
+Three consequences shape the wiring:
+
+- **The plugin is initialised at boot on every platform Lotti notifies on.**
+  iOS parks *any* tap that arrives before `initialize`, including one on a
+  process alive in the background, and only ever hands it out as launch
+  details. A lazily materialised service would swallow warm taps until the
+  first entry write happened to construct it. `routeNotificationLaunch`
+  therefore resolves the service during `registerSingletons` — awaited before
+  `runApp`, so the first frame is already the tapped screen — and skips Linux
+  and Windows before touching it, which is what keeps the sandboxed-build
+  guarantee the lazy registration exists for.
+- **The launch is read once per process.** `registerSingletons` runs again on
+  a profile switch, and the launch details describe the same tap every time
+  they are read; a second read would replay a tap the user already acted on
+  into the new world.
+- **A route is parked until the config flags say which tabs exist.** At boot
+  every flag reads `false`, and `NavService`'s normalisation would drop
+  `/people/<id>` or `/goals/details/<id>` to Tasks without a word — the same
+  trap the restored tab already had to defer around. `beamToNamedWhenReady`
+  parks the route and the first flag emission beams it, after the restored
+  tab has been selected, so the tap wins over where the app was left. A tab
+  still disabled once the flags arrive falls back to Tasks, and a tab that
+  lockdown hides drops the beam, exactly as the bell's route would.
+
+The response callback routes only a tap on the notification itself. Lotti
+defines no action buttons, so the other response types cannot occur today;
+one added later has to decide its own destination rather than inherit the
+body tap's. The launch read is deliberately **not** gated on
+`enable_notifications`: the alert already exists and the user has already
+tapped it.
+
+Marking the row seen is what makes a tap on the phone clear the badge and
+cancel the alarm on the laptop, the way a tap in the bell does. It runs after
+the beam, and its failure is logged rather than surfaced: the screen is what
+the user tapped for.
 
 # Not every variant may surface before it is due
 

@@ -37,6 +37,8 @@ import 'package:lotti/features/journal/service/image_path_migration_service.dart
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/services/label_validator.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
+import 'package:lotti/features/notifications/routing/notification_launch_routing.dart';
+import 'package:lotti/features/notifications/routing/notification_tap_router.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/notifications/scheduler/notification_startup_reconcile.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
@@ -445,11 +447,33 @@ Future<void> registerSingletons({
     ..registerSingleton<NavService>(
       NavService(),
       dispose: (service) => service.dispose(),
+    )
+    // Where a tapped OS notification lands. Registered before the launch
+    // read below, and so before the lazily registered NotificationService
+    // can materialise — which is what lets the service's default tap handler
+    // find it.
+    ..registerSingleton<NotificationTapRouter>(
+      NotificationTapRouter(
+        navService: getIt<NavService>(),
+        notificationRepository: notificationRepository,
+        logger: domainLogger,
+      ),
     );
 
   // Awaited here, before `runApp`, so the app's first frame is already on the
   // screen the previous session was left on rather than flashing Tasks first.
   await getIt<NavService>().restoreNavigationState();
+
+  // Then the notification that launched the app, if one did, on top of the
+  // restored position — awaited for the same reason. On the platforms Lotti
+  // notifies on this is also what initialises the notification plugin at
+  // boot, which iOS needs before it will deliver a warm tap at all.
+  await routeNotificationLaunch(
+    // ignore: unnecessary_lambdas
+    notificationService: () => getIt<NotificationService>(),
+    router: getIt<NotificationTapRouter>(),
+    logger: domainLogger,
+  );
 
   if (registerLateAndOptional) {
     await _registerLateAndOptionalServices(profile: profile);

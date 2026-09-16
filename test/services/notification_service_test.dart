@@ -5,6 +5,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/logging_types.dart';
+import 'package:lotti/features/notifications/routing/notification_tap_router.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
@@ -57,6 +59,10 @@ class _ChannelRecorder {
   /// standing in for a plugin that failed to register (the flatpak case).
   String? failingMethod;
 
+  /// What the platform answers to `getNotificationAppLaunchDetails`; null is
+  /// what an implementation without launch details returns.
+  Map<Object?, Object?>? launchDetails;
+
   List<String> get methods => [for (final call in calls) call.method];
 
   int countOf(String method) => methods.where((m) => m == method).length;
@@ -82,6 +88,7 @@ class _ChannelRecorder {
           }
           return switch (call.method) {
             'initialize' || 'requestPermissions' => true,
+            'getNotificationAppLaunchDetails' => launchDetails,
             _ => null,
           };
         });
@@ -177,13 +184,51 @@ void main() {
 
   /// Builds the service and waits for the constructor's fire-and-forget
   /// `initialize` to finish, so channel assertions are not racing it.
-  Future<NotificationService> buildService() async {
+  Future<NotificationService> buildService({
+    void Function(String payload)? onNotificationTap,
+  }) async {
     final service = NotificationService(
       timezoneLookup: () async => tz.local.name,
+      onNotificationTap: onNotificationTap,
     );
     await service.initialized;
     return service;
   }
+
+  /// A response arriving from the platform side of the plugin's channel, the
+  /// way a tap does once `initialize` has registered the Dart handler.
+  Future<void> deliverResponse({
+    required NotificationResponseType type,
+    String? payload,
+  }) {
+    return TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .handlePlatformMessage(
+          _pluginChannel.name,
+          const StandardMethodCodec().encodeMethodCall(
+            MethodCall('didReceiveNotificationResponse', <String, Object?>{
+              'notificationId': 1,
+              'payload': payload,
+              'notificationResponseType': type.index,
+            }),
+          ),
+          (_) {},
+        );
+  }
+
+  /// A `getNotificationAppLaunchDetails` answer for an app the OS started
+  /// because the user tapped a notification carrying [payload].
+  Map<Object?, Object?> launchedBy({
+    String? payload,
+    NotificationResponseType type =
+        NotificationResponseType.selectedNotification,
+  }) => <Object?, Object?>{
+    'notificationLaunchedApp': true,
+    'notificationResponse': <Object?, Object?>{
+      'notificationId': 1,
+      'payload': payload,
+      'notificationResponseType': type.index,
+    },
+  };
 
   group('NotificationConstants', () {
     test('exposes the documented badge/encouragement values', () {
@@ -1112,6 +1157,205 @@ void main() {
     }
   });
 
+  // A tapped notification carries its payload back through the plugin. Both
+  // arrival paths are exercised at the channel: the response callback that
+  // `initialize` registers, and the launch details a cold start reads.
+  group('notification taps', () {
+    for (final platform in [
+      TargetPlatform.macOS,
+      TargetPlatform.iOS,
+      TargetPlatform.android,
+    ]) {
+      test('$platform hands a tapped payload to the handler', () async {
+        _usePlatform(platform);
+        final received = <String>[];
+        await buildService(onNotificationTap: received.add);
+
+        await deliverResponse(
+          type: NotificationResponseType.selectedNotification,
+          payload: '/tasks/task-1',
+        );
+
+        expect(received, ['/tasks/task-1']);
+      });
+    }
+
+    test(
+      'an action button response is not a tap on the notification',
+      () async {
+        _usePlatform(TargetPlatform.macOS);
+        final received = <String>[];
+        await buildService(onNotificationTap: received.add);
+
+        await deliverResponse(
+          type: NotificationResponseType.selectedNotificationAction,
+          payload: '/tasks/task-1',
+        );
+
+        expect(received, isEmpty);
+      },
+    );
+
+    for (final (label, payload) in <(String, String?)>[
+      ('no payload', null),
+      ('an empty payload', ''),
+    ]) {
+      test('a tap carrying $label routes nowhere', () async {
+        _usePlatform(TargetPlatform.macOS);
+        final received = <String>[];
+        await buildService(onNotificationTap: received.add);
+
+        await deliverResponse(
+          type: NotificationResponseType.selectedNotification,
+          payload: payload,
+        );
+
+        expect(received, isEmpty);
+      });
+    }
+
+    test('by default a tap goes to the registered tap router', () async {
+      _usePlatform(TargetPlatform.macOS);
+      final router = MockNotificationTapRouter();
+      when(() => router.handleTap(any())).thenAnswer((_) async {});
+      getIt.registerSingleton<NotificationTapRouter>(router);
+      await buildService();
+
+      await deliverResponse(
+        type: NotificationResponseType.selectedNotification,
+        payload: '/people/rel-1',
+      );
+
+      verify(() => router.handleTap('/people/rel-1')).called(1);
+    });
+
+    test('a tap before the router exists is logged, not thrown', () async {
+      _usePlatform(TargetPlatform.macOS);
+      await buildService();
+
+      await expectLater(
+        deliverResponse(
+          type: NotificationResponseType.selectedNotification,
+          payload: '/people/rel-1',
+        ),
+        completes,
+      );
+
+      verify(
+        () => domainLogger.log(
+          LogDomain.notifications,
+          any(that: contains('before the tap router')),
+          subDomain: 'tap',
+          level: InsightLevel.warn,
+        ),
+      ).called(1);
+    });
+  });
+
+  group('launchNotificationPayload', () {
+    for (final platform in [
+      TargetPlatform.macOS,
+      TargetPlatform.iOS,
+      TargetPlatform.android,
+    ]) {
+      test('$platform returns the payload of the launching tap', () async {
+        _usePlatform(platform);
+        channel.launchDetails = launchedBy(payload: '/people/rel-1');
+        final service = await buildService();
+
+        expect(await service.launchNotificationPayload(), '/people/rel-1');
+      });
+    }
+
+    test('waits for initialize before asking', () async {
+      // Constructed and read in one go, without awaiting `initialized`, the
+      // way bootstrap resolves the lazy service and reads straight away.
+      _usePlatform(TargetPlatform.macOS);
+      channel.launchDetails = launchedBy(payload: '/people/rel-1');
+      final service = NotificationService(
+        timezoneLookup: () async => tz.local.name,
+      );
+
+      expect(await service.launchNotificationPayload(), '/people/rel-1');
+      expect(channel.methods, [
+        'initialize',
+        'getNotificationAppLaunchDetails',
+      ]);
+    });
+
+    test('is not gated on the notifications flag', () async {
+      // The alert exists and the user tapped it; whether they would want a
+      // new one is a different question.
+      _usePlatform(TargetPlatform.macOS);
+      setNotificationsEnabled(enabled: false);
+      channel.launchDetails = launchedBy(payload: '/people/rel-1');
+      final service = await buildService();
+
+      expect(await service.launchNotificationPayload(), '/people/rel-1');
+    });
+
+    test('an ordinary launch has no payload', () async {
+      _usePlatform(TargetPlatform.macOS);
+      channel.launchDetails = {'notificationLaunchedApp': false};
+      final service = await buildService();
+
+      expect(await service.launchNotificationPayload(), isNull);
+    });
+
+    test('a platform without launch details has no payload', () async {
+      _usePlatform(TargetPlatform.macOS);
+      final service = await buildService();
+
+      expect(await service.launchNotificationPayload(), isNull);
+    });
+
+    test('a launch without a response has no payload', () async {
+      _usePlatform(TargetPlatform.macOS);
+      channel.launchDetails = {'notificationLaunchedApp': true};
+      final service = await buildService();
+
+      expect(await service.launchNotificationPayload(), isNull);
+    });
+
+    test('a launch through an action button has no payload', () async {
+      _usePlatform(TargetPlatform.macOS);
+      channel.launchDetails = launchedBy(
+        payload: '/people/rel-1',
+        type: NotificationResponseType.selectedNotificationAction,
+      );
+      final service = await buildService();
+
+      expect(await service.launchNotificationPayload(), isNull);
+    });
+
+    for (final platform in [TargetPlatform.linux, TargetPlatform.windows]) {
+      test('$platform answers null without touching the plugin', () async {
+        _usePlatform(platform);
+        channel.launchDetails = launchedBy(payload: '/people/rel-1');
+        final service = await buildService();
+
+        expect(await service.launchNotificationPayload(), isNull);
+        expect(channel.calls, isEmpty);
+      });
+    }
+  });
+
+  group('notifiesOnCurrentPlatform', () {
+    for (final (platform, notifies) in [
+      (TargetPlatform.iOS, true),
+      (TargetPlatform.macOS, true),
+      (TargetPlatform.android, true),
+      (TargetPlatform.linux, false),
+      (TargetPlatform.windows, false),
+    ]) {
+      test('$platform: $notifies', () {
+        debugDefaultTargetPlatformOverride = platform;
+
+        expect(NotificationService.notifiesOnCurrentPlatform, notifies);
+      });
+    }
+  });
+
   group('scheduleHabitNotification', () {
     late MockNotificationService delegate;
 
@@ -1172,6 +1416,7 @@ void main() {
             showOnDesktop: false,
             notifyAt: captureAny(named: 'notifyAt'),
             notificationId: 'habit-1'.hashCode,
+            deepLink: '/habits',
           ),
         ).captured;
 
@@ -1235,6 +1480,7 @@ void main() {
                       showOnDesktop: false,
                       notifyAt: captureAny(named: 'notifyAt'),
                       notificationId: 'habit-1'.hashCode,
+                      deepLink: '/habits',
                     ),
                   ).captured.single
                   as DateTime;

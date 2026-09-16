@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/notifications_db.dart';
+import 'package:lotti/features/notifications/model/notification_tap_payload.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
@@ -71,7 +72,7 @@ void main() {
             notificationId: NotificationScheduler.notificationIdFor('due-id'),
             showOnMobile: true,
             showOnDesktop: true,
-            deepLink: '/tasks/task-1',
+            deepLink: _payload(route: '/tasks/task-1', inboxId: 'due-id'),
           ),
         ).called(1);
         verifyNever(
@@ -117,7 +118,7 @@ void main() {
           ),
           showOnMobile: true,
           showOnDesktop: true,
-          deepLink: '/habits',
+          deepLink: _payload(route: '/habits', inboxId: 'habits-auto'),
         ),
       ).called(1);
     });
@@ -141,7 +142,7 @@ void main() {
           notificationId: NotificationScheduler.notificationIdFor('future-id'),
           showOnMobile: true,
           showOnDesktop: true,
-          deepLink: '/tasks/task-2',
+          deepLink: _payload(route: '/tasks/task-2', inboxId: 'future-id'),
         ),
       ).called(1);
       verifyNever(
@@ -220,7 +221,10 @@ void main() {
             ),
             showOnMobile: true,
             showOnDesktop: true,
-            deepLink: '/tasks/task-id',
+            deepLink: _payload(
+              route: '/tasks/task-id',
+              inboxId: 'fallback-now',
+            ),
           ),
         ).called(1);
       },
@@ -265,7 +269,10 @@ void main() {
             ),
             showOnMobile: true,
             showOnDesktop: true,
-            deepLink: '/tasks/task-exact',
+            deepLink: _payload(
+              route: '/tasks/task-exact',
+              inboxId: 'exact-now-id',
+            ),
           ),
         ).called(1);
         verifyNever(
@@ -287,11 +294,14 @@ void main() {
   // Routing is a switch over the union rather than a read of the shared
   // `linkedEntityId` getter, because every variant answers that getter — which
   // is how a relationship id used to be handed to the `/tasks/` route.
-  group('NotificationScheduler deep links', () {
+  // The payload is what the OS hands back on a tap: the route to open and
+  // the row's own id, so the tap can mark the row seen. Decoded here rather
+  // than compared as a string, so the wire format is the payload's business.
+  group('NotificationScheduler tap payloads', () {
     final now = DateTime.utc(2026, 5, 17, 10);
 
-    /// Schedules [entity] in the past and returns the deep link it carried.
-    Future<String?> deepLinkOf(NotificationEntity entity) async {
+    /// Schedules [entity] in the past and returns the payload it carried.
+    Future<NotificationTapPayload?> payloadOf(NotificationEntity entity) async {
       clearInteractions(notificationService);
       await scheduler.schedule(entity, now: now);
       final captured = verify(
@@ -304,35 +314,35 @@ void main() {
           deepLink: captureAny(named: 'deepLink'),
         ),
       ).captured;
-      return captured.single as String?;
+      return NotificationTapPayload.decode(captured.single as String?);
     }
 
     final past = now.subtract(const Duration(minutes: 1));
 
-    test('a task suggestion points at its task', () async {
+    test('a task suggestion points at its task and names its row', () async {
       expect(
-        await deepLinkOf(
+        await payloadOf(
           _suggestion(id: 's', linkedTaskId: 't-1', scheduledFor: past),
         ),
-        '/tasks/t-1',
+        const NotificationTapPayload(route: '/tasks/t-1', inboxId: 's'),
       );
     });
 
-    test('an overdue task points at its task', () async {
+    test('an overdue task points at its task and names its row', () async {
       expect(
-        await deepLinkOf(
+        await payloadOf(
           _notification(id: 'o', linkedTaskId: 't-2', scheduledFor: past),
         ),
-        '/tasks/t-2',
+        const NotificationTapPayload(route: '/tasks/t-2', inboxId: 'o'),
       );
     });
 
     test('a check-in reminder points at the person, not a task', () async {
       expect(
-        await deepLinkOf(
+        await payloadOf(
           _checkIn(id: 'c', linkedRelationshipId: 'rel-9', scheduledFor: past),
         ),
-        '/people/rel-9',
+        const NotificationTapPayload(route: '/people/rel-9', inboxId: 'c'),
       );
     });
   });
@@ -366,7 +376,7 @@ void main() {
           ),
           showOnMobile: true,
           showOnDesktop: true,
-          deepLink: '/people/rel-1',
+          deepLink: _payload(route: '/people/rel-1', inboxId: 'upcoming-row'),
         ),
       ).called(1);
     });
@@ -507,6 +517,11 @@ void main() {
     });
   });
 }
+
+/// The payload the scheduler hands the OS for a row: its route plus its own
+/// id, so a tap can mark the row seen.
+String _payload({required String route, required String inboxId}) =>
+    NotificationTapPayload(route: route, inboxId: inboxId).encode();
 
 void _stubNotificationService(MockNotificationService service) {
   when(
