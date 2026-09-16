@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:lotti/classes/day_agent_plan_models.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -644,7 +646,40 @@ Map<String, Object?> blockJson(PlannedBlock block) => {
 List<Object?> objectListArg(Object? raw, String name) {
   if (raw == null) return const <Object?>[];
   if (raw is List) return raw;
+  // Models sometimes send the array JSON-encoded inside a string — the whole
+  // plan arrives, correct, as one `"[{...}]"` value. Refusing it threw away a
+  // finished draft over its wrapping, so a string that decodes to a list is
+  // taken as the list it plainly is.
+  if (raw is String) {
+    final trimmed = raw.trim();
+    if (trimmed.startsWith('[')) {
+      try {
+        final decoded = jsonDecode(trimmed);
+        if (decoded is List) return decoded;
+      } on FormatException {
+        // Falls through to the contract error below.
+      }
+    }
+  }
   throw DayAgentCaptureException('$name must be an array');
+}
+
+/// Whether a raw block is an empty buffer a fresh draft can simply drop.
+///
+/// A zero-length block represents no time and carries no work, and the rules
+/// already forbid one as a placeholder. Rejecting the call over it discarded
+/// the whole plan around it, which is a far larger loss than the decoration.
+/// Only `buffer` qualifies: an empty `ai` or `manual` block would be real work
+/// being nulled out, and that still fails.
+bool isDroppableEmptyBuffer(Object? raw) {
+  if (raw is! Map) return false;
+  final data = raw.cast<String, dynamic>();
+  if (optionalStringArg(data['type']) != PlannedBlockType.buffer.name) {
+    return false;
+  }
+  final start = optionalDateTimeArg(data['start']);
+  final end = optionalDateTimeArg(data['end']);
+  return start != null && end != null && !end.isAfter(start);
 }
 
 List<String> stringListArg(Object? raw) {

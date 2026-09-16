@@ -405,6 +405,10 @@ class DayAgentPlanWriter {
         : await _allowedExistingTaskIds(rawBlocks, allowedCategoryIds);
     final blocks = <PlannedBlock>[];
     for (final raw in rawBlocks) {
+      // A zero-length buffer is decoration that represents no time; dropping
+      // it keeps the plan it was wrapped around. Closed-window echoes are
+      // exempt: there the list must match the baseline exactly.
+      if (!validateClosedBaseline && isDroppableEmptyBuffer(raw)) continue;
       blocks.add(
         validateClosedBaseline
             // Closed-window validation compares the model echo with historical
@@ -442,7 +446,13 @@ class DayAgentPlanWriter {
           : validationBaselineBlocks.map(_asRenderedPromptBlock).toList();
       final baselineRepeatedExactly = _sameBlocksWithMultiplicity(
         promptBaselineBlocks,
-        blocks,
+        // The schema requires a `reason` on every block, but a legacy
+        // baseline block may have none, leaving the echo no way to be both
+        // schema-valid and byte-identical. A reason supplied where the
+        // baseline had none is dropped before the comparison: this path
+        // persists the stored payload, never the echo, so the invented text
+        // changes nothing either way.
+        _withoutReasonsTheBaselineLacks(promptBaselineBlocks, blocks),
       );
       if (validationBaselineBlocks.isNotEmpty && !baselineRepeatedExactly) {
         throw const DayAgentCaptureException(
@@ -475,10 +485,17 @@ class DayAgentPlanWriter {
         workingHoursStart: workingHoursStart,
         workingHoursEnd: workingHoursEnd,
       );
-      final bands = [
-        for (final raw in rawEnergyBands)
-          parseEnergyBand(raw: raw, day: planDate),
-      ];
+      // Energy bands are optional colour on the plan, and a model that gets
+      // one wrong — an omitted `level`, a band outside the day — should not
+      // cost the schedule itself. The bands it did get right are kept.
+      final bands = <DayAgentEnergyBand>[];
+      for (final raw in rawEnergyBands) {
+        try {
+          bands.add(parseEnergyBand(raw: raw, day: planDate));
+        } on DayAgentCaptureException {
+          continue;
+        }
+      }
       final scheduledMinutes = scheduledMinutesFor(blocks);
       final pinnedTasks = pinnedTasksFor(blocks);
       preparedPlan =
@@ -707,6 +724,26 @@ class DayAgentPlanWriter {
           PlannedBlockState.drafted,
       reason: optionalStringArg(data['reason']),
     );
+  }
+
+  /// Clears an echoed `reason` wherever the baseline block of the same id
+  /// carries none, so a schema-required field cannot fail an exact repeat.
+  List<PlannedBlock> _withoutReasonsTheBaselineLacks(
+    List<PlannedBlock> baseline,
+    List<PlannedBlock> emitted,
+  ) {
+    final reasonlessIds = {
+      for (final block in baseline)
+        if (block.reason == null) block.id,
+    };
+    if (reasonlessIds.isEmpty) return emitted;
+    return [
+      for (final block in emitted)
+        if (block.reason != null && reasonlessIds.contains(block.id))
+          block.copyWith(reason: null)
+        else
+          block,
+    ];
   }
 
   bool _sameBlocksWithMultiplicity(

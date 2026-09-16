@@ -327,6 +327,18 @@ estimate means **unsized, not free**, so it is given a deliberate slot with a
 stated reason or left out, rather than totalling as zero against
 `availableMinutes`.
 
+**A malformed part does not cost the whole draft.** `draft_day_plan` is
+terminal, so a rejected call throws away a finished plan and buys a second
+round trip at best. Four shapes models actually emitted are therefore
+recovered rather than refused: `blocks` arriving JSON-encoded inside a string
+is decoded, a zero-length `buffer` block is dropped, an energy band that fails
+to parse is dropped while the schedule persists, and a `reason` supplied where
+a closed-window baseline block had none is ignored for the exact-repeat
+comparison. What stays fatal is anything that would nullify real work or
+persist a claim that is not true: a zero-length `ai` or `manual` block, an
+`ai` block with no reason, a block outside the day or the working hours, a
+remainder with no task, a negative remainder.
+
 **A partial placement is stated, not described.** When a task gets less time
 than its estimate, its block carries `remainingMinutes` — the estimate minus
 the minutes the plan gives it — and the `reason` explains the choice rather

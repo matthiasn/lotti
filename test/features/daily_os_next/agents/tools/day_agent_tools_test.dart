@@ -291,22 +291,18 @@ void main() {
       );
     });
 
-    test('draft_day_plan states the reason rule without requiring it', () {
-      // A gym run lost six drafts to a missing reason, but requiring the
-      // field unconditionally breaks the other end: a closed-window wake
-      // echoes its baseline exactly, and a legacy block may carry a null
-      // reason, which would then have no schema-valid representation.
+    test('draft_day_plan requires the reason its writer enforces', () {
+      // Gym runs lost whole drafts to a missing reason while the schema said
+      // nothing. The closed-window echo of a legacy null-reason block stays
+      // valid because the writer drops a reason the baseline lacks before
+      // comparing — see day_agent_plan_writer_test.
       final blockItems =
           ((parametersFor(DayAgentToolNames.draftDayPlan)['properties']
                       as Map<String, dynamic>)['blocks']
                   as Map<String, dynamic>)['items']
               as Map<String, dynamic>;
 
-      expect(
-        blockItems['required'],
-        isNot(contains('reason')),
-        reason: 'a null-reason baseline echo must stay representable',
-      );
+      expect(blockItems['required'], contains('reason'));
       expect(
         ((blockItems['properties'] as Map<String, dynamic>)['reason']
             as Map<String, dynamic>)['description'],
