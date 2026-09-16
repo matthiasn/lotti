@@ -435,9 +435,7 @@ final List<AgentToolDefinition> goalAgentTools = [
               'standing summary. Prose slots are facts only; put every '
               'instruction in nextActions. Keep each slot concise and do '
               'not repeat the same fact across slots. Return a JSON object, '
-              'never an encoded JSON string. Every section — tldr, '
-              'currentPeriod, rollingWindow, latestChange, coverage and '
-              'nextActions — goes inside this object, never beside it.',
+              'never an encoded JSON string.',
           'properties': {
             GoalReportSectionKeys.tldr: {
               'type': 'string',
