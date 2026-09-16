@@ -18,12 +18,19 @@ import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The shortest block that can still show one title line: a `bodySmall`
-/// line plus the card's vertical padding. Below it a block carves no
-/// inter-block gap, and a block that starts closer than this (in minutes at
-/// the current zoom) to one it overlaps cannot sit on top of it without
-/// hiding that title — see `layoutTimelineBlocks`.
-double minimumReadableBlockHeight(DsTokens tokens) =>
-    tokens.typography.lineHeight.bodySmall + tokens.spacing.step2 * 2;
+/// line at the user's text scale plus the card's vertical padding. Below it
+/// a block carves no inter-block gap, and a block that starts closer than
+/// this (in minutes at the current zoom) to one it overlaps cannot sit on
+/// top of it without hiding that title — see `layoutTimelineBlocks`. The
+/// line grows with [textScaler] exactly as `_BlockContent` lays it out, so
+/// large accessibility text widens the window rather than letting a raised
+/// block shear the title beneath it.
+double minimumReadableBlockHeight(
+  DsTokens tokens, {
+  required TextScaler textScaler,
+}) =>
+    textScaler.scale(tokens.typography.lineHeight.bodySmall) +
+    tokens.spacing.step2 * 2;
 
 /// Positions a [DayBlock] absolutely within the timeline stack. Converts the
 /// block's start/end through the [foldingState] (which collapses idle gaps) to
@@ -122,7 +129,10 @@ class _BlockPositionState extends State<BlockPosition> {
       pxPerMinute: widget.pxPerMinute,
     );
     final rawHeight = math.max(0, end - top).toDouble();
-    final minimumReadableHeight = minimumReadableBlockHeight(tokens);
+    final minimumReadableHeight = minimumReadableBlockHeight(
+      tokens,
+      textScaler: MediaQuery.textScalerOf(context),
+    );
     final preferredGap = tokens.spacing.step1;
     final blockGap = rawHeight > minimumReadableHeight + preferredGap
         ? math.min(preferredGap, rawHeight / 3)

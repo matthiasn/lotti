@@ -175,7 +175,17 @@ class _TimelinePane extends StatelessWidget {
               builder: (context, constraints) {
                 final slots = layoutTimelineBlocks(
                   blocks,
-                  peerWindow: _peerWindow(tokens),
+                  peerWindow: _peerWindow(
+                    tokens,
+                    textScaler: MediaQuery.textScalerOf(context),
+                  ),
+                );
+                final insets = resolveTimelineBlockInsets(
+                  slots,
+                  laneWidth: constraints.maxWidth,
+                  edgeInset: tokens.spacing.step3,
+                  indent: tokens.spacing.step5,
+                  columnGap: tokens.spacing.step2,
                 );
                 return Stack(
                   clipBehavior: Clip.none,
@@ -193,12 +203,7 @@ class _TimelinePane extends StatelessWidget {
                       BlockPosition(
                         key: ValueKey('daily-os-position-${slot.block.id}'),
                         block: slot.block,
-                        horizontal: slot.horizontalInsets(
-                          laneWidth: constraints.maxWidth,
-                          edgeInset: tokens.spacing.step3,
-                          indent: tokens.spacing.step5,
-                          columnGap: tokens.spacing.step2,
-                        ),
+                        horizontal: insets[slot.block.id]!,
                         raised: slot.isRaised,
                         windowStart: windowStart,
                         foldingState: foldingState,
@@ -231,11 +236,16 @@ class _TimelinePane extends StatelessWidget {
 
   /// How far apart two overlapping blocks must start before the later one
   /// can sit on top of the earlier without hiding its title: the readable
-  /// block height in minutes at the current zoom, so zooming out widens the
-  /// window and turns a tight cascade into side-by-side columns.
-  Duration _peerWindow(DsTokens tokens) => Duration(
-    minutes: (minimumReadableBlockHeight(tokens) / pxPerMinute).ceil(),
-  );
+  /// block height — at the user's text scale — in minutes at the current
+  /// zoom. Zooming out or enlarging text widens the window and turns a tight
+  /// cascade into side-by-side columns.
+  Duration _peerWindow(DsTokens tokens, {required TextScaler textScaler}) =>
+      Duration(
+        minutes:
+            (minimumReadableBlockHeight(tokens, textScaler: textScaler) /
+                    pxPerMinute)
+                .ceil(),
+      );
 }
 
 class _SharedHourRail extends StatelessWidget {

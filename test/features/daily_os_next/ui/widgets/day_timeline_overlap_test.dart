@@ -15,6 +15,13 @@ const _category = DayAgentCategory(
 /// 1 px per minute.
 const _window = Duration(minutes: 28);
 
+/// The pane's token values, so geometry expectations read as the numbers a
+/// 300 px lane really produces.
+const _lane = 300.0;
+const _edge = 8.0;
+const _indent = 16.0;
+const _gap = 4.0;
+
 /// Minutes into the day, so spans read as clock times at the call site.
 int _hm(int hour, [int minute = 0]) => hour * 60 + minute;
 
@@ -42,6 +49,17 @@ TimelineBlockSlot _slot(List<TimelineBlockSlot> slots, String id) =>
   final slot = _slot(slots, id);
   return (slot.depth, slot.column, slot.columnCount);
 }
+
+Map<String, TimelineBlockInsets> _resolve(
+  List<TimelineBlockSlot> slots, {
+  double laneWidth = _lane,
+}) => resolveTimelineBlockInsets(
+  slots,
+  laneWidth: laneWidth,
+  edgeInset: _edge,
+  indent: _indent,
+  columnGap: _gap,
+);
 
 bool _overlaps(TimeBlock a, TimeBlock b) =>
     a.start.isBefore(b.end) && b.start.isBefore(a.end);
@@ -97,6 +115,7 @@ void main() {
 
       expect(_placement(slots, 'a'), (0, 0, 1));
       expect(_slot(slots, 'a').isRaised, isFalse);
+      expect(_slot(slots, 'a').parentId, isNull);
     });
 
     test('blocks that never share a minute all keep the full lane', () {
@@ -144,10 +163,11 @@ void main() {
         expect(_placement(slots, 'session'), (0, 0, 1));
         expect(_placement(slots, 'call'), (1, 0, 1));
         expect(_slot(slots, 'call').isRaised, isTrue);
+        expect(_slot(slots, 'call').parentId, 'session');
       },
     );
 
-    test('nested interruptions rise one level each', () {
+    test('nested interruptions rise one level each, each above the last', () {
       final slots = _layout([
         _block('session', _hm(15), _hm(18)),
         _block('coding', _hm(15, 30), _hm(17)),
@@ -156,7 +176,9 @@ void main() {
 
       expect(_slot(slots, 'session').depth, 0);
       expect(_slot(slots, 'coding').depth, 1);
+      expect(_slot(slots, 'coding').parentId, 'session');
       expect(_slot(slots, 'call').depth, 2);
+      expect(_slot(slots, 'call').parentId, 'coding');
     });
 
     test(
@@ -169,7 +191,8 @@ void main() {
         ]);
 
         // `early` is over by 17:00, so `late` sits one level up, not two.
-        expect(_slot(slots, 'late').depth, 1);
+        expect(_placement(slots, 'late'), (1, 0, 1));
+        expect(_slot(slots, 'late').parentId, 'session');
       },
     );
 
@@ -184,7 +207,60 @@ void main() {
       // rises above `b` rather than dropping to the floor.
       expect(_slot(slots, 'b').depth, 1);
       expect(_slot(slots, 'c').depth, 2);
+      expect(_slot(slots, 'c').parentId, 'b');
     });
+
+    test(
+      'a block raised above a pair of peers is measured from the leftmost '
+      'one still running',
+      () {
+        final slots = _layout([
+          _block('left', _hm(9), _hm(9, 30)),
+          _block('right', _hm(9, 10), _hm(12)),
+          _block('call', _hm(10), _hm(10, 30)),
+        ]);
+
+        // `left` is over by 10:00; only the right-hand column still runs.
+        expect(_placement(slots, 'left'), (0, 0, 2));
+        expect(_placement(slots, 'right'), (0, 1, 2));
+        expect(_placement(slots, 'call'), (1, 0, 1));
+        expect(_slot(slots, 'call').parentId, 'right');
+      },
+    );
+
+    test(
+      'a block raised above a pair both still running is measured from the '
+      'left-hand one',
+      () {
+        final slots = _layout([
+          _block('left', _hm(9), _hm(11)),
+          _block('right', _hm(9, 10), _hm(12)),
+          _block('call', _hm(10), _hm(10, 30)),
+        ]);
+
+        expect(_slot(slots, 'call').parentId, 'left');
+      },
+    );
+
+    test(
+      "the parent is fixed when the level opens, so a raised level's peers "
+      'share it',
+      () {
+        final slots = _layout([
+          _block('left', _hm(9), _hm(10, 2)),
+          _block('right', _hm(9, 10), _hm(12)),
+          _block('call', _hm(10), _hm(10, 30)),
+          _block('note', _hm(10, 5), _hm(10, 30)),
+        ]);
+
+        // `call` opened its level while `left` still ran; `note` joins as a
+        // peer after `left` has ended and still measures from `left`.
+        expect(_placement(slots, 'call'), (1, 0, 2));
+        expect(_placement(slots, 'note'), (1, 1, 2));
+        expect(_slot(slots, 'call').parentId, 'left');
+        expect(_slot(slots, 'note').parentId, 'left');
+      },
+    );
   });
 
   group('layoutTimelineBlocks — peers', () {
@@ -230,6 +306,26 @@ void main() {
       // … and `d` reuses `b`'s column, free since 09:20.
       expect(_placement(slots, 'd'), (0, 1, 3));
     });
+
+    test(
+      'a reused column reports its latest block as the one still running',
+      () {
+        final slots = _layout([
+          _block('a', _hm(9), _hm(9, 20)),
+          _block('b', _hm(9, 5), _hm(12)),
+          _block('c', _hm(9, 25), _hm(11)),
+          _block('call', _hm(10), _hm(10, 30)),
+        ]);
+
+        // `a` opened column 0 and `b` column 1; `c` took over column 0 once
+        // `a` had ended. At 10:00 `c` is the leftmost block running, so the
+        // call measures from `c`, not from the long-gone `a`.
+        expect(_placement(slots, 'a'), (0, 0, 2));
+        expect(_placement(slots, 'b'), (0, 1, 2));
+        expect(_placement(slots, 'c'), (0, 0, 2));
+        expect(_slot(slots, 'call').parentId, 'c');
+      },
+    );
 
     test(
       "peers are judged against the level's first block, not the last peer",
@@ -290,6 +386,7 @@ void main() {
       // `instant` kept nothing running, so `next` starts a fresh level
       // rather than joining or rising above it.
       expect(_placement(slots, 'next'), (1, 0, 1));
+      expect(_slot(slots, 'next').parentId, 'session');
     });
 
     test(
@@ -346,30 +443,29 @@ void main() {
   });
 
   group('TimelineBlockSlot.horizontalInsets', () {
-    const lane = 300.0;
-    const edge = 8.0;
-    const indent = 16.0;
-    const gap = 4.0;
-
-    ({double left, double right}) insets(
+    TimelineBlockInsets insets(
       TimelineBlockSlot slot, {
-      double laneWidth = lane,
+      double laneWidth = _lane,
+      TimelineBlockInsets? parent,
     }) => slot.horizontalInsets(
       laneWidth: laneWidth,
-      edgeInset: edge,
-      indent: indent,
-      columnGap: gap,
+      edgeInset: _edge,
+      indent: _indent,
+      columnGap: _gap,
+      parent: parent,
     );
 
     TimelineBlockSlot slot({
       int depth = 0,
       int column = 0,
       int columnCount = 1,
+      String? parentId,
     }) => TimelineBlockSlot(
       block: _block('x', _hm(9), _hm(10)),
       depth: depth,
       column: column,
       columnCount: columnCount,
+      parentId: parentId ?? (depth > 0 ? 'parent' : null),
     );
 
     test('a floor block in a single column keeps only the edge gutters', () {
@@ -379,50 +475,146 @@ void main() {
     test(
       'a slot the layout could never produce is refused at construction',
       () {
-        // Each would resolve to NaN or negative geometry; the layout never
-        // builds one, and the constructor says so.
+        // Each would resolve to NaN or negative geometry, or name a parent
+        // the level cannot have; the layout never builds one, and the
+        // constructor says so.
         expect(() => slot(columnCount: 0), throwsAssertionError);
         expect(() => slot(column: 2, columnCount: 2), throwsAssertionError);
         expect(() => slot(column: -1), throwsAssertionError);
         expect(() => slot(depth: -1), throwsAssertionError);
+        expect(
+          () => TimelineBlockSlot(
+            block: _block('x', _hm(9), _hm(10)),
+            depth: 1,
+            column: 0,
+            columnCount: 1,
+          ),
+          throwsAssertionError,
+        );
+        expect(() => slot(parentId: 'floor-with-parent'), throwsAssertionError);
       },
     );
 
-    test('each level of depth indents the left edge and keeps the right', () {
-      expect(insets(slot(depth: 1)), (left: 24.0, right: 8.0));
-      expect(insets(slot(depth: 2)), (left: 40.0, right: 8.0));
+    test(
+      "a raised level is indented from its parent's left edge and keeps the "
+      "lane's right gutter",
+      () {
+        final first = insets(slot(depth: 1), parent: (left: 8.0, right: 8.0));
+        expect(first, (left: 24.0, right: 8.0));
+        expect(insets(slot(depth: 2), parent: first), (left: 40.0, right: 8.0));
+      },
+    );
+
+    test("the indent never takes more than half the parent's width", () {
+      // A 20 px parent gives up 10, not 16.
+      expect(
+        insets(slot(depth: 1), parent: (left: 8.0, right: 272.0)),
+        (left: 18.0, right: 8.0),
+      );
     });
 
-    test('the depth indent never eats more than half the usable width', () {
-      // Usable width is 284; half of it is 142, well under 20 × 16.
-      expect(insets(slot(depth: 20)), (left: 150.0, right: 8.0));
+    test(
+      "a raised level above the left-hand column runs to the lane's right "
+      "gutter, not to the column's",
+      () {
+        expect(
+          insets(slot(depth: 1), parent: (left: 8.0, right: 152.0)),
+          (left: 24.0, right: 8.0),
+        );
+      },
+    );
+
+    test('a raised level above the right-hand column starts inside it', () {
+      expect(
+        insets(slot(depth: 1), parent: (left: 152.0, right: 8.0)),
+        (left: 168.0, right: 8.0),
+      );
     });
 
     test('peer columns split the usable width with one gap between them', () {
       // (284 − 4) / 2 = 140 per column.
-      expect(
-        insets(slot(columnCount: 2)),
-        (left: 8.0, right: 152.0),
-      );
+      expect(insets(slot(columnCount: 2)), (left: 8.0, right: 152.0));
       expect(
         insets(slot(column: 1, columnCount: 2)),
         (left: 152.0, right: 8.0),
       );
     });
 
-    test('a raised peer column starts after the depth indent', () {
-      // Usable 284 − indent 16 = 268; (268 − 2 × 4) / 3 = 86.67 per column.
-      final third = insets(slot(depth: 1, column: 2, columnCount: 3));
+    test('a raised peer column starts after the indent', () {
+      // Region 24..292 = 268; (268 − 2 × 4) / 3 = 86.67 per column.
+      final third = insets(
+        slot(depth: 1, column: 2, columnCount: 3),
+        parent: (left: 8.0, right: 8.0),
+      );
       expect(third.left, closeTo(24 + 2 * (86.666 + 4), 0.01));
       expect(third.right, closeTo(8, 0.01));
     });
 
     test('a lane narrower than its gutters never yields negative geometry', () {
-      final cramped = insets(
-        slot(depth: 3, column: 2, columnCount: 3),
-        laneWidth: 10,
-      );
+      final cramped = insets(slot(column: 2, columnCount: 3), laneWidth: 10);
       expect(cramped, (left: 10.0, right: 0.0));
+    });
+
+    test('a parent narrower than nothing still yields a valid region', () {
+      // A parent whose insets exceed the lane (a squeezed cascade) has zero
+      // width; the raised level then starts at the parent's left edge.
+      expect(
+        insets(slot(depth: 1), parent: (left: 300.0, right: 8.0)),
+        (left: 300.0, right: 0.0),
+      );
+    });
+  });
+
+  group('resolveTimelineBlockInsets', () {
+    test('threads each raised level through its parent', () {
+      final insets = _resolve(
+        _layout([
+          _block('session', _hm(15), _hm(18)),
+          _block('coding', _hm(15, 30), _hm(17)),
+          _block('call', _hm(16, 10), _hm(16, 40)),
+        ]),
+      );
+
+      expect(insets['session'], (left: 8.0, right: 8.0));
+      expect(insets['coding'], (left: 24.0, right: 8.0));
+      expect(insets['call'], (left: 40.0, right: 8.0));
+    });
+
+    test(
+      "a block raised above the right-hand peer keeps that peer's stripe "
+      'and leaves the left-hand peer alone',
+      () {
+        final insets = _resolve(
+          _layout([
+            _block('left', _hm(9), _hm(9, 30)),
+            _block('right', _hm(9, 10), _hm(12)),
+            _block('call', _hm(10), _hm(10, 30)),
+          ]),
+        );
+
+        expect(insets['left'], (left: 8.0, right: 152.0));
+        expect(insets['right'], (left: 152.0, right: 8.0));
+        expect(insets['call'], (left: 168.0, right: 8.0));
+      },
+    );
+
+    test("peers of a raised level split their parent's region", () {
+      final insets = _resolve(
+        _layout([
+          _block('left', _hm(9), _hm(9, 30)),
+          _block('right', _hm(9, 10), _hm(12)),
+          _block('call', _hm(10), _hm(10, 30)),
+          _block('note', _hm(10, 5), _hm(10, 30)),
+        ]),
+      );
+
+      // Region 168..292 = 124; (124 − 4) / 2 = 60 per column.
+      expect(insets['call'], (left: 168.0, right: 72.0));
+      expect(insets['note'], (left: 232.0, right: 8.0));
+    });
+
+    test('an empty lane resolves to nothing', () {
+      expect(_resolve(const []), isEmpty);
     });
   });
 
@@ -528,30 +720,70 @@ void main() {
       tags: 'glados',
     );
 
+    glados.Glados<_Scenario>(
+      glados.any.scenario,
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'a raised block names a parent one level down that started no later, '
+      'and precedes it in paint order',
+      (scenario) {
+        final slots = _layout(scenario.blocks, peerWindow: scenario.window);
+
+        for (final (index, slot) in slots.indexed) {
+          if (!slot.isRaised) {
+            expect(slot.parentId, isNull);
+            continue;
+          }
+          final parentIndex = slots.indexWhere(
+            (other) => other.block.id == slot.parentId,
+          );
+          expect(parentIndex, greaterThanOrEqualTo(0), reason: '$slot');
+          expect(parentIndex, lessThan(index), reason: '$slot');
+          final parent = slots[parentIndex];
+          expect(parent.depth, slot.depth - 1, reason: '$slot');
+          expect(
+            parent.block.start.isAfter(slot.block.start),
+            isFalse,
+            reason: '$slot in $scenario',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
     glados.Glados2<_Scenario, double>(
       glados.any.scenario,
       glados.any.laneWidth,
       glados.ExploreConfig(numRuns: 150),
     ).test(
-      'insets stay inside the lane at any width, so no block gets a negative '
-      'width',
+      'insets stay inside the lane at any width, and a raised level starts '
+      'at or after its parent and at most one indent beyond',
       (scenario, laneWidth) {
         final slots = _layout(scenario.blocks, peerWindow: scenario.window);
+        final insets = _resolve(slots, laneWidth: laneWidth);
 
         for (final slot in slots) {
-          final insets = slot.horizontalInsets(
-            laneWidth: laneWidth,
-            edgeInset: 8,
-            indent: 16,
-            columnGap: 4,
-          );
-          expect(insets.left, greaterThanOrEqualTo(0));
-          expect(insets.right, greaterThanOrEqualTo(0));
+          final own = insets[slot.block.id]!;
+          expect(own.left, greaterThanOrEqualTo(0));
+          expect(own.right, greaterThanOrEqualTo(0));
           expect(
-            insets.left + insets.right,
+            own.left + own.right,
             lessThanOrEqualTo(laneWidth + 1e-9),
             reason: '$slot at $laneWidth px in $scenario',
           );
+          if (slot.parentId case final parentId?) {
+            final parent = insets[parentId]!;
+            // Every peer of the level sits at or right of the parent; the
+            // level itself (its first column) opens at most one indent in.
+            expect(own.left, greaterThanOrEqualTo(parent.left - 1e-9));
+            if (slot.column == 0) {
+              expect(
+                own.left,
+                lessThanOrEqualTo(parent.left + _indent + 1e-9),
+                reason: '$slot at $laneWidth px in $scenario',
+              );
+            }
+          }
         }
       },
       tags: 'glados',

@@ -2837,17 +2837,25 @@ void main() {
       List<TimeBlock> planned = const [],
       List<TimeBlock> actual = const [],
       double pxPerMinute = 1.0,
+      double textScale = 1.0,
       bool Function(TimeBlock block)? isRedacted,
     }) async {
       _setView(tester, const Size(1280, 1200));
       await tester.pumpWidget(
         _wrap(
-          DayTimeline(
-            draft: _draftWithBlocks(blocks: planned),
-            actualBlocks: actual,
-            pxPerMinute: pxPerMinute,
-            isRedacted: isRedacted,
-            clock: () => DateTime(2026, 5, 25, 9, 15),
+          Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: TextScaler.linear(textScale)),
+              child: DayTimeline(
+                draft: _draftWithBlocks(blocks: planned),
+                actualBlocks: actual,
+                pxPerMinute: pxPerMinute,
+                isRedacted: isRedacted,
+                clock: () => DateTime(2026, 5, 25, 9, 15),
+              ),
+            ),
           ),
         ),
       );
@@ -2888,7 +2896,11 @@ void main() {
         expect(
           call.top,
           greaterThanOrEqualTo(
-            session.top + minimumReadableBlockHeight(tokens),
+            session.top +
+                minimumReadableBlockHeight(
+                  tokens,
+                  textScaler: TextScaler.noScaling,
+                ),
           ),
         );
 
@@ -2984,6 +2996,63 @@ void main() {
         // At 0.55 px/min the same 28 px take 51 minutes, so 30 minutes in
         // the session's title has no room yet: the two become columns.
         await pumpTimeline(tester, actual: actual, pxPerMinute: 0.55);
+        session = tester.getRect(block('actual:session'));
+        call = tester.getRect(block('actual:call'));
+        expect(call.left, greaterThanOrEqualTo(session.right));
+        expect(seamOf(tester, 'actual:call'), isNull);
+      },
+    );
+
+    testWidgets(
+      'a block raised above the right-hand peer is measured from that peer, '
+      'so its stripe stays and the left-hand peer is untouched',
+      (tester) async {
+        await pumpTimeline(
+          tester,
+          actual: [
+            tracked('short', from: (9, 0), to: (9, 30)),
+            tracked('long', from: (9, 10), to: (12, 0)),
+            tracked('call', from: (10, 0), to: (10, 30)),
+          ],
+        );
+        final tokens = tester.element(find.byType(DayTimeline)).designTokens;
+        final lane = tester.getRect(
+          find.byKey(const Key('daily_os_timeline_actual_pane')),
+        );
+        final short = tester.getRect(block('actual:short'));
+        final long = tester.getRect(block('actual:long'));
+        final call = tester.getRect(block('actual:call'));
+
+        // `short` and `long` are peers: left and right column. Only `long`
+        // still runs at 10:00, so the call rises above it alone — indented
+        // from the right column's edge, not the lane's — and runs to the
+        // lane's right gutter.
+        expect(long.left, greaterThan(short.right));
+        expect(call.left, closeTo(long.left + tokens.spacing.step5, 0.01));
+        expect(call.right, closeTo(lane.right - tokens.spacing.step3, 0.01));
+        expect(call.left, greaterThan(short.right));
+      },
+    );
+
+    testWidgets(
+      'larger text widens the peer window, so a block that would be raised '
+      'at default scale becomes a column at 2x',
+      (tester) async {
+        final actual = [
+          tracked('session', from: (15, 0), to: (18, 0)),
+          tracked('call', from: (15, 30), to: (16, 0)),
+        ];
+
+        // 20 px line + 8 px padding = 28 minutes at 1 px/min: raised.
+        await pumpTimeline(tester, actual: actual);
+        var session = tester.getRect(block('actual:session'));
+        var call = tester.getRect(block('actual:call'));
+        expect(call.left, greaterThan(session.left));
+        expect(call.right, closeTo(session.right, 0.01));
+
+        // At 2x the title line is 40 px, the window 48 minutes: 30 minutes
+        // in, the session's title still needs the room, so they are columns.
+        await pumpTimeline(tester, actual: actual, textScale: 2);
         session = tester.getRect(block('actual:session'));
         call = tester.getRect(block('actual:call'));
         expect(call.left, greaterThanOrEqualTo(session.right));
