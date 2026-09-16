@@ -660,6 +660,46 @@ void main() {
           expect(await db!.getHabitByIdForIntegrity(deletedHabit.id), isNull);
         },
       );
+
+      test(
+        'getAllHabitDefinitionsAllPrivate lists private habits with the '
+        'private flag off, and still no deleted ones',
+        () async {
+          // The reminder sweep reads through this: hiding private entries
+          // from view must not leave a private habit's alarm armed.
+          await db!.upsertConfigFlag(
+            const ConfigFlag(
+              name: privateFlag,
+              description: 'Show private entries?',
+              status: false,
+            ),
+          );
+          // Names are unique in the table, so each copy gets its own.
+          final privateHabit = habitFlossing.copyWith(
+            id: 'private-habit',
+            name: 'Private flossing',
+            private: true,
+          );
+          final deletedHabit = habitFlossing.copyWith(
+            id: 'deleted-habit',
+            name: 'Deleted flossing',
+            deletedAt: DateTime(2026, 8, 11),
+          );
+          await db!.upsertHabitDefinition(habitFlossing);
+          await db!.upsertHabitDefinition(privateHabit);
+          await db!.upsertHabitDefinition(deletedHabit);
+
+          final filtered = await db!.getAllHabitDefinitions();
+          final all = await db!.getAllHabitDefinitionsAllPrivate();
+
+          expect(filtered.map((h) => h.id), isNot(contains(privateHabit.id)));
+          expect(
+            all.map((h) => h.id),
+            containsAll([habitFlossing.id, privateHabit.id]),
+          );
+          expect(all.map((h) => h.id), isNot(contains(deletedHabit.id)));
+        },
+      );
     });
 
     group('getAllDashboards / getDashboardById -', () {

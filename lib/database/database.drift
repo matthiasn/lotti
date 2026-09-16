@@ -1033,6 +1033,10 @@ SELECT * FROM habit_definitions
   WHERE private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   AND deleted = false;
 
+allHabitDefinitionsAllPrivate:
+SELECT * FROM habit_definitions
+  WHERE deleted = false;
+
 habitById:
 SELECT * FROM habit_definitions
   WHERE deleted = false

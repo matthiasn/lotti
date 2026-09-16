@@ -61,7 +61,9 @@ template line is not an agent speaking.
 - A slip detected at 06:00 is armed with template copy and re-worded by the
   escalation wake minutes later; a check-in reminder armed days ahead is
   re-worded on its due day's wake — both before the 09:00 alarm. A wake that
-  runs after the alarm fired leaves it alone.
+  runs after the alarm fired leaves it alone, and a peer that receives the
+  re-wording after its own alarm fired shows the new words in the bell only:
+  the inbound handler re-arms a content update only for a row still ahead.
 - The bell shows the re-worded row too; a tap still marks the same row seen.
 - Both workflows gain one optional constructor argument; every existing
   construction site is unchanged.

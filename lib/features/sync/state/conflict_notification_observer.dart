@@ -50,11 +50,22 @@ class ConflictNotificationObserver {
   bool _primed = false;
   StreamSubscription<List<Conflict>>? _subscription;
 
+  /// The snapshot being applied, so the next one waits for it.
+  Future<void> _applying = Future<void>.value();
+
   /// Subscribes to the unresolved-conflict stream. Idempotent.
+  ///
+  /// Snapshots are applied one at a time. Conflicts arriving during a sync
+  /// land one by one, each emitting its own snapshot, and two of those
+  /// running side by side would each arm a row and then retract the other's
+  /// — leaving no row at all. [handleSnapshot] never throws, so the chain
+  /// never breaks.
   void start() {
-    _subscription ??= _db
-        .watchConflicts(ConflictStatus.unresolved)
-        .listen(handleSnapshot);
+    _subscription ??= _db.watchConflicts(ConflictStatus.unresolved).listen((
+      snapshot,
+    ) {
+      _applying = _applying.then((_) => handleSnapshot(snapshot));
+    });
   }
 
   /// Processes one snapshot of unresolved conflicts. Visible for testing so the
