@@ -593,6 +593,28 @@ void main() {
       );
     });
 
+    test('an is-there pep talk is not clarification', () {
+      for (final message in [
+        'Is there any better feeling than crushing a goal?',
+        'Is there anything better than a long walk on a clear day?',
+      ]) {
+        expect(
+          classifyGoalAgentResult(
+            scenario: scenarioById('evo_ambiguous'),
+            toolCalls: [
+              call(
+                GoalAgentToolNames.replyToUser,
+                jsonEncode({'message': message}),
+              ),
+            ],
+            assistantContent: '',
+          ),
+          GoalAgentEvalFailureCategory.missingAssistantContent,
+          reason: message,
+        );
+      }
+    });
+
     test('a rhetorical question at the end still is not clarification', () {
       expect(
         classifyGoalAgentResult(
