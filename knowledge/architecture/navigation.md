@@ -5,7 +5,7 @@ description: Ten independent Beamer stacks behind one IndexedStack, how the acti
 resource: ../../lib/beamer
 tags: [architecture, navigation, beamer, routing, app-shell]
 status: stable
-generated: { by: claude-code/fable-5.1, at: 2026-09-15T14:00:00Z }
+generated: { by: claude-code/fable-5.1, at: 2026-09-16T11:30:00Z }
 stale_after: 2027-03-02
 sources:
   - id: route-mirror
@@ -24,10 +24,14 @@ sources:
     resource: ../../lib/widgets/misc/contact_support_row.dart
     title: ContactSupportRow — the Contact Us footer, wired to its destinations
     last_modified: 2026-08-05
-  - id: more-sheet
-    resource: ../../lib/widgets/nav_bar/mobile_nav_more_sheet.dart
-    title: Mobile More overflow sheet
-    last_modified: 2026-08-05
+  - id: mobile-launcher
+    resource: ../../lib/widgets/nav_bar/mobile_navigation_launcher.dart
+    title: MobileNavigationLauncher — the mobile navigation and its docked page action
+    last_modified: 2026-09-16
+  - id: mobile-nav-sheet
+    resource: ../../lib/widgets/nav_bar/mobile_nav_sheet.dart
+    title: The Navigate grid of every enabled destination
+    last_modified: 2026-09-07
   - id: settings-location
     resource: ../../lib/beamer/locations/settings_location.dart
     title: SettingsLocation — the settings page stack and its pop targets
@@ -115,9 +119,8 @@ flowchart TD
   Screen --> Chrome{"Form factor"}
   Chrome -->|desktop| Sidebar["DesktopSidebar"]
   Chrome -->|desktop| DayCol["DayViewSidePanel (right-docked day view)"]
-  Chrome -->|mobile| NavFlag{"enable_mobile_navigation_launcher"}
-  NavFlag -->|off or unresolved| Bar["DesignSystemFiveSlotNavBar + More sheet"]
-  NavFlag -->|on| Launcher["Glass Navigate chip (+ docked page action) + two-column grid"]
+  Chrome -->|mobile| Launcher["MobileNavigationLauncher: glass Navigate chip (+ docked page action)"]
+  Launcher --> Grid["showMobileNavSheet: two-column grid of every enabled destination"]
 ```
 
 An `IndexedStack` keeps every tab **mounted**. Tabs preserve scroll position and
@@ -524,43 +527,37 @@ Two consequences worth knowing before adding a settings page:
   URL of the page that pushed them. They escape the nav by pushing onto the root
   navigator through `bottomNavSafeNavigatorOf` instead.
 
-With the mobile launcher flag off, slot allocation is derived from width. Tasks, Daily OS and
-Journal are the primary destinations that survive the narrowest window; the rest
-start behind a *More* sheet and are promoted into their own slots as width
-allows, until everything fits and the More slot disappears.
+## The mobile launcher
 
-## Opt-in mobile launcher
+`MobileNavigationLauncher` is the mobile shell's navigation: a floating row of
+glass chips over the page rather than an edge-to-edge bar of slots. Its
+Navigate chip opens `showMobileNavSheet`, which presents every enabled section
+in a two-column grid with 16-point horizontal tile padding, the active section
+highlighted, support links on the left and sync counts on the right. Selection
+dismisses the grid and resolves the destination index at tap time
+(`_currentDestinationIndex`), so section flags changing while the grid is open
+cannot route to a stale index. Desktop never shows it: the sidebar replaces it
+there, with the Settings sync counts beside the Settings row.
 
-`enable_mobile_navigation_launcher` defaults to false, including while its
-provider is unresolved. Settings → Config Flags exposes it as **New mobile
-navigation**. Startup seeds it with `insertFlagIfNotExists`, preserving an
-existing opt-in. The flag is read only in the mobile shell; desktop keeps its
-existing sidebar and Settings sync counts.
+`DesignSystemBottomNavigationBar.occupiedHeight` reads
+`MobileNavigationLauncher.barHeight` directly, so page/FAB clearance and the
+activity island follow the launcher's rendered height on every window and text
+scale; there is no second navigation design whose height the shell would have
+to publish. The launcher measures its localized label with `TextPainter`,
+including nonlinear text scaling. The route-hiding rules above apply to it
+unchanged.
 
-When enabled, `MobileNavigationLauncher` replaces the slot bar with a floating
-row of glass chips. `showMobileNavSheet` presents all enabled
-sections in a two-column grid with 16-point horizontal tile padding, the active
-section highlighted, support links on the left and sync counts on the right.
-Selection dismisses the sheet and resolves the destination index at tap time,
-so section flags changing while the sheet is open cannot route to a stale index.
-
-Changing the flag swaps only the chrome, retaining the current tab and its
-navigation stack. `_MobileNavOverlayHeightScope` publishes the selected bar's
-height through `DesignSystemBottomNavigationOverlayHeight.navigationBarHeight`;
-page/FAB clearance and the activity island therefore follow the visible
-bar. Standalone pages without an explicit height keep the legacy calculation.
-The launcher measures its localized label with `TextPainter`, including
-nonlinear text scaling. Both designs share the existing route-hiding rules.
-
-The new launcher and grid are independent of the legacy slot and More widgets.
-The app shell chooses between them; neither new widget imports the old ones.
+The launcher and grid replaced the earlier five-slot bar and its More sheet.
+The `enable_mobile_navigation_launcher` flag that chose between the two is in
+`retiredConfigFlags`, so an upgraded install drops the stored row on its next
+start whichever way it was set.
 
 ## The activity island
 
 While a time recording and/or an audio recording runs somewhere other than
 the page on screen, the mobile shell floats one glass capsule —
 [`MobileActivityIsland`](../../lib/widgets/nav_bar/mobile_activity_island.dart)
-— `spacing.step3` above whichever bar it shows. A running timer is a red dot
+— `spacing.step3` above the launcher. A running timer is a red dot
 (`alert.error`) and its elapsed time; a live recording is the level orb and its
 elapsed time; both at once share the capsule with a hairline between them.
 Each half is its own button: the timer opens the running entry through
@@ -577,8 +574,7 @@ own vocabulary — `DsGlassChipSurface`, `dsGlassChipFill`, `dsGlassChipBorder`,
 the default text size, a step under the 48 px chips so it reads as their
 subordinate rather than a third peer, growing with the system text scale the
 way the launcher's chips do (`capsuleHeight`: the scaled subtitle2 line inside
-`spacing.step2` of air, never below `step8`), and it looks the same over the
-classic five-slot bar, where it floats above the bar instead of fusing with it.
+`spacing.step2` of air, never below `step8`).
 
 Three contracts hold it together:
 
@@ -594,7 +590,7 @@ Three contracts hold it together:
   `TimeService.getCurrent()`, so a timer already running shows, and is
   reserved for, on the first frame.
 - **Outside the slide-away subtree.** The island is positioned by the shell,
-  not by either bar: on routes that slide the bar away it animates down to
+  not by the launcher: on routes that slide the launcher away it animates down to
   its gap above the bottom safe-area edge in the same motion, so a running
   timer stays visible inside settings editors; on task details the whole
   bottom stack, island included, yields to the page's own action bar.
@@ -651,11 +647,12 @@ the row — `createTaskFromTaskListFilters` reads the task list's filters,
 `logbookCreateCategoryId` the feed's single-category selection — so a filter
 changed since the last shell rebuild still applies.
 
-The same predicate decides both halves of the handover:
-`mobileNavigationLauncherOwnsPageActions(context, ref)` — the flag, and a
-non-desktop window — is read by the shell to pick the launcher and by each of
-the five pages to drop its own `DesignSystemFloatingActionButton`. One rule,
-one place; the action moves onto the row rather than being duplicated above it.
+One predicate decides the handover:
+`mobileNavigationLauncherOwnsPageActions(context)` — a non-desktop window — is
+what each of the five pages reads to drop its own
+`DesignSystemFloatingActionButton`, on exactly the windows where the shell
+floats the launcher and docks the action on it. One rule, one place; the action
+moves onto the row rather than being duplicated above it.
 
 It decides a third thing on the two lists that reserve scroll clearance for
 their floating button on top of the bar's own height — Goals and Projects both
@@ -699,7 +696,7 @@ stateDiagram-v2
 ```
 
 `labelsFit` measures both labels with a `TextPainter` at the current scaler
-against `availableRowWidth`, exactly as the slot bar budgets its slots. It is
+against `availableRowWidth`. It is
 consulted only for a `MobileNavDockAction.worded` action; a `.glyph` one is
 round at every width. Below the threshold a worded action drops to
 `DsGlassRoundButton` at the same diameter as the row's chip height — it keeps
@@ -754,7 +751,7 @@ factors:
 | Form factor | Where | Suppressed when |
 |-------------|-------|-----------------|
 | Desktop | sidebar `footerBand`, under Settings | the sidebar is collapsed |
-| Mobile | footer of the *More* sheet, or the opt-in *Navigate* grid | never — the sheet is its only home |
+| Mobile | footer of the *Navigate* grid | never — the grid is its only home |
 
 **No rule separates it from the rows above, on either surface.** These are the
 quietest controls the app's navigation has, and a divider gave them the weight
@@ -770,8 +767,8 @@ optional status row beneath Settings to displace it. Collapsing the sidebar
 removes the band entirely — the icon-only rail is 72 px, narrower than the four
 glyphs — and the Manual stays reachable from Settings meanwhile.
 
-The actions are right-aligned in the sidebar and More sheet. The opt-in
-launcher places the same intrinsic-width group on the left beside sync counts. Email is a plain envelope
+The actions are right-aligned in the sidebar. The Navigate grid places the
+same intrinsic-width group on the left beside sync counts. Email is a plain envelope
 button with the same 44 px target, colour, tooltip and semantics as Manual,
 GitHub and Discord; its localized “Contact Us” wording remains the accessible
 name rather than visible copy. With no label competing for width, all four
@@ -801,9 +798,9 @@ Two rules hold it together:
 | Index, delegate registry, flag gating, state persistence | [`lib/services/nav_service.dart`](../../lib/services/nav_service.dart) |
 | Restore hook, awaited before `runApp` | [`lib/get_it.dart`](../../lib/get_it.dart) |
 | Logbook auto-selection, the background-navigation case | [`lib/features/journal/ui/pages/journal_root_page.dart`](../../lib/features/journal/ui/pages/journal_root_page.dart) |
-| Opt-in launcher | [`lib/widgets/nav_bar/mobile_navigation_launcher.dart`](../../lib/widgets/nav_bar/mobile_navigation_launcher.dart) |
-| Opt-in destination grid | [`lib/widgets/nav_bar/mobile_nav_sheet.dart`](../../lib/widgets/nav_bar/mobile_nav_sheet.dart) |
-| Mobile overflow sheet | [`lib/widgets/nav_bar/mobile_nav_more_sheet.dart`](../../lib/widgets/nav_bar/mobile_nav_more_sheet.dart) |
+| Mobile launcher and its docked page action | [`lib/widgets/nav_bar/mobile_navigation_launcher.dart`](../../lib/widgets/nav_bar/mobile_navigation_launcher.dart) |
+| Navigate grid | [`lib/widgets/nav_bar/mobile_nav_sheet.dart`](../../lib/widgets/nav_bar/mobile_nav_sheet.dart) |
+| Bottom clearance contract, activity island scope | [`lib/widgets/nav_bar/design_system_bottom_navigation_bar.dart`](../../lib/widgets/nav_bar/design_system_bottom_navigation_bar.dart) |
 | Contact Us footer, wired | [`lib/widgets/misc/contact_support_row.dart`](../../lib/widgets/misc/contact_support_row.dart) |
 | Contact Us footer, presentation | [`lib/features/design_system/components/navigation/design_system_contact_row.dart`](../../lib/features/design_system/components/navigation/design_system_contact_row.dart) |
 | External addresses | [`lib/utils/support_links.dart`](../../lib/utils/support_links.dart) |

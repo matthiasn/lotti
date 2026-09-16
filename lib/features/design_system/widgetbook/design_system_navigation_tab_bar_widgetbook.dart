@@ -1,10 +1,8 @@
-import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
-import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/widgetbook/widgetbook_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
+import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:widgetbook/widgetbook.dart';
 
@@ -87,60 +85,24 @@ class _BottomNavigationShellShowcase extends StatelessWidget {
           color: context.designTokens.colors.background.level01,
           child: SizedBox(
             height: 220,
-            child: Stack(
-              children: [
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: DesignSystemBottomNavigationBar(
-                    items: _shellItems(context),
-                  ),
+            // The mobile shell's navigation: the Navigate chip and, on the
+            // list tabs that hand one over, the page's create action docked
+            // beside it on the same glass row.
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: MobileNavigationLauncher(
+                onNavigate: () {},
+                pageAction: MobileNavDockAction.worded(
+                  label: context.messages.addActionCreateTask,
+                  icon: LottiIcons.add,
+                  onPressed: () {},
                 ),
-                const Align(
-                  alignment: Alignment.bottomRight,
-                  child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: DesignSystemBottomNavigationFabPadding(
-                      child: DesignSystemFloatingActionButton(
-                        semanticLabel: 'Create',
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
       ),
     );
-  }
-
-  /// The compact line-up: always-visible destinations plus a More slot
-  /// for the overflow. On windows where every destination's label fits
-  /// (see [DesignSystemFiveSlotNavBar.allSlotsFit]) the shell renders one
-  /// slot per destination instead.
-  List<DesignSystemFiveSlotNavBarItem> _shellItems(BuildContext context) {
-    return [
-      DesignSystemFiveSlotNavBarItem(
-        label: context.messages.navTabTitleTasks,
-        icon: const Icon(LottiIcons.confirmCircled),
-        activeIcon: const Icon(LottiIcons.confirmCircled),
-        active: true,
-      ),
-      DesignSystemFiveSlotNavBarItem(
-        label: context.messages.navTabTitleJournal,
-        icon: const Icon(LottiIcons.book),
-        activeIcon: const Icon(LottiIcons.book),
-      ),
-      DesignSystemFiveSlotNavBarItem(
-        label: context.messages.navTabTitleSettings,
-        icon: const Icon(LottiIcons.settings),
-        activeIcon: const Icon(LottiIcons.settings),
-      ),
-      DesignSystemFiveSlotNavBarItem(
-        label: context.messages.navTabTitleMore,
-        icon: const Icon(LottiIcons.more),
-      ),
-    ];
   }
 }
 

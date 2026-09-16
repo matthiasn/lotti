@@ -34,8 +34,7 @@ import 'package:material_ui/material_ui.dart';
 /// legacy Material palette rather than the launcher's glass. The island is
 /// built from the same vocabulary as those chips ([DsGlassChipSurface],
 /// [dsGlassChipFill], [dsGlassChipBorder]) and floats [gapAboveBar] above
-/// whichever bar the shell shows, so it reads the same over the launcher and
-/// over the classic five-slot bar.
+/// the launcher, so the two read as one glass dialect.
 ///
 /// A running timer is a red dot and its elapsed time; a live recording is
 /// the level orb and its elapsed time; both at once share the capsule with a

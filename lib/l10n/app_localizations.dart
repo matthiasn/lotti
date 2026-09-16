@@ -6114,18 +6114,6 @@ abstract class AppLocalizations {
   /// **'Enable the Matrix integration to sync your entries across devices and with other Matrix users.'**
   String get configFlagEnableMatrixDescription;
 
-  /// No description provided for @configFlagEnableMobileNavigationLauncher.
-  ///
-  /// In en, this message translates to:
-  /// **'New mobile navigation'**
-  String get configFlagEnableMobileNavigationLauncher;
-
-  /// No description provided for @configFlagEnableMobileNavigationLauncherDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Use one Navigate button to open all app sections.'**
-  String get configFlagEnableMobileNavigationLauncherDescription;
-
   /// No description provided for @configFlagEnableNotifications.
   ///
   /// In en, this message translates to:
@@ -16435,12 +16423,6 @@ abstract class AppLocalizations {
   /// **'Manual'**
   String get navSidebarManualLabel;
 
-  /// No description provided for @navTabMoreSemanticsLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{More, 1 additional destination} other{More, {count} additional destinations}}'**
-  String navTabMoreSemanticsLabel(int count);
-
   /// No description provided for @navTabTitleCalendar.
   ///
   /// In en, this message translates to:
@@ -16476,12 +16458,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Logbook'**
   String get navTabTitleJournal;
-
-  /// No description provided for @navTabTitleMore.
-  ///
-  /// In en, this message translates to:
-  /// **'More'**
-  String get navTabTitleMore;
 
   /// No description provided for @navTabTitleNavigate.
   ///

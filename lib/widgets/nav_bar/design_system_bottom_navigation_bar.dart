@@ -1,86 +1,60 @@
-import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
+import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Mobile bottom-navigation container: hosts the five-slot bar
-/// ([DesignSystemFiveSlotNavBar]) docked flush against the screen's bottom
-/// edge. The activity island (running timer / recording) that floats above
-/// the bar is owned by the mobile shell (`lib/beamer/beamer_app.dart`), not
-/// by this container, so it stays visible when the shell slides the bar
-/// away.
-class DesignSystemBottomNavigationBar extends StatelessWidget {
-  const DesignSystemBottomNavigationBar({
-    required this.items,
-    super.key,
-  });
-
-  /// The bar's slots (at most five — overflow destinations live in the
-  /// More sheet, represented here by their More slot item).
-  final List<DesignSystemFiveSlotNavBarItem> items;
-
-  /// Vertical screen estate the docked bottom stack occupies: the bar
-  /// (including the bottom safe-area inset it absorbs into its surface)
-  /// plus the estate the shell-owned activity island claims above it,
-  /// published via [DesignSystemBottomNavigationOverlayHeight]. Content
-  /// scrolling behind the bar pads by this amount (see
-  /// [DesignSystemBottomNavigationFabPadding]).
+/// The clearance contract of the mobile bottom navigation.
+///
+/// The mobile shell (`lib/beamer/beamer_app.dart`) floats the
+/// [MobileNavigationLauncher] over each tab's page stack as an app-level
+/// overlay — not a `Scaffold.bottomNavigationBar` — and the activity island
+/// (running timer / recording) above it. Pages therefore reserve room for
+/// that bottom stack themselves, through [occupiedHeight] directly or via
+/// [DesignSystemBottomNavigationFabPadding].
+abstract final class DesignSystemBottomNavigationBar {
+  /// Vertical screen estate the docked bottom stack occupies: the launcher
+  /// (including the bottom safe-area inset it absorbs into its padding) plus
+  /// the estate the shell-owned activity island claims above it, published
+  /// via [DesignSystemBottomNavigationOverlayHeight]. Content scrolling
+  /// behind the launcher pads by this amount.
   static double occupiedHeight(BuildContext context) {
-    // In desktop layout the bottom navigation bar is not shown;
-    // the sidebar replaces it, so no bottom inset is needed.
+    // In desktop layout there is no bottom navigation; the sidebar replaces
+    // it, so no bottom inset is needed.
     if (isDesktopLayout(context)) return 0;
 
-    // A slid-away bar occupies nothing; the activity island above it stays,
-    // so its height still counts.
+    // A slid-away launcher occupies nothing; the activity island above it
+    // stays, so its height still counts.
     final barHeight =
         DesignSystemBottomNavigationOverlayHeight.barDockedOf(context)
-        ? (DesignSystemBottomNavigationOverlayHeight.navigationBarHeightOf(
-                context,
-              ) ??
-              DesignSystemFiveSlotNavBar.barHeight(context))
+        ? MobileNavigationLauncher.barHeight(context)
         : 0.0;
     return barHeight + DesignSystemBottomNavigationOverlayHeight.of(context);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return DesignSystemFiveSlotNavBar(items: items);
   }
 }
 
 /// Publishes the estate the shell-owned activity island (running timer /
-/// recording) claims above the nav bar to the page stack. The app shell
+/// recording) claims above the launcher to the page stack. The app shell
 /// wraps the pages with this scope and updates [height] as the island
 /// appears and disappears, so
 /// [DesignSystemBottomNavigationBar.occupiedHeight] — and everything padding
-/// by it — matches the full rendered bottom stack, not just the bar.
+/// by it — matches the full rendered bottom stack, not just the launcher.
 class DesignSystemBottomNavigationOverlayHeight extends InheritedWidget {
   const DesignSystemBottomNavigationOverlayHeight({
     required this.height,
     required super.child,
     this.barDocked = true,
-    this.navigationBarHeight,
     super.key,
   });
 
-  /// Estate the island claims above the bar; 0 while it is not visible.
+  /// Estate the island claims above the launcher; 0 while it is not visible.
   final double height;
 
-  /// Rendered height of the selected navigation design. Null uses the legacy
-  /// bar's geometry for standalone pages and previews.
-  final double? navigationBarHeight;
-
-  static double? navigationBarHeightOf(BuildContext context) => context
-      .dependOnInheritedWidgetOfExactType<
-        DesignSystemBottomNavigationOverlayHeight
-      >()
-      ?.navigationBarHeight;
-
-  /// Whether the nav bar itself is docked at the bottom edge.
+  /// Whether the launcher itself is docked at the bottom edge.
   ///
   /// False on routes that slide it away (goal agent pages, project and
-  /// settings details): the bar occupies no screen estate there, so a page
-  /// padding by [DesignSystemBottomNavigationBar.occupiedHeight] must not
-  /// leave a bar-sized gutter its own pinned surface then cannot fill.
+  /// settings details): the launcher occupies no screen estate there, so a
+  /// page padding by [DesignSystemBottomNavigationBar.occupiedHeight] must
+  /// not leave a launcher-sized gutter its own pinned surface then cannot
+  /// fill.
   final bool barDocked;
 
   /// Overlay height published by the nearest enclosing scope, or 0 when
@@ -93,8 +67,9 @@ class DesignSystemBottomNavigationOverlayHeight extends InheritedWidget {
     return scope?.height ?? 0;
   }
 
-  /// Whether the bar is docked; true when no scope exists, so pages rendered
-  /// outside the shell keep reserving room for it as they always have.
+  /// Whether the launcher is docked; true when no scope exists, so pages
+  /// rendered outside the shell keep reserving room for it as they always
+  /// have.
   static bool barDockedOf(BuildContext context) {
     final scope = context
         .dependOnInheritedWidgetOfExactType<
@@ -106,12 +81,11 @@ class DesignSystemBottomNavigationOverlayHeight extends InheritedWidget {
   @override
   bool updateShouldNotify(
     DesignSystemBottomNavigationOverlayHeight oldWidget,
-  ) =>
-      height != oldWidget.height ||
-      barDocked != oldWidget.barDocked ||
-      navigationBarHeight != oldWidget.navigationBarHeight;
+  ) => height != oldWidget.height || barDocked != oldWidget.barDocked;
 }
 
+/// Lifts a screen-level floating action above the mobile bottom stack by
+/// padding it with [DesignSystemBottomNavigationBar.occupiedHeight].
 class DesignSystemBottomNavigationFabPadding extends StatelessWidget {
   const DesignSystemBottomNavigationFabPadding({
     required this.child,

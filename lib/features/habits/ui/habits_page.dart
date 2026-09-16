@@ -304,8 +304,7 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
         // create action on its own row (see [habitsTabDockAction]); a
         // floating copy above it would put two create affordances in the
         // same corner.
-        floatingActionButton:
-            mobileNavigationLauncherOwnsPageActions(context, ref)
+        floatingActionButton: mobileNavigationLauncherOwnsPageActions(context)
             ? null
             : DesignSystemBottomNavigationFabPadding(
                 child: DesignSystemFloatingActionButton(

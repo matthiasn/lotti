@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
@@ -41,7 +40,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
@@ -282,28 +280,14 @@ void main() {
     expect(find.text('Completed'), findsOneWidget);
     expect(findRichTextContaining('5 tasks'), findsOneWidget);
     expect(findRichTextContaining('Due Mar 27'), findsOneWidget);
-    expect(find.bySemanticsLabel('New Project'), findsOneWidget);
-    expect(find.byType(DesignSystemBottomNavigationFabPadding), findsOneWidget);
-    expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
-
     final textField = tester.widget<TextField>(find.byType(TextField));
     expect(textField.enabled, isTrue);
   });
 
   group('the mobile navigation launcher owns the create action', () {
-    List<Override> launcher({required bool enabled}) => [
-      configFlagProvider(
-        enableMobileNavigationLauncherFlag,
-      ).overrideWith((_) => Stream.value(enabled)),
-    ];
-
     testWidgets('the projects list drops its floating button so the launcher '
         'can dock the same action on its own row', (tester) async {
-      await pumpPage(
-        tester,
-        groups: [buildWorkGroup()],
-        extraOverrides: launcher(enabled: true),
-      );
+      await pumpPage(tester, groups: [buildWorkGroup()]);
       // The Scaffold animates its floating button out, so it outlives the
       // rebuild that dropped it.
       await tester.pump(const Duration(milliseconds: 400));
@@ -312,26 +296,22 @@ void main() {
       expect(find.byType(DesignSystemBottomNavigationFabPadding), findsNothing);
     });
 
-    testWidgets('the floating button stays with the flag off', (tester) async {
+    testWidgets('a desktop window keeps the floating button, lifted by the '
+        'clearance wrapper — the sidebar replaces the launcher there', (
+      tester,
+    ) async {
       await pumpPage(
         tester,
         groups: [buildWorkGroup()],
-        extraOverrides: launcher(enabled: false),
+        mediaQueryData: desktopLayoutMediaQueryData,
       );
 
+      expect(find.bySemanticsLabel('New Project'), findsOneWidget);
       expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
-    });
-
-    testWidgets('a desktop window keeps the floating button even with the '
-        'flag on', (tester) async {
-      await pumpPage(
-        tester,
-        groups: [buildWorkGroup()],
-        mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
-        extraOverrides: launcher(enabled: true),
+      expect(
+        find.byType(DesignSystemBottomNavigationFabPadding),
+        findsOneWidget,
       );
-
-      expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
     });
 
     testWidgets(
@@ -376,26 +356,41 @@ void main() {
         .listBottomPadding;
 
     testWidgets(
-      "and stops reserving the floating button's footprint, so the docked "
-      'chip leaves no empty gutter above it',
+      "and reserves the launcher's height but not a floating button's "
+      'footprint, so the docked chip leaves no empty gutter above it',
       (tester) async {
-        await pumpPage(
-          tester,
-          groups: [buildWorkGroup()],
-          extraOverrides: launcher(enabled: true),
-        );
+        await pumpPage(tester, groups: [buildWorkGroup()]);
         await tester.pump(const Duration(milliseconds: 400));
 
         final context = tester.element(find.byType(ProjectsTabPage));
         final occupied = DesignSystemBottomNavigationBar.occupiedHeight(
           context,
         );
-        // A zero here would make the assertion below vacuous. The
-        // with-a-button value (occupied + step12) is pinned by
-        // 'list bottom padding clears the docked nav bar plus the FAB
-        // footprint'.
+        // The harness renders at a phone width, so the launcher genuinely
+        // occupies space — a zero here would make the assertion vacuous.
         expect(occupied, greaterThan(0));
         expect(listBottomPadding(tester), occupied);
+      },
+    );
+
+    testWidgets(
+      "a desktop list reserves its floating button's own footprint above "
+      'the sidebar-only clearance',
+      (tester) async {
+        await pumpPage(
+          tester,
+          groups: [buildWorkGroup()],
+          mediaQueryData: desktopLayoutMediaQueryData,
+        );
+
+        final context = tester.element(find.byType(ProjectsTabPage));
+        // Desktop reserves nothing for a bottom bar; the allowance is the
+        // button's footprint alone.
+        expect(DesignSystemBottomNavigationBar.occupiedHeight(context), 0);
+        expect(
+          listBottomPadding(tester),
+          context.designTokens.spacing.step12,
+        );
       },
     );
 
@@ -407,8 +402,8 @@ void main() {
           tester,
           groups: [buildWorkGroup()],
           overrideVisibleGroups: false,
+          mediaQueryData: desktopLayoutMediaQueryData,
           extraOverrides: [
-            ...launcher(enabled: false),
             visibleProjectGroupsProvider.overrideWith(
               (ref) => const AsyncValue<List<ProjectCategoryGroup>>.loading(),
             ),
@@ -420,29 +415,6 @@ void main() {
       },
     );
   });
-
-  testWidgets(
-    'list bottom padding clears the docked nav bar plus the FAB footprint',
-    (tester) async {
-      await pumpPage(tester, groups: [buildWorkGroup()]);
-
-      final BuildContext context = tester.element(
-        find.byType(ProjectsTabPage),
-      );
-      final occupied = DesignSystemBottomNavigationBar.occupiedHeight(context);
-      // The harness renders at a mobile width, so the bar genuinely occupies
-      // space — a zero here would make the clearance assertion vacuous.
-      expect(occupied, greaterThan(0));
-
-      final content = tester.widget<ProjectsOverviewContent>(
-        find.byType(ProjectsOverviewContent),
-      );
-      expect(
-        content.listBottomPadding,
-        occupied + context.designTokens.spacing.step12,
-      );
-    },
-  );
 
   testWidgets(
     'list bottom padding grows with the home-indicator inset',
@@ -573,9 +545,11 @@ void main() {
     var beamed = false;
     beamToNamedOverride = (_) => beamed = true;
 
+    // Desktop-wide: on a phone the launcher docks the create action instead.
     await pumpPage(
       tester,
       groups: [buildWorkGroup()],
+      mediaQueryData: desktopLayoutMediaQueryData,
     );
 
     final messages = tester.element(find.byType(ProjectsTabPage)).messages;
@@ -983,6 +957,9 @@ void main() {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const ProjectsTabPage(),
+        // Desktop-wide, so the floating button below can stand in for "the
+        // established page, not the loading shell".
+        mediaQueryData: desktopLayoutMediaQueryData,
         theme: withOverrides(ThemeData.dark(useMaterial3: true)),
         overrides: [
           projectsOverviewProvider.overrideWith(
@@ -1014,6 +991,7 @@ void main() {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const ProjectsTabPage(),
+        mediaQueryData: desktopLayoutMediaQueryData,
         theme: withOverrides(ThemeData.dark(useMaterial3: true)),
         overrides: [
           projectsOverviewProvider.overrideWith(

@@ -1,13 +1,10 @@
 import 'dart:math' as math;
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/glass_chip_surface.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Whether the mobile navigation launcher owns the bottom action row on the
@@ -20,15 +17,12 @@ import 'package:material_ui/material_ui.dart';
 /// the launcher (see [MobileNavigationLauncher.pageAction]) rather than
 /// floating it above the launcher, so the two land on one row.
 ///
-/// The desktop layout has no launcher at all: the sidebar replaces the
-/// bottom navigation there, and floating actions keep their corner.
-bool mobileNavigationLauncherOwnsPageActions(
-  BuildContext context,
-  WidgetRef ref,
-) =>
-    !isDesktopLayout(context) &&
-    (ref.watch(configFlagProvider(enableMobileNavigationLauncherFlag)).value ??
-        false);
+/// True on every compact window: the launcher is the mobile shell's only
+/// navigation. The desktop layout has no launcher at all — the sidebar
+/// replaces the bottom navigation there, and floating actions keep their
+/// corner — so this is the one place a page needs to ask.
+bool mobileNavigationLauncherOwnsPageActions(BuildContext context) =>
+    !isDesktopLayout(context);
 
 /// A page-owned primary action docked beside the launcher's Navigate
 /// control while that page is the active tab.

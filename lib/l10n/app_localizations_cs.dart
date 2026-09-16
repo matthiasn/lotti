@@ -3671,14 +3671,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Povolit integraci s Matrix pro synchronizaci vašich záznamů mezi zařízeními a s ostatními uživateli Matrix.';
 
   @override
-  String get configFlagEnableMobileNavigationLauncher =>
-      'Nová mobilní navigace';
-
-  @override
-  String get configFlagEnableMobileNavigationLauncherDescription =>
-      'Otevírej všechny části aplikace jedním tlačítkem Navigace.';
-
-  @override
   String get configFlagEnableNotifications => 'Povolit oznámení?';
 
   @override
@@ -9832,18 +9824,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get navSidebarManualLabel => 'Příručka';
 
   @override
-  String navTabMoreSemanticsLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Více, $count dalších sekcí',
-      few: 'Více, $count další sekce',
-      one: 'Více, 1 další sekce',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get navTabTitleCalendar => 'DailyOS';
 
   @override
@@ -9860,9 +9840,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get navTabTitleJournal => 'Zápisník';
-
-  @override
-  String get navTabTitleMore => 'Více';
 
   @override
   String get navTabTitleNavigate => 'Navigovat';

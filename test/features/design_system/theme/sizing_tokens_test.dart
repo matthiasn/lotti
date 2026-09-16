@@ -70,6 +70,17 @@ void main() {
     });
   });
 
+  group('TapTargets', () {
+    test('the compact floor stays at the platform guidance, under the '
+        'recommended target', () {
+      // Dense rows (the contact footer) take the 44 px platform floor; it must
+      // never rise to the 48 px recommendation those rows cannot afford, nor
+      // sink below what a finger can reliably hit.
+      expect(TapTargets.compact, greaterThanOrEqualTo(44));
+      expect(TapTargets.compact, lessThan(TapTargets.minimum));
+    });
+  });
+
   group('BorderWidths', () {
     test('the emphasis stroke reads as heavier than the hairline', () {
       expect(BorderWidths.emphasis, greaterThan(BorderWidths.hairline));

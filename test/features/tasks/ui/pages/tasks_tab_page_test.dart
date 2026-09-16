@@ -11,7 +11,6 @@ import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
@@ -42,7 +41,6 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
@@ -207,23 +205,31 @@ void main() {
     );
   }
 
-  List<Override> pageOverrides({bool launcherEnabled = false}) => [
+  List<Override> pageOverrides() => [
     journalPageScopeProvider.overrideWithValue(true),
     journalPageControllerProvider(true).overrideWith(() => fakeController),
     taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
-    configFlagProvider(
-      enableMobileNavigationLauncherFlag,
-    ).overrideWith((_) => Stream.value(launcherEnabled)),
   ];
 
+  /// The desktop list pane reads the desktop selection; stub it before
+  /// pumping the page at [desktopLayoutMediaQueryData].
+  void stubDesktopSelection() => when(
+    () => mockNavService.desktopSelectedTaskId,
+  ).thenReturn(ValueNotifier<String?>(null));
+
+  /// [desktop] pumps the page on a desktop-wide window — the one place it
+  /// still floats its own create button. On a phone the mobile navigation
+  /// launcher docks that action on its own row, so the FAB tests below run
+  /// at desktop width.
   Widget buildSubject({
     required JournalPageState state,
     TasksTabCreateTaskCallback? onCreateTaskPressed,
     TasksTabPageController? controller,
     MediaQueryData? mediaQueryData,
-    bool launcherEnabled = false,
+    bool desktop = false,
   }) {
     fakeController = FakeJournalPageController(state);
+    if (desktop) stubDesktopSelection();
 
     return makeTestableWidgetNoScroll(
       AppCommandHost(
@@ -234,8 +240,8 @@ void main() {
           controller: controller,
         ),
       ),
-      mediaQueryData: mediaQueryData,
-      overrides: pageOverrides(launcherEnabled: launcherEnabled),
+      mediaQueryData: desktop ? desktopLayoutMediaQueryData : mediaQueryData,
+      overrides: pageOverrides(),
     );
   }
 
@@ -265,9 +271,6 @@ void main() {
         journalPageScopeProvider.overrideWithValue(true),
         journalPageControllerProvider(true).overrideWith(() => fakeController),
         taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
-        configFlagProvider(
-          enableMobileNavigationLauncherFlag,
-        ).overrideWith((_) => Stream.value(false)),
       ],
     );
   }
@@ -290,6 +293,7 @@ void main() {
           calls++;
           receivedContext = filterContext;
         },
+        desktop: true,
       ),
     );
     await tester.pump();
@@ -321,6 +325,7 @@ void main() {
         onCreateTaskPressed: (ref, filterContext) async {
           receivedContext = filterContext;
         },
+        desktop: true,
       ),
     );
     await tester.pump();
@@ -523,6 +528,7 @@ void main() {
           onCreateTaskPressed: (ref, filterContext) async {
             createdCategoryId = filterContext.categoryId;
           },
+          desktop: true,
         ),
       );
       await tester.pump();
@@ -592,7 +598,7 @@ void main() {
           labelIds: any(named: 'labelIds'),
         ),
       ).thenAnswer((_) => result.future);
-      await tester.pumpWidget(buildSubject(state: state()));
+      await tester.pumpWidget(buildSubject(state: state(), desktop: true));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       final message = tester
@@ -644,6 +650,7 @@ void main() {
       buildSubject(
         state: state(selectedLabelIds: const {'label-1'}),
         // Do NOT provide onCreateTaskPressed — exercises default path
+        desktop: true,
       ),
     );
     await tester.pump();
@@ -724,6 +731,7 @@ void main() {
       ).thenAnswer((_) => assignment.future);
 
       fakeController = FakeJournalPageController(state());
+      stubDesktopSelection();
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
           const AppCommandHost(
@@ -731,6 +739,7 @@ void main() {
             platform: TargetPlatform.windows,
             child: TasksTabPage(),
           ),
+          mediaQueryData: desktopLayoutMediaQueryData,
           overrides: [
             journalPageScopeProvider.overrideWithValue(true),
             journalPageControllerProvider(
@@ -766,11 +775,7 @@ void main() {
   testWidgets('uses the design-system FAB with bottom-nav padding', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      buildSubject(
-        state: state(),
-      ),
-    );
+    await tester.pumpWidget(buildSubject(state: state(), desktop: true));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
@@ -783,9 +788,7 @@ void main() {
       'the task list drops its floating button so the launcher can dock the '
       'same action on its own row',
       (tester) async {
-        await tester.pumpWidget(
-          buildSubject(state: state(), launcherEnabled: true),
-        );
+        await tester.pumpWidget(buildSubject(state: state()));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -802,72 +805,16 @@ void main() {
     );
 
     testWidgets(
-      'a desktop window keeps the floating button even with the flag on — '
-      'the sidebar replaces the launcher there',
+      'a desktop window keeps the floating button — the sidebar replaces the '
+      'launcher there',
       (tester) async {
-        tester.view
-          ..physicalSize = const Size(1280, 800)
-          ..devicePixelRatio = 1;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
-        when(
-          () => mockNavService.desktopSelectedTaskId,
-        ).thenReturn(ValueNotifier<String?>(null));
-
-        await tester.pumpWidget(
-          buildSubject(
-            state: state(),
-            launcherEnabled: true,
-            mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
-          ),
-        );
+        await tester.pumpWidget(buildSubject(state: state(), desktop: true));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
       },
     );
-
-    testWidgets('the floating button returns when the flag goes off', (
-      tester,
-    ) async {
-      final flag = StreamController<bool>.broadcast();
-      addTearDown(flag.close);
-      fakeController = FakeJournalPageController(state());
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          const AppCommandHost(
-            handlers: {},
-            platform: TargetPlatform.windows,
-            child: TasksTabPage(),
-          ),
-          overrides: [
-            journalPageScopeProvider.overrideWithValue(true),
-            journalPageControllerProvider(
-              true,
-            ).overrideWith(() => fakeController),
-            taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
-            configFlagProvider(
-              enableMobileNavigationLauncherFlag,
-            ).overrideWith((_) => flag.stream),
-          ],
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      for (final enabled in [true, false, true]) {
-        flag.add(enabled);
-        // Settled, not pumped: the Scaffold animates its floating button out,
-        // so the widget outlives the rebuild that dropped it.
-        await tester.pumpAndSettle();
-        expect(
-          find.byType(DesignSystemFloatingActionButton),
-          enabled ? findsNothing : findsOneWidget,
-          reason: 'launcher flag $enabled',
-        );
-      }
-    });
 
     testWidgets('tasksTabDockAction words the chip the way the FAB words '
         'itself', (tester) async {
@@ -988,11 +935,7 @@ void main() {
     'the worded FAB matches the task action bar: 48 high, one step4 above '
     'the content edge',
     (tester) async {
-      await tester.pumpWidget(
-        buildSubject(
-          state: state(),
-        ),
-      );
+      await tester.pumpWidget(buildSubject(state: state(), desktop: true));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 

@@ -39,7 +39,6 @@ import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/shutdown_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
-import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -51,7 +50,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgets/media/thumb_hash_image.dart';
-import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
+import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -853,28 +852,9 @@ Widget _dayShell(ScreenshotDevice device, {required DraftPlan draft}) {
         left: 0,
         right: 0,
         bottom: 0,
-        child: DesignSystemBottomNavigationBar(
-          items: [
-            const DesignSystemFiveSlotNavBarItem(
-              label: 'Daily OS',
-              icon: Icon(LottiIcons.today),
-              activeIcon: Icon(LottiIcons.today),
-              active: true,
-            ),
-            DesignSystemFiveSlotNavBarItem(
-              label: _t('Tasks', 'Aufgaben'),
-              icon: const Icon(LottiIcons.confirmCircled),
-            ),
-            DesignSystemFiveSlotNavBarItem(
-              label: _t('Calendar', 'Kalender'),
-              icon: const Icon(LottiIcons.calendar),
-            ),
-            DesignSystemFiveSlotNavBarItem(
-              label: _t('Settings', 'Einstellungen'),
-              icon: const Icon(LottiIcons.settings),
-            ),
-          ],
-        ),
+        // Daily OS docks no page action, so the shell centres Navigate
+        // alone over the day page.
+        child: MobileNavigationLauncher(onNavigate: () {}),
       ),
     ],
   );

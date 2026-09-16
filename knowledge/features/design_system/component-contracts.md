@@ -442,7 +442,7 @@ glyph-only external destinations. Email comes first, followed by
 the Manual, GitHub and Discord. The envelope is intentionally no longer a
 labelled or otherwise privileged affordance: all four actions take the same
 target, icon theme, hover treatment, tooltip and semantic construction. The
-desktop sidebar pins the group beneath Settings; the mobile More sheet ends
+desktop sidebar pins the group beneath Settings; the mobile Navigate grid ends
 with it. See [navigation](../../architecture/navigation.md) for why nothing in
 it is an app destination.
 
@@ -451,9 +451,8 @@ together would break the row.** That control pins its target to
 `TapTargets.minimum` and treats the resulting 48×48 as a layout commitment for
 card headers and panel corners — it says in as many words not to put it in a
 dense row. This *is* a dense row, in the narrowest column the app has. It takes
-`DesignSystemFiveSlotNavBar.minTapTarget` instead: the floor the rest of this
-app's navigation chrome already uses, still above the 44 px platform guidance
-for touch.
+`TapTargets.compact` instead — the 44 px platform guidance for touch, four of
+which still fit the rail.
 
 **The four controls move as one trailing group.** One `Align.centerRight` owns
 the placement, and one `Row(mainAxisSize: min)` owns the uninterrupted action
@@ -615,23 +614,23 @@ override, and the semantics node enclosing each box.
 
 # Shell-aware overlay spacing
 
-The bottom navigation shell is an **app-level overlay docked flush against the
-screen's bottom edge**, not a normal `Scaffold.bottomNavigationBar`. Any
-screen-level FAB or status overlay hugging the bottom edge therefore needs
-explicit clearance.
+The mobile navigation launcher is an **app-level overlay floating over the
+bottom edge**, not a normal `Scaffold.bottomNavigationBar`. Any screen-level
+FAB or status overlay hugging the bottom edge therefore needs explicit
+clearance.
 
-The shell and its clearance wrapper live **outside this feature**, in
-`lib/widgets/nav_bar/`. The DS widgetbook demonstrates the components;
+The launcher and its clearance contract live **outside this feature**, in
+`lib/widgets/nav_bar/`. The DS widgetbook demonstrates the launcher;
 [`design_system_bottom_navigation_bar_test.dart`](../../../test/widgets/nav_bar/design_system_bottom_navigation_bar_test.dart)
-tests the shell and clearance wrapper directly, and
+tests the clearance contract and its wrapper directly, and
 [`beamer_app_test.dart`](../../../test/beamer/beamer_app_test.dart) exercises
-their integration with the app shell, including both navigation flag states.
-The contract:
+their integration with the app shell, docked and slid away. The contract:
 
 - `DesignSystemBottomNavigationBar.occupiedHeight(context)` defines how much
-  vertical space the shell consumes — the bar including safe-area inset, plus the
-  height of the indicator overlay row currently riding above it, published by the
-  app shell.
+  vertical space the bottom stack consumes — the launcher including the
+  bottom safe-area inset it absorbs, plus the height of the activity island
+  currently riding above it, published by the app shell. Zero in the desktop
+  layout; only the island's part while the launcher has slid away.
 - `DesignSystemBottomNavigationFabPadding` is the default wrapper for
   screen-level FABs that need to stay above that shell. **Feature pages should use
   the wrapper rather than inventing local bottom offsets.**
@@ -642,15 +641,9 @@ The contract:
   ask the app shell to slide the bar away; project, goal, habit, people and
   settings route helpers keep that decision tied to router state rather than
   widget timing.
-- The shell can publish `navigationBarHeight` alongside the recording height
-  in `DesignSystemBottomNavigationOverlayHeight`. Consumers then reserve that
-  selected design's height; without it, the legacy slot-bar calculation applies.
-  Changing the height notifies existing page/FAB consumers without rebuilding
-  their navigation stacks.
-- `DesignSystemFiveSlotNavBar.contentHeight(context)` owns the slot-row height
-  contract. It **scales caption line height with `MediaQuery.textScalerOf` and
-  rounds fractional line boxes up to the logical pixel Flutter renders**, so
-  accessibility scales such as 1.3× cannot overflow the fixed row.
+- `DesignSystemBottomNavigationOverlayHeight` is the shell's scope for the
+  island's height and the launcher's docked state. Changing either notifies
+  existing page/FAB consumers without rebuilding their navigation stacks.
 - `MobileNavigationLauncher.barHeight(context)` owns launcher clearance, and is
   `chipHeight` plus one `spacing.step2` and the bottom inset (never less than
   `spacing.step6`). `chipHeight` measures the localized Navigate label at the
@@ -669,7 +662,7 @@ The contract:
   `blurred: false` and skips the filter it could not show through.
 - `MobileActivityIsland`
   ([mobile_activity_island.dart](../../../lib/widgets/nav_bar/mobile_activity_island.dart))
-  is the one capsule that floats above either bar while a timer or a
+  is the one capsule that floats above the launcher while a timer or a
   recording runs. It wears the same `DsGlassChipSurface`, `dsGlassChipFill`
   and `dsGlassChipBorder` as the launcher chips — one glass dialect, not a
   third. `capsuleHeight` is `spacing.step8` at the default text size and,
@@ -689,7 +682,7 @@ The contract:
   [navigation](../../architecture/navigation.md#the-activity-island).
 - `MobileNavigationLauncher.labelsFit(context, action)` decides between the
   two-label row and the glyph-only companion, budgeting `DsGlassPill.intrinsicWidth`
-  against `availableRowWidth` the way the slot bar budgets slots. The pill
+  against `availableRowWidth`. The pill
   measures itself — padding, glyph, gap and label at the current text scale —
   because a caller that restated that arithmetic would drift silently the day
   the pill's own padding changed. The page

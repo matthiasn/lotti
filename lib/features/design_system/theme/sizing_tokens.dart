@@ -62,6 +62,14 @@ abstract final class TapTargets {
   /// 48×48 and grows the row it sits in — which is why it belongs in card
   /// headers and panel corners rather than dense rows.
   static const double minimum = 48;
+
+  /// 44 — the platform guidance for touch, and the floor for a dense row of
+  /// glyph-only controls that cannot afford [minimum].
+  ///
+  /// The one taker is `DesignSystemContactRow`: four targets sharing the
+  /// narrowest column the app has (a 184 px rail) do not fit at 48 and do at
+  /// 44. Anything with room for the recommended target takes [minimum].
+  static const double compact = 44;
 }
 
 /// Where the system text scale stops being "a little bigger" and a layout

@@ -2,7 +2,7 @@
 
 This directory holds the reusable widgets that belong to no single feature: app-bar
 chrome, modal presentation, selection primitives, the settings page scaffolding,
-the entity picker, and the bottom-navigation shell.
+the entity picker, and the mobile navigation launcher.
 
 Anything with a token-backed visual identity — buttons, inputs, chips, badges —
 lives in the [design system](../features/design_system/README.md) instead. What
@@ -17,7 +17,7 @@ lib/widgets/
 ├── selection/   # selection-modal primitives and the unified toggle family
 ├── settings/    # settings page grid and detail scaffold
 ├── picker/      # EntityPickerSheet, shared by categories, labels and task links
-├── nav_bar/     # bottom navigation shell and FAB clearance
+├── nav_bar/     # mobile navigation launcher, its grid, the activity island and FAB clearance
 ├── media/       # full-screen image-viewer orientation lifecycle
 ├── timeline/    # the one vertical timeline rail, shared by events and goals
 ├── day_indicators/ # DayMark model, day cells, strip and track geometry shared by goals and habits
@@ -27,7 +27,7 @@ lib/widgets/
 ## How it works
 
 Why modal presentation is centralized, why the selection primitives were
-extracted, and why the bottom-nav shell lives here rather than in the design
+extracted, and why the mobile navigation lives here rather than in the design
 system are documented in the knowledge bundle:
 
 **→ [knowledge/architecture/shared-widgets.md](../../knowledge/architecture/shared-widgets.md)**

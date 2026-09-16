@@ -3655,14 +3655,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Aktiviert die Matrix-Integration, um deine Einträge geräteübergreifend und mit anderen Matrix-Benutzern zu synchronisieren.';
 
   @override
-  String get configFlagEnableMobileNavigationLauncher =>
-      'Neue mobile Navigation';
-
-  @override
-  String get configFlagEnableMobileNavigationLauncherDescription =>
-      'Öffne alle App-Bereiche über eine einzige Navigationsschaltfläche.';
-
-  @override
   String get configFlagEnableNotifications => 'Benachrichtigungen aktivieren?';
 
   @override
@@ -9773,17 +9765,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get navSidebarManualLabel => 'Handbuch';
 
   @override
-  String navTabMoreSemanticsLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Mehr, $count weitere Bereiche',
-      one: 'Mehr, 1 weiterer Bereich',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get navTabTitleCalendar => 'DailyOS';
 
   @override
@@ -9800,9 +9781,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get navTabTitleJournal => 'Logbuch';
-
-  @override
-  String get navTabTitleMore => 'Mehr';
 
   @override
   String get navTabTitleNavigate => 'Navigieren';

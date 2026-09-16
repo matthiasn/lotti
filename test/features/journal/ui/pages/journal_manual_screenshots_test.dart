@@ -65,6 +65,7 @@ import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/widgets/modal/index.dart';
+import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -112,6 +113,31 @@ class _ManualEntryController extends FakeEntryController {
       controller.document.insert(0, text);
     }
     return result;
+  }
+}
+
+/// The logbook as a phone shows it: the page with the mobile navigation
+/// launcher docked over its bottom edge, carrying the logbook's create
+/// action exactly as the app shell hands it over.
+class _LogbookUnderLauncher extends ConsumerWidget {
+  const _LogbookUnderLauncher();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Stack(
+      children: [
+        const InfiniteJournalPage(),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: MobileNavigationLauncher(
+            onNavigate: () {},
+            pageAction: logbookDockAction(context, ref),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -751,13 +777,25 @@ void main() {
       });
 
       testWidgets('$viewport journal create menu — $theme', (tester) async {
+        // On a phone the logbook's create action rides the mobile navigation
+        // launcher's row, the way the app shell docks it; desktop keeps the
+        // page's own floating button.
         await pumpSurface(
           tester,
           device: device,
           brightness: brightness,
-          home: const InfiniteJournalPage(),
+          home: device.isPhone
+              ? const _LogbookUnderLauncher()
+              : const InfiniteJournalPage(),
         );
-        await tester.tap(find.byType(DesignSystemFloatingActionButton));
+        await tester.tap(
+          device.isPhone
+              ? find.descendant(
+                  of: find.byType(MobileNavigationLauncher),
+                  matching: find.byIcon(LottiIcons.add),
+                )
+              : find.byType(DesignSystemFloatingActionButton),
+        );
         await settleFrames(tester, 6);
         final messages = _messages(tester);
         expect(find.text(messages.createEntryTitle), findsOneWidget);

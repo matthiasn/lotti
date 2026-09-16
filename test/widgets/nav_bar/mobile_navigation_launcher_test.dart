@@ -1,14 +1,10 @@
-import 'dart:async';
-
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -130,80 +126,45 @@ void main() {
   );
 
   group('mobileNavigationLauncherOwnsPageActions', () {
-    Future<bool?> resolve(
-      WidgetTester tester, {
-      required Stream<bool> flag,
-      required Size size,
-    }) async {
+    Future<bool?> resolve(WidgetTester tester, {required Size size}) async {
       bool? owns;
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          Consumer(
-            builder: (context, ref, _) {
-              owns = mobileNavigationLauncherOwnsPageActions(context, ref);
+          Builder(
+            builder: (context) {
+              owns = mobileNavigationLauncherOwnsPageActions(context);
               return const SizedBox.shrink();
             },
           ),
           theme: DesignSystemTheme.light(),
           mediaQueryData: MediaQueryData(size: size),
-          overrides: [
-            configFlagProvider(
-              enableMobileNavigationLauncherFlag,
-            ).overrideWith((_) => flag),
-          ],
         ),
       );
       await tester.pump();
       return owns;
     }
 
-    testWidgets('is false while the flag has not resolved yet', (tester) async {
-      final pending = StreamController<bool>();
-      addTearDown(pending.close);
-      expect(
-        await resolve(
-          tester,
-          flag: pending.stream,
-          size: const Size(390, 844),
-        ),
-        isFalse,
-      );
+    testWidgets('is true on a compact window — the launcher is the mobile '
+        'navigation, nothing opts into it', (tester) async {
+      expect(await resolve(tester, size: const Size(390, 844)), isTrue);
     });
 
-    testWidgets('is false while the launcher flag is off', (tester) async {
+    testWidgets('is true right up to the desktop breakpoint', (tester) async {
       expect(
-        await resolve(
-          tester,
-          flag: Stream.value(false),
-          size: const Size(390, 844),
-        ),
-        isFalse,
-      );
-    });
-
-    testWidgets('is true on a compact window with the flag on', (tester) async {
-      expect(
-        await resolve(
-          tester,
-          flag: Stream.value(true),
-          size: const Size(390, 844),
-        ),
+        await resolve(tester, size: const Size(kDesktopBreakpoint - 1, 844)),
         isTrue,
       );
     });
 
     testWidgets(
-      'is false on a desktop window even with the flag on — the sidebar '
-      'replaces the launcher there, so floating actions keep their corner',
+      'is false from the desktop breakpoint on — the sidebar replaces the '
+      'launcher there, so floating actions keep their corner',
       (tester) async {
         expect(
-          await resolve(
-            tester,
-            flag: Stream.value(true),
-            size: const Size(1280, 800),
-          ),
+          await resolve(tester, size: const Size(kDesktopBreakpoint, 844)),
           isFalse,
         );
+        expect(await resolve(tester, size: const Size(1280, 800)), isFalse);
       },
     );
   });

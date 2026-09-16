@@ -26,7 +26,6 @@ import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_view_side_panel.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/sidebar_calendar.dart';
 import 'package:lotti/features/demo/ui/demo_mode_banner.dart';
-import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -57,7 +56,6 @@ import 'package:lotti/features/profiles/service/profile_switch_chrome.dart';
 import 'package:lotti/features/projects/ui/pages/projects_tab_page.dart';
 import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
-import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/sync_queue_counts.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
@@ -85,7 +83,6 @@ import 'package:lotti/widgets/misc/sidebar_activity_summary.dart';
 import 'package:lotti/widgets/misc/zoom_wrapper.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/nav_bar/mobile_activity_island.dart';
-import 'package:lotti/widgets/nav_bar/mobile_nav_more_sheet.dart';
 import 'package:lotti/widgets/nav_bar/mobile_nav_sheet.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
@@ -378,7 +375,6 @@ class _AppNavigationDestination {
     required this.kind,
     required this.label,
     required this.iconBuilder,
-    this.mobileIconWrapper,
     this.trailingBuilder,
     this.expandedChildBuilder,
   });
@@ -386,33 +382,9 @@ class _AppNavigationDestination {
   final _AppNavigationDestinationKind kind;
   final String label;
 
-  /// Whether this destination is part of the mobile bar's base line-up —
-  /// the slots that survive even the narrowest window. Tasks and Daily OS
-  /// are the most important pages — Daily OS never overflows — and
-  /// Journal keeps its slot alongside them. The remaining destinations
-  /// start out behind the More sheet (which is also where newly toggled
-  /// pages appear) and are promoted into their own slots as window width
-  /// allows (see [DesignSystemFiveSlotNavBar.comfortableSlotWidth]); once
-  /// everything fits, the More slot disappears.
-  bool get isMobilePrimary => switch (kind) {
-    _AppNavigationDestinationKind.tasks ||
-    _AppNavigationDestinationKind.dailyOs ||
-    _AppNavigationDestinationKind.journal => true,
-    _AppNavigationDestinationKind.projects ||
-    _AppNavigationDestinationKind.goals ||
-    _AppNavigationDestinationKind.habits ||
-    _AppNavigationDestinationKind.dashboards ||
-    _AppNavigationDestinationKind.people ||
-    _AppNavigationDestinationKind.events ||
-    _AppNavigationDestinationKind.settings => false,
-  };
-
-  /// Base icon for this destination. The desktop sidebar uses this directly;
-  /// compact navigation may decorate it through [mobileIconWrapper].
+  /// Icon for this destination, shared by the desktop sidebar rows and the
+  /// mobile Navigate grid's tiles.
   final Widget Function({required bool active}) iconBuilder;
-
-  /// Optional wrapper applied to the icon in compact (mobile) contexts.
-  final Widget Function(Widget icon)? mobileIconWrapper;
 
   /// Optional trailing widget shown on the right side of the desktop sidebar
   /// row, such as a status or count indicator.
@@ -422,24 +394,6 @@ class _AppNavigationDestination {
   /// destination row when it is the active tab and the sidebar is expanded.
   /// The Tasks destination uses this to host the saved-filters treeview.
   final Widget Function()? expandedChildBuilder;
-
-  Widget _mobileIcon({required bool active}) {
-    final icon = iconBuilder(active: active);
-    return mobileIconWrapper?.call(icon) ?? icon;
-  }
-
-  DesignSystemFiveSlotNavBarItem toFiveSlotItem({
-    required bool active,
-    required VoidCallback onTap,
-  }) {
-    return DesignSystemFiveSlotNavBarItem(
-      label: label,
-      icon: _mobileIcon(active: false),
-      activeIcon: _mobileIcon(active: true),
-      active: active,
-      onTap: onTap,
-    );
-  }
 
   /// [includeExpandedChild] drops the under-row subtree (saved filters, the
   /// month calendar) — lockdown uses this because those subtrees name things
@@ -1197,156 +1151,37 @@ class _AppScreenState extends ConsumerState<AppScreen> {
               navService.relationshipsDelegate.currentBeamLocation,
             ));
 
-    final useLauncher = mobileNavigationLauncherOwnsPageActions(context, ref);
-    final navigationBarHeight = useLauncher
-        ? MobileNavigationLauncher.barHeight(context)
-        : DesignSystemFiveSlotNavBar.barHeight(context);
+    final launcherHeight = MobileNavigationLauncher.barHeight(context);
 
-    // The bar fills with as many destinations as fit comfortably at the
-    // current window width and text scale. The base line-up is Tasks,
-    // Daily OS (when enabled), Logbook, plus More for everything else —
-    // that's also where newly toggled pages surface. As space grows,
-    // overflow destinations are promoted out of the More sheet in nav
-    // order, each landing in its canonical position with More pinned
-    // last, so resizing only ever adds or removes slots — nothing
-    // reshuffles. Once every destination fits, the More slot disappears
-    // entirely. Entries carry their full destination index so taps route
-    // through the same NavService indices the IndexedStack uses. Built
-    // lazily: on routes that suppress the bar entirely the slot config
-    // (and its per-slot closures) is never constructed.
-    Widget buildBottomNavigationBar() {
-      if (useLauncher) {
-        return MobileNavigationLauncher(
-          pageAction: _launcherDockAction(context, destinations[index].kind),
-          onNavigate: () => showMobileNavSheet(
-            context: context,
-            footerTrailing: const SyncQueueCounts(),
-            items: [
-              for (final (i, destination) in destinations.indexed)
-                MobileNavSheetItem(
-                  label: destination.label,
-                  icon: destination.iconBuilder(active: i == index),
-                  active: i == index,
-                  onSelected: () {
-                    final tapIndex = _currentDestinationIndex(destination.kind);
-                    if (tapIndex != null) navService.tapIndex(tapIndex);
-                  },
-                ),
-            ],
-          ),
-        );
-      }
-
-      double slotWidth(String label) =>
-          DesignSystemFiveSlotNavBar.comfortableSlotWidth(context, label);
-      final availableWidth = DesignSystemFiveSlotNavBar.availableRowWidth(
-        context,
-      );
-      final showAllDestinations = DesignSystemFiveSlotNavBar.allSlotsFit(
-        context,
-        [for (final destination in destinations) destination.label],
-      );
-
-      // Greedy promotion in nav order, stopping at the first destination
-      // that no longer fits alongside the base line-up and the More slot.
-      // Stopping (rather than skipping ahead to a narrower label) keeps
-      // the promoted set a stable prefix: a given window width always
-      // shows the same line-up regardless of how it was reached.
-      final promoted = <int>{};
-      if (!showAllDestinations) {
-        var used = slotWidth(context.messages.navTabTitleMore);
-        for (final destination in destinations) {
-          if (destination.isMobilePrimary) {
-            used += slotWidth(destination.label);
-          }
-        }
-        for (var i = 0; i < destinations.length; i++) {
-          if (destinations[i].isMobilePrimary) continue;
-          final width = slotWidth(destinations[i].label);
-          if (used + width > availableWidth) break;
-          promoted.add(i);
-          used += width;
-        }
-      }
-
-      final primaryEntries = <(int, _AppNavigationDestination)>[];
-      final overflowEntries = <(int, _AppNavigationDestination)>[];
-      for (var i = 0; i < destinations.length; i++) {
-        (showAllDestinations ||
-                    destinations[i].isMobilePrimary ||
-                    promoted.contains(i)
-                ? primaryEntries
-                : overflowEntries)
-            .add((i, destinations[i]));
-      }
-
-      // Only a destination actually living behind More may lend the More
-      // slot its name — a promoted destination lights up its own slot.
-      final activeOverflowDestination =
-          overflowEntries.any(
-            (entry) => entry.$1 == index,
-          )
-          ? destinations[index]
-          : null;
-
-      return DesignSystemBottomNavigationBar(
+    // The launcher's row: the shell's Navigate chip and, on the list tabs
+    // that hand one over, the active page's create action. Navigate opens
+    // every enabled destination in a grid; taps route through the same
+    // NavService indices the IndexedStack uses. Built lazily: on routes that
+    // suppress the bar entirely the grid's per-destination closures are
+    // never constructed.
+    Widget buildLauncher() => MobileNavigationLauncher(
+      pageAction: _launcherDockAction(context, destinations[index].kind),
+      onNavigate: () => showMobileNavSheet(
+        context: context,
+        footerTrailing: const SyncQueueCounts(),
         items: [
-          for (final (i, destination) in primaryEntries)
-            destination.toFiveSlotItem(
+          for (final (i, destination) in destinations.indexed)
+            MobileNavSheetItem(
+              label: destination.label,
+              icon: destination.iconBuilder(active: i == index),
               active: i == index,
-              onTap: () => navService.tapIndex(i),
-            ),
-          if (overflowEntries.isNotEmpty)
-            DesignSystemFiveSlotNavBarItem(
-              // While an overflow destination is on screen the More slot
-              // takes its name and the active tint so the bar reflects
-              // location even though the destination has no own slot. For
-              // screen readers the slot keeps announcing the More
-              // affordance alongside the destination name — activating it
-              // still opens the sheet, not the destination.
-              label:
-                  activeOverflowDestination?.label ??
-                  context.messages.navTabTitleMore,
-              icon: const Icon(LottiIcons.more),
-              active: activeOverflowDestination != null,
-              semanticsLabel: activeOverflowDestination != null
-                  ? '${activeOverflowDestination.label} — '
-                        '${context.messages.navTabMoreSemanticsLabel(overflowEntries.length)}'
-                  : context.messages.navTabMoreSemanticsLabel(
-                      overflowEntries.length,
-                    ),
-              onTap: () => showMobileNavMoreSheet(
-                context: context,
-                items: [
-                  for (final (i, destination) in overflowEntries)
-                    MobileNavMoreSheetItem(
-                      label: destination.label,
-                      // The bare icon, not the badge-wrapped mobile one:
-                      // sheet rows have a trailing slot (like the desktop
-                      // sidebar), so a count pill there beats a badge
-                      // cramped over the icon.
-                      icon: destination.iconBuilder(active: i == index),
-                      trailing: destination.trailingBuilder?.call(
-                        active: i == index,
-                      ),
-                      active: i == index,
-                      // The index is resolved at tap time, not captured: a
-                      // flag change (e.g. synced from another device) while
-                      // the sheet is open re-numbers the destinations, and a
-                      // stale index would route the tap to the wrong tab.
-                      onSelected: () {
-                        final tapIndex = _currentDestinationIndex(
-                          destination.kind,
-                        );
-                        if (tapIndex != null) navService.tapIndex(tapIndex);
-                      },
-                    ),
-                ],
-              ),
+              // The index is resolved at tap time, not captured: a flag
+              // change (e.g. synced from another device) while the grid is
+              // open re-numbers the destinations, and a stale index would
+              // route the tap to the wrong tab.
+              onSelected: () {
+                final tapIndex = _currentDestinationIndex(destination.kind);
+                if (tapIndex != null) navService.tapIndex(tapIndex);
+              },
             ),
         ],
-      );
-    }
+      ),
+    );
 
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
@@ -1360,7 +1195,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           // island never covers scroll content or floating actions.
           _MobileNavOverlayHeightScope(
             navBarVisible: showBottomNav,
-            navigationBarHeight: navigationBarHeight,
             // A slid-away bar reserves nothing: the goal agent pages, project
             // details and settings details dock their own pinned surfaces at
             // the bottom edge and must not pad around a bar that is gone.
@@ -1377,7 +1211,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
               bottom: 0,
               child: _SlideAwayBottomNav(
                 hidden: slideNavAway,
-                child: buildBottomNavigationBar(),
+                child: buildLauncher(),
               ),
             ),
             // The activity island (running timer / recording) floats above
@@ -1396,7 +1230,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
               bottom:
                   (slideNavAway
                       ? MediaQuery.paddingOf(context).bottom
-                      : navigationBarHeight) +
+                      : launcherHeight) +
                   MobileActivityIsland.gapAboveBar(context),
               // The recording half is omitted on Flatpak builds (MediaKit
               // compatibility issues).
@@ -1542,7 +1376,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         kind: _AppNavigationDestinationKind.settings,
         label: context.messages.navTabTitleSettings,
         iconBuilder: ({required active}) => const Icon(LottiIcons.settings),
-        mobileIconWrapper: (icon) => OutboxBadgeIcon(icon: icon),
         trailingBuilder: ({required active}) => const SyncQueueCounts(),
       ),
     ];
@@ -1559,7 +1392,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     final result = allDestinations
         .where((destination) => enabledKinds.contains(destination.kind))
         .toList(growable: false);
-    // The More sheet resolves tap indices from _enabledDestinationKinds
+    // The Navigate grid resolves tap indices from _enabledDestinationKinds
     // while this list (ordered by `allDestinations`) drives the
     // IndexedStack — a reorder of one without the other silently
     // misroutes taps, so pin their agreement.
@@ -1576,8 +1409,8 @@ class _AppScreenState extends ConsumerState<AppScreen> {
   /// Destination index of [kind] as enabled *right now*, read directly
   /// from the NavService flag getters — the same ordering
   /// [_buildNavigationDestinations] uses via [_enabledDestinationKinds].
-  /// Resolved at tap time by the More sheet so a flag change while the
-  /// sheet is open cannot route a tap through a stale index. Null when
+  /// Resolved at tap time by the Navigate grid so a flag change while the
+  /// grid is open cannot route a tap through a stale index. Null when
   /// [kind] got disabled in the meantime.
   int? _currentDestinationIndex(_AppNavigationDestinationKind kind) {
     final index = _enabledDestinationKinds(
@@ -1695,13 +1528,11 @@ class _NudgeBannerTopLane extends ConsumerWidget {
 class _MobileNavOverlayHeightScope extends ConsumerWidget {
   const _MobileNavOverlayHeightScope({
     required this.navBarVisible,
-    required this.navigationBarHeight,
     required this.barDocked,
     required this.child,
   });
 
   final bool navBarVisible;
-  final double navigationBarHeight;
 
   /// Whether the bar is docked at the bottom edge rather than slid away;
   /// see [DesignSystemBottomNavigationOverlayHeight.barDocked].
@@ -1743,7 +1574,6 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
             : 0.0;
         return DesignSystemBottomNavigationOverlayHeight(
           height: height,
-          navigationBarHeight: navigationBarHeight,
           barDocked: barDocked,
           child: child,
         );
@@ -1761,9 +1591,9 @@ class _SlideAwayBottomNav extends StatelessWidget {
 
   static const Duration slideDuration = Duration(milliseconds: 450);
 
-  /// Matches the five-slot bar's tint ease so nav transitions share one
-  /// motion language (`cubic-bezier(0.25, 1, 0.5, 1)` — easeOutQuart).
-  static const Curve slideCurve = DesignSystemFiveSlotNavBar.tintCurve;
+  /// easeOutQuart — the ease the mobile navigation's transitions have
+  /// always used.
+  static const Curve slideCurve = MotionCurves.easeOutQuart;
 
   final bool hidden;
   final Widget child;
@@ -1797,7 +1627,7 @@ class _SlideAwayBottomNav extends StatelessWidget {
 
 /// The enabled destination kinds in navigation order — the single source
 /// of truth for how flags map to tab indices, shared by the destination
-/// builder and the More sheet's tap-time index resolution.
+/// builder and the Navigate grid's tap-time index resolution.
 List<_AppNavigationDestinationKind> _enabledDestinationKinds({
   required bool isProjectsPageEnabled,
   required bool isDailyOsPageEnabled,
