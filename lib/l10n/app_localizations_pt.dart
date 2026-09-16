@@ -9,14 +9,6 @@ class AppLocalizationsPt extends AppLocalizations {
   AppLocalizationsPt([String locale = 'pt']) : super(locale);
 
   @override
-  String get goalOffTrackNotificationBody => 'Um bom momento para retomar.';
-
-  @override
-  String goalOffTrackNotificationTitle(String goal) {
-    return '$goal está fora do rumo';
-  }
-
-  @override
   String get activeLabel => 'Ativo';
 
   @override
@@ -3669,9 +3661,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Habilite a integração do Matrix para sincronizar suas entradas entre dispositivos e com outros usuários do Matrix.';
 
   @override
-  String get configFlagEnableNotifications => 'Ativar notificações?';
-
-  @override
   String get configFlagEnableNotificationsDescription =>
       'Receba notificações de lembretes, atualizações e eventos importantes.';
 
@@ -7282,6 +7271,14 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get goalNudgeStatusSuperseded => 'Substituído';
+
+  @override
+  String get goalOffTrackNotificationBody => 'Um bom momento para retomar.';
+
+  @override
+  String goalOffTrackNotificationTitle(String goal) {
+    return '$goal está fora do rumo';
+  }
 
   @override
   String goalPatternBusiestHour(String hour) {
@@ -13695,6 +13692,89 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsMeasurableValueKindNumber => 'Número';
 
   @override
+  String get settingsNotificationsAllowTitle => 'Permitir notificações';
+
+  @override
+  String get settingsNotificationsBadgeDescription =>
+      'Mostra no ícone da app quantas tarefas estão em curso.';
+
+  @override
+  String get settingsNotificationsBadgeTitle =>
+      'Número de tarefas no ícone da app';
+
+  @override
+  String get settingsNotificationsCheckInRemindersDescription =>
+      'Quando está na hora de entrar em contacto com alguém.';
+
+  @override
+  String get settingsNotificationsCheckInRemindersTitle =>
+      'Lembretes de contacto';
+
+  @override
+  String get settingsNotificationsDayPlanOutcomesDescription =>
+      'Quando um plano do dia preparado em segundo plano está pronto ou não foi concluído.';
+
+  @override
+  String get settingsNotificationsDayPlanOutcomesTitle =>
+      'Resultados do plano do dia';
+
+  @override
+  String get settingsNotificationsExplanation =>
+      'Os avisos chegam pelas notificações do teu dispositivo. Escolhe o que merece um; de qualquer forma, tudo fica no sino do Lotti.';
+
+  @override
+  String get settingsNotificationsGoalAlertsDescription =>
+      'Quando um objetivo sai do rumo.';
+
+  @override
+  String get settingsNotificationsGoalAlertsTitle => 'Avisos de objetivos';
+
+  @override
+  String get settingsNotificationsHabitAutoCompletionsDescription =>
+      'Quando o Lotti assinala um hábito por ti a partir dos teus dados.';
+
+  @override
+  String get settingsNotificationsHabitAutoCompletionsTitle =>
+      'Hábitos assinalados automaticamente';
+
+  @override
+  String get settingsNotificationsHabitRemindersDescription =>
+      'À hora que definiste num hábito.';
+
+  @override
+  String get settingsNotificationsHabitRemindersTitle => 'Lembretes de hábitos';
+
+  @override
+  String get settingsNotificationsKindsHeading => 'Avisar-me sobre';
+
+  @override
+  String get settingsNotificationsKindsNote =>
+      'Desligar um tipo só para os seus avisos. As suas entradas continuam a aparecer no sino.';
+
+  @override
+  String get settingsNotificationsSubtitle =>
+      'Que avisos te chegam como notificação';
+
+  @override
+  String get settingsNotificationsSyncConflictsDescription =>
+      'Quando uma entrada foi editada em dois dispositivos e precisa da tua revisão.';
+
+  @override
+  String get settingsNotificationsSyncConflictsTitle =>
+      'Conflitos de sincronização';
+
+  @override
+  String get settingsNotificationsTaskSuggestionsDescription =>
+      'Quando um agente tem sugestões sobre uma tarefa ou uma tarefa está atrasada.';
+
+  @override
+  String get settingsNotificationsTaskSuggestionsTitle =>
+      'Sugestões de tarefas';
+
+  @override
+  String get settingsNotificationsTitle => 'Notificações';
+
+  @override
   String get settingsOnboardingActionSubtitle =>
       'Reabra o fluxo de boas-vindas – conecte seu cérebro de IA e crie uma tarefa';
 
@@ -13751,7 +13831,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get settingsPreferencesSubtitle =>
-      'Tema, animações, estilo de gravação, fala e atalhos';
+      'Tema, animações, notificações, estilo de gravação, fala e atalhos';
 
   @override
   String get settingsPreferencesTitle => 'Preferências';

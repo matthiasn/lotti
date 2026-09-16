@@ -33,9 +33,9 @@ and list scaffolding they all sit in.
 The desktop/mobile layout fork; route composition for `/settings/**`; the shared
 settings presentation widgets; the shared list and detail scaffolding every
 definition editor reuses; the confirm-then-progress modal; and its own utility
-pages — theming, flags, logging domains, manual language, maintenance, about,
-health import and recording style. System health lives in its own feature and
-is only routed to from here.
+pages — theming, notifications, flags, logging domains, manual language,
+maintenance, about, health import and recording style. System health lives in
+its own feature and is only routed to from here.
 
 It does **not** own the AI, agents, categories, labels, projects or sync settings
 pages — those live in their features and Settings only routes into them. The menu

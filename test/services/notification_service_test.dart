@@ -143,6 +143,21 @@ void main() {
     ).thenAnswer((_) async => enabled);
   }
 
+  /// Stubs the per-kind switch for habit reminders. Defaults to on, as a
+  /// fresh install seeds it.
+  void setHabitRemindersEnabled({required bool enabled}) {
+    when(
+      () => sharedDb.getConfigFlag(notifyHabitRemindersFlag),
+    ).thenAnswer((_) async => enabled);
+  }
+
+  /// Stubs the badge switch beneath the master one. Defaults to on.
+  void setTaskBadgeEnabled({required bool enabled}) {
+    when(
+      () => sharedDb.getConfigFlag(showTaskBadgeFlag),
+    ).thenAnswer((_) async => enabled);
+  }
+
   /// Stubs the in-progress task count the badge is derived from.
   void setWipCount(int count) {
     // ignore: unnecessary_lambdas
@@ -172,6 +187,8 @@ void main() {
     getIt.registerSingleton<JournalDb>(sharedDb);
 
     setNotificationsEnabled(enabled: false);
+    setHabitRemindersEnabled(enabled: true);
+    setTaskBadgeEnabled(enabled: true);
     setWipCount(0);
   });
 
@@ -777,6 +794,62 @@ void main() {
     });
   });
 
+  group('updateBadge honours the badge switch', () {
+    test('a badge switched off clears the icon and reads no count', () async {
+      _usePlatform(TargetPlatform.macOS);
+      setNotificationsEnabled(enabled: true);
+      setTaskBadgeEnabled(enabled: false);
+      final service = await buildService();
+      channel.calls.clear();
+
+      await service.updateBadge();
+
+      // Same shape as notifications-off: the number comes down, and the
+      // count that would have gone up is never even queried.
+      expect(channel.methods, ['cancel', 'show']);
+      expect(channel.platformSpecificsOf('show')!['badgeNumber'], 0);
+      // ignore: unnecessary_lambdas
+      verifyNever(() => sharedDb.getWipCount());
+    });
+
+    test('switching the badge back on posts the count again', () async {
+      _usePlatform(TargetPlatform.macOS);
+      setNotificationsEnabled(enabled: true);
+      setTaskBadgeEnabled(enabled: false);
+      final service = await buildService();
+      await service.updateBadge();
+
+      setTaskBadgeEnabled(enabled: true);
+      setWipCount(3);
+      channel.calls.clear();
+      await service.updateBadge();
+
+      expect(channel.platformSpecificsOf('show')!['badgeNumber'], 3);
+      expect(service.badgeCount, 3);
+    });
+
+    test('the badge switch is not read while notifications are off', () async {
+      _usePlatform(TargetPlatform.macOS);
+      setNotificationsEnabled(enabled: false);
+      final service = await buildService();
+
+      await service.updateBadge();
+
+      // The master switch decides first; a badge preference behind it is
+      // moot and costs no database read.
+      verifyNever(() => sharedDb.getConfigFlag(showTaskBadgeFlag));
+    });
+
+    test('Android reads neither switch — there is no badge', () async {
+      _usePlatform(TargetPlatform.android);
+      final service = await buildService();
+
+      await service.updateBadge();
+
+      verifyNever(() => sharedDb.getConfigFlag(any()));
+    });
+  });
+
   group('updateBadge while notifications are on', () {
     late NotificationService service;
 
@@ -1146,6 +1219,34 @@ void main() {
     }
   });
 
+  group('cancelAllNotifications', () {
+    test(
+      'sweeps every alarm through the channel on a Darwin platform',
+      () async {
+        _usePlatform(TargetPlatform.macOS);
+        final service = await buildService();
+        channel.calls.clear();
+
+        await service.cancelAllNotifications();
+
+        // Pending and delivered alike: the sweep is what switching
+        // notifications off means for alarms already armed weeks ahead.
+        expect(channel.methods, ['cancelAll']);
+      },
+    );
+
+    for (final platform in [TargetPlatform.linux, TargetPlatform.windows]) {
+      test('$platform returns without reading the database', () async {
+        _usePlatform(platform);
+        final service = await buildService();
+
+        await expectLater(service.cancelAllNotifications(), completes);
+        verifyNever(() => sharedDb.getConfigFlag(any()));
+        expect(channel.calls, isEmpty);
+      });
+    }
+  });
+
   // A tapped notification carries its payload back through the plugin. Both
   // arrival paths are exercised at the channel: the response callback that
   // `initialize` registers, and the launch details a cold start reads.
@@ -1345,6 +1446,22 @@ void main() {
     }
   });
 
+  group('supportsIconBadge', () {
+    for (final (platform, supports) in [
+      (TargetPlatform.iOS, true),
+      (TargetPlatform.macOS, true),
+      (TargetPlatform.android, false),
+      (TargetPlatform.linux, false),
+      (TargetPlatform.windows, false),
+    ]) {
+      test('$platform: $supports', () {
+        debugDefaultTargetPlatformOverride = platform;
+
+        expect(NotificationService.supportsIconBadge, supports);
+      });
+    }
+  });
+
   group('scheduleHabitNotification', () {
     late MockNotificationService delegate;
 
@@ -1377,6 +1494,65 @@ void main() {
       active: true,
       private: false,
     );
+
+    test(
+      'habit reminders switched off: nothing is armed and the alarm the '
+      'habit may hold is dropped',
+      () async {
+        _usePlatform(TargetPlatform.macOS);
+        setHabitRemindersEnabled(enabled: false);
+        final service = await buildService();
+        channel.calls.clear();
+
+        await service.scheduleHabitNotification(
+          habit(
+            schedule: HabitSchedule.daily(
+              requiredCompletions: 1,
+              alertAtTime: DateTime(2024, 1, 1, 7, 45),
+            ),
+          ),
+        );
+
+        verifyNever(
+          () => delegate.scheduleNotification(
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            notifyAt: any(named: 'notifyAt'),
+            notificationId: any(named: 'notificationId'),
+            showOnMobile: any(named: 'showOnMobile'),
+            showOnDesktop: any(named: 'showOnDesktop'),
+            repeat: any(named: 'repeat'),
+            deepLink: any(named: 'deepLink'),
+          ),
+        );
+        // A reminder armed before the switch was flipped would fire once
+        // more otherwise; the save path is where it gets withdrawn.
+        expect(channel.methods, ['cancel']);
+        expect(channel.calls.single.arguments, 'habit-1'.hashCode);
+      },
+    );
+
+    test('a habit without an alert time reads no preference', () async {
+      final service = await buildService();
+
+      await service.scheduleHabitNotification(
+        habit(schedule: const HabitSchedule.daily(requiredCompletions: 1)),
+      );
+
+      verifyNever(() => sharedDb.getConfigFlag(notifyHabitRemindersFlag));
+      verifyNever(
+        () => delegate.scheduleNotification(
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          notifyAt: any(named: 'notifyAt'),
+          notificationId: any(named: 'notificationId'),
+          showOnMobile: any(named: 'showOnMobile'),
+          showOnDesktop: any(named: 'showOnDesktop'),
+          repeat: any(named: 'repeat'),
+          deepLink: any(named: 'deepLink'),
+        ),
+      );
+    });
 
     test(
       'daily schedule with alertAtTime delegates with the alert hour/minute',

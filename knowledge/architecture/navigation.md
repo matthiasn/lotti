@@ -421,7 +421,7 @@ one level and the pop plays as a pop:
 | AI model edit | `/settings/ai/model/:modelId` | `/settings/ai` |
 | AI profile edit | `/settings/ai/profile/:profileId` | `/settings/ai` |
 | Every definition leaf | `/settings/categories`, `/settings/labels`, `/settings/habits`, `/settings/dashboards`, `/settings/measurables` | `/settings/definitions` |
-| Every preference leaf | `/settings/theming`, `/settings/recording-style`, `/settings/speech`, `/settings/keyboard-shortcuts`, `/settings/advanced/animations` | `/settings/preferences` |
+| Every preference leaf | `/settings/theming`, `/settings/notifications`, `/settings/recording-style`, `/settings/speech`, `/settings/keyboard-shortcuts`, `/settings/advanced/animations` | `/settings/preferences` |
 | Advanced's two flat leaves | `/settings/flags`, `/settings/health_import` | `/settings/advanced` |
 
 The AI rows all use `aiSettingsParentRoute`, the same constant the detail pages'

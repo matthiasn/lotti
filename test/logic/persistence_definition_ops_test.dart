@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/features/notifications/model/notification_kind_flags.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -76,7 +77,38 @@ void main() {
     when(
       () => notificationService.cancelNotification(any()),
     ).thenAnswer((_) async {});
+    when(notificationService.cancelAllNotifications).thenAnswer((_) async {});
+    when(
+      () => notificationService.scheduleHabitNotification(
+        any(),
+        daysToAdd: any(named: 'daysToAdd'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => mocks.journalDb.getAllHabitDefinitions(),
+    ).thenAnswer((_) async => const []);
   });
+
+  HabitDefinition habitNamed(String id, {bool active = true}) =>
+      HabitDefinition(
+        id: id,
+        name: id,
+        description: '',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        habitSchedule: const HabitSchedule.daily(requiredCompletions: 1),
+        vectorClock: null,
+        active: active,
+        private: false,
+      );
+
+  /// Two habits, one archived: the re-arm must skip the archived one, the
+  /// sweep must not.
+  void withHabits() {
+    when(() => mocks.journalDb.getAllHabitDefinitions()).thenAnswer(
+      (_) async => [habitNamed('walk'), habitNamed('read', active: false)],
+    );
+  }
 
   tearDown(tearDownTestGetIt);
 
@@ -466,14 +498,66 @@ void main() {
       },
     );
 
-    test('switching off does not touch the armed alarms', () async {
+    test('switching off sweeps every alarm instead of reconciling', () async {
       withStoredStatus(status: true);
 
       await ops.setConfigFlagImpl(notificationsFlag(status: false));
 
+      // Alarms armed weeks ahead would still fire; the rows stay in the
+      // inbox for when notifications come back on.
+      verify(notificationService.cancelAllNotifications).called(1);
       verifyNever(
         () => notificationScheduler.reconcile(now: any(named: 'now')),
       );
+    });
+
+    test('the sweep runs before the badge is cleared', () async {
+      withStoredStatus(status: true);
+
+      await ops.setConfigFlagImpl(notificationsFlag(status: false));
+
+      // The zero-badge post is itself a notification; sweeping after it
+      // would take it down again and leave the count on the icon.
+      verifyInOrder([
+        notificationService.cancelAllNotifications,
+        notificationService.updateBadge,
+      ]);
+    });
+
+    test('a sweep failure still clears the badge and saves', () async {
+      withStoredStatus(status: true);
+      when(
+        notificationService.cancelAllNotifications,
+      ).thenThrow(StateError('channel'));
+
+      await expectLater(
+        ops.setConfigFlagImpl(notificationsFlag(status: false)),
+        completes,
+      );
+
+      verify(notificationService.updateBadge).called(1);
+    });
+
+    test('switching on re-arms the reminder of every active habit', () async {
+      withStoredStatus(status: false);
+      withHabits();
+
+      await ops.setConfigFlagImpl(notificationsFlag(status: true));
+
+      // Habit reminders have no inbox row for the reconcile to find.
+      verify(
+        () => notificationService.scheduleHabitNotification(
+          habitNamed('walk'),
+          daysToAdd: any(named: 'daysToAdd'),
+        ),
+      ).called(1);
+      verifyNever(
+        () => notificationService.scheduleHabitNotification(
+          habitNamed('read', active: false),
+          daysToAdd: any(named: 'daysToAdd'),
+        ),
+      );
+      verifyNever(notificationService.cancelAllNotifications);
     });
 
     test('re-writing an already-on flag does not reconcile', () async {
@@ -498,6 +582,147 @@ void main() {
         ops.setConfigFlagImpl(notificationsFlag(status: true)),
         completes,
       );
+    });
+  });
+  group('setConfigFlagImpl applies the per-kind switches', () {
+    void withStored(String name, {required bool status}) {
+      when(() => mocks.journalDb.getConfigFlagByName(name)).thenAnswer(
+        (_) async => ConfigFlag(name: name, description: 'd', status: status),
+      );
+      when(
+        () => mocks.journalDb.upsertConfigFlag(any()),
+      ).thenAnswer((_) async => 1);
+    }
+
+    ConfigFlag flagOf(String name, {required bool status}) =>
+        ConfigFlag(name: name, description: 'd', status: status);
+
+    setUp(() {
+      when(notificationService.updateBadge).thenAnswer((_) async {});
+    });
+
+    for (final name in notificationRowKindFlags) {
+      test('$name switched off drops its alarms through a reconcile', () async {
+        withStored(name, status: true);
+
+        await ops.setConfigFlagImpl(flagOf(name, status: false));
+
+        // The scheduler cancels per row once the kind answers false; no
+        // badge work and no sweep, which would hit every other kind too.
+        verify(
+          () => notificationScheduler.reconcile(now: any(named: 'now')),
+        ).called(1);
+        verifyNever(notificationService.updateBadge);
+        verifyNever(notificationService.cancelAllNotifications);
+      });
+    }
+
+    test('a kind switched on re-arms its rows', () async {
+      withStored(notifyGoalAlertsFlag, status: false);
+
+      await ops.setConfigFlagImpl(flagOf(notifyGoalAlertsFlag, status: true));
+
+      verify(
+        () => notificationScheduler.reconcile(now: any(named: 'now')),
+      ).called(1);
+    });
+
+    test('re-writing a kind switch unchanged does nothing', () async {
+      withStored(notifyGoalAlertsFlag, status: true);
+
+      await ops.setConfigFlagImpl(flagOf(notifyGoalAlertsFlag, status: true));
+
+      verifyNever(
+        () => notificationScheduler.reconcile(now: any(named: 'now')),
+      );
+      verifyNever(() => outboxService.enqueueMessage(any()));
+    });
+
+    test('the badge switch refreshes the icon and nothing else', () async {
+      withStored(showTaskBadgeFlag, status: true);
+
+      await ops.setConfigFlagImpl(flagOf(showTaskBadgeFlag, status: false));
+
+      verify(notificationService.updateBadge).called(1);
+      verifyNever(
+        () => notificationScheduler.reconcile(now: any(named: 'now')),
+      );
+      verifyNever(notificationService.cancelAllNotifications);
+    });
+
+    test("habit reminders switched off cancel every habit's alarm", () async {
+      withStored(notifyHabitRemindersFlag, status: true);
+      withHabits();
+
+      await ops.setConfigFlagImpl(
+        flagOf(notifyHabitRemindersFlag, status: false),
+      );
+
+      // Archived habits too: an alarm left from before archiving is exactly
+      // what the user is asking to silence.
+      verify(
+        () => notificationService.cancelNotification('walk'.hashCode),
+      ).called(1);
+      verify(
+        () => notificationService.cancelNotification('read'.hashCode),
+      ).called(1);
+      verifyNever(
+        () => notificationService.scheduleHabitNotification(
+          any(),
+          daysToAdd: any(named: 'daysToAdd'),
+        ),
+      );
+      verifyNever(
+        () => notificationScheduler.reconcile(now: any(named: 'now')),
+      );
+    });
+
+    test('habit reminders switched on re-arm every active habit', () async {
+      withStored(notifyHabitRemindersFlag, status: false);
+      withHabits();
+
+      await ops.setConfigFlagImpl(
+        flagOf(notifyHabitRemindersFlag, status: true),
+      );
+
+      verify(
+        () => notificationService.scheduleHabitNotification(
+          habitNamed('walk'),
+          daysToAdd: any(named: 'daysToAdd'),
+        ),
+      ).called(1);
+      verifyNever(
+        () => notificationService.scheduleHabitNotification(
+          habitNamed('read', active: false),
+          daysToAdd: any(named: 'daysToAdd'),
+        ),
+      );
+      verifyNever(() => notificationService.cancelNotification(any()));
+    });
+
+    test('a habit sweep failure does not fail the settings write', () async {
+      withStored(notifyHabitRemindersFlag, status: true);
+      when(
+        () => mocks.journalDb.getAllHabitDefinitions(),
+      ).thenThrow(StateError('db gone'));
+
+      await expectLater(
+        ops.setConfigFlagImpl(flagOf(notifyHabitRemindersFlag, status: false)),
+        completes,
+      );
+    });
+
+    test('a flag that is no notification preference touches nothing', () async {
+      withStored('private', status: false);
+
+      await ops.setConfigFlagImpl(flagOf('private', status: true));
+
+      verifyNever(
+        () => notificationScheduler.reconcile(now: any(named: 'now')),
+      );
+      verifyNever(notificationService.updateBadge);
+      verifyNever(notificationService.cancelAllNotifications);
+      verifyNever(() => mocks.journalDb.getAllHabitDefinitions());
     });
   });
 }

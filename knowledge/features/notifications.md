@@ -227,7 +227,9 @@ default experience rather than an edge case.
 **The badge is a count, not an alert.** `updateBadge` posts the number of
 tasks in progress with an empty title and body, `presentAlert: false` on both
 Darwin platforms: a notification whose only content is its badge updates the
-icon and shows nothing, in the foreground or the background. macOS used to
+icon and shows nothing, in the foreground or the background. It has a switch
+of its own, `show_task_badge`, beneath the master one; either off clears the
+icon. macOS used to
 alert for a non-zero count so that a "3 tasks in progress" line was delivered
 with it — which made every entry write that changed the count post a
 notification, in hard-coded English, about a number the icon already shows.
@@ -311,6 +313,69 @@ the platform is not a reason to report it as unsaved.
 
 Cancelling is the one thing that stays ungated: removing an alert must keep
 working after notifications are switched off.
+
+# Which kinds reach the OS is the user's to choose
+
+`enable_notifications` is the master switch; beneath it, one config flag per
+kind of alert decides whether the scheduler projects that kind's rows onto the
+OS channel. The flags are seeded **on** — a user who switches notifications on
+has asked for alerts, not for a second round of opting in — and are edited on
+the Notifications page under Settings → Preferences (`/settings/notifications`,
+`lib/features/settings/ui/pages/notification_settings_page.dart`), which also
+carries the master switch. The Config Flags page no longer lists it.
+
+| flag | governs |
+|---|---|
+| `notify_task_suggestions` | task suggestions **and** overdue tasks — two faces of "an agent has something to say about a task" |
+| `notify_check_in_reminders` | relationship check-ins |
+| `notify_goal_alerts` | a goal slipping off track |
+| `notify_habit_reminders` | the reminders armed from a habit's alert time |
+| `notify_habit_auto_completions` | habits the engine checked off |
+| `notify_day_plan_outcomes` | a plan job's outcome |
+| `notify_sync_conflicts` | newly detected sync conflicts |
+| `show_task_badge` | the task count on the app icon — offered on iOS and macOS only, where there is an icon to put it on |
+
+`notificationFlagFor` in
+`lib/features/notifications/model/notification_kind_flags.dart` maps a row to
+its flag with an exhaustive switch, so a new variant does not compile until it
+names its switch. The scheduler consults it on every arm, **before** the
+service's master gate:
+
+```mermaid
+flowchart TD
+  Write["repository write · reconcile"] --> Sched["NotificationScheduler.schedule"]
+  Sched --> Dealt{"seen, acted on<br/>or deleted?"}
+  Dealt -- yes --> Cancel["cancelNotification"]
+  Dealt -- no --> Kind{"the kind's flag on?"}
+  Kind -- no --> Cancel
+  Kind -- yes --> Service["NotificationService<br/>(master gate, then the OS)"]
+```
+
+**The row is untouched either way.** A kind switched off still lands in the
+inbox and the bell; the flag decides whether the OS is told, not whether Lotti
+remembers — which is what the page says beneath the switches.
+
+**A flip takes effect at once, through the hook the master switch already
+used** — `setConfigFlagImpl` in `lib/logic/persistence_definition_ops.dart`.
+Every consequence is best-effort: logged, never surfaced as an unsaved
+setting.
+
+| change | consequence |
+|---|---|
+| a kind flag, either way | `reconcile`: `schedule` re-arms the upcoming rows of a kind switched on and cancels the alarms of one switched off |
+| `notify_habit_reminders` off | every habit's alarm is cancelled by id — a reminder has no row for the reconcile to find |
+| `notify_habit_reminders` on | every active habit's next reminder is armed; a habit already completed today reminds once more, until the next completion skips ahead again |
+| `show_task_badge`, either way | `updateBadge`, which clears the icon when either switch is off |
+| `enable_notifications` off | `cancelAllNotifications` sweeps every pending and delivered alert, **then** the badge is cleared — the zero-badge post is itself a notification and would be swept in the other order |
+| `enable_notifications` on | badge first (where the permission prompt surfaces), then `reconcile`, then the habit reminders |
+
+Habit reminders take their gate inside `scheduleHabitNotification` itself:
+with the flag off it cancels the habit's alarm and arms nothing, so a save or
+a completion while the switch is off withdraws a reminder armed before it.
+
+Config flags sync between devices (`SyncMessage.configFlag`), so a kind
+silenced on one device is silenced on all of them — the reach the master
+switch already had.
 
 # Habit reminders retain their calendar date
 

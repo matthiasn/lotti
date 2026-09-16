@@ -1,5 +1,18 @@
 const privateFlag = 'private';
 const enableNotificationsFlag = 'enable_notifications';
+// Which kinds of alert may reach the OS while `enable_notifications` is on.
+// Seeded on, so switching notifications on means every kind until the user
+// says otherwise on the Notifications settings page.
+const notifyTaskSuggestionsFlag = 'notify_task_suggestions';
+const notifyCheckInRemindersFlag = 'notify_check_in_reminders';
+const notifyGoalAlertsFlag = 'notify_goal_alerts';
+const notifyHabitRemindersFlag = 'notify_habit_reminders';
+const notifyHabitAutoCompletionsFlag = 'notify_habit_auto_completions';
+const notifyDayPlanOutcomesFlag = 'notify_day_plan_outcomes';
+const notifySyncConflictsFlag = 'notify_sync_conflicts';
+
+/// Whether the count of tasks in progress sits on the app icon (iOS, macOS).
+const showTaskBadgeFlag = 'show_task_badge';
 const recordLocationFlag = 'record_location';
 const enableMatrixFlag = 'enable_matrix';
 const enableTooltipFlag = 'enable_tooltip';

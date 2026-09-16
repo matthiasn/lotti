@@ -27,6 +27,7 @@ void main() {
     scheduler = NotificationScheduler(
       notificationsDb: notificationsDb,
       notificationServiceProvider: () => notificationService,
+      isKindEnabled: (_) async => true,
     );
 
     _stubNotificationService(notificationService);
@@ -388,6 +389,162 @@ void main() {
   // OS-level alarms do not survive an app update, a reinstall or an Android
   // reboot, while the rows describing them do. Nothing else re-arms them:
   // `schedule` only ever runs on a write.
+  group('NotificationScheduler per-kind preference', () {
+    final now = DateTime.utc(2026, 5, 17, 10);
+    late List<NotificationEntity> asked;
+
+    /// A scheduler whose preference answers [enabled] for every kind and
+    /// records which rows it was asked about.
+    NotificationScheduler gated({required bool enabled}) =>
+        NotificationScheduler(
+          notificationsDb: notificationsDb,
+          notificationServiceProvider: () => notificationService,
+          isKindEnabled: (entity) async {
+            asked.add(entity);
+            return enabled;
+          },
+        );
+
+    setUp(() => asked = []);
+
+    void verifyNothingArmed() {
+      verifyNever(
+        () => notificationService.showNotificationNow(
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          notificationId: any(named: 'notificationId'),
+          showOnMobile: any(named: 'showOnMobile'),
+          showOnDesktop: any(named: 'showOnDesktop'),
+          deepLink: any(named: 'deepLink'),
+        ),
+      );
+      verifyNever(
+        () => notificationService.scheduleNotificationAt(
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          notifyAt: any(named: 'notifyAt'),
+          notificationId: any(named: 'notificationId'),
+          showOnMobile: any(named: 'showOnMobile'),
+          showOnDesktop: any(named: 'showOnDesktop'),
+          deepLink: any(named: 'deepLink'),
+        ),
+      );
+    }
+
+    test(
+      'a kind switched off cancels the alarm instead of announcing a due row',
+      () async {
+        final entity = _notification(
+          id: 'due-id',
+          scheduledFor: now.subtract(const Duration(minutes: 1)),
+        );
+
+        await gated(enabled: false).schedule(entity, now: now);
+
+        // The row stays in the inbox; only the OS side is withdrawn.
+        verify(
+          () => notificationService.cancelNotification(
+            NotificationScheduler.notificationIdFor('due-id'),
+          ),
+        ).called(1);
+        verifyNothingArmed();
+      },
+    );
+
+    test(
+      'a kind switched off cancels the alarm instead of arming a future row',
+      () async {
+        final entity = _notification(
+          id: 'future-id',
+          scheduledFor: now.add(const Duration(days: 2)),
+        );
+
+        await gated(enabled: false).schedule(entity, now: now);
+
+        verify(
+          () => notificationService.cancelNotification(
+            NotificationScheduler.notificationIdFor('future-id'),
+          ),
+        ).called(1);
+        verifyNothingArmed();
+      },
+    );
+
+    test('the preference is asked about the row itself', () async {
+      final entity = _notification(id: 'row-id', scheduledFor: now);
+
+      await gated(enabled: true).schedule(entity, now: now);
+
+      expect(asked, [entity]);
+    });
+
+    test(
+      'a row already dealt with is cancelled without consulting the '
+      'preference',
+      () async {
+        final entity = _notification(
+          id: 'seen-id',
+          scheduledFor: now.add(const Duration(hours: 1)),
+          seenAt: now,
+        );
+
+        await gated(enabled: true).schedule(entity, now: now);
+
+        expect(asked, isEmpty);
+        verify(
+          () => notificationService.cancelNotification(
+            NotificationScheduler.notificationIdFor('seen-id'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'reconcile drops the alarm of a future row whose kind was switched off',
+      () async {
+        await notificationsDb.upsertNotification(
+          _notification(
+            id: 'future-id',
+            scheduledFor: now.add(const Duration(days: 1)),
+          ),
+        );
+
+        await gated(enabled: false).reconcile(now: now);
+
+        // This is what the settings hook relies on: flipping a kind off runs
+        // the reconcile, and the reconcile is what reaches the OS.
+        verify(
+          () => notificationService.cancelNotification(
+            NotificationScheduler.notificationIdFor('future-id'),
+          ),
+        ).called(1);
+        verifyNothingArmed();
+      },
+    );
+
+    test('reconcile re-arms a future row once its kind is back on', () async {
+      final notifyAt = now.add(const Duration(days: 1));
+      await notificationsDb.upsertNotification(
+        _notification(id: 'future-id', scheduledFor: notifyAt),
+      );
+
+      await gated(enabled: true).reconcile(now: now);
+
+      verify(
+        () => notificationService.scheduleNotificationAt(
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          notifyAt: notifyAt,
+          notificationId: NotificationScheduler.notificationIdFor('future-id'),
+          showOnMobile: any(named: 'showOnMobile'),
+          showOnDesktop: any(named: 'showOnDesktop'),
+          deepLink: any(named: 'deepLink'),
+        ),
+      ).called(1);
+      verifyNever(() => notificationService.cancelNotification(any()));
+    });
+  });
+
   group('NotificationScheduler.reconcile', () {
     final now = DateTime.utc(2026, 5, 17, 10);
 
@@ -526,6 +683,7 @@ void main() {
             resolutions++;
             return notificationService;
           },
+          isKindEnabled: (_) async => true,
         );
 
         await lazyScheduler.reconcile(now: now);

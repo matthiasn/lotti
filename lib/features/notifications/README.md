@@ -29,13 +29,20 @@ restarts and stay consistent across the user's devices.
 - **Stays quiet until asked.** Notifications ship switched off. Until the user
   turns them on in Settings, Lotti neither delivers anything nor asks the
   operating system for permission to.
+- **Alerts only about what the user chose.** The Notifications page under
+  Preferences has one switch per kind — task suggestions, check-in reminders,
+  goal alerts, habit reminders, habits checked off automatically, day plan
+  results, sync conflicts, and the task count on the app icon where there is
+  one. A kind switched off still shows in the bell; only the alert stops, and
+  it stops at once, on every device.
 
 ## What it owns
 
 The notification store and repository; the scheduling of alerts, including
 re-arming them at startup; the sync of notifications and their lifecycle state;
 convergence when devices act in different orders; which surface a given alert
-leads to; and the tap on the OS alert that takes the user there.
+leads to; the tap on the OS alert that takes the user there; and which kinds
+the user has allowed onto the OS channel at all.
 
 It does **not** decide when an alert is warranted. Producers own that — the
 change-set builder for task suggestions, the relationship agent's deterministic
@@ -65,7 +72,7 @@ Why the store is separate, why lifecycle state converges through monotonic
 timestamps rather than whole-row last-write-wins, which two rows never leave
 the device, what Android needed before it worked at all, why some variants
 stay out of the inbox until they are due, how a tap on the OS alert finds its
-screen, and what every producer shares, are documented in the knowledge
-bundle:
+screen, which kinds the user can switch off and what a switch does at once,
+and what every producer shares, are documented in the knowledge bundle:
 
 **→ [knowledge/features/notifications.md](../../../knowledge/features/notifications.md)**

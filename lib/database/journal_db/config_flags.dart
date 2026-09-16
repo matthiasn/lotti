@@ -77,6 +77,23 @@ Future<void> initConfigFlags(
       status: false,
     ),
   );
+  // The per-kind notification preferences default to on: they narrow what
+  // `enable_notifications` lets through, and a user who switches that on has
+  // asked for alerts, not for a second round of opting in.
+  for (final (name, description) in const [
+    (notifyTaskSuggestionsFlag, 'Notify about task suggestions?'),
+    (notifyCheckInRemindersFlag, 'Notify about check-in reminders?'),
+    (notifyGoalAlertsFlag, 'Notify when a goal slips?'),
+    (notifyHabitRemindersFlag, 'Notify with habit reminders?'),
+    (notifyHabitAutoCompletionsFlag, 'Notify about auto-completed habits?'),
+    (notifyDayPlanOutcomesFlag, 'Notify about day plan results?'),
+    (notifySyncConflictsFlag, 'Notify about sync conflicts?'),
+    (showTaskBadgeFlag, 'Show the task count on the app icon?'),
+  ]) {
+    await db.insertFlagIfNotExists(
+      ConfigFlag(name: name, description: description, status: true),
+    );
+  }
   await db.insertFlagIfNotExists(
     const ConfigFlag(
       name: enableHabitsPageFlag,

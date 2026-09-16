@@ -280,6 +280,11 @@ List<SettingsNode> buildSettingsTree({
           panel: 'preferences-animations',
         ),
         leaf(
+          'preferences/notifications',
+          LottiIcons.notificationActive,
+          panel: 'notifications',
+        ),
+        leaf(
           'preferences/recording-style',
           LottiIcons.waveform,
           panel: 'recording-style',

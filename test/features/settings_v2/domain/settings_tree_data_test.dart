@@ -180,6 +180,7 @@ void main() {
             'definitions/labels',
             'definitions/measurables',
             'preferences',
+            'preferences/notifications',
             'preferences/recording-style',
             'preferences/theming',
             'preferences/keyboard-shortcuts',
@@ -397,6 +398,7 @@ void main() {
       expect(preferences.children!.map((n) => n.id).toList(), [
         'preferences/theming',
         'preferences/animations',
+        'preferences/notifications',
         'preferences/recording-style',
         'preferences/speech',
         'preferences/keyboard-shortcuts',
@@ -460,7 +462,7 @@ void main() {
       }
     });
 
-    test('keeps its four unconditional leaves with every flag off', () {
+    test('keeps its five unconditional leaves with every flag off', () {
       final preferences = _tree(
         enableHabits: false,
         enableDashboards: false,
@@ -470,6 +472,7 @@ void main() {
       expect(preferences.children!.map((n) => n.id).toList(), [
         'preferences/theming',
         'preferences/animations',
+        'preferences/notifications',
         'preferences/recording-style',
         'preferences/keyboard-shortcuts',
       ]);
@@ -600,6 +603,8 @@ void main() {
         // it left.
         'preferences/theming': 'theming',
         'preferences/animations': 'preferences-animations',
+        // Born under the branch, so its key names the leaf alone.
+        'preferences/notifications': 'notifications',
         'preferences/recording-style': 'recording-style',
         'preferences/keyboard-shortcuts': 'keyboard-shortcuts',
         'advanced/flags': 'flags',

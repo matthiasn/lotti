@@ -117,18 +117,6 @@ abstract class AppLocalizations {
     Locale('sv'),
   ];
 
-  /// No description provided for @goalOffTrackNotificationBody.
-  ///
-  /// In en, this message translates to:
-  /// **'A good moment to get back on it.'**
-  String get goalOffTrackNotificationBody;
-
-  /// No description provided for @goalOffTrackNotificationTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'{goal} is off track'**
-  String goalOffTrackNotificationTitle(String goal);
-
   /// No description provided for @activeLabel.
   ///
   /// In en, this message translates to:
@@ -6125,12 +6113,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enable the Matrix integration to sync your entries across devices and with other Matrix users.'**
   String get configFlagEnableMatrixDescription;
-
-  /// No description provided for @configFlagEnableNotifications.
-  ///
-  /// In en, this message translates to:
-  /// **'Enable notifications?'**
-  String get configFlagEnableNotifications;
 
   /// No description provided for @configFlagEnableNotificationsDescription.
   ///
@@ -12179,6 +12161,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Superseded'**
   String get goalNudgeStatusSuperseded;
+
+  /// No description provided for @goalOffTrackNotificationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A good moment to get back on it.'**
+  String get goalOffTrackNotificationBody;
+
+  /// No description provided for @goalOffTrackNotificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{goal} is off track'**
+  String goalOffTrackNotificationTitle(String goal);
 
   /// No description provided for @goalPatternBusiestHour.
   ///
@@ -22583,6 +22577,138 @@ abstract class AppLocalizations {
   /// **'Number'**
   String get settingsMeasurableValueKindNumber;
 
+  /// No description provided for @settingsNotificationsAllowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow notifications'**
+  String get settingsNotificationsAllowTitle;
+
+  /// No description provided for @settingsNotificationsBadgeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Show how many tasks are in progress on the app icon.'**
+  String get settingsNotificationsBadgeDescription;
+
+  /// No description provided for @settingsNotificationsBadgeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Task count on the app icon'**
+  String get settingsNotificationsBadgeTitle;
+
+  /// No description provided for @settingsNotificationsCheckInRemindersDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When it is time to get in touch with someone.'**
+  String get settingsNotificationsCheckInRemindersDescription;
+
+  /// No description provided for @settingsNotificationsCheckInRemindersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-in reminders'**
+  String get settingsNotificationsCheckInRemindersTitle;
+
+  /// No description provided for @settingsNotificationsDayPlanOutcomesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When a day plan drafted in the background is ready, or did not finish.'**
+  String get settingsNotificationsDayPlanOutcomesDescription;
+
+  /// No description provided for @settingsNotificationsDayPlanOutcomesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Day plan results'**
+  String get settingsNotificationsDayPlanOutcomesTitle;
+
+  /// No description provided for @settingsNotificationsExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts arrive through your device\'s notifications. Choose what is worth one; everything still lands in the bell inside Lotti.'**
+  String get settingsNotificationsExplanation;
+
+  /// No description provided for @settingsNotificationsGoalAlertsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When a goal slips off track.'**
+  String get settingsNotificationsGoalAlertsDescription;
+
+  /// No description provided for @settingsNotificationsGoalAlertsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal alerts'**
+  String get settingsNotificationsGoalAlertsTitle;
+
+  /// No description provided for @settingsNotificationsHabitAutoCompletionsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When Lotti checks a habit off for you from your data.'**
+  String get settingsNotificationsHabitAutoCompletionsDescription;
+
+  /// No description provided for @settingsNotificationsHabitAutoCompletionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Habits checked off automatically'**
+  String get settingsNotificationsHabitAutoCompletionsTitle;
+
+  /// No description provided for @settingsNotificationsHabitRemindersDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'At the time you set on a habit.'**
+  String get settingsNotificationsHabitRemindersDescription;
+
+  /// No description provided for @settingsNotificationsHabitRemindersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Habit reminders'**
+  String get settingsNotificationsHabitRemindersTitle;
+
+  /// No description provided for @settingsNotificationsKindsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Alert me about'**
+  String get settingsNotificationsKindsHeading;
+
+  /// No description provided for @settingsNotificationsKindsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Switching a kind off only stops its alerts. Its entries still appear in the bell.'**
+  String get settingsNotificationsKindsNote;
+
+  /// No description provided for @settingsNotificationsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Which alerts reach you as notifications'**
+  String get settingsNotificationsSubtitle;
+
+  /// No description provided for @settingsNotificationsSyncConflictsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When an entry was edited on two devices and needs your review.'**
+  String get settingsNotificationsSyncConflictsDescription;
+
+  /// No description provided for @settingsNotificationsSyncConflictsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync conflicts'**
+  String get settingsNotificationsSyncConflictsTitle;
+
+  /// No description provided for @settingsNotificationsTaskSuggestionsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When an agent has suggestions on a task, or a task is overdue.'**
+  String get settingsNotificationsTaskSuggestionsDescription;
+
+  /// No description provided for @settingsNotificationsTaskSuggestionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Task suggestions'**
+  String get settingsNotificationsTaskSuggestionsTitle;
+
+  /// No description provided for @settingsNotificationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get settingsNotificationsTitle;
+
   /// No description provided for @settingsOnboardingActionSubtitle.
   ///
   /// In en, this message translates to:
@@ -22682,7 +22808,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsPreferencesSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Theming, animations, recording style, speech, and shortcuts'**
+  /// **'Theming, animations, notifications, recording style, speech, and shortcuts'**
   String get settingsPreferencesSubtitle;
 
   /// No description provided for @settingsPreferencesTitle.

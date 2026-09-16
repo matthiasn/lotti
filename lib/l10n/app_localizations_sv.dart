@@ -9,15 +9,6 @@ class AppLocalizationsSv extends AppLocalizations {
   AppLocalizationsSv([String locale = 'sv']) : super(locale);
 
   @override
-  String get goalOffTrackNotificationBody =>
-      'Ett bra tillfälle att komma tillbaka på spåret.';
-
-  @override
-  String goalOffTrackNotificationTitle(String goal) {
-    return '$goal ligger efter';
-  }
-
-  @override
   String get activeLabel => 'Aktiv';
 
   @override
@@ -3641,9 +3632,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Aktivera Matrix-integrationen för att synkronisera dina poster mellan enheter och med andra Matrix-användare.';
 
   @override
-  String get configFlagEnableNotifications => 'Aktivera notiser?';
-
-  @override
   String get configFlagEnableNotificationsDescription =>
       'Få notiser om påminnelser, uppdateringar och viktiga evenemang.';
 
@@ -7215,6 +7203,15 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalNudgeStatusSuperseded => 'Ersatt';
+
+  @override
+  String get goalOffTrackNotificationBody =>
+      'Ett bra tillfälle att komma tillbaka på spåret.';
+
+  @override
+  String goalOffTrackNotificationTitle(String goal) {
+    return '$goal ligger efter';
+  }
 
   @override
   String goalPatternBusiestHour(String hour) {
@@ -13589,6 +13586,85 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsMeasurableValueKindNumber => 'Tal';
 
   @override
+  String get settingsNotificationsAllowTitle => 'Tillåt aviseringar';
+
+  @override
+  String get settingsNotificationsBadgeDescription =>
+      'Visar på appikonen hur många uppgifter som pågår.';
+
+  @override
+  String get settingsNotificationsBadgeTitle => 'Antal uppgifter på appikonen';
+
+  @override
+  String get settingsNotificationsCheckInRemindersDescription =>
+      'När det är dags att höra av dig till någon.';
+
+  @override
+  String get settingsNotificationsCheckInRemindersTitle => 'Kontaktpåminnelser';
+
+  @override
+  String get settingsNotificationsDayPlanOutcomesDescription =>
+      'När en dagsplan som förberetts i bakgrunden är klar, eller inte blev färdig.';
+
+  @override
+  String get settingsNotificationsDayPlanOutcomesTitle =>
+      'Resultat av dagsplanen';
+
+  @override
+  String get settingsNotificationsExplanation =>
+      'Varningar kommer via enhetens aviseringar. Välj vad som är värt en; allt hamnar ändå i klockan i Lotti.';
+
+  @override
+  String get settingsNotificationsGoalAlertsDescription =>
+      'När ett mål kommer ur kurs.';
+
+  @override
+  String get settingsNotificationsGoalAlertsTitle => 'Målvarningar';
+
+  @override
+  String get settingsNotificationsHabitAutoCompletionsDescription =>
+      'När Lotti bockar av en vana åt dig utifrån dina data.';
+
+  @override
+  String get settingsNotificationsHabitAutoCompletionsTitle =>
+      'Automatiskt avbockade vanor';
+
+  @override
+  String get settingsNotificationsHabitRemindersDescription =>
+      'Vid den tid du ställt in för en vana.';
+
+  @override
+  String get settingsNotificationsHabitRemindersTitle => 'Vanepåminnelser';
+
+  @override
+  String get settingsNotificationsKindsHeading => 'Avisera mig om';
+
+  @override
+  String get settingsNotificationsKindsNote =>
+      'Att stänga av en typ stoppar bara dess varningar. Dess poster finns kvar i klockan.';
+
+  @override
+  String get settingsNotificationsSubtitle =>
+      'Vilka varningar som når dig som aviseringar';
+
+  @override
+  String get settingsNotificationsSyncConflictsDescription =>
+      'När en post har redigerats på två enheter och behöver din granskning.';
+
+  @override
+  String get settingsNotificationsSyncConflictsTitle => 'Synkkonflikter';
+
+  @override
+  String get settingsNotificationsTaskSuggestionsDescription =>
+      'När en agent har förslag på en uppgift, eller en uppgift är försenad.';
+
+  @override
+  String get settingsNotificationsTaskSuggestionsTitle => 'Uppgiftsförslag';
+
+  @override
+  String get settingsNotificationsTitle => 'Aviseringar';
+
+  @override
   String get settingsOnboardingActionSubtitle =>
       'Öppna välkomstflödet igen – koppla upp din AI-hjärna och skapa en uppgift';
 
@@ -13645,7 +13721,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsPreferencesSubtitle =>
-      'Tematisering, animationer, inspelningsstil, tal och genvägar';
+      'Tematisering, animationer, aviseringar, inspelningsstil, tal och genvägar';
 
   @override
   String get settingsPreferencesTitle => 'Preferenser';

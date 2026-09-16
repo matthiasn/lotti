@@ -1,13 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
-import 'package:lotti/features/design_system/components/lists/hover_divider_index.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
-import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
-import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
+import 'package:lotti/features/settings/ui/widgets/settings_toggle_list.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -94,9 +91,11 @@ class FlagsBody extends ConsumerStatefulWidget {
   /// Canonical render order for the flag list. Adding a flag here
   /// also requires icon + title + subtitle wiring below; the
   /// modular flag tests assert each end of that chain.
+  ///
+  /// `enable_notifications` and the per-kind `notify_*` flags are not
+  /// here: they have a page of their own under Preferences.
   static const List<String> defaultDisplayedItems = [
     privateFlag,
-    enableNotificationsFlag,
     recordLocationFlag,
     enableTooltipFlag,
     enableAiStreamingFlag,
@@ -151,8 +150,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
     switch (flagName) {
       case privateFlag:
         return LottiIcons.lock;
-      case enableNotificationsFlag:
-        return LottiIcons.notificationActive;
       case recordLocationFlag:
         return LottiIcons.map;
       case enableTooltipFlag:
@@ -204,8 +201,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
     switch (flag.name) {
       case privateFlag:
         return context.messages.configFlagPrivateDescription;
-      case enableNotificationsFlag:
-        return context.messages.configFlagEnableNotificationsDescription;
       case recordLocationFlag:
         return context.messages.configFlagRecordLocationDescription;
       case enableTooltipFlag:
@@ -257,8 +252,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
     switch (flag.name) {
       case privateFlag:
         return context.messages.configFlagPrivate;
-      case enableNotificationsFlag:
-        return context.messages.configFlagEnableNotifications;
       case recordLocationFlag:
         return context.messages.configFlagRecordLocation;
       case enableTooltipFlag:
@@ -373,11 +366,20 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
                     padding:
                         pageGutter +
                         EdgeInsets.only(bottom: tokens.spacing.step5),
-                    child: _FlagsList(
-                      flags: filteredFlags,
-                      iconFor: _iconForFlag,
-                      titleFor: (flag) => _titleForFlag(context, flag),
-                      subtitleFor: (flag) => _subtitleForFlag(context, flag),
+                    child: SettingsToggleList(
+                      rows: [
+                        for (final flag in filteredFlags)
+                          SettingsToggleRow(
+                            title: _titleForFlag(context, flag),
+                            subtitle: _subtitleForFlag(context, flag),
+                            icon: _iconForFlag(flag.name),
+                            value: flag.status,
+                            onChanged: (status) =>
+                                getIt<PersistenceLogic>().setConfigFlag(
+                                  flag.copyWith(status: status),
+                                ),
+                          ),
+                      ],
                     ),
                   );
                 },
@@ -386,85 +388,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// Renders the bordered, rounded list of flag rows. Pulled out as a
-/// dedicated widget so the empty-search and populated branches stay
-/// readable in [_FlagsBodyState.build] and the list shape is easy to
-/// inspect from tests.
-class _FlagsList extends StatefulWidget {
-  const _FlagsList({
-    required this.flags,
-    required this.iconFor,
-    required this.titleFor,
-    required this.subtitleFor,
-  });
-
-  final List<ConfigFlag> flags;
-  final IconData Function(String flagName) iconFor;
-  final String Function(ConfigFlag flag) titleFor;
-  final String Function(ConfigFlag flag) subtitleFor;
-
-  @override
-  State<_FlagsList> createState() => _FlagsListState();
-}
-
-class _FlagsListState extends State<_FlagsList>
-    with HoverDividerIndex<_FlagsList> {
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final flags = widget.flags;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-        border: Border.all(color: tokens.colors.decorative.level01),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final (index, flag) in flags.indexed)
-              DesignSystemListItem(
-                title: widget.titleFor(flag),
-                subtitle: widget.subtitleFor(flag),
-                // `null` lifts the default single-line cap so long
-                // descriptions ("Generate AI summary for task actions",
-                // etc.) wrap onto a second / third line instead of
-                // truncating with ellipsis.
-                subtitleMaxLines: null,
-                leading: SettingsIcon(icon: widget.iconFor(flag.name)),
-                trailing: DesignSystemToggle(
-                  value: flag.status,
-                  semanticsLabel: widget.titleFor(flag),
-                  onChanged: (bool status) {
-                    getIt<PersistenceLogic>().setConfigFlag(
-                      flag.copyWith(status: status),
-                    );
-                  },
-                ),
-                onTap: () {
-                  getIt<PersistenceLogic>().setConfigFlag(
-                    flag.copyWith(status: !flag.status),
-                  );
-                },
-                onHoverChanged: (hovered) =>
-                    onRowHoverChanged(index, hovered: hovered),
-                // Keep `showDivider` stable so layout doesn't shift by
-                // 1 px on hover; fade the divider to transparent when
-                // either this row or the row below it is hovered, so
-                // the hovered row is never bisected by a hairline.
-                showDivider: index < flags.length - 1,
-                dividerColor: hoverDividerColorFor(index),
-                dividerIndent: SettingsIcon.dividerIndent(tokens),
-              ),
-          ],
-        ),
-      ),
     );
   }
 }

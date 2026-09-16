@@ -34,6 +34,7 @@ import 'package:lotti/features/settings/ui/pages/habits/habits_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
+import 'package:lotti/features/settings/ui/pages/notification_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/recording_style_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
 import 'package:lotti/features/settings_v2/ui/detail/ai_panel_dispatch.dart';
@@ -135,6 +136,10 @@ const Map<String, SettingsPanelSpec> kSettingsPanels =
       // SingleChildScrollView (the inner Expanded would receive
       // unbounded height).
       'flags': SettingsPanelSpec(build: _flagsPanel),
+      'notifications': SettingsPanelSpec(
+        build: _notificationsPanel,
+        scrollable: true,
+      ),
       'recording-style': SettingsPanelSpec(
         build: _recordingStylePanel,
         scrollable: true,
@@ -244,6 +249,8 @@ Widget _dailyOsPanel(BuildContext context) => const DailyOsSettingsBody();
 
 // --- Step 7 builders --------------------------------------------------------
 Widget _flagsPanel(BuildContext context) => const FlagsBody();
+Widget _notificationsPanel(BuildContext context) =>
+    const NotificationSettingsBody();
 Widget _recordingStylePanel(BuildContext context) =>
     const RecordingStyleSettingsBody();
 Widget _themingPanel(BuildContext context) => const ThemingBody();

@@ -122,6 +122,7 @@ void main() {
     expect(preferences.children!.map((n) => n.id).toList(), [
       'preferences/theming',
       'preferences/animations',
+      'preferences/notifications',
       'preferences/recording-style',
       'preferences/keyboard-shortcuts',
     ]);
