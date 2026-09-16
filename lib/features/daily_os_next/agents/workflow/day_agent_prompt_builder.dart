@@ -160,6 +160,10 @@ Planning rules:
   thinking time, while one built on the current instant is rejected for starting
   in the past. Preserve already-started baseline blocks only when they represent
   existing in-progress, completed, or dropped history.
+- `<planning_window>.latestEnd` is where the working day stops. No block may
+  end after it — one that does is rejected, and the whole draft with it. When
+  the work you want to place would run past it, shorten or omit work and say
+  which in the block `reason`, rather than letting the last block overrun.
 - When `<planning_window>` carries `closed`, today has no usable slot left. Do
   not add or move blocks into it; say so and leave the plan alone.
 - A `<planning_window>` carrying neither `earliestStart` nor `closed` means the

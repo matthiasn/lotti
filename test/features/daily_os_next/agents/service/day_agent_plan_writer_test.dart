@@ -86,6 +86,84 @@ void main() {
       expect(plan.runKey, _runKey);
     });
 
+    test(
+      'an energy band written as a time of day lands on the plan day',
+      () async {
+        // A deepseek-v4.1-flash gym run sent `"start": "09:00"` for the bands
+        // while getting every block right, and lost the whole draft to it: the
+        // fields name times on one known day, so they are read as such.
+        final plan = await withClock(
+          Clock.fixed(_openAt),
+          () => writer.persistDraftPlan(
+            agentId: _agentId,
+            dayId: _dayId,
+            planDate: _planDate,
+            rawBlocks: [_blockJson(_block())],
+            rawEnergyBands: const [
+              {
+                'start': '09:00',
+                'end': '12:00',
+                'level': 'high',
+                'label': 'morning',
+              },
+              // Seconds are part of the form, and anchor to the same day.
+              {
+                'start': '13:15:30',
+                'end': '15:45:05',
+                'level': 'low',
+                'label': 'afternoon',
+              },
+            ],
+            runKey: _runKey,
+          ),
+        );
+
+        expect(plan.energyBands, hasLength(2));
+        expect(plan.energyBands.first.start, DateTime(2026, 5, 25, 9));
+        expect(plan.energyBands.first.end, DateTime(2026, 5, 25, 12));
+        expect(plan.energyBands.first.label, 'morning');
+        expect(
+          plan.energyBands.last.start,
+          DateTime(2026, 5, 25, 13, 15, 30),
+        );
+        expect(plan.energyBands.last.end, DateTime(2026, 5, 25, 15, 45, 5));
+        expect(plan.energyBands.last.label, 'afternoon');
+      },
+    );
+
+    test(
+      'an energy band with an impossible time of day is still rejected',
+      () async {
+        await expectLater(
+          withClock(
+            Clock.fixed(_openAt),
+            () => writer.persistDraftPlan(
+              agentId: _agentId,
+              dayId: _dayId,
+              planDate: _planDate,
+              rawBlocks: [_blockJson(_block())],
+              rawEnergyBands: const [
+                {
+                  'start': '25:00',
+                  'end': '26:00',
+                  'level': 'high',
+                  'label': 'morning',
+                },
+              ],
+              runKey: _runKey,
+            ),
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (error) => error.message,
+              'message',
+              contains('ISO-8601'),
+            ),
+          ),
+        );
+      },
+    );
+
     test('rejects invented blocks when no baseline exists', () async {
       await expectLater(
         withClock(

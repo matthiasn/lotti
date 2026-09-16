@@ -308,10 +308,16 @@ final _omittedAllocationPattern = RegExp(
 ///
 /// "Only 60 minutes remain inside the working day" is day capacity, not the
 /// task's remainder; reading it as one vetoed a correct partial disclosure.
+///
+/// The scope noun may sit behind a clock time and an `end of`: models write
+/// "before the 17:00 end of the working day", which named the day just as
+/// plainly and still vetoed the disclosure beside it.
 final _unrelatedRemainderScopePattern = RegExp(
   r'\b(?:in|inside|within|during|for|before|until)\s+'
   r'(?:(?:the|a|an|my|our|their|your)\s+)?'
-  r'(?:meeting|workday|working\s+day|calendar|appointment|break)\b',
+  r'(?:\d{1,2}(?::\d{2})?\s+)?'
+  r'(?:(?:end|close)\s+of\s+(?:the\s+)?(?:working\s+day|workday|day)|'
+  r'meeting|workday|working\s+day|calendar|appointment|break)\b',
   caseSensitive: false,
 );
 
@@ -1799,12 +1805,55 @@ bool _referenceAttributesEvidence(
   return prepositionAttaches || allocationToAttaches || labelAttaches;
 }
 
+/// A scope cue binds to its own clause, commas included.
+///
+/// Sentence scope let one clause poison another: "only 60 minutes remain
+/// before the end of the working day, so 120 minutes are left unscheduled"
+/// reads both counts as day capacity, and the task's true remainder standing
+/// right beside it lost its credit.
+const _remainderScopeBoundaries = ',.;!?\n';
+
+/// A phrase that continues the clause before it rather than starting its own.
+final _scopeContinuationPattern = RegExp(
+  r'^\s*(?:in|inside|within|during|for|before|until)\b',
+  caseSensitive: false,
+);
+
+/// The remainder's clause, plus any comma-attached phrase that continues it.
+///
+/// Clause scope is what stops one clause poisoning the next, but a scope
+/// phrase may itself be set off by a comma — "only 60 minutes remain, before
+/// the end of the working day" — and still say what that count measures.
+/// Only a continuation opening with a scope preposition is taken in: "so 120
+/// minutes are left unscheduled" begins a new statement about the task, and
+/// swallowing it would hand the day's scope to the task's own remainder.
+String _remainderScopeClause(String reason, Match match) {
+  final range = _matchClauseRange(
+    reason,
+    match,
+    boundaries: _remainderScopeBoundaries,
+  );
+  var end = range.end;
+  while (end < reason.length && reason[end] == ',') {
+    var next = end + 1;
+    while (next < reason.length &&
+        !_remainderScopeBoundaries.contains(reason[next])) {
+      next++;
+    }
+    if (!_scopeContinuationPattern.hasMatch(reason.substring(end + 1, next))) {
+      break;
+    }
+    end = next;
+  }
+  return reason.substring(range.start, end);
+}
+
 bool _remainderIsTaskBound(String reason, Match match) {
   if (_evidenceHasExplicitNonTaskObject(reason, match) ||
       _remainderHasExplicitNonTaskSubject(reason, match)) {
     return false;
   }
-  final clause = _matchClause(reason, match);
+  final clause = _remainderScopeClause(reason, match);
   if (_unrelatedRemainderScopePattern.hasMatch(clause)) return false;
   if (_partialRemainderDispositionPattern.hasMatch(clause)) return true;
   return _partialMentionPattern.hasMatch(reason);
@@ -1816,7 +1865,9 @@ bool _remainderIsRelatedToTask(String reason, Match match) {
     return false;
   }
   if (_remainderIsTaskBound(reason, match)) return true;
-  return !_unrelatedRemainderScopePattern.hasMatch(_matchClause(reason, match));
+  return !_unrelatedRemainderScopePattern.hasMatch(
+    _remainderScopeClause(reason, match),
+  );
 }
 
 bool _remainderHasExplicitNonTaskSubject(String reason, Match match) {

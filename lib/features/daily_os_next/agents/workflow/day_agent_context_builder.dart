@@ -891,8 +891,14 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     // dropped the floor a diff still has to respect, and let a 480-minute
     // baseline advertise room for a 240-minute addition at 15:00 with 115
     // working minutes left.
+    // The writer rejects a block that ends after the working day, so the end
+    // is advertised beside the start rather than left to be inferred from the
+    // working hours: a window that says where work may begin and not where it
+    // must stop bought one rejected draft per late-day wake.
+    final latest = workingHourOn(planDate, config.workingHoursEnd);
     final budget = <String, Object?>{
       'availableMinutes': ?available,
+      'latestEnd': ?latest?.toIso8601String(),
       ...refineBudget,
     };
     final earliest = advertisedPlanningStart(planDate: planDate, now: now);

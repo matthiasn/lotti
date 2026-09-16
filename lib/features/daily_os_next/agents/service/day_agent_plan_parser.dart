@@ -444,10 +444,50 @@ PlannedBlock parsePlannedBlock({
   );
 }
 
+/// The `HH:mm` or `HH:mm:ss` a model writes for a band that is, in its own
+/// words, a time of day.
+final _bandTimeOfDay = RegExp(r'^(\d{1,2}):(\d{2})(?::(\d{2}))?$');
+
+/// Reads a band edge, resolving a bare time of day against [day].
+///
+/// The band fields name times on one known day, and models write them that
+/// way — `"09:00"` — often enough that rejecting the form cost a whole draft
+/// and a second round trip. A full ISO-8601 timestamp still parses as itself,
+/// so nothing that was already valid changes meaning.
+DateTime bandEdge(Map<String, dynamic> data, String key, DateTime day) {
+  final raw = data[key];
+  if (raw is String) {
+    final match = _bandTimeOfDay.firstMatch(raw.trim());
+    if (match != null) {
+      final hour = int.parse(match.group(1)!);
+      final minute = int.parse(match.group(2)!);
+      final second = int.parse(match.group(3) ?? '0');
+      if (hour > 23 || minute > 59 || second > 59) {
+        throw DayAgentCaptureException(
+          '$key must be a valid ISO-8601 date-time',
+        );
+      }
+      final dayStart = localDay(day);
+      return DateTime(
+        dayStart.year,
+        dayStart.month,
+        dayStart.day,
+        hour,
+        minute,
+        second,
+      );
+    }
+  }
+  return requiredDateTimeArg(data, key);
+}
+
 /// Validates and parses one model-emitted energy band into a
 /// [DayAgentEnergyBand], throwing [DayAgentCaptureException] when `end` is not
 /// after `start`, the band falls outside the plan day, or `level` is not one
 /// of `high`/`low`/`secondWind`.
+///
+/// A band edge may be a full ISO-8601 timestamp or a bare `HH:mm` time of day,
+/// which is resolved against [day]; see [bandEdge].
 DayAgentEnergyBand parseEnergyBand({
   required Object? raw,
   required DateTime day,
@@ -456,8 +496,8 @@ DayAgentEnergyBand parseEnergyBand({
     throw const DayAgentCaptureException('energyBand must be an object');
   }
   final data = raw.cast<String, dynamic>();
-  final start = requiredDateTimeArg(data, 'start');
-  final end = requiredDateTimeArg(data, 'end');
+  final start = bandEdge(data, 'start', day);
+  final end = bandEdge(data, 'end', day);
   if (!end.isAfter(start)) {
     throw const DayAgentCaptureException(
       'energyBand end must be after start',

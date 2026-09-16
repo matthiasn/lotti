@@ -4000,6 +4000,42 @@ void main() {
         );
       });
 
+      test('a clock time before the day scope still reads as the day', () {
+        // Verbatim from a deepseek-v4.1-flash gym run: the disclosure is
+        // exact — 60 placed, 120 left of 180 — but the day's own remainder
+        // sat behind "the 17:00 end of", which the scope cue did not reach,
+        // so 60 was read as the task's remainder and vetoed the placement.
+        final result = score(
+          'Partial placement: the migration is estimated at 180 minutes but '
+          'only 60 minutes remain before the 17:00 end of the working day, '
+          'so 120 minutes are left unscheduled and should be picked up on '
+          'the next available day.',
+        );
+
+        expect(result.passed, isTrue, reason: result.detail);
+        expect(
+          result.detail,
+          contains('task-long-migration 60min partial of 180min'),
+        );
+      });
+
+      test('a scope phrase set off by a comma still scopes the count', () {
+        // Clause scope is what stops one clause poisoning the next, but the
+        // scope phrase can carry its own comma. Cutting there would strand
+        // "60 minutes remain", and the sentence-wide "Partial" would then
+        // read it as the task's remainder and veto the true 120.
+        final result = score(
+          'Partial placement: only 60 minutes remain, before the 17:00 end '
+          'of the working day, so 120 minutes are left unscheduled.',
+        );
+
+        expect(result.passed, isTrue, reason: result.detail);
+        expect(
+          result.detail,
+          contains('task-long-migration 60min partial of 180min'),
+        );
+      });
+
       test('a remainder that contradicts the block still fails', () {
         final result = score(
           'PARTIAL: the migration is estimated at 180 minutes but only 60 '
