@@ -35,14 +35,19 @@ restarts and stay consistent across the user's devices.
   results, sync conflicts, and the task count on the app icon where there is
   one. A kind switched off still shows in the bell; only the alert stops, and
   it stops at once, on every device.
+- **Speaks in the agent's words, if allowed.** With the wording switch on, a
+  goal or check-in alert takes the words of the banner the agent wrote for it
+  instead of a fixed line. Off by default: those words can carry details, and
+  an alert shows on the lock screen.
 
 ## What it owns
 
 The notification store and repository; the scheduling of alerts, including
 re-arming them at startup; the sync of notifications and their lifecycle state;
 convergence when devices act in different orders; which surface a given alert
-leads to; the tap on the OS alert that takes the user there; and which kinds
-the user has allowed onto the OS channel at all.
+leads to; the tap on the OS alert that takes the user there; which kinds the
+user has allowed onto the OS channel at all; and the one way an agent's LLM
+tier may touch an alert — re-wording it with its banner's copy.
 
 It does **not** decide when an alert is warranted. Producers own that — the
 change-set builder for task suggestions, the relationship agent's deterministic
@@ -73,6 +78,7 @@ timestamps rather than whole-row last-write-wins, which two rows never leave
 the device, what Android needed before it worked at all, why some variants
 stay out of the inbox until they are due, how a tap on the OS alert finds its
 screen, which kinds the user can switch off and what a switch does at once,
-and what every producer shares, are documented in the knowledge bundle:
+how an agent may re-word an armed alert, and what every producer shares, are
+documented in the knowledge bundle:
 
 **→ [knowledge/features/notifications.md](../../../knowledge/features/notifications.md)**

@@ -37,16 +37,19 @@ void main() {
   ConfigFlag flag(String name, {required bool status}) =>
       ConfigFlag(name: name, description: name, status: status);
 
-  /// Every switch the page knows, master and kinds alike, minus [omit].
+  /// Every switch the page knows — master, kinds and wording — minus [omit].
   Set<ConfigFlag> flags({
     bool master = true,
     bool kinds = true,
+    bool wording = false,
     Set<String> omit = const {},
   }) => {
     if (!omit.contains(enableNotificationsFlag))
       flag(enableNotificationsFlag, status: master),
     for (final name in _kindFlags)
       if (!omit.contains(name)) flag(name, status: kinds),
+    if (!omit.contains(notifyAgentCopyFlag))
+      flag(notifyAgentCopyFlag, status: wording),
   };
 
   void stubFlags(Stream<Set<ConfigFlag>> stream) =>
@@ -122,10 +125,12 @@ void main() {
   ) async {
     await pumpPage(tester);
 
-    // Linux has no icon badge, so the badge row is not offered here.
+    // Linux has no icon badge, so the badge row is not offered here. The
+    // wording switch sits alone under the kinds: it is not a kind.
     expect(listedRows(tester), [
       [enableNotificationsFlag],
       _kindFlags.where((f) => f != showTaskBadgeFlag).toList(),
+      [notifyAgentCopyFlag],
     ]);
     expect(find.text('Allow notifications'), findsOneWidget);
     expect(find.text('Goal alerts'), findsOneWidget);
@@ -242,6 +247,7 @@ void main() {
       for (final name in _kindFlags.where((f) => f != showTaskBadgeFlag)) {
         expect(toggleOf(tester, name).enabled, isFalse, reason: name);
       }
+      expect(toggleOf(tester, notifyAgentCopyFlag).enabled, isFalse);
       expect(toggleOf(tester, enableNotificationsFlag).enabled, isTrue);
 
       await tester.tap(find.text('Goal alerts'));
@@ -268,7 +274,7 @@ void main() {
     await pumpPage(tester);
 
     expect(rowOf(notifyGoalAlertsFlag), findsNothing);
-    expect(listedRows(tester).last, hasLength(6));
+    expect(listedRows(tester)[1], hasLength(6));
   });
 
   testWidgets('shows nothing until the flags arrive', (tester) async {
@@ -298,6 +304,55 @@ void main() {
       [enableNotificationsFlag],
     ]);
     expect(find.text('Alert me about'), findsNothing);
+  });
+
+  testWidgets('the wording switch writes notify_agent_copy', (tester) async {
+    await pumpPage(tester);
+
+    expect(toggleOf(tester, notifyAgentCopyFlag).value, isFalse);
+    await tester.tap(
+      find.descendant(
+        of: rowOf(notifyAgentCopyFlag),
+        matching: find.byType(DesignSystemToggle),
+      ),
+    );
+    await tester.pump();
+
+    verify(
+      () => mockPersistenceLogic.setConfigFlag(
+        flag(notifyAgentCopyFlag, status: true),
+      ),
+    ).called(1);
+  });
+
+  testWidgets('the wording switch shows its flag and says what it does', (
+    tester,
+  ) async {
+    stubFlags(Stream.value(flags(wording: true)));
+    await pumpPage(tester);
+
+    expect(toggleOf(tester, notifyAgentCopyFlag).value, isTrue);
+    expect(find.text('Wording'), findsOneWidget);
+    expect(find.text("Alerts in the agent's words"), findsOneWidget);
+    expect(
+      find.text(
+        "A goal or check-in alert uses the words of the agent's banner "
+        'instead of a fixed line. It can mention details, and it shows on '
+        'the lock screen.',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('the wording section is omitted when its flag is not seeded', (
+    tester,
+  ) async {
+    stubFlags(Stream.value(flags(omit: {notifyAgentCopyFlag})));
+    await pumpPage(tester);
+
+    expect(rowOf(notifyAgentCopyFlag), findsNothing);
+    expect(find.text('Wording'), findsNothing);
+    expect(listedRows(tester), hasLength(2));
   });
 
   testWidgets('explains the switches in plain words', (tester) async {

@@ -13586,6 +13586,14 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsMeasurableValueKindNumber => 'Tal';
 
   @override
+  String get settingsNotificationsAgentCopyDescription =>
+      'En mål- eller kontaktvarning använder orden från agentens banner i stället för en fast rad. Den kan nämna detaljer och visas på låsskärmen.';
+
+  @override
+  String get settingsNotificationsAgentCopyTitle =>
+      'Varningar med agentens egna ord';
+
+  @override
   String get settingsNotificationsAllowTitle => 'Tillåt aviseringar';
 
   @override
@@ -13663,6 +13671,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsNotificationsTitle => 'Aviseringar';
+
+  @override
+  String get settingsNotificationsWordingHeading => 'Formulering';
 
   @override
   String get settingsOnboardingActionSubtitle =>

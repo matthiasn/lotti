@@ -13598,6 +13598,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsMeasurableValueKindNumber => 'Getal';
 
   @override
+  String get settingsNotificationsAgentCopyDescription =>
+      'Een doel- of contactwaarschuwing gebruikt de woorden van de banner van de agent in plaats van een vaste regel. Die kan details noemen en verschijnt op het vergrendelscherm.';
+
+  @override
+  String get settingsNotificationsAgentCopyTitle =>
+      'Waarschuwingen in de woorden van de agent';
+
+  @override
   String get settingsNotificationsAllowTitle => 'Meldingen toestaan';
 
   @override
@@ -13678,6 +13686,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsNotificationsTitle => 'Meldingen';
+
+  @override
+  String get settingsNotificationsWordingHeading => 'Bewoording';
 
   @override
   String get settingsOnboardingActionSubtitle =>

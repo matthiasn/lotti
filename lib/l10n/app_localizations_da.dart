@@ -13571,6 +13571,14 @@ class AppLocalizationsDa extends AppLocalizations {
   String get settingsMeasurableValueKindNumber => 'Tal';
 
   @override
+  String get settingsNotificationsAgentCopyDescription =>
+      'En mål- eller kontaktadvarsel bruger ordene fra agentens banner i stedet for en fast linje. Den kan nævne detaljer og vises på låseskærmen.';
+
+  @override
+  String get settingsNotificationsAgentCopyTitle =>
+      'Advarsler med agentens egne ord';
+
+  @override
   String get settingsNotificationsAllowTitle => 'Tillad notifikationer';
 
   @override
@@ -13649,6 +13657,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get settingsNotificationsTitle => 'Notifikationer';
+
+  @override
+  String get settingsNotificationsWordingHeading => 'Formulering';
 
   @override
   String get settingsOnboardingActionSubtitle =>

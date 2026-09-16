@@ -1058,6 +1058,284 @@ void main() {
     });
   });
 
+  group('NotificationRepository.restateOpenRows', () {
+    const kind = NotificationKinds.relationshipCheckIn;
+    const newTitle = "Check in with Anna — it's been 2 weeks.";
+    const newBody = 'Last time: the move.';
+    final ahead = fixedNow.add(const Duration(days: 1));
+    final later = fixedNow.add(const Duration(minutes: 5));
+
+    /// The wall clock the restate happens at: after the arm, as in
+    /// production, so the re-worded row wins the content merge outright
+    /// rather than by the tie-break.
+    late DateTime current;
+
+    setUp(() {
+      current = fixedNow;
+      repository = NotificationRepository(
+        notificationsDb: notificationsDb,
+        vectorClockService: vectorClockService,
+        outboxService: outboxService,
+        updateNotifications: updateNotifications,
+        scheduler: scheduler,
+        now: () => current,
+      );
+    });
+
+    Future<NotificationEntity> armEpisode(
+      String dueDayKey, {
+      String subjectId = 'rel-1',
+      DateTime? scheduledFor,
+    }) async {
+      final saved = await repository.armEpisode(
+        id: notificationEpisodeId(
+          kind: kind,
+          subjectId: subjectId,
+          episodeKey: dueDayKey,
+        ),
+        scheduledFor: scheduledFor ?? ahead,
+        build: (meta) => NotificationEntity.relationshipCheckIn(
+          meta: meta,
+          linkedRelationshipId: subjectId,
+          title: 'Check in?',
+          body: 'A good moment to reach out.',
+        ),
+      );
+      return saved!;
+    }
+
+    Future<List<NotificationEntity>> restate({
+      String? body = newBody,
+      String linkedEntityId = 'rel-1',
+      String rowKind = kind,
+    }) {
+      current = later;
+      clearInteractions(scheduler);
+      clearInteractions(outboxService);
+      clearInteractions(updateNotifications);
+      return repository.restateOpenRows(
+        linkedEntityId: linkedEntityId,
+        kind: rowKind,
+        title: newTitle,
+        body: body,
+      );
+    }
+
+    Future<NotificationEntity> stored(String id) async =>
+        (await notificationsDb.notificationById(id))!;
+
+    test('re-words an open future row and stamps the write', () async {
+      final row = await armEpisode('2026-06-16');
+
+      final restated = await restate();
+
+      expect(restated.map((r) => r.id), [row.id]);
+      final saved = await stored(row.id);
+      expect(saved.title, newTitle);
+      expect(saved.body, newBody);
+      expect(saved, isA<RelationshipCheckInNotification>());
+      expect(saved.meta.updatedAt, later);
+      expect(saved.meta.createdAt, row.meta.createdAt);
+      expect(saved.meta.scheduledFor, ahead);
+      expect(saved.meta.originatingHostId, 'host-a');
+    });
+
+    test('re-arms the row under its unchanged id and syncs it whole', () async {
+      final row = await armEpisode('2026-06-16');
+
+      await restate();
+
+      // Same id → the OS alarm is replaced, not doubled; a full row on the
+      // wire → peers converge on the new words by updatedAt.
+      final rearmed =
+          verify(
+                () => scheduler.schedule(
+                  captureAny<NotificationEntity>(),
+                  now: later,
+                ),
+              ).captured.single
+              as NotificationEntity;
+      expect(rearmed.id, row.id);
+      expect(rearmed.title, newTitle);
+      final synced =
+          verify(
+                () => outboxService.enqueueNotification(
+                  captureAny<NotificationEntity>(),
+                  originatingHostId: any(named: 'originatingHostId'),
+                ),
+              ).captured.single
+              as NotificationEntity;
+      expect(synced.title, newTitle);
+      verify(
+        () => updateNotifications.notify({
+          row.id,
+          'rel-1',
+          inboxNotification,
+        }, fromSync: false),
+      ).called(1);
+    });
+
+    test('keeps the body when none is given', () async {
+      final row = await armEpisode('2026-06-16');
+
+      await restate(body: null);
+
+      final saved = await stored(row.id);
+      expect(saved.title, newTitle);
+      expect(saved.body, 'A good moment to reach out.');
+    });
+
+    test('leaves a row already due alone — its alert went out', () async {
+      final due = await armEpisode(
+        '2026-05-16',
+        scheduledFor: fixedNow.subtract(const Duration(hours: 1)),
+      );
+
+      final restated = await restate();
+
+      // Rescheduling a due row would announce it a second time.
+      expect(restated, isEmpty);
+      expect((await stored(due.id)).title, 'Check in?');
+      verifyNever(
+        () => scheduler.schedule(
+          any<NotificationEntity>(),
+          now: any(named: 'now'),
+        ),
+      );
+    });
+
+    test('leaves a seen, acted-on or deleted row alone', () async {
+      final seen = await armEpisode('2026-06-16');
+      await repository.markSeen(seen.id);
+      final retracted = await armEpisode('2026-07-16');
+      await repository.retract(retracted.id);
+
+      final restated = await restate();
+
+      expect(restated, isEmpty);
+      expect((await stored(seen.id)).title, 'Check in?');
+      expect((await stored(retracted.id)).title, 'Check in?');
+    });
+
+    test("leaves another subject's and another kind's rows alone", () async {
+      final theirs = await armEpisode('2026-06-16', subjectId: 'rel-2');
+      final mine = await armEpisode('2026-06-16');
+
+      final restated = await restate();
+      final otherKind = await restate(rowKind: NotificationKinds.goalOffTrack);
+
+      expect(restated.map((r) => r.id), [mine.id]);
+      expect(otherKind, isEmpty);
+      expect((await stored(theirs.id)).title, 'Check in?');
+    });
+
+    test('writes nothing when the words already read this way', () async {
+      await armEpisode('2026-06-16');
+      await restate();
+
+      final again = await restate();
+
+      // A re-run wake must not bump the clock, sync or re-arm for nothing.
+      expect(again, isEmpty);
+      verifyNever(
+        () => outboxService.enqueueNotification(
+          any<NotificationEntity>(),
+          originatingHostId: any(named: 'originatingHostId'),
+        ),
+      );
+      verifyNever(
+        () => scheduler.schedule(
+          any<NotificationEntity>(),
+          now: any(named: 'now'),
+        ),
+      );
+    });
+
+    test('a device-local row is re-worded but never enqueued', () async {
+      final local = await repository.create(
+        NotificationEntity.dayPlanOutcome(
+          meta: NotificationMeta(
+            id: 'plan-row',
+            createdAt: fixedNow,
+            updatedAt: fixedNow,
+            scheduledFor: ahead,
+            vectorClock: const VectorClock({}),
+            originatingHostId: '',
+          ),
+          dayId: 'day-1',
+          succeeded: true,
+          title: 'Your day plan is ready',
+          body: 'The draft is waiting for your review.',
+        ),
+      );
+
+      final restated = await restate(
+        linkedEntityId: 'day-1',
+        rowKind: NotificationKinds.dayPlanOutcome,
+      );
+
+      expect(restated.map((r) => r.id), [local!.id]);
+      expect((await stored(local.id)).title, newTitle);
+      verifyNever(
+        () => outboxService.enqueueNotification(
+          any<NotificationEntity>(),
+          originatingHostId: any(named: 'originatingHostId'),
+        ),
+      );
+    });
+
+    test('without a host nothing is written', () async {
+      final row = await armEpisode('2026-06-16');
+      when(() => vectorClockService.getHost()).thenAnswer((_) async => null);
+
+      final restated = await restate();
+
+      expect(restated, isEmpty);
+      expect((await stored(row.id)).title, 'Check in?');
+    });
+
+    group('commits the clock scope only for a row it wrote', () {
+      late _CommitEvaluatingVectorClockService commitClock;
+
+      setUp(() {
+        commitClock = _CommitEvaluatingVectorClockService();
+        when(() => commitClock.getHost()).thenAnswer((_) async => 'host-a');
+        when(
+          () =>
+              commitClock.getNextVectorClock(previous: any(named: 'previous')),
+        ).thenAnswer((_) async => const VectorClock({'host-a': 1}));
+        repository = NotificationRepository(
+          notificationsDb: notificationsDb,
+          vectorClockService: commitClock,
+          outboxService: outboxService,
+          updateNotifications: updateNotifications,
+          scheduler: scheduler,
+          now: () => current,
+        );
+      });
+
+      test('a re-wording that wrote the row commits', () async {
+        await armEpisode('2026-06-16');
+        commitClock.commits.clear();
+
+        await restate();
+
+        expect(commitClock.commits, [true]);
+      });
+
+      test('a re-wording with no host does not commit', () async {
+        await armEpisode('2026-06-16');
+        commitClock.commits.clear();
+        when(() => commitClock.getHost()).thenAnswer((_) async => null);
+
+        await restate();
+
+        // No clock can be attributed, so no tick may be spent.
+        expect(commitClock.commits, [false]);
+      });
+    });
+  });
+
   group('NotificationRepository.retractOpenRows', () {
     const kind = NotificationKinds.relationshipCheckIn;
 

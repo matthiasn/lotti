@@ -96,6 +96,16 @@ Future<void> initConfigFlags(
   }
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: notifyAgentCopyFlag,
+      // Off by default: the agent's banner copy can carry details, and an
+      // alert lands on the lock screen (ADR 0039 Decision 6 stands until the
+      // user says otherwise).
+      description: "Word alerts in the agent's own words?",
+      status: false,
+    ),
+  );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: enableHabitsPageFlag,
       description: 'Enable Habits Page?',
       status: false,

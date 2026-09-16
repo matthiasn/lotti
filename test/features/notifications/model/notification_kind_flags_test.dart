@@ -131,6 +131,9 @@ void main() {
         notificationRowKindFlags,
         isNot(contains(enableNotificationsFlag)),
       );
+      // The wording switch changes what the next wake writes, never what is
+      // armed now, so a flip has nothing to reconcile.
+      expect(notificationRowKindFlags, isNot(contains(notifyAgentCopyFlag)));
     });
   });
 }

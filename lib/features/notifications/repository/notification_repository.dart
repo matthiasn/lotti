@@ -161,6 +161,79 @@ class NotificationRepository {
     return retracted;
   }
 
+  /// Re-words the open, not-yet-fired rows of [kind] linked to
+  /// [linkedEntityId] — the agent's own voice on an alert the deterministic
+  /// tier armed (ADR 0063). [title] replaces the row's title; [body] its body
+  /// when given, else the body stays.
+  ///
+  /// A row already due keeps its words: its alert went out, and rescheduling
+  /// it would announce it a second time. A row whose words already read this
+  /// way is left alone, so a re-run wake writes nothing. The re-worded row
+  /// syncs as a full row — content converges last-writer-wins on `updatedAt`
+  /// (`NotificationMerge`), which is what lets it overtake the template copy
+  /// on every peer whatever order the two events arrive in — and is
+  /// re-armed under its unchanged OS id, so the alarm is replaced, not
+  /// doubled.
+  Future<List<NotificationEntity>> restateOpenRows({
+    required String linkedEntityId,
+    required String kind,
+    required String title,
+    String? body,
+  }) async {
+    final now = _now();
+    final rows = await _notificationsDb.forLinkedEntity(linkedEntityId);
+    final restated = <NotificationEntity>[];
+    for (final row in rows) {
+      if (row.type != kind) continue;
+      final meta = row.meta;
+      if (meta.seenAt != null ||
+          meta.actedOnAt != null ||
+          meta.deletedAt != null ||
+          !meta.scheduledFor.isAfter(now)) {
+        continue;
+      }
+      final newBody = body ?? row.body;
+      if (row.title == title && row.body == newBody) continue;
+      final result = await _restate(row, title: title, body: newBody);
+      if (result != null) restated.add(result);
+    }
+    return restated;
+  }
+
+  Future<NotificationEntity?> _restate(
+    NotificationEntity row, {
+    required String title,
+    required String body,
+  }) {
+    return _vectorClockService.withVcScope<NotificationEntity?>(() async {
+      final host = await _vectorClockService.getHost();
+      if (host == null) return null;
+
+      final now = _now();
+      final vectorClock = await _vectorClockService.getNextVectorClock(
+        previous: row.meta.vectorClock,
+      );
+      final reworded = row
+          .copyWithCopy(title: title, body: body)
+          .copyWithMeta(
+            row.meta.copyWith(
+              updatedAt: now,
+              vectorClock: vectorClock,
+              originatingHostId: host,
+            ),
+          );
+      final saved = await _notificationsDb.upsertNotification(reworded);
+      if (saved == null) return null;
+
+      if (!saved.isDeviceLocal) {
+        await _outboxService.enqueueNotification(saved);
+      }
+      await _scheduler.schedule(saved, now: now);
+      _notify(saved, fromSync: false);
+      return saved;
+    }, commitWhen: (result) => result != null);
+  }
+
   /// The meta a brand-new row carries into [create]: both timestamps at now,
   /// no lifecycle marks, and an empty clock and host for [_create] to fill.
   NotificationMeta _pendingMeta({

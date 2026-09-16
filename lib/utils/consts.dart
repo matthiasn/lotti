@@ -13,6 +13,10 @@ const notifySyncConflictsFlag = 'notify_sync_conflicts';
 
 /// Whether the count of tasks in progress sits on the app icon (iOS, macOS).
 const showTaskBadgeFlag = 'show_task_badge';
+
+/// Whether an agent may re-word an armed alert with its banner's own copy —
+/// off by default, because that copy lands on a lock screen (ADR 0063).
+const notifyAgentCopyFlag = 'notify_agent_copy';
 const recordLocationFlag = 'record_location';
 const enableMatrixFlag = 'enable_matrix';
 const enableTooltipFlag = 'enable_tooltip';

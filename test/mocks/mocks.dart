@@ -133,6 +133,7 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/state/linked_from_entries_controller.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
+import 'package:lotti/features/notifications/producer/agent_alert_copy.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/notifications/routing/notification_tap_router.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
@@ -878,6 +879,8 @@ class MockNotificationScheduler extends Mock implements NotificationScheduler {}
 class MockNotificationTapRouter extends Mock implements NotificationTapRouter {}
 
 class MockGoalOffTrackSink extends Mock implements GoalOffTrackSink {}
+
+class MockAgentAlertCopy extends Mock implements AgentAlertCopy {}
 
 class MockOutboxService extends Mock implements OutboxService {}
 

@@ -31,6 +31,7 @@ import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
 import 'package:lotti/features/goals/workflow/goal_criterion_names.dart';
+import 'package:lotti/features/notifications/producer/agent_alert_copy.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -70,10 +71,12 @@ GoalAgentWorkflow _offTrackWorkflow(
   MockAgentSyncService syncService,
   MockConversationRepository conversationRepository,
   MockCloudInferenceRepository cloudInferenceRepository,
-  MockAiConfigRepository aiConfigRepository,
-) => GoalAgentWorkflow(
+  MockAiConfigRepository aiConfigRepository, {
+  AgentAlertCopy? alertCopy,
+}) => GoalAgentWorkflow(
   repository: repository,
   syncService: syncService,
+  alertCopy: alertCopy,
   phaseA: GoalAgentPhaseA(
     repository: repository,
     syncService: syncService,
@@ -6036,6 +6039,206 @@ void main() {
       42,
     ]);
     expect(sections['unexpected'], 7);
+  });
+  group("the armed alert in the agent's words (ADR 0063)", () {
+    late MockAgentAlertCopy alertCopy;
+
+    setUp(() {
+      alertCopy = MockAgentAlertCopy();
+      when(
+        () => alertCopy.restate(
+          subjectId: any(named: 'subjectId'),
+          brief: any(named: 'brief'),
+        ),
+      ).thenAnswer((_) async {});
+    });
+
+    /// An off-track escalation wake whose model answers with [toolCalls].
+    Future<WakeResult> offTrackWake(
+      List<ChatCompletionMessageToolCall> Function() toolCalls,
+    ) async {
+      stubSpec();
+      stubGlmResolution();
+      workflow = _offTrackWorkflow(
+        repository,
+        syncService,
+        conversationRepository,
+        cloudInferenceRepository,
+        aiConfigRepository,
+        alertCopy: alertCopy,
+      );
+      _stubBadPrior(repository, agentId, now);
+      conversationRepository.sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            await (strategy! as GoalAgentStrategy).processToolCalls(
+              toolCalls: toolCalls(),
+              manager: conversationManager,
+            );
+            return const InferenceUsage(inputTokens: 900, outputTokens: 120);
+          };
+      return run();
+    }
+
+    ChatCompletionMessageToolCall report() =>
+        toolCall(GoalAgentToolNames.updateGoalReport, {
+          'status': 'offTrack',
+          'oneLiner': 'Averaging 6k of 10k steps.',
+          'tldr': 'The rolling week slid well under target.',
+        }, id: 'call-a');
+
+    test(
+      'the banner this wake created re-words the alert with the brief the '
+      'banner shows',
+      () async {
+        final result = await offTrackWake(
+          () => [
+            report(),
+            toolCall(GoalAgentToolNames.createGoalAd, {
+              'headline': '  Your pedometer   misses you.  ',
+              'tagline': 'Averaging 6k of 10k steps.',
+              'tone': 'nudge',
+              'animation': 'steady',
+            }, id: 'call-b'),
+          ],
+        );
+
+        expect(result.success, isTrue, reason: result.error);
+        final nudge = upserts.whereType<GoalNudgeEntity>().single;
+        // The persisted brief — sanitised, the one the dock renders — not
+        // the raw tool arguments, so the alert can never say what the
+        // banner does not.
+        verify(
+          () => alertCopy.restate(subjectId: agentId, brief: nudge.brief),
+        ).called(1);
+      },
+    );
+
+    test('a wake that creates no banner re-words nothing', () async {
+      final result = await offTrackWake(() => [report()]);
+
+      expect(result.success, isTrue, reason: result.error);
+      expect(upserts.whereType<GoalNudgeEntity>(), isEmpty);
+      verifyNever(
+        () => alertCopy.restate(
+          subjectId: any(named: 'subjectId'),
+          brief: any(named: 'brief'),
+        ),
+      );
+    });
+
+    test(
+      'a banner suppressed by a fresh active one re-words nothing either',
+      () async {
+        // Only a banner this wake actually wrote may lend its words: the
+        // alert must never read like a banner the user never saw.
+        when(
+          () => repository.getEntitiesByAgentId(
+            agentId,
+            type: AgentEntityTypes.goalNudge,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            AgentDomainEntity.goalNudge(
+              id: 'fresh-active',
+              agentId: agentId,
+              status: NudgeStatus.active,
+              brief: const NudgeBrief(
+                headline: 'Still here.',
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
+              ),
+              briefDigest: 'digest',
+              createdAt: now.toUtc(),
+              updatedAt: now.toUtc(),
+              vectorClock: null,
+              runKey: 'run-0',
+              threadId: 'thread-0',
+              triggerProgressId: goalProgressId(agentId, '2026-08-09'),
+              staleAt: now.toUtc().add(goalAdLifetime),
+              activatedAt: now.toUtc(),
+            ),
+          ],
+        );
+
+        final result = await offTrackWake(
+          () => [
+            report(),
+            toolCall(GoalAgentToolNames.createGoalAd, {
+              'headline': 'Your pedometer misses you.',
+              'tone': 'nudge',
+              'animation': 'steady',
+            }, id: 'call-b'),
+          ],
+        );
+
+        expect(result.success, isTrue, reason: result.error);
+        expect(upserts.whereType<GoalNudgeEntity>(), isEmpty);
+        verifyNever(
+          () => alertCopy.restate(
+            subjectId: any(named: 'subjectId'),
+            brief: any(named: 'brief'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'without the helper wired, a banner leaves the alert as it is',
+      () async {
+        workflow = _offTrackWorkflow(
+          repository,
+          syncService,
+          conversationRepository,
+          cloudInferenceRepository,
+          aiConfigRepository,
+        );
+        stubSpec();
+        stubGlmResolution();
+        _stubBadPrior(repository, agentId, now);
+        conversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              await (strategy! as GoalAgentStrategy).processToolCalls(
+                toolCalls: [
+                  report(),
+                  toolCall(GoalAgentToolNames.createGoalAd, {
+                    'headline': 'Your pedometer misses you.',
+                    'tone': 'nudge',
+                    'animation': 'steady',
+                  }, id: 'call-b'),
+                ],
+                manager: conversationManager,
+              );
+              return const InferenceUsage(inputTokens: 900, outputTokens: 120);
+            };
+
+        final result = await run();
+
+        // The optional seam absent is a wake like before this step: a banner,
+        // and an alert with its template copy.
+        expect(result.success, isTrue, reason: result.error);
+        expect(upserts.whereType<GoalNudgeEntity>(), hasLength(1));
+      },
+    );
   });
 }
 

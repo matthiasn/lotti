@@ -36,8 +36,9 @@ typedef _KindRow = ({
 });
 
 /// The Notifications settings: the master switch that lets anything reach the
-/// OS at all, and beneath it one switch per kind of alert — plus, where the
-/// platform has an icon badge, the task count on it.
+/// OS at all, beneath it one switch per kind of alert — plus, where the
+/// platform has an icon badge, the task count on it — and last the wording
+/// switch that lets an agent re-word an alert in its banner's own words.
 ///
 /// Every switch is a config flag, read from the same stream the flags page
 /// watches and written through [PersistenceLogic.setConfigFlag], whose hook
@@ -183,6 +184,30 @@ class NotificationSettingsBody extends StatelessWidget {
                 SettingsToggleList(rows: kindRows),
                 SizedBox(height: tokens.spacing.step3),
                 Text(messages.settingsNotificationsKindsNote, style: noteStyle),
+              ],
+              // The agent's own words on an alert: opt-in, because a banner
+              // brief can carry details and an alert lands on the lock
+              // screen (ADR 0063). Greyed with the kinds while the master
+              // switch is off.
+              if (flags[notifyAgentCopyFlag] case final wording?) ...[
+                SizedBox(height: tokens.spacing.sectionGap),
+                Text(
+                  messages.settingsNotificationsWordingHeading,
+                  style: tokens.typography.styles.subtitle.subtitle2,
+                ),
+                SizedBox(height: tokens.spacing.step3),
+                SettingsToggleList(
+                  rows: [
+                    rowFor(
+                      wording,
+                      icon: LottiIcons.chat,
+                      title: messages.settingsNotificationsAgentCopyTitle,
+                      subtitle:
+                          messages.settingsNotificationsAgentCopyDescription,
+                      enabled: master.status,
+                    ),
+                  ],
+                ),
               ],
             ],
           ),

@@ -161,6 +161,72 @@ void main() {
     ),
   );
 
+  group('NotificationEpisodeProducer.restate', () {
+    setUp(() {
+      when(
+        () => notifications.restateOpenRows(
+          linkedEntityId: any(named: 'linkedEntityId'),
+          kind: any(named: 'kind'),
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+        ),
+      ).thenAnswer((_) async => const []);
+    });
+
+    test("re-words the subject's open rows of this producer's kind", () async {
+      await producer().restate('subject-1', title: 'T', body: 'B');
+
+      // Scoped exactly like clearFor: the kind keeps another producer's rows
+      // for the same subject out of reach.
+      verify(
+        () => notifications.restateOpenRows(
+          linkedEntityId: 'subject-1',
+          kind: NotificationKinds.relationshipCheckIn,
+          title: 'T',
+          body: 'B',
+        ),
+      ).called(1);
+      verifyNothingLogged();
+    });
+
+    test('passes a missing body through, so the row keeps its own', () async {
+      await producer().restate('subject-1', title: 'T');
+
+      verify(
+        () => notifications.restateOpenRows(
+          linkedEntityId: 'subject-1',
+          kind: NotificationKinds.relationshipCheckIn,
+          title: 'T',
+        ),
+      ).called(1);
+    });
+
+    test('a store failure is logged under restate and never escapes', () async {
+      when(
+        () => notifications.restateOpenRows(
+          linkedEntityId: any(named: 'linkedEntityId'),
+          kind: any(named: 'kind'),
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+        ),
+      ).thenThrow(StateError('notifications.sqlite unavailable'));
+
+      await expectLater(
+        producer().restate('subject-1', title: 'T', body: 'B'),
+        completes,
+      );
+
+      verify(
+        () => logger.error(
+          LogDomain.notifications,
+          any<Object>(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'testProducer.restate',
+        ),
+      ).called(1);
+    });
+  });
+
   group('NotificationEpisodeProducer.arm', () {
     test(
       'arms the episode under its derived id, instant and category',

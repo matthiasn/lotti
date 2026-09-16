@@ -13758,6 +13758,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsMeasurableValueKindNumber => 'Číslo';
 
   @override
+  String get settingsNotificationsAgentCopyDescription =>
+      'Upozornění na cíl nebo kontakt použije slova z banneru agenta místo pevné věty. Může zmínit podrobnosti a zobrazí se na zamykací obrazovce.';
+
+  @override
+  String get settingsNotificationsAgentCopyTitle => 'Upozornění slovy agenta';
+
+  @override
   String get settingsNotificationsAllowTitle => 'Povolit oznámení';
 
   @override
@@ -13837,6 +13844,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsNotificationsTitle => 'Oznámení';
+
+  @override
+  String get settingsNotificationsWordingHeading => 'Znění';
 
   @override
   String get settingsOnboardingActionSubtitle =>
