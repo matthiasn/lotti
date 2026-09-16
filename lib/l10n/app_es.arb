@@ -5296,7 +5296,7 @@
   "settingsNotificationsCheckInRemindersTitle": "Recordatorios de contacto",
   "settingsNotificationsDayPlanOutcomesDescription": "Cuando un plan del día preparado en segundo plano está listo o no se completó.",
   "settingsNotificationsDayPlanOutcomesTitle": "Resultados del plan del día",
-  "settingsNotificationsExplanation": "Los avisos llegan por las notificaciones de tu dispositivo. Elige qué merece uno; de todos modos, todo queda en la campana de Lotti.",
+  "settingsNotificationsExplanation": "Los avisos llegan por las notificaciones de tu dispositivo. Elige cuáles merecen una notificación; de todos modos, todo queda en la campana de Lotti.",
   "settingsNotificationsGoalAlertsDescription": "Cuando un objetivo se desvía del rumbo.",
   "settingsNotificationsGoalAlertsTitle": "Avisos de objetivos",
   "settingsNotificationsHabitAutoCompletionsDescription": "Cuando Lotti marca un hábito por ti a partir de tus datos.",

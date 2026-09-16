@@ -22634,7 +22634,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsNotificationsExplanation.
   ///
   /// In en, this message translates to:
-  /// **'Alerts arrive through your device\'s notifications. Choose what is worth one; everything still lands in the bell inside Lotti.'**
+  /// **'Alerts arrive through your device\'s notifications. Choose which are worth a notification; everything still lands in the bell inside Lotti.'**
   String get settingsNotificationsExplanation;
 
   /// No description provided for @settingsNotificationsGoalAlertsDescription.

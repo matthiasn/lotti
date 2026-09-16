@@ -13700,7 +13700,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsNotificationsExplanation =>
-      'Hinweise kommen über die Benachrichtigungen deines Geräts. Wähle, was dir einen wert ist – in der Glocke in Lotti landet trotzdem alles.';
+      'Hinweise kommen über die Benachrichtigungen deines Geräts. Wähle, was dir eine Benachrichtigung wert ist – in der Glocke in Lotti landet trotzdem alles.';
 
   @override
   String get settingsNotificationsGoalAlertsDescription =>

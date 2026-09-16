@@ -360,8 +360,9 @@ void main() {
 
     expect(
       find.text(
-        "Alerts arrive through your device's notifications. Choose what is "
-        'worth one; everything still lands in the bell inside Lotti.',
+        "Alerts arrive through your device's notifications. Choose which are "
+        'worth a notification; everything still lands in the bell inside '
+        'Lotti.',
       ),
       findsOneWidget,
     );

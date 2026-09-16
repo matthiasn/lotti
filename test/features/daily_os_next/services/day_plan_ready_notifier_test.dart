@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/notification_entity.dart';
@@ -138,6 +140,53 @@ void main() {
       expect(row.body, 'The draft is waiting for your review.');
       // Never syncs: the job ledger it reports on is this device's.
       expect(row.isDeviceLocal, isTrue);
+    },
+  );
+
+  test(
+    'outcomes are recorded one at a time, so the later one survives',
+    () async {
+      // Two outcomes side by side would each arm a row and retract the other's.
+      final firstArm = Completer<NotificationEntity?>();
+      var arms = 0;
+      when(
+        () => notifications.armEpisode(
+          id: any(named: 'id'),
+          scheduledFor: any(named: 'scheduledFor'),
+          build: any(named: 'build'),
+          category: any(named: 'category'),
+        ),
+      ).thenAnswer((_) => ++arms == 1 ? firstArm.future : Future.value());
+      final notifier = makeNotifier();
+
+      final first = notifier.onJobOutcome(
+        job(
+          payload: const DraftPlanPayload(),
+          status: DayProcessingJobStatus.failed,
+        ),
+      );
+      final second = notifier.onJobOutcome(
+        job(payload: const DraftPlanPayload(), id: 'job-2'),
+      );
+      await pumpEventQueue();
+
+      expect(arms, 1, reason: 'the second outcome waits for the first');
+
+      firstArm.complete(null);
+      await Future.wait([first, second]);
+
+      expect(arms, 2);
+      final spared = verify(
+        () => notifications.retractOpenRows(
+          linkedEntityId: dayId,
+          kind: NotificationKinds.dayPlanOutcome,
+          exceptId: captureAny(named: 'exceptId'),
+        ),
+      ).captured;
+      expect(spared, [
+        episodeId(status: 'failed'),
+        episodeId(jobId: 'job-2'),
+      ]);
     },
   );
 

@@ -13620,7 +13620,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsNotificationsExplanation =>
-      'Varningar kommer via enhetens aviseringar. Välj vad som är värt en; allt hamnar ändå i klockan i Lotti.';
+      'Varningar kommer via enhetens aviseringar. Välj vilka som är värda en avisering; allt hamnar ändå under Notiser i Lotti.';
 
   @override
   String get settingsNotificationsGoalAlertsDescription =>
@@ -13649,7 +13649,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsNotificationsKindsNote =>
-      'Att stänga av en typ stoppar bara dess varningar. Dess poster finns kvar i klockan.';
+      'Att stänga av en typ stoppar bara dess varningar. Dess poster finns kvar under Notiser.';
 
   @override
   String get settingsNotificationsSubtitle =>

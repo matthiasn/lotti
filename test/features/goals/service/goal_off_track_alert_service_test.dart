@@ -57,11 +57,12 @@ void main() {
   GoalWakeDerivation derivation({
     String periodKey = '2026-08-08',
     GoalTrackStatus status = GoalTrackStatus.offTrack,
+    GoalTrackStatus? previousStatus = GoalTrackStatus.onTrack,
   }) => GoalWakeDerivation(
     version: specVersion,
     facts: GoalWakeFacts(
       trackStatus: status,
-      previousStatus: GoalTrackStatus.onTrack,
+      previousStatus: previousStatus,
       evaluation: const GoalEvaluation(
         attainment: 0.6,
         satisfied: false,
@@ -73,10 +74,14 @@ void main() {
     priors: const [],
   );
 
-  String episodeId({String periodKey = '2026-08-08'}) => notificationEpisodeId(
+  /// The transition day plus the status the goal slipped from.
+  String episodeId({
+    String periodKey = '2026-08-08',
+    GoalTrackStatus? previousStatus = GoalTrackStatus.onTrack,
+  }) => notificationEpisodeId(
     kind: NotificationKinds.goalOffTrack,
     subjectId: agentId,
-    episodeKey: periodKey,
+    episodeKey: '$periodKey:${previousStatus?.name ?? 'none'}',
   );
 
   /// `armEpisode` runs the builder the way the real repository does, so the
@@ -248,8 +253,12 @@ void main() {
         // 2026-10-25 switch would land at 08:00.
         final scheduledFor = await armedInstant();
 
-        expect(scheduledFor.day, 25);
-        expect(scheduledFor.hour, goalOffTrackAlertHour);
+        // The exact local instant, not day + hour: on a DST-observing host
+        // (Europe/Berlin falls back that night) `now + 24h` is 08:00 and
+        // fails this. Dart cannot pin the native zone from inside a test,
+        // so on a UTC host — CI — the two agree and this is a calendar check.
+        expect(scheduledFor, DateTime(2026, 10, 25, goalOffTrackAlertHour));
+        expect(scheduledFor.isUtc, isFalse);
       },
       now: DateTime(2026, 10, 24, 23),
     );
@@ -326,6 +335,48 @@ void main() {
         ),
       ).called(1);
       expect(armedRows, isEmpty);
+    });
+  });
+
+  group('the episode key', () {
+    clockedTest(
+      'two slips on one day from different baselines are two episodes',
+      () async {
+        // On track → off track in the morning, recovered, then at risk →
+        // off track in the afternoon: the second slip must alert, so it
+        // cannot share the id of the row the recovery retracted.
+        await service.arm(subject: subject, derivation: derivation());
+        await service.arm(
+          subject: subject,
+          derivation: derivation(previousStatus: GoalTrackStatus.atRisk),
+        );
+
+        expect(armedRows.map((row) => row.meta.id), [
+          episodeId(),
+          episodeId(previousStatus: GoalTrackStatus.atRisk),
+        ]);
+      },
+    );
+
+    clockedTest(
+      'the same transition twice on one day is one episode',
+      () async {
+        // The banner's own ceiling: the key must converge across devices, and
+        // a per-tick stamp would mint one row per device instead.
+        await service.arm(subject: subject, derivation: derivation());
+        await service.arm(subject: subject, derivation: derivation());
+
+        expect(armedRows.map((row) => row.meta.id), [episodeId(), episodeId()]);
+      },
+    );
+
+    clockedTest('a first evaluation with no prior status still keys', () async {
+      await service.arm(
+        subject: subject,
+        derivation: derivation(previousStatus: null),
+      );
+
+      expect(armedRows.single.meta.id, episodeId(previousStatus: null));
     });
   });
 }

@@ -54,16 +54,29 @@ class DayPlanReadyNotifier {
   NotificationRepository get _notifications =>
       _notificationRepository ?? getIt<NotificationRepository>();
 
+  /// The outcome being recorded, so the next one waits for it.
+  Future<void> _applying = Future<void>.value();
+
   /// Handles one attempt outcome from the outbox processor.
   ///
   /// Not only terminal ones: `failed` is not terminal, and this is the
   /// listener that decides a failed plan job is worth reporting.
   ///
+  /// Outcomes are recorded one at a time. Two for the same day running side
+  /// by side would each arm a row and then retract the other's, leaving
+  /// none; serialised, the later outcome's row is the one that survives.
+  ///
   /// Never throws: the hook is invoked fire-and-forget from the processor's
   /// completion path, so a write failure (repository resolution, locale
   /// lookup, the notification store) must stay a contained best-effort miss
   /// instead of surfacing as an unhandled async error on job completion.
-  Future<void> onJobOutcome(DayProcessingJob job) async {
+  Future<void> onJobOutcome(DayProcessingJob job) {
+    final run = _applying.then((_) => _record(job));
+    _applying = run;
+    return run;
+  }
+
+  Future<void> _record(DayProcessingJob job) async {
     final succeeded = job.status == DayProcessingJobStatus.succeeded;
     // A job that exhausted its retries is exactly as worth saying out loud as
     // one that worked: the user asked for a plan and is otherwise left with a

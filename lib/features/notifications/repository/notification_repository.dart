@@ -27,7 +27,7 @@ class NotificationRepository {
   final NotificationScheduler _scheduler;
   final DateTime Function() _now;
   final Uuid _uuid = const Uuid();
-  final Map<String, Future<void>> _taskSuggestionMutationTails = {};
+  final Map<String, Future<void>> _mutationTails = {};
 
   /// Creates (or refreshes) a `taskSuggestion` row in the synced inbox.
   ///
@@ -87,13 +87,18 @@ class NotificationRepository {
     required DateTime scheduledFor,
     required NotificationEntity Function(NotificationMeta meta) build,
     String? category,
-  }) async {
-    if (await _notificationsDb.notificationById(id) != null) return null;
-    return create(
-      build(
-        _pendingMeta(id: id, scheduledFor: scheduledFor, category: category),
-      ),
-    );
+  }) {
+    // Check and write under one per-episode chain: a cadence tick racing a
+    // write-driven wake for the same subject would otherwise both read "no
+    // row" and both write, enqueue, schedule and notify.
+    return _withKeyedMutation('episode:$id', () async {
+      if (await _notificationsDb.notificationById(id) != null) return null;
+      return create(
+        build(
+          _pendingMeta(id: id, scheduledFor: scheduledFor, category: category),
+        ),
+      );
+    });
   }
 
   /// Deterministic id for the auto-completion row of [dayKey] covering
@@ -210,6 +215,10 @@ class NotificationRepository {
       if (host == null) return null;
 
       final now = _now();
+      // Re-checked against the clock this write carries: the row was ahead
+      // when `restateOpenRows` read it, and one that came due in between has
+      // had its alert go out — re-arming it would announce it twice.
+      if (!row.meta.scheduledFor.isAfter(now)) return null;
       final vectorClock = await _vectorClockService.getNextVectorClock(
         previous: row.meta.vectorClock,
       );
@@ -255,8 +264,8 @@ class NotificationRepository {
 
   Future<NotificationEntity?> create(NotificationEntity entity) {
     if (entity is TaskSuggestionNotification) {
-      return _withTaskSuggestionMutation(
-        entity.linkedTaskId,
+      return _withKeyedMutation(
+        'task:${entity.linkedTaskId}',
         () => _create(entity),
       );
     }
@@ -322,8 +331,8 @@ class NotificationRepository {
   Future<List<NotificationEntity>> markTaskSuggestionsActedOn(
     String linkedTaskId,
   ) {
-    return _withTaskSuggestionMutation(
-      linkedTaskId,
+    return _withKeyedMutation(
+      'task:$linkedTaskId',
       () => _applyOpenTaskSuggestionStateUnlocked(
         linkedTaskId: linkedTaskId,
         actedOnAt: _now(),
@@ -338,8 +347,8 @@ class NotificationRepository {
   Future<List<NotificationEntity>> retractTaskSuggestionsForTask(
     String linkedTaskId,
   ) {
-    return _withTaskSuggestionMutation(
-      linkedTaskId,
+    return _withKeyedMutation(
+      'task:$linkedTaskId',
       () => _applyOpenTaskSuggestionStateUnlocked(
         linkedTaskId: linkedTaskId,
         deletedAt: _now(),
@@ -417,13 +426,17 @@ class NotificationRepository {
         (deletedAt != null && meta.deletedAt == null);
   }
 
-  Future<T> _withTaskSuggestionMutation<T>(
-    String linkedTaskId,
+  /// Runs [mutation] after every earlier mutation chained under [key] has
+  /// settled. Keys are namespaced (`task:<linkedTaskId>`, `episode:<id>`) so
+  /// the two families never wait on each other — and never on themselves,
+  /// which is what would deadlock if a chained call re-entered its own key.
+  Future<T> _withKeyedMutation<T>(
+    String key,
     Future<T> Function() mutation,
   ) async {
-    final previous = _taskSuggestionMutationTails[linkedTaskId];
+    final previous = _mutationTails[key];
     final completer = Completer<void>();
-    _taskSuggestionMutationTails[linkedTaskId] = completer.future;
+    _mutationTails[key] = completer.future;
 
     try {
       if (previous != null) {
@@ -432,11 +445,8 @@ class NotificationRepository {
       return await mutation();
     } finally {
       completer.complete();
-      if (identical(
-        _taskSuggestionMutationTails[linkedTaskId],
-        completer.future,
-      )) {
-        await _taskSuggestionMutationTails.remove(linkedTaskId);
+      if (identical(_mutationTails[key], completer.future)) {
+        await _mutationTails.remove(key);
       }
     }
   }

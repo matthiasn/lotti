@@ -60,6 +60,7 @@ module's: one sink contract, one choreography, per-episode identity
 ```text
 lib/features/notifications/
 ├── model/
+├── preferences/
 ├── producer/
 ├── repository/
 ├── routing/

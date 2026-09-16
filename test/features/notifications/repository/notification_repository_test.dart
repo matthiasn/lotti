@@ -839,6 +839,29 @@ void main() {
       verify(() => scheduler.schedule(saved, now: fixedNow)).called(1);
     });
 
+    test('two concurrent arms of one episode write it once', () async {
+      // A cadence tick racing a write-driven wake for the same subject:
+      // unless the check and the write are chained by episode, both read
+      // "no row" and both write, enqueue, schedule and notify.
+      final results = await Future.wait([arm(), arm()]);
+
+      expect(results.whereType<NotificationEntity>(), hasLength(1));
+      expect(builds, 1);
+      expect(await notificationsDb.notificationById(episodeId()), isNotNull);
+      verify(
+        () => scheduler.schedule(
+          any<NotificationEntity>(),
+          now: any(named: 'now'),
+        ),
+      ).called(1);
+      verify(
+        () => outboxService.enqueueNotification(
+          any<NotificationEntity>(),
+          originatingHostId: any(named: 'originatingHostId'),
+        ),
+      ).called(1);
+    });
+
     test('a second arm for the same episode writes nothing', () async {
       await arm();
       clearInteractions(scheduler);
@@ -1200,6 +1223,43 @@ void main() {
         () => scheduler.schedule(
           any<NotificationEntity>(),
           now: any(named: 'now'),
+        ),
+      );
+    });
+
+    test('a row that comes due while being re-worded is left alone', () async {
+      // `restateOpenRows` read it ahead of the clock; by the time the write
+      // is stamped the alert has gone out. Re-arming it would announce it a
+      // second time, so the write is skipped on the clock it would carry.
+      final soon = await armEpisode(
+        '2026-05-17',
+        scheduledFor: fixedNow.add(const Duration(minutes: 1)),
+      );
+      var reads = 0;
+      repository = NotificationRepository(
+        notificationsDb: notificationsDb,
+        vectorClockService: vectorClockService,
+        outboxService: outboxService,
+        updateNotifications: updateNotifications,
+        scheduler: scheduler,
+        // The read sees the row a minute ahead; the write's clock is past it.
+        now: () => reads++ == 0 ? fixedNow : later,
+      );
+
+      final restated = await restate();
+
+      expect(restated, isEmpty);
+      expect((await stored(soon.id)).title, 'Check in?');
+      verifyNever(
+        () => scheduler.schedule(
+          any<NotificationEntity>(),
+          now: any(named: 'now'),
+        ),
+      );
+      verifyNever(
+        () => outboxService.enqueueNotification(
+          any<NotificationEntity>(),
+          originatingHostId: any(named: 'originatingHostId'),
         ),
       );
     });

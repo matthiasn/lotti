@@ -32,8 +32,11 @@ one kind only by accident.
 ## Decision
 
 1. **One sink contract, in `lib/classes`.**
-   `NotificationEpisodeSink<TSubject, TDerivation>` has two members:
-   `arm({subject, derivation})` and `clearFor(subjectId)`. A runtime names
+   `NotificationEpisodeSink<TSubject, TDerivation>` has two members of its
+   own, `arm({subject, derivation})` and `clearFor(subjectId)`, and since
+   ADR 0063 inherits a third, `restate(subjectId, {title, body})`, from
+   `NotificationEpisodeRestater`; when a restatement is permitted is that
+   ADR's policy, not this contract's. A runtime names
    its own alias beside its derivation — `RelationshipReminderSink` is
    `NotificationEpisodeSink<RelationshipEntry, RelationshipCadenceDerivation>`
    — and imports only `lib/classes`. The one-way direction the amendment
@@ -79,13 +82,18 @@ one kind only by accident.
   relationship suite now covers copy, instant, category and kind.
 - `NotificationRepository` stops growing with the union. What is per kind is
   what only that kind knows.
-- Nothing on the wire changes: discriminators, ids and message families are
-  as before.
+- Nothing on the wire changes for the kinds that exist: their discriminators,
+  ids and message families are as before. A kind adopted later (ADR 0062's
+  goal alert) adds its own discriminator, as any new variant does; the
+  contract itself carries nothing new over the wire.
 
 ## Non-Goals
 
-- Model-authored notification copy. Copy is baked at write time and lands on
-  lock screens; ADR 0039 Decision 6's content-minimal rule stands.
+- Model-authored copy at arming time. What a producer arms is baked at write
+  time and lands on lock screens; ADR 0039 Decision 6's content-minimal rule
+  stands. Whether an agent may later re-word a row it armed, in its own
+  voice, is a separate decision — ADR 0063 — layered on top of this
+  contract, not part of it.
 - Recurring reminders. The episode key moves only with the subject's own
   state, which is what keeps an ignored subject alerted once.
 - Moving task suggestions onto the contract.

@@ -8,6 +8,7 @@ extension SyncEventProcessorApply on SyncEventProcessor {
     required PreparedSyncEvent prepared,
     required JournalDb journalDb,
     Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
+    AfterCommitSink? afterCommit,
   }) async {
     final event = prepared.event;
     final syncMessage = prepared.syncMessage;
@@ -141,12 +142,32 @@ extension SyncEventProcessorApply on SyncEventProcessor {
           description: description,
           status: status,
         );
+        final previous = await journalDb.getConfigFlagByName(name);
         await journalDb.upsertConfigFlag(configFlag);
         if (configFlag.name == 'private') {
           _updateNotifications.notify(
             {privateToggleNotification},
             fromSync: true,
           );
+        }
+        // A notification preference flipped on a peer governs this device's
+        // alarms too: the same consequences the local hook runs, so a kind
+        // switched off over there stops alerting here, and one switched on
+        // re-arms what is already in the inbox. Those consequences are
+        // platform calls and an alarm reconciliation, which must not run
+        // inside the journal transaction the queue adapter wraps this apply
+        // in — they would hold the writer lock for every reader — so they
+        // are parked for after the commit when the caller offers a slot.
+        final effects = previous?.status != configFlag.status
+            ? _notificationPreferenceEffects?.call(journalDb)
+            : null;
+        if (effects != null) {
+          Future<void> applyEffects() => effects.apply(configFlag);
+          if (afterCommit != null) {
+            afterCommit(applyEffects);
+          } else {
+            await applyEffects();
+          }
         }
         return null;
       case SyncThemingSelection(
@@ -346,6 +367,7 @@ extension SyncEventProcessorApply on SyncEventProcessor {
               prepared: child,
               journalDb: journalDb,
               prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
+              afterCommit: afterCommit,
             ),
           ),
         );

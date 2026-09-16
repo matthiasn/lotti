@@ -13605,7 +13605,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get settingsNotificationsExplanation =>
-      'Advarsler kommer via din enheds notifikationer. Vælg, hvad der er en værd; alt havner alligevel i klokken i Lotti.';
+      'Advarsler kommer via din enheds notifikationer. Vælg, hvilke der er en notifikation værd; alt havner alligevel under Notifikationer i Lotti.';
 
   @override
   String get settingsNotificationsGoalAlertsDescription =>
@@ -13634,7 +13634,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get settingsNotificationsKindsNote =>
-      'Slår du en type fra, stopper kun dens advarsler. Dens poster bliver i klokken.';
+      'Slår du en type fra, stopper kun dens advarsler. Dens poster bliver under Notifikationer.';
 
   @override
   String get settingsNotificationsSubtitle =>

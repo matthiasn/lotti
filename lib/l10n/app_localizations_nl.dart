@@ -13633,7 +13633,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsNotificationsExplanation =>
-      'Waarschuwingen komen via de meldingen van je apparaat. Kies wat er een waard is; alles blijft hoe dan ook in de bel in Lotti staan.';
+      'Waarschuwingen komen via de meldingen van je apparaat. Kies welke een melding waard zijn; alles blijft hoe dan ook in de bel in Lotti staan.';
 
   @override
   String get settingsNotificationsGoalAlertsDescription =>

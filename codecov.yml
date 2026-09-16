@@ -32,6 +32,9 @@ ignore:
   # integration tests rather than unit-mocked. Line coverage here is
   # misleading and churns on every wiring change.
   - "lib/get_it.dart"
+  # Its `part` file: the Matrix sync stack's wiring, split out of the root in
+  # #3798 with the same nature — nothing under `test/` boots it.
+  - "lib/get_it_sync.dart"
   # Platform/native-gated code: macOS/iOS notification delivery, desktop
   # window + menu integration, XDG desktop portals (screenshots, location),
   # and the native image picker. These paths require a real desktop session

@@ -77,6 +77,7 @@ void main() {
                   () => localProcessor.apply(
                     prepared: prepared,
                     journalDb: localJournalDb,
+                    afterCommit: any(named: 'afterCommit'),
                   ),
                 ).thenAnswer((_) async => null);
               case GeneratedAdapterApplyOutcome.pendingDescriptor:
@@ -87,6 +88,7 @@ void main() {
                   () => localProcessor.apply(
                     prepared: prepared,
                     journalDb: localJournalDb,
+                    afterCommit: any(named: 'afterCommit'),
                   ),
                 ).thenThrow(scenario.applyException());
             }
@@ -123,6 +125,7 @@ void main() {
             () => localProcessor.apply(
               prepared: prepared,
               journalDb: localJournalDb,
+              afterCommit: any(named: 'afterCommit'),
             ),
           ).called(1);
         } else {
@@ -130,6 +133,7 @@ void main() {
             () => localProcessor.apply(
               prepared: any(named: 'prepared'),
               journalDb: localJournalDb,
+              afterCommit: any(named: 'afterCommit'),
             ),
           );
         }
@@ -169,6 +173,7 @@ void main() {
       () => processor.apply(
         prepared: any(named: 'prepared'),
         journalDb: journalDb,
+        afterCommit: any(named: 'afterCommit'),
       ),
     );
   });
@@ -203,6 +208,7 @@ void main() {
       () => processor.apply(
         prepared: any(named: 'prepared'),
         journalDb: journalDb,
+        afterCommit: any(named: 'afterCommit'),
       ),
     ).thenAnswer((_) async => null);
 
@@ -212,6 +218,7 @@ void main() {
       () => processor.apply(
         prepared: prepared,
         journalDb: journalDb,
+        afterCommit: any(named: 'afterCommit'),
       ),
     ).called(1);
   });
@@ -251,6 +258,7 @@ void main() {
       () => processor.apply(
         prepared: any(named: 'prepared'),
         journalDb: journalDb,
+        afterCommit: any(named: 'afterCommit'),
       ),
     );
   });
@@ -294,6 +302,7 @@ void main() {
       () => processor.apply(
         prepared: any(named: 'prepared'),
         journalDb: journalDb,
+        afterCommit: any(named: 'afterCommit'),
       ),
     );
   });
@@ -312,6 +321,7 @@ void main() {
       () => processor.apply(
         prepared: any(named: 'prepared'),
         journalDb: journalDb,
+        afterCommit: any(named: 'afterCommit'),
       ),
     ).thenThrow(const FileSystemException('disk full'));
 
@@ -458,6 +468,7 @@ void main() {
           () => processor.apply(
             prepared: prepared,
             journalDb: journalDb,
+            afterCommit: any(named: 'afterCommit'),
           ),
         ).thenThrow(
           const FileSystemException('attachment descriptor not yet available'),
@@ -519,7 +530,11 @@ void main() {
           () => processor.prepare(event: any(named: 'event')),
         ).thenAnswer((_) async => prepared);
         when(
-          () => processor.apply(prepared: prepared, journalDb: journalDb),
+          () => processor.apply(
+            prepared: prepared,
+            journalDb: journalDb,
+            afterCommit: any(named: 'afterCommit'),
+          ),
         ).thenAnswer((_) async => null);
 
         final adapter = build();
@@ -534,6 +549,7 @@ void main() {
           () => processor.apply(
             prepared: prepared,
             journalDb: journalDb,
+            afterCommit: any(named: 'afterCommit'),
           ),
         ).called(1);
       },
@@ -560,7 +576,11 @@ void main() {
           () => processor.prepare(event: any(named: 'event')),
         ).thenAnswer((_) async => prepared);
         when(
-          () => processor.apply(prepared: prepared, journalDb: journalDb),
+          () => processor.apply(
+            prepared: prepared,
+            journalDb: journalDb,
+            afterCommit: any(named: 'afterCommit'),
+          ),
         ).thenAnswer((_) async => null);
 
         final adapter = build();

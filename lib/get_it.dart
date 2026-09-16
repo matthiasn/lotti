@@ -37,6 +37,7 @@ import 'package:lotti/features/journal/service/image_path_migration_service.dart
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/services/label_validator.dart';
 import 'package:lotti/features/notifications/model/notification_kind_flags.dart';
+import 'package:lotti/features/notifications/preferences/notification_preference_effects.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/notifications/routing/notification_launch_routing.dart';
 import 'package:lotti/features/notifications/routing/notification_tap_router.dart';

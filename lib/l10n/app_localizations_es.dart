@@ -13779,7 +13779,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsNotificationsExplanation =>
-      'Los avisos llegan por las notificaciones de tu dispositivo. Elige qué merece uno; de todos modos, todo queda en la campana de Lotti.';
+      'Los avisos llegan por las notificaciones de tu dispositivo. Elige cuáles merecen una notificación; de todos modos, todo queda en la campana de Lotti.';
 
   @override
   String get settingsNotificationsGoalAlertsDescription =>

@@ -55,7 +55,9 @@ class AgentAlertCopy {
   static ({String title, String? body})? fromBrief(NudgeBrief brief) {
     final title = fit(brief.headline, titleLimit);
     if (title.isEmpty) return null;
-    final body = fit(brief.tagline ?? brief.cta ?? '', bodyLimit);
+    // A blank tagline is no tagline: fall through to the call to action.
+    final tagline = fit(brief.tagline ?? '', bodyLimit);
+    final body = tagline.isNotEmpty ? tagline : fit(brief.cta ?? '', bodyLimit);
     return (title: title, body: body.isEmpty ? null : body);
   }
 

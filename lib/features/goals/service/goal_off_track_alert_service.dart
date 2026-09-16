@@ -45,11 +45,17 @@ class GoalOffTrackAlertService
   @override
   String subjectIdOf(GoalOffTrackSubject subject) => subject.agentId;
 
-  /// The transition day. Phase A calls `arm` only on the tick whose status
-  /// changed, so the evaluation day of that tick names the slip — and a
-  /// later tick in the same slip, with nothing transitioned, never asks.
+  /// The transition day plus the status the goal slipped *from*. Phase A
+  /// calls `arm` only on the tick whose status changed, so the evaluation
+  /// day of that tick names the slip — and a later tick in the same slip,
+  /// with nothing transitioned, never asks. The baseline separates two slips
+  /// on one day that left different states (on track → off track, then at
+  /// risk → off track after a recovery); the same transition recurring on
+  /// one day is one episode, the banner's own ceiling, because the key must
+  /// converge across devices and a per-tick stamp would not.
   @override
-  String episodeKeyOf(GoalWakeDerivation derivation) => derivation.periodKey;
+  String episodeKeyOf(GoalWakeDerivation derivation) =>
+      '${derivation.periodKey}:${derivation.facts.previousStatus?.name ?? 'none'}';
 
   /// The next [goalOffTrackAlertHour] in local time.
   ///
