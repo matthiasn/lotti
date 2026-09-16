@@ -498,7 +498,14 @@ mixin _$PlannedBlock {
  PlannedBlockType get type;/// Current block lifecycle state.
  PlannedBlockState get state;/// Why this block belongs at this time. Required for AI blocks at the
 /// day-agent tool-handler layer.
- String? get reason;
+ String? get reason;/// Minutes of [taskId]'s estimate this plan deliberately leaves
+/// unscheduled, when the block covers less than the whole task.
+///
+/// Null means the block is not a partial placement. It is the structured
+/// form of "60 of 180 minutes, 120 left for later": the planner states the
+/// remainder rather than describing it in [reason], so the day can show
+/// what is left and a checker can verify the arithmetic.
+ int? get remainingMinutes;
 /// Create a copy of PlannedBlock
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -511,16 +518,16 @@ $PlannedBlockCopyWith<PlannedBlock> get copyWith => _$PlannedBlockCopyWithImpl<P
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlannedBlock&&(identical(other.id, id) || other.id == id)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.note, note) || other.note == note)&&(identical(other.taskId, taskId) || other.taskId == taskId)&&(identical(other.title, title) || other.title == title)&&(identical(other.type, type) || other.type == type)&&(identical(other.state, state) || other.state == state)&&(identical(other.reason, reason) || other.reason == reason));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlannedBlock&&(identical(other.id, id) || other.id == id)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.note, note) || other.note == note)&&(identical(other.taskId, taskId) || other.taskId == taskId)&&(identical(other.title, title) || other.title == title)&&(identical(other.type, type) || other.type == type)&&(identical(other.state, state) || other.state == state)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.remainingMinutes, remainingMinutes) || other.remainingMinutes == remainingMinutes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,categoryId,startTime,endTime,note,taskId,title,type,state,reason);
+int get hashCode => Object.hash(runtimeType,id,categoryId,startTime,endTime,note,taskId,title,type,state,reason,remainingMinutes);
 
 @override
 String toString() {
-  return 'PlannedBlock(id: $id, categoryId: $categoryId, startTime: $startTime, endTime: $endTime, note: $note, taskId: $taskId, title: $title, type: $type, state: $state, reason: $reason)';
+  return 'PlannedBlock(id: $id, categoryId: $categoryId, startTime: $startTime, endTime: $endTime, note: $note, taskId: $taskId, title: $title, type: $type, state: $state, reason: $reason, remainingMinutes: $remainingMinutes)';
 }
 
 
@@ -531,7 +538,7 @@ abstract mixin class $PlannedBlockCopyWith<$Res>  {
   factory $PlannedBlockCopyWith(PlannedBlock value, $Res Function(PlannedBlock) _then) = _$PlannedBlockCopyWithImpl;
 @useResult
 $Res call({
- String id, String categoryId, DateTime startTime, DateTime endTime, String? note, String? taskId, String? title, PlannedBlockType type, PlannedBlockState state, String? reason
+ String id, String categoryId, DateTime startTime, DateTime endTime, String? note, String? taskId, String? title, PlannedBlockType type, PlannedBlockState state, String? reason, int? remainingMinutes
 });
 
 
@@ -548,7 +555,7 @@ class _$PlannedBlockCopyWithImpl<$Res>
 
 /// Create a copy of PlannedBlock
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? categoryId = null,Object? startTime = null,Object? endTime = null,Object? note = freezed,Object? taskId = freezed,Object? title = freezed,Object? type = null,Object? state = null,Object? reason = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? categoryId = null,Object? startTime = null,Object? endTime = null,Object? note = freezed,Object? taskId = freezed,Object? title = freezed,Object? type = null,Object? state = null,Object? reason = freezed,Object? remainingMinutes = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,categoryId: null == categoryId ? _self.categoryId : categoryId // ignore: cast_nullable_to_non_nullable
@@ -560,7 +567,8 @@ as String?,title: freezed == title ? _self.title : title // ignore: cast_nullabl
 as String?,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as PlannedBlockType,state: null == state ? _self.state : state // ignore: cast_nullable_to_non_nullable
 as PlannedBlockState,reason: freezed == reason ? _self.reason : reason // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,remainingMinutes: freezed == remainingMinutes ? _self.remainingMinutes : remainingMinutes // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 
@@ -645,10 +653,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String categoryId,  DateTime startTime,  DateTime endTime,  String? note,  String? taskId,  String? title,  PlannedBlockType type,  PlannedBlockState state,  String? reason)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String categoryId,  DateTime startTime,  DateTime endTime,  String? note,  String? taskId,  String? title,  PlannedBlockType type,  PlannedBlockState state,  String? reason,  int? remainingMinutes)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PlannedBlock() when $default != null:
-return $default(_that.id,_that.categoryId,_that.startTime,_that.endTime,_that.note,_that.taskId,_that.title,_that.type,_that.state,_that.reason);case _:
+return $default(_that.id,_that.categoryId,_that.startTime,_that.endTime,_that.note,_that.taskId,_that.title,_that.type,_that.state,_that.reason,_that.remainingMinutes);case _:
   return orElse();
 
 }
@@ -666,10 +674,10 @@ return $default(_that.id,_that.categoryId,_that.startTime,_that.endTime,_that.no
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String categoryId,  DateTime startTime,  DateTime endTime,  String? note,  String? taskId,  String? title,  PlannedBlockType type,  PlannedBlockState state,  String? reason)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String categoryId,  DateTime startTime,  DateTime endTime,  String? note,  String? taskId,  String? title,  PlannedBlockType type,  PlannedBlockState state,  String? reason,  int? remainingMinutes)  $default,) {final _that = this;
 switch (_that) {
 case _PlannedBlock():
-return $default(_that.id,_that.categoryId,_that.startTime,_that.endTime,_that.note,_that.taskId,_that.title,_that.type,_that.state,_that.reason);case _:
+return $default(_that.id,_that.categoryId,_that.startTime,_that.endTime,_that.note,_that.taskId,_that.title,_that.type,_that.state,_that.reason,_that.remainingMinutes);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -686,10 +694,10 @@ return $default(_that.id,_that.categoryId,_that.startTime,_that.endTime,_that.no
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String categoryId,  DateTime startTime,  DateTime endTime,  String? note,  String? taskId,  String? title,  PlannedBlockType type,  PlannedBlockState state,  String? reason)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String categoryId,  DateTime startTime,  DateTime endTime,  String? note,  String? taskId,  String? title,  PlannedBlockType type,  PlannedBlockState state,  String? reason,  int? remainingMinutes)?  $default,) {final _that = this;
 switch (_that) {
 case _PlannedBlock() when $default != null:
-return $default(_that.id,_that.categoryId,_that.startTime,_that.endTime,_that.note,_that.taskId,_that.title,_that.type,_that.state,_that.reason);case _:
+return $default(_that.id,_that.categoryId,_that.startTime,_that.endTime,_that.note,_that.taskId,_that.title,_that.type,_that.state,_that.reason,_that.remainingMinutes);case _:
   return null;
 
 }
@@ -701,7 +709,7 @@ return $default(_that.id,_that.categoryId,_that.startTime,_that.endTime,_that.no
 @JsonSerializable()
 
 class _PlannedBlock implements PlannedBlock {
-  const _PlannedBlock({required this.id, required this.categoryId, required this.startTime, required this.endTime, this.note, this.taskId, this.title, this.type = PlannedBlockType.ai, this.state = PlannedBlockState.drafted, this.reason});
+  const _PlannedBlock({required this.id, required this.categoryId, required this.startTime, required this.endTime, this.note, this.taskId, this.title, this.type = PlannedBlockType.ai, this.state = PlannedBlockState.drafted, this.reason, this.remainingMinutes});
   factory _PlannedBlock.fromJson(Map<String, dynamic> json) => _$PlannedBlockFromJson(json);
 
 /// UUID for internal reference within the plan
@@ -728,6 +736,14 @@ class _PlannedBlock implements PlannedBlock {
 /// Why this block belongs at this time. Required for AI blocks at the
 /// day-agent tool-handler layer.
 @override final  String? reason;
+/// Minutes of [taskId]'s estimate this plan deliberately leaves
+/// unscheduled, when the block covers less than the whole task.
+///
+/// Null means the block is not a partial placement. It is the structured
+/// form of "60 of 180 minutes, 120 left for later": the planner states the
+/// remainder rather than describing it in [reason], so the day can show
+/// what is left and a checker can verify the arithmetic.
+@override final  int? remainingMinutes;
 
 /// Create a copy of PlannedBlock
 /// with the given fields replaced by the non-null parameter values.
@@ -742,16 +758,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PlannedBlock&&(identical(other.id, id) || other.id == id)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.note, note) || other.note == note)&&(identical(other.taskId, taskId) || other.taskId == taskId)&&(identical(other.title, title) || other.title == title)&&(identical(other.type, type) || other.type == type)&&(identical(other.state, state) || other.state == state)&&(identical(other.reason, reason) || other.reason == reason));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PlannedBlock&&(identical(other.id, id) || other.id == id)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.note, note) || other.note == note)&&(identical(other.taskId, taskId) || other.taskId == taskId)&&(identical(other.title, title) || other.title == title)&&(identical(other.type, type) || other.type == type)&&(identical(other.state, state) || other.state == state)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.remainingMinutes, remainingMinutes) || other.remainingMinutes == remainingMinutes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,categoryId,startTime,endTime,note,taskId,title,type,state,reason);
+int get hashCode => Object.hash(runtimeType,id,categoryId,startTime,endTime,note,taskId,title,type,state,reason,remainingMinutes);
 
 @override
 String toString() {
-  return 'PlannedBlock(id: $id, categoryId: $categoryId, startTime: $startTime, endTime: $endTime, note: $note, taskId: $taskId, title: $title, type: $type, state: $state, reason: $reason)';
+  return 'PlannedBlock(id: $id, categoryId: $categoryId, startTime: $startTime, endTime: $endTime, note: $note, taskId: $taskId, title: $title, type: $type, state: $state, reason: $reason, remainingMinutes: $remainingMinutes)';
 }
 
 
@@ -762,7 +778,7 @@ abstract mixin class _$PlannedBlockCopyWith<$Res> implements $PlannedBlockCopyWi
   factory _$PlannedBlockCopyWith(_PlannedBlock value, $Res Function(_PlannedBlock) _then) = __$PlannedBlockCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String categoryId, DateTime startTime, DateTime endTime, String? note, String? taskId, String? title, PlannedBlockType type, PlannedBlockState state, String? reason
+ String id, String categoryId, DateTime startTime, DateTime endTime, String? note, String? taskId, String? title, PlannedBlockType type, PlannedBlockState state, String? reason, int? remainingMinutes
 });
 
 
@@ -779,7 +795,7 @@ class __$PlannedBlockCopyWithImpl<$Res>
 
 /// Create a copy of PlannedBlock
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? categoryId = null,Object? startTime = null,Object? endTime = null,Object? note = freezed,Object? taskId = freezed,Object? title = freezed,Object? type = null,Object? state = null,Object? reason = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? categoryId = null,Object? startTime = null,Object? endTime = null,Object? note = freezed,Object? taskId = freezed,Object? title = freezed,Object? type = null,Object? state = null,Object? reason = freezed,Object? remainingMinutes = freezed,}) {
   return _then(_PlannedBlock(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,categoryId: null == categoryId ? _self.categoryId : categoryId // ignore: cast_nullable_to_non_nullable
@@ -791,7 +807,8 @@ as String?,title: freezed == title ? _self.title : title // ignore: cast_nullabl
 as String?,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as PlannedBlockType,state: null == state ? _self.state : state // ignore: cast_nullable_to_non_nullable
 as PlannedBlockState,reason: freezed == reason ? _self.reason : reason // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,remainingMinutes: freezed == remainingMinutes ? _self.remainingMinutes : remainingMinutes // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 

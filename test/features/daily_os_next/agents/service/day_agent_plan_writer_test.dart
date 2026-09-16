@@ -164,6 +164,43 @@ void main() {
       },
     );
 
+    test('persists a declared partial remainder on the block', () async {
+      final plan = await withClock(
+        Clock.fixed(_openAt),
+        () => writer.persistDraftPlan(
+          agentId: _agentId,
+          dayId: _dayId,
+          planDate: _planDate,
+          rawBlocks: [_blockJson(_block())..['remainingMinutes'] = 120],
+          runKey: _runKey,
+        ),
+      );
+
+      expect(plan.data.plannedBlocks.single.remainingMinutes, 120);
+    });
+
+    test('rejects a negative remainder rather than storing it', () async {
+      await expectLater(
+        withClock(
+          Clock.fixed(_openAt),
+          () => writer.persistDraftPlan(
+            agentId: _agentId,
+            dayId: _dayId,
+            planDate: _planDate,
+            rawBlocks: [_blockJson(_block())..['remainingMinutes'] = -30],
+            runKey: _runKey,
+          ),
+        ),
+        throwsA(
+          isA<DayAgentCaptureException>().having(
+            (error) => error.message,
+            'message',
+            contains('remainingMinutes'),
+          ),
+        ),
+      );
+    });
+
     test('rejects invented blocks when no baseline exists', () async {
       await expectLater(
         withClock(
