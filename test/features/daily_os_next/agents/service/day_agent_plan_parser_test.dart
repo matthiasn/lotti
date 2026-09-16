@@ -47,6 +47,41 @@ void main() {
     );
   }
 
+  group('objectListArg', () {
+    test('decodes a list the model wrapped in a string', () {
+      expect(
+        objectListArg('[{"id": "a"}]', 'blocks'),
+        [
+          {'id': 'a'},
+        ],
+      );
+    });
+
+    test('refuses a string that is not a list after all', () {
+      // Measured on glm-5.3:speed: the payload opened with `[` and then broke
+      // its own quoting (`,start": "...`). Nothing recoverable is in there,
+      // so it stays a contract error rather than a guess.
+      for (final raw in [
+        '[{"categoryId": "cat-work",start": "2026-09-17T09:00"}]',
+        '{"blocks": []}',
+        '[unterminated',
+        42,
+      ]) {
+        expect(
+          () => objectListArg(raw, 'blocks'),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (error) => error.message,
+              'message',
+              contains('must be an array'),
+            ),
+          ),
+          reason: '$raw',
+        );
+      }
+    });
+  });
+
   group('parsePlannedBlock', () {
     test('keeps a declared partial remainder against its task', () {
       final block = parse(

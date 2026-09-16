@@ -149,6 +149,12 @@ PlanBlockSnapshot? optionalBlockSnapshot(
       'available to this agent — use ai, buffer, or manual',
     );
   }
+  final remainingMinutes = optionalIntArg(data['remainingMinutes']);
+  if (remainingMinutes != null && remainingMinutes < 0) {
+    throw DayAgentCaptureException(
+      '`$label.remainingMinutes` must not be negative',
+    );
+  }
   return PlanBlockSnapshot(
     start: start,
     end: end,
@@ -157,6 +163,7 @@ PlanBlockSnapshot? optionalBlockSnapshot(
     taskId: optionalStringArg(data['taskId']),
     type: type,
     reason: optionalStringArg(data['reason']),
+    remainingMinutes: remainingMinutes,
   );
 }
 

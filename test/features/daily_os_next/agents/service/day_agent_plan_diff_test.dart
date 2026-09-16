@@ -51,6 +51,40 @@ void main() {
   }
 
   group('parsePlanDiffChange', () {
+    test('a proposed remainder survives into the change args', () {
+      // The snapshot parser never read the field, so the schema advertised
+      // it, the apply path handled it, and nothing in between carried it.
+      final change = parsePlanDiffChange(
+        raw: rawChange(
+          action: 'added',
+          blockId: null,
+          to: snapshot()
+            ..['taskId'] = 'task-ops'
+            ..['remainingMinutes'] = 45,
+        ),
+        plan: plan,
+        blockById: {'block-1': block()},
+      );
+
+      expect(change.to?.remainingMinutes, 45);
+      expect(change.toArgs()['remainingMinutes'], 45);
+    });
+
+    test('a negative proposed remainder is refused', () {
+      expect(
+        () => parsePlanDiffChange(
+          raw: rawChange(
+            action: 'added',
+            blockId: null,
+            to: snapshot()..['remainingMinutes'] = -5,
+          ),
+          plan: plan,
+          blockById: {'block-1': block()},
+        ),
+        throwsA(isA<DayAgentCaptureException>()),
+      );
+    });
+
     test('parses a moved change with from/to snapshots', () {
       final change = parsePlanDiffChange(
         raw: rawChange(
