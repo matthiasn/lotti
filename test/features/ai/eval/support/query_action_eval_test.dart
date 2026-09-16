@@ -370,6 +370,46 @@ void main() {
     );
   });
 
+  test('a checklist edit may restate the fields it leaves unchanged', () {
+    // A glm-5.3-flash gym run archived the right item and echoed its
+    // unchanged title alongside isArchived, which read as a wrong action.
+    const archive = ChangeItem(
+      toolName: 'update_checklist_item',
+      args: {'id': ActionEvalIds.feeder, 'isArchived': true},
+      humanSummary: 'Archive',
+    );
+    expect(scenario('checklist_archive').grade(answer([archive])), isEmpty);
+    expect(
+      scenario('checklist_archive').grade(
+        answer([
+          archive.copyWith(
+            args: {...archive.args, 'title': 'Inspect the feeder seal'},
+          ),
+        ]),
+      ),
+      isEmpty,
+      reason: 'the unchanged title may be restated at its current value',
+    );
+    expect(
+      scenario('checklist_archive').grade(
+        answer([
+          archive.copyWith(args: {...archive.args, 'title': 'Something else'}),
+        ]),
+      ),
+      isNotEmpty,
+      reason: 'renaming while archiving is a change nobody asked for',
+    );
+    expect(
+      scenario('checklist_archive').grade(
+        answer([
+          archive.copyWith(args: {...archive.args, 'isChecked': true}),
+        ]),
+      ),
+      isNotEmpty,
+      reason: 'checking it off is not archiving it',
+    );
+  });
+
   test(
     'negative cases require an answer without actions or completion claims',
     () {
