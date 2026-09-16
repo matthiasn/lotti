@@ -209,9 +209,18 @@ bool containsAffirmativeReportClaim(
   return false;
 }
 
+/// The modals that turn a German passive into planned or possible work.
+///
+/// Ability, obligation and permission (kann, soll, muss, darf) and the
+/// possibility subjunctive (könnte). Deliberately not the epistemic forms
+/// dürfte and müsste: "der Review dürfte abgeschlossen sein" says the review is
+/// *probably* complete, which is a hedged completion claim, not a plan.
+const _germanPlanningModals =
+    'kann|können|soll|sollen|muss|müssen|darf|dürfen|könnte|könnten';
+
 /// A German modal earlier in the claim's own clause: "…, kann der Prototyp ".
 final RegExp _germanModalBeforeClaim = RegExp(
-  r'(?<![\p{L}])(?:kann|können|soll|sollen|muss|müssen)(?![\p{L}])'
+  '(?<![\\p{L}])(?:$_germanPlanningModals)(?![\\p{L}])'
   r'[^,.;:!?\n\r]{0,60}$',
   unicode: true,
 );
@@ -231,7 +240,7 @@ final RegExp _germanPassiveAfterClaim = RegExp(
 /// Both words sit directly after the participle, so the modal can only be
 /// governing that verb.
 final RegExp _germanVerbFinalModalAfterClaim = RegExp(
-  r'^\s+(?:sein|werden)\s+(?:kann|können|soll|sollen|muss|müssen)(?![\p{L}])',
+  '^\\s+(?:sein|werden)\\s+(?:$_germanPlanningModals)(?![\\p{L}])',
   unicode: true,
 );
 

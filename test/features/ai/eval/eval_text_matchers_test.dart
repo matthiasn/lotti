@@ -243,6 +243,43 @@ void main() {
       }
     });
 
+    test('permission and possibility modals plan the work too', () {
+      for (final (text, claim) in [
+        (
+          'weil der review abgeschlossen werden darf, planen wir ihn.',
+          'abgeschlossen',
+        ),
+        (
+          'damit der review rechtzeitig abgeschlossen sein könnte.',
+          'abgeschlossen',
+        ),
+        (
+          'sobald es freigegeben ist, darf die anmeldung umgesetzt werden.',
+          'umgesetzt',
+        ),
+      ]) {
+        expect(
+          containsAffirmativeReportClaim(text, claim),
+          isFalse,
+          reason: '$claim in $text',
+        );
+      }
+    });
+
+    test('an epistemic modal is a hedged completion, not a plan', () {
+      // "Probably complete" still asserts completion, so it must fire.
+      for (final text in [
+        'der review dürfte abgeschlossen sein.',
+        'weil der review längst abgeschlossen sein müsste.',
+      ]) {
+        expect(
+          containsAffirmativeReportClaim(text, 'abgeschlossen'),
+          isTrue,
+          reason: text,
+        );
+      }
+    });
+
     test('a completion followed by an unrelated modal still fires', () {
       // "ist abgeschlossen und kann verwendet werden": the participle's own
       // auxiliary is "ist", and the modal belongs to the next verb.
