@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/notifications_db.dart';
+import 'package:lotti/features/notifications/model/notification_tap_payload.dart';
 import 'package:lotti/services/notification_service.dart';
 
 class NotificationScheduler {
@@ -53,7 +54,7 @@ class NotificationScheduler {
         notificationId: notificationId,
         showOnMobile: true,
         showOnDesktop: true,
-        deepLink: _deepLinkFor(entity),
+        deepLink: _tapPayloadFor(entity),
       );
       return;
     }
@@ -65,7 +66,7 @@ class NotificationScheduler {
       notificationId: notificationId,
       showOnMobile: true,
       showOnDesktop: true,
-      deepLink: _deepLinkFor(entity),
+      deepLink: _tapPayloadFor(entity),
     );
   }
 
@@ -82,9 +83,9 @@ class NotificationScheduler {
   /// **Only future rows.** A row that is already due needs no alarm: it is by
   /// definition sitting in the inbox, on the device the user is holding.
   /// Re-announcing it would mean an OS banner *per launch*, forever — showing
-  /// a notification does not mark the row, and with no tap handler wired the
-  /// only way to clear one is the in-app bell. That turns every unacknowledged
-  /// alert into a permanent startup nag.
+  /// a notification does not mark the row; only a tap on it or on the bell
+  /// does. That turns every unacknowledged alert into a permanent startup
+  /// nag.
   ///
   /// The query already filters to unseen/unacted/undeleted rows, so a row the
   /// user dealt with on any device is never revived. [NotificationService] is
@@ -97,13 +98,20 @@ class NotificationScheduler {
     }
   }
 
+  /// What the OS hands back when the notification is tapped: where to land,
+  /// and which row to mark seen once there.
+  String _tapPayloadFor(NotificationEntity entity) => NotificationTapPayload(
+    route: _routeFor(entity),
+    inboxId: entity.id,
+  ).encode();
+
   /// Where tapping the OS notification should land.
   ///
   /// Exhaustive over the union rather than reading `linkedEntityId`: that
   /// getter answers "some entity" for every variant, and routing a
   /// relationship id into `/tasks/` produced a dead route rather than a
   /// visible error.
-  String? _deepLinkFor(NotificationEntity entity) => switch (entity) {
+  String _routeFor(NotificationEntity entity) => switch (entity) {
     TaskSuggestionNotification(:final linkedTaskId) => '/tasks/$linkedTaskId',
     TaskOverdueNotification(:final linkedTaskId) => '/tasks/$linkedTaskId',
     RelationshipCheckInNotification(:final linkedRelationshipId) =>

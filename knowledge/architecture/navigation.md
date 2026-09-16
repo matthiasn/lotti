@@ -5,7 +5,7 @@ description: Ten independent Beamer stacks behind one IndexedStack, how the acti
 resource: ../../lib/beamer
 tags: [architecture, navigation, beamer, routing, app-shell]
 status: stable
-generated: { by: claude-code/fable-5.1, at: 2026-09-16T11:30:00Z }
+generated: { by: claude-code/fable-5.1, at: 2026-09-16T14:30:00Z }
 stale_after: 2027-03-02
 sources:
   - id: route-mirror
@@ -43,7 +43,7 @@ sources:
   - id: nav-service
     resource: ../../lib/services/nav_service.dart
     title: NavService — tab index, delegate registry and persisted nav state
-    last_modified: 2026-08-19
+    last_modified: 2026-09-16
   - id: journal-root-page
     resource: ../../lib/features/journal/ui/pages/journal_root_page.dart
     title: JournalRootPage — the logbook split and its background auto-selection
@@ -270,6 +270,15 @@ stateDiagram-v2
 
 A corrupt or unknown-version row degrades to "nothing saved" — the Tasks
 landing — rather than throwing during bootstrap.
+
+**A notification tap arriving during boot is parked the same way.** Every
+flag still reads `false` while the streams are pending, so a route into a
+flag-gated tab would be normalised to Tasks. `beamToNamedWhenReady` holds the
+route and the first flag emission beams it — after the restored tab has been
+selected, so the tap lands on top of the restored position rather than under
+it, and the restored route stays in its own tab's history. Where the tap
+comes from and what it carries is the notifications concept's:
+[a tap on the OS alert opens the same place](../features/notifications.md#a-tap-on-the-os-alert-opens-the-same-place).
 
 **A restored route is stacked on its tab root, never substituted for it.**
 Restore beams each tab with `beamToNamed` on top of the root the constructor's

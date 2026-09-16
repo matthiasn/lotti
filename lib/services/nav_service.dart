@@ -223,6 +223,10 @@ class NavService {
   /// [_enabledTabSpecs] reflects reality yet.
   bool _flagsReceived = false;
 
+  /// A route parked by [beamToNamedWhenReady] until the config-flag streams
+  /// have emitted.
+  String? _pendingDeepLinkPath;
+
   /// Coalesces the saves triggered by delegate notifications, so one
   /// navigation (which can notify several delegates) costs one write.
   bool _persistScheduled = false;
@@ -701,8 +705,18 @@ class NavService {
     // flag-gated tab can be selected. Consumed once — later flag changes must
     // move the user off a tab that just disappeared, not back onto the tab
     // they were on at boot.
-    if (_consumePendingActiveTab()) return;
+    if (!_consumePendingActiveTab()) {
+      _normalizeActiveTab();
+    }
+    // After the tab selection, so a deep link into a flag-gated tab lands on
+    // top of the restored position rather than being replaced by it.
+    _consumePendingDeepLink();
+  }
 
+  /// Re-derives the active tab from [currentPath] against the tabs that now
+  /// exist, dropping to Tasks when the current one sits behind a disabled
+  /// flag.
+  void _normalizeActiveTab() {
     final previousPath = currentPath;
     final normalizedPath = _normalizePath(previousPath);
     final matchingSpec = _specForPath(normalizedPath);
@@ -860,6 +874,32 @@ class NavService {
     }
     setPath(normalizedPath);
     delegateByIndex(index).beamToNamed(normalizedPath, data: data);
+  }
+
+  /// Beams to [path] as [beamToNamed] does, but not before the config-flag
+  /// streams have emitted.
+  ///
+  /// A notification tap can reach the service during boot, when every flag
+  /// still reads `false` and `_normalizePath` would drop a route into a
+  /// flag-gated tab — `/people/<id>`, `/goals/details/<id>` — to Tasks
+  /// without a word. The route is parked instead and beamed by the first
+  /// [_handleNavigationFlagsUpdated], after the restored tab has been
+  /// selected, so the tap wins over the restored position. Only the newest
+  /// parked route survives: a second tap before the flags arrive replaces
+  /// the first, exactly as it would on a running app.
+  void beamToNamedWhenReady(String path) {
+    if (_flagsReceived) {
+      beamToNamed(path);
+      return;
+    }
+    _pendingDeepLinkPath = path;
+  }
+
+  void _consumePendingDeepLink() {
+    final path = _pendingDeepLinkPath;
+    if (path == null) return;
+    _pendingDeepLinkPath = null;
+    beamToNamed(path);
   }
 
   /// Beams [path] inside the tab that OWNS it, without making that tab
