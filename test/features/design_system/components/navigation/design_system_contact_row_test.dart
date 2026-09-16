@@ -2,7 +2,6 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_contact_row.dart';
-import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
@@ -137,9 +136,7 @@ void main() {
       final targets = [
         for (final key in actionKeys) tester.getRect(find.byKey(key)),
       ];
-      const expectedSize = Size.square(
-        DesignSystemFiveSlotNavBar.minTapTarget,
-      );
+      const expectedSize = Size.square(TapTargets.compact);
 
       for (final target in targets) {
         expect(target.size, expectedSize);

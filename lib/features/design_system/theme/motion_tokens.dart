@@ -9,7 +9,8 @@
 /// the single source of truth for animation timing across the app.
 ///
 /// Durations follow the Material 3 duration scale; curves follow the M3
-/// easing family (standard / emphasized-decelerate).
+/// easing family (standard / emphasized-decelerate), plus the one
+/// easeOutQuart the mobile navigation has always slid with.
 library;
 
 import 'package:flutter/animation.dart';
@@ -55,6 +56,12 @@ abstract final class MotionCurves {
   /// the motion *arrives* at rest instead of stopping. This is the curve the
   /// user actually watches when a gap closes, so the soft landing matters most.
   static const Curve emphasizedDecelerate = Cubic(0.05, 0.7, 0.1, 1);
+
+  /// `cubic-bezier(0.25, 1, 0.5, 1)` — easeOutQuart. Not from the M3 family:
+  /// the mobile navigation's slide-away (see `_SlideAwayBottomNav` in
+  /// `beamer_app.dart`) has used it since the bottom bar existed, and the
+  /// launcher keeps that motion.
+  static const Curve easeOutQuart = Cubic(0.25, 1, 0.5, 1);
 }
 
 /// The one shared "resolve → collapse" choreography for an accepted/rejected

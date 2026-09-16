@@ -275,7 +275,6 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage>
     // footprint at the bottom of its scroll.
     final launcherOwnsCreateAction = mobileNavigationLauncherOwnsPageActions(
       context,
-      ref,
     );
 
     return Scaffold(

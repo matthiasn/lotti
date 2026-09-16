@@ -3692,13 +3692,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Activați integrarea Matrix pentru a sincroniza intrările dvs. între dispozitive și cu alți utilizatori Matrix.';
 
   @override
-  String get configFlagEnableMobileNavigationLauncher => 'Navigare mobilă nouă';
-
-  @override
-  String get configFlagEnableMobileNavigationLauncherDescription =>
-      'Deschideți toate secțiunile aplicației cu un singur buton de navigare.';
-
-  @override
   String get configFlagEnableNotifications =>
       'Activați notificările pe desktop?';
 
@@ -9902,18 +9895,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get navSidebarManualLabel => 'Ghid';
 
   @override
-  String navTabMoreSemanticsLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Mai multe, $count de secțiuni suplimentare',
-      few: 'Mai multe, $count secțiuni suplimentare',
-      one: 'Mai multe, 1 secțiune suplimentară',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get navTabTitleCalendar => 'DailyOS';
 
   @override
@@ -9930,9 +9911,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get navTabTitleJournal => 'Jurnal';
-
-  @override
-  String get navTabTitleMore => 'Mai multe';
 
   @override
   String get navTabTitleNavigate => 'Navigare';

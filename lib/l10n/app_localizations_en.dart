@@ -3607,14 +3607,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enable the Matrix integration to sync your entries across devices and with other Matrix users.';
 
   @override
-  String get configFlagEnableMobileNavigationLauncher =>
-      'New mobile navigation';
-
-  @override
-  String get configFlagEnableMobileNavigationLauncherDescription =>
-      'Use one Navigate button to open all app sections.';
-
-  @override
   String get configFlagEnableNotifications => 'Enable notifications?';
 
   @override
@@ -9664,17 +9656,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navSidebarManualLabel => 'Manual';
 
   @override
-  String navTabMoreSemanticsLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'More, $count additional destinations',
-      one: 'More, 1 additional destination',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get navTabTitleCalendar => 'DailyOS';
 
   @override
@@ -9691,9 +9672,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get navTabTitleJournal => 'Logbook';
-
-  @override
-  String get navTabTitleMore => 'More';
 
   @override
   String get navTabTitleNavigate => 'Navigate';

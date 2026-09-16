@@ -90,8 +90,7 @@ class InfiniteJournalPage extends ConsumerWidget {
           // to the corner only: on the launcher's row the create chip is
           // persistent chrome beside Navigate, the same as on every other
           // tab, so the shell keeps docking it there.
-          floatingActionButton:
-              mobileNavigationLauncherOwnsPageActions(context, ref)
+          floatingActionButton: mobileNavigationLauncherOwnsPageActions(context)
               ? null
               : state.pagingController == null
               ? FloatingAddActionButton(categoryId: categoryId)

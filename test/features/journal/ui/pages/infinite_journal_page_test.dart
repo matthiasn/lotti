@@ -10,7 +10,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
@@ -834,6 +833,9 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetNoScroll(
             const InfiniteJournalPage(),
+            // Desktop-wide: on a phone the launcher docks the create action
+            // and the page floats no button to read the category from.
+            mediaQueryData: desktopLayoutMediaQueryData,
             overrides: [
               journalPageScopeProvider.overrideWithValue(false),
               journalPageControllerProvider(
@@ -881,6 +883,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetNoScroll(
             const InfiniteJournalPage(),
+            mediaQueryData: desktopLayoutMediaQueryData,
             overrides: [
               journalPageScopeProvider.overrideWithValue(false),
               journalPageControllerProvider(
@@ -917,7 +920,6 @@ void main() {
 
       Future<void> pumpLogbook(
         WidgetTester tester, {
-        required bool launcherEnabled,
         JournalPageState state = feedState,
         MediaQueryData? mediaQueryData,
       }) async {
@@ -930,9 +932,6 @@ void main() {
               journalPageControllerProvider(
                 false,
               ).overrideWith(() => FakeJournalPageController(state)),
-              configFlagProvider(
-                enableMobileNavigationLauncherFlag,
-              ).overrideWith((_) => Stream.value(launcherEnabled)),
             ],
           ),
         );
@@ -944,29 +943,72 @@ void main() {
 
       testWidgets('the logbook drops its floating button so the launcher can '
           'dock the same action on its own row', (tester) async {
-        await pumpLogbook(tester, launcherEnabled: true);
+        await pumpLogbook(tester);
 
         expect(find.byType(FloatingAddActionButton), findsNothing);
       });
 
-      testWidgets('the floating button stays with the flag off', (
-        tester,
-      ) async {
-        await pumpLogbook(tester, launcherEnabled: false);
+      testWidgets('a desktop window keeps the floating button — the sidebar '
+          'replaces the launcher there', (tester) async {
+        await pumpLogbook(tester, mediaQueryData: desktopLayoutMediaQueryData);
 
         expect(find.byType(FloatingAddActionButton), findsOneWidget);
       });
 
-      testWidgets('a desktop window keeps the floating button even with the '
-          'flag on', (tester) async {
-        await pumpLogbook(
-          tester,
-          launcherEnabled: true,
-          mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
-        );
+      PagingController<int, JournalEntity> emptyFeed() {
+        final controller =
+            PagingController<int, JournalEntity>(
+                getNextPageKey: (_) => null,
+                fetchPage: (_) async => const <JournalEntity>[],
+              )
+              ..value = PagingState(
+                pages: const [<JournalEntity>[]],
+                keys: const [0],
+                hasNextPage: false,
+              );
+        addTearDown(controller.dispose);
+        return controller;
+      }
 
-        expect(find.byType(FloatingAddActionButton), findsOneWidget);
-      });
+      // The corner-only rule lives on with the desktop button: it yields to
+      // the first-run zero state's inline CTA, and floats again as soon as
+      // the emptiness is the user's own doing.
+      testWidgets(
+        'on desktop the first-run zero state withholds the floating button — '
+        'its inline CTA is the single primary action',
+        (tester) async {
+          await pumpLogbook(
+            tester,
+            mediaQueryData: desktopLayoutMediaQueryData,
+            state: JournalPageState(
+              showTasks: false,
+              pagingController: emptyFeed(),
+            ),
+          );
+
+          expect(find.text('Create new entry'), findsOneWidget);
+          expect(find.byType(FloatingAddActionButton), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'on desktop a feed the user narrowed to nothing keeps floating the '
+        'button',
+        (tester) async {
+          await pumpLogbook(
+            tester,
+            mediaQueryData: desktopLayoutMediaQueryData,
+            state: JournalPageState(
+              showTasks: false,
+              match: 'no such entry',
+              pagingController: emptyFeed(),
+            ),
+          );
+
+          expect(find.text('Create new entry'), findsNothing);
+          expect(find.byType(FloatingAddActionButton), findsOneWidget);
+        },
+      );
 
       testWidgets('logbookDockAction is a glyph action named for the create '
           'modal it opens', (tester) async {

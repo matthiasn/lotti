@@ -189,10 +189,12 @@ lookup still writes its matches into the body's fields, and the next rebuild —
 for any unrelated reason — then finds them describing the wrong query and drops
 the current query's results.
 
-# The bottom-nav shell is app-level
+# The mobile navigation is app-level
 
-`DesignSystemBottomNavigationBar` and its FAB clearance wrapper live here rather
-than in the design system, because the shell is **an app-level overlay docked flush
-to the screen edge**, not a `Scaffold.bottomNavigationBar`. Its height contract —
-and the clearance any screen-level FAB must respect — is documented in
+`MobileNavigationLauncher`, the activity island, the clearance contract
+(`DesignSystemBottomNavigationBar.occupiedHeight`) and its FAB clearance wrapper
+live here rather than in the design system, because the launcher is **an
+app-level overlay floating over each tab's page stack**, not a
+`Scaffold.bottomNavigationBar`. Its height contract — and the clearance any
+screen-level FAB must respect — is documented in
 [component contracts](../features/design_system/component-contracts.md).

@@ -3638,14 +3638,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Schakel de integratie van Matrix in om uw items te synchroniseren tussen apparaten en met andere Matrix-gebruikers.';
 
   @override
-  String get configFlagEnableMobileNavigationLauncher =>
-      'Nieuwe mobiele navigatie';
-
-  @override
-  String get configFlagEnableMobileNavigationLauncherDescription =>
-      'Open alle onderdelen van de app met één navigatieknop.';
-
-  @override
   String get configFlagEnableNotifications =>
       'Notificatieberichten inschakelen?';
 
@@ -9727,17 +9719,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get navSidebarManualLabel => 'Handmatig';
 
   @override
-  String navTabMoreSemanticsLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Meer. $count aanvullende bestemmingen',
-      one: 'Meer, 1 extra bestemming',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get navTabTitleCalendar => 'DailyOS';
 
   @override
@@ -9754,9 +9735,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get navTabTitleJournal => 'Logboek';
-
-  @override
-  String get navTabTitleMore => 'Meer';
 
   @override
   String get navTabTitleNavigate => 'Navigeren';

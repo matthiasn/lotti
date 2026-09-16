@@ -300,7 +300,6 @@ class _ProjectsListScaffold extends ConsumerWidget {
     // in the same corner.
     final launcherOwnsCreateAction = mobileNavigationLauncherOwnsPageActions(
       context,
-      ref,
     );
     // Reserve room so the floating create button never lands on top of the
     // last project card. The FAB is lifted above the bottom nav by

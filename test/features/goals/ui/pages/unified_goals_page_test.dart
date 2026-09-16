@@ -6,7 +6,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -33,7 +32,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/device_region.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
@@ -420,7 +418,9 @@ void main() {
     beamToNamedOverride = navigated.add;
     addTearDown(() => beamToNamedOverride = null);
 
-    await pump(tester, baseState());
+    // Desktop-wide: on a phone the launcher docks the create action and the
+    // page floats no button of its own.
+    await pump(tester, baseState(), viewport: const Size(1280, 2600));
 
     await tester.tap(find.byType(DesignSystemFloatingActionButton));
     await tester.pump();
@@ -428,46 +428,25 @@ void main() {
   });
 
   group('the mobile navigation launcher owns the create action', () {
-    List<Override> launcher({required bool enabled}) => [
-      configFlagProvider(
-        enableMobileNavigationLauncherFlag,
-      ).overrideWith((_) => Stream.value(enabled)),
-    ];
-
     testWidgets('the goals list drops its floating button so the launcher '
         'can dock the same action on its own row', (tester) async {
       // The default viewport is 800 wide — below `kDesktopBreakpoint`, so the
       // page is in its mobile layout where the launcher exists.
-      await pump(
-        tester,
-        baseState(),
-        extraOverrides: launcher(enabled: true),
-      );
+      await pump(tester, baseState());
 
       expect(find.byType(DesignSystemFloatingActionButton), findsNothing);
       expect(find.byType(DesignSystemBottomNavigationFabPadding), findsNothing);
     });
 
-    testWidgets('the floating button stays with the flag off', (tester) async {
-      await pump(
-        tester,
-        baseState(),
-        extraOverrides: launcher(enabled: false),
-      );
+    testWidgets('a desktop window keeps the floating button — the sidebar '
+        'replaces the launcher there', (tester) async {
+      await pump(tester, baseState(), viewport: const Size(1280, 2600));
 
       expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
-    });
-
-    testWidgets('a desktop window keeps the floating button even with the '
-        'flag on', (tester) async {
-      await pump(
-        tester,
-        baseState(),
-        viewport: const Size(1280, 2600),
-        extraOverrides: launcher(enabled: true),
+      expect(
+        find.byType(DesignSystemBottomNavigationFabPadding),
+        findsOneWidget,
       );
-
-      expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
     });
 
     // Read off the page's own scroll padding: the first SliverPadding is the
@@ -480,38 +459,28 @@ void main() {
         .bottom;
 
     testWidgets(
-      "the list reserves the floating button's own footprint while it "
+      "a desktop list reserves the floating button's own footprint while it "
       'floats one',
       (tester) async {
-        await pump(
-          tester,
-          baseState(),
-          extraOverrides: launcher(enabled: false),
-        );
+        await pump(tester, baseState(), viewport: const Size(1280, 2600));
 
         final context = tester.element(find.byType(UnifiedGoalsPage));
         final tokens = context.designTokens;
-        final occupied = DesignSystemBottomNavigationBar.occupiedHeight(
-          context,
-        );
-        // A zero here would make the assertion below vacuous.
-        expect(occupied, greaterThan(0));
+        // Desktop reserves nothing for a bottom bar; what is left of the
+        // allowance is the button's footprint alone.
+        expect(DesignSystemBottomNavigationBar.occupiedHeight(context), 0);
         expect(
           listBottomPadding(tester),
-          tokens.spacing.step6 + occupied + tokens.spacing.step12,
+          tokens.spacing.step6 + tokens.spacing.step12,
         );
       },
     );
 
     testWidgets(
-      'and stops reserving it once the launcher owns the action, so the '
-      'docked chip leaves no empty gutter above it',
+      "a phone list reserves the launcher's height but not a button's "
+      'footprint, so the docked chip leaves no empty gutter above it',
       (tester) async {
-        await pump(
-          tester,
-          baseState(),
-          extraOverrides: launcher(enabled: true),
-        );
+        await pump(tester, baseState());
 
         final context = tester.element(find.byType(UnifiedGoalsPage));
         final tokens = context.designTokens;

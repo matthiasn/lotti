@@ -3669,14 +3669,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Abilitare l\'integrazione Matrix per sincronizzare le voci tra i dispositivi e con altri utenti Matrix.';
 
   @override
-  String get configFlagEnableMobileNavigationLauncher =>
-      'Nuova navigazione mobile';
-
-  @override
-  String get configFlagEnableMobileNavigationLauncherDescription =>
-      'Apri tutte le sezioni dell’app con un unico pulsante di navigazione.';
-
-  @override
   String get configFlagEnableNotifications => 'Attivare le notifiche?';
 
   @override
@@ -9834,17 +9826,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get navSidebarManualLabel => 'Manuale';
 
   @override
-  String navTabMoreSemanticsLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Altro, $count destinazioni aggiuntive',
-      one: 'Altro, 1 destinazione aggiuntiva',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get navTabTitleCalendar => 'Quotidiano';
 
   @override
@@ -9861,9 +9842,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get navTabTitleJournal => 'Regime di registro';
-
-  @override
-  String get navTabTitleMore => 'Altro';
 
   @override
   String get navTabTitleNavigate => 'Naviga';

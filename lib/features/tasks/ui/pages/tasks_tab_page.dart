@@ -217,7 +217,6 @@ class _TasksTabPageState extends ConsumerState<TasksTabPage> {
     // the launcher would stack two labelled pills in the same corner.
     final launcherOwnsCreateAction = mobileNavigationLauncherOwnsPageActions(
       context,
-      ref,
     );
     final floatingActionButton = DesignSystemFloatingActionButton(
       semanticLabel: context.messages.addActionCreateTask,

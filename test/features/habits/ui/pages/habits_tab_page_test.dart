@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
@@ -24,7 +23,6 @@ import 'package:lotti/logic/signals/health_signal_refresh_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/device_region.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -662,34 +660,39 @@ void main() {
       expect(find.byType(HabitActionRow), findsNothing);
     });
     group('creating a habit', () {
-      testWidgets('the FAB leads to the habit editor', (tester) async {
+      testWidgets('the desktop FAB opens the habit editor in its side panel', (
+        tester,
+      ) async {
         String? beamedTo;
         beamToNamedOverride = (path) => beamedTo = path;
         addTearDown(() => beamToNamedOverride = null);
-        await pump(tester, HabitsState.initial());
-        // The FAB floats below the 600 px test viewport; invoke it directly.
+        // Desktop-wide: on a phone the launcher docks the create action (see
+        // `habitsTabDockAction` below) and the page floats no button of its
+        // own. On desktop the same launcher opens the editor embedded in a
+        // panel instead of beaming to its route.
+        await pump(
+          tester,
+          HabitsState.initial(),
+          mediaQueryData: desktopLayoutMediaQueryData,
+        );
         tester
             .widget<DesignSystemFloatingActionButton>(
               find.byKey(const ValueKey('habits-create-fab')),
             )
             .onPressed!();
-        expect(beamedTo, '/habits/create');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(beamedTo, isNull, reason: 'no navigation on desktop');
+        expect(find.byType(ModalBarrier), findsWidgets);
+        final messages = tester.element(find.byType(HabitsTabPage)).messages;
+        expect(find.text(messages.habitEditorCreateTitle), findsOneWidget);
       });
 
       group('the mobile navigation launcher owns the create action', () {
-        List<Override> launcher({required bool enabled}) => [
-          configFlagProvider(
-            enableMobileNavigationLauncherFlag,
-          ).overrideWith((_) => Stream.value(enabled)),
-        ];
-
         testWidgets('the habits list drops its floating button so the '
             'launcher can dock the same action on its own row', (tester) async {
-          await pump(
-            tester,
-            HabitsState.initial(),
-            extraOverrides: launcher(enabled: true),
-          );
+          await pump(tester, HabitsState.initial());
           // The Scaffold animates its floating button out, so it outlives the
           // rebuild that dropped it.
           await tester.pump(const Duration(milliseconds: 400));
@@ -701,28 +704,12 @@ void main() {
           );
         });
 
-        testWidgets('the floating button stays with the flag off', (
-          tester,
-        ) async {
+        testWidgets('a desktop window keeps the floating button — the sidebar '
+            'replaces the launcher there', (tester) async {
           await pump(
             tester,
             HabitsState.initial(),
-            extraOverrides: launcher(enabled: false),
-          );
-
-          expect(
-            find.byKey(const ValueKey('habits-create-fab')),
-            findsOneWidget,
-          );
-        });
-
-        testWidgets('a desktop window keeps the floating button even with '
-            'the flag on', (tester) async {
-          await pump(
-            tester,
-            HabitsState.initial(),
-            mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
-            extraOverrides: launcher(enabled: true),
+            mediaQueryData: desktopLayoutMediaQueryData,
           );
 
           expect(

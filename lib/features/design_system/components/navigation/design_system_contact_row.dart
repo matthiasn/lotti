@@ -1,4 +1,3 @@
-import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -18,7 +17,7 @@ class DesignSystemContactAction {
   });
 
   /// The glyph. Rendered inside the row's [IconTheme], centred in a tap
-  /// target of [DesignSystemFiveSlotNavBar.minTapTarget].
+  /// target of [TapTargets.compact].
   final Widget icon;
 
   /// Tooltip text and accessible name. A glyph-only control has no visible
@@ -108,9 +107,8 @@ class DesignSystemContactRow extends StatelessWidget {
 /// headers and panel corners — it says in as many words not to put it in a
 /// dense row. This footer is a dense row, in a rail whose usable width is 184
 /// px at its minimum: four of those targets would not fit. It takes
-/// [DesignSystemFiveSlotNavBar.minTapTarget] instead — the floor the rest of
-/// this app's navigation chrome already uses, and still above the 44 px
-/// platform guidance for touch.
+/// [TapTargets.compact] instead — the 44 px platform guidance for touch,
+/// which four of still fit the rail.
 ///
 /// The other divergence is the glyph itself: a `Widget` rather than an
 /// `IconData`, so a bundled vector mark can sit beside font icons.
@@ -139,8 +137,8 @@ class _ContactIconAction extends StatelessWidget {
               onTap: action.onPressed,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(
-                  minWidth: DesignSystemFiveSlotNavBar.minTapTarget,
-                  minHeight: DesignSystemFiveSlotNavBar.minTapTarget,
+                  minWidth: TapTargets.compact,
+                  minHeight: TapTargets.compact,
                 ),
                 child: Center(
                   widthFactor: 1,

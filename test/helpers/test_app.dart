@@ -12,6 +12,10 @@ const phoneMediaQueryData = MediaQueryData(
   padding: EdgeInsets.only(top: 47, bottom: 34),
 );
 
+/// A desktop-wide window, past `kDesktopBreakpoint`: the sidebar replaces the
+/// mobile navigation launcher, so pages float their own actions here.
+const desktopLayoutMediaQueryData = MediaQueryData(size: Size(1280, 800));
+
 ThemeData resolveTestTheme([ThemeData? theme]) {
   final baseTheme = theme ?? ThemeData(useMaterial3: true);
   if (baseTheme.extension<DsTokens>() != null) {
