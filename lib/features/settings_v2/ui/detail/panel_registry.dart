@@ -34,6 +34,7 @@ import 'package:lotti/features/settings/ui/pages/habits/habits_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
+import 'package:lotti/features/settings/ui/pages/notification_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/recording_style_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/sections_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
@@ -139,6 +140,10 @@ const Map<String, SettingsPanelSpec> kSettingsPanels =
       // SectionsBody is a short fixed Column, so unlike FlagsBody it wants
       // the registry's scroll host rather than managing its own.
       'sections': SettingsPanelSpec(build: _sectionsPanel, scrollable: true),
+      'notifications': SettingsPanelSpec(
+        build: _notificationsPanel,
+        scrollable: true,
+      ),
       'recording-style': SettingsPanelSpec(
         build: _recordingStylePanel,
         scrollable: true,
@@ -249,6 +254,8 @@ Widget _dailyOsPanel(BuildContext context) => const DailyOsSettingsBody();
 // --- Step 7 builders --------------------------------------------------------
 Widget _flagsPanel(BuildContext context) => const FlagsBody();
 Widget _sectionsPanel(BuildContext context) => const SectionsBody();
+Widget _notificationsPanel(BuildContext context) =>
+    const NotificationSettingsBody();
 Widget _recordingStylePanel(BuildContext context) =>
     const RecordingStyleSettingsBody();
 Widget _themingPanel(BuildContext context) => const ThemingBody();

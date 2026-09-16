@@ -18,17 +18,16 @@ typedef FlagLabelResolver =
 /// and one localized description per flag name.
 ///
 /// Every surface that renders a toggle for a stored [ConfigFlag] goes through
-/// here. The raw `ConfigFlag.description` written by `initConfigFlags` is an
-/// English developer string and must never reach a user — it survives only as
-/// the fallback for a flag this catalog has no entry for, which in practice
-/// means a flag no surface lists.
+/// here, except Settings → Notifications, which words its own rows as one
+/// master switch and the kinds beneath it. The raw `ConfigFlag.description`
+/// written by `initConfigFlags` is an English developer string and must never
+/// reach a user — it survives only as the fallback for a flag this catalog has
+/// no entry for, which in practice means a flag no surface lists.
 abstract final class ConfigFlagLabels {
   static IconData iconFor(String flagName) {
     switch (flagName) {
       case privateFlag:
         return LottiIcons.lock;
-      case enableNotificationsFlag:
-        return LottiIcons.notificationActive;
       case recordLocationFlag:
         return LottiIcons.map;
       case enableTooltipFlag:
@@ -82,8 +81,6 @@ abstract final class ConfigFlagLabels {
     switch (flag.name) {
       case privateFlag:
         return context.messages.configFlagPrivate;
-      case enableNotificationsFlag:
-        return context.messages.configFlagEnableNotifications;
       case recordLocationFlag:
         return context.messages.configFlagRecordLocation;
       case enableTooltipFlag:
@@ -137,8 +134,6 @@ abstract final class ConfigFlagLabels {
     switch (flag.name) {
       case privateFlag:
         return context.messages.configFlagPrivateDescription;
-      case enableNotificationsFlag:
-        return context.messages.configFlagEnableNotificationsDescription;
       case recordLocationFlag:
         return context.messages.configFlagRecordLocationDescription;
       case enableTooltipFlag:

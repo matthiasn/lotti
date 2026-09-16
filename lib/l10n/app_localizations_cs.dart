@@ -9,14 +9,6 @@ class AppLocalizationsCs extends AppLocalizations {
   AppLocalizationsCs([String locale = 'cs']) : super(locale);
 
   @override
-  String get goalOffTrackNotificationBody => 'Dobrá chvíle se k tomu vrátit.';
-
-  @override
-  String goalOffTrackNotificationTitle(String goal) {
-    return '$goal: jsi pozadu';
-  }
-
-  @override
   String get activeLabel => 'Aktivní';
 
   @override
@@ -3668,9 +3660,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nahraď tlačítko Navigovat tlačítkem nabídky nahoře, které otevře boční panel se všemi sekcemi a tvými nedávnými hledáními.';
 
   @override
-  String get configFlagEnableNotifications => 'Povolit oznámení?';
-
-  @override
   String get configFlagEnableNotificationsDescription =>
       'Přijímejte upozornění na připomínky, aktualizace a důležité události.';
 
@@ -7291,6 +7280,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalNudgeStatusSuperseded => 'Nahrazeno';
+
+  @override
+  String get goalOffTrackNotificationBody => 'Dobrá chvíle se k tomu vrátit.';
+
+  @override
+  String goalOffTrackNotificationTitle(String goal) {
+    return '$goal: jsi pozadu';
+  }
 
   @override
   String goalPatternBusiestHour(String hour) {
@@ -13851,6 +13848,87 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsMeasurableValueKindNumber => 'Číslo';
 
   @override
+  String get settingsNotificationsAllowTitle => 'Povolit oznámení';
+
+  @override
+  String get settingsNotificationsBadgeDescription =>
+      'Zobrazí na ikoně aplikace, kolik úkolů je rozpracovaných.';
+
+  @override
+  String get settingsNotificationsBadgeTitle => 'Počet úkolů na ikoně aplikace';
+
+  @override
+  String get settingsNotificationsCheckInRemindersDescription =>
+      'Když je čas se někomu ozvat.';
+
+  @override
+  String get settingsNotificationsCheckInRemindersTitle =>
+      'Připomínky kontaktu';
+
+  @override
+  String get settingsNotificationsDayPlanOutcomesDescription =>
+      'Když je denní plán připravený na pozadí hotový, nebo se nedokončil.';
+
+  @override
+  String get settingsNotificationsDayPlanOutcomesTitle =>
+      'Výsledky denního plánu';
+
+  @override
+  String get settingsNotificationsExplanation =>
+      'Upozornění přicházejí přes oznámení tvého zařízení. Vyber, co za ně stojí; všechno stejně zůstane ve zvonečku v Lotti.';
+
+  @override
+  String get settingsNotificationsGoalAlertsDescription =>
+      'Když se cíl odchýlí od kurzu.';
+
+  @override
+  String get settingsNotificationsGoalAlertsTitle => 'Upozornění na cíle';
+
+  @override
+  String get settingsNotificationsHabitAutoCompletionsDescription =>
+      'Když Lotti odškrtne návyk za tebe podle tvých dat.';
+
+  @override
+  String get settingsNotificationsHabitAutoCompletionsTitle =>
+      'Automaticky odškrtnuté návyky';
+
+  @override
+  String get settingsNotificationsHabitRemindersDescription =>
+      'V čase nastaveném u návyku.';
+
+  @override
+  String get settingsNotificationsHabitRemindersTitle => 'Připomínky návyků';
+
+  @override
+  String get settingsNotificationsKindsHeading => 'Upozorňovat mě na';
+
+  @override
+  String get settingsNotificationsKindsNote =>
+      'Vypnutí druhu zastaví jen jeho upozornění. Jeho položky zůstanou ve zvonečku.';
+
+  @override
+  String get settingsNotificationsSubtitle =>
+      'Která upozornění tě zastihnou jako oznámení';
+
+  @override
+  String get settingsNotificationsSyncConflictsDescription =>
+      'Když byla položka upravena na dvou zařízeních a potřebuje tvou kontrolu.';
+
+  @override
+  String get settingsNotificationsSyncConflictsTitle =>
+      'Konflikty synchronizace';
+
+  @override
+  String get settingsNotificationsTaskSuggestionsDescription =>
+      'Když má agent návrhy k úkolu nebo je úkol po termínu.';
+
+  @override
+  String get settingsNotificationsTaskSuggestionsTitle => 'Návrhy k úkolům';
+
+  @override
+  String get settingsNotificationsTitle => 'Oznámení';
+
+  @override
   String get settingsOnboardingActionSubtitle =>
       'Znovu otevři uvítací postup — připoj svou AI a vytvoř úkol';
 
@@ -13906,7 +13984,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsPreferencesSubtitle =>
-      'Vzhled, animace, styl nahrávání, řeč a klávesové zkratky';
+      'Vzhled, animace, oznámení, styl nahrávání, řeč a klávesové zkratky';
 
   @override
   String get settingsPreferencesTitle => 'Předvolby';

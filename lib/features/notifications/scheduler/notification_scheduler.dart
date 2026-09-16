@@ -14,10 +14,17 @@ class NotificationScheduler {
   NotificationScheduler({
     required this._notificationsDb,
     required this._notificationServiceProvider,
+    required this._isKindEnabled,
   });
 
   final NotificationsDb _notificationsDb;
   final NotificationService Function() _notificationServiceProvider;
+
+  /// Whether the user still wants [NotificationEntity]s of this kind on the
+  /// OS channel — the per-kind switch on the Notifications settings page.
+  /// Consulted on every arm, so a kind switched off stops at the next write
+  /// or reconcile while the row itself stays in the inbox.
+  final Future<bool> Function(NotificationEntity entity) _isKindEnabled;
 
   NotificationService get _notificationService =>
       _notificationServiceProvider();
@@ -42,6 +49,12 @@ class NotificationScheduler {
         entity.meta.actedOnAt != null) {
       // Match the dueNow/upcoming queries: rows acted on (regardless of seen
       // state) are no longer schedulable, so cancel any stale OS-level alert.
+      await _notificationService.cancelNotification(notificationId);
+      return;
+    }
+    if (!await _isKindEnabled(entity)) {
+      // The row is the inbox's to keep; the OS must forget the alarm it may
+      // already hold for it.
       await _notificationService.cancelNotification(notificationId);
       return;
     }
@@ -78,7 +91,9 @@ class NotificationScheduler {
   /// without this a reminder armed weeks ahead silently stops existing at the
   /// OS level. The same gap exists for rows written while the
   /// `enable_notifications` flag was off (the platform calls are gated on it),
-  /// which is why flipping that flag on also runs this.
+  /// which is why flipping that flag on also runs this. A per-kind switch runs
+  /// it too: [schedule] re-arms the rows of a kind switched on and cancels
+  /// the alarms of one switched off.
   ///
   /// **Only future rows.** A row that is already due needs no alarm: it is by
   /// definition sitting in the inbox, on the device the user is holding.

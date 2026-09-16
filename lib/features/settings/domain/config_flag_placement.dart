@@ -5,12 +5,13 @@
 /// lives without importing a widget — and the two halves of the partition
 /// cannot drift into separate layers.
 ///
-/// Every flag `initConfigFlags` creates belongs to exactly one of three
+/// Every flag `initConfigFlags` creates belongs to exactly one of four
 /// surfaces:
 ///
 /// | Surface | Holds | Rule |
 /// |---------|-------|------|
 /// | Sections | [sectionFlags] | The flag adds a top-level navigation destination |
+/// | Notifications | [notificationSettingsFlags] | The flag decides what may reach the OS |
 /// | Config Flags | [configFlagGroups] | Everything else a user may set |
 /// | Advanced → Logging | the `LogDomain` toggles and `log_slow_queries` | Diagnostics with their own page |
 ///
@@ -45,6 +46,26 @@ const sectionFlags = <String>[
   enableEventsFlag,
 ];
 
+/// The flags Settings → Notifications owns: the master switch that lets
+/// anything reach the OS at all, one switch per kind of alert, and the task
+/// count on the app icon.
+///
+/// They are not Config Flags rows: the kinds are greyed while the master is
+/// off, so they read as one decision, and a second copy of the master switch
+/// on the flags page would bypass the hook's ordering. The page lays the rows
+/// out itself; this list is only where they live.
+const notificationSettingsFlags = <String>[
+  enableNotificationsFlag,
+  notifyTaskSuggestionsFlag,
+  notifyCheckInRemindersFlag,
+  notifyGoalAlertsFlag,
+  notifyHabitRemindersFlag,
+  notifyHabitAutoCompletionsFlag,
+  notifyDayPlanOutcomesFlag,
+  notifySyncConflictsFlag,
+  showTaskBadgeFlag,
+];
+
 /// The two jobs the Config Flags page still does, after the rows that turn
 /// whole app sections on moved out to Sections.
 ///
@@ -59,13 +80,12 @@ enum ConfigFlagGroup { preferences, advanced }
 /// here also requires icon + title + subtitle wiring in `ConfigFlagLabels`;
 /// `config_flag_labels_test` asserts the far end of that chain.
 ///
-/// [sectionFlags] are deliberately absent — a flag listed in both places would
-/// give one stored value two homes, and the tests assert the two sets stay
-/// disjoint.
+/// [sectionFlags] and [notificationSettingsFlags] are deliberately absent — a
+/// flag listed in two places would give one stored value two homes, and the
+/// tests assert the sets stay disjoint.
 const Map<ConfigFlagGroup, List<String>> configFlagGroups = {
   ConfigFlagGroup.preferences: [
     privateFlag,
-    enableNotificationsFlag,
     recordLocationFlag,
     enableTooltipFlag,
     enableSessionRatingsFlag,

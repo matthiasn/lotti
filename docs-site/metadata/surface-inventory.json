@@ -903,6 +903,19 @@
       "status": "verified"
     },
     {
+      "id": "settings-notifications",
+      "title": "Notifications",
+      "kind": "settings-page",
+      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "sourcePattern": "'preferences/notifications'",
+      "locator": "/settings/notifications",
+      "routes": [
+        "/settings/notifications"
+      ],
+      "page": "reference/notifications",
+      "status": "planned"
+    },
+    {
       "id": "settings-speech",
       "title": "Speech and text-to-speech",
       "kind": "settings-page",

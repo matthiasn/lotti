@@ -9,14 +9,6 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get goalOffTrackNotificationBody => 'A good moment to get back on it.';
-
-  @override
-  String goalOffTrackNotificationTitle(String goal) {
-    return '$goal is off track';
-  }
-
-  @override
   String get activeLabel => 'Active';
 
   @override
@@ -3605,9 +3597,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Replace the Navigate button with a menu button at the top that opens a sidebar with every section and your recent searches.';
 
   @override
-  String get configFlagEnableNotifications => 'Enable notifications?';
-
-  @override
   String get configFlagEnableNotificationsDescription =>
       'Receive notifications for reminders, updates, and important events.';
 
@@ -7184,6 +7173,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalNudgeStatusSuperseded => 'Superseded';
+
+  @override
+  String get goalOffTrackNotificationBody => 'A good moment to get back on it.';
+
+  @override
+  String goalOffTrackNotificationTitle(String goal) {
+    return '$goal is off track';
+  }
 
   @override
   String goalPatternBusiestHour(String hour) {
@@ -13596,6 +13593,84 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsMeasurableValueKindNumber => 'Number';
 
   @override
+  String get settingsNotificationsAllowTitle => 'Allow notifications';
+
+  @override
+  String get settingsNotificationsBadgeDescription =>
+      'Show how many tasks are in progress on the app icon.';
+
+  @override
+  String get settingsNotificationsBadgeTitle => 'Task count on the app icon';
+
+  @override
+  String get settingsNotificationsCheckInRemindersDescription =>
+      'When it is time to get in touch with someone.';
+
+  @override
+  String get settingsNotificationsCheckInRemindersTitle => 'Check-in reminders';
+
+  @override
+  String get settingsNotificationsDayPlanOutcomesDescription =>
+      'When a day plan drafted in the background is ready, or did not finish.';
+
+  @override
+  String get settingsNotificationsDayPlanOutcomesTitle => 'Day plan results';
+
+  @override
+  String get settingsNotificationsExplanation =>
+      'Alerts arrive through your device\'s notifications. Choose what is worth one; everything still lands in the bell inside Lotti.';
+
+  @override
+  String get settingsNotificationsGoalAlertsDescription =>
+      'When a goal slips off track.';
+
+  @override
+  String get settingsNotificationsGoalAlertsTitle => 'Goal alerts';
+
+  @override
+  String get settingsNotificationsHabitAutoCompletionsDescription =>
+      'When Lotti checks a habit off for you from your data.';
+
+  @override
+  String get settingsNotificationsHabitAutoCompletionsTitle =>
+      'Habits checked off automatically';
+
+  @override
+  String get settingsNotificationsHabitRemindersDescription =>
+      'At the time you set on a habit.';
+
+  @override
+  String get settingsNotificationsHabitRemindersTitle => 'Habit reminders';
+
+  @override
+  String get settingsNotificationsKindsHeading => 'Alert me about';
+
+  @override
+  String get settingsNotificationsKindsNote =>
+      'Switching a kind off only stops its alerts. Its entries still appear in the bell.';
+
+  @override
+  String get settingsNotificationsSubtitle =>
+      'Which alerts reach you as notifications';
+
+  @override
+  String get settingsNotificationsSyncConflictsDescription =>
+      'When an entry was edited on two devices and needs your review.';
+
+  @override
+  String get settingsNotificationsSyncConflictsTitle => 'Sync conflicts';
+
+  @override
+  String get settingsNotificationsTaskSuggestionsDescription =>
+      'When an agent has suggestions on a task, or a task is overdue.';
+
+  @override
+  String get settingsNotificationsTaskSuggestionsTitle => 'Task suggestions';
+
+  @override
+  String get settingsNotificationsTitle => 'Notifications';
+
+  @override
   String get settingsOnboardingActionSubtitle =>
       'Reopen the welcome flow — connect your AI brain and create a task';
 
@@ -13650,7 +13725,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsPreferencesSubtitle =>
-      'Theming, animations, recording style, speech, and shortcuts';
+      'Theming, animations, notifications, recording style, speech, and shortcuts';
 
   @override
   String get settingsPreferencesTitle => 'Preferences';

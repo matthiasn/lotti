@@ -1,10 +1,6 @@
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
-import 'package:lotti/features/design_system/components/lists/hover_divider_index.dart';
-import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/widgets/config_flag_labels.dart';
-import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
+import 'package:lotti/features/settings/ui/widgets/settings_toggle_list.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:material_ui/material_ui.dart';
@@ -20,8 +16,9 @@ import 'package:material_ui/material_ui.dart';
 /// Rows are labelled through [ConfigFlagLabels], and a tap on either the row
 /// or its toggle persists the inverted status via [PersistenceLogic]. There is
 /// no local state: the caller rebuilds from `watchConfigFlags()`, so the toggle
-/// reflects what was stored rather than what was tapped.
-class ConfigFlagToggleList extends StatefulWidget {
+/// reflects what was stored rather than what was tapped. The card itself is
+/// [SettingsToggleList], the shape Settings → Notifications renders too.
+class ConfigFlagToggleList extends StatelessWidget {
   const ConfigFlagToggleList({required this.flags, this.labels, super.key});
 
   /// Rows to render, in display order.
@@ -34,69 +31,24 @@ class ConfigFlagToggleList extends StatefulWidget {
   final FlagLabelResolver? labels;
 
   @override
-  State<ConfigFlagToggleList> createState() => _ConfigFlagToggleListState();
-}
-
-class _ConfigFlagToggleListState extends State<ConfigFlagToggleList>
-    with HoverDividerIndex<ConfigFlagToggleList> {
-  @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final flags = widget.flags;
-    final labels = widget.labels ?? ConfigFlagLabels.resolverFor(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-        border: Border.all(color: tokens.colors.decorative.level01),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final (index, flag) in flags.indexed)
-              _row(tokens, index: index, flag: flag, label: labels(flag)),
-          ],
-        ),
-      ),
+    final resolve = labels ?? ConfigFlagLabels.resolverFor(context);
+    return SettingsToggleList(
+      rows: [
+        for (final flag in flags)
+          // Resolved once per row: the catalog switch would otherwise run for
+          // the title and again for the subtitle.
+          if (resolve(flag) case (:final title, :final subtitle))
+            SettingsToggleRow(
+              title: title,
+              subtitle: subtitle,
+              icon: ConfigFlagLabels.iconFor(flag.name),
+              value: flag.status,
+              onChanged: (status) => getIt<PersistenceLogic>().setConfigFlag(
+                flag.copyWith(status: status),
+              ),
+            ),
+      ],
     );
-  }
-
-  /// One flag row. [label] is resolved by the caller so the catalog switch
-  /// runs once per row rather than once per field that reads it — the title
-  /// alone is needed twice, visibly and as the toggle's semantics label.
-  Widget _row(
-    DsTokens tokens, {
-    required int index,
-    required ConfigFlag flag,
-    required ({String title, String subtitle}) label,
-  }) {
-    return DesignSystemListItem(
-      title: label.title,
-      subtitle: label.subtitle,
-      // `null` lifts the default single-line cap so long descriptions
-      // ("Generate AI summary for task actions", etc.) wrap onto a second /
-      // third line instead of truncating with ellipsis.
-      subtitleMaxLines: null,
-      leading: SettingsIcon(icon: ConfigFlagLabels.iconFor(flag.name)),
-      trailing: DesignSystemToggle(
-        value: flag.status,
-        semanticsLabel: label.title,
-        onChanged: (bool status) => _setStatus(flag, status),
-      ),
-      onTap: () => _setStatus(flag, !flag.status),
-      onHoverChanged: (hovered) => onRowHoverChanged(index, hovered: hovered),
-      // Keep `showDivider` stable so layout doesn't shift by 1 px on hover;
-      // fade the divider to transparent when either this row or the row below
-      // it is hovered, so the hovered row is never bisected by a hairline.
-      showDivider: index < widget.flags.length - 1,
-      dividerColor: hoverDividerColorFor(index),
-      dividerIndent: SettingsIcon.dividerIndent(tokens),
-    );
-  }
-
-  void _setStatus(ConfigFlag flag, bool status) {
-    getIt<PersistenceLogic>().setConfigFlag(flag.copyWith(status: status));
   }
 }

@@ -1,4 +1,11 @@
 ### Added
+- **Choose which notifications reach you.** Settings → Preferences →
+  Notifications holds the switch that turns notifications on, and beneath it
+  one switch per kind: task suggestions, check-in reminders, goal alerts,
+  habit reminders, habits checked off automatically, day plan results and
+  sync conflicts, plus the task count on the app icon on iPhone and Mac. A
+  switch takes effect at once, and a kind switched off still shows in the
+  bell — only the alert stops.
 - **Lotti now tells you when a goal slips.** When a goal agent finds a goal
   off track, or at risk and getting worse, a notification arrives at nine the
   next morning — once per slip, not every day — and tapping it opens the
@@ -7,6 +14,10 @@
   once notifications are switched on in Settings.
 
 ### Changed
+- **The notifications switch has moved.** It lives on the new Notifications
+  page under Preferences rather than among the config flags, and switching it
+  off now also takes down every alert already scheduled instead of letting
+  them fire anyway.
 - **"Your day plan is ready" and "Sync needs your review" now stay in the
   bell.** Both used to be a banner that was gone once dismissed. They now
   land in the notifications inbox as well, so a plan that finished while the

@@ -155,6 +155,10 @@ class NotificationService {
   static bool get notifiesOnCurrentPlatform =>
       !_skipNotificationsOnCurrentPlatform;
 
+  /// Whether the current platform puts a count on the app icon. The
+  /// Notifications settings page offers the badge switch only where it does.
+  static bool get supportsIconBadge => _supportsIconBadge;
+
   /// Resolves the device IANA zone; injectable to exercise DST independently
   /// of the host timezone.
   final Future<String> Function() _timezoneLookup;
@@ -506,7 +510,10 @@ class NotificationService {
     if (!_supportsIconBadge) {
       return;
     }
-    if (!await _notificationsAllowed()) {
+    // The badge has its own switch beneath the master one; either off means
+    // the icon shows nothing.
+    if (!await _notificationsAllowed() ||
+        !await _db.getConfigFlag(showTaskBadgeFlag)) {
       await _clearBadge();
       return;
     }
@@ -605,6 +612,12 @@ class NotificationService {
     );
 
     if (alertAtTime != null) {
+      if (!await _db.getConfigFlag(notifyHabitRemindersFlag)) {
+        // Habit reminders are switched off: drop the alarm this habit may
+        // still hold rather than let it fire once more.
+        await cancelNotification(habitDefinition.id.hashCode);
+        return;
+      }
       final location = _resolveLocation(await _timezoneLookup());
       final now = TZDateTime.from(clock.now(), location);
       // Construct a calendar date: adding 24 hours can skip or repeat a day
@@ -762,5 +775,17 @@ class NotificationService {
     }
 
     await flutterLocalNotificationsPlugin.cancel(id: notificationId);
+  }
+
+  /// Drops every alarm and delivered alert this app holds with the OS — what
+  /// switching notifications off means for alarms already armed weeks ahead.
+  /// The rows they projected stay in the inbox; switching back on re-arms the
+  /// ones still ahead through `NotificationScheduler.reconcile`.
+  Future<void> cancelAllNotifications() async {
+    if (_skipNotificationsOnCurrentPlatform) {
+      return;
+    }
+
+    await flutterLocalNotificationsPlugin.cancelAll();
   }
 }

@@ -37,6 +37,7 @@ import 'package:lotti/features/settings/ui/pages/habits/habits_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
+import 'package:lotti/features/settings/ui/pages/notification_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/recording_style_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/sections_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
@@ -85,6 +86,7 @@ void main() {
       'sections',
       // Step 7 — simple leaves.
       'flags',
+      'notifications',
       'recording-style',
       'theming',
       'keyboard-shortcuts',
@@ -193,6 +195,14 @@ void main() {
     );
 
     test(
+      'notifications panel is scrollable — NotificationSettingsBody is a '
+      'plain Column of cards, not its own scroll view',
+      () {
+        expect(panelSpecFor('notifications')!.scrollable, isTrue);
+      },
+    );
+
+    test(
       'onboarding panel is scrollable — OnboardingSettingsBody is a plain '
       'grouped-list column, not its own scroll view',
       () {
@@ -268,6 +278,7 @@ void main() {
           build('recording-style'),
           isA<RecordingStyleSettingsBody>(),
         );
+        expect(build('notifications'), isA<NotificationSettingsBody>());
         expect(build('theming'), isA<ThemingBody>());
         expect(build('keyboard-shortcuts'), isA<KeyboardShortcutsBody>());
         expect(build('speech'), isA<SpeechSettingsBody>());
