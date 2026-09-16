@@ -3151,6 +3151,15 @@
   "goalNudgeStatusExpired": "Utgången",
   "goalNudgeStatusRetired": "Tillbakadragen",
   "goalNudgeStatusSuperseded": "Ersatt",
+  "goalOffTrackNotificationBody": "Ett bra tillfälle att komma tillbaka på spåret.",
+  "goalOffTrackNotificationTitle": "{goal} ligger efter",
+  "@goalOffTrackNotificationTitle": {
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      }
+    }
+  },
   "goalPatternBusiestHour": "De flesta sessioner börjar runt {hour}:00. Öppna insikter för djupare analys.",
   "goalPatternTitle": "Tidsmönster",
   "goalPendingProposalBadge": "Förslag väntar",

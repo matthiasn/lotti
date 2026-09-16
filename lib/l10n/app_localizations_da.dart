@@ -9,6 +9,15 @@ class AppLocalizationsDa extends AppLocalizations {
   AppLocalizationsDa([String locale = 'da']) : super(locale);
 
   @override
+  String get goalOffTrackNotificationBody =>
+      'Et godt tidspunkt at komme tilbage på sporet.';
+
+  @override
+  String goalOffTrackNotificationTitle(String goal) {
+    return '$goal er bagud';
+  }
+
+  @override
   String get activeLabel => 'Aktiv';
 
   @override

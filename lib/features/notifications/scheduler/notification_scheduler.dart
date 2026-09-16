@@ -117,5 +117,7 @@ class NotificationScheduler {
     RelationshipCheckInNotification(:final linkedRelationshipId) =>
       '/people/$linkedRelationshipId',
     HabitAutoCompletedNotification() => '/habits',
+    GoalOffTrackNotification(:final linkedGoalAgentId) =>
+      '/goals/details/$linkedGoalAgentId',
   };
 }

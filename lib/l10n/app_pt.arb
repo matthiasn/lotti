@@ -3150,6 +3150,15 @@
   "goalNudgeStatusExpired": "Expirado",
   "goalNudgeStatusRetired": "Retirado",
   "goalNudgeStatusSuperseded": "Substituído",
+  "goalOffTrackNotificationBody": "Um bom momento para retomar.",
+  "goalOffTrackNotificationTitle": "{goal} está fora do rumo",
+  "@goalOffTrackNotificationTitle": {
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      }
+    }
+  },
   "goalPatternBusiestHour": "A maioria das sessões começa por volta de {hour}:00. Abra o Insights para uma análise mais profunda.",
   "goalPatternTitle": "Padrão de tempo",
   "goalPendingProposalBadge": "Proposta a aguardar revisão",

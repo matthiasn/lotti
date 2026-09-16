@@ -4275,6 +4275,15 @@
   "goalNudgeStatusExpired": "Expired",
   "goalNudgeStatusRetired": "Retired",
   "goalNudgeStatusSuperseded": "Superseded",
+  "goalOffTrackNotificationBody": "A good moment to get back on it.",
+  "goalOffTrackNotificationTitle": "{goal} is off track",
+  "@goalOffTrackNotificationTitle": {
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      }
+    }
+  },
   "goalPatternBusiestHour": "Most sessions start around {hour}:00. Open Insights for deeper analysis.",
   "@goalPatternBusiestHour": {
     "placeholders": {

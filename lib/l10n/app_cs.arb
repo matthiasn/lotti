@@ -2901,6 +2901,15 @@
   "goalNudgeStatusExpired": "Vypršelo",
   "goalNudgeStatusRetired": "Staženo",
   "goalNudgeStatusSuperseded": "Nahrazeno",
+  "goalOffTrackNotificationBody": "Dobrá chvíle se k tomu vrátit.",
+  "goalOffTrackNotificationTitle": "{goal}: jsi pozadu",
+  "@goalOffTrackNotificationTitle": {
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      }
+    }
+  },
   "goalPatternBusiestHour": "Většina relací začíná kolem {hour}:00. Pro podrobnější analýzu otevři Přehledy.",
   "goalPatternTitle": "Vzorek časování",
   "goalPendingProposalBadge": "Návrh čeká na posouzení",

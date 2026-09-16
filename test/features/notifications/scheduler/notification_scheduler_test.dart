@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/notifications_db.dart';
+import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/features/notifications/model/notification_tap_payload.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -345,6 +346,26 @@ void main() {
         const NotificationTapPayload(route: '/people/rel-9', inboxId: 'c'),
       );
     });
+
+    test("a slipped goal points at the goal's page", () async {
+      final payload = await payloadOf(
+        _goalOffTrack(
+          id: 'g',
+          linkedGoalAgentId: 'agent-3',
+          scheduledFor: past,
+        ),
+      );
+
+      expect(
+        payload,
+        const NotificationTapPayload(
+          route: '/goals/details/agent-3',
+          inboxId: 'g',
+        ),
+      );
+      // The same route the goals surface builds, so the two cannot drift.
+      expect(payload!.route, goalDetailPath('agent-3'));
+    });
   });
 
   // OS-level alarms do not survive an app update, a reinstall or an Android
@@ -602,6 +623,19 @@ NotificationEntity _suggestion({
     meta: _meta(id: id, scheduledFor: scheduledFor),
     linkedTaskId: linkedTaskId,
     suggestionCount: 2,
+    title: 'Due title',
+    body: 'Due body',
+  );
+}
+
+NotificationEntity _goalOffTrack({
+  required String id,
+  String linkedGoalAgentId = 'agent-id',
+  DateTime? scheduledFor,
+}) {
+  return NotificationEntity.goalOffTrack(
+    meta: _meta(id: id, scheduledFor: scheduledFor),
+    linkedGoalAgentId: linkedGoalAgentId,
     title: 'Due title',
     body: 'Due body',
   );

@@ -15,6 +15,7 @@ abstract final class NotificationKinds {
   static const String taskOverdue = 'taskOverdue';
   static const String relationshipCheckIn = 'relationshipCheckIn';
   static const String habitAutoCompleted = 'habitAutoCompleted';
+  static const String goalOffTrack = 'goalOffTrack';
 }
 
 @freezed
@@ -70,6 +71,23 @@ sealed class NotificationEntity with _$NotificationEntity {
     required String body,
   }) = HabitAutoCompletedNotification;
 
+  /// A goal that has slipped — off track, or at risk and worsening — as its
+  /// deterministic tier judged it (ADR 0062).
+  ///
+  /// One row per slip: the episode is the day the goal transitioned into
+  /// that state, armed for the next alert hour by the goal agent's Phase A
+  /// and retracted the moment the goal is back on track. [linkedGoalAgentId]
+  /// is the agent, which is what the goal detail route is keyed by.
+  ///
+  /// [title] and [body] are baked in the arming device's locale (see the
+  /// check-in variant for why).
+  const factory NotificationEntity.goalOffTrack({
+    required NotificationMeta meta,
+    required String linkedGoalAgentId,
+    required String title,
+    required String body,
+  }) = GoalOffTrackNotification;
+
   factory NotificationEntity.fromJson(Map<String, dynamic> json) =>
       _$NotificationEntityFromJson(json);
 }
@@ -99,6 +117,7 @@ extension NotificationEntityFields on NotificationEntity {
     TaskOverdueNotification(:final meta) => meta,
     RelationshipCheckInNotification(:final meta) => meta,
     HabitAutoCompletedNotification(:final meta) => meta,
+    GoalOffTrackNotification(:final meta) => meta,
   };
 
   String get id => meta.id;
@@ -108,6 +127,7 @@ extension NotificationEntityFields on NotificationEntity {
     TaskOverdueNotification() => NotificationKinds.taskOverdue,
     RelationshipCheckInNotification() => NotificationKinds.relationshipCheckIn,
     HabitAutoCompletedNotification() => NotificationKinds.habitAutoCompleted,
+    GoalOffTrackNotification() => NotificationKinds.goalOffTrack,
   };
 
   String? get linkedEntityId => switch (this) {
@@ -118,6 +138,7 @@ extension NotificationEntityFields on NotificationEntity {
     // A grouped row links several habits; the row itself leads to the
     // habits page, so no single id is "the" linked entity.
     HabitAutoCompletedNotification() => null,
+    GoalOffTrackNotification(:final linkedGoalAgentId) => linkedGoalAgentId,
   };
 
   NotificationEntity copyWithMeta(NotificationMeta meta) => switch (this) {
@@ -162,6 +183,17 @@ extension NotificationEntityFields on NotificationEntity {
         meta: meta,
         linkedHabitIds: linkedHabitIds,
         dayKey: dayKey,
+        title: title,
+        body: body,
+      ),
+    GoalOffTrackNotification(
+      :final linkedGoalAgentId,
+      :final title,
+      :final body,
+    ) =>
+      NotificationEntity.goalOffTrack(
+        meta: meta,
+        linkedGoalAgentId: linkedGoalAgentId,
         title: title,
         body: body,
       ),

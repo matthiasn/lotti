@@ -129,3 +129,4 @@ Each ADR should contain:
 - [`0059-relationship-agent-runtime-and-nudge-generalization.md`](./0059-relationship-agent-runtime-and-nudge-generalization.md)
 - [`0060-banner-dock-as-app-shell-structural-band.md`](./0060-banner-dock-as-app-shell-structural-band.md)
 - [`0061-notification-producers-one-episode-contract.md`](./0061-notification-producers-one-episode-contract.md)
+- [`0062-goal-off-track-alerts-on-the-os-channel.md`](./0062-goal-off-track-alerts-on-the-os-channel.md)

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/notifications/state/notification_inbox_controller.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
@@ -87,6 +88,10 @@ class _NotificationBellState extends ConsumerState<NotificationBell> {
         beamToNamed('/people/$linkedRelationshipId');
       case HabitAutoCompletedNotification():
         beamToNamed('/habits');
+      case GoalOffTrackNotification(:final linkedGoalAgentId):
+        // The goal's page, not its chat: the alert says the goal slipped,
+        // and the page is where the progress and the banner both are.
+        beamToNamed(goalDetailPath(linkedGoalAgentId));
     }
   }
 

@@ -9,6 +9,14 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get goalOffTrackNotificationBody => 'A good moment to get back on it.';
+
+  @override
+  String goalOffTrackNotificationTitle(String goal) {
+    return '$goal is off track';
+  }
+
+  @override
   String get activeLabel => 'Active';
 
   @override

@@ -3151,6 +3151,15 @@
   "goalNudgeStatusExpired": "Scaduto",
   "goalNudgeStatusRetired": "Ritirato",
   "goalNudgeStatusSuperseded": "Sostituito",
+  "goalOffTrackNotificationBody": "Un buon momento per rimetterti in pista.",
+  "goalOffTrackNotificationTitle": "{goal}: sei in ritardo",
+  "@goalOffTrackNotificationTitle": {
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      }
+    }
+  },
   "goalPatternBusiestHour": "La maggior parte delle sessioni inizia intorno alle {hour}:00. Apri Insights per un'analisi più approfondita.",
   "goalPatternTitle": "Modello di tempistica",
   "goalPendingProposalBadge": "Proposta in attesa",

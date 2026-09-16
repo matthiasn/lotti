@@ -8,8 +8,8 @@ restarts and stay consistent across the user's devices.
 
 ## What it does for the user
 
-- **Tells the user when something is waiting.** Task suggestions and check-in
-  reminders surface as real notifications.
+- **Tells the user when something is waiting.** Task suggestions, check-in
+  reminders and a goal that has slipped surface as real notifications.
 - **Opens what it is about.** Tapping an alert takes the user to the task,
   the person or the page behind it, whether Lotti is already running or the
   tap is what starts it.

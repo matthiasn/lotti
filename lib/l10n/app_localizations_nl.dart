@@ -9,6 +9,15 @@ class AppLocalizationsNl extends AppLocalizations {
   AppLocalizationsNl([String locale = 'nl']) : super(locale);
 
   @override
+  String get goalOffTrackNotificationBody =>
+      'Een goed moment om de draad weer op te pakken.';
+
+  @override
+  String goalOffTrackNotificationTitle(String goal) {
+    return '$goal loopt achter';
+  }
+
+  @override
   String get activeLabel => 'Actief';
 
   @override
