@@ -291,6 +291,39 @@ void main() {
       );
     });
 
+    test('draft_day_plan requires a reason on every block', () {
+      // The writer rejects an ai block with no reason, and the schema used to
+      // stay silent about it: a gym run lost six drafts to the mismatch.
+      final blockSchema =
+          (parametersFor(DayAgentToolNames.draftDayPlan)['properties']
+                  as Map<String, dynamic>)['blocks']
+              as Map<String, dynamic>;
+
+      expect(
+        (blockSchema['items'] as Map<String, dynamic>)['required'],
+        containsAll(['title', 'categoryId', 'start', 'end', 'type', 'reason']),
+      );
+    });
+
+    test('day-scoped tools say which day id to send', () {
+      // An empty dayId was the single commonest rejection in a gym run, and
+      // the field carried no description at all.
+      for (final tool in [
+        DayAgentToolNames.draftDayPlan,
+        DayAgentToolNames.proposePlanDiff,
+        DayAgentToolNames.surfacePendingDecisions,
+      ]) {
+        final dayIdSchema =
+            (parametersFor(tool)['properties'] as Map<String, dynamic>)['dayId']
+                as Map<String, dynamic>;
+        expect(
+          dayIdSchema['description'],
+          allOf(contains('<day>.dayId'), contains('never blank')),
+          reason: tool,
+        );
+      }
+    });
+
     test('draft_day_plan energy bands state the time format', () {
       // The band fields were the only times in the schema with no format
       // note, and models wrote "09:00" for them while getting every block

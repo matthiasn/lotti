@@ -218,7 +218,13 @@ const dayAgentTools = <AgentToolDefinition>[
     parameters: {
       'type': 'object',
       'properties': {
-        'dayId': {'type': 'string'},
+        'dayId': {
+          'type': 'string',
+          'description':
+              'The day id for this wake, copied from `<day>.dayId` — for '
+              'example dayplan-2026-09-17. It is never blank and never '
+              'another day: a call naming a different day is rejected.',
+        },
       },
       'required': ['dayId'],
       'additionalProperties': false,
@@ -272,7 +278,13 @@ const dayAgentTools = <AgentToolDefinition>[
     parameters: {
       'type': 'object',
       'properties': {
-        'dayId': {'type': 'string'},
+        'dayId': {
+          'type': 'string',
+          'description':
+              'The day id for this wake, copied from `<day>.dayId` — for '
+              'example dayplan-2026-09-17. It is never blank and never '
+              'another day: a call naming a different day is rejected.',
+        },
         'dayDate': {
           'type': 'string',
           'description': 'ISO-8601 date-time for the local day being drafted.',
@@ -349,13 +361,24 @@ const dayAgentTools = <AgentToolDefinition>[
                 'type': 'string',
                 'minLength': 1,
                 'description':
-                    'Why this block belongs here. REQUIRED whenever type is '
-                    '"ai" — the tool handler rejects ai blocks without a '
-                    'non-empty reason.',
+                    'Why this block belongs here. Every block carries one, '
+                    'and for an "ai" block it must be non-empty — the tool '
+                    'handler rejects the whole draft otherwise. For a buffer '
+                    'or calendar block a short phrase is enough.',
               },
               'note': {'type': 'string'},
             },
-            'required': ['title', 'categoryId', 'start', 'end', 'type'],
+            // `reason` is required here because the writer already rejects
+            // an ai block without one, and a schema that stayed silent let
+            // models omit it and lose the entire draft to the rejection.
+            'required': [
+              'title',
+              'categoryId',
+              'start',
+              'end',
+              'type',
+              'reason',
+            ],
             'additionalProperties': false,
           },
         },
@@ -417,7 +440,13 @@ const dayAgentTools = <AgentToolDefinition>[
     parameters: {
       'type': 'object',
       'properties': {
-        'dayId': {'type': 'string'},
+        'dayId': {
+          'type': 'string',
+          'description':
+              'The day id for this wake, copied from `<day>.dayId` — for '
+              'example dayplan-2026-09-17. It is never blank and never '
+              'another day: a call naming a different day is rejected.',
+        },
         'baselinePlanId': {
           'type': 'string',
           'description':
