@@ -1,5 +1,7 @@
 # Goal check-in compaction evaluation
 
+**Judged run, 2026-09-16:** hierarchical passes the bar (96% recall, zero hallucinations, 15/15 same recommendation) — [full results](../lotti-gym-2026-09-16.md).
+
 Does the goal agent draw the same conclusions from a **compacted** check-in
 history as from the **full** one? A goal runs for years; three check-ins a
 week at ~100 tokens each is ~15k tokens a year of user voice, against a wake

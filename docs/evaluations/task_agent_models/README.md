@@ -1,5 +1,7 @@
 # Task-Agent Model Evaluation
 
+**Full-catalog results, 2026-09-16:** [LottiGym, every section run and optimised](../lotti-gym-2026-09-16.md).
+
 This directory documents Lotti's reproducible Task Agent model evaluation. The
 harness evaluates behavior that users see: proposed task mutations, checklist
 extraction, and the report shown on task and project surfaces. Generated run
