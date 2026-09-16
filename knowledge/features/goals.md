@@ -525,8 +525,12 @@ See [profile resolution](ai/profile-resolution.md) for failure and precedence ru
   the report are moved into it. Models split the report this way with every
   section present and correct, and the all-or-nothing parser refused the lot —
   9 of 30 compaction wakes on one model. A value already in the right place
-  wins, and one missing from both places is still refused, so completeness is
-  unchanged and nothing is accepted that the model did not write. Structured
+  wins. A prose section missing from both places is still refused. An action
+  list missing from both places counts as empty: `now` is a filter over
+  authorized criteria and no rule requires an item, so an omitted list and
+  `[]` persist the same report — and treating omission as refusal cost 4 of 30
+  compaction wakes. `oneLiner`, which belongs beside `report`, is read from
+  inside it when absent where it belongs. Structured
   current actions carry a criterion id and survive only when deterministic
   `healthLoggingNeededCriterionIds` authorizes that id, so a lagging rolling
   habit cannot create a current action item; delayed overdue evaluations expose

@@ -242,31 +242,35 @@ class GoalAgentStrategy extends ConversationStrategy
     return _withActionsLiftedIntoNextActions(withSections);
   }
 
-  /// The same split one level down: `now` or `later` written beside
-  /// `nextActions` inside the report, rather than inside it.
+  /// `nextActions` with both of its lists in place.
   ///
-  /// glm-5.3 wrote `nextActions: {later: [...]}` with `now: []` as a sibling
-  /// — both lists present, one misplaced — and the parser, finding no `now`
-  /// list where it looks, refused the report. The same rules apply: a list
-  /// already inside `nextActions` wins, and one absent from both is still
-  /// refused.
+  /// A list written beside `nextActions` inside the report is moved into it:
+  /// glm-5.3 wrote `nextActions: {later: [...]}` with `now: []` as a sibling,
+  /// and the parser, finding no `now` list where it looks, refused the report.
+  /// A list already inside `nextActions` wins.
+  ///
+  /// A list absent from both places counts as empty. That was refused at
+  /// first, on the reasoning that the slot must be *present*, and the next
+  /// full run measured the cost: 4 of 30 compaction wakes on glm-5.3-flash
+  /// wrote a correct report with only `later` and lost it. Absent and empty
+  /// mean the same thing here — `now` is a filter, keeping only items whose
+  /// criterion `allowedCurrentActionCriterionIds` authorizes, and no rule
+  /// requires one — and the schema already tells the model to use an empty
+  /// list. Only the action lists default; every prose section is still
+  /// required.
   static Map<String, dynamic> _withActionsLiftedIntoNextActions(
     Map<String, dynamic> report,
   ) {
     final actions = report[GoalReportSectionKeys.nextActions];
     if (actions is! Map<String, dynamic>) return report;
-    final lifted = [
+    final completed = {
+      ...actions,
       for (final key in GoalReportActionKeys.values)
-        if (!actions.containsKey(key) && report.containsKey(key)) key,
-    ];
-    if (lifted.isEmpty) return report;
-    return {
-      ...report,
-      GoalReportSectionKeys.nextActions: {
-        ...actions,
-        for (final key in lifted) key: report[key],
-      },
+        if (!actions.containsKey(key))
+          key: report.containsKey(key) ? report[key] : const <Object?>[],
     };
+    if (completed.length == actions.length) return report;
+    return {...report, GoalReportSectionKeys.nextActions: completed};
   }
 
   Future<void> _handleUpdateReport(
@@ -278,7 +282,13 @@ class GoalAgentStrategy extends ConversationStrategy
     final status = GoalTrackStatus.values
         .where((s) => s.name == statusRaw)
         .firstOrNull;
-    final oneLiner = _trimmed(args['oneLiner']);
+    // The mirror of the section lift: `oneLiner` belongs beside `report`, and
+    // glm-5.3-flash wrote it inside with the status correct and every section
+    // present. Taken from inside only when absent where it belongs.
+    final reportMap = args['report'];
+    final oneLiner = _trimmed(args['oneLiner']).isNotEmpty
+        ? _trimmed(args['oneLiner'])
+        : _trimmed(reportMap is Map ? reportMap['oneLiner'] : null);
     final content = _trimmed(args['content']);
     final hasStructuredReport = args.containsKey('report');
     final reportArg = _withSectionsLiftedIntoReport(args);

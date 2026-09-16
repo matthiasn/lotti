@@ -203,7 +203,12 @@ void main() {
       expect(strategy.hasReport, isTrue);
     });
 
-    test('an action list missing from both places is still refused', () async {
+    test('an action list the model omitted counts as empty', () async {
+      // Reversed on evidence. This was refused at first, on the reasoning that
+      // the slot must be present; the next full run lost 4 of 30 compaction
+      // wakes on glm-5.3-flash to reports carrying only `later`. `now` is a
+      // filter — nothing requires an item — so absent and empty persist the
+      // same report.
       final args = split();
       final report = Map<String, dynamic>.from(args['report'] as Map)
         ..addAll({
@@ -225,7 +230,58 @@ void main() {
         manager: manager,
       );
 
+      expect(strategy.hasReport, isTrue);
+      expect(strategy.reportContent, contains('Keep the lunch loop.'));
+    });
+
+    test('a prose section omitted from both places is still refused', () async {
+      // Only the action lists default. A missing narrative section is a
+      // report with a hole in it, not an empty list.
+      final args = split();
+      final report = Map<String, dynamic>.from(args['report'] as Map)
+        ..addAll({
+          'latestChange': args.remove('latestChange'),
+          'coverage': args.remove('coverage'),
+          'nextActions': args.remove('nextActions'),
+        });
+      args
+        ..remove('currentPeriod')
+        ..['report'] = report;
+
+      await strategy.processToolCalls(
+        toolCalls: [
+          _call(name: GoalAgentToolNames.updateGoalReport, args: args),
+        ],
+        manager: manager,
+      );
+
       expect(strategy.hasReport, isFalse);
+    });
+
+    test('a oneLiner written inside the report is read from there', () async {
+      // glm-5.3-flash: status correct, every section present, and oneLiner
+      // one level too deep.
+      final args = split();
+      final oneLiner = args.remove('oneLiner');
+      final report = Map<String, dynamic>.from(args['report'] as Map)
+        ..addAll({
+          'oneLiner': oneLiner,
+          'currentPeriod': args.remove('currentPeriod'),
+          'latestChange': args.remove('latestChange'),
+          'coverage': args.remove('coverage'),
+          'nextActions': args.remove('nextActions'),
+        });
+      args['report'] = report;
+
+      await strategy.processToolCalls(
+        toolCalls: [
+          _call(name: GoalAgentToolNames.updateGoalReport, args: args),
+        ],
+        manager: manager,
+      );
+
+      expect(strategy.hasReport, isTrue);
+      expect(strategy.reportOneLiner, oneLiner);
     });
 
     test('a section missing from both places is still refused', () async {
