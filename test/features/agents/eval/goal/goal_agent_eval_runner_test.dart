@@ -569,6 +569,30 @@ void main() {
       );
     });
 
+    test('an is-there question about the difficulty is clarification', () {
+      // Verbatim from a glm-5.3-flash gym run: a real question, three
+      // options, and scored as no question at all because the pattern knew
+      // "is it" and not "is there".
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenarioById('evo_ambiguous'),
+          toolCalls: [
+            call(
+              GoalAgentToolNames.replyToUser,
+              jsonEncode({
+                'message':
+                    'Totally fair. Before anything else: is there something '
+                    'specific that makes it feel heavy — the daily number '
+                    'itself, the time it takes, or how it is being measured?',
+              }),
+            ),
+          ],
+          assistantContent: '',
+        ),
+        GoalAgentEvalFailureCategory.none,
+      );
+    });
+
     test('a rhetorical question at the end still is not clarification', () {
       expect(
         classifyGoalAgentResult(
