@@ -4,6 +4,76 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.17]
+
+### Added
+
+- **A day plan now records how much of a task it leaves for later.** When the
+  assistant schedules part of a task, the block carries the minutes still
+  outstanding, so the day can show what remains instead of burying it in prose.
+
+### Changed
+
+- **The Navigate button is now the mobile navigation.** The bottom bar with
+  its Tasks, Daily OS and Logbook slots and the More menu behind them is gone.
+  Every phone now gets the single glass Navigate button that opens all app
+  sections in a two-column grid, with each list's create button riding beside
+  it on the same row. There is nothing to switch on any more.
+
+### Removed
+
+- **The "New mobile navigation" toggle under Settings → Advanced → Config
+  Flags.** It only chose between the two navigations, and one of them has
+  been retired. The stored setting is removed from existing installs on the
+  next start, whichever way it was set.
+
+### Fixed
+
+- **Overlapping time on the Day timeline no longer hides one entry behind
+  another.** A call logged during a tracked session, or two tasks tracked at
+  the same time, used to paint over each other on the Day view, the calendar
+  tab and the day column beside the tasks list, so only the top entry could be
+  read or tapped. A later entry now sits inset on top of the session it
+  interrupts, which keeps its colour stripe and title, and entries started
+  together share the lane side by side. Zooming out, where titles need more
+  minutes of room, turns a tight stack into columns.
+- **The colour stripe on Day timeline blocks no longer pokes out of the
+  rounded corners.** Each block's category stripe was a separate bar drawn
+  over the card, so at the top and bottom it stuck out past the card's curved
+  corner like a pen nib. The stripe is now part of the card's shape and
+  follows the corner, on the Day view, the calendar tab and the day column
+  beside the tasks list, and it matches the agenda card's stripe in width.
+- **A day plan is no longer lost to one malformed piece of it.** A stray empty
+  buffer block, an energy band the assistant got wrong or wrote as a plain
+  time of day, a blank day id, or a plan sent as text rather than a list used
+  to discard the whole schedule. The plan is now kept and the bad part dropped
+  or filled in, and the assistant is told where the working day ends rather
+  than inferring it. Work itself is still never silently discarded.
+- **Day plan blocks now stay linked to their tasks.** A drafted block could be
+  saved with no task behind it, so it tracked no time and moved no status.
+- **The day planner could invent filler work on a day with nothing to plan.**
+  The planner was never told that a plan for a day still under way needs at
+  least one block. When it had nothing to schedule, or everything was blocked,
+  it sent an empty plan, got it rejected, and sometimes tried again with
+  made-up blocks like "Open flexible time". It is now told to leave a single
+  buffer block with a note saying why the day is empty.
+- **DeepSeek models no longer skip a required briefing, report or day plan.**
+  When an agent had to insist on one particular tool, the request pinned that
+  tool — and DeepSeek answered with the call written as text, which the app
+  could not see, so the wake ended with nothing saved. The app no longer pins
+  the tool for those models, and the retry lands.
+- **Recovering goals keep their briefing.** A goal agent report that said you
+  are "recovering" or have "achieved" something was refused as a leaked status
+  value and never saved; those ordinary words are now allowed in the report.
+- **Lotti answers no longer fail over stray characters.** Some models write
+  `\-` in front of list dashes, or put a raw line break inside the answer they
+  send back, which made the whole reply unreadable and the question fail.
+  Those answers now come through.
+- **A Lotti answer survives an action it cannot offer.** When the assistant
+  proposed a change to something outside the current task — another task's
+  entry, say — the whole answer was dropped and the chat showed an error.
+  The answer is now shown with no change proposed.
+
 ## [1.1.16]
 
 ### Changed
