@@ -1,8 +1,9 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/semantics.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -3122,5 +3123,213 @@ void main() {
         expect(find.text('secret'), findsNothing);
       },
     );
+  });
+
+  group('DayBlock category stripe', () {
+    const blockSize = Size(240, 60);
+    const rasterKey = Key('stripe-raster-boundary');
+
+    TimeBlock recorded() => TimeBlock(
+      id: 'stripe-probe',
+      title: 'Recorded session',
+      start: DateTime(2026, 5, 25, 9),
+      end: DateTime(2026, 5, 25, 10),
+      type: TimeBlockType.manual,
+      state: TimeBlockState.completed,
+      category: _work,
+    );
+
+    Finder stripe() =>
+        find.byKey(const Key('daily_os_block_stripe_stripe-probe'));
+
+    /// Renders one block alone over the canvas colour. The boundary is what
+    /// [rasterise] reads back, so a test can say what a pixel at the card's
+    /// edge actually is rather than what widget sits there.
+    Future<void> pumpBlock(
+      WidgetTester tester, {
+      bool raised = false,
+      bool redacted = false,
+    }) async {
+      _setView(tester, const Size(400, 200));
+      await tester.pumpWidget(
+        _wrap(
+          Builder(
+            builder: (context) => Center(
+              child: RepaintBoundary(
+                key: rasterKey,
+                child: ColoredBox(
+                  color: context.designTokens.colors.background.level01,
+                  child: SizedBox.fromSize(
+                    size: blockSize,
+                    child: DayBlock(
+                      block: recorded(),
+                      tracked: true,
+                      raised: raised,
+                      redacted: redacted,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          size: const Size(400, 200),
+        ),
+      );
+      await tester.pump();
+    }
+
+    Future<({Uint8List bytes, int width})> rasterise(
+      WidgetTester tester,
+    ) async {
+      final boundary = tester.renderObject<RenderRepaintBoundary>(
+        find.byKey(rasterKey),
+      );
+      late final Uint8List bytes;
+      late final int width;
+      await tester.runAsync(() async {
+        final image = await boundary.toImage();
+        width = image.width;
+        // Raw RGBA is the default byte layout: four bytes per pixel, rows
+        // top to bottom.
+        final data = await image.toByteData();
+        bytes = data!.buffer.asUint8List();
+        image.dispose();
+      });
+      return (bytes: bytes, width: width);
+    }
+
+    Color pixel(({Uint8List bytes, int width}) raster, int x, int y) {
+      final i = (y * raster.width + x) * 4;
+      return Color.fromARGB(
+        raster.bytes[i + 3],
+        raster.bytes[i],
+        raster.bytes[i + 1],
+        raster.bytes[i + 2],
+      );
+    }
+
+    testWidgets(
+      "the stripe is one spacing step wide, sits under the card's rounded "
+      'clip and carries the full category colour on a tracked block',
+      (tester) async {
+        await pumpBlock(tester);
+        final tokens = tester.element(stripe()).designTokens;
+
+        expect(tester.getSize(stripe()).width, tokens.spacing.step1);
+        expect(
+          tester.widget<ColoredBox>(stripe()).color,
+          categoryColorFromHex(_work.colorHex),
+        );
+        final clip = tester.widget<ClipRRect>(
+          find.ancestor(of: stripe(), matching: find.byType(ClipRRect)).first,
+        );
+        expect(clip.borderRadius, BorderRadius.circular(tokens.radii.m));
+      },
+    );
+
+    testWidgets(
+      'the stripe follows the corner arc: outside the arc the pixel is '
+      'canvas, along the straight edge it is the category colour',
+      (tester) async {
+        await pumpBlock(tester);
+        final tokens = tester.element(stripe()).designTokens;
+        final canvas = tokens.colors.background.level01;
+        final category = categoryColorFromHex(_work.colorHex);
+        final raster = await rasterise(tester);
+
+        // Column 1 is inside the 12 px corner arc's cut-out at row 4 and
+        // row 55 — the old bar painted its colour there — and inside the
+        // stripe half-way down.
+        expect(pixel(raster, 1, 4), canvas);
+        expect(pixel(raster, 1, 55), canvas);
+        expect(pixel(raster, 1, 30), category);
+        expect(pixel(raster, 0, 30), category);
+      },
+    );
+
+    testWidgets(
+      "a raised block's stripe starts right inside its seam, with no sliver "
+      'of fill between them',
+      (tester) async {
+        await pumpBlock(tester, raised: true);
+        final tokens = tester.element(stripe()).designTokens;
+        final canvas = tokens.colors.background.level01;
+        final category = categoryColorFromHex(_work.colorHex);
+        final raster = await rasterise(tester);
+
+        // The hairline takes column 0; the stripe takes columns 1 and 2.
+        // `Ink` insets its child by the border on its own — a padding on
+        // top of that pushed the stripe to column 2 and left column 1 as
+        // fill.
+        expect(pixel(raster, 0, 30), canvas);
+        expect(pixel(raster, 1, 30), category);
+        expect(pixel(raster, 2, 30), category);
+        expect(pixel(raster, 1, 4), canvas);
+      },
+    );
+
+    for (final redacted in [false, true]) {
+      testWidgets(
+        "a raised ${redacted ? 'redacted slab' : 'block'} clips its content "
+        "at the seam's inner edge, concentric with the hairline",
+        (tester) async {
+          await pumpBlock(tester, raised: true, redacted: redacted);
+          final tokens = tester.element(stripe()).designTokens;
+
+          // The content box is inset by the 1 px seam, so its clip radius is
+          // the card's radius less that width — the inner edge of a uniform
+          // border — not the card's full radius on the smaller box.
+          final seamWidth = tokens.spacing.step1 / 2;
+          final clip = find
+              .ancestor(of: stripe(), matching: find.byType(ClipRRect))
+              .first;
+          expect(
+            tester.widget<ClipRRect>(clip).borderRadius,
+            BorderRadius.circular(tokens.radii.m - seamWidth),
+          );
+          expect(
+            tester.getRect(clip),
+            tester.getRect(find.byType(DayBlock)).deflate(seamWidth),
+          );
+        },
+      );
+    }
+
+    testWidgets("a raised redacted slab's stripe starts inside its seam too", (
+      tester,
+    ) async {
+      await pumpBlock(tester, raised: true, redacted: true);
+      final tokens = tester.element(stripe()).designTokens;
+      final canvas = tokens.colors.background.level01;
+      final slab = tokens.colors.background.level03;
+      final raster = await rasterise(tester);
+
+      // `DecoratedBox` does not inset by its border, so the slab pads by
+      // hand: seam in column 0, the neutral wash from column 1.
+      expect(pixel(raster, 0, 30), canvas);
+      expect(pixel(raster, 1, 30), isNot(canvas));
+      expect(pixel(raster, 1, 30), isNot(slab));
+      expect(pixel(raster, 3, 30), slab);
+    });
+
+    testWidgets('the redacted slab clips its neutral stripe the same way', (
+      tester,
+    ) async {
+      await pumpBlock(tester, redacted: true);
+      final tokens = tester.element(stripe()).designTokens;
+      final canvas = tokens.colors.background.level01;
+      final raster = await rasterise(tester);
+
+      expect(tester.getSize(stripe()).width, tokens.spacing.step1);
+      final clip = tester.widget<ClipRRect>(
+        find.ancestor(of: stripe(), matching: find.byType(ClipRRect)).first,
+      );
+      expect(clip.borderRadius, BorderRadius.circular(tokens.radii.m));
+      // No category colour on a redacted block: a neutral wash over the
+      // slab, still cut to the corner.
+      expect(pixel(raster, 1, 4), canvas);
+      expect(pixel(raster, 1, 30), isNot(canvas));
+      expect(pixel(raster, 1, 30), isNot(categoryColorFromHex(_work.colorHex)));
+    });
   });
 }
