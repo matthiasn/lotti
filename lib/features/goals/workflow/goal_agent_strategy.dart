@@ -337,9 +337,15 @@ class GoalAgentStrategy extends ConversationStrategy
       content,
     ]);
     if (tokenInProse != null) {
+      final (:token, :text) = tokenInProse;
+      // Quote the sentence it sits in. A report has seven prose slots and the
+      // bare token name did not say which one: a model told only that
+      // "atRisk" was not prose resubmitted the identical report, so the one
+      // forced retry fixed nothing and the goal kept no standing summary.
       problems.add(
-        '"$tokenInProse" is a status field value, not prose. '
-        "Rewrite the visible text in the user's language and call "
+        '"$token" is a status field value, not prose, and appears in: '
+        '"${_sentenceAround(text, token)}". '
+        "Rewrite that text in the user's language and call "
         'update_goal_report again.',
       );
     }
@@ -732,17 +738,31 @@ class GoalAgentStrategy extends ConversationStrategy
   /// `achieved` are ordinary English — "you're recovering nicely" is exactly
   /// the encouragement a recovering goal's report should carry — and banning
   /// them refused every such report, then lost it on the one forced retry.
-  String? _statusTokenIn(List<String> texts) {
+  ({String token, String text})? _statusTokenIn(List<String> texts) {
     final unmistakable = goalTrackStatusNames.where(
       (token) => token != token.toLowerCase(),
     );
     for (final text in texts) {
       if (text.isEmpty) continue;
       for (final token in unmistakable) {
-        if (RegExp('\\b$token\\b').hasMatch(text)) return token;
+        if (RegExp('\\b$token\\b').hasMatch(text)) {
+          return (token: token, text: text);
+        }
       }
     }
     return null;
+  }
+
+  /// The sentence of [text] containing [token], so a rejection can point at
+  /// the exact words to rewrite instead of naming a token somewhere in them.
+  String _sentenceAround(String text, String token) {
+    final match = RegExp('\\b$token\\b').firstMatch(text);
+    if (match == null) return text;
+    final before = text.substring(0, match.start);
+    final start = before.lastIndexOf(RegExp(r'[.!?]\s')) + 1;
+    final after = text.indexOf(RegExp(r'[.!?](\s|$)'), match.end);
+    final end = after == -1 ? text.length : after + 1;
+    return text.substring(start, end).trim();
   }
 
   String _trimmed(Object? value) => value is String ? value.trim() : '';

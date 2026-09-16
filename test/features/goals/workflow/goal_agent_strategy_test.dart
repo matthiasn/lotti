@@ -373,6 +373,46 @@ void main() {
     expect(error, contains('not prose'));
   });
 
+  test('the rejection quotes the sentence the token sits in', () async {
+    // A deepseek-v4.1-flash compaction wake was told only that "atRisk" was
+    // not prose and resubmitted the identical seven-slot report, so its one
+    // forced retry fixed nothing. Naming the sentence is what makes the retry
+    // able to find it.
+    await strategy.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.updateGoalReport,
+          args: {
+            'status': 'atRisk',
+            'oneLiner': 'Averaging 8,500 against the 10,000 target.',
+            'report': {
+              'tldr':
+                  'Steps are climbing. The goal stands at atRisk: the '
+                  'rolling average is 8,500. It is up from last week.',
+              'currentPeriod': 'Nothing is outstanding today.',
+              'rollingWindow': 'Rolling 7 days: 8,500 against 10,000.',
+              'latestChange': '',
+              'coverage': 'Seven of seven days logged.',
+              'nextActions': {'now': <Object>[], 'later': <Object>[]},
+            },
+          },
+        ),
+      ],
+      manager: manager,
+    );
+
+    final error = rejection();
+    expect(
+      error,
+      contains(
+        'appears in: "The goal stands at atRisk: the rolling average is '
+        '8,500."',
+      ),
+    );
+    expect(error, isNot(contains('Steps are climbing')));
+    expect(error, isNot(contains('up from last week')));
+  });
+
   test('status names that are ordinary English stay legal in prose', () async {
     // `recovering` and `achieved` are words, not identifiers: a recovering
     // goal's report is supposed to say so. Refusing them lost every such
