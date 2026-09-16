@@ -176,6 +176,58 @@ void main() {
       },
     );
 
+    test('a now list written beside nextActions is read into it', () async {
+      // glm-5.3: `nextActions: {later: [...]}` with `now: []` as its sibling.
+      final args = split();
+      final report = Map<String, dynamic>.from(args['report'] as Map)
+        ..addAll({
+          'currentPeriod': args.remove('currentPeriod'),
+          'latestChange': args.remove('latestChange'),
+          'coverage': args.remove('coverage'),
+          'nextActions': {
+            'later': ['Keep the lunch loop.'],
+          },
+          'now': <Object?>[],
+        });
+      args
+        ..remove('nextActions')
+        ..['report'] = report;
+
+      await strategy.processToolCalls(
+        toolCalls: [
+          _call(name: GoalAgentToolNames.updateGoalReport, args: args),
+        ],
+        manager: manager,
+      );
+
+      expect(strategy.hasReport, isTrue);
+    });
+
+    test('an action list missing from both places is still refused', () async {
+      final args = split();
+      final report = Map<String, dynamic>.from(args['report'] as Map)
+        ..addAll({
+          'currentPeriod': args.remove('currentPeriod'),
+          'latestChange': args.remove('latestChange'),
+          'coverage': args.remove('coverage'),
+          'nextActions': {
+            'later': ['Keep the lunch loop.'],
+          },
+        });
+      args
+        ..remove('nextActions')
+        ..['report'] = report;
+
+      await strategy.processToolCalls(
+        toolCalls: [
+          _call(name: GoalAgentToolNames.updateGoalReport, args: args),
+        ],
+        manager: manager,
+      );
+
+      expect(strategy.hasReport, isFalse);
+    });
+
     test('a section missing from both places is still refused', () async {
       final args = split()..remove('coverage');
       await strategy.processToolCalls(

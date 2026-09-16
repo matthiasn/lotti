@@ -236,8 +236,37 @@ class GoalAgentStrategy extends ConversationStrategy
       for (final key in GoalReportSectionKeys.values)
         if (!report.containsKey(key) && args.containsKey(key)) key,
     ];
+    final withSections = lifted.isEmpty
+        ? report
+        : {...report, for (final key in lifted) key: args[key]};
+    return _withActionsLiftedIntoNextActions(withSections);
+  }
+
+  /// The same split one level down: `now` or `later` written beside
+  /// `nextActions` inside the report, rather than inside it.
+  ///
+  /// glm-5.3 wrote `nextActions: {later: [...]}` with `now: []` as a sibling
+  /// — both lists present, one misplaced — and the parser, finding no `now`
+  /// list where it looks, refused the report. The same rules apply: a list
+  /// already inside `nextActions` wins, and one absent from both is still
+  /// refused.
+  static Map<String, dynamic> _withActionsLiftedIntoNextActions(
+    Map<String, dynamic> report,
+  ) {
+    final actions = report[GoalReportSectionKeys.nextActions];
+    if (actions is! Map<String, dynamic>) return report;
+    final lifted = [
+      for (final key in GoalReportActionKeys.values)
+        if (!actions.containsKey(key) && report.containsKey(key)) key,
+    ];
     if (lifted.isEmpty) return report;
-    return {...report, for (final key in lifted) key: args[key]};
+    return {
+      ...report,
+      GoalReportSectionKeys.nextActions: {
+        ...actions,
+        for (final key in lifted) key: report[key],
+      },
+    };
   }
 
   Future<void> _handleUpdateReport(
