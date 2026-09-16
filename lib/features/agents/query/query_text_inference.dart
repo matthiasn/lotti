@@ -329,37 +329,57 @@ Object? _decodeModelJson(String text) {
   try {
     return jsonDecode(text);
   } on FormatException {
-    final repaired = _withoutInvalidJsonEscapes(text);
+    final repaired = _withEscapedStringLiterals(text);
     if (repaired == text) rethrow;
     return jsonDecode(repaired);
   }
 }
 
-/// Drops each backslash that does not begin a valid JSON escape, walking
-/// escape pairs so an escaped backslash (`\\`) is never split. `\u` counts
-/// only with four hex digits: `C:\users` would otherwise still fail.
-String _withoutInvalidJsonEscapes(String text) {
+/// Repairs the two malformations models keep writing inside string values:
+/// a backslash that begins no valid JSON escape, and a raw control character.
+///
+/// Walks escape pairs, so an escaped backslash (`\\`) is never split, and
+/// tracks whether the scanner is inside a string, so only a string's own
+/// control characters are escaped — the newlines that format the JSON itself
+/// are left alone. `\u` counts as an escape only with four hex digits, or
+/// `C:\users` would still fail.
+String _withEscapedStringLiterals(String text) {
   const validEscapes = r'"\/bfnrt';
+  const controlEscapes = {'\n': r'\n', '\r': r'\r', '\t': r'\t'};
   final buffer = StringBuffer();
+  var inString = false;
   for (var i = 0; i < text.length; i++) {
     final char = text[i];
-    if (char != r'\' || i + 1 >= text.length) {
+    if (char == '"') {
+      inString = !inString;
       buffer.write(char);
       continue;
     }
-    final next = text[i + 1];
-    final validUnicode =
-        next == 'u' &&
-        i + 5 < text.length &&
-        RegExp(r'^[0-9a-fA-F]{4}$').hasMatch(text.substring(i + 2, i + 6));
-    if (next == 'u' ? validUnicode : validEscapes.contains(next)) {
-      buffer
-        ..write(char)
-        ..write(next);
-    } else {
-      buffer.write(next);
+    if (char == r'\' && i + 1 < text.length) {
+      final next = text[i + 1];
+      final validUnicode =
+          next == 'u' &&
+          i + 5 < text.length &&
+          RegExp(r'^[0-9a-fA-F]{4}$').hasMatch(text.substring(i + 2, i + 6));
+      if (next == 'u' ? validUnicode : validEscapes.contains(next)) {
+        buffer
+          ..write(char)
+          ..write(next);
+        i++;
+      }
+      // An invalid escape drops only its backslash: the character after it is
+      // left for the next iteration, so a raw control character there still
+      // reaches the escaping below instead of being written through raw.
+      continue;
     }
-    i++;
+    if (inString && char.codeUnitAt(0) < 0x20) {
+      buffer.write(
+        controlEscapes[char] ??
+            r'\u' + char.codeUnitAt(0).toRadixString(16).padLeft(4, '0'),
+      );
+      continue;
+    }
+    buffer.write(char);
   }
   return buffer.toString();
 }

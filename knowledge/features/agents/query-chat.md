@@ -263,10 +263,13 @@ checks. Synthesis guidance puts the JSON contract first, requires exact owner
 titles (rendered in bold), and permits an unresolved answer with no owner IDs
 when no factual answer is supported. Malformed JSON or attribution still fails
 validation; the pipeline does not feed errors back for automatic model repair.
-The one deterministic tolerance is a backslash before a character JSON cannot
-escape (models write `\-` for markdown list dashes): `QueryTextInference`
-drops such a backslash and retries the decode, in the final parse and the
-streamed answer prefix alike, and anything still invalid fails as before.
+The deterministic tolerances are two malformations models keep writing inside
+string values: a backslash before a character JSON cannot escape (`\-` for a
+markdown list dash) and a raw control character (an unescaped newline in an
+answer). `QueryTextInference` drops the first and escapes the second, then
+retries the decode — in the final parse and the streamed answer prefix alike,
+tracking string boundaries so the JSON's own formatting is untouched. Anything
+still invalid fails as before.
 Action planning has one matching tolerance: a proposal naming a target outside
 the scope (`QueryTaskActionTargetUnavailable`) is retried once like any
 validation failure, and if it recurs the planner returns the model's answer

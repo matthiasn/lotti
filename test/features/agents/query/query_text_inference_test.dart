@@ -221,6 +221,57 @@ void main() {
       },
     );
 
+    test('a raw newline inside a string value is escaped, not fatal', () async {
+      // From a glm-5.3:speed LottiGym run: `FormatException: Control
+      // character in string`, which lost the whole query answer.
+      final result =
+          await QueryTextInference(
+            generate: (_, _) => Stream.value(
+              '{\n "answer": "First line\nsecond line\tafter a tab"\n}',
+            ),
+          ).complete(
+            system: 'answer',
+            input: {},
+            cancellation: QueryCancellation(),
+          );
+      expect(result['answer'], 'First line\nsecond line\tafter a tab');
+    });
+
+    test(
+      'a raw control character after a stray backslash is escaped',
+      () async {
+        // The two malformations in one place: dropping the backslash used to
+        // write the newline straight through, so the repaired payload still
+        // threw `Control character in string` and lost the whole answer.
+        final result =
+            await QueryTextInference(
+              generate: (_, _) =>
+                  Stream.value('{"answer":"first\\\nsecond\\\u0001third"}'),
+            ).complete(
+              system: 'answer',
+              input: {},
+              cancellation: QueryCancellation(),
+            );
+        expect(result['answer'], 'first\nsecond\u0001third');
+      },
+    );
+
+    test(
+      'a control character outside n, r and t gets a unicode escape',
+      () async {
+        final result =
+            await QueryTextInference(
+              generate: (_, _) =>
+                  Stream.value('{"answer":"bell\u0007 and vtab\u000b"}'),
+            ).complete(
+              system: 'answer',
+              input: {},
+              cancellation: QueryCancellation(),
+            );
+        expect(result['answer'], 'bell\u0007 and vtab\u000b');
+      },
+    );
+
     test('a payload that is broken beyond escapes still throws', () async {
       await expectLater(
         QueryTextInference(
