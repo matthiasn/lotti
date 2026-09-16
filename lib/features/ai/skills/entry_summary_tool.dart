@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:lotti/features/ai/util/forced_tool_choice.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Name of the tool a summary skill must call to publish its result.
@@ -118,15 +119,12 @@ const ChatCompletionTool entrySummaryTool = ChatCompletionTool(
 
 /// Pins the model to [entrySummaryTool] so the summary cannot come back as
 /// prose the caller would have to parse.
-const ChatCompletionToolChoiceOption entrySummaryToolChoice =
-    ChatCompletionToolChoiceOption.tool(
-      ChatCompletionNamedToolChoice(
-        type: ChatCompletionNamedToolChoiceType.function,
-        function: ChatCompletionFunctionCallOption(
-          name: entrySummaryToolName,
-        ),
-      ),
-    );
+///
+/// Null for the models that answer a pinned choice with prose anyway — see
+/// [forcedToolChoiceFor]. For those the single-tool list is what steers, and
+/// pinning would lose the call entirely rather than guarantee it.
+ChatCompletionToolChoiceOption? entrySummaryToolChoiceFor(String modelId) =>
+    forcedToolChoiceFor(modelId: modelId, toolName: entrySummaryToolName);
 
 /// Decodes and validates the [entrySummaryToolName] call out of [toolCalls].
 ///

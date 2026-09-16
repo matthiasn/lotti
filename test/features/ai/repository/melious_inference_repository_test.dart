@@ -163,7 +163,7 @@ void main() {
                 baseUrl: 'https://api.melious.ai/v1',
                 apiKey: 'test-key',
                 tools: tools,
-                toolChoice: entrySummaryToolChoice,
+                toolChoice: entrySummaryToolChoiceFor('glm-5.3-flash'),
                 impactCollector: collector,
               ),
               'messages' => repository.generateTextWithMessages(
@@ -178,7 +178,7 @@ void main() {
                 baseUrl: 'https://api.melious.ai/v1',
                 apiKey: 'test-key',
                 tools: tools,
-                toolChoice: entrySummaryToolChoice,
+                toolChoice: entrySummaryToolChoiceFor('glm-5.3-flash'),
                 impactCollector: collector,
               ),
               _ => repository.generateWithImages(
@@ -188,7 +188,7 @@ void main() {
                 baseUrl: 'https://api.melious.ai/v1',
                 apiKey: 'test-key',
                 tools: tools,
-                toolChoice: entrySummaryToolChoice,
+                toolChoice: entrySummaryToolChoiceFor('glm-5.3-flash'),
                 impactCollector: collector,
               ),
             };
@@ -228,9 +228,9 @@ void main() {
           MeliousInferenceRepository.resolveToolChoice(
             candidate,
             tools,
-            entrySummaryToolChoice,
+            entrySummaryToolChoiceFor('glm-5.3-flash'),
           ),
-          entrySummaryToolChoice,
+          entrySummaryToolChoiceFor('glm-5.3-flash'),
         );
       }
       for (final choice in [null, auto, required, none]) {
@@ -249,9 +249,9 @@ void main() {
           MeliousInferenceRepository.resolveToolChoice(
             model,
             offered,
-            entrySummaryToolChoice,
+            entrySummaryToolChoiceFor('glm-5.3-flash'),
           ),
-          entrySummaryToolChoice,
+          entrySummaryToolChoiceFor('glm-5.3-flash'),
         );
       }
     });
@@ -3542,7 +3542,7 @@ void main() {
               apiKey: apiKey,
               images: const ['abc123'],
               tools: [entrySummaryTool],
-              toolChoice: entrySummaryToolChoice,
+              toolChoice: entrySummaryToolChoiceFor('glm-5.3-flash'),
               impactCollector: InferenceImpactCollector(),
             )
             .toList();

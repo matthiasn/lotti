@@ -505,7 +505,9 @@ class SkillInferenceRunner {
           provider: provider,
           systemMessage: promptResult.systemMessage,
           tools: useTieredSummary ? [entrySummaryTool] : null,
-          toolChoice: useTieredSummary ? entrySummaryToolChoice : null,
+          toolChoice: useTieredSummary
+              ? entrySummaryToolChoiceFor(modelId)
+              : null,
           geminiThinkingMode: effectiveThinkingMode,
           impactCollector: impactCollector,
         );
@@ -881,7 +883,7 @@ class SkillInferenceRunner {
               provider: provider,
               systemMessage: promptResult.systemMessage,
               tools: [entrySummaryTool],
-              toolChoice: entrySummaryToolChoice,
+              toolChoice: entrySummaryToolChoiceFor(modelId),
               geminiThinkingMode: effectiveThinkingMode,
               impactCollector: collector,
             ),

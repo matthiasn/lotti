@@ -483,13 +483,9 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''' : ''}'''
       'tool choice',
       subDomain: 'execute',
     );
-    const forcedToolChoice = ChatCompletionToolChoiceOption.tool(
-      ChatCompletionNamedToolChoice(
-        type: ChatCompletionNamedToolChoiceType.function,
-        function: ChatCompletionFunctionCallOption(
-          name: DayAgentToolNames.parseCaptureToItems,
-        ),
-      ),
+    final forcedToolChoice = forcedToolChoiceFor(
+      modelId: modelId,
+      toolName: DayAgentToolNames.parseCaptureToItems,
     );
     final parseOnlyTools = tools
         .where(
@@ -534,13 +530,9 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''' : ''}'''
       'drafting wake missed draft_day_plan — retrying with forced tool choice',
       subDomain: 'execute',
     );
-    const forcedToolChoice = ChatCompletionToolChoiceOption.tool(
-      ChatCompletionNamedToolChoice(
-        type: ChatCompletionNamedToolChoiceType.function,
-        function: ChatCompletionFunctionCallOption(
-          name: DayAgentToolNames.draftDayPlan,
-        ),
-      ),
+    final forcedToolChoice = forcedToolChoiceFor(
+      modelId: modelId,
+      toolName: DayAgentToolNames.draftDayPlan,
     );
     final draftOnlyTools = tools
         .where((tool) => tool.function.name == DayAgentToolNames.draftDayPlan)

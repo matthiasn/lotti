@@ -316,9 +316,15 @@ void main() {
 
     test('pins tool choice to this tool by name', () {
       expect(
-        entrySummaryToolChoice.toString(),
+        entrySummaryToolChoiceFor('glm-5.3-flash').toString(),
         contains(entrySummaryToolName),
       );
+    });
+
+    test('pins nothing for a model that answers a pinned choice in prose', () {
+      // DeepSeek returns the call as text with an empty `tool_calls` when the
+      // choice is pinned, so the summary would be lost entirely.
+      expect(entrySummaryToolChoiceFor('deepseek-v4.1-flash:speed'), isNull);
     });
   });
 }

@@ -26,6 +26,7 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:lotti/features/ai/util/forced_tool_choice.dart';
 import 'package:lotti/features/goals/logic/goal_checkin_compaction_strategy.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
@@ -224,6 +225,8 @@ class GoalCompactionCaseResult {
     this.probeUsage,
     this.errorMessage,
     this.reportedStatus,
+    this.forcedReportRetry = false,
+    this.forcedReportError,
   });
 
   final GoalCompactionFixture fixture;
@@ -246,6 +249,12 @@ class GoalCompactionCaseResult {
   /// mismatched status, a status token in prose, a missing aggregate or an
   /// incomplete structure, and such a report never persists.
   final String? reportedStatus;
+
+  /// Whether this wake needed production's pinned forced-report retry.
+  final bool forcedReportRetry;
+
+  /// Why that retry produced nothing, when it failed outright.
+  final String? forcedReportError;
 
   String? get reportOneLiner {
     for (final call in toolCalls.reversed) {
@@ -292,6 +301,8 @@ class GoalCompactionCaseResult {
     'wake': {
       'expectedStatus': fixture.truth.expectedStatus.name,
       'reportedStatus': reportedStatus,
+      'forcedReportRetry': forcedReportRetry,
+      'forcedReportError': ?forcedReportError,
       'statusCorrect': reportedStatus == fixture.truth.expectedStatus.name,
       'oneLiner': reportOneLiner,
       'reply': wakeReply,
@@ -619,13 +630,9 @@ class GoalCompactionEvalRunner {
               ]
             : tools,
         toolChoice: forceReport
-            ? const ChatCompletionToolChoiceOption.tool(
-                ChatCompletionNamedToolChoice(
-                  type: ChatCompletionNamedToolChoiceType.function,
-                  function: ChatCompletionFunctionCallOption(
-                    name: GoalAgentToolNames.updateGoalReport,
-                  ),
-                ),
+            ? forcedToolChoiceFor(
+                modelId: modelId,
+                toolName: GoalAgentToolNames.updateGoalReport,
               )
             : null,
         temperature: temperature,
@@ -640,6 +647,8 @@ class GoalCompactionEvalRunner {
 
     InferenceUsage? wakeUsage;
     InferenceUsage? probeUsage;
+    var forcedReportRetry = false;
+    String? forcedReportError;
     try {
       wakeUsage = await exchange(0, facts);
       // Production's pinned retry: a status-transition wake whose response
@@ -650,6 +659,7 @@ class GoalCompactionEvalRunner {
       if (statusTransitioned &&
           await acceptedGoalReportStatus(strategy.toolCalls, derivation) ==
               null) {
+        forcedReportRetry = true;
         try {
           final retryUsage = await exchange(
             0,
@@ -661,8 +671,11 @@ class GoalCompactionEvalRunner {
                 ? retryUsage
                 : wakeUsage.merge(retryUsage);
           }
-        } on Object {
-          // Best-effort, exactly as `GoalAgentWorkflow._forceReport`.
+        } on Object catch (error) {
+          // Best-effort, exactly as `GoalAgentWorkflow._forceReport` — but
+          // recorded, so a retry that never reached the model is not read as
+          // a model that declined to report.
+          forcedReportError = error.toString();
         }
       }
       probeUsage = await exchange(
@@ -682,6 +695,8 @@ class GoalCompactionEvalRunner {
       );
       return GoalCompactionCaseResult(
         reportedStatus: reportedStatus,
+        forcedReportRetry: forcedReportRetry,
+        forcedReportError: forcedReportError,
         fixture: fixture,
         strategyId: strategyId,
         modelId: modelId,
@@ -717,6 +732,8 @@ class GoalCompactionEvalRunner {
           strategy.toolCalls,
           derivation,
         ),
+        forcedReportRetry: forcedReportRetry,
+        forcedReportError: forcedReportError,
       );
     } finally {
       conversationRepository.deleteConversation(conversationId);

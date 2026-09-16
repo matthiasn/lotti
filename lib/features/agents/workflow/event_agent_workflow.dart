@@ -21,6 +21,7 @@ import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
+import 'package:lotti/features/ai/util/forced_tool_choice.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
@@ -614,13 +615,9 @@ class EventAgentWorkflow with AgentErrorLogging {
       'no recap published — retrying with forced update_report',
       subDomain: 'execute',
     );
-    const forcedToolChoice = ChatCompletionToolChoiceOption.tool(
-      ChatCompletionNamedToolChoice(
-        type: ChatCompletionNamedToolChoiceType.function,
-        function: ChatCompletionFunctionCallOption(
-          name: EventAgentToolNames.updateReport,
-        ),
-      ),
+    final forcedToolChoice = forcedToolChoiceFor(
+      modelId: modelId,
+      toolName: EventAgentToolNames.updateReport,
     );
     final reportOnlyTools = tools
         .where((tool) => tool.function.name == EventAgentToolNames.updateReport)
