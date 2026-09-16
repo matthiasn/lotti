@@ -200,6 +200,99 @@ class GymTest(unittest.TestCase):
         self.assertTrue(all(job["state"] == "failed" for job in jobs), jobs)
         self.assertEqual(sum(len(job["attempts"]) for job in jobs), 9)
 
+    def _failing_probe_worker(self, message, fail_times):
+        """A worker that writes `message` as an inference error `fail_times`."""
+        state = {"calls": 0}
+
+        def worker(command, env, log, timeout, **kwargs):
+            if self.suite["gate"] not in env:
+                return self.fake_worker(command, env, log, timeout, **kwargs)
+            state["calls"] += 1
+            if state["calls"] > fail_times:
+                return self.fake_worker(command, env, log, timeout, **kwargs)
+            log.write_text(
+                "\n".join(
+                    json.dumps(e)
+                    for e in [
+                        {"type": "testDone", "result": "error", "error": message},
+                        {"type": "done", "success": False},
+                    ]
+                )
+            )
+            gym.atomic_json(
+                Path(env["GOAL_AGENT_EVAL_JSON"]),
+                {
+                    "results": [
+                        {
+                            "modelId": self.manifest["model"],
+                            "scenarioId": case,
+                            "passed": False,
+                            "failureCategory": "inferenceError",
+                            "errorMessage": message,
+                        }
+                        for case in env["GOAL_AGENT_EVAL_SCENARIOS"].split(",")
+                    ]
+                },
+            )
+            return 1
+
+        return worker, state
+
+    def test_a_transient_preflight_failure_is_retried_and_the_matrix_runs(self):
+        # One 503 on the single probe used to abandon the whole matrix.
+        patcher = patch.object(gym, "PREFLIGHT_RETRY_DELAY_S", 0)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        jobs = gym.make_jobs([self.suite], 1, batch_size=1)
+        processes = Mock()
+        worker, state = self._failing_probe_worker(
+            "MeliousInferenceException (HTTP 503): provider encountered an error",
+            fail_times=2,
+        )
+        processes.run.side_effect = worker
+
+        gym.execute(self.output, self.manifest, jobs, "key", 1, processes, ["0"])
+
+        probe = next(j for j in jobs if len(j["attempts"]) > 1)
+        self.assertEqual(
+            [a["state"] for a in probe["attempts"]],
+            ["error", "error", "failed"],
+            "two transient errors, then the probe lands",
+        )
+        self.assertGreaterEqual(state["calls"], 3)
+        self.assertTrue(all(job["state"] != "blocked" for job in jobs), jobs)
+
+    def test_a_transient_failure_that_never_clears_stops_after_the_retries(self):
+        patcher = patch.object(gym, "PREFLIGHT_RETRY_DELAY_S", 0)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.manifest.update(suites=[self.suite, suite(id="dependent", dependencies=["goals"])])
+        jobs = gym.make_jobs(self.manifest["suites"], 1, batch_size=1)
+        processes = Mock()
+        worker, state = self._failing_probe_worker("HTTP 503 Service Unavailable", fail_times=99)
+        processes.run.side_effect = worker
+
+        gym.execute(self.output, self.manifest, jobs, "key", 1, processes, ["0"])
+
+        self.assertEqual(state["calls"], gym.PREFLIGHT_RETRIES + 1)
+        self.assertTrue(any(job["state"] == "blocked" for job in jobs), jobs)
+
+    def test_a_rejected_key_is_not_retried(self):
+        patcher = patch.object(gym, "PREFLIGHT_RETRY_DELAY_S", 0)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        jobs = gym.make_jobs([self.suite], 1, batch_size=1)
+        processes = Mock()
+        worker, state = self._failing_probe_worker(
+            "MeliousInferenceException (HTTP 401): Invalid API key",
+            fail_times=99,
+        )
+        processes.run.side_effect = worker
+
+        gym.execute(self.output, self.manifest, jobs, "key", 1, processes, ["0"])
+
+        self.assertEqual(state["calls"], 1, "a rejected key repeats forever")
+
     def test_compiler_leases_isolate_active_runs_and_reuse_released_caches(self):
         leases = self.output / "leases"
         with gym.compiler_slot_pool(2, leases) as first:

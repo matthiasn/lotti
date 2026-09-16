@@ -406,6 +406,60 @@ def flutter_test_command(entry_point, compiler_slot):
     ]
 
 
+# How many extra attempts the provider preflight probe gets after a transient
+# failure, and how long to wait between them (multiplied by the attempt
+# number). One flaky 5xx used to cost a whole run.
+PREFLIGHT_RETRIES = 3
+PREFLIGHT_RETRY_DELAY_S = 5
+
+# Failures worth another attempt: the provider wobbled. Everything else — a
+# rejected key, an unservable model, a contract breach — repeats forever, so
+# retrying only burns time and money.
+TRANSIENT_FAILURE_MARKERS = (
+    "http 500",
+    "http 502",
+    "http 503",
+    "http 504",
+    "http 429",
+    "timed out",
+    "timeout",
+    "temporarily",
+    "connection",
+    "provider encountered an error",
+)
+
+PERMANENT_FAILURE_MARKERS = (
+    "http 401",
+    "http 403",
+    "http 404",
+    "invalid api key",
+    "not found",
+    "unsupported",
+)
+
+
+def transient_failure(result):
+    """Whether a failed job looks like a provider wobble rather than a verdict.
+
+    Reads the attempt's own evidence — the worker log and artifact it just
+    wrote — because the consolidated report deliberately never carries raw
+    provider error text. A permanent marker wins over a transient one, so
+    "HTTP 401" is never retried just because the word "connection" appears
+    elsewhere in the log.
+    """
+    directory = Path(result.get("directory", ""))
+    text = ""
+    for name in ("worker.jsonl", "artifact.json", "result.json"):
+        path = directory / name
+        try:
+            text += path.read_text(encoding="utf-8", errors="ignore").lower()
+        except OSError:
+            continue
+    if any(marker in text for marker in PERMANENT_FAILURE_MARKERS):
+        return False
+    return any(marker in text for marker in TRANSIENT_FAILURE_MARKERS)
+
+
 def run_job(suite, job, manifest, output, api_key, processes, summary_path, compiler_slot):
     number = len(job["attempts"]) + 1
     directory = output / "jobs" / job["directory"] / f"attempt-{number}"
@@ -755,18 +809,33 @@ def execute(output, manifest, jobs, api_key, workers, processes, compiler_slots)
             (j for j in pending if not suites[j["suite"]]["dependencies"]), None
         )
         if probe is not None:
-            result = run_job(
-                suites[probe["suite"]],
-                probe,
-                manifest,
-                output,
-                api_key,
-                processes,
-                None,
-                compiler_slots[0],
-            )
-            probe["attempts"].append(result)
-            probe["state"] = result["state"]
+            for attempt in range(PREFLIGHT_RETRIES + 1):
+                result = run_job(
+                    suites[probe["suite"]],
+                    probe,
+                    manifest,
+                    output,
+                    api_key,
+                    processes,
+                    None,
+                    compiler_slots[0],
+                )
+                probe["attempts"].append(result)
+                probe["state"] = result["state"]
+                if probe["state"] != "error":
+                    break
+                if attempt >= PREFLIGHT_RETRIES or not transient_failure(result):
+                    break
+                # A 5xx or a timeout on the one probe used to cost the whole
+                # matrix. A rejected key or an unservable model still does,
+                # on the first attempt: those repeat forever.
+                print(
+                    f"Provider preflight attempt {attempt + 1} hit a transient"
+                    " provider failure; retrying.",
+                    flush=True,
+                )
+                checkpoint(output, manifest, jobs)
+                time.sleep(PREFLIGHT_RETRY_DELAY_S * (attempt + 1))
             pending.remove(probe)
             if probe["state"] == "error":
                 for job in pending:

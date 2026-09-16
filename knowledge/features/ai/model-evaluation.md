@@ -72,6 +72,14 @@ inference, the remaining matrix stays unassessed instead of repeating an
 authentication, unavailable-model or transport failure across every exercise.
 Behavioral failures still allow the complete matrix to run.
 
+A transient provider failure on that one probe — `HTTP 5xx`, `429`, a timeout,
+a dropped connection — buys up to `PREFLIGHT_RETRIES` further attempts with a
+growing pause, because one wobble used to abandon a whole run. A rejected key,
+an unservable model or any other permanent marker still stops on the first
+attempt: those repeat forever, and retrying them only spends money. The
+classifier reads the attempt's own worker log and artifact, which is where the
+raw provider text lives; the consolidated report still never carries it.
+
 Useful variations:
 
 ```sh
