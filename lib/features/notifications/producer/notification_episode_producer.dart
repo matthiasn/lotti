@@ -50,7 +50,8 @@ abstract class NotificationEpisodeProducer<TSubject, TDerivation>
   String get kind;
 
   /// The log sub-domain the producer's failures are filed under, e.g.
-  /// `relationshipReminder`; `arm` and `clearFor` append their own name.
+  /// `relationshipReminder`; `arm`, `clearFor` and `restate` append their
+  /// own name.
   String get logSubDomain;
 
   /// The id of the entity [subject] is — the `linkedEntityId` of every row
@@ -120,6 +121,25 @@ abstract class NotificationEpisodeProducer<TSubject, TDerivation>
   Future<void> clearFor(String subjectId) => _bestEffort(
     'clearFor',
     () => _notifications.retractOpenRows(linkedEntityId: subjectId, kind: kind),
+  );
+
+  /// The LLM tier's one word in the choreography: the words of an alert the
+  /// deterministic tier armed, never whether or when it exists. Scoped to
+  /// this producer's [kind] and to [subjectId]'s rows, like [clearFor].
+  @override
+  @nonVirtual
+  Future<void> restate(
+    String subjectId, {
+    required String title,
+    String? body,
+  }) => _bestEffort(
+    'restate',
+    () => _notifications.restateOpenRows(
+      linkedEntityId: subjectId,
+      kind: kind,
+      title: title,
+      body: body,
+    ),
   );
 
   /// [buildRow], checked against the two facts the choreography relies on:

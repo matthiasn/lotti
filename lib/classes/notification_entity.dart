@@ -203,6 +203,75 @@ extension NotificationEntityFields on NotificationEntity {
     SyncConflictNotification() => syncConflictsSubjectId,
   };
 
+  /// The same row with new words. Every variant carries a title and a body,
+  /// but the sealed union has no shared `copyWith` for them, so this is the
+  /// one place a re-wording touches each variant.
+  NotificationEntity copyWithCopy({
+    required String title,
+    required String body,
+  }) => switch (this) {
+    TaskSuggestionNotification(
+      :final meta,
+      :final linkedTaskId,
+      :final suggestionCount,
+    ) =>
+      NotificationEntity.taskSuggestion(
+        meta: meta,
+        linkedTaskId: linkedTaskId,
+        suggestionCount: suggestionCount,
+        title: title,
+        body: body,
+      ),
+    TaskOverdueNotification(:final meta, :final linkedTaskId) =>
+      NotificationEntity.taskOverdue(
+        meta: meta,
+        linkedTaskId: linkedTaskId,
+        title: title,
+        body: body,
+      ),
+    RelationshipCheckInNotification(:final meta, :final linkedRelationshipId) =>
+      NotificationEntity.relationshipCheckIn(
+        meta: meta,
+        linkedRelationshipId: linkedRelationshipId,
+        title: title,
+        body: body,
+      ),
+    HabitAutoCompletedNotification(
+      :final meta,
+      :final linkedHabitIds,
+      :final dayKey,
+    ) =>
+      NotificationEntity.habitAutoCompleted(
+        meta: meta,
+        linkedHabitIds: linkedHabitIds,
+        dayKey: dayKey,
+        title: title,
+        body: body,
+      ),
+    GoalOffTrackNotification(:final meta, :final linkedGoalAgentId) =>
+      NotificationEntity.goalOffTrack(
+        meta: meta,
+        linkedGoalAgentId: linkedGoalAgentId,
+        title: title,
+        body: body,
+      ),
+    DayPlanOutcomeNotification(:final meta, :final dayId, :final succeeded) =>
+      NotificationEntity.dayPlanOutcome(
+        meta: meta,
+        dayId: dayId,
+        succeeded: succeeded,
+        title: title,
+        body: body,
+      ),
+    SyncConflictNotification(:final meta, :final conflictCount) =>
+      NotificationEntity.syncConflict(
+        meta: meta,
+        conflictCount: conflictCount,
+        title: title,
+        body: body,
+      ),
+  };
+
   NotificationEntity copyWithMeta(NotificationMeta meta) => switch (this) {
     TaskSuggestionNotification(
       :final linkedTaskId,

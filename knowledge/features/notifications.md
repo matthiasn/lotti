@@ -334,6 +334,7 @@ carries the master switch. The Config Flags page no longer lists it.
 | `notify_day_plan_outcomes` | a plan job's outcome |
 | `notify_sync_conflicts` | newly detected sync conflicts |
 | `show_task_badge` | the task count on the app icon — offered on iOS and macOS only, where there is an icon to put it on |
+| `notify_agent_copy` | whether an agent may re-word an armed alert with its banner's words — **off** by default, see [below](#the-agent-may-re-word-an-armed-alert) |
 
 `notificationFlagFor` in
 `lib/features/notifications/model/notification_kind_flags.dart` maps a row to
@@ -650,6 +651,63 @@ reads the armer's language on both.
 This knowingly departs from [localization](../conventions/localization.md)'s
 rule to persist structured facts and compose the sentence at render time. The
 reason is that there is no render moment: the OS holds the alarm for weeks with
-the app closed, and what it will show has to be a string by then. All four
-variants do this; `HabitAutoCompletionNotifier` bakes its copy through
+the app closed, and what it will show has to be a string by then. Every
+variant does this; `HabitAutoCompletionNotifier` bakes its copy through
 `deviceMessages()` like the check-in reminder does.
+
+Baked does not mean final: a producer's deterministic template can be
+**restated** by the agent's LLM tier before the alarm fires, if the user
+allows it — the next section.
+
+# The agent may re-word an armed alert
+
+The goal and relationship agents' LLM tier authors a banner brief on an
+escalation wake — `create_goal_ad`, `create_relationship_ad` — and that wake
+follows the deterministic tier that armed an alert for the same subject. ADR
+0066 lets the brief lend the alert its words: the headline becomes the title,
+the tagline (or else the call to action) the body, fitted to one line each
+within lock-screen room. Nothing is minted and nothing is decided: *whether*
+and *when* an alert exists stays the deterministic tier's.
+
+```mermaid
+sequenceDiagram
+  participant PA as Phase A (deterministic)
+  participant PB as Phase B (LLM wake)
+  participant C as AgentAlertCopy
+  participant R as NotificationRepository
+  participant OS as OS alarm
+  PA->>R: arm episode — template copy
+  R->>OS: schedule(id, "Anna is due")
+  PB->>PB: create_*_ad → NudgeBrief persisted (txn)
+  PB->>C: restate(subjectId, brief) — after the txn
+  C->>C: notify_agent_copy on? headline → title, tagline → body, fit
+  C->>R: restateOpenRows(kind, subjectId, title, body)
+  R->>R: open + not yet due + words differ? bump updatedAt, clock
+  R->>OS: schedule(id, "Check in with Anna — it's been 2 weeks.")
+  R-->>R: enqueue whole row → peers converge by updatedAt
+```
+
+The seam is `NotificationEpisodeRestater` in
+`lib/classes/notification_producer.dart` — the narrow interface the workflows
+get, which every `NotificationEpisodeSink` extends — and the producer base
+routes it to `restateOpenRows` under its own kind, best-effort like `arm`.
+`AgentAlertCopy` (`lib/features/notifications/producer/agent_alert_copy.dart`)
+reads the `notify_agent_copy` flag at the moment of the wake, fits the brief,
+and hands it to the restater; each workflow holds one, bound to its own
+producer, and calls it once its output transaction has committed, only for a
+banner that wake created.
+
+**Three rows are never re-worded**: one already due (its alert went out;
+rescheduling would announce it again), one seen, acted on or deleted, and one
+whose words already read this way (a re-run wake writes nothing). The
+re-worded row keeps its id — the OS alarm is replaced, not doubled — and
+travels whole; `NotificationMerge` picks content by `updatedAt`, so the new
+words win on every peer whatever order the create and the re-wording arrive
+in. A device-local row is re-worded but never enqueued, like every write to
+it.
+
+**Off by default.** The banner brief can carry the facts the banner is about,
+and an alert lands on the lock screen, so ADR 0039 Decision 6's
+content-minimal rule stands until the user flips the wording switch on the
+Notifications page. Flipping it has no immediate consequence — alarms already
+armed keep their words — which is why the settings hook does nothing for it.

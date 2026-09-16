@@ -13759,6 +13759,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsMeasurableValueKindNumber => 'Zahl';
 
   @override
+  String get settingsNotificationsAgentCopyDescription =>
+      'Ein Ziel- oder Kontakt-Hinweis übernimmt die Worte des Agenten-Banners statt einer festen Zeile. Er kann Details nennen und erscheint auf dem Sperrbildschirm.';
+
+  @override
+  String get settingsNotificationsAgentCopyTitle =>
+      'Hinweise in den Worten des Agenten';
+
+  @override
   String get settingsNotificationsAllowTitle => 'Benachrichtigungen erlauben';
 
   @override
@@ -13839,6 +13847,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsNotificationsTitle => 'Benachrichtigungen';
+
+  @override
+  String get settingsNotificationsWordingHeading => 'Wortlaut';
 
   @override
   String get settingsOnboardingActionSubtitle =>

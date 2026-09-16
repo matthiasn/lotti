@@ -86,6 +86,9 @@ void main() {
         notifyDayPlanOutcomesFlag: true,
         notifySyncConflictsFlag: true,
         showTaskBadgeFlag: true,
+        // Off: the agent's banner copy can carry details onto a lock screen,
+        // so the user says when (ADR 0066).
+        notifyAgentCopyFlag: false,
         enableHabitsPageFlag: false,
         enableDashboardsPageFlag: false,
         enableDailyOsPageFlag: false,

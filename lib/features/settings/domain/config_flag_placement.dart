@@ -47,8 +47,8 @@ const sectionFlags = <String>[
 ];
 
 /// The flags Settings → Notifications owns: the master switch that lets
-/// anything reach the OS at all, one switch per kind of alert, and the task
-/// count on the app icon.
+/// anything reach the OS at all, one switch per kind of alert, the task count
+/// on the app icon, and whether an agent may word an alert in its own copy.
 ///
 /// They are not Config Flags rows: the kinds are greyed while the master is
 /// off, so they read as one decision, and a second copy of the master switch
@@ -64,6 +64,7 @@ const notificationSettingsFlags = <String>[
   notifyDayPlanOutcomesFlag,
   notifySyncConflictsFlag,
   showTaskBadgeFlag,
+  notifyAgentCopyFlag,
 ];
 
 /// The two jobs the Config Flags page still does, after the rows that turn

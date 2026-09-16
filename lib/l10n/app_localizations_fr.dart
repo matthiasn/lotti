@@ -13899,6 +13899,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsMeasurableValueKindNumber => 'Nombre';
 
   @override
+  String get settingsNotificationsAgentCopyDescription =>
+      'Une alerte d’objectif ou de contact reprend les mots de la bannière de l’agent au lieu d’une ligne fixe. Elle peut citer des détails, et elle s’affiche sur l’écran de verrouillage.';
+
+  @override
+  String get settingsNotificationsAgentCopyTitle =>
+      'Alertes dans les mots de l’agent';
+
+  @override
   String get settingsNotificationsAllowTitle => 'Autoriser les notifications';
 
   @override
@@ -13979,6 +13987,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsNotificationsTitle => 'Notifications';
+
+  @override
+  String get settingsNotificationsWordingHeading => 'Formulation';
 
   @override
   String get settingsOnboardingActionSubtitle =>

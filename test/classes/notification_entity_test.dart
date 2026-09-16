@@ -475,6 +475,108 @@ void main() {
       expect(() => NotificationEntity.fromJson(json), throwsA(isA<Object>()));
     });
   });
+
+  group('NotificationEntityFields.copyWithCopy', () {
+    final meta = NotificationMeta(
+      id: 'row',
+      createdAt: DateTime.utc(2026, 9, 16),
+      updatedAt: DateTime.utc(2026, 9, 16),
+      scheduledFor: DateTime.utc(2026, 9, 17, 9),
+      vectorClock: const VectorClock({'host-a': 1}),
+      originatingHostId: 'host-a',
+    );
+
+    /// Every variant with its own fields, so a re-wording that dropped one
+    /// would show up as a changed variant or a lost field.
+    final variants = <(String, NotificationEntity)>[
+      (
+        'taskSuggestion',
+        NotificationEntity.taskSuggestion(
+          meta: meta,
+          linkedTaskId: 'task-1',
+          suggestionCount: 3,
+          title: 'old',
+          body: 'old body',
+        ),
+      ),
+      (
+        'taskOverdue',
+        NotificationEntity.taskOverdue(
+          meta: meta,
+          linkedTaskId: 'task-1',
+          title: 'old',
+          body: 'old body',
+        ),
+      ),
+      (
+        'relationshipCheckIn',
+        NotificationEntity.relationshipCheckIn(
+          meta: meta,
+          linkedRelationshipId: 'rel-1',
+          title: 'old',
+          body: 'old body',
+        ),
+      ),
+      (
+        'habitAutoCompleted',
+        NotificationEntity.habitAutoCompleted(
+          meta: meta,
+          linkedHabitIds: const ['h-1', 'h-2'],
+          dayKey: '2026-09-16',
+          title: 'old',
+          body: 'old body',
+        ),
+      ),
+      (
+        'goalOffTrack',
+        NotificationEntity.goalOffTrack(
+          meta: meta,
+          linkedGoalAgentId: 'agent-1',
+          title: 'old',
+          body: 'old body',
+        ),
+      ),
+      (
+        'dayPlanOutcome',
+        NotificationEntity.dayPlanOutcome(
+          meta: meta,
+          dayId: 'day-1',
+          succeeded: false,
+          title: 'old',
+          body: 'old body',
+        ),
+      ),
+      (
+        'syncConflict',
+        NotificationEntity.syncConflict(
+          meta: meta,
+          conflictCount: 4,
+          title: 'old',
+          body: 'old body',
+        ),
+      ),
+    ];
+
+    for (final (name, entity) in variants) {
+      test('$name keeps everything but its words', () {
+        final reworded = entity.copyWithCopy(title: 'new', body: 'new body');
+
+        expect(reworded.title, 'new');
+        expect(reworded.body, 'new body');
+        expect(reworded.runtimeType, entity.runtimeType);
+        expect(reworded.meta, meta);
+        // Same row, same fields, different words: the JSON differs in the
+        // two copy keys and nowhere else.
+        final before = entity.toJson()
+          ..remove('title')
+          ..remove('body');
+        final after = reworded.toJson()
+          ..remove('title')
+          ..remove('body');
+        expect(after, before);
+      });
+    }
+  });
 }
 
 class _GeneratedEntity {

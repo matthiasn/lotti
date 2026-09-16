@@ -98,6 +98,67 @@ void main() {
     });
 
     test(
+      'a re-worded row overtakes the stored words by updatedAt, whichever '
+      'order the two events arrive in',
+      () async {
+        // ADR 0066: an agent re-words an armed alert on one device and the
+        // repository syncs the whole row; peers must land on the new words
+        // even if the older create is replayed after it.
+        final template = hNotification(
+          id: 'notification-id',
+          linkedTaskId: 'task-1',
+        );
+        final reworded = template
+            .copyWithCopy(
+              title: 'Your pedometer misses you.',
+              body: 'Averaging 6k of 10k steps.',
+            )
+            .copyWithMeta(
+              template.meta.copyWith(
+                updatedAt: template.meta.updatedAt.add(
+                  const Duration(minutes: 5),
+                ),
+                vectorClock: const VectorClock({'local-host': 2}),
+              ),
+            );
+        Future<void> applyRow(NotificationEntity row) =>
+            notificationProcessor.apply(
+              prepared: PreparedSyncEvent.forTesting(
+                event: event,
+                syncMessage: SyncMessage.notification(
+                  id: row.meta.id,
+                  jsonPath: '/notifications/notification-id.json',
+                  vectorClock: row.meta.vectorClock,
+                  originatingHostId: 'remote-host',
+                ),
+                resolvedNotification: row,
+              ),
+              journalDb: journalDb,
+            );
+
+        await applyRow(template);
+        await applyRow(reworded);
+        final afterReword = await notificationsDb.notificationById(
+          template.meta.id,
+        );
+        expect(afterReword?.title, 'Your pedometer misses you.');
+        expect(afterReword?.body, 'Averaging 6k of 10k steps.');
+        verify(() => scheduler.schedule(afterReword!)).called(1);
+
+        // The older create replayed afterwards loses on updatedAt.
+        await applyRow(template);
+        final replayed = await notificationsDb.notificationById(
+          template.meta.id,
+        );
+        expect(replayed?.title, 'Your pedometer misses you.');
+        expect(
+          replayed?.meta.vectorClock,
+          const VectorClock({'local-host': 2}),
+        );
+      },
+    );
+
+    test(
       'applies notification state updates and reschedules changed rows',
       () async {
         final base = hNotification(

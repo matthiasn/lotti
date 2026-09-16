@@ -47,6 +47,7 @@ import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
 import 'package:lotti/features/goals/workflow/goal_criterion_names.dart';
 import 'package:lotti/features/goals/workflow/goal_facts_renderer.dart';
+import 'package:lotti/features/notifications/producer/agent_alert_copy.dart';
 import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:lotti/get_it.dart';
@@ -118,6 +119,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     this._checkInDigestService,
     this._criterionNameReader,
     this._domainLogger,
+    this._alertCopy,
   }) : _chatHistoryService =
            chatHistoryService ?? GoalChatHistoryService(_repository);
 
@@ -129,6 +131,11 @@ class GoalAgentWorkflow with AgentErrorLogging {
   final AiConfigRepository _aiConfigRepository;
   final GoalChatHistoryService _chatHistoryService;
   final GoalFactsRenderer _factsRenderer;
+
+  /// Re-words the off-track alert Phase A armed with the banner this wake
+  /// authors, when the user allows it (ADR 0066). Optional: without it the
+  /// alert keeps its template copy, which is where the app stood before.
+  final AgentAlertCopy? _alertCopy;
 
   /// Names the habits and measurables the criteria refer to, so a criterion
   /// authored without a title still reaches the model with a readable name.
@@ -1508,6 +1515,9 @@ class GoalAgentWorkflow with AgentErrorLogging {
     var attributionFinalized = false;
     var reportHeadAdvanced = false;
     var fenced = false;
+    // The banner this wake created, if any — the words the armed alert may
+    // take once the transaction holding the banner has committed.
+    NudgeBrief? alertBrief;
 
     await _syncService.runInTransaction(() async {
       // A revision approved while the model was thinking moves the head
@@ -1964,6 +1974,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
           continue;
         }
         freshActiveExists = true;
+        alertBrief = brief;
         await _syncService.upsertEntity(
           AgentDomainEntity.goalNudge(
             id: creationId,
@@ -2069,6 +2080,13 @@ class GoalAgentWorkflow with AgentErrorLogging {
         attributionFinalized: false,
         reportHeadAdvanced: false,
       );
+    }
+
+    // The alert in the agent's words — AFTER the transaction, like Phase A's
+    // sink calls, so a rolled-back banner never re-words an alert, and only
+    // for a banner this wake created: a re-run banner keeps the alert as is.
+    if (alertBrief case final brief?) {
+      await _alertCopy?.restate(subjectId: agentId, brief: brief);
     }
 
     // Finalize AFTER the transaction: the projection must never describe

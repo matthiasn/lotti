@@ -13932,6 +13932,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMeasurableValueKindNumber => 'Număr';
 
   @override
+  String get settingsNotificationsAgentCopyDescription =>
+      'O alertă pentru un obiectiv sau un contact folosește cuvintele bannerului agentului în locul unei linii fixe. Poate menționa detalii și apare pe ecranul de blocare.';
+
+  @override
+  String get settingsNotificationsAgentCopyTitle =>
+      'Alerte în cuvintele agentului';
+
+  @override
   String get settingsNotificationsAllowTitle => 'Permiteți notificările';
 
   @override
@@ -14014,6 +14022,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsNotificationsTitle => 'Notificări';
+
+  @override
+  String get settingsNotificationsWordingHeading => 'Formulare';
 
   @override
   String get settingsOnboardingActionSubtitle =>

@@ -43,6 +43,7 @@ import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
 import 'package:lotti/features/goals/workflow/goal_criterion_names.dart';
 import 'package:lotti/features/goals/workflow/goal_tool_dispatcher.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/notifications/producer/agent_alert_copy.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
@@ -226,6 +227,11 @@ final goalAgentWorkflowProvider = Provider<GoalAgentWorkflow>(
     checkInDigestService: ref.watch(goalCheckInDigestServiceProvider),
     criterionNameReader: ref.watch(goalCriterionNameReaderProvider),
     domainLogger: ref.watch(domainLoggerProvider),
+    alertCopy: AgentAlertCopy.fromFlags(
+      alerts: ref.watch(goalOffTrackAlertServiceProvider),
+      journalDb: ref.watch(journalDbProvider),
+      logger: ref.watch(domainLoggerProvider),
+    ),
   ),
   name: 'goalAgentWorkflowProvider',
 );

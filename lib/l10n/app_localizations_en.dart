@@ -13593,6 +13593,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsMeasurableValueKindNumber => 'Number';
 
   @override
+  String get settingsNotificationsAgentCopyDescription =>
+      'A goal or check-in alert uses the words of the agent\'s banner instead of a fixed line. It can mention details, and it shows on the lock screen.';
+
+  @override
+  String get settingsNotificationsAgentCopyTitle =>
+      'Alerts in the agent\'s words';
+
+  @override
   String get settingsNotificationsAllowTitle => 'Allow notifications';
 
   @override
@@ -13669,6 +13677,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsNotificationsTitle => 'Notifications';
+
+  @override
+  String get settingsNotificationsWordingHeading => 'Wording';
 
   @override
   String get settingsOnboardingActionSubtitle =>

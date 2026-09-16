@@ -1,17 +1,20 @@
 ### Added
+- **Lotti now tells you when a goal slips.** When a goal agent finds a goal
+  off track, or at risk and getting worse, a notification arrives at nine the
+  next morning — once per slip, not every day — and tapping it opens the
+  goal's page. Getting back on track, reaching the goal or deleting it takes
+  the alert back before it fires.
 - **Choose which notifications reach you.** Settings → Preferences →
   Notifications holds the switch that turns notifications on, and beneath it
   one switch per kind: task suggestions, check-in reminders, goal alerts,
   habit reminders, habits checked off automatically, day plan results and
   sync conflicts, plus the task count on the app icon on iPhone and Mac. A
-  switch takes effect at once, and a kind switched off still shows in the
-  bell — only the alert stops.
-- **Lotti now tells you when a goal slips.** When a goal agent finds a goal
-  off track, or at risk and getting worse, a notification arrives at nine the
-  next morning — once per slip, not every day — and tapping it opens the
-  goal's page. Getting back on track, reaching the goal, or deleting it takes
-  the alert back before it fires. Like every notification, it only arrives
-  once notifications are switched on in Settings.
+  switch takes effect at once, on every device, and a kind switched off still
+  shows in the bell — only the alert stops.
+- **Alerts in the agent's words.** A further switch on the same page lets a
+  goal or check-in alert use the words of the banner the agent wrote for it,
+  instead of a fixed line. Off unless you turn it on: those words can mention
+  details, and an alert shows on the lock screen.
 
 ### Changed
 - **The notifications switch has moved.** It lives on the new Notifications
@@ -19,10 +22,10 @@
   off now also takes down every alert already scheduled instead of letting
   them fire anyway.
 - **"Your day plan is ready" and "Sync needs your review" now stay in the
-  bell.** Both used to be a banner that was gone once dismissed. They now
-  land in the notifications inbox as well, so a plan that finished while the
-  app was in the background, or a sync conflict that appeared, can still be
-  found after the banner has passed, and tapping either opens the day or the
+  bell.** Both used to be a banner that was gone once dismissed. They now land
+  in the notifications inbox as well, so a plan that finished while the app
+  was in the background, or a sync conflict that appeared, can still be found
+  after the banner has passed, and tapping either opens the day or the
   conflicts list. Neither travels to your other devices: a plan job and a
   conflict are about the device they happened on.
 - **The Mac no longer posts a "tasks in progress" notification after every

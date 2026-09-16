@@ -759,6 +759,20 @@ void main() {
       );
     });
 
+    test('the wording switch has no immediate consequence', () async {
+      // It binds the next wake that authors a banner; alarms already armed
+      // keep their words either way, so there is nothing to reconcile.
+      withStored(notifyAgentCopyFlag, status: false);
+
+      await ops.setConfigFlagImpl(flagOf(notifyAgentCopyFlag, status: true));
+
+      verifyNever(
+        () => notificationScheduler.reconcile(now: any(named: 'now')),
+      );
+      verifyNever(notificationService.updateBadge);
+      verifyNever(notificationService.cancelAllNotifications);
+    });
+
     test('a flag that is no notification preference touches nothing', () async {
       withStored('private', status: false);
 

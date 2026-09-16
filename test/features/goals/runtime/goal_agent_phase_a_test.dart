@@ -1384,6 +1384,17 @@ class _RecordingOffTrackSink implements GoalOffTrackSink {
     _events.add('arm');
   }
 
+  /// Phase A never re-words: the seam belongs to Phase B (ADR 0066), so a
+  /// call landing here would be a wrong-tier defect.
+  @override
+  Future<void> restate(
+    String subjectId, {
+    required String title,
+    String? body,
+  }) async {
+    throw StateError('Phase A must not restate ($subjectId)');
+  }
+
   @override
   Future<void> clearFor(String subjectId) async {
     cleared.add(subjectId);

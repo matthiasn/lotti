@@ -22751,6 +22751,18 @@ abstract class AppLocalizations {
   /// **'Number'**
   String get settingsMeasurableValueKindNumber;
 
+  /// No description provided for @settingsNotificationsAgentCopyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'A goal or check-in alert uses the words of the agent\'s banner instead of a fixed line. It can mention details, and it shows on the lock screen.'**
+  String get settingsNotificationsAgentCopyDescription;
+
+  /// No description provided for @settingsNotificationsAgentCopyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts in the agent\'s words'**
+  String get settingsNotificationsAgentCopyTitle;
+
   /// No description provided for @settingsNotificationsAllowTitle.
   ///
   /// In en, this message translates to:
@@ -22882,6 +22894,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Notifications'**
   String get settingsNotificationsTitle;
+
+  /// No description provided for @settingsNotificationsWordingHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Wording'**
+  String get settingsNotificationsWordingHeading;
 
   /// No description provided for @settingsOnboardingActionSubtitle.
   ///

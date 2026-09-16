@@ -1879,6 +1879,11 @@ the service imports Phase A, and Phase A never learns that
 kind, the due day as episode key, the reminder hour, the copy — and the
 choreography below is the
 [producer contract's](notifications.md#producers-share-one-episode-contract).
+Phase B touches the reminder in one way only: once its transaction has
+committed a banner, `AgentAlertCopy` may re-word the armed reminder with that
+banner's brief, if the user allows it — never arm or retract one
+([ADR 0066](../../docs/adr/0066-agent-worded-alerts-restate-an-armed-episode.md),
+[the notifications concept](notifications.md#the-agent-may-re-word-an-armed-alert)).
 
 ```mermaid
 flowchart TD

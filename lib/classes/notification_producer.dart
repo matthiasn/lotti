@@ -1,3 +1,14 @@
+/// The narrower seam the LLM tier gets: it may re-word an alert the
+/// deterministic tier has armed, and nothing else (ADR 0066). Every
+/// [NotificationEpisodeSink] is one, so a producer serves both tiers.
+abstract interface class NotificationEpisodeRestater {
+  /// Re-words every open, not-yet-fired episode of [subjectId]: [title]
+  /// replaces the row's title and [body], when given, its body. Mints
+  /// nothing — a subject without an armed episode is left without one — and
+  /// leaves an episode that already fired with the words it fired with.
+  Future<void> restate(String subjectId, {required String title, String? body});
+}
+
 /// The seam between an agent kind's deterministic tier and the synced
 /// notification inbox.
 ///
@@ -17,7 +28,8 @@
 /// Implementations must be **best-effort and non-throwing**. By the time a
 /// sink runs, the wake's real work has committed, and a notification-store
 /// hiccup must not fail a wake that succeeded into a retry.
-abstract interface class NotificationEpisodeSink<TSubject, TDerivation> {
+abstract interface class NotificationEpisodeSink<TSubject, TDerivation>
+    implements NotificationEpisodeRestater {
   /// Arms the episode [derivation] describes for [subject] and retracts any
   /// episode it supersedes. Called only after the tier's own eligibility gate
   /// has passed.

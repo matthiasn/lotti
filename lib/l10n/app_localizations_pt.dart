@@ -13789,6 +13789,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsMeasurableValueKindNumber => 'Número';
 
   @override
+  String get settingsNotificationsAgentCopyDescription =>
+      'Um aviso de objetivo ou de contacto usa as palavras do banner do agente em vez de uma linha fixa. Pode mencionar detalhes e aparece no ecrã de bloqueio.';
+
+  @override
+  String get settingsNotificationsAgentCopyTitle =>
+      'Avisos nas palavras do agente';
+
+  @override
   String get settingsNotificationsAllowTitle => 'Permitir notificações';
 
   @override
@@ -13870,6 +13878,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get settingsNotificationsTitle => 'Notificações';
+
+  @override
+  String get settingsNotificationsWordingHeading => 'Formulação';
 
   @override
   String get settingsOnboardingActionSubtitle =>

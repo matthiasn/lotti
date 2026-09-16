@@ -262,6 +262,13 @@ void registerAllFallbackValues() {
   registerFallbackValue(fallbackJournalEntity);
   registerFallbackValue(fallbackProjectEntry);
   registerFallbackValue(fallbackRelationshipEntry);
+  registerFallbackValue(
+    const NudgeBrief(
+      headline: '',
+      tone: NudgeTone.nudge,
+      animation: NudgeBannerAnimation.steady,
+    ),
+  );
   registerFallbackValue(fallbackRelationshipData);
   registerFallbackValue(fallbackCheckInEntry);
   registerFallbackValue(fallbackCheckInData);
