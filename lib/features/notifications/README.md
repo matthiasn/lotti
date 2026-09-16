@@ -35,13 +35,16 @@ leads to; and the tap on the OS alert that takes the user there.
 
 It does **not** decide when an alert is warranted. Producers own that — the
 change-set builder for task suggestions, the relationship agent's deterministic
-tier for check-in reminders.
+tier for check-in reminders. What a producer arms an alert *through* is this
+module's: one sink contract, one choreography, per-episode identity
+(ADR 0064).
 
 ## Where the code lives
 
 ```text
 lib/features/notifications/
 ├── model/
+├── producer/
 ├── repository/
 ├── routing/
 ├── scheduler/
@@ -56,8 +59,8 @@ itself is `lib/services/notification_service.dart`.
 
 Why the store is separate, why lifecycle state converges through monotonic
 timestamps rather than whole-row last-write-wins, what Android needed before it
-worked at all, why some variants stay out of the inbox until they are due, and
-how a tap on the OS alert finds its screen, are documented in the knowledge
-bundle:
+worked at all, why some variants stay out of the inbox until they are due, how
+a tap on the OS alert finds its screen, and what every producer shares, are
+documented in the knowledge bundle:
 
 **→ [knowledge/features/notifications.md](../../../knowledge/features/notifications.md)**

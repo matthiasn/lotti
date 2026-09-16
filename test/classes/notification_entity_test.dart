@@ -149,6 +149,67 @@ void main() {
     });
   });
 
+  group('NotificationKinds', () {
+    test('names the wire discriminator of every variant', () {
+      // A producer derives its episode ids from a kind and retracts rows by
+      // it, so the constants and `type` must never disagree — and the strings
+      // are the sync wire format, so neither may move.
+      final meta = NotificationMeta(
+        id: 'k',
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+        scheduledFor: DateTime(2026),
+        vectorClock: const VectorClock({}),
+        originatingHostId: '',
+      );
+      final byVariant = <String, NotificationEntity>{
+        'taskSuggestion': NotificationEntity.taskSuggestion(
+          meta: meta,
+          linkedTaskId: 't',
+          suggestionCount: 1,
+          title: 'a',
+          body: 'b',
+        ),
+        'taskOverdue': NotificationEntity.taskOverdue(
+          meta: meta,
+          linkedTaskId: 't',
+          title: 'a',
+          body: 'b',
+        ),
+        'relationshipCheckIn': NotificationEntity.relationshipCheckIn(
+          meta: meta,
+          linkedRelationshipId: 'r',
+          title: 'a',
+          body: 'b',
+        ),
+        'habitAutoCompleted': NotificationEntity.habitAutoCompleted(
+          meta: meta,
+          linkedHabitIds: const ['h'],
+          dayKey: '2026-01-01',
+          title: 'a',
+          body: 'b',
+        ),
+      };
+
+      expect(
+        byVariant['taskSuggestion']!.type,
+        NotificationKinds.taskSuggestion,
+      );
+      expect(byVariant['taskOverdue']!.type, NotificationKinds.taskOverdue);
+      expect(
+        byVariant['relationshipCheckIn']!.type,
+        NotificationKinds.relationshipCheckIn,
+      );
+      expect(
+        byVariant['habitAutoCompleted']!.type,
+        NotificationKinds.habitAutoCompleted,
+      );
+      for (final entry in byVariant.entries) {
+        expect(entry.value.type, entry.key);
+      }
+    });
+  });
+
   group('NotificationMeta standalone round-trip', () {
     NotificationMeta roundTrip(NotificationMeta meta) =>
         NotificationMeta.fromJson(

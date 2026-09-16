@@ -5,7 +5,7 @@ description: Durable app-level alerts stored outside the journal, converging acr
 resource: ../../lib/features/notifications
 tags: [notifications, sync, convergence]
 status: stable
-generated: { by: claude-code/fable-5.1, at: 2026-09-16T14:30:00Z }
+generated: { by: claude-code/fable-5.1, at: 2026-09-16T17:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: src
@@ -35,6 +35,26 @@ sources:
   - id: launch-routing
     resource: ../../lib/features/notifications/routing/notification_launch_routing.dart
     title: routeNotificationLaunch — the cold-start read of the launching tap
+    last_modified: 2026-09-16
+  - id: sink
+    resource: ../../lib/classes/notification_producer.dart
+    title: NotificationEpisodeSink — the contract a runtime depends on
+    last_modified: 2026-09-16
+  - id: producer
+    resource: ../../lib/features/notifications/producer/notification_episode_producer.dart
+    title: NotificationEpisodeProducer — the choreography every kind shares
+    last_modified: 2026-09-16
+  - id: episode-id
+    resource: ../../lib/features/notifications/model/notification_episode_id.dart
+    title: notificationEpisodeId — per-episode identity
+    last_modified: 2026-09-16
+  - id: repository
+    resource: ../../lib/features/notifications/repository/notification_repository.dart
+    title: NotificationRepository — armEpisode and retractOpenRows
+    last_modified: 2026-09-16
+  - id: adr-0064
+    resource: ../../docs/adr/0064-notification-producers-one-episode-contract.md
+    title: ADR 0064 — Notification producers, one episode contract per agent kind
     last_modified: 2026-09-16
   - id: adr-0039
     resource: ../../docs/adr/0039-relationship-check-in-reminders.md
@@ -429,6 +449,67 @@ Marking the row seen is what makes a tap on the phone clear the badge and
 cancel the alarm on the laptop, the way a tap in the bell does. It runs after
 the beam, and its failure is logged rather than surfaced: the screen is what
 the user tapped for.
+
+# Producers share one episode contract
+
+Every producer that arms an alert ahead of time faces the same four questions
+— which row is *this* episode, what to do when the row already exists, what to
+do with the episode it supersedes, and what a failure may cost the caller —
+and answering them per kind is how the repository grew one create, one retract
+and one id helper per variant. ADR 0064 collapses that into one contract with
+three layers:
+
+```mermaid
+flowchart LR
+  subgraph runtime["agent runtime — imports lib/classes only"]
+    PA["deterministic tier<br/>RelationshipAgentPhaseA"]
+    SINK["NotificationEpisodeSink&lt;S, D&gt;<br/>lib/classes/notification_producer.dart<br/>arm(subject, derivation) · clearFor(subjectId)"]
+    PA -- "after its own transaction commits" --> SINK
+  end
+  subgraph feature["notifications feature"]
+    BASE["NotificationEpisodeProducer&lt;S, D&gt;<br/>kind · subjectIdOf · episodeKeyOf<br/>scheduledInstantOf · categoryOf · buildRow"]
+    ID["notificationEpisodeId<br/>uuid5(kind, subjectId, episodeKey)"]
+    REPO["NotificationRepository<br/>armEpisode · retractOpenRows"]
+    BASE --> ID
+    BASE --> REPO
+  end
+  SINK -. "implemented by a subclass, e.g.<br/>RelationshipReminderService" .-> BASE
+```
+
+- **The sink is the runtime's only dependency, and it lives in `lib/classes`**
+  so the runtime never imports this module. A kind names its own alias beside
+  its derivation — `RelationshipReminderSink` is
+  `NotificationEpisodeSink<RelationshipEntry, RelationshipCadenceDerivation>`
+  — and the producer implements the alias and imports the runtime: the
+  direction ADR 0039's amendment fixed, now enforced by where the type is
+  declared rather than by care.
+- **The base owns the choreography.** `arm` derives the episode id, arms it
+  through `armEpisode` only while `scheduledInstantOf` is still ahead — a
+  lapsed episode would fire a banner on the spot, one per subject on the tick
+  that first evaluates a set of overdue subjects — then retracts every other
+  open row of its kind for the subject. `clearFor` retracts them all. Both log
+  and swallow, because the wake that called has already committed its real
+  work. A subclass supplies seven hooks and nothing else.
+- **The repository offers two primitives instead of one method per kind.**
+  `armEpisode` is create-if-absent: an existing row is left exactly alone and
+  `build` is never invoked, so a producer re-deriving its verdict every tick
+  costs no write, no outbox message and no listener refresh, and never
+  resurrects a dismissed row. `retractOpenRows` is kind-scoped because
+  `forLinkedEntity` is not; it treats a seen row as still open (its alert is
+  cancelled, its inbox entry is not) and leaves acted-on and deleted rows
+  alone. Task suggestions keep their own serialised, replace-the-previous
+  path: a suggestion wave is not an episode.
+- **Identity is `uuid5(kind, subjectId, episodeKey)`**, with `kind` the
+  variant's wire discriminator from `NotificationKinds` — the same scheme and
+  the same value the check-in rows already synced under, so nothing in a
+  mixed fleet changes. The kind is also what the base checks every built row
+  against before writing: a row of another kind, or linked to another entity,
+  is a row nothing could ever retract, and is refused.
+
+What stays per kind is the union variant itself. A generic route-carrying row
+would have been shorter, but the exhaustive switches over the union are what
+force a new kind to decide its inbox behaviour and its tap route rather than
+inherit one. A new kind is a variant, a subclass, and a call from its tier.
 
 # Not every variant may surface before it is due
 

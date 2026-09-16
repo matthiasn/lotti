@@ -1463,10 +1463,10 @@ class _RecordingReminderSink implements RelationshipReminderSink {
 
   @override
   Future<void> arm({
-    required RelationshipEntry relationship,
+    required RelationshipEntry subject,
     required RelationshipCadenceDerivation derivation,
   }) async {
-    armed.add((relationshipId: relationship.meta.id, derivation: derivation));
+    armed.add((relationshipId: subject.meta.id, derivation: derivation));
     _events.add('arm');
   }
 
