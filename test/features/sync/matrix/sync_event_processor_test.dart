@@ -23,6 +23,7 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart'
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
@@ -882,10 +883,181 @@ void main() {
       status: flag.status,
     );
     when(() => event.text).thenReturn(encodeMessage(message));
+    when(
+      () => journalDb.getConfigFlagByName(flag.name),
+    ).thenAnswer((_) async => null);
 
     await processor.process(event: event, journalDb: journalDb);
 
     verify(() => journalDb.upsertConfigFlag(flag)).called(1);
+  });
+
+  group('a synced notification preference (ADR 0065, the settings page)', () {
+    late MockNotificationPreferenceEffects effects;
+
+    const stored = ConfigFlag(
+      name: enableNotificationsFlag,
+      description: 'Enable notifications?',
+      status: true,
+    );
+
+    SyncMessage flipped({required bool status}) => SyncMessage.configFlag(
+      name: stored.name,
+      description: stored.description,
+      status: status,
+    );
+
+    setUp(() {
+      effects = MockNotificationPreferenceEffects();
+      when(() => effects.apply(any())).thenAnswer((_) async {});
+      processor = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        savedTaskFiltersRepository: savedTaskFiltersRepository,
+        settingsDb: settingsDb,
+        journalEntityLoader: journalEntityLoader,
+        notificationPreferenceEffects: (_) => effects,
+      );
+      when(
+        () => journalDb.getConfigFlagByName(stored.name),
+      ).thenAnswer((_) async => stored);
+    });
+
+    test('a flag that changed applies its effects to this device', () async {
+      when(() => event.text).thenReturn(encodeMessage(flipped(status: false)));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      // The alarms a preference governs are this device's: a switch flipped
+      // on the phone has to reach the laptop's alarms, not only its page.
+      verify(() => journalDb.upsertConfigFlag(stored.copyWith(status: false)));
+      verify(
+        () => effects.apply(stored.copyWith(status: false)),
+      ).called(1);
+    });
+
+    test('a flag with the status already stored applies nothing', () async {
+      when(() => event.text).thenReturn(encodeMessage(flipped(status: true)));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verifyNever(() => effects.apply(any()));
+    });
+
+    test('a flag this device has never seen counts as changed', () async {
+      when(
+        () => journalDb.getConfigFlagByName(stored.name),
+      ).thenAnswer((_) async => null);
+      when(() => event.text).thenReturn(encodeMessage(flipped(status: true)));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(() => effects.apply(stored)).called(1);
+    });
+
+    test(
+      'with an after-commit slot the effects are parked, not run inline',
+      () async {
+        // The queue adapter wraps this apply in the journal transaction; the
+        // platform calls and the reconcile must wait for the commit.
+        when(
+          () => event.text,
+        ).thenReturn(encodeMessage(flipped(status: false)));
+        final parked = <Future<void> Function()>[];
+        final prepared = await processor.prepare(event: event);
+
+        await processor.apply(
+          prepared: prepared!,
+          journalDb: journalDb,
+          afterCommit: parked.add,
+        );
+
+        verify(
+          () => journalDb.upsertConfigFlag(stored.copyWith(status: false)),
+        );
+        verifyNever(() => effects.apply(any()));
+        expect(parked, hasLength(1));
+
+        await parked.single();
+
+        verify(
+          () => effects.apply(stored.copyWith(status: false)),
+        ).called(1);
+      },
+    );
+
+    test('a flag inside an outbox bundle parks its effects too', () async {
+      // The bundle's children apply in the same transaction as the bundle.
+      when(() => event.text).thenReturn(
+        encodeMessage(
+          SyncOutboxBundle(
+            children: [flipped(status: false)],
+            originatingHostId: 'host-peer',
+          ),
+        ),
+      );
+      final parked = <Future<void> Function()>[];
+      final prepared = await processor.prepare(event: event);
+
+      await processor.apply(
+        prepared: prepared!,
+        journalDb: journalDb,
+        afterCommit: parked.add,
+      );
+
+      verify(
+        () => journalDb.upsertConfigFlag(stored.copyWith(status: false)),
+      );
+      verifyNever(() => effects.apply(any()));
+      expect(parked, hasLength(1));
+
+      await parked.single();
+
+      verify(
+        () => effects.apply(stored.copyWith(status: false)),
+      ).called(1);
+    });
+
+    test('an unchanged flag parks nothing either', () async {
+      when(() => event.text).thenReturn(encodeMessage(flipped(status: true)));
+      final parked = <Future<void> Function()>[];
+      final prepared = await processor.prepare(event: event);
+
+      await processor.apply(
+        prepared: prepared!,
+        journalDb: journalDb,
+        afterCommit: parked.add,
+      );
+
+      expect(parked, isEmpty);
+    });
+
+    test(
+      'without an effects factory the flag is stored and that is all',
+      () async {
+        processor = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          savedTaskFiltersRepository: savedTaskFiltersRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+        );
+        when(
+          () => event.text,
+        ).thenReturn(encodeMessage(flipped(status: false)));
+
+        await expectLater(
+          processor.process(event: event, journalDb: journalDb),
+          completes,
+        );
+
+        verify(
+          () => journalDb.upsertConfigFlag(stored.copyWith(status: false)),
+        );
+      },
+    );
   });
 
   test(
@@ -902,6 +1074,9 @@ void main() {
         status: flag.status,
       );
       when(() => event.text).thenReturn(encodeMessage(message));
+      when(
+        () => journalDb.getConfigFlagByName(flag.name),
+      ).thenAnswer((_) async => null);
 
       await processor.process(event: event, journalDb: journalDb);
 

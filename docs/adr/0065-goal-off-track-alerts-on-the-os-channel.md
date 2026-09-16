@@ -37,7 +37,7 @@ the nag that trains people to switch notifications off.
    The two channels can therefore never disagree about what a slip is, and
    no model is consulted.
 
-3. **The episode is the transition day.** One row per slip, keyed by the
+3. **The episode is the transition day and the baseline it left.** One row per slip, keyed by the
    evaluation day that saw the transition, so a goal that stays behind is
    alerted once and a later slip is a new episode. Recovery, achievement, a
    data gap, or deletion (the `deleteGoalAgent` cascade) retract the open

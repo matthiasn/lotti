@@ -18,10 +18,12 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
-Conflict _conflict(String id) => Conflict(
+final _firstSeen = DateTime.utc(2024, 3, 15, 14);
+
+Conflict _conflict(String id, {DateTime? updatedAt}) => Conflict(
   id: id,
-  createdAt: DateTime(2024, 3, 15, 14),
-  updatedAt: DateTime(2024, 3, 15, 14),
+  createdAt: _firstSeen,
+  updatedAt: updatedAt ?? _firstSeen,
   serialized: '{}',
   schemaVersion: 1,
   status: ConflictStatus.unresolved.index,
@@ -39,11 +41,17 @@ void main() {
   late List<NotificationEntity> armedRows;
   final l10n = AppLocalizationsEn();
 
-  String episodeId(List<String> freshIds) => notificationEpisodeId(
-    kind: NotificationKinds.syncConflict,
-    subjectId: syncConflictsSubjectId,
-    episodeKey: ([...freshIds]..sort()).join('+'),
-  );
+  /// The episode key names each fresh conflict with the time its row was
+  /// written, so the same entry conflicting again later is a new episode.
+  String episodeId(List<String> freshIds, {DateTime? updatedAt}) =>
+      notificationEpisodeId(
+        kind: NotificationKinds.syncConflict,
+        subjectId: syncConflictsSubjectId,
+        episodeKey: ([
+          for (final id in freshIds)
+            '$id@${(updatedAt ?? _firstSeen).toUtc().toIso8601String()}',
+        ]..sort()).join('+'),
+      );
 
   void stubSuccess() {
     when(
@@ -162,6 +170,25 @@ void main() {
     expect(armedRows.single.meta.id, episodeId(['a', 'b', 'c']));
   });
 
+  test(
+    'an entry that conflicts again after being resolved is a new episode',
+    () async {
+      // Resolving the conflict drops its id from the known set, so the recurrence
+      // is fresh again — and must not reuse the id of the row the user already
+      // saw or dismissed, which `armEpisode` would leave exactly as it is.
+      final later = _firstSeen.add(const Duration(days: 2));
+      await observer.handleSnapshot(const []); // prime
+      await observer.handleSnapshot([_conflict('a')]);
+      await observer.handleSnapshot(const []); // resolved
+      await observer.handleSnapshot([_conflict('a', updatedAt: later)]);
+
+      expect(armedRows.map((row) => row.meta.id), [
+        episodeId(['a']),
+        episodeId(['a'], updatedAt: later),
+      ]);
+    },
+  );
+
   test('does not alert when no new conflict id appears', () async {
     await observer.handleSnapshot([_conflict('a')]); // prime with one existing
     await observer.handleSnapshot([_conflict('a')]); // unchanged
@@ -198,6 +225,66 @@ void main() {
         stackTrace: any(named: 'stackTrace'),
       ),
     ).called(1);
+  });
+
+  test(
+    'a burst the database refused is retried on the next snapshot',
+    () async {
+      // The ids are remembered only once the writes landed: otherwise the
+      // re-emitted snapshot has nothing fresh and the alert is gone for good.
+      var attempts = 0;
+      when(
+        () => notifications.armEpisode(
+          id: any(named: 'id'),
+          scheduledFor: any(named: 'scheduledFor'),
+          build: any(named: 'build'),
+          category: any(named: 'category'),
+        ),
+      ).thenAnswer((_) async {
+        attempts++;
+        throw StateError('notifications.sqlite unavailable');
+      });
+      await observer.handleSnapshot(const []); // prime
+      await observer.handleSnapshot([_conflict('a')]);
+      expect(attempts, 1);
+      expect(armedRows, isEmpty);
+
+      stubSuccess(); // the database is back
+      await observer.handleSnapshot([_conflict('a')]);
+
+      expect(armedRows.map((r) => r.id), [
+        episodeId(['a']),
+      ]);
+      // And once it landed, the same snapshot again is the usual no-op.
+      await observer.handleSnapshot([_conflict('a')]);
+      expect(armedRows, hasLength(1));
+    },
+  );
+
+  test('a retract the database refused is retried too', () async {
+    // The new row landed but the superseded one is still open: the replay
+    // re-arms (a no-op for `armEpisode`) and retracts again.
+    await observer.handleSnapshot(const []); // prime
+    await observer.handleSnapshot([_conflict('a')]);
+    when(
+      () => notifications.retractOpenRows(
+        linkedEntityId: any(named: 'linkedEntityId'),
+        kind: any(named: 'kind'),
+        exceptId: any(named: 'exceptId'),
+      ),
+    ).thenThrow(StateError('notifications.sqlite unavailable'));
+    await observer.handleSnapshot([_conflict('a'), _conflict('b')]);
+    stubSuccess();
+
+    await observer.handleSnapshot([_conflict('a'), _conflict('b')]);
+
+    verify(
+      () => notifications.retractOpenRows(
+        linkedEntityId: syncConflictsSubjectId,
+        kind: NotificationKinds.syncConflict,
+        exceptId: episodeId(['b']),
+      ),
+    ).called(2);
   });
 
   test('a write failure without a logger is swallowed too', () async {
@@ -312,6 +399,40 @@ void main() {
     ]);
 
     await observer.dispose();
+    await controller.close();
+  });
+
+  test('dispose waits for the snapshot being applied', () async {
+    // The observer's profile services are torn down right after dispose; a
+    // write still in flight would land on a store that is gone.
+    final controller = StreamController<List<Conflict>>();
+    when(
+      () => db.watchConflicts(ConflictStatus.unresolved),
+    ).thenAnswer((_) => controller.stream);
+    final arm = Completer<NotificationEntity?>();
+    when(
+      () => notifications.armEpisode(
+        id: any(named: 'id'),
+        scheduledFor: any(named: 'scheduledFor'),
+        build: any(named: 'build'),
+        category: any(named: 'category'),
+      ),
+    ).thenAnswer((_) => arm.future);
+
+    observer.start();
+    controller
+      ..add(const []) // prime
+      ..add([_conflict('a')]);
+    await pumpEventQueue();
+
+    var disposed = false;
+    final disposing = observer.dispose().then((_) => disposed = true);
+    await pumpEventQueue();
+    expect(disposed, isFalse, reason: 'still applying the snapshot');
+
+    arm.complete(null);
+    await disposing;
+    expect(disposed, isTrue);
     await controller.close();
   });
 

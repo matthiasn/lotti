@@ -6228,9 +6228,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get eventsFilterTooltip => 'Filtrer begivenheder';
 
   @override
-  String get eventsNoResults => 'Ingen matchende begivenheder';
-
-  @override
   String eventsMetricPhotos(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6254,6 +6251,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get eventsNewEvent => 'Ny begivenhed';
+
+  @override
+  String get eventsNoResults => 'Ingen matchende begivenheder';
 
   @override
   String get eventsPageTitle => 'Begivenheder';
@@ -13700,7 +13700,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get settingsNotificationsExplanation =>
-      'Advarsler kommer via din enheds notifikationer. Vælg, hvad der er en værd; alt havner alligevel i klokken i Lotti.';
+      'Advarsler kommer via din enheds notifikationer. Vælg, hvilke der er en notifikation værd. Alt undtagen vanepåmindelser havner også under Notifikationer i Lotti.';
 
   @override
   String get settingsNotificationsGoalAlertsDescription =>
@@ -13729,7 +13729,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get settingsNotificationsKindsNote =>
-      'Slår du en type fra, stopper kun dens advarsler. Dens poster bliver i klokken.';
+      'Slår du en type fra, stopper kun dens advarsler. Dens poster bliver under Notifikationer, undtagen vanepåmindelser, som ikke har nogen post der.';
 
   @override
   String get settingsNotificationsSubtitle =>

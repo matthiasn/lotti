@@ -6330,9 +6330,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get eventsFilterTooltip => 'Filtrer les événements';
 
   @override
-  String get eventsNoResults => 'Aucun événement correspondant';
-
-  @override
   String eventsMetricPhotos(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6356,6 +6353,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get eventsNewEvent => 'Nouvel événement';
+
+  @override
+  String get eventsNoResults => 'Aucun événement correspondant';
 
   @override
   String get eventsPageTitle => 'Événements';
@@ -13934,7 +13934,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsNotificationsExplanation =>
-      'Les alertes arrivent par les notifications de ton appareil. Choisis ce qui en mérite une ; tout reste de toute façon dans la cloche de Lotti.';
+      'Les alertes arrivent par les notifications de ton appareil. Choisis ce qui en mérite une. Tout, sauf les rappels d’habitude, reste aussi dans la cloche de Lotti.';
 
   @override
   String get settingsNotificationsGoalAlertsDescription =>
@@ -13963,7 +13963,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsNotificationsKindsNote =>
-      'Désactiver un type n’arrête que ses alertes. Ses entrées restent visibles dans la cloche.';
+      'Désactiver un type n’arrête que ses alertes. Ses entrées restent visibles dans la cloche, sauf les rappels d’habitude, qui n’y ont pas d’entrée.';
 
   @override
   String get settingsNotificationsSubtitle =>

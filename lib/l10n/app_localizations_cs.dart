@@ -6296,9 +6296,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get eventsFilterTooltip => 'Filtrovat události';
 
   @override
-  String get eventsNoResults => 'Žádné odpovídající události';
-
-  @override
   String eventsMetricPhotos(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6324,6 +6321,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get eventsNewEvent => 'Nová událost';
+
+  @override
+  String get eventsNoResults => 'Žádné odpovídající události';
 
   @override
   String get eventsPageTitle => 'Události';
@@ -13882,7 +13882,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsNotificationsExplanation =>
-      'Upozornění přicházejí přes oznámení tvého zařízení. Vyber, co za ně stojí; všechno stejně zůstane ve zvonečku v Lotti.';
+      'Upozornění přicházejí přes oznámení tvého zařízení. Vyber, co za oznámení stojí. Všechno kromě připomínek návyků zůstane i ve zvonečku v Lotti.';
 
   @override
   String get settingsNotificationsGoalAlertsDescription =>
@@ -13911,7 +13911,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsNotificationsKindsNote =>
-      'Vypnutí druhu zastaví jen jeho upozornění. Jeho položky zůstanou ve zvonečku.';
+      'Vypnutí druhu zastaví jen jeho upozornění. Jeho položky zůstanou ve zvonečku, kromě připomínek návyků, které tam položku nemají.';
 
   @override
   String get settingsNotificationsSubtitle =>

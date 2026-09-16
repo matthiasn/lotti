@@ -92,6 +92,15 @@ void main() {
     test('a tagline that fits to nothing is dropped, not sent blank', () {
       expect(AgentAlertCopy.fromBrief(_brief(tagline: '   '))!.body, isNull);
     });
+
+    test('a blank tagline falls through to the call to action', () {
+      expect(
+        AgentAlertCopy.fromBrief(
+          _brief(tagline: '  \n', cta: 'Call her'),
+        )!.body,
+        'Call her',
+      );
+    });
   });
 
   group('AgentAlertCopy.fit', () {

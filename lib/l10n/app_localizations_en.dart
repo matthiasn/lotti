@@ -6202,9 +6202,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventsFilterTooltip => 'Filter events';
 
   @override
-  String get eventsNoResults => 'No matching events';
-
-  @override
   String eventsMetricPhotos(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6228,6 +6225,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventsNewEvent => 'New event';
+
+  @override
+  String get eventsNoResults => 'No matching events';
 
   @override
   String get eventsPageTitle => 'Events';
@@ -13626,7 +13626,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsNotificationsExplanation =>
-      'Alerts arrive through your device\'s notifications. Choose what is worth one; everything still lands in the bell inside Lotti.';
+      'Alerts arrive through your device\'s notifications. Choose which are worth a notification. Everything except habit reminders also lands in the bell inside Lotti.';
 
   @override
   String get settingsNotificationsGoalAlertsDescription =>
@@ -13655,7 +13655,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsNotificationsKindsNote =>
-      'Switching a kind off only stops its alerts. Its entries still appear in the bell.';
+      'Switching a kind off only stops its alerts. Its entries still appear in the bell, except habit reminders, which have no entry there.';
 
   @override
   String get settingsNotificationsSubtitle =>

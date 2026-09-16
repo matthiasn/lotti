@@ -74,26 +74,33 @@ class ConflictNotificationObserver {
   /// Never throws: it runs as a stream listener, where an escaping error is an
   /// unhandled async error with nobody to catch it.
   Future<void> handleSnapshot(List<Conflict> conflicts) async {
-    final ids = conflicts.map((c) => c.id).toSet();
+    final byId = {for (final conflict in conflicts) conflict.id: conflict};
+    final ids = byId.keys.toSet();
     final fresh = ids.difference(_known);
-    _known
-      ..clear()
-      ..addAll(ids);
 
     if (!_primed) {
       _primed = true;
+      _remember(ids);
       return;
     }
-    if (fresh.isEmpty) return;
+    if (fresh.isEmpty) {
+      _remember(ids);
+      return;
+    }
 
     try {
       final messages = _messages();
       // The burst is the episode: the same new ids arriving again — a
       // re-emitted snapshot — write nothing, a different set is a new row.
+      // Each id is stamped with its conflict's own time, so an entry that
+      // conflicts again after being resolved is a new episode rather than
+      // the id of a row already seen or retracted, which `armEpisode` would
+      // leave alone.
       final id = notificationEpisodeId(
         kind: NotificationKinds.syncConflict,
         subjectId: syncConflictsSubjectId,
-        episodeKey: (fresh.toList()..sort()).join('+'),
+        episodeKey: (fresh.map((id) => _occurrence(byId[id]!)).toList()..sort())
+            .join('+'),
       );
       final notifications = _notifications;
       await notifications.armEpisode(
@@ -111,6 +118,12 @@ class ConflictNotificationObserver {
         kind: NotificationKinds.syncConflict,
         exceptId: id,
       );
+      // Remembered only once both writes landed: a burst the database
+      // refused stays fresh, so the next snapshot — usually the same one,
+      // re-emitted — tries again instead of the alert vanishing or the
+      // superseded row staying open. A re-arm of a row that did land is
+      // `armEpisode`'s no-op.
+      _remember(ids);
     } catch (e, s) {
       if (getIt.isRegistered<DomainLogger>()) {
         getIt<DomainLogger>().error(
@@ -123,8 +136,21 @@ class ConflictNotificationObserver {
     }
   }
 
+  void _remember(Set<String> ids) => _known
+    ..clear()
+    ..addAll(ids);
+
+  /// One conflict occurrence: the entry plus the moment this conflict row
+  /// was last written, UTC so two devices name it the same.
+  static String _occurrence(Conflict conflict) =>
+      '${conflict.id}@${conflict.updatedAt.toUtc().toIso8601String()}';
+
+  /// Cancels the subscription and waits for the snapshot being applied, so
+  /// nothing is written after the observer — and the services it writes
+  /// through — is gone.
   Future<void> dispose() async {
     await _subscription?.cancel();
     _subscription = null;
+    await _applying;
   }
 }

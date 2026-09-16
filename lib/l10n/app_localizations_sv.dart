@@ -6234,9 +6234,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get eventsFilterTooltip => 'Filtrera evenemang';
 
   @override
-  String get eventsNoResults => 'Inga matchande evenemang';
-
-  @override
   String eventsMetricPhotos(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6260,6 +6257,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get eventsNewEvent => 'Nytt evenemang';
+
+  @override
+  String get eventsNoResults => 'Inga matchande evenemang';
 
   @override
   String get eventsPageTitle => 'Evenemang';
@@ -13711,7 +13711,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsNotificationsExplanation =>
-      'Varningar kommer via enhetens aviseringar. Välj vad som är värt en; allt hamnar ändå i klockan i Lotti.';
+      'Varningar kommer via enhetens aviseringar. Välj vilka som är värda en avisering. Allt utom vanepåminnelser hamnar också under Notiser i Lotti.';
 
   @override
   String get settingsNotificationsGoalAlertsDescription =>
@@ -13740,7 +13740,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsNotificationsKindsNote =>
-      'Att stänga av en typ stoppar bara dess varningar. Dess poster finns kvar i klockan.';
+      'Att stänga av en typ stoppar bara dess varningar. Dess poster finns kvar under Notiser, utom vanepåminnelser, som inte har någon post där.';
 
   @override
   String get settingsNotificationsSubtitle =>

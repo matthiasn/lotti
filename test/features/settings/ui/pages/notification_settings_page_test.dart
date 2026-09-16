@@ -360,8 +360,9 @@ void main() {
 
     expect(
       find.text(
-        "Alerts arrive through your device's notifications. Choose what is "
-        'worth one; everything still lands in the bell inside Lotti.',
+        "Alerts arrive through your device's notifications. Choose which are "
+        'worth a notification. Everything except habit reminders also lands '
+        'in the bell inside Lotti.',
       ),
       findsOneWidget,
     );
@@ -369,7 +370,8 @@ void main() {
     expect(
       find.text(
         'Switching a kind off only stops its alerts. Its entries still '
-        'appear in the bell.',
+        'appear in the bell, except habit reminders, which have no entry '
+        'there.',
       ),
       findsOneWidget,
     );

@@ -6336,9 +6336,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get eventsFilterTooltip => 'Filtrați evenimentele';
 
   @override
-  String get eventsNoResults => 'Niciun eveniment corespunzător';
-
-  @override
   String eventsMetricPhotos(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6364,6 +6361,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get eventsNewEvent => 'Eveniment nou';
+
+  @override
+  String get eventsNoResults => 'Niciun eveniment corespunzător';
 
   @override
   String get eventsPageTitle => 'Evenimente';
@@ -13968,7 +13968,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsNotificationsExplanation =>
-      'Alertele sosesc prin notificările dispozitivului dumneavoastră. Alegeți ce merită una; oricum, totul rămâne în clopoțelul din Lotti.';
+      'Alertele sosesc prin notificările dispozitivului dumneavoastră. Alegeți ce merită o notificare. Totul, în afară de mementourile pentru obiceiuri, rămâne și în clopoțelul din Lotti.';
 
   @override
   String get settingsNotificationsGoalAlertsDescription =>
@@ -13998,7 +13998,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsNotificationsKindsNote =>
-      'Dezactivarea unui tip oprește doar alertele sale. Intrările sale rămân în clopoțel.';
+      'Dezactivarea unui tip oprește doar alertele sale. Intrările sale rămân în clopoțel, cu excepția mementourilor pentru obiceiuri, care nu au intrare acolo.';
 
   @override
   String get settingsNotificationsSubtitle =>

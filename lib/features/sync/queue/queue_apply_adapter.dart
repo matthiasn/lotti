@@ -253,19 +253,28 @@ class QueueApplyAdapter {
     if (message != null) {
       wrap = writesJournalDb(message);
     }
+    // Work the apply parks for after the commit — a synced notification
+    // preference's platform calls and alarm reconciliation — runs once the
+    // transaction has released the journal writer, outside its zone.
+    final afterCommit = <Future<void> Function()>[];
     try {
       if (wrap) {
         await _journalDb.transaction(() async {
           await _processor.apply(
             prepared: prepared,
             journalDb: _journalDb,
+            afterCommit: afterCommit.add,
           );
         });
       } else {
         await _processor.apply(
           prepared: prepared,
           journalDb: _journalDb,
+          afterCommit: afterCommit.add,
         );
+      }
+      for (final action in afterCommit) {
+        await action();
       }
       return ApplyOutcome.applied;
     } on IOException catch (error, stackTrace) {

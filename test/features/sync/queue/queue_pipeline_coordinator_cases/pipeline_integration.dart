@@ -65,6 +65,7 @@ extension _PipelineIntegrationCases on _QueueCoordinatorTestSetup {
             () => liveProcessor.apply(
               prepared: any(named: 'prepared'),
               journalDb: journalDb,
+              afterCommit: any(named: 'afterCommit'),
             ),
           ).thenAnswer((_) async {
             if (!applied.isCompleted) {
@@ -97,6 +98,7 @@ extension _PipelineIntegrationCases on _QueueCoordinatorTestSetup {
             () => liveProcessor.apply(
               prepared: prepared,
               journalDb: journalDb,
+              afterCommit: any(named: 'afterCommit'),
             ),
           ).called(1);
 
@@ -134,6 +136,7 @@ extension _PipelineIntegrationCases on _QueueCoordinatorTestSetup {
             () => liveProcessor.apply(
               prepared: any(named: 'prepared'),
               journalDb: journalDb,
+              afterCommit: any(named: 'afterCommit'),
             ),
           ).thenAnswer((_) async {
             if (!appliedDone.isCompleted) {
@@ -245,6 +248,7 @@ extension _PipelineIntegrationCases on _QueueCoordinatorTestSetup {
             () => liveProcessor.apply(
               prepared: prepared,
               journalDb: journalDb,
+              afterCommit: any(named: 'afterCommit'),
             ),
           ).called(1);
 
@@ -284,6 +288,7 @@ extension _PipelineIntegrationCases on _QueueCoordinatorTestSetup {
             () => liveProcessor.apply(
               prepared: any(named: 'prepared'),
               journalDb: journalDb,
+              afterCommit: any(named: 'afterCommit'),
             ),
           ).thenAnswer((_) async {
             if (!appliedDone.isCompleted) {
@@ -409,6 +414,7 @@ extension _PipelineIntegrationCases on _QueueCoordinatorTestSetup {
             () => liveProcessor.apply(
               prepared: prepared,
               journalDb: journalDb,
+              afterCommit: any(named: 'afterCommit'),
             ),
           ).called(1);
 

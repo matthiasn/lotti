@@ -618,9 +618,9 @@ class _GeneratedEntity {
       category: _category(categorySlot),
     );
 
-    // Modulo four, so the generator reaches every variant of the union
-    // rather than only the two it had when it was written.
-    return switch (variantSlot % 4) {
+    // Modulo the number of variants, so the generator reaches every one of
+    // them — the round trip is only a property of the union if it does.
+    return switch (variantSlot % 7) {
       0 => NotificationEntity.taskSuggestion(
         meta: meta,
         linkedTaskId: 'task-$idSlot',

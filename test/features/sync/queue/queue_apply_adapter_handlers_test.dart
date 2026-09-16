@@ -5,6 +5,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
@@ -82,6 +83,7 @@ void main() {
                   () => localProcessor.apply(
                     prepared: prepared,
                     journalDb: localJournalDb,
+                    afterCommit: any(named: 'afterCommit'),
                   ),
                 ).thenAnswer((_) async => null);
               case GeneratedAdapterApplyOutcome.pendingDescriptor:
@@ -92,6 +94,7 @@ void main() {
                   () => localProcessor.apply(
                     prepared: prepared,
                     journalDb: localJournalDb,
+                    afterCommit: any(named: 'afterCommit'),
                   ),
                 ).thenThrow(scenario.applyException());
             }
@@ -128,6 +131,7 @@ void main() {
             () => localProcessor.apply(
               prepared: prepared,
               journalDb: localJournalDb,
+              afterCommit: any(named: 'afterCommit'),
             ),
           ).called(1);
         } else {
@@ -135,6 +139,7 @@ void main() {
             () => localProcessor.apply(
               prepared: any(named: 'prepared'),
               journalDb: localJournalDb,
+              afterCommit: any(named: 'afterCommit'),
             ),
           );
         }
@@ -174,6 +179,7 @@ void main() {
       () => processor.apply(
         prepared: any(named: 'prepared'),
         journalDb: journalDb,
+        afterCommit: any(named: 'afterCommit'),
       ),
     );
   });
@@ -194,6 +200,84 @@ void main() {
     },
   );
 
+  group('work the apply parks for after the commit', () {
+    /// Stubs apply to park [action] through the sink the adapter hands it,
+    /// logging the order things ran in.
+    List<String> stubParkingApply(
+      AdapterMockPreparedSyncEvent prepared, {
+      SyncMessage? message,
+    }) {
+      final log = <String>[];
+      when(() => prepared.syncMessage).thenReturn(
+        message ??
+            const SyncMessage.configFlag(
+              name: 'enable_notifications',
+              description: 'Enable notifications?',
+              status: false,
+            ),
+      );
+      when(
+        () => processor.prepare(event: any(named: 'event')),
+      ).thenAnswer((_) async => prepared);
+      when(
+        () => processor.apply(
+          prepared: any(named: 'prepared'),
+          journalDb: journalDb,
+          afterCommit: any(named: 'afterCommit'),
+        ),
+      ).thenAnswer((invocation) async {
+        log.add('apply');
+        final sink =
+            invocation.namedArguments[#afterCommit] as AfterCommitSink?;
+        expect(sink, isNotNull, reason: 'the adapter always offers the slot');
+        sink!(() async => log.add('effects'));
+        return null;
+      });
+      return log;
+    }
+
+    test(
+      'a journal-writing message runs the parked work after apply returned, '
+      'once, and still maps to applied',
+      () async {
+        // A synced notification preference parks its platform calls and
+        // reconcile here: they must not run inside the journal transaction
+        // the adapter wraps a journal-writing apply in.
+        final entry = hBuildEntry(
+          eventId: r'$flag',
+          roomId: '!r',
+          originTsMs: 1,
+        );
+        final prepared = AdapterMockPreparedSyncEvent();
+        final log = stubParkingApply(prepared);
+        expect(QueueApplyAdapter.writesJournalDb(prepared.syncMessage), isTrue);
+
+        final outcome = await build().bind()(entry, room);
+
+        expect(outcome, ApplyOutcome.applied);
+        expect(log, ['apply', 'effects']);
+      },
+    );
+
+    test('a message outside the transaction wrap runs it too', () async {
+      final entry = hBuildEntry(eventId: r'$cons', roomId: '!r', originTsMs: 1);
+      final prepared = AdapterMockPreparedSyncEvent();
+      final log = stubParkingApply(
+        prepared,
+        message: SyncMessage.consumptionEvent(
+          event: makeConsumptionEvent(),
+          status: SyncEntryStatus.update,
+        ),
+      );
+      expect(QueueApplyAdapter.writesJournalDb(prepared.syncMessage), isFalse);
+
+      final outcome = await build().bind()(entry, room);
+
+      expect(outcome, ApplyOutcome.applied);
+      expect(log, ['apply', 'effects']);
+    });
+  });
+
   test('successful prepare + apply maps to applied', () async {
     final entry = hBuildEntry(
       eventId: r'$ok',
@@ -208,6 +292,7 @@ void main() {
       () => processor.apply(
         prepared: any(named: 'prepared'),
         journalDb: journalDb,
+        afterCommit: any(named: 'afterCommit'),
       ),
     ).thenAnswer((_) async => null);
 
@@ -217,6 +302,7 @@ void main() {
       () => processor.apply(
         prepared: prepared,
         journalDb: journalDb,
+        afterCommit: any(named: 'afterCommit'),
       ),
     ).called(1);
   });
@@ -235,6 +321,7 @@ void main() {
       () => processor.apply(
         prepared: any(named: 'prepared'),
         journalDb: journalDb,
+        afterCommit: any(named: 'afterCommit'),
       ),
     ).thenThrow(const FileSystemException('disk full'));
 
@@ -489,6 +576,7 @@ void main() {
           () => processor.apply(
             prepared: any(named: 'prepared'),
             journalDb: journalDb,
+            afterCommit: any(named: 'afterCommit'),
           ),
         ).thenAnswer((_) async => null);
 
@@ -522,6 +610,7 @@ void main() {
           () => processor.apply(
             prepared: any(named: 'prepared'),
             journalDb: journalDb,
+            afterCommit: any(named: 'afterCommit'),
           ),
         ).thenAnswer((_) async => null);
 

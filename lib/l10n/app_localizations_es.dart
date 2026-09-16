@@ -6311,9 +6311,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventsFilterTooltip => 'Filtrar eventos';
 
   @override
-  String get eventsNoResults => 'No hay eventos que coincidan';
-
-  @override
   String eventsMetricPhotos(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6337,6 +6334,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get eventsNewEvent => 'Nuevo evento';
+
+  @override
+  String get eventsNoResults => 'No hay eventos que coincidan';
 
   @override
   String get eventsPageTitle => 'Eventos';
@@ -13876,7 +13876,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsNotificationsExplanation =>
-      'Los avisos llegan por las notificaciones de tu dispositivo. Elige qué merece uno; de todos modos, todo queda en la campana de Lotti.';
+      'Los avisos llegan por las notificaciones de tu dispositivo. Elige cuáles merecen una notificación. Todo, salvo los recordatorios de hábitos, queda también en la campana de Lotti.';
 
   @override
   String get settingsNotificationsGoalAlertsDescription =>
@@ -13906,7 +13906,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsNotificationsKindsNote =>
-      'Desactivar un tipo solo detiene sus avisos. Sus entradas siguen apareciendo en la campana.';
+      'Desactivar un tipo solo detiene sus avisos. Sus entradas siguen apareciendo en la campana, salvo los recordatorios de hábitos, que no tienen entrada allí.';
 
   @override
   String get settingsNotificationsSubtitle =>

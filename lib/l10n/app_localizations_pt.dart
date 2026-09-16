@@ -6290,9 +6290,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventsFilterTooltip => 'Filtrar eventos';
 
   @override
-  String get eventsNoResults => 'Nenhum evento correspondente';
-
-  @override
   String eventsMetricPhotos(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6316,6 +6313,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get eventsNewEvent => 'Novo evento';
+
+  @override
+  String get eventsNoResults => 'Nenhum evento correspondente';
 
   @override
   String get eventsPageTitle => 'Eventos';
@@ -13825,7 +13825,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get settingsNotificationsExplanation =>
-      'Os avisos chegam pelas notificações do teu dispositivo. Escolhe o que merece um; de qualquer forma, tudo fica no sino do Lotti.';
+      'Os avisos chegam pelas notificações do teu dispositivo. Escolhe o que merece uma notificação. Tudo, exceto os lembretes de hábitos, fica também no sino do Lotti.';
 
   @override
   String get settingsNotificationsGoalAlertsDescription =>
@@ -13854,7 +13854,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get settingsNotificationsKindsNote =>
-      'Desligar um tipo só para os seus avisos. As suas entradas continuam a aparecer no sino.';
+      'Desligar um tipo só para os seus avisos. As suas entradas continuam a aparecer no sino, exceto os lembretes de hábitos, que não têm entrada aí.';
 
   @override
   String get settingsNotificationsSubtitle =>

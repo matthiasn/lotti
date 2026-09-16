@@ -6272,9 +6272,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get eventsFilterTooltip => 'Ereignisse filtern';
 
   @override
-  String get eventsNoResults => 'Keine passenden Ereignisse';
-
-  @override
   String eventsMetricPhotos(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6298,6 +6295,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get eventsNewEvent => 'Neues Ereignis';
+
+  @override
+  String get eventsNoResults => 'Keine passenden Ereignisse';
 
   @override
   String get eventsPageTitle => 'Ereignisse';
@@ -13795,7 +13795,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsNotificationsExplanation =>
-      'Hinweise kommen über die Benachrichtigungen deines Geräts. Wähle, was dir einen wert ist – in der Glocke in Lotti landet trotzdem alles.';
+      'Hinweise kommen über die Benachrichtigungen deines Geräts. Wähle, was dir eine Benachrichtigung wert ist. Alles außer Gewohnheits-Erinnerungen landet auch in der Glocke in Lotti.';
 
   @override
   String get settingsNotificationsGoalAlertsDescription =>
@@ -13825,7 +13825,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsNotificationsKindsNote =>
-      'Eine Art auszuschalten stoppt nur ihre Hinweise. Ihre Einträge erscheinen weiterhin in der Glocke.';
+      'Eine Art auszuschalten stoppt nur ihre Hinweise. Ihre Einträge erscheinen weiterhin in der Glocke – außer Gewohnheits-Erinnerungen, die dort keinen Eintrag haben.';
 
   @override
   String get settingsNotificationsSubtitle =>

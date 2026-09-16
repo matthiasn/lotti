@@ -136,6 +136,7 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/state/linked_from_entries_controller.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
+import 'package:lotti/features/notifications/preferences/notification_preference_effects.dart';
 import 'package:lotti/features/notifications/producer/agent_alert_copy.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/notifications/routing/notification_tap_router.dart';
@@ -896,6 +897,9 @@ class MockGoalOffTrackSink extends Mock implements GoalOffTrackSink {}
 
 class MockAgentAlertCopy extends Mock implements AgentAlertCopy {}
 
+class MockNotificationPreferenceEffects extends Mock
+    implements NotificationPreferenceEffects {}
+
 class MockOutboxService extends Mock implements OutboxService {}
 
 class MockOnboardingSyncService extends Mock implements OnboardingSyncService {}
@@ -1208,6 +1212,7 @@ class MockSyncEventProcessor extends Mock implements SyncEventProcessor {
   Future<SyncApplyDiagnostics?> apply({
     required PreparedSyncEvent prepared,
     required JournalDb journalDb,
+    AfterCommitSink? afterCommit,
   }) async => null;
 }
 

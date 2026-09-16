@@ -6251,9 +6251,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get eventsFilterTooltip => 'Gebeurtenissen filteren';
 
   @override
-  String get eventsNoResults => 'Geen overeenkomende gebeurtenissen';
-
-  @override
   String eventsMetricPhotos(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6277,6 +6274,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get eventsNewEvent => 'Nieuwe gebeurtenis';
+
+  @override
+  String get eventsNoResults => 'Geen overeenkomende gebeurtenissen';
 
   @override
   String get eventsPageTitle => 'Gebeurtenissen';
@@ -13729,7 +13729,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsNotificationsExplanation =>
-      'Waarschuwingen komen via de meldingen van je apparaat. Kies wat er een waard is; alles blijft hoe dan ook in de bel in Lotti staan.';
+      'Waarschuwingen komen via de meldingen van je apparaat. Kies welke een melding waard zijn. Alles behalve gewoonteherinneringen blijft ook in de bel in Lotti staan.';
 
   @override
   String get settingsNotificationsGoalAlertsDescription =>
@@ -13759,7 +13759,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsNotificationsKindsNote =>
-      'Een soort uitzetten stopt alleen de waarschuwingen ervan. De items blijven in de bel staan.';
+      'Een soort uitzetten stopt alleen de waarschuwingen ervan. De items blijven in de bel staan, behalve gewoonteherinneringen, die daar geen item hebben.';
 
   @override
   String get settingsNotificationsSubtitle =>

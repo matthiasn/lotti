@@ -114,7 +114,12 @@ replacement, now with a row behind it that survives the banner.
 by one, each emitting its own snapshot, and `ConflictNotificationObserver`
 chains them: two applied side by side would each arm a row and then retract
 the other's, leaving no row at all. Serialised, the last burst's row is the
-one that survives — the same outcome the single OS id used to give.
+one that survives — the same outcome the single OS id used to give — and
+`dispose` waits for the snapshot in flight. `DayPlanReadyNotifier` records
+outcomes the same way, for the same reason. A conflict's episode key stamps
+each entry with the time its conflict row was written, so an entry that
+conflicts again after being resolved is a new episode rather than the id of
+a row already seen or retracted, which `armEpisode` would leave alone.
 
 # Why monotonic state, not last-write-wins on the row
 
@@ -382,7 +387,16 @@ a completion while the switch is off withdraws a reminder armed before it.
 
 Config flags sync between devices (`SyncMessage.configFlag`), so a kind
 silenced on one device is silenced on all of them — the reach the master
-switch already had.
+switch already had. The consequences live in `NotificationPreferenceEffects`
+(`lib/features/notifications/preferences/`), and the sync apply path runs
+them for a flag that arrived from a peer exactly as the local hook does for
+one written here: the alarms a preference governs are held by *this*
+device's OS, so a switch flipped on the phone has to reach the laptop's
+alarms, not only its settings page. Either path applies them only when the
+stored status actually changed — and the sync path parks them in the
+`afterCommit` slot the queue adapter hands `SyncEventProcessor.apply`, so
+the platform calls and the reconcile run once the journal transaction the
+adapter wraps the apply in has released the writer, never inside it.
 
 # Habit reminders retain their calendar date
 

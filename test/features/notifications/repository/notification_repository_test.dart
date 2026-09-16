@@ -5,8 +5,10 @@ import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/features/notifications/model/notification_episode_id.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/commit_evaluating_vector_clock_service.dart';
@@ -849,6 +851,29 @@ void main() {
       verify(() => scheduler.schedule(saved, now: fixedNow)).called(1);
     });
 
+    test('two concurrent arms of one episode write it once', () async {
+      // A cadence tick racing a write-driven wake for the same subject:
+      // unless the check and the write are chained by episode, both read
+      // "no row" and both write, enqueue, schedule and notify.
+      final results = await Future.wait([arm(), arm()]);
+
+      expect(results.whereType<NotificationEntity>(), hasLength(1));
+      expect(builds, 1);
+      expect(await notificationsDb.notificationById(episodeId()), isNotNull);
+      verify(
+        () => scheduler.schedule(
+          any<NotificationEntity>(),
+          now: any(named: 'now'),
+        ),
+      ).called(1);
+      verify(
+        () => outboxService.enqueueNotification(
+          any<NotificationEntity>(),
+          originatingHostId: any(named: 'originatingHostId'),
+        ),
+      ).called(1);
+    });
+
     test('a second arm for the same episode writes nothing', () async {
       await arm();
       clearInteractions(scheduler);
@@ -1183,6 +1208,20 @@ void main() {
           inboxNotification,
         }, fromSync: false),
       ).called(1);
+      // The reservation is bound to the row — the arming write's and the
+      // re-wording's alike — so a crash between the upsert and the enqueue
+      // leaves a counter backfill can resolve rather than a dangling one.
+      final reservations = verify(
+        () => vectorClockService.getNextVectorClock(
+          previous: any(named: 'previous'),
+          payload: captureAny<VcPayloadRef?>(named: 'payload'),
+        ),
+      ).captured;
+      expect(reservations, hasLength(2));
+      expect(
+        reservations.last,
+        (id: row.id, type: SyncSequencePayloadType.notification),
+      );
     });
 
     test('keeps the body when none is given', () async {
@@ -1210,6 +1249,43 @@ void main() {
         () => scheduler.schedule(
           any<NotificationEntity>(),
           now: any(named: 'now'),
+        ),
+      );
+    });
+
+    test('a row that comes due while being re-worded is left alone', () async {
+      // `restateOpenRows` read it ahead of the clock; by the time the write
+      // is stamped the alert has gone out. Re-arming it would announce it a
+      // second time, so the write is skipped on the clock it would carry.
+      final soon = await armEpisode(
+        '2026-05-17',
+        scheduledFor: fixedNow.add(const Duration(minutes: 1)),
+      );
+      var reads = 0;
+      repository = NotificationRepository(
+        notificationsDb: notificationsDb,
+        vectorClockService: vectorClockService,
+        outboxService: outboxService,
+        updateNotifications: updateNotifications,
+        scheduler: scheduler,
+        // The read sees the row a minute ahead; the write's clock is past it.
+        now: () => reads++ == 0 ? fixedNow : later,
+      );
+
+      final restated = await restate();
+
+      expect(restated, isEmpty);
+      expect((await stored(soon.id)).title, 'Check in?');
+      verifyNever(
+        () => scheduler.schedule(
+          any<NotificationEntity>(),
+          now: any(named: 'now'),
+        ),
+      );
+      verifyNever(
+        () => outboxService.enqueueNotification(
+          any<NotificationEntity>(),
+          originatingHostId: any(named: 'originatingHostId'),
         ),
       );
     });
@@ -1305,14 +1381,16 @@ void main() {
     });
 
     group('commits the clock scope only for a row it wrote', () {
-      late _CommitEvaluatingVectorClockService commitClock;
+      late CommitEvaluatingVectorClockService commitClock;
 
       setUp(() {
-        commitClock = _CommitEvaluatingVectorClockService();
+        commitClock = CommitEvaluatingVectorClockService();
         when(() => commitClock.getHost()).thenAnswer((_) async => 'host-a');
         when(
-          () =>
-              commitClock.getNextVectorClock(previous: any(named: 'previous')),
+          () => commitClock.getNextVectorClock(
+            previous: any(named: 'previous'),
+            payload: any(named: 'payload'),
+          ),
         ).thenAnswer((_) async => const VectorClock({'host-a': 1}));
         repository = NotificationRepository(
           notificationsDb: notificationsDb,

@@ -10649,12 +10649,6 @@ abstract class AppLocalizations {
   /// **'Filter events'**
   String get eventsFilterTooltip;
 
-  /// No description provided for @eventsNoResults.
-  ///
-  /// In en, this message translates to:
-  /// **'No matching events'**
-  String get eventsNoResults;
-
   /// No description provided for @eventsMetricPhotos.
   ///
   /// In en, this message translates to:
@@ -10672,6 +10666,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New event'**
   String get eventsNewEvent;
+
+  /// No description provided for @eventsNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching events'**
+  String get eventsNoResults;
 
   /// No description provided for @eventsPageTitle.
   ///
@@ -22808,7 +22808,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsNotificationsExplanation.
   ///
   /// In en, this message translates to:
-  /// **'Alerts arrive through your device\'s notifications. Choose what is worth one; everything still lands in the bell inside Lotti.'**
+  /// **'Alerts arrive through your device\'s notifications. Choose which are worth a notification. Everything except habit reminders also lands in the bell inside Lotti.'**
   String get settingsNotificationsExplanation;
 
   /// No description provided for @settingsNotificationsGoalAlertsDescription.
@@ -22856,7 +22856,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsNotificationsKindsNote.
   ///
   /// In en, this message translates to:
-  /// **'Switching a kind off only stops its alerts. Its entries still appear in the bell.'**
+  /// **'Switching a kind off only stops its alerts. Its entries still appear in the bell, except habit reminders, which have no entry there.'**
   String get settingsNotificationsKindsNote;
 
   /// No description provided for @settingsNotificationsSubtitle.

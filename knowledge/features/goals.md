@@ -244,14 +244,19 @@ tier on the [producer contract](notifications.md#producers-share-one-episode-con
   `automaticGoalAdEligible`, the banner's own predicate, so the two channels
   never disagree. An unchanged slip projects nothing (one alert per slip), and
   a fenced write projects nothing (the revision's tick judges again).
-- **The episode is the transition day.** `GoalOffTrackAlertService` keys the
-  row by the derivation's `periodKey` of the tick that transitioned, links it
+- **The episode is the transition day and the baseline it left.**
+  `GoalOffTrackAlertService` keys the row by the derivation's `periodKey` of
+  the tick that transitioned plus the status it slipped *from*, links it
   to the *agent* (what the goal detail route is keyed by), and arms it for
   the next 09:00 local — calendar components, not a Duration. Recovery,
   achievement, a data gap and `deleteGoalAgent` all reach `clearFor`, which
   is what cancels the alarm.
-- **Copy is deterministic and content-minimal**: the goal's title and a fixed
-  line, from the ARB catalogs, baked in the arming device's locale.
+- **Copy is deterministic and content-minimal by default**: the goal's title
+  and a fixed line, from the ARB catalogs, baked in the arming device's
+  locale. With `notify_agent_copy` on, the wake that created the banner may
+  restate the armed row in the banner's own words afterwards (ADR 0066, the
+  `REWORD` step above); the deterministic row is what exists until then and
+  what stays when the switch is off.
 
 **A banner dismissal does not cancel an already-armed alert.** "Not today" is
 written to the nudge row, which wakes no goal tick, so an alert armed at 06:00
