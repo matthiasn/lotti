@@ -127,6 +127,44 @@ void main() {
       expect(updated.meta.seenAt, DateTime.utc(2026, 5, 17, 16));
     });
 
+    test('a goalOffTrack row links the goal agent', () {
+      final entity = _goalOffTrack(
+        id: 'go-1',
+        linkedGoalAgentId: 'goal-agent-7',
+        title: 'Daily steps is off track',
+        body: 'A good moment to get back on it.',
+      );
+
+      expect(entity.id, 'go-1');
+      expect(entity.type, 'goalOffTrack');
+      expect(entity.title, 'Daily steps is off track');
+      expect(entity.body, 'A good moment to get back on it.');
+      // The agent, not a journal goal id: the goal detail route is keyed by
+      // the agent, and so is every register and banner the alert reflects.
+      expect(entity.linkedEntityId, 'goal-agent-7');
+    });
+
+    test('copyWithMeta preserves the goalOffTrack variant', () {
+      final entity = _goalOffTrack(
+        id: 'go-2',
+        linkedGoalAgentId: 'goal-agent-8',
+        title: 'Title',
+        body: 'Body',
+      );
+      final replacement = entity.meta.copyWith(
+        actedOnAt: DateTime.utc(2026, 5, 17, 16),
+      );
+
+      final updated = entity.copyWithMeta(replacement);
+
+      expect(updated, isA<GoalOffTrackNotification>());
+      final updatedGoal = updated as GoalOffTrackNotification;
+      expect(updatedGoal.linkedGoalAgentId, 'goal-agent-8');
+      expect(updatedGoal.title, 'Title');
+      expect(updatedGoal.body, 'Body');
+      expect(updated.meta.actedOnAt, DateTime.utc(2026, 5, 17, 16));
+    });
+
     test('copyWithMeta preserves the overdue variant', () {
       final entity = _overdue(
         id: 'od-2',
@@ -189,6 +227,12 @@ void main() {
           title: 'a',
           body: 'b',
         ),
+        'goalOffTrack': NotificationEntity.goalOffTrack(
+          meta: meta,
+          linkedGoalAgentId: 'g',
+          title: 'a',
+          body: 'b',
+        ),
       };
 
       expect(
@@ -204,6 +248,7 @@ void main() {
         byVariant['habitAutoCompleted']!.type,
         NotificationKinds.habitAutoCompleted,
       );
+      expect(byVariant['goalOffTrack']!.type, NotificationKinds.goalOffTrack);
       for (final entry in byVariant.entries) {
         expect(entry.value.type, entry.key);
       }
@@ -300,6 +345,12 @@ void main() {
           body: 'y',
         ): 'relationshipCheckIn',
         _habitAuto(id: 'd', linkedHabitIds: ['h1', 'h2']): 'habitAutoCompleted',
+        _goalOffTrack(
+          id: 'e',
+          linkedGoalAgentId: 'g',
+          title: 'x',
+          body: 'y',
+        ): 'goalOffTrack',
       };
 
       for (final row in rows.entries) {
@@ -391,6 +442,12 @@ class _GeneratedEntity {
       2 => NotificationEntity.relationshipCheckIn(
         meta: meta,
         linkedRelationshipId: 'rel-$idSlot',
+        title: 'Title $idSlot',
+        body: 'Body $idSlot',
+      ),
+      3 => NotificationEntity.goalOffTrack(
+        meta: meta,
+        linkedGoalAgentId: 'goal-$idSlot',
         title: 'Title $idSlot',
         body: 'Body $idSlot',
       ),
@@ -511,6 +568,28 @@ NotificationEntity _checkIn({
       originatingHostId: 'host-a',
     ),
     linkedRelationshipId: linkedRelationshipId,
+    title: title,
+    body: body,
+  );
+}
+
+NotificationEntity _goalOffTrack({
+  required String id,
+  required String linkedGoalAgentId,
+  required String title,
+  required String body,
+}) {
+  final timestamp = DateTime.utc(2026, 5, 17, 8);
+  return NotificationEntity.goalOffTrack(
+    meta: NotificationMeta(
+      id: id,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      scheduledFor: timestamp,
+      vectorClock: const VectorClock({'host-a': 1}),
+      originatingHostId: 'host-a',
+    ),
+    linkedGoalAgentId: linkedGoalAgentId,
     title: title,
     body: body,
   );

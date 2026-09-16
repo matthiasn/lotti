@@ -260,6 +260,12 @@ void main() {
       expect(showsBeforeScheduledTime(_checkInRow(id: 'c')), isFalse);
     });
 
+    test('a slipped-goal alert waits for its alert hour', () {
+      // Armed on the tick that saw the slip for the next alert hour; the
+      // bell would otherwise say "off track" hours before the alert does.
+      expect(showsBeforeScheduledTime(_goalOffTrackRow(id: 'g')), isFalse);
+    });
+
     test('an auto-completion row is due on arrival', () {
       final base = DateTime.utc(2026, 5, 17, 8);
       final row = NotificationEntity.habitAutoCompleted(
@@ -280,6 +286,24 @@ void main() {
       expect(showsBeforeScheduledTime(row), isTrue);
     });
   });
+}
+
+GoalOffTrackNotification _goalOffTrackRow({required String id}) {
+  final base = DateTime.utc(2026, 5, 17, 8);
+  return NotificationEntity.goalOffTrack(
+        meta: NotificationMeta(
+          id: id,
+          createdAt: base,
+          updatedAt: base,
+          scheduledFor: base.add(const Duration(hours: 3)),
+          vectorClock: const VectorClock({'host': 1}),
+          originatingHostId: 'host',
+        ),
+        linkedGoalAgentId: 'goal-agent-1',
+        title: 'Daily steps is off track',
+        body: 'A good moment to get back on it.',
+      )
+      as GoalOffTrackNotification;
 }
 
 RelationshipCheckInNotification _checkInRow({required String id}) {

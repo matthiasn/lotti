@@ -3142,6 +3142,15 @@
   "goalNudgeStatusExpired": "Verlopen",
   "goalNudgeStatusRetired": "Teruggetrokken",
   "goalNudgeStatusSuperseded": "Vervangen",
+  "goalOffTrackNotificationBody": "Een goed moment om de draad weer op te pakken.",
+  "goalOffTrackNotificationTitle": "{goal} loopt achter",
+  "@goalOffTrackNotificationTitle": {
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      }
+    }
+  },
   "goalPatternBusiestHour": "De meeste sessies beginnen rond {hour}:00. Open Insights voor diepere analyses.",
   "goalPatternTitle": "Timingpatroon",
   "goalPendingProposalBadge": "Voorstel wacht op beoordeling",

@@ -31,6 +31,10 @@ NotificationEntity _$NotificationEntityFromJson(
           return HabitAutoCompletedNotification.fromJson(
             json
           );
+                case 'goalOffTrack':
+          return GoalOffTrackNotification.fromJson(
+            json
+          );
         
           default:
             throw CheckedFromJsonException(
@@ -131,14 +135,15 @@ extension NotificationEntityPatterns on NotificationEntity {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( TaskSuggestionNotification value)?  taskSuggestion,TResult Function( TaskOverdueNotification value)?  taskOverdue,TResult Function( RelationshipCheckInNotification value)?  relationshipCheckIn,TResult Function( HabitAutoCompletedNotification value)?  habitAutoCompleted,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( TaskSuggestionNotification value)?  taskSuggestion,TResult Function( TaskOverdueNotification value)?  taskOverdue,TResult Function( RelationshipCheckInNotification value)?  relationshipCheckIn,TResult Function( HabitAutoCompletedNotification value)?  habitAutoCompleted,TResult Function( GoalOffTrackNotification value)?  goalOffTrack,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case TaskSuggestionNotification() when taskSuggestion != null:
 return taskSuggestion(_that);case TaskOverdueNotification() when taskOverdue != null:
 return taskOverdue(_that);case RelationshipCheckInNotification() when relationshipCheckIn != null:
 return relationshipCheckIn(_that);case HabitAutoCompletedNotification() when habitAutoCompleted != null:
-return habitAutoCompleted(_that);case _:
+return habitAutoCompleted(_that);case GoalOffTrackNotification() when goalOffTrack != null:
+return goalOffTrack(_that);case _:
   return orElse();
 
 }
@@ -156,14 +161,15 @@ return habitAutoCompleted(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( TaskSuggestionNotification value)  taskSuggestion,required TResult Function( TaskOverdueNotification value)  taskOverdue,required TResult Function( RelationshipCheckInNotification value)  relationshipCheckIn,required TResult Function( HabitAutoCompletedNotification value)  habitAutoCompleted,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( TaskSuggestionNotification value)  taskSuggestion,required TResult Function( TaskOverdueNotification value)  taskOverdue,required TResult Function( RelationshipCheckInNotification value)  relationshipCheckIn,required TResult Function( HabitAutoCompletedNotification value)  habitAutoCompleted,required TResult Function( GoalOffTrackNotification value)  goalOffTrack,}){
 final _that = this;
 switch (_that) {
 case TaskSuggestionNotification():
 return taskSuggestion(_that);case TaskOverdueNotification():
 return taskOverdue(_that);case RelationshipCheckInNotification():
 return relationshipCheckIn(_that);case HabitAutoCompletedNotification():
-return habitAutoCompleted(_that);}
+return habitAutoCompleted(_that);case GoalOffTrackNotification():
+return goalOffTrack(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -177,14 +183,15 @@ return habitAutoCompleted(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( TaskSuggestionNotification value)?  taskSuggestion,TResult? Function( TaskOverdueNotification value)?  taskOverdue,TResult? Function( RelationshipCheckInNotification value)?  relationshipCheckIn,TResult? Function( HabitAutoCompletedNotification value)?  habitAutoCompleted,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( TaskSuggestionNotification value)?  taskSuggestion,TResult? Function( TaskOverdueNotification value)?  taskOverdue,TResult? Function( RelationshipCheckInNotification value)?  relationshipCheckIn,TResult? Function( HabitAutoCompletedNotification value)?  habitAutoCompleted,TResult? Function( GoalOffTrackNotification value)?  goalOffTrack,}){
 final _that = this;
 switch (_that) {
 case TaskSuggestionNotification() when taskSuggestion != null:
 return taskSuggestion(_that);case TaskOverdueNotification() when taskOverdue != null:
 return taskOverdue(_that);case RelationshipCheckInNotification() when relationshipCheckIn != null:
 return relationshipCheckIn(_that);case HabitAutoCompletedNotification() when habitAutoCompleted != null:
-return habitAutoCompleted(_that);case _:
+return habitAutoCompleted(_that);case GoalOffTrackNotification() when goalOffTrack != null:
+return goalOffTrack(_that);case _:
   return null;
 
 }
@@ -201,13 +208,14 @@ return habitAutoCompleted(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( NotificationMeta meta,  String linkedTaskId,  int suggestionCount,  String title,  String body)?  taskSuggestion,TResult Function( NotificationMeta meta,  String linkedTaskId,  String title,  String body)?  taskOverdue,TResult Function( NotificationMeta meta,  String linkedRelationshipId,  String title,  String body)?  relationshipCheckIn,TResult Function( NotificationMeta meta,  List<String> linkedHabitIds,  String dayKey,  String title,  String body)?  habitAutoCompleted,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( NotificationMeta meta,  String linkedTaskId,  int suggestionCount,  String title,  String body)?  taskSuggestion,TResult Function( NotificationMeta meta,  String linkedTaskId,  String title,  String body)?  taskOverdue,TResult Function( NotificationMeta meta,  String linkedRelationshipId,  String title,  String body)?  relationshipCheckIn,TResult Function( NotificationMeta meta,  List<String> linkedHabitIds,  String dayKey,  String title,  String body)?  habitAutoCompleted,TResult Function( NotificationMeta meta,  String linkedGoalAgentId,  String title,  String body)?  goalOffTrack,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case TaskSuggestionNotification() when taskSuggestion != null:
 return taskSuggestion(_that.meta,_that.linkedTaskId,_that.suggestionCount,_that.title,_that.body);case TaskOverdueNotification() when taskOverdue != null:
 return taskOverdue(_that.meta,_that.linkedTaskId,_that.title,_that.body);case RelationshipCheckInNotification() when relationshipCheckIn != null:
 return relationshipCheckIn(_that.meta,_that.linkedRelationshipId,_that.title,_that.body);case HabitAutoCompletedNotification() when habitAutoCompleted != null:
-return habitAutoCompleted(_that.meta,_that.linkedHabitIds,_that.dayKey,_that.title,_that.body);case _:
+return habitAutoCompleted(_that.meta,_that.linkedHabitIds,_that.dayKey,_that.title,_that.body);case GoalOffTrackNotification() when goalOffTrack != null:
+return goalOffTrack(_that.meta,_that.linkedGoalAgentId,_that.title,_that.body);case _:
   return orElse();
 
 }
@@ -225,13 +233,14 @@ return habitAutoCompleted(_that.meta,_that.linkedHabitIds,_that.dayKey,_that.tit
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( NotificationMeta meta,  String linkedTaskId,  int suggestionCount,  String title,  String body)  taskSuggestion,required TResult Function( NotificationMeta meta,  String linkedTaskId,  String title,  String body)  taskOverdue,required TResult Function( NotificationMeta meta,  String linkedRelationshipId,  String title,  String body)  relationshipCheckIn,required TResult Function( NotificationMeta meta,  List<String> linkedHabitIds,  String dayKey,  String title,  String body)  habitAutoCompleted,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( NotificationMeta meta,  String linkedTaskId,  int suggestionCount,  String title,  String body)  taskSuggestion,required TResult Function( NotificationMeta meta,  String linkedTaskId,  String title,  String body)  taskOverdue,required TResult Function( NotificationMeta meta,  String linkedRelationshipId,  String title,  String body)  relationshipCheckIn,required TResult Function( NotificationMeta meta,  List<String> linkedHabitIds,  String dayKey,  String title,  String body)  habitAutoCompleted,required TResult Function( NotificationMeta meta,  String linkedGoalAgentId,  String title,  String body)  goalOffTrack,}) {final _that = this;
 switch (_that) {
 case TaskSuggestionNotification():
 return taskSuggestion(_that.meta,_that.linkedTaskId,_that.suggestionCount,_that.title,_that.body);case TaskOverdueNotification():
 return taskOverdue(_that.meta,_that.linkedTaskId,_that.title,_that.body);case RelationshipCheckInNotification():
 return relationshipCheckIn(_that.meta,_that.linkedRelationshipId,_that.title,_that.body);case HabitAutoCompletedNotification():
-return habitAutoCompleted(_that.meta,_that.linkedHabitIds,_that.dayKey,_that.title,_that.body);}
+return habitAutoCompleted(_that.meta,_that.linkedHabitIds,_that.dayKey,_that.title,_that.body);case GoalOffTrackNotification():
+return goalOffTrack(_that.meta,_that.linkedGoalAgentId,_that.title,_that.body);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -245,13 +254,14 @@ return habitAutoCompleted(_that.meta,_that.linkedHabitIds,_that.dayKey,_that.tit
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( NotificationMeta meta,  String linkedTaskId,  int suggestionCount,  String title,  String body)?  taskSuggestion,TResult? Function( NotificationMeta meta,  String linkedTaskId,  String title,  String body)?  taskOverdue,TResult? Function( NotificationMeta meta,  String linkedRelationshipId,  String title,  String body)?  relationshipCheckIn,TResult? Function( NotificationMeta meta,  List<String> linkedHabitIds,  String dayKey,  String title,  String body)?  habitAutoCompleted,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( NotificationMeta meta,  String linkedTaskId,  int suggestionCount,  String title,  String body)?  taskSuggestion,TResult? Function( NotificationMeta meta,  String linkedTaskId,  String title,  String body)?  taskOverdue,TResult? Function( NotificationMeta meta,  String linkedRelationshipId,  String title,  String body)?  relationshipCheckIn,TResult? Function( NotificationMeta meta,  List<String> linkedHabitIds,  String dayKey,  String title,  String body)?  habitAutoCompleted,TResult? Function( NotificationMeta meta,  String linkedGoalAgentId,  String title,  String body)?  goalOffTrack,}) {final _that = this;
 switch (_that) {
 case TaskSuggestionNotification() when taskSuggestion != null:
 return taskSuggestion(_that.meta,_that.linkedTaskId,_that.suggestionCount,_that.title,_that.body);case TaskOverdueNotification() when taskOverdue != null:
 return taskOverdue(_that.meta,_that.linkedTaskId,_that.title,_that.body);case RelationshipCheckInNotification() when relationshipCheckIn != null:
 return relationshipCheckIn(_that.meta,_that.linkedRelationshipId,_that.title,_that.body);case HabitAutoCompletedNotification() when habitAutoCompleted != null:
-return habitAutoCompleted(_that.meta,_that.linkedHabitIds,_that.dayKey,_that.title,_that.body);case _:
+return habitAutoCompleted(_that.meta,_that.linkedHabitIds,_that.dayKey,_that.title,_that.body);case GoalOffTrackNotification() when goalOffTrack != null:
+return goalOffTrack(_that.meta,_that.linkedGoalAgentId,_that.title,_that.body);case _:
   return null;
 
 }
@@ -603,6 +613,94 @@ class _$HabitAutoCompletedNotificationCopyWithImpl<$Res>
 meta: null == meta ? _self.meta : meta // ignore: cast_nullable_to_non_nullable
 as NotificationMeta,linkedHabitIds: null == linkedHabitIds ? _self._linkedHabitIds : linkedHabitIds // ignore: cast_nullable_to_non_nullable
 as List<String>,dayKey: null == dayKey ? _self.dayKey : dayKey // ignore: cast_nullable_to_non_nullable
+as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String,body: null == body ? _self.body : body // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+/// Create a copy of NotificationEntity
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$NotificationMetaCopyWith<$Res> get meta {
+  
+  return $NotificationMetaCopyWith<$Res>(_self.meta, (value) {
+    return _then(_self.copyWith(meta: value));
+  });
+}
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class GoalOffTrackNotification implements NotificationEntity {
+  const GoalOffTrackNotification({required this.meta, required this.linkedGoalAgentId, required this.title, required this.body, final  String? $type}): $type = $type ?? 'goalOffTrack';
+  factory GoalOffTrackNotification.fromJson(Map<String, dynamic> json) => _$GoalOffTrackNotificationFromJson(json);
+
+@override final  NotificationMeta meta;
+ final  String linkedGoalAgentId;
+@override final  String title;
+@override final  String body;
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of NotificationEntity
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$GoalOffTrackNotificationCopyWith<GoalOffTrackNotification> get copyWith => _$GoalOffTrackNotificationCopyWithImpl<GoalOffTrackNotification>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$GoalOffTrackNotificationToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalOffTrackNotification&&(identical(other.meta, meta) || other.meta == meta)&&(identical(other.linkedGoalAgentId, linkedGoalAgentId) || other.linkedGoalAgentId == linkedGoalAgentId)&&(identical(other.title, title) || other.title == title)&&(identical(other.body, body) || other.body == body));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,meta,linkedGoalAgentId,title,body);
+
+@override
+String toString() {
+  return 'NotificationEntity.goalOffTrack(meta: $meta, linkedGoalAgentId: $linkedGoalAgentId, title: $title, body: $body)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $GoalOffTrackNotificationCopyWith<$Res> implements $NotificationEntityCopyWith<$Res> {
+  factory $GoalOffTrackNotificationCopyWith(GoalOffTrackNotification value, $Res Function(GoalOffTrackNotification) _then) = _$GoalOffTrackNotificationCopyWithImpl;
+@override @useResult
+$Res call({
+ NotificationMeta meta, String linkedGoalAgentId, String title, String body
+});
+
+
+@override $NotificationMetaCopyWith<$Res> get meta;
+
+}
+/// @nodoc
+class _$GoalOffTrackNotificationCopyWithImpl<$Res>
+    implements $GoalOffTrackNotificationCopyWith<$Res> {
+  _$GoalOffTrackNotificationCopyWithImpl(this._self, this._then);
+
+  final GoalOffTrackNotification _self;
+  final $Res Function(GoalOffTrackNotification) _then;
+
+/// Create a copy of NotificationEntity
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? meta = null,Object? linkedGoalAgentId = null,Object? title = null,Object? body = null,}) {
+  return _then(GoalOffTrackNotification(
+meta: null == meta ? _self.meta : meta // ignore: cast_nullable_to_non_nullable
+as NotificationMeta,linkedGoalAgentId: null == linkedGoalAgentId ? _self.linkedGoalAgentId : linkedGoalAgentId // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,body: null == body ? _self.body : body // ignore: cast_nullable_to_non_nullable
 as String,

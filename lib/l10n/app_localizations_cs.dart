@@ -9,6 +9,14 @@ class AppLocalizationsCs extends AppLocalizations {
   AppLocalizationsCs([String locale = 'cs']) : super(locale);
 
   @override
+  String get goalOffTrackNotificationBody => 'Dobrá chvíle se k tomu vrátit.';
+
+  @override
+  String goalOffTrackNotificationTitle(String goal) {
+    return '$goal: jsi pozadu';
+  }
+
+  @override
   String get activeLabel => 'Aktivní';
 
   @override

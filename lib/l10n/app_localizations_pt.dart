@@ -9,6 +9,14 @@ class AppLocalizationsPt extends AppLocalizations {
   AppLocalizationsPt([String locale = 'pt']) : super(locale);
 
   @override
+  String get goalOffTrackNotificationBody => 'Um bom momento para retomar.';
+
+  @override
+  String goalOffTrackNotificationTitle(String goal) {
+    return '$goal está fora do rumo';
+  }
+
+  @override
   String get activeLabel => 'Ativo';
 
   @override

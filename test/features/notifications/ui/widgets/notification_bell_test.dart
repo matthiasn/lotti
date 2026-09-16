@@ -527,6 +527,47 @@ void main() {
   );
 
   testWidgets(
+    "tapping a slipped-goal alert opens the goal's page",
+    (tester) async {
+      final navService = _registerNavService();
+      final beamedTo = _captureBeams();
+
+      final entity = _makeGoalOffTrackNotification(
+        id: 'steps',
+        title: 'Daily steps is off track',
+        body: 'A good moment to get back on it.',
+      );
+      final container = ProviderContainer(
+        overrides: [
+          unseenNotificationCountProvider.overrideWith(() => _CountUnseen(1)),
+          inboxNotificationsProvider.overrideWith(
+            () => _StaticInbox([entity]),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        _makeBellHarness(
+          container: container,
+          mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byIcon(LottiIcons.notificationActive));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Daily steps is off track'));
+      await tester.pump();
+
+      // The goal's page, not its chat, and keyed by the agent id.
+      expect(beamedTo, ['/goals/details/goal-steps']);
+      verifyNever(() => navService.pushDesktopTaskDetail(any()));
+      verify(() => repository.markSeen('steps')).called(1);
+    },
+  );
+
+  testWidgets(
     'tapping an auto-completion row opens the habits page',
     (tester) async {
       final navService = _registerNavService();
@@ -789,6 +830,27 @@ NotificationEntity _makeCheckInNotification({
       originatingHostId: 'host-A',
     ),
     linkedRelationshipId: 'rel-$id',
+    title: title,
+    body: body,
+  );
+}
+
+NotificationEntity _makeGoalOffTrackNotification({
+  required String id,
+  required String title,
+  required String body,
+}) {
+  final now = DateTime.utc(2026, 5, 17, 10);
+  return NotificationEntity.goalOffTrack(
+    meta: NotificationMeta(
+      id: id,
+      createdAt: now,
+      updatedAt: now,
+      scheduledFor: now,
+      vectorClock: const VectorClock({'host-A': 1}),
+      originatingHostId: 'host-A',
+    ),
+    linkedGoalAgentId: 'goal-$id',
     title: title,
     body: body,
   );

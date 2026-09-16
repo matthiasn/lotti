@@ -2886,6 +2886,15 @@
   "goalNudgeStatusExpired": "Expiré",
   "goalNudgeStatusRetired": "Retiré",
   "goalNudgeStatusSuperseded": "Remplacé",
+  "goalOffTrackNotificationBody": "Un bon moment pour t'y remettre.",
+  "goalOffTrackNotificationTitle": "{goal} : tu prends du retard",
+  "@goalOffTrackNotificationTitle": {
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      }
+    }
+  },
   "goalPatternBusiestHour": "La plupart des sessions commencent vers {hour}:00. Ouvre Insights pour une analyse plus approfondie.",
   "goalPatternTitle": "Rythme horaire",
   "goalPendingProposalBadge": "Proposition en attente",

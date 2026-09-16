@@ -2886,6 +2886,15 @@
   "goalNudgeStatusExpired": "Caducado",
   "goalNudgeStatusRetired": "Retirado",
   "goalNudgeStatusSuperseded": "Reemplazado",
+  "goalOffTrackNotificationBody": "Un buen momento para retomarlo.",
+  "goalOffTrackNotificationTitle": "{goal}: vas con retraso",
+  "@goalOffTrackNotificationTitle": {
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      }
+    }
+  },
   "goalPatternBusiestHour": "La mayoría de las sesiones comienzan alrededor de {hour}:00. Abra Insights para un análisis más profundo.",
   "goalPatternTitle": "Patrón de sincronización",
   "goalPendingProposalBadge": "Propuesta pendiente",

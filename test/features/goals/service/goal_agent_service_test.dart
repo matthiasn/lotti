@@ -765,6 +765,48 @@ void main() {
       verify(() => agentService.destroyAgent(agentId)).called(1);
     });
 
+    test('clears the armed off-track alert as the last leg', () async {
+      // Destroying the agent is what stops the ticks, so no later tick can
+      // retract an alert armed weeks ago — the cascade has to.
+      final alerts = MockGoalOffTrackSink();
+      when(() => alerts.clearFor(any())).thenAnswer((_) async {});
+      when(() => agentService.cancelPendingWake(agentId)).thenReturn(null);
+      when(() => agentService.abortRunningWake(agentId)).thenReturn(true);
+      when(() => orchestrator.removeSubscriptions(agentId)).thenReturn(null);
+      when(
+        () => agentService.destroyAgent(agentId),
+      ).thenAnswer((_) async => true);
+      final wired = GoalAgentService(
+        agentService: agentService,
+        repository: repository,
+        syncService: syncService,
+        orchestrator: orchestrator,
+        offTrackAlerts: alerts,
+      );
+
+      expect(await wired.deleteGoalAgent(agentId), isTrue);
+
+      verify(() => alerts.clearFor(agentId)).called(1);
+    });
+
+    test('leaves the alert alone when nothing was destroyed', () async {
+      final alerts = MockGoalOffTrackSink();
+      when(
+        () => agentService.destroyAgent('missing'),
+      ).thenAnswer((_) async => false);
+      final wired = GoalAgentService(
+        agentService: agentService,
+        repository: repository,
+        syncService: syncService,
+        orchestrator: orchestrator,
+        offTrackAlerts: alerts,
+      );
+
+      expect(await wired.deleteGoalAgent('missing'), isFalse);
+
+      verifyNever(() => alerts.clearFor(any()));
+    });
+
     test('reports when no goal matched the id', () async {
       when(
         () => agentService.destroyAgent('missing'),

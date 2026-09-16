@@ -3,6 +3,7 @@ import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_progress_models.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/classes/notification_producer.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -21,6 +22,21 @@ const goalCadenceHour = 6;
 
 /// How many prior daily register rows feed the grace-period check.
 const goalPriorLookbackDays = 3;
+
+/// What the off-track alert needs from the goal: the agent the alert is
+/// linked to and routed by, and the title its copy names.
+typedef GoalOffTrackSubject = ({String agentId, String goalTitle});
+
+/// The OS-alert seam (ADR 0065): the shared producer contract, bound to the
+/// goal's subject and its wake derivation.
+///
+/// Named here, next to the derivation it consumes, so the dependency runs one
+/// way: `GoalOffTrackAlertService` implements this and imports Phase A, while
+/// Phase A stays unaware of `features/notifications` entirely. `arm` is
+/// called on the tick whose status transitioned into a slip; `clearFor` on
+/// one that transitioned out of it, and when the goal is deleted.
+typedef GoalOffTrackSink =
+    NotificationEpisodeSink<GoalOffTrackSubject, GoalWakeDerivation>;
 
 /// Phase A of the goal-agent wake (ADR 0054): deterministic, model-free,
 /// idempotent — the tier that runs on every tick, on every device, and
@@ -41,7 +57,13 @@ class GoalAgentPhaseA {
     this._onEscalationArmed,
     this._onReportStale,
     this._onReportRefreshNeeded,
+    this._offTrackAlerts,
   });
+
+  /// Projects a status transition onto the OS alert channel — see
+  /// [_projectOffTrackAlert]. Optional so the tier keeps working, and stays
+  /// testable, without the notification stack.
+  final GoalOffTrackSink? _offTrackAlerts;
 
   /// Nudges the scheduled-wake manager after an escalation is armed, so a
   /// local transition is processed promptly instead of waiting out the
@@ -163,7 +185,47 @@ class GoalAgentPhaseA {
       await _onReportRefreshNeeded?.call(agentId);
     }
 
+    // Deliberately AFTER the transaction, the relationship reminder's
+    // ordering: the alert row lives in notifications.sqlite behind its own
+    // vector-clock scope and outbox enqueue, and it is a projection of the
+    // register this tick just made durable. Only a persisted transition
+    // projects — an unchanged slip must not re-alert, and a fenced write
+    // means the revision's own tick will judge again.
+    if (persisted && facts.statusTransitioned) {
+      await _projectOffTrackAlert(
+        agentId: agentId,
+        goalTitle: version.title,
+        derivation: derivation,
+        slipped: replacementEligible,
+      );
+    }
+
     return const WakeResult(success: true);
+  }
+
+  /// A slip arms the alert for its episode — the transition day, so a goal
+  /// that stays behind is alerted once per slip — and anything else clears
+  /// every open alert for the goal, because "off track" has stopped being
+  /// true. Eligibility is the banner's own predicate
+  /// (`automaticGoalAdEligible`), so the two channels never disagree about
+  /// what a slip is. The sink never throws (its contract), so a
+  /// notification-store failure cannot fail the wake that already committed.
+  Future<void> _projectOffTrackAlert({
+    required String agentId,
+    required String goalTitle,
+    required GoalWakeDerivation derivation,
+    required bool slipped,
+  }) async {
+    final alerts = _offTrackAlerts;
+    if (alerts == null) return;
+    if (slipped) {
+      await alerts.arm(
+        subject: (agentId: agentId, goalTitle: goalTitle),
+        derivation: derivation,
+      );
+    } else {
+      await alerts.clearFor(agentId);
+    }
   }
 
   /// Persists one already-derived deterministic register snapshot.

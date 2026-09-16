@@ -2886,6 +2886,15 @@
   "goalNudgeStatusExpired": "Expirat",
   "goalNudgeStatusRetired": "Retras",
   "goalNudgeStatusSuperseded": "Înlocuit",
+  "goalOffTrackNotificationBody": "Un moment bun pentru a reveni pe drumul cel bun.",
+  "goalOffTrackNotificationTitle": "{goal}: sunteți în urmă",
+  "@goalOffTrackNotificationTitle": {
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      }
+    }
+  },
   "goalPatternBusiestHour": "Cele mai multe sesiuni încep în jurul {hour}:00. Deschideți Perspective pentru o analiză mai profundă.",
   "goalPatternTitle": "Model de sincronizare",
   "goalPendingProposalBadge": "Propunere în așteptarea evaluării",

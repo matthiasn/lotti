@@ -9,6 +9,15 @@ class AppLocalizationsSv extends AppLocalizations {
   AppLocalizationsSv([String locale = 'sv']) : super(locale);
 
   @override
+  String get goalOffTrackNotificationBody =>
+      'Ett bra tillfälle att komma tillbaka på spåret.';
+
+  @override
+  String goalOffTrackNotificationTitle(String goal) {
+    return '$goal ligger efter';
+  }
+
+  @override
   String get activeLabel => 'Aktiv';
 
   @override

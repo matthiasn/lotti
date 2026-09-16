@@ -5,7 +5,7 @@ description: Durable app-level alerts stored outside the journal, converging acr
 resource: ../../lib/features/notifications
 tags: [notifications, sync, convergence]
 status: stable
-generated: { by: claude-code/fable-5.1, at: 2026-09-16T17:00:00Z }
+generated: { by: claude-code/fable-5.1, at: 2026-09-16T19:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: src
@@ -98,12 +98,14 @@ when the field it sets is still null. That is what makes the lifecycle a lattice
 rather than a sequence: the three marks are independent, so replaying a
 transition is a no-op and reordering two of them converges either way.
 
-The union has four variants — `taskSuggestion`, `taskOverdue`,
-`relationshipCheckIn` and `habitAutoCompleted` (one row for every habit the
+The union has five variants — `taskSuggestion`, `taskOverdue`,
+`relationshipCheckIn`, `habitAutoCompleted` (one row for every habit the
 [auto-completion engine](habits.md#auto-completion-the-engine-only-fills-empty-days)
 checked off in one batch; its `linkedEntityId` is `null` because a grouped row
-leads to the habits page, not to one habit) — and the discriminator strings
-are the sync wire format,
+leads to the habits page, not to one habit) and `goalOffTrack` (a goal that
+slipped, linked to its agent; see
+[goal agents](goals.md#the-os-alert-for-a-slipped-goal)) — and the
+discriminator strings are the sync wire format,
 so renaming one would make every already-synced row of that kind undecodable on
 upgrade. A peer too old to know a variant throws in `fromJson`, which
 `SyncEventProcessor` turns into `UnrecoverableSyncPayloadException` and skips:
@@ -371,7 +373,8 @@ appending `/tasks/` silently produced a dead route for anything that was not a
 task — which is what happened the moment a second entity kind got a
 notification. The same trap exists in the bell, where `_InboxRow` routes
 through `onSelectEntry` with the whole entity for the same reason. An
-auto-completion row leads to `/habits`, on both channels.
+auto-completion row leads to `/habits`, and a slipped-goal row to the goal's
+page at `/goals/details/<agentId>` — not its chat — on both channels.
 
 **A task row in the bell beams to `/tasks/<id>`** through `beamToNamed`, the
 route the task list, the logbook cards and the Daily OS lanes use, so the
@@ -473,7 +476,7 @@ flowchart LR
     BASE --> ID
     BASE --> REPO
   end
-  SINK -. "implemented by a subclass, e.g.<br/>RelationshipReminderService" .-> BASE
+  SINK -. "implemented by a subclass:<br/>RelationshipReminderService,<br/>GoalOffTrackAlertService" .-> BASE
 ```
 
 - **The sink is the runtime's only dependency, and it lives in `lib/classes`**
@@ -509,7 +512,12 @@ flowchart LR
 What stays per kind is the union variant itself. A generic route-carrying row
 would have been shorter, but the exhaustive switches over the union are what
 force a new kind to decide its inbox behaviour and its tap route rather than
-inherit one. A new kind is a variant, a subclass, and a call from its tier.
+inherit one. A new kind is a variant, a subclass, and a call from its tier —
+which is exactly what the slipped-goal alert (ADR 0065) added, and nothing
+else: `GoalOffTrackAlertService` supplies the kind, the agent as subject, the
+transition day as episode key, the next 09:00 as instant and the copy, and
+`GoalAgentPhaseA` calls the sink after its transaction on a status
+transition.
 
 # Not every variant may surface before it is due
 
@@ -525,7 +533,10 @@ once-per-episode nudge into the ambient noise the banner channel was chosen
 over an inbox to avoid. `showsBeforeScheduledTime` is the per-variant gate, and
 it is exhaustive over the union so a new variant has to make the choice rather
 than inherit one. `habitAutoCompleted` chose like the task rows: it is written
-at the moment of completion, so it is due on arrival.
+at the moment of completion, so it is due on arrival. `goalOffTrack` chose like
+the check-in reminder: it is armed on the tick that saw the slip for the next
+alert hour, and the bell would otherwise say "off track" hours before the
+alert does.
 
 # Copy is baked, not composed
 

@@ -92,6 +92,26 @@ Map<String, dynamic> _$HabitAutoCompletedNotificationToJson(
   'runtimeType': instance.$type,
 };
 
+GoalOffTrackNotification _$GoalOffTrackNotificationFromJson(
+  Map<String, dynamic> json,
+) => GoalOffTrackNotification(
+  meta: NotificationMeta.fromJson(json['meta'] as Map<String, dynamic>),
+  linkedGoalAgentId: json['linkedGoalAgentId'] as String,
+  title: json['title'] as String,
+  body: json['body'] as String,
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$GoalOffTrackNotificationToJson(
+  GoalOffTrackNotification instance,
+) => <String, dynamic>{
+  'meta': instance.meta,
+  'linkedGoalAgentId': instance.linkedGoalAgentId,
+  'title': instance.title,
+  'body': instance.body,
+  'runtimeType': instance.$type,
+};
+
 _NotificationMeta _$NotificationMetaFromJson(Map<String, dynamic> json) =>
     _NotificationMeta(
       id: json['id'] as String,

@@ -9,6 +9,15 @@ class AppLocalizationsRo extends AppLocalizations {
   AppLocalizationsRo([String locale = 'ro']) : super(locale);
 
   @override
+  String get goalOffTrackNotificationBody =>
+      'Un moment bun pentru a reveni pe drumul cel bun.';
+
+  @override
+  String goalOffTrackNotificationTitle(String goal) {
+    return '$goal: sunteți în urmă';
+  }
+
+  @override
   String get activeLabel => 'Activ';
 
   @override

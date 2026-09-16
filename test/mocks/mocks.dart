@@ -118,6 +118,7 @@ import 'package:lotti/features/daily_os_next/services/day_processing_runtime.dar
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/goals/repository/goal_repository.dart';
+import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
 import 'package:lotti/features/goals/service/goal_chat_service.dart';
 import 'package:lotti/features/goals/service/goal_checkin_compactor.dart';
@@ -889,6 +890,8 @@ class MockNotificationRepository extends Mock
 class MockNotificationScheduler extends Mock implements NotificationScheduler {}
 
 class MockNotificationTapRouter extends Mock implements NotificationTapRouter {}
+
+class MockGoalOffTrackSink extends Mock implements GoalOffTrackSink {}
 
 class MockOutboxService extends Mock implements OutboxService {}
 

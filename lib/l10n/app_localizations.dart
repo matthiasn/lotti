@@ -117,6 +117,18 @@ abstract class AppLocalizations {
     Locale('sv'),
   ];
 
+  /// No description provided for @goalOffTrackNotificationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A good moment to get back on it.'**
+  String get goalOffTrackNotificationBody;
+
+  /// No description provided for @goalOffTrackNotificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{goal} is off track'**
+  String goalOffTrackNotificationTitle(String goal);
+
   /// No description provided for @activeLabel.
   ///
   /// In en, this message translates to:

@@ -12,6 +12,14 @@ sources:
     resource: ../../lib/features/goals
     title: Goals feature source
     last_modified: 2026-09-15
+  - id: off-track-alert
+    resource: ../../lib/features/goals/service/goal_off_track_alert_service.dart
+    title: GoalOffTrackAlertService — the OS-alert projection of a slip
+    last_modified: 2026-09-16
+  - id: adr-0065
+    resource: ../../docs/adr/0065-goal-off-track-alerts-on-the-os-channel.md
+    title: ADR 0065 — Goal off-track alerts on the OS channel
+    last_modified: 2026-09-16
   - id: phase-a
     resource: ../../lib/features/goals/runtime/goal_agent_phase_a.dart
     title: GoalAgentPhaseA — the deterministic tick
@@ -186,6 +194,9 @@ flowchart TD
     REARM --> READ[GoalSignalReader\njournal → GoalSignalWindow]
     READ --> EVAL[GoalProgressEvaluator\n+ GoalTrackPolicy]
     EVAL --> REG[upsert goalProgress register\ngoal_progress:agent:evaluation-day\nrecompute, never accumulate]
+    REG --> ALERT{persisted status\ntransition?}
+    ALERT -- "into a slip" --> ARM[GoalOffTrackSink.arm\nafter the transaction — one\nalert per slip, next 09:00]
+    ALERT -- "out of one" --> CLEAR[GoalOffTrackSink.clearFor\nretracts the open alert]
     REG --> MATERIAL{status transition, register change,\nor eligible banner expiry?}
     MATERIAL -- no --> DONE[return — the €0 no-op]
     MATERIAL -- yes --> STALE2[advance report-stale watermark]
@@ -215,6 +226,36 @@ typed setup, legacy agent profile, then the device's Settings default. The
 validated `glm-5.2` built-in remains only when no Settings default was selected.
 See [profile resolution](ai/profile-resolution.md) for failure and precedence rules.
 
+
+## The OS alert for a slipped goal
+
+The banner dock is the goal's primary attention channel (ADR 0055) and needs
+the app open. ADR 0065 adds the case it cannot cover — the device the user is
+not holding — the way ADR 0059 did for people: a durable inbox row that the
+notifications feature projects to an OS alarm, produced by the deterministic
+tier on the [producer contract](notifications.md#producers-share-one-episode-contract).
+
+- **Phase A is the producer, and only a persisted status transition
+  projects.** After `persistDerivation` commits — never inside its
+  transaction, since the alert row lives in `notifications.sqlite` behind
+  its own vector-clock scope — a transition *into* a slip calls
+  `GoalOffTrackSink.arm`; a transition out of one calls `clearFor`. A slip is
+  `automaticGoalAdEligible`, the banner's own predicate, so the two channels
+  never disagree. An unchanged slip projects nothing (one alert per slip), and
+  a fenced write projects nothing (the revision's tick judges again).
+- **The episode is the transition day.** `GoalOffTrackAlertService` keys the
+  row by the derivation's `periodKey` of the tick that transitioned, links it
+  to the *agent* (what the goal detail route is keyed by), and arms it for
+  the next 09:00 local — calendar components, not a Duration. Recovery,
+  achievement, a data gap and `deleteGoalAgent` all reach `clearFor`, which
+  is what cancels the alarm.
+- **Copy is deterministic and content-minimal**: the goal's title and a fixed
+  line, from the ARB catalogs, baked in the arming device's locale.
+
+**A banner dismissal does not cancel an already-armed alert.** "Not today" is
+written to the nudge row, which wakes no goal tick, so an alert armed at 06:00
+for 09:00 still fires after an 08:00 dismissal. The sink is where a dismissal
+handler would retract it; that wiring is a follow-up.
 
 ## Invariants
 
@@ -1745,6 +1786,10 @@ Invariants worth not breaking:
 - Goal *lifecycle* (active/paused/retired) still lives only agent-side. The
   definition was moved to the journal; the lifecycle was not, so losing the
   agent database still loses which goals were retired.
+- The OS alert is armed per *transition day*, so two devices that first see
+  the same slip on different days write two rows; the later arm retracts the
+  earlier open one through the producer's own supersession, which is the
+  intended convergence rather than a duplicate alert.
 
 ## Related
 
