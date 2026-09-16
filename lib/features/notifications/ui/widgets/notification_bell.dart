@@ -92,6 +92,10 @@ class _NotificationBellState extends ConsumerState<NotificationBell> {
         // The goal's page, not its chat: the alert says the goal slipped,
         // and the page is where the progress and the banner both are.
         beamToNamed(goalDetailPath(linkedGoalAgentId));
+      case DayPlanOutcomeNotification():
+        beamToNamed('/calendar');
+      case SyncConflictNotification():
+        beamToNamed('/settings/advanced/conflicts');
     }
   }
 

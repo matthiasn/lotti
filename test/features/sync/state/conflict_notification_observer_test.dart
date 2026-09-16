@@ -1,15 +1,22 @@
 import 'dart:async';
 import 'dart:ui' show Locale;
 
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/notifications/model/notification_episode_id.dart';
+import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/sync/state/conflict_notification_observer.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
-import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 Conflict _conflict(String id) => Conflict(
   id: id,
@@ -23,132 +30,215 @@ Conflict _conflict(String id) => Conflict(
 void main() {
   // The default-locale path resolves through WidgetsBinding.instance.
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(registerAllFallbackValues);
 
+  final now = DateTime(2026, 9, 16, 12);
   late MockJournalDb db;
-  late MockNotificationService notifications;
+  late MockNotificationRepository notifications;
   late ConflictNotificationObserver observer;
+  late List<NotificationEntity> armedRows;
   final l10n = AppLocalizationsEn();
 
-  void stubNotify() {
+  String episodeId(List<String> freshIds) => notificationEpisodeId(
+    kind: NotificationKinds.syncConflict,
+    subjectId: syncConflictsSubjectId,
+    episodeKey: ([...freshIds]..sort()).join('+'),
+  );
+
+  void stubSuccess() {
     when(
-      () => notifications.showNotificationNow(
-        title: any(named: 'title'),
-        body: any(named: 'body'),
-        notificationId: any(named: 'notificationId'),
-        showOnMobile: any(named: 'showOnMobile'),
-        showOnDesktop: any(named: 'showOnDesktop'),
-        deepLink: any(named: 'deepLink'),
+      () => notifications.armEpisode(
+        id: any(named: 'id'),
+        scheduledFor: any(named: 'scheduledFor'),
+        build: any(named: 'build'),
+        category: any(named: 'category'),
       ),
-    ).thenAnswer((_) async {});
+    ).thenAnswer((invocation) async {
+      final build =
+          invocation.namedArguments[#build]
+              as NotificationEntity Function(NotificationMeta);
+      final row = build(
+        NotificationMeta(
+          id: invocation.namedArguments[#id] as String,
+          createdAt: now,
+          updatedAt: now,
+          scheduledFor: invocation.namedArguments[#scheduledFor] as DateTime,
+          vectorClock: const VectorClock({}),
+          originatingHostId: '',
+        ),
+      );
+      armedRows.add(row);
+      return row;
+    });
+    when(
+      () => notifications.retractOpenRows(
+        linkedEntityId: any(named: 'linkedEntityId'),
+        kind: any(named: 'kind'),
+        exceptId: any(named: 'exceptId'),
+      ),
+    ).thenAnswer((_) async => const []);
   }
 
   setUp(() {
     db = MockJournalDb();
-    notifications = MockNotificationService();
-    stubNotify();
+    notifications = MockNotificationRepository();
+    armedRows = [];
+    stubSuccess();
     observer = ConflictNotificationObserver(
       db: db,
-      notificationService: notifications,
+      notificationRepository: notifications,
       messages: AppLocalizationsEn.new,
     );
   });
 
-  void verifyNeverNotified() => verifyNever(
-    () => notifications.showNotificationNow(
-      title: any(named: 'title'),
-      body: any(named: 'body'),
-      notificationId: any(named: 'notificationId'),
-      showOnMobile: any(named: 'showOnMobile'),
-      showOnDesktop: any(named: 'showOnDesktop'),
-      deepLink: any(named: 'deepLink'),
+  Future<void> clocked(Future<void> Function() body) =>
+      withClock(Clock.fixed(now), body);
+
+  void verifyNothingWritten() => verifyNever(
+    () => notifications.armEpisode(
+      id: any(named: 'id'),
+      scheduledFor: any(named: 'scheduledFor'),
+      build: any(named: 'build'),
+      category: any(named: 'category'),
     ),
   );
 
-  test('does not alert for conflicts already present at startup', () {
-    observer.handleSnapshot([_conflict('a')]);
-    verifyNeverNotified();
+  test('does not alert for conflicts already present at startup', () async {
+    await observer.handleSnapshot([_conflict('a')]);
+
+    verifyNothingWritten();
   });
 
-  test('alerts when a new conflict appears, with the total count', () {
-    observer
-      ..handleSnapshot(const []) // prime
-      ..handleSnapshot([_conflict('a')]);
+  test('writes a row due now when a new conflict appears', () async {
+    await clocked(() async {
+      await observer.handleSnapshot(const []); // prime
+      await observer.handleSnapshot([_conflict('a')]);
+    });
 
     verify(
-      () => notifications.showNotificationNow(
-        title: l10n.conflictNotificationTitle,
-        body: l10n.conflictNotificationBody(1),
-        notificationId: ConflictNotificationObserver.notificationId,
-        showOnMobile: true,
-        showOnDesktop: true,
-        deepLink: ConflictNotificationObserver.deepLink,
+      () => notifications.armEpisode(
+        id: episodeId(['a']),
+        scheduledFor: now,
+        build: any(named: 'build'),
+        category: any(named: 'category'),
+      ),
+    ).called(1);
+    final row = armedRows.single as SyncConflictNotification;
+    expect(row.conflictCount, 1);
+    expect(row.title, l10n.conflictNotificationTitle);
+    expect(row.body, l10n.conflictNotificationBody(1));
+    // A conflict is this device's disagreement with a peer; the row must
+    // never travel to that peer.
+    expect(row.isDeviceLocal, isTrue);
+    expect(row.linkedEntityId, syncConflictsSubjectId);
+  });
+
+  test('a later burst retracts the earlier row', () async {
+    await observer.handleSnapshot(const []); // prime
+    await observer.handleSnapshot([_conflict('a')]);
+    await observer.handleSnapshot([_conflict('a'), _conflict('b')]);
+
+    verify(
+      () => notifications.retractOpenRows(
+        linkedEntityId: syncConflictsSubjectId,
+        kind: NotificationKinds.syncConflict,
+        exceptId: episodeId(['b']),
+      ),
+    ).called(1);
+    // The body carries the total still unresolved, not the burst's size.
+    expect((armedRows.last as SyncConflictNotification).conflictCount, 2);
+  });
+
+  test('coalesces a burst of new conflicts into a single row', () async {
+    await observer.handleSnapshot(const []); // prime
+    await observer.handleSnapshot([
+      _conflict('a'),
+      _conflict('b'),
+      _conflict('c'),
+    ]);
+
+    expect(armedRows, hasLength(1));
+    expect(armedRows.single.body, l10n.conflictNotificationBody(3));
+    expect(armedRows.single.meta.id, episodeId(['a', 'b', 'c']));
+  });
+
+  test('does not alert when no new conflict id appears', () async {
+    await observer.handleSnapshot([_conflict('a')]); // prime with one existing
+    await observer.handleSnapshot([_conflict('a')]); // unchanged
+    await observer.handleSnapshot(const []); // one resolved, none new
+
+    verifyNothingWritten();
+  });
+
+  test('a write failure is logged and never escapes the listener', () async {
+    final logger = MockDomainLogger();
+    await setUpTestGetIt(
+      additionalSetup: () => getIt
+        ..unregister<DomainLogger>()
+        ..registerSingleton<DomainLogger>(logger),
+    );
+    addTearDown(tearDownTestGetIt);
+    when(
+      () => notifications.armEpisode(
+        id: any(named: 'id'),
+        scheduledFor: any(named: 'scheduledFor'),
+        build: any(named: 'build'),
+        category: any(named: 'category'),
+      ),
+    ).thenThrow(StateError('notifications.sqlite unavailable'));
+
+    await observer.handleSnapshot(const []); // prime
+    await expectLater(observer.handleSnapshot([_conflict('a')]), completes);
+
+    verify(
+      () => logger.error(
+        LogDomain.sync,
+        any<Object>(),
+        message: 'failed to record sync-conflict notification',
+        stackTrace: any(named: 'stackTrace'),
       ),
     ).called(1);
   });
 
-  test('coalesces a burst of new conflicts into a single alert', () {
-    observer
-      ..handleSnapshot(const []) // prime
-      ..handleSnapshot([_conflict('a'), _conflict('b'), _conflict('c')]);
-
-    verify(
-      () => notifications.showNotificationNow(
-        title: any(named: 'title'),
-        body: l10n.conflictNotificationBody(3),
-        notificationId: any(named: 'notificationId'),
-        showOnMobile: any(named: 'showOnMobile'),
-        showOnDesktop: any(named: 'showOnDesktop'),
-        deepLink: any(named: 'deepLink'),
+  test('a write failure without a logger is swallowed too', () async {
+    when(
+      () => notifications.armEpisode(
+        id: any(named: 'id'),
+        scheduledFor: any(named: 'scheduledFor'),
+        build: any(named: 'build'),
+        category: any(named: 'category'),
       ),
-    ).called(1);
-  });
+    ).thenThrow(StateError('notifications.sqlite unavailable'));
 
-  test('does not alert when no new conflict id appears', () {
-    observer
-      ..handleSnapshot([_conflict('a')]) // prime with one existing
-      ..handleSnapshot([_conflict('a')]) // unchanged
-      ..handleSnapshot(const []); // one resolved, none new
-    verifyNeverNotified();
+    await observer.handleSnapshot(const []); // prime
+    await expectLater(observer.handleSnapshot([_conflict('a')]), completes);
   });
 
   group('default dependencies resolve from getIt', () {
-    setUp(() {
-      if (getIt.isRegistered<JournalDb>()) getIt.unregister<JournalDb>();
-      if (getIt.isRegistered<NotificationService>()) {
-        getIt.unregister<NotificationService>();
-      }
-      getIt
-        ..registerSingleton<JournalDb>(db)
-        ..registerSingleton<NotificationService>(notifications);
+    setUp(() async {
+      await setUpTestGetIt(
+        additionalSetup: () => getIt
+          ..unregister<JournalDb>()
+          ..registerSingleton<JournalDb>(db)
+          ..registerSingleton<NotificationRepository>(notifications),
+      );
     });
 
-    tearDown(() {
-      if (getIt.isRegistered<JournalDb>()) getIt.unregister<JournalDb>();
-      if (getIt.isRegistered<NotificationService>()) {
-        getIt.unregister<NotificationService>();
-      }
-    });
+    tearDown(tearDownTestGetIt);
 
     test(
-      'falls back to getIt for the db/notifier and the device locale for copy',
-      () {
-        // No db, notifier or messages passed: the db comes from getIt, the
-        // notifier resolves lazily from getIt on first alert, and the copy
+      'falls back to getIt for the db and repository, and to the device '
+      'locale for copy',
+      () async {
+        // No db, repository or messages passed: the db comes from getIt, the
+        // repository resolves lazily from getIt on first alert, and the copy
         // comes from the device-locale resolver (en in the test host).
-        ConflictNotificationObserver()
-          ..handleSnapshot(const []) // prime
-          ..handleSnapshot([_conflict('a')]);
+        final fallback = ConflictNotificationObserver();
+        await fallback.handleSnapshot(const []); // prime
+        await fallback.handleSnapshot([_conflict('a')]);
 
-        verify(
-          () => notifications.showNotificationNow(
-            title: l10n.conflictNotificationTitle,
-            body: l10n.conflictNotificationBody(1),
-            notificationId: ConflictNotificationObserver.notificationId,
-            showOnMobile: true,
-            showOnDesktop: true,
-            deepLink: ConflictNotificationObserver.deepLink,
-          ),
-        ).called(1);
+        expect(armedRows.single.title, l10n.conflictNotificationTitle);
+        expect(armedRows.single.body, l10n.conflictNotificationBody(1));
       },
     );
 
@@ -160,20 +250,11 @@ void main() {
       tester.platformDispatcher.localeTestValue = const Locale('xx');
       addTearDown(tester.platformDispatcher.clearLocaleTestValue);
 
-      ConflictNotificationObserver()
-        ..handleSnapshot(const []) // prime
-        ..handleSnapshot([_conflict('a')]);
+      final fallback = ConflictNotificationObserver();
+      await fallback.handleSnapshot(const []); // prime
+      await fallback.handleSnapshot([_conflict('a')]);
 
-      verify(
-        () => notifications.showNotificationNow(
-          title: l10n.conflictNotificationTitle,
-          body: l10n.conflictNotificationBody(1),
-          notificationId: ConflictNotificationObserver.notificationId,
-          showOnMobile: true,
-          showOnDesktop: true,
-          deepLink: ConflictNotificationObserver.deepLink,
-        ),
-      ).called(1);
+      expect(armedRows.single.title, l10n.conflictNotificationTitle);
     });
   });
 
@@ -187,18 +268,9 @@ void main() {
     controller
       ..add(const []) // prime
       ..add([_conflict('x')]);
-    await Future<void>.delayed(Duration.zero);
+    await pumpEventQueue();
 
-    verify(
-      () => notifications.showNotificationNow(
-        title: any(named: 'title'),
-        body: any(named: 'body'),
-        notificationId: any(named: 'notificationId'),
-        showOnMobile: any(named: 'showOnMobile'),
-        showOnDesktop: any(named: 'showOnDesktop'),
-        deepLink: any(named: 'deepLink'),
-      ),
-    ).called(1);
+    expect(armedRows, hasLength(1));
 
     await observer.dispose();
     expect(controller.hasListener, isFalse);

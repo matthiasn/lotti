@@ -967,6 +967,107 @@ void main() {
     });
   });
 
+  // A row about this device's own processing never leaves it — and neither
+  // do its lifecycle marks: a peer receiving a state update for a row it
+  // never got keeps the event pending forever, waiting for a base row that
+  // is never coming (`_applyNotificationStateUpdateMessage` throws to retry).
+  group('NotificationRepository device-local rows', () {
+    Future<NotificationEntity> armConflict() async {
+      final saved = await repository.armEpisode(
+        id: 'conflict-burst-1',
+        scheduledFor: fixedNow,
+        build: (meta) => NotificationEntity.syncConflict(
+          meta: meta,
+          conflictCount: 2,
+          title: 'Sync needs your review',
+          body: '2 entries were edited on two devices',
+        ),
+      );
+      return saved!;
+    }
+
+    void verifyNoStateUpdateEnqueued() => verifyNever(
+      () => outboxService.enqueueNotificationStateUpdate(
+        id: any(named: 'id'),
+        seenAt: any(named: 'seenAt'),
+        actedOnAt: any(named: 'actedOnAt'),
+        deletedAt: any(named: 'deletedAt'),
+        vectorClock: any(named: 'vectorClock'),
+        originatingHostId: any(named: 'originatingHostId'),
+      ),
+    );
+
+    test(
+      'a create is stored, scheduled and announced but never enqueued',
+      () async {
+        final saved = await armConflict();
+
+        expect(saved.isDeviceLocal, isTrue);
+        expect(await notificationsDb.notificationById(saved.id), isNotNull);
+        verify(() => scheduler.schedule(saved, now: fixedNow)).called(1);
+        verify(
+          () => updateNotifications.notify(any(), fromSync: false),
+        ).called(1);
+        verifyNever(
+          () => outboxService.enqueueNotification(
+            any<NotificationEntity>(),
+            originatingHostId: any(named: 'originatingHostId'),
+          ),
+        );
+      },
+    );
+
+    test('marking it seen stays local too', () async {
+      final saved = await armConflict();
+
+      final seen = await repository.markSeen(saved.id);
+
+      expect(seen!.meta.seenAt, isNotNull);
+      verifyNoStateUpdateEnqueued();
+    });
+
+    test('retracting it stays local too', () async {
+      final saved = await armConflict();
+
+      final retracted = await repository.retract(saved.id);
+
+      expect(retracted!.meta.deletedAt, isNotNull);
+      verifyNoStateUpdateEnqueued();
+    });
+
+    test('a synced row still enqueues its create and its marks', () async {
+      // The guard is per variant, not a global switch.
+      final saved = await repository.armEpisode(
+        id: 'checkin-1',
+        scheduledFor: fixedNow,
+        build: (meta) => NotificationEntity.relationshipCheckIn(
+          meta: meta,
+          linkedRelationshipId: 'rel-1',
+          title: 'Check in?',
+          body: 'b',
+        ),
+      );
+      await repository.markSeen(saved!.id);
+
+      verify(
+        () => outboxService.enqueueNotification(
+          saved,
+          originatingHostId: any(named: 'originatingHostId'),
+        ),
+      ).called(1);
+      verify(
+        () => outboxService.enqueueNotificationStateUpdate(
+          id: saved.id,
+          seenAt: any(named: 'seenAt'),
+          actedOnAt: any(named: 'actedOnAt'),
+          deletedAt: any(named: 'deletedAt'),
+          vectorClock: any(named: 'vectorClock'),
+          originatingHostId: any(named: 'originatingHostId'),
+        ),
+      ).called(1);
+    });
+  });
+
   group('NotificationRepository.retractOpenRows', () {
     const kind = NotificationKinds.relationshipCheckIn;
 

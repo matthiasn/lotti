@@ -59,6 +59,9 @@ bool showsBeforeScheduledTime(NotificationEntity entity) => switch (entity) {
   // Armed for the next alert hour on the tick that saw the slip; the bell
   // would otherwise carry "off track" for hours before the alert says it.
   GoalOffTrackNotification() => false,
+  // Both written the moment the thing happened, so due on arrival.
+  DayPlanOutcomeNotification() => true,
+  SyncConflictNotification() => true,
 };
 
 String _inboxIdentityKey(NotificationEntity entity) {

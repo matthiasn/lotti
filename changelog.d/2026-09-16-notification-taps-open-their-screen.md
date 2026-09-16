@@ -6,6 +6,18 @@
   the alert back before it fires. Like every notification, it only arrives
   once notifications are switched on in Settings.
 
+### Changed
+- **"Your day plan is ready" and "Sync needs your review" now stay in the
+  bell.** Both used to be a banner that was gone once dismissed. They now
+  land in the notifications inbox as well, so a plan that finished while the
+  app was in the background, or a sync conflict that appeared, can still be
+  found after the banner has passed, and tapping either opens the day or the
+  conflicts list. Neither travels to your other devices: a plan job and a
+  conflict are about the device they happened on.
+- **The Mac no longer posts a "tasks in progress" notification after every
+  change.** The number of tasks in progress stays on the Dock icon, silently,
+  as it does on the iPhone.
+
 ### Fixed
 - **Tapping a notification now opens what it is about.** A tap on a check-in
   reminder, a task suggestion, a habit reminder, a "your day plan is ready"

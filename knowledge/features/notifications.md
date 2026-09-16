@@ -5,7 +5,7 @@ description: Durable app-level alerts stored outside the journal, converging acr
 resource: ../../lib/features/notifications
 tags: [notifications, sync, convergence]
 status: stable
-generated: { by: claude-code/fable-5.1, at: 2026-09-16T19:00:00Z }
+generated: { by: claude-code/fable-5.1, at: 2026-09-16T21:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: src
@@ -83,6 +83,33 @@ churn — created, delivered, dismissed, retracted — never competes with journ
 reads for the same write lock, and a notification schema change never touches the
 primary store.
 
+# Two rows never leave the device
+
+Most rows sync, because what they say is true on every device and dealing
+with one on any device must clear it on the others. Two say something that is
+only true *here*, and `NotificationEntityFields.isDeviceLocal` — exhaustive
+over the union, so every variant has to choose — keeps them home:
+
+| Variant | Written by | Why it cannot sync |
+|---------|-----------|--------------------|
+| `dayPlanOutcome` | `DayPlanReadyNotifier`, when a Daily OS draft or refine job succeeds or gives up while the app is in the background | the [job ledger](daily_os_next/processing-outbox.md) is this device's, and "open Lotti to try again" is only true here |
+| `syncConflict` | `ConflictNotificationObserver`, once per burst of newly detected conflicts | a conflict is this device's disagreement with a peer, and the [list the row opens](sync/vector-clocks-and-conflicts.md#proactive-surfacing) is this device's |
+
+For such a row `NotificationRepository` skips the outbox on create **and on
+every lifecycle mark**. The second half is the load-bearing one: a peer that
+receives a `notificationStateUpdate` for a row it never got treats it as a
+base row that has not arrived yet and keeps the event pending, retrying
+forever. Everything else is unchanged — the row is stored, scheduled onto the
+OS, shown in the bell, and cleared by a tap like any other.
+
+Both are "due on arrival" and keyed per episode through the same
+`notificationEpisodeId` the producers use: a plan outcome by the job and its
+status (a job that failed and then succeeded on retry is two rows), a
+conflict row by the burst's new ids. A later row for the same day, or the
+next burst, retracts the earlier open one through `retractOpenRows` — which
+is what the single OS notification id these two used to post directly did by
+replacement, now with a row behind it that survives the banner.
+
 # Why monotonic state, not last-write-wins on the row
 
 Dismissal is a **state transition**, not a field edit. Two devices can act on the
@@ -98,14 +125,15 @@ when the field it sets is still null. That is what makes the lifecycle a lattice
 rather than a sequence: the three marks are independent, so replaying a
 transition is a no-op and reordering two of them converges either way.
 
-The union has five variants — `taskSuggestion`, `taskOverdue`,
+The union has seven variants — `taskSuggestion`, `taskOverdue`,
 `relationshipCheckIn`, `habitAutoCompleted` (one row for every habit the
 [auto-completion engine](habits.md#auto-completion-the-engine-only-fills-empty-days)
 checked off in one batch; its `linkedEntityId` is `null` because a grouped row
-leads to the habits page, not to one habit) and `goalOffTrack` (a goal that
+leads to the habits page, not to one habit), `goalOffTrack` (a goal that
 slipped, linked to its agent; see
-[goal agents](goals.md#the-os-alert-for-a-slipped-goal)) — and the
-discriminator strings are the sync wire format,
+[goal agents](goals.md#the-os-alert-for-a-slipped-goal)), and the two
+[device-local](#two-rows-never-leave-the-device) ones, `dayPlanOutcome` and
+`syncConflict` — and the discriminator strings are the sync wire format,
 so renaming one would make every already-synced row of that kind undecodable on
 upgrade. A peer too old to know a variant throws in `fromJson`, which
 `SyncEventProcessor` turns into `UnrecoverableSyncPayloadException` and skips:
@@ -196,6 +224,15 @@ that asks before consulting the flag prompts a user who has switched
 notifications off. `enable_notifications` ships **off**, which makes that the
 default experience rather than an edge case.
 
+**The badge is a count, not an alert.** `updateBadge` posts the number of
+tasks in progress with an empty title and body, `presentAlert: false` on both
+Darwin platforms: a notification whose only content is its badge updates the
+icon and shows nothing, in the foreground or the background. macOS used to
+alert for a non-zero count so that a "3 tasks in progress" line was delivered
+with it — which made every entry write that changed the count post a
+notification, in hard-coded English, about a number the icon already shows.
+The alerts are the inbox rows.
+
 Two things conspired to make the prompt appear during a user's *first task*.
 `updateBadge` runs after every entry write, and it is what first resolves the
 lazily registered service — so construction and the first gate evaluation both
@@ -227,11 +264,10 @@ lifecycle transition. Memoising a *rejected* future would then make that abort
 permanent for the life of the process rather than transient.
 
 The badge follows the flag rather than outliving it, and taking it down is
-**two calls, not one**. `cancel` removes the delivered record — the "3 tasks in
-progress" entry in Notification Center — but on Darwin the number on the icon
-is carried by a notification's own `badge` field (`content.badge` natively),
-and `removeDeliveredNotifications` does not reset it. Only a `badgeNumber: 0`
-post actually clears the icon.
+**two calls, not one**. `cancel` removes the delivered record, but on Darwin
+the number on the icon is carried by a notification's own `badge` field
+(`content.badge` natively), and `removeDeliveredNotifications` does not reset
+it. Only a `badgeNumber: 0` post actually clears the icon.
 
 Posting that while notifications are off is not a notification in any sense the
 user sees: empty, `presentAlert: false`, and existing only to zero the number.
@@ -301,8 +337,8 @@ exactly that case. Because `_initializePlugin` deliberately swallows its own
 failures — a sandboxed flatpak build must stay startable — that throw was
 caught, logged, and never surfaced. The result was not a degraded Android
 experience but an absent one: the plugin stayed uninitialised, so habit
-reminders, the Daily OS plan-ready banner and sync-conflict alerts were all
-discarded silently.
+reminders, the Daily OS plan-ready banner and sync-conflict alerts (both
+inbox rows since; see above) were all discarded silently.
 
 Three things follow from switching it on, and none of them are cosmetic:
 
@@ -322,9 +358,9 @@ Three things follow from switching it on, and none of them are cosmetic:
 - **`updateBadge` is Darwin-only, and that is a behavioural guard.** The badge
   is a *number on the icon*, carried by a notification's own `badge` field and
   posted with `presentAlert: false`. Android has no such thing: the same call
-  posts a visible "3 tasks in progress" notification after every entry write.
-  The early return sits *before* the flag check, because this is not a
-  "notifications are off" path — there is simply nothing to put a count on.
+  would post a visible notification after every entry write. The early return
+  sits *before* the flag check, because this is not a "notifications are off"
+  path — there is simply nothing to put a count on.
 - **Scheduling is inexact on purpose.** The exact modes need
   `SCHEDULE_EXACT_ALARM`, which Android 13+ does not grant on install and the
   Play Store accepts only from apps whose core function is alarms or calendars.
@@ -373,8 +409,9 @@ appending `/tasks/` silently produced a dead route for anything that was not a
 task — which is what happened the moment a second entity kind got a
 notification. The same trap exists in the bell, where `_InboxRow` routes
 through `onSelectEntry` with the whole entity for the same reason. An
-auto-completion row leads to `/habits`, and a slipped-goal row to the goal's
-page at `/goals/details/<agentId>` — not its chat — on both channels.
+auto-completion row leads to `/habits`, a slipped-goal row to the goal's page
+at `/goals/details/<agentId>` — not its chat — a plan outcome to `/calendar`
+and a sync conflict to `/settings/advanced/conflicts`, on both channels.
 
 **A task row in the bell beams to `/tasks/<id>`** through `beamToNamed`, the
 route the task list, the logbook cards and the Daily OS lanes use, so the
@@ -394,10 +431,11 @@ What the plugin hands back on a tap is the string the alert was armed with,
 so everything a tap needs has to travel in it. `NotificationTapPayload` is
 that string: a JSON object carrying the `route` to open and, for an inbox row,
 the row's `inboxId`, written by the scheduler for every row it projects. The
-producers without a row — the plan-ready alert, the sync-conflict alert, the
-habit reminder — pass a bare route instead, and the decoder accepts both,
-which also keeps every alarm armed before tap routing existed decodable
-rather than turning it into a dead tap on upgrade.
+one producer without a row — the habit reminder, a recurring device-local
+alarm re-armed from the synced habit definition, which a row per habit per day
+would only turn into bell noise — passes a bare route instead, and the decoder
+accepts both, which also keeps every alarm armed before tap routing existed
+decodable rather than turning it into a dead tap on upgrade.
 
 Two paths bring a tap into Dart, and they are disjoint by the plugin's design
 rather than by care:

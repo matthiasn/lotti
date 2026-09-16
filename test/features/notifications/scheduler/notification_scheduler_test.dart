@@ -366,6 +366,23 @@ void main() {
       // The same route the goals surface builds, so the two cannot drift.
       expect(payload!.route, goalDetailPath('agent-3'));
     });
+
+    test('a plan outcome points at the Daily OS day', () async {
+      expect(
+        await payloadOf(_dayPlanOutcome(id: 'p', scheduledFor: past)),
+        const NotificationTapPayload(route: '/calendar', inboxId: 'p'),
+      );
+    });
+
+    test('a sync conflict points at the conflicts list', () async {
+      expect(
+        await payloadOf(_syncConflict(id: 'x', scheduledFor: past)),
+        const NotificationTapPayload(
+          route: '/settings/advanced/conflicts',
+          inboxId: 'x',
+        ),
+      );
+    });
   });
 
   // OS-level alarms do not survive an app update, a reinstall or an Android
@@ -623,6 +640,28 @@ NotificationEntity _suggestion({
     meta: _meta(id: id, scheduledFor: scheduledFor),
     linkedTaskId: linkedTaskId,
     suggestionCount: 2,
+    title: 'Due title',
+    body: 'Due body',
+  );
+}
+
+NotificationEntity _dayPlanOutcome({
+  required String id,
+  DateTime? scheduledFor,
+}) {
+  return NotificationEntity.dayPlanOutcome(
+    meta: _meta(id: id, scheduledFor: scheduledFor),
+    dayId: 'dayplan-2026-05-17',
+    succeeded: true,
+    title: 'Due title',
+    body: 'Due body',
+  );
+}
+
+NotificationEntity _syncConflict({required String id, DateTime? scheduledFor}) {
+  return NotificationEntity.syncConflict(
+    meta: _meta(id: id, scheduledFor: scheduledFor),
+    conflictCount: 2,
     title: 'Due title',
     body: 'Due body',
   );

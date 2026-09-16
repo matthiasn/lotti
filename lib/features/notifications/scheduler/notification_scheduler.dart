@@ -119,5 +119,7 @@ class NotificationScheduler {
     HabitAutoCompletedNotification() => '/habits',
     GoalOffTrackNotification(:final linkedGoalAgentId) =>
       '/goals/details/$linkedGoalAgentId',
+    DayPlanOutcomeNotification() => '/calendar',
+    SyncConflictNotification() => '/settings/advanced/conflicts',
   };
 }

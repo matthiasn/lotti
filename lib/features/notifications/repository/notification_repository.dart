@@ -232,7 +232,12 @@ class NotificationRepository {
         );
       }
 
-      await _outboxService.enqueueNotification(saved);
+      // A device-local row never leaves this device — see
+      // `NotificationEntityFields.isDeviceLocal` for why its marks must not
+      // either.
+      if (!saved.isDeviceLocal) {
+        await _outboxService.enqueueNotification(saved);
+      }
       await _scheduler.schedule(saved, now: now);
       _notify(saved, fromSync: false);
       return saved;
@@ -317,14 +322,16 @@ class NotificationRepository {
       final updated = result.entity;
       if (updated == null || !result.changed) return null;
 
-      await _outboxService.enqueueNotificationStateUpdate(
-        id: id,
-        seenAt: seenAt,
-        actedOnAt: actedOnAt,
-        deletedAt: deletedAt,
-        vectorClock: vectorClock,
-        originatingHostId: host,
-      );
+      if (!updated.isDeviceLocal) {
+        await _outboxService.enqueueNotificationStateUpdate(
+          id: id,
+          seenAt: seenAt,
+          actedOnAt: actedOnAt,
+          deletedAt: deletedAt,
+          vectorClock: vectorClock,
+          originatingHostId: host,
+        );
+      }
       await _scheduler.schedule(updated);
       _notifyStateChange(updated);
       return updated;

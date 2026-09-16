@@ -178,7 +178,7 @@ the user resolves it in *Settings → Advanced → Conflicts*.
 stateDiagram-v2
     [*] --> Detected: incoming clock concurrent with local
     Detected: Detected (status = unresolved)
-    Detected --> Alerted: ConflictNotificationObserver OS banner
+    Detected --> Alerted: ConflictNotificationObserver inbox row → OS banner
     Alerted --> Reviewing: open conflict detail
     Detected --> Reviewing: open from settings list
     Reviewing --> Edited: shape = edited
@@ -234,11 +234,16 @@ write-gate auto-resolves the row.
 
 Conflicts do not have to be discovered by browsing settings.
 `ConflictNotificationObserver`, started from `get_it`, watches the
-unresolved-conflict stream and raises a single OS banner when *new* conflicts
-appear during a session. Conflicts already present at startup are primed
-silently, and a burst — a device returning from a long offline stretch — is
-coalesced into one alert. `unresolvedConflictCountProvider` exposes the live
-count for badges.
+unresolved-conflict stream and writes a single `syncConflict` inbox row when
+*new* conflicts appear during a session — the OS banner is the notification
+scheduler's projection of that row, a tap opens this list, and the row stays
+in the bell after the banner is gone. Conflicts already present at startup
+are primed silently, and a burst — a device returning from a long offline
+stretch — is coalesced into one row; the next burst retracts the previous
+one. The row is [device-local](../notifications.md#two-rows-never-leave-the-device):
+a conflict is this device's disagreement with a peer, so the row must never
+reach that peer. `unresolvedConflictCountProvider` exposes the live count for
+badges.
 
 # Agent state converges without user involvement
 
