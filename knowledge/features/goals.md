@@ -528,7 +528,10 @@ See [profile resolution](ai/profile-resolution.md) for failure and precedence ru
   outcome eval exercises the production workflow, including its forced retry.
   A wake with zero tool calls is legal (the no-op policy row) — the
   strategy never nags for output. Two deterministic exceptions are forced
-  with one pinned retry each: a wake missing its report where the status
+  with one forced retry each (`forcedToolChoiceFor` decides whether that retry
+  may also pin `tool_choice`: DeepSeek answers a pinned choice with prose and
+  an empty `tool_calls`, so for those models the retry sends the single tool
+  and no pin): a wake missing its report where the status
   transitioned, the detail page requested a refresh, **or the pending chat
   message asked for the standing report itself to be rewritten**; and policy
   row P5 (offTrack, no fresh ad, no cooldown) or an explicit new-banner

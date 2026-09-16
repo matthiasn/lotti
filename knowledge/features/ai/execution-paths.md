@@ -292,9 +292,13 @@ task context.
 
 Two properties are contract rather than detail:
 
-- **The tiers come back through a pinned tool call, never a parser.** The skill
-  sends `entrySummaryTool` with `toolChoice` fixed to it, and
-  `parseEntrySummaryToolCall` decodes typed arguments — the same shape the
+- **The tiers come back through a tool call, never a parser.** The skill
+  sends `entrySummaryTool`, with `toolChoice` fixed to it for every model that
+  honours a pinned choice — `entrySummaryToolChoiceFor` omits it for the
+  DeepSeek family, which answers a pinned choice with the call written as
+  `<｜DSML｜ invoke …>` prose and an empty `tool_calls`, losing the summary
+  outright; the single-tool list is what steers those. `parseEntrySummaryToolCall`
+  decodes typed arguments — the same shape the
   agents' `update_report` uses. A rejected call (no tool call, wrong tool,
   missing field, one-liner over `entrySummaryOneLinerMaxChars`) buys exactly
   one forced retry, whose tokens are merged with the first attempt's so a model
