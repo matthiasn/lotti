@@ -220,6 +220,55 @@ class GoalAgentStrategy extends ConversationStrategy
   @override
   String? getContinuationPrompt(ConversationManager manager) => null;
 
+  /// The report, with any section the model wrote beside it moved inside.
+  ///
+  /// Models split the report across two levels — `tldr` and `rollingWindow`
+  /// inside `report`, the other sections as siblings of it — with every
+  /// section present and correct. The strict parser refused the whole report
+  /// and nothing persisted: on glm-5.3-flash that was 9 of 30 compaction
+  /// wakes. A section already inside `report` wins, and only one absent there
+  /// is taken from beside it, so this adds nothing the model did not write and
+  /// a section missing from both places is still refused.
+  static Object? _withSectionsLiftedIntoReport(Map<String, dynamic> args) {
+    final report = args['report'];
+    if (report is! Map<String, dynamic>) return report;
+    final lifted = [
+      for (final key in GoalReportSectionKeys.values)
+        if (!report.containsKey(key) && args.containsKey(key)) key,
+    ];
+    final withSections = lifted.isEmpty
+        ? report
+        : {...report, for (final key in lifted) key: args[key]};
+    return _withActionsLiftedIntoNextActions(withSections);
+  }
+
+  /// The same split one level down: `now` or `later` written beside
+  /// `nextActions` inside the report, rather than inside it.
+  ///
+  /// glm-5.3 wrote `nextActions: {later: [...]}` with `now: []` as a sibling
+  /// — both lists present, one misplaced — and the parser, finding no `now`
+  /// list where it looks, refused the report. The same rules apply: a list
+  /// already inside `nextActions` wins, and one absent from both is still
+  /// refused.
+  static Map<String, dynamic> _withActionsLiftedIntoNextActions(
+    Map<String, dynamic> report,
+  ) {
+    final actions = report[GoalReportSectionKeys.nextActions];
+    if (actions is! Map<String, dynamic>) return report;
+    final lifted = [
+      for (final key in GoalReportActionKeys.values)
+        if (!actions.containsKey(key) && report.containsKey(key)) key,
+    ];
+    if (lifted.isEmpty) return report;
+    return {
+      ...report,
+      GoalReportSectionKeys.nextActions: {
+        ...actions,
+        for (final key in lifted) key: report[key],
+      },
+    };
+  }
+
   Future<void> _handleUpdateReport(
     ChatCompletionMessageToolCall call,
     Map<String, dynamic> args,
@@ -232,15 +281,15 @@ class GoalAgentStrategy extends ConversationStrategy
     final oneLiner = _trimmed(args['oneLiner']);
     final content = _trimmed(args['content']);
     final hasStructuredReport = args.containsKey('report');
-    final structured = GoalStructuredReport.tryParse(args['report']);
+    final reportArg = _withSectionsLiftedIntoReport(args);
+    final structured = GoalStructuredReport.tryParse(reportArg);
     // What the RULES read, which is not what gets persisted. A report the
     // strict parser refused still has text in it, and the rules below are the
     // model's only warning about that text — skipping them because a slot was
     // missing spends the one forced retry on the shape and lets the aggregate
     // rule ambush the retry. Completeness is still judged strictly, from
     // `structured`, so nothing here can make an incomplete report acceptable.
-    final checkable =
-        structured ?? GoalStructuredReport.lenient(args['report']);
+    final checkable = structured ?? GoalStructuredReport.lenient(reportArg);
     final tldr = hasStructuredReport
         ? structured?.tldr ?? ''
         : _trimmed(args['tldr']);
@@ -288,9 +337,15 @@ class GoalAgentStrategy extends ConversationStrategy
       content,
     ]);
     if (tokenInProse != null) {
+      final (:token, :text) = tokenInProse;
+      // Quote the sentence it sits in. A report has seven prose slots and the
+      // bare token name did not say which one: a model told only that
+      // "atRisk" was not prose resubmitted the identical report, so the one
+      // forced retry fixed nothing and the goal kept no standing summary.
       problems.add(
-        '"$tokenInProse" is a status field value, not prose. '
-        "Rewrite the visible text in the user's language and call "
+        '"$token" is a status field value, not prose, and appears in: '
+        '"${_sentenceAround(text, token)}". '
+        "Rewrite that text in the user's language and call "
         'update_goal_report again.',
       );
     }
@@ -683,17 +738,31 @@ class GoalAgentStrategy extends ConversationStrategy
   /// `achieved` are ordinary English — "you're recovering nicely" is exactly
   /// the encouragement a recovering goal's report should carry — and banning
   /// them refused every such report, then lost it on the one forced retry.
-  String? _statusTokenIn(List<String> texts) {
+  ({String token, String text})? _statusTokenIn(List<String> texts) {
     final unmistakable = goalTrackStatusNames.where(
       (token) => token != token.toLowerCase(),
     );
     for (final text in texts) {
       if (text.isEmpty) continue;
       for (final token in unmistakable) {
-        if (RegExp('\\b$token\\b').hasMatch(text)) return token;
+        if (RegExp('\\b$token\\b').hasMatch(text)) {
+          return (token: token, text: text);
+        }
       }
     }
     return null;
+  }
+
+  /// The sentence of [text] containing [token], so a rejection can point at
+  /// the exact words to rewrite instead of naming a token somewhere in them.
+  String _sentenceAround(String text, String token) {
+    final match = RegExp('\\b$token\\b').firstMatch(text);
+    if (match == null) return text;
+    final before = text.substring(0, match.start);
+    final start = before.lastIndexOf(RegExp(r'[.!?]\s')) + 1;
+    final after = text.indexOf(RegExp(r'[.!?](\s|$)'), match.end);
+    final end = after == -1 ? text.length : after + 1;
+    return text.substring(start, end).trim();
   }
 
   String _trimmed(Object? value) => value is String ? value.trim() : '';

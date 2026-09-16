@@ -121,6 +121,126 @@ void main() {
     expect(strategy.reportContent, isNull);
   });
 
+  group('report sections written beside the report', () {
+    // The exact split a glm-5.3-flash compaction run produced: `tldr` and
+    // `rollingWindow` inside `report`, the other four beside it — every
+    // section present and correct, and all of it refused. 9 of 30 wakes.
+    Map<String, dynamic> split({Map<String, dynamic> extraReport = const {}}) =>
+        {
+          'status': 'achieved',
+          'oneLiner': 'Goal achieved: 10,400 against the 10,000 target.',
+          'currentPeriod': 'The rolling week is complete at 10,400 steps.',
+          'latestChange': '',
+          'coverage': 'Full coverage: 7 of 7 days logged.',
+          'nextActions': {
+            'now': <Object?>[],
+            'later': ['Keep the lunch loop.'],
+          },
+          'report': {
+            'tldr': 'The goal is achieved and holding.',
+            'rollingWindow': 'Rolling 7-day average stands at 10,400.',
+            ...extraReport,
+          },
+        };
+
+    test('are read from beside it and the report is accepted', () async {
+      await strategy.processToolCalls(
+        toolCalls: [
+          _call(name: GoalAgentToolNames.updateGoalReport, args: split()),
+        ],
+        manager: manager,
+      );
+
+      expect(strategy.hasReport, isTrue);
+      expect(strategy.reportStatus, GoalTrackStatus.achieved);
+    });
+
+    test(
+      'a section already inside the report wins over one beside it',
+      () async {
+        await strategy.processToolCalls(
+          toolCalls: [
+            _call(
+              name: GoalAgentToolNames.updateGoalReport,
+              args: split(
+                extraReport: {'coverage': 'Inside: 6 of 7 days logged.'},
+              ),
+            ),
+          ],
+          manager: manager,
+        );
+
+        expect(strategy.hasReport, isTrue);
+        expect(strategy.reportContent, contains('Inside: 6 of 7 days logged.'));
+        expect(strategy.reportContent, isNot(contains('Full coverage')));
+      },
+    );
+
+    test('a now list written beside nextActions is read into it', () async {
+      // glm-5.3: `nextActions: {later: [...]}` with `now: []` as its sibling.
+      final args = split();
+      final report = Map<String, dynamic>.from(args['report'] as Map)
+        ..addAll({
+          'currentPeriod': args.remove('currentPeriod'),
+          'latestChange': args.remove('latestChange'),
+          'coverage': args.remove('coverage'),
+          'nextActions': {
+            'later': ['Keep the lunch loop.'],
+          },
+          'now': <Object?>[],
+        });
+      args
+        ..remove('nextActions')
+        ..['report'] = report;
+
+      await strategy.processToolCalls(
+        toolCalls: [
+          _call(name: GoalAgentToolNames.updateGoalReport, args: args),
+        ],
+        manager: manager,
+      );
+
+      expect(strategy.hasReport, isTrue);
+    });
+
+    test('an action list missing from both places is still refused', () async {
+      final args = split();
+      final report = Map<String, dynamic>.from(args['report'] as Map)
+        ..addAll({
+          'currentPeriod': args.remove('currentPeriod'),
+          'latestChange': args.remove('latestChange'),
+          'coverage': args.remove('coverage'),
+          'nextActions': {
+            'later': ['Keep the lunch loop.'],
+          },
+        });
+      args
+        ..remove('nextActions')
+        ..['report'] = report;
+
+      await strategy.processToolCalls(
+        toolCalls: [
+          _call(name: GoalAgentToolNames.updateGoalReport, args: args),
+        ],
+        manager: manager,
+      );
+
+      expect(strategy.hasReport, isFalse);
+    });
+
+    test('a section missing from both places is still refused', () async {
+      final args = split()..remove('coverage');
+      await strategy.processToolCalls(
+        toolCalls: [
+          _call(name: GoalAgentToolNames.updateGoalReport, args: args),
+        ],
+        manager: manager,
+      );
+
+      expect(strategy.hasReport, isFalse);
+    });
+  });
+
   test(
     'structured report sections become the persisted visible summary',
     () async {
@@ -251,6 +371,46 @@ void main() {
     final error = rejection();
     expect(error, contains('insufficientData'));
     expect(error, contains('not prose'));
+  });
+
+  test('the rejection quotes the sentence the token sits in', () async {
+    // A deepseek-v4.1-flash compaction wake was told only that "atRisk" was
+    // not prose and resubmitted the identical seven-slot report, so its one
+    // forced retry fixed nothing. Naming the sentence is what makes the retry
+    // able to find it.
+    await strategy.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.updateGoalReport,
+          args: {
+            'status': 'atRisk',
+            'oneLiner': 'Averaging 8,500 against the 10,000 target.',
+            'report': {
+              'tldr':
+                  'Steps are climbing. The goal stands at atRisk: the '
+                  'rolling average is 8,500. It is up from last week.',
+              'currentPeriod': 'Nothing is outstanding today.',
+              'rollingWindow': 'Rolling 7 days: 8,500 against 10,000.',
+              'latestChange': '',
+              'coverage': 'Seven of seven days logged.',
+              'nextActions': {'now': <Object>[], 'later': <Object>[]},
+            },
+          },
+        ),
+      ],
+      manager: manager,
+    );
+
+    final error = rejection();
+    expect(
+      error,
+      contains(
+        'appears in: "The goal stands at atRisk: the rolling average is '
+        '8,500."',
+      ),
+    );
+    expect(error, isNot(contains('Steps are climbing')));
+    expect(error, isNot(contains('up from last week')));
   });
 
   test('status names that are ordinary English stay legal in prose', () async {
