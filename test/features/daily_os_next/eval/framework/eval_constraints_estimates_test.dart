@@ -4036,6 +4036,19 @@ void main() {
         );
       });
 
+      test('a day end named before its noun still scopes the count', () {
+        // Third phrasing from the gym: "working-day end" rather than "end of
+        // the working day", and hyphenated. Same day scope, same veto if the
+        // cue misses it.
+        final result = score(
+          'Partial placement: the migration is 180 min but only 60 min '
+          'remain before the 17:00 working-day end, so this is a deliberate '
+          '60-min slice; ~120 min remains and is omitted today.',
+        );
+
+        expect(result.passed, isTrue, reason: result.detail);
+      });
+
       test('a remainder that contradicts the block still fails', () {
         final result = score(
           'PARTIAL: the migration is estimated at 180 minutes but only 60 '
