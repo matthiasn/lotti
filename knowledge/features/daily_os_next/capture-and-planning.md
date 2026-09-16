@@ -329,15 +329,30 @@ stated reason or left out, rather than totalling as zero against
 
 **A malformed part does not cost the whole draft.** `draft_day_plan` is
 terminal, so a rejected call throws away a finished plan and buys a second
-round trip at best. Four shapes models actually emitted are therefore
-recovered rather than refused: `blocks` arriving JSON-encoded inside a string
-is decoded, a zero-length `buffer` block is dropped, an energy band that fails
-to parse is dropped while the schedule persists, and a `reason` supplied where
-a closed-window baseline block had none is ignored for the exact-repeat
-comparison. What stays fatal is anything that would nullify real work or
-persist a claim that is not true: a zero-length `ai` or `manual` block, an
-`ai` block with no reason, a block outside the day or the working hours, a
-remainder with no task, a negative remainder.
+round trip at best. The shapes models actually emitted are therefore recovered
+rather than refused:
+
+- `blocks` arriving JSON-encoded inside a string is decoded. When the string
+  runs on past the array — the model closes it and keeps writing its other
+  arguments, `"[{…}], \"dayDate\": …"` — the complete array it opens with is
+  decoded and the trailing text ignored. Brackets inside string literals are
+  skipped, so a `]` in a block title cannot end the array early, and an array
+  that is itself malformed still fails. Losing the trailing arguments is safe:
+  `dayDate` falls back to the date in `dayId`, which the wake fills in.
+- A zero-length `buffer` block is dropped.
+- An energy band that fails to parse is dropped while the schedule persists.
+- A `reason` supplied where a closed-window baseline block had none is ignored
+  for the exact-repeat comparison.
+- A `remainingMinutes` on a block with no task is dropped — the field, not the
+  plan. Nothing can hold the number, but a directive commitment is real work
+  with no corpus task behind it, and failing the call cost the whole draft.
+
+What stays fatal is anything that would nullify real work or persist a claim
+that is not true: a zero-length `ai` or `manual` block, an `ai` block with no
+reason, a block with no title, a block outside the day or the working hours,
+and a negative remainder. A titleless block stays refused because the
+projection renders a missing title as a fixed fallback rather than anything the
+user wrote.
 
 **A partial placement is stated, not described.** When a task gets less time
 than its estimate, its block carries `remainingMinutes` — the estimate minus
