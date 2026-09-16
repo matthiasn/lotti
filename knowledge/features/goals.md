@@ -513,7 +513,20 @@ See [profile resolution](ai/profile-resolution.md) for failure and precedence ru
   `onTrack`, `atRisk`, `offTrack`, `insufficientData`; `recovering` and
   `achieved` are ordinary words a report may use) and for quoting the deterministic
   aggregates — a wake gets one forced report retry, and a rejection naming
-  only the shape would let those rules ambush it. Structured
+  only the shape would let those rules ambush it. A status-token rejection
+  quotes the sentence the token sits in rather than naming the token alone:
+  across seven prose slots a model told only that `atRisk` was not prose
+  resubmitted the identical report, so the retry fixed nothing. The token is
+  still never sanitized away, since mapping it to English words would put
+  English into every other catalog.
+
+  Before parsing, a section the model wrote **beside** `report` instead of
+  inside it is moved in, and `now`/`later` written beside `nextActions` inside
+  the report are moved into it. Models split the report this way with every
+  section present and correct, and the all-or-nothing parser refused the lot —
+  9 of 30 compaction wakes on one model. A value already in the right place
+  wins, and one missing from both places is still refused, so completeness is
+  unchanged and nothing is accepted that the model did not write. Structured
   current actions carry a criterion id and survive only when deterministic
   `healthLoggingNeededCriterionIds` authorizes that id, so a lagging rolling
   habit cannot create a current action item; delayed overdue evaluations expose
