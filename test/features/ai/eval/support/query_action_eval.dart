@@ -37,8 +37,10 @@ class ExpectedQueryAction {
 
   /// Compares one argument, reading a time as the wall time it names.
   ///
-  /// A model may write `2026-09-12T09:30:00` or the same moment with an
-  /// offset; both answer the question. Everything else is compared verbatim.
+  /// A model may write `2026-09-12T09:30`, `…T09:30:00` or `…T09:30:00.000`
+  /// for one moment; all three answer the question. A timezone-qualified
+  /// value parses to null and still fails, which is what production does with
+  /// it. Everything else is compared verbatim.
   static bool _sameArgument(String key, Object? actual, Object? expected) {
     if ((key == 'startTime' || key == 'endTime') &&
         actual is String &&

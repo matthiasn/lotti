@@ -326,6 +326,26 @@ void main() {
     expect(
       scenario('time_start_edit').grade(
         answer([
+          edit.copyWith(args: {...edit.args, 'endTime': '2026-09-12T11:00'}),
+        ]),
+      ),
+      isEmpty,
+      reason: 'a default is read as a wall time, not compared byte for byte',
+    );
+    expect(
+      scenario('time_start_edit').grade(
+        answer([
+          edit.copyWith(
+            args: {...edit.args, 'endTime': '2026-09-12T11:00:00+02:00'},
+          ),
+        ]),
+      ),
+      isNotEmpty,
+      reason: 'a timezone-qualified time is rejected here as in production',
+    );
+    expect(
+      scenario('time_start_edit').grade(
+        answer([
           edit.copyWith(
             args: {...edit.args, 'endTime': '2026-09-12T12:00:00'},
           ),
