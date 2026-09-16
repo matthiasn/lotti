@@ -11,6 +11,7 @@ import hashlib
 import json
 import os
 import platform
+import re
 import shlex
 import subprocess
 import sys
@@ -412,26 +413,37 @@ def flutter_test_command(entry_point, compiler_slot):
 PREFLIGHT_RETRIES = 3
 PREFLIGHT_RETRY_DELAY_S = 5
 
+# Exit codes Processes.run reports itself: a coordinator timeout, and a run the
+# operator cancelled.
+TIMEOUT_EXIT_CODE = 124
+CANCELLED_EXIT_CODE = 130
+
 # Failures worth another attempt: the provider wobbled. Everything else — a
 # rejected key, an unservable model, a contract breach — repeats forever, so
 # retrying only burns time and money.
+#
+# An HTTP status decides on its own when the log carries one, because a status
+# is the provider's own verdict: 429 and 5xx are worth another call, and every
+# other 4xx says the request itself is wrong. The text markers only speak for
+# failures that never reached a status — a socket that died, a call that hung.
+HTTP_STATUS_PATTERN = re.compile(r"\b(?:http|status(?:\s*code)?)[^0-9a-z]{0,3}(\d{3})\b")
+RETRYABLE_STATUS_CODES = frozenset({408, 409, 425, 429, 500, 502, 503, 504, 529})
+
 TRANSIENT_FAILURE_MARKERS = (
-    "http 500",
-    "http 502",
-    "http 503",
-    "http 504",
-    "http 429",
     "timed out",
     "timeout",
     "temporarily",
-    "connection",
+    "connection refused",
+    "connection reset",
+    "connection aborted",
+    "connection closed",
+    "connection error",
+    "connection failed",
+    "broken pipe",
     "provider encountered an error",
 )
 
 PERMANENT_FAILURE_MARKERS = (
-    "http 401",
-    "http 403",
-    "http 404",
     "invalid api key",
     "not found",
     "unsupported",
@@ -443,9 +455,13 @@ def transient_failure(result):
 
     Reads the attempt's own evidence — the worker log and artifact it just
     wrote — because the consolidated report deliberately never carries raw
-    provider error text. A permanent marker wins over a transient one, so
-    "HTTP 401" is never retried just because the word "connection" appears
-    elsewhere in the log.
+    provider error text. Statuses outrank words: an "HTTP 400: connection
+    parameter is invalid" is a rejected request, not a network wobble, and an
+    "HTTP 401" is never retried because "timeout" appears elsewhere in the log.
+
+    A coordinator timeout (exit code 124) counts as transient even when the
+    worker logged nothing, since the call it was waiting on never answered.
+    Cancellation (130) does not: the operator stopped the run.
     """
     directory = Path(result.get("directory", ""))
     text = ""
@@ -455,9 +471,17 @@ def transient_failure(result):
             text += path.read_text(encoding="utf-8", errors="ignore").lower()
         except OSError:
             continue
+    statuses = {int(code) for code in HTTP_STATUS_PATTERN.findall(text)}
+    statuses = {code for code in statuses if 400 <= code < 600}
+    if statuses:
+        # A permanent status wins: a run that saw both a 503 and a 401 has a
+        # rejected key, and repeating it only spends money on the same answer.
+        return not statuses - RETRYABLE_STATUS_CODES
     if any(marker in text for marker in PERMANENT_FAILURE_MARKERS):
         return False
-    return any(marker in text for marker in TRANSIENT_FAILURE_MARKERS)
+    if any(marker in text for marker in TRANSIENT_FAILURE_MARKERS):
+        return True
+    return result.get("exitCode") == TIMEOUT_EXIT_CODE
 
 
 def run_job(suite, job, manifest, output, api_key, processes, summary_path, compiler_slot):
@@ -494,7 +518,11 @@ def run_job(suite, job, manifest, output, api_key, processes, summary_path, comp
             if len(files) == 1:
                 artifact_path = files[0]
         result["artifact"] = str(artifact_path)
-        if exit_code < 0 or exit_code in (124, 130) or not artifact_path.is_file():
+        if (
+            exit_code < 0
+            or exit_code in (TIMEOUT_EXIT_CODE, CANCELLED_EXIT_CODE)
+            or not artifact_path.is_file()
+        ):
             raise InvalidArtifact(
                 "Worker timed out, was cancelled, or produced no artifact"
             )
@@ -809,7 +837,15 @@ def execute(output, manifest, jobs, api_key, workers, processes, compiler_slots)
             (j for j in pending if not suites[j["suite"]]["dependencies"]), None
         )
         if probe is not None:
-            for attempt in range(PREFLIGHT_RETRIES + 1):
+            # A resumed run inherits the probe's spent attempts: the budget is
+            # per probe, not per invocation, or an interrupted run could reset
+            # it indefinitely and pay for the same rejection over and over.
+            # An attempt the operator cancelled (exit code 130) asked the
+            # provider nothing, so it costs no budget.
+            spent = sum(
+                1 for a in probe["attempts"] if a.get("exitCode") != CANCELLED_EXIT_CODE
+            )
+            for attempt in range(spent, PREFLIGHT_RETRIES + 1):
                 result = run_job(
                     suites[probe["suite"]],
                     probe,

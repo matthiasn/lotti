@@ -293,6 +293,40 @@ class GymTest(unittest.TestCase):
 
         self.assertEqual(state["calls"], 1, "a rejected key repeats forever")
 
+    def test_a_resumed_run_does_not_reset_the_preflight_retry_budget(self):
+        # An interrupted run that already spent a paid probe attempt resumes
+        # with the rest of the budget, never a fresh one.
+        patcher = patch.object(gym, "PREFLIGHT_RETRY_DELAY_S", 0)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        jobs = gym.make_jobs([self.suite], 1, batch_size=1)
+        jobs[0].update(
+            state="error",
+            attempts=[
+                {
+                    "state": "error",
+                    "number": number,
+                    "exitCode": code,
+                    "results": [],
+                    "directory": str(
+                        self.output / "jobs" / jobs[0]["directory"] / f"attempt-{number}"
+                    ),
+                }
+                for number, code in enumerate([1, gym.CANCELLED_EXIT_CODE], start=1)
+            ],
+        )
+        processes = Mock()
+        worker, state = self._failing_probe_worker("HTTP 503 Service Unavailable", fail_times=99)
+        processes.run.side_effect = worker
+
+        gym.execute(self.output, self.manifest, jobs, "key", 1, processes, ["0"])
+
+        self.assertEqual(
+            state["calls"],
+            gym.PREFLIGHT_RETRIES,
+            "one spent attempt leaves three; the cancelled one costs nothing",
+        )
+
     def test_compiler_leases_isolate_active_runs_and_reuse_released_caches(self):
         leases = self.output / "leases"
         with gym.compiler_slot_pool(2, leases) as first:
@@ -890,6 +924,52 @@ class GymTest(unittest.TestCase):
                     self.assertEqual(
                         env["QUERY_EVAL_OUTPUT"], str(self.output / "artifact.json")
                     )
+
+
+class TransientFailureTest(unittest.TestCase):
+    """Classify a failed attempt from the evidence it actually wrote."""
+
+    def setUp(self):
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        self.directory = Path(temp.name)
+
+    def attempt(self, log="", exit_code=1):
+        (self.directory / "worker.jsonl").write_text(log)
+        return {"directory": str(self.directory), "exitCode": exit_code}
+
+    def test_a_rejected_request_is_not_retried_for_mentioning_a_connection(self):
+        self.assertFalse(
+            gym.transient_failure(
+                self.attempt("HTTP 400: connection parameter is invalid")
+            )
+        )
+
+    def test_overload_and_server_statuses_are_retried(self):
+        for status in ["HTTP 429: slow down", "HTTP 503 Service Unavailable", "status code 500"]:
+            self.assertTrue(gym.transient_failure(self.attempt(status)), status)
+
+    def test_a_permanent_status_beats_a_transient_one(self):
+        self.assertFalse(
+            gym.transient_failure(
+                self.attempt("HTTP 503 once, then HTTP 401: Invalid API key")
+            )
+        )
+
+    def test_a_coordinator_timeout_is_retried_without_any_marker(self):
+        # Killing the worker at the timeout can leave the log empty; the call
+        # it was waiting on still never answered.
+        self.assertTrue(
+            gym.transient_failure(self.attempt(exit_code=gym.TIMEOUT_EXIT_CODE))
+        )
+
+    def test_a_cancelled_attempt_is_not_retried(self):
+        self.assertFalse(
+            gym.transient_failure(self.attempt(exit_code=gym.CANCELLED_EXIT_CODE))
+        )
+
+    def test_a_contract_breach_without_evidence_is_not_retried(self):
+        self.assertFalse(gym.transient_failure(self.attempt("expected 3 reports, saw 1")))
 
 
 if __name__ == "__main__":
