@@ -26,6 +26,7 @@ import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
+import 'package:lotti/features/ai/util/forced_tool_choice.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
@@ -1026,13 +1027,9 @@ class GoalAgentWorkflow with AgentErrorLogging {
               tool,
         ],
         toolChoice: userRequestedAd
-            ? const ChatCompletionToolChoiceOption.tool(
-                ChatCompletionNamedToolChoice(
-                  type: ChatCompletionNamedToolChoiceType.function,
-                  function: ChatCompletionFunctionCallOption(
-                    name: GoalAgentToolNames.createGoalAd,
-                  ),
-                ),
+            ? forcedToolChoiceFor(
+                modelId: resolved.modelId,
+                toolName: GoalAgentToolNames.createGoalAd,
               )
             : null,
         temperature: 0,
@@ -1405,13 +1402,9 @@ class GoalAgentWorkflow with AgentErrorLogging {
           for (final tool in tools)
             if (tool.function.name == GoalAgentToolNames.updateGoalReport) tool,
         ],
-        toolChoice: const ChatCompletionToolChoiceOption.tool(
-          ChatCompletionNamedToolChoice(
-            type: ChatCompletionNamedToolChoiceType.function,
-            function: ChatCompletionFunctionCallOption(
-              name: GoalAgentToolNames.updateGoalReport,
-            ),
-          ),
+        toolChoice: forcedToolChoiceFor(
+          modelId: resolved.modelId,
+          toolName: GoalAgentToolNames.updateGoalReport,
         ),
         temperature: 0,
         strategy: strategy,

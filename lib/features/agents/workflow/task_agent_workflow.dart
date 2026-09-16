@@ -51,6 +51,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
+import 'package:lotti/features/ai/util/forced_tool_choice.dart';
 import 'package:lotti/features/ai/util/image_ai_responses.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
@@ -302,13 +303,9 @@ class TaskAgentWorkflow with AgentErrorLogging {
       'no report published — retrying with forced update_report',
       subDomain: 'execute',
     );
-    const forcedToolChoice = ChatCompletionToolChoiceOption.tool(
-      ChatCompletionNamedToolChoice(
-        type: ChatCompletionNamedToolChoiceType.function,
-        function: ChatCompletionFunctionCallOption(
-          name: TaskAgentStrategy.reportToolName,
-        ),
-      ),
+    final forcedToolChoice = forcedToolChoiceFor(
+      modelId: modelId,
+      toolName: TaskAgentStrategy.reportToolName,
     );
     final reportOnlyTools = tools
         .where((tool) => tool.function.name == TaskAgentStrategy.reportToolName)

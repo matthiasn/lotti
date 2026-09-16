@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
@@ -229,6 +230,30 @@ void main() {
         startDate: startDate,
       ),
     );
+  }
+
+  final deepseekModel =
+      AiConfig.model(
+            id: 'model-deepseek',
+            name: 'DeepSeek V4.1 Flash',
+            providerModelId: meliousDeepseekV41FlashModelId,
+            inferenceProviderId: 'melious-provider',
+            createdAt: DateTime(2026),
+            inputModalities: const [Modality.text],
+            outputModalities: const [Modality.text],
+            isReasoningModel: true,
+            supportsFunctionCalling: true,
+            description: 'deepseek',
+          )
+          as AiConfigModel;
+
+  void stubDeepseekResolution() {
+    when(
+      () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+    ).thenAnswer((_) async => [deepseekModel]);
+    when(
+      () => aiConfigRepository.getConfigById('melious-provider'),
+    ).thenAnswer((_) async => meliousProvider);
   }
 
   void stubGlmResolution() {
@@ -2490,6 +2515,92 @@ void main() {
     expect(progress.specVersionId, '$agentId:spec-v1');
     final report = upserts.whereType<AgentReportEntity>().single;
     expect(report.oneLiner, 'The edited day is accounted for.');
+  });
+
+  test('the forced report pins no tool choice for a model that answers one '
+      'in prose', () async {
+    // DeepSeek answers a pinned `tool_choice` with `<｜DSML｜ invoke …>` text
+    // and an empty `tool_calls`, so the forced report silently produced
+    // nothing. The single-tool list still steers it.
+    stubSpec();
+    final deepseekIdentity = makeTestIdentity(
+      id: agentId,
+      agentId: agentId,
+      kind: AgentKinds.goalAgent,
+      config: const AgentConfig(profileId: 'profile-deepseek'),
+    );
+    final deepseekProfile =
+        AiConfig.inferenceProfile(
+              id: 'profile-deepseek',
+              name: 'DeepSeek profile',
+              createdAt: DateTime(2026),
+              thinkingModelId: meliousDeepseekV41FlashModelId,
+            )
+            as AiConfigInferenceProfile;
+    when(
+      () => aiConfigRepository.getConfigById('profile-deepseek'),
+    ).thenAnswer((_) async => deepseekProfile);
+    stubDeepseekResolution();
+    when(
+      () => repository.getEntity(goalProgressId(agentId, '2026-08-09')),
+    ).thenAnswer(
+      (_) async => AgentDomainEntity.goalProgress(
+        id: goalProgressId(agentId, '2026-08-09'),
+        agentId: agentId,
+        periodKey: '2026-08-09',
+        trackStatus: GoalTrackStatus.insufficientData,
+        attainment: 0,
+        dataCoverage: 0,
+        satisfied: false,
+        specVersionId: '$agentId:spec-v1',
+        createdAt: now,
+        updatedAt: now,
+        vectorClock: null,
+      ),
+    );
+    conversationRepository.maxDelegateCalls = 2;
+    var calls = 0;
+    ChatCompletionToolChoiceOption? retryToolChoice;
+    List<String>? retryToolNames;
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          calls += 1;
+          if (calls == 2) {
+            retryToolChoice = toolChoice;
+            retryToolNames = [for (final tool in tools!) tool.function.name];
+            await (strategy! as GoalAgentStrategy).processToolCalls(
+              toolCalls: [
+                toolCall(GoalAgentToolNames.updateGoalReport, {
+                  'status': 'insufficientData',
+                  'oneLiner': 'The edited day is accounted for.',
+                  'tldr': 'The standing report now reflects the correction.',
+                }),
+              ],
+              manager: conversationManager,
+            );
+          }
+          return null;
+        };
+
+    final result = await run(
+      triggerTokens: const {goalReportRefreshTriggerToken},
+      identityOverride: deepseekIdentity,
+    );
+
+    expect(calls, 2);
+    expect(retryToolChoice, isNull);
+    expect(retryToolNames, [GoalAgentToolNames.updateGoalReport]);
+    expect(result.reportUpdated, isTrue);
   });
 
   test('a report rendered while a watched category timer is active remains '
