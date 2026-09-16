@@ -306,6 +306,12 @@ plan edited by hand can overlap too.
   `background.level01` around itself (`DayBlock.raised`) to keep its edge
   against the fill it sits on; the redacted slab keeps the seam so lockdown
   still shows the day's layering. Floor blocks and peers draw none.
+- **The stripe.** The category key down a block's left edge is a `step1`
+  `ColoredBox` with no shape of its own, cut to the corner arc by the card's
+  `ClipRRect` — the construction the agenda card and the live card use. It
+  used to be a wider bar with its own rounded cap drawn over the card, which
+  stuck out past the card's curved corners at both ends; a raised block's
+  stripe sits inside its seam.
 
 The layout changes where blocks sit, not what the lane counts: the
 time-spent card's total still sums every recording, so an hour of two

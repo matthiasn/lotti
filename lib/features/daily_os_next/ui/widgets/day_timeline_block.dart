@@ -497,23 +497,18 @@ class DayBlock extends ConsumerWidget {
         borderRadius: borderRadius,
         border: seam,
       ),
-      child: Padding(
-        // The stripe starts at the card's edge; keep it inside the seam so
-        // the hairline stays whole on the left.
-        padding: EdgeInsets.all(seam?.top.width ?? 0),
+      // The card's rounded shape clips its content, so the stripe follows
+      // the corner arc instead of poking past it as a loose bar. `Ink`
+      // already insets its child by the seam's width when the decoration
+      // carries a border, so the stripe starts right inside the hairline
+      // without a padding of its own; the clip runs along the seam's inner
+      // edge so the stripe's arc stays concentric with it.
+      child: ClipRRect(
+        borderRadius: _contentRadius(tokens, seam),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(
-              width: 3,
-              decoration: BoxDecoration(
-                color: leftStripeColor,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(tokens.radii.m),
-                  bottomLeft: Radius.circular(tokens.radii.m),
-                ),
-              ),
-            ),
+            _CategoryStripe(blockId: block.id, color: leftStripeColor),
             Expanded(
               child: Padding(
                 padding: EdgeInsets.symmetric(
@@ -633,35 +628,65 @@ class _RedactedBlock extends StatelessWidget {
       else
         context.messages.dailyOsNextTimelinePlanned,
     ].join(', ');
+    final borderRadius = BorderRadius.circular(tokens.radii.m);
     return Semantics(
       label: semanticsLabel,
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: tokens.colors.background.level03,
-          borderRadius: BorderRadius.circular(tokens.radii.m),
+          borderRadius: borderRadius,
           border: seam,
         ),
+        // Unlike `Ink`, a `DecoratedBox` does not inset its child by its
+        // border, so the seam's width is kept clear here by hand — outside
+        // the clip, so the clip runs along the seam's inner edge as it does
+        // on a live block.
         child: Padding(
           padding: EdgeInsets.all(seam?.top.width ?? 0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                width: 3,
-                decoration: BoxDecoration(
+          child: ClipRRect(
+            borderRadius: _contentRadius(tokens, seam),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _CategoryStripe(
+                  blockId: block.id,
                   color: tokens.colors.text.lowEmphasis.withValues(
                     alpha: 0.32,
                   ),
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(tokens.radii.m),
-                    bottomLeft: Radius.circular(tokens.radii.m),
-                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The radius a block's content is clipped to: the card's corner radius,
+/// less the seam when there is one. A uniform border's inner edge has the
+/// outer radius minus the border width, so clipping the content — already
+/// inset by that width — at this radius keeps the stripe's corner arc
+/// concentric with the hairline instead of bending tighter than it.
+BorderRadius _contentRadius(DsTokens tokens, Border? seam) =>
+    BorderRadius.circular(tokens.radii.m - (seam?.top.width ?? 0));
+
+/// The category key down a block's left edge: one spacing step of colour,
+/// the same stripe the agenda card and the live card draw. It carries no
+/// shape of its own — the card's `ClipRRect` cuts it to the corner arc — so
+/// it reads as the edge of the card rather than a bar laid on top of it.
+class _CategoryStripe extends StatelessWidget {
+  const _CategoryStripe({required this.blockId, required this.color});
+
+  final String blockId;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      key: Key('daily_os_block_stripe_$blockId'),
+      color: color,
+      child: SizedBox(width: context.designTokens.spacing.step1),
     );
   }
 }
