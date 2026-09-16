@@ -361,11 +361,14 @@ const queryActionEvalCases = <QueryActionEvalCase>[
   ),
   QueryActionEvalCase(
     'time',
-    'Record habitat maintenance for this task on September 12, 2026 from 10:00 to 10:30.',
+    // 14:00, clear of the seeded 10:00–11:00 calibration session: overlapping
+    // it made a careful model ask whether to add or correct an entry, which is
+    // the right answer to a different question than this case asks.
+    'Record habitat maintenance for this task on September 12, 2026 from 14:00 to 14:30.',
     [
       ExpectedQueryAction(
         'create_time_entry',
-        {'startTime': '2026-09-12T10:00:00', 'endTime': '2026-09-12T10:30:00'},
+        {'startTime': '2026-09-12T14:00:00', 'endTime': '2026-09-12T14:30:00'},
         words: {
           'summary': ['habitat', 'maintenance'],
         },

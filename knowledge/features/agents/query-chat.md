@@ -5,7 +5,7 @@ description: Task, project and category conversations with isolated source check
 resource: ../../../lib/features/agents/query
 tags: [agents, chat, retrieval, evidence, privacy, sync]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-13T07:18:59Z }
+generated: { by: claude-code/opus-5, at: 2026-09-16T00:00:00Z }
 stale_after: 2026-10-12
 sources:
   - id: controller
@@ -38,8 +38,8 @@ sources:
     last_modified: 2026-09-13
   - id: inference
     resource: ../../../lib/features/agents/query/query_text_inference.dart
-    title: Profile routing and fresh device clock context
-    last_modified: 2026-09-13
+    title: Profile routing, fresh device clock context and lenient JSON escapes
+    last_modified: 2026-09-16
   - id: access
     resource: ../../../lib/features/agents/query/query_source_access.dart
     title: Live visibility gate
@@ -263,6 +263,15 @@ checks. Synthesis guidance puts the JSON contract first, requires exact owner
 titles (rendered in bold), and permits an unresolved answer with no owner IDs
 when no factual answer is supported. Malformed JSON or attribution still fails
 validation; the pipeline does not feed errors back for automatic model repair.
+The one deterministic tolerance is a backslash before a character JSON cannot
+escape (models write `\-` for markdown list dashes): `QueryTextInference`
+drops such a backslash and retries the decode, in the final parse and the
+streamed answer prefix alike, and anything still invalid fails as before.
+Action planning has one matching tolerance: a proposal naming a target outside
+the scope (`QueryTaskActionTargetUnavailable`) is retried once like any
+validation failure, and if it recurs the planner returns the model's answer
+with no actions instead of failing the reply. A malformed response, or one
+with no readable answer, still fails closed.
 
 Summary answers have no `QueryEvidence` cards and create no shared durable
 conclusion. The answer itself is saved as chat history with owner visibility
