@@ -9,14 +9,18 @@ restarts and stay consistent across the user's devices.
 ## What it does for the user
 
 - **Tells the user when something is waiting.** Task suggestions, check-in
-  reminders and a goal that has slipped surface as real notifications.
+  reminders, a goal that has slipped, a day plan that finished in the
+  background and newly detected sync conflicts all surface as real
+  notifications — and stay in the bell until dealt with.
 - **Opens what it is about.** Tapping an alert takes the user to the task,
   the person or the page behind it, whether Lotti is already running or the
   tap is what starts it.
 - **Reaches a closed app.** An alert can be armed days or weeks ahead, so the
   operating system delivers it whether or not Lotti is running.
 - **Clears everywhere at once.** Dismissing or acting on an alert on one device
-  removes it on the others, and it does not come back.
+  removes it on the others, and it does not come back. Two kinds stay on the
+  device they are about — a plan job's outcome and a sync conflict — because
+  they are only true there.
 - **Retracts itself when it stops being true.** If the agent withdraws its
   suggestions, the alert goes away rather than leading to an empty page.
 - **Survives a restart** — and an app update, a reinstall, or an Android
@@ -58,9 +62,10 @@ itself is `lib/services/notification_service.dart`.
 ## How it works
 
 Why the store is separate, why lifecycle state converges through monotonic
-timestamps rather than whole-row last-write-wins, what Android needed before it
-worked at all, why some variants stay out of the inbox until they are due, how
-a tap on the OS alert finds its screen, and what every producer shares, are
-documented in the knowledge bundle:
+timestamps rather than whole-row last-write-wins, which two rows never leave
+the device, what Android needed before it worked at all, why some variants
+stay out of the inbox until they are due, how a tap on the OS alert finds its
+screen, and what every producer shares, are documented in the knowledge
+bundle:
 
 **→ [knowledge/features/notifications.md](../../../knowledge/features/notifications.md)**

@@ -165,6 +165,79 @@ void main() {
       expect(updated.meta.actedOnAt, DateTime.utc(2026, 5, 17, 16));
     });
 
+    test('a dayPlanOutcome row links the day it planned', () {
+      final entity = _dayPlanOutcome(id: 'dp-1', dayId: 'dayplan-2026-07-22');
+
+      expect(entity.type, 'dayPlanOutcome');
+      expect(entity.title, 'Title');
+      expect(entity.body, 'Body');
+      // The day is the subject: a later outcome for the same day retracts an
+      // earlier one by this id.
+      expect(entity.linkedEntityId, 'dayplan-2026-07-22');
+    });
+
+    test('copyWithMeta preserves the dayPlanOutcome variant', () {
+      final entity = _dayPlanOutcome(
+        id: 'dp-2',
+        dayId: 'dayplan-2026-07-22',
+        succeeded: false,
+      );
+      final replacement = entity.meta.copyWith(
+        seenAt: DateTime.utc(2026, 5, 17, 16),
+      );
+
+      final updated = entity.copyWithMeta(replacement);
+
+      expect(updated, isA<DayPlanOutcomeNotification>());
+      final updatedOutcome = updated as DayPlanOutcomeNotification;
+      expect(updatedOutcome.dayId, 'dayplan-2026-07-22');
+      expect(updatedOutcome.succeeded, isFalse);
+      expect(updatedOutcome.title, 'Title');
+      expect(updated.meta.seenAt, DateTime.utc(2026, 5, 17, 16));
+    });
+
+    test('a syncConflict row links the conflicts list, not an entry', () {
+      final entity = _syncConflict(id: 'sc-1', conflictCount: 3);
+
+      expect(entity.type, 'syncConflict');
+      // No entry of its own — the pseudo subject is what lets a later burst
+      // retract the earlier row.
+      expect(entity.linkedEntityId, syncConflictsSubjectId);
+    });
+
+    test('copyWithMeta preserves the syncConflict variant', () {
+      final entity = _syncConflict(id: 'sc-2', conflictCount: 3);
+      final replacement = entity.meta.copyWith(
+        deletedAt: DateTime.utc(2026, 5, 17, 16),
+      );
+
+      final updated = entity.copyWithMeta(replacement);
+
+      expect(updated, isA<SyncConflictNotification>());
+      expect((updated as SyncConflictNotification).conflictCount, 3);
+      expect(updated.meta.deletedAt, DateTime.utc(2026, 5, 17, 16));
+    });
+
+    test("only rows about this device's own processing stay local", () {
+      // Exhaustive over the union: a peer that receives a lifecycle mark for
+      // a row it never got keeps the event pending forever, so the choice is
+      // load-bearing for every variant.
+      final local = <String>{
+        for (final entity in <NotificationEntity>[
+          _suggestion(id: 'a', linkedTaskId: 't', title: 'x', body: 'y'),
+          _overdue(id: 'b', linkedTaskId: 't', title: 'x', body: 'y'),
+          _checkIn(id: 'c', linkedRelationshipId: 'r', title: 'x', body: 'y'),
+          _habitAuto(id: 'd', linkedHabitIds: ['h']),
+          _goalOffTrack(id: 'e', linkedGoalAgentId: 'g', title: 'x', body: 'y'),
+          _dayPlanOutcome(id: 'f', dayId: 'day'),
+          _syncConflict(id: 'g', conflictCount: 1),
+        ])
+          if (entity.isDeviceLocal) entity.type,
+      };
+
+      expect(local, {'dayPlanOutcome', 'syncConflict'});
+    });
+
     test('copyWithMeta preserves the overdue variant', () {
       final entity = _overdue(
         id: 'od-2',
@@ -233,6 +306,19 @@ void main() {
           title: 'a',
           body: 'b',
         ),
+        'dayPlanOutcome': NotificationEntity.dayPlanOutcome(
+          meta: meta,
+          dayId: 'day',
+          succeeded: true,
+          title: 'a',
+          body: 'b',
+        ),
+        'syncConflict': NotificationEntity.syncConflict(
+          meta: meta,
+          conflictCount: 2,
+          title: 'a',
+          body: 'b',
+        ),
       };
 
       expect(
@@ -249,6 +335,11 @@ void main() {
         NotificationKinds.habitAutoCompleted,
       );
       expect(byVariant['goalOffTrack']!.type, NotificationKinds.goalOffTrack);
+      expect(
+        byVariant['dayPlanOutcome']!.type,
+        NotificationKinds.dayPlanOutcome,
+      );
+      expect(byVariant['syncConflict']!.type, NotificationKinds.syncConflict);
       for (final entry in byVariant.entries) {
         expect(entry.value.type, entry.key);
       }
@@ -351,6 +442,8 @@ void main() {
           title: 'x',
           body: 'y',
         ): 'goalOffTrack',
+        _dayPlanOutcome(id: 'f', dayId: 'd'): 'dayPlanOutcome',
+        _syncConflict(id: 'g', conflictCount: 1): 'syncConflict',
       };
 
       for (final row in rows.entries) {
@@ -448,6 +541,19 @@ class _GeneratedEntity {
       3 => NotificationEntity.goalOffTrack(
         meta: meta,
         linkedGoalAgentId: 'goal-$idSlot',
+        title: 'Title $idSlot',
+        body: 'Body $idSlot',
+      ),
+      4 => NotificationEntity.dayPlanOutcome(
+        meta: meta,
+        dayId: 'dayplan-2026-05-${10 + idSlot}',
+        succeeded: suggestionCountSlot.isEven,
+        title: 'Title $idSlot',
+        body: 'Body $idSlot',
+      ),
+      5 => NotificationEntity.syncConflict(
+        meta: meta,
+        conflictCount: suggestionCountSlot + 1,
         title: 'Title $idSlot',
         body: 'Body $idSlot',
       ),
@@ -570,6 +676,48 @@ NotificationEntity _checkIn({
     linkedRelationshipId: linkedRelationshipId,
     title: title,
     body: body,
+  );
+}
+
+NotificationEntity _dayPlanOutcome({
+  required String id,
+  required String dayId,
+  bool succeeded = true,
+}) {
+  final timestamp = DateTime.utc(2026, 5, 17, 8);
+  return NotificationEntity.dayPlanOutcome(
+    meta: NotificationMeta(
+      id: id,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      scheduledFor: timestamp,
+      vectorClock: const VectorClock({'host-a': 1}),
+      originatingHostId: 'host-a',
+    ),
+    dayId: dayId,
+    succeeded: succeeded,
+    title: 'Title',
+    body: 'Body',
+  );
+}
+
+NotificationEntity _syncConflict({
+  required String id,
+  required int conflictCount,
+}) {
+  final timestamp = DateTime.utc(2026, 5, 17, 8);
+  return NotificationEntity.syncConflict(
+    meta: NotificationMeta(
+      id: id,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      scheduledFor: timestamp,
+      vectorClock: const VectorClock({'host-a': 1}),
+      originatingHostId: 'host-a',
+    ),
+    conflictCount: conflictCount,
+    title: 'Title',
+    body: 'Body',
   );
 }
 

@@ -5,7 +5,7 @@ description: A device-local job table with viewer-relative claim priority, atomi
 resource: ../../../lib/features/daily_os_next/database/day_processing_db.drift
 tags: [daily-os, outbox, jobs, durability, adr-0044]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-01T12:00:00Z }
+generated: { by: claude-code/fable-5.1, at: 2026-09-16T21:00:00Z }
 stale_after: 2026-11-01
 sources:
   - id: schema
@@ -92,10 +92,16 @@ otherwise see:
 | `waitingForNetwork` | **Yes** | The runtime probes it and re-queues on connectivity restore, but the wait is otherwise invisible; the row says what is pending and offers to force the attempt |
 
 **Notification coverage is narrower than the timeline's.** `DayPlanReadyNotifier`
-reacts only to `draftPlan`/`refinePlan` reaching `succeeded` or `failed`; it
-ignores `waitingForUser`, `waitingForNetwork`, and every `parseCapture` outcome.
-So Activity is the only surface that shows those — which is the gap it was added
-to close, not a duplicate of the notification.
+reacts only to `draftPlan`/`refinePlan` reaching `succeeded` or `failed`, and
+only while the app is in the background; it ignores `waitingForUser`,
+`waitingForNetwork`, and every `parseCapture` outcome. So Activity is the only
+surface that shows those — which is the gap it was added to close, not a
+duplicate of the notification. What the notifier writes is a `dayPlanOutcome`
+inbox row — one per job and outcome, a later one for the same day retracting
+the earlier — that the notification scheduler projects to the OS banner and
+the bell keeps until dealt with. The row is
+[device-local](../notifications.md#two-rows-never-leave-the-device), like
+this ledger.
 
 The row is placed at `requestedAt`, not `updatedAt`. While the device is offline
 the runtime probes each waiting job on a timer, re-queuing and re-parking it,

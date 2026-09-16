@@ -18,13 +18,7 @@ import 'package:timezone/timezone.dart';
 
 abstract final class NotificationConstants {
   static const int badgeNotificationId = 1;
-  static const int taskThreshold = 5;
   static const String defaultActionName = 'Open notification';
-  static const String taskSingular = 'task';
-  static const String taskPlural = 'tasks';
-  static const String inProgressSuffix = ' in progress';
-  static const String encouragementLow = 'Nice';
-  static const String encouragementHigh = "Let's get that number down";
 }
 
 final JournalDb _db = getIt<JournalDb>();
@@ -398,22 +392,26 @@ class NotificationService {
         ?.requestNotificationsPermission();
   }
 
-  /// Badge presentation. iOS never alerts for the badge — the number on the
-  /// icon is the whole message there — while macOS alerts for a non-zero count
-  /// so the "N tasks in progress" text is actually delivered.
-  NotificationDetails _badgeDetails({required bool presentAlertOnDesktop}) =>
-      NotificationDetails(
-        iOS: DarwinNotificationDetails(
-          presentAlert: false,
-          presentBadge: true,
-          badgeNumber: badgeCount,
-        ),
-        macOS: DarwinNotificationDetails(
-          presentAlert: presentAlertOnDesktop,
-          presentBadge: true,
-          badgeNumber: badgeCount,
-        ),
-      );
+  /// Badge presentation: the number on the icon and nothing else, on both
+  /// Darwin platforms.
+  ///
+  /// macOS used to alert for a non-zero count so that a "3 tasks in
+  /// progress" line was delivered with it — which made every entry write
+  /// that changed the count post a notification, in hard-coded English,
+  /// about a number the icon already shows. The badge is a count, not an
+  /// alert; the alerts are the inbox rows.
+  NotificationDetails _badgeDetails() => NotificationDetails(
+    iOS: DarwinNotificationDetails(
+      presentAlert: false,
+      presentBadge: true,
+      badgeNumber: badgeCount,
+    ),
+    macOS: DarwinNotificationDetails(
+      presentAlert: false,
+      presentBadge: true,
+      badgeNumber: badgeCount,
+    ),
+  );
 
   /// Android presentation, or null where it would be discarded.
   ///
@@ -495,7 +493,8 @@ class NotificationService {
         : null,
   );
 
-  /// Reflects the number of tasks in progress on the app icon.
+  /// Reflects the number of tasks in progress on the app icon — silently:
+  /// the count is the whole message, on both Darwin platforms.
   ///
   /// Runs after every entry write, which makes it the first thing to resolve
   /// the lazily registered service — and therefore the first thing that could
@@ -532,17 +531,14 @@ class NotificationService {
       id: NotificationConstants.badgeNotificationId,
     );
 
-    final label = badgeCount == 1
-        ? NotificationConstants.taskSingular
-        : NotificationConstants.taskPlural;
-
+    // Empty title and body: a notification whose only content is its badge
+    // updates the icon and shows nothing, in the foreground or the
+    // background — the same shape [_zeroBadge] relies on to clear it.
     await flutterLocalNotificationsPlugin.show(
       id: NotificationConstants.badgeNotificationId,
-      title: '$badgeCount $label${NotificationConstants.inProgressSuffix}',
-      body: badgeCount < NotificationConstants.taskThreshold
-          ? NotificationConstants.encouragementLow
-          : NotificationConstants.encouragementHigh,
-      notificationDetails: _badgeDetails(presentAlertOnDesktop: true),
+      title: '',
+      body: '',
+      notificationDetails: _badgeDetails(),
     );
   }
 
@@ -595,7 +591,7 @@ class NotificationService {
       id: NotificationConstants.badgeNotificationId,
       title: '',
       body: '',
-      notificationDetails: _badgeDetails(presentAlertOnDesktop: false),
+      notificationDetails: _badgeDetails(),
     );
   }
 

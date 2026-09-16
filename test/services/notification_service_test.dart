@@ -231,18 +231,9 @@ void main() {
   };
 
   group('NotificationConstants', () {
-    test('exposes the documented badge/encouragement values', () {
+    test('exposes the badge id and the Linux action name', () {
       expect(NotificationConstants.badgeNotificationId, 1);
-      expect(NotificationConstants.taskThreshold, 5);
       expect(NotificationConstants.defaultActionName, 'Open notification');
-      expect(NotificationConstants.taskSingular, 'task');
-      expect(NotificationConstants.taskPlural, 'tasks');
-      expect(NotificationConstants.inProgressSuffix, ' in progress');
-      expect(NotificationConstants.encouragementLow, 'Nice');
-      expect(
-        NotificationConstants.encouragementHigh,
-        "Let's get that number down",
-      );
     });
   });
 
@@ -781,7 +772,7 @@ void main() {
 
       // badgeCount was reset on the way down, so the unchanged-count
       // short-circuit must not swallow the restore.
-      expect(channel.argsOf('show')['title'], '3 tasks in progress');
+      expect(channel.platformSpecificsOf('show')!['badgeNumber'], 3);
       expect(service.badgeCount, 3);
     });
   });
@@ -832,32 +823,30 @@ void main() {
       },
     );
 
-    test('one task reads as singular and encourages', () async {
-      await withWipCount(1);
+    for (final count in [1, 4, 5]) {
+      test(
+        'a count of $count crosses as a silent badge with no copy',
+        () async {
+          await withWipCount(count);
 
-      expect(channel.argsOf('show')['title'], '1 task in progress');
-      expect(channel.argsOf('show')['body'], 'Nice');
-    });
+          // The number on the icon is the whole message. There used to be a
+          // "N tasks in progress" line with it, which made every entry write
+          // that changed the count post a notification about a number the icon
+          // already shows.
+          expect(channel.argsOf('show')['title'], '');
+          expect(channel.argsOf('show')['body'], '');
+          final specifics = channel.platformSpecificsOf('show')!;
+          expect(specifics['badgeNumber'], count);
+          expect(specifics['presentBadge'], isTrue);
+        },
+      );
+    }
 
-    test('below the threshold reads as plural and still encourages', () async {
-      await withWipCount(4);
-
-      expect(channel.argsOf('show')['title'], '4 tasks in progress');
-      expect(channel.argsOf('show')['body'], 'Nice');
-    });
-
-    test('at the threshold the message turns into a nudge', () async {
-      await withWipCount(NotificationConstants.taskThreshold);
-
-      expect(channel.argsOf('show')['title'], '5 tasks in progress');
-      expect(channel.argsOf('show')['body'], "Let's get that number down");
-    });
-
-    test('macOS alerts for a non-zero badge and carries the count', () async {
+    test('macOS never alerts for the badge either', () async {
       await withWipCount(3);
 
       final specifics = channel.platformSpecificsOf('show')!;
-      expect(specifics['presentAlert'], isTrue);
+      expect(specifics['presentAlert'], isFalse);
       expect(specifics['presentBadge'], isTrue);
       expect(specifics['badgeNumber'], 3);
     });
