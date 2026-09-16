@@ -658,8 +658,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
                     'after editing a habit day. Call update_goal_report now '
                     'with the status and current evidence from the FACTS '
                     'block.'
-              : 'The track status changed this wake. Call update_goal_report '
-                    'now with the status from the FACTS block.',
+              : goalStatusTransitionReportInstruction,
         );
         if (retryUsage != null) {
           usage = usage == null ? retryUsage : usage.merge(retryUsage);

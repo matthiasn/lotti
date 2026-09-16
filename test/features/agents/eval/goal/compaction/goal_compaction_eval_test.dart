@@ -10,10 +10,37 @@ import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/goals/logic/goal_checkin_compaction_strategy.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
+import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import 'support/goal_compaction_eval.dart';
+import 'support/goal_compaction_facts.dart';
 import 'support/goal_compaction_fixtures.dart';
+
+/// The first fixture's deterministic rolling aggregates, which a report must
+/// quote for the production strategy to accept it.
+final List<String> _fixtureAggregates = () {
+  final derivation = deriveGoalCompactionFacts(goalCompactionFixtures.first);
+  return goalRollingAggregateStrings(
+    derivation.version.criteria,
+    derivation.facts.evaluation.results,
+  );
+}();
+
+/// An `update_goal_report` payload the production strategy accepts when
+/// [status] matches the derived status.
+String _reportArguments(String status, String oneLiner) => jsonEncode({
+  'status': status,
+  'oneLiner': oneLiner,
+  'report': {
+    'tldr': 'Behind the target for a year.',
+    'currentPeriod': 'Below the target today.',
+    'rollingWindow': 'Averaging ${_fixtureAggregates.join(', ')} this window.',
+    'latestChange': 'Down from the last period.',
+    'coverage': 'Seven days carry data.',
+    'nextActions': {'now': <Object>[], 'later': <Object>[]},
+  },
+});
 
 /// A scripted model: answers the wake with a report and a reply, answers
 /// the probe turn with JSON, and answers a digest request with prose. The
@@ -23,9 +50,23 @@ class _ScriptedInference extends InferenceRepositoryInterface {
     this.reportedStatus = 'offTrack',
     this.failOn,
     this.blankDigest = false,
+    this.replyOnlyWake = false,
+    this.rejectedWakeReport = false,
   });
 
+  /// Answer the wake with a report the production strategy rejects (no
+  /// structure, no quoted aggregate) alongside the reply.
+  final bool rejectedWakeReport;
+
   final String reportedStatus;
+
+  /// Answer the wake with a reply but no report, leaving the status
+  /// unreported until the forced retry asks for it.
+  final bool replyOnlyWake;
+
+  /// The tool names and tool choice offered on each user turn, in order.
+  final offeredTools = <List<String>>[];
+  final toolChoices = <ChatCompletionToolChoiceOption?>[];
 
   /// A substring of a user message that makes the call throw.
   final String? failOn;
@@ -55,6 +96,11 @@ class _ScriptedInference extends InferenceRepositoryInterface {
     }
     final user = last.mapOrNull(user: (m) => m.content.value)?.toString() ?? '';
     prompts.add(user);
+    offeredTools.add([
+      for (final tool in tools ?? const <ChatCompletionTool>[])
+        tool.function.name,
+    ]);
+    toolChoices.add(toolChoice);
     if (failOn != null && user.contains(failOn!)) {
       return Stream.error(Exception('scripted failure'));
     }
@@ -91,23 +137,48 @@ class _ScriptedInference extends InferenceRepositoryInterface {
         ], promptTokens: 700),
       );
     }
+    // The forced retry answers with the report alone, as a named tool choice
+    // demands.
+    if (user == goalStatusTransitionReportInstruction) {
+      return Stream.value(
+        _tools([
+          (
+            GoalAgentToolNames.updateGoalReport,
+            _reportArguments(reportedStatus, 'Retried.'),
+          ),
+        ], promptTokens: 5100),
+      );
+    }
     // The wake.
+    if (rejectedWakeReport) {
+      return Stream.value(
+        _tools([
+          (
+            GoalAgentToolNames.updateGoalReport,
+            jsonEncode({'status': reportedStatus, 'oneLiner': 'Off track.'}),
+          ),
+          (
+            GoalAgentToolNames.replyToUser,
+            jsonEncode({'message': 'Restore the calendar block.'}),
+          ),
+        ], promptTokens: 5000),
+      );
+    }
+    if (replyOnlyWake) {
+      return Stream.value(
+        _tools([
+          (
+            GoalAgentToolNames.replyToUser,
+            jsonEncode({'message': 'Restore the calendar block.'}),
+          ),
+        ], promptTokens: 5000),
+      );
+    }
     return Stream.value(
       _tools([
         (
           GoalAgentToolNames.updateGoalReport,
-          jsonEncode({
-            'status': reportedStatus,
-            'oneLiner': 'Off track for a year.',
-            'report': {
-              'tldr': 'tldr',
-              'currentPeriod': 'c',
-              'rollingWindow': 'r',
-              'latestChange': 'l',
-              'coverage': 'cov',
-              'now': <Object>[],
-            },
-          }),
+          _reportArguments(reportedStatus, 'Off track for a year.'),
         ),
         (
           GoalAgentToolNames.replyToUser,
@@ -435,12 +506,94 @@ void main() {
       },
     );
 
-    test('a wrong status is recorded as incorrect, not hidden', () async {
+    test(
+      "a transition wake that only replies gets production's forced report",
+      () async {
+        expect(
+          fixture.transitionFrom,
+          isNot(fixture.truth.expectedStatus),
+          reason: 'the retry only applies to a status transition',
+        );
+        final inference = _ScriptedInference(replyOnlyWake: true);
+        final runner = GoalCompactionEvalRunner(
+          provider: provider,
+          modelId: 'm',
+          conversationRepository: _repo(container),
+          inferenceRepository: inference,
+        );
+        final packet = await runner.run(
+          fixtures: [fixture],
+          strategies: const [FullContextCheckInCompaction()],
+          samples: 1,
+        );
+
+        final c = packet.cases.single;
+        expect(c.reportedStatus, 'offTrack');
+        expect(c.wakeReply, 'Restore the calendar block.');
+        final retry = inference.prompts.indexOf(
+          goalStatusTransitionReportInstruction,
+        );
+        expect(retry, greaterThan(0));
+        expect(inference.offeredTools[retry], [
+          GoalAgentToolNames.updateGoalReport,
+        ]);
+        expect(inference.toolChoices[retry], isNotNull);
+        expect(inference.toolChoices[0], isNull);
+        // The retry belongs to the wake, so the probe turn still follows it.
+        expect(inference.prompts.last, startsWith('A few questions'));
+      },
+    );
+
+    test('a report production rejects still earns the forced retry', () async {
+      // A name-only check skipped the retry here, although the strategy
+      // refuses the report and the workflow retries on `hasReport == false`.
+      final inference = _ScriptedInference(rejectedWakeReport: true);
       final runner = GoalCompactionEvalRunner(
         provider: provider,
         modelId: 'm',
         conversationRepository: _repo(container),
-        inferenceRepository: _ScriptedInference(reportedStatus: 'onTrack'),
+        inferenceRepository: inference,
+      );
+      final packet = await runner.run(
+        fixtures: [fixture],
+        strategies: const [FullContextCheckInCompaction()],
+        samples: 1,
+      );
+
+      expect(
+        inference.prompts,
+        contains(goalStatusTransitionReportInstruction),
+      );
+      expect(packet.cases.single.reportedStatus, 'offTrack');
+    });
+
+    test('a wake that reported gets no forced retry', () async {
+      final inference = _ScriptedInference();
+      final runner = GoalCompactionEvalRunner(
+        provider: provider,
+        modelId: 'm',
+        conversationRepository: _repo(container),
+        inferenceRepository: inference,
+      );
+      await runner.run(
+        fixtures: [fixture],
+        strategies: const [FullContextCheckInCompaction()],
+        samples: 1,
+      );
+      expect(
+        inference.prompts,
+        isNot(contains(goalStatusTransitionReportInstruction)),
+      );
+    });
+
+    test('a status production rejects is scored unreported, after the '
+        'retry', () async {
+      final inference = _ScriptedInference(reportedStatus: 'onTrack');
+      final runner = GoalCompactionEvalRunner(
+        provider: provider,
+        modelId: 'm',
+        conversationRepository: _repo(container),
+        inferenceRepository: inference,
       );
       final packet = await runner.run(
         fixtures: [fixture],
@@ -450,9 +603,15 @@ void main() {
       final wake =
           packet.cases.single.toJson(goalCompactionEvalReference)['wake']!
               as Map;
-      expect(wake['reportedStatus'], 'onTrack');
+      // The strategy rejects a status contradicting the FACTS, so nothing
+      // persists — and, as in production, that rejection earns the retry.
+      expect(wake['reportedStatus'], isNull);
       expect(wake['expectedStatus'], 'offTrack');
       expect(wake['statusCorrect'], isFalse);
+      expect(
+        inference.prompts,
+        contains(goalStatusTransitionReportInstruction),
+      );
     });
 
     test(

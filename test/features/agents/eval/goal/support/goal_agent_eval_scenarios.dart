@@ -352,7 +352,7 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
     policyRuleId: 'P4',
     description:
         'First evaluation at risk with no active ad: report plus a welcome '
-        'nudge banner.',
+        'banner.',
     facts: buildStepsFacts(
       dailySteps: gSlightlyOffSteps,
       attainment: gSlightlyOffAttainment,
@@ -363,10 +363,10 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
         GoalAgentToolNames.updateGoalReport,
         expectedArgumentsSubset: {'status': 'atRisk'},
       ),
-      GoalAgentExpectedToolCall(
-        GoalAgentToolNames.createGoalAd,
-        expectedArgumentsSubset: {'tone': 'nudge'},
-      ),
+      // No tone is prescribed here: the contract binds "nudge" to atRisk
+      // WITH trendWorsening3PlusDays (`ad_create_worsening`), while a first
+      // evaluation at risk may legitimately encourage instead.
+      GoalAgentExpectedToolCall(GoalAgentToolNames.createGoalAd),
     ],
     forbiddenToolArgumentTerms: const {
       GoalAgentToolNames.createGoalAd: signePrivateStrings,
