@@ -219,6 +219,45 @@ void main() {
       }
     });
 
+    test('a verb-final modal passive in a subordinate clause plans too', () {
+      // Verbatim from a glm-5.3-flash gym run: "so that the review can be
+      // completed before 30 September" failed as claiming it was completed,
+      // because the detector only knew the main-clause order.
+      for (final (text, claim) in [
+        (
+          'lea früh einplanen, damit der review vor dem 30. september '
+              'abgeschlossen sein kann.',
+          'abgeschlossen',
+        ),
+        (
+          'bevor die anmeldung umgesetzt werden muss, klären wir den umfang.',
+          'umgesetzt',
+        ),
+        ('weil der prototyp erst erledigt sein soll, warten wir.', 'erledigt'),
+      ]) {
+        expect(
+          containsAffirmativeReportClaim(text, claim),
+          isFalse,
+          reason: '$claim in $text',
+        );
+      }
+    });
+
+    test('a completion followed by an unrelated modal still fires', () {
+      // "ist abgeschlossen und kann verwendet werden": the participle's own
+      // auxiliary is "ist", and the modal belongs to the next verb.
+      for (final text in [
+        'der review ist abgeschlossen und kann jetzt verwendet werden.',
+        'der review ist abgeschlossen, sein ergebnis kann geteilt werden.',
+      ]) {
+        expect(
+          containsAffirmativeReportClaim(text, 'abgeschlossen'),
+          isTrue,
+          reason: text,
+        );
+      }
+    });
+
     test('a modal governing a different verb or noun excuses nothing', () {
       // From review: the modal must govern the claimed participle itself.
       expect(
