@@ -633,6 +633,35 @@ void main() {
       }
     });
 
+    test('a scenario is never asked to reply without the reply tool', () {
+      // The same trap for the reply tool: it is withheld when no message is
+      // waiting, so a scenario expecting a reply there would fail every model
+      // on a surface the runtime never presents.
+      for (final scenario in goalAgentEvalScenarios) {
+        if (scenario.replyToolOffered) continue;
+        expect(
+          scenario.expectedToolCalls.map((call) => call.name),
+          isNot(contains(GoalAgentToolNames.replyToUser)),
+          reason: '${scenario.id} expects a reply the wake withholds',
+        );
+      }
+    });
+
+    test('the reply tool is offered exactly when a message is waiting', () {
+      final withMessage = goalAgentEvalScenarios.singleWhere(
+        (scenario) => scenario.id == 'evo_ambiguous',
+      );
+      final scheduled = goalAgentEvalScenarios.singleWhere(
+        (scenario) => scenario.id == 'ad_no_double',
+      );
+
+      expect(withMessage.hasPendingUserMessage, isTrue);
+      expect(withMessage.replyToolOffered, isTrue);
+      expect(scheduled.hasPendingUserMessage, isFalse);
+      expect(scheduled.expectsNoToolCalls, isFalse);
+      expect(scheduled.replyToolOffered, isFalse);
+    });
+
     test('slightly-off restraint uses an established, non-worsening goal', () {
       final scenario = goalAgentEvalScenarios.singleWhere(
         (scenario) => scenario.id == 'gp_slightly_off',

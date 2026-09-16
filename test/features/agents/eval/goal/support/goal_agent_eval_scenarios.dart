@@ -112,6 +112,18 @@ class GoalAgentEvalScenario {
     return priors is! List || priors.isEmpty;
   }
 
+  /// Whether this wake is handed `reply_to_user`.
+  ///
+  /// Mirrors `GoalAgentWorkflow`: persistence ignores a reply on a wake with no
+  /// message waiting, so the runtime withholds the tool rather than offering
+  /// one whose every call is discarded. The scorer already allows the tool
+  /// only when a message is pending; this keeps the offered surface in step.
+  /// Restraint scenarios keep the full surface, as with the ad tools.
+  bool get replyToolOffered =>
+      expectsNoToolCalls ||
+      hasPendingUserMessage ||
+      followUpUserMessages.isNotEmpty;
+
   /// Whether the authored FACTS carry a message awaiting an answer.
   bool get hasPendingUserMessage => pendingUserMessages.isNotEmpty;
 

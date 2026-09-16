@@ -225,6 +225,15 @@ See [profile resolution](ai/profile-resolution.md) for failure and precedence ru
   at risk on the initial/worsening path), that expiry re-arms the period's
   escalation so Phase B creates or reuses a replacement. Healthy expiry stays
   a EUR0 maintenance event.
+- **A reply with nobody to answer is unofferable too.** A wake with no
+  pending user message is not handed `reply_to_user`. On such a wake
+  `persistOutputs` reads only plain final prose and ignores the reply tool, so
+  a call was paid for and discarded — and a model that took the offer posted
+  the unsolicited status update the contract calls nagging. Interactive wakes
+  keep it, including for `userAskedForBanner`. The eval runner mirrors the
+  narrowing (`GoalAgentEvalScenario.replyToolOffered`), and its scorer already
+  allowed the tool only when a message was pending, so the offered surface and
+  the judged one now agree.
 - **A blocked banner is unofferable, not merely forbidden.** Before the first
   inference of a scheduled wake, `GoalAgentWorkflow` drops `create_goal_ad` and
   `rerun_goal_ad` from the tool list whenever the deterministic tier has already

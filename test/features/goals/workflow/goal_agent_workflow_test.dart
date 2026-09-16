@@ -1011,11 +1011,13 @@ void main() {
       reason: 'a dismissal blocks automatic ads for the calendar day',
     );
     expect(handedOver, isNot(contains(GoalAgentToolNames.rerunGoalAd)));
-    // Only the two ad tools come off: withholding must not quietly shrink the
-    // surface that makes a wake useful.
+    // No message is waiting on a scheduled wake, so the reply tool comes off
+    // with the ad pair. Nothing else may: withholding must not quietly shrink
+    // the surface that makes a wake useful.
+    expect(handedOver, isNot(contains(GoalAgentToolNames.replyToUser)));
     expect(handedOver, contains(GoalAgentToolNames.updateGoalReport));
     expect(handedOver, contains(GoalAgentToolNames.retireGoalAd));
-    expect(handedOver, hasLength(goalAgentTools.length - 2));
+    expect(handedOver, hasLength(goalAgentTools.length - 3));
   });
 
   test('a wake compacts pending check-ins and carries the user voice into '
@@ -1799,7 +1801,13 @@ void main() {
           expect(provider.id, 'melious-provider');
           expect(temperature, 0);
           expect(message, startsWith('FACTS (deterministic'));
-          expect(tools, hasLength(goalAgentTools.length));
+          // A scheduled wake has no message waiting, so the reply tool —
+          // whose output persistence would discard — is the one withheld.
+          expect(tools, hasLength(goalAgentTools.length - 1));
+          expect(
+            [for (final tool in tools!) tool.function.name],
+            isNot(contains(GoalAgentToolNames.replyToUser)),
+          );
           await (strategy! as GoalAgentStrategy).processToolCalls(
             toolCalls: [
               toolCall(GoalAgentToolNames.updateGoalReport, {
