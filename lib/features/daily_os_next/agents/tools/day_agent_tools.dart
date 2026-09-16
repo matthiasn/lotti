@@ -368,17 +368,14 @@ const dayAgentTools = <AgentToolDefinition>[
               },
               'note': {'type': 'string'},
             },
-            // `reason` is required here because the writer already rejects
-            // an ai block without one, and a schema that stayed silent let
-            // models omit it and lose the entire draft to the rejection.
-            'required': [
-              'title',
-              'categoryId',
-              'start',
-              'end',
-              'type',
-              'reason',
-            ],
+            // `reason` is deliberately NOT required here, though the writer
+            // rejects an ai block without one. A closed-window wake must echo
+            // its baseline blocks exactly, and a legacy block may carry a null
+            // reason: requiring the field would leave that echo no valid form
+            // — invent a reason and the repeat is no longer exact, omit it and
+            // the call is off-schema. The rule lives in the field description,
+            // which is where it can be conditional on the block type.
+            'required': ['title', 'categoryId', 'start', 'end', 'type'],
             'additionalProperties': false,
           },
         },

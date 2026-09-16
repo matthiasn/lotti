@@ -291,17 +291,26 @@ void main() {
       );
     });
 
-    test('draft_day_plan requires a reason on every block', () {
-      // The writer rejects an ai block with no reason, and the schema used to
-      // stay silent about it: a gym run lost six drafts to the mismatch.
-      final blockSchema =
-          (parametersFor(DayAgentToolNames.draftDayPlan)['properties']
-                  as Map<String, dynamic>)['blocks']
+    test('draft_day_plan states the reason rule without requiring it', () {
+      // A gym run lost six drafts to a missing reason, but requiring the
+      // field unconditionally breaks the other end: a closed-window wake
+      // echoes its baseline exactly, and a legacy block may carry a null
+      // reason, which would then have no schema-valid representation.
+      final blockItems =
+          ((parametersFor(DayAgentToolNames.draftDayPlan)['properties']
+                      as Map<String, dynamic>)['blocks']
+                  as Map<String, dynamic>)['items']
               as Map<String, dynamic>;
 
       expect(
-        (blockSchema['items'] as Map<String, dynamic>)['required'],
-        containsAll(['title', 'categoryId', 'start', 'end', 'type', 'reason']),
+        blockItems['required'],
+        isNot(contains('reason')),
+        reason: 'a null-reason baseline echo must stay representable',
+      );
+      expect(
+        ((blockItems['properties'] as Map<String, dynamic>)['reason']
+            as Map<String, dynamic>)['description'],
+        allOf(contains('ai'), contains('rejects the whole draft')),
       );
     });
 

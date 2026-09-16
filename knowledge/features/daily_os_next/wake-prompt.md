@@ -263,6 +263,24 @@ It is windowed to the **wall clock**: today or yesterday only, independent of th
 wake workspace. This is the sole, ADR-governed exception to the workspace-day tool
 guard, dispatched before the blanket dayId rejection.
 
+## The workspace-day guard, and the blank id
+
+A day-scoped call naming a day other than the wake's workspace is rejected
+(ADR 0022 Decision 4): under one planner the model must never mutate another
+day. A call naming **no** day is not rejected — for the plan tools it is
+normalized to the wake's own `dayId` before dispatch.
+
+The two rules are the same rule. If the only day a named call may carry is this
+wake's, an unnamed one can mean nothing else; failing it instead cost whole
+drafted plans, because `draft_day_plan` is terminal and the writer's
+`dayId must not be empty` arrives after the model has already done the work.
+Measured on `glm-5.3-flash`, a blank `dayId` was the single commonest rejection
+in a day-planning run.
+
+The fill is scoped to the plan tools, which are the ones that take a `dayId`.
+Capture, knowledge and week-context schemas declare `additionalProperties: false`
+and no `dayId`, so adding the field there would make their calls invalid.
+
 Text is whitespace-normalized and capped at 500 characters at the write path.
 Concurrent versions resolve **earliest-createdAt wins** — the most
 contemporaneous testimony is canonical.
