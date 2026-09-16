@@ -327,6 +327,25 @@ estimate means **unsized, not free**, so it is given a deliberate slot with a
 stated reason or left out, rather than totalling as zero against
 `availableMinutes`.
 
+**A partial placement is stated, not described.** When a task gets less time
+than its estimate, its block carries `remainingMinutes` — the estimate minus
+the minutes the plan gives it — and the `reason` explains the choice rather
+than carrying the arithmetic. `PlannedBlock.remainingMinutes` is null for a
+block that covers its whole task, and a negative value is rejected at the
+write path rather than persisted as fact.
+
+The field exists because the alternative did not work. The rules previously
+asked the planner to say "that it is partial and how much remains" in prose,
+and the estimated-capacity check had to recover those numbers from free text.
+Three different renderings of one idea appeared in three consecutive
+evaluation runs — "60 of the 180 estimated minutes", "only 60 min remain
+before the 17:00 working-day end", "~120 minutes are deliberately left
+unscheduled" — each needing its own pattern, and each new pattern risking a
+false negative somewhere else. A declared number is checked by arithmetic
+instead: it is credited when `allocated + remainingMinutes == estimate`, and a
+declaration that does not add up is not rescued by prose that would have
+qualified on its own.
+
 **The day's remaining budget is stated, not derived.** `<planning_window>`
 carries `availableMinutes` — working time still available, bounded by the
 clock *and* by capacity, whichever binds harder. Without it the model had to

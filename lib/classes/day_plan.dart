@@ -150,6 +150,15 @@ abstract class PlannedBlock with _$PlannedBlock {
     /// Why this block belongs at this time. Required for AI blocks at the
     /// day-agent tool-handler layer.
     String? reason,
+
+    /// Minutes of [taskId]'s estimate this plan deliberately leaves
+    /// unscheduled, when the block covers less than the whole task.
+    ///
+    /// Null means the block is not a partial placement. It is the structured
+    /// form of "60 of 180 minutes, 120 left for later": the planner states the
+    /// remainder rather than describing it in [reason], so the day can show
+    /// what is left and a checker can verify the arithmetic.
+    int? remainingMinutes,
   }) = _PlannedBlock;
 
   factory PlannedBlock.fromJson(Map<String, dynamic> json) =>

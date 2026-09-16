@@ -399,6 +399,9 @@ typedef _PlacementDisclosure = ({bool canQualify, String prose});
 typedef _EstimatedTaskPlacement = ({
   List<EvalCorpusTask> corpus,
   int allocatedMinutes,
+
+  /// Every `remainingMinutes` the task's own work blocks declared.
+  List<int> declaredRemainders,
   List<_PlacementDisclosure> disclosures,
   int estimateMinutes,
   bool hasOverlappingBlocks,
@@ -417,6 +420,7 @@ Map<String, _EstimatedTaskPlacement> _estimatedTaskPlacements(
 ) {
   final allocatedByTask = <String, int>{};
   final blocksByTask = <String, List<PlannedBlock>>{};
+  final remaindersByTask = <String, List<int>>{};
   final disclosuresByTask = <String, List<_PlacementDisclosure>>{};
 
   void addDisclosure(
@@ -467,6 +471,9 @@ Map<String, _EstimatedTaskPlacement> _estimatedTaskPlacements(
       ifAbsent: () => block.endTime.difference(block.startTime).inMinutes,
     );
     blocksByTask.putIfAbsent(taskId, () => []).add(block);
+    if (block.remainingMinutes case final int remaining) {
+      remaindersByTask.putIfAbsent(taskId, () => []).add(remaining);
+    }
     if (reason != null && reason.isNotEmpty) {
       addDisclosure(taskId, canQualify: true, prose: reason);
     }
@@ -484,6 +491,7 @@ Map<String, _EstimatedTaskPlacement> _estimatedTaskPlacements(
         entry.key: (
           corpus: outcome.inputs.corpus,
           allocatedMinutes: entry.value,
+          declaredRemainders: remaindersByTask[entry.key] ?? const [],
           disclosures: disclosuresByTask[entry.key] ?? const [],
           estimateMinutes: estimate,
           hasOverlappingBlocks: _hasOverlappingIntervals(
@@ -515,20 +523,34 @@ bool _hasOverlappingIntervals(List<PlannedBlock> blocks) {
 /// scoring from treating a one-minute task marker as genuine partial work.
 /// Overlapping blocks are likewise ineligible because summed intervals can
 /// manufacture represented minutes without adding wall-clock work.
-bool _isAuditedPartial(_EstimatedTaskPlacement placement) =>
-    placement.allocatedMinutes > 0 &&
-    placement.allocatedMinutes < placement.estimateMinutes &&
-    placement.allocatedMinutes * 10 >= placement.estimateMinutes &&
-    !placement.hasOverlappingBlocks &&
-    _hasAuditablePartialDisclosure(
-      disclosures: placement.disclosures,
-      allocatedMinutes: placement.allocatedMinutes,
-      estimateMinutes: placement.estimateMinutes,
-      taskId: placement.taskId,
-      taskTitle: placement.taskTitle,
-      corpus: placement.corpus,
-      now: placement.now,
+bool _isAuditedPartial(_EstimatedTaskPlacement placement) {
+  if (placement.allocatedMinutes <= 0 ||
+      placement.allocatedMinutes >= placement.estimateMinutes ||
+      placement.allocatedMinutes * 10 < placement.estimateMinutes ||
+      placement.hasOverlappingBlocks) {
+    return false;
+  }
+  // A declared remainder answers the question outright, so prose is not read
+  // at all: the planner stated the split in `remainingMinutes` and the only
+  // thing left to check is whether the arithmetic holds. Every declaration on
+  // the task must agree with it — one wrong number is a wrong claim, not a
+  // near miss, and falling back to prose there would let it pass on wording.
+  if (placement.declaredRemainders.isNotEmpty) {
+    final shortfall = placement.estimateMinutes - placement.allocatedMinutes;
+    return placement.declaredRemainders.every(
+      (remaining) => remaining == shortfall,
     );
+  }
+  return _hasAuditablePartialDisclosure(
+    disclosures: placement.disclosures,
+    allocatedMinutes: placement.allocatedMinutes,
+    estimateMinutes: placement.estimateMinutes,
+    taskId: placement.taskId,
+    taskTitle: placement.taskTitle,
+    corpus: placement.corpus,
+    now: placement.now,
+  );
+}
 
 /// Whether prose makes a shortened placement safe to charge as partial.
 ///

@@ -333,6 +333,26 @@ void main() {
       }
     });
 
+    test('draft_day_plan blocks can declare a partial remainder', () {
+      // The structured form of "60 of 180 minutes, 120 left": three different
+      // English renderings of that idea each needed their own pattern in the
+      // eval before the planner could simply state the number.
+      final blockProps =
+          (((parametersFor(DayAgentToolNames.draftDayPlan)['properties']
+                          as Map<String, dynamic>)['blocks']
+                      as Map<String, dynamic>)['items']
+                  as Map<String, dynamic>)['properties']
+              as Map<String, dynamic>;
+      final remaining = blockProps['remainingMinutes'] as Map<String, dynamic>;
+
+      expect(remaining['type'], 'integer');
+      expect(remaining['minimum'], 0);
+      expect(
+        remaining['description'],
+        allOf(contains('estimateMinutes'), contains('left unscheduled')),
+      );
+    });
+
     test('draft_day_plan energy bands state the time format', () {
       // The band fields were the only times in the schema with no format
       // note, and models wrote "09:00" for them while getting every block

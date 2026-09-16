@@ -367,6 +367,18 @@ const dayAgentTools = <AgentToolDefinition>[
                     'or calendar block a short phrase is enough.',
               },
               'note': {'type': 'string'},
+              'remainingMinutes': {
+                'type': 'integer',
+                'minimum': 0,
+                'description':
+                    'When this block covers less of its task than that '
+                    'task\u2019s estimateMinutes, the minutes left '
+                    'unscheduled: '
+                    'estimateMinutes minus the minutes this plan gives the '
+                    'task. Set it instead of only describing the split in '
+                    'the reason, so the day can show what is left. Omit it '
+                    'when the block covers the whole task.',
+              },
             },
             // `reason` is deliberately NOT required here, though the writer
             // rejects an ai block without one. A closed-window wake must echo
@@ -500,6 +512,15 @@ const dayAgentTools = <AgentToolDefinition>[
                     'enum': ['ai', 'buffer', 'manual'],
                   },
                   'reason': {'type': 'string', 'minLength': 1},
+                  'remainingMinutes': {
+                    'type': 'integer',
+                    'minimum': 0,
+                    'description':
+                        'Minutes of this block\u2019s task left unscheduled '
+                        'after the change. Send it whenever the change makes '
+                        'the block cover more or less of its task, so the '
+                        'remainder does not describe the block it used to be.',
+                  },
                 },
                 'additionalProperties': false,
               },

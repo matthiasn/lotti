@@ -10,10 +10,12 @@ const dayAgentOmissionRules = '''
   you must decide, visibly. Either leave work out and say which in a block
   `reason`, call `raise_day_status` with status `attentionNeeded` and reason
   `overCommitted` and name the omitted work in its `note`, or place a task for
-  less than its estimate and say in that block's `reason` that it is partial
-  and how much remains. What you may not do is run past the working day, or
-  quietly shrink estimates so everything appears to fit — a plan that looks
-  complete but cannot be worked is worse than one that names what was dropped.
+  less than its estimate. A partial placement is stated, not described: set
+  that block's `remainingMinutes` to its `estimateMinutes` minus the minutes
+  you give it, and say in the `reason` why it is split. What you may not do is
+  run past the working day, or quietly shrink estimates so everything appears
+  to fit — a plan that looks complete but cannot be worked is worse than one
+  that names what was dropped.
 - Never represent omitted or unscheduled work as a zero-duration placeholder
   block. Every block must have `end` later than `start`; if work does not fit,
   name the omitted work in an existing block `reason`. If there is no retained
@@ -49,6 +51,10 @@ Worked example:
   reason when that is clearer). Never make an instruction disappear: every
   selected item is either placed, explicitly partial, or explicitly named as
   omitted or conflicting.
+- Partial placement: a 90-minute archive audit with only 35 minutes left in
+  the day gets a 35-minute block with `remainingMinutes: 55`, and a `reason`
+  saying it is a deliberate slice. The numbers live in the field; the reason
+  explains the choice.
 ''';
 
 @visibleForTesting

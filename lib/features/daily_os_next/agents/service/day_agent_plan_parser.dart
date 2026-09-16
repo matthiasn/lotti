@@ -411,7 +411,24 @@ PlannedBlock parsePlannedBlock({
       'AI planned blocks require a non-empty reason',
     );
   }
+  // A remainder only means something against a task's estimate, and a
+  // negative one means nothing at all. Both are the model's arithmetic to
+  // get right, so a wrong shape is refused rather than persisted as fact.
+  final remainingMinutes = optionalIntArg(data['remainingMinutes']);
+  if (remainingMinutes != null && remainingMinutes < 0) {
+    throw const DayAgentCaptureException(
+      'remainingMinutes must not be negative',
+    );
+  }
   final taskId = optionalStringArg(data['taskId']);
+  // Outstanding minutes of *what*? On a block with no task there is nothing
+  // for the number to be the remainder of, and nothing for the day to carry
+  // it over to — it would read as phantom work nobody can pick up.
+  if (remainingMinutes != null && taskId == null) {
+    throw const DayAgentCaptureException(
+      'remainingMinutes needs the taskId whose estimate it is left from',
+    );
+  }
   // Both sets are resolved and category-filtered by the caller, which is the
   // point: `decidedTaskIds` arrives as a `draft_day_plan` argument the model
   // writes itself, so treating it as a permission set let a model reference
@@ -441,6 +458,7 @@ PlannedBlock parsePlannedBlock({
     type: blockType,
     state: blockState,
     reason: reason,
+    remainingMinutes: remainingMinutes,
   );
 }
 
@@ -618,6 +636,9 @@ Map<String, Object?> blockJson(PlannedBlock block) => {
   'state': block.state.name,
   'reason': block.reason,
   'note': block.note,
+  // Rendered so a closed-window echo can repeat it: the baseline comparison
+  // is block equality, and a field the model never sees comes back null.
+  'remainingMinutes': block.remainingMinutes,
 };
 
 List<Object?> objectListArg(Object? raw, String name) {

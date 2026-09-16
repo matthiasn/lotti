@@ -692,6 +692,7 @@ class DayAgentPlanWriter {
       note: optionalStringArg(data['note']),
       taskId: optionalStringArg(data['taskId']),
       title: optionalStringArg(data['title']),
+      remainingMinutes: optionalIntArg(data['remainingMinutes']),
       type:
           optionalEnumArg(
             PlannedBlockType.values,

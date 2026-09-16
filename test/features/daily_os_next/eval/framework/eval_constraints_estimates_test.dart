@@ -3916,6 +3916,7 @@ void main() {
       required (int, int) end,
       String? taskId,
       String? reason,
+      int? remainingMinutes,
       PlannedBlockType type = PlannedBlockType.ai,
     }) => PlannedBlock(
       id: id,
@@ -3924,9 +3925,84 @@ void main() {
       endTime: DateTime(2026, 7, 18, end.$1, end.$2),
       taskId: taskId,
       reason: reason,
+      remainingMinutes: remainingMinutes,
       title: id,
       type: type,
     );
+
+    group('a declared remainder', () {
+      const corpus = [
+        EvalCorpusTask(
+          taskId: 'task-long-migration',
+          title: 'Finish the database migration',
+          estimateMinutes: 180,
+        ),
+      ];
+
+      EvalConstraintResult score({int? remainingMinutes, String? reason}) =>
+          scoreWithinCapacityByEstimate(
+            outcome(
+              blocks: [
+                minuteBlock(
+                  id: 'blk-migration',
+                  taskId: 'task-long-migration',
+                  start: (16, 0),
+                  end: (17, 0),
+                  reason: reason,
+                  remainingMinutes: remainingMinutes,
+                ),
+              ],
+              corpus: corpus,
+              now: DateTime(2026, 7, 18, 15),
+            ),
+          );
+
+      test('credits the partial without reading any prose', () {
+        // 60 of 180 placed, 120 declared left. No wording to parse: three
+        // different English renderings of this one idea each needed their own
+        // pattern before the planner could simply state it.
+        final result = score(
+          remainingMinutes: 120,
+          reason: 'Deliberate slice.',
+        );
+
+        expect(result.passed, isTrue, reason: result.detail);
+        expect(
+          result.detail,
+          contains('task-long-migration 60min partial of 180min'),
+        );
+      });
+
+      test('a declaration that does not add up is not credited', () {
+        final result = score(remainingMinutes: 30, reason: 'Deliberate slice.');
+
+        expect(result.passed, isFalse);
+        expect(result.detail, contains('without a matching concrete partial'));
+      });
+
+      test('a wrong declaration is not rescued by correct prose', () {
+        // Prose that would qualify on its own must not paper over a declared
+        // number that contradicts it — the field is the claim.
+        final result = score(
+          remainingMinutes: 30,
+          reason:
+              'PARTIAL: 60 of the 180 estimated minutes; 120 min remain '
+              'unscheduled.',
+        );
+
+        expect(result.passed, isFalse);
+      });
+
+      test('prose still qualifies when nothing is declared', () {
+        final result = score(
+          reason:
+              'PARTIAL: 60 of the 180 estimated minutes; 120 min remain '
+              'unscheduled.',
+        );
+
+        expect(result.passed, isTrue, reason: result.detail);
+      });
+    });
 
     group('lateStart', () {
       const corpus = [

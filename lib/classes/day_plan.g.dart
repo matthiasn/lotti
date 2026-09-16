@@ -82,6 +82,7 @@ _PlannedBlock _$PlannedBlockFromJson(Map<String, dynamic> json) =>
           $enumDecodeNullable(_$PlannedBlockStateEnumMap, json['state']) ??
           PlannedBlockState.drafted,
       reason: json['reason'] as String?,
+      remainingMinutes: (json['remainingMinutes'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$PlannedBlockToJson(_PlannedBlock instance) =>
@@ -96,6 +97,7 @@ Map<String, dynamic> _$PlannedBlockToJson(_PlannedBlock instance) =>
       'type': _$PlannedBlockTypeEnumMap[instance.type]!,
       'state': _$PlannedBlockStateEnumMap[instance.state]!,
       'reason': instance.reason,
+      'remainingMinutes': instance.remainingMinutes,
     };
 
 const _$PlannedBlockTypeEnumMap = {

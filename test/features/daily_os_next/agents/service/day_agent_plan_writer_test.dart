@@ -164,6 +164,32 @@ void main() {
       },
     );
 
+    test('rejects a remainder on a block with no task', () async {
+      await expectLater(
+        withClock(
+          Clock.fixed(_openAt),
+          () => writer.persistDraftPlan(
+            agentId: _agentId,
+            dayId: _dayId,
+            planDate: _planDate,
+            rawBlocks: [
+              _blockJson(_block())
+                ..remove('taskId')
+                ..['remainingMinutes'] = 30,
+            ],
+            runKey: _runKey,
+          ),
+        ),
+        throwsA(
+          isA<DayAgentCaptureException>().having(
+            (error) => error.message,
+            'message',
+            contains('taskId whose estimate'),
+          ),
+        ),
+      );
+    });
+
     test('rejects invented blocks when no baseline exists', () async {
       await expectLater(
         withClock(

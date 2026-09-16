@@ -158,6 +158,58 @@ void main() {
       expect(result.single.categoryId, 'cat-ops');
     });
 
+    test('add_block carries a declared remainder onto the new block', () {
+      final result = applyPlanDiffItem(
+        item('add_block', {
+          'categoryId': 'cat-1',
+          'toStart': DateTime(2024, 3, 15, 14).toIso8601String(),
+          'toEnd': DateTime(2024, 3, 15, 15).toIso8601String(),
+          'title': 'Ops work',
+          'taskId': 'task-ops',
+          'blockReason': 'why',
+          'remainingMinutes': 45,
+        }),
+        const [],
+        addedBlockState: PlannedBlockState.drafted,
+        taskCategoryIds: const {'task-ops': 'cat-ops'},
+      );
+
+      expect(result.single.remainingMinutes, 45);
+    });
+
+    test(
+      'move_block updates the remainder it is given, keeps it otherwise',
+      () {
+        // Resizing a partial block changes the arithmetic, so a refine that
+        // shortens one must be able to restate what is left — and a move that
+        // says nothing about it must not silently drop it.
+        final partial = block().copyWith(
+          taskId: 'task-ops',
+          remainingMinutes: 60,
+        );
+        final resized = applyPlanDiffItem(
+          item('move_block', {
+            'blockId': 'block-1',
+            'toEnd': DateTime(2024, 3, 15, 15).toIso8601String(),
+            'remainingMinutes': 30,
+          }),
+          [partial],
+          addedBlockState: PlannedBlockState.drafted,
+        );
+        final untouched = applyPlanDiffItem(
+          item('move_block', {
+            'blockId': 'block-1',
+            'toStart': DateTime(2024, 3, 15, 14).toIso8601String(),
+          }),
+          [partial],
+          addedBlockState: PlannedBlockState.drafted,
+        );
+
+        expect(resized.single.remainingMinutes, 30);
+        expect(untouched.single.remainingMinutes, 60);
+      },
+    );
+
     test('move_block re-derives the category even when only times move', () {
       // Applied at acceptance, not only at proposal: a change set written
       // before this rule — or by a peer on an older build — is filed
