@@ -451,6 +451,9 @@ List<PlannedBlock> applyPlanDiffItem(
         reason: args.containsKey('blockReason')
             ? args['blockReason'] as String?
             : block.reason,
+        remainingMinutes: args.containsKey('remainingMinutes')
+            ? args['remainingMinutes'] as int?
+            : block.remainingMinutes,
       );
     case 'add_block':
       out.add(
@@ -468,6 +471,7 @@ List<PlannedBlock> applyPlanDiffItem(
           type: _argType(args) ?? PlannedBlockType.ai,
           state: addedBlockState,
           reason: args['blockReason'] as String?,
+          remainingMinutes: args['remainingMinutes'] as int?,
         ),
       );
     case 'drop_block':
@@ -567,6 +571,9 @@ class PlanDiffChange {
       if (toSnap.taskId != null) args['taskId'] = toSnap.taskId;
       if (toSnap.type != null) args['type'] = toSnap.type!.name;
       if (toSnap.reason != null) args['blockReason'] = toSnap.reason;
+      if (toSnap.remainingMinutes != null) {
+        args['remainingMinutes'] = toSnap.remainingMinutes;
+      }
     }
     return args;
   }
@@ -584,6 +591,7 @@ class PlanBlockSnapshot {
     this.taskId,
     this.type,
     this.reason,
+    this.remainingMinutes,
   });
 
   final DateTime? start;
@@ -593,4 +601,11 @@ class PlanBlockSnapshot {
   final String? taskId;
   final PlannedBlockType? type;
   final String? reason;
+
+  /// Minutes of [taskId]'s estimate left unscheduled after the change.
+  ///
+  /// Travels with the diff because shortening or extending a block changes
+  /// the arithmetic: a refine that moved a partial block used to leave the
+  /// old remainder behind, describing work that no longer matched the plan.
+  final int? remainingMinutes;
 }

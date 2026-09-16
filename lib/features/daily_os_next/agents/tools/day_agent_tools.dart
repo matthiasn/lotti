@@ -512,6 +512,15 @@ const dayAgentTools = <AgentToolDefinition>[
                     'enum': ['ai', 'buffer', 'manual'],
                   },
                   'reason': {'type': 'string', 'minLength': 1},
+                  'remainingMinutes': {
+                    'type': 'integer',
+                    'minimum': 0,
+                    'description':
+                        'Minutes of this block\u2019s task left unscheduled '
+                        'after the change. Send it whenever the change makes '
+                        'the block cover more or less of its task, so the '
+                        'remainder does not describe the block it used to be.',
+                  },
                 },
                 'additionalProperties': false,
               },

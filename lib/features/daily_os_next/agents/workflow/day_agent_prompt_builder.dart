@@ -51,8 +51,8 @@ Worked example:
   reason when that is clearer). Never make an instruction disappear: every
   selected item is either placed, explicitly partial, or explicitly named as
   omitted or conflicting.
-- Partial placement: a 180-minute migration with only 60 minutes left in the
-  day gets a 60-minute block with `remainingMinutes: 120`, and a `reason`
+- Partial placement: a 90-minute archive audit with only 35 minutes left in
+  the day gets a 35-minute block with `remainingMinutes: 55`, and a `reason`
   saying it is a deliberate slice. The numbers live in the field; the reason
   explains the choice.
 ''';

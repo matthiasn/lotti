@@ -164,22 +164,7 @@ void main() {
       },
     );
 
-    test('persists a declared partial remainder on the block', () async {
-      final plan = await withClock(
-        Clock.fixed(_openAt),
-        () => writer.persistDraftPlan(
-          agentId: _agentId,
-          dayId: _dayId,
-          planDate: _planDate,
-          rawBlocks: [_blockJson(_block())..['remainingMinutes'] = 120],
-          runKey: _runKey,
-        ),
-      );
-
-      expect(plan.data.plannedBlocks.single.remainingMinutes, 120);
-    });
-
-    test('rejects a negative remainder rather than storing it', () async {
+    test('rejects a remainder on a block with no task', () async {
       await expectLater(
         withClock(
           Clock.fixed(_openAt),
@@ -187,7 +172,11 @@ void main() {
             agentId: _agentId,
             dayId: _dayId,
             planDate: _planDate,
-            rawBlocks: [_blockJson(_block())..['remainingMinutes'] = -30],
+            rawBlocks: [
+              _blockJson(_block())
+                ..remove('taskId')
+                ..['remainingMinutes'] = 30,
+            ],
             runKey: _runKey,
           ),
         ),
@@ -195,7 +184,7 @@ void main() {
           isA<DayAgentCaptureException>().having(
             (error) => error.message,
             'message',
-            contains('remainingMinutes'),
+            contains('taskId whose estimate'),
           ),
         ),
       );

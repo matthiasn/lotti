@@ -48,6 +48,47 @@ void main() {
   }
 
   group('parsePlannedBlock', () {
+    test('keeps a declared partial remainder against its task', () {
+      final block = parse(
+        rawBlock(taskId: 'task-1')..['remainingMinutes'] = 120,
+        decidedTaskIds: const {'task-1': 'cat-1'},
+      );
+
+      expect(block.remainingMinutes, 120);
+      expect(block.taskId, 'task-1');
+    });
+
+    test('rejects a negative remainder', () {
+      expect(
+        () => parse(
+          rawBlock(taskId: 'task-1')..['remainingMinutes'] = -30,
+          decidedTaskIds: const {'task-1': 'cat-1'},
+        ),
+        throwsA(
+          isA<DayAgentCaptureException>().having(
+            (error) => error.message,
+            'message',
+            contains('must not be negative'),
+          ),
+        ),
+      );
+    });
+
+    test('rejects a remainder with no task to be the remainder of', () {
+      // Outstanding minutes of what? A buffer block carrying one is phantom
+      // work the day cannot attribute or carry over.
+      expect(
+        () => parse(rawBlock()..['remainingMinutes'] = 30),
+        throwsA(
+          isA<DayAgentCaptureException>().having(
+            (error) => error.message,
+            'message',
+            contains('taskId whose estimate'),
+          ),
+        ),
+      );
+    });
+
     test('parses a valid ai block with reason and generates an id', () {
       final block = parse(rawBlock());
 
