@@ -74,19 +74,15 @@ void main() {
       );
     });
 
-    test('rejects a remainder with no task to be the remainder of', () {
-      // Outstanding minutes of what? A buffer block carrying one is phantom
-      // work the day cannot attribute or carry over.
-      expect(
-        () => parse(rawBlock()..['remainingMinutes'] = 30),
-        throwsA(
-          isA<DayAgentCaptureException>().having(
-            (error) => error.message,
-            'message',
-            contains('taskId whose estimate'),
-          ),
-        ),
-      );
+    test('drops a remainder with no task to be the remainder of', () {
+      // Outstanding minutes of what? Nothing can hold the number, so it is
+      // not stored — but a gym run put one on a directive commitment, which
+      // is real work with no corpus task, and failing cost the whole plan.
+      final block = parse(rawBlock()..['remainingMinutes'] = 30);
+
+      expect(block.remainingMinutes, isNull);
+      expect(block.taskId, isNull);
+      expect(block.title, 'Deep work');
     });
 
     test('parses a valid ai block with reason and generates an id', () {

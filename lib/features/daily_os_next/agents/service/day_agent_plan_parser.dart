@@ -425,12 +425,13 @@ PlannedBlock parsePlannedBlock({
   final taskId = optionalStringArg(data['taskId']);
   // Outstanding minutes of *what*? On a block with no task there is nothing
   // for the number to be the remainder of, and nothing for the day to carry
-  // it over to — it would read as phantom work nobody can pick up.
-  if (remainingMinutes != null && taskId == null) {
-    throw const DayAgentCaptureException(
-      'remainingMinutes needs the taskId whose estimate it is left from',
-    );
-  }
+  // it over to, so it is dropped rather than stored as phantom work.
+  //
+  // Dropped, not refused: a directive commitment is real work with no corpus
+  // task behind it, and a model declaring what is left of one wrote a number
+  // that means something even though nothing can hold it. Failing the call
+  // cost the whole plan; forgetting the field costs only the field.
+  final attributedRemainder = taskId == null ? null : remainingMinutes;
   // Both sets are resolved and category-filtered by the caller, which is the
   // point: `decidedTaskIds` arrives as a `draft_day_plan` argument the model
   // writes itself, so treating it as a permission set let a model reference
@@ -460,7 +461,7 @@ PlannedBlock parsePlannedBlock({
     type: blockType,
     state: blockState,
     reason: reason,
-    remainingMinutes: remainingMinutes,
+    remainingMinutes: attributedRemainder,
   );
 }
 

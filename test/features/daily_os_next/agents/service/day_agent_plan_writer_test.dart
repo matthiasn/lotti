@@ -160,32 +160,6 @@ void main() {
       expect(plan.data.plannedBlocks, hasLength(1));
     });
 
-    test('rejects a remainder on a block with no task', () async {
-      await expectLater(
-        withClock(
-          Clock.fixed(_openAt),
-          () => writer.persistDraftPlan(
-            agentId: _agentId,
-            dayId: _dayId,
-            planDate: _planDate,
-            rawBlocks: [
-              _blockJson(_block())
-                ..remove('taskId')
-                ..['remainingMinutes'] = 30,
-            ],
-            runKey: _runKey,
-          ),
-        ),
-        throwsA(
-          isA<DayAgentCaptureException>().having(
-            (error) => error.message,
-            'message',
-            contains('taskId whose estimate'),
-          ),
-        ),
-      );
-    });
-
     test('a legacy block with no reason can still be echoed back', () async {
       // The schema requires `reason` on every block, so repeating a legacy
       // block that has none forces the model to invent one. That must not
