@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart' show StringCharacters;
 import 'package:lotti/classes/notification_producer.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/database/database.dart';
@@ -58,13 +59,15 @@ class AgentAlertCopy {
     return (title: title, body: body.isEmpty ? null : body);
   }
 
-  /// [text] as one line of at most [limit] characters: whitespace runs
-  /// collapse to a space, and a longer text is cut at the last word boundary
-  /// before the limit and closed with an ellipsis.
+  /// [text] as one line of at most [limit] user-perceived characters:
+  /// whitespace runs collapse to a space, and a longer text is cut at the
+  /// last word boundary before the limit and closed with an ellipsis. Counted
+  /// in grapheme clusters, so a hard cut can never split an emoji or a
+  /// combining mark.
   static String fit(String text, int limit) {
     final line = text.replaceAll(RegExp(r'\s+'), ' ').trim();
-    if (line.length <= limit) return line;
-    final room = line.substring(0, limit - 1);
+    if (line.characters.length <= limit) return line;
+    final room = line.characters.take(limit - 1).toString();
     final cut = room.lastIndexOf(' ');
     return '${cut > 0 ? room.substring(0, cut) : room}…';
   }

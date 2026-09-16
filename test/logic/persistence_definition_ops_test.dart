@@ -85,7 +85,7 @@ void main() {
       ),
     ).thenAnswer((_) async {});
     when(
-      () => mocks.journalDb.getAllHabitDefinitions(),
+      () => mocks.journalDb.getAllHabitDefinitionsAllPrivate(),
     ).thenAnswer((_) async => const []);
   });
 
@@ -103,9 +103,10 @@ void main() {
       );
 
   /// Two habits, one archived: the re-arm must skip the archived one, the
-  /// sweep must not.
+  /// sweep must not. Read through the unfiltered query, so a private habit
+  /// is swept and re-armed whatever the `private` flag shows.
   void withHabits() {
-    when(() => mocks.journalDb.getAllHabitDefinitions()).thenAnswer(
+    when(() => mocks.journalDb.getAllHabitDefinitionsAllPrivate()).thenAnswer(
       (_) async => [habitNamed('walk'), habitNamed('read', active: false)],
     );
   }
@@ -703,7 +704,7 @@ void main() {
     test('a habit sweep failure does not fail the settings write', () async {
       withStored(notifyHabitRemindersFlag, status: true);
       when(
-        () => mocks.journalDb.getAllHabitDefinitions(),
+        () => mocks.journalDb.getAllHabitDefinitionsAllPrivate(),
       ).thenThrow(StateError('db gone'));
 
       await expectLater(
@@ -736,7 +737,7 @@ void main() {
       );
       verifyNever(notificationService.updateBadge);
       verifyNever(notificationService.cancelAllNotifications);
-      verifyNever(() => mocks.journalDb.getAllHabitDefinitions());
+      verifyNever(() => mocks.journalDb.getAllHabitDefinitionsAllPrivate());
     });
   });
 }

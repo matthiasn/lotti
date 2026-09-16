@@ -134,6 +134,15 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
     );
   }
 
+  /// Every habit that is not deleted, private ones included whatever the
+  /// `private` flag says — for work about the user's own reminders, which
+  /// hiding private entries from view must not silence or skip.
+  Future<List<HabitDefinition>> getAllHabitDefinitionsAllPrivate() async {
+    return habitDefinitionsStreamMapper(
+      await allHabitDefinitionsAllPrivate().get(),
+    );
+  }
+
   Future<List<DashboardDefinition>> getAllDashboards() async {
     return dashboardStreamMapper(await allDashboards().get());
   }

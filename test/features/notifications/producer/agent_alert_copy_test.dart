@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart' show StringCharacters;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/notifications/producer/agent_alert_copy.dart';
@@ -124,6 +125,21 @@ void main() {
       final fitted = AgentAlertCopy.fit('a' * 100, 20);
 
       expect(fitted, '${'a' * 19}…');
+    });
+
+    test('a hard cut never splits an emoji or a combining mark', () {
+      // Counted in grapheme clusters: the flag (two code points, four UTF-16
+      // units) and the accented e (a base plus a combining mark) each count
+      // as one and are kept whole or dropped whole, never halved.
+      const flag = '\u{1F1E9}\u{1F1EA}';
+      const accented = 'e\u0301';
+      final fitted = AgentAlertCopy.fit(
+        '${'a' * 17}$flag$accented${'b' * 5}',
+        20,
+      );
+
+      expect(fitted, '${'a' * 17}$flag$accented…');
+      expect(fitted.characters.length, 20);
     });
 
     test('the title and body limits fit a lock screen', () {

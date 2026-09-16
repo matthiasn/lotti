@@ -238,27 +238,32 @@ class PersistenceDefinitionOps extends PersistenceCollaboratorBase {
     () => getIt<NotificationService>().cancelAllNotifications(),
   );
 
-  /// Arms the next reminder of every active habit that has one. A habit
-  /// already completed today gets today's reminder once more — the
-  /// completion path is what skips to tomorrow, and it will again at the
-  /// next completion.
-  Future<void> _rearmHabitReminders() =>
-      _bestEffort('habitReminders', () async {
-        final notificationService = getIt<NotificationService>();
-        for (final habit in await journalDb.getAllHabitDefinitions()) {
-          if (habit.active) {
-            await notificationService.scheduleHabitNotification(habit);
-          }
+  /// Arms the next reminder of every active habit that has one — private
+  /// habits included, whatever the `private` flag shows: the reminder is the
+  /// user's own. A habit already completed today gets today's reminder once
+  /// more — the completion path is what skips to tomorrow, and it will again
+  /// at the next completion.
+  Future<void> _rearmHabitReminders() => _bestEffort(
+    'habitReminders',
+    () async {
+      final notificationService = getIt<NotificationService>();
+      for (final habit in await journalDb.getAllHabitDefinitionsAllPrivate()) {
+        if (habit.active) {
+          await notificationService.scheduleHabitNotification(habit);
         }
-      });
+      }
+    },
+  );
 
-  Future<void> _cancelHabitReminders() =>
-      _bestEffort('habitReminders', () async {
-        final notificationService = getIt<NotificationService>();
-        for (final habit in await journalDb.getAllHabitDefinitions()) {
-          await notificationService.cancelNotification(habit.id.hashCode);
-        }
-      });
+  Future<void> _cancelHabitReminders() => _bestEffort(
+    'habitReminders',
+    () async {
+      final notificationService = getIt<NotificationService>();
+      for (final habit in await journalDb.getAllHabitDefinitionsAllPrivate()) {
+        await notificationService.cancelNotification(habit.id.hashCode);
+      }
+    },
+  );
 
   Future<void> _bestEffort(String step, Future<void> Function() body) async {
     try {

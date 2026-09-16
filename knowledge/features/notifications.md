@@ -110,6 +110,12 @@ next burst, retracts the earlier open one through `retractOpenRows` — which
 is what the single OS notification id these two used to post directly did by
 replacement, now with a row behind it that survives the banner.
 
+**Snapshots apply one at a time.** Conflicts arriving during a sync land one
+by one, each emitting its own snapshot, and `ConflictNotificationObserver`
+chains them: two applied side by side would each arm a row and then retract
+the other's, leaving no row at all. Serialised, the last burst's row is the
+one that survives — the same outcome the single OS id used to give.
+
 # Why monotonic state, not last-write-wins on the row
 
 Dismissal is a **state transition**, not a field edit. Two devices can act on the
@@ -703,8 +709,13 @@ whose words already read this way (a re-run wake writes nothing). The
 re-worded row keeps its id — the OS alarm is replaced, not doubled — and
 travels whole; `NotificationMerge` picks content by `updatedAt`, so the new
 words win on every peer whatever order the create and the re-wording arrive
-in. A device-local row is re-worded but never enqueued, like every write to
-it.
+in. A peer applies the words but re-arms only a row still ahead: a
+re-wording that lands after that peer's own alarm fired — the device was
+offline across it — would otherwise be announced on the spot a second time
+(`schedule` shows a due row at once), so the inbound handler skips the
+scheduler for a content-only update to a due row it already held; a row
+arriving with a lifecycle mark still schedules, which cancels. A
+device-local row is re-worded but never enqueued, like every write to it.
 
 **Off by default.** The banner brief can carry the facts the banner is about,
 and an alert lands on the lock screen, so ADR 0039 Decision 6's

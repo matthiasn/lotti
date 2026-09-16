@@ -258,6 +258,63 @@ void main() {
     });
   });
 
+  test('snapshots from the stream are applied one at a time', () async {
+    // Conflicts arriving one by one during a sync each emit a snapshot. Two
+    // applied side by side would each arm a row and then retract the
+    // other's; serialised, the second waits and the last row survives.
+    final controller = StreamController<List<Conflict>>();
+    when(
+      () => db.watchConflicts(ConflictStatus.unresolved),
+    ).thenAnswer((_) => controller.stream);
+    final firstArm = Completer<NotificationEntity?>();
+    var arms = 0;
+    when(
+      () => notifications.armEpisode(
+        id: any(named: 'id'),
+        scheduledFor: any(named: 'scheduledFor'),
+        build: any(named: 'build'),
+        category: any(named: 'category'),
+      ),
+    ).thenAnswer((_) => ++arms == 1 ? firstArm.future : Future.value());
+
+    observer.start();
+    controller
+      ..add(const []) // prime
+      ..add([_conflict('a')])
+      ..add([_conflict('a'), _conflict('b')]);
+    await pumpEventQueue();
+
+    // The second burst has not been touched while the first is still armed.
+    expect(arms, 1);
+    verifyNever(
+      () => notifications.retractOpenRows(
+        linkedEntityId: any(named: 'linkedEntityId'),
+        kind: any(named: 'kind'),
+        exceptId: any(named: 'exceptId'),
+      ),
+    );
+
+    firstArm.complete(null);
+    await pumpEventQueue();
+
+    expect(arms, 2);
+    // The last retraction spares the last row: the order the bursts came in.
+    final spared = verify(
+      () => notifications.retractOpenRows(
+        linkedEntityId: syncConflictsSubjectId,
+        kind: NotificationKinds.syncConflict,
+        exceptId: captureAny(named: 'exceptId'),
+      ),
+    ).captured;
+    expect(spared, [
+      episodeId(['a']),
+      episodeId(['b']),
+    ]);
+
+    await observer.dispose();
+    await controller.close();
+  });
+
   test('start subscribes to the unresolved stream; dispose cancels', () async {
     final controller = StreamController<List<Conflict>>();
     when(
