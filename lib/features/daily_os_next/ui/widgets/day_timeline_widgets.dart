@@ -169,47 +169,83 @@ class _TimelinePane extends StatelessWidget {
           height: totalHeight + tokens.spacing.step5,
           child: Padding(
             padding: EdgeInsets.symmetric(vertical: tokens.spacing.step3),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                if (showBands)
-                  for (final band in bands)
-                    _EnergyBandBox(
-                      band: band,
-                      windowStart: windowStart,
-                      foldingState: foldingState,
-                      pxPerMinute: pxPerMinute,
-                    ),
-                for (final block in blocks)
-                  BlockPosition(
-                    key: ValueKey('daily-os-position-${block.id}'),
-                    block: block,
-                    windowStart: windowStart,
-                    foldingState: foldingState,
-                    pxPerMinute: pxPerMinute,
-                    tracked: tracked,
-                    onRename: onRenameBlock == null
-                        ? null
-                        : (title) => onRenameBlock!(block, title),
-                    onEdit: onEditBlock,
-                    arrangeMode: arrangeMode,
-                    onReschedule: onRescheduleBlock,
-                    redacted: isRedacted?.call(block) ?? false,
+            // The lane's width decides how peer columns and cascade indents
+            // resolve to pixels, so the overlap layout is built inside it.
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final slots = layoutTimelineBlocks(
+                  blocks,
+                  peerWindow: _peerWindow(
+                    tokens,
+                    textScaler: MediaQuery.textScalerOf(context),
                   ),
-                if (now != null)
-                  NowLine(
-                    windowStart: windowStart,
-                    now: now!,
-                    foldingState: foldingState,
-                    pxPerMinute: pxPerMinute,
-                  ),
-              ],
+                );
+                final insets = resolveTimelineBlockInsets(
+                  slots,
+                  laneWidth: constraints.maxWidth,
+                  edgeInset: tokens.spacing.step3,
+                  indent: tokens.spacing.step5,
+                  columnGap: tokens.spacing.step2,
+                );
+                return Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    if (showBands)
+                      for (final band in bands)
+                        _EnergyBandBox(
+                          band: band,
+                          windowStart: windowStart,
+                          foldingState: foldingState,
+                          pxPerMinute: pxPerMinute,
+                        ),
+                    // Slots come in paint order: floor first, raised later.
+                    for (final slot in slots)
+                      BlockPosition(
+                        key: ValueKey('daily-os-position-${slot.block.id}'),
+                        block: slot.block,
+                        horizontal: insets[slot.block.id]!,
+                        raised: slot.isRaised,
+                        windowStart: windowStart,
+                        foldingState: foldingState,
+                        pxPerMinute: pxPerMinute,
+                        tracked: tracked,
+                        onRename: onRenameBlock == null
+                            ? null
+                            : (title) => onRenameBlock!(slot.block, title),
+                        onEdit: onEditBlock,
+                        arrangeMode: arrangeMode,
+                        onReschedule: onRescheduleBlock,
+                        redacted: isRedacted?.call(slot.block) ?? false,
+                      ),
+                    if (now != null)
+                      NowLine(
+                        windowStart: windowStart,
+                        now: now!,
+                        foldingState: foldingState,
+                        pxPerMinute: pxPerMinute,
+                      ),
+                  ],
+                );
+              },
             ),
           ),
         ),
       ],
     );
   }
+
+  /// How far apart two overlapping blocks must start before the later one
+  /// can sit on top of the earlier without hiding its title: the readable
+  /// block height — at the user's text scale — in minutes at the current
+  /// zoom. Zooming out or enlarging text widens the window and turns a tight
+  /// cascade into side-by-side columns.
+  Duration _peerWindow(DsTokens tokens, {required TextScaler textScaler}) =>
+      Duration(
+        minutes:
+            (minimumReadableBlockHeight(tokens, textScaler: textScaler) /
+                    pxPerMinute)
+                .ceil(),
+      );
 }
 
 class _SharedHourRail extends StatelessWidget {

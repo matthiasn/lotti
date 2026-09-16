@@ -2814,4 +2814,313 @@ void main() {
       expect(find.text('Open work'), findsOneWidget);
     });
   });
+
+  group('DayTimeline overlapping blocks', () {
+    TimeBlock tracked(
+      String id, {
+      required (int, int) from,
+      required (int, int) to,
+      String? taskId,
+    }) => TimeBlock(
+      id: 'actual:$id',
+      title: id,
+      start: DateTime(2026, 5, 25, from.$1, from.$2),
+      end: DateTime(2026, 5, 25, to.$1, to.$2),
+      type: TimeBlockType.manual,
+      state: TimeBlockState.completed,
+      category: _work,
+      taskId: taskId,
+    );
+
+    Future<void> pumpTimeline(
+      WidgetTester tester, {
+      List<TimeBlock> planned = const [],
+      List<TimeBlock> actual = const [],
+      double pxPerMinute = 1.0,
+      double textScale = 1.0,
+      bool Function(TimeBlock block)? isRedacted,
+    }) async {
+      _setView(tester, const Size(1280, 1200));
+      await tester.pumpWidget(
+        _wrap(
+          Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: TextScaler.linear(textScale)),
+              child: DayTimeline(
+                draft: _draftWithBlocks(blocks: planned),
+                actualBlocks: actual,
+                pxPerMinute: pxPerMinute,
+                isRedacted: isRedacted,
+                clock: () => DateTime(2026, 5, 25, 9, 15),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    Finder block(String id) => find.byKey(Key('daily_os_day_block_$id'));
+
+    Border? seamOf(WidgetTester tester, String id) {
+      final ink = tester.widget<Ink>(
+        find.descendant(of: block(id), matching: find.byType(Ink)),
+      );
+      return (ink.decoration! as BoxDecoration).border as Border?;
+    }
+
+    testWidgets(
+      'an interruption sits inset on top of the session it falls in, and '
+      'each keeps its own tap',
+      (tester) async {
+        final navigated = <String>[];
+        beamToNamedOverride = navigated.add;
+        await pumpTimeline(
+          tester,
+          actual: [
+            tracked('session', from: (15, 0), to: (18, 0), taskId: 'billing'),
+            tracked('call', from: (16, 0), to: (16, 30), taskId: 'friend'),
+          ],
+        );
+        final tokens = tester.element(find.byType(DayTimeline)).designTokens;
+        final session = tester.getRect(block('actual:session'));
+        final call = tester.getRect(block('actual:call'));
+
+        // Inset by one step on the left, flush with the session on the right,
+        // and below the session's title row — the readable height the peer
+        // window is derived from.
+        expect(call.left, closeTo(session.left + tokens.spacing.step5, 0.01));
+        expect(call.right, closeTo(session.right, 0.01));
+        expect(
+          call.top,
+          greaterThanOrEqualTo(
+            session.top +
+                minimumReadableBlockHeight(
+                  tokens,
+                  textScaler: TextScaler.noScaling,
+                ),
+          ),
+        );
+
+        // The call is painted above the session, so its body is its own …
+        await tester.tapAt(call.center);
+        await tester.pump();
+        expect(navigated, ['/tasks/friend']);
+        // … while the session's gutter beside it, and its title above it,
+        // still open the session.
+        await tester.tapAt(Offset(session.left + 4, call.center.dy));
+        await tester.pump();
+        await tester.tapAt(Offset(session.center.dx, session.top + 8));
+        await tester.pump();
+        expect(navigated, [
+          '/tasks/friend',
+          '/tasks/billing',
+          '/tasks/billing',
+        ]);
+      },
+    );
+
+    testWidgets(
+      'sessions started the same minute share the lane side by side',
+      (
+        tester,
+      ) async {
+        await pumpTimeline(
+          tester,
+          actual: [
+            tracked('standup', from: (9, 0), to: (10, 0)),
+            tracked('coffee', from: (9, 0), to: (9, 30)),
+          ],
+        );
+        final tokens = tester.element(find.byType(DayTimeline)).designTokens;
+        final lane = tester.getRect(
+          find.byKey(const Key('daily_os_timeline_actual_pane')),
+        );
+        final standup = tester.getRect(block('actual:standup'));
+        final coffee = tester.getRect(block('actual:coffee'));
+
+        // Longest first, from the left gutter; the shorter one ends at the
+        // right gutter; one gap between them; equal widths.
+        expect(standup.left, closeTo(lane.left + tokens.spacing.step3, 0.01));
+        expect(coffee.right, closeTo(lane.right - tokens.spacing.step3, 0.01));
+        expect(
+          coffee.left - standup.right,
+          closeTo(tokens.spacing.step2, 0.01),
+        );
+        expect(coffee.width, closeTo(standup.width, 0.01));
+        // Neither sits on the other, so neither draws a seam.
+        expect(seamOf(tester, 'actual:standup'), isNull);
+        expect(seamOf(tester, 'actual:coffee'), isNull);
+      },
+    );
+
+    testWidgets(
+      'a raised block draws a seam in the canvas colour; the floor block '
+      'draws none',
+      (tester) async {
+        await pumpTimeline(
+          tester,
+          actual: [
+            tracked('session', from: (15, 0), to: (18, 0)),
+            tracked('call', from: (16, 0), to: (16, 30)),
+          ],
+        );
+        final tokens = tester.element(find.byType(DayTimeline)).designTokens;
+
+        expect(seamOf(tester, 'actual:session'), isNull);
+        final seam = seamOf(tester, 'actual:call');
+        expect(seam, isNotNull);
+        expect(seam!.top.color, tokens.colors.background.level01);
+        expect(seam.top.width, tokens.spacing.step1 / 2);
+      },
+    );
+
+    testWidgets(
+      'zooming out widens the peer window and turns a cascade into columns',
+      (tester) async {
+        final actual = [
+          tracked('session', from: (15, 0), to: (18, 0)),
+          tracked('call', from: (15, 30), to: (16, 0)),
+        ];
+
+        // 28 px readable height at 1 px/min → a 28-minute window: 30 minutes
+        // in, the call is raised and inset.
+        await pumpTimeline(tester, actual: actual);
+        var session = tester.getRect(block('actual:session'));
+        var call = tester.getRect(block('actual:call'));
+        expect(call.left, greaterThan(session.left));
+        expect(call.right, closeTo(session.right, 0.01));
+
+        // At 0.55 px/min the same 28 px take 51 minutes, so 30 minutes in
+        // the session's title has no room yet: the two become columns.
+        await pumpTimeline(tester, actual: actual, pxPerMinute: 0.55);
+        session = tester.getRect(block('actual:session'));
+        call = tester.getRect(block('actual:call'));
+        expect(call.left, greaterThanOrEqualTo(session.right));
+        expect(seamOf(tester, 'actual:call'), isNull);
+      },
+    );
+
+    testWidgets(
+      'a block raised above the right-hand peer is measured from that peer, '
+      'so its stripe stays and the left-hand peer is untouched',
+      (tester) async {
+        await pumpTimeline(
+          tester,
+          actual: [
+            tracked('short', from: (9, 0), to: (9, 30)),
+            tracked('long', from: (9, 10), to: (12, 0)),
+            tracked('call', from: (10, 0), to: (10, 30)),
+          ],
+        );
+        final tokens = tester.element(find.byType(DayTimeline)).designTokens;
+        final lane = tester.getRect(
+          find.byKey(const Key('daily_os_timeline_actual_pane')),
+        );
+        final short = tester.getRect(block('actual:short'));
+        final long = tester.getRect(block('actual:long'));
+        final call = tester.getRect(block('actual:call'));
+
+        // `short` and `long` are peers: left and right column. Only `long`
+        // still runs at 10:00, so the call rises above it alone — indented
+        // from the right column's edge, not the lane's — and runs to the
+        // lane's right gutter.
+        expect(long.left, greaterThan(short.right));
+        expect(call.left, closeTo(long.left + tokens.spacing.step5, 0.01));
+        expect(call.right, closeTo(lane.right - tokens.spacing.step3, 0.01));
+        expect(call.left, greaterThan(short.right));
+      },
+    );
+
+    testWidgets(
+      'larger text widens the peer window, so a block that would be raised '
+      'at default scale becomes a column at 2x',
+      (tester) async {
+        final actual = [
+          tracked('session', from: (15, 0), to: (18, 0)),
+          tracked('call', from: (15, 30), to: (16, 0)),
+        ];
+
+        // 20 px line + 8 px padding = 28 minutes at 1 px/min: raised.
+        await pumpTimeline(tester, actual: actual);
+        var session = tester.getRect(block('actual:session'));
+        var call = tester.getRect(block('actual:call'));
+        expect(call.left, greaterThan(session.left));
+        expect(call.right, closeTo(session.right, 0.01));
+
+        // At 2x the title line is 40 px, the window 48 minutes: 30 minutes
+        // in, the session's title still needs the room, so they are columns.
+        await pumpTimeline(tester, actual: actual, textScale: 2);
+        session = tester.getRect(block('actual:session'));
+        call = tester.getRect(block('actual:call'));
+        expect(call.left, greaterThanOrEqualTo(session.right));
+        expect(seamOf(tester, 'actual:call'), isNull);
+      },
+    );
+
+    testWidgets('the planned lane resolves overlaps the same way', (
+      tester,
+    ) async {
+      await pumpTimeline(
+        tester,
+        planned: [
+          _timeBlock(id: 'focus', title: 'Focus', startHour: 9, endHour: 11),
+          _timeBlock(id: 'sync', title: 'Sync', startHour: 10, endHour: 11),
+        ],
+      );
+      final tokens = tester.element(find.byType(DayTimeline)).designTokens;
+      final focus = tester.getRect(block('focus'));
+      final sync = tester.getRect(block('sync'));
+
+      expect(sync.left, closeTo(focus.left + tokens.spacing.step5, 0.01));
+      expect(sync.right, closeTo(focus.right, 0.01));
+      expect(seamOf(tester, 'sync'), isNotNull);
+      expect(seamOf(tester, 'focus'), isNull);
+    });
+
+    test('a non-positive zoom is refused, because the peer window divides '
+        'by it', () {
+      expect(
+        () => DayTimeline(draft: _draft(), pxPerMinute: 0),
+        throwsAssertionError,
+      );
+    });
+
+    testWidgets(
+      'a redacted raised block keeps its seam so the layering survives '
+      'lockdown',
+      (tester) async {
+        await pumpTimeline(
+          tester,
+          actual: [
+            tracked('session', from: (15, 0), to: (18, 0)),
+            tracked('secret', from: (16, 0), to: (16, 30)),
+          ],
+          isRedacted: (block) => block.id == 'actual:secret',
+        );
+        final tokens = tester.element(find.byType(DayTimeline)).designTokens;
+        final session = tester.getRect(block('actual:session'));
+        final secret = tester.getRect(block('actual:secret'));
+
+        expect(secret.left, closeTo(session.left + tokens.spacing.step5, 0.01));
+        final slab = tester.widget<DecoratedBox>(
+          find
+              .descendant(
+                of: block('actual:secret'),
+                matching: find.byType(DecoratedBox),
+              )
+              .first,
+        );
+        final decoration = slab.decoration as BoxDecoration;
+        expect(decoration.color, tokens.colors.background.level03);
+        expect(
+          (decoration.border! as Border).top.color,
+          tokens.colors.background.level01,
+        );
+        expect(find.text('secret'), findsNothing);
+      },
+    );
+  });
 }

@@ -489,6 +489,43 @@ List<TimeBlock> _actuals() => [
   ),
 ];
 
+/// The recorded day with the concurrency real days have: a briefing tracked
+/// from the same minute as the habitat inspection, a call with a crew member
+/// during the sardine negotiation, and a Mission Control status call that
+/// runs while the fish-feeder session is still going and gets a check-in of
+/// its own — three recordings sharing one stretch of the lane.
+List<TimeBlock> _overlappingActuals() => [
+  ..._actuals(),
+  _tracked(
+    'briefing',
+    _t('Brief Mission Control', 'Missionskontrolle briefen'),
+    _at(9, 5),
+    _at(9, 35),
+    _client,
+  ),
+  _tracked(
+    'call-pip',
+    _t('Call with Pip', 'Telefonat mit Pip'),
+    _at(13, 40),
+    _at(14, 5),
+    _health,
+  ),
+  _tracked(
+    'status-call',
+    _t('Mission Control status call', 'Statusanruf Missionskontrolle'),
+    _at(15, 5),
+    _at(15, 50),
+    _client,
+  ),
+  _tracked(
+    'check-in-pip',
+    _t('Pip checks in', 'Pip meldet sich'),
+    _at(15, 30),
+    _at(15, 40),
+    _health,
+  ),
+];
+
 PlannerKnowledgeEntity _knowledge(
   String id,
   String key,
@@ -867,8 +904,10 @@ Future<void> _pumpDayPage(
   double textScale = 1.0,
   bool showPlannerReview = true,
   List<DayActivityEntry> activityEntries = const [],
+  List<TimeBlock>? actualBlocks,
 }) async {
   applyScreenshotDevice(tester, device);
+  final actuals = actualBlocks ?? _actuals();
   final documentsDirectory = _manualDocumentsDirectory;
   if (documentsDirectory == null) {
     throw StateError('Manual screenshot documents directory is unavailable.');
@@ -894,7 +933,7 @@ Future<void> _pumpDayPage(
             (ref, date) async => activityEntries,
           ),
           dailyOsActualTimeBlocksProvider.overrideWith(
-            (ref, date) async => _actuals(),
+            (ref, date) async => actuals,
           ),
           captureControllerProvider.overrideWith(_stubCapture),
           plannerKnowledgeProvider.overrideWith(
@@ -1196,6 +1235,41 @@ void main() {
     await _showRecordedLane(tester);
     await captureScreenshot(tester, 'day_mini_03_timeline_recorded_dark');
   });
+
+  for (final brightness in [Brightness.dark, Brightness.light]) {
+    final theme = brightness == Brightness.dark ? 'dark' : 'light';
+
+    testWidgets('desktop timeline overlapping sessions — $theme', (
+      tester,
+    ) async {
+      await _pumpDayPage(
+        tester,
+        device: desktopDevice,
+        brightness: brightness,
+        actualBlocks: _overlappingActuals(),
+      );
+      await _switchToDayView(tester);
+      expect(find.byType(DayTimeline), findsOneWidget);
+      await captureScreenshot(
+        tester,
+        'day_desktop_08_timeline_overlaps_$theme',
+      );
+    });
+
+    testWidgets('mini timeline recorded lane overlapping sessions — $theme', (
+      tester,
+    ) async {
+      await _pumpDayPage(
+        tester,
+        device: miniDevice,
+        brightness: brightness,
+        actualBlocks: _overlappingActuals(),
+      );
+      await _switchToDayView(tester);
+      await _showRecordedLane(tester);
+      await captureScreenshot(tester, 'day_mini_08_timeline_overlaps_$theme');
+    });
+  }
 
   testWidgets('pro timeline arrange mode — dark', (tester) async {
     await _pumpDayPage(tester, device: proDevice);

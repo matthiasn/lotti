@@ -8,6 +8,7 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_block.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_fold_surface.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_folding.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_overlap.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
@@ -45,11 +46,14 @@ class DayTimeline extends StatefulWidget {
     this.toolbarLeading,
     this.toolbarTrailing,
     super.key,
-  });
+  }) : assert(pxPerMinute > 0, 'pxPerMinute must be positive');
 
   final DraftPlan draft;
   final int startHour;
   final int endHour;
+
+  /// Vertical scale of the lanes. Strictly positive: the overlap layout
+  /// converts the readable block height into minutes by dividing by it.
   final double pxPerMinute;
 
   /// Measured pane width at which the planned and actual lanes render side

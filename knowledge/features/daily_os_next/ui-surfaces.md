@@ -36,6 +36,10 @@ sources:
     resource: ../../../lib/features/daily_os_next/logic/recorded_time.dart
     title: What counts as recorded time, shared by the lane and the planner lookback
     last_modified: 2026-09-03
+  - id: overlap-layout
+    resource: ../../../lib/features/daily_os_next/ui/widgets/day_timeline_overlap.dart
+    title: How blocks that share a stretch of the day divide the lane
+    last_modified: 2026-09-16
 ---
 
 # The planning modal
@@ -261,6 +265,51 @@ first line of the narrative. A check-in block has no task and is not an
 event, so, like an unlinked recording, it has no tap destination; the
 planner's week-context lookback counts its minutes under the person's
 category.
+
+## Overlapping blocks
+
+Recorded time overlaps: a call logged during a tracked session, two tasks
+tracked at once, a check-in inside a meeting. Each lane used to stack every
+block full-width in start order, so the later block painted over the earlier
+one and took its taps. `layoutTimelineBlocks` in
+[day_timeline_overlap.dart](../../../lib/features/daily_os_next/ui/widgets/day_timeline_overlap.dart)
+resolves a lane's blocks into slots — pure Dart like the folding model, so
+the rules are unit- and property-tested — and `_TimelinePane` positions each
+`BlockPosition` from its slot inside a `LayoutBuilder`, because the lane's
+width is what turns columns and indents into pixels. Both lanes use it: a
+plan edited by hand can overlap too.
+
+- **Raised.** A block that starts a *peer window* or more after a block
+  still running is raised one level above it: indented by `step5` from the
+  left edge of the block it rises above — the leftmost column still running
+  when the level opened, named by `TimelineBlockSlot.parentId`, never more
+  than half that block's width — flush with the lane's right gutter, and
+  built later in the `Stack` so it paints and hit-tests on top. Measuring
+  from the parent rather than the lane edge is what keeps a right-hand peer's
+  stripe when something rises above it alone. The block beneath keeps its
+  stripe, its title row above the interruption, and its gutter beside it, all
+  still tappable. Nested interruptions rise one level each; a block that
+  starts after a raised block has ended drops back to the level below.
+- **Peers.** Blocks that start within the same window cannot stack without
+  one hiding the other's title, so they share the level side by side: columns
+  ordered longest first, a `step2` gap between them, a column reused once its
+  block has ended. Peers are judged against the level's first block, so a
+  chain of near-starts cannot creep a level open indefinitely, and two blocks
+  starting the same minute are peers whatever the window.
+- **The window follows the zoom and the text size.** It is the readable
+  block height (`minimumReadableBlockHeight`: one `bodySmall` line at the
+  user's text scale, plus the card padding) in minutes at the current
+  `pxPerMinute` — 28 minutes at default zoom, 51 zoomed all the way out, 9
+  zoomed in, 48 at 2× text — so a cascade that no longer has room for a
+  title becomes columns when the user pinches out or enlarges text.
+- **The seam.** Fills are opaque, so a raised block draws a hairline in
+  `background.level01` around itself (`DayBlock.raised`) to keep its edge
+  against the fill it sits on; the redacted slab keeps the seam so lockdown
+  still shows the day's layering. Floor blocks and peers draw none.
+
+The layout changes where blocks sit, not what the lane counts: the
+time-spent card's total still sums every recording, so an hour of two
+overlapping sessions is two hours there.
 
 ## The docked day-view column (desktop shell)
 
