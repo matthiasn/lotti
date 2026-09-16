@@ -299,6 +299,57 @@ void main() {
     );
   });
 
+  test('a time edit may restate the field it leaves unchanged', () {
+    // A glm-5.3-flash gym run proposed the correct 09:30 start and repeated
+    // the existing 11:00 end alongside it, which the matcher used to read as
+    // a wrong action. "Keep its end unchanged" is what re-sending 11:00 does.
+    const edit = ChangeItem(
+      toolName: 'update_time_entry',
+      args: {
+        'entryId': ActionEvalIds.session,
+        'startTime': '2026-09-12T09:30:00',
+      },
+      humanSummary: 'Move the start to 09:30',
+    );
+    expect(scenario('time_start_edit').grade(answer([edit])), isEmpty);
+    expect(
+      scenario('time_start_edit').grade(
+        answer([
+          edit.copyWith(
+            args: {...edit.args, 'endTime': '2026-09-12T11:00:00'},
+          ),
+        ]),
+      ),
+      isEmpty,
+      reason: 'the unchanged end may be restated at its current value',
+    );
+    expect(
+      scenario('time_start_edit').grade(
+        answer([
+          edit.copyWith(
+            args: {...edit.args, 'endTime': '2026-09-12T12:00:00'},
+          ),
+        ]),
+      ),
+      isNotEmpty,
+      reason: 'moving the end is a change the question did not ask for',
+    );
+    expect(
+      scenario('time_end_edit').grade(
+        answer([
+          edit.copyWith(
+            args: {
+              'entryId': ActionEvalIds.session,
+              'startTime': '2026-09-12T10:00:00',
+              'endTime': '2026-09-12T11:30:00',
+            },
+          ),
+        ]),
+      ),
+      isEmpty,
+    );
+  });
+
   test(
     'negative cases require an answer without actions or completion claims',
     () {

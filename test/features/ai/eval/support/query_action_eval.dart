@@ -35,6 +35,20 @@ class ExpectedQueryAction {
   final Map<String, List<String>> words;
   final Map<String, int> minLengths;
 
+  /// Compares one argument, reading a time as the wall time it names.
+  ///
+  /// A model may write `2026-09-12T09:30:00` or the same moment with an
+  /// offset; both answer the question. Everything else is compared verbatim.
+  static bool _sameArgument(String key, Object? actual, Object? expected) {
+    if ((key == 'startTime' || key == 'endTime') &&
+        actual is String &&
+        expected is String) {
+      final parsed = parseTimeEntryLocalDateTime(actual);
+      return parsed != null && parsed == parseTimeEntryLocalDateTime(expected);
+    }
+    return const DeepCollectionEquality().equals(actual, expected);
+  }
+
   bool matches(ChangeItem item, String? newTaskId) {
     if (item.toolName != tool || item.status != ChangeItemStatus.pending) {
       return false;
@@ -58,16 +72,9 @@ class ExpectedQueryAction {
       final expected = pair.value == ActionEvalIds.newTask
           ? newTaskId
           : pair.value;
-      final actual = item.args[pair.key];
-      final same =
-          (pair.key == 'startTime' || pair.key == 'endTime') &&
-              actual is String &&
-              expected is String
-          ? parseTimeEntryLocalDateTime(actual) != null &&
-                parseTimeEntryLocalDateTime(actual) ==
-                    parseTimeEntryLocalDateTime(expected)
-          : const DeepCollectionEquality().equals(actual, expected);
-      if (!item.args.containsKey(pair.key) || expected == null || !same) {
+      if (!item.args.containsKey(pair.key) ||
+          expected == null ||
+          !_sameArgument(pair.key, item.args[pair.key], expected)) {
         return false;
       }
     }
@@ -77,7 +84,7 @@ class ExpectedQueryAction {
     }
     for (final pair in defaults.entries) {
       if (item.args.containsKey(pair.key) &&
-          item.args[pair.key] != pair.value) {
+          !_sameArgument(pair.key, item.args[pair.key], pair.value)) {
         return false;
       }
     }
@@ -392,30 +399,47 @@ const queryActionEvalCases = <QueryActionEvalCase>[
     'time_start_edit',
     'Change the start of the existing September 12 feeder calibration session (10:00–11:00) to 09:30. Keep its end and description unchanged.',
     [
-      ExpectedQueryAction('update_time_entry', {
-        'entryId': ActionEvalIds.session,
-        'startTime': '2026-09-12T09:30:00',
-      }),
+      // Restating the unchanged end at its current value keeps it unchanged,
+      // which is what the question asks for; changing it still fails.
+      ExpectedQueryAction(
+        'update_time_entry',
+        {
+          'entryId': ActionEvalIds.session,
+          'startTime': '2026-09-12T09:30:00',
+        },
+        defaults: {'endTime': '2026-09-12T11:00:00'},
+      ),
     ],
   ),
   QueryActionEvalCase(
     'time_end_edit',
     'Change the end of the existing September 12 feeder calibration session (10:00–11:00) to 11:30. Keep its start and description unchanged.',
     [
-      ExpectedQueryAction('update_time_entry', {
-        'entryId': ActionEvalIds.session,
-        'endTime': '2026-09-12T11:30:00',
-      }),
+      ExpectedQueryAction(
+        'update_time_entry',
+        {
+          'entryId': ActionEvalIds.session,
+          'endTime': '2026-09-12T11:30:00',
+        },
+        defaults: {'startTime': '2026-09-12T10:00:00'},
+      ),
     ],
   ),
   QueryActionEvalCase(
     'time_description',
     'Change only the description of the existing September 12 feeder calibration session (10:00–11:00) to "Replaced the feeder inlet seal."',
     [
-      ExpectedQueryAction('update_time_entry', {
-        'entryId': ActionEvalIds.session,
-        'summary': 'Replaced the feeder inlet seal.',
-      }),
+      ExpectedQueryAction(
+        'update_time_entry',
+        {
+          'entryId': ActionEvalIds.session,
+          'summary': 'Replaced the feeder inlet seal.',
+        },
+        defaults: {
+          'startTime': '2026-09-12T10:00:00',
+          'endTime': '2026-09-12T11:00:00',
+        },
+      ),
     ],
   ),
   QueryActionEvalCase(
