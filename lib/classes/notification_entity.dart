@@ -4,6 +4,19 @@ import 'package:lotti/features/sync/vector_clock.dart';
 part 'notification_entity.freezed.dart';
 part 'notification_entity.g.dart';
 
+/// The wire discriminators of the union.
+///
+/// Also the `kind` every producer derives its episode ids from and retracts
+/// by, so the two can never drift apart: a producer names its kind here, and
+/// [NotificationEntityFields.type] answers the same string for the row it
+/// writes.
+abstract final class NotificationKinds {
+  static const String taskSuggestion = 'taskSuggestion';
+  static const String taskOverdue = 'taskOverdue';
+  static const String relationshipCheckIn = 'relationshipCheckIn';
+  static const String habitAutoCompleted = 'habitAutoCompleted';
+}
+
 @freezed
 sealed class NotificationEntity with _$NotificationEntity {
   const factory NotificationEntity.taskSuggestion({
@@ -91,10 +104,10 @@ extension NotificationEntityFields on NotificationEntity {
   String get id => meta.id;
 
   String get type => switch (this) {
-    TaskSuggestionNotification() => 'taskSuggestion',
-    TaskOverdueNotification() => 'taskOverdue',
-    RelationshipCheckInNotification() => 'relationshipCheckIn',
-    HabitAutoCompletedNotification() => 'habitAutoCompleted',
+    TaskSuggestionNotification() => NotificationKinds.taskSuggestion,
+    TaskOverdueNotification() => NotificationKinds.taskOverdue,
+    RelationshipCheckInNotification() => NotificationKinds.relationshipCheckIn,
+    HabitAutoCompletedNotification() => NotificationKinds.habitAutoCompleted,
   };
 
   String? get linkedEntityId => switch (this) {

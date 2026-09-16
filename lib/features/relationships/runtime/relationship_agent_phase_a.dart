@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/notification_producer.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/relationship_trigger_tokens.dart';
@@ -46,28 +47,18 @@ typedef RelationshipCadenceDerivation = ({
   String dueDayKey,
 });
 
-/// The OS-reminder seam (ADR 0039, plan v2 phase 8).
+/// The OS-reminder seam (ADR 0039, plan v2 phase 8): the shared producer
+/// contract, bound to this kind's subject and verdict.
 ///
-/// Declared here, next to the derivation it consumes, so the dependency runs
-/// one way: `RelationshipReminderService` implements this and imports Phase A,
-/// while Phase A stays unaware of `features/notifications` entirely. Phase A
-/// decides *when* a person is due; what that means for the OS notification
-/// layer is not its concern.
-///
-/// Implementations must be **best-effort and non-throwing** — a wake's job is
-/// the cadence register, and a notification-database hiccup must not fail the
-/// wake into a retry.
-abstract interface class RelationshipReminderSink {
-  /// Arms the reminder for the episode [derivation] describes and drops any
-  /// superseded one. Called only for a person who passed the eligibility gate.
-  Future<void> arm({
-    required RelationshipEntry relationship,
-    required RelationshipCadenceDerivation derivation,
-  });
-
-  /// Drops every open reminder for a person who should no longer be nudged.
-  Future<void> clearFor(String relationshipId);
-}
+/// Named here, next to the derivation it consumes, so the dependency runs one
+/// way: `RelationshipReminderService` implements this and imports Phase A,
+/// while Phase A stays unaware of `features/notifications` entirely — the
+/// contract itself lives in `lib/classes` (ADR 0061). Phase A decides *when*
+/// a person is due; what that means for the OS notification layer is not its
+/// concern. `arm` is called only for a person who passed the eligibility
+/// gate; `clearFor` for one who should no longer be nudged.
+typedef RelationshipReminderSink =
+    NotificationEpisodeSink<RelationshipEntry, RelationshipCadenceDerivation>;
 
 /// Phase A of the relationship-agent wake (ADR 0059 Decision 2, the
 /// ADR 0054 deterministic tier): model-free, idempotent, €0 — the tier that
@@ -233,7 +224,7 @@ class RelationshipAgentPhaseA {
     // an unrelated store. The reminder is a projection of state this
     // transaction just made durable, so deriving it afterwards is also the
     // correct ordering.
-    await _reminders?.arm(relationship: relationship, derivation: derivation);
+    await _reminders?.arm(subject: relationship, derivation: derivation);
 
     return const WakeResult(success: true);
   }
