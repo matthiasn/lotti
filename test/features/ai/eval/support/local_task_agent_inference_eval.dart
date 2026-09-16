@@ -1064,7 +1064,11 @@ LocalTaskAgentEvalScenario _activeDeploymentConstraintScenario(
 /// after reconnecting two devices" — as plain a recurrence as the scenario
 /// asks for — failed for not saying "reappeared". No new concept is admitted;
 /// only the inflections of the ones already listed.
-const _recurrenceTerms = ['reappear', 'resurfac', 'again', 'recur'];
+///
+/// `recurr`, not `recur`: the shorter stem also matches "recursive" and
+/// "recursion", and "recursive sync retries remain a risk" says nothing about
+/// the fixed problem coming back.
+const _recurrenceTerms = ['reappear', 'resurfac', 'again', 'recurr'];
 
 LocalTaskAgentEvalScenario _userCompletedItemScenario(
   LocalTaskAgentEvalPromptVariant variant,

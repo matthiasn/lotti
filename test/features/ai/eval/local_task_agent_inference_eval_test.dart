@@ -661,7 +661,7 @@ void main() {
 
     expect(
       scenario.requiredReportTermGroups,
-      contains(equals(['reappear', 'resurfac', 'again', 'recur'])),
+      contains(equals(['reappear', 'resurfac', 'again', 'recurr'])),
     );
     // Every inflection a report actually uses, not just the past tense: a
     // report saying the issue was "reappearing" failed a check it satisfied.
@@ -680,10 +680,17 @@ void main() {
         reason: phrasing,
       );
     }
-    expect(
-      containsAnyEvalTerm('the fix held and the issue is gone', recurrence),
-      isFalse,
-    );
+    for (final unrelated in [
+      'the fix held and the issue is gone',
+      'recursive sync retries remain a risk',
+      'a recursion in the reconnect handler',
+    ]) {
+      expect(
+        containsAnyEvalTerm(unrelated, recurrence),
+        isFalse,
+        reason: unrelated,
+      );
+    }
     expect(
       scenario.requiredReportTermGroups.last,
       containsAll(['root cause', 'investigat']),
