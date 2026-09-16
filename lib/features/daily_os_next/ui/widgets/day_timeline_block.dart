@@ -17,10 +17,21 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
+/// The shortest block that can still show one title line: a `bodySmall`
+/// line plus the card's vertical padding. Below it a block carves no
+/// inter-block gap, and a block that starts closer than this (in minutes at
+/// the current zoom) to one it overlaps cannot sit on top of it without
+/// hiding that title — see `layoutTimelineBlocks`.
+double minimumReadableBlockHeight(DsTokens tokens) =>
+    tokens.typography.lineHeight.bodySmall + tokens.spacing.step2 * 2;
+
 /// Positions a [DayBlock] absolutely within the timeline stack. Converts the
 /// block's start/end through the [foldingState] (which collapses idle gaps) to
 /// pixel offsets, then carves a small inter-block gap out of tall enough blocks
-/// so adjacent blocks read as distinct without overlapping.
+/// so adjacent blocks read as distinct without overlapping. Across the lane
+/// it sits where [horizontal] says: the pane resolves that from the block's
+/// overlap slot, so concurrent blocks share the width instead of the same
+/// pixels.
 class BlockPosition extends StatefulWidget {
   const BlockPosition({
     required this.block,
@@ -32,11 +43,21 @@ class BlockPosition extends StatefulWidget {
     required this.onEdit,
     required this.arrangeMode,
     required this.onReschedule,
+    required this.horizontal,
+    this.raised = false,
     this.redacted = false,
     super.key,
   });
 
   final TimeBlock block;
+
+  /// Insets from the lane's left and right edges, in px, from
+  /// `TimelineBlockSlot.horizontalInsets`.
+  final ({double left, double right}) horizontal;
+
+  /// See [DayBlock.raised].
+  final bool raised;
+
   final DateTime windowStart;
   final TimelineFoldingState foldingState;
   final double pxPerMinute;
@@ -101,8 +122,7 @@ class _BlockPositionState extends State<BlockPosition> {
       pxPerMinute: widget.pxPerMinute,
     );
     final rawHeight = math.max(0, end - top).toDouble();
-    final minimumReadableHeight =
-        tokens.typography.lineHeight.bodySmall + tokens.spacing.step2 * 2;
+    final minimumReadableHeight = minimumReadableBlockHeight(tokens);
     final preferredGap = tokens.spacing.step1;
     final blockGap = rawHeight > minimumReadableHeight + preferredGap
         ? math.min(preferredGap, rawHeight / 3)
@@ -121,12 +141,13 @@ class _BlockPositionState extends State<BlockPosition> {
       tracked: widget.tracked,
       onRename: widget.onRename,
       onEdit: widget.onEdit,
+      raised: widget.raised,
       redacted: widget.redacted,
     );
     return Positioned(
       top: top + blockGap / 2,
-      left: tokens.spacing.step3,
-      right: tokens.spacing.step3,
+      left: widget.horizontal.left,
+      right: widget.horizontal.right,
       height: height,
       child: canArrange
           ? Stack(
@@ -362,12 +383,19 @@ class DayBlock extends ConsumerWidget {
     this.tracked = false,
     this.onRename,
     this.onEdit,
+    this.raised = false,
     this.redacted = false,
     super.key,
   });
 
   final TimeBlock block;
   final bool tracked;
+
+  /// Whether the block is painted on top of another block it overlaps in
+  /// time. Fills are opaque, so without a seam two tinted cards on the same
+  /// pixels read as one shape; a raised block draws a hairline in the canvas
+  /// colour around itself to keep its edge.
+  final bool raised;
 
   /// Draws the block as a plain neutral slab: right time and height, but no
   /// title, no category colour, no live task projection and no tap, edit or
@@ -386,7 +414,9 @@ class DayBlock extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
-    if (redacted) return _RedactedBlock(block: block, tracked: tracked);
+    if (redacted) {
+      return _RedactedBlock(block: block, tracked: tracked, raised: raised);
+    }
     final taskId = block.taskId?.trim();
     final liveTask = watchLiveTaskMetadata(ref, taskId);
     final effectiveTitle = liveTask.missing
@@ -450,39 +480,46 @@ class DayBlock extends ConsumerWidget {
         : category.withValues(alpha: kTimelinePlannedAccentAlpha);
 
     final borderRadius = BorderRadius.circular(tokens.radii.m);
+    final seam = _raisedSeam(tokens, raised: raised);
     final card = Ink(
       decoration: BoxDecoration(
         color: fill,
         borderRadius: borderRadius,
+        border: seam,
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            width: 3,
-            decoration: BoxDecoration(
-              color: leftStripeColor,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(tokens.radii.m),
-                bottomLeft: Radius.circular(tokens.radii.m),
+      child: Padding(
+        // The stripe starts at the card's edge; keep it inside the seam so
+        // the hairline stays whole on the left.
+        padding: EdgeInsets.all(seam?.top.width ?? 0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              width: 3,
+              decoration: BoxDecoration(
+                color: leftStripeColor,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(tokens.radii.m),
+                  bottomLeft: Radius.circular(tokens.radii.m),
+                ),
               ),
             ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step3,
-                vertical: tokens.spacing.step2,
-              ),
-              child: _BlockContent(
-                block: effectiveBlock,
-                tracked: tracked,
-                onRename: onRename,
-                onEdit: openEditor,
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spacing.step3,
+                  vertical: tokens.spacing.step2,
+                ),
+                child: _BlockContent(
+                  block: effectiveBlock,
+                  tracked: tracked,
+                  onRename: onRename,
+                  onEdit: openEditor,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
 
@@ -548,20 +585,37 @@ class DayBlock extends ConsumerWidget {
       categoryColorFromHex(block.category.colorHex);
 }
 
+/// The hairline a raised block draws around itself, in the canvas colour, so
+/// its edge survives against the opaque fill it sits on. `null` for a block
+/// on the lane floor.
+Border? _raisedSeam(DsTokens tokens, {required bool raised}) => raised
+    ? Border.all(
+        color: tokens.colors.background.level01,
+        width: tokens.spacing.step1 / 2,
+      )
+    : null;
+
 /// The redacted rendering of a [DayBlock]: the buffer block's neutral stripe
 /// on a plain `background.level03` fill, the same radius as a real block, and
 /// nothing inside. Not a button — there is nothing to open — and its
 /// accessible name carries only the time range and whether it was tracked or
-/// planned, never the title.
+/// planned, never the title. A raised slab keeps its seam: two redacted
+/// blocks share one fill, so without it the day's layering would vanish.
 class _RedactedBlock extends StatelessWidget {
-  const _RedactedBlock({required this.block, required this.tracked});
+  const _RedactedBlock({
+    required this.block,
+    required this.tracked,
+    required this.raised,
+  });
 
   final TimeBlock block;
   final bool tracked;
+  final bool raised;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final seam = _raisedSeam(tokens, raised: raised);
     final semanticsLabel = [
       formatClockRange(context, block.start, block.end),
       if (tracked)
@@ -575,21 +629,27 @@ class _RedactedBlock extends StatelessWidget {
         decoration: BoxDecoration(
           color: tokens.colors.background.level03,
           borderRadius: BorderRadius.circular(tokens.radii.m),
+          border: seam,
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              width: 3,
-              decoration: BoxDecoration(
-                color: tokens.colors.text.lowEmphasis.withValues(alpha: 0.32),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(tokens.radii.m),
-                  bottomLeft: Radius.circular(tokens.radii.m),
+        child: Padding(
+          padding: EdgeInsets.all(seam?.top.width ?? 0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                width: 3,
+                decoration: BoxDecoration(
+                  color: tokens.colors.text.lowEmphasis.withValues(
+                    alpha: 0.32,
+                  ),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(tokens.radii.m),
+                    bottomLeft: Radius.circular(tokens.radii.m),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

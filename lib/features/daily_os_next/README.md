@@ -29,6 +29,9 @@ via the rail's calendar button and resized by its edge; both survive restarts.
   plan: recorded time, imported workouts, check-ins with a length and events
   with a start and end sit on its recorded lane, and an event opens from its block. Agenda and Activity are
   a tap away.
+- **Shows time that overlapped.** A call taken during a tracked session sits
+  inset on top of it, and sessions started together share the lane side by
+  side — on the Day view and in the docked day column alike.
 - **Keeps everything even when things fail.** A recording is saved before anything
   is transcribed, and a failed transcription is retried in the background rather
   than losing the recording. Closing the app mid-plan does not lose the request.
