@@ -673,7 +673,16 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
       // ignore: no_adjacent_strings_in_list, missing_whitespace_between_adjacent_strings
       r"\b(?:what(?: is|'s|’s| feels| makes| would)|which (?:part|aspect|option)|"
           // ignore: missing_whitespace_between_adjacent_strings
-          'how (?:can|could|would)|(?:do|would|could|can) you|is it|are you|'
+          'how (?:can|could|would)|(?:do|would|could|can) you|is it|'
+          // "Is there something specific that makes it feel heavy?" asks for
+          // the difficulty as plainly as "is it" does; leaving it out failed
+          // a clarifying question that offered three options. Bare `is there`
+          // also admits the pep talk "is there any better feeling than…?", so
+          // it counts only when it goes on to ask about the user's situation.
+          // ignore: missing_whitespace_between_adjacent_strings
+          'is there (?:something|anything) (?:specific|in particular|that|'
+          // ignore: missing_whitespace_between_adjacent_strings
+          'about|making|getting)|are you|'
           // ignore: missing_whitespace_between_adjacent_strings
           'is the (?:hard|difficult|tough) part)'
           r'\b[^?!.]*\?',
