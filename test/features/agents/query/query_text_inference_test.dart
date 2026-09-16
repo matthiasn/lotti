@@ -221,6 +221,22 @@ void main() {
       },
     );
 
+    test('a raw newline inside a string value is escaped, not fatal', () async {
+      // From a glm-5.3:speed LottiGym run: `FormatException: Control
+      // character in string`, which lost the whole query answer.
+      final result =
+          await QueryTextInference(
+            generate: (_, _) => Stream.value(
+              '{\n "answer": "First line\nsecond line\tafter a tab"\n}',
+            ),
+          ).complete(
+            system: 'answer',
+            input: {},
+            cancellation: QueryCancellation(),
+          );
+      expect(result['answer'], 'First line\nsecond line\tafter a tab');
+    });
+
     test('a payload that is broken beyond escapes still throws', () async {
       await expectLater(
         QueryTextInference(
