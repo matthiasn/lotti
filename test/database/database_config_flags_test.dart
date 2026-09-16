@@ -84,6 +84,53 @@ final expectedFlags = <ConfigFlag>{
     description: 'Enable notifications?',
     status: false,
   ),
+  // The per-kind switches narrow what the master flag lets through, so they
+  // seed on; the wording switch seeds off (ADR 0063).
+  const ConfigFlag(
+    name: notifyTaskSuggestionsFlag,
+    description: 'Notify about task suggestions?',
+    status: true,
+  ),
+  const ConfigFlag(
+    name: notifyCheckInRemindersFlag,
+    description: 'Notify about check-in reminders?',
+    status: true,
+  ),
+  const ConfigFlag(
+    name: notifyGoalAlertsFlag,
+    description: 'Notify when a goal slips?',
+    status: true,
+  ),
+  const ConfigFlag(
+    name: notifyHabitRemindersFlag,
+    description: 'Notify with habit reminders?',
+    status: true,
+  ),
+  const ConfigFlag(
+    name: notifyHabitAutoCompletionsFlag,
+    description: 'Notify about auto-completed habits?',
+    status: true,
+  ),
+  const ConfigFlag(
+    name: notifyDayPlanOutcomesFlag,
+    description: 'Notify about day plan results?',
+    status: true,
+  ),
+  const ConfigFlag(
+    name: notifySyncConflictsFlag,
+    description: 'Notify about sync conflicts?',
+    status: true,
+  ),
+  const ConfigFlag(
+    name: showTaskBadgeFlag,
+    description: 'Show the task count on the app icon?',
+    status: true,
+  ),
+  const ConfigFlag(
+    name: notifyAgentCopyFlag,
+    description: "Word alerts in the agent's own words?",
+    status: false,
+  ),
   const ConfigFlag(
     name: enableEventsFlag,
     description: 'Enable Events?',
