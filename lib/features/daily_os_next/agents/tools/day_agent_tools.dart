@@ -218,7 +218,13 @@ const dayAgentTools = <AgentToolDefinition>[
     parameters: {
       'type': 'object',
       'properties': {
-        'dayId': {'type': 'string'},
+        'dayId': {
+          'type': 'string',
+          'description':
+              'The day id for this wake, copied from `<day>.dayId` — for '
+              'example dayplan-2026-09-17. It is never blank and never '
+              'another day: a call naming a different day is rejected.',
+        },
       },
       'required': ['dayId'],
       'additionalProperties': false,
@@ -272,7 +278,13 @@ const dayAgentTools = <AgentToolDefinition>[
     parameters: {
       'type': 'object',
       'properties': {
-        'dayId': {'type': 'string'},
+        'dayId': {
+          'type': 'string',
+          'description':
+              'The day id for this wake, copied from `<day>.dayId` — for '
+              'example dayplan-2026-09-17. It is never blank and never '
+              'another day: a call naming a different day is rejected.',
+        },
         'dayDate': {
           'type': 'string',
           'description': 'ISO-8601 date-time for the local day being drafted.',
@@ -349,12 +361,20 @@ const dayAgentTools = <AgentToolDefinition>[
                 'type': 'string',
                 'minLength': 1,
                 'description':
-                    'Why this block belongs here. REQUIRED whenever type is '
-                    '"ai" — the tool handler rejects ai blocks without a '
-                    'non-empty reason.',
+                    'Why this block belongs here. Every block carries one, '
+                    'and for an "ai" block it must be non-empty — the tool '
+                    'handler rejects the whole draft otherwise. For a buffer '
+                    'or calendar block a short phrase is enough.',
               },
               'note': {'type': 'string'},
             },
+            // `reason` is deliberately NOT required here, though the writer
+            // rejects an ai block without one. A closed-window wake must echo
+            // its baseline blocks exactly, and a legacy block may carry a null
+            // reason: requiring the field would leave that echo no valid form
+            // — invent a reason and the repeat is no longer exact, omit it and
+            // the call is off-schema. The rule lives in the field description,
+            // which is where it can be conditional on the block type.
             'required': ['title', 'categoryId', 'start', 'end', 'type'],
             'additionalProperties': false,
           },
@@ -417,7 +437,13 @@ const dayAgentTools = <AgentToolDefinition>[
     parameters: {
       'type': 'object',
       'properties': {
-        'dayId': {'type': 'string'},
+        'dayId': {
+          'type': 'string',
+          'description':
+              'The day id for this wake, copied from `<day>.dayId` — for '
+              'example dayplan-2026-09-17. It is never blank and never '
+              'another day: a call naming a different day is rejected.',
+        },
         'baselinePlanId': {
           'type': 'string',
           'description':

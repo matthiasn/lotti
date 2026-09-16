@@ -83,6 +83,15 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
             'workspace "$dayId".',
       );
     }
+    // A plan call that names no day means this wake's day: it is the only one
+    // the guard above would ever accept. Models leave the field empty often
+    // enough that the writer's "dayId must not be empty" was throwing away
+    // whole drafts over an id the wake already knows. Only the plan tools
+    // take a dayId, and their schemas forbid unknown properties, so the fill
+    // stays scoped to them.
+    final planArgs = argDayId is String && argDayId.trim().isNotEmpty
+        ? args
+        : {...args, 'dayId': dayId};
 
     if (DayAgentToolNames.isCaptureReconcileTool(toolName)) {
       final service = captureService;
@@ -118,7 +127,7 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
         threadId: threadId,
         runKey: runKey,
         toolName: toolName,
-        args: args,
+        args: planArgs,
         planningConfig: config,
         planningSnapshotAt: planningSnapshotAt,
         planningBaselinePlan: planningBaselinePlan,

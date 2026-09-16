@@ -291,6 +291,48 @@ void main() {
       );
     });
 
+    test('draft_day_plan states the reason rule without requiring it', () {
+      // A gym run lost six drafts to a missing reason, but requiring the
+      // field unconditionally breaks the other end: a closed-window wake
+      // echoes its baseline exactly, and a legacy block may carry a null
+      // reason, which would then have no schema-valid representation.
+      final blockItems =
+          ((parametersFor(DayAgentToolNames.draftDayPlan)['properties']
+                      as Map<String, dynamic>)['blocks']
+                  as Map<String, dynamic>)['items']
+              as Map<String, dynamic>;
+
+      expect(
+        blockItems['required'],
+        isNot(contains('reason')),
+        reason: 'a null-reason baseline echo must stay representable',
+      );
+      expect(
+        ((blockItems['properties'] as Map<String, dynamic>)['reason']
+            as Map<String, dynamic>)['description'],
+        allOf(contains('ai'), contains('rejects the whole draft')),
+      );
+    });
+
+    test('day-scoped tools say which day id to send', () {
+      // An empty dayId was the single commonest rejection in a gym run, and
+      // the field carried no description at all.
+      for (final tool in [
+        DayAgentToolNames.draftDayPlan,
+        DayAgentToolNames.proposePlanDiff,
+        DayAgentToolNames.surfacePendingDecisions,
+      ]) {
+        final dayIdSchema =
+            (parametersFor(tool)['properties'] as Map<String, dynamic>)['dayId']
+                as Map<String, dynamic>;
+        expect(
+          dayIdSchema['description'],
+          allOf(contains('<day>.dayId'), contains('never blank')),
+          reason: tool,
+        );
+      }
+    });
+
     test('draft_day_plan energy bands state the time format', () {
       // The band fields were the only times in the schema with no format
       // note, and models wrote "09:00" for them while getting every block

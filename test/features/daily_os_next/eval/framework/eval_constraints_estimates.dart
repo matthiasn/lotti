@@ -309,15 +309,16 @@ final _omittedAllocationPattern = RegExp(
 /// "Only 60 minutes remain inside the working day" is day capacity, not the
 /// task's remainder; reading it as one vetoed a correct partial disclosure.
 ///
-/// The scope noun may sit behind a clock time and an `end of`: models write
-/// "before the 17:00 end of the working day", which named the day just as
-/// plainly and still vetoed the disclosure beside it.
+/// The scope noun may sit behind a clock time and an `end of`, and may be
+/// hyphenated: models write "before the 17:00 end of the working day" and
+/// "before the 17:00 working-day end", each naming the day just as plainly
+/// while still vetoing the disclosure beside it.
 final _unrelatedRemainderScopePattern = RegExp(
   r'\b(?:in|inside|within|during|for|before|until)\s+'
   r'(?:(?:the|a|an|my|our|their|your)\s+)?'
   r'(?:\d{1,2}(?::\d{2})?\s+)?'
-  r'(?:(?:end|close)\s+of\s+(?:the\s+)?(?:working\s+day|workday|day)|'
-  r'meeting|workday|working\s+day|calendar|appointment|break)\b',
+  r'(?:(?:end|close)\s+of\s+(?:the\s+)?(?:working[\s-]day|workday|day)|'
+  r'meeting|workday|working[\s-]day|calendar|appointment|break)\b',
   caseSensitive: false,
 );
 

@@ -224,6 +224,52 @@ void main() {
       expect(args, {'dayId': dayId, 'blocks': <Object?>[]});
     });
 
+    test('fills in the wake day when the model sends no dayId', () async {
+      // The commonest rejection in a glm-5.3-flash gym run was "dayId must
+      // not be empty" — 14 drafts thrown away over an id this wake already
+      // knows, and which the guard below would accept from no other day.
+      final planService = MockDayAgentPlanService();
+      when(
+        () => planService.executeTool(
+          agentId: any(named: 'agentId'),
+          threadId: any(named: 'threadId'),
+          runKey: any(named: 'runKey'),
+          toolName: any(named: 'toolName'),
+          args: any(named: 'args'),
+          planningConfig: any(named: 'planningConfig'),
+          planningSnapshotAt: any(named: 'planningSnapshotAt'),
+          planningBaselinePlan: any(named: 'planningBaselinePlan'),
+        ),
+      ).thenAnswer(
+        (_) async => DayAgentDirectToolResult.success(const {'ok': true}),
+      );
+      conversationRepository.toolCalls = [
+        toolCall(
+          name: DayAgentToolNames.draftDayPlan,
+          args: const {'dayId': '', 'blocks': <Object?>[]},
+        ),
+      ];
+
+      final result = await execute(workflow(planService: planService));
+
+      expect(result.success, isTrue);
+      final args =
+          verify(
+                () => planService.executeTool(
+                  agentId: agentId,
+                  threadId: threadId,
+                  runKey: runKey,
+                  toolName: DayAgentToolNames.draftDayPlan,
+                  args: captureAny(named: 'args'),
+                  planningConfig: any(named: 'planningConfig'),
+                  planningSnapshotAt: any(named: 'planningSnapshotAt'),
+                  planningBaselinePlan: any(named: 'planningBaselinePlan'),
+                ),
+              ).captured.single
+              as Map<String, dynamic>;
+      expect(args['dayId'], dayId);
+    });
+
     test('rejects a tool call targeting a different day workspace', () async {
       // ADR 0022 Decision 4: under one planner the model must never mutate a
       // day other than the wake's workspace.
