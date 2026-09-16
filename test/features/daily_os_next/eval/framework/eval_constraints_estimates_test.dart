@@ -4019,6 +4019,23 @@ void main() {
         );
       });
 
+      test('a scope phrase set off by a comma still scopes the count', () {
+        // Clause scope is what stops one clause poisoning the next, but the
+        // scope phrase can carry its own comma. Cutting there would strand
+        // "60 minutes remain", and the sentence-wide "Partial" would then
+        // read it as the task's remainder and veto the true 120.
+        final result = score(
+          'Partial placement: only 60 minutes remain, before the 17:00 end '
+          'of the working day, so 120 minutes are left unscheduled.',
+        );
+
+        expect(result.passed, isTrue, reason: result.detail);
+        expect(
+          result.detail,
+          contains('task-long-migration 60min partial of 180min'),
+        );
+      });
+
       test('a remainder that contradicts the block still fails', () {
         final result = score(
           'PARTIAL: the migration is estimated at 180 minutes but only 60 '

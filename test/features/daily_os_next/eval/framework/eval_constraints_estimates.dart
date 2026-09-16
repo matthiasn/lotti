@@ -1813,16 +1813,47 @@ bool _referenceAttributesEvidence(
 /// right beside it lost its credit.
 const _remainderScopeBoundaries = ',.;!?\n';
 
+/// A phrase that continues the clause before it rather than starting its own.
+final _scopeContinuationPattern = RegExp(
+  r'^\s*(?:in|inside|within|during|for|before|until)\b',
+  caseSensitive: false,
+);
+
+/// The remainder's clause, plus any comma-attached phrase that continues it.
+///
+/// Clause scope is what stops one clause poisoning the next, but a scope
+/// phrase may itself be set off by a comma — "only 60 minutes remain, before
+/// the end of the working day" — and still say what that count measures.
+/// Only a continuation opening with a scope preposition is taken in: "so 120
+/// minutes are left unscheduled" begins a new statement about the task, and
+/// swallowing it would hand the day's scope to the task's own remainder.
+String _remainderScopeClause(String reason, Match match) {
+  final range = _matchClauseRange(
+    reason,
+    match,
+    boundaries: _remainderScopeBoundaries,
+  );
+  var end = range.end;
+  while (end < reason.length && reason[end] == ',') {
+    var next = end + 1;
+    while (next < reason.length &&
+        !_remainderScopeBoundaries.contains(reason[next])) {
+      next++;
+    }
+    if (!_scopeContinuationPattern.hasMatch(reason.substring(end + 1, next))) {
+      break;
+    }
+    end = next;
+  }
+  return reason.substring(range.start, end);
+}
+
 bool _remainderIsTaskBound(String reason, Match match) {
   if (_evidenceHasExplicitNonTaskObject(reason, match) ||
       _remainderHasExplicitNonTaskSubject(reason, match)) {
     return false;
   }
-  final clause = _matchClause(
-    reason,
-    match,
-    boundaries: _remainderScopeBoundaries,
-  );
+  final clause = _remainderScopeClause(reason, match);
   if (_unrelatedRemainderScopePattern.hasMatch(clause)) return false;
   if (_partialRemainderDispositionPattern.hasMatch(clause)) return true;
   return _partialMentionPattern.hasMatch(reason);
@@ -1835,7 +1866,7 @@ bool _remainderIsRelatedToTask(String reason, Match match) {
   }
   if (_remainderIsTaskBound(reason, match)) return true;
   return !_unrelatedRemainderScopePattern.hasMatch(
-    _matchClause(reason, match, boundaries: _remainderScopeBoundaries),
+    _remainderScopeClause(reason, match),
   );
 }
 
