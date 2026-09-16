@@ -18,6 +18,7 @@ import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
+import 'support/eval_text_matchers.dart';
 import 'support/local_task_agent_inference_eval.dart';
 
 void main() {
@@ -660,15 +661,28 @@ void main() {
 
     expect(
       scenario.requiredReportTermGroups,
-      contains(
-        equals([
-          'reappeared',
-          'resurfaced',
-          'again',
-          'recurrence',
-          'recurred',
-        ]),
-      ),
+      contains(equals(['reappear', 'resurfac', 'again', 'recur'])),
+    );
+    // Every inflection a report actually uses, not just the past tense: a
+    // report saying the issue was "reappearing" failed a check it satisfied.
+    final recurrence = scenario.requiredReportTermGroups[1];
+    for (final phrasing in [
+      'the issue reappeared',
+      'QA saw it reappearing once',
+      'duplicate events resurfacing after reconnect',
+      'a recurrence after reconnecting',
+      'it recurred and keeps recurring',
+      'happened again',
+    ]) {
+      expect(
+        containsAnyEvalTerm(phrasing, recurrence),
+        isTrue,
+        reason: phrasing,
+      );
+    }
+    expect(
+      containsAnyEvalTerm('the fix held and the issue is gone', recurrence),
+      isFalse,
     );
     expect(
       scenario.requiredReportTermGroups.last,
