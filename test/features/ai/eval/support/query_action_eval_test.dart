@@ -399,14 +399,90 @@ void main() {
       isNotEmpty,
       reason: 'renaming while archiving is a change nobody asked for',
     );
+    // Not even at its current value: an approved update treats any present
+    // isChecked as approving the check, rewriting checkedBy and checkedAt and
+    // appending a receipt, so echoing it changes provenance.
+    for (final isChecked in [true, false]) {
+      expect(
+        scenario('checklist_archive').grade(
+          answer([
+            archive.copyWith(args: {...archive.args, 'isChecked': isChecked}),
+          ]),
+        ),
+        isNotEmpty,
+        reason: 'isChecked: $isChecked rewrites checked-state provenance',
+      );
+    }
+  });
+
+  test('a rename may restate its archive state but not its checked state', () {
+    const rename = ChangeItem(
+      toolName: 'update_checklist_item',
+      args: {'id': ActionEvalIds.feeder, 'title': 'Inspect the inlet seal'},
+      humanSummary: 'Rename',
+    );
+    final check = scenario('checklist_rename');
+
+    expect(check.grade(answer([rename])), isEmpty);
     expect(
-      scenario('checklist_archive').grade(
+      check.grade(
         answer([
-          archive.copyWith(args: {...archive.args, 'isChecked': true}),
+          rename.copyWith(args: {...rename.args, 'isArchived': false}),
+        ]),
+      ),
+      isEmpty,
+    );
+    expect(
+      check.grade(
+        answer([
+          rename.copyWith(args: {...rename.args, 'isArchived': true}),
         ]),
       ),
       isNotEmpty,
-      reason: 'checking it off is not archiving it',
+      reason: 'archiving while renaming is a change nobody asked for',
+    );
+    expect(
+      check.grade(
+        answer([
+          rename.copyWith(args: {...rename.args, 'isChecked': false}),
+        ]),
+      ),
+      isNotEmpty,
+      reason: '"without changing its checked state" forbids touching it',
+    );
+  });
+
+  test('a restore may restate its title but not rename the item', () {
+    const restore = ChangeItem(
+      toolName: 'update_checklist_item',
+      args: {
+        'id': ActionEvalIds.sensor,
+        'isArchived': false,
+        'isChecked': false,
+        'reason': 'The user asked to restore and uncheck this item.',
+      },
+      humanSummary: 'Restore',
+    );
+    final check = scenario('checklist_restore');
+
+    expect(check.grade(answer([restore])), isEmpty);
+    expect(
+      check.grade(
+        answer([
+          restore.copyWith(
+            args: {...restore.args, 'title': 'Replace the pressure sensor'},
+          ),
+        ]),
+      ),
+      isEmpty,
+    );
+    expect(
+      check.grade(
+        answer([
+          restore.copyWith(args: {...restore.args, 'title': 'Sensor swap'}),
+        ]),
+      ),
+      isNotEmpty,
     );
   });
 

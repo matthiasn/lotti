@@ -265,7 +265,7 @@ const queryActionEvalCases = <QueryActionEvalCase>[
       ExpectedQueryAction(
         'update_checklist_item',
         {'id': ActionEvalIds.feeder, 'title': 'Inspect the inlet seal'},
-        defaults: {'isChecked': false, 'isArchived': false},
+        defaults: {'isArchived': false},
       ),
     ],
   ),
@@ -273,13 +273,16 @@ const queryActionEvalCases = <QueryActionEvalCase>[
     'checklist_archive',
     'Archive the existing "Inspect the feeder seal" checklist item.',
     [
-      // Restating a field the edit leaves alone, at its current value, keeps
-      // it unchanged — which is what these requests ask for. A changed value
-      // still fails.
+      // Restating `title` or `isArchived` at its current value is a true no-op:
+      // LottiChecklistUpdateHandler compares both against the stored value.
+      // `isChecked` is deliberately NOT a default. An approved update treats
+      // any present isChecked as approving the check — rewriting checkedBy and
+      // checkedAt and appending a receipt even when the boolean is unchanged —
+      // so echoing it is a provenance change the request never asked for.
       ExpectedQueryAction(
         'update_checklist_item',
         {'id': ActionEvalIds.feeder, 'isArchived': true},
-        defaults: {'title': 'Inspect the feeder seal', 'isChecked': false},
+        defaults: {'title': 'Inspect the feeder seal'},
       ),
     ],
   ),
