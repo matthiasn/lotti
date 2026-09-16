@@ -3553,6 +3553,63 @@ void main() {
         },
       );
 
+      test('resizing a partial block restates what is left of it', () async {
+        // allocated + remainingMinutes is the task's estimate, so the
+        // estimate survives without being known here: 60 of 180 dragged out
+        // to 90 leaves 90, not the stored 120.
+        seedPlanEntity(
+          blocks: [
+            PlannedBlock(
+              id: 'block-partial',
+              categoryId: 'work',
+              startTime: DateTime(2026, 5, 25, 9),
+              endTime: DateTime(2026, 5, 25, 10),
+              title: 'Focus work',
+              reason: 'Deliberate slice.',
+              taskId: 'task-1',
+              remainingMinutes: 120,
+            ),
+          ],
+        );
+
+        final grown = await createService().editBlock(
+          agentId: _agentId,
+          dayId: _dayId,
+          blockId: 'block-partial',
+          start: DateTime(2026, 5, 25, 9),
+          end: DateTime(2026, 5, 25, 10, 30),
+        );
+
+        expect(grown.data.plannedBlocks.single.remainingMinutes, 90);
+      });
+
+      test('a block grown past its estimate has nothing left', () async {
+        seedPlanEntity(
+          blocks: [
+            PlannedBlock(
+              id: 'block-partial',
+              categoryId: 'work',
+              startTime: DateTime(2026, 5, 25, 9),
+              endTime: DateTime(2026, 5, 25, 10),
+              title: 'Focus work',
+              reason: 'Deliberate slice.',
+              taskId: 'task-1',
+              remainingMinutes: 15,
+            ),
+          ],
+        );
+
+        final grown = await createService().editBlock(
+          agentId: _agentId,
+          dayId: _dayId,
+          blockId: 'block-partial',
+          start: DateTime(2026, 5, 25, 9),
+          end: DateTime(2026, 5, 25, 11),
+        );
+
+        expect(grown.data.plannedBlocks.single.remainingMinutes, 0);
+      });
+
       test(
         'returns the live plan without a write when times are unchanged',
         () async {

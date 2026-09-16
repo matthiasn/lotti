@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_agent_identity.dart';
@@ -8,6 +10,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_parser.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_reads.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_writer.dart';
 import 'package:mocktail/mocktail.dart';
@@ -131,40 +134,130 @@ void main() {
       },
     );
 
+    test('an energy band with an impossible time of day is dropped', () async {
+      // Not persisted as a fact, and not fatal either: the schedule is the
+      // artifact worth keeping, and a band is colour on top of it.
+      final plan = await withClock(
+        Clock.fixed(_openAt),
+        () => writer.persistDraftPlan(
+          agentId: _agentId,
+          dayId: _dayId,
+          planDate: _planDate,
+          rawBlocks: [_blockJson(_block())],
+          rawEnergyBands: const [
+            {
+              'start': '25:00',
+              'end': '26:00',
+              'level': 'high',
+              'label': 'morning',
+            },
+          ],
+          runKey: _runKey,
+        ),
+      );
+
+      expect(plan.energyBands, isEmpty);
+      expect(plan.data.plannedBlocks, hasLength(1));
+    });
+
+    test('a legacy block with no reason can still be echoed back', () async {
+      // The schema requires `reason` on every block, so repeating a legacy
+      // block that has none forces the model to invent one. That must not
+      // read as a change: this path persists the stored payload anyway.
+      final baseline = _seedPlan(
+        entities,
+        blocks: [_block(reason: null)],
+      );
+
+      final repeated = await withClock(
+        Clock.fixed(_closedAt),
+        () => writer.persistDraftPlan(
+          agentId: _agentId,
+          dayId: _dayId,
+          planDate: _planDate,
+          rawBlocks: [
+            _blockJson(baseline.data.plannedBlocks.single)
+              ..['reason'] = 'Repeating the approved block.',
+          ],
+          planningSnapshotAt: _closedAt,
+          planningBaselinePlan: baseline,
+        ),
+      );
+
+      expect(repeated.data.plannedBlocks.single.reason, isNull);
+    });
+
     test(
-      'an energy band with an impossible time of day is still rejected',
+      'an echoed reason that rewrites a real one is still a change',
       () async {
+        final baseline = _seedPlan(entities, blocks: [_block()]);
+
         await expectLater(
           withClock(
-            Clock.fixed(_openAt),
+            Clock.fixed(_closedAt),
             () => writer.persistDraftPlan(
               agentId: _agentId,
               dayId: _dayId,
               planDate: _planDate,
-              rawBlocks: [_blockJson(_block())],
-              rawEnergyBands: const [
-                {
-                  'start': '25:00',
-                  'end': '26:00',
-                  'level': 'high',
-                  'label': 'morning',
-                },
+              rawBlocks: [
+                _blockJson(baseline.data.plannedBlocks.single)
+                  ..['reason'] = 'Something else entirely.',
               ],
-              runKey: _runKey,
+              planningSnapshotAt: _closedAt,
+              planningBaselinePlan: baseline,
             ),
           ),
-          throwsA(
-            isA<DayAgentCaptureException>().having(
-              (error) => error.message,
-              'message',
-              contains('ISO-8601'),
-            ),
-          ),
+          throwsA(isA<DayAgentCaptureException>()),
         );
       },
     );
 
-    test('rejects a remainder on a block with no task', () async {
+    test('a blocks array sent as a JSON string is still a plan', () async {
+      // Observed twice in one gym run: the whole draft arrived correct, and
+      // JSON-encoded inside a string.
+      final plan = await withClock(
+        Clock.fixed(_openAt),
+        () => writer.persistDraftPlan(
+          agentId: _agentId,
+          dayId: _dayId,
+          planDate: _planDate,
+          rawBlocks: objectListArg(
+            jsonEncode([_blockJson(_block())]),
+            'blocks',
+          ),
+          runKey: _runKey,
+        ),
+      );
+
+      expect(plan.data.plannedBlocks.single.title, 'Prep demo');
+    });
+
+    test('an empty buffer block is dropped, keeping the plan', () async {
+      final plan = await withClock(
+        Clock.fixed(_openAt),
+        () => writer.persistDraftPlan(
+          agentId: _agentId,
+          dayId: _dayId,
+          planDate: _planDate,
+          rawBlocks: [
+            _blockJson(_block()),
+            _blockJson(
+              _block(id: 'block-empty').copyWith(
+                type: PlannedBlockType.buffer,
+                startTime: DateTime(2026, 5, 25, 17),
+                endTime: DateTime(2026, 5, 25, 17),
+              ),
+            ),
+          ],
+          runKey: _runKey,
+        ),
+      );
+
+      expect(plan.data.plannedBlocks.map((b) => b.id), ['block-1']);
+    });
+
+    test('an empty ai block is still rejected', () async {
+      // Nulling out real work is not decoration, so it keeps failing.
       await expectLater(
         withClock(
           Clock.fixed(_openAt),
@@ -173,21 +266,44 @@ void main() {
             dayId: _dayId,
             planDate: _planDate,
             rawBlocks: [
-              _blockJson(_block())
-                ..remove('taskId')
-                ..['remainingMinutes'] = 30,
+              _blockJson(
+                _block().copyWith(
+                  startTime: DateTime(2026, 5, 25, 17),
+                  endTime: DateTime(2026, 5, 25, 17),
+                ),
+              ),
             ],
             runKey: _runKey,
           ),
         ),
-        throwsA(
-          isA<DayAgentCaptureException>().having(
-            (error) => error.message,
-            'message',
-            contains('taskId whose estimate'),
-          ),
+        throwsA(isA<DayAgentCaptureException>()),
+      );
+    });
+
+    test('a band the model got wrong does not cost the schedule', () async {
+      // One band omitted `level`; the plan around it was sound.
+      final plan = await withClock(
+        Clock.fixed(_openAt),
+        () => writer.persistDraftPlan(
+          agentId: _agentId,
+          dayId: _dayId,
+          planDate: _planDate,
+          rawBlocks: [_blockJson(_block())],
+          rawEnergyBands: const [
+            {
+              'start': '09:00',
+              'end': '12:00',
+              'level': 'high',
+              'label': 'morning',
+            },
+            {'start': '15:00', 'end': '17:00', 'label': 'second wind'},
+          ],
+          runKey: _runKey,
         ),
       );
+
+      expect(plan.data.plannedBlocks, hasLength(1));
+      expect(plan.energyBands.map((b) => b.label), ['morning']);
     });
 
     test('rejects invented blocks when no baseline exists', () async {

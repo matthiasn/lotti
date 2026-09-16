@@ -735,6 +735,11 @@ class DayAgentPlanEditor {
                 endTime: end,
                 title: trimmedTitle ?? candidate.title,
                 categoryId: trimmedCategoryId ?? candidate.categoryId,
+                remainingMinutes: _remainderAfterResize(
+                  candidate,
+                  start: start,
+                  end: end,
+                ),
               )
             else
               candidate,
@@ -815,4 +820,26 @@ class DayAgentPlanEditor {
       ..call(uncommittedPlan.id);
     return uncommittedPlan;
   }
+}
+
+/// The outstanding minutes a partial block still has after being resized.
+///
+/// `allocated + remainingMinutes` is the task's estimate, so the estimate
+/// survives a resize without being known here: giving the block n more
+/// minutes leaves n fewer outstanding. Keeping the stored number would state
+/// an estimate the plan no longer implies — a 60-minute block with 120 left,
+/// dragged out to 90, covers 90 of 180 and has 90 left, not 120. It floors at
+/// zero rather than going negative when a block grows past its estimate.
+int? _remainderAfterResize(
+  PlannedBlock block, {
+  required DateTime start,
+  required DateTime end,
+}) {
+  final remaining = block.remainingMinutes;
+  if (remaining == null) return null;
+  final grewBy =
+      end.difference(start).inMinutes -
+      block.endTime.difference(block.startTime).inMinutes;
+  final adjusted = remaining - grewBy;
+  return adjusted < 0 ? 0 : adjusted;
 }

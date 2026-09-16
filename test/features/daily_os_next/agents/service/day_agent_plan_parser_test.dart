@@ -47,6 +47,41 @@ void main() {
     );
   }
 
+  group('objectListArg', () {
+    test('decodes a list the model wrapped in a string', () {
+      expect(
+        objectListArg('[{"id": "a"}]', 'blocks'),
+        [
+          {'id': 'a'},
+        ],
+      );
+    });
+
+    test('refuses a string that is not a list after all', () {
+      // Measured on glm-5.3:speed: the payload opened with `[` and then broke
+      // its own quoting (`,start": "...`). Nothing recoverable is in there,
+      // so it stays a contract error rather than a guess.
+      for (final raw in [
+        '[{"categoryId": "cat-work",start": "2026-09-17T09:00"}]',
+        '{"blocks": []}',
+        '[unterminated',
+        42,
+      ]) {
+        expect(
+          () => objectListArg(raw, 'blocks'),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (error) => error.message,
+              'message',
+              contains('must be an array'),
+            ),
+          ),
+          reason: '$raw',
+        );
+      }
+    });
+  });
+
   group('parsePlannedBlock', () {
     test('keeps a declared partial remainder against its task', () {
       final block = parse(
@@ -74,19 +109,15 @@ void main() {
       );
     });
 
-    test('rejects a remainder with no task to be the remainder of', () {
-      // Outstanding minutes of what? A buffer block carrying one is phantom
-      // work the day cannot attribute or carry over.
-      expect(
-        () => parse(rawBlock()..['remainingMinutes'] = 30),
-        throwsA(
-          isA<DayAgentCaptureException>().having(
-            (error) => error.message,
-            'message',
-            contains('taskId whose estimate'),
-          ),
-        ),
-      );
+    test('drops a remainder with no task to be the remainder of', () {
+      // Outstanding minutes of what? Nothing can hold the number, so it is
+      // not stored — but a gym run put one on a directive commitment, which
+      // is real work with no corpus task, and failing cost the whole plan.
+      final block = parse(rawBlock()..['remainingMinutes'] = 30);
+
+      expect(block.remainingMinutes, isNull);
+      expect(block.taskId, isNull);
+      expect(block.title, 'Deep work');
     });
 
     test('parses a valid ai block with reason and generates an id', () {
