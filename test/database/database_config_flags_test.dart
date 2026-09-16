@@ -90,6 +90,53 @@ final expectedFlags = <ConfigFlag>{
     description: 'Enable notifications?',
     status: false,
   ),
+  // The per-kind switches narrow what the master flag lets through, so they
+  // seed on; the wording switch seeds off (ADR 0066).
+  const ConfigFlag(
+    name: notifyTaskSuggestionsFlag,
+    description: 'Notify about task suggestions?',
+    status: true,
+  ),
+  const ConfigFlag(
+    name: notifyCheckInRemindersFlag,
+    description: 'Notify about check-in reminders?',
+    status: true,
+  ),
+  const ConfigFlag(
+    name: notifyGoalAlertsFlag,
+    description: 'Notify when a goal slips?',
+    status: true,
+  ),
+  const ConfigFlag(
+    name: notifyHabitRemindersFlag,
+    description: 'Notify with habit reminders?',
+    status: true,
+  ),
+  const ConfigFlag(
+    name: notifyHabitAutoCompletionsFlag,
+    description: 'Notify about auto-completed habits?',
+    status: true,
+  ),
+  const ConfigFlag(
+    name: notifyDayPlanOutcomesFlag,
+    description: 'Notify about day plan results?',
+    status: true,
+  ),
+  const ConfigFlag(
+    name: notifySyncConflictsFlag,
+    description: 'Notify about sync conflicts?',
+    status: true,
+  ),
+  const ConfigFlag(
+    name: showTaskBadgeFlag,
+    description: 'Show the task count on the app icon?',
+    status: true,
+  ),
+  const ConfigFlag(
+    name: notifyAgentCopyFlag,
+    description: "Word alerts in the agent's own words?",
+    status: false,
+  ),
   const ConfigFlag(
     name: enableEventsFlag,
     description: 'Enable Events?',
@@ -211,12 +258,12 @@ void main() {
     test(
       'every initialized flag has exactly one settings home',
       () async {
-        // The authoring guard behind the Sections / Config Flags split: a
-        // flag `initConfigFlags` creates but neither page lists is a stored
-        // value no user can ever reach, and one *both* list is a value that
-        // can disagree with itself across two screens.
+        // The authoring guard behind the Sections / Notifications / Config
+        // Flags split: a flag `initConfigFlags` creates but no page lists is a
+        // stored value no user can ever reach, and one two pages list is a
+        // value that can disagree with itself across two screens.
         //
-        // Placed here rather than beside either page because this is where
+        // Placed here rather than beside any page because this is where
         // the definition lives — the test above proves `expectedFlags` is
         // what a real database ends up holding, so adding a flag forces an
         // edit here and this assertion then demands it be given a home.
@@ -232,26 +279,31 @@ void main() {
           logSlowQueriesFlag,
         };
 
-        final onSections = sectionFlags.toSet();
-        final onConfigFlags = configFlagsOnFlagsPage.toSet();
+        final pages = {
+          'Sections': sectionFlags.toSet(),
+          'Notifications': notificationSettingsFlags.toSet(),
+          'Config Flags': configFlagsOnFlagsPage.toSet(),
+        };
 
+        for (final (index, page) in pages.entries.indexed) {
+          for (final other in pages.entries.skip(index + 1)) {
+            expect(
+              page.value.intersection(other.value),
+              isEmpty,
+              reason:
+                  'a flag must not be listed on both ${page.key} and '
+                  '${other.key}',
+            );
+          }
+        }
+        final listed = pages.values.expand((flags) => flags).toSet();
         expect(
-          onSections.intersection(onConfigFlags),
-          isEmpty,
-          reason: 'a flag must not be listed on both pages',
-        );
-        expect(
-          stored
-              .difference(onSections)
-              .difference(onConfigFlags)
-              .difference(
-                loggingOwned,
-              ),
+          stored.difference(listed).difference(loggingOwned),
           isEmpty,
           reason: 'flag created by initConfigFlags with no settings row',
         );
         expect(
-          onSections.union(onConfigFlags).difference(stored),
+          listed.difference(stored),
           isEmpty,
           reason: 'settings row for a flag initConfigFlags never creates',
         );
