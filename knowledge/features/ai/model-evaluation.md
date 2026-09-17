@@ -5,13 +5,13 @@ description: One-call model assessment over Lotti's live harnesses, with explici
 resource: ../../../tool/lotti_gym.py
 tags: [ai, evaluation, benchmarking, model-selection, lotti-gym]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-09-17T16:30:00Z }
+generated: { by: claude-code/opus-5, at: 2026-09-17T19:30:00Z }
 stale_after: 2026-10-22
 sources:
   - id: gym
     resource: ../../../tool/lotti_gym.py
     title: CLI, worker scheduling, provenance and resume
-    last_modified: 2026-09-14
+    last_modified: 2026-09-17
   - id: catalog
     resource: ../../../tool/lotti_gym_catalog.dart
     title: Authoritative exercise inventory
@@ -142,8 +142,14 @@ default production assessment.
 
 A job is a bounded batch of cases for one suite and sample. Wake scenarios and
 compaction fixtures each get their own job. Query cases stay together because
-follow-ups depend on earlier answers. Each worker has its own process and
-artifact directory; GetIt state is not shared between simultaneous workers.
+follow-ups depend on earlier answers. Each exercise (a suite's case batch) is a
+lane: one worker runs its samples back to back, while different exercises run
+on different workers at the same time. The same exercise never runs twice at
+once, so a repeat meets a warm provider prompt cache, as a user's sequential
+wakes do; identical prompts sent side by side all miss it, which overstated the
+cost of models whose cache fills slowly. A sample that errors does not stop its
+lane; `resume` retries it as before. Each worker has its own process and artifact directory; GetIt state
+is not shared between simultaneous workers.
 Kernel locks lease stable compiler slots from
 `build/test_cache/lotti_gym_leases/`. Each slot has a private Flutter project
 under `build/lotti_gym_workers/`: source entries link to this checkout, while

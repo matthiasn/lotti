@@ -189,6 +189,11 @@ def make_jobs(suites, samples, batch_size=8):
     return jobs
 
 
+def exercise_key(job):
+    """One exercise across samples: the same suite and case batch."""
+    return (job["suite"], tuple(job["cases"]))
+
+
 def job_environment(suite, job, manifest, directory, api_key, summary_path=None):
     """Translate the common model config into existing harness entry contracts."""
     env = clean_environment(os.environ)
@@ -884,55 +889,91 @@ def execute(output, manifest, jobs, api_key, workers, processes, compiler_slots)
                 )
                 return
             checkpoint(output, manifest, jobs)
+    # Each exercise is a lane: its samples run back to back on one worker,
+    # while different exercises run on different workers at the same time.
+    # A repeat therefore starts right after its twin and meets a warm provider
+    # prompt cache, as a user's sequential wakes do. Identical prompts sent side
+    # by side all miss it, which inflated the cost of models whose cache fills
+    # slowly.
+    lanes = {}
+    for job in pending:
+        lanes.setdefault(exercise_key(job), []).append(job)
+    for lane in lanes.values():
+        lane.sort(key=lambda job: job["sample"])
+    waiting = list(lanes)
     pool = ThreadPoolExecutor(max_workers=workers)
-    try:
-        while pending or active:
-            for job in list(pending):
-                if len(active) >= workers:
-                    break
-                dependencies = [
-                    j
-                    for j in jobs
-                    if j["suite"] in suites[job["suite"]]["dependencies"]
-                ]
-                if any(j["state"] in ("pending", "running") for j in dependencies):
-                    continue
-                pending.remove(job)
-                if any(j["state"] != "prepared" for j in dependencies):
-                    job["state"] = "blocked"
-                    checkpoint(output, manifest, jobs)
-                    continue
-                summary_path = (
-                    Path(dependencies[0]["attempts"][-1]["artifact"])
-                    if dependencies
-                    else None
-                )
-                job["state"] = "running"
+
+    def start(key, slot):
+        """Start the lane's next job on [slot].
+
+        Returns "started", "wait" while a dependency is unresolved, or "done"
+        when nothing is left in the lane (remaining jobs may have been blocked).
+        """
+        lane = lanes[key]
+        while lane:
+            job = lane[0]
+            dependencies = [
+                j for j in jobs if j["suite"] in suites[job["suite"]]["dependencies"]
+            ]
+            if any(j["state"] in ("pending", "running") for j in dependencies):
+                return "wait"
+            if any(j["state"] != "prepared" for j in dependencies):
+                lane.pop(0)
+                job["state"] = "blocked"
                 checkpoint(output, manifest, jobs)
-                slot = idle_slots.pop()
-                future = pool.submit(
-                    run_job,
-                    suites[job["suite"]],
-                    job,
-                    manifest,
-                    output,
-                    api_key,
-                    processes,
-                    summary_path,
-                    slot,
-                )
-                active[future] = (job, slot)
+                continue
+            summary_path = (
+                Path(dependencies[0]["attempts"][-1]["artifact"])
+                if dependencies
+                else None
+            )
+            job["state"] = "running"
+            checkpoint(output, manifest, jobs)
+            future = pool.submit(
+                run_job,
+                suites[job["suite"]],
+                job,
+                manifest,
+                output,
+                api_key,
+                processes,
+                summary_path,
+                slot,
+            )
+            active[future] = (job, slot, key)
+            return "started"
+        return "done"
+
+    try:
+        while waiting or active:
+            for key in list(waiting):
+                if not idle_slots:
+                    break
+                # First in, first out: the preflight probe ran on the first
+                # slot, so its exercise's lane continues there.
+                slot = idle_slots.pop(0)
+                outcome = start(key, slot)
+                if outcome != "wait":
+                    waiting.remove(key)
+                if outcome != "started":
+                    idle_slots.append(slot)
             if active:
                 finished, _ = wait(active, return_when=FIRST_COMPLETED)
                 for future in finished:
-                    job, slot = active.pop(future)
-                    idle_slots.append(slot)
+                    job, slot, key = active.pop(future)
                     result = future.result()
                     job["attempts"].append(result)
                     job["state"] = result["state"]
                     checkpoint(output, manifest, jobs)
                     print(f"{job['state']}: {job['id']}", flush=True)
-            elif pending:
+                    lanes[key].pop(0)
+                    # The lane keeps its worker for its next sample.
+                    outcome = start(key, slot)
+                    if outcome != "started":
+                        idle_slots.append(slot)
+                    if outcome == "wait":
+                        waiting.append(key)
+            elif waiting:
                 raise ValueError("No runnable jobs; invalid dependency graph")
     except BaseException:
         processes.cancel()
@@ -941,7 +982,7 @@ def execute(output, manifest, jobs, api_key, workers, processes, compiler_slots)
         pool.shutdown(wait=True, cancel_futures=True)
         # A completed future is durable even if cancellation arrived before
         # the scheduler consumed it. Recover it on this or the next resume.
-        for future, (job, _) in active.items():
+        for future, (job, _, _) in active.items():
             if future.done() and not future.cancelled() and future.exception() is None:
                 result = future.result()
                 job["attempts"].append(result)

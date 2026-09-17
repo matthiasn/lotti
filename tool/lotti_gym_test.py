@@ -177,6 +177,73 @@ class GymTest(unittest.TestCase):
             gym.execute(self.output, self.manifest, jobs, "key", 2, processes, ["0", "1"])
         processes.cancel.assert_called_once_with()
 
+    def test_samples_of_one_exercise_run_in_sequence_and_exercises_in_parallel(self):
+        self.suite = suite(cases=["a", "b", "c"])
+        self.manifest.update(suites=[self.suite], workers=3, samples=3)
+        jobs = gym.make_jobs([self.suite], 3, batch_size=1)
+        job_of = {job["directory"]: job for job in jobs}
+        lock = threading.Lock()
+        running = []
+        overlaps = []
+        finished = []
+        workers_used = {}
+        # Exercises a, b and c must be in flight together at least once.
+        together = threading.Barrier(3, timeout=5)
+        processes = Mock()
+
+        def worker(command, env, log, timeout, **kwargs):
+            if self.suite["gate"] not in env:
+                return self.fake_worker(command, env, log, timeout, **kwargs)
+            job = job_of[next(d for d in job_of if d in str(log))]
+            with lock:
+                overlaps.extend(
+                    (job["id"], other["id"]) for other in running
+                    if other["cases"] == job["cases"]
+                )
+                earlier = [
+                    j["id"] for j in jobs
+                    if j["cases"] == job["cases"] and j["sample"] < job["sample"]
+                ]
+                self.assertTrue(set(earlier) <= set(finished), (job["id"], finished))
+                running.append(job)
+                workers_used.setdefault(tuple(job["cases"]), set()).add(str(kwargs.get("cwd")))
+            if job["sample"] == 2:
+                together.wait()
+            try:
+                return self.fake_worker(command, env, log, timeout, **kwargs)
+            finally:
+                with lock:
+                    running.remove(job)
+                    finished.append(job["id"])
+
+        processes.run.side_effect = worker
+        gym.execute(self.output, self.manifest, jobs, "key", 3, processes, ["0", "1", "2"])
+        self.assertEqual(sum(len(job["attempts"]) for job in jobs), 9)
+        self.assertEqual(overlaps, [])
+        self.assertFalse(together.broken)
+        # Each exercise is one lane: all its samples ran on the same worker.
+        self.assertEqual({cases: len(used) for cases, used in workers_used.items()},
+                         {("a",): 1, ("b",): 1, ("c",): 1})
+
+    def test_an_errored_sample_does_not_stall_its_exercise(self):
+        self.suite = suite(cases=["a", "b"])
+        self.manifest.update(suites=[self.suite], samples=2)
+        jobs = gym.make_jobs([self.suite], 2, batch_size=1)
+        errored = next(j for j in jobs if j["cases"] == ["b"] and j["sample"] == 1)
+        later = next(j for j in jobs if j["cases"] == ["b"] and j["sample"] == 2)
+        processes = Mock()
+
+        def worker(command, env, log, timeout, **kwargs):
+            if errored["directory"] in str(log):
+                return 1  # No artifact: an infrastructure error, not a verdict.
+            return self.fake_worker(command, env, log, timeout, **kwargs)
+
+        processes.run.side_effect = worker
+        gym.execute(self.output, self.manifest, jobs, "key", 1, processes, ["0"])
+        self.assertEqual(errored["state"], "error")
+        self.assertEqual(later["state"], "failed")
+        self.assertTrue(all(job["attempts"] for job in jobs), jobs)
+
     def test_eight_paid_workers_run_concurrently_after_preflight(self):
         self.suite = suite(cases=[str(i) for i in range(9)])
         self.manifest.update(suites=[self.suite], workers=8)
