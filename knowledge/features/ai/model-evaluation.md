@@ -5,8 +5,8 @@ description: One-call model assessment over Lotti's live harnesses, with explici
 resource: ../../../tool/lotti_gym.py
 tags: [ai, evaluation, benchmarking, model-selection, lotti-gym]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-14T20:00:00Z }
-stale_after: 2026-10-19
+generated: { by: claude-code/opus-5, at: 2026-09-17T12:30:00Z }
+stale_after: 2026-10-22
 sources:
   - id: gym
     resource: ../../../tool/lotti_gym.py
@@ -23,7 +23,7 @@ sources:
   - id: billing
     resource: ../../../tool/lotti_gym_billing.py
     title: Per-request provider billing ledger and transparent relay
-    last_modified: 2026-09-14
+    last_modified: 2026-09-17
   - id: history
     resource: ../../../tool/lotti_gym_history.py
     title: Public aggregate run history and duration accounting
@@ -289,8 +289,11 @@ An explicitly frozen report fixture is a zero-request dependency and does not
 count as an untracked paid attempt.
 The task-wake driver installs the shared interaction-capture bench, matching
 the production billing route and retaining its per-turn consumption events.
-The relay retries opening the provider connection up to three times, with a
-growing pause, when the DNS lookup, TCP connect or TLS handshake fails. Nothing
+The relay makes up to three attempts to open the provider connection (two
+retries, with a growing pause) when the DNS lookup, TCP connect or TLS handshake
+fails. Each attempt is bounded by a 30-second connect timeout rather than the
+10-minute response timeout, so a stalled network cannot outlast the worker's own
+deadline. Nothing
 has reached the provider at that point, so the retry cannot double-bill. Each
 retry is journalled as `connect_retry`, which billing totals ignore. A failure
 after the request is sent is never retried and still surfaces as a 502, because

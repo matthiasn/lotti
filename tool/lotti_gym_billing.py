@@ -90,7 +90,8 @@ class BillingRelay:
     """One attempt's transparent loopback endpoint and durable billing journal."""
 
     def __init__(self, upstream, ledger, *, stage="candidate", timeout=600,
-                 connect_attempts=3, connect_backoff=1.0, sleep=time.sleep):
+                 connect_attempts=3, connect_timeout=30, connect_backoff=1.0,
+                 sleep=time.sleep):
         self.upstream = urlsplit(upstream)
         if self.upstream.scheme not in ("http", "https") or not self.upstream.hostname:
             raise ValueError("Billing relay requires an HTTP(S) provider endpoint")
@@ -98,6 +99,7 @@ class BillingRelay:
         self.stage = stage
         self.timeout = timeout
         self.connect_attempts = connect_attempts
+        self.connect_timeout = connect_timeout
         self.connect_backoff = connect_backoff
         self.sleep = sleep
         self.lock = threading.Lock()
@@ -111,14 +113,21 @@ class BillingRelay:
         request. Gym runs lost whole jobs to bursts of exactly these failures.
         Anything after the connection is open is left alone: the request may
         already be billed.
+
+        Each attempt gets [connect_timeout], not the response [timeout]: three
+        stalled handshakes at the full response timeout would outlast the
+        worker's own deadline and hold the relay open after the job was killed.
+        The response timeout applies once the connection is open.
         """
         kind = (http.client.HTTPSConnection if self.upstream.scheme == "https"
                 else http.client.HTTPConnection)
         for attempt in range(1, self.connect_attempts + 1):
             connection = kind(self.upstream.hostname, self.upstream.port,
-                              timeout=self.timeout)
+                              timeout=self.connect_timeout)
             try:
                 connection.connect()
+                connection.timeout = self.timeout
+                connection.sock.settimeout(self.timeout)
                 return connection
             except OSError as failure:
                 connection.close()

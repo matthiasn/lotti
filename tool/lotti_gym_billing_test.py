@@ -168,6 +168,27 @@ class BillingTest(unittest.TestCase):
         self.assertEqual(len(received), 1)
         sleep.assert_not_called()
 
+    def test_connecting_is_bounded_separately_from_the_response(self):
+        received = []
+        seen = []
+        real_connect = http.client.HTTPConnection.connect
+
+        def connect(connection):
+            seen.append(connection.timeout)
+            return real_connect(connection)
+
+        ledger = self.directory / "billing.jsonl"
+        with provider([(200, "application/json", b"{}")], received) as upstream:
+            relay = BillingRelay(upstream, ledger, timeout=600, connect_timeout=7)
+            with patch.object(http.client.HTTPConnection, "connect", connect):
+                connection = relay.connect("request")
+            try:
+                self.assertEqual(seen, [7])
+                self.assertEqual(connection.timeout, 600)
+                self.assertEqual(connection.sock.gettimeout(), 600)
+            finally:
+                connection.close()
+
     def test_connect_requires_at_least_one_attempt(self):
         relay = BillingRelay("http://127.0.0.1:9/v1", self.directory / "unused.jsonl",
                              connect_attempts=0)
