@@ -1057,6 +1057,19 @@ LocalTaskAgentEvalScenario _activeDeploymentConstraintScenario(
   );
 }
 
+/// Ways a report says the fixed problem came back.
+///
+/// Stems, since the matcher is a substring test: the list used to hold only
+/// past-tense forms, and a report stating the issue was "reappearing once
+/// after reconnecting two devices" — as plain a recurrence as the scenario
+/// asks for — failed for not saying "reappeared". No new concept is admitted;
+/// only the inflections of the ones already listed.
+///
+/// `recurr`, not `recur`: the shorter stem also matches "recursive" and
+/// "recursion", and "recursive sync retries remain a risk" says nothing about
+/// the fixed problem coming back.
+const _recurrenceTerms = ['reappear', 'resurfac', 'again', 'recurr'];
+
 LocalTaskAgentEvalScenario _userCompletedItemScenario(
   LocalTaskAgentEvalPromptVariant variant,
 ) {
@@ -1073,7 +1086,7 @@ LocalTaskAgentEvalScenario _userCompletedItemScenario(
         ['qa'],
         ['11:20'],
         ['duplicate', 'sync'],
-        ['reappeared', 'resurfaced', 'again', 'recurrence', 'recurred'],
+        _recurrenceTerms,
       ],
     },
     allowedExtraToolNames: const {
@@ -1086,7 +1099,7 @@ LocalTaskAgentEvalScenario _userCompletedItemScenario(
     promptVariant: variant,
     requiredReportTermGroups: const [
       ['sync'],
-      ['reappeared', 'resurfaced', 'again', 'recurrence', 'recurred'],
+      _recurrenceTerms,
       ['blocked', 'blocker', 'risk', 'root cause', 'investigat'],
     ],
     // Only the internal id is a bare term. "the fix as implemented does not
