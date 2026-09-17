@@ -145,12 +145,13 @@ class BillingTest(unittest.TestCase):
         ledger = self.directory / "billing.jsonl"
         with provider([], received) as upstream:
             with self.failing_provider(upstream, "connect",
-                                       [socket.gaierror("no DNS")] * 3):
+                                       [socket.gaierror("no DNS")] * 6):
                 with BillingRelay(upstream, ledger, sleep=sleep) as relay:
                     status, _ = self.post(relay)
         self.assertEqual(status, 502)
         self.assertEqual(received, [])
-        self.assertEqual(sleep.call_count, 2)
+        self.assertEqual([call.args[0] for call in sleep.call_args_list],
+                         [1.0, 2.0, 4.0, 8.0, 16.0])
         finished = [json.loads(line) for line in ledger.read_text().splitlines()
                     if '"request_finished"' in line]
         self.assertEqual([record["error"] for record in finished], ["gaierror"])

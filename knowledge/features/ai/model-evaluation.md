@@ -289,9 +289,10 @@ An explicitly frozen report fixture is a zero-request dependency and does not
 count as an untracked paid attempt.
 The task-wake driver installs the shared interaction-capture bench, matching
 the production billing route and retaining its per-turn consumption events.
-The relay makes up to three attempts to open the provider connection (two
-retries, with a growing pause) when the DNS lookup, TCP connect or TLS handshake
-fails. The TCP connect and TLS handshake of each attempt are bounded by a
+The relay makes up to six attempts to open the provider connection (five
+retries, pausing 1, 2, 4, 8 and 16 seconds) when the DNS lookup, TCP connect or
+TLS handshake fails. That rides out network outages of up to a minute or two;
+a longer outage still ends the job in an infrastructure error for `resume`. The TCP connect and TLS handshake of each attempt are bounded by a
 30-second connect timeout rather than the 10-minute response timeout. The DNS
 lookup is not: a failed lookup returns at once and is retried, but a lookup
 that hangs is bounded only by the system resolver. Nothing

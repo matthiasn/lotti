@@ -90,7 +90,7 @@ class BillingRelay:
     """One attempt's transparent loopback endpoint and durable billing journal."""
 
     def __init__(self, upstream, ledger, *, stage="candidate", timeout=600,
-                 connect_attempts=3, connect_timeout=30, connect_backoff=1.0,
+                 connect_attempts=6, connect_timeout=30, connect_backoff=1.0,
                  sleep=time.sleep):
         self.upstream = urlsplit(upstream)
         if self.upstream.scheme not in ("http", "https") or not self.upstream.hostname:
@@ -110,7 +110,9 @@ class BillingRelay:
 
         A failed DNS lookup, refused connection or TLS handshake cannot have
         reached the provider, so retrying it neither repeats nor double-bills a
-        request. Gym runs lost whole jobs to bursts of exactly these failures.
+        request. Gym runs lost whole jobs to bursts of exactly these failures,
+        network outages of seconds to minutes; doubling pauses ride out the
+        shorter ones, and resume covers the rest.
         Anything after the connection is open is left alone: the request may
         already be billed.
 
@@ -137,7 +139,7 @@ class BillingRelay:
                     raise
                 self.record("connect_retry", requestId=request_id, attempt=attempt,
                             error=type(failure).__name__)
-                self.sleep(self.connect_backoff * attempt)
+                self.sleep(self.connect_backoff * 2 ** (attempt - 1))
         raise ValueError("connect_attempts must be at least 1")
 
     def record(self, event, **fields):
