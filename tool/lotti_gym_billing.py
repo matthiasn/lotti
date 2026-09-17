@@ -117,7 +117,9 @@ class BillingRelay:
         Each attempt gets [connect_timeout], not the response [timeout]: three
         stalled handshakes at the full response timeout would outlast the
         worker's own deadline and hold the relay open after the job was killed.
-        The response timeout applies once the connection is open.
+        The response timeout applies once the connection is open. The DNS
+        lookup happens before any socket exists, so it is bounded by the system
+        resolver rather than by either timeout.
         """
         kind = (http.client.HTTPSConnection if self.upstream.scheme == "https"
                 else http.client.HTTPConnection)
