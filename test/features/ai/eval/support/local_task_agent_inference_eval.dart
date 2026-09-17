@@ -2680,21 +2680,14 @@ class LocalTaskAgentInferenceEvalRunner {
             modelId: profile.providerModelId,
           );
           if (scenario.requiresReport && strategy.hasReport) {
-            final fullMaterialTaskState =
-                buildLocalTaskAgentEvalMaterialTaskState(
-                  strategy.toolCalls,
-                  currentDueDate: scenario.currentDueDate,
-                  currentEstimateMinutes: scenario.currentEstimateMinutes,
-                  currentPriority: scenario.currentPriority,
-                );
-            final materialTaskState =
-                route == TaskAgentReportRoute.detectedWording
-                ? TaskAgentReportEditor.withoutAnchorsMissingFrom(
-                    fullMaterialTaskState,
-                    strategy.latestReportArguments!,
-                  )
-                : fullMaterialTaskState;
-            final initialValidationIssues = route.isDetected
+            final materialTaskState = buildLocalTaskAgentEvalMaterialTaskState(
+              strategy.toolCalls,
+              currentDueDate: scenario.currentDueDate,
+              currentEstimateMinutes: scenario.currentEstimateMinutes,
+              currentPriority: scenario.currentPriority,
+            );
+            final initialValidationIssues =
+                route == TaskAgentReportRoute.detected
                 ? TaskAgentReportEditor.detectDirectQwenRegressions(
                     languageCode:
                         materialTaskState['languageCode'] as String? ??
@@ -2713,7 +2706,6 @@ class LocalTaskAgentInferenceEvalRunner {
                   strategy: strategy,
                   wakeRunKey: wakeRunKey,
                   initialValidationIssues: initialValidationIssues,
-                  materialTaskState: materialTaskState,
                 ),
               );
             }
@@ -2827,16 +2819,13 @@ class LocalTaskAgentInferenceEvalRunner {
     required _LocalTaskAgentEvalStrategy strategy,
     required String wakeRunKey,
     Set<TaskAgentReportRevisionIssue> initialValidationIssues = const {},
-    Map<String, Object?>? materialTaskState,
   }) async {
-    final effectiveMaterialTaskState =
-        materialTaskState ??
-        buildLocalTaskAgentEvalMaterialTaskState(
-          strategy.toolCalls,
-          currentDueDate: scenario.currentDueDate,
-          currentEstimateMinutes: scenario.currentEstimateMinutes,
-          currentPriority: scenario.currentPriority,
-        );
+    final materialTaskState = buildLocalTaskAgentEvalMaterialTaskState(
+      strategy.toolCalls,
+      currentDueDate: scenario.currentDueDate,
+      currentEstimateMinutes: scenario.currentEstimateMinutes,
+      currentPriority: scenario.currentPriority,
+    );
     final result =
         await TaskAgentReportEditor(
           conversationRepository: conversationRepository,
@@ -2850,7 +2839,7 @@ class LocalTaskAgentInferenceEvalRunner {
             strategy.latestReportArguments!,
           )!,
           languageCode: scenario.languageCode,
-          materialTaskState: effectiveMaterialTaskState,
+          materialTaskState: materialTaskState,
           reportDirective: _effectiveEvalReportDirective(
             profile: profile,
             scenario: scenario,

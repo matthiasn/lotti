@@ -101,7 +101,7 @@ turn task metadata or a checklist edit into an accomplishment.
     }
   });
 
-  test('route sends DeepSeek and GLM through the defect detector', () {
+  test('route edits only Mistral and Qwen reports', () {
     for (final (model, provider, route) in [
       (
         meliousMistralSmall4119BInstructModelId,
@@ -116,17 +116,17 @@ turn task metadata or a checklist edit into an accomplishment.
       (
         'deepseek-v4.1-flash',
         InferenceProviderType.melious,
-        TaskAgentReportRoute.detectedWording,
+        TaskAgentReportRoute.none,
       ),
       (
         'GLM-5.3-Flash',
         InferenceProviderType.melious,
-        TaskAgentReportRoute.detectedWording,
+        TaskAgentReportRoute.none,
       ),
       (
         'glm-5.3',
         InferenceProviderType.melious,
-        TaskAgentReportRoute.detectedWording,
+        TaskAgentReportRoute.none,
       ),
       (
         'deepseek-v4.1-flash',
@@ -1380,82 +1380,6 @@ turn task metadata or a checklist edit into an accomplishment.
         report: candidateReport,
       ),
       [TaskAgentReportRevisionIssue.processNarration],
-    );
-  });
-
-  test('a draft without anchors is not required to gain them', () {
-    // Verbatim glm-5.3-flash German report: correct, but it names neither the
-    // P1 priority nor the due date's year. Qwen's anchor checks flagged it,
-    // and the rewrite they forced failed the case.
-    const materialTaskState = <String, Object?>{
-      'languageCode': 'de',
-      'priority': 'P1',
-      'dueDate': '2026-09-30',
-      'estimateMinutes': 120,
-      'newChecklistItems': ['API-Umfang mit Ben klären'],
-    };
-    const report = <String, dynamic>{
-      'oneLiner':
-          'Beta-Checkliste steht: vier Schritte bis 30. September offen',
-      'tldr':
-          'Die Vorbereitung ist in vier konkrete Schritte gegliedert, alle '
-          'noch offen. Nächster Schritt: API-Umfang mit Ben klären.',
-      'content': '1. API-Umfang mit Ben klären',
-    };
-
-    expect(
-      TaskAgentReportEditor.detectDirectQwenRegressions(
-        languageCode: 'de',
-        materialTaskState: materialTaskState,
-        report: report,
-      ),
-      unorderedEquals([
-        TaskAgentReportRevisionIssue.missingPriority,
-        TaskAgentReportRevisionIssue.missingDueDate,
-        TaskAgentReportRevisionIssue.missingEstimate,
-      ]),
-    );
-    final withoutMissing = TaskAgentReportEditor.withoutAnchorsMissingFrom(
-      materialTaskState,
-      report,
-    );
-    expect(withoutMissing, {
-      'languageCode': 'de',
-      'newChecklistItems': ['API-Umfang mit Ben klären'],
-    });
-    expect(
-      TaskAgentReportEditor.detectDirectQwenRegressions(
-        languageCode: 'de',
-        materialTaskState: withoutMissing,
-        report: {...report, 'tldr': 'Die Arbeit am Export läuft aktuell.'},
-      ),
-      [TaskAgentReportRevisionIssue.processNarration],
-      reason: 'wording defects are still detected',
-    );
-
-    // An anchor the draft did state stays, so a rewrite cannot drop it.
-    final statedReport = <String, dynamic>{
-      ...report,
-      'content': 'P1, fällig am 2026-09-30. API-Umfang mit Ben klären.',
-    };
-    final kept = TaskAgentReportEditor.withoutAnchorsMissingFrom(
-      materialTaskState,
-      statedReport,
-    );
-    expect(kept, containsPair('priority', 'P1'));
-    expect(kept, containsPair('dueDate', '2026-09-30'));
-    expect(kept, isNot(contains('estimateMinutes')));
-    expect(
-      TaskAgentReportEditor.validateRevision(
-        languageCode: 'de',
-        materialTaskState: kept,
-        draftReport: statedReport,
-        candidateReport: report,
-      ),
-      containsAll([
-        TaskAgentReportRevisionIssue.missingPriority,
-        TaskAgentReportRevisionIssue.missingDueDate,
-      ]),
     );
   });
 
