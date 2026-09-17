@@ -209,9 +209,18 @@ bool containsAffirmativeReportClaim(
   return false;
 }
 
+/// The modals that turn a German passive into planned or possible work.
+///
+/// Ability, obligation and permission (kann, soll, muss, darf) and the
+/// possibility subjunctive (könnte). Deliberately not the epistemic forms
+/// dürfte and müsste: "der Review dürfte abgeschlossen sein" says the review is
+/// *probably* complete, which is a hedged completion claim, not a plan.
+const _germanPlanningModals =
+    'kann|können|soll|sollen|muss|müssen|darf|dürfen|könnte|könnten';
+
 /// A German modal earlier in the claim's own clause: "…, kann der Prototyp ".
 final RegExp _germanModalBeforeClaim = RegExp(
-  r'(?<![\p{L}])(?:kann|können|soll|sollen|muss|müssen)(?![\p{L}])'
+  '(?<![\\p{L}])(?:$_germanPlanningModals)(?![\\p{L}])'
   r'[^,.;:!?\n\r]{0,60}$',
   unicode: true,
 );
@@ -224,18 +233,37 @@ final RegExp _germanPassiveAfterClaim = RegExp(
   unicode: true,
 );
 
+/// The verb-final order of a German subordinate clause, where the passive
+/// auxiliary and the modal both follow the participle: "damit der Review
+/// abgeschlossen sein kann", "bevor die Anmeldung umgesetzt werden muss".
+///
+/// Both words sit directly after the participle, so the modal can only be
+/// governing that verb.
+final RegExp _germanVerbFinalModalAfterClaim = RegExp(
+  '^\\s+(?:sein|werden)\\s+(?:$_germanPlanningModals)(?![\\p{L}])',
+  unicode: true,
+);
+
 /// Whether the participle at [start]..[end] is itself the verb of a German
 /// modal passive — "kann der Prototyp abgeschlossen werden" plans the work
-/// rather than reporting it done.
+/// rather than reporting it done, and so does the subordinate-clause order
+/// "damit der Review abgeschlossen sein kann".
+///
+/// The main-clause form alone missed every subordinate clause: after damit,
+/// bevor, sobald or weil German puts the modal last, and a report planning a
+/// review "so that it can be completed" failed as claiming it was completed.
 ///
 /// Scoped to the claimed participle on purpose. Modals as ordinary negation
 /// cues excused far too much: "Die Newsletter-Idee soll umgesetzt werden" is
 /// still a claim about the newsletter, and "wurde abgeschlossen und kann jetzt
 /// verwendet werden" is still a completion — the modal there governs another
 /// verb.
-bool _isGovernedByGermanModalPassive(String text, int start, int end) =>
-    _germanModalBeforeClaim.hasMatch(text.substring(0, start)) &&
-    _germanPassiveAfterClaim.hasMatch(text.substring(end));
+bool _isGovernedByGermanModalPassive(String text, int start, int end) {
+  final after = text.substring(end);
+  if (_germanVerbFinalModalAfterClaim.hasMatch(after)) return true;
+  return _germanModalBeforeClaim.hasMatch(text.substring(0, start)) &&
+      _germanPassiveAfterClaim.hasMatch(after);
+}
 
 final RegExp _letterPattern = RegExp(r'\p{L}', unicode: true);
 
