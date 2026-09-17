@@ -1271,44 +1271,44 @@ void main() {
         );
       });
 
-      test(
-        'a DeepSeek report with a known defect is repaired by the editor',
-        () async {
-          // The detected route beyond Qwen. A full gym run found
-          // deepseek-v4.1-flash narrating its own bookkeeping and pending work
-          // against report rules it was given; the detector flags it and the
-          // Qwen editor repairs it, while the executor keeps writing the draft.
-          stubMeliousTaskAgentModel(
-            providerId: 'melious-provider-deepseek-repair',
-            modelConfigId: 'deepseek-model-repair',
-            modelName: 'DeepSeek V4.1 Flash',
-            providerModelId: meliousDeepseekV41FlashModelId,
-          );
+      for (final (name, modelId) in [
+        ('DeepSeek', meliousDeepseekV41FlashModelId),
+        ('GLM', meliousGlm53FlashModelId),
+      ]) {
+        test(
+          'a $name report publishes as written, without a Qwen pass',
+          () async {
+            // Only Mistral and Qwen reports go to the Qwen editor. Rewriting a
+            // stronger executor's report with Qwen would publish the weaker
+            // model's text under the stronger model's run.
+            stubMeliousTaskAgentModel(
+              providerId: 'melious-provider-$name',
+              modelConfigId: '$name-model',
+              modelName: name,
+              providerModelId: modelId,
+            );
 
-          final models = <String>[];
-          final messages = <String>[];
-          final capturingRepo =
-              MockConversationRepository(mockConversationManager)
-                ..maxDelegateCalls = 2
-                ..sendMessageDelegate =
-                    ({
-                      required conversationId,
-                      required message,
-                      required model,
-                      required provider,
-                      required inferenceRepo,
-                      tools,
-                      toolChoice,
-                      temperature = 0.7,
-                      strategy,
-                    }) async {
-                      models.add(model);
-                      messages.add(message);
-                      if (strategy is TaskAgentStrategy) {
-                        await strategy.processToolCalls(
+            final models = <String>[];
+            final capturingRepo =
+                MockConversationRepository(mockConversationManager)
+                  ..maxDelegateCalls = 1
+                  ..sendMessageDelegate =
+                      ({
+                        required conversationId,
+                        required message,
+                        required model,
+                        required provider,
+                        required inferenceRepo,
+                        tools,
+                        toolChoice,
+                        temperature = 0.7,
+                        strategy,
+                      }) async {
+                        models.add(model);
+                        await strategy!.processToolCalls(
                           toolCalls: [
                             const ChatCompletionMessageToolCall(
-                              id: 'deepseek-action-call',
+                              id: 'action-call',
                               type: ChatCompletionMessageToolCallType.function,
                               function: ChatCompletionMessageFunctionCall(
                                 name: TaskAgentToolNames
@@ -1318,10 +1318,11 @@ void main() {
                               ),
                             ),
                             ChatCompletionMessageToolCall(
-                              id: 'deepseek-draft-report-call',
+                              id: 'report-call',
                               type: ChatCompletionMessageToolCallType.function,
                               function: ChatCompletionMessageFunctionCall(
                                 name: TaskAgentToolNames.updateReport,
+                                // Narration the Qwen detector would flag.
                                 arguments: jsonEncode({
                                   'oneLiner': 'Fix profile seeding',
                                   'tldr':
@@ -1338,192 +1339,56 @@ void main() {
                           inputTokens: 100,
                           outputTokens: 20,
                         );
-                      }
-                      await strategy!.processToolCalls(
-                        toolCalls: [
-                          ChatCompletionMessageToolCall(
-                            id: 'deepseek-repaired-report-call',
-                            type: ChatCompletionMessageToolCallType.function,
-                            function: ChatCompletionMessageFunctionCall(
-                              name: TaskAgentToolNames.updateReport,
-                              arguments: jsonEncode({
-                                'oneLiner': 'Fix profile seeding',
-                                'tldr': 'Fix profile seeding next.',
-                                'content': 'Fix profile seeding.',
-                              }),
-                            ),
-                          ),
-                        ],
-                        manager: mockConversationManager,
-                      );
-                      return const InferenceUsage(
-                        inputTokens: 30,
-                        outputTokens: 8,
-                      );
-                    };
-          final deepseekWorkflow = createTestWorkflow(
-            agentRepository: mockAgentRepository,
-            conversationRepository: capturingRepo,
-            aiInputRepository: mockAiInputRepository,
-            aiConfigRepository: mockAiConfigRepository,
-            journalDb: mockJournalDb,
-            cloudInferenceRepository: mockCloudInferenceRepository,
-            journalRepository: mockJournalRepository,
-            checklistRepository: mockChecklistRepository,
-            labelsRepository: mockLabelsRepository,
-            syncService: mockSyncService,
-            templateService: mockTemplateService,
-          );
+                      };
+            final workflow = createTestWorkflow(
+              agentRepository: mockAgentRepository,
+              conversationRepository: capturingRepo,
+              aiInputRepository: mockAiInputRepository,
+              aiConfigRepository: mockAiConfigRepository,
+              journalDb: mockJournalDb,
+              cloudInferenceRepository: mockCloudInferenceRepository,
+              journalRepository: mockJournalRepository,
+              checklistRepository: mockChecklistRepository,
+              labelsRepository: mockLabelsRepository,
+              syncService: mockSyncService,
+              templateService: mockTemplateService,
+            );
 
-          final result = await deepseekWorkflow.execute(
-            agentIdentity: testAgentIdentity,
-            runKey: runKey,
-            triggerTokens: {'entity-a'},
-            threadId: threadId,
-          );
+            final result = await workflow.execute(
+              agentIdentity: testAgentIdentity,
+              runKey: runKey,
+              triggerTokens: {'entity-a'},
+              threadId: threadId,
+            );
 
-          expect(result.success, isTrue);
-          // The executor drafts; the editor, a different model, repairs.
-          expect(models, [
-            meliousDeepseekV41FlashModelId,
-            meliousQwen35122BA10BModelId,
-          ]);
-          expect(messages.last, contains('processNarration'));
-          final captured = verify(
-            () => mockSyncService.upsertEntity(captureAny()),
-          ).captured;
-          final report = capturedEntitiesOfType<AgentReportEntity>(
-            captured,
-          ).single;
-          expect(report.tldr, 'Fix profile seeding next.');
-          // Qwen wrote the published text, so Qwen is credited for it.
-          final provenance = ReportInferenceProvenance.tryRead(
-            report.provenance,
-          )!;
-          expect(provenance.finalizerOutcome, ReportFinalizerOutcome.accepted);
-          expect(provenance.finalContentAuthor, ReportContentAuthor.finalizer);
-          expect(
-            provenance.finalAuthorRoute.providerModelId,
-            meliousQwen35122BA10BModelId,
-          );
-          expect(
-            provenance.executor.providerModelId,
-            meliousDeepseekV41FlashModelId,
-          );
-          expect(
-            provenance.finalAuthorRoute.servingProviderType,
-            InferenceProviderType.melious,
-          );
-          expect(
-            capturedEntitiesOfType<AgentMessageEntity>(captured).map(
-              (message) => message.metadata.toolName,
-            ),
-            contains(
-              '${TaskAgentReportEditor.auditToolPrefix}_detected_repaired',
-            ),
-          );
-          expect(
-            capturedTokenUsageEntities(captured).map((entry) => entry.modelId),
-            unorderedEquals([
-              meliousDeepseekV41FlashModelId,
-              meliousQwen35122BA10BModelId,
-            ]),
-          );
-        },
-      );
-
-      test('a clean GLM report publishes without an editor pass', () async {
-        stubMeliousTaskAgentModel(
-          providerId: 'melious-provider-glm-clean',
-          modelConfigId: 'glm-model-clean',
-          modelName: 'GLM 5.3 Flash',
-          providerModelId: meliousGlm53FlashModelId,
+            expect(result.success, isTrue);
+            expect(models, [modelId]);
+            final captured = verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured;
+            final report = capturedEntitiesOfType<AgentReportEntity>(
+              captured,
+            ).single;
+            expect(
+              report.tldr,
+              'The full sequence is now tracked as checklist items.',
+            );
+            final provenance = ReportInferenceProvenance.tryRead(
+              report.provenance,
+            )!;
+            expect(provenance.finalizer, isNull);
+            expect(provenance.finalAuthorRoute.providerModelId, modelId);
+            expect(
+              capturedEntitiesOfType<AgentMessageEntity>(captured).map(
+                (message) => message.metadata.toolName,
+              ),
+              everyElement(
+                isNot(startsWith(TaskAgentReportEditor.auditToolPrefix)),
+              ),
+            );
+          },
         );
-
-        final models = <String>[];
-        final capturingRepo =
-            MockConversationRepository(mockConversationManager)
-              ..maxDelegateCalls = 1
-              ..sendMessageDelegate =
-                  ({
-                    required conversationId,
-                    required message,
-                    required model,
-                    required provider,
-                    required inferenceRepo,
-                    tools,
-                    toolChoice,
-                    temperature = 0.7,
-                    strategy,
-                  }) async {
-                    models.add(model);
-                    await strategy!.processToolCalls(
-                      toolCalls: const [
-                        // The report leaves the new P1 unstated. That is an
-                        // anchor defect only on Qwen's route, not GLM's.
-                        ChatCompletionMessageToolCall(
-                          id: 'glm-clean-priority-call',
-                          type: ChatCompletionMessageToolCallType.function,
-                          function: ChatCompletionMessageFunctionCall(
-                            name: TaskAgentToolNames.updateTaskPriority,
-                            arguments: '{"priority":"P1"}',
-                          ),
-                        ),
-                        ChatCompletionMessageToolCall(
-                          id: 'glm-clean-report-call',
-                          type: ChatCompletionMessageToolCallType.function,
-                          function: ChatCompletionMessageFunctionCall(
-                            name: TaskAgentToolNames.updateReport,
-                            arguments:
-                                '{"oneLiner":"Review the active risk","tldr":"Approval remains pending.","content":"Marta must approve deployment."}',
-                          ),
-                        ),
-                      ],
-                      manager: mockConversationManager,
-                    );
-                    return const InferenceUsage(
-                      inputTokens: 90,
-                      outputTokens: 15,
-                    );
-                  };
-        final glmWorkflow = createTestWorkflow(
-          agentRepository: mockAgentRepository,
-          conversationRepository: capturingRepo,
-          aiInputRepository: mockAiInputRepository,
-          aiConfigRepository: mockAiConfigRepository,
-          journalDb: mockJournalDb,
-          cloudInferenceRepository: mockCloudInferenceRepository,
-          journalRepository: mockJournalRepository,
-          checklistRepository: mockChecklistRepository,
-          labelsRepository: mockLabelsRepository,
-          syncService: mockSyncService,
-          templateService: mockTemplateService,
-        );
-
-        final result = await glmWorkflow.execute(
-          agentIdentity: testAgentIdentity,
-          runKey: runKey,
-          triggerTokens: {'entity-a'},
-          threadId: threadId,
-        );
-
-        expect(result.success, isTrue);
-        // Only the executor ran: a clean report costs nothing extra.
-        expect(models, [meliousGlm53FlashModelId]);
-        final captured = verify(
-          () => mockSyncService.upsertEntity(captureAny()),
-        ).captured;
-        expect(
-          capturedEntitiesOfType<AgentReportEntity>(captured).single.content,
-          'Marta must approve deployment.',
-        );
-        expect(
-          capturedEntitiesOfType<AgentMessageEntity>(captured).map(
-            (message) => message.metadata.toolName,
-          ),
-          contains('${TaskAgentReportEditor.auditToolPrefix}_detected_clean'),
-        );
-      });
+      }
 
       test('Mistral evidence mode accepts a grounded Qwen report revision and '
           'attributes usage to both models', () async {
@@ -1666,6 +1531,24 @@ void main() {
         expect(
           reports.single.content,
           contains('compare the candidate with the reference'),
+        );
+        // Qwen wrote the published text, so Qwen is credited for it.
+        final provenance = ReportInferenceProvenance.tryRead(
+          reports.single.provenance,
+        )!;
+        expect(provenance.finalizerOutcome, ReportFinalizerOutcome.accepted);
+        expect(provenance.finalContentAuthor, ReportContentAuthor.finalizer);
+        expect(
+          provenance.finalAuthorRoute.providerModelId,
+          meliousQwen35122BA10BModelId,
+        );
+        expect(
+          provenance.executor.providerModelId,
+          meliousMistralSmall4119BInstructModelId,
+        );
+        expect(
+          provenance.finalAuthorRoute.servingProviderType,
+          InferenceProviderType.melious,
         );
         final usage = capturedTokenUsageEntities(captured);
         expect(usage, hasLength(2));

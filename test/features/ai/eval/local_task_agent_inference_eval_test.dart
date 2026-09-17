@@ -2299,79 +2299,35 @@ void main() {
     },
   );
 
-  test(
-    'production routing does not make the editor add anchors a GLM draft '
-    'never stated',
-    () async {
-      final inferenceRepository = _QueuedInferenceRepository([
-        [
-          _toolCalls([
-            ..._expectedMetadataToolCalls(),
-            (
-              name: TaskAgentToolNames.updateReport,
-              argumentsJson: jsonEncode({
-                'oneLiner': 'Run the candidate evaluation',
-                'tldr': 'Compare the candidate with the reference model.',
-                'content':
-                    'Compare the models. Additional fixes can be applied and '
-                    'validated afterward.',
-              }),
-            ),
-          ]),
-        ],
-        [
-          _toolCalls([
-            (
-              name: TaskAgentToolNames.updateReport,
-              argumentsJson: jsonEncode({
-                'oneLiner': 'Run the candidate evaluation',
-                'tldr': 'Compare the candidate with the reference model.',
-                'content':
-                    'Run the local app evaluation, then compare the candidate '
-                    'with the reference model.',
-              }),
-            ),
-          ]),
-        ],
-      ]);
-      final runner = _createRunner(
-        provider: _meliousProvider(),
-        inferenceRepository: inferenceRepository,
-        executionMode: LocalTaskAgentEvalExecutionMode.productionRouting,
-        temperature: 0,
-      );
+  test('production routing publishes a GLM report as written', () async {
+    final inferenceRepository = _QueuedInferenceRepository([
+      [_toolCalls(_metadataCallsWithReport(processNarration: true))],
+    ]);
+    final runner = _createRunner(
+      provider: _meliousProvider(),
+      inferenceRepository: inferenceRepository,
+      executionMode: LocalTaskAgentEvalExecutionMode.productionRouting,
+      temperature: 0,
+    );
 
-      final report = await runner.run(
-        profiles: const [
-          LocalTaskAgentEvalProfile(
-            name: 'glm-production',
-            providerModelId: meliousGlm53FlashModelId,
-            modelClass: 'glm',
-          ),
-        ],
-        scenarios: [defaultLocalTaskAgentWakeScenario()],
-      );
+    final report = await runner.run(
+      profiles: const [
+        LocalTaskAgentEvalProfile(
+          name: 'glm-production',
+          providerModelId: meliousGlm53FlashModelId,
+          modelClass: 'glm',
+        ),
+      ],
+      scenarios: [defaultLocalTaskAgentWakeScenario()],
+    );
 
-      final result = report.results.single;
-      // The narration is repaired; the missing P1, due date and estimate are
-      // not demanded, so the first candidate is accepted.
-      expect(result.reportEditorAttempts, 1);
-      expect(result.reportEditorValidationIssues, isEmpty);
-      expect(result.reportEditorRejectedReport, isNull);
-      final editorInput =
-          jsonDecode(
-                inferenceRepository.requests.last.messages.last
-                        .toJson()['content']!
-                    as String,
-              )
-              as Map<String, dynamic>;
-      final materialTaskState =
-          editorInput['materialTaskState'] as Map<String, dynamic>;
-      expect(materialTaskState, isNot(contains('priority')));
-      expect(materialTaskState, isNot(contains('dueDate')));
-      expect(materialTaskState, isNot(contains('estimateMinutes')));
-    },
-  );
+    // The narration a Qwen draft would be repaired for stays: a GLM report is
+    // graded as GLM wrote it.
+    final result = report.results.single;
+    expect(result.reportEditorAttempts, 0);
+    expect(result.usedForcedReportRetry, isFalse);
+    expect(inferenceRepository.requests, hasLength(1));
+  });
 
   test(
     'production routing keeps a grounded direct Qwen report single-pass',

@@ -144,37 +144,8 @@ enum TaskAgentReportRoute {
 
   /// Checked by the deterministic defect detector, and handed to the editor
   /// only when it finds a known defect. A clean report publishes untouched.
-  ///
-  /// Includes the anchor checks (priority, due date, estimate), which come
-  /// from regressions where Qwen dropped them.
   detected,
-
-  /// [detected], without demanding anchors the draft never stated.
-  ///
-  /// A priority, due date or estimate the draft leaves out is removed from the
-  /// material task state (see [TaskAgentReportEditor.withoutAnchorsMissingFrom]),
-  /// so neither the detector nor the editor's validation requires it; one the
-  /// draft does state must survive the rewrite. Replaying the detector over two
-  /// gym runs, these checks fired on about a sixth of DeepSeek and GLM
-  /// reports, none of which failed, and the forced rewrites cost correct
-  /// reports their pass.
-  detectedWording;
-
-  /// Whether the defect detector decides if the editor runs.
-  bool get isDetected => this == detected || this == detectedWording;
 }
-
-/// Model families whose reports go through
-/// [TaskAgentReportRoute.detectedWording].
-///
-/// The detector is model-agnostic — it looks for checklist narration, pending
-/// work called "underway", waiting on a request nobody made, and leaked
-/// deferred scope — so it serves any executor that makes those mistakes. A full
-/// gym run found both families here doing exactly that, against report rules
-/// they were already given: glm-5.3-flash wrote "now tracked as checklist
-/// items" and "investigation underway", and deepseek-v4.1-flash wrote
-/// "awaiting Security cert" for certificates nobody had requested.
-const _detectedReportModelFragments = ['deepseek', 'glm'];
 
 /// Isolated, bounded report editor for the efficient task-agent routes.
 class TaskAgentReportEditor {
@@ -216,9 +187,6 @@ class TaskAgentReportEditor {
     }
     if (normalized == meliousQwen35122BA10BModelId) {
       return TaskAgentReportRoute.detected;
-    }
-    if (_detectedReportModelFragments.any(normalized.contains)) {
-      return TaskAgentReportRoute.detectedWording;
     }
     return TaskAgentReportRoute.none;
   }
@@ -807,23 +775,6 @@ class TaskAgentReportEditor {
       TaskAgentReportRevisionIssue.missingEstimate,
     _ => null,
   };
-
-  /// [materialTaskState] without the priority, due date or estimate that
-  /// [report] does not state.
-  ///
-  /// An editor given the result keeps every anchor the report carried but is
-  /// not required to add one it never had.
-  static Map<String, Object?> withoutAnchorsMissingFrom(
-    Map<String, Object?> materialTaskState,
-    Map<String, dynamic> report,
-  ) {
-    final normalizedReport = _reportFieldText(report).toLowerCase();
-    return {
-      for (final MapEntry(:key, :value) in materialTaskState.entries)
-        if (_unstatedAnchorIssue(key, value, normalizedReport) == null)
-          key: value,
-    };
-  }
 
   static bool _hasKnownProcessNarration({
     required String normalizedCandidate,

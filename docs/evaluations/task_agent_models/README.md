@@ -131,8 +131,8 @@ release-evidence contracts across English, German, and Spanish. Each case keeps
 the original mutation and grounding checks and adds directive-specific format
 checks. Use `productionRouting` with the evidence-synthesis prompt to reproduce
 the shipped Melious routes: Mistral always uses the isolated Qwen editor, while
-direct Qwen, DeepSeek and GLM receive a Qwen call only when the known-regression
-detector matches their draft. This mode resolves the production Qwen model and
+direct Qwen receives a second Qwen call only when the known-regression detector
+matches its draft. This mode resolves the production Qwen model and
 three-attempt bound automatically and carries each scenario's current material
 task anchors into report validation. `reportEditing` remains an always-edit
 orchestration control for historical experiments.
