@@ -186,6 +186,13 @@ def make_jobs(suites, samples, batch_size=8):
                         "attempts": [],
                     }
                 )
+    # Sample rounds run in order: every sample-1 job before any sample 2. A
+    # repeat of the same exercise then starts after its twin finished, so the
+    # provider's prompt cache is warm, as it is for a user's sequential wakes.
+    # Identical prompts sent side by side all miss the cache, which inflated
+    # the measured cost of models whose cache fills slowly. The sort is stable,
+    # so suite order is kept within a round.
+    jobs.sort(key=lambda job: job["sample"])
     return jobs
 
 
@@ -896,6 +903,13 @@ def execute(output, manifest, jobs, api_key, workers, processes, compiler_slots)
                     if j["suite"] in suites[job["suite"]]["dependencies"]
                 ]
                 if any(j["state"] in ("pending", "running") for j in dependencies):
+                    continue
+                # Different exercises run in parallel; a later sample round
+                # waits until the earlier round has finished (see make_jobs).
+                if any(
+                    j["sample"] < job["sample"] and j["state"] in ("pending", "running")
+                    for j in jobs
+                ):
                     continue
                 pending.remove(job)
                 if any(j["state"] != "prepared" for j in dependencies):

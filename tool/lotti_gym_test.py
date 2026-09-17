@@ -124,7 +124,8 @@ class GymTest(unittest.TestCase):
         self.assertEqual(len(jobs), 6)
         self.assertEqual(len({j["directory"] for j in jobs}), 6)
         self.assertEqual(jobs, gym.make_jobs([self.suite], 3, batch_size=1))
-        self.assertEqual([j["sample"] for j in jobs[:3]], [1, 2, 3])
+        self.assertEqual([j["sample"] for j in jobs], [1, 1, 2, 2, 3, 3])
+        self.assertEqual([j["cases"] for j in jobs[:2]], [["quiet"], ["change"]])
         with self.assertRaises(ValueError):
             gym.make_jobs([self.suite], 0)
 
@@ -176,6 +177,60 @@ class GymTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Could not compile"):
             gym.execute(self.output, self.manifest, jobs, "key", 2, processes, ["0", "1"])
         processes.cancel.assert_called_once_with()
+
+    def test_sample_rounds_run_in_order_with_exercises_in_parallel(self):
+        self.suite = suite(cases=["a", "b", "c"])
+        self.manifest.update(suites=[self.suite], workers=3, samples=3)
+        jobs = gym.make_jobs([self.suite], 3, batch_size=1)
+        sample_of = {job["directory"]: job["sample"] for job in jobs}
+        lock = threading.Lock()
+        running = []
+        events = []
+        # Rounds 2 and 3 each run all three exercises at once, or this times out.
+        barriers = {2: threading.Barrier(3, timeout=5), 3: threading.Barrier(3, timeout=5)}
+        processes = Mock()
+
+        def worker(command, env, log, timeout, **kwargs):
+            if self.suite["gate"] not in env:
+                return self.fake_worker(command, env, log, timeout, **kwargs)
+            directory = next(d for d in sample_of if d in str(log))
+            sample = sample_of[directory]
+            with lock:
+                events.append(("start", sample, [sample_of[d] for d in running]))
+                running.append(directory)
+            if sample in barriers:
+                barriers[sample].wait()
+            try:
+                return self.fake_worker(command, env, log, timeout, **kwargs)
+            finally:
+                with lock:
+                    running.remove(directory)
+
+        processes.run.side_effect = worker
+        gym.execute(self.output, self.manifest, jobs, "key", 3, processes, ["0", "1", "2"])
+        self.assertEqual(sum(len(job["attempts"]) for job in jobs), 9)
+        starts = [(sample, others) for kind, sample, others in events if kind == "start"]
+        self.assertEqual([sample for sample, _ in starts], [1, 1, 1, 2, 2, 2, 3, 3, 3])
+        for sample, others in starts:
+            self.assertTrue(all(other == sample for other in others), starts)
+        self.assertFalse(any(barrier.broken for barrier in barriers.values()))
+
+    def test_an_errored_job_does_not_stall_the_next_round(self):
+        self.suite = suite(cases=["a", "b"])
+        self.manifest.update(suites=[self.suite], samples=2)
+        jobs = gym.make_jobs([self.suite], 2, batch_size=1)
+        errored = next(j for j in jobs if j["cases"] == ["b"] and j["sample"] == 1)
+        processes = Mock()
+
+        def worker(command, env, log, timeout, **kwargs):
+            if errored["directory"] in str(log):
+                return 1  # No artifact: an infrastructure error, not a verdict.
+            return self.fake_worker(command, env, log, timeout, **kwargs)
+
+        processes.run.side_effect = worker
+        gym.execute(self.output, self.manifest, jobs, "key", 1, processes, ["0"])
+        self.assertEqual(errored["state"], "error")
+        self.assertTrue(all(job["attempts"] for job in jobs if job["sample"] == 2), jobs)
 
     def test_eight_paid_workers_run_concurrently_after_preflight(self):
         self.suite = suite(cases=[str(i) for i in range(9)])
