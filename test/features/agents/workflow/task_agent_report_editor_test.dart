@@ -1285,6 +1285,41 @@ turn task metadata or a checklist edit into an accomplishment.
     );
   });
 
+  test('detector catches a report stating that metadata is unset', () {
+    List<TaskAgentReportRevisionIssue> issues(String content) =>
+        TaskAgentReportEditor.detectDirectQwenRegressions(
+          languageCode: 'en',
+          materialTaskState: const {},
+          report: {
+            'oneLiner': 'Fix inference profile seeding',
+            'tldr': 'Fix seeding, then open the pull request.',
+            'content': content,
+          },
+        );
+
+    // Verbatim sentences from failed task-workflow gym samples.
+    for (final sentence in [
+      'No estimate or due date is set for this work.',
+      'No estimate or due date has been set, and no review or release artifacts exist yet.',
+      '- Task priority is P2, status OPEN, no due date or estimate set',
+      'No work has started yet — the task is open with no time logged and no due date set.',
+      'No due date or time estimate has been set yet.',
+    ]) {
+      expect(
+        issues('Fix the seeding. $sentence'),
+        [TaskAgentReportRevisionIssue.processNarration],
+        reason: sentence,
+      );
+    }
+    for (final grounded in [
+      'Fix the seeding. The estimate is two hours, due 2026-10-01.',
+      'No deadline is set yet — the March cutoff will drive the timing.',
+      'There is no estimated risk to the release.',
+    ]) {
+      expect(issues(grounded), isEmpty, reason: grounded);
+    }
+  });
+
   test('validation catches checklist narration with the verb first', () {
     // Verbatim glm-5.3-flash gym report: the noun-first pattern ("items ...
     // captured") missed "captured as ordered checklist items".

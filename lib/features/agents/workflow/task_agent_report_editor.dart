@@ -890,7 +890,16 @@ class TaskAgentReportEditor {
           r'\b(workflow|plan|actions?|tasks?|steps?|work)\b.{0,35}'
           r'\b(?:is|are|looks?|seems?)?\s*ready\b',
         ).hasMatch(normalizedCandidate);
-    return assignsProgressToNewActions ||
+    // The report contract says to omit absent metadata. Across LottiGym runs
+    // on 2026-09-15..17, all three efficient models still wrote "No estimate
+    // or due date is set", which failed 7 of 12 failed task-workflow samples.
+    // "No deadline" is left alone: those sentences mostly carry reasoning
+    // about a real upcoming cutoff.
+    final reportsAbsentMetadata = RegExp(
+      r'\bno\s+(?:time\s+)?(?:estimate|due\s+date)\b',
+    ).hasMatch(normalizedCandidate);
+    return reportsAbsentMetadata ||
+        assignsProgressToNewActions ||
         describesNewActionsAsSetup ||
         describesNewActionsAsProgress ||
         describesPendingInvestigationAsProgress ||
