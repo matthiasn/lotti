@@ -493,9 +493,10 @@ For the exact Melious `mistral-small-4-119b-instruct` executor:
 - Melious Qwen, DeepSeek and GLM executors (chosen by
   `TaskAgentReportEditor.routeFor`) skip the always-on edit and use a
   **separate, narrower** detector derived from captured regressions. Qwen
-  (`detected`) is also checked for a lost priority, due date or estimate;
-  DeepSeek and GLM (`detectedWording`) only for wording defects, because on
-  their drafts the anchor checks fired on correct reports. It is not a semantic validator, quality score, or parser for
+  (`detected`) is also checked for a missing priority, due date or estimate.
+  DeepSeek and GLM (`detectedWording`) are held only to the anchors their
+  draft states (`withoutAnchorsMissingFrom`), because on their drafts the
+  anchor checks fired on correct reports. It is not a semantic validator, quality score, or parser for
   arbitrary evolved directives; standalone words such as `Goal`, `Checklist` and
   `No blockers` do not trigger it.
 - **A detected-route executor does not rate its own work.** A local rule match

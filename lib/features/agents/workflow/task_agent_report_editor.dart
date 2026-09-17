@@ -103,10 +103,17 @@ class TaskAgentReportEditResult {
     required this.usage,
     required this.error,
     required this.stackTrace,
+    this.rejectedReport,
   });
 
   /// Accepted revision, or `null` when every candidate was rejected.
   final TaskAgentReportDraft? revision;
+
+  /// The last candidate validation rejected, when no revision was accepted.
+  ///
+  /// Not published anywhere; evaluations record it to show why a repair
+  /// failed.
+  final TaskAgentReportDraft? rejectedReport;
 
   /// Whether the editor returned at least one `update_report` candidate.
   final bool hadRevision;
@@ -142,12 +149,15 @@ enum TaskAgentReportRoute {
   /// from regressions where Qwen dropped them.
   detected,
 
-  /// [detected], but for wording defects only.
+  /// [detected], without demanding anchors the draft never stated.
   ///
-  /// Anchor checks are left out. Replaying the detector on two gym runs'
-  /// DeepSeek and GLM drafts, they fired on about a sixth of all reports, and
-  /// none of those reports failed. The rewrites they triggered cost one German
-  /// report its pass when Qwen's revision could not satisfy the date check.
+  /// A priority, due date or estimate the draft leaves out is removed from the
+  /// material task state (see [TaskAgentReportEditor.withoutAnchorsMissingFrom]),
+  /// so neither the detector nor the editor's validation requires it; one the
+  /// draft does state must survive the rewrite. Replaying the detector over two
+  /// gym runs, these checks fired on about a sixth of DeepSeek and GLM
+  /// reports, none of which failed, and the forced rewrites cost correct
+  /// reports their pass.
   detectedWording;
 
   /// Whether the defect detector decides if the editor runs.
@@ -406,6 +416,7 @@ class TaskAgentReportEditor {
       usage: usage,
       error: null,
       stackTrace: null,
+      rejectedReport: hadRevision ? rejectedReport : null,
     );
   }
 
@@ -547,14 +558,10 @@ class TaskAgentReportEditor {
   /// This is deliberately not a semantic validator or a parser for the active
   /// report directive. In particular, headings and standalone words such as
   /// `Goal`, `Checklist`, or `No blockers` do not trigger a rewrite.
-  ///
-  /// With [checkAnchors] false, a missing priority, due date or estimate is
-  /// not a defect; the report's shape and wording still are.
   static List<TaskAgentReportRevisionIssue> detectDirectQwenRegressions({
     required String languageCode,
     required Map<String, Object?> materialTaskState,
     required Map<String, dynamic> report,
-    bool checkAnchors = true,
   }) {
     final issues = <TaskAgentReportRevisionIssue>{};
     final reportText = _reportFieldText(report);
@@ -562,7 +569,7 @@ class TaskAgentReportEditor {
 
     _addShapeAndAnchorIssues(
       issues: issues,
-      materialTaskState: checkAnchors ? materialTaskState : const {},
+      materialTaskState: materialTaskState,
       candidateReport: report,
       normalizedCandidate: normalizedReport,
     );
@@ -773,19 +780,49 @@ class TaskAgentReportEditor {
     if (TaskAgentReportDraft.fromJson(candidateReport) == null) {
       issues.add(TaskAgentReportRevisionIssue.invalidShape);
     }
-    if (materialTaskState['priority'] case final String priority
+    for (final MapEntry(:key, :value) in materialTaskState.entries) {
+      if (_unstatedAnchorIssue(key, value, normalizedCandidate)
+          case final issue?) {
+        issues.add(issue);
+      }
+    }
+  }
+
+  /// The issue for an anchor [key] whose [value] the report does not state,
+  /// or `null` when it does or [key] is not an anchor.
+  static TaskAgentReportRevisionIssue? _unstatedAnchorIssue(
+    String key,
+    Object? value,
+    String normalizedReport,
+  ) => switch ((key, value)) {
+    ('priority', final String priority)
         when priority.trim().isNotEmpty &&
-            !normalizedCandidate.contains(priority.toLowerCase())) {
-      issues.add(TaskAgentReportRevisionIssue.missingPriority);
-    }
-    if (materialTaskState['dueDate'] case final String dueDate
-        when !_containsReportDate(normalizedCandidate, dueDate)) {
-      issues.add(TaskAgentReportRevisionIssue.missingDueDate);
-    }
-    if (materialTaskState['estimateMinutes'] case final num minutes
-        when !_containsReportEstimate(normalizedCandidate, minutes)) {
-      issues.add(TaskAgentReportRevisionIssue.missingEstimate);
-    }
+            !normalizedReport.contains(priority.toLowerCase()) =>
+      TaskAgentReportRevisionIssue.missingPriority,
+    ('dueDate', final String dueDate)
+        when !_containsReportDate(normalizedReport, dueDate) =>
+      TaskAgentReportRevisionIssue.missingDueDate,
+    ('estimateMinutes', final num minutes)
+        when !_containsReportEstimate(normalizedReport, minutes) =>
+      TaskAgentReportRevisionIssue.missingEstimate,
+    _ => null,
+  };
+
+  /// [materialTaskState] without the priority, due date or estimate that
+  /// [report] does not state.
+  ///
+  /// An editor given the result keeps every anchor the report carried but is
+  /// not required to add one it never had.
+  static Map<String, Object?> withoutAnchorsMissingFrom(
+    Map<String, Object?> materialTaskState,
+    Map<String, dynamic> report,
+  ) {
+    final normalizedReport = _reportFieldText(report).toLowerCase();
+    return {
+      for (final MapEntry(:key, :value) in materialTaskState.entries)
+        if (_unstatedAnchorIssue(key, value, normalizedReport) == null)
+          key: value,
+    };
   }
 
   static bool _hasKnownProcessNarration({

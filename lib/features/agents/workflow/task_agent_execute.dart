@@ -671,7 +671,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         TaskPriority.p1High => TaskPriority.p1High.short,
         _ => null,
       };
-      final materialTaskState =
+      final fullMaterialTaskState =
           reportEditorRouteEligible && effectiveReport != null
           ? TaskAgentReportEditor.buildMaterialTaskState(
               strategy.extractSuccessfulMutations(),
@@ -683,6 +683,14 @@ extension TaskAgentExecute on TaskAgentWorkflow {
               currentPriority: currentTaskPriority,
             )
           : null;
+      final materialTaskState =
+          reportRoute == TaskAgentReportRoute.detectedWording &&
+              fullMaterialTaskState != null
+          ? TaskAgentReportEditor.withoutAnchorsMissingFrom(
+              fullMaterialTaskState,
+              effectiveReport!.toJson(),
+            )
+          : fullMaterialTaskState;
       final languageCode = materialTaskState == null
           ? null
           : materialTaskState['languageCode'] as String? ??
@@ -693,7 +701,6 @@ extension TaskAgentExecute on TaskAgentWorkflow {
               languageCode: languageCode!,
               materialTaskState: materialTaskState!,
               report: effectiveReport.toJson(),
-              checkAnchors: reportRoute == TaskAgentReportRoute.detected,
             ).toSet()
           : const <TaskAgentReportRevisionIssue>{};
       if (directQwenIssues.isNotEmpty) {

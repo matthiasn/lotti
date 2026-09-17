@@ -1383,11 +1383,12 @@ turn task metadata or a checklist edit into an accomplishment.
     );
   });
 
-  test('the wording-only detector ignores unstated anchors', () {
+  test('a draft without anchors is not required to gain them', () {
     // Verbatim glm-5.3-flash German report: correct, but it names neither the
     // P1 priority nor the due date's year. Qwen's anchor checks flagged it,
     // and the rewrite they forced failed the case.
     const materialTaskState = <String, Object?>{
+      'languageCode': 'de',
       'priority': 'P1',
       'dueDate': '2026-09-30',
       'estimateMinutes': 120,
@@ -1414,24 +1415,47 @@ turn task metadata or a checklist edit into an accomplishment.
         TaskAgentReportRevisionIssue.missingEstimate,
       ]),
     );
-    expect(
-      TaskAgentReportEditor.detectDirectQwenRegressions(
-        languageCode: 'de',
-        materialTaskState: materialTaskState,
-        report: report,
-        checkAnchors: false,
-      ),
-      isEmpty,
+    final withoutMissing = TaskAgentReportEditor.withoutAnchorsMissingFrom(
+      materialTaskState,
+      report,
     );
+    expect(withoutMissing, {
+      'languageCode': 'de',
+      'newChecklistItems': ['API-Umfang mit Ben klären'],
+    });
     expect(
       TaskAgentReportEditor.detectDirectQwenRegressions(
         languageCode: 'de',
-        materialTaskState: materialTaskState,
+        materialTaskState: withoutMissing,
         report: {...report, 'tldr': 'Die Arbeit am Export läuft aktuell.'},
-        checkAnchors: false,
       ),
       [TaskAgentReportRevisionIssue.processNarration],
       reason: 'wording defects are still detected',
+    );
+
+    // An anchor the draft did state stays, so a rewrite cannot drop it.
+    final statedReport = <String, dynamic>{
+      ...report,
+      'content': 'P1, fällig am 2026-09-30. API-Umfang mit Ben klären.',
+    };
+    final kept = TaskAgentReportEditor.withoutAnchorsMissingFrom(
+      materialTaskState,
+      statedReport,
+    );
+    expect(kept, containsPair('priority', 'P1'));
+    expect(kept, containsPair('dueDate', '2026-09-30'));
+    expect(kept, isNot(contains('estimateMinutes')));
+    expect(
+      TaskAgentReportEditor.validateRevision(
+        languageCode: 'de',
+        materialTaskState: kept,
+        draftReport: statedReport,
+        candidateReport: report,
+      ),
+      containsAll([
+        TaskAgentReportRevisionIssue.missingPriority,
+        TaskAgentReportRevisionIssue.missingDueDate,
+      ]),
     );
   });
 
@@ -1632,6 +1656,7 @@ turn task metadata or a checklist edit into an accomplishment.
     expect(result.hadRevision, isTrue);
     expect(result.attempts, 1);
     expect(result.validationIssues, isEmpty);
+    expect(result.rejectedReport, isNull);
     expect(result.usage?.inputTokens, 50);
     expect(result.usage?.outputTokens, 10);
     expect(inferenceRepository.requests, hasLength(1));
@@ -2035,6 +2060,7 @@ turn task metadata or a checklist edit into an accomplishment.
       result.validationIssues,
       contains(TaskAgentReportRevisionIssue.processNarration),
     );
+    expect(result.rejectedReport?.content, 'The checklist contains two items.');
   });
 
   test('editor distinguishes missing and malformed report calls', () async {
