@@ -137,10 +137,25 @@ enum TaskAgentReportRoute {
 
   /// Checked by the deterministic defect detector, and handed to the editor
   /// only when it finds a known defect. A clean report publishes untouched.
+  ///
+  /// Includes the anchor checks (priority, due date, estimate), which come
+  /// from regressions where Qwen dropped them.
   detected,
+
+  /// [detected], but for wording defects only.
+  ///
+  /// Anchor checks are left out. Replaying the detector on two gym runs'
+  /// DeepSeek and GLM drafts, they fired on about a sixth of all reports, and
+  /// none of those reports failed. The rewrites they triggered cost one German
+  /// report its pass when Qwen's revision could not satisfy the date check.
+  detectedWording;
+
+  /// Whether the defect detector decides if the editor runs.
+  bool get isDetected => this == detected || this == detectedWording;
 }
 
-/// Model families whose reports go through [TaskAgentReportRoute.detected].
+/// Model families whose reports go through
+/// [TaskAgentReportRoute.detectedWording].
 ///
 /// The detector is model-agnostic — it looks for checklist narration, pending
 /// work called "underway", waiting on a request nobody made, and leaked
@@ -173,7 +188,6 @@ class TaskAgentReportEditor {
   /// Production bound: one initial candidate and at most two repairs.
   static const productionMaxAttempts = 3;
 
-  /// Prefix used for persisted, internal editor-route outcomes.
   /// The route a report written by [modelId] takes.
   ///
   /// The one place this is decided, so the task workflow and the evaluation
@@ -190,13 +204,16 @@ class TaskAgentReportEditor {
     if (normalized == meliousMistralSmall4119BInstructModelId) {
       return TaskAgentReportRoute.alwaysEdited;
     }
-    if (normalized == meliousQwen35122BA10BModelId ||
-        _detectedReportModelFragments.any(normalized.contains)) {
+    if (normalized == meliousQwen35122BA10BModelId) {
       return TaskAgentReportRoute.detected;
+    }
+    if (_detectedReportModelFragments.any(normalized.contains)) {
+      return TaskAgentReportRoute.detectedWording;
     }
     return TaskAgentReportRoute.none;
   }
 
+  /// Prefix used for persisted, internal editor-route outcomes.
   static const auditToolPrefix = 'qwen_report_editor';
 
   final ConversationRepository conversationRepository;
@@ -530,10 +547,14 @@ class TaskAgentReportEditor {
   /// This is deliberately not a semantic validator or a parser for the active
   /// report directive. In particular, headings and standalone words such as
   /// `Goal`, `Checklist`, or `No blockers` do not trigger a rewrite.
+  ///
+  /// With [checkAnchors] false, a missing priority, due date or estimate is
+  /// not a defect; the report's shape and wording still are.
   static List<TaskAgentReportRevisionIssue> detectDirectQwenRegressions({
     required String languageCode,
     required Map<String, Object?> materialTaskState,
     required Map<String, dynamic> report,
+    bool checkAnchors = true,
   }) {
     final issues = <TaskAgentReportRevisionIssue>{};
     final reportText = _reportFieldText(report);
@@ -541,7 +562,7 @@ class TaskAgentReportEditor {
 
     _addShapeAndAnchorIssues(
       issues: issues,
-      materialTaskState: materialTaskState,
+      materialTaskState: checkAnchors ? materialTaskState : const {},
       candidateReport: report,
       normalizedCandidate: normalizedReport,
     );

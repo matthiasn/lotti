@@ -651,7 +651,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       );
       final mistralReportEditorEligible =
           reportRoute == TaskAgentReportRoute.alwaysEdited;
-      final isDetectedExecutor = reportRoute == TaskAgentReportRoute.detected;
+      final isDetectedExecutor = reportRoute.isDetected;
       final normalizedExecutorModelId = modelId.toLowerCase();
       final isDirectQwenModel =
           normalizedExecutorModelId == meliousQwen35122BA10BModelId;
@@ -693,6 +693,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
               languageCode: languageCode!,
               materialTaskState: materialTaskState!,
               report: effectiveReport.toJson(),
+              checkAnchors: reportRoute == TaskAgentReportRoute.detected,
             ).toSet()
           : const <TaskAgentReportRevisionIssue>{};
       if (directQwenIssues.isNotEmpty) {

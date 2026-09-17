@@ -1459,6 +1459,16 @@ void main() {
                     models.add(model);
                     await strategy!.processToolCalls(
                       toolCalls: const [
+                        // The report leaves the new P1 unstated. That is an
+                        // anchor defect only on Qwen's route, not GLM's.
+                        ChatCompletionMessageToolCall(
+                          id: 'glm-clean-priority-call',
+                          type: ChatCompletionMessageToolCallType.function,
+                          function: ChatCompletionMessageFunctionCall(
+                            name: TaskAgentToolNames.updateTaskPriority,
+                            arguments: '{"priority":"P1"}',
+                          ),
+                        ),
                         ChatCompletionMessageToolCall(
                           id: 'glm-clean-report-call',
                           type: ChatCompletionMessageToolCallType.function,

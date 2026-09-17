@@ -116,14 +116,18 @@ turn task metadata or a checklist edit into an accomplishment.
       (
         'deepseek-v4.1-flash',
         InferenceProviderType.melious,
-        TaskAgentReportRoute.detected,
+        TaskAgentReportRoute.detectedWording,
       ),
       (
         'GLM-5.3-Flash',
         InferenceProviderType.melious,
-        TaskAgentReportRoute.detected,
+        TaskAgentReportRoute.detectedWording,
       ),
-      ('glm-5.3', InferenceProviderType.melious, TaskAgentReportRoute.detected),
+      (
+        'glm-5.3',
+        InferenceProviderType.melious,
+        TaskAgentReportRoute.detectedWording,
+      ),
       (
         'deepseek-v4.1-flash',
         InferenceProviderType.genericOpenAi,
@@ -1376,6 +1380,58 @@ turn task metadata or a checklist edit into an accomplishment.
         report: candidateReport,
       ),
       [TaskAgentReportRevisionIssue.processNarration],
+    );
+  });
+
+  test('the wording-only detector ignores unstated anchors', () {
+    // Verbatim glm-5.3-flash German report: correct, but it names neither the
+    // P1 priority nor the due date's year. Qwen's anchor checks flagged it,
+    // and the rewrite they forced failed the case.
+    const materialTaskState = <String, Object?>{
+      'priority': 'P1',
+      'dueDate': '2026-09-30',
+      'estimateMinutes': 120,
+      'newChecklistItems': ['API-Umfang mit Ben klären'],
+    };
+    const report = <String, dynamic>{
+      'oneLiner':
+          'Beta-Checkliste steht: vier Schritte bis 30. September offen',
+      'tldr':
+          'Die Vorbereitung ist in vier konkrete Schritte gegliedert, alle '
+          'noch offen. Nächster Schritt: API-Umfang mit Ben klären.',
+      'content': '1. API-Umfang mit Ben klären',
+    };
+
+    expect(
+      TaskAgentReportEditor.detectDirectQwenRegressions(
+        languageCode: 'de',
+        materialTaskState: materialTaskState,
+        report: report,
+      ),
+      unorderedEquals([
+        TaskAgentReportRevisionIssue.missingPriority,
+        TaskAgentReportRevisionIssue.missingDueDate,
+        TaskAgentReportRevisionIssue.missingEstimate,
+      ]),
+    );
+    expect(
+      TaskAgentReportEditor.detectDirectQwenRegressions(
+        languageCode: 'de',
+        materialTaskState: materialTaskState,
+        report: report,
+        checkAnchors: false,
+      ),
+      isEmpty,
+    );
+    expect(
+      TaskAgentReportEditor.detectDirectQwenRegressions(
+        languageCode: 'de',
+        materialTaskState: materialTaskState,
+        report: {...report, 'tldr': 'Die Arbeit am Export läuft aktuell.'},
+        checkAnchors: false,
+      ),
+      [TaskAgentReportRevisionIssue.processNarration],
+      reason: 'wording defects are still detected',
     );
   });
 

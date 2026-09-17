@@ -490,9 +490,12 @@ For the exact Melious `mistral-small-4-119b-instruct` executor:
 - Candidates are checked for lost dates or estimates, active-risk loss, locale
   register, fake link sections, process narration, unsupported priority claims,
   and causal claims inferred from a user checkmark.
-- Melious Qwen, DeepSeek and GLM executors (`TaskAgentReportRoute.detected`,
-  chosen by `TaskAgentReportEditor.routeFor`) skip the always-on edit and use a
-  **separate, narrower** detector derived from captured regressions. It is not a semantic validator, quality score, or parser for
+- Melious Qwen, DeepSeek and GLM executors (chosen by
+  `TaskAgentReportEditor.routeFor`) skip the always-on edit and use a
+  **separate, narrower** detector derived from captured regressions. Qwen
+  (`detected`) is also checked for a lost priority, due date or estimate;
+  DeepSeek and GLM (`detectedWording`) only for wording defects, because on
+  their drafts the anchor checks fired on correct reports. It is not a semantic validator, quality score, or parser for
   arbitrary evolved directives; standalone words such as `Goal`, `Checklist` and
   `No blockers` do not trigger it.
 - **A detected-route executor does not rate its own work.** A local rule match

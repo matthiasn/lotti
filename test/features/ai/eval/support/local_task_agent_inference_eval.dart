@@ -2678,14 +2678,14 @@ class LocalTaskAgentInferenceEvalRunner {
               currentEstimateMinutes: scenario.currentEstimateMinutes,
               currentPriority: scenario.currentPriority,
             );
-            final initialValidationIssues =
-                route == TaskAgentReportRoute.detected
+            final initialValidationIssues = route.isDetected
                 ? TaskAgentReportEditor.detectDirectQwenRegressions(
                     languageCode:
                         materialTaskState['languageCode'] as String? ??
                         scenario.languageCode,
                     materialTaskState: materialTaskState,
                     report: strategy.latestReportArguments!,
+                    checkAnchors: route == TaskAgentReportRoute.detected,
                   ).toSet()
                 : const <TaskAgentReportRevisionIssue>{};
             if (route == TaskAgentReportRoute.alwaysEdited ||
