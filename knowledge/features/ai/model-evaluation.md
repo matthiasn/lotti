@@ -142,13 +142,13 @@ default production assessment.
 
 A job is a bounded batch of cases for one suite and sample. Wake scenarios and
 compaction fixtures each get their own job. Query cases stay together because
-follow-ups depend on earlier answers. Samples run in rounds: workers run
-different exercises in parallel, but no sample-2 job starts until every sample-1
-job has finished, and likewise for later rounds. A repeat of an exercise
-therefore meets a warm provider prompt cache, as a user's sequential wakes do;
-identical prompts sent side by side all miss it, which overstated the cost of
-models whose cache fills slowly. A round job that errors does not hold back the
-next round. Each worker has its own process and artifact directory; GetIt state
+follow-ups depend on earlier answers. Each exercise (a suite's case batch) is a
+lane: one worker runs its samples back to back, while different exercises run
+on different workers at the same time. The same exercise never runs twice at
+once, so a repeat meets a warm provider prompt cache, as a user's sequential
+wakes do; identical prompts sent side by side all miss it, which overstated the
+cost of models whose cache fills slowly. A sample that errors does not stop its
+lane; `resume` retries it as before. Each worker has its own process and artifact directory; GetIt state
 is not shared between simultaneous workers.
 Kernel locks lease stable compiler slots from
 `build/test_cache/lotti_gym_leases/`. Each slot has a private Flutter project
