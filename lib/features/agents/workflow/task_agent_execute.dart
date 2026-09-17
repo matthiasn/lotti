@@ -644,22 +644,25 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         'content': strategy.extractReportContent(),
       });
       InferenceUsage? reportEditorUsage;
-      final mistralReportEditorEligible = TaskAgentReportEditor.supports(
-        executorModelId: modelId,
+      final reportRoute = TaskAgentReportEditor.routeFor(
         providerType: provider.inferenceProviderType,
+        modelId: modelId,
       );
+      final mistralReportEditorEligible =
+          reportRoute == TaskAgentReportRoute.alwaysEdited;
+      final isDetectedExecutor = reportRoute == TaskAgentReportRoute.detected;
       final normalizedExecutorModelId = modelId.toLowerCase();
-      final isMeliousProvider =
-          provider.inferenceProviderType == InferenceProviderType.melious;
       final isDirectQwenModel =
           normalizedExecutorModelId == meliousQwen35122BA10BModelId;
-      final isDirectQwenExecutor = isMeliousProvider && isDirectQwenModel;
+      // Qwen keeps its own audit names; other detected executors use generic
+      // ones, since the editor that repairs them is a different model.
+      final isDirectQwenExecutor = isDetectedExecutor && isDirectQwenModel;
       final isMistralEditorCandidate =
           normalizedExecutorModelId == meliousMistralSmall4119BInstructModelId;
       final isReportEditorCandidate =
           isMistralEditorCandidate || isDirectQwenModel;
       final reportEditorRouteEligible =
-          mistralReportEditorEligible || isDirectQwenExecutor;
+          mistralReportEditorEligible || isDetectedExecutor;
       final currentTaskData = taskAttentionContext.task?.data;
       final currentTaskDue = currentTaskData?.due;
       final currentTaskPriority = switch (currentTaskData?.priority) {
@@ -684,7 +687,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
           : materialTaskState['languageCode'] as String? ??
                 taskAttentionContext.task?.data.languageCode ??
                 'en';
-      final directQwenIssues = isDirectQwenExecutor && effectiveReport != null
+      final directQwenIssues = isDetectedExecutor && effectiveReport != null
           ? TaskAgentReportEditor.detectDirectQwenRegressions(
               languageCode: languageCode!,
               materialTaskState: materialTaskState!,
@@ -695,7 +698,8 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         final issueCodes = directQwenIssues.map((issue) => issue.name).toList()
           ..sort();
         _log(
-          'direct Qwen regression detector matched: ${issueCodes.join(',')}',
+          'report defect detector matched: ${issueCodes.join(',')}; '
+          'executorModelId=$modelId',
           subDomain: 'reportEditor',
         );
       }
@@ -718,9 +722,11 @@ extension TaskAgentExecute on TaskAgentWorkflow {
               ? 'executor_missing_required_report'
               : null,
         );
-      } else if (isDirectQwenExecutor && directQwenIssues.isEmpty) {
+      } else if (isDetectedExecutor && directQwenIssues.isEmpty) {
         await strategy.recordWorkflowResult(
-          toolName: '${TaskAgentReportEditor.auditToolPrefix}_direct_qwen',
+          toolName: isDirectQwenExecutor
+              ? '${TaskAgentReportEditor.auditToolPrefix}_direct_qwen'
+              : '${TaskAgentReportEditor.auditToolPrefix}_detected_clean',
         );
       } else if (shouldRunReportEditor && effectiveReport != null) {
         try {
@@ -760,9 +766,14 @@ extension TaskAgentExecute on TaskAgentWorkflow {
           } else if (revision != null) {
             effectiveReport = revision;
             await strategy.recordWorkflowResult(
-              toolName: isDirectQwenExecutor
-                  ? '${TaskAgentReportEditor.auditToolPrefix}_direct_qwen_repaired'
-                  : '${TaskAgentReportEditor.auditToolPrefix}_accepted',
+              toolName: switch ((isDetectedExecutor, isDirectQwenExecutor)) {
+                (_, true) =>
+                  '${TaskAgentReportEditor.auditToolPrefix}_direct_qwen_repaired',
+                (true, false) =>
+                  '${TaskAgentReportEditor.auditToolPrefix}_detected_repaired',
+                (false, _) =>
+                  '${TaskAgentReportEditor.auditToolPrefix}_accepted',
+              },
             );
             _log(
               'accepted report editor revision after '

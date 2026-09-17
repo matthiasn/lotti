@@ -93,8 +93,6 @@ enum LocalTaskAgentEvalExecutionMode {
   productionRouting,
 }
 
-enum _LocalTaskAgentProductionRoute { none, mistralWithQwen, directQwen }
-
 const _missingInitialReportPrompt =
     'You did not call `update_report` before stopping. Call it now. You MUST '
     'supply a concise `oneLiner`, a 1-3 sentence `tldr`, and the full markdown '
@@ -2537,20 +2535,6 @@ class LocalTaskAgentInferenceEvalRunner {
     );
   }
 
-  _LocalTaskAgentProductionRoute _productionReportRoute(
-    LocalTaskAgentEvalProfile profile,
-  ) {
-    if (provider.inferenceProviderType != InferenceProviderType.melious) {
-      return _LocalTaskAgentProductionRoute.none;
-    }
-    return switch (profile.providerModelId.toLowerCase()) {
-      meliousMistralSmall4119BInstructModelId =>
-        _LocalTaskAgentProductionRoute.mistralWithQwen,
-      meliousQwen35122BA10BModelId => _LocalTaskAgentProductionRoute.directQwen,
-      _ => _LocalTaskAgentProductionRoute.none,
-    };
-  }
-
   Future<LocalTaskAgentEvalCaseResult> _runScenario(
     LocalTaskAgentEvalProfile profile,
     LocalTaskAgentEvalScenario scenario,
@@ -2681,7 +2665,12 @@ class LocalTaskAgentInferenceEvalRunner {
           if (recoverMissingInitialReport) {
             await runForcedReportPass(_missingInitialReportPrompt);
           }
-          final route = _productionReportRoute(profile);
+          // Production's own decision, not a copy of it: the eval measures the
+          // route the workflow actually takes, and cannot drift from it.
+          final route = TaskAgentReportEditor.routeFor(
+            providerType: provider.inferenceProviderType,
+            modelId: profile.providerModelId,
+          );
           if (scenario.requiresReport && strategy.hasReport) {
             final materialTaskState = buildLocalTaskAgentEvalMaterialTaskState(
               strategy.toolCalls,
@@ -2690,7 +2679,7 @@ class LocalTaskAgentInferenceEvalRunner {
               currentPriority: scenario.currentPriority,
             );
             final initialValidationIssues =
-                route == _LocalTaskAgentProductionRoute.directQwen
+                route == TaskAgentReportRoute.detected
                 ? TaskAgentReportEditor.detectDirectQwenRegressions(
                     languageCode:
                         materialTaskState['languageCode'] as String? ??
@@ -2699,7 +2688,7 @@ class LocalTaskAgentInferenceEvalRunner {
                     report: strategy.latestReportArguments!,
                   ).toSet()
                 : const <TaskAgentReportRevisionIssue>{};
-            if (route == _LocalTaskAgentProductionRoute.mistralWithQwen ||
+            if (route == TaskAgentReportRoute.alwaysEdited ||
                 initialValidationIssues.isNotEmpty) {
               usedForcedReportRetry = true;
               applyEditResult(

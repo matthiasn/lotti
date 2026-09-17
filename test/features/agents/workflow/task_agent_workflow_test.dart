@@ -1243,7 +1243,8 @@ void main() {
         verify(
           () => domainLogger.log(
             LogDomain.agentWorkflow,
-            'direct Qwen regression detector matched: processNarration',
+            'report defect detector matched: processNarration; '
+            'executorModelId=$meliousQwen35122BA10BModelId',
             subDomain: 'reportEditor',
           ),
         ).called(1);
@@ -1266,6 +1267,232 @@ void main() {
         expect(
           usage.map((entry) => entry.modelId),
           everyElement(meliousQwen35122BA10BModelId),
+        );
+      });
+
+      test(
+        'a DeepSeek report with a known defect is repaired by the editor',
+        () async {
+          // The detected route beyond Qwen. A full gym run found
+          // deepseek-v4.1-flash narrating its own bookkeeping and pending work
+          // against report rules it was given; the detector flags it and the
+          // Qwen editor repairs it, while the executor keeps writing the draft.
+          stubMeliousTaskAgentModel(
+            providerId: 'melious-provider-deepseek-repair',
+            modelConfigId: 'deepseek-model-repair',
+            modelName: 'DeepSeek V4.1 Flash',
+            providerModelId: meliousDeepseekV41FlashModelId,
+          );
+
+          final models = <String>[];
+          final messages = <String>[];
+          final capturingRepo =
+              MockConversationRepository(mockConversationManager)
+                ..maxDelegateCalls = 2
+                ..sendMessageDelegate =
+                    ({
+                      required conversationId,
+                      required message,
+                      required model,
+                      required provider,
+                      required inferenceRepo,
+                      tools,
+                      toolChoice,
+                      temperature = 0.7,
+                      strategy,
+                    }) async {
+                      models.add(model);
+                      messages.add(message);
+                      if (strategy is TaskAgentStrategy) {
+                        await strategy.processToolCalls(
+                          toolCalls: [
+                            const ChatCompletionMessageToolCall(
+                              id: 'deepseek-action-call',
+                              type: ChatCompletionMessageToolCallType.function,
+                              function: ChatCompletionMessageFunctionCall(
+                                name: TaskAgentToolNames
+                                    .addMultipleChecklistItems,
+                                arguments:
+                                    '{"items":[{"title":"Fix profile seeding"}]}',
+                              ),
+                            ),
+                            ChatCompletionMessageToolCall(
+                              id: 'deepseek-draft-report-call',
+                              type: ChatCompletionMessageToolCallType.function,
+                              function: ChatCompletionMessageFunctionCall(
+                                name: TaskAgentToolNames.updateReport,
+                                arguments: jsonEncode({
+                                  'oneLiner': 'Fix profile seeding',
+                                  'tldr':
+                                      'The full sequence is now tracked as '
+                                      'checklist items.',
+                                  'content': 'Fix profile seeding.',
+                                }),
+                              ),
+                            ),
+                          ],
+                          manager: mockConversationManager,
+                        );
+                        return const InferenceUsage(
+                          inputTokens: 100,
+                          outputTokens: 20,
+                        );
+                      }
+                      await strategy!.processToolCalls(
+                        toolCalls: [
+                          ChatCompletionMessageToolCall(
+                            id: 'deepseek-repaired-report-call',
+                            type: ChatCompletionMessageToolCallType.function,
+                            function: ChatCompletionMessageFunctionCall(
+                              name: TaskAgentToolNames.updateReport,
+                              arguments: jsonEncode({
+                                'oneLiner': 'Fix profile seeding',
+                                'tldr': 'Fix profile seeding next.',
+                                'content': 'Fix profile seeding.',
+                              }),
+                            ),
+                          ),
+                        ],
+                        manager: mockConversationManager,
+                      );
+                      return const InferenceUsage(
+                        inputTokens: 30,
+                        outputTokens: 8,
+                      );
+                    };
+          final deepseekWorkflow = createTestWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: capturingRepo,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+          );
+
+          final result = await deepseekWorkflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          // The executor drafts; the editor, a different model, repairs.
+          expect(models, [
+            meliousDeepseekV41FlashModelId,
+            meliousQwen35122BA10BModelId,
+          ]);
+          expect(messages.last, contains('processNarration'));
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final report = capturedEntitiesOfType<AgentReportEntity>(
+            captured,
+          ).single;
+          expect(report.tldr, 'Fix profile seeding next.');
+          expect(
+            capturedEntitiesOfType<AgentMessageEntity>(captured).map(
+              (message) => message.metadata.toolName,
+            ),
+            contains(
+              '${TaskAgentReportEditor.auditToolPrefix}_detected_repaired',
+            ),
+          );
+          expect(
+            capturedTokenUsageEntities(captured).map((entry) => entry.modelId),
+            unorderedEquals([
+              meliousDeepseekV41FlashModelId,
+              meliousQwen35122BA10BModelId,
+            ]),
+          );
+        },
+      );
+
+      test('a clean GLM report publishes without an editor pass', () async {
+        stubMeliousTaskAgentModel(
+          providerId: 'melious-provider-glm-clean',
+          modelConfigId: 'glm-model-clean',
+          modelName: 'GLM 5.3 Flash',
+          providerModelId: meliousGlm53FlashModelId,
+        );
+
+        final models = <String>[];
+        final capturingRepo =
+            MockConversationRepository(mockConversationManager)
+              ..maxDelegateCalls = 1
+              ..sendMessageDelegate =
+                  ({
+                    required conversationId,
+                    required message,
+                    required model,
+                    required provider,
+                    required inferenceRepo,
+                    tools,
+                    toolChoice,
+                    temperature = 0.7,
+                    strategy,
+                  }) async {
+                    models.add(model);
+                    await strategy!.processToolCalls(
+                      toolCalls: const [
+                        ChatCompletionMessageToolCall(
+                          id: 'glm-clean-report-call',
+                          type: ChatCompletionMessageToolCallType.function,
+                          function: ChatCompletionMessageFunctionCall(
+                            name: TaskAgentToolNames.updateReport,
+                            arguments:
+                                '{"oneLiner":"Review the active risk","tldr":"Approval remains pending.","content":"Marta must approve deployment."}',
+                          ),
+                        ),
+                      ],
+                      manager: mockConversationManager,
+                    );
+                    return const InferenceUsage(
+                      inputTokens: 90,
+                      outputTokens: 15,
+                    );
+                  };
+        final glmWorkflow = createTestWorkflow(
+          agentRepository: mockAgentRepository,
+          conversationRepository: capturingRepo,
+          aiInputRepository: mockAiInputRepository,
+          aiConfigRepository: mockAiConfigRepository,
+          journalDb: mockJournalDb,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: mockChecklistRepository,
+          labelsRepository: mockLabelsRepository,
+          syncService: mockSyncService,
+          templateService: mockTemplateService,
+        );
+
+        final result = await glmWorkflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+        // Only the executor ran: a clean report costs nothing extra.
+        expect(models, [meliousGlm53FlashModelId]);
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        expect(
+          capturedEntitiesOfType<AgentReportEntity>(captured).single.content,
+          'Marta must approve deployment.',
+        );
+        expect(
+          capturedEntitiesOfType<AgentMessageEntity>(captured).map(
+            (message) => message.metadata.toolName,
+          ),
+          contains('${TaskAgentReportEditor.auditToolPrefix}_detected_clean'),
         );
       });
 

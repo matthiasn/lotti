@@ -127,6 +127,30 @@ class TaskAgentReportEditResult {
   final StackTrace? stackTrace;
 }
 
+/// How a task agent's published report reaches the user.
+enum TaskAgentReportRoute {
+  /// Published as written.
+  none,
+
+  /// Always revised by the editor before publishing.
+  alwaysEdited,
+
+  /// Checked by the deterministic defect detector, and handed to the editor
+  /// only when it finds a known defect. A clean report publishes untouched.
+  detected,
+}
+
+/// Model families whose reports go through [TaskAgentReportRoute.detected].
+///
+/// The detector is model-agnostic — it looks for checklist narration, pending
+/// work called "underway", waiting on a request nobody made, and leaked
+/// deferred scope — so it serves any executor that makes those mistakes. A full
+/// gym run found both families here doing exactly that, against report rules
+/// they were already given: glm-5.3-flash wrote "now tracked as checklist
+/// items" and "investigation underway", and deepseek-v4.1-flash wrote
+/// "awaiting Security cert" for certificates nobody had requested.
+const _detectedReportModelFragments = ['deepseek', 'glm'];
+
 /// Isolated, bounded report editor for the efficient task-agent routes.
 class TaskAgentReportEditor {
   TaskAgentReportEditor({
@@ -150,6 +174,29 @@ class TaskAgentReportEditor {
   static const productionMaxAttempts = 3;
 
   /// Prefix used for persisted, internal editor-route outcomes.
+  /// The route a report written by [modelId] takes.
+  ///
+  /// The one place this is decided, so the task workflow and the evaluation
+  /// that mirrors it cannot drift apart. Only Melious executors are routed:
+  /// the editor itself runs on a Melious model.
+  static TaskAgentReportRoute routeFor({
+    required InferenceProviderType providerType,
+    required String modelId,
+  }) {
+    if (providerType != InferenceProviderType.melious) {
+      return TaskAgentReportRoute.none;
+    }
+    final normalized = modelId.toLowerCase();
+    if (normalized == meliousMistralSmall4119BInstructModelId) {
+      return TaskAgentReportRoute.alwaysEdited;
+    }
+    if (normalized == meliousQwen35122BA10BModelId ||
+        _detectedReportModelFragments.any(normalized.contains)) {
+      return TaskAgentReportRoute.detected;
+    }
+    return TaskAgentReportRoute.none;
+  }
+
   static const auditToolPrefix = 'qwen_report_editor';
 
   final ConversationRepository conversationRepository;
@@ -169,11 +216,9 @@ class TaskAgentReportEditor {
   static bool supports({
     required String executorModelId,
     required InferenceProviderType providerType,
-  }) {
-    return providerType == InferenceProviderType.melious &&
-        executorModelId.toLowerCase() ==
-            meliousMistralSmall4119BInstructModelId;
-  }
+  }) =>
+      routeFor(providerType: providerType, modelId: executorModelId) ==
+      TaskAgentReportRoute.alwaysEdited;
 
   /// Rewrites [draft] from compact, ID-free task facts.
   Future<TaskAgentReportEditResult> edit({
@@ -767,12 +812,20 @@ class TaskAgentReportEditor {
     ).hasMatch(normalizedCandidate);
     final narratesNewActionsAsQueued =
         hasNewChecklistItems &&
-        RegExp(
-          r'\b(workflow\s+items?|actions?|tasks?|steps?|schritte|items?)\b.{0,30}'
-          r'\b(queued|queue|listed|captured|prepared|identified|extracted|'
-          'defined|recorded|created|added|assembled|tracked|identifiziert|'
-          r'erfasst)\b',
-        ).hasMatch(normalizedCandidate);
+        (RegExp(
+              r'\b(workflow\s+items?|actions?|tasks?|steps?|schritte|items?)\b.{0,30}'
+              r'\b(queued|queue|listed|captured|prepared|identified|extracted|'
+              'defined|recorded|created|added|assembled|tracked|identifiziert|'
+              r'erfasst)\b',
+            ).hasMatch(normalizedCandidate) ||
+            // The same narration with the verb first: "the full workflow is
+            // captured as ordered checklist items", "now tracked as checklist
+            // items". Measured on glm-5.3-flash, which wrote both; the
+            // noun-first pattern above missed the verb-first one.
+            RegExp(
+              r'\b(queued|listed|captured|recorded|created|added|tracked)\s+'
+              r'as\s+(?:\w+\s+){0,2}(items?|steps?|actions?|tasks?)\b',
+            ).hasMatch(normalizedCandidate));
     final narratesNewActionsAsReady =
         hasNewChecklistItems &&
         RegExp(

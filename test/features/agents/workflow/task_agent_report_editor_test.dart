@@ -101,6 +101,53 @@ turn task metadata or a checklist edit into an accomplishment.
     }
   });
 
+  test('route sends DeepSeek and GLM through the defect detector', () {
+    for (final (model, provider, route) in [
+      (
+        meliousMistralSmall4119BInstructModelId,
+        InferenceProviderType.melious,
+        TaskAgentReportRoute.alwaysEdited,
+      ),
+      (
+        meliousQwen35122BA10BModelId,
+        InferenceProviderType.melious,
+        TaskAgentReportRoute.detected,
+      ),
+      (
+        'deepseek-v4.1-flash',
+        InferenceProviderType.melious,
+        TaskAgentReportRoute.detected,
+      ),
+      (
+        'GLM-5.3-Flash',
+        InferenceProviderType.melious,
+        TaskAgentReportRoute.detected,
+      ),
+      ('glm-5.3', InferenceProviderType.melious, TaskAgentReportRoute.detected),
+      (
+        'deepseek-v4.1-flash',
+        InferenceProviderType.genericOpenAi,
+        TaskAgentReportRoute.none,
+      ),
+      (
+        meliousMistralSmall4119BInstructModelId,
+        InferenceProviderType.genericOpenAi,
+        TaskAgentReportRoute.none,
+      ),
+      (
+        'gpt-oss-120b',
+        InferenceProviderType.melious,
+        TaskAgentReportRoute.none,
+      ),
+    ]) {
+      expect(
+        TaskAgentReportEditor.routeFor(providerType: provider, modelId: model),
+        route,
+        reason: '$model via $provider',
+      );
+    }
+  });
+
   test('report-only tool localizes every field', () {
     final reportTool = TaskAgentReportEditor.buildTool(languageCode: 'de');
     final properties =
@@ -1231,6 +1278,35 @@ turn task metadata or a checklist edit into an accomplishment.
         },
       ),
       [TaskAgentReportRevisionIssue.processNarration],
+    );
+  });
+
+  test('validation catches checklist narration with the verb first', () {
+    // Verbatim glm-5.3-flash gym report: the noun-first pattern ("items ...
+    // captured") missed "captured as ordered checklist items".
+    const items = ['Implement the seeding fix', 'Create pull request'];
+    List<TaskAgentReportRevisionIssue> issues(String tldr) =>
+        TaskAgentReportEditor.detectDirectQwenRegressions(
+          languageCode: 'en',
+          materialTaskState: const {'newChecklistItems': items},
+          report: {
+            'oneLiner': 'Profile seeding cleanup pending',
+            'tldr': tldr,
+            'content':
+                'Implement the seeding fix, then create the pull request.',
+          },
+        );
+
+    expect(
+      issues(
+        'The full workflow is captured as ordered checklist items, beginning '
+        'with implementing the fix.',
+      ),
+      [TaskAgentReportRevisionIssue.processNarration],
+    );
+    expect(
+      issues('Nothing is implemented yet; the fix comes first.'),
+      isEmpty,
     );
   });
 

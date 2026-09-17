@@ -490,17 +490,20 @@ For the exact Melious `mistral-small-4-119b-instruct` executor:
 - Candidates are checked for lost dates or estimates, active-risk loss, locale
   register, fake link sections, process narration, unsupported priority claims,
   and causal claims inferred from a user checkmark.
-- Direct Qwen uses a **separate, narrower** detector derived from captured
-  regressions. It is not a semantic validator, quality score, or parser for
+- Melious Qwen, DeepSeek and GLM executors (`TaskAgentReportRoute.detected`,
+  chosen by `TaskAgentReportEditor.routeFor`) skip the always-on edit and use a
+  **separate, narrower** detector derived from captured regressions. It is not a semantic validator, quality score, or parser for
   arbitrary evolved directives; standalone words such as `Goal`, `Checklist` and
   `No blockers` do not trigger it.
-- **Direct Qwen does not rate its own work.** A local rule match triggers an
-  isolated rewrite with specific correction codes, written to the `reportEditor`
+- **A detected-route executor does not rate its own work.** A local rule match
+  triggers an isolated Qwen rewrite with specific correction codes, written to the `reportEditor`
   domain log without report text or task data.
 - Up to two repair attempts receive the sanitized rejected candidate and the
   exact failed checks; a candidate leaking deferred scope is withheld entirely.
-  After three invalid attempts, or any editor failure, the original Mistral draft
-  remains the report.
+  After three invalid attempts, or any editor failure, the executor's original
+  draft remains the report. Audit names record the route: `_direct_qwen` or
+  `_detected_clean` for a clean draft, `_direct_qwen_repaired` or
+  `_detected_repaired` for a repaired one.
 - Executor and editor usage persist separately, so model-level cost accounting
   stays accurate.
 
