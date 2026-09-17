@@ -73,6 +73,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   proposed a change to something outside the current task — another task's
   entry, say — the whole answer was dropped and the chat showed an error.
   The answer is now shown with no change proposed.
+- **A day plan is no longer lost when the assistant runs its arguments
+  together.** If the plan's blocks were followed by the rest of the request in
+  the same piece of text, the whole schedule was discarded; the complete plan
+  is now kept.
+- **A goal report is no longer lost over where its sections were written.** The
+  assistant sometimes placed some report sections beside the report rather than
+  inside it; the whole update was discarded and the goal kept a stale summary.
+- **A task report rewritten by the report editor now names the model that
+  wrote it.** The model shown for the report used to be the one whose draft was
+  replaced.
 
 ## [1.1.16]
 
