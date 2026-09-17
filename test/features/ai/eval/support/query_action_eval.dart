@@ -253,6 +253,7 @@ const queryActionEvalCases = <QueryActionEvalCase>[
       ExpectedQueryAction(
         'update_checklist_item',
         {'id': ActionEvalIds.feeder, 'isChecked': true},
+        defaults: {'title': 'Inspect the feeder seal', 'isArchived': false},
         minLengths: {'reason': 20},
       ),
     ],
@@ -261,20 +262,28 @@ const queryActionEvalCases = <QueryActionEvalCase>[
     'checklist_rename',
     'Rename the existing "Inspect the feeder seal" checklist item to "Inspect the inlet seal" without changing its checked state.',
     [
-      ExpectedQueryAction('update_checklist_item', {
-        'id': ActionEvalIds.feeder,
-        'title': 'Inspect the inlet seal',
-      }),
+      ExpectedQueryAction(
+        'update_checklist_item',
+        {'id': ActionEvalIds.feeder, 'title': 'Inspect the inlet seal'},
+        defaults: {'isArchived': false},
+      ),
     ],
   ),
   QueryActionEvalCase(
     'checklist_archive',
     'Archive the existing "Inspect the feeder seal" checklist item.',
     [
-      ExpectedQueryAction('update_checklist_item', {
-        'id': ActionEvalIds.feeder,
-        'isArchived': true,
-      }),
+      // Restating `title` or `isArchived` at its current value is a true no-op:
+      // LottiChecklistUpdateHandler compares both against the stored value.
+      // `isChecked` is deliberately NOT a default. An approved update treats
+      // any present isChecked as approving the check — rewriting checkedBy and
+      // checkedAt and appending a receipt even when the boolean is unchanged —
+      // so echoing it is a provenance change the request never asked for.
+      ExpectedQueryAction(
+        'update_checklist_item',
+        {'id': ActionEvalIds.feeder, 'isArchived': true},
+        defaults: {'title': 'Inspect the feeder seal'},
+      ),
     ],
   ),
   QueryActionEvalCase(
@@ -284,6 +293,7 @@ const queryActionEvalCases = <QueryActionEvalCase>[
       ExpectedQueryAction(
         'update_checklist_item',
         {'id': ActionEvalIds.sensor, 'isArchived': false, 'isChecked': false},
+        defaults: {'title': 'Replace the pressure sensor'},
         minLengths: {'reason': 20},
       ),
     ],
