@@ -2,7 +2,9 @@
 
 import contextlib
 import gzip
+import http.client
 import json
+import socket
 import tempfile
 import threading
 import unittest
@@ -89,6 +91,88 @@ class BillingTest(unittest.TestCase):
         self.assertEqual(received[0][1]["Authorization"], "Bearer PRIVATE KEY")
         self.assertEqual(json.loads(received[1][2])["messages"], ["PRIVATE PROMPT"])
         self.assertNotIn("PRIVATE", ledger.read_text())
+
+    @contextlib.contextmanager
+    def failing_provider(self, upstream, method, failures):
+        """Raise [failures] from [method], only on connections to the provider.
+
+        The test's own request to the relay uses http.client too, so a global
+        patch would break the client side instead of the relay's upstream hop.
+        """
+        port = int(upstream.split(":")[2].split("/")[0])
+        real = getattr(http.client.HTTPConnection, method)
+
+        def flaky(connection, *args, **kwargs):
+            if connection.port == port and failures:
+                raise failures.pop(0)
+            return real(connection, *args, **kwargs)
+
+        with patch.object(http.client.HTTPConnection, method, flaky):
+            yield
+
+    def post(self, relay):
+        request = urllib.request.Request(relay.base_url + "/chat/completions",
+                                         data=b'{"model":"candidate"}')
+        try:
+            with urllib.request.urlopen(request) as response:
+                return response.status, response.read()
+        except urllib.error.HTTPError as error:
+            return error.code, error.read()
+
+    def test_connection_failures_are_retried_before_the_request_is_sent(self):
+        failures = [socket.gaierror("temporary DNS failure"), ConnectionRefusedError()]
+        received = []
+        sleep = Mock()
+        ledger = self.directory / "billing.jsonl"
+        body = b'{"billing_cost":{"credits":"0.1","paid_with":"credits"}}'
+        with provider([(200, "application/json", body)], received) as upstream:
+            with self.failing_provider(upstream, "connect", failures):
+                with BillingRelay(upstream, ledger, sleep=sleep) as relay:
+                    self.assertEqual(self.post(relay), (200, body))
+        self.assertEqual(len(received), 1)
+        self.assertEqual(sleep.call_args_list, [((1.0,),), ((2.0,),)])
+        retries = [json.loads(line) for line in ledger.read_text().splitlines()
+                   if '"connect_retry"' in line]
+        self.assertEqual([(r["attempt"], r["error"]) for r in retries],
+                         [(1, "gaierror"), (2, "ConnectionRefusedError")])
+        result = summarize_billing([ledger])
+        self.assertTrue(result["complete"])
+        self.assertEqual((result["requests"], result["totalCostEur"]), (1, "0.1"))
+
+    def test_a_connection_that_never_opens_fails_after_the_last_attempt(self):
+        received = []
+        sleep = Mock()
+        ledger = self.directory / "billing.jsonl"
+        with provider([], received) as upstream:
+            with self.failing_provider(upstream, "connect",
+                                       [socket.gaierror("no DNS")] * 3):
+                with BillingRelay(upstream, ledger, sleep=sleep) as relay:
+                    status, _ = self.post(relay)
+        self.assertEqual(status, 502)
+        self.assertEqual(received, [])
+        self.assertEqual(sleep.call_count, 2)
+        finished = [json.loads(line) for line in ledger.read_text().splitlines()
+                    if '"request_finished"' in line]
+        self.assertEqual([record["error"] for record in finished], ["gaierror"])
+
+    def test_a_failure_after_the_request_is_sent_is_not_retried(self):
+        received = []
+        sleep = Mock()
+        ledger = self.directory / "billing.jsonl"
+        with provider([(200, "application/json", b"{}")], received) as upstream:
+            with self.failing_provider(upstream, "getresponse",
+                                       [http.client.RemoteDisconnected("closed")]):
+                with BillingRelay(upstream, ledger, sleep=sleep) as relay:
+                    status, _ = self.post(relay)
+        self.assertEqual(status, 502)
+        self.assertEqual(len(received), 1)
+        sleep.assert_not_called()
+
+    def test_connect_requires_at_least_one_attempt(self):
+        relay = BillingRelay("http://127.0.0.1:9/v1", self.directory / "unused.jsonl",
+                             connect_attempts=0)
+        with self.assertRaisesRegex(ValueError, "at least 1"):
+            relay.connect("request")
 
     def test_stream_is_forwarded_unchanged_and_final_billing_counted_once(self):
         body = (

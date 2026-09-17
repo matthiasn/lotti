@@ -9,6 +9,7 @@ import gzip
 import http.client
 import json
 import threading
+import time
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
@@ -88,15 +89,45 @@ def safe_response_headers(headers):
 class BillingRelay:
     """One attempt's transparent loopback endpoint and durable billing journal."""
 
-    def __init__(self, upstream, ledger, *, stage="candidate", timeout=600):
+    def __init__(self, upstream, ledger, *, stage="candidate", timeout=600,
+                 connect_attempts=3, connect_backoff=1.0, sleep=time.sleep):
         self.upstream = urlsplit(upstream)
         if self.upstream.scheme not in ("http", "https") or not self.upstream.hostname:
             raise ValueError("Billing relay requires an HTTP(S) provider endpoint")
         self.ledger = ledger
         self.stage = stage
         self.timeout = timeout
+        self.connect_attempts = connect_attempts
+        self.connect_backoff = connect_backoff
+        self.sleep = sleep
         self.lock = threading.Lock()
         self.session_id = uuid.uuid4().hex
+
+    def connect(self, request_id):
+        """Open the provider connection, retrying failures before any byte is sent.
+
+        A failed DNS lookup, refused connection or TLS handshake cannot have
+        reached the provider, so retrying it neither repeats nor double-bills a
+        request. Gym runs lost whole jobs to bursts of exactly these failures.
+        Anything after the connection is open is left alone: the request may
+        already be billed.
+        """
+        kind = (http.client.HTTPSConnection if self.upstream.scheme == "https"
+                else http.client.HTTPConnection)
+        for attempt in range(1, self.connect_attempts + 1):
+            connection = kind(self.upstream.hostname, self.upstream.port,
+                              timeout=self.timeout)
+            try:
+                connection.connect()
+                return connection
+            except OSError as failure:
+                connection.close()
+                if attempt == self.connect_attempts:
+                    raise
+                self.record("connect_retry", requestId=request_id, attempt=attempt,
+                            error=type(failure).__name__)
+                self.sleep(self.connect_backoff * attempt)
+        raise ValueError("connect_attempts must be at least 1")
 
     def record(self, event, **fields):
         record = {
@@ -163,10 +194,7 @@ class BillingRelay:
                     # and Host headers cannot turn this into a forward proxy.
                     if not self.path.startswith("/") or self.path.startswith("//"):
                         raise ValueError("Expected an origin-relative request path")
-                    kind = (http.client.HTTPSConnection if relay.upstream.scheme == "https"
-                            else http.client.HTTPConnection)
-                    connection = kind(relay.upstream.hostname, relay.upstream.port,
-                                      timeout=relay.timeout)
+                    connection = relay.connect(request_id)
                     hop_headers = {"host", "connection", "transfer-encoding",
                                    "content-length", "keep-alive", "proxy-authorization",
                                    "te", "trailer", "upgrade", "accept-encoding"}

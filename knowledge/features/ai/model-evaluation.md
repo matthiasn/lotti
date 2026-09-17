@@ -289,6 +289,12 @@ An explicitly frozen report fixture is a zero-request dependency and does not
 count as an untracked paid attempt.
 The task-wake driver installs the shared interaction-capture bench, matching
 the production billing route and retaining its per-turn consumption events.
+The relay retries opening the provider connection up to three times, with a
+growing pause, when the DNS lookup, TCP connect or TLS handshake fails. Nothing
+has reached the provider at that point, so the retry cannot double-bill. Each
+retry is journalled as `connect_retry`, which billing totals ignore. A failure
+after the request is sent is never retried and still surfaces as a 502, because
+the provider may already have charged for it.
 
 ```mermaid
 flowchart LR
