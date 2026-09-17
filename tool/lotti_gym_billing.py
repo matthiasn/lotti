@@ -86,12 +86,30 @@ def safe_response_headers(headers):
     ]
 
 
+# Provider statuses that mean "not now" rather than "no": overload, gateway
+# trouble and rate limits. A model is not at fault for any of them.
+RETRYABLE_PROVIDER_STATUSES = frozenset({429, 502, 503, 504, 529})
+
+# Longest Retry-After the relay honours. Five capped waits stay well inside the
+# app's 5-minute Melious request timeout, so a retried call can still answer.
+MAX_RETRY_AFTER_SECONDS = 30
+
+
+def retry_delay(retry_after, fallback):
+    """The provider's Retry-After in seconds when usable, else [fallback]."""
+    try:
+        seconds = float(retry_after)
+    except (TypeError, ValueError):
+        return fallback
+    return min(max(seconds, 0.0), MAX_RETRY_AFTER_SECONDS)
+
+
 class BillingRelay:
     """One attempt's transparent loopback endpoint and durable billing journal."""
 
     def __init__(self, upstream, ledger, *, stage="candidate", timeout=600,
                  connect_attempts=6, connect_timeout=30, connect_backoff=1.0,
-                 sleep=time.sleep):
+                 status_attempts=6, sleep=time.sleep):
         self.upstream = urlsplit(upstream)
         if self.upstream.scheme not in ("http", "https") or not self.upstream.hostname:
             raise ValueError("Billing relay requires an HTTP(S) provider endpoint")
@@ -100,6 +118,7 @@ class BillingRelay:
         self.timeout = timeout
         self.connect_attempts = connect_attempts
         self.connect_timeout = connect_timeout
+        self.status_attempts = status_attempts
         self.connect_backoff = connect_backoff
         self.sleep = sleep
         self.lock = threading.Lock()
@@ -207,16 +226,40 @@ class BillingRelay:
                     # and Host headers cannot turn this into a forward proxy.
                     if not self.path.startswith("/") or self.path.startswith("//"):
                         raise ValueError("Expected an origin-relative request path")
-                    connection = relay.connect(request_id)
                     hop_headers = {"host", "connection", "transfer-encoding",
                                    "content-length", "keep-alive", "proxy-authorization",
                                    "te", "trailer", "upgrade", "accept-encoding"}
                     headers = {k: v for k, v in self.headers.items()
                                if k.lower() not in hop_headers}
                     headers["Accept-Encoding"] = "identity"
-                    connection.request(self.command, self.path, body=body, headers=headers)
-                    response = connection.getresponse()
-                    status = response.status
+                    buffered = None
+                    for attempt in range(1, relay.status_attempts + 1):
+                        connection = relay.connect(request_id)
+                        connection.request(self.command, self.path, body=body,
+                                           headers=headers)
+                        response = connection.getresponse()
+                        status = response.status
+                        if (status not in RETRYABLE_PROVIDER_STATUSES
+                                or attempt == relay.status_attempts):
+                            break
+                        # A transient refusal is read whole so its billing can be
+                        # checked. Only an unbilled one is retried: a charged
+                        # response is forwarded, never paid for twice.
+                        buffered = response.read()
+                        refusal_billing = response_billing(
+                            buffered, response.getheader("Content-Type", ""),
+                            response.getheader("Content-Encoding", ""),
+                        )
+                        if refusal_billing["billingCost"] is not None:
+                            break
+                        relay.record("provider_retry", requestId=request_id,
+                                     attempt=attempt, httpStatus=status)
+                        delay = retry_delay(response.getheader("Retry-After"),
+                                            relay.connect_backoff * 2 ** (attempt - 1))
+                        connection.close()
+                        connection = None
+                        buffered = None
+                        relay.sleep(delay)
                     self.send_response_only(status, response.reason)
                     for key, value in safe_response_headers(response.getheaders()):
                         self.send_header(
@@ -227,7 +270,11 @@ class BillingRelay:
                     sent_headers = True
                     chunks = []
                     client_connected = True
-                    while chunk := response.read1(65536):
+                    pieces = [buffered] if buffered is not None else iter(
+                        lambda: response.read1(65536), b"")
+                    for chunk in pieces:
+                        if not chunk:
+                            continue
                         chunks.append(chunk)
                         if client_connected:
                             try:
