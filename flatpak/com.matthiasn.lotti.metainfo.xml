@@ -40,7 +40,7 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
-    <release version="1.1.17" date="2026-09-16">
+    <release version="1.1.17" date="2026-09-17">
       <description>
         <p>Added: a day plan now records how much of a task it leaves for later. When the assistant schedules part of a task, the block carries the minutes still outstanding, so the day can show what remains instead of burying it in prose.</p>
         <p>Changed: the Navigate button is now the mobile navigation. The bottom bar with its Tasks, Daily OS and Logbook slots and the More menu behind them is gone. Every phone now gets the single glass Navigate button that opens all app sections in a two-column grid, with each list's create button riding beside it on the same row. There is nothing to switch on any more.</p>
@@ -54,6 +54,9 @@
         <p>Fixed: recovering goals keep their briefing. A goal agent report that said you are "recovering" or have "achieved" something was refused as a leaked status value and never saved; those ordinary words are now allowed in the report.</p>
         <p>Fixed: Lotti answers no longer fail over stray characters. Some models write a backslash in front of list dashes, or put a raw line break inside the answer they send back, which made the whole reply unreadable and the question fail. Those answers now come through.</p>
         <p>Fixed: a Lotti answer survives an action it cannot offer. When the assistant proposed a change to something outside the current task - another task's entry, say - the whole answer was dropped and the chat showed an error. The answer is now shown with no change proposed.</p>
+        <p>Fixed: a day plan is no longer lost when the assistant runs its arguments together. If the plan's blocks were followed by the rest of the request in the same piece of text, the whole schedule was discarded; the complete plan is now kept.</p>
+        <p>Fixed: a goal report is no longer lost over where its sections were written. The assistant sometimes placed some report sections beside the report rather than inside it; the whole update was discarded and the goal kept a stale summary.</p>
+        <p>Fixed: a task report rewritten by the report editor now names the model that wrote it. The model shown for the report used to be the one whose draft was replaced.</p>
       </description>
     </release>
     <release version="1.1.16" date="2026-09-15">
