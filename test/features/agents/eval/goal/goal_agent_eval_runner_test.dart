@@ -593,6 +593,55 @@ void main() {
       );
     });
 
+    test('an abbreviation inside the question does not end it', () {
+      // Verbatim shape from a deepseek-v4.1-flash gym run: the periods in
+      // "i.e." were read as full stops, so a single clarifying question with
+      // two concrete options scored as no question at all.
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenarioById('evo_ambiguous'),
+          toolCalls: [
+            call(
+              GoalAgentToolNames.replyToUser,
+              jsonEncode({
+                'message':
+                    'One question so I know which way to lean: is it the '
+                    'number that feels like too much, or the daily part — '
+                    'i.e. would a lower target, or the same target over a '
+                    'longer window, feel more livable?',
+              }),
+            ),
+          ],
+          assistantContent: '',
+        ),
+        GoalAgentEvalFailureCategory.none,
+      );
+    });
+
+    test('a real sentence end still separates a lead from a question', () {
+      // Including one that ends in an abbreviation: "etc." closes sentences,
+      // so it must not let a lead bridge into a later rhetorical question.
+      for (final message in [
+        'Is it hard some days. The win is getting out the door?',
+        'Is it hard because of work, family, etc. The win is out the door?',
+      ]) {
+        expect(
+          classifyGoalAgentResult(
+            scenario: scenarioById('evo_ambiguous'),
+            toolCalls: [
+              call(
+                GoalAgentToolNames.replyToUser,
+                jsonEncode({'message': message}),
+              ),
+            ],
+            assistantContent: '',
+          ),
+          GoalAgentEvalFailureCategory.missingAssistantContent,
+          reason: message,
+        );
+      }
+    });
+
     test('an is-there pep talk is not clarification', () {
       for (final message in [
         'Is there any better feeling than crushing a goal?',

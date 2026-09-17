@@ -697,7 +697,14 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
           'about|making|getting)|are you|'
           // ignore: missing_whitespace_between_adjacent_strings
           'is the (?:hard|difficult|tough) part)'
-          r'\b[^?!.]*\?',
+          // The span to the question mark may not cross a sentence end, but
+          // an abbreviation's periods are not one: "is it the number or the
+          // daily part — i.e. would a lower target feel more livable?" is a
+          // single clarifying question, and reading "i.e." as two full stops
+          // failed it. Only abbreviations that do not end sentences qualify:
+          // "etc." routinely does ("work, family, etc. The win is…?"), and
+          // admitting it let a lead bridge into an unrelated later question.
+          r'\b(?:[^?!.]|\b(?:i\.e|e\.g|vs)\.)*\?',
     ],
   ),
   GoalAgentEvalScenario(
