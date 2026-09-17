@@ -1291,7 +1291,9 @@ void main() {
             final models = <String>[];
             final capturingRepo =
                 MockConversationRepository(mockConversationManager)
-                  ..maxDelegateCalls = 1
+                  // Room for a second call, so an unwanted editor pass is recorded
+                  // rather than silently refused by the mock.
+                  ..maxDelegateCalls = 2
                   ..sendMessageDelegate =
                       ({
                         required conversationId,
@@ -1305,6 +1307,7 @@ void main() {
                         strategy,
                       }) async {
                         models.add(model);
+                        if (models.length > 1) return null;
                         await strategy!.processToolCalls(
                           toolCalls: [
                             const ChatCompletionMessageToolCall(
