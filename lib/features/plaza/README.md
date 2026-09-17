@@ -90,6 +90,8 @@ and widget textures belong to `flutter_scene`.
 - `state/plaza_sky_mode_controller.dart` remembers the chosen sky, and
   `ui/plaza_wall_swap.dart` decides which painted texture set to load for it.
 - `domain/` holds geometry, attention, routes, collisions and the Morning walk.
+- `scene/ground_shade.dart` plans the daylight shade quads without the GPU;
+  the scene lays them on the decal plane.
 - `scene/` builds geometry, manages facade detail and captures, and animates
   status lights, flames and ambient life.
 - `ui/plaza_hud.dart` is the chrome, and `ui/plaza_top_bar.dart` the collapsible

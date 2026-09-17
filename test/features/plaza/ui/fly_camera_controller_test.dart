@@ -690,4 +690,44 @@ void main() {
       expect(camera.moving, isFalse);
     });
   });
+
+  group('near plane', () {
+    test('walking keeps the near plane at the walking value', () {
+      const walking = FlyCameraController.walkingNearClip;
+      expect(FlyCameraController.nearClipFor(0), walking);
+      expect(FlyCameraController.nearClipFor(eyeHeight), walking);
+      // It only starts growing once one percent of the altitude passes it.
+      expect(FlyCameraController.nearClipFor(30), walking);
+    });
+
+    test('aloft, the near plane is one percent of the altitude', () {
+      expect(FlyCameraController.nearClipFor(100), closeTo(1, 1e-12));
+      expect(FlyCameraController.nearClipFor(288), closeTo(2.88, 1e-12));
+    });
+
+    test('the near plane never cuts what a flight clears', () {
+      // Flights hold Flight.clearance above every solid, and the tallest
+      // thing in the district is an 80 m skyline accent: up to there the
+      // plane must stay inside that clearance, or a roof the camera lifts
+      // over would be sliced open on the way past.
+      const tallest = 80.0;
+      for (var height = 0.0; height <= tallest + Flight.clearance; height++) {
+        expect(
+          FlyCameraController.nearClipFor(height),
+          lessThan(Flight.clearance),
+          reason: 'at $height m',
+        );
+      }
+    });
+
+    test('the projection takes its near plane from the pose height', () {
+      final camera = _controller();
+      final walking = camera.camera().projection as PerspectiveProjection;
+      camera.pose = const CameraPose(x: 0, y: 99, z: 0, yaw: 0);
+      final aloft = camera.camera().projection as PerspectiveProjection;
+      expect(walking.near, FlyCameraController.walkingNearClip);
+      expect(aloft.near, closeTo(0.99, 1e-12));
+      expect(aloft.far, walking.far);
+    });
+  });
 }

@@ -21,7 +21,7 @@ extension _PlazaLightsBuilder on PlazaSceneController {
     scene.add(
       Node(
         localTransform: Matrix4.translation(
-          Vector3(at.x, PlazaSceneController._groundTop, at.z),
+          Vector3(at.x, PlazaSceneController.groundTop, at.z),
         )..rotateX(-math.pi / 2),
         mesh: Mesh(ccwQuad(radius * 2, radius * 2), material),
       ),
@@ -39,19 +39,20 @@ extension _PlazaLightsBuilder on PlazaSceneController {
     required double yaw,
     required Color color,
     required double alpha,
+    Node? parent,
   }) {
     final lit = _groundLight(alpha);
     final material = UnlitMaterial()
       ..baseColorFactor = linearColor(color, alpha: lit)
       ..alphaMode = AlphaMode.blend;
     _washes.add((material, lit));
-    scene.add(
+    (parent ?? scene.root).add(
       Node(
         localTransform:
             Matrix4.translation(
                 Vector3(
                   at.x + math.sin(yaw) * length / 2,
-                  PlazaSceneController._groundTop,
+                  PlazaSceneController.groundTop,
                   at.z + math.cos(yaw) * length / 2,
                 ),
               )
@@ -62,91 +63,50 @@ extension _PlazaLightsBuilder on PlazaSceneController {
     );
   }
 
-  /// The shadow a [height]-metre volume standing on [at] throws across the
-  /// paving, [width] by [depth] at its foot.
+  /// The shade a [height]-metre volume standing on [at] throws across the
+  /// paving, [width] by [depth] at its foot: the quads [shadeQuadsFor] plans
+  /// for this hour, laid on the decal plane. Night plans none.
   ///
-  /// There is no light in this scene and nothing casts anything: this is
-  /// two soft dark quads on the ground. It is the one thing that makes an
-  /// unlit daylight city read as standing on its street rather than pasted
-  /// onto it, which is why the day palette carries a sun angle at all.
-  /// Night has no sun, so [PlazaSky.shadowLength] returns zero and nothing
-  /// is added.
-  ///
-  /// Two quads, not one, because they do different jobs. The **contact**
-  /// pad sits on the footprint and is what says the building meets the
-  /// ground — it has to be there from every camera angle, including the one
-  /// looking straight down the sun. The **cast** streak runs away from the
-  /// sun and is what says where the sun is. One offset quad cannot be both:
-  /// its falloff peaks half a shadow-length out, leaving the wall's own
-  /// foot at a third of the density, which reads as a smudge on the paving
-  /// rather than as contact.
-  ///
-  /// Both are square to the sun rather than to the building: a facade
-  /// turned off-axis gets the larger of its two footprint sides, which at
-  /// this softness reads correctly and costs no solve.
+  /// [parent] is where the quads hang — the scene root unless the caster
+  /// itself lives in a group that hides, in which case its shade must hide
+  /// with it: a filler block that leaves the map view must not leave its
+  /// shadow on the ground behind it.
   void _addShadow(
     Vector3 at, {
     required double width,
     required double depth,
     required double height,
     bool contact = true,
+    Node? parent,
   }) {
-    final alpha = palette.lights.shadowAlpha;
-    final length = palette.sky.shadowLength(height);
-    if (alpha <= 0 || length <= 0) return;
-    // Away from the sun, along the ground.
-    final cast = palette.sky.sunAzimuth + math.pi;
-    final lateral = math.max(width, depth);
-    // A sign on two thin posts meets the ground at two thin posts: it
-    // gets the streak its panel throws and no pad, or the pad would read
-    // as a slab of shade the structure does not have.
-    if (contact) {
-      _shadowQuad(
-        at,
-        width: lateral * 1.25,
-        length: lateral * 1.25,
-        yaw: 0,
-        alpha: alpha,
-      );
-    }
-    _shadowQuad(
-      Vector3(
-        at.x + math.sin(cast) * length / 2,
-        0,
-        at.z + math.cos(cast) * length / 2,
-      ),
-      width: lateral * 1.1,
-      length: lateral + length,
-      yaw: cast,
-      alpha: alpha * castShare,
+    final quads = shadeQuadsFor(
+      palette,
+      x: at.x,
+      z: at.z,
+      width: width,
+      depth: depth,
+      height: height,
+      contact: contact,
     );
+    for (final quad in quads) {
+      _shadowQuad(quad, parent: parent);
+    }
   }
 
-  /// How much of the contact pad's density the cast streak carries. A
-  /// shadow thrown across open paving is lighter than the dark under the
-  /// wall itself, and the two overlap where they meet.
-  static const castShare = 0.7;
-
-  void _shadowQuad(
-    Vector3 at, {
-    required double width,
-    required double length,
-    required double yaw,
-    required double alpha,
-  }) {
+  void _shadowQuad(ShadeQuad quad, {Node? parent}) {
     final material = UnlitMaterial()
-      ..baseColorFactor = linearColor(palette.lights.shadow, alpha: alpha)
+      ..baseColorFactor = linearColor(palette.lights.shadow, alpha: quad.alpha)
       ..alphaMode = AlphaMode.blend;
     _shadows.add(material);
-    scene.add(
+    (parent ?? scene.root).add(
       Node(
         localTransform:
             Matrix4.translation(
-                Vector3(at.x, PlazaSceneController._groundTop, at.z),
+                Vector3(quad.x, PlazaSceneController.groundTop, quad.z),
               )
-              ..rotateY(yaw)
+              ..rotateY(quad.yaw)
               ..rotateX(-math.pi / 2),
-        mesh: Mesh(ccwQuad(width, length), material),
+        mesh: Mesh(ccwQuad(quad.width, quad.length), material),
       ),
     );
   }
