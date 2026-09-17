@@ -644,6 +644,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         'content': strategy.extractReportContent(),
       });
       InferenceUsage? reportEditorUsage;
+      ReportFinalizerOutcome? reportFinalizerOutcome;
       final reportRoute = TaskAgentReportEditor.routeFor(
         providerType: provider.inferenceProviderType,
         modelId: modelId,
@@ -729,6 +730,8 @@ extension TaskAgentExecute on TaskAgentWorkflow {
               : '${TaskAgentReportEditor.auditToolPrefix}_detected_clean',
         );
       } else if (shouldRunReportEditor && effectiveReport != null) {
+        // Whatever happens below, the editor ran, so its outcome is recorded.
+        reportFinalizerOutcome = ReportFinalizerOutcome.failed;
         try {
           final editResult =
               await TaskAgentReportEditor(
@@ -765,6 +768,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
             );
           } else if (revision != null) {
             effectiveReport = revision;
+            reportFinalizerOutcome = ReportFinalizerOutcome.accepted;
             await strategy.recordWorkflowResult(
               toolName: switch ((isDetectedExecutor, isDirectQwenExecutor)) {
                 (_, true) =>
@@ -781,6 +785,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
               subDomain: 'reportEditor',
             );
           } else {
+            reportFinalizerOutcome = ReportFinalizerOutcome.rejected;
             await strategy.recordWorkflowResult(
               toolName: '${TaskAgentReportEditor.auditToolPrefix}_rejected',
               errorMessage: editResult.validationIssues
@@ -876,9 +881,24 @@ extension TaskAgentExecute on TaskAgentWorkflow {
             threadId: threadId,
             runKey: runKey,
             now: now,
-            reportProvenance: ReportInferenceProvenance.executorOnly(
-              runSnapshot,
-            ),
+            reportProvenance: reportFinalizerOutcome == null
+                ? ReportInferenceProvenance.executorOnly(runSnapshot)
+                : ReportInferenceProvenance.edited(
+                    runSnapshot,
+                    // The editor runs on the executor's provider connection.
+                    finalizer: InferenceRouteSnapshot(
+                      providerModelId: meliousQwen35122BA10BModelId,
+                      modelName: meliousQwen35122BA10BModelId,
+                      servingProviderConfigId:
+                          runSnapshot.executor.servingProviderConfigId,
+                      servingProviderType:
+                          runSnapshot.executor.servingProviderType,
+                      servingProviderName:
+                          runSnapshot.executor.servingProviderName,
+                      runtimeSettings: const {},
+                    ),
+                    outcome: reportFinalizerOutcome,
+                  ),
           );
 
       // 9b. Embed the report for vector search (fire-and-forget).

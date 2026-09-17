@@ -506,6 +506,9 @@ For the exact Melious `mistral-small-4-119b-instruct` executor:
   `_detected_repaired` for a repaired one.
 - Executor and editor usage persist separately, so model-level cost accounting
   stays accurate.
+- Report provenance records the editor as `finalizer` with its outcome. Only an
+  accepted revision makes the editor the `finalContentAuthor`, so the model
+  identity row credits the model that wrote the published text.
 
 # Tool policy
 

@@ -6,6 +6,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/projection/content_digest.dart';
@@ -1395,6 +1396,24 @@ void main() {
             captured,
           ).single;
           expect(report.tldr, 'Fix profile seeding next.');
+          // Qwen wrote the published text, so Qwen is credited for it.
+          final provenance = ReportInferenceProvenance.tryRead(
+            report.provenance,
+          )!;
+          expect(provenance.finalizerOutcome, ReportFinalizerOutcome.accepted);
+          expect(provenance.finalContentAuthor, ReportContentAuthor.finalizer);
+          expect(
+            provenance.finalAuthorRoute.providerModelId,
+            meliousQwen35122BA10BModelId,
+          );
+          expect(
+            provenance.executor.providerModelId,
+            meliousDeepseekV41FlashModelId,
+          );
+          expect(
+            provenance.finalAuthorRoute.servingProviderType,
+            InferenceProviderType.melious,
+          );
           expect(
             capturedEntitiesOfType<AgentMessageEntity>(captured).map(
               (message) => message.metadata.toolName,
