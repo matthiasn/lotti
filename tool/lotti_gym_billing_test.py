@@ -32,8 +32,10 @@ def provider(responses, received):
         def do_POST(self):
             received.append((self.path, dict(self.headers),
                              self.rfile.read(int(self.headers["Content-Length"]))))
-            status, content_type, body = responses[len(received) - 1]
+            status, content_type, body, *extra = responses[len(received) - 1]
             self.send_response(status)
+            for key, value in (extra[0] if extra else {}).items():
+                self.send_header(key, value)
             self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
@@ -189,6 +191,97 @@ class BillingTest(unittest.TestCase):
                 self.assertEqual(connection.sock.gettimeout(), 600)
             finally:
                 connection.close()
+
+    def test_an_unbilled_provider_refusal_is_retried_until_it_succeeds(self):
+        overloaded = (503, "application/json", b'{"error":"The model provider encountered an error."}')
+        body = b'{"billing_cost":{"credits":"0.2","paid_with":"credits"}}'
+        received = []
+        sleep = Mock()
+        ledger = self.directory / "billing.jsonl"
+        with provider([overloaded, overloaded, (200, "application/json", body)],
+                      received) as upstream:
+            with BillingRelay(upstream, ledger, sleep=sleep) as relay:
+                self.assertEqual(self.post(relay), (200, body))
+        self.assertEqual(len(received), 3)
+        self.assertEqual([call.args[0] for call in sleep.call_args_list], [1.0, 2.0])
+        retries = [json.loads(line) for line in ledger.read_text().splitlines()
+                   if '"provider_retry"' in line]
+        self.assertEqual([(r["attempt"], r["httpStatus"]) for r in retries],
+                         [(1, 503), (2, 503)])
+        # The refusals were never charged, so the run's price stays complete.
+        result = summarize_billing([ledger])
+        self.assertTrue(result["complete"])
+        self.assertEqual((result["requests"], result["totalCostEur"]), (1, "0.2"))
+
+    def test_retry_after_is_honoured_and_capped(self):
+        body = b'{"billing_cost":{"credits":"0.1","paid_with":"credits"}}'
+        responses = [
+            (429, "application/json", b"{}", {"Retry-After": "7"}),
+            (503, "application/json", b"{}", {"Retry-After": "3600"}),
+            (529, "application/json", b"{}", {"Retry-After": "soon"}),
+            (200, "application/json", body),
+        ]
+        sleep = Mock()
+        with provider(responses, []) as upstream:
+            with BillingRelay(upstream, self.directory / "billing.jsonl", sleep=sleep) as relay:
+                self.assertEqual(self.post(relay), (200, body))
+        self.assertEqual([call.args[0] for call in sleep.call_args_list], [7.0, 30.0, 4.0])
+
+    def test_retry_after_accepts_an_http_date_and_rejects_non_finite_values(self):
+        from datetime import datetime, timezone
+        from tool.lotti_gym_billing import retry_delay
+        now = datetime(2026, 9, 17, 12, 0, 0, tzinfo=timezone.utc)
+        self.assertEqual(retry_delay("Thu, 17 Sep 2026 12:00:12 GMT", 1.0, now=now), 12.0)
+        self.assertEqual(retry_delay("Thu, 17 Sep 2026 13:00:00 GMT", 1.0, now=now), 30.0)
+        self.assertEqual(retry_delay("Thu, 17 Sep 2026 11:00:00 GMT", 1.0, now=now), 0.0)
+        for value in ["NaN", "inf", "-inf", "", "not a date"]:
+            self.assertEqual(retry_delay(value, 4.0, now=now), 4.0, msg=value)
+        self.assertEqual(retry_delay(None, 2.0), 2.0)
+
+    def test_gateway_errors_are_not_replayed(self):
+        # A 502 or 504 may follow a request the provider accepted and billed.
+        for status in (502, 504):
+            received = []
+            sleep = Mock()
+            gateway = (status, "text/html", b"<html>gateway</html>")
+            with provider([gateway, (200, "application/json", b"{}")], received) as upstream:
+                with BillingRelay(upstream, self.directory / f"{status}.jsonl",
+                                  sleep=sleep) as relay:
+                    self.assertEqual(self.post(relay), (status, gateway[2]))
+            self.assertEqual(len(received), 1, msg=status)
+            sleep.assert_not_called()
+
+    def test_a_billed_refusal_is_forwarded_not_paid_for_twice(self):
+        billed = (503, "application/json",
+                  b'{"billing_cost":{"credits":"0.05","paid_with":"credits"}}')
+        received = []
+        sleep = Mock()
+        ledger = self.directory / "billing.jsonl"
+        with provider([billed, (200, "application/json", b"{}")], received) as upstream:
+            with BillingRelay(upstream, ledger, sleep=sleep) as relay:
+                self.assertEqual(self.post(relay), (503, billed[2]))
+        self.assertEqual(len(received), 1)
+        sleep.assert_not_called()
+        self.assertEqual(summarize_billing([ledger])["totalCostEur"], "0.05")
+
+    def test_persistent_refusals_and_permanent_errors_reach_the_caller(self):
+        overloaded = (503, "application/json", b'{"error":"overloaded"}')
+        received = []
+        sleep = Mock()
+        with provider([overloaded] * 6, received) as upstream:
+            with BillingRelay(upstream, self.directory / "a.jsonl", sleep=sleep) as relay:
+                self.assertEqual(self.post(relay), (503, overloaded[2]))
+        self.assertEqual(len(received), 6)
+        self.assertEqual(sleep.call_count, 5)
+
+        rejected = (400, "application/json", b'{"error":"bad request"}')
+        received = []
+        sleep = Mock()
+        with provider([rejected, (200, "application/json", b"{}")], received) as upstream:
+            with BillingRelay(upstream, self.directory / "b.jsonl", sleep=sleep) as relay:
+                self.assertEqual(self.post(relay), (400, rejected[2]))
+        self.assertEqual(len(received), 1)
+        sleep.assert_not_called()
 
     def test_connect_requires_at_least_one_attempt(self):
         relay = BillingRelay("http://127.0.0.1:9/v1", self.directory / "unused.jsonl",
