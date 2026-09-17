@@ -644,22 +644,26 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         'content': strategy.extractReportContent(),
       });
       InferenceUsage? reportEditorUsage;
-      final mistralReportEditorEligible = TaskAgentReportEditor.supports(
-        executorModelId: modelId,
+      ReportFinalizerOutcome? reportFinalizerOutcome;
+      final reportRoute = TaskAgentReportEditor.routeFor(
         providerType: provider.inferenceProviderType,
+        modelId: modelId,
       );
+      final mistralReportEditorEligible =
+          reportRoute == TaskAgentReportRoute.alwaysEdited;
+      final isDetectedExecutor = reportRoute.isDetected;
       final normalizedExecutorModelId = modelId.toLowerCase();
-      final isMeliousProvider =
-          provider.inferenceProviderType == InferenceProviderType.melious;
       final isDirectQwenModel =
           normalizedExecutorModelId == meliousQwen35122BA10BModelId;
-      final isDirectQwenExecutor = isMeliousProvider && isDirectQwenModel;
+      // Qwen keeps its own audit names; other detected executors use generic
+      // ones, since the editor that repairs them is a different model.
+      final isDirectQwenExecutor = isDetectedExecutor && isDirectQwenModel;
       final isMistralEditorCandidate =
           normalizedExecutorModelId == meliousMistralSmall4119BInstructModelId;
       final isReportEditorCandidate =
           isMistralEditorCandidate || isDirectQwenModel;
       final reportEditorRouteEligible =
-          mistralReportEditorEligible || isDirectQwenExecutor;
+          mistralReportEditorEligible || isDetectedExecutor;
       final currentTaskData = taskAttentionContext.task?.data;
       final currentTaskDue = currentTaskData?.due;
       final currentTaskPriority = switch (currentTaskData?.priority) {
@@ -667,7 +671,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         TaskPriority.p1High => TaskPriority.p1High.short,
         _ => null,
       };
-      final materialTaskState =
+      final fullMaterialTaskState =
           reportEditorRouteEligible && effectiveReport != null
           ? TaskAgentReportEditor.buildMaterialTaskState(
               strategy.extractSuccessfulMutations(),
@@ -679,12 +683,20 @@ extension TaskAgentExecute on TaskAgentWorkflow {
               currentPriority: currentTaskPriority,
             )
           : null;
+      final materialTaskState =
+          reportRoute == TaskAgentReportRoute.detectedWording &&
+              fullMaterialTaskState != null
+          ? TaskAgentReportEditor.withoutAnchorsMissingFrom(
+              fullMaterialTaskState,
+              effectiveReport!.toJson(),
+            )
+          : fullMaterialTaskState;
       final languageCode = materialTaskState == null
           ? null
           : materialTaskState['languageCode'] as String? ??
                 taskAttentionContext.task?.data.languageCode ??
                 'en';
-      final directQwenIssues = isDirectQwenExecutor && effectiveReport != null
+      final directQwenIssues = isDetectedExecutor && effectiveReport != null
           ? TaskAgentReportEditor.detectDirectQwenRegressions(
               languageCode: languageCode!,
               materialTaskState: materialTaskState!,
@@ -695,7 +707,8 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         final issueCodes = directQwenIssues.map((issue) => issue.name).toList()
           ..sort();
         _log(
-          'direct Qwen regression detector matched: ${issueCodes.join(',')}',
+          'report defect detector matched: ${issueCodes.join(',')}; '
+          'executorModelId=$modelId',
           subDomain: 'reportEditor',
         );
       }
@@ -718,11 +731,15 @@ extension TaskAgentExecute on TaskAgentWorkflow {
               ? 'executor_missing_required_report'
               : null,
         );
-      } else if (isDirectQwenExecutor && directQwenIssues.isEmpty) {
+      } else if (isDetectedExecutor && directQwenIssues.isEmpty) {
         await strategy.recordWorkflowResult(
-          toolName: '${TaskAgentReportEditor.auditToolPrefix}_direct_qwen',
+          toolName: isDirectQwenExecutor
+              ? '${TaskAgentReportEditor.auditToolPrefix}_direct_qwen'
+              : '${TaskAgentReportEditor.auditToolPrefix}_detected_clean',
         );
       } else if (shouldRunReportEditor && effectiveReport != null) {
+        // Whatever happens below, the editor ran, so its outcome is recorded.
+        reportFinalizerOutcome = ReportFinalizerOutcome.failed;
         try {
           final editResult =
               await TaskAgentReportEditor(
@@ -759,10 +776,16 @@ extension TaskAgentExecute on TaskAgentWorkflow {
             );
           } else if (revision != null) {
             effectiveReport = revision;
+            reportFinalizerOutcome = ReportFinalizerOutcome.accepted;
             await strategy.recordWorkflowResult(
-              toolName: isDirectQwenExecutor
-                  ? '${TaskAgentReportEditor.auditToolPrefix}_direct_qwen_repaired'
-                  : '${TaskAgentReportEditor.auditToolPrefix}_accepted',
+              toolName: switch ((isDetectedExecutor, isDirectQwenExecutor)) {
+                (_, true) =>
+                  '${TaskAgentReportEditor.auditToolPrefix}_direct_qwen_repaired',
+                (true, false) =>
+                  '${TaskAgentReportEditor.auditToolPrefix}_detected_repaired',
+                (false, _) =>
+                  '${TaskAgentReportEditor.auditToolPrefix}_accepted',
+              },
             );
             _log(
               'accepted report editor revision after '
@@ -770,6 +793,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
               subDomain: 'reportEditor',
             );
           } else {
+            reportFinalizerOutcome = ReportFinalizerOutcome.rejected;
             await strategy.recordWorkflowResult(
               toolName: '${TaskAgentReportEditor.auditToolPrefix}_rejected',
               errorMessage: editResult.validationIssues
@@ -865,9 +889,24 @@ extension TaskAgentExecute on TaskAgentWorkflow {
             threadId: threadId,
             runKey: runKey,
             now: now,
-            reportProvenance: ReportInferenceProvenance.executorOnly(
-              runSnapshot,
-            ),
+            reportProvenance: reportFinalizerOutcome == null
+                ? ReportInferenceProvenance.executorOnly(runSnapshot)
+                : ReportInferenceProvenance.edited(
+                    runSnapshot,
+                    // The editor runs on the executor's provider connection.
+                    finalizer: InferenceRouteSnapshot(
+                      providerModelId: meliousQwen35122BA10BModelId,
+                      modelName: meliousQwen35122BA10BModelId,
+                      servingProviderConfigId:
+                          runSnapshot.executor.servingProviderConfigId,
+                      servingProviderType:
+                          runSnapshot.executor.servingProviderType,
+                      servingProviderName:
+                          runSnapshot.executor.servingProviderName,
+                      runtimeSettings: const {},
+                    ),
+                    outcome: reportFinalizerOutcome,
+                  ),
           );
 
       // 9b. Embed the report for vector search (fire-and-forget).

@@ -103,10 +103,17 @@ class TaskAgentReportEditResult {
     required this.usage,
     required this.error,
     required this.stackTrace,
+    this.rejectedReport,
   });
 
   /// Accepted revision, or `null` when every candidate was rejected.
   final TaskAgentReportDraft? revision;
+
+  /// The last candidate validation rejected, when no revision was accepted.
+  ///
+  /// Not published anywhere; evaluations record it to show why a repair
+  /// failed.
+  final TaskAgentReportDraft? rejectedReport;
 
   /// Whether the editor returned at least one `update_report` candidate.
   final bool hadRevision;
@@ -126,6 +133,48 @@ class TaskAgentReportEditResult {
   /// Stack trace paired with [error].
   final StackTrace? stackTrace;
 }
+
+/// How a task agent's published report reaches the user.
+enum TaskAgentReportRoute {
+  /// Published as written.
+  none,
+
+  /// Always revised by the editor before publishing.
+  alwaysEdited,
+
+  /// Checked by the deterministic defect detector, and handed to the editor
+  /// only when it finds a known defect. A clean report publishes untouched.
+  ///
+  /// Includes the anchor checks (priority, due date, estimate), which come
+  /// from regressions where Qwen dropped them.
+  detected,
+
+  /// [detected], without demanding anchors the draft never stated.
+  ///
+  /// A priority, due date or estimate the draft leaves out is removed from the
+  /// material task state (see [TaskAgentReportEditor.withoutAnchorsMissingFrom]),
+  /// so neither the detector nor the editor's validation requires it; one the
+  /// draft does state must survive the rewrite. Replaying the detector over two
+  /// gym runs, these checks fired on about a sixth of DeepSeek and GLM
+  /// reports, none of which failed, and the forced rewrites cost correct
+  /// reports their pass.
+  detectedWording;
+
+  /// Whether the defect detector decides if the editor runs.
+  bool get isDetected => this == detected || this == detectedWording;
+}
+
+/// Model families whose reports go through
+/// [TaskAgentReportRoute.detectedWording].
+///
+/// The detector is model-agnostic — it looks for checklist narration, pending
+/// work called "underway", waiting on a request nobody made, and leaked
+/// deferred scope — so it serves any executor that makes those mistakes. A full
+/// gym run found both families here doing exactly that, against report rules
+/// they were already given: glm-5.3-flash wrote "now tracked as checklist
+/// items" and "investigation underway", and deepseek-v4.1-flash wrote
+/// "awaiting Security cert" for certificates nobody had requested.
+const _detectedReportModelFragments = ['deepseek', 'glm'];
 
 /// Isolated, bounded report editor for the efficient task-agent routes.
 class TaskAgentReportEditor {
@@ -149,6 +198,31 @@ class TaskAgentReportEditor {
   /// Production bound: one initial candidate and at most two repairs.
   static const productionMaxAttempts = 3;
 
+  /// The route a report written by [modelId] takes.
+  ///
+  /// The one place this is decided, so the task workflow and the evaluation
+  /// that mirrors it cannot drift apart. Only Melious executors are routed:
+  /// the editor itself runs on a Melious model.
+  static TaskAgentReportRoute routeFor({
+    required InferenceProviderType providerType,
+    required String modelId,
+  }) {
+    if (providerType != InferenceProviderType.melious) {
+      return TaskAgentReportRoute.none;
+    }
+    final normalized = modelId.toLowerCase();
+    if (normalized == meliousMistralSmall4119BInstructModelId) {
+      return TaskAgentReportRoute.alwaysEdited;
+    }
+    if (normalized == meliousQwen35122BA10BModelId) {
+      return TaskAgentReportRoute.detected;
+    }
+    if (_detectedReportModelFragments.any(normalized.contains)) {
+      return TaskAgentReportRoute.detectedWording;
+    }
+    return TaskAgentReportRoute.none;
+  }
+
   /// Prefix used for persisted, internal editor-route outcomes.
   static const auditToolPrefix = 'qwen_report_editor';
 
@@ -169,11 +243,9 @@ class TaskAgentReportEditor {
   static bool supports({
     required String executorModelId,
     required InferenceProviderType providerType,
-  }) {
-    return providerType == InferenceProviderType.melious &&
-        executorModelId.toLowerCase() ==
-            meliousMistralSmall4119BInstructModelId;
-  }
+  }) =>
+      routeFor(providerType: providerType, modelId: executorModelId) ==
+      TaskAgentReportRoute.alwaysEdited;
 
   /// Rewrites [draft] from compact, ID-free task facts.
   Future<TaskAgentReportEditResult> edit({
@@ -344,6 +416,7 @@ class TaskAgentReportEditor {
       usage: usage,
       error: null,
       stackTrace: null,
+      rejectedReport: hadRevision ? rejectedReport : null,
     );
   }
 
@@ -707,19 +780,49 @@ class TaskAgentReportEditor {
     if (TaskAgentReportDraft.fromJson(candidateReport) == null) {
       issues.add(TaskAgentReportRevisionIssue.invalidShape);
     }
-    if (materialTaskState['priority'] case final String priority
+    for (final MapEntry(:key, :value) in materialTaskState.entries) {
+      if (_unstatedAnchorIssue(key, value, normalizedCandidate)
+          case final issue?) {
+        issues.add(issue);
+      }
+    }
+  }
+
+  /// The issue for an anchor [key] whose [value] the report does not state,
+  /// or `null` when it does or [key] is not an anchor.
+  static TaskAgentReportRevisionIssue? _unstatedAnchorIssue(
+    String key,
+    Object? value,
+    String normalizedReport,
+  ) => switch ((key, value)) {
+    ('priority', final String priority)
         when priority.trim().isNotEmpty &&
-            !normalizedCandidate.contains(priority.toLowerCase())) {
-      issues.add(TaskAgentReportRevisionIssue.missingPriority);
-    }
-    if (materialTaskState['dueDate'] case final String dueDate
-        when !_containsReportDate(normalizedCandidate, dueDate)) {
-      issues.add(TaskAgentReportRevisionIssue.missingDueDate);
-    }
-    if (materialTaskState['estimateMinutes'] case final num minutes
-        when !_containsReportEstimate(normalizedCandidate, minutes)) {
-      issues.add(TaskAgentReportRevisionIssue.missingEstimate);
-    }
+            !normalizedReport.contains(priority.toLowerCase()) =>
+      TaskAgentReportRevisionIssue.missingPriority,
+    ('dueDate', final String dueDate)
+        when !_containsReportDate(normalizedReport, dueDate) =>
+      TaskAgentReportRevisionIssue.missingDueDate,
+    ('estimateMinutes', final num minutes)
+        when !_containsReportEstimate(normalizedReport, minutes) =>
+      TaskAgentReportRevisionIssue.missingEstimate,
+    _ => null,
+  };
+
+  /// [materialTaskState] without the priority, due date or estimate that
+  /// [report] does not state.
+  ///
+  /// An editor given the result keeps every anchor the report carried but is
+  /// not required to add one it never had.
+  static Map<String, Object?> withoutAnchorsMissingFrom(
+    Map<String, Object?> materialTaskState,
+    Map<String, dynamic> report,
+  ) {
+    final normalizedReport = _reportFieldText(report).toLowerCase();
+    return {
+      for (final MapEntry(:key, :value) in materialTaskState.entries)
+        if (_unstatedAnchorIssue(key, value, normalizedReport) == null)
+          key: value,
+    };
   }
 
   static bool _hasKnownProcessNarration({
@@ -767,12 +870,20 @@ class TaskAgentReportEditor {
     ).hasMatch(normalizedCandidate);
     final narratesNewActionsAsQueued =
         hasNewChecklistItems &&
-        RegExp(
-          r'\b(workflow\s+items?|actions?|tasks?|steps?|schritte|items?)\b.{0,30}'
-          r'\b(queued|queue|listed|captured|prepared|identified|extracted|'
-          'defined|recorded|created|added|assembled|tracked|identifiziert|'
-          r'erfasst)\b',
-        ).hasMatch(normalizedCandidate);
+        (RegExp(
+              r'\b(workflow\s+items?|actions?|tasks?|steps?|schritte|items?)\b.{0,30}'
+              r'\b(queued|queue|listed|captured|prepared|identified|extracted|'
+              'defined|recorded|created|added|assembled|tracked|identifiziert|'
+              r'erfasst)\b',
+            ).hasMatch(normalizedCandidate) ||
+            // The same narration with the verb first: "the full workflow is
+            // captured as ordered checklist items", "now tracked as checklist
+            // items". Measured on glm-5.3-flash, which wrote both; the
+            // noun-first pattern above missed the verb-first one.
+            RegExp(
+              r'\b(queued|listed|captured|recorded|created|added|tracked)\s+'
+              r'as\s+(?:\w+\s+){0,2}(items?|steps?|actions?|tasks?)\b',
+            ).hasMatch(normalizedCandidate));
     final narratesNewActionsAsReady =
         hasNewChecklistItems &&
         RegExp(

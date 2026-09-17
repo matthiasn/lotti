@@ -108,6 +108,40 @@ void main() {
     expect(decoded.finalAuthorRoute, finalizer);
   });
 
+  test('an edited report credits the editor only when accepted', () {
+    const snapshot = InferenceRunSnapshot(
+      runKey: 'run-1',
+      threadId: 'thread-1',
+      profileId: 'profile-1',
+      executor: executor,
+    );
+    const editor = InferenceRouteSnapshot(
+      providerModelId: 'qwen3.5-122b-a10b',
+      modelName: 'qwen3.5-122b-a10b',
+      servingProviderType: InferenceProviderType.melious,
+      servingProviderName: 'Melious',
+      runtimeSettings: <String, Object?>{},
+    );
+
+    for (final (outcome, author) in [
+      (ReportFinalizerOutcome.accepted, editor),
+      (ReportFinalizerOutcome.rejected, executor),
+      (ReportFinalizerOutcome.failed, executor),
+    ]) {
+      final decoded = ReportInferenceProvenance.tryRead(
+        ReportInferenceProvenance.edited(
+          snapshot,
+          finalizer: editor,
+          outcome: outcome,
+        ).toReportMap(),
+      )!;
+      expect(decoded.finalizerOutcome, outcome);
+      expect(decoded.finalizer, editor);
+      expect(decoded.finalAuthorRoute, author, reason: outcome.name);
+      expect(decoded.profileId, 'profile-1');
+    }
+  });
+
   test('missing or malformed report provenance is attribution unavailable', () {
     expect(ReportInferenceProvenance.tryRead(const {}), isNull);
     expect(

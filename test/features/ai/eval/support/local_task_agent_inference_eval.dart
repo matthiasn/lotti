@@ -93,8 +93,6 @@ enum LocalTaskAgentEvalExecutionMode {
   productionRouting,
 }
 
-enum _LocalTaskAgentProductionRoute { none, mistralWithQwen, directQwen }
-
 const _missingInitialReportPrompt =
     'You did not call `update_report` before stopping. Call it now. You MUST '
     'supply a concise `oneLiner`, a 1-3 sentence `tldr`, and the full markdown '
@@ -2101,6 +2099,7 @@ class LocalTaskAgentEvalCaseResult {
     this.usedForcedReportRetry = false,
     this.reportEditorAttempts = 0,
     this.reportEditorValidationIssues = const [],
+    this.reportEditorRejectedReport,
     this.errorMessage,
     this.consumption = const [],
   });
@@ -2117,6 +2116,9 @@ class LocalTaskAgentEvalCaseResult {
   final bool usedForcedReportRetry;
   final int reportEditorAttempts;
   final List<TaskAgentReportRevisionIssue> reportEditorValidationIssues;
+
+  /// The editor's last rejected candidate, showing why a repair failed.
+  final TaskAgentReportDraft? reportEditorRejectedReport;
   final String? errorMessage;
   final List<LocalTaskAgentEvalToolCall> toolCalls;
   final LocalTaskAgentEvalFailureCategory failureCategory;
@@ -2264,6 +2266,8 @@ class LocalTaskAgentEvalCaseResult {
       'reportEditorValidationIssues': reportEditorValidationIssues
           .map((issue) => issue.name)
           .toList(),
+      if (reportEditorRejectedReport case final rejected?)
+        'reportEditorRejectedReport': rejected.toJson(),
       'errorMessage': errorMessage,
       'toolCalls': toolCalls.map((call) => call.toJson()).toList(),
     };
@@ -2537,20 +2541,6 @@ class LocalTaskAgentInferenceEvalRunner {
     );
   }
 
-  _LocalTaskAgentProductionRoute _productionReportRoute(
-    LocalTaskAgentEvalProfile profile,
-  ) {
-    if (provider.inferenceProviderType != InferenceProviderType.melious) {
-      return _LocalTaskAgentProductionRoute.none;
-    }
-    return switch (profile.providerModelId.toLowerCase()) {
-      meliousMistralSmall4119BInstructModelId =>
-        _LocalTaskAgentProductionRoute.mistralWithQwen,
-      meliousQwen35122BA10BModelId => _LocalTaskAgentProductionRoute.directQwen,
-      _ => _LocalTaskAgentProductionRoute.none,
-    };
-  }
-
   Future<LocalTaskAgentEvalCaseResult> _runScenario(
     LocalTaskAgentEvalProfile profile,
     LocalTaskAgentEvalScenario scenario,
@@ -2607,6 +2597,7 @@ class LocalTaskAgentInferenceEvalRunner {
         var reportRevisionValid = true;
         var reportEditorAttempts = 0;
         var reportEditorValidationIssues = <TaskAgentReportRevisionIssue>[];
+        TaskAgentReportDraft? reportEditorRejectedReport;
         void includeUsage(InferenceUsage? additionalUsage) {
           if (additionalUsage == null) return;
           final currentUsage = usage;
@@ -2620,6 +2611,7 @@ class LocalTaskAgentInferenceEvalRunner {
           reportEditorValidationIssues = editResult.validationIssues;
           reportRevisionValid = reportEditorValidationIssues.isEmpty;
           reportEditorAttempts = editResult.attempts;
+          reportEditorRejectedReport = editResult.rejectedReport;
           includeUsage(editResult.usage);
         }
 
@@ -2681,16 +2673,28 @@ class LocalTaskAgentInferenceEvalRunner {
           if (recoverMissingInitialReport) {
             await runForcedReportPass(_missingInitialReportPrompt);
           }
-          final route = _productionReportRoute(profile);
+          // Production's own decision, not a copy of it: the eval measures the
+          // route the workflow actually takes, and cannot drift from it.
+          final route = TaskAgentReportEditor.routeFor(
+            providerType: provider.inferenceProviderType,
+            modelId: profile.providerModelId,
+          );
           if (scenario.requiresReport && strategy.hasReport) {
-            final materialTaskState = buildLocalTaskAgentEvalMaterialTaskState(
-              strategy.toolCalls,
-              currentDueDate: scenario.currentDueDate,
-              currentEstimateMinutes: scenario.currentEstimateMinutes,
-              currentPriority: scenario.currentPriority,
-            );
-            final initialValidationIssues =
-                route == _LocalTaskAgentProductionRoute.directQwen
+            final fullMaterialTaskState =
+                buildLocalTaskAgentEvalMaterialTaskState(
+                  strategy.toolCalls,
+                  currentDueDate: scenario.currentDueDate,
+                  currentEstimateMinutes: scenario.currentEstimateMinutes,
+                  currentPriority: scenario.currentPriority,
+                );
+            final materialTaskState =
+                route == TaskAgentReportRoute.detectedWording
+                ? TaskAgentReportEditor.withoutAnchorsMissingFrom(
+                    fullMaterialTaskState,
+                    strategy.latestReportArguments!,
+                  )
+                : fullMaterialTaskState;
+            final initialValidationIssues = route.isDetected
                 ? TaskAgentReportEditor.detectDirectQwenRegressions(
                     languageCode:
                         materialTaskState['languageCode'] as String? ??
@@ -2699,7 +2703,7 @@ class LocalTaskAgentInferenceEvalRunner {
                     report: strategy.latestReportArguments!,
                   ).toSet()
                 : const <TaskAgentReportRevisionIssue>{};
-            if (route == _LocalTaskAgentProductionRoute.mistralWithQwen ||
+            if (route == TaskAgentReportRoute.alwaysEdited ||
                 initialValidationIssues.isNotEmpty) {
               usedForcedReportRetry = true;
               applyEditResult(
@@ -2709,6 +2713,7 @@ class LocalTaskAgentInferenceEvalRunner {
                   strategy: strategy,
                   wakeRunKey: wakeRunKey,
                   initialValidationIssues: initialValidationIssues,
+                  materialTaskState: materialTaskState,
                 ),
               );
             }
@@ -2792,6 +2797,7 @@ class LocalTaskAgentInferenceEvalRunner {
           usedForcedReportRetry: usedForcedReportRetry,
           reportEditorAttempts: reportEditorAttempts,
           reportEditorValidationIssues: reportEditorValidationIssues,
+          reportEditorRejectedReport: reportEditorRejectedReport,
           errorMessage: manager?.lastError,
           toolCalls: strategy.toolCalls,
           failureCategory: failureCategory,
@@ -2821,13 +2827,16 @@ class LocalTaskAgentInferenceEvalRunner {
     required _LocalTaskAgentEvalStrategy strategy,
     required String wakeRunKey,
     Set<TaskAgentReportRevisionIssue> initialValidationIssues = const {},
+    Map<String, Object?>? materialTaskState,
   }) async {
-    final materialTaskState = buildLocalTaskAgentEvalMaterialTaskState(
-      strategy.toolCalls,
-      currentDueDate: scenario.currentDueDate,
-      currentEstimateMinutes: scenario.currentEstimateMinutes,
-      currentPriority: scenario.currentPriority,
-    );
+    final effectiveMaterialTaskState =
+        materialTaskState ??
+        buildLocalTaskAgentEvalMaterialTaskState(
+          strategy.toolCalls,
+          currentDueDate: scenario.currentDueDate,
+          currentEstimateMinutes: scenario.currentEstimateMinutes,
+          currentPriority: scenario.currentPriority,
+        );
     final result =
         await TaskAgentReportEditor(
           conversationRepository: conversationRepository,
@@ -2841,7 +2850,7 @@ class LocalTaskAgentInferenceEvalRunner {
             strategy.latestReportArguments!,
           )!,
           languageCode: scenario.languageCode,
-          materialTaskState: materialTaskState,
+          materialTaskState: effectiveMaterialTaskState,
           reportDirective: _effectiveEvalReportDirective(
             profile: profile,
             scenario: scenario,
@@ -2866,6 +2875,7 @@ class LocalTaskAgentInferenceEvalRunner {
       attempts: result.attempts,
       validationIssues: result.validationIssues,
       usage: result.usage,
+      rejectedReport: result.rejectedReport,
     );
   }
 
@@ -2905,12 +2915,14 @@ class _LocalTaskAgentReportEditingResult {
     required this.attempts,
     required this.validationIssues,
     required this.usage,
+    this.rejectedReport,
   });
 
   final bool completed;
   final int attempts;
   final List<TaskAgentReportRevisionIssue> validationIssues;
   final InferenceUsage? usage;
+  final TaskAgentReportDraft? rejectedReport;
 }
 
 class _LocalTaskAgentEvalStrategy extends ConversationStrategy {

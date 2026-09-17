@@ -171,6 +171,32 @@ class ReportInferenceProvenance {
     );
   }
 
+  /// Provenance for a wake whose draft went to a report editor.
+  ///
+  /// The editor is the final author only when its revision was [accepted];
+  /// a rejected or failed edit leaves the executor's draft as the report.
+  ///
+  /// [accepted]: ReportFinalizerOutcome.accepted
+  factory ReportInferenceProvenance.edited(
+    InferenceRunSnapshot snapshot, {
+    required InferenceRouteSnapshot finalizer,
+    required ReportFinalizerOutcome outcome,
+  }) {
+    return ReportInferenceProvenance(
+      runKey: snapshot.runKey,
+      threadId: snapshot.threadId,
+      setupSource: snapshot.setupSource,
+      setupOrigin: snapshot.setupOrigin,
+      profileId: snapshot.profileId,
+      executor: snapshot.executor,
+      finalizer: finalizer,
+      finalizerOutcome: outcome,
+      finalContentAuthor: outcome == ReportFinalizerOutcome.accepted
+          ? ReportContentAuthor.finalizer
+          : ReportContentAuthor.executor,
+    );
+  }
+
   factory ReportInferenceProvenance.fromJson(Map<String, Object?> json) {
     final finalizerJson = json['finalizer'];
     return ReportInferenceProvenance(

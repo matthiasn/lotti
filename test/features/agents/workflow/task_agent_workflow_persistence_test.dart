@@ -7,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
@@ -439,6 +440,20 @@ void main() {
                   '${TaskAgentReportEditor.auditToolPrefix}_rejected',
             );
         expect(editorAudit.metadata.errorMessage, contains('processNarration'));
+        // The editor ran but lost, so the executor stays the report's author.
+        final provenance = ReportInferenceProvenance.tryRead(
+          reports.single.provenance,
+        )!;
+        expect(provenance.finalizerOutcome, ReportFinalizerOutcome.rejected);
+        expect(provenance.finalContentAuthor, ReportContentAuthor.executor);
+        expect(
+          provenance.finalAuthorRoute.providerModelId,
+          meliousMistralSmall4119BInstructModelId,
+        );
+        expect(
+          provenance.finalizer?.providerModelId,
+          meliousQwen35122BA10BModelId,
+        );
       });
 
       test(
@@ -463,6 +478,11 @@ void main() {
                     '${TaskAgentReportEditor.auditToolPrefix}_failed',
               );
           expect(editorAudit.metadata.errorMessage, 'StateError');
+          final provenance = ReportInferenceProvenance.tryRead(
+            reports.single.provenance,
+          )!;
+          expect(provenance.finalizerOutcome, ReportFinalizerOutcome.failed);
+          expect(provenance.finalContentAuthor, ReportContentAuthor.executor);
         },
       );
 
@@ -476,6 +496,12 @@ void main() {
         expect(result.success, isTrue);
         final reports = capturedEntitiesOfType<AgentReportEntity>(captured);
         expect(reports.single.content, '## Progress\nTask configured.');
+        expect(
+          ReportInferenceProvenance.tryRead(
+            reports.single.provenance,
+          )!.finalizerOutcome,
+          ReportFinalizerOutcome.failed,
+        );
         expect(capturedTokenUsageEntities(captured), hasLength(1));
         final editorAudit = capturedEntitiesOfType<AgentMessageEntity>(captured)
             .singleWhere(
