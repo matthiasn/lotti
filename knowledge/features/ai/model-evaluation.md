@@ -293,11 +293,12 @@ The relay makes up to six attempts to open the provider connection (five
 retries, pausing 1, 2, 4, 8 and 16 seconds) when the DNS lookup, TCP connect or
 TLS handshake fails. That rides out network outages of up to a minute or two;
 a longer outage still ends the job in an infrastructure error for `resume`.
-The relay also retries a provider response of 429, 502, 503, 504 or 529,
-up to six attempts, when that response carries no billing: an overloaded or
-rate-limited provider is not a model failure. It waits for `Retry-After`
-(capped at 30 seconds) or the same doubling pause, and journals each retry as
-`provider_retry`. A refusal that was billed is forwarded, never retried, so no
+The relay also retries a provider refusal (429, 503 or 529) up to six attempts,
+when that response carries no billing: an overloaded or rate-limited provider is
+not a model failure. It waits for `Retry-After`, in seconds or as an HTTP date
+and capped at 30 seconds, or else the same doubling pause, and journals each
+retry as `provider_retry`. Gateway errors (502, 504) are not retried, because a
+gateway can return one after the provider accepted and charged the request. A refusal that was billed is forwarded, never retried, so no
 request is paid for twice. The TCP connect and TLS handshake of each attempt are bounded by a
 30-second connect timeout rather than the 10-minute response timeout. The DNS
 lookup is not: a failed lookup returns at once and is retried, but a lookup

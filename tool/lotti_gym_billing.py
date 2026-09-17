@@ -8,11 +8,13 @@ ledger. It never records authorization headers, prompts or generated content.
 import gzip
 import http.client
 import json
+import math
 import threading
 import time
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
+from email.utils import parsedate_to_datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
 
@@ -86,20 +88,36 @@ def safe_response_headers(headers):
     ]
 
 
-# Provider statuses that mean "not now" rather than "no": overload, gateway
-# trouble and rate limits. A model is not at fault for any of them.
-RETRYABLE_PROVIDER_STATUSES = frozenset({429, 502, 503, 504, 529})
+# Provider statuses that refuse a request outright: rate limited, unavailable,
+# overloaded. A model is not at fault for any of them. 502 and 504 are left out
+# on purpose: a gateway can return them after the provider accepted, and
+# charged, the request, and a gateway's reply cannot carry that bill.
+RETRYABLE_PROVIDER_STATUSES = frozenset({429, 503, 529})
 
 # Longest Retry-After the relay honours. Five capped waits stay well inside the
 # app's 5-minute Melious request timeout, so a retried call can still answer.
 MAX_RETRY_AFTER_SECONDS = 30
 
 
-def retry_delay(retry_after, fallback):
-    """The provider's Retry-After in seconds when usable, else [fallback]."""
+def retry_delay(retry_after, fallback, *, now=None):
+    """The provider's Retry-After in seconds when usable, else [fallback].
+
+    Accepts both forms the header allows, delay-seconds and an HTTP-date, and
+    caps the wait at MAX_RETRY_AFTER_SECONDS.
+    """
+    if retry_after is None:
+        return fallback
     try:
         seconds = float(retry_after)
-    except (TypeError, ValueError):
+    except ValueError:
+        try:
+            moment = parsedate_to_datetime(retry_after)
+        except (TypeError, ValueError, IndexError):
+            return fallback
+        if moment.tzinfo is None:
+            moment = moment.replace(tzinfo=timezone.utc)
+        seconds = (moment - (now or datetime.now(timezone.utc))).total_seconds()
+    if not math.isfinite(seconds):
         return fallback
     return min(max(seconds, 0.0), MAX_RETRY_AFTER_SECONDS)
 

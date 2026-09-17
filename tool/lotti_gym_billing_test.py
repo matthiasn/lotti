@@ -218,7 +218,7 @@ class BillingTest(unittest.TestCase):
         responses = [
             (429, "application/json", b"{}", {"Retry-After": "7"}),
             (503, "application/json", b"{}", {"Retry-After": "3600"}),
-            (504, "application/json", b"{}", {"Retry-After": "soon"}),
+            (529, "application/json", b"{}", {"Retry-After": "soon"}),
             (200, "application/json", body),
         ]
         sleep = Mock()
@@ -226,6 +226,30 @@ class BillingTest(unittest.TestCase):
             with BillingRelay(upstream, self.directory / "billing.jsonl", sleep=sleep) as relay:
                 self.assertEqual(self.post(relay), (200, body))
         self.assertEqual([call.args[0] for call in sleep.call_args_list], [7.0, 30.0, 4.0])
+
+    def test_retry_after_accepts_an_http_date_and_rejects_non_finite_values(self):
+        from datetime import datetime, timezone
+        from tool.lotti_gym_billing import retry_delay
+        now = datetime(2026, 9, 17, 12, 0, 0, tzinfo=timezone.utc)
+        self.assertEqual(retry_delay("Thu, 17 Sep 2026 12:00:12 GMT", 1.0, now=now), 12.0)
+        self.assertEqual(retry_delay("Thu, 17 Sep 2026 13:00:00 GMT", 1.0, now=now), 30.0)
+        self.assertEqual(retry_delay("Thu, 17 Sep 2026 11:00:00 GMT", 1.0, now=now), 0.0)
+        for value in ["NaN", "inf", "-inf", "", "not a date"]:
+            self.assertEqual(retry_delay(value, 4.0, now=now), 4.0, msg=value)
+        self.assertEqual(retry_delay(None, 2.0), 2.0)
+
+    def test_gateway_errors_are_not_replayed(self):
+        # A 502 or 504 may follow a request the provider accepted and billed.
+        for status in (502, 504):
+            received = []
+            sleep = Mock()
+            gateway = (status, "text/html", b"<html>gateway</html>")
+            with provider([gateway, (200, "application/json", b"{}")], received) as upstream:
+                with BillingRelay(upstream, self.directory / f"{status}.jsonl",
+                                  sleep=sleep) as relay:
+                    self.assertEqual(self.post(relay), (status, gateway[2]))
+            self.assertEqual(len(received), 1, msg=status)
+            sleep.assert_not_called()
 
     def test_a_billed_refusal_is_forwarded_not_paid_for_twice(self):
         billed = (503, "application/json",
