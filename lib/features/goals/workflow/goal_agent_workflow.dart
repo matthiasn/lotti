@@ -585,14 +585,22 @@ class GoalAgentWorkflow with AgentErrorLogging {
         userRequestedAd ||
         (_adsEligible(facts, derivation.priors) &&
             !_factsRenderer.dismissalCooldownActive(nudges, now));
-    final tools = adToolsPermitted
-        ? allTools
-        : [
-            for (final tool in allTools)
-              if (tool.function.name != GoalAgentToolNames.createGoalAd &&
-                  tool.function.name != GoalAgentToolNames.rerunGoalAd)
-                tool,
-          ];
+    // The same reasoning for `reply_to_user`. On a wake with no message
+    // waiting, persistence reads only plain final prose and ignores the
+    // reply tool entirely, so every such call was paid for and thrown away —
+    // and a model that took the offer posted an unsolicited status update the
+    // contract calls nagging. Withholding it makes that impossible instead of
+    // merely discouraged.
+    final replyPermitted = pendingUserMessage != null;
+    final tools = [
+      for (final tool in allTools)
+        if ((adToolsPermitted ||
+                (tool.function.name != GoalAgentToolNames.createGoalAd &&
+                    tool.function.name != GoalAgentToolNames.rerunGoalAd)) &&
+            (replyPermitted ||
+                tool.function.name != GoalAgentToolNames.replyToUser))
+          tool,
+    ];
     final inferenceRepo = CloudInferenceWrapper(
       cloudRepository: _cloudInferenceRepository,
       geminiThinkingMode: resolved.geminiThinkingMode,

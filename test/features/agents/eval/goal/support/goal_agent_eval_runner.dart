@@ -736,9 +736,11 @@ class GoalAgentInferenceEvalRunner {
           // harder problem the runtime never poses.
           tools: [
             for (final tool in goalAgentTools)
-              if (scenario.adToolsOffered ||
-                  (tool.name != GoalAgentToolNames.createGoalAd &&
-                      tool.name != GoalAgentToolNames.rerunGoalAd))
+              if ((scenario.adToolsOffered ||
+                      (tool.name != GoalAgentToolNames.createGoalAd &&
+                          tool.name != GoalAgentToolNames.rerunGoalAd)) &&
+                  (scenario.replyToolOffered ||
+                      tool.name != GoalAgentToolNames.replyToUser))
                 ChatCompletionTool(
                   type: ChatCompletionToolType.function,
                   function: FunctionObject(

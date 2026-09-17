@@ -219,16 +219,21 @@ void main() {
           offered[scenario.id],
           reason: '${scenario.id}: rerun_goal_ad on the wire',
         );
-        // Everything else is always available — withholding is exactly two
-        // tools wide, and a wider cut would silently disable reporting.
+        // Reporting is always available; a wider cut would silently disable
+        // it. The reply tool rides on whether a message is waiting, since
+        // persistence discards a reply on a wake that has none.
         expect(
           driven.toolNames,
           containsAll([
             GoalAgentToolNames.updateGoalReport,
             GoalAgentToolNames.retireGoalAd,
-            GoalAgentToolNames.replyToUser,
           ]),
-          reason: '${scenario.id}: only the ad-creation pair may be withheld',
+          reason: '${scenario.id}: reporting must never be withheld',
+        );
+        expect(
+          driven.toolNames.contains(GoalAgentToolNames.replyToUser),
+          scenario.pendingUserMessage != null,
+          reason: '${scenario.id}: reply_to_user only when a message waits',
         );
       }
     });
