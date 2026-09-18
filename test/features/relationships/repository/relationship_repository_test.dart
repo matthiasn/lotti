@@ -1270,18 +1270,22 @@ void main() {
       deletedAt: deletedAt,
     );
 
-    Future<void> link(String from, String to, {bool hidden = false}) =>
-        db.upsertEntryLink(
-          EntryLink.basic(
-            id: '$from->$to',
-            fromId: from,
-            toId: to,
-            createdAt: at,
-            updatedAt: at,
-            vectorClock: null,
-            hidden: hidden,
-          ),
-        );
+    Future<void> link(
+      String from,
+      String to, {
+      bool hidden = false,
+      DateTime? addedAt,
+    }) => db.upsertEntryLink(
+      EntryLink.basic(
+        id: '$from->$to',
+        fromId: from,
+        toId: to,
+        createdAt: addedAt ?? at,
+        updatedAt: addedAt ?? at,
+        vectorClock: null,
+        hidden: hidden,
+      ),
+    );
 
     setUpAll(() => db = JournalDb(inMemoryDatabase: true));
     tearDownAll(() => db.close());
@@ -1329,8 +1333,15 @@ void main() {
         await db.updateJournalEntity(entity);
       }
       await db.updateJournalEntity(taskEntry('task', dateFrom: at));
-      for (final child in ['comment', 'take', 'photo', 'gone', 'task']) {
-        await link('c-1', child);
+      // Added in this order, whatever the entries' own dates say.
+      for (final (index, child) in [
+        'take',
+        'comment',
+        'photo',
+        'gone',
+        'task',
+      ].indexed) {
+        await link('c-1', child, addedAt: at.add(Duration(minutes: index)));
       }
       await link('c-1', 'hidden', hidden: true);
       await link('c-2', 'comment');
@@ -1385,6 +1396,80 @@ void main() {
             'hidden note is not an entry',
       );
     });
+
+    // Codex review on #4347: a photo taken long ago but attached now is a
+    // new addition, and sorts as one.
+    test(
+      'orders entries by when they were added, not by their own date',
+      () async {
+        final oldPhoto = testImageEntry.copyWith(
+          meta: entryMeta('old-photo', at.subtract(const Duration(days: 30))),
+        );
+        await db.updateJournalEntity(oldPhoto);
+        await link(
+          'c-1',
+          'old-photo',
+          addedAt: at.add(const Duration(hours: 1)),
+        );
+
+        expect(
+          [
+            for (final e in (await real.getAllEntriesForCheckIns({
+              'c-1',
+            }))['c-1']!)
+              e.id,
+          ],
+          ['take', 'comment', 'photo', 'old-photo'],
+        );
+      },
+    );
+
+    // Codex review on #4347: a dictation is recorded against the person, so
+    // its recording is linked from the person as well as the check-in —
+    // that is still the check-in's recording, and goes with it.
+    for (final byPerson in [false, true]) {
+      test('a recording linked from the person too is deleted with the '
+          '${byPerson ? 'person' : 'check-in'}', () async {
+        await db.updateJournalEntity(relationshipEntry());
+        await link('rel-001', 'take');
+        when(
+          () => mockPersistence.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
+
+        if (byPerson) {
+          await real.deleteRelationship('rel-001');
+        } else {
+          await real.deleteCheckIn('c-1');
+        }
+
+        final tombstoned = verify(
+          () => mockPersistence.updateDbEntity(captureAny()),
+        ).captured.cast<JournalEntity>();
+        expect(tombstoned.map((e) => e.id), contains('take'));
+      });
+    }
+
+    test(
+      'a rejected entry tombstone is logged and the cascade goes on',
+      () async {
+        when(() => mockPersistence.updateDbEntity(any())).thenAnswer(
+          (call) async =>
+              (call.positionalArguments.first as JournalEntity).id != 'take',
+        );
+
+        expect(await real.deleteCheckIn('c-2'), isTrue);
+        expect(await real.deleteCheckIn('c-1'), isTrue);
+
+        verify(
+          () => getIt<DomainLogger>().error(
+            LogDomain.persistence,
+            'check-in entry tombstone rejected for take',
+            message: any(named: 'message'),
+            subDomain: '_softDeleteEntriesOf',
+          ),
+        ).called(1);
+      },
+    );
 
     for (final (showPrivate, expected) in [
       (false, ['take', 'comment']),

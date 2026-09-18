@@ -152,6 +152,11 @@ void main() {
             comment('t-1', at.add(const Duration(minutes: 3)), 'Send krill.'),
             recording('r-2', at.add(const Duration(minutes: 4))),
             photo('p-1', at.add(const Duration(minutes: 5))),
+            photo(
+              'p-2',
+              at.add(const Duration(minutes: 6)),
+              caption: 'Pip at the launch pad.',
+            ),
           ],
         },
       );
@@ -164,7 +169,8 @@ void main() {
           'launch.\n'
           '  2026-08-14 20:03 comment: Send krill.\n'
           '  2026-08-14 20:04 recording (1:05): transcript not available yet\n'
-          '  2026-08-14 20:05 photo: no description yet\n',
+          '  2026-08-14 20:05 photo: no description yet\n'
+          '  2026-08-14 20:06 photo: Pip at the launch pad.\n',
         ),
       );
     });

@@ -264,7 +264,8 @@ class RelationshipRepository {
 
   // ── Check-in entries ───────────────────────────────────────────────────────
 
-  /// The entries of each of [checkInIds], oldest first: typed comments,
+  /// The entries of each of [checkInIds], in the order they were added:
+  /// typed comments,
   /// recordings and photos, each linked check-in → entry with a
   /// [BasicLink]. A check-in's own `entryText` (the narrative check-ins were
   /// saved with before they held entries) is not among them — callers show
@@ -299,6 +300,13 @@ class RelationshipRepository {
             when isCheckInEntryKind(entity))
           entity.id: entity,
     };
+    // Ordered by when each entry was added to the check-in — the link's
+    // creation — not by the entry's own date: a photo taken last week and
+    // attached today is today's addition.
+    final addedAt = <String, Map<String, DateTime>>{};
+    for (final link in links) {
+      addedAt.putIfAbsent(link.fromId, () => {})[link.toId] = link.createdAt;
+    }
     final result = <String, List<JournalEntity>>{
       for (final id in checkInIds) id: <JournalEntity>[],
     };
@@ -308,8 +316,13 @@ class RelationshipRepository {
       if (entity == null || entries == null) continue;
       if (entries.every((e) => e.id != entity.id)) entries.add(entity);
     }
-    for (final entries in result.values) {
-      entries.sort((a, b) => a.meta.dateFrom.compareTo(b.meta.dateFrom));
+    for (final MapEntry(:key, value: entries) in result.entries) {
+      final added = addedAt[key] ?? const {};
+      entries.sort(
+        (a, b) => (added[a.id] ?? a.meta.createdAt).compareTo(
+          added[b.id] ?? b.meta.createdAt,
+        ),
+      );
     }
     return result;
   }
@@ -529,7 +542,11 @@ class RelationshipRepository {
         );
       }
     }
-    await _softDeleteEntriesOf({for (final c in checkIns) c.id}, deletedAt);
+    await _softDeleteEntriesOf(
+      {for (final c in checkIns) c.id},
+      deletedAt,
+      personId: relationshipId,
+    );
     return true;
   }
 
@@ -538,14 +555,21 @@ class RelationshipRepository {
   /// leaves no orphaned data about them). An entry that also belongs to
   /// something else, such as a photo attached to a task too, is left alone.
   /// A rejected tombstone is logged and skipped, like a check-in's.
+  ///
+  /// [personId] is the person the check-ins belong to: a dictation is
+  /// recorded against the person before its check-in exists, so its
+  /// recording carries a link from the person too, and that link is the
+  /// check-in's, not another owner's.
   Future<void> _softDeleteEntriesOf(
     Set<String> checkInIds,
-    DateTime deletedAt,
-  ) async {
+    DateTime deletedAt, {
+    required String personId,
+  }) async {
+    final owners = {...checkInIds, personId};
     final entries = await getAllEntriesForCheckIns(checkInIds);
     for (final entry in entries.values.expand((e) => e).toSet()) {
       final parents = await _journalDb.parentLinkedEntityIds(entry.id).get();
-      if (!parents.every(checkInIds.contains)) continue;
+      if (!parents.every(owners.contains)) continue;
       if (!await _softDelete(entry, deletedAt)) {
         getIt<DomainLogger>().error(
           LogDomain.persistence,
@@ -567,7 +591,11 @@ class RelationshipRepository {
     if (entity is! CheckInEntry || entity.isDeleted) return false;
     final deletedAt = clock.now();
     if (!await _softDelete(entity, deletedAt)) return false;
-    await _softDeleteEntriesOf({checkInId}, deletedAt);
+    await _softDeleteEntriesOf(
+      {checkInId},
+      deletedAt,
+      personId: entity.data.relationshipId,
+    );
     return true;
   }
 

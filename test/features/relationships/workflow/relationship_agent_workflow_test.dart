@@ -316,6 +316,35 @@ void main() {
           };
   }
 
+  // Codex review on #4347: a later change arms its own refresh, so the one
+  // armed for the change it overtook must stand down — even while the
+  // cadence is due, which otherwise waves a wake past the freshness gate.
+  test('a refresh armed for evidence that has changed since stands down '
+      'without inference', () async {
+    stubGlmResolution();
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0,
+          strategy,
+        }) async => null;
+
+    final result = await run(
+      tokens: {
+        relationshipReportRefreshEscalationWorkspaceKey('20260801T170000000'),
+      },
+    );
+
+    expect(result.success, isTrue);
+    expect(conversationRepository.sendMessageDelegateCallCount, 0);
+  });
+
   // Everything a check-in holds is evidence: the wake reads the entries of
   // the check-ins it renders and hands them to the model.
   test("the check-ins' entries reach the model's FACTS", () async {

@@ -802,6 +802,81 @@ void main() {
     expect(keys, hasLength(2), reason: 'each change is briefed once');
   });
 
+  // Codex review on #4347: journal times are stored as wall-clock values
+  // without an offset, so a peer in another zone reads a different instant;
+  // the episode key must come from the components every device reads alike.
+  group('relationshipEvidenceKey', () {
+    test('is built from the stored date and time, not the instant', () {
+      expect(
+        relationshipEvidenceKey(DateTime(2026, 8, 15, 9, 3, 7, 45)),
+        '20260815T090307045',
+      );
+      expect(
+        relationshipEvidenceKey(DateTime.utc(2026, 8, 15, 9, 3, 7, 45)),
+        '20260815T090307045Z',
+      );
+    });
+  });
+
+  group('relationshipRefreshSuperseded', () {
+    final derivation = (
+      status: RelationshipCadenceStatus.ok,
+      previousStatus: null,
+      cadenceDays: 7,
+      referenceAt: DateTime.utc(2026, 8, 15),
+      lastCheckInAt: DateTime.utc(2026, 8, 15),
+      lastEvidenceAt: DateTime(2026, 8, 15, 9, 20),
+      dueDayUtc: DateTime.utc(2026, 8, 22),
+      dueDayKey: '2026-08-22',
+    );
+
+    for (final (label, key, superseded) in [
+      ('the current change', 'refresh-20260815T092000000', false),
+      ('an earlier change', 'refresh-20260815T090000000', true),
+      ('a cadence lapse', '2026-08-22', false),
+      ('no escalation at all', null, false),
+    ]) {
+      test('a wake armed for $label is superseded: $superseded', () {
+        expect(relationshipRefreshSuperseded(key, derivation), superseded);
+      });
+    }
+  });
+
+  test('with two recordings still on their way, the refresh waits for the '
+      'later one', () async {
+    final savedAt = now.subtract(const Duration(minutes: 1));
+    final first = now.subtract(const Duration(minutes: 4));
+    final second = now.subtract(const Duration(minutes: 2));
+    when(
+      () => relationshipRepository.getAllCheckInsForRelationship(
+        relationshipId,
+      ),
+    ).thenAnswer((_) async => [checkIn('c-1', first, savedAt: savedAt)]);
+    when(
+      () => repository.getLatestReport(any(), any()),
+    ).thenAnswer((_) async => freshReport(DateTime(2026, 8, 10)));
+    JournalAudio take(String id, DateTime at) => testAudioEntry.copyWith(
+      meta: testAudioEntry.meta.copyWith(id: id, createdAt: at),
+      entryText: null,
+    );
+    when(
+      () => relationshipRepository.getAllEntriesForCheckIns({'c-1'}),
+    ).thenAnswer(
+      (_) async => {
+        'c-1': [take('take-1', first), take('take-2', second)],
+      },
+    );
+
+    await withClock(Clock.fixed(now), run);
+
+    expect(
+      writtenWakes()
+          .singleWhere((w) => isRelationshipEscalationWorkspace(w.workspaceKey))
+          .scheduledAt,
+      second.add(checkInTranscriptTimeout).toUtc(),
+    );
+  });
+
   // Briefing before the words arrive is the "agent looks broken" failure:
   // the refresh waits for the transcript, or for its timeout.
   for (final (label, transcript, expectDeferred) in [

@@ -337,6 +337,13 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
     if (!interactive && !reportRefresh && !cadenceDue && !reportStale) {
       return const WakeResult(success: true);
     }
+    // A refresh armed for evidence that has since changed again stands down:
+    // the newer change armed its own refresh, which briefs on everything.
+    if (!interactive &&
+        !reportRefresh &&
+        relationshipRefreshSuperseded(escalationDueDay, derivation)) {
+      return const WakeResult(success: true);
+    }
     // Eligibility binds automatic wakes: un-marking important or archiving
     // silences the agent instantly. Chat and the explicit Brief me remain
     // answerable — the user is asking directly.

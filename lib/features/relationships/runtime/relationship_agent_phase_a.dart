@@ -39,8 +39,12 @@ typedef RelationshipCadenceDerivation = ({
   /// UTC — see the normalization note in `deriveCadenceFacts`.
   DateTime? lastCheckInAt,
 
-  /// When the evidence last changed, UTC: the newest `updatedAt` among the
-  /// person's check-ins. A check-in is saved again whenever it gains an
+  /// When the evidence last changed: the newest `updatedAt` among the
+  /// person's check-ins, exactly as stored — NOT normalized to UTC like the
+  /// fields above, because journal times are stored as wall-clock values
+  /// without an offset and a peer in another zone reads the same components
+  /// as a different instant. [relationshipEvidenceKey] keys the refresh
+  /// episode by those components, which every device reads identically. A check-in is saved again whenever it gains an
   /// entry or one of its recordings or photos is described, so this moves
   /// for a backdated check-in, a second one on the same day, and a
   /// transcript arriving after the check-in was saved — none of which move
@@ -407,7 +411,7 @@ class RelationshipAgentPhaseA {
       cadenceDays: cadenceDays,
       referenceAt: referenceAt.toUtc(),
       lastCheckInAt: lastCheckInAt?.toUtc(),
-      lastEvidenceAt: lastEvidenceAt?.toUtc(),
+      lastEvidenceAt: lastEvidenceAt,
       dueDayUtc: dueDayUtc,
       dueDayKey: const GoalWindow.day().periodKey(dueDayUtc),
     );
@@ -600,11 +604,11 @@ AgentDomainEntity relationshipReportRefreshEscalationWake(
   required DateTime updatedAt,
   DateTime? notBefore,
 }) {
-  final evidenceAt = derivation.lastEvidenceAt!.toUtc();
+  final evidenceAt = derivation.lastEvidenceAt!;
   final workspaceKey = relationshipReportRefreshEscalationWorkspaceKey(
     relationshipEvidenceKey(evidenceAt),
   );
-  final settled = evidenceAt.add(relationshipEvidenceSettle);
+  final settled = evidenceAt.add(relationshipEvidenceSettle).toUtc();
   return AgentDomainEntity.scheduledWake(
     id: scheduledWakeRecordId(agentId, workspaceKey: workspaceKey),
     agentId: agentId,
@@ -642,8 +646,34 @@ bool relationshipEvidenceNewerThan(
 }
 
 /// The refresh episode's key component for evidence that changed at
-/// [evidenceAt]: its UTC instant to the millisecond. Every device arming for
-/// the same synced evidence writes the identical record, and each distinct
-/// change is its own episode — at most one briefing per change.
-String relationshipEvidenceKey(DateTime evidenceAt) =>
-    evidenceAt.toUtc().millisecondsSinceEpoch.toString();
+/// [evidenceAt]: its stored date and time to the millisecond, from the
+/// components rather than the instant, so every device arming for the same
+/// synced evidence writes the identical record whatever its time zone. Each
+/// distinct change is its own episode — at most one briefing per change.
+String relationshipEvidenceKey(DateTime evidenceAt) {
+  String two(int value) => value.toString().padLeft(2, '0');
+  return '${evidenceAt.year}${two(evidenceAt.month)}${two(evidenceAt.day)}'
+      'T${two(evidenceAt.hour)}${two(evidenceAt.minute)}'
+      '${two(evidenceAt.second)}'
+      '${evidenceAt.millisecond.toString().padLeft(3, '0')}'
+      '${evidenceAt.isUtc ? 'Z' : ''}';
+}
+
+/// Whether the refresh episode a wake was armed for, [escalationKey] (the
+/// part after `relationship-escalation:`), has been overtaken by newer
+/// evidence. A later change arms its own, later-settling episode, so the
+/// earlier one must end at €0 rather than brief twice — the settle delay
+/// only coalesces a burst if the overtaken wakes stand down.
+bool relationshipRefreshSuperseded(
+  String? escalationKey,
+  RelationshipCadenceDerivation derivation,
+) {
+  const prefix = 'refresh-';
+  if (escalationKey == null || !escalationKey.startsWith(prefix)) {
+    return false;
+  }
+  final current = derivation.lastEvidenceAt;
+  return current != null &&
+      escalationKey.substring(prefix.length) !=
+          relationshipEvidenceKey(current);
+}

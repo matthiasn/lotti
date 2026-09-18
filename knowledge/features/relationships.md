@@ -236,13 +236,16 @@ flowchart LR
 | `getAllEntriesForCheckIns(ids)` | none — private entries included | the agent's FACTS, Phase A, the delete cascade |
 | `getCheckInEntries(id)` | the private-entry display preference | the UI |
 
-Both return entries oldest first and leave out deleted entries, hidden
-links and anything linked from a check-in that is not a comment, recording
-or photo. Every write that changes what a check-in holds saves the check-in
+Both return entries in the order they were added — by the link's creation,
+not the entry's own date, so a photo taken last week and attached today is
+today's addition — and leave out deleted entries, hidden links and anything
+linked from a check-in that is not a comment, recording or photo. Every write that changes what a check-in holds saves the check-in
 again (`touchCheckIn`), because its `updatedAt` is the agent's "evidence
 changed" signal — see the deterministic tier below. Deleting a check-in, or
 its person, tombstones the entries the check-ins alone hold; one that also
-belongs elsewhere is left alone.
+belongs elsewhere is left alone. The person counts as one of the owners: a
+dictation is recorded against the person before its check-in exists, so its
+recording carries a link from the person as well.
 
 # A person's two images
 
@@ -686,9 +689,14 @@ independently of the composer, which may be long closed — through
 check-in logged after the briefing but dated before it (yesterday's call,
 logged this morning) never made the briefing stale, and a second check-in
 on the same UTC day shared the first one's consumed episode. Now each
-distinct change is its own episode, keyed by its instant to the millisecond
-so every device arming for the same synced evidence writes the identical
-record. The deadline is the change plus `relationshipEvidenceSettle` (30 s),
+distinct change is its own episode, keyed by `relationshipEvidenceKey`: the
+stored date and time to the millisecond, taken from the components rather
+than the instant — journal times are stored as wall-clock values without an
+offset, so a peer in another zone reads the same components as a different
+instant, and only the components give every device the identical record. A
+refresh armed for a change that has since been overtaken stands down before
+inference (`relationshipRefreshSuperseded`), even while the cadence is due;
+the newer change's own refresh briefs on everything. The deadline is the change plus `relationshipEvidenceSettle` (30 s),
 so a burst — a dictation, then a photo, then a comment — is briefed once;
 and while a changed check-in holds a recording whose transcript has not
 arrived, the deadline moves to that recording's `checkInTranscriptTimeout`,
