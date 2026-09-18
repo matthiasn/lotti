@@ -100,15 +100,18 @@ A report already exists. Before publishing, identify a new or corrected task fac
   /// A trailing clause that only appends which metadata the task lacks, as in
   /// "the task is open with no due date or estimate set".
   ///
-  /// The clause must be introduced by "with" or "and": "No deadline is set yet
-  /// — the March cutoff will drive the timing" keeps its reasoning.
+  /// The clause must be introduced by "with" or "and" and must end the line:
+  /// "No deadline is set yet — the March cutoff will drive the timing" keeps
+  /// its reasoning, and "The task can proceed with no due date set, and the
+  /// owner will confirm tomorrow" keeps its condition, because the note is not
+  /// what the sentence ends on.
   static final _absentMetadataClause = RegExp(
     r'(?:\s*[,;—–-]+\s*|\s+)(?:with|and)\s+no\s+'
     '$_metadataNouns'
     '(?:\\s*(?:,|,?\\s*(?:or|and))\\s*$_metadataNouns)*'
     r'\s*(?:is|are|has\s+been|have\s+been)?\s*'
     '(?:set|recorded|specified|defined|assigned|given|requested)?'
-    r'(?:\s+yet)?(?=[.!,;]|\s*$)',
+    r'(?:\s+yet)?(?=[.!]?\s*$)',
     caseSensitive: false,
   );
 
@@ -198,6 +201,18 @@ A report already exists. Before publishing, identify a new or corrected task fac
         )
         .replaceAll(RegExp('[^A-Za-z]'), '');
     return bare.isEmpty;
+  }
+
+  /// [report] cleaned of notes and empty sections, or unchanged when that
+  /// would leave nothing.
+  ///
+  /// A report whose every sentence is filtered away is a report the model
+  /// wrote badly, not one it did not write: publishing the empty string would
+  /// skip the report a required wake owes and leave the previous one looking
+  /// fresh. The draft is published as it stands instead.
+  static String withoutPublicationNoise(String report) {
+    final cleaned = withoutEmptySections(withoutAbsentMetadataNotes(report));
+    return cleaned.trim().isEmpty ? report : cleaned;
   }
 
   /// [report] without Markdown sections whose body only says "none".

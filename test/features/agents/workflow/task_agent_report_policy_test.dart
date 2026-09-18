@@ -162,6 +162,7 @@ void main() {
         'No deadline is set yet — the March cutoff will drive the timing.',
         'The estimate is two hours and the due date is 2026-10-01.',
         'No blockers remain.',
+        'The task can proceed with no due date set, and the owner will confirm it tomorrow.',
         'No deadline is set yet, though the March cutoff will drive the timing.',
         'There is no estimated risk to the release.',
       ];
@@ -172,6 +173,27 @@ void main() {
           reason: line,
         );
       }
+    });
+
+    test('a draft that is only noise is published as the model wrote it', () {
+      // Emptying a required report would skip publication and leave the
+      // previous report looking fresh, so the draft stands.
+      for (final draft in [
+        'No estimate or due date is set.',
+        '## Decision needed\nNone right now.',
+      ]) {
+        expect(
+          TaskAgentReportPolicy.withoutPublicationNoise(draft),
+          draft,
+          reason: draft,
+        );
+      }
+      expect(
+        TaskAgentReportPolicy.withoutPublicationNoise(
+          'Fix the seeding. No estimate or due date is set.',
+        ),
+        'Fix the seeding.',
+      );
     });
 
     test('a report that is only the note becomes empty', () {

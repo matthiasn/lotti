@@ -5,13 +5,13 @@ description: The primary agent workflow — inference setup resolution, the auto
 resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
 tags: [agents, task-agent, tools, proposals, inference]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-14T00:00:00Z }
-stale_after: 2026-10-12
+generated: { by: claude-code/opus-5, at: 2026-09-18T13:00:00Z }
+stale_after: 2026-10-23
 sources:
   - id: report-policy
     resource: ../../../lib/features/agents/workflow/task_agent_report_policy.dart
     title: Shared publication policy for prompts and execution
-    last_modified: 2026-09-14
+    last_modified: 2026-09-18
   - id: planning-tools
     resource: ../../../lib/features/agents/tools/task_planning_tool_definitions.dart
     title: Evidence-backed requests for planner attention
@@ -43,7 +43,7 @@ sources:
   - id: workflow
     resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
     title: TaskAgentWorkflow
-    last_modified: 2026-07-26
+    last_modified: 2026-09-18
   - id: strategy
     resource: ../../../lib/features/agents/workflow/task_agent_strategy.dart
     title: TaskAgentStrategy
@@ -469,6 +469,28 @@ outcome, and absent metadata and excluded scope stay out of the report.
 Custom report directives remain verbatim. Other model IDs keep the common
 scaffold and `0.3` until evaluated explicitly. This profile selection does not
 override reasoning effort.
+
+## Publication filter
+
+Every task report passes `TaskAgentReportPolicy.withoutPublicationNoise` on its
+way to persistence, after any editor pass and for every executor. It removes
+only text that says nothing:
+
+- a sentence, coordinate clause, trailing clause or bullet that merely reports
+  absent metadata ("No estimate or due date is set");
+- a Markdown section whose body is only "none" or is empty.
+
+A sentence that carries anything else is kept whole, including a subordinate
+clause that cannot stand alone ("No deadline is set yet, though the March
+cutoff will drive the timing"), and a draft filtered down to nothing is
+published unchanged: an empty report would skip the publication a required wake
+owes and leave the previous report looking fresh.
+
+The report contract already forbids absent-metadata notes and empty sections,
+yet every efficient model still wrote them; on 2026-09-15..18 that single
+sentence failed 7 of the 12 failed `task-workflow` gym samples across all three
+models. Prompt wording did not move it, so the filter cleans the published text
+instead of rejecting the report.
 
 ## The isolated report editor
 
