@@ -124,13 +124,41 @@ void main() {
       );
     });
 
+    test('a note joined to real content loses only the note', () {
+      // Verbatim glm-5.3-flash gym reports that the sentence rule missed.
+      const joined = {
+        'No due date or time estimate has been set, and no code changes have '
+                'been made yet.':
+            'No code changes have been made yet.',
+        'No estimate or due date is set, and no blockers are recorded. Work '
+                'has not started yet.':
+            'No blockers are recorded. Work has not started yet.',
+        'No estimate, due date, or scheduling request has been given yet. '
+                'Work begins with the implementation step.':
+            'Work begins with the implementation step.',
+        'No estimate, due date, or planner time has been set yet; these can '
+                'be added once implementation starts.':
+            'These can be added once implementation starts.',
+        'No deadline or estimate is set, and no review artifacts exist yet.':
+            'No review artifacts exist yet.',
+        '- Task priority is P2, status OPEN, no due date or estimate set':
+            '- Task priority is P2, status OPEN.',
+      };
+      joined.forEach((report, expected) {
+        expect(
+          TaskAgentReportPolicy.withoutAbsentMetadataNotes(report),
+          expected,
+          reason: report,
+        );
+      });
+    });
+
     test('a sentence that carries anything else survives untouched', () {
       const kept = [
         'No deadline is set yet — the March cutoff will drive the timing.',
-        'No deadline or estimate is set, and no review artifacts exist yet.',
-        '- Task priority is P2, status OPEN, no due date or estimate set',
         'The estimate is two hours and the due date is 2026-10-01.',
         'No blockers remain.',
+        'No deadline is set yet, though the March cutoff will drive the timing.',
         'There is no estimated risk to the release.',
       ];
       for (final line in kept) {

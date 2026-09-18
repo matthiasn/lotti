@@ -84,14 +84,18 @@ A report already exists. Before publishing, identify a new or corrected task fac
   /// alone. Only the bare note is removed.
   static final _absentMetadataNote = RegExp(
     r'^\s*(?:and\s+)?(?:there\s+(?:is|are)\s+)?no\s+'
-    r'(?:\w+\s+)?(?:estimate|due\s+date|deadline|target\s+date)'
-    r'(?:\s*(?:,|,?\s*(?:or|and))\s*(?:\w+\s+)?'
-    r'(?:estimate|due\s+date|deadline|target\s+date|priority|owner))*'
+    '$_metadataNouns'
+    '(?:\\s*(?:,|,?\\s*(?:or|and))\\s*$_metadataNouns)*'
     r'\s*(?:is|are|has\s+been|have\s+been)?\s*'
-    '(?:set|recorded|specified|defined|assigned)?'
-    r'(?:\s+yet)?(?:\s+for\s+(?:this|the)\s+\w+)?\s*[.!]?\s*$',
+    '(?:set|recorded|specified|defined|assigned|given|requested)?'
+    r'(?:\s+yet)?(?:\s+for\s+(?:this|the)\s+\w+)?\s*[.!,;]?\s*$',
     caseSensitive: false,
   );
+
+  /// The metadata a report may be tempted to call absent.
+  static const _metadataNouns =
+      r'(?:\w+\s+)?(?:estimate|due\s+date|deadline|target\s+date|'
+      r'scheduling\s+request|planner\s+time|priority|owner)';
 
   /// A trailing clause that only appends which metadata the task lacks, as in
   /// "the task is open with no due date or estimate set".
@@ -100,14 +104,48 @@ A report already exists. Before publishing, identify a new or corrected task fac
   /// — the March cutoff will drive the timing" keeps its reasoning.
   static final _absentMetadataClause = RegExp(
     r'(?:\s*[,;—–-]+\s*|\s+)(?:with|and)\s+no\s+'
-    r'(?:\w+\s+)?(?:estimate|due\s+date|deadline|target\s+date)'
-    r'(?:\s*(?:,|,?\s*(?:or|and))\s*(?:\w+\s+)?'
-    r'(?:estimate|due\s+date|deadline|target\s+date|priority|owner))*'
+    '$_metadataNouns'
+    '(?:\\s*(?:,|,?\\s*(?:or|and))\\s*$_metadataNouns)*'
     r'\s*(?:is|are|has\s+been|have\s+been)?\s*'
-    '(?:set|recorded|specified|defined|assigned)?'
+    '(?:set|recorded|specified|defined|assigned|given|requested)?'
     r'(?:\s+yet)?(?=[.!,;]|\s*$)',
     caseSensitive: false,
   );
+
+  /// [sentence] without any clause that only reports absent metadata.
+  ///
+  /// Models join the note to real content — "No due date or estimate has been
+  /// set, and no code changes have been made yet" — so the sentence is split on
+  /// its own conjunctions and each part judged alone. What remains is rejoined
+  /// and recapitalised. Only coordinate clauses are split: a subordinate
+  /// "though the March cutoff will drive the timing" cannot stand without the
+  /// clause it qualifies, so that sentence is left whole.
+  static String _withoutAbsentMetadataClauses(String sentence) {
+    final trailingTrimmed = sentence.replaceAll(_absentMetadataClause, '');
+    final clauses = trailingTrimmed
+        .split(
+          RegExp(r';\s+|,\s+(?=(?:and|but)\s+|no\s+)'),
+        )
+        .map((clause) => clause.trim())
+        .where((clause) => clause.isNotEmpty)
+        .toList();
+    if (clauses.length < 2) {
+      return _absentMetadataNote.hasMatch(trailingTrimmed)
+          ? ''
+          : trailingTrimmed;
+    }
+    final kept = clauses
+        .where((clause) => !_absentMetadataNote.hasMatch(clause))
+        .map((clause) => clause.replaceFirst(RegExp(r'^(?:and|but)\s+'), ''))
+        .toList();
+    if (kept.isEmpty) return '';
+    if (kept.length == clauses.length) return trailingTrimmed;
+    final rejoined = kept.join('; ');
+    final ended = RegExp(r'[.!?]$').hasMatch(rejoined)
+        ? rejoined
+        : '$rejoined.';
+    return ended[0].toUpperCase() + ended.substring(1);
+  }
 
   /// [report] without sentences or clauses that only report absent metadata.
   ///
@@ -123,7 +161,8 @@ A report already exists. Before publishing, identify a new or corrected task fac
       final sentences = line.split(RegExp(r'(?<=[.!])\s+'));
       final remaining = sentences
           .where((sentence) => !_absentMetadataNote.hasMatch(sentence))
-          .map((sentence) => sentence.replaceAll(_absentMetadataClause, ''))
+          .map(_withoutAbsentMetadataClauses)
+          .where((sentence) => sentence.isNotEmpty)
           .join(' ')
           .trimRight();
       // A line that was only such a note disappears; one that carried other
