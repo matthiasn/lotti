@@ -106,6 +106,20 @@ void main() {
       }
     });
 
+    test('the note is removed whatever Markdown marker introduces it', () {
+      // Report content is free-form Markdown, so the note arrives in bullets,
+      // numbered steps and quotes as well as paragraphs.
+      for (final marker in ['- ', '* ', '• ', '> ', '1. ', '2) ']) {
+        expect(
+          TaskAgentReportPolicy.withoutAbsentMetadataNotes(
+            'Fix the seeding.\n${marker}No estimate or due date is set.',
+          ),
+          'Fix the seeding.',
+          reason: marker,
+        );
+      }
+    });
+
     test('a trailing absence clause is dropped, the sentence is kept', () {
       // Verbatim glm-5.3 gym report: the sentence says something, its tail
       // does not.

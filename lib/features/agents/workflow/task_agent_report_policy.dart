@@ -115,7 +115,7 @@ A report already exists. Before publishing, identify a new or corrected task fac
     caseSensitive: false,
   );
 
-  /// [sentence] without any clause that only reports absent metadata.
+  /// The sentence without any clause that only reports absent metadata.
   ///
   /// Models join the note to real content — "No due date or estimate has been
   /// set, and no code changes have been made yet" — so the sentence is split on
@@ -123,17 +123,12 @@ A report already exists. Before publishing, identify a new or corrected task fac
   /// and recapitalised. Only coordinate clauses are split: a subordinate
   /// "though the March cutoff will drive the timing" cannot stand without the
   /// clause it qualifies, so that sentence is left whole.
-  static String _withoutAbsentMetadataClauses(String sentence) {
-    // A bullet or numbered marker belongs to the line, not to the clause it
-    // introduces, and is restored on whatever survives.
-    final marker =
-        RegExp(r'^\s*(?:[-*•]|\d+[.)])\s+').stringMatch(sentence) ?? '';
-    final body = sentence.substring(marker.length);
-    final kept = _withoutAbsentMetadataClausesIn(body);
-    return kept.isEmpty ? '' : '$marker$kept';
-  }
+  /// A list, quote or numbered marker, which belongs to the line rather than
+  /// to the sentence it introduces. Report content is free-form Markdown, so
+  /// the note arrives as often in a bullet as in a paragraph.
+  static final _lineMarker = RegExp(r'^\s*(?:[-*•>]|\d+[.)])\s+');
 
-  static String _withoutAbsentMetadataClausesIn(String sentence) {
+  static String _withoutAbsentMetadataClauses(String sentence) {
     final trailingTrimmed = sentence.replaceAll(_absentMetadataClause, '');
     final clauses = trailingTrimmed
         .split(
@@ -263,7 +258,9 @@ A report already exists. Before publishing, identify a new or corrected task fac
   static String withoutAbsentMetadataNotes(String report) {
     final kept = <String>[];
     for (final line in report.split('\n')) {
-      final sentences = line.split(RegExp(r'(?<=[.!])\s+'));
+      final marker = _lineMarker.stringMatch(line) ?? '';
+      final body = line.substring(marker.length);
+      final sentences = body.split(RegExp(r'(?<=[.!])\s+'));
       final remaining = sentences
           .where((sentence) => !_absentMetadataNote.hasMatch(sentence))
           .map(_withoutAbsentMetadataClauses)
@@ -273,10 +270,10 @@ A report already exists. Before publishing, identify a new or corrected task fac
       // A line that was only such a note disappears; one that carried other
       // prose keeps it. Bullets and headings are lines, so neither is joined
       // into its neighbour.
-      if (sentences.isNotEmpty && remaining.isEmpty && line.trim().isNotEmpty) {
+      if (sentences.isNotEmpty && remaining.isEmpty && body.trim().isNotEmpty) {
         continue;
       }
-      kept.add(remaining.isEmpty ? line : remaining);
+      kept.add(remaining.isEmpty ? line : marker + remaining);
     }
     return kept.join('\n').replaceAll(RegExp(r'\n{3,}'), '\n\n').trim();
   }
