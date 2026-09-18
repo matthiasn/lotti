@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/nudge_models.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/workflow/relationship_agent_contract.dart';
 import 'package:lotti/features/relationships/workflow/relationship_agent_strategy.dart';
@@ -156,6 +157,58 @@ void main() {
       );
       expect(strategy.deferredItems, hasLength(3));
       expect(lastResponse(), contains('three'));
+    });
+  });
+
+  group('record_relationship_observations', () {
+    test('keeps the notes for the workflow to persist', () async {
+      await strategy.processToolCalls(
+        toolCalls: [
+          _call(
+            name: 'record_relationship_observations',
+            args: {
+              'observations': [
+                {
+                  'text': 'Vanja was misheard; the user means Wanja.',
+                  'category': 'grievance',
+                },
+                'Pip gets anxious before launches.',
+              ],
+            },
+          ),
+        ],
+        manager: manager,
+      );
+
+      expect(
+        [for (final o in strategy.observations) (o.text, o.category)],
+        [
+          (
+            'Vanja was misheard; the user means Wanja.',
+            ObservationCategory.grievance,
+          ),
+          (
+            'Pip gets anxious before launches.',
+            ObservationCategory.operational,
+          ),
+        ],
+      );
+      expect(lastResponse(), 'Recorded 2 observation(s).');
+    });
+
+    test('rejects a call with nothing to record', () async {
+      await strategy.processToolCalls(
+        toolCalls: [
+          _call(
+            name: 'record_relationship_observations',
+            args: {'observations': <Object>[]},
+          ),
+        ],
+        manager: manager,
+      );
+
+      expect(strategy.observations, isEmpty);
+      expect(lastResponse(), startsWith('Error:'));
     });
   });
 

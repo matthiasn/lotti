@@ -25,6 +25,7 @@ import 'package:lotti/features/relationships/model/relationship_health_metrics.d
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/workflow/relationship_agent_contract.dart';
 import 'package:lotti/features/relationships/workflow/relationship_agent_workflow.dart';
+import 'package:lotti/features/relationships/workflow/relationship_facts_renderer.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -184,6 +185,13 @@ void main() {
     when(
       () => repository.getProposalLedger(agentId, taskId: relationshipId),
     ).thenAnswer((_) async => const ProposalLedger.empty());
+    when(
+      () => repository.getMessagesByKind(
+        agentId,
+        AgentMessageKind.observation,
+        limit: relationshipObservationLookback,
+      ),
+    ).thenAnswer((_) async => []);
     workflow = RelationshipAgentWorkflow(
       repository: repository,
       syncService: syncService,
@@ -302,6 +310,92 @@ void main() {
             return null;
           };
   }
+
+  // The usage session behind this: the user corrected a misheard name in a
+  // check-in, and the agent kept nothing of it for its next wake.
+  test('a grievance recorded in one wake is read back by the next', () async {
+    stubGlmResolution();
+    final seen = <String>[];
+    conversationRepository
+      ..maxDelegateCalls = 2
+      ..sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0,
+            strategy,
+          }) async {
+            seen.add(message);
+            await strategy!.processToolCalls(
+              toolCalls: [
+                toolCall(
+                  RelationshipAgentToolNames.recordRelationshipObservations,
+                  {
+                    'observations': [
+                      {
+                        'text': 'Vanja was misheard; the user means Wanja.',
+                        'category': 'grievance',
+                      },
+                    ],
+                  },
+                  id: 'notes',
+                ),
+                toolCall(
+                  RelationshipAgentToolNames.updateRelationshipReport,
+                  briefingArgs(),
+                  id: 'report',
+                ),
+                // The fixture's cadence is due: without its banner the wake
+                // forces a second turn.
+                toolCall(
+                  RelationshipAgentToolNames.createRelationshipAd,
+                  adArgs(),
+                  id: 'ad',
+                ),
+              ],
+              manager: conversationManager,
+            );
+            return null;
+          };
+
+    expect(
+      (await run(tokens: {relationshipReportRefreshTriggerToken})).success,
+      isTrue,
+    );
+    final note = upserts.whereType<AgentMessageEntity>().singleWhere(
+      (m) => m.kind == AgentMessageKind.observation,
+    );
+    final payload = upserts.whereType<AgentMessagePayloadEntity>().singleWhere(
+      (p) => p.id == note.contentEntryId,
+    );
+    expect(payload.content['category'], 'grievance');
+    expect(seen.single, contains('not evidence:\n- none'));
+
+    when(
+      () => repository.getMessagesByKind(
+        agentId,
+        AgentMessageKind.observation,
+        limit: relationshipObservationLookback,
+      ),
+    ).thenAnswer((_) async => [note]);
+    when(
+      () => repository.getEntitiesByIds(any()),
+    ).thenAnswer((_) async => {payload.id: payload});
+    expect(
+      (await run(tokens: {relationshipReportRefreshTriggerToken})).success,
+      isTrue,
+    );
+
+    expect(
+      seen.last,
+      contains('Vanja was misheard; the user means Wanja.'),
+    );
+  });
 
   test(
     'defers the task in a relationship-scoped change set with evidence',

@@ -7,6 +7,7 @@ import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/relationship_trigger_tokens.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/workflow/relationship_facts_renderer.dart';
 
@@ -92,6 +93,7 @@ void main() {
     List<RelationshipNudgeEntity> nudges = const [],
     RelationshipCadenceDerivation? d,
     RelationshipCadenceStatus? preTransitionStatus,
+    List<RecalledObservation> observations = const [],
   }) => renderer.render(
     relationship: relationship(),
     derivation: d ?? derivation(),
@@ -101,7 +103,35 @@ void main() {
     nudges: nudges,
     now: now,
     preTransitionStatus: preTransitionStatus,
+    observations: observations,
   );
+
+  // Codex review on #4345: FACTS are authoritative, so a note that says a
+  // name was misheard must be told to win over the misheard check-in.
+  test("the agent's notes come back with corrections ranked above facts", () {
+    final facts = render(
+      observations: [
+        (
+          at: DateTime(2026, 8, 14, 20),
+          text: 'The user said "Vanja" was misheard;\nthe name is Wanja.',
+        ),
+        (at: DateTime(2026, 8, 2, 9), text: 'Pip dislikes long calls.'),
+      ],
+    );
+
+    expect(
+      facts,
+      contains(
+        'YOUR OBSERVATIONS (your private notes from earlier wakes, newest '
+        'first). A correction the user made overrides what it corrects; '
+        'any other note is context, not evidence:\n'
+        '- 2026-08-14: The user said "Vanja" was misheard; the name is '
+        'Wanja.\n'
+        '- 2026-08-02: Pip dislikes long calls.\n',
+      ),
+    );
+    expect(render(), contains('not evidence:\n- none\n'));
+  });
 
   test('the baseline token is the only way to tell newly-lapsed from '
       'still-overdue (ADR 0059 Decision 3): rendered on a due cadence, and '

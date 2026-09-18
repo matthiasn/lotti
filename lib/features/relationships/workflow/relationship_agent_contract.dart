@@ -8,6 +8,7 @@ library;
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 
 /// Tool names of the relationship-agent surface.
@@ -15,6 +16,8 @@ import 'package:lotti/features/relationships/model/relationship_health_metrics.d
 /// and deferred `create_and_link_task` keep their cross-feature names.
 class RelationshipAgentToolNames {
   static const String replyToUser = AgentConversationToolNames.replyToUser;
+  static const recordRelationshipObservations =
+      'record_relationship_observations';
   static const updateRelationshipReport = 'update_relationship_report';
   static const createRelationshipAd = 'create_relationship_ad';
   static const createAndLinkTask = 'create_and_link_task';
@@ -92,7 +95,12 @@ Actions:
    three. Quote evidence and pass sourceCheckInId. Never re-propose pending,
    confirmed, or rejected proposals or paraphrases; never derive tasks from a
    contact channel. Proposals require user confirmation. Add dueDate only from evidence.
-5. If no step is triggered, follow the no-op rule above.
+5. Call record_relationship_observations for what later wakes must remember
+   and FACTS cannot hold: a correction of the record (a misheard name, a
+   wrong fact), the user's feelings about the relationship, a recurring
+   pattern, or the user's complaint about your briefing (category grievance).
+   Do not repeat YOUR OBSERVATIONS.
+6. If no step is triggered, follow the no-op rule above.
 ''';
 
 /// Header introducing the pending user message appended to an interactive
@@ -235,6 +243,17 @@ final List<AgentToolDefinition> relationshipAgentTools = [
       },
       'required': ['headline', 'tone', 'animation'],
     },
+  ),
+  AgentToolDefinition(
+    name: RelationshipAgentToolNames.recordRelationshipObservations,
+    description:
+        'Record private notes for your later wakes. Never shown as the '
+        'briefing; the user can read them under Agent internals.',
+    parameters: recordObservationsParameters(
+      textDescription:
+          'One self-contained note, naming the check-in or message it '
+          'comes from.',
+    ),
   ),
   const AgentToolDefinition(
     name: RelationshipAgentToolNames.snoozeRelationshipAd,

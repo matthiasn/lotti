@@ -15,6 +15,7 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/util/inference_provider_resolver.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/agent_system_prompt.dart';
 import 'package:lotti/features/agents/workflow/carrierless_attribution.dart';
 import 'package:lotti/features/agents/workflow/deferred_change_items.dart';
@@ -364,6 +365,11 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       agentId,
       taskId: relationshipId,
     );
+    final observations = await recallAgentObservations(
+      _repository,
+      agentId,
+      limit: relationshipObservationLookback,
+    );
     var factsBlock = _factsRenderer.render(
       relationship: relationship,
       derivation: derivation,
@@ -374,6 +380,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       now: now,
       preTransitionStatus: preTransitionStatus,
       proposals: proposals,
+      observations: observations,
     );
     if (interactive) {
       factsBlock =
@@ -883,6 +890,15 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
           ),
         );
       }
+
+      await persistAgentObservations(
+        _syncService,
+        agentId: agentId,
+        threadId: threadId,
+        runKey: runKey,
+        now: now,
+        observations: strategy.observations,
+      );
 
       if (reportId != null) {
         final briefing = strategy.briefing!;

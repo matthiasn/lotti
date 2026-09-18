@@ -3,8 +3,10 @@ import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/nudge_models.dart';
+import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/workflow/agent_message_recording.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/agent_tool_arg_parsing.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
@@ -81,6 +83,7 @@ class RelationshipAgentStrategy extends ConversationStrategy
   String? _replyToUser;
   final _createdAds = <RelationshipAdRequest>[];
   final _snoozeRequests = <RelationshipAdSnooze>[];
+  final _observations = <ObservationRecord>[];
 
   RelationshipBriefing? get briefing => _briefing;
   bool get hasBriefing => _briefing != null;
@@ -89,6 +92,9 @@ class RelationshipAgentStrategy extends ConversationStrategy
   List<RelationshipAdRequest> get createdAds => List.unmodifiable(_createdAds);
   List<RelationshipAdSnooze> get snoozeRequests =>
       List.unmodifiable(_snoozeRequests);
+
+  /// Private notes for later wakes, in the order they were recorded.
+  List<ObservationRecord> get observations => List.unmodifiable(_observations);
 
   /// Called by the workflow after the loop with the last assistant text.
   void recordFinalResponse(String? content) {
@@ -138,6 +144,8 @@ class RelationshipAgentStrategy extends ConversationStrategy
           await _handleCreateAd(call, args, manager);
         case RelationshipAgentToolNames.snoozeRelationshipAd:
           await _handleSnoozeAd(call, args, manager);
+        case RelationshipAgentToolNames.recordRelationshipObservations:
+          await _handleRecordObservations(call, args, manager);
         default:
           await _reject(
             call: call,
@@ -425,6 +433,20 @@ class RelationshipAgentStrategy extends ConversationStrategy
       manager,
       'Banner snoozed until ${until.toIso8601String()}.',
     );
+  }
+
+  Future<void> _handleRecordObservations(
+    ChatCompletionMessageToolCall call,
+    Map<String, dynamic> args,
+    ConversationManager manager,
+  ) async {
+    final (:records, :error) = parseRecordObservations(args);
+    if (error != null) {
+      await _reject(call: call, manager: manager, error: error);
+      return;
+    }
+    _observations.addAll(records);
+    await _accept(call, manager, 'Recorded ${records.length} observation(s).');
   }
 
   int? _iso8601UtcOffsetMinutes(String value) {

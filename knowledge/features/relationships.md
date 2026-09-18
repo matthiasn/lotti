@@ -5,7 +5,7 @@ description: A personal CRM carried by two journal variants — why check-ins ar
 resource: ../../lib/features/relationships
 tags: [relationships, check-ins, journal-entity, privacy]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-09-19T01:30:00Z }
+generated: { by: claude-code/opus-5, at: 2026-09-19T02:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: sync-runtime
@@ -697,8 +697,9 @@ removed:
   A briefing is triggered when it is missing, a check-in is newer, cadence is
   due, or the user explicitly requests a refresh.
   `reply_to_user`, `update_relationship_report`, `create_relationship_ad`,
-  `snooze_relationship_ad`, and `create_and_link_task` accumulate in the
-  strategy; `persistOutputs` writes one transaction. Deletion is always fenced;
+  `snooze_relationship_ad`, `record_relationship_observations` and
+  `create_and_link_task` accumulate in the strategy; `persistOutputs` writes
+  one transaction. Deletion is always fenced;
   `important` and active status are fenced for automatic wakes, while chat and
   explicit briefing requests may still persist their reply, briefing and
   banner after unmarking because the user directly requested them. Deferred
@@ -712,6 +713,26 @@ removed:
   provenance carries the health band + rationale + confidence
   (`RelationshipReportProvenanceKeys`, parsed fail-closed by
   `relationship_health_metrics.dart`).
+- **The agent keeps private observations, and reads them back.** FACTS hold
+  what the user logged; they cannot hold what the agent learned about the
+  record itself — that a name was misheard, that the user found a briefing
+  wrong, how the user feels about the relationship. Without a place for that,
+  a correction check-in was narrated once and forgotten, and the
+  *Observations* tab under *Agent internals* stayed empty because the agent
+  had no tool that writes there. `record_relationship_observations` takes
+  notes with the shared priority and category (a complaint about the agent
+  is category `grievance`); `persistOutputs` writes them as observation
+  messages with ids derived from the agent, run and position, so a retried
+  transaction rewrites rather than duplicates. The next wake reads the
+  newest `relationshipObservationLookback` (20) back through
+  `recallAgentObservations` and renders them under `YOUR OBSERVATIONS`,
+  after the previous briefing, with an exact status: a correction the user
+  made overrides the check-in or fact it corrects — FACTS are otherwise
+  authoritative, so a note saying a name was misheard would lose to the
+  misheard check-in — and every other note is context, never evidence. They sit behind the same deletion and consent fences as every
+  other output. The parsing, recall and persistence live in
+  [`agent_observations.dart`](../../lib/features/agents/workflow/agent_observations.dart),
+  shared so other agents can move off their own copies.
 - **The standing head advances by DUE DAY, not by wall clock.** Report rows
   accumulate as history; the `agentReportHead` row is what the UI reads. It
   is stamped with the due day's last instant once that day is over (the

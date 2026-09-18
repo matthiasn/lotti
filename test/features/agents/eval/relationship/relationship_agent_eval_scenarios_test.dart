@@ -363,8 +363,10 @@ void main() {
     test('system prompt stays lean', () {
       // The goal-contract lesson: a bloated prompt gets skimmed, and every
       // number the model needs arrives in FACTS. Hard ceiling — revisit
-      // any growth past it deliberately.
-      expect(relationshipAgentSystemPrompt.length, lessThan(3000));
+      // any growth past it deliberately. Raised from 3000 for the
+      // observations rule (lotti3-pu0p.4), the agent's only memory of
+      // corrections and grievances between wakes.
+      expect(relationshipAgentSystemPrompt.length, lessThan(3400));
       expect(relationshipAgentSystemPrompt, contains('reply_to_user'));
       expect(
         relationshipAgentSystemPrompt,
