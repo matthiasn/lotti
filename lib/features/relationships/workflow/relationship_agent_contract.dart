@@ -89,11 +89,9 @@ Actions:
    A roast request changes the banner tone; it does not replace the required banner with a reply.
    Use fixed animation/accent presets. No images or private details.
 4. For each captured explicit commitment, call create_and_link_task, at most
-   three. Quote it word for word as its check-in's narrative writes it, even
-   if a later check-in corrects it, and pass that sourceCheckInId.
-   Never re-propose pending, confirmed, or rejected proposals or paraphrases;
-   never derive tasks from a contact channel. Proposals require user
-   confirmation. Add dueDate only from evidence.
+   three. Quote it verbatim and pass sourceCheckInId. Never re-propose pending,
+   confirmed, or rejected proposals or paraphrases; never derive tasks from a
+   contact channel. Proposals require user confirmation. Add dueDate only from evidence.
 5. If no step is triggered, follow the no-op rule above.
 ''';
 
@@ -299,8 +297,10 @@ const Set<String> relationshipDeferredTools = {
 };
 
 /// Whether [quote] is evidence found in [narrative]: the same words, ignoring
-/// case, spacing and line breaks, quotation marks, dash and apostrophe
-/// styles, an ellipsis, and punctuation at either end of the quote.
+/// case, spacing and line breaks, which quotation mark, dash and apostrophe
+/// *style* is used, an ellipsis, and punctuation or quotation marks wrapping
+/// the quote. Quotation marks *inside* the quote still count: dropping the
+/// quotes from `I "promised" to call` is not quoting it verbatim.
 ///
 /// Shared by the strategy (a proposal whose quote is not there is rejected
 /// in-conversation, so the model can quote again) and the dispatcher (the
@@ -316,16 +316,16 @@ bool relationshipQuoteAppearsIn({
   return needle.isNotEmpty && _comparableEvidence(narrative).contains(needle);
 }
 
-final _quotationMarks = RegExp('["“”„‟«»‹›]');
+final _quotationMarks = RegExp('[“”„‟«»‹›]');
 final _apostrophes = RegExp('[‘’‚′]');
 final _dashes = RegExp('[‐‑‒–—―]');
 final _ellipsis = RegExp(r'…|\.{3}');
 final _whitespace = RegExp(r'\s+');
-final _edgePunctuation = RegExp(r"^[\s.,;:!?'\-]+|[\s.,;:!?'\-]+$");
+final _edgePunctuation = RegExp(r'''^[\s.,;:!?'"\-]+|[\s.,;:!?'"\-]+$''');
 
 String _comparableEvidence(String text) => text
     .toLowerCase()
-    .replaceAll(_quotationMarks, '')
+    .replaceAll(_quotationMarks, '"')
     .replaceAll(_apostrophes, "'")
     .replaceAll(_dashes, '-')
     .replaceAll(_ellipsis, ' ')

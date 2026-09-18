@@ -29,6 +29,28 @@ void main() {
       });
     }
 
+    // Codex review on #4344: quotes inside the evidence are part of it.
+    test('keeps quotation marks inside the quote, in any style', () {
+      const quoted = 'Wanja said I "promised" to call Pingo.';
+
+      expect(
+        relationshipQuoteAppearsIn(
+          narrative: quoted,
+          quote: 'I promised to call Pingo',
+        ),
+        isFalse,
+        reason: 'dropping the scare quotes is not quoting verbatim',
+      );
+      expect(
+        relationshipQuoteAppearsIn(
+          narrative: quoted,
+          quote: '„I “promised” to call Pingo.“',
+        ),
+        isTrue,
+        reason: 'the same quotes in another style, and wrapping ones',
+      );
+    });
+
     glados.Glados2(
       glados.any.nonEmptyList(glados.any.nonEmptyLetters),
       glados.any.nonEmptyList(glados.any.choose([' ', '\n', '\n\n', '  '])),

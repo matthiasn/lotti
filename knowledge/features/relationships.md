@@ -980,8 +980,10 @@ rendered window, deduplicates source/title pairs, and queues at most three tasks
 
 **The quote must be in its check-in, and both sides check it the same way.**
 `relationshipQuoteAppearsIn` compares the description with the source
-check-in's narrative ignoring case, spacing and line breaks, quotation marks,
-dash and apostrophe styles, an ellipsis, and punctuation at the quote's ends.
+check-in's narrative ignoring case, spacing and line breaks, the *style* of
+quotation marks, dashes and apostrophes, an ellipsis, and punctuation or
+quotation marks wrapping the quote. Quotation marks inside the quote still
+count, so dropping them is not quoting verbatim.
 The strategy runs it on every proposal (it holds each rendered check-in's
 narrative, `sourceCheckIns`), so a quote that is not there is rejected
 in-conversation and the model can quote again; the dispatcher runs it again at
@@ -990,9 +992,9 @@ matter: the model reads narratives whitespace-collapsed and cut at 400
 characters, and the confirmation check used to demand the stored text's exact
 line breaks — a commitment crossing the blank line between two dictated takes,
 or quoted with a name a later check-in corrected, was withdrawn under the
-user's finger with *Failed to apply change* and no task. The contract tells the
-model to quote as the narrative writes it, even where a later check-in
-corrects it.
+user's finger with *Failed to apply change* and no task. The contract asks for
+the quote verbatim; the tool's `description` parameter and the rejection add
+"even where a later check-in corrects it", keeping the prompt under its cap.
 
 The workflow persists those items inside its existing output transaction,
 rechecking that the person is live, important and active. A deterministic
