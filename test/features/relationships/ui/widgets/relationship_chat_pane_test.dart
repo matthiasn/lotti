@@ -17,6 +17,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
@@ -49,7 +50,26 @@ void main() {
     VoidCallback? onBack,
     bool showInternalsAction = false,
     Size size = const Size(400, 800),
+    List<AgentChatMessage> messages = const [],
+    String? nickname,
   }) async {
+    await setUpTestGetIt();
+    addTearDown(tearDownTestGetIt);
+    final repository = MockRelationshipRepository();
+    when(
+      () => repository.getRelationshipById(relationshipId),
+    ).thenAnswer(
+      (_) async => testRelationship.copyWith(
+        meta: testRelationship.meta.copyWith(id: relationshipId),
+        data: testRelationship.data.copyWith(nickname: nickname),
+      ),
+    );
+    when(
+      () => repository.getCheckInsForRelationship(relationshipId),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.getLinkedTasks(relationshipId),
+    ).thenAnswer((_) async => []);
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         Scaffold(
@@ -68,12 +88,13 @@ void main() {
         ),
         mediaQueryData: MediaQueryData(size: size),
         overrides: [
+          relationshipRepositoryProvider.overrideWithValue(repository),
           agentIdentityProvider(
             agentId,
           ).overrideWith((ref) async => identity()),
           agentChatProjectionProvider(
             agentId,
-          ).overrideWith((ref) async => const []),
+          ).overrideWith((ref) async => messages),
         ],
       ),
     );
@@ -92,6 +113,58 @@ void main() {
       reason: 'the header says what the agent can see before the user asks',
     );
     expect(find.byType(AgentChatView), findsOneWidget);
+  });
+
+  // The agent carries the person's name, but the person is not the one
+  // listening: the empty state and the input talk to the briefing agent
+  // about them.
+  testWidgets('the empty state and the input address the agent, about the '
+      'person', (tester) async {
+    await pumpPane(tester);
+
+    expect(
+      find.text('Start a conversation with the briefing agent about Anna.'),
+      findsOneWidget,
+    );
+    expect(find.text('Talk to the agent about Anna…'), findsOneWidget);
+    expect(find.text('Talk to Anna…'), findsNothing);
+  });
+
+  // The one-line input has the least room for a long formal name.
+  testWidgets('the input uses the nickname when the person has one', (
+    tester,
+  ) async {
+    await pumpPane(tester, nickname: 'Annie');
+
+    expect(find.text('Talk to the agent about Annie…'), findsOneWidget);
+    expect(
+      find.text('Start a conversation with the briefing agent about Anna.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets("the agent's replies are signed by the agent, not the person", (
+    tester,
+  ) async {
+    await pumpPane(
+      tester,
+      messages: [
+        AgentChatMessage(
+          id: 'reply',
+          role: AgentChatRole.agent,
+          text: 'Bring up the krill contract.',
+          createdAt: DateTime(2026, 8, 14, 10),
+        ),
+      ],
+    );
+
+    // The reply's byline is "{author} · {time}"; the header's own
+    // "Anna · briefing agent" is not a byline.
+    expect(
+      find.textContaining(RegExp(r'^Briefing agent · \d')),
+      findsOneWidget,
+    );
+    expect(find.textContaining(RegExp(r'^Anna · \d')), findsNothing);
   });
 
   testWidgets('offers back only when the host asks for it', (tester) async {

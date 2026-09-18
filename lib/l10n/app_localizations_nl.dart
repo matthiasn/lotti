@@ -11838,18 +11838,6 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String relationshipAgentReadingBody(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Leest $count check-ins. Meestal binnen een minuut.',
-      one: 'Leest 1 check-in. Meestal binnen een minuut.',
-      zero: 'Bereidt de briefing voor. Meestal binnen een minuut.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get relationshipAgentSeeActivity => 'Activiteit bekijken';
 
   @override
@@ -11892,23 +11880,6 @@ class AppLocalizationsNl extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String relationshipBriefingDisclosureBody(String provider) {
-    return 'De briefing draait op $provider. Notities over deze persoon worden daarheen gestuurd voor verwerking.';
-  }
-
-  @override
-  String get relationshipBriefingDisclosureConfirm => 'Doorgaan';
-
-  @override
-  String relationshipBriefingDisclosureTitle(String provider) {
-    return 'Naar $provider sturen?';
-  }
-
-  @override
-  String get relationshipBriefingRequested =>
-      'Briefing aangevraagd — verschijnt hier zo.';
 
   @override
   String get relationshipBriefingRequestFailed =>
@@ -12210,6 +12181,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipJustAdded => 'Net toegevoegd';
 
   @override
+  String get relationshipKnownTermsBody =>
+      'Mensen, huisdieren en plekken die je bij hen noemt, gescheiden door puntkomma\'s. Ingesproken check-ins spellen ze zo.';
+
+  @override
+  String get relationshipKnownTermsHint => 'Sam; Luna; Lissabon';
+
+  @override
+  String get relationshipKnownTermsLabel => 'Namen die langskomen';
+
+  @override
   String relationshipLastSpoke(String time) {
     return 'laatst gesproken $time';
   }
@@ -12245,16 +12226,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get relationshipNicknameLabel => 'Bijnaam';
-
-  @override
-  String get relationshipKnownTermsBody =>
-      'Mensen, huisdieren en plekken die je bij hen noemt, gescheiden door puntkomma\'s. Ingesproken check-ins spellen ze zo.';
-
-  @override
-  String get relationshipKnownTermsHint => 'Sam; Luna; Lissabon';
-
-  @override
-  String get relationshipKnownTermsLabel => 'Namen die langskomen';
 
   @override
   String get relationshipNoCheckIns =>
@@ -15909,4 +15880,17 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
+
+  @override
+  String get relationshipChatAgentName => 'Briefingagent';
+
+  @override
+  String relationshipChatEmpty(String name) {
+    return 'Begin een gesprek met de briefingagent over $name.';
+  }
+
+  @override
+  String relationshipChatPlaceholder(String name) {
+    return 'Praat met de agent over $name…';
+  }
 }

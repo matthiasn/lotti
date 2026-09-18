@@ -6914,14 +6914,6 @@
       }
     }
   },
-  "relationshipAgentReadingBody": "{count, plural, =0{Preparing the briefing. Usually under a minute.} =1{Reading 1 check-in. Usually under a minute.} other{Reading {count} check-ins. Usually under a minute.}}",
-  "@relationshipAgentReadingBody": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "relationshipAgentSeeActivity": "See activity",
   "relationshipAgentSources": "Sources: {count, plural, =1{1 check-in} other{{count} check-ins}} · contact channels never sent",
   "@relationshipAgentSources": {
@@ -6959,26 +6951,6 @@
       }
     }
   },
-  "relationshipBriefingDisclosureBody": "The briefing runs on {provider}. Notes about this person will be sent there for processing.",
-  "@relationshipBriefingDisclosureBody": {
-    "description": "Confirm dialog body before a cloud-bound briefing; provider is the inference provider name.",
-    "placeholders": {
-      "provider": {
-        "type": "String"
-      }
-    }
-  },
-  "relationshipBriefingDisclosureConfirm": "Continue",
-  "relationshipBriefingDisclosureTitle": "Send to {provider}?",
-  "@relationshipBriefingDisclosureTitle": {
-    "description": "Confirm dialog title before a cloud-bound briefing; provider is the inference provider name.",
-    "placeholders": {
-      "provider": {
-        "type": "String"
-      }
-    }
-  },
-  "relationshipBriefingRequested": "Briefing requested — it will appear here shortly.",
   "relationshipBriefingRequestFailed": "Could not request the briefing.",
   "relationshipBriefingTitle": "Briefing",
   "relationshipCadenceEveryNDays": "{days, plural, =1{Every day} other{Every {days} days}}",
@@ -7004,10 +6976,27 @@
   "relationshipCadencePromptLabel": "Nudge me every",
   "relationshipCadenceQuarterly": "Quarterly",
   "relationshipCadenceWeekly": "Weekly",
+  "relationshipChatAgentName": "Briefing agent",
   "relationshipChatAgentSubtitle": "Knows your check-ins, not the channels",
   "relationshipChatAgentTitle": "{name} · briefing agent",
   "@relationshipChatAgentTitle": {
     "description": "Title of the per-person chat header: the person's name and what the agent is",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipChatEmpty": "Start a conversation with the briefing agent about {name}.",
+  "@relationshipChatEmpty": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipChatPlaceholder": "Talk to the agent about {name}…",
+  "@relationshipChatPlaceholder": {
     "placeholders": {
       "name": {
         "type": "String"

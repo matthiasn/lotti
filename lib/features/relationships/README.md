@@ -35,11 +35,14 @@ see the activity after a failure) and one primary: mark important, brief
 now, choose a model, retry, update, or call. An out-of-date briefing shows
 its age in the header; open task proposals are counted by their own band
 under the body. The model row carries the inference cost, and a current
-briefing names its sources once it is expanded. A first cloud briefing
-names the provider before sending relationship context. The agent keeps
-private notes between briefings — a corrected name, a complaint about its
-briefing, how things feel — shown under *Agent internals*, and reads them
-back the next time it writes.
+briefing names its sources once it is expanded. The model row names the
+model and provider before anything is sent, so *Brief now* and *Update now*
+start at once, with no confirmation; while a new briefing is written the
+previous one stays readable under the spinner. The agent keeps private notes
+between briefings — a corrected name, a complaint about its briefing, how
+things feel — shown under *Agent internals*, and reads them back the next
+time it writes. The chat talks to the briefing agent about the person, never
+to the person.
 
 The agent can propose tasks from explicit commitments in check-ins. The
 card and chat show the source check-in and any proposed due date before

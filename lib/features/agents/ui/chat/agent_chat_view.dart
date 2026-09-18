@@ -34,6 +34,8 @@ class AgentChatView extends ConsumerStatefulWidget {
     this.attachmentBuilder,
     this.history,
     this.emptyState,
+    this.emptyMessage,
+    this.composerHint,
     this.activity,
     this.pinnedActivity,
     this.sendingLabel,
@@ -65,6 +67,14 @@ class AgentChatView extends ConsumerStatefulWidget {
   /// When present the agent-wide message log is never subscribed to.
   final AsyncValue<List<AgentChatMessage>>? history;
   final Widget? emptyState;
+
+  /// The empty conversation's line, when the default one — which addresses
+  /// [agentName] — would name the wrong party. A person's briefing agent is
+  /// the one listening, not the person.
+  final String? emptyMessage;
+
+  /// The composer's hint, for the same reason as [emptyMessage].
+  final String? composerHint;
   final Widget? activity;
 
   /// Optional persistent status above the composer for an active request.
@@ -245,9 +255,10 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
                             child: Padding(
                               padding: EdgeInsets.all(tokens.spacing.step5),
                               child: Text(
-                                context.messages.goalChatEmpty(
-                                  widget.agentName,
-                                ),
+                                widget.emptyMessage ??
+                                    context.messages.goalChatEmpty(
+                                      widget.agentName,
+                                    ),
                                 textAlign: TextAlign.center,
                                 style: tokens.typography.styles.body.bodyMedium
                                     .copyWith(
@@ -356,7 +367,9 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
             _ChatComposer(
               availableHeight: constraints.maxHeight,
               controller: _controller,
-              agentName: widget.agentName,
+              hintText:
+                  widget.composerHint ??
+                  context.messages.goalChatPlaceholder(widget.agentName),
               isSending: widget.isSending,
               allowDraftWhileSending: widget.allowDraftWhileSending,
               showVoiceDetails: widget.showVoiceDetails,
@@ -388,7 +401,7 @@ class _ChatComposer extends ConsumerWidget {
   const _ChatComposer({
     required this.availableHeight,
     required this.controller,
-    required this.agentName,
+    required this.hintText,
     required this.isSending,
     required this.allowDraftWhileSending,
     required this.showVoiceDetails,
@@ -402,7 +415,7 @@ class _ChatComposer extends ConsumerWidget {
 
   final double availableHeight;
   final TextEditingController controller;
-  final String agentName;
+  final String hintText;
   final bool isSending;
   final bool allowDraftWhileSending;
   final bool showVoiceDetails;
@@ -450,7 +463,7 @@ class _ChatComposer extends ConsumerWidget {
           ),
           _ => _IdleComposer(
             controller: controller,
-            agentName: agentName,
+            hintText: hintText,
             isSending: isSending,
             allowDraftWhileSending: allowDraftWhileSending,
             sendingLabel: sendingLabel,
@@ -473,7 +486,7 @@ class _ChatComposer extends ConsumerWidget {
 class _IdleComposer extends StatelessWidget {
   const _IdleComposer({
     required this.controller,
-    required this.agentName,
+    required this.hintText,
     required this.isSending,
     required this.allowDraftWhileSending,
     required this.sendingLabel,
@@ -485,7 +498,7 @@ class _IdleComposer extends StatelessWidget {
   });
 
   final TextEditingController controller;
-  final String agentName;
+  final String hintText;
   final bool isSending;
   final bool allowDraftWhileSending;
   final String sendingLabel;
@@ -508,7 +521,7 @@ class _IdleComposer extends StatelessWidget {
           child: DesignSystemTextInput(
             controller: controller,
             shape: shape,
-            hintText: context.messages.goalChatPlaceholder(agentName),
+            hintText: hintText,
             helperText: isSending && !allowDraftWhileSending
                 ? sendingLabel
                 : null,

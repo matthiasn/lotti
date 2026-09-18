@@ -11756,18 +11756,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String relationshipAgentReadingBody(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Reading $count check-ins. Usually under a minute.',
-      one: 'Reading 1 check-in. Usually under a minute.',
-      zero: 'Preparing the briefing. Usually under a minute.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get relationshipAgentSeeActivity => 'See activity';
 
   @override
@@ -11810,23 +11798,6 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String relationshipBriefingDisclosureBody(String provider) {
-    return 'The briefing runs on $provider. Notes about this person will be sent there for processing.';
-  }
-
-  @override
-  String get relationshipBriefingDisclosureConfirm => 'Continue';
-
-  @override
-  String relationshipBriefingDisclosureTitle(String provider) {
-    return 'Send to $provider?';
-  }
-
-  @override
-  String get relationshipBriefingRequested =>
-      'Briefing requested — it will appear here shortly.';
 
   @override
   String get relationshipBriefingRequestFailed =>
@@ -12123,6 +12094,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipJustAdded => 'Just added';
 
   @override
+  String get relationshipKnownTermsBody =>
+      'People, pets and places you mention with them, separated by semicolons. Dictated check-ins spell them this way.';
+
+  @override
+  String get relationshipKnownTermsHint => 'Sam; Luna; Lisbon';
+
+  @override
+  String get relationshipKnownTermsLabel => 'Names that come up';
+
+  @override
   String relationshipLastSpoke(String time) {
     return 'last spoke $time';
   }
@@ -12158,16 +12139,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get relationshipNicknameLabel => 'Nickname';
-
-  @override
-  String get relationshipKnownTermsBody =>
-      'People, pets and places you mention with them, separated by semicolons. Dictated check-ins spell them this way.';
-
-  @override
-  String get relationshipKnownTermsHint => 'Sam; Luna; Lisbon';
-
-  @override
-  String get relationshipKnownTermsLabel => 'Names that come up';
 
   @override
   String get relationshipNoCheckIns =>
@@ -15771,6 +15742,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
+
+  @override
+  String get relationshipChatAgentName => 'Briefing agent';
+
+  @override
+  String relationshipChatEmpty(String name) {
+    return 'Start a conversation with the briefing agent about $name.';
+  }
+
+  @override
+  String relationshipChatPlaceholder(String name) {
+    return 'Talk to the agent about $name…';
+  }
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

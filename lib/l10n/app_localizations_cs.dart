@@ -11986,19 +11986,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String relationshipAgentReadingBody(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Čte $count check-inů. Obvykle do minuty.',
-      few: 'Čte $count check-iny. Obvykle do minuty.',
-      one: 'Čte 1 check-in. Obvykle do minuty.',
-      zero: 'Připravuje briefing. Obvykle do minuty.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get relationshipAgentSeeActivity => 'Zobrazit aktivitu';
 
   @override
@@ -12043,23 +12030,6 @@ class AppLocalizationsCs extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String relationshipBriefingDisclosureBody(String provider) {
-    return 'Briefing běží na $provider. Poznámky o této osobě tam budou odeslány ke zpracování.';
-  }
-
-  @override
-  String get relationshipBriefingDisclosureConfirm => 'Pokračovat';
-
-  @override
-  String relationshipBriefingDisclosureTitle(String provider) {
-    return 'Odeslat do $provider?';
-  }
-
-  @override
-  String get relationshipBriefingRequested =>
-      'Briefing vyžádán — za chvíli se tu objeví.';
 
   @override
   String get relationshipBriefingRequestFailed =>
@@ -12367,6 +12337,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipJustAdded => 'Právě přidáno';
 
   @override
+  String get relationshipKnownTermsBody =>
+      'Lidé, zvířata a místa, o kterých v souvislosti s nimi mluvíš, oddělené středníky. Diktované check-iny je napíšou přesně takhle.';
+
+  @override
+  String get relationshipKnownTermsHint => 'Sam; Luna; Lisabon';
+
+  @override
+  String get relationshipKnownTermsLabel => 'Jména, která zmiňuješ';
+
+  @override
   String relationshipLastSpoke(String time) {
     return 'naposledy mluvili $time';
   }
@@ -12402,16 +12382,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipNicknameLabel => 'Přezdívka';
-
-  @override
-  String get relationshipKnownTermsBody =>
-      'Lidé, zvířata a místa, o kterých v souvislosti s nimi mluvíš, oddělené středníky. Diktované check-iny je napíšou přesně takhle.';
-
-  @override
-  String get relationshipKnownTermsHint => 'Sam; Luna; Lisabon';
-
-  @override
-  String get relationshipKnownTermsLabel => 'Jména, která zmiňuješ';
 
   @override
   String get relationshipNoCheckIns =>
@@ -16070,4 +16040,17 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
+
+  @override
+  String get relationshipChatAgentName => 'Briefingový agent';
+
+  @override
+  String relationshipChatEmpty(String name) {
+    return 'Začni konverzaci s briefingovým agentem o osobě $name.';
+  }
+
+  @override
+  String relationshipChatPlaceholder(String name) {
+    return 'Mluv s agentem o osobě $name…';
+  }
 }

@@ -11961,18 +11961,6 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String relationshipAgentReadingBody(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Lettura di $count check-in. Di solito meno di un minuto.',
-      one: 'Lettura di 1 check-in. Di solito meno di un minuto.',
-      zero: 'Preparazione del briefing. Di solito meno di un minuto.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get relationshipAgentSeeActivity => 'Vedi attività';
 
   @override
@@ -12015,23 +12003,6 @@ class AppLocalizationsIt extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String relationshipBriefingDisclosureBody(String provider) {
-    return 'Il briefing viene generato su $provider. Le note su questa persona verranno inviate lì per l’elaborazione.';
-  }
-
-  @override
-  String get relationshipBriefingDisclosureConfirm => 'Continua';
-
-  @override
-  String relationshipBriefingDisclosureTitle(String provider) {
-    return 'Inviare a $provider?';
-  }
-
-  @override
-  String get relationshipBriefingRequested =>
-      'Briefing richiesto: apparirà qui a breve.';
 
   @override
   String get relationshipBriefingRequestFailed =>
@@ -12333,6 +12304,16 @@ class AppLocalizationsIt extends AppLocalizations {
   String get relationshipJustAdded => 'Appena aggiunto';
 
   @override
+  String get relationshipKnownTermsBody =>
+      'Persone, animali e luoghi che nomini parlando di loro, separati da punto e virgola. I check-in dettati li scrivono così.';
+
+  @override
+  String get relationshipKnownTermsHint => 'Sam; Luna; Lisbona';
+
+  @override
+  String get relationshipKnownTermsLabel => 'Nomi ricorrenti';
+
+  @override
   String relationshipLastSpoke(String time) {
     return 'ultimo contatto $time';
   }
@@ -12368,16 +12349,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get relationshipNicknameLabel => 'Soprannome';
-
-  @override
-  String get relationshipKnownTermsBody =>
-      'Persone, animali e luoghi che nomini parlando di loro, separati da punto e virgola. I check-in dettati li scrivono così.';
-
-  @override
-  String get relationshipKnownTermsHint => 'Sam; Luna; Lisbona';
-
-  @override
-  String get relationshipKnownTermsLabel => 'Nomi ricorrenti';
 
   @override
   String get relationshipNoCheckIns =>
@@ -16062,4 +16033,17 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Salta!';
+
+  @override
+  String get relationshipChatAgentName => 'Agente di briefing';
+
+  @override
+  String relationshipChatEmpty(String name) {
+    return 'Inizia una conversazione con l\'agente di briefing riguardo a $name.';
+  }
+
+  @override
+  String relationshipChatPlaceholder(String name) {
+    return 'Parla con l\'agente riguardo a $name…';
+  }
 }

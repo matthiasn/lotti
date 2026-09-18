@@ -744,9 +744,6 @@ void main() {
         providers: [],
       ),
     ),
-    relationshipBriefingDisclosureProvider(
-      _pipId,
-    ).overrideWith((ref) async => null),
     relationshipSuggestionListProvider(_pipId).overrideWith(
       (ref) async => proposals ?? const RelationshipProposalSnapshot.empty(),
     ),
@@ -1246,6 +1243,13 @@ void main() {
       state: makeTestState(agentId: agentId),
       running: true,
     ),
+    // An update running over an earlier briefing: the briefing stays put
+    // under the spinner until the new one lands.
+    'running_with_briefing': () => personOverrides(
+      report: briefing(createdAt: _now.subtract(const Duration(days: 6))),
+      state: makeTestState(agentId: agentId),
+      running: true,
+    ),
     'failed': () => personOverrides(
       state: makeTestState(
         agentId: agentId,
@@ -1284,7 +1288,7 @@ void main() {
         device: proDevice,
         brightness: Brightness.dark,
         overrides: face.value(),
-        settle: face.key != 'running',
+        settle: !face.key.startsWith('running'),
       );
 
       expect(
@@ -1771,6 +1775,38 @@ void main() {
     // The agent conversation: a page on a phone, the detail pane on a
     // desktop.
     // ---------------------------------------------------------------
+    // Before the first message: who the empty state and the input address.
+    testWidgets('$viewport person chat, empty — dark', (tester) async {
+      await pumpSurface(
+        tester,
+        home: device.isPhone
+            ? const Scaffold(
+                body: RelationshipChatPane(relationshipId: _pipId),
+              )
+            : const RelationshipsPage(),
+        device: device,
+        brightness: Brightness.dark,
+        selectedId: _pipId,
+        desktopChat: true,
+        overrides: [
+          ...personOverrides(report: briefing()),
+          agentChatProjectionProvider(
+            agentId,
+          ).overrideWith((ref) async => const []),
+        ],
+      );
+
+      expect(
+        find.text('Commander Pip Frostbeak · briefing agent'),
+        findsOneWidget,
+      );
+      await captureScreenshot(
+        tester,
+        'person_chat_empty_${viewport}_dark',
+        subdir: _subdir,
+      );
+    });
+
     testWidgets('$viewport person chat — dark', (tester) async {
       await pumpSurface(
         tester,

@@ -5,7 +5,7 @@ description: A personal CRM carried by two journal variants — why check-ins ar
 resource: ../../lib/features/relationships
 tags: [relationships, check-ins, journal-entity, privacy]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-09-19T02:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-09-19T03:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: sync-runtime
@@ -764,7 +764,7 @@ removed:
   completion stream (shutdown, runtime teardown) fails the turn rather than
   leaving the caller on a future that can no longer complete, which would
   strand the composer disabled.
-- **One resolution chain for runtime, status and disclosure.**
+- **One resolution chain for runtime and status.**
   `resolveRelationshipAgentModel` honors the typed setup saved by the shared
   model picker, including direct thinking-model overrides. Disabled or broken
   typed setups do not fall through. Legacy agents try the person's profile,
@@ -800,28 +800,15 @@ removed:
   repair runs independently before the configuration check. Configuration read
   exceptions also re-arm the episode; an unreadable failure counter uses the
   initial one-hour delay rather than discarding the retry.
-- **Disclosure fails closed.** The "Brief me" card resolves the agent's
-  model to a provider name through that same chain; a cloud provider is
-  named in a consent dialog first (ADR 0037), and an unresolvable profile is
-  treated as cloud. The relationship read is unfiltered — Phase B resolves
-  through the person's own profile whatever this device's private-entry
-  display preference, so the dialog must see the same row — and a route that
-  resolves to nothing throws `RelationshipInferenceSetupUnavailable`. Automatic
-  provider retries are disabled for this preflight: the card immediately shows
-  the unavailable setup, recovery guidance and a button opening `AgentModelSheet`.
-  Every explicit briefing attempt refreshes disclosure so a repaired setup is
-  reread before consent. The card holds a manual provider subscription until
-  that preflight settles, releasing it on success, failure or widget disposal.
-  Awaiting an auto-disposed provider's future alone does not retain it across
-  database reads or a default-profile reload; losing it mid-read causes the
-  generic request-failed toast before any inference is queued. Disclosure
-  captures its repository and category-lookup dependencies before awaiting
-  reads, so a superseded resolution never reads a disposed `Ref`.
-  The click captures one relationship snapshot for disclosure, the queued
-  request and setup recovery; a card rebuild cannot retarget an in-flight action.
-  The existing unavailable-status link opens the same
-  sheet. A direct model
-  override checks its own provider locality, not its optional base profile.
+- **The provider is named on the card, not confirmed per tap** (ADR 0061,
+  refining ADR 0037 Decision 3). The card's model row — `{model} · via
+  {provider}`, on every enrolled face before and during a run — is the
+  disclosure; *Brief now* and *Update now* call `requestBriefing` at once,
+  with no consent sheet and no acknowledgement toast (the running face is the
+  acknowledgement). A failure to enqueue still toasts. There is no pre-tap
+  route resolution any more: a wake whose route resolves to nothing is
+  stamped failed, and the failed face offers *Choose a model*, which opens
+  `AgentModelSheet`.
 
 ## The briefing wears the shared AI panel
 
@@ -934,7 +921,7 @@ so the decision is a table rather than a widget tree:
 |---|---|---|
 | Not enrolled | not `important`, or dormant/archived | plain section card, people glyph · `No agent for this person` (or the status word while paused) · what *important* turns on · **Mark important** · meta `Only what you start yourself uses AI` |
 | No briefing | enrolled, no current report | `Agent watching · next look {day}` · how many check-ins *Brief now* would read, and that it never sees a channel · *Log check-in* · **Brief now** |
-| Running | `agentIsRunningProvider` | spinner · `Writing the briefing…` · `Reading N check-ins. Usually under a minute.` · *See activity* · no primary |
+| Running | `agentIsRunningProvider` | spinner · `Writing the briefing…` · the briefing being replaced, still readable (TL;DR + Read more), or no body before the first — never a duration estimate · *See activity* · no primary |
 | Failed | `consecutiveFailureCount > 0` and the last wake is newer than the report | `Last run failed · {ago}` in error ink · the provider returned an error, your check-ins are unchanged (or that no model is set up) · *See activity* · **Choose a model** when no route resolves, **Try again** otherwise |
 | Current | report, not stale | `{band} · as of {ago}` · TL;DR + Read more · *Log check-in* · **Update now** (secondary) · sources line once *Read more* is open |
 | Out of date | `AgentStateEntity.isReportStale` | `Out of date · new check-in {day}` in warning ink, `{n} days old` pill once a day old · body · *Log check-in* · **Update now** (primary) — no sources line, since the count would include the check-in it missed |
@@ -1373,7 +1360,13 @@ changed colour the moment they were imported.)
 is the shared `AgentChatView` under an identity header — sparkle, "<name> ·
 briefing agent", and the line naming the boundary the agent works within
 (ADR 0041 §5) — with *Agent internals* labelled where there is room and an
-icon where there is not. It has two hosts, and the layout decides which:
+icon where there is not. The agent is named after the person, but the person
+is never the one addressed: the pane passes `AgentChatView` the localized
+*Briefing agent* as its `agentName`, so replies are signed by the agent, and
+its own `emptyMessage` and `composerHint` — *Start a conversation with the
+briefing agent about {name}* and *Talk to the agent about {nickname or
+name}…* — replace the defaults that would address the agent's display name.
+It has two hosts, and the layout decides which:
 
 ```mermaid
 stateDiagram-v2

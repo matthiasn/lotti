@@ -19735,12 +19735,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 proposed} other{{count} proposed}}'**
   String relationshipAgentProposedCount(int count);
 
-  /// No description provided for @relationshipAgentReadingBody.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =0{Preparing the briefing. Usually under a minute.} =1{Reading 1 check-in. Usually under a minute.} other{Reading {count} check-ins. Usually under a minute.}}'**
-  String relationshipAgentReadingBody(int count);
-
   /// No description provided for @relationshipAgentSeeActivity.
   ///
   /// In en, this message translates to:
@@ -19788,30 +19782,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{days, plural, =1{1 day old} other{{days} days old}}'**
   String relationshipBriefingAge(int days);
-
-  /// Confirm dialog body before a cloud-bound briefing; provider is the inference provider name.
-  ///
-  /// In en, this message translates to:
-  /// **'The briefing runs on {provider}. Notes about this person will be sent there for processing.'**
-  String relationshipBriefingDisclosureBody(String provider);
-
-  /// No description provided for @relationshipBriefingDisclosureConfirm.
-  ///
-  /// In en, this message translates to:
-  /// **'Continue'**
-  String get relationshipBriefingDisclosureConfirm;
-
-  /// Confirm dialog title before a cloud-bound briefing; provider is the inference provider name.
-  ///
-  /// In en, this message translates to:
-  /// **'Send to {provider}?'**
-  String relationshipBriefingDisclosureTitle(String provider);
-
-  /// No description provided for @relationshipBriefingRequested.
-  ///
-  /// In en, this message translates to:
-  /// **'Briefing requested — it will appear here shortly.'**
-  String get relationshipBriefingRequested;
 
   /// No description provided for @relationshipBriefingRequestFailed.
   ///
@@ -20227,6 +20197,24 @@ abstract class AppLocalizations {
   /// **'Just added'**
   String get relationshipJustAdded;
 
+  /// No description provided for @relationshipKnownTermsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'People, pets and places you mention with them, separated by semicolons. Dictated check-ins spell them this way.'**
+  String get relationshipKnownTermsBody;
+
+  /// No description provided for @relationshipKnownTermsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Sam; Luna; Lisbon'**
+  String get relationshipKnownTermsHint;
+
+  /// No description provided for @relationshipKnownTermsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Names that come up'**
+  String get relationshipKnownTermsLabel;
+
   /// No description provided for @relationshipLastSpoke.
   ///
   /// In en, this message translates to:
@@ -20292,24 +20280,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Nickname'**
   String get relationshipNicknameLabel;
-
-  /// No description provided for @relationshipKnownTermsBody.
-  ///
-  /// In en, this message translates to:
-  /// **'People, pets and places you mention with them, separated by semicolons. Dictated check-ins spell them this way.'**
-  String get relationshipKnownTermsBody;
-
-  /// No description provided for @relationshipKnownTermsHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Sam; Luna; Lisbon'**
-  String get relationshipKnownTermsHint;
-
-  /// No description provided for @relationshipKnownTermsLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Names that come up'**
-  String get relationshipKnownTermsLabel;
 
   /// No description provided for @relationshipNoCheckIns.
   ///
@@ -26398,6 +26368,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
+
+  /// No description provided for @relationshipChatAgentName.
+  ///
+  /// In en, this message translates to:
+  /// **'Briefing agent'**
+  String get relationshipChatAgentName;
+
+  /// No description provided for @relationshipChatEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a conversation with the briefing agent about {name}.'**
+  String relationshipChatEmpty(String name);
+
+  /// No description provided for @relationshipChatPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Talk to the agent about {name}…'**
+  String relationshipChatPlaceholder(String name);
 }
 
 class _AppLocalizationsDelegate
