@@ -182,12 +182,14 @@ class CheckInTranscriptionService {
         },
         knownTerms: knownTerms,
       );
+      // A run can end without an error and without words — the runner
+      // writes nothing for an empty response — so the transcript is read
+      // back rather than assumed: no words, no change to the check-in.
+      if (failed || await _readTranscript(audioEntryId) == null) return;
       // The words are evidence: when the recording already belongs to a
       // saved check-in, that check-in changed, and its briefing is stale.
       // Done here rather than in the composer, which may be long closed.
-      if (!failed) {
-        await _relationshipRepository.touchCheckInsHolding(audioEntryId);
-      }
+      await _relationshipRepository.touchCheckInsHolding(audioEntryId);
     } catch (exception, stackTrace) {
       developer.log(
         'Requested transcription failed for $audioEntryId',

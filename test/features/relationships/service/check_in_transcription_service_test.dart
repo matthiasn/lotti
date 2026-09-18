@@ -233,10 +233,11 @@ void main() {
       });
 
       withRun((run) {
+        final before = reads;
         run.notify({'someone-else'});
 
         expect(run.isDone, isFalse);
-        expect(reads, 1, reason: 'only the initial read should have happened');
+        expect(reads, before, reason: 'another entry changed, not this one');
       });
     });
   });
@@ -420,10 +421,20 @@ void main() {
     // check-in holding the recording is saved again so its briefing goes
     // stale — whether or not anyone is still waiting in the composer.
     test('a landed transcript marks the check-in holding it as changed', () {
+      stubEntity(audioWith('Pip hauled the krill.'));
+
       withRun((run) {
         verify(
           () => relationships.touchCheckInsHolding(audioEntryId),
         ).called(1);
+      });
+    });
+
+    // CodeRabbit review on #4347: the runner writes nothing for an empty
+    // response, so a run ending without an error is no proof of words.
+    test('a run that ends without words changes no check-in', () {
+      withRun((run) {
+        verifyNever(() => relationships.touchCheckInsHolding(any()));
       });
     });
 

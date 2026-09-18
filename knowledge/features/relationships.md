@@ -241,9 +241,12 @@ not the entry's own date, so a photo taken last week and attached today is
 today's addition — and leave out deleted entries, hidden links and anything
 linked from a check-in that is not a comment, recording or photo. Every write that changes what a check-in holds saves the check-in
 again (`touchCheckIn`), because its `updatedAt` is the agent's "evidence
-changed" signal — see the deterministic tier below. Deleting a check-in, or
-its person, tombstones the entries the check-ins alone hold; one that also
-belongs elsewhere is left alone. The person counts as one of the owners: a
+changed" signal — see the deterministic tier below. A rejected touch (a
+synced edit of the same check-in landed in between) is read and saved once
+more, and a second rejection is logged. Deleting a check-in, or its person,
+tombstones the entries the check-ins alone hold; one that also belongs to
+something still live is left alone, while a link from something already
+deleted — another check-in removed earlier — no longer keeps it. The person counts as one of the owners: a
 dictation is recorded against the person before its check-in exists, so its
 recording carries a link from the person as well.
 
@@ -683,7 +686,8 @@ regenerates the briefing anyway.
 the person's check-ins, and a check-in is saved again whenever what it holds
 changes: `RelationshipRepository.addCommentToCheckIn` and
 `attachEntryToCheckIn` touch it, and so does
-`CheckInTranscriptionService` once a recording's transcript lands —
+`CheckInTranscriptionService` once a recording's transcript lands — read
+back from the entry, since a run can end without an error and without words —
 independently of the composer, which may be long closed — through
 `touchCheckInsHolding`. Keyed by the check-in's date, as it used to be, a
 check-in logged after the briefing but dated before it (yesterday's call,
@@ -693,7 +697,10 @@ distinct change is its own episode, keyed by `relationshipEvidenceKey`: the
 stored date and time to the millisecond, taken from the components rather
 than the instant — journal times are stored as wall-clock values without an
 offset, so a peer in another zone reads the same components as a different
-instant, and only the components give every device the identical record. A
+instant, and only the components give every device the identical record
+(`lastEvidenceKey`). The deadlines, by contrast, are instants:
+`relationshipStoredInstant` rebuilds each one from the stored components and
+the entry's own `utcOffset`, so every device schedules the same moment. A
 refresh armed for a change that has since been overtaken stands down before
 inference (`relationshipRefreshSuperseded`), even while the cadence is due;
 the newer change's own refresh briefs on everything. The deadline is the change plus `relationshipEvidenceSettle` (30 s),

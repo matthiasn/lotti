@@ -46,14 +46,16 @@ second check-in on the same day never produced a new one.
    so every device sees the same signal.
 4. **One refresh per evidence change** (refining ADR 0059 Decision 2): the
    refresh episode is keyed by the instant the evidence last changed, to the
-   millisecond, instead of the newest check-in's UTC day. Its deadline is
-   that instant plus a 30-second settle, so a burst of additions is briefed
+   millisecond, instead of the newest check-in's UTC day. The key is taken
+   from the stored date and time components, which every device reads alike;
+   the deadline is the instant those components and the check-in's recorded
+   UTC offset name, plus a 30-second settle, so a burst of additions is briefed
    once; while a changed check-in's recording still awaits its transcript,
    the deadline moves to the transcript timeout, so the agent never briefs on
    a check-in that says nothing yet.
 5. **Deleting cascades to entries** (ADR 0037): deleting a check-in, or its
    person, tombstones the entries the check-ins alone hold; an entry that
-   also belongs to something else is left alone.
+   also belongs to something else still live is left alone.
 
 ## Consequences
 

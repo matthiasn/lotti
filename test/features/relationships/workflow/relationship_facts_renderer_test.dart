@@ -86,6 +86,7 @@ void main() {
     referenceAt: lastCheckInAt ?? testDate,
     lastCheckInAt: lastCheckInAt,
     lastEvidenceAt: lastEvidenceAt ?? lastCheckInAt,
+    lastEvidenceKey: null,
     dueDayUtc: DateTime.utc(2026, 8, 21),
     dueDayKey: '2026-08-21',
   );

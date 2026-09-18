@@ -693,6 +693,39 @@ void main() {
     );
   });
 
+  test('the refresh deadline is the instant the writer meant, read from '
+      "the check-in's own offset — not the reading device's zone", () async {
+    // Saved at 20:00 by a device five hours behind UTC: 01:00 UTC the next
+    // day, whatever zone this test runs in.
+    final stored = DateTime(2026, 8, 14, 20);
+    final saved = checkIn('c-1', stored);
+    when(
+      () => relationshipRepository.getAllCheckInsForRelationship(
+        relationshipId,
+      ),
+    ).thenAnswer(
+      (_) async => [
+        saved.copyWith(meta: saved.meta.copyWith(utcOffset: -300)),
+      ],
+    );
+    when(
+      () => repository.getLatestReport(any(), any()),
+    ).thenAnswer((_) async => freshReport(DateTime(2026, 8, 10)));
+    await withClock(Clock.fixed(now), run);
+
+    final escalation = writtenWakes().singleWhere(
+      (w) => isRelationshipEscalationWorkspace(w.workspaceKey),
+    );
+    expect(
+      escalation.scheduledAt,
+      DateTime.utc(2026, 8, 15, 1).add(relationshipEvidenceSettle),
+    );
+    expect(
+      escalation.workspaceKey,
+      relationshipReportRefreshEscalationWorkspaceKey('20260814T200000000'),
+    );
+  });
+
   test('a report-refresh escalation carries the baseline token when a '
       'register already exists — Phase B tells "newly ok" from "still ok" '
       'from the token, never from storage', () async {
@@ -818,6 +851,30 @@ void main() {
     });
   });
 
+  group('relationshipStoredInstant', () {
+    // Written in Berlin at 09:20 summer time, read by any device: the
+    // components and the recorded offset name 07:20 UTC wherever the reader
+    // sits, which the device's own zone could not.
+    test('turns stored components and their offset into one instant', () {
+      expect(
+        relationshipStoredInstant(DateTime(2026, 8, 15, 9, 20, 5, 7, 9), 120),
+        DateTime.utc(2026, 8, 15, 7, 20, 5, 7, 9),
+      );
+      expect(
+        relationshipStoredInstant(DateTime(2026, 8, 15, 1, 30), -300),
+        DateTime.utc(2026, 8, 15, 6, 30),
+      );
+    });
+
+    test('takes a UTC value, or one without an offset, as it is', () {
+      final utc = DateTime.utc(2026, 8, 15, 9, 20);
+      final local = DateTime(2026, 8, 15, 9, 20);
+
+      expect(relationshipStoredInstant(utc, 120), utc);
+      expect(relationshipStoredInstant(local, null), local.toUtc());
+    });
+  });
+
   group('relationshipRefreshSuperseded', () {
     final derivation = (
       status: RelationshipCadenceStatus.ok,
@@ -825,7 +882,8 @@ void main() {
       cadenceDays: 7,
       referenceAt: DateTime.utc(2026, 8, 15),
       lastCheckInAt: DateTime.utc(2026, 8, 15),
-      lastEvidenceAt: DateTime(2026, 8, 15, 9, 20),
+      lastEvidenceAt: DateTime.utc(2026, 8, 15, 7, 20),
+      lastEvidenceKey: '20260815T092000000',
       dueDayUtc: DateTime.utc(2026, 8, 22),
       dueDayKey: '2026-08-22',
     );

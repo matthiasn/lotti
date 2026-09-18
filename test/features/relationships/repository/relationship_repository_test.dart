@@ -1397,6 +1397,31 @@ void main() {
       );
     });
 
+    // CodeRabbit review on #4347: the comment both check-ins held survived
+    // the first delete because c-2 still held it — once c-2 is gone, its
+    // stale link must not keep the comment from going with c-1.
+    test('a link from a check-in deleted earlier does not keep an entry '
+        'alive', () async {
+      await db.updateJournalEntity(
+        checkInEntry('c-2').copyWith(
+          meta: checkInEntry('c-2').meta.copyWith(deletedAt: at),
+        ),
+      );
+      when(
+        () => mockPersistence.updateDbEntity(any()),
+      ).thenAnswer((_) async => true);
+
+      expect(await real.deleteCheckIn('c-1'), isTrue);
+
+      final tombstoned = verify(
+        () => mockPersistence.updateDbEntity(captureAny()),
+      ).captured.cast<JournalEntity>();
+      expect(
+        tombstoned.map((e) => e.id).toSet(),
+        {'c-1', 'take', 'comment', 'photo'},
+      );
+    });
+
     // Codex review on #4347: a photo taken long ago but attached now is a
     // new addition, and sorts as one.
     test(
@@ -1569,6 +1594,48 @@ void main() {
         isTrue,
       );
       expectTouched();
+    });
+
+    // CodeRabbit review on #4347: a synced edit landing between the read
+    // and the save rejects the touch; the briefing must still learn of it.
+    test(
+      'a rejected touch reads the check-in again and retries once',
+      () async {
+        var saves = 0;
+        when(
+          () => mockPersistence.updateDbEntity(any()),
+        ).thenAnswer((_) async => ++saves > 1);
+
+        expect(await repository.touchCheckIn('c-1'), isTrue);
+
+        verify(() => mockDb.journalEntityById('c-1')).called(2);
+        verifyNever(
+          () => getIt<DomainLogger>().error(
+            any(),
+            any(),
+            message: any(named: 'message'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        );
+      },
+    );
+
+    test('a touch rejected twice is logged and reported', () async {
+      when(
+        () => mockPersistence.updateDbEntity(any()),
+      ).thenAnswer((_) async => false);
+
+      expect(await repository.touchCheckIn('c-1'), isFalse);
+
+      verify(() => mockPersistence.updateDbEntity(any())).called(2);
+      verify(
+        () => getIt<DomainLogger>().error(
+          LogDomain.persistence,
+          'check-in touch rejected twice for c-1',
+          message: any(named: 'message'),
+          subDomain: 'touchCheckIn',
+        ),
+      ).called(1);
     });
 
     test('a transcript landing on a held recording changes its check-in, and '

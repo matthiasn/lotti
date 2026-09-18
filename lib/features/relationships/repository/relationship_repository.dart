@@ -388,10 +388,24 @@ class RelationshipRepository {
   /// out of date and is written again; and the save syncs, so every device
   /// sees the same signal. Returns false when [checkInId] is not a live
   /// check-in or the write was rejected.
+  ///
+  /// A rejected write is read and tried once more: the usual cause is a
+  /// synced edit of the same check-in landing in between, whose newer
+  /// vector clock the second save builds on. Losing the touch would leave
+  /// the briefing blind to the new entry, so a second rejection is logged.
   Future<bool> touchCheckIn(String checkInId) async {
-    final entity = await _journalDb.journalEntityById(checkInId);
-    if (entity is! CheckInEntry || entity.isDeleted) return false;
-    return updateCheckIn(entity);
+    for (var attempt = 0; attempt < 2; attempt++) {
+      final entity = await _journalDb.journalEntityById(checkInId);
+      if (entity is! CheckInEntry || entity.isDeleted) return false;
+      if (await updateCheckIn(entity)) return true;
+    }
+    getIt<DomainLogger>().error(
+      LogDomain.persistence,
+      'check-in touch rejected twice for $checkInId',
+      message: 'the briefing will not see this evidence change',
+      subDomain: 'touchCheckIn',
+    );
+    return false;
   }
 
   /// Touches every live check-in that holds [entryId] as an entry — the
@@ -553,8 +567,10 @@ class RelationshipRepository {
   /// Tombstones the entries the check-ins in [checkInIds] hold — the
   /// recordings, comments and photos about the person (ADR 0037: deleting
   /// leaves no orphaned data about them). An entry that also belongs to
-  /// something else, such as a photo attached to a task too, is left alone.
-  /// A rejected tombstone is logged and skipped, like a check-in's.
+  /// something else that is still live, such as a photo attached to a task
+  /// too, is left alone; a link from something already deleted — another
+  /// check-in of this person deleted earlier — does not keep it. A rejected
+  /// tombstone is logged and skipped, like a check-in's.
   ///
   /// [personId] is the person the check-ins belong to: a dictation is
   /// recorded against the person before its check-in exists, so its
@@ -568,8 +584,19 @@ class RelationshipRepository {
     final owners = {...checkInIds, personId};
     final entries = await getAllEntriesForCheckIns(checkInIds);
     for (final entry in entries.values.expand((e) => e).toSet()) {
-      final parents = await _journalDb.parentLinkedEntityIds(entry.id).get();
-      if (!parents.every(owners.contains)) continue;
+      final others = {
+        for (final id in await _journalDb.parentLinkedEntityIds(entry.id).get())
+          if (!owners.contains(id)) id,
+      };
+      if (others.isNotEmpty &&
+          (await _journalDb
+                  .journalEntitiesByIdsUnorderedAllPrivate(
+                    others.toList(growable: false),
+                  )
+                  .get())
+              .isNotEmpty) {
+        continue;
+      }
       if (!await _softDelete(entry, deletedAt)) {
         getIt<DomainLogger>().error(
           LogDomain.persistence,

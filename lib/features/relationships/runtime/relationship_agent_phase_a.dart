@@ -39,17 +39,21 @@ typedef RelationshipCadenceDerivation = ({
   /// UTC — see the normalization note in `deriveCadenceFacts`.
   DateTime? lastCheckInAt,
 
-  /// When the evidence last changed: the newest `updatedAt` among the
-  /// person's check-ins, exactly as stored — NOT normalized to UTC like the
-  /// fields above, because journal times are stored as wall-clock values
-  /// without an offset and a peer in another zone reads the same components
-  /// as a different instant. [relationshipEvidenceKey] keys the refresh
-  /// episode by those components, which every device reads identically. A check-in is saved again whenever it gains an
+  /// When the evidence last changed, as a UTC instant: the newest
+  /// `updatedAt` among the person's check-ins, reconstructed from its stored
+  /// wall-clock value and the check-in's own `utcOffset`
+  /// ([relationshipStoredInstant]) so every device derives the same instant.
+  /// Null when there is no check-in. A check-in is saved again whenever it gains an
   /// entry or one of its recordings or photos is described, so this moves
   /// for a backdated check-in, a second one on the same day, and a
   /// transcript arriving after the check-in was saved — none of which move
   /// [lastCheckInAt]. Null when there is no check-in.
   DateTime? lastEvidenceAt,
+
+  /// [lastEvidenceAt]'s identity for the refresh episode: its stored date and
+  /// time components ([relationshipEvidenceKey]), which every device reads
+  /// identically whatever its zone.
+  String? lastEvidenceKey,
 
   /// UTC calendar day the cadence lapses, as a midnight-UTC instant.
   /// Zone-free by construction — it is the episode key every device must
@@ -360,14 +364,19 @@ class RelationshipAgentPhaseA {
         .getAllCheckInsForRelationship(relationship.meta.id);
     DateTime? lastCheckInAt;
     DateTime? lastEvidenceAt;
+    String? lastEvidenceKey;
     for (final checkIn in checkIns) {
       final at = checkIn.meta.dateFrom;
       if (lastCheckInAt == null || at.isAfter(lastCheckInAt)) {
         lastCheckInAt = at;
       }
-      final changed = checkIn.meta.updatedAt;
+      final changed = relationshipStoredInstant(
+        checkIn.meta.updatedAt,
+        checkIn.meta.utcOffset,
+      );
       if (lastEvidenceAt == null || changed.isAfter(lastEvidenceAt)) {
         lastEvidenceAt = changed;
+        lastEvidenceKey = relationshipEvidenceKey(checkIn.meta.updatedAt);
       }
     }
     // Baseline: the newest check-in, or tracking start (ADR 0039 — the
@@ -412,6 +421,7 @@ class RelationshipAgentPhaseA {
       referenceAt: referenceAt.toUtc(),
       lastCheckInAt: lastCheckInAt?.toUtc(),
       lastEvidenceAt: lastEvidenceAt,
+      lastEvidenceKey: lastEvidenceKey,
       dueDayUtc: dueDayUtc,
       dueDayKey: const GoalWindow.day().periodKey(dueDayUtc),
     );
@@ -498,7 +508,12 @@ class RelationshipAgentPhaseA {
           in await _relationshipRepository.getAllCheckInsForRelationship(
             relationshipId,
           ))
-        if (since == null || checkIn.meta.updatedAt.isAfter(since)) checkIn.id,
+        if (since == null ||
+            relationshipStoredInstant(
+              checkIn.meta.updatedAt,
+              checkIn.meta.utcOffset,
+            ).isAfter(since))
+          checkIn.id,
     ];
     if (changed.isEmpty) return null;
     final entries = await _relationshipRepository.getAllEntriesForCheckIns(
@@ -509,7 +524,10 @@ class RelationshipAgentPhaseA {
       if (entry is! JournalAudio) continue;
       final words = entry.entryText?.plainText.trim() ?? '';
       if (words.isNotEmpty) continue;
-      final until = entry.meta.createdAt.add(checkInTranscriptTimeout).toUtc();
+      final until = relationshipStoredInstant(
+        entry.meta.createdAt,
+        entry.meta.utcOffset,
+      ).add(checkInTranscriptTimeout);
       if (deadline == null || until.isAfter(deadline)) deadline = until;
     }
     return deadline;
@@ -604,11 +622,10 @@ AgentDomainEntity relationshipReportRefreshEscalationWake(
   required DateTime updatedAt,
   DateTime? notBefore,
 }) {
-  final evidenceAt = derivation.lastEvidenceAt!;
   final workspaceKey = relationshipReportRefreshEscalationWorkspaceKey(
-    relationshipEvidenceKey(evidenceAt),
+    derivation.lastEvidenceKey!,
   );
-  final settled = evidenceAt.add(relationshipEvidenceSettle).toUtc();
+  final settled = derivation.lastEvidenceAt!.add(relationshipEvidenceSettle);
   return AgentDomainEntity.scheduledWake(
     id: scheduledWakeRecordId(agentId, workspaceKey: workspaceKey),
     agentId: agentId,
@@ -672,8 +689,28 @@ bool relationshipRefreshSuperseded(
   if (escalationKey == null || !escalationKey.startsWith(prefix)) {
     return false;
   }
-  final current = derivation.lastEvidenceAt;
-  return current != null &&
-      escalationKey.substring(prefix.length) !=
-          relationshipEvidenceKey(current);
+  final current = derivation.lastEvidenceKey;
+  return current != null && escalationKey.substring(prefix.length) != current;
+}
+
+/// The instant a journal time [stored] names on every device.
+///
+/// Journal metadata times are written as local wall-clock values without an
+/// offset, so a peer in another zone parses the same components as a
+/// different instant; the entry's own [utcOffsetMinutes] (recorded when it
+/// was created) turns the components back into the instant the writer
+/// meant. A value already in UTC, or one without a recorded offset, is
+/// taken as it is.
+DateTime relationshipStoredInstant(DateTime stored, int? utcOffsetMinutes) {
+  if (stored.isUtc || utcOffsetMinutes == null) return stored.toUtc();
+  return DateTime.utc(
+    stored.year,
+    stored.month,
+    stored.day,
+    stored.hour,
+    stored.minute,
+    stored.second,
+    stored.millisecond,
+    stored.microsecond,
+  ).subtract(Duration(minutes: utcOffsetMinutes));
 }
