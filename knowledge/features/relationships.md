@@ -978,24 +978,23 @@ ledger. Pending, confirmed and rejected decisions therefore feed the next wake;
 contact channels remain outside FACTS. The strategy accepts only IDs from that
 rendered window, deduplicates source/title pairs, and queues at most three tasks.
 
-**The quote must be in its check-in, and both sides check it the same way.**
-`relationshipQuoteAppearsIn` compares the description with the source
-check-in's narrative ignoring case, spacing and line breaks, the *style* of
-quotation marks, dashes and apostrophes, an ellipsis, and punctuation or
-quotation marks wrapping the quote. Quotation marks inside the quote still
-count, so dropping them is not quoting verbatim, and the quote must start and
-end on whole words ("check" is not evidence of "checklist").
-The strategy runs it on every proposal (it holds each rendered check-in's
-narrative, `sourceCheckIns`), so a quote that is not there is rejected
-in-conversation and the model can quote again; the dispatcher runs it again at
-confirmation, because the check-in may have been edited since. Both sides
-matter: the model reads narratives whitespace-collapsed and cut at 400
-characters, and the confirmation check used to demand the stored text's exact
-line breaks — a commitment crossing the blank line between two dictated takes,
-or quoted with a name a later check-in corrected, was withdrawn under the
-user's finger with *Failed to apply change* and no task. The contract asks for
-the quote verbatim; the tool's `description` parameter and the rejection add
-"even where a later check-in corrects it", keeping the prompt under its cap.
+**The quote grounds the proposal; the user's confirmation decides it.**
+`relationshipQuoteAppearsIn` runs in the strategy on every proposal: it compares
+the description with the source check-in's narrative ignoring case, spacing and
+line breaks, the *style* of quotation marks, dashes and apostrophes, an
+ellipsis, and punctuation or quotation marks wrapping the quote, while
+quotation marks inside the quote still count and the quote must start and end
+on whole words. A quote that is not there is rejected in-conversation (the
+strategy holds each rendered check-in's narrative, `sourceCheckIns`), so the
+model grounds the suggestion in a real check-in and can quote again. The
+dispatcher deliberately does **not** re-check the quote at confirmation: it
+used to demand an exact substring of the stored text, and since the model reads
+narratives whitespace-collapsed and cut at 400 characters — and a later
+check-in may correct a misheard name the quote then uses — suggestions the user
+had read and confirmed were withdrawn with *Failed to apply change* and no
+task. The contract asks for the quote verbatim; the tool's `description`
+parameter and the rejection add "even where a later check-in corrects it",
+keeping the prompt under its cap.
 
 The workflow persists those items inside its existing output transaction,
 rechecking that the person is live, important and active. A deterministic
@@ -1017,8 +1016,8 @@ stateDiagram-v2
 ```
 
 [`relationship_tool_dispatcher.dart`](../../lib/features/relationships/workflow/relationship_tool_dispatcher.dart)
-is the only apply path. It rechecks visible evidence, its quoted narrative
-(with the same `relationshipQuoteAppearsIn`), and current consent; creates a task with the person's category, inherited
+is the only apply path. It rechecks that the source check-in is still visible
+and still the person's, and current consent — not the quote; creates a task with the person's category, inherited
 privacy (also preserving private evidence), evidence link and proposed due
 date; then links it to the person. A link failure tombstones the new task only
 if it is unchanged and has no live links. A refused compensation is

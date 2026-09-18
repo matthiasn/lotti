@@ -303,12 +303,12 @@ const Set<String> relationshipDeferredTools = {
 /// quotes from `I "promised" to call` is not quoting it verbatim. The quote
 /// must start and end on whole words.
 ///
-/// Shared by the strategy (a proposal whose quote is not there is rejected
-/// in-conversation, so the model can quote again) and the dispatcher (the
-/// check-in may have been edited since). Both must agree: the model reads a
-/// narrative excerpt with its whitespace collapsed, and a check that
-/// demanded the stored text's exact line breaks withdrew proposals the user
-/// was trying to confirm.
+/// Run by the strategy only: a proposal whose quote is not in its check-in
+/// is rejected in-conversation, so the model grounds the suggestion in a real
+/// check-in and can quote again. It is deliberately never run at
+/// confirmation — the user's confirmation is the validation there. The model
+/// reads a narrative excerpt with its whitespace collapsed, which is why the
+/// comparison ignores spacing and line breaks.
 bool relationshipQuoteAppearsIn({
   required String narrative,
   required String quote,

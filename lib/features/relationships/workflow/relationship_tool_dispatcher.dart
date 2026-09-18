@@ -77,16 +77,12 @@ class RelationshipToolDispatcher {
         permanent: true,
       );
     }
+    // The quote is NOT re-checked here. It was checked when the agent
+    // proposed the task, and the user has since read the suggestion and
+    // confirmed it: that confirmation is the validation. Re-matching text now
+    // only withdrew suggestions the user wanted, whenever the check-in had
+    // been edited or corrected in between.
     final quote = (args['description'] as String).trim();
-    if (!relationshipQuoteAppearsIn(
-      narrative: evidence.entryText?.plainText ?? '',
-      quote: quote,
-    )) {
-      return _failure(
-        'The quoted commitment is no longer in the source check-in',
-        permanent: true,
-      );
-    }
     // One journal identity per evidence-backed commitment, independent of
     // device-local creation timestamps or status UUIDs. Retrying or syncing
     // concurrent confirmations cannot produce a second task row.
