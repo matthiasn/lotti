@@ -1,84 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/workflow/relationship_agent_contract.dart';
 
 void main() {
-  group('relationshipQuoteAppearsIn', () {
-    const narrative =
-        'We talked about the launch.\n\nI promised to send the\n'
-        "checklist before Friday. Pip's sister – Wanja – joins too.";
-
-    for (final (label, quote, appears) in [
-      ('the exact sentence', 'I promised to send the', true),
-      ('a line break read as a space', 'send the checklist before', true),
-      ('German quotation marks', '„I promised to send the checklist“', true),
-      ('different case', 'i PROMISED to send', true),
-      ('a dash and apostrophe of another style', 'Pip’s sister - Wanja', true),
-      ('the excerpt ellipsis', 'checklist before Friday…', true),
-      ('a corrected name', "Pip's sister – Vanja", false),
-      ('a paraphrase', 'I will send the checklist', false),
-      ('nothing but punctuation', ' „…“ ', false),
-      // CodeRabbit review on #4344: a cut-off word is not a quote.
-      ('a word cut off at the end', 'send the check', false),
-      ('a word cut off at the start', 'romised to send', false),
-    ]) {
-      test('${appears ? 'finds' : 'rejects'} $label', () {
-        expect(
-          relationshipQuoteAppearsIn(narrative: narrative, quote: quote),
-          appears,
-        );
-      });
-    }
-
-    // Codex review on #4344: quotes inside the evidence are part of it.
-    test('keeps quotation marks inside the quote, in any style', () {
-      const quoted = 'Wanja said I "promised" to call Pingo.';
-
-      expect(
-        relationshipQuoteAppearsIn(
-          narrative: quoted,
-          quote: 'I promised to call Pingo',
-        ),
-        isFalse,
-        reason: 'dropping the scare quotes is not quoting verbatim',
-      );
-      expect(
-        relationshipQuoteAppearsIn(
-          narrative: quoted,
-          quote: '„I “promised” to call Pingo.“',
-        ),
-        isTrue,
-        reason: 'the same quotes in another style, and wrapping ones',
-      );
-    });
-
-    glados.Glados2(
-      glados.any.nonEmptyList(glados.any.nonEmptyLetters),
-      glados.any.nonEmptyList(glados.any.choose([' ', '\n', '\n\n', '  '])),
-      glados.ExploreConfig(numRuns: 150),
-    ).test(
-      'any run of whole words is found, however the narrative spaces them',
-      (words, gaps) {
-        final narrative = [
-          for (var i = 0; i < words.length; i++) ...[
-            words[i],
-            gaps[i % gaps.length],
-          ],
-        ].join();
-        final from = words.length ~/ 3;
-        final quote = words.sublist(from, words.length - from).join(' ');
-
-        expect(
-          relationshipQuoteAppearsIn(narrative: narrative, quote: quote),
-          isTrue,
-        );
-      },
-      tags: 'glados',
-    );
-  });
-
   test('the system prompt stays lean — growth is argued, not accreted '
       '(the goal-contract hard-cap discipline)', () {
     expect(relationshipAgentSystemPrompt.length, lessThanOrEqualTo(4300));

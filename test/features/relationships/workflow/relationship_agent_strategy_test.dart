@@ -58,11 +58,7 @@ void main() {
       threadId: 'thread-1',
       runKey: 'run-1',
       activeAdIds: {'ad-live'},
-      sourceCheckIns: {
-        'check-in-1':
-            'Pip asked about the launch.\nI promised to send the launch '
-            'checklist.',
-      },
+      sourceCheckInIds: {'check-in-1'},
     );
   });
 
@@ -96,32 +92,6 @@ void main() {
         expect(strategy.briefing, isNull);
       },
     );
-
-    // A later check-in correcting a misheard name tempts the model to quote
-    // the corrected words; the stored narrative still has the original ones.
-    test('asks again when the quote is not in the check-in', () async {
-      await strategy.processToolCalls(
-        toolCalls: [
-          _call(
-            name: 'create_and_link_task',
-            args: {
-              ...taskArgs(),
-              'description': 'I promised to send Pingo the launch checklist.',
-            },
-          ),
-        ],
-        manager: manager,
-      );
-
-      expect(strategy.deferredItems, isEmpty);
-      expect(
-        lastResponse(),
-        allOf(
-          contains('word for word'),
-          contains('Call create_and_link_task again'),
-        ),
-      );
-    });
 
     test('rejects evidence outside the rendered check-in window', () async {
       await strategy.processToolCalls(

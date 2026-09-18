@@ -89,7 +89,7 @@ Actions:
    A roast request changes the banner tone; it does not replace the required banner with a reply.
    Use fixed animation/accent presets. No images or private details.
 4. For each captured explicit commitment, call create_and_link_task, at most
-   three. Quote it verbatim and pass sourceCheckInId. Never re-propose pending,
+   three. Quote evidence and pass sourceCheckInId. Never re-propose pending,
    confirmed, or rejected proposals or paraphrases; never derive tasks from a
    contact channel. Proposals require user confirmation. Add dueDate only from evidence.
 5. If no step is triggered, follow the no-op rule above.
@@ -268,10 +268,7 @@ final List<AgentToolDefinition> relationshipAgentTools = [
         'title': {'type': 'string', 'description': 'Concise task title.'},
         'description': {
           'type': 'string',
-          'description':
-              'The commitment sentence, word for word as the source '
-              "check-in's narrative writes it — even where a later check-in "
-              'corrects it.',
+          'description': 'Quote the commitment sentence from the check-in.',
         },
         'sourceCheckInId': {
           'type': 'string',
@@ -295,49 +292,6 @@ final List<AgentToolDefinition> relationshipAgentTools = [
 const Set<String> relationshipDeferredTools = {
   RelationshipAgentToolNames.createAndLinkTask,
 };
-
-/// Whether [quote] is evidence found in [narrative]: the same words, ignoring
-/// case, spacing and line breaks, which quotation mark, dash and apostrophe
-/// *style* is used, an ellipsis, and punctuation or quotation marks wrapping
-/// the quote. Quotation marks *inside* the quote still count: dropping the
-/// quotes from `I "promised" to call` is not quoting it verbatim. The quote
-/// must start and end on whole words.
-///
-/// Run by the strategy only: a proposal whose quote is not in its check-in
-/// is rejected in-conversation, so the model grounds the suggestion in a real
-/// check-in and can quote again. It is deliberately never run at
-/// confirmation — the user's confirmation is the validation there. The model
-/// reads a narrative excerpt with its whitespace collapsed, which is why the
-/// comparison ignores spacing and line breaks.
-bool relationshipQuoteAppearsIn({
-  required String narrative,
-  required String quote,
-}) {
-  final needle = _comparableEvidence(quote);
-  if (needle.isEmpty) return false;
-  // Whole words only: "check" is not evidence of "checklist". Punctuation
-  // after the quote still ends it — the narrative keeps its full stops.
-  return RegExp(
-    '(?<![\\p{L}\\p{N}])${RegExp.escape(needle)}(?![\\p{L}\\p{N}])',
-    unicode: true,
-  ).hasMatch(_comparableEvidence(narrative));
-}
-
-final _quotationMarks = RegExp('[“”„‟«»‹›]');
-final _apostrophes = RegExp('[‘’‚′]');
-final _dashes = RegExp('[‐‑‒–—―]');
-final _ellipsis = RegExp(r'…|\.{3}');
-final _whitespace = RegExp(r'\s+');
-final _edgePunctuation = RegExp(r'''^[\s.,;:!?'"\-]+|[\s.,;:!?'"\-]+$''');
-
-String _comparableEvidence(String text) => text
-    .toLowerCase()
-    .replaceAll(_quotationMarks, '"')
-    .replaceAll(_apostrophes, "'")
-    .replaceAll(_dashes, '-')
-    .replaceAll(_ellipsis, ' ')
-    .replaceAll(_whitespace, ' ')
-    .replaceAll(_edgePunctuation, '');
 
 /// Rejects malformed task proposals at both production and confirmation.
 /// Calendar dates must round-trip: Dart otherwise normalizes February 30.

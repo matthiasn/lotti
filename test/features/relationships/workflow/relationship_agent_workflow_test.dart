@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
-import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/relationship_data.dart';
@@ -108,13 +107,6 @@ void main() {
       relationshipId: relationshipId,
       interactionType: CheckInInteractionType.call,
       sentiment: sentiment,
-    ),
-    // The commitment the proposal scenarios quote: a proposal is only
-    // accepted when its quote is in the check-in.
-    entryText: const EntryText(
-      plainText:
-          'Pip is nervous about the launch.\nI promised to send the '
-          'checklist.',
     ),
   );
 

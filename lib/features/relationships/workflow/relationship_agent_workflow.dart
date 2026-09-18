@@ -431,9 +431,8 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       threadId: threadId,
       runKey: runKey,
       activeAdIds: activeAdIds,
-      sourceCheckIns: {
-        for (final entry in relationshipCheckInWindow(checkIns))
-          entry.id: entry.entryText?.plainText ?? '',
+      sourceCheckInIds: {
+        for (final entry in relationshipCheckInWindow(checkIns)) entry.id,
       },
       allowedHealthBands: relationshipHealthBandConstraint(
         checkIns: checkIns,

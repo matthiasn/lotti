@@ -978,23 +978,17 @@ ledger. Pending, confirmed and rejected decisions therefore feed the next wake;
 contact channels remain outside FACTS. The strategy accepts only IDs from that
 rendered window, deduplicates source/title pairs, and queues at most three tasks.
 
-**The quote grounds the proposal; the user's confirmation decides it.**
-`relationshipQuoteAppearsIn` runs in the strategy on every proposal: it compares
-the description with the source check-in's narrative ignoring case, spacing and
-line breaks, the *style* of quotation marks, dashes and apostrophes, an
-ellipsis, and punctuation or quotation marks wrapping the quote, while
-quotation marks inside the quote still count and the quote must start and end
-on whole words. A quote that is not there is rejected in-conversation (the
-strategy holds each rendered check-in's narrative, `sourceCheckIns`), so the
-model grounds the suggestion in a real check-in and can quote again. The
-dispatcher deliberately does **not** re-check the quote at confirmation: it
-used to demand an exact substring of the stored text, and since the model reads
-narratives whitespace-collapsed and cut at 400 characters — and a later
-check-in may correct a misheard name the quote then uses — suggestions the user
-had read and confirmed were withdrawn with *Failed to apply change* and no
-task. The contract asks for the quote verbatim; the tool's `description`
-parameter and the rejection add "even where a later check-in corrects it",
-keeping the prompt under its cap.
+**The user's confirmation decides a proposal; no text is matched.** A
+proposal is grounded by its `sourceCheckInId`, which must name a check-in the
+wake rendered, and the card shows that check-in beside the quoted commitment.
+Nothing compares the quote with the check-in's text. The dispatcher used to
+demand an exact substring at confirmation and withdrew the suggestion on a
+miss — but the model reads narratives whitespace-collapsed and cut at 400
+characters, and quotes a name a later check-in corrected, so suggestions the
+user had read and confirmed failed with *Failed to apply change* and no task.
+A proposal-time check would not help either: the conversation ends after tool
+results (`getContinuationPrompt` returns null), so a rejected proposal is
+silently dropped rather than quoted again.
 
 The workflow persists those items inside its existing output transaction,
 rechecking that the person is live, important and active. A deterministic
@@ -1017,8 +1011,8 @@ stateDiagram-v2
 
 [`relationship_tool_dispatcher.dart`](../../lib/features/relationships/workflow/relationship_tool_dispatcher.dart)
 is the only apply path. It rechecks that the source check-in is still visible
-and still the person's, and current consent — not the quote; creates a task with the person's category, inherited
-privacy (also preserving private evidence), evidence link and proposed due
+and still the person's, and current consent — not the quote; creates a task
+with the person's category, inherited privacy (also preserving private evidence), evidence link and proposed due
 date; then links it to the person. A link failure tombstones the new task only
 if it is unchanged and has no live links. A refused compensation is
 non-retryable, preserving tasks already edited or linked by another writer. The shared

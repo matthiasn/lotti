@@ -48,7 +48,7 @@ class RelationshipAgentStrategy extends ConversationStrategy
     required this.threadId,
     required this.runKey,
     required this._activeAdIds,
-    this.sourceCheckIns = const {},
+    this.sourceCheckInIds = const {},
     this.allowedHealthBands,
   });
 
@@ -65,9 +65,8 @@ class RelationshipAgentStrategy extends ConversationStrategy
   /// hallucinated id fails in-conversation instead of corrupting state.
   final Set<String> _activeAdIds;
 
-  /// The check-ins rendered in this wake, by id, with the narrative each
-  /// one's quote must come from. Only these may supply evidence.
-  final Map<String, String> sourceCheckIns;
+  /// Only check-ins actually rendered in this wake may supply evidence.
+  final Set<String> sourceCheckInIds;
 
   /// Sentiment-derived verdict bound rendered into this wake's FACTS.
   final Set<RelationshipHealthBand>? allowedHealthBands;
@@ -166,30 +165,12 @@ class RelationshipAgentStrategy extends ConversationStrategy
     ConversationManager manager,
   ) async {
     final error = relationshipTaskProposalError(args);
-    final narrative = sourceCheckIns[args['sourceCheckInId']];
-    if (error != null || narrative == null) {
+    if (error != null || !sourceCheckInIds.contains(args['sourceCheckInId'])) {
       await _reject(
         call: call,
         manager: manager,
         error:
             'Error: ${error ?? 'sourceCheckInId must name a rendered check-in'}.',
-      );
-      return;
-    }
-    // Checked here, not only at confirmation: the model can still quote
-    // again in this wake, while a proposal that fails later is withdrawn
-    // under the user's finger.
-    if (!relationshipQuoteAppearsIn(
-      narrative: narrative,
-      quote: args['description'] as String,
-    )) {
-      await _reject(
-        call: call,
-        manager: manager,
-        error:
-            'Error: description must quote that check-in word for word, as '
-            'its narrative writes it — even where a later check-in corrects '
-            'it. Call create_and_link_task again with the exact sentence.',
       );
       return;
     }

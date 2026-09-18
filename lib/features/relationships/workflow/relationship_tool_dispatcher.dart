@@ -77,11 +77,11 @@ class RelationshipToolDispatcher {
         permanent: true,
       );
     }
-    // The quote is NOT re-checked here. It was checked when the agent
-    // proposed the task, and the user has since read the suggestion and
-    // confirmed it: that confirmation is the validation. Re-matching text now
-    // only withdrew suggestions the user wanted, whenever the check-in had
-    // been edited or corrected in between.
+    // The quote is deliberately not matched against the check-in's text:
+    // the user has read the suggestion beside its source check-in and
+    // confirmed it, and that confirmation is the validation. An exact match
+    // here withdrew suggestions the user wanted whenever the model's
+    // whitespace-collapsed view, or a later correction, changed the wording.
     final quote = (args['description'] as String).trim();
     // One journal identity per evidence-backed commitment, independent of
     // device-local creation timestamps or status UUIDs. Retrying or syncing
