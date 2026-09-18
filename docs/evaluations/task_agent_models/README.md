@@ -1,6 +1,7 @@
 # Task-Agent Model Evaluation
 
 **Full-catalog results, 2026-09-16:** [LottiGym, every section run and optimised](../lotti-gym-2026-09-16.md).
+**Four models and what a run costs, 2026-09-17:** [LottiGym, four models](../lotti-gym-2026-09-17.md).
 
 This directory documents Lotti's reproducible Task Agent model evaluation. The
 harness evaluates behavior that users see: proposed task mutations, checklist
@@ -571,6 +572,11 @@ behaviour; they are listed below and are fixed. Re-measured afterwards:
 
 Two of the three candidates now pass every scenario. Treat the earlier column
 as a measurement of the suite, not of the models.
+
+Kimi K3's result here covers 14 scenarios. Over the whole catalog on
+2026-09-17 it scored 454/480, the lowest of four models, for €25.16 — 7.7× the
+`glm-5.3` control and 24× `glm-5.3-flash`. **It is not a candidate for any Lotti
+route**; see [LottiGym, four models](../lotti-gym-2026-09-17.md).
 
 Latency separates them further: on the clean matrix GLM completed the suite in
 38 s with a 5.9 s worst case and Kimi in 159 s with an 18.9 s worst case, while
