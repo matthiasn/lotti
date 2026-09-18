@@ -481,6 +481,37 @@ void main() {
       );
     });
 
+    // Codex review on #4346: Brief now starts without asking because this
+    // row names the provider (ADR 0061), so no width or text size may shed
+    // the provider from it.
+    testWidgets('a narrow card at large text still names the provider', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(320, 4000)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await pump(
+        tester,
+        checkIns: onTrackCheckIns,
+        current: report(),
+        textScaler: const TextScaler.linear(2.5),
+      );
+
+      final identity = find.descendant(
+        of: find.byType(TaskAgentIdentityRegion),
+        matching: find.byType(Text),
+      );
+      expect(
+        tester
+            .widgetList<Text>(identity)
+            .map((text) => text.data ?? text.textSpan?.toPlainText() ?? '')
+            .first,
+        startsWith('Gemini · '),
+        reason: 'the narrowest tier leads with the provider',
+      );
+    });
+
     testWidgets('at large text the footer stacks the privacy note above the '
         'primary, so neither squeezes the other', (tester) async {
       await pump(

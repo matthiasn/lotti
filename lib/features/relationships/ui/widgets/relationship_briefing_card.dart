@@ -944,6 +944,9 @@ class _AgentCard extends StatelessWidget {
           identity: TaskAgentIdentityRegion(
             data: identityData,
             onSetupTap: onChooseModel,
+            // This row is the disclosure a briefing starts on (ADR 0061):
+            // no width or text size may shed the provider from it.
+            alwaysNameProvider: true,
             trailingMeta: totalTokens > 0
                 ? messages.agentConversationTokenCount(
                     NumberFormat.compact(

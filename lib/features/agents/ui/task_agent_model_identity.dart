@@ -91,9 +91,15 @@ String formatInferenceRouteIdentity(
 /// row exists to disclose — and leaves the connective word behind
 /// ("Qwen 3.5 Plus · Alibaba · via Meliou…"). The model name is the payload
 /// and survives every tier.
+///
+/// [alwaysNameProvider] is for a row that *is* the disclosure of where data
+/// goes — the relationship briefing starts without asking because its row
+/// names the provider (ADR 0061). There the narrowest tier leads with the
+/// provider, so an overflow ellipsizes the model and never the provider.
 List<String> inferenceRouteIdentityTiers(
   InferenceRouteSnapshot route, {
   required String viaLabel,
+  bool alwaysNameProvider = false,
 }) {
   final model = route.modelName;
   final publisher = route.publisherName?.trim();
@@ -106,6 +112,6 @@ List<String> inferenceRouteIdentityTiers(
       '$model · $viaLabel $provider',
     // Drops the publisher and the connective word, keeping both names.
     '$model · $provider',
-    model,
+    if (alwaysNameProvider) '$provider · $model' else model,
   ];
 }
