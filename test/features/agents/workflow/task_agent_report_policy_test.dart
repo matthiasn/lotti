@@ -184,4 +184,63 @@ void main() {
       expect(TaskAgentReportPolicy.withoutAbsentMetadataNotes(''), isEmpty);
     });
   });
+
+  group('withoutEmptySections', () {
+    test('a section that only says none is dropped', () {
+      // Verbatim glm-5.3 and glm-5.3-flash decision memos.
+      const report =
+          '## Recommendation\n'
+          'Deployment stays on hold; Marta owns the Legal approval.\n\n'
+          '## Next moves\n'
+          '- Marta approves the retention wording.\n\n'
+          '## Decision needed\n'
+          'None from you right now — the gate sits with Marta and Legal.';
+      expect(
+        TaskAgentReportPolicy.withoutEmptySections(report),
+        '## Recommendation\n'
+        'Deployment stays on hold; Marta owns the Legal approval.\n\n'
+        '## Next moves\n'
+        '- Marta approves the retention wording.',
+      );
+      for (final body in [
+        "None — the only open input is Marta's approval, tracked above.",
+        'Nothing outstanding.',
+        'No decision is needed.',
+        'N/A',
+      ]) {
+        expect(
+          TaskAgentReportPolicy.withoutEmptySections(
+            '## Keep\nReal.\n\n## Gone\n$body',
+          ),
+          '## Keep\nReal.',
+          reason: body,
+        );
+      }
+    });
+
+    test('a heading with no body at all is dropped', () {
+      expect(
+        TaskAgentReportPolicy.withoutEmptySections(
+          '## Progress\n\n## Next\nShip it.',
+        ),
+        '## Next\nShip it.',
+      );
+    });
+
+    test('a section that carries content is kept whole', () {
+      const kept = [
+        '## Decision needed\nPick the candidate model before the eval runs.',
+        '## Decision needed\nNone of the three candidates is ready.\nPick one anyway.',
+        '## Blockers\nNone of the sensors report, so the swap is blocked.',
+        '## Next\n- None of this is done yet.\n- Start with the seeding fix.',
+      ];
+      for (final report in kept) {
+        expect(
+          TaskAgentReportPolicy.withoutEmptySections(report),
+          report,
+          reason: report,
+        );
+      }
+    });
+  });
 }

@@ -157,6 +157,86 @@ A report already exists. Before publishing, identify a new or corrected task fac
     return ended[0].toUpperCase() + ended.substring(1);
   }
 
+  /// Whether [body] only says the section is empty.
+  ///
+  /// The opening clause, up to a dash or full stop, must itself be the
+  /// negation: "None from you right now — the gate sits with Marta" qualifies,
+  /// while "None of the sensors report, so the swap is blocked" does not,
+  /// because there the negation is the subject of a real statement.
+  static bool _saysNothing(String body) {
+    final opening = body
+        .split(RegExp(r'\s*[—–]\s*|(?<=[.!;:])\s'))
+        .first
+        .trim();
+    if (RegExp(
+      r'^(?:none|nothing)\s+of\b',
+      caseSensitive: false,
+    ).hasMatch(opening)) {
+      return false;
+    }
+    if (opening.split(RegExp(r'\s+')).length > 6) return false;
+    // "None", plus the time and audience fillers models pad it with.
+    final bare = opening
+        .replaceFirst(
+          RegExp(
+            r'^(?:none|nothing|n/?a|no\s+\w+(?:\s+\w+)?\s+(?:is\s+|are\s+)?'
+            r'(?:needed|required|outstanding|pending|open))\b',
+            caseSensitive: false,
+          ),
+          '',
+        )
+        .replaceAll(
+          RegExp(
+            r'\b(?:from|for|at|on|in|to|of|the|this|your|you|us|we|me|i|'
+            'right|now|currently|yet|today|here|moment|time|point|side|'
+            'part|present|stage|outstanding|pending|open|needed|required|'
+            'blocking|left|else|further|additional|new|action|actions|'
+            r'decision|decisions|blocker|blockers|risk|risks)\b',
+            caseSensitive: false,
+          ),
+          '',
+        )
+        .replaceAll(RegExp('[^A-Za-z]'), '');
+    return bare.isEmpty;
+  }
+
+  /// [report] without Markdown sections whose body only says "none".
+  ///
+  /// The contract already asks for empty sections to be omitted, yet models
+  /// write "## Decision needed" followed by "None from you right now — the gate
+  /// sits with Marta", which repeats what the sections above already say. Four
+  /// of the glm-5.3 control's decision-memo failures on 2026-09-15..18 were
+  /// exactly this. A section with anything else — a bullet list, a second
+  /// paragraph — is kept whole.
+  static String withoutEmptySections(String report) {
+    final lines = report.split('\n');
+    final kept = <String>[];
+    for (var index = 0; index < lines.length; index++) {
+      final heading = RegExp(r'^(#{2,6})\s+\S').firstMatch(lines[index]);
+      if (heading == null) {
+        kept.add(lines[index]);
+        continue;
+      }
+      final level = heading.group(1)!.length;
+      var end = index + 1;
+      while (end < lines.length &&
+          !RegExp('^#{2,$level}\\s+\\S').hasMatch(lines[end])) {
+        end++;
+      }
+      final body = lines
+          .sublist(index + 1, end)
+          .where((line) => line.trim().isNotEmpty)
+          .toList();
+      final isEmptyClaim = body.length == 1 && _saysNothing(body.single.trim());
+      if (body.isEmpty || isEmptyClaim) {
+        index = end - 1;
+        continue;
+      }
+      kept.add(lines[index]);
+    }
+    return kept.join('\n').replaceAll(RegExp(r'\n{3,}'), '\n\n').trim();
+  }
+
   /// [report] without sentences or clauses that only report absent metadata.
   ///
   /// The report contract says to omit absent metadata, yet every efficient

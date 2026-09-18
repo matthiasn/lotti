@@ -834,8 +834,10 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       // 7–11. Persist all wake outputs atomically. Wrapping in a transaction
       // ensures the state revision is only bumped if all outputs (thought,
       // report, observations) are successfully written.
-      final reportContent = TaskAgentReportPolicy.withoutAbsentMetadataNotes(
-        effectiveReport?.content ?? strategy.extractReportContent(),
+      final reportContent = TaskAgentReportPolicy.withoutEmptySections(
+        TaskAgentReportPolicy.withoutAbsentMetadataNotes(
+          effectiveReport?.content ?? strategy.extractReportContent(),
+        ),
       );
       final draftTldr = effectiveReport?.tldr ?? strategy.extractReportTldr();
       final reportTldr = draftTldr == null
