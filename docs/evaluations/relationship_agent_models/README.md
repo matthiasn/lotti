@@ -1,6 +1,7 @@
 # Relationship-agent model evaluations
 
 **Full-catalog results, 2026-09-16:** [LottiGym, every section run and optimised](../lotti-gym-2026-09-16.md).
+**Four models and what a run costs, 2026-09-17:** [LottiGym, four models](../lotti-gym-2026-09-17.md).
 
 Inference-level evals for the **relationship agent** (plan v2 phases 4–5,
 ADR 0059) — run **before** any model is trusted with a briefing, on the

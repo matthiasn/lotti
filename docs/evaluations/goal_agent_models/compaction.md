@@ -1,5 +1,6 @@
 # Goal check-in compaction evaluation
 
+**Four-model catalog, 2026-09-17:** [LottiGym, four models](../lotti-gym-2026-09-17.md).
 **Judged run, 2026-09-16:** hierarchical passes the bar (96% recall, zero hallucinations, 15/15 same recommendation) — [full results](../lotti-gym-2026-09-16.md).
 
 Does the goal agent draw the same conclusions from a **compacted** check-in
