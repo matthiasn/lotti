@@ -74,4 +74,64 @@ void main() {
       );
     },
   );
+
+  group('withoutAbsentMetadataNotes', () {
+    // Verbatim sentences from failed task-workflow gym samples, 2026-09-15..17.
+    const bareNotes = [
+      'No estimate or due date is set for this work.',
+      'No estimate or due date is set yet.',
+      'No estimate or due date is set.',
+      'No deadline or estimate is set.',
+      'No due date or time estimate has been set yet.',
+      'No deadline, priority, or estimate is set.',
+      'There is no due date set.',
+    ];
+
+    test('a report keeps its prose and loses the bare absence note', () {
+      for (final note in bareNotes) {
+        expect(
+          TaskAgentReportPolicy.withoutAbsentMetadataNotes(
+            'Fix the seeding so empty profiles are no longer offered. $note',
+          ),
+          'Fix the seeding so empty profiles are no longer offered.',
+          reason: note,
+        );
+        expect(
+          TaskAgentReportPolicy.withoutAbsentMetadataNotes(
+            '## Next actions\n- Fix the seeding.\n\n$note\n',
+          ),
+          '## Next actions\n- Fix the seeding.',
+          reason: note,
+        );
+      }
+    });
+
+    test('a sentence that carries anything else survives untouched', () {
+      const kept = [
+        'No deadline is set yet — the March cutoff will drive the timing.',
+        'No deadline or estimate is set, and no review artifacts exist yet.',
+        '- Task priority is P2, status OPEN, no due date or estimate set',
+        'The estimate is two hours and the due date is 2026-10-01.',
+        'No blockers remain.',
+        'There is no estimated risk to the release.',
+      ];
+      for (final line in kept) {
+        expect(
+          TaskAgentReportPolicy.withoutAbsentMetadataNotes(line),
+          line,
+          reason: line,
+        );
+      }
+    });
+
+    test('a report that is only the note becomes empty', () {
+      expect(
+        TaskAgentReportPolicy.withoutAbsentMetadataNotes(
+          'No estimate or due date is set.',
+        ),
+        isEmpty,
+      );
+      expect(TaskAgentReportPolicy.withoutAbsentMetadataNotes(''), isEmpty);
+    });
+  });
 }

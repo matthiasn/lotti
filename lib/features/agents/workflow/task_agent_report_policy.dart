@@ -77,6 +77,49 @@ A report already exists. Before publishing, identify a new or corrected task fac
         '${hasReport ? '$changedEntitiesRule\n' : ''}\n';
   }
 
+  /// A sentence that only states which metadata the task lacks.
+  ///
+  /// Anchored at both ends, so a sentence that carries anything else — "No
+  /// deadline is set yet — the March cutoff will drive the timing" — is left
+  /// alone. Only the bare note is removed.
+  static final _absentMetadataNote = RegExp(
+    r'^\s*(?:and\s+)?(?:there\s+(?:is|are)\s+)?no\s+'
+    r'(?:\w+\s+)?(?:estimate|due\s+date|deadline|target\s+date)'
+    r'(?:\s*(?:,|,?\s*(?:or|and))\s*(?:\w+\s+)?'
+    r'(?:estimate|due\s+date|deadline|target\s+date|priority|owner))*'
+    r'\s*(?:is|are|has\s+been|have\s+been)?\s*'
+    '(?:set|recorded|specified|defined|assigned)?'
+    r'(?:\s+yet)?(?:\s+for\s+(?:this|the)\s+\w+)?\s*[.!]?\s*$',
+    caseSensitive: false,
+  );
+
+  /// [report] without sentences that only report absent metadata.
+  ///
+  /// The report contract says to omit absent metadata, yet every efficient
+  /// model still writes "No estimate or due date is set." It caused 7 of the
+  /// 12 failed `task-workflow` gym samples on 2026-09-15..17, across all three
+  /// models, at both temperatures and under both prompt scaffolds. Removing
+  /// the sentence keeps everything the model got right instead of discarding
+  /// or rewriting the report.
+  static String withoutAbsentMetadataNotes(String report) {
+    final kept = <String>[];
+    for (final line in report.split('\n')) {
+      final sentences = line.split(RegExp(r'(?<=[.!])\s+'));
+      final remaining = sentences
+          .where((sentence) => !_absentMetadataNote.hasMatch(sentence))
+          .join(' ')
+          .trimRight();
+      // A line that was only such a note disappears; one that carried other
+      // prose keeps it. Bullets and headings are lines, so neither is joined
+      // into its neighbour.
+      if (sentences.isNotEmpty && remaining.isEmpty && line.trim().isNotEmpty) {
+        continue;
+      }
+      kept.add(remaining.isEmpty ? line : remaining);
+    }
+    return kept.join('\n').replaceAll(RegExp(r'\n{3,}'), '\n\n').trim();
+  }
+
   /// Housekeeping alone does not stale an existing task report. The model may
   /// still publish when independent evidence changes the task's material state.
   static bool requiresReport({
