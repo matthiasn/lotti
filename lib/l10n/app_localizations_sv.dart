@@ -12230,6 +12230,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipNicknameLabel => 'Smeknamn';
 
   @override
+  String get relationshipKnownTermsBody =>
+      'Personer, djur och platser du nämner i samband med dem, åtskilda med semikolon. Dikterade incheckningar stavar dem så.';
+
+  @override
+  String get relationshipKnownTermsHint => 'Sam; Luna; Lissabon';
+
+  @override
+  String get relationshipKnownTermsLabel => 'Namn som dyker upp';
+
+  @override
   String get relationshipNoCheckIns =>
       'Inga avstämningar än — logga en efter ert nästa samtal.';
 

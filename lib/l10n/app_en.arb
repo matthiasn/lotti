@@ -7228,6 +7228,9 @@
   "@relationshipJustAdded": {
     "description": "Relationships redesign label."
   },
+  "relationshipKnownTermsBody": "People, pets and places you mention with them, separated by semicolons. Dictated check-ins spell them this way.",
+  "relationshipKnownTermsHint": "Sam; Luna; Lisbon",
+  "relationshipKnownTermsLabel": "Names that come up",
   "relationshipLastSpoke": "last spoke {time}",
   "@relationshipLastSpoke": {
     "placeholders": {

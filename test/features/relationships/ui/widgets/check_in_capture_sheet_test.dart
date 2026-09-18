@@ -1123,6 +1123,11 @@ void main() {
       );
       expect(saveReason(tester), 'Waiting for the transcript');
       expect(stubTranscription.transcribeCalls, ['audio-1']);
+      expect(
+        stubTranscription.transcribePeople,
+        ['rel-001'],
+        reason: "the words are corrected against this person's names",
+      );
 
       gate.complete('She got the job.');
       await tester.pumpAndSettle();

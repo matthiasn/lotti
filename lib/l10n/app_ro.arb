@@ -4700,6 +4700,9 @@
   "@relationshipJustAdded": {
     "description": "Relationships redesign label."
   },
+  "relationshipKnownTermsBody": "Persoane, animale și locuri pe care le menționați în legătură cu această persoană, separate prin punct și virgulă. Check-in-urile dictate le scriu astfel.",
+  "relationshipKnownTermsHint": "Sam; Luna; Lisabona",
+  "relationshipKnownTermsLabel": "Nume care apar",
   "relationshipLastSpoke": "ultima discuție {time}",
   "@relationshipLastSpoke": {
     "placeholders": {

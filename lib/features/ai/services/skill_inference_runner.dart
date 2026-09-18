@@ -41,6 +41,7 @@ import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/speech/helpers/transcript_term_corrector.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -128,6 +129,15 @@ class SkillInferenceRunner {
   /// `entryText`, so silence is indistinguishable from a slow model and the
   /// caller sits on a spinner until its own timeout. [onError] is that
   /// signal, and it fires for the same failures the error controller shows.
+  ///
+  /// [knownTerms] are words the caller knows the recording is likely to
+  /// contain — a person's name and the people around them. They lead the
+  /// provider's vocabulary hint ahead of the category speech dictionary, and,
+  /// because not every provider honours that hint, the finished transcript is
+  /// also corrected against both lists with [correctTranscriptTerms]. The
+  /// audio's transcript history keeps what the provider actually returned;
+  /// only its text carries the correction. Without [knownTerms] the
+  /// transcript is stored exactly as returned.
   Future<void> runTranscription({
     required String audioEntryId,
     required AutomationResult automationResult,
@@ -135,6 +145,7 @@ class SkillInferenceRunner {
     String? overrideModelId,
     GeminiThinkingMode? geminiThinkingMode,
     void Function(Object error)? onError,
+    List<String> knownTerms = const [],
   }) async {
     final skill = automationResult.skill;
     final profile = automationResult.resolvedProfile;
@@ -177,8 +188,10 @@ class SkillInferenceRunner {
 
         // 2. Build context for prompts (fetch terms once, reuse for both
         // prompt text and provider-level context biasing).
-        final speechDictionaryTerms = await _promptBuilderHelper
-            .getSpeechDictionaryTerms(entity);
+        final speechDictionaryTerms = mergeSpeechTerms(
+          knownTerms,
+          await _promptBuilderHelper.getSpeechDictionaryTerms(entity),
+        );
         final speechDictionary = _formatSpeechDictionaryText(
           speechDictionaryTerms,
         );
@@ -340,14 +353,17 @@ class SkillInferenceRunner {
           aiAttribution: attributionEnvelope,
         );
 
+        final text = knownTerms.isEmpty
+            ? response
+            : correctTranscriptTerms(response, speechDictionaryTerms).text;
         final existingTranscripts = currentAudio.data.transcripts ?? [];
         final updated = currentAudio.copyWith(
           data: currentAudio.data.copyWith(
             transcripts: [...existingTranscripts, transcript],
           ),
           entryText: EntryText(
-            plainText: response,
-            markdown: response,
+            plainText: text,
+            markdown: text,
           ),
         );
         await _journalRepository.updateJournalEntity(updated);

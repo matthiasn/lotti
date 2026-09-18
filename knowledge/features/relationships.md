@@ -5,7 +5,7 @@ description: A personal CRM carried by two journal variants — why check-ins ar
 resource: ../../lib/features/relationships
 tags: [relationships, check-ins, journal-entity, privacy]
 status: stable
-generated: { by: claude-code/fable-5.1, at: 2026-09-13T18:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-09-19T01:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: sync-runtime
@@ -15,7 +15,7 @@ sources:
   - id: src
     resource: ../../lib/features/relationships
     title: Relationships feature source
-    last_modified: 2026-09-12
+    last_modified: 2026-09-19
   - id: queries
     resource: ../../lib/database/database_relationship_queries.dart
     title: Relationship and check-in queries
@@ -1300,7 +1300,9 @@ phone number does not go.
 
 **The form** ([relationship_form_modal.dart](../../lib/features/relationships/ui/widgets/relationship_form_modal.dart))
 groups into three `DesignSystemSectionCard`s — **Who** (name, nickname, the
-category, and while editing the status), **Important** (the consent switch,
+names that come up with them — the category speech dictionary's semicolon
+format, parsed by the same `parseSpeechTerms` — the category, and while
+editing the status), **Important** (the consent switch,
 one line saying what it enables, and the cadence presets *only* once it is
 on), **How to reach them** (the channel editor under the same privacy line
 the page's Reach card carries). The category is a name beside a 10px colour
@@ -1492,11 +1494,22 @@ Three invariants hold regardless of what comes back:
   asks first, in those words ("Replace your edited words with a new take?"),
   and a declined dialog moves nothing.
 
-Name accuracy comes from the **category's `speechDictionary`**, not from
-anything relationship-specific: the recording is created with the person's
-`categoryId`, and `PromptBuilderHelper.getSpeechDictionaryTerms` reads the
-audio entry's own category, sending those terms as provider context bias and
-injecting them into the transcription prompt.
+Name accuracy comes from **correcting the transcript**, because the route
+most people use cannot be biased: Melious' Whisper endpoints accept a
+vocabulary `prompt` and ignore it (see
+[speech dictionaries](ai/provider-routing.md#speech-dictionaries)).
+`CheckInTranscriptionService.transcribe` takes the person's id and, while the
+profile resolves, builds their known terms with
+[`relationshipKnownTerms`](../../lib/features/relationships/model/relationship_speech_terms.dart):
+the name, the nickname, the person's own `knownTerms` ("Names that come up" in
+the form), then the names and nicknames of the other people in the same
+category. Another person marked private contributes nothing, because the
+terms leave the device with the recording; the subject always does. The
+runner puts these ahead of the category's `speechDictionary` (read from the
+audio entry's category, which the recording inherits from the person) and
+corrects the finished transcript against both, so a misheard name reaches
+the field already spelled the way the user writes it. A failed read of the
+terms costs the correction, never the transcript.
 # Reaching a user who has not opened the app (plan v2 phase 8)
 
 A banner needs the app running. The case a check-in reminder exists for is the

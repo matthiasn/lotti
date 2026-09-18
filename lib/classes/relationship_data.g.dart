@@ -115,6 +115,11 @@ _RelationshipData _$RelationshipDataFromJson(
   title: json['title'] as String,
   status: RelationshipStatus.fromJson(json['status'] as Map<String, dynamic>),
   nickname: json['nickname'] as String?,
+  knownTerms:
+      (json['knownTerms'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
   important: json['important'] as bool? ?? false,
   statusHistory:
       (json['statusHistory'] as List<dynamic>?)
@@ -150,6 +155,7 @@ Map<String, dynamic> _$RelationshipDataToJson(_RelationshipData instance) =>
       'title': instance.title,
       'status': instance.status,
       'nickname': instance.nickname,
+      'knownTerms': instance.knownTerms,
       'important': instance.important,
       'statusHistory': instance.statusHistory,
       'checkInCadenceDays': instance.checkInCadenceDays,

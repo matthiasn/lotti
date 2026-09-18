@@ -20293,6 +20293,24 @@ abstract class AppLocalizations {
   /// **'Nickname'**
   String get relationshipNicknameLabel;
 
+  /// No description provided for @relationshipKnownTermsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'People, pets and places you mention with them, separated by semicolons. Dictated check-ins spell them this way.'**
+  String get relationshipKnownTermsBody;
+
+  /// No description provided for @relationshipKnownTermsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Sam; Luna; Lisbon'**
+  String get relationshipKnownTermsHint;
+
+  /// No description provided for @relationshipKnownTermsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Names that come up'**
+  String get relationshipKnownTermsLabel;
+
   /// No description provided for @relationshipNoCheckIns.
   ///
   /// In en, this message translates to:

@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
+import 'package:lotti/features/relationships/model/relationship_speech_terms.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/db_notification.dart';
@@ -60,7 +61,10 @@ typedef CheckInTranscriptionRoute = ({String model, String provider});
 /// for a person, and getting the words once they have spoken.
 ///
 /// Uses only the system's selected default inference profile and its
-/// transcription slot. The recording sheet disables its automatic trigger for
+/// transcription slot. The words are corrected against the person's known
+/// terms ([relationshipKnownTerms]) plus the category speech dictionary, so
+/// a name the provider mishears still lands spelled the way the user writes
+/// it. The recording sheet disables its automatic trigger for
 /// this capture, so this explicit request owns the one transcription run.
 /// There is no subject/category resolution or model-discovery fallback.
 ///
@@ -102,31 +106,59 @@ class CheckInTranscriptionService {
     return profile;
   }
 
-  /// Waits for [audioEntryId]'s transcript and starts one explicit request.
+  /// Waits for [audioEntryId]'s transcript and starts one explicit request
+  /// about the person [relationshipId].
   ///
   /// Listening starts before inference so a fast result cannot be missed.
   /// Missing default configuration and inference errors end the wait promptly.
   CheckInTranscriptWait transcribe({
     required String audioEntryId,
+    required String relationshipId,
     Duration timeout = checkInTranscriptTimeout,
   }) {
     final wait = _awaitTranscript(audioEntryId, timeout: timeout);
     unawaited(
       _runTranscription(
         audioEntryId: audioEntryId,
+        relationshipId: relationshipId,
         onFailure: wait.cancel,
       ),
     );
     return wait;
   }
 
+  /// The person's known terms, or none when they cannot be read. A missing
+  /// list costs only the correction, never the transcript.
+  Future<List<String>> _knownTerms(String relationshipId) async {
+    try {
+      final person = await _journalDb.journalEntityById(relationshipId);
+      if (person is! RelationshipEntry) return const [];
+      return relationshipKnownTerms(
+        person: person,
+        people: await _journalDb.getRelationships(),
+      );
+    } catch (exception, stackTrace) {
+      developer.log(
+        'Could not read known terms for $relationshipId',
+        name: _logTag,
+        error: exception,
+        stackTrace: stackTrace,
+      );
+      return const [];
+    }
+  }
+
   /// Runs the system default's transcription slot without any fallback.
   Future<void> _runTranscription({
     required String audioEntryId,
+    required String relationshipId,
     required void Function() onFailure,
   }) async {
     try {
-      final profile = await _resolveProfile();
+      final (profile, knownTerms) = await (
+        _resolveProfile(),
+        _knownTerms(relationshipId),
+      ).wait;
       if (profile == null) {
         onFailure();
         return;
@@ -141,6 +173,7 @@ class CheckInTranscriptionService {
           skill: findBuiltInSkill(skillTranscribeContextId),
         ),
         onError: (_) => onFailure(),
+        knownTerms: knownTerms,
       );
     } catch (exception, stackTrace) {
       developer.log(

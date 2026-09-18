@@ -5196,6 +5196,9 @@
   "@relationshipJustAdded": {
     "description": "Relationships redesign label."
   },
+  "relationshipKnownTermsBody": "Personer, djur och platser du nämner i samband med dem, åtskilda med semikolon. Dikterade incheckningar stavar dem så.",
+  "relationshipKnownTermsHint": "Sam; Luna; Lissabon",
+  "relationshipKnownTermsLabel": "Namn som dyker upp",
   "relationshipLastSpoke": "pratade senast {time}",
   "@relationshipLastSpoke": {
     "placeholders": {

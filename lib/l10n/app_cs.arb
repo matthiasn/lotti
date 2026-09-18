@@ -4707,6 +4707,9 @@
   "@relationshipJustAdded": {
     "description": "Relationships redesign label."
   },
+  "relationshipKnownTermsBody": "Lidé, zvířata a místa, o kterých v souvislosti s nimi mluvíš, oddělené středníky. Diktované check-iny je napíšou přesně takhle.",
+  "relationshipKnownTermsHint": "Sam; Luna; Lisabon",
+  "relationshipKnownTermsLabel": "Jména, která zmiňuješ",
   "relationshipLastSpoke": "naposledy mluvili {time}",
   "@relationshipLastSpoke": {
     "placeholders": {

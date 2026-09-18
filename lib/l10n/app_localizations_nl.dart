@@ -12247,6 +12247,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipNicknameLabel => 'Bijnaam';
 
   @override
+  String get relationshipKnownTermsBody =>
+      'Mensen, huisdieren en plekken die je bij hen noemt, gescheiden door puntkomma\'s. Ingesproken check-ins spellen ze zo.';
+
+  @override
+  String get relationshipKnownTermsHint => 'Sam; Luna; Lissabon';
+
+  @override
+  String get relationshipKnownTermsLabel => 'Namen die langskomen';
+
+  @override
   String get relationshipNoCheckIns =>
       'Nog geen check-ins — leg er een vast na jullie volgende gesprek.';
 

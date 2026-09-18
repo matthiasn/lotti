@@ -5195,6 +5195,9 @@
   "@relationshipJustAdded": {
     "description": "Relationships redesign label."
   },
+  "relationshipKnownTermsBody": "Mensen, huisdieren en plekken die je bij hen noemt, gescheiden door puntkomma's. Ingesproken check-ins spellen ze zo.",
+  "relationshipKnownTermsHint": "Sam; Luna; Lissabon",
+  "relationshipKnownTermsLabel": "Namen die langskomen",
   "relationshipLastSpoke": "laatst gesproken {time}",
   "@relationshipLastSpoke": {
     "placeholders": {

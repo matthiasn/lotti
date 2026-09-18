@@ -33,6 +33,9 @@ class StubCheckInTranscriptionService implements CheckInTranscriptionService {
   int cancelCount = 0;
   final transcribeCalls = <String>[];
 
+  /// The person each transcript was asked for, in call order.
+  final transcribePeople = <String>[];
+
   @override
   Future<bool> canTranscribe() async {
     await preflightGate?.future;
@@ -48,9 +51,11 @@ class StubCheckInTranscriptionService implements CheckInTranscriptionService {
   @override
   CheckInTranscriptWait transcribe({
     required String audioEntryId,
+    required String relationshipId,
     Duration timeout = checkInTranscriptTimeout,
   }) {
     transcribeCalls.add(audioEntryId);
+    transcribePeople.add(relationshipId);
     final completer = gate ?? (Completer<String?>()..complete(transcript));
     return CheckInTranscriptWait.forTesting(
       result: completer.future,

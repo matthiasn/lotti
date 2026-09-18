@@ -14,6 +14,7 @@ import 'package:lotti/features/relationships/state/relationship_agent_providers.
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/widgets/form/lotti_text_field.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -49,6 +50,18 @@ class _FakeContactsService implements ContactsService {
 
   @override
   Future<void> openSystemSettings() async {}
+}
+
+/// The first channel row's value field: name, nickname and the names that
+/// come up are the three text fields above it.
+final Finder firstChannelField = find.byType(TextField).at(3);
+
+/// Taps [finder] once it is scrolled into view: everything below the Who
+/// card can sit past the bottom of the 800×600 test surface.
+Future<void> tapVisible(WidgetTester tester, Finder finder) async {
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+  await tester.tap(finder);
 }
 
 void main() {
@@ -717,12 +730,16 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, 'Ada');
-      await tester.tap(find.byKey(const ValueKey('person-form-add-channel')));
+      await tapVisible(
+        tester,
+        find.byKey(const ValueKey('person-form-add-channel')),
+      );
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField).at(2), 'ada@example.com');
+      await tester.enterText(firstChannelField, 'ada@example.com');
       await tester.pumpAndSettle();
 
-      await tester.tap(
+      await tapVisible(
+        tester,
         find.byType(DropdownButtonFormField<ContactChannelType>),
       );
       await tester.pumpAndSettle();
@@ -763,12 +780,15 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, 'Ada');
-      await tester.tap(find.byKey(const ValueKey('person-form-add-channel')));
+      await tapVisible(
+        tester,
+        find.byKey(const ValueKey('person-form-add-channel')),
+      );
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField).at(2), '+1 555');
+      await tester.enterText(firstChannelField, '+1 555');
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Delete'));
+      await tapVisible(tester, find.byTooltip('Delete'));
       await tester.pumpAndSettle();
 
       expect(find.text('+1 555'), findsNothing);
@@ -852,7 +872,8 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
-      await tester.tap(
+      await tapVisible(
+        tester,
         find.byKey(const ValueKey('person-form-add-from-contacts')),
       );
       await tester.pumpAndSettle();
@@ -895,16 +916,20 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('person-form-add-channel')));
+      await tapVisible(
+        tester,
+        find.byKey(const ValueKey('person-form-add-channel')),
+      );
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField).at(2), '+15550109999');
+      await tester.enterText(firstChannelField, '+15550109999');
       await tester.pumpAndSettle();
 
       await tester.ensureVisible(
         find.byKey(const ValueKey('person-form-add-from-contacts')),
       );
       await tester.pump();
-      await tester.tap(
+      await tapVisible(
+        tester,
         find.byKey(const ValueKey('person-form-add-from-contacts')),
       );
       await tester.pumpAndSettle();
@@ -932,16 +957,20 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('person-form-add-channel')));
+      await tapVisible(
+        tester,
+        find.byKey(const ValueKey('person-form-add-channel')),
+      );
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField).at(2), '+1 555');
+      await tester.enterText(firstChannelField, '+1 555');
       await tester.pumpAndSettle();
 
       await tester.ensureVisible(
         find.byKey(const ValueKey('person-form-add-from-contacts')),
       );
       await tester.pump();
-      await tester.tap(
+      await tapVisible(
+        tester,
         find.byKey(const ValueKey('person-form-add-from-contacts')),
       );
       await tester.pumpAndSettle();
@@ -985,6 +1014,49 @@ void main() {
     expect(data.checkInCadenceDays, isNull);
     expect(data.important, isFalse);
     expect(data.nickname, isNull);
+  });
+
+  testWidgets('saves the names that come up as a list', (tester) async {
+    when(
+      () => mockRepository.createRelationship(
+        data: any(named: 'data'),
+        categoryId: any(named: 'categoryId'),
+        id: any(named: 'id'),
+      ),
+    ).thenAnswer(
+      (invocation) async =>
+          createdEntry(invocation.namedArguments[#data] as RelationshipData),
+    );
+
+    await tester.pumpWidget(buildForm());
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Frida Kjellsen');
+    await tester.enterText(
+      find.byKey(const ValueKey('person-form-known-terms')),
+      'Wanja;  Waddle One ; ',
+    );
+    expect(
+      find.text(
+        'People, pets and places you mention with them, separated by '
+        'semicolons. Dictated check-ins spell them this way.',
+      ),
+      findsOneWidget,
+      reason: 'the field says what the names are for',
+    );
+    await tester.ensureVisible(find.text('Create'));
+    await tester.tap(find.text('Create'));
+    await tester.pumpAndSettle();
+
+    final data =
+        verify(
+              () => mockRepository.createRelationship(
+                data: captureAny(named: 'data'),
+                categoryId: any(named: 'categoryId'),
+                id: any(named: 'id'),
+              ),
+            ).captured.single
+            as RelationshipData;
+    expect(data.knownTerms, ['Wanja', 'Waddle One']);
   });
 
   group('edit mode', () {
@@ -1090,6 +1162,38 @@ void main() {
           categoryId: 'category-7',
         ),
       ).called(1);
+    });
+
+    testWidgets('shows the saved names and saves them edited', (
+      tester,
+    ) async {
+      final person = existing();
+      await tester.pumpWidget(
+        buildForm(
+          initial: person.copyWith(
+            data: person.data.copyWith(knownTerms: const ['Wanja', 'Pingo']),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final field = find.byKey(const ValueKey('person-form-known-terms'));
+      expect(
+        tester.widget<LottiTextField>(field).controller.text,
+        'Wanja; Pingo',
+      );
+
+      await tester.enterText(field, 'Wanja; Pingo Floe');
+      await tester.ensureVisible(find.text('Save'));
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      final updated =
+          verify(
+                () => mockRepository.updateRelationship(captureAny()),
+              ).captured.single
+              as RelationshipEntry;
+      expect(updated.data.knownTerms, ['Wanja', 'Pingo Floe']);
     });
 
     testWidgets('prefills the person and saves edited fields', (tester) async {
@@ -1519,7 +1623,7 @@ void main() {
           .widget<PersonCategoryRow>(find.byType(PersonCategoryRow))
           .onChanged(null);
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(Switch));
+      await tapVisible(tester, find.byType(Switch));
       await tester.pumpAndSettle();
 
       await tester.ensureVisible(find.text('Save'));

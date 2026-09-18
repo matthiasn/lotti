@@ -5195,6 +5195,9 @@
   "@relationshipJustAdded": {
     "description": "Relationships redesign label."
   },
+  "relationshipKnownTermsBody": "Pessoas, pets e lugares que você menciona sobre essa pessoa, separados por ponto e vírgula. Check-ins ditados escrevem assim.",
+  "relationshipKnownTermsHint": "Sam; Luna; Lisboa",
+  "relationshipKnownTermsLabel": "Nomes que aparecem",
   "relationshipLastSpoke": "última conversa {time}",
   "@relationshipLastSpoke": {
     "placeholders": {

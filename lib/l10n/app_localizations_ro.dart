@@ -12474,6 +12474,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipNicknameLabel => 'Poreclă';
 
   @override
+  String get relationshipKnownTermsBody =>
+      'Persoane, animale și locuri pe care le menționați în legătură cu această persoană, separate prin punct și virgulă. Check-in-urile dictate le scriu astfel.';
+
+  @override
+  String get relationshipKnownTermsHint => 'Sam; Luna; Lisabona';
+
+  @override
+  String get relationshipKnownTermsLabel => 'Nume care apar';
+
+  @override
   String get relationshipNoCheckIns =>
       'Nicio înregistrare încă — adăugați una după următoarea conversație.';
 

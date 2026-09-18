@@ -12336,6 +12336,16 @@ class AppLocalizationsPt extends AppLocalizations {
   String get relationshipNicknameLabel => 'Apelido';
 
   @override
+  String get relationshipKnownTermsBody =>
+      'Pessoas, pets e lugares que você menciona sobre essa pessoa, separados por ponto e vírgula. Check-ins ditados escrevem assim.';
+
+  @override
+  String get relationshipKnownTermsHint => 'Sam; Luna; Lisboa';
+
+  @override
+  String get relationshipKnownTermsLabel => 'Nomes que aparecem';
+
+  @override
   String get relationshipNoCheckIns =>
       'Nenhum registro ainda — adicione um após a próxima conversa.';
 

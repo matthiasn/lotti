@@ -65,8 +65,11 @@ never saves automatically or overwrites existing typed text. Editing a
 check-in that was saved with words offers no Dictate: the saved text is
 edited as text. A missing
 transcript can be asked for again without recording again. A missing
-transcription model is explained before recording. Category speech
-dictionaries can improve recognition of names. Save waits for a few words
+transcription model is explained before recording. Dictated words are
+corrected against the person's name and nickname, the names that come up
+with them (set in the person editor), the other people in their category and
+the category's speech dictionary, so a misheard name arrives spelled the way
+the user writes it. Save waits for a few words
 and says so while it waits. Closing the composer with unsaved words, or
 while a recording is running, asks first, and confirming discards the
 recording too; an untouched draft closes at once. A failure card offers

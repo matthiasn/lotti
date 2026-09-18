@@ -135,7 +135,7 @@ class CloudInferenceGenerateMore {
         model: model,
         audioBase64: audioBase64,
         apiKey: apiKey,
-        prompt: prompt,
+        prompt: _promptWithSpeechDictionary(prompt, speechDictionaryTerms),
       );
     }
 
