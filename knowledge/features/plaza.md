@@ -5,7 +5,7 @@ description: Scoped journal snapshots generate task timelines and category avenu
 resource: ../../lib/features/plaza
 tags: [plaza, 3d, flutter-scene, flutter-gpu, tasks, projects, categories]
 status: draft
-generated: { by: codex/gpt-6, at: 2026-09-09T00:27:05Z }
+generated: { by: codex/gpt-6, at: 2026-09-17T21:18:16Z }
 stale_after: 2027-03-01
 sources:
   - id: repository
@@ -54,8 +54,16 @@ sources:
     last_modified: 2026-09-11
   - id: scene
     resource: ../../lib/features/plaza/scene/plaza_scene.dart
-    title: Geometry and static batching
-    last_modified: 2026-09-08
+    title: Geometry, static batching and the ground layers
+    last_modified: 2026-09-17
+  - id: shade
+    resource: ../../lib/features/plaza/scene/ground_shade.dart
+    title: The shade quads a caster throws, planned without the GPU
+    last_modified: 2026-09-17
+  - id: camera
+    resource: ../../lib/features/plaza/ui/fly_camera_controller.dart
+    title: Walking, flights and the altitude-scaled near plane
+    last_modified: 2026-09-17
   - id: lod
     resource: ../../lib/features/plaza/scene/facade_lod_manager.dart
     title: Facade promotion and capture budgets
@@ -286,7 +294,8 @@ urgent is full size, with successively smaller factors for high, medium and low.
 Mount centers and orientation remain fixed. Completed walls are muted green;
 completed roof lights stay clearly green and do not pulse. Cancellation remains
 a neutral, distinct status. Overview framing grows with the full district;
-the camera's far plane grows with it rather than clipping to the prototype size.
+the camera's far plane grows with it rather than clipping to the prototype size,
+and its near plane grows with the camera's altitude (below).
 
 Category generation assigns one named avenue per project using explicit layout
 buckets, while portal records retain actual creation dates. Since Home sits at
@@ -484,7 +493,9 @@ road markers and status lights readable in Overview. Decorative filler blocks
 and the skyline ring share a separately baked `city-context` root. It hides at
 the same altitude threshold that reveals map labels, removing their occlusion
 of task roofs; the project landmark, actual task buildings and week addresses
-remain. This is currently a discrete map transition, not an opacity fade.
+remain. A filler block's shade and parade wash hang under that root with the
+block, so the ground does not keep the shadows of buildings the map view has
+hidden. This is currently a discrete map transition, not an opacity fade.
 
 Facade tiers are geometry-only far, captured sign, and activated live. The LOD
 manager caps sign/live counts, uses range/view hysteresis and paces promotions.
@@ -589,6 +600,22 @@ contact pad on its footprint, which is what says it meets the ground from any
 camera angle, and a streak away from the sun, which is what says where the sun
 is. One offset quad cannot be both — its falloff peaks half a shadow-length
 out and leaves the wall's own foot at a third of the density.
+
+`shadeQuadsFor` plans both quads without the GPU — position, size, yaw and
+density — and the scene only lays them down, so the geometry is unit-tested
+where the renderer cannot be. Every ground decal (pool, wash, shade) lies on
+one plane, `PlazaSceneController.groundTop`, a centimetre above the pavement.
+Nothing opaque may share that height: a face at exactly the decals' depth ties
+the depth test with every decal over it and stipples as the camera moves. The
+map ribbon only shows from the air, which is exactly where every shadow cast
+across a road lies over it, so it tops out at `mapRibbonTop`, under the plane,
+and a test pins the two apart. From the air the depth buffer itself is the
+limit: its precision falls with the square of the distance and rises with the
+near plane, so `FlyCameraController.nearClipFor` grows the near plane to one
+percent of the altitude above 30 m. That keeps a decal's centimetre over the
+pavement at several depth steps however wide the district, costs nothing at
+street level, and stays under `Flight.clearance` until the eye is well above
+the tallest tower, so nothing a flight clears is ever cut.
 
 Shade uses its own mask, not the light pool's. The pool is a hot core with a
 long thin skirt, which is right for light and wrong for shade: the renderer

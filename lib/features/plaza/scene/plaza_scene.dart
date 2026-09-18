@@ -9,6 +9,7 @@ import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/domain/scenery.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
+import 'package:lotti/features/plaza/scene/ground_shade.dart';
 import 'package:lotti/features/plaza/scene/plaza_architecture.dart';
 import 'package:lotti/features/plaza/scene/plaza_boxes.dart';
 import 'package:lotti/features/plaza/scene/plaza_primitives.dart';
@@ -98,8 +99,25 @@ class PlazaSceneController {
   final List<(UnlitMaterial, double)> _washes = [];
   late final Vector4 _centreLine = linearColor(palette.surfaces.centreLine);
 
-  /// Top of the pavement; every ground light pool sits above this.
-  static const _groundTop = 0.11;
+  /// Top of the pavement strips along every road.
+  static const pavementTop = 0.10;
+
+  /// The decal plane: every ground light pool, wash and shadow quad lies
+  /// here, a centimetre above [pavementTop], so it wins the depth test
+  /// against the paving it lights or darkens. Nothing opaque may share this
+  /// height — a face at exactly the decals' depth ties the test with every
+  /// decal over it and stipples as the camera moves — which is why the map
+  /// ribbon tops out at [mapRibbonTop], and a test pins the two apart.
+  static const groundTop = 0.11;
+
+  /// The highest opaque road marking: the top of the centre-line dashes.
+  static const roadMarkingsTop = 0.05;
+
+  /// The map ribbon's top face, between the road markings and the decal
+  /// plane. The ribbon only shows from the air, which is exactly where
+  /// every shadow a building casts across the road lies over it.
+  static const mapRibbonTop = 0.08;
+  static const mapRibbonThickness = 0.02;
 
   /// Side and back wall materials waiting for their window texture, by
   /// lantern state.

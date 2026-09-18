@@ -288,6 +288,31 @@ class FlyCameraController {
     _pose = CameraPose(x: x, y: y, z: z, yaw: _pose.yaw, pitch: _pose.pitch);
   }
 
+  /// The near plane while walking. The walker's clearance keeps every
+  /// solid 0.6 m off; a near plane three times the default triples the
+  /// depth precision far out, where a facade's layers are centimetres
+  /// apart.
+  static const walkingNearClip = 0.3;
+
+  /// The share of the eye's altitude the near plane takes once aloft.
+  static const nearClipPerMetre = 0.01;
+
+  /// The near plane for an eye [height] metres above the street: the
+  /// walking value, or one percent of the altitude once that is more.
+  ///
+  /// Depth precision falls with the square of the distance and rises with
+  /// the near plane, and from the overview the paving is 1.3–1.8 heights
+  /// away: a district 400 m wide puts its far rows 500 m off, where 0.3 m
+  /// of near plane cannot tell a ground decal from the pavement a
+  /// centimetre under it, and the shade stipples. One percent of the
+  /// altitude keeps that gap at several depth steps however large the
+  /// district grows, and costs nothing at street level: the plane only
+  /// starts growing above 30 m, and stays under [Flight.clearance] until
+  /// the eye is well above the tallest tower, so nothing a flight clears
+  /// is ever cut.
+  static double nearClipFor(double height) =>
+      math.max(walkingNearClip, height * nearClipPerMetre);
+
   /// The camera for this frame.
   Camera camera({double farClip = 1400}) {
     final eye = position;
@@ -295,10 +320,7 @@ class FlyCameraController {
       position: eye,
       target: eye + forward * 10,
       fovRadiansY: fovRadiansY,
-      // The walker's clearance keeps every solid 0.6 m off; a near plane
-      // three times the default triples the depth precision far out,
-      // where a facade's layers are centimetres apart.
-      fovNear: 0.3,
+      fovNear: nearClipFor(eye.y),
       fovFar: farClip,
     );
   }

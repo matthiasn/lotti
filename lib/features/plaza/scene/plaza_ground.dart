@@ -38,8 +38,16 @@ extension _PlazaGroundBuilder on PlazaSceneController {
       for (final side in [-1.0, 1.0]) {
         _box(
           roadNode,
-          Vector3(side * (layout.roadWidth / 2 - 1.5), 0.05, 0),
-          Vector3(3, 0.1, segment.length + 0.4),
+          Vector3(
+            side * (layout.roadWidth / 2 - 1.5),
+            PlazaSceneController.pavementTop / 2,
+            0,
+          ),
+          Vector3(
+            3,
+            PlazaSceneController.pavementTop,
+            segment.length + 0.4,
+          ),
           _pavementMaterial,
         );
         // A kerb you could stub a toe on: a raised stone edge between the
@@ -53,15 +61,28 @@ extension _PlazaGroundBuilder on PlazaSceneController {
       }
       // The map layer: a teal ribbon down the axis of every segment,
       // connectors included, shown from the air so the overview reads
-      // as a route and not a dark render.
+      // as a route and not a dark render. Its top face stays under the
+      // decal plane: from the air every shadow cast across the road lies
+      // over the ribbon, and an opaque face at the decals' own height
+      // would tie the depth test with each of them and stipple.
       final ribbon = _box(
         roadNode,
-        Vector3(0, 0.1, 0),
-        Vector3(0.9, 0.02, segment.length + 0.4),
+        Vector3(
+          0,
+          PlazaSceneController.mapRibbonTop -
+              PlazaSceneController.mapRibbonThickness / 2,
+          0,
+        ),
+        Vector3(
+          0.9,
+          PlazaSceneController.mapRibbonThickness,
+          segment.length + 0.4,
+        ),
         _boxes.solid(PlazaSceneController._ribbon),
       )..visible = false;
       _mapRibbons.add(ribbon);
       if (!segment.isGap) {
+        const dashThickness = 0.01;
         for (
           var along = -segment.length / 2 + 3;
           along < segment.length / 2 - 2;
@@ -69,8 +90,12 @@ extension _PlazaGroundBuilder on PlazaSceneController {
         ) {
           _box(
             roadNode,
-            Vector3(0, 0.045, along),
-            Vector3(0.18, 0.01, 2.2),
+            Vector3(
+              0,
+              PlazaSceneController.roadMarkingsTop - dashThickness / 2,
+              along,
+            ),
+            Vector3(0.18, dashThickness, 2.2),
             _boxes.solid(_centreLine),
           );
         }
@@ -91,7 +116,7 @@ extension _PlazaGroundBuilder on PlazaSceneController {
               Matrix4.translation(
                   Vector3(
                     segment.startX + math.sin(segment.headingRadians) * along,
-                    PlazaSceneController._groundTop + 0.02,
+                    PlazaSceneController.groundTop + 0.02,
                     segment.startZ + math.cos(segment.headingRadians) * along,
                   ),
                 )

@@ -76,11 +76,15 @@ extension _PlazaSkylineBuilder on PlazaSceneController {
             ..localTransform = (Matrix4.translation(
               Vector3(block.x, 0, block.z),
             )..rotateY(block.yawRadians));
+      // The block's shade and parade light hang under the city context
+      // with the block: when the map view hides the fabric, the ground
+      // must not keep the shadows of buildings that are no longer there.
       _addShadow(
         Vector3(block.x, 0, block.z),
         width: bw,
         depth: bd,
         height: bh,
+        parent: _cityContext,
       );
       // The parade's light on the pavement, on the street side.
       {
@@ -96,6 +100,7 @@ extension _PlazaSkylineBuilder on PlazaSceneController {
           yaw: yaw,
           color: palette.lights.parade,
           alpha: 0.06,
+          parent: _cityContext,
         );
       }
       if (stableUnit(id, 'sign') < 0.34) {
