@@ -17,6 +17,8 @@
 /// * it is *spelled* almost the same once sound-alike spellings are folded
 ///   (v/w, ck/k, y/i, ie/i, a silent h, doubled letters): at most one edit
 ///   for short words, a third of the length for longer ones;
+/// * it is not one of the everyday words in [_commonWords] — a capital at
+///   the start of a sentence does not make "Dann" a misheard "Dan";
 /// * exactly one known term qualifies — an ambiguous match is left alone.
 ///
 /// "Vanja" becomes "Wanja", "Frieda Kellsen" becomes "Frida Kjellsen"; "Weg"
@@ -96,6 +98,46 @@ TranscriptTermCorrectionResult correctTranscriptTerms(
   return (text: text, corrections: List.unmodifiable(corrections));
 }
 
+/// Everyday German and English words that a sentence can start with and
+/// that sound like a short name: "Dann" and "Dan", "Kann" and "Can", "Will"
+/// and "Will". Being capitalised at a sentence start proves nothing about
+/// them, and no name is worth rewriting one of them.
+const _commonWords = {
+  // German
+  'aber', 'alle', 'also', 'auch', 'bald', 'bei', 'beim', 'bin', 'bis',
+  'bist', 'da', 'dabei', 'dafür', 'damals', 'damit', 'dann', 'darauf',
+  'darum', 'das', 'dass', 'dein', 'deine', 'dem', 'den', 'denn', 'der',
+  'des', 'dich', 'die', 'dies', 'diese', 'dieser', 'dir', 'doch', 'dort',
+  'du', 'durch', 'eben', 'ein', 'eine', 'einem', 'einen', 'einer', 'er',
+  'erst', 'es', 'etwa', 'euch', 'fast', 'für', 'ganz', 'gar', 'gern',
+  'gerne', 'gestern', 'gut', 'hab', 'habe', 'haben', 'hat', 'hatte',
+  'heute', 'hier', 'ich', 'ihm', 'ihn', 'ihr', 'ihre', 'im', 'immer', 'in',
+  'ist', 'ja', 'jede', 'jetzt', 'kam', 'kann', 'kannst', 'kaum', 'kein',
+  'keine', 'kommt', 'mal', 'man', 'mehr', 'mein', 'meine', 'mich', 'mir',
+  'mit', 'morgen', 'muss', 'nach', 'nachher', 'neben', 'nein', 'nicht',
+  'nie', 'noch', 'nun', 'nur', 'ob', 'oder', 'oft', 'ohne', 'schon', 'sehr',
+  'sein', 'seine', 'seit', 'sich', 'sie', 'sind', 'so', 'soll', 'sonst',
+  'später', 'statt', 'um', 'und', 'uns', 'unser', 'unter', 'viel', 'vom',
+  'von', 'vor', 'wann', 'war', 'waren', 'warum', 'was', 'weil', 'weiter',
+  'welche', 'wenn', 'wer', 'werde', 'wie', 'wieder', 'will', 'wir', 'wird',
+  'wo', 'wohl', 'zu', 'zum', 'zur', 'zwar',
+  // English (words shared with German are listed above)
+  'about', 'after', 'again', 'all', 'and', 'any', 'are', 'back',
+  'bad', 'because', 'been', 'before', 'being', 'best', 'better', 'both',
+  'but', 'came', 'can', 'could', 'did', 'does', 'done', 'down', 'each',
+  'even', 'ever', 'every', 'few', 'for', 'from', 'get', 'good', 'got',
+  'had', 'has', 'have', 'her', 'here', 'him', 'his', 'how', 'into', 'its',
+  'just', 'last', 'late', 'later', 'less', 'let', 'like', 'made', 'make',
+  'many', 'may', 'maybe', 'mine', 'more', 'most', 'much', 'must', 'never',
+  'next', 'nor', 'not', 'now', 'off', 'once', 'one', 'only', 'our', 'out',
+  'over', 'said', 'same', 'see', 'she', 'should', 'since', 'some', 'soon',
+  'still', 'such', 'sure', 'than', 'that', 'the', 'their', 'them', 'then',
+  'there', 'these', 'they', 'this', 'those', 'though', 'today', 'told',
+  'too', 'under', 'until', 'very', 'way', 'well', 'went', 'were',
+  'what', 'when', 'where', 'which', 'while', 'who', 'why', 'with',
+  'would', 'yes', 'yet', 'you', 'your',
+};
+
 String? _replacementFor(
   String heard,
   Map<String, String> known,
@@ -104,7 +146,8 @@ String? _replacementFor(
   if (heard.length < _minimumTermLength) return null;
   final first = heard[0];
   if (first == first.toLowerCase()) return null;
-  if (known.containsKey(heard.toLowerCase())) return null;
+  final lower = heard.toLowerCase();
+  if (known.containsKey(lower) || _commonWords.contains(lower)) return null;
   final candidates = byCode[colognePhonetics(heard)];
   if (candidates == null) return null;
   final heardSpelling = soundAlikeSpelling(heard);

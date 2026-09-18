@@ -18,6 +18,13 @@ void main() {
       ]);
     });
 
+    test('still corrects a name that starts a sentence', () {
+      expect(
+        correctTranscriptTerms('Vanja kommt auch.', ['Wanja']).text,
+        'Wanja kommt auch.',
+      );
+    });
+
     test('folds umlauts both ways', () {
       expect(
         correctTranscriptTerms('Bjoern kommt.', ['Björn']).text,
@@ -33,6 +40,10 @@ void main() {
       ('a word already known', 'Wanja und Vanja', ['Wanja', 'Vanja']),
       ('two equally close terms', 'Mit Maier.', ['Meier', 'Mayer']),
       ('a term too short to carry sound', 'Ada und Ida', ['Ida']),
+      // Codex review on #4343: a sentence-initial capital is not a name.
+      ('a common word starting a sentence', 'Dann gingen wir los.', ['Dan']),
+      ('a German modal verb', 'Kann ich helfen?', ['Can']),
+      ('an English one', 'Will you come?', ['Wil']),
     ]) {
       test('leaves $label alone', () {
         final result = correctTranscriptTerms(transcript, terms);

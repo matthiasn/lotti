@@ -449,7 +449,9 @@ ahead of the category dictionary in whatever the provider receives, then runs
 [`correctTranscriptTerms`](../../../lib/features/speech/helpers/transcript_term_corrector.dart)
 over the finished text against both lists: a capitalised word that sounds the
 same (Kölner Phonetik) and is spelled almost the same becomes the known term,
-unless it is itself known or more than one term fits. The audio's transcript
+unless it is itself known, is an everyday German or English word (a capital at
+a sentence start does not turn "Dann" into a misheard "Dan"), or more than one
+term fits. The audio's transcript
 history keeps the provider's words; `entryText` carries the correction.
 Without `knownTerms` the transcript is stored as returned, so ordinary task
 audio is unaffected. Spoken check-ins are the caller today — see
