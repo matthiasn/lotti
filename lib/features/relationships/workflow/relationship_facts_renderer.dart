@@ -7,12 +7,16 @@ import 'package:lotti/classes/relationship_trigger_tokens.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 
 /// How many recent check-ins feed the FACTS block (ADR 0040 Decision 4:
 /// bounded context keeps briefings explainable and token budgets fixed).
 const relationshipCheckInLookback = 10;
+
+/// How many of the agent's own newest observations a wake reads back.
+const relationshipObservationLookback = 20;
 
 /// Longest check-in narrative excerpt the FACTS block carries per entry.
 const relationshipNarrativeExcerptChars = 400;
@@ -99,6 +103,7 @@ class RelationshipFactsRenderer {
     required DateTime now,
     RelationshipCadenceStatus? preTransitionStatus,
     ProposalLedger proposals = const ProposalLedger.empty(),
+    List<RecalledObservation> observations = const [],
   }) {
     final data = relationship.data;
     final buffer = StringBuffer()
@@ -213,6 +218,20 @@ class RelationshipFactsRenderer {
           'BRIEFING IS STALE: check-ins landed after it was written.',
         );
       }
+    }
+
+    // The agent's own memory, not evidence: labelled so the model never
+    // mistakes a note it wrote for something the user logged.
+    buffer.writeln(
+      'YOUR OBSERVATIONS (your private notes from earlier wakes, newest '
+      'first; not facts):',
+    );
+    if (observations.isEmpty) buffer.writeln('- none');
+    for (final observation in observations) {
+      buffer.writeln(
+        '- ${_day(observation.at)}: '
+        '${observation.text.replaceAll(RegExp(r'\s+'), ' ')}',
+      );
     }
 
     final active = nudges

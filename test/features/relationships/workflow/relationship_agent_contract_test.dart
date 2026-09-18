@@ -159,14 +159,19 @@ void main() {
     expect(RelationshipAgentToolNames.replyToUser, 'reply_to_user');
   });
 
-  test('the tool surface is briefing tools and the deferred task proposal', () {
+  test('the tool surface is briefing tools, private notes and the deferred '
+      'task proposal', () {
     expect(relationshipAgentTools.map((tool) => tool.name), [
       RelationshipAgentToolNames.replyToUser,
       RelationshipAgentToolNames.updateRelationshipReport,
       RelationshipAgentToolNames.createRelationshipAd,
+      RelationshipAgentToolNames.recordRelationshipObservations,
       RelationshipAgentToolNames.snoozeRelationshipAd,
       RelationshipAgentToolNames.createAndLinkTask,
     ]);
+    // The user's corrections of the record and complaints about the agent
+    // are what the notes exist for.
+    expect(relationshipAgentSystemPrompt, contains('category grievance'));
   });
 
   test(
