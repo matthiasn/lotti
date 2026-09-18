@@ -5196,6 +5196,9 @@
   "@relationshipJustAdded": {
     "description": "Relationships redesign label."
   },
+  "relationshipKnownTermsBody": "Persone, animali e luoghi che nomini parlando di loro, separati da punto e virgola. I check-in dettati li scrivono così.",
+  "relationshipKnownTermsHint": "Sam; Luna; Lisbona",
+  "relationshipKnownTermsLabel": "Nomi ricorrenti",
   "relationshipLastSpoke": "ultimo contatto {time}",
   "@relationshipLastSpoke": {
     "placeholders": {

@@ -51,6 +51,7 @@ class _NoTranscription implements CheckInTranscriptionService {
   @override
   CheckInTranscriptWait transcribe({
     required String audioEntryId,
+    required String relationshipId,
     Duration timeout = checkInTranscriptTimeout,
   }) => throw UnimplementedError();
 }

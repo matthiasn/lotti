@@ -72,6 +72,7 @@ void main() {
     MeliousInferenceRepository? meliousRepository,
     MistralInferenceRepository? mistralRepository,
     OmlxTranscriptionRepository? omlxRepository,
+    OpenAiTranscriptionRepository? openAiTranscriptionRepository,
   }) {
     return CloudInferenceGenerateMore(
       sherpaRepository: () => sherpaRepo,
@@ -84,7 +85,8 @@ void main() {
       whisperRepository: whisperRepo,
       omlxTranscriptionRepository: omlxRepository ?? omlxTranscriptionRepo,
       voxtralRepository: voxtralRepo,
-      openAiTranscriptionRepository: openAiTranscriptionRepo,
+      openAiTranscriptionRepository:
+          openAiTranscriptionRepository ?? openAiTranscriptionRepo,
       helpers: const CloudInferenceRequestHelpers(),
     );
   }
@@ -207,6 +209,32 @@ void main() {
         expect(request.prompt, contains('SPEECH DICTIONARY'));
         expect(request.prompt, contains('"Lotti"'));
         expect(request.prompt, contains('"Voxtral"'));
+      },
+    );
+
+    test(
+      'gives OpenAI transcription models the speech dictionary in their '
+      'prompt',
+      () async {
+        final openAi = _FakeOpenAiTranscriptionRepository();
+        final openAiProvider = providerOfType(InferenceProviderType.openAi);
+
+        await createGenerateMore(openAiTranscriptionRepository: openAi)
+            .generateWithAudio(
+              prompt,
+              model: 'gpt-4o-transcribe',
+              audioBase64: 'openai-audio',
+              baseUrl: openAiProvider.baseUrl,
+              apiKey: openAiProvider.apiKey,
+              provider: openAiProvider,
+              speechDictionaryTerms: const ['Frida Kjellsen', 'Wanja'],
+            )
+            .drain<void>();
+
+        final sent = openAi.prompts.single!;
+        expect(sent, startsWith(prompt));
+        expect(sent, contains('"Frida Kjellsen"'));
+        expect(sent, contains('"Wanja"'));
       },
     );
 
@@ -711,6 +739,22 @@ void main() {
       verify(() => ollamaRepo.installModel('llama3', baseUrl)).called(1);
     });
   });
+}
+
+class _FakeOpenAiTranscriptionRepository extends OpenAiTranscriptionRepository {
+  final prompts = <String?>[];
+
+  @override
+  Stream<CreateChatCompletionStreamResponse> transcribeAudio({
+    required String model,
+    required String audioBase64,
+    required String apiKey,
+    String? prompt,
+    Duration? timeout,
+  }) {
+    prompts.add(prompt);
+    return const Stream.empty();
+  }
 }
 
 class _FakeMistralInferenceRepository extends MistralInferenceRepository {

@@ -12370,6 +12370,16 @@ class AppLocalizationsIt extends AppLocalizations {
   String get relationshipNicknameLabel => 'Soprannome';
 
   @override
+  String get relationshipKnownTermsBody =>
+      'Persone, animali e luoghi che nomini parlando di loro, separati da punto e virgola. I check-in dettati li scrivono così.';
+
+  @override
+  String get relationshipKnownTermsHint => 'Sam; Luna; Lisbona';
+
+  @override
+  String get relationshipKnownTermsLabel => 'Nomi ricorrenti';
+
+  @override
   String get relationshipNoCheckIns =>
       'Nessun contatto registrato — aggiungine uno dopo la prossima conversazione.';
 

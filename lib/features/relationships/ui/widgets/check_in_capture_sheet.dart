@@ -1305,6 +1305,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
 
     final wait = _transcriptWait = transcription.transcribe(
       audioEntryId: audioEntryId,
+      relationshipId: widget.relationshipId,
     );
     // Preserve the provider's error detail for the failure card, including
     // a failure that arrived before this subscription was attached.

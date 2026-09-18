@@ -12404,6 +12404,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipNicknameLabel => 'Přezdívka';
 
   @override
+  String get relationshipKnownTermsBody =>
+      'Lidé, zvířata a místa, o kterých v souvislosti s nimi mluvíš, oddělené středníky. Diktované check-iny je napíšou přesně takhle.';
+
+  @override
+  String get relationshipKnownTermsHint => 'Sam; Luna; Lisabon';
+
+  @override
+  String get relationshipKnownTermsLabel => 'Jména, která zmiňuješ';
+
+  @override
   String get relationshipNoCheckIns =>
       'Zatím žádné záznamy — přidej první po dalším rozhovoru.';
 

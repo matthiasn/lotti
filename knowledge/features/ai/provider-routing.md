@@ -5,13 +5,17 @@ description: The routing table behind CloudInferenceRepository, per-provider cat
 resource: ../../../lib/features/ai/repository/cloud_inference_repository.dart
 tags: [ai, providers, routing, audio, gemini]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-12T12:48:35Z }
-stale_after: 2026-10-19
+generated: { by: claude-code/opus-5, at: 2026-09-19T01:00:00Z }
+stale_after: 2026-12-19
 sources:
   - id: melious
     resource: ../../../lib/features/ai/repository/melious_inference_repository.dart
     title: Melious request shaping and response parsing
     last_modified: 2026-09-12
+  - id: term-corrector
+    resource: ../../../lib/features/speech/helpers/transcript_term_corrector.dart
+    title: Post-transcription correction against known terms
+    last_modified: 2026-09-19
   - id: router
     resource: ../../../lib/features/ai/repository/cloud_inference_repository.dart
     title: CloudInferenceRepository facade
@@ -427,6 +431,31 @@ dictionary terms through `PromptBuilderHelper.getSpeechDictionaryTerms()`.
 |------|-------------------------|
 | Chat-audio (including temporary-MP3 Mistral and Melious Voxtral) | Appended as a dictionary block to the user message |
 | Mistral transcription-only models | The dedicated `context_bias` parameter |
+| OpenAI `gpt-4o(-mini)-transcribe` | Appended as a dictionary block to the `prompt` field |
+| Melious `/audio/transcriptions` (Whisper) | The OpenAI-standard `prompt` field, comma-joined — **accepted and ignored** |
+| Local Whisper, sherpa | Not delivered |
+
+Melious' Whisper endpoints take the `prompt` field and do nothing with it:
+probed live on 2026-09-18, `whisper-large-v3`, `whisper-large-v3-turbo` and
+`faster-whisper-large-v3` returned byte-identical transcripts with and without
+it, even when the prompt was the spoken sentence itself; `initial_prompt` and
+`hotwords` are ignored too, and only `language` changes the output. A green
+unit test proves the field is *sent*, not that it is used.
+
+Recognition bias is therefore not something every route can offer, and a
+caller that knows which names a recording should contain corrects the result
+instead. `SkillInferenceRunner.runTranscription(knownTerms:)` puts those terms
+ahead of the category dictionary in whatever the provider receives, then runs
+[`correctTranscriptTerms`](../../../lib/features/speech/helpers/transcript_term_corrector.dart)
+over the finished text against both lists: a capitalised word that sounds the
+same (Kölner Phonetik) and is spelled almost the same becomes the known term,
+unless it is itself known, is an everyday German or English word (a capital at
+a sentence start does not turn "Dann" into a misheard "Dan"), or more than one
+term fits. The audio's transcript
+history keeps the provider's words; `entryText` carries the correction.
+Without `knownTerms` the transcript is stored as returned, so ordinary task
+audio is unaffected. Spoken check-ins are the caller today — see
+[relationships](../relationships.md#voice-check-ins-plan-v2-phase-6).
 
 Decoder-level dictionary/G2P integration remains a separate native-bridge
 follow-up, pending a stable SDK surface.

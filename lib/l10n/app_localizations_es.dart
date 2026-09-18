@@ -12390,6 +12390,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get relationshipNicknameLabel => 'Apodo';
 
   @override
+  String get relationshipKnownTermsBody =>
+      'Personas, mascotas y lugares que mencionas con ellos, separados por punto y coma. Los check-ins dictados los escriben así.';
+
+  @override
+  String get relationshipKnownTermsHint => 'Sam; Luna; Lisboa';
+
+  @override
+  String get relationshipKnownTermsLabel => 'Nombres que aparecen';
+
+  @override
   String get relationshipNoCheckIns =>
       'Aún no hay registros: añade uno tras vuestra próxima conversación.';
 

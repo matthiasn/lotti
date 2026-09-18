@@ -4700,6 +4700,9 @@
   "@relationshipJustAdded": {
     "description": "Relationships redesign label."
   },
+  "relationshipKnownTermsBody": "Personnes, animaux et lieux que tu mentionnes à leur sujet, séparés par des points-virgules. Les check-ins dictés les écrivent ainsi.",
+  "relationshipKnownTermsHint": "Sam; Luna; Lisbonne",
+  "relationshipKnownTermsLabel": "Noms qui reviennent",
   "relationshipLastSpoke": "dernier échange {time}",
   "@relationshipLastSpoke": {
     "placeholders": {

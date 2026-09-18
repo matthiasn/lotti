@@ -12222,6 +12222,16 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipNicknameLabel => 'Kaldenavn';
 
   @override
+  String get relationshipKnownTermsBody =>
+      'Personer, dyr og steder, du nævner i forbindelse med dem, adskilt med semikolon. Dikterede check-ins staver dem sådan.';
+
+  @override
+  String get relationshipKnownTermsHint => 'Sam; Luna; Lissabon';
+
+  @override
+  String get relationshipKnownTermsLabel => 'Navne, der dukker op';
+
+  @override
   String get relationshipNoCheckIns =>
       'Ingen check-ins endnu — registrér et efter jeres næste snak.';
 

@@ -76,6 +76,7 @@ void main() {
   late MockSkillInferenceRunner runner;
 
   const audioEntryId = 'audio-1';
+  final personId = testRelationship.id;
 
   JournalAudio audioWith(String? transcript) => testAudioEntry.copyWith(
     entryText: transcript == null ? null : EntryText(plainText: transcript),
@@ -105,6 +106,7 @@ void main() {
 
       final wait = service.transcribe(
         audioEntryId: audioEntryId,
+        relationshipId: personId,
       );
       final run = _Run(async, updates, wait)..settle();
       body(run);
@@ -144,10 +146,15 @@ void main() {
         overrideModelId: any(named: 'overrideModelId'),
         geminiThinkingMode: any(named: 'geminiThinkingMode'),
         onError: any(named: 'onError'),
+        knownTerms: any(named: 'knownTerms'),
       ),
     ).thenAnswer((_) async {});
     stubDefault(defaultProfile);
     stubEntity(audioWith(null));
+    when(
+      () => journalDb.journalEntityById(personId),
+    ).thenAnswer((_) async => null);
+    when(() => journalDb.getRelationships()).thenAnswer((_) async => []);
   });
 
   test('notification stream failure ends the transcript wait', () {
@@ -345,6 +352,62 @@ void main() {
       },
     );
 
+    test("corrects against the person's names and their category", () {
+      final frida = testRelationship.copyWith(
+        meta: testRelationship.meta.copyWith(categoryId: 'penguin-operations'),
+        data: testRelationship.data.copyWith(
+          title: 'Frida Kjellsen',
+          knownTerms: const ['Wanja'],
+        ),
+      );
+      final crewmate = testRelationship.copyWith(
+        meta: testRelationship.meta.copyWith(
+          id: 'crewmate',
+          categoryId: 'penguin-operations',
+        ),
+        data: testRelationship.data.copyWith(title: 'Pingo Floe'),
+      );
+      when(
+        () => journalDb.journalEntityById(personId),
+      ).thenAnswer((_) async => frida);
+      when(
+        () => journalDb.getRelationships(),
+      ).thenAnswer((_) async => [frida, crewmate]);
+
+      withRun((run) {
+        final captured = verify(
+          () => runner.runTranscription(
+            audioEntryId: audioEntryId,
+            automationResult: any(named: 'automationResult'),
+            onError: any(named: 'onError'),
+            knownTerms: captureAny(named: 'knownTerms'),
+          ),
+        ).captured;
+        expect(captured.single, ['Frida Kjellsen', 'Wanja', 'Pingo Floe']);
+      });
+    });
+
+    // Terms only sharpen the words; failing to read them must never cost
+    // the transcript itself.
+    test('still transcribes when the person cannot be read', () {
+      when(
+        () => journalDb.journalEntityById(personId),
+      ).thenAnswer((_) async => throw StateError('database closed'));
+
+      withRun((run) {
+        final captured = verify(
+          () => runner.runTranscription(
+            audioEntryId: audioEntryId,
+            automationResult: any(named: 'automationResult'),
+            onError: any(named: 'onError'),
+            knownTerms: captureAny(named: 'knownTerms'),
+          ),
+        ).captured;
+        expect(captured.single, isEmpty);
+        expect(run.isDone, isFalse, reason: 'the transcript is still coming');
+      });
+    });
+
     test('never passes a task id for a person', () {
       withRun((run) {
         final captured = verify(
@@ -398,6 +461,7 @@ void main() {
           overrideModelId: any(named: 'overrideModelId'),
           geminiThinkingMode: any(named: 'geminiThinkingMode'),
           onError: any(named: 'onError'),
+          knownTerms: any(named: 'knownTerms'),
         ),
       ).thenAnswer((invocation) async {
         (invocation.namedArguments[#onError] as void Function(Object)?)?.call(
@@ -425,6 +489,7 @@ void main() {
           overrideModelId: any(named: 'overrideModelId'),
           geminiThinkingMode: any(named: 'geminiThinkingMode'),
           onError: any(named: 'onError'),
+          knownTerms: any(named: 'knownTerms'),
         ),
       ).thenAnswer((invocation) async {
         reportFailure =

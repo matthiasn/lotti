@@ -4700,6 +4700,9 @@
   "@relationshipJustAdded": {
     "description": "Relationships redesign label."
   },
+  "relationshipKnownTermsBody": "Personas, mascotas y lugares que mencionas con ellos, separados por punto y coma. Los check-ins dictados los escriben así.",
+  "relationshipKnownTermsHint": "Sam; Luna; Lisboa",
+  "relationshipKnownTermsLabel": "Nombres que aparecen",
   "relationshipLastSpoke": "última charla {time}",
   "@relationshipLastSpoke": {
     "placeholders": {

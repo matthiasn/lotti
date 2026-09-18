@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
+import 'package:lotti/features/categories/ui/widgets/category_speech_dictionary.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
@@ -243,7 +244,7 @@ _StatusKind _kindOf(RelationshipStatus status) => switch (status) {
 /// and [showRelationshipEditModal].
 ///
 /// Three cards, in the design's order (2026-09-06 §6): **Who** (name,
-/// nickname, category as a colour dot), **Important** (the consent switch,
+/// nickname, the names that come up with them, category as a colour dot), **Important** (the consent switch,
 /// what it turns on, and — only once it is on — the cadence presets), and
 /// **How to reach them** (the channel editor under its privacy line). The
 /// status picker joins the first card while editing. Persists through
@@ -268,6 +269,7 @@ class RelationshipForm extends ConsumerStatefulWidget {
 class _RelationshipFormState extends ConsumerState<RelationshipForm> {
   late final TextEditingController _nameController;
   late final TextEditingController _nicknameController;
+  late final TextEditingController _knownTermsController;
   late bool _important;
   late int? _cadenceDays;
   late _StatusKind _statusKind;
@@ -289,6 +291,9 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     final data = widget.initial?.data;
     _nameController = TextEditingController(text: data?.title ?? '');
     _nicknameController = TextEditingController(text: data?.nickname ?? '');
+    _knownTermsController = TextEditingController(
+      text: formatSpeechTerms(data?.knownTerms),
+    );
     _important = data?.important ?? false;
     _cadenceDays = data?.checkInCadenceDays;
     _statusKind = data != null ? _kindOf(data.status) : _StatusKind.active;
@@ -317,6 +322,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
   void dispose() {
     _nameController.dispose();
     _nicknameController.dispose();
+    _knownTermsController.dispose();
     for (final channel in _channels) {
       channel.dispose();
     }
@@ -388,6 +394,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
         ? ref.read(relationshipAgentServiceProvider)
         : null;
     final nickname = _nicknameController.text.trim();
+    final knownTerms = parseSpeechTerms(_knownTermsController.text);
 
     try {
       if (_isEditing) {
@@ -395,6 +402,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
         var data = initial.data.copyWith(
           title: name,
           nickname: nickname.isEmpty ? null : nickname,
+          knownTerms: knownTerms,
           important: _important,
           checkInCadenceDays: _cadenceDays,
           contactChannels: _editedChannels,
@@ -440,6 +448,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
           data: RelationshipData(
             title: name,
             nickname: nickname.isEmpty ? null : nickname,
+            knownTerms: knownTerms,
             important: _important,
             checkInCadenceDays: _cadenceDays,
             contactChannels: _editedChannels,
@@ -619,6 +628,24 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
                 controller: _nicknameController,
                 labelText: messages.relationshipNicknameLabel,
                 textCapitalization: TextCapitalization.words,
+              ),
+              gap(tokens.spacing.step4),
+              // The category speech dictionary's format, so one habit edits
+              // both lists.
+              LottiTextField(
+                key: const ValueKey('person-form-known-terms'),
+                controller: _knownTermsController,
+                labelText: messages.relationshipKnownTermsLabel,
+                hintText: messages.relationshipKnownTermsHint,
+                textCapitalization: TextCapitalization.words,
+                maxLines: null,
+              ),
+              gap(tokens.spacing.step2),
+              Text(
+                messages.relationshipKnownTermsBody,
+                style: tokens.typography.styles.body.bodySmall.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
               ),
               gap(tokens.spacing.step4),
               // Category scoping (the ProjectCreateForm precedent): the

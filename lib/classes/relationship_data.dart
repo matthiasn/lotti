@@ -158,6 +158,13 @@ abstract class RelationshipData with _$RelationshipData {
     required RelationshipStatus status,
     String? nickname,
 
+    /// Names that come up when the user talks about this person — their
+    /// partner, children, friends, pets, places — spelled as the user wants
+    /// them written. Dictated check-ins about the person are corrected
+    /// against these, the person's own name and the category's speech
+    /// dictionary, because a speech model mishears names it has never seen.
+    @Default([]) List<String> knownTerms,
+
     /// The single consent switch for proactive behavior: only important
     /// relationships produce cadence nudges and reminders (ADR 0039).
     @Default(false) bool important,

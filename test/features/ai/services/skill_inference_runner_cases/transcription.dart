@@ -181,6 +181,89 @@ extension _TranscriptionCases on _SkillInferenceTestSetup {
       expect(updatedEntity.data.transcripts!.last.model, 'whisper-1');
     });
 
+    // The dictionary alone never rewrites words: only a caller that knows
+    // who the recording is about opts into correction.
+    for (final (knownTerms, sentTerms, storedText) in [
+      (
+        const ['Frida Kjellsen', 'Wanja'],
+        const ['Frida Kjellsen', 'Wanja', 'Waddle One'],
+        'Wanja war mit Frida Kjellsen auf der Waddle One.',
+      ),
+      (
+        const <String>[],
+        const ['Waddle One', 'wanja'],
+        'Vanja war mit Frieda Kellsen auf der Waddle One.',
+      ),
+    ]) {
+      test(
+        'with ${knownTerms.length} known terms, sends $sentTerms and stores '
+        '"$storedText"',
+        () async {
+          const heard = 'Vanja war mit Frieda Kellsen auf der Waddle One.';
+          final audioEntity = makeAudioEntity();
+          await createStubAudioFile();
+          when(
+            () => mockAiInputRepo.getEntity('audio-1'),
+          ).thenAnswer((_) async => audioEntity);
+          when(
+            () => mockPromptBuilderHelper.getSpeechDictionaryTerms(audioEntity),
+          ).thenAnswer((_) async => ['Waddle One', 'wanja']);
+          when(
+            () => mockTaskSummaryResolver.resolve(any()),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockCloudRepo.generateWithAudio(
+              any(),
+              model: any(named: 'model'),
+              audioBase64: any(named: 'audioBase64'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+            ),
+          ).thenAnswer((_) => Stream.value(makeStreamChunk(heard)));
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+          stubLoggingEvent();
+
+          await runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: makeTranscriptionResult(),
+            knownTerms: knownTerms,
+          );
+
+          final sent = verify(
+            () => mockCloudRepo.generateWithAudio(
+              any(),
+              model: any(named: 'model'),
+              audioBase64: any(named: 'audioBase64'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              speechDictionaryTerms: captureAny(named: 'speechDictionaryTerms'),
+            ),
+          ).captured.single;
+          // With known terms, the dictionary's "wanja" repeats one and is
+          // dropped; the known terms lead.
+          expect(sent, sentTerms);
+          final saved =
+              verify(
+                    () => mockJournalRepo.updateJournalEntity(captureAny()),
+                  ).captured.single
+                  as JournalAudio;
+          expect(saved.entryText?.plainText, storedText);
+          expect(
+            saved.data.transcripts!.last.transcript,
+            heard,
+            reason: 'history keeps what the provider returned',
+          );
+        },
+      );
+    }
+
     for (final accountingFails in [false, true]) {
       test(
         'preserves transcription failure and incurred accounting (writeFails=$accountingFails)',

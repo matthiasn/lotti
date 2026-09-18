@@ -10,6 +10,29 @@ const int kMaxTermLength = 50;
 /// Raised from 30 to 500 to align with correction examples limit.
 const int kDictionaryWarningThreshold = 500;
 
+/// Formats speech terms as the one semicolon-separated line the user edits.
+String formatSpeechTerms(List<String>? terms) {
+  if (terms == null || terms.isEmpty) return '';
+  return terms.join('; ');
+}
+
+/// Parses a semicolon-separated line of speech terms: trimmed, blanks
+/// dropped, each cut to [kMaxTermLength] characters.
+List<String> parseSpeechTerms(String text) {
+  if (text.trim().isEmpty) return [];
+
+  return text
+      .split(';')
+      .map((term) => term.trim())
+      .where((term) => term.isNotEmpty)
+      .map(
+        (term) => term.length > kMaxTermLength
+            ? term.substring(0, kMaxTermLength)
+            : term,
+      )
+      .toList();
+}
+
 /// A widget for editing the speech dictionary of a category, rendered as
 /// a [DesignSystemTextarea] so it matches the design-system fields around
 /// it. The "how to format terms" explanation lives in the section
@@ -49,7 +72,7 @@ class _CategorySpeechDictionaryState extends State<CategorySpeechDictionary> {
   void initState() {
     super.initState();
     _controller = TextEditingController(
-      text: _formatDictionary(widget.dictionary),
+      text: formatSpeechTerms(widget.dictionary),
     );
   }
 
@@ -58,11 +81,11 @@ class _CategorySpeechDictionaryState extends State<CategorySpeechDictionary> {
     super.didUpdateWidget(oldWidget);
     // Only update text field if the dictionary changed externally
     // and differs from what the user has typed (to avoid clobbering input)
-    final currentParsed = _parseDictionary(_controller.text);
+    final currentParsed = parseSpeechTerms(_controller.text);
     final newParsed = widget.dictionary ?? [];
 
     if (!_listsEqual(currentParsed, newParsed)) {
-      _controller.text = _formatDictionary(widget.dictionary);
+      _controller.text = formatSpeechTerms(widget.dictionary);
     }
   }
 
@@ -72,43 +95,19 @@ class _CategorySpeechDictionaryState extends State<CategorySpeechDictionary> {
     super.dispose();
   }
 
-  /// Formats a list of terms into a semicolon-separated string.
-  String _formatDictionary(List<String>? dictionary) {
-    if (dictionary == null || dictionary.isEmpty) return '';
-    return dictionary.join('; ');
-  }
-
-  /// Parses a semicolon-separated string into a list of terms.
-  /// Filters out empty strings and trims whitespace.
-  /// Truncates terms to [kMaxTermLength] characters.
-  List<String> _parseDictionary(String text) {
-    if (text.trim().isEmpty) return [];
-
-    return text
-        .split(';')
-        .map((term) => term.trim())
-        .where((term) => term.isNotEmpty)
-        .map(
-          (term) => term.length > kMaxTermLength
-              ? term.substring(0, kMaxTermLength)
-              : term,
-        )
-        .toList();
-  }
-
   bool _listsEqual(List<String> a, List<String> b) {
     return const DeepCollectionEquality().equals(a, b);
   }
 
   void _onChanged(String value) {
-    final terms = _parseDictionary(value);
+    final terms = parseSpeechTerms(value);
     setState(() {}); // Trigger rebuild to update warning
     widget.onChanged(terms);
   }
 
   @override
   Widget build(BuildContext context) {
-    final termCount = _parseDictionary(_controller.text).length;
+    final termCount = parseSpeechTerms(_controller.text).length;
     final showWarning = termCount > kDictionaryWarningThreshold;
 
     // The hosting "Speech recognition" section header already names this

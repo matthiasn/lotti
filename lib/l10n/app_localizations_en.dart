@@ -12160,6 +12160,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipNicknameLabel => 'Nickname';
 
   @override
+  String get relationshipKnownTermsBody =>
+      'People, pets and places you mention with them, separated by semicolons. Dictated check-ins spell them this way.';
+
+  @override
+  String get relationshipKnownTermsHint => 'Sam; Luna; Lisbon';
+
+  @override
+  String get relationshipKnownTermsLabel => 'Names that come up';
+
+  @override
   String get relationshipNoCheckIns =>
       'No check-ins yet — log one after you next talk.';
 

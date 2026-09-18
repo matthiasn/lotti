@@ -4700,6 +4700,9 @@
   "@relationshipJustAdded": {
     "description": "Relationships redesign label."
   },
+  "relationshipKnownTermsBody": "Menschen, Tiere und Orte, die du im Zusammenhang erwähnst, getrennt durch Semikolons. Diktierte Check-ins schreiben sie genau so.",
+  "relationshipKnownTermsHint": "Sam; Luna; Lissabon",
+  "relationshipKnownTermsLabel": "Namen, die vorkommen",
   "relationshipLastSpoke": "zuletzt gesprochen {time}",
   "@relationshipLastSpoke": {
     "placeholders": {
