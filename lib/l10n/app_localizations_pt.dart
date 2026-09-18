@@ -11925,18 +11925,6 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String relationshipAgentReadingBody(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'A ler $count check-ins. Costuma demorar menos de um minuto.',
-      one: 'A ler 1 check-in. Costuma demorar menos de um minuto.',
-      zero: 'A preparar o briefing. Costuma demorar menos de um minuto.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get relationshipAgentSeeActivity => 'Ver atividade';
 
   @override
@@ -11981,23 +11969,6 @@ class AppLocalizationsPt extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String relationshipBriefingDisclosureBody(String provider) {
-    return 'O briefing corre em $provider. As notas sobre esta pessoa serão enviadas para lá para processamento.';
-  }
-
-  @override
-  String get relationshipBriefingDisclosureConfirm => 'Continuar';
-
-  @override
-  String relationshipBriefingDisclosureTitle(String provider) {
-    return 'Enviar para $provider?';
-  }
-
-  @override
-  String get relationshipBriefingRequested =>
-      'Briefing pedido — vai aparecer aqui em breve.';
 
   @override
   String get relationshipBriefingRequestFailed =>
@@ -12299,6 +12270,16 @@ class AppLocalizationsPt extends AppLocalizations {
   String get relationshipJustAdded => 'Recém-adicionado';
 
   @override
+  String get relationshipKnownTermsBody =>
+      'Pessoas, pets e lugares que você menciona sobre essa pessoa, separados por ponto e vírgula. Check-ins ditados escrevem assim.';
+
+  @override
+  String get relationshipKnownTermsHint => 'Sam; Luna; Lisboa';
+
+  @override
+  String get relationshipKnownTermsLabel => 'Nomes que aparecem';
+
+  @override
   String relationshipLastSpoke(String time) {
     return 'última conversa $time';
   }
@@ -12334,16 +12315,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get relationshipNicknameLabel => 'Apelido';
-
-  @override
-  String get relationshipKnownTermsBody =>
-      'Pessoas, pets e lugares que você menciona sobre essa pessoa, separados por ponto e vírgula. Check-ins ditados escrevem assim.';
-
-  @override
-  String get relationshipKnownTermsHint => 'Sam; Luna; Lisboa';
-
-  @override
-  String get relationshipKnownTermsLabel => 'Nomes que aparecem';
 
   @override
   String get relationshipNoCheckIns =>
@@ -16010,4 +15981,17 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Pular';
+
+  @override
+  String get relationshipChatAgentName => 'Agente de resumos';
+
+  @override
+  String relationshipChatEmpty(String name) {
+    return 'Comece uma conversa com o agente de resumos sobre $name.';
+  }
+
+  @override
+  String relationshipChatPlaceholder(String name) {
+    return 'Converse com o agente sobre $name…';
+  }
 }

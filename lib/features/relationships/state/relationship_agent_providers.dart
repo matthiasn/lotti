@@ -10,8 +10,6 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
-import 'package:lotti/features/ai/helpers/profile_locality.dart';
-import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -145,15 +143,6 @@ relationshipAgentResolvedSetupProvider = FutureProvider.autoDispose
                 : AgentSetupResolutionStatus.broken,
           );
     }, name: 'relationshipAgentResolvedSetupProvider');
-
-/// A missing or unusable route needs a configuration action, not an AI retry.
-class RelationshipInferenceSetupUnavailable implements Exception {
-  const RelationshipInferenceSetupUnavailable();
-
-  @override
-  String toString() =>
-      'No inference provider resolves for the relationship agent';
-}
 
 /// Phase B — the lease-elected LLM tier (briefing, banner, chat).
 final relationshipAgentWorkflowProvider = Provider<RelationshipAgentWorkflow>(
@@ -304,66 +293,4 @@ final relationshipRuntimeMaintenanceProvider =
         );
       },
       name: 'relationshipRuntimeMaintenanceProvider',
-    );
-
-/// The inference-provider name to disclose before a cloud-bound "Brief
-/// me", or null when the resolved route is local (ADR 0037 / ADR 0059
-/// Decision 7: the trigger surface names the provider first, and the
-/// locality check fails closed). Routes through the SAME resolution chain
-/// as Phase B (`resolveRelationshipAgentModel`) so the dialog can never
-/// name a provider other than the one inference actually uses — which is
-/// also why the relationship read is UNFILTERED: Phase B resolves through
-/// the relationship's own profile whatever this device's private-entry
-/// display preference, so the disclosure must see the same row. Throws
-/// when no route resolves at all: unresolved is NOT local, and the
-/// trigger surface must surface the failure rather than proceed silently.
-final FutureProviderFamily<String?, String>
-relationshipBriefingDisclosureProvider = FutureProvider.autoDispose
-    .family<String?, String>(
-      (ref, relationshipId) async {
-        final aiConfigRepository = ref.watch(aiConfigRepositoryProvider);
-        ref.watch(
-          defaultInferenceProfileControllerProvider.select(
-            (value) => value.value,
-          ),
-        );
-        final relationshipRepository = ref.watch(
-          relationshipRepositoryProvider,
-        );
-        final agentRepository = ref.watch(agentRepositoryProvider);
-        final categoryProfileLookup = ref.watch(
-          relationshipCategoryProfileLookupProvider,
-        );
-        final relationship = await relationshipRepository
-            .getRelationshipByIdUnfiltered(relationshipId);
-        final identity = await agentRepository.getEntity(
-          relationshipAgentIdFor(relationshipId),
-        );
-        final resolved = await resolveRelationshipAgentModel(
-          relationship: relationship,
-          agentIdentity: identity is AgentIdentityEntity ? identity : null,
-          aiConfigRepository: aiConfigRepository,
-          categoryProfileLookup: categoryProfileLookup,
-        );
-        if (resolved == null) {
-          throw const RelationshipInferenceSetupUnavailable();
-        }
-        final profileId = resolved.profileId;
-        if (profileId != null) {
-          final config = await aiConfigRepository.getConfigById(profileId);
-          if (config is AiConfigInferenceProfile &&
-              await profileIsLocal(config, aiConfigRepository)) {
-            return null;
-          }
-        }
-        if (profileId == null &&
-            PromptCapabilityFilter.isLocalOnlyProviderType(
-              resolved.provider.inferenceProviderType,
-            )) {
-          return null;
-        }
-        return resolved.provider.name;
-      },
-      name: 'relationshipBriefingDisclosureProvider',
-      retry: (_, _) => null,
     );

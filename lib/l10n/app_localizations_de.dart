@@ -11893,18 +11893,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String relationshipAgentReadingBody(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Liest $count Check-ins. Dauert meist unter einer Minute.',
-      one: 'Liest 1 Check-in. Dauert meist unter einer Minute.',
-      zero: 'Bereitet das Briefing vor. Dauert meist unter einer Minute.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get relationshipAgentSeeActivity => 'Aktivität ansehen';
 
   @override
@@ -11947,23 +11935,6 @@ class AppLocalizationsDe extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String relationshipBriefingDisclosureBody(String provider) {
-    return 'Das Briefing läuft über $provider. Notizen zu dieser Person werden dorthin zur Verarbeitung gesendet.';
-  }
-
-  @override
-  String get relationshipBriefingDisclosureConfirm => 'Weiter';
-
-  @override
-  String relationshipBriefingDisclosureTitle(String provider) {
-    return 'An $provider senden?';
-  }
-
-  @override
-  String get relationshipBriefingRequested =>
-      'Briefing angefragt — es erscheint gleich hier.';
 
   @override
   String get relationshipBriefingRequestFailed =>
@@ -12265,6 +12236,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get relationshipJustAdded => 'Gerade hinzugefügt';
 
   @override
+  String get relationshipKnownTermsBody =>
+      'Menschen, Tiere und Orte, die du im Zusammenhang erwähnst, getrennt durch Semikolons. Diktierte Check-ins schreiben sie genau so.';
+
+  @override
+  String get relationshipKnownTermsHint => 'Sam; Luna; Lissabon';
+
+  @override
+  String get relationshipKnownTermsLabel => 'Namen, die vorkommen';
+
+  @override
   String relationshipLastSpoke(String time) {
     return 'zuletzt gesprochen $time';
   }
@@ -12300,16 +12281,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get relationshipNicknameLabel => 'Spitzname';
-
-  @override
-  String get relationshipKnownTermsBody =>
-      'Menschen, Tiere und Orte, die du im Zusammenhang erwähnst, getrennt durch Semikolons. Diktierte Check-ins schreiben sie genau so.';
-
-  @override
-  String get relationshipKnownTermsHint => 'Sam; Luna; Lissabon';
-
-  @override
-  String get relationshipKnownTermsLabel => 'Namen, die vorkommen';
 
   @override
   String get relationshipNoCheckIns =>
@@ -15982,4 +15953,17 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Überspringen';
+
+  @override
+  String get relationshipChatAgentName => 'Briefing-Agent';
+
+  @override
+  String relationshipChatEmpty(String name) {
+    return 'Starte ein Gespräch mit dem Briefing-Agenten über $name.';
+  }
+
+  @override
+  String relationshipChatPlaceholder(String name) {
+    return 'Sprich mit dem Agenten über $name…';
+  }
 }

@@ -12053,19 +12053,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String relationshipAgentReadingBody(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Se citesc $count de check-in-uri. De obicei sub un minut.',
-      few: 'Se citesc $count check-in-uri. De obicei sub un minut.',
-      one: 'Se citește 1 check-in. De obicei sub un minut.',
-      zero: 'Se pregătește briefingul. De obicei sub un minut.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get relationshipAgentSeeActivity => 'Vedeți activitatea';
 
   @override
@@ -12110,23 +12097,6 @@ class AppLocalizationsRo extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String relationshipBriefingDisclosureBody(String provider) {
-    return 'Rezumatul rulează pe $provider. Notițele despre această persoană vor fi trimise acolo pentru procesare.';
-  }
-
-  @override
-  String get relationshipBriefingDisclosureConfirm => 'Continuați';
-
-  @override
-  String relationshipBriefingDisclosureTitle(String provider) {
-    return 'Trimiteți la $provider?';
-  }
-
-  @override
-  String get relationshipBriefingRequested =>
-      'Rezumat solicitat — va apărea aici în curând.';
 
   @override
   String get relationshipBriefingRequestFailed =>
@@ -12437,6 +12407,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipJustAdded => 'Adăugat recent';
 
   @override
+  String get relationshipKnownTermsBody =>
+      'Persoane, animale și locuri pe care le menționați în legătură cu această persoană, separate prin punct și virgulă. Check-in-urile dictate le scriu astfel.';
+
+  @override
+  String get relationshipKnownTermsHint => 'Sam; Luna; Lisabona';
+
+  @override
+  String get relationshipKnownTermsLabel => 'Nume care apar';
+
+  @override
   String relationshipLastSpoke(String time) {
     return 'ultima discuție $time';
   }
@@ -12472,16 +12452,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipNicknameLabel => 'Poreclă';
-
-  @override
-  String get relationshipKnownTermsBody =>
-      'Persoane, animale și locuri pe care le menționați în legătură cu această persoană, separate prin punct și virgulă. Check-in-urile dictate le scriu astfel.';
-
-  @override
-  String get relationshipKnownTermsHint => 'Sam; Luna; Lisabona';
-
-  @override
-  String get relationshipKnownTermsLabel => 'Nume care apar';
 
   @override
   String get relationshipNoCheckIns =>
@@ -16185,4 +16155,17 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
+
+  @override
+  String get relationshipChatAgentName => 'Agent de briefing';
+
+  @override
+  String relationshipChatEmpty(String name) {
+    return 'Începeți o conversație cu agentul de briefing despre $name.';
+  }
+
+  @override
+  String relationshipChatPlaceholder(String name) {
+    return 'Vorbiți cu agentul despre $name…';
+  }
 }

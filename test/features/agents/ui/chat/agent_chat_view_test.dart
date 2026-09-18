@@ -21,6 +21,51 @@ import '../evolution/widgets/evolution_recorder_test_utils.dart';
 void main() {
   setUpAll(loadAppFonts);
 
+  // A person's briefing agent is named after the person; the consumer must
+  // be able to address the agent instead, while every other chat keeps
+  // talking to the agent by its own name.
+  for (final (label, emptyMessage, composerHint, expectEmpty, expectHint) in [
+    (
+      'defaults address the agent by name',
+      null,
+      null,
+      'Start a conversation with Habitat Watcher.',
+      'Talk to Habitat Watcher…',
+    ),
+    (
+      'a consumer can word both itself',
+      'Ask the watcher about the habitat.',
+      'Ask about the habitat…',
+      'Ask the watcher about the habitat.',
+      'Ask about the habitat…',
+    ),
+  ]) {
+    testWidgets('empty state and composer hint: $label', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: AgentChatView(
+              agentId: 'agent',
+              agentName: 'Habitat Watcher',
+              draft: '',
+              isSending: false,
+              onDraftChanged: (_) {},
+              onSend: () {},
+              onRetry: () {},
+              history: const AsyncData([]),
+              emptyMessage: emptyMessage,
+              composerHint: composerHint,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text(expectEmpty), findsOneWidget);
+      expect(find.text(expectHint), findsOneWidget);
+    });
+  }
+
   testWidgets('question recovery stays outside the user bubble', (
     tester,
   ) async {

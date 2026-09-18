@@ -11813,18 +11813,6 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String relationshipAgentReadingBody(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Læser $count check-ins. Tager som regel under et minut.',
-      one: 'Læser 1 check-in. Tager som regel under et minut.',
-      zero: 'Forbereder briefingen. Tager som regel under et minut.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get relationshipAgentSeeActivity => 'Se aktivitet';
 
   @override
@@ -11867,23 +11855,6 @@ class AppLocalizationsDa extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String relationshipBriefingDisclosureBody(String provider) {
-    return 'Briefingen kører på $provider. Noter om denne person sendes dertil til behandling.';
-  }
-
-  @override
-  String get relationshipBriefingDisclosureConfirm => 'Fortsæt';
-
-  @override
-  String relationshipBriefingDisclosureTitle(String provider) {
-    return 'Send til $provider?';
-  }
-
-  @override
-  String get relationshipBriefingRequested =>
-      'Briefing bestilt — den vises her om lidt.';
 
   @override
   String get relationshipBriefingRequestFailed =>
@@ -12185,6 +12156,16 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipJustAdded => 'Netop tilføjet';
 
   @override
+  String get relationshipKnownTermsBody =>
+      'Personer, dyr og steder, du nævner i forbindelse med dem, adskilt med semikolon. Dikterede check-ins staver dem sådan.';
+
+  @override
+  String get relationshipKnownTermsHint => 'Sam; Luna; Lissabon';
+
+  @override
+  String get relationshipKnownTermsLabel => 'Navne, der dukker op';
+
+  @override
   String relationshipLastSpoke(String time) {
     return 'sidst talt $time';
   }
@@ -12220,16 +12201,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get relationshipNicknameLabel => 'Kaldenavn';
-
-  @override
-  String get relationshipKnownTermsBody =>
-      'Personer, dyr og steder, du nævner i forbindelse med dem, adskilt med semikolon. Dikterede check-ins staver dem sådan.';
-
-  @override
-  String get relationshipKnownTermsHint => 'Sam; Luna; Lissabon';
-
-  @override
-  String get relationshipKnownTermsLabel => 'Navne, der dukker op';
 
   @override
   String get relationshipNoCheckIns =>
@@ -15862,4 +15833,17 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
+
+  @override
+  String get relationshipChatAgentName => 'Briefingagent';
+
+  @override
+  String relationshipChatEmpty(String name) {
+    return 'Start en samtale med briefingagenten om $name.';
+  }
+
+  @override
+  String relationshipChatPlaceholder(String name) {
+    return 'Tal med agenten om $name…';
+  }
 }

@@ -11821,18 +11821,6 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String relationshipAgentReadingBody(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Läser $count avstämningar. Tar oftast under en minut.',
-      one: 'Läser 1 avstämning. Tar oftast under en minut.',
-      zero: 'Förbereder briefingen. Tar oftast under en minut.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get relationshipAgentSeeActivity => 'Visa aktivitet';
 
   @override
@@ -11875,23 +11863,6 @@ class AppLocalizationsSv extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String relationshipBriefingDisclosureBody(String provider) {
-    return 'Briefingen körs på $provider. Anteckningar om personen skickas dit för bearbetning.';
-  }
-
-  @override
-  String get relationshipBriefingDisclosureConfirm => 'Fortsätt';
-
-  @override
-  String relationshipBriefingDisclosureTitle(String provider) {
-    return 'Skicka till $provider?';
-  }
-
-  @override
-  String get relationshipBriefingRequested =>
-      'Briefing begärd — den visas här strax.';
 
   @override
   String get relationshipBriefingRequestFailed =>
@@ -12193,6 +12164,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipJustAdded => 'Nyss tillagd';
 
   @override
+  String get relationshipKnownTermsBody =>
+      'Personer, djur och platser du nämner i samband med dem, åtskilda med semikolon. Dikterade incheckningar stavar dem så.';
+
+  @override
+  String get relationshipKnownTermsHint => 'Sam; Luna; Lissabon';
+
+  @override
+  String get relationshipKnownTermsLabel => 'Namn som dyker upp';
+
+  @override
   String relationshipLastSpoke(String time) {
     return 'pratade senast $time';
   }
@@ -12228,16 +12209,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get relationshipNicknameLabel => 'Smeknamn';
-
-  @override
-  String get relationshipKnownTermsBody =>
-      'Personer, djur och platser du nämner i samband med dem, åtskilda med semikolon. Dikterade incheckningar stavar dem så.';
-
-  @override
-  String get relationshipKnownTermsHint => 'Sam; Luna; Lissabon';
-
-  @override
-  String get relationshipKnownTermsLabel => 'Namn som dyker upp';
 
   @override
   String get relationshipNoCheckIns =>
@@ -15882,4 +15853,17 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
+
+  @override
+  String get relationshipChatAgentName => 'Briefingagent';
+
+  @override
+  String relationshipChatEmpty(String name) {
+    return 'Starta ett samtal med briefingagenten om $name.';
+  }
+
+  @override
+  String relationshipChatPlaceholder(String name) {
+    return 'Prata med agenten om $name…';
+  }
 }

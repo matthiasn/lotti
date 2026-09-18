@@ -40,7 +40,6 @@ import 'package:lotti/features/relationships/ui/widgets/relationship_suggestions
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/relative_age_label.dart';
-import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The localized label of a health band — shared by the chip and any
@@ -257,20 +256,6 @@ class _RelationshipBriefingCardState
     );
   }
 
-  /// Refreshes disclosure while retaining it across asynchronous reads and
-  /// default-profile changes. Release the subscription on success or failure;
-  /// WidgetRef also releases it if this card is disposed during the request.
-  Future<String?> _resolveBriefingDisclosure(String relationshipId) async {
-    final provider = relationshipBriefingDisclosureProvider(relationshipId);
-    ref.invalidate(provider);
-    final subscription = ref.listenManual(provider, (_, _) {});
-    try {
-      return await ref.read(provider.future);
-    } finally {
-      subscription.close();
-    }
-  }
-
   /// Asks for a briefing: the first one, an update, or a retry after a
   /// failure — one path, one trigger token.
   Future<void> _briefMe() async {
@@ -278,50 +263,16 @@ class _RelationshipBriefingCardState
     final relationship = widget.relationship;
     final messages = context.messages;
     setState(() => _requesting = true);
+    // No confirmation and no toast: the card's model row already names the
+    // model and provider before anything is sent (ADR 0061), and the
+    // running face's spinner is the acknowledgement.
     try {
-      // Name the provider BEFORE any cloud-bound trigger (ADR 0037): the
-      // locality check fails closed, so an unresolvable profile discloses.
-      final providerName = await _resolveBriefingDisclosure(
-        relationship.meta.id,
-      );
-      if (!mounted) return;
-      if (providerName != null) {
-        final confirmed = await showConfirmationModal(
-          context: context,
-          title: messages.relationshipBriefingDisclosureTitle(providerName),
-          message: messages.relationshipBriefingDisclosureBody(providerName),
-          confirmLabel: messages.relationshipBriefingDisclosureConfirm,
-          cancelLabel: messages.cancelButton,
-          isDestructive: false,
-        );
-        if (!confirmed || !mounted) return;
-      }
       await ref
           .read(relationshipAgentServiceProvider)
           .requestBriefing(relationship);
-      if (!mounted) return;
-      context.showToast(
-        tone: DesignSystemToastTone.success,
-        title: messages.relationshipBriefingRequested,
-      );
-    } on RelationshipInferenceSetupUnavailable {
-      if (!mounted) return;
-      context.showToast(
-        tone: DesignSystemToastTone.error,
-        title: messages.taskAgentSetupBroken,
-        description: messages.relationshipAgentFailedNoModel,
-        action: ToastAction(
-          label: messages.inferenceProfileChooseModelTitle,
-          onPressed: () => AgentModelSheet.show(
-            context: context,
-            agentId: relationshipAgentIdFor(relationship.meta.id),
-            entityId: relationship.meta.id,
-          ),
-        ),
-      );
     } catch (error, stackTrace) {
-      // Only what fails before the wake is queued lands here — disclosure,
-      // agent setup, the enqueue itself; the workflow logs its own failures.
+      // Only what fails before the wake is queued lands here — agent setup
+      // and the enqueue itself; the workflow logs its own failures.
       developer.log(
         'Failed to request a relationship briefing',
         name: 'RelationshipBriefingCard',
@@ -813,13 +764,23 @@ class _AgentCard extends StatelessWidget {
           color: ai.bodyText,
         ),
       ),
-      RelationshipAgentCardState.running => Text(
-        messages.relationshipAgentReadingBody(checkInCount),
-        key: const ValueKey('relationship-agent-body'),
-        style: tokens.typography.styles.body.bodyMedium.copyWith(
-          color: ai.bodyText,
+      // An update keeps the briefing it will replace in view — the spinner
+      // on the status line is the only thing that says it is running, and
+      // the new briefing swaps in when it lands. A first briefing has
+      // nothing to show yet, so the status line stands alone.
+      RelationshipAgentCardState.running => switch (current) {
+        null => null,
+        final report => TldrBody(
+          key: const ValueKey('relationship-briefing-body'),
+          disclosureKey: const ValueKey('relationship-briefing-expand'),
+          bodyStyle: tokens.typography.styles.body.bodyMedium,
+          tldr: resolveReportTldr(report),
+          expanded: expanded,
+          additionalReport: resolveReportAdditional(report),
+          onToggle: onToggleExpanded,
+          onOpenInternals: onOpenInternals,
         ),
-      ),
+      },
       RelationshipAgentCardState.failed => Text(
         modelMissing
             ? messages.relationshipAgentFailedNoModel
@@ -959,18 +920,19 @@ class _AgentCard extends StatelessWidget {
           trailing: _pill(context, messages),
           onTap: onOpenInternals,
         ),
-        Padding(
-          // No bottom inset under TldrBody: its disclosure row carries the
-          // trailing gap inside its tap target. The plain-text bodies bring
-          // one of their own.
-          padding: EdgeInsets.fromLTRB(
-            tokens.spacing.cardPadding,
-            0,
-            tokens.spacing.cardPadding,
-            body is TldrBody ? 0 : tokens.spacing.step4,
+        if (body != null)
+          Padding(
+            // No bottom inset under TldrBody: its disclosure row carries the
+            // trailing gap inside its tap target. The plain-text bodies bring
+            // one of their own.
+            padding: EdgeInsets.fromLTRB(
+              tokens.spacing.cardPadding,
+              0,
+              tokens.spacing.cardPadding,
+              body is TldrBody ? 0 : tokens.spacing.step4,
+            ),
+            child: body,
           ),
-          child: body,
-        ),
         RelationshipSuggestionsBand(
           relationshipId: item.relationship.id,
           checkIns: checkIns,
@@ -982,6 +944,9 @@ class _AgentCard extends StatelessWidget {
           identity: TaskAgentIdentityRegion(
             data: identityData,
             onSetupTap: onChooseModel,
+            // This row is the disclosure a briefing starts on (ADR 0061):
+            // no width or text size may shed the provider from it.
+            alwaysNameProvider: true,
             trailingMeta: totalTokens > 0
                 ? messages.agentConversationTokenCount(
                     NumberFormat.compact(

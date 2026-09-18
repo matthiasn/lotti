@@ -24,6 +24,7 @@ class TaskAgentIdentityRegion extends StatelessWidget {
     required this.data,
     required this.onSetupTap,
     this.trailingMeta,
+    this.alwaysNameProvider = false,
     super.key,
   });
 
@@ -36,6 +37,10 @@ class TaskAgentIdentityRegion extends StatelessWidget {
   /// from none, because it is the reader's cost rather than decoration.
   final String? trailingMeta;
 
+  /// Keeps the serving provider in every width tier of the setup row; see
+  /// [inferenceRouteIdentityTiers].
+  final bool alwaysNameProvider;
+
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
@@ -44,6 +49,7 @@ class TaskAgentIdentityRegion extends StatelessWidget {
         : inferenceRouteIdentityTiers(
             data.currentRoute!,
             viaLabel: messages.taskAgentRouteVia,
+            alwaysNameProvider: alwaysNameProvider,
           );
     final meta = trailingMeta;
     final currentTiers = routeTiers == null || meta == null

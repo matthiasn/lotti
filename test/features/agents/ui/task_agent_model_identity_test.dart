@@ -60,6 +60,29 @@ void main() {
     },
   );
 
+  // Codex review on #4346: a row that is the disclosure of where data goes
+  // must not shed the provider at its narrowest.
+  for (final (alwaysNameProvider, narrowest) in [
+    (false, 'Qwen 3.5 Plus'),
+    (true, 'Melious.ai · Qwen 3.5 Plus'),
+  ]) {
+    test('the narrowest tier is "$narrowest" when alwaysNameProvider is '
+        '$alwaysNameProvider', () {
+      expect(
+        inferenceRouteIdentityTiers(
+          route,
+          viaLabel: 'via',
+          alwaysNameProvider: alwaysNameProvider,
+        ),
+        [
+          'Qwen 3.5 Plus · Alibaba · via Melious.ai',
+          'Qwen 3.5 Plus · Melious.ai',
+          narrowest,
+        ],
+      );
+    });
+  }
+
   test('no report shows current setup only', () {
     final data = TaskAgentModelIdentityViewData.fromResolution(
       setup: resolved,

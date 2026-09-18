@@ -146,8 +146,10 @@ class RelationshipAgentService {
   /// The explicit "Brief me" trigger (plan v2 phase 5 item 5): ensures
   /// the agent exists — Brief me on a not-yet-important person is the
   /// plan's "explicit enable" — then routes one manual wake through the
-  /// LLM tier via the report-refresh token. Provider disclosure happens in
-  /// the UI BEFORE this is called (ADR 0037: name the provider first).
+  /// LLM tier via the report-refresh token. There is no confirmation step:
+  /// the briefing card names the model and provider before this is called
+  /// (ADR 0061). A missing model surfaces as the failed wake's *Choose a
+  /// model*.
   Future<void> requestBriefing(RelationshipEntry relationship) async {
     final identity = await ensureAgentForRelationship(relationship);
     _orchestrator.enqueueManualWake(

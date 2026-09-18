@@ -97,9 +97,26 @@ class RelationshipChatPane extends ConsumerWidget {
     final controller = ref.read(
       relationshipChatControllerProvider(agentId).notifier,
     );
+    final messages = context.messages;
+    // The one-line input has the least room: it uses the name the user calls
+    // the person by, when there is one.
+    final nickname = ref
+        .watch(
+          relationshipDetailControllerProvider(
+            relationshipId,
+          ).select((detail) => detail.value?.relationship.data.nickname),
+        )
+        ?.trim();
+    // The agent is named after the person it watches, but the one answering
+    // here is the briefing agent: its replies are signed as the agent, and
+    // the empty state and the input talk to it *about* the person.
     return AgentChatView(
       agentId: agentId,
-      agentName: name,
+      agentName: messages.relationshipChatAgentName,
+      emptyMessage: messages.relationshipChatEmpty(name),
+      composerHint: messages.relationshipChatPlaceholder(
+        nickname == null || nickname.isEmpty ? name : nickname,
+      ),
       draft: composer.draft,
       isSending: composer.isSending,
       hasFailedTurn: composer.failedMessage != null,
