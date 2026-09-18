@@ -109,6 +109,35 @@ class ImageImportConstants {
   static const int maxFileSizeBytes = 50 * 1024 * 1024;
 }
 
+/// Lets the user add images from wherever this platform keeps them: the
+/// photo library on macOS and mobile, a file dialog on Linux and Windows,
+/// which have no gallery picker.
+Future<void> importImagesForPlatform(
+  BuildContext context, {
+  String? linkedId,
+  String? categoryId,
+  AutomaticImageAnalysisTrigger? analysisTrigger,
+}) async {
+  if (isLinux || isWindows) {
+    await importImagePickerFiles(
+      linkedId: linkedId,
+      categoryId: categoryId,
+      analysisTrigger: analysisTrigger,
+    );
+    return;
+  }
+  // Native gallery picker (photo_manager) — macOS/mobile only; the headless
+  // Linux CI runner always takes the file-dialog branch above.
+  // coverage:ignore-start
+  await importImageAssets(
+    context,
+    linkedId: linkedId,
+    categoryId: categoryId,
+    analysisTrigger: analysisTrigger,
+  );
+  // coverage:ignore-end
+}
+
 /// Imports images from the device's photo library.
 ///
 /// Opens a photo picker UI and creates journal entries for selected images.

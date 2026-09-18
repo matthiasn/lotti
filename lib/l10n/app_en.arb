@@ -7005,6 +7005,36 @@
   },
   "relationshipChatTooltip": "Chat about this person",
   "relationshipChatUnavailable": "No agent yet — mark this person as important first.",
+  "relationshipCheckInAddComment": "Add comment",
+  "relationshipCheckInAddPhoto": "Photo",
+  "relationshipCheckInCommentCount": "{count, plural, =1{1 comment} other{{count} comments}}",
+  "@relationshipCheckInCommentCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipCheckInCommentHint": "Add a comment…",
+  "relationshipCheckInEmpty": "Nothing added yet. Add a comment, a recording or a photo.",
+  "relationshipCheckInGone": "This check-in no longer exists.",
+  "relationshipCheckInNoteLabel": "Noted when it was logged",
+  "relationshipCheckInPhotoCount": "{count, plural, =1{1 photo} other{{count} photos}}",
+  "@relationshipCheckInPhotoCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipCheckInRecordingCount": "{count, plural, =1{1 recording} other{{count} recordings}}",
+  "@relationshipCheckInRecordingCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipCheckInReminderBody": "A good moment to reach out.",
   "relationshipCheckInReminderTitle": "Check in with {name}?",
   "@relationshipCheckInReminderTitle": {

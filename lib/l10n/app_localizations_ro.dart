@@ -12146,12 +12146,25 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipCadenceWeekly => 'Săptămânal';
 
   @override
+  String get relationshipChatAgentName => 'Agent de briefing';
+
+  @override
   String get relationshipChatAgentSubtitle =>
       'Cunoaște check-in-urile dvs., nu canalele de contact';
 
   @override
   String relationshipChatAgentTitle(String name) {
     return '$name · agent de briefing';
+  }
+
+  @override
+  String relationshipChatEmpty(String name) {
+    return 'Începeți o conversație cu agentul de briefing despre $name.';
+  }
+
+  @override
+  String relationshipChatPlaceholder(String name) {
+    return 'Vorbiți cu agentul despre $name…';
   }
 
   @override
@@ -16157,15 +16170,57 @@ class AppLocalizationsRo extends AppLocalizations {
   String get whatsNewSkipButton => 'Omite';
 
   @override
-  String get relationshipChatAgentName => 'Agent de briefing';
-
-  @override
-  String relationshipChatEmpty(String name) {
-    return 'Începeți o conversație cu agentul de briefing despre $name.';
+  String relationshipCheckInRecordingCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de înregistrări',
+      few: '$count înregistrări',
+      one: '1 înregistrare',
+    );
+    return '$_temp0';
   }
 
   @override
-  String relationshipChatPlaceholder(String name) {
-    return 'Vorbiți cu agentul despre $name…';
+  String relationshipCheckInPhotoCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de fotografii',
+      few: '$count fotografii',
+      one: '1 fotografie',
+    );
+    return '$_temp0';
   }
+
+  @override
+  String relationshipCheckInCommentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de comentarii',
+      few: '$count comentarii',
+      one: '1 comentariu',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipCheckInNoteLabel => 'Notat la înregistrare';
+
+  @override
+  String get relationshipCheckInCommentHint => 'Adăugați un comentariu…';
+
+  @override
+  String get relationshipCheckInAddComment => 'Adăugați comentariu';
+
+  @override
+  String get relationshipCheckInAddPhoto => 'Fotografie';
+
+  @override
+  String get relationshipCheckInEmpty =>
+      'Nimic adăugat încă. Adăugați un comentariu, o înregistrare sau o fotografie.';
+
+  @override
+  String get relationshipCheckInGone => 'Acest check-in nu mai există.';
 }

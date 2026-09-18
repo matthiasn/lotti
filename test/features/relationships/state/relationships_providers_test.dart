@@ -13,6 +13,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 
 void main() {
   final testDate = DateTime(2026, 8, 13, 10, 30);
@@ -100,6 +101,9 @@ void main() {
     when(
       () => mockRepository.getLinkedTasks(any()),
     ).thenAnswer((_) async => []);
+    when(
+      () => mockRepository.getEntriesForCheckIns(any()),
+    ).thenAnswer((_) async => const {});
     getIt.registerSingleton<UpdateNotifications>(mockNotifications);
     container = ProviderContainer(
       overrides: [
@@ -388,6 +392,50 @@ void main() {
           ),
           isNull,
         );
+        subscription.close();
+      },
+    );
+
+    // ADR 0062: the rows lead with what a check-in holds, so its entries
+    // come with the detail, and a transcript landing on one refreshes it.
+    test(
+      "carries each check-in's entries and refetches when one changes",
+      () async {
+        var calls = 0;
+        when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer((
+          _,
+        ) async {
+          calls++;
+          return relationship('rel-1');
+        });
+        when(
+          () => mockRepository.getCheckInsForRelationship('rel-1'),
+        ).thenAnswer(
+          (_) async => [checkIn('check-1', 'rel-1')],
+        );
+        when(
+          () => mockRepository.getEntriesForCheckIns({'check-1'}),
+        ).thenAnswer(
+          (_) async => {
+            'check-1': [testAudioEntry],
+          },
+        );
+
+        final subscription = container.listen(
+          relationshipDetailControllerProvider('rel-1'),
+          (_, _) {},
+        );
+        final detail = await container.read(
+          relationshipDetailControllerProvider('rel-1').future,
+        );
+        expect(detail!.checkInEntries['check-1']!.single.id, testAudioEntry.id);
+
+        updateStreamController.add({testAudioEntry.id});
+        await container.read(
+          relationshipDetailControllerProvider('rel-1').future,
+        );
+
+        expect(calls, 2);
         subscription.close();
       },
     );

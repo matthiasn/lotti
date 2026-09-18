@@ -60,6 +60,10 @@ final relationshipsListControllerProvider =
 typedef RelationshipDetail = ({
   RelationshipEntry relationship,
   List<CheckInEntry> checkIns,
+
+  /// Each check-in's comments, recordings and photos, oldest first — the
+  /// display read, so a hidden private entry is absent.
+  Map<String, List<JournalEntity>> checkInEntries,
   List<Task> linkedTasks,
 });
 
@@ -82,6 +86,10 @@ class RelationshipDetailController extends AsyncNotifier<RelationshipDetail?> {
   /// edit on the task side refreshes the section without a relationship
   /// write. Link/unlink writes notify the relationship id itself.
   var _linkedTaskIds = const <String>{};
+
+  /// Ids of the check-ins' entries the last build saw, so a transcript
+  /// landing on a recording refreshes the row that shows it.
+  var _checkInEntryIds = const <String>{};
 
   @override
   Future<RelationshipDetail?> build() async {
@@ -108,7 +116,8 @@ class RelationshipDetailController extends AsyncNotifier<RelationshipDetail?> {
           affectedIds.contains(
             relationshipEntityUpdateNotification(_relationshipId),
           ) ||
-          affectedIds.any(_linkedTaskIds.contains)) {
+          affectedIds.any(_linkedTaskIds.contains) ||
+          affectedIds.any(_checkInEntryIds.contains)) {
         ref.invalidateSelf();
       }
     });
@@ -119,11 +128,19 @@ class RelationshipDetailController extends AsyncNotifier<RelationshipDetail?> {
     final checkIns = await repository.getCheckInsForRelationship(
       _relationshipId,
     );
+    final checkInEntries = await repository.getEntriesForCheckIns({
+      for (final checkIn in checkIns) checkIn.id,
+    });
+    _checkInEntryIds = {
+      for (final entries in checkInEntries.values)
+        for (final entry in entries) entry.id,
+    };
     final linkedTasks = await repository.getLinkedTasks(_relationshipId);
     _linkedTaskIds = {for (final task in linkedTasks) task.id};
     return (
       relationship: relationship,
       checkIns: checkIns,
+      checkInEntries: checkInEntries,
       linkedTasks: linkedTasks,
     );
   }

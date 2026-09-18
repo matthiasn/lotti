@@ -10,6 +10,7 @@ import 'package:lotti/features/relationships/ui/shared/sentiment.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_ins_card.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
@@ -45,15 +46,20 @@ void main() {
 
   Future<List<CheckInEntry>> pump(
     WidgetTester tester,
-    List<CheckInEntry> checkIns,
-  ) async {
+    List<CheckInEntry> checkIns, {
+    Map<String, List<JournalEntity>> entries = const {},
+  }) async {
     final opened = <CheckInEntry>[];
     await withClock(Clock.fixed(now), () async {
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
           CustomScrollView(
             slivers: [
-              CheckInsCardSliver(checkIns: checkIns, onOpen: opened.add),
+              CheckInsCardSliver(
+                checkIns: checkIns,
+                entries: entries,
+                onOpen: opened.add,
+              ),
             ],
           ),
         ),
@@ -215,6 +221,104 @@ void main() {
         expect(tag.shape, DsPillShape.tag);
         expect(tag.variant, DsPillVariant.filled);
       }
+    });
+  });
+
+  // Check-ins hold entries (ADR 0062): a new one has no text of its own, so
+  // the row leads with the first words it holds and says what else is in it.
+  group('what the row says a check-in holds', () {
+    JournalEntity comment(String text) => testTextEntry.copyWith(
+      entryText: EntryText(plainText: text),
+    );
+    JournalEntity recording({String? transcript}) => testAudioEntry.copyWith(
+      entryText: transcript == null ? null : EntryText(plainText: transcript),
+    );
+    final photo = testImageEntry.copyWith(entryText: null);
+
+    for (final (label, narrative, held, summary, holds) in [
+      (
+        'the text it was saved with leads, the rest is counted',
+        'Called about the launch.',
+        [recording(transcript: 'Krill memo.'), photo],
+        'Called about the launch.',
+        '1 recording · 1 photo',
+      ),
+      (
+        'without its own text, the first words it holds',
+        null,
+        [photo, recording(transcript: 'Krill memo.'), comment('Send it.')],
+        'Krill memo.',
+        '1 recording · 1 photo · 1 comment',
+      ),
+      (
+        'a recording still being transcribed says so',
+        null,
+        [recording()],
+        'Transcribing…',
+        '1 recording',
+      ),
+      (
+        'photos alone lead with nothing',
+        null,
+        [photo, photo],
+        null,
+        '2 photos',
+      ),
+      (
+        'nothing held, nothing counted',
+        'Short call.',
+        <JournalEntity>[],
+        'Short call.',
+        null,
+      ),
+    ]) {
+      testWidgets(label, (tester) async {
+        await pump(
+          tester,
+          [checkIn('c-1', narrative: narrative)],
+          entries: {'c-1': held},
+        );
+
+        final summaryFinder = find.byKey(
+          const ValueKey('check-in-row-summary'),
+        );
+        if (summary == null) {
+          expect(summaryFinder, findsNothing);
+        } else {
+          expect(tester.widget<Text>(summaryFinder).data, summary);
+        }
+        final holdsFinder = find.byKey(const ValueKey('check-in-row-holds'));
+        if (holds == null) {
+          expect(holdsFinder, findsNothing);
+        } else {
+          expect(tester.widget<Text>(holdsFinder).data, holds);
+        }
+      });
+    }
+
+    testWidgets('pending words are quieter than words', (tester) async {
+      await pump(
+        tester,
+        [checkIn('c-1'), checkIn('c-2', narrative: 'Said hi.')],
+        entries: {
+          'c-1': [recording()],
+        },
+      );
+      Color? colorOf(String id) => tester
+          .widget<Text>(
+            find.descendant(
+              of: find.byKey(ValueKey('check-in-row-$id')),
+              matching: find.byKey(const ValueKey('check-in-row-summary')),
+            ),
+          )
+          .style
+          ?.color;
+
+      final tokens = tester
+          .element(find.byType(CheckInsCardSliver))
+          .designTokens;
+      expect(colorOf('c-1'), tokens.colors.text.mediumEmphasis);
+      expect(colorOf('c-2'), tokens.colors.text.highEmphasis);
     });
   });
 }

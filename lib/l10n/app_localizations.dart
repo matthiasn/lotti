@@ -19855,6 +19855,12 @@ abstract class AppLocalizations {
   /// **'Weekly'**
   String get relationshipCadenceWeekly;
 
+  /// No description provided for @relationshipChatAgentName.
+  ///
+  /// In en, this message translates to:
+  /// **'Briefing agent'**
+  String get relationshipChatAgentName;
+
   /// No description provided for @relationshipChatAgentSubtitle.
   ///
   /// In en, this message translates to:
@@ -19866,6 +19872,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{name} · briefing agent'**
   String relationshipChatAgentTitle(String name);
+
+  /// No description provided for @relationshipChatEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a conversation with the briefing agent about {name}.'**
+  String relationshipChatEmpty(String name);
+
+  /// No description provided for @relationshipChatPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Talk to the agent about {name}…'**
+  String relationshipChatPlaceholder(String name);
 
   /// No description provided for @relationshipChatTooltip.
   ///
@@ -26369,23 +26387,59 @@ abstract class AppLocalizations {
   /// **'Skip'**
   String get whatsNewSkipButton;
 
-  /// No description provided for @relationshipChatAgentName.
+  /// No description provided for @relationshipCheckInRecordingCount.
   ///
   /// In en, this message translates to:
-  /// **'Briefing agent'**
-  String get relationshipChatAgentName;
+  /// **'{count, plural, =1{1 recording} other{{count} recordings}}'**
+  String relationshipCheckInRecordingCount(int count);
 
-  /// No description provided for @relationshipChatEmpty.
+  /// No description provided for @relationshipCheckInPhotoCount.
   ///
   /// In en, this message translates to:
-  /// **'Start a conversation with the briefing agent about {name}.'**
-  String relationshipChatEmpty(String name);
+  /// **'{count, plural, =1{1 photo} other{{count} photos}}'**
+  String relationshipCheckInPhotoCount(int count);
 
-  /// No description provided for @relationshipChatPlaceholder.
+  /// No description provided for @relationshipCheckInCommentCount.
   ///
   /// In en, this message translates to:
-  /// **'Talk to the agent about {name}…'**
-  String relationshipChatPlaceholder(String name);
+  /// **'{count, plural, =1{1 comment} other{{count} comments}}'**
+  String relationshipCheckInCommentCount(int count);
+
+  /// No description provided for @relationshipCheckInNoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Noted when it was logged'**
+  String get relationshipCheckInNoteLabel;
+
+  /// No description provided for @relationshipCheckInCommentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a comment…'**
+  String get relationshipCheckInCommentHint;
+
+  /// No description provided for @relationshipCheckInAddComment.
+  ///
+  /// In en, this message translates to:
+  /// **'Add comment'**
+  String get relationshipCheckInAddComment;
+
+  /// No description provided for @relationshipCheckInAddPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo'**
+  String get relationshipCheckInAddPhoto;
+
+  /// No description provided for @relationshipCheckInEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing added yet. Add a comment, a recording or a photo.'**
+  String get relationshipCheckInEmpty;
+
+  /// No description provided for @relationshipCheckInGone.
+  ///
+  /// In en, this message translates to:
+  /// **'This check-in no longer exists.'**
+  String get relationshipCheckInGone;
 }
 
 class _AppLocalizationsDelegate

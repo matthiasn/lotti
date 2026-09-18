@@ -12051,12 +12051,25 @@ class AppLocalizationsIt extends AppLocalizations {
   String get relationshipCadenceWeekly => 'Ogni settimana';
 
   @override
+  String get relationshipChatAgentName => 'Agente di briefing';
+
+  @override
   String get relationshipChatAgentSubtitle =>
       'Conosce i tuoi contatti, non i recapiti';
 
   @override
   String relationshipChatAgentTitle(String name) {
     return '$name · agente di briefing';
+  }
+
+  @override
+  String relationshipChatEmpty(String name) {
+    return 'Inizia una conversazione con l\'agente di briefing riguardo a $name.';
+  }
+
+  @override
+  String relationshipChatPlaceholder(String name) {
+    return 'Parla con l\'agente riguardo a $name…';
   }
 
   @override
@@ -16035,15 +16048,54 @@ class AppLocalizationsIt extends AppLocalizations {
   String get whatsNewSkipButton => 'Salta!';
 
   @override
-  String get relationshipChatAgentName => 'Agente di briefing';
-
-  @override
-  String relationshipChatEmpty(String name) {
-    return 'Inizia una conversazione con l\'agente di briefing riguardo a $name.';
+  String relationshipCheckInRecordingCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count registrazioni',
+      one: '1 registrazione',
+    );
+    return '$_temp0';
   }
 
   @override
-  String relationshipChatPlaceholder(String name) {
-    return 'Parla con l\'agente riguardo a $name…';
+  String relationshipCheckInPhotoCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count foto',
+      one: '1 foto',
+    );
+    return '$_temp0';
   }
+
+  @override
+  String relationshipCheckInCommentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count commenti',
+      one: '1 commento',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipCheckInNoteLabel => 'Annotato alla registrazione';
+
+  @override
+  String get relationshipCheckInCommentHint => 'Aggiungi un commento…';
+
+  @override
+  String get relationshipCheckInAddComment => 'Aggiungi commento';
+
+  @override
+  String get relationshipCheckInAddPhoto => 'Foto';
+
+  @override
+  String get relationshipCheckInEmpty =>
+      'Ancora niente. Aggiungi un commento, una registrazione o una foto.';
+
+  @override
+  String get relationshipCheckInGone => 'Questo check-in non esiste più.';
 }

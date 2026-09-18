@@ -259,6 +259,12 @@ class NavService {
   final ValueNotifier<bool> desktopRelationshipChatOpen = ValueNotifier<bool>(
     false,
   );
+
+  /// The check-in whose detail fills the desktop People pane (the
+  /// `/check-ins/<id>` segment), or null for the person's page or chat —
+  /// another face of the same pane, like the chat.
+  final ValueNotifier<String?> desktopRelationshipCheckInId =
+      ValueNotifier<String?>(null);
   final ValueNotifier<String?> desktopSelectedDashboardId =
       ValueNotifier<String?>(null);
 
@@ -968,6 +974,7 @@ class NavService {
     desktopSelectedProjectId.dispose();
     desktopSelectedRelationshipId.dispose();
     desktopRelationshipChatOpen.dispose();
+    desktopRelationshipCheckInId.dispose();
     desktopSelectedDashboardId.dispose();
     desktopSelectedEntryId.dispose();
     desktopSelectedEntryLinkedFromId.dispose();

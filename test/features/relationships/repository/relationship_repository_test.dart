@@ -17,6 +17,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/entry_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../database/test_utils.dart';
@@ -1557,7 +1558,8 @@ void main() {
       );
 
       expect(entry, isA<JournalEntry>());
-      expect(entry!.entryText?.plainText, 'Send krill.');
+      // Saved like every typed entry: the text with its Quill form.
+      expect(entry!.entryText, entryTextFromPlain('Send krill.'));
       verify(
         () => mockPersistence.createDbEntity(entry, linkedId: 'c-1'),
       ).called(1);

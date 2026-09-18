@@ -13,6 +13,7 @@ import 'package:lotti/features/relationships/state/relationships_providers.dart'
 import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
 import 'package:lotti/features/relationships/ui/pages/contact_import_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_in_detail_view.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_summary_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_chat_pane.dart';
@@ -105,7 +106,8 @@ class RelationshipsPage extends ConsumerWidget {
   }
 }
 
-/// The desktop detail pane's two faces: the person's page, or their chat.
+/// The desktop detail pane's three faces: the person's page, their chat, or
+/// one of their check-ins.
 ///
 /// The chat replaces the page rather than stacking over it (design
 /// 2026-09-06 §6), so the pane switches on
@@ -118,8 +120,25 @@ class _PersonDetailPane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final navService = getIt<NavService>();
+    return ValueListenableBuilder<String?>(
+      valueListenable: navService.desktopRelationshipCheckInId,
+      builder: (context, checkInId, _) => checkInId != null
+          ? Scaffold(
+              key: ValueKey('people-check-in-$checkInId'),
+              body: CheckInDetailView(
+                relationshipId: relationshipId,
+                checkInId: checkInId,
+                onBack: () => beamToNamed('/people/$relationshipId'),
+              ),
+            )
+          : _personOrChat(navService),
+    );
+  }
+
+  Widget _personOrChat(NavService navService) {
     return ValueListenableBuilder<bool>(
-      valueListenable: getIt<NavService>().desktopRelationshipChatOpen,
+      valueListenable: navService.desktopRelationshipChatOpen,
       builder: (context, chatOpen, _) => chatOpen
           // The pane is raw content, unlike the person page, which brings its
           // own Scaffold — and the composer's fields need a Material ancestor.

@@ -12079,12 +12079,25 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipCadenceWeekly => 'Každý týden';
 
   @override
+  String get relationshipChatAgentName => 'Briefingový agent';
+
+  @override
   String get relationshipChatAgentSubtitle =>
       'Zná tvé check-iny, ne kontaktní údaje';
 
   @override
   String relationshipChatAgentTitle(String name) {
     return '$name · briefingový agent';
+  }
+
+  @override
+  String relationshipChatEmpty(String name) {
+    return 'Začni konverzaci s briefingovým agentem o osobě $name.';
+  }
+
+  @override
+  String relationshipChatPlaceholder(String name) {
+    return 'Mluv s agentem o osobě $name…';
   }
 
   @override
@@ -16042,15 +16055,57 @@ class AppLocalizationsCs extends AppLocalizations {
   String get whatsNewSkipButton => 'Přeskočit';
 
   @override
-  String get relationshipChatAgentName => 'Briefingový agent';
-
-  @override
-  String relationshipChatEmpty(String name) {
-    return 'Začni konverzaci s briefingovým agentem o osobě $name.';
+  String relationshipCheckInRecordingCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count nahrávek',
+      few: '$count nahrávky',
+      one: '1 nahrávka',
+    );
+    return '$_temp0';
   }
 
   @override
-  String relationshipChatPlaceholder(String name) {
-    return 'Mluv s agentem o osobě $name…';
+  String relationshipCheckInPhotoCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fotek',
+      few: '$count fotky',
+      one: '1 fotka',
+    );
+    return '$_temp0';
   }
+
+  @override
+  String relationshipCheckInCommentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count komentářů',
+      few: '$count komentáře',
+      one: '1 komentář',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipCheckInNoteLabel => 'Poznamenáno při zápisu';
+
+  @override
+  String get relationshipCheckInCommentHint => 'Přidej komentář…';
+
+  @override
+  String get relationshipCheckInAddComment => 'Přidat komentář';
+
+  @override
+  String get relationshipCheckInAddPhoto => 'Fotka';
+
+  @override
+  String get relationshipCheckInEmpty =>
+      'Zatím nic. Přidej komentář, nahrávku nebo fotku.';
+
+  @override
+  String get relationshipCheckInGone => 'Tento check-in už neexistuje.';
 }
