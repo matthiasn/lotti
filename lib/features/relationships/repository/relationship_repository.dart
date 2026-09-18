@@ -5,6 +5,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -27,6 +28,11 @@ typedef RelationshipListItem = ({
 extension RelationshipListItemRecency on RelationshipListItem {
   DateTime? get lastCheckInAt => lastCheckIn?.meta.dateFrom;
 }
+
+/// Whether [entity] is something a check-in holds as one of its entries: a
+/// typed comment, a recording or a photo.
+bool isCheckInEntryKind(JournalEntity entity) =>
+    entity is JournalEntry || entity is JournalAudio || entity is JournalImage;
 
 /// Repository for relationship and check-in CRUD (ADR 0038).
 ///
@@ -256,6 +262,135 @@ class RelationshipRepository {
     return result ?? false;
   }
 
+  // ── Check-in entries ───────────────────────────────────────────────────────
+
+  /// The entries of each of [checkInIds], oldest first: typed comments,
+  /// recordings and photos, each linked check-in → entry with a
+  /// [BasicLink]. A check-in's own `entryText` (the narrative check-ins were
+  /// saved with before they held entries) is not among them — callers show
+  /// it as the check-in's first entry.
+  ///
+  /// Deliberately unfiltered by the private-entry display preference, like
+  /// [getAllCheckInsForRelationship]: the agent reads this, and devices with
+  /// different display settings must give it the same context. Deleted
+  /// entries and hidden links are left out, and so is anything linked from a
+  /// check-in that is not a comment, recording or photo.
+  Future<Map<String, List<JournalEntity>>> getAllEntriesForCheckIns(
+    Set<String> checkInIds,
+  ) async {
+    if (checkInIds.isEmpty) return const {};
+    final links =
+        (await _journalDb
+                .linksFromIds(checkInIds.toList(growable: false))
+                .get())
+            .map(entryLinkFromLinkedDbEntry)
+            .whereType<BasicLink>();
+    final targets = {for (final link in links) link.toId};
+    final byId = {
+      for (final row
+          in targets.isEmpty
+              ? const <JournalDbEntity>[]
+              : await _journalDb
+                    .journalEntitiesByIdsUnorderedAllPrivate(
+                      targets.toList(growable: false),
+                    )
+                    .get())
+        if (fromDbEntity(row) case final JournalEntity entity
+            when isCheckInEntryKind(entity))
+          entity.id: entity,
+    };
+    final result = <String, List<JournalEntity>>{
+      for (final id in checkInIds) id: <JournalEntity>[],
+    };
+    for (final link in links) {
+      final entity = byId[link.toId];
+      final entries = result[link.fromId];
+      if (entity == null || entries == null) continue;
+      if (entries.every((e) => e.id != entity.id)) entries.add(entity);
+    }
+    for (final entries in result.values) {
+      entries.sort((a, b) => a.meta.dateFrom.compareTo(b.meta.dateFrom));
+    }
+    return result;
+  }
+
+  /// The display read of one check-in's entries, oldest first: like
+  /// [getAllEntriesForCheckIns], but a private entry is left out while
+  /// private entries are hidden.
+  Future<List<JournalEntity>> getCheckInEntries(String checkInId) async {
+    final entries =
+        (await getAllEntriesForCheckIns({checkInId}))[checkInId] ?? const [];
+    if (await _journalDb.getConfigFlag(privateFlag)) return entries;
+    return [
+      for (final entry in entries)
+        if (!(entry.meta.private ?? false)) entry,
+    ];
+  }
+
+  /// Adds a typed comment to [checkIn] as its own entry, linked from the
+  /// check-in and inheriting its category and privacy. Returns null when the
+  /// entry could not be written.
+  Future<JournalEntity?> addCommentToCheckIn(
+    CheckInEntry checkIn,
+    String text,
+  ) async {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return null;
+    final entry = JournalEntity.journalEntry(
+      entryText: EntryText(plainText: trimmed, markdown: trimmed),
+      meta: await _persistenceLogic.createMetadata(
+        dateFrom: clock.now(),
+        categoryId: checkIn.meta.categoryId,
+        private: checkIn.meta.private,
+      ),
+    );
+    final created = await _persistenceLogic.createDbEntity(
+      entry,
+      linkedId: checkIn.id,
+    );
+    if (!(created ?? false)) return null;
+    await touchCheckIn(checkIn.id);
+    return entry;
+  }
+
+  /// Makes an existing recording or photo an entry of [checkInId].
+  Future<bool> attachEntryToCheckIn({
+    required String checkInId,
+    required String entryId,
+  }) async {
+    final linked = await _persistenceLogic.createLink(
+      fromId: checkInId,
+      toId: entryId,
+    );
+    if (linked) await touchCheckIn(checkInId);
+    return linked;
+  }
+
+  /// Records that [checkInId]'s evidence changed — an entry was added, or a
+  /// recording's transcript or a photo's description arrived — by saving the
+  /// check-in again, which advances its `updatedAt`.
+  ///
+  /// The relationship agent reads `updatedAt` as "evidence last changed"
+  /// (`RelationshipCadenceDerivation.lastEvidenceAt`), so the briefing goes
+  /// out of date and is written again; and the save syncs, so every device
+  /// sees the same signal. Returns false when [checkInId] is not a live
+  /// check-in or the write was rejected.
+  Future<bool> touchCheckIn(String checkInId) async {
+    final entity = await _journalDb.journalEntityById(checkInId);
+    if (entity is! CheckInEntry || entity.isDeleted) return false;
+    return updateCheckIn(entity);
+  }
+
+  /// Touches every live check-in that holds [entryId] as an entry — the
+  /// signal that a recording's transcript or a photo's description arrived
+  /// after the check-in was saved. See [touchCheckIn].
+  Future<void> touchCheckInsHolding(String entryId) async {
+    final parents = await _journalDb.parentLinkedEntityIds(entryId).get();
+    for (final parentId in parents.toSet()) {
+      await touchCheckIn(parentId);
+    }
+  }
+
   // ── Task links ─────────────────────────────────────────────────────────────
 
   /// Links [taskId] to the relationship with a [RelationshipLink]
@@ -394,17 +529,46 @@ class RelationshipRepository {
         );
       }
     }
+    await _softDeleteEntriesOf({for (final c in checkIns) c.id}, deletedAt);
     return true;
   }
 
-  /// Soft-deletes a single check-in. Returns false when [checkInId] does not
-  /// resolve to a live check-in, or when the tombstone write is rejected.
+  /// Tombstones the entries the check-ins in [checkInIds] hold — the
+  /// recordings, comments and photos about the person (ADR 0037: deleting
+  /// leaves no orphaned data about them). An entry that also belongs to
+  /// something else, such as a photo attached to a task too, is left alone.
+  /// A rejected tombstone is logged and skipped, like a check-in's.
+  Future<void> _softDeleteEntriesOf(
+    Set<String> checkInIds,
+    DateTime deletedAt,
+  ) async {
+    final entries = await getAllEntriesForCheckIns(checkInIds);
+    for (final entry in entries.values.expand((e) => e).toSet()) {
+      final parents = await _journalDb.parentLinkedEntityIds(entry.id).get();
+      if (!parents.every(checkInIds.contains)) continue;
+      if (!await _softDelete(entry, deletedAt)) {
+        getIt<DomainLogger>().error(
+          LogDomain.persistence,
+          'check-in entry tombstone rejected for ${entry.id}',
+          message: 'orphaned check-in entry left behind by a delete',
+          subDomain: '_softDeleteEntriesOf',
+        );
+      }
+    }
+  }
+
+  /// Soft-deletes a single check-in and the entries it alone holds. Returns
+  /// false when [checkInId] does not resolve to a live check-in, or when the
+  /// check-in's own tombstone write is rejected.
   /// Providers reload through the tombstone's `affectedIds`, which carry the
   /// relationship id.
   Future<bool> deleteCheckIn(String checkInId) async {
     final entity = await _journalDb.journalEntityById(checkInId);
     if (entity is! CheckInEntry || entity.isDeleted) return false;
-    return _softDelete(entity, clock.now());
+    final deletedAt = clock.now();
+    if (!await _softDelete(entity, deletedAt)) return false;
+    await _softDeleteEntriesOf({checkInId}, deletedAt);
+    return true;
   }
 
   /// Writes a tombstone for [entity]. Returns false when the write was

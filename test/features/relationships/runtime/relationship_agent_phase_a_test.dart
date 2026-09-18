@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/relationship_data.dart';
@@ -15,10 +16,12 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
+import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -58,15 +61,19 @@ void main() {
           )
           as AgentIdentityEntity;
 
-  Metadata meta(String id, {DateTime? dateFrom, DateTime? deletedAt}) =>
-      Metadata(
-        id: id,
-        createdAt: testDate,
-        updatedAt: testDate,
-        dateFrom: dateFrom ?? testDate,
-        dateTo: dateFrom ?? testDate,
-        deletedAt: deletedAt,
-      );
+  Metadata meta(
+    String id, {
+    DateTime? dateFrom,
+    DateTime? deletedAt,
+    DateTime? updatedAt,
+  }) => Metadata(
+    id: id,
+    createdAt: testDate,
+    updatedAt: updatedAt ?? testDate,
+    dateFrom: dateFrom ?? testDate,
+    dateTo: dateFrom ?? testDate,
+    deletedAt: deletedAt,
+  );
 
   RelationshipEntry relationship({
     bool important = true,
@@ -90,13 +97,16 @@ void main() {
     ),
   );
 
-  CheckInEntry checkIn(String id, DateTime at) => CheckInEntry(
-    meta: meta(id, dateFrom: at),
-    data: const CheckInData(
-      relationshipId: relationshipId,
-      interactionType: CheckInInteractionType.call,
-    ),
-  );
+  /// A check-in that happened at [at] and — unless [savedAt] says it was
+  /// logged later, or gained an entry since — was last saved then.
+  CheckInEntry checkIn(String id, DateTime at, {DateTime? savedAt}) =>
+      CheckInEntry(
+        meta: meta(id, dateFrom: at, updatedAt: savedAt ?? at),
+        data: const CheckInData(
+          relationshipId: relationshipId,
+          interactionType: CheckInInteractionType.call,
+        ),
+      );
 
   Future<WakeResult> run() async => phaseA.execute(
     agentIdentity: identity(),
@@ -127,6 +137,9 @@ void main() {
     when(
       () => repository.getLatestReport(any(), any()),
     ).thenAnswer((_) async => null);
+    when(
+      () => relationshipRepository.getAllEntriesForCheckIns(any()),
+    ).thenAnswer((_) async => const {});
     when(
       () => repository.getEntitiesByAgentId(any(), type: any(named: 'type')),
     ).thenAnswer((_) async => []);
@@ -653,22 +666,22 @@ void main() {
     final escalation = writtenWakes().singleWhere(
       (w) => isRelationshipEscalationWorkspace(w.workspaceKey),
     );
-    // Its OWN episode family, keyed to the check-in's UTC day — consuming
-    // the lapse episode's key (2026-08-21) early would suppress the real
-    // lapse escalation when that day arrives.
-    final utc = checkInAt.toUtc();
-    final utcDay =
-        '${utc.year}-'
-        '${utc.month.toString().padLeft(2, '0')}-'
-        '${utc.day.toString().padLeft(2, '0')}';
+    // Its OWN episode family, keyed to the instant the evidence changed —
+    // consuming the lapse episode's key (2026-08-21) early would suppress
+    // the real lapse escalation when that day arrives.
     expect(
       escalation.workspaceKey,
-      relationshipReportRefreshEscalationWorkspaceKey(utcDay),
+      relationshipReportRefreshEscalationWorkspaceKey(
+        relationshipEvidenceKey(checkInAt),
+      ),
     );
-    // The deadline is the check-in's own instant: deterministic across
-    // devices AND already past, so the briefing refresh fires now instead
-    // of waiting out the rest of the cadence.
-    expect(escalation.scheduledAt, checkInAt.toUtc());
+    // The deadline is the evidence instant plus the settle delay:
+    // deterministic across devices AND already past, so the briefing
+    // refresh fires now instead of waiting out the rest of the cadence.
+    expect(
+      escalation.scheduledAt,
+      checkInAt.toUtc().add(relationshipEvidenceSettle),
+    );
     expect(escalation.scheduledAt.isBefore(now.toUtc()), isTrue);
     expect(escalationCallbacks, 1);
     // No previous register on a first evaluation, so no baseline token.
@@ -724,6 +737,121 @@ void main() {
       RelationshipCadenceStatus.due.name,
     );
   });
+
+  // The latent bug the evidence signal fixes: yesterday's call, logged
+  // after this morning's briefing, happened before it — its date never made
+  // the briefing stale.
+  test('a check-in logged after the briefing re-briefs even when it is '
+      'dated before it', () async {
+    final happenedAt = DateTime(2026, 8, 14, 18);
+    final loggedAt = DateTime(2026, 8, 15, 9);
+    when(
+      () => relationshipRepository.getAllCheckInsForRelationship(
+        relationshipId,
+      ),
+    ).thenAnswer(
+      (_) async => [checkIn('c-1', happenedAt, savedAt: loggedAt)],
+    );
+    when(
+      () => repository.getLatestReport(any(), any()),
+    ).thenAnswer((_) async => freshReport(DateTime(2026, 8, 15, 6)));
+
+    await withClock(Clock.fixed(now), run);
+
+    final escalation = writtenWakes().singleWhere(
+      (w) => isRelationshipEscalationWorkspace(w.workspaceKey),
+    );
+    expect(
+      escalation.workspaceKey,
+      relationshipReportRefreshEscalationWorkspaceKey(
+        relationshipEvidenceKey(loggedAt),
+      ),
+    );
+  });
+
+  test('a check-in that gained an entry after the briefing is a new episode '
+      'of its own', () async {
+    when(
+      () => repository.getLatestReport(any(), any()),
+    ).thenAnswer((_) async => freshReport(DateTime(2026, 8, 15, 6)));
+    final keys = <String?>{};
+    for (final savedAt in [
+      DateTime(2026, 8, 15, 9),
+      DateTime(2026, 8, 15, 9, 20),
+    ]) {
+      upserts.clear();
+      when(
+        () => relationshipRepository.getAllCheckInsForRelationship(
+          relationshipId,
+        ),
+      ).thenAnswer(
+        (_) async => [
+          checkIn('c-1', DateTime(2026, 8, 14, 18), savedAt: savedAt),
+        ],
+      );
+      await withClock(Clock.fixed(now), run);
+      keys.add(
+        writtenWakes()
+            .singleWhere(
+              (w) => isRelationshipEscalationWorkspace(w.workspaceKey),
+            )
+            .workspaceKey,
+      );
+    }
+
+    expect(keys, hasLength(2), reason: 'each change is briefed once');
+  });
+
+  // Briefing before the words arrive is the "agent looks broken" failure:
+  // the refresh waits for the transcript, or for its timeout.
+  for (final (label, transcript, expectDeferred) in [
+    ('waits for a transcript still on its way', null, true),
+    ('does not wait for one that has landed', 'We talked krill.', false),
+  ]) {
+    test('the refresh $label', () async {
+      final savedAt = now.subtract(const Duration(minutes: 1));
+      final recordedAt = now.subtract(const Duration(minutes: 2));
+      when(
+        () => relationshipRepository.getAllCheckInsForRelationship(
+          relationshipId,
+        ),
+      ).thenAnswer(
+        (_) async => [checkIn('c-1', recordedAt, savedAt: savedAt)],
+      );
+      when(
+        () => repository.getLatestReport(any(), any()),
+      ).thenAnswer((_) async => freshReport(DateTime(2026, 8, 10)));
+      when(
+        () => relationshipRepository.getAllEntriesForCheckIns({'c-1'}),
+      ).thenAnswer(
+        (_) async => {
+          'c-1': [
+            testAudioEntry.copyWith(
+              meta: testAudioEntry.meta.copyWith(
+                id: 'take-1',
+                createdAt: recordedAt,
+              ),
+              entryText: transcript == null
+                  ? null
+                  : EntryText(plainText: transcript),
+            ),
+          ],
+        },
+      );
+
+      await withClock(Clock.fixed(now), run);
+
+      final escalation = writtenWakes().singleWhere(
+        (w) => isRelationshipEscalationWorkspace(w.workspaceKey),
+      );
+      expect(
+        escalation.scheduledAt,
+        expectDeferred
+            ? recordedAt.add(checkInTranscriptTimeout).toUtc()
+            : savedAt.toUtc().add(relationshipEvidenceSettle),
+      );
+    });
+  }
 
   test('when the cadence newly lapses AND the briefing is stale, only the '
       'lapse episode arms — its run regenerates the briefing anyway', () async {

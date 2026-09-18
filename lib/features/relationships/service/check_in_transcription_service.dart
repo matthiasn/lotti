@@ -12,6 +12,7 @@ import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/relationships/model/relationship_speech_terms.dart';
+import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/db_notification.dart';
@@ -76,12 +77,14 @@ class CheckInTranscriptionService {
     this._updateNotifications,
     this._profileResolver,
     this._runner,
+    this._relationshipRepository,
   );
 
   final JournalDb _journalDb;
   final UpdateNotifications _updateNotifications;
   final ProfileResolver _profileResolver;
   final SkillInferenceRunner _runner;
+  final RelationshipRepository _relationshipRepository;
 
   /// Whether the selected system default has a usable transcription slot.
   Future<bool> canTranscribe() async => await _resolveProfile() != null;
@@ -165,6 +168,7 @@ class CheckInTranscriptionService {
       }
       // This is a manual request: no automated skill assignment or task id.
       // In particular, it must not start a profile's automatic summary skill.
+      var failed = false;
       await _runner.runTranscription(
         audioEntryId: audioEntryId,
         automationResult: AutomationResult(
@@ -172,9 +176,18 @@ class CheckInTranscriptionService {
           resolvedProfile: profile,
           skill: findBuiltInSkill(skillTranscribeContextId),
         ),
-        onError: (_) => onFailure(),
+        onError: (_) {
+          failed = true;
+          onFailure();
+        },
         knownTerms: knownTerms,
       );
+      // The words are evidence: when the recording already belongs to a
+      // saved check-in, that check-in changed, and its briefing is stale.
+      // Done here rather than in the composer, which may be long closed.
+      if (!failed) {
+        await _relationshipRepository.touchCheckInsHolding(audioEntryId);
+      }
     } catch (exception, stackTrace) {
       developer.log(
         'Requested transcription failed for $audioEntryId',
@@ -270,4 +283,5 @@ CheckInTranscriptionService checkInTranscriptionService(Ref ref) =>
       getIt<UpdateNotifications>(),
       ref.watch(profileResolverProvider),
       ref.watch(skillInferenceRunnerProvider),
+      ref.watch(relationshipRepositoryProvider),
     );

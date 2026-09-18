@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,15 +10,19 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../database/test_utils.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 
 void main() {
   final testDate = DateTime(2026, 8, 13, 10, 30);
@@ -106,6 +112,8 @@ void main() {
     // Private entries are hidden unless a test opts in — the main-side
     // default the private-gate tests assume.
     when(() => mockDb.getConfigFlag(any())).thenAnswer((_) async => false);
+    // No check-in holds entries unless a test says so.
+    when(() => mockDb.linksFromIds(any())).thenReturn(MockSelectable([]));
 
     when(
       () => mockPersistence.createMetadata(
@@ -1238,6 +1246,258 @@ void main() {
         () => mockDb.journalEntityById('rel-001'),
       ).thenAnswer((_) async => relationshipEntry());
       expect((await wired.getRelationshipById('rel-001'))?.id, 'rel-001');
+    });
+  });
+
+  group('check-in entries on a real database', () {
+    late JournalDb db;
+    late RelationshipRepository real;
+    late Directory documents;
+    final at = DateTime(2026, 8, 14, 20);
+
+    Metadata entryMeta(
+      String id,
+      DateTime dateFrom, {
+      bool private = false,
+      DateTime? deletedAt,
+    }) => Metadata(
+      id: id,
+      createdAt: dateFrom,
+      updatedAt: dateFrom,
+      dateFrom: dateFrom,
+      dateTo: dateFrom,
+      private: private,
+      deletedAt: deletedAt,
+    );
+
+    Future<void> link(String from, String to, {bool hidden = false}) =>
+        db.upsertEntryLink(
+          EntryLink.basic(
+            id: '$from->$to',
+            fromId: from,
+            toId: to,
+            createdAt: at,
+            updatedAt: at,
+            vectorClock: null,
+            hidden: hidden,
+          ),
+        );
+
+    setUpAll(() => db = JournalDb(inMemoryDatabase: true));
+    tearDownAll(() => db.close());
+
+    setUp(() async {
+      documents = Directory.systemTemp.createTempSync('check_in_entries_');
+      final notifications = MockUpdateNotifications();
+      when(
+        () => notifications.updateStream,
+      ).thenAnswer((_) => const Stream.empty());
+      getIt
+        ..registerSingleton<UpdateNotifications>(notifications)
+        ..registerSingleton<Directory>(documents);
+      await clearAllTables(db);
+      await initConfigFlags(db, inMemoryDatabase: true);
+      real = RelationshipRepository(
+        journalDb: db,
+        journalRepository: mockJournalRepository,
+        persistenceLogic: mockPersistence,
+      );
+
+      await db.updateJournalEntity(checkInEntry('c-1'));
+      await db.updateJournalEntity(checkInEntry('c-2'));
+      final comment = JournalEntity.journalEntry(
+        meta: entryMeta('comment', at.add(const Duration(minutes: 2))),
+        entryText: const EntryText(plainText: 'Send krill.'),
+      );
+      final take = testAudioEntry.copyWith(
+        meta: entryMeta('take', at.add(const Duration(minutes: 1))),
+      );
+      final privatePhoto = testImageEntry.copyWith(
+        meta: entryMeta(
+          'photo',
+          at.add(const Duration(minutes: 3)),
+          private: true,
+        ),
+      );
+      final gone = JournalEntity.journalEntry(
+        meta: entryMeta('gone', at, deletedAt: at),
+      );
+      final hiddenNote = JournalEntity.journalEntry(
+        meta: entryMeta('hidden', at),
+      );
+      for (final entity in [comment, take, privatePhoto, gone, hiddenNote]) {
+        await db.updateJournalEntity(entity);
+      }
+      await db.updateJournalEntity(taskEntry('task', dateFrom: at));
+      for (final child in ['comment', 'take', 'photo', 'gone', 'task']) {
+        await link('c-1', child);
+      }
+      await link('c-1', 'hidden', hidden: true);
+      await link('c-2', 'comment');
+    });
+
+    tearDown(() {
+      getIt
+        ..unregister<UpdateNotifications>()
+        ..unregister<Directory>();
+      documents.deleteSync(recursive: true);
+    });
+
+    // The agent reads this: private entries included (display preference
+    // must not change its context), deleted ones, hidden links and anything
+    // that is not a comment, recording or photo left out.
+    test("groups each check-in's entries, oldest first, unfiltered", () async {
+      final entries = await real.getAllEntriesForCheckIns({'c-1', 'c-2', 'x'});
+
+      expect(
+        {
+          for (final e in entries.entries)
+            e.key: [for (final x in e.value) x.id],
+        },
+        {
+          'c-1': ['take', 'comment', 'photo'],
+          'c-2': ['comment'],
+          'x': <String>[],
+        },
+      );
+    });
+
+    // ADR 0037: deleting leaves nothing about the person behind — but an
+    // entry that also belongs to something else is not the check-in's to
+    // delete.
+    test('deleting a check-in tombstones the entries it alone holds', () async {
+      await db.updateJournalEntity(taskEntry('task-2', dateFrom: at));
+      await link('task-2', 'photo');
+      when(
+        () => mockPersistence.updateDbEntity(any()),
+      ).thenAnswer((_) async => true);
+
+      expect(await real.deleteCheckIn('c-1'), isTrue);
+
+      final tombstoned = verify(
+        () => mockPersistence.updateDbEntity(captureAny()),
+      ).captured.cast<JournalEntity>();
+      expect(
+        tombstoned.map((e) => (e.id, e.meta.deletedAt != null)).toSet(),
+        {('c-1', true), ('take', true)},
+        reason:
+            'the comment also belongs to c-2 and the photo to a task; the '
+            'hidden note is not an entry',
+      );
+    });
+
+    for (final (showPrivate, expected) in [
+      (false, ['take', 'comment']),
+      (true, ['take', 'comment', 'photo']),
+    ]) {
+      test('the display read shows private entries only when they are shown: '
+          '$showPrivate', () async {
+        await db.upsertConfigFlag(
+          ConfigFlag(
+            name: privateFlag,
+            description: 'Show private entries?',
+            status: showPrivate,
+          ),
+        );
+
+        expect(
+          [for (final e in await real.getCheckInEntries('c-1')) e.id],
+          expected,
+        );
+      });
+    }
+  });
+
+  group('adding to a check-in', () {
+    final checkIn = checkInEntry('c-1');
+
+    setUp(() {
+      when(
+        () => mockDb.journalEntityById('c-1'),
+      ).thenAnswer((_) async => checkIn);
+      when(
+        () => mockPersistence.updateDbEntity(any()),
+      ).thenAnswer((_) async => true);
+    });
+
+    // Every change to what a check-in holds must re-save the check-in: its
+    // updatedAt is the agent's "evidence changed" signal.
+    void expectTouched() {
+      final saved =
+          verify(
+                () => mockPersistence.updateDbEntity(captureAny()),
+              ).captured.single
+              as CheckInEntry;
+      expect(saved.id, 'c-1');
+      expect(saved.meta.updatedAt, testDate.add(const Duration(minutes: 1)));
+    }
+
+    test('a comment is its own entry, linked from the check-in, and the '
+        'check-in changes', () async {
+      when(
+        () => mockPersistence.createDbEntity(
+          any(),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      final entry = await repository.addCommentToCheckIn(
+        checkIn,
+        '  Send krill. ',
+      );
+
+      expect(entry, isA<JournalEntry>());
+      expect(entry!.entryText?.plainText, 'Send krill.');
+      verify(
+        () => mockPersistence.createDbEntity(entry, linkedId: 'c-1'),
+      ).called(1);
+      expectTouched();
+    });
+
+    test(
+      'a blank or unsaved comment adds nothing and changes nothing',
+      () async {
+        when(
+          () => mockPersistence.createDbEntity(
+            any(),
+            linkedId: any(named: 'linkedId'),
+          ),
+        ).thenAnswer((_) async => false);
+
+        expect(await repository.addCommentToCheckIn(checkIn, '   '), isNull);
+        expect(await repository.addCommentToCheckIn(checkIn, 'Lost.'), isNull);
+        verifyNever(() => mockPersistence.updateDbEntity(any()));
+      },
+    );
+
+    test('a recording or photo is attached by a link, and the check-in '
+        'changes', () async {
+      when(
+        () => mockPersistence.createLink(fromId: 'c-1', toId: 'take'),
+      ).thenAnswer((_) async => true);
+
+      expect(
+        await repository.attachEntryToCheckIn(
+          checkInId: 'c-1',
+          entryId: 'take',
+        ),
+        isTrue,
+      );
+      expectTouched();
+    });
+
+    test('a transcript landing on a held recording changes its check-in, and '
+        'only live check-ins are touched', () async {
+      when(
+        () => mockDb.parentLinkedEntityIds('take'),
+      ).thenReturn(MockSelectable(['c-1', 'c-1', 'rel-001']));
+      when(
+        () => mockDb.journalEntityById('rel-001'),
+      ).thenAnswer((_) async => relationshipEntry());
+
+      await repository.touchCheckInsHolding('take');
+
+      expectTouched();
     });
   });
 }

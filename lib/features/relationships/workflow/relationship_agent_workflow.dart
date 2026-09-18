@@ -324,10 +324,10 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
     );
     // The briefing is stale when evidence arrived after it was written —
     // including the very first check-ins before any briefing exists.
-    final reportStale =
-        derivation.lastCheckInAt != null &&
-        (previousReport == null ||
-            derivation.lastCheckInAt!.isAfter(previousReport.createdAt));
+    final reportStale = relationshipEvidenceNewerThan(
+      derivation,
+      previousReport,
+    );
 
     // Re-derive facts FIRST and return before any inference when the armed
     // fact no longer holds (ADR 0059 Decision 3): a check-in landing while
@@ -365,6 +365,10 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       agentId,
       taskId: relationshipId,
     );
+    final checkInEntries = await _relationshipRepository
+        .getAllEntriesForCheckIns({
+          for (final checkIn in relationshipCheckInWindow(checkIns)) checkIn.id,
+        });
     final observations = await recallAgentObservations(
       _repository,
       agentId,
@@ -381,6 +385,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       preTransitionStatus: preTransitionStatus,
       proposals: proposals,
       observations: observations,
+      checkInEntries: checkInEntries,
     );
     if (interactive) {
       factsBlock =

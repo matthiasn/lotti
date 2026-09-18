@@ -15,6 +15,10 @@ import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.
 /// bounded context keeps briefings explainable and token budgets fixed).
 const relationshipCheckInLookback = 10;
 
+/// How many of a check-in's entries the FACTS block carries, oldest first;
+/// the rest are counted so the model knows they exist.
+const relationshipCheckInEntryLookback = 8;
+
 /// How many of the agent's own newest observations a wake reads back.
 const relationshipObservationLookback = 20;
 
@@ -104,6 +108,7 @@ class RelationshipFactsRenderer {
     RelationshipCadenceStatus? preTransitionStatus,
     ProposalLedger proposals = const ProposalLedger.empty(),
     List<RecalledObservation> observations = const [],
+    Map<String, List<JournalEntity>> checkInEntries = const {},
   }) {
     final data = relationship.data;
     final buffer = StringBuffer()
@@ -186,9 +191,21 @@ class RelationshipFactsRenderer {
       if (d.avoid != null && d.avoid!.trim().isNotEmpty) {
         buffer.writeln('  avoid: ${d.avoid!.trim()}');
       }
+      // The text a check-in was saved with (every check-in before they held
+      // entries) reads first, then its entries in the order they were added.
       final narrative = checkIn.entryText?.plainText.trim() ?? '';
       if (narrative.isNotEmpty) {
         buffer.writeln('  narrative: ${_excerpt(narrative)}');
+      }
+      final entries = checkInEntries[checkIn.id] ?? const <JournalEntity>[];
+      for (final entry in entries.take(relationshipCheckInEntryLookback)) {
+        buffer.writeln('  ${_entryLine(entry)}');
+      }
+      if (entries.length > relationshipCheckInEntryLookback) {
+        buffer.writeln(
+          '  (${entries.length - relationshipCheckInEntryLookback} later '
+          'entries not shown)',
+        );
       }
     }
 
@@ -210,12 +227,9 @@ class RelationshipFactsRenderer {
           'PREVIOUS BRIEFING (${_day(previousReport.createdAt)}):',
         )
         ..writeln(previousReport.tldr ?? previousReport.content);
-      final newerCheckIns =
-          derivation.lastCheckInAt != null &&
-          derivation.lastCheckInAt!.isAfter(previousReport.createdAt);
-      if (newerCheckIns) {
+      if (relationshipEvidenceNewerThan(derivation, previousReport)) {
         buffer.writeln(
-          'BRIEFING IS STALE: check-ins landed after it was written.',
+          'BRIEFING IS STALE: check-ins changed after it was written.',
         );
       }
     }
@@ -323,6 +337,41 @@ class RelationshipFactsRenderer {
       b.month,
       b.day,
     ).difference(DateTime(a.year, a.month, a.day)).inDays;
+  }
+
+  /// One check-in entry as the model reads it: what kind it is, when it was
+  /// added, and its words — or, for a recording or photo without words yet,
+  /// that they have not arrived, so the model never reads silence as
+  /// "nothing was said".
+  String _entryLine(JournalEntity entry) {
+    final at = _minute(entry.meta.dateFrom);
+    final words = entry.entryText?.plainText.trim() ?? '';
+    return switch (entry) {
+      JournalAudio(:final data) =>
+        words.isEmpty
+            ? '$at recording (${_clock(data.duration)}): transcript not '
+                  'available yet'
+            : '$at recording (${_clock(data.duration)}): ${_excerpt(words)}',
+      JournalImage() =>
+        words.isEmpty
+            ? '$at photo: no description yet'
+            : '$at photo: ${_excerpt(words)}',
+      _ => '$at comment: ${_excerpt(words)}',
+    };
+  }
+
+  String _minute(DateTime value) {
+    final local = value.toLocal();
+    final hour = local.hour.toString().padLeft(2, '0');
+    final minute = local.minute.toString().padLeft(2, '0');
+    return '${_day(local)} $hour:$minute';
+  }
+
+  String _clock(Duration duration) {
+    final seconds = (duration.inSeconds % 60).toString().padLeft(2, '0');
+    if (duration.inHours == 0) return '${duration.inMinutes}:$seconds';
+    final minutes = (duration.inMinutes % 60).toString().padLeft(2, '0');
+    return '${duration.inHours}:$minutes:$seconds';
   }
 
   String _excerpt(String text) {

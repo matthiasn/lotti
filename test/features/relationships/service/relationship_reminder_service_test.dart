@@ -62,6 +62,7 @@ void main() {
     cadenceDays: 7,
     referenceAt: testDate,
     lastCheckInAt: null,
+    lastEvidenceAt: null,
     dueDayUtc: dueDayUtc ?? DateTime.utc(2026, 8, 21),
     dueDayKey: dueDayKey,
   );

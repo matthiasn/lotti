@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
+import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:mocktail/mocktail.dart';
@@ -71,6 +72,7 @@ class _Run {
 
 void main() {
   late MockJournalDb journalDb;
+  late MockRelationshipRepository relationships;
   late MockProfileResolver resolver;
   late ResolvedProfile defaultProfile;
   late MockSkillInferenceRunner runner;
@@ -102,6 +104,7 @@ void main() {
         notifications,
         resolver,
         runner,
+        relationships,
       );
 
       final wait = service.transcribe(
@@ -135,6 +138,10 @@ void main() {
 
   setUp(() {
     journalDb = MockJournalDb();
+    relationships = MockRelationshipRepository();
+    when(
+      () => relationships.touchCheckInsHolding(any()),
+    ).thenAnswer((_) async {});
     resolver = MockProfileResolver();
     defaultProfile = profile();
     runner = MockSkillInferenceRunner();
@@ -307,6 +314,7 @@ void main() {
           journalDbProvider.overrideWithValue(journalDb),
           profileResolverProvider.overrideWithValue(resolver),
           skillInferenceRunnerProvider.overrideWithValue(runner),
+          relationshipRepositoryProvider.overrideWithValue(relationships),
         ],
       );
       addTearDown(container.dispose);
@@ -405,6 +413,39 @@ void main() {
         ).captured;
         expect(captured.single, isEmpty);
         expect(run.isDone, isFalse, reason: 'the transcript is still coming');
+      });
+    });
+
+    // Words that arrive after the check-in was saved are new evidence: the
+    // check-in holding the recording is saved again so its briefing goes
+    // stale — whether or not anyone is still waiting in the composer.
+    test('a landed transcript marks the check-in holding it as changed', () {
+      withRun((run) {
+        verify(
+          () => relationships.touchCheckInsHolding(audioEntryId),
+        ).called(1);
+      });
+    });
+
+    test('a failed run changes no check-in', () {
+      when(
+        () => runner.runTranscription(
+          audioEntryId: any(named: 'audioEntryId'),
+          automationResult: any(named: 'automationResult'),
+          linkedTaskId: any(named: 'linkedTaskId'),
+          overrideModelId: any(named: 'overrideModelId'),
+          geminiThinkingMode: any(named: 'geminiThinkingMode'),
+          onError: any(named: 'onError'),
+          knownTerms: any(named: 'knownTerms'),
+        ),
+      ).thenAnswer((invocation) async {
+        (invocation.namedArguments[#onError] as void Function(Object)?)?.call(
+          Exception('HTTP 503'),
+        );
+      });
+
+      withRun((run) {
+        verifyNever(() => relationships.touchCheckInsHolding(any()));
       });
     });
 
@@ -516,6 +557,7 @@ void main() {
         MockUpdateNotifications(),
         resolver,
         runner,
+        relationships,
       );
     });
 
@@ -563,6 +605,7 @@ void main() {
         MockUpdateNotifications(),
         resolver,
         runner,
+        relationships,
       );
     });
 

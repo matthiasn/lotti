@@ -109,6 +109,12 @@ independent tasks linked to them.
   Shared agents, tasks, speech, nudges and design-system modules provide the
   underlying capabilities.
 
+A check-in holds its comments, recordings and photos as entries of its own;
+the text older check-ins were saved with reads as their first entry. Adding
+to a check-in, or a recording's transcript arriving later, brings the
+briefing up to date, and everything a check-in holds is part of what the
+agent reads.
+
 Relationships and check-ins live in People, outside the main journal
 stream. Data stays on-device and syncs through the user's own end-to-end
 encrypted Matrix rooms. Private people are hidden from both list and detail

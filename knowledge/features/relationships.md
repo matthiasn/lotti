@@ -5,7 +5,7 @@ description: A personal CRM carried by two journal variants — why check-ins ar
 resource: ../../lib/features/relationships
 tags: [relationships, check-ins, journal-entity, privacy]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-09-19T03:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-09-19T05:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: sync-runtime
@@ -212,6 +212,37 @@ column — a person's whole check-in history is never deserialized only to be
 discarded. Scoping the read to `RelationshipLink` also keeps it in step with
 `unlinkTask`, which removes exactly that type: a task surfaced through some
 other link type would render an unlink action that could never succeed.
+
+# What a check-in holds
+
+A check-in is a container (ADR 0062). Its comments, recordings and photos
+are entries of their own — `JournalEntry`, `JournalAudio`, `JournalImage`
+(`isCheckInEntryKind`) — each linked check-in → entry with a `BasicLink` and
+inheriting the check-in's category and privacy. The text a check-in was
+saved with before it held entries stays in its `entryText` and is shown, and
+given to the agent, as its first entry: the migration happens at read time,
+nothing is rewritten.
+
+```mermaid
+flowchart LR
+  P[RelationshipEntry] -->|RelationshipLink| C[CheckInEntry<br/>entryText = legacy narrative]
+  C -->|BasicLink| T[JournalEntry<br/>comment]
+  C -->|BasicLink| A[JournalAudio<br/>transcript in entryText]
+  C -->|BasicLink| I[JournalImage]
+```
+
+| Read | Filter | Used by |
+|---|---|---|
+| `getAllEntriesForCheckIns(ids)` | none — private entries included | the agent's FACTS, Phase A, the delete cascade |
+| `getCheckInEntries(id)` | the private-entry display preference | the UI |
+
+Both return entries oldest first and leave out deleted entries, hidden
+links and anything linked from a check-in that is not a comment, recording
+or photo. Every write that changes what a check-in holds saves the check-in
+again (`touchCheckIn`), because its `updatedAt` is the agent's "evidence
+changed" signal — see the deterministic tier below. Deleting a check-in, or
+its person, tombstones the entries the check-ins alone hold; one that also
+belongs elsewhere is left alone.
 
 # A person's two images
 
@@ -595,9 +626,9 @@ flowchart TD
   SW --> REG["recompute relationshipHealth register<br/>ONE row per agent, skip-if-identical"]
   REG --> N{"newly due?"}
   N -->|yes| ESC["arm relationship-escalation:&lt;dueDayKey&gt;<br/>lease-elected, idempotent per episode,<br/>baseline token = pre-transition status"]
-  N -->|no| ST{"check-in newer than<br/>current briefing?"}
+  N -->|no| ST{"evidence changed after<br/>current briefing?"}
   ST -->|no| OK3[€0 no-write no-op]
-  ST -->|yes| REF["arm relationship-escalation:refresh-&lt;utcDay&gt;<br/>deadline = the check-in's own instant,<br/>one refresh per UTC day of new evidence"]
+  ST -->|yes| REF["arm relationship-escalation:refresh-&lt;evidenceMs&gt;<br/>deadline = evidence + 30 s settle,<br/>or a pending transcript's timeout"]
 ```
 
 Four decisions keep multi-device runs convergent (ADR 0059 Decision 2):
@@ -635,16 +666,35 @@ draining immediately because the tier is free.
 
 Escalation arms on **two facts, not one**, and each fact has its own
 episode family. The cadence newly lapsing arms
-`relationship-escalation:<dueDayKey>` at the due day (already past). A
-check-in landing after the current briefing (`reportStale`) arms
-`relationship-escalation:refresh-<utcDay>` with the check-in's own instant
-as the deadline — immediately due, so "log a call, get a fresh briefing"
-does not wait out the next cadence lapse. The families are deliberately
-separate: an early-fired refresh consuming the lapse episode's record would
-let per-episode idempotence suppress the real lapse escalation. Refresh
-episodes are keyed to the newest check-in's UTC day, debouncing to at most
-one refresh inference per day of new evidence; when a tick sees both facts,
-only the lapse episode arms — its run regenerates the briefing anyway.
+`relationship-escalation:<dueDayKey>` at the due day (already past). The
+evidence changing after the current briefing (`reportStale`, via
+`relationshipEvidenceNewerThan`) arms
+`relationship-escalation:refresh-<evidenceMs>`. The families are
+deliberately separate: an early-fired refresh consuming the lapse episode's
+record would let per-episode idempotence suppress the real lapse escalation.
+When a tick sees both facts, only the lapse episode arms — its run
+regenerates the briefing anyway.
+
+**"Evidence changed" is a check-in's `updatedAt`, not its date** (ADR 0062).
+`deriveCadenceFacts` reports `lastEvidenceAt`, the newest `updatedAt` among
+the person's check-ins, and a check-in is saved again whenever what it holds
+changes: `RelationshipRepository.addCommentToCheckIn` and
+`attachEntryToCheckIn` touch it, and so does
+`CheckInTranscriptionService` once a recording's transcript lands —
+independently of the composer, which may be long closed — through
+`touchCheckInsHolding`. Keyed by the check-in's date, as it used to be, a
+check-in logged after the briefing but dated before it (yesterday's call,
+logged this morning) never made the briefing stale, and a second check-in
+on the same UTC day shared the first one's consumed episode. Now each
+distinct change is its own episode, keyed by its instant to the millisecond
+so every device arming for the same synced evidence writes the identical
+record. The deadline is the change plus `relationshipEvidenceSettle` (30 s),
+so a burst — a dictation, then a photo, then a comment — is briefed once;
+and while a changed check-in holds a recording whose transcript has not
+arrived, the deadline moves to that recording's `checkInTranscriptTimeout`,
+so the agent never briefs on a check-in that says nothing yet. A transcript
+that does arrive touches the check-in, minting an earlier refresh; the
+deferred one then finds the briefing fresh and ends at €0.
 
 # The LLM tier (plan v2 phase 5)
 
@@ -661,7 +711,12 @@ removed:
   holds — the wake fired, the world moved on, nothing to say. A missing
   provider re-arms the escalation instead of consuming the episode.
 - **`RelationshipFactsRenderer` is the whole ground truth.** Bounded (last
-  10 check-ins, 400-char narrative excerpts) and — the ADR 0041 §5 boundary
+  10 check-ins; per check-in its saved narrative and up to
+  `relationshipCheckInEntryLookback` (8) of its entries, oldest first —
+  comments, recordings with their transcript or "transcript not available
+  yet", photos with their caption or "no description yet" — each a 400-char
+  excerpt; the entries are read unfiltered by
+  `RelationshipRepository.getAllEntriesForCheckIns`) and — the ADR 0041 §5 boundary
   — its `render` signature has **no channel parameter**, so contact
   channels are structurally absent from model context, not filtered out. The
   user-set sentiments in that window also emit the allowed health verdicts in

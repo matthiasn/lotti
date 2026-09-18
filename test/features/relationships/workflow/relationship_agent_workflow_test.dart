@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/relationship_data.dart';
@@ -33,6 +34,7 @@ import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 import '../../agents/workflow/task_agent_workflow_test_helpers.dart';
 
 void main() {
@@ -247,6 +249,9 @@ void main() {
       () => relationshipRepository.getLinkedTasks(relationshipId),
     ).thenAnswer((_) async => []);
     when(
+      () => relationshipRepository.getAllEntriesForCheckIns(any()),
+    ).thenAnswer((_) async => const {});
+    when(
       () => aiConfigRepository.getConfigsByType(any()),
     ).thenAnswer((_) async => []);
     when(
@@ -310,6 +315,45 @@ void main() {
             return null;
           };
   }
+
+  // Everything a check-in holds is evidence: the wake reads the entries of
+  // the check-ins it renders and hands them to the model.
+  test("the check-ins' entries reach the model's FACTS", () async {
+    stubGlmResolution();
+    when(
+      () => relationshipRepository.getAllEntriesForCheckIns({'c-1'}),
+    ).thenAnswer(
+      (_) async => {
+        'c-1': [
+          testAudioEntry.copyWith(
+            entryText: const EntryText(plainText: 'Pip wants the krill memo.'),
+          ),
+        ],
+      },
+    );
+    String? facts;
+    conversationRepository
+      ..maxDelegateCalls = 1
+      ..sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0,
+            strategy,
+          }) async {
+            facts = message;
+            return null;
+          };
+
+    await run(tokens: {relationshipReportRefreshTriggerToken});
+
+    expect(facts, contains('recording (1:00:00): Pip wants the krill memo.'));
+  });
 
   // The usage session behind this: the user corrected a misheard name in a
   // check-in, and the agent kept nothing of it for its next wake.
