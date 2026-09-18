@@ -143,6 +143,10 @@ void main() {
             'No review artifacts exist yet.',
         '- Task priority is P2, status OPEN, no due date or estimate set':
             '- Task priority is P2, status OPEN.',
+        // Verbatim glm-5.3-flash bullet: the marker stays with what survives.
+        '- No estimate or due date has been set; the work is sequenced as a '
+                'single review-and-release pipeline.':
+            '- The work is sequenced as a single review-and-release pipeline.',
       };
       joined.forEach((report, expected) {
         expect(

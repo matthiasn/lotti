@@ -121,6 +121,16 @@ A report already exists. Before publishing, identify a new or corrected task fac
   /// "though the March cutoff will drive the timing" cannot stand without the
   /// clause it qualifies, so that sentence is left whole.
   static String _withoutAbsentMetadataClauses(String sentence) {
+    // A bullet or numbered marker belongs to the line, not to the clause it
+    // introduces, and is restored on whatever survives.
+    final marker =
+        RegExp(r'^\s*(?:[-*•]|\d+[.)])\s+').stringMatch(sentence) ?? '';
+    final body = sentence.substring(marker.length);
+    final kept = _withoutAbsentMetadataClausesIn(body);
+    return kept.isEmpty ? '' : '$marker$kept';
+  }
+
+  static String _withoutAbsentMetadataClausesIn(String sentence) {
     final trailingTrimmed = sentence.replaceAll(_absentMetadataClause, '');
     final clauses = trailingTrimmed
         .split(
