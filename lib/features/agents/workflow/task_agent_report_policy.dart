@@ -77,6 +77,207 @@ A report already exists. Before publishing, identify a new or corrected task fac
         '${hasReport ? '$changedEntitiesRule\n' : ''}\n';
   }
 
+  /// A sentence that only states which metadata the task lacks.
+  ///
+  /// Anchored at both ends, so a sentence that carries anything else — "No
+  /// deadline is set yet — the March cutoff will drive the timing" — is left
+  /// alone. Only the bare note is removed.
+  static final _absentMetadataNote = RegExp(
+    r'^\s*(?:and\s+)?(?:there\s+(?:is|are)\s+)?no\s+'
+    '$_metadataNouns'
+    '(?:\\s*(?:,|,?\\s*(?:or|and))\\s*$_metadataNouns)*'
+    r'\s*(?:is|are|has\s+been|have\s+been)?\s*'
+    '(?:set|recorded|specified|defined|assigned|given|requested)?'
+    r'(?:\s+yet)?(?:\s+for\s+(?:this|the)\s+\w+)?\s*[.!,;]?\s*$',
+    caseSensitive: false,
+  );
+
+  /// The metadata a report may be tempted to call absent.
+  static const _metadataNouns =
+      r'(?:\w+\s+)?(?:estimate|due\s+date|deadline|target\s+date|'
+      r'scheduling\s+request|planner\s+time|priority|owner)';
+
+  /// A trailing clause that only appends which metadata the task lacks, as in
+  /// "the task is open with no due date or estimate set".
+  ///
+  /// The clause must be introduced by "with" or "and" and must end the line:
+  /// "No deadline is set yet — the March cutoff will drive the timing" keeps
+  /// its reasoning, and "The task can proceed with no due date set, and the
+  /// owner will confirm tomorrow" keeps its condition, because the note is not
+  /// what the sentence ends on.
+  static final _absentMetadataClause = RegExp(
+    r'(?:\s*[,;—–-]+\s*|\s+)(?:with|and)\s+no\s+'
+    '$_metadataNouns'
+    '(?:\\s*(?:,|,?\\s*(?:or|and))\\s*$_metadataNouns)*'
+    r'\s*(?:is|are|has\s+been|have\s+been)?\s*'
+    '(?:set|recorded|specified|defined|assigned|given|requested)?'
+    r'(?:\s+yet)?(?=[.!]?\s*$)',
+    caseSensitive: false,
+  );
+
+  /// The sentence without any clause that only reports absent metadata.
+  ///
+  /// Models join the note to real content — "No due date or estimate has been
+  /// set, and no code changes have been made yet" — so the sentence is split on
+  /// its own conjunctions and each part judged alone. What remains is rejoined
+  /// and recapitalised. Only coordinate clauses are split: a subordinate
+  /// "though the March cutoff will drive the timing" cannot stand without the
+  /// clause it qualifies, so that sentence is left whole.
+  /// A list, quote or numbered marker, which belongs to the line rather than
+  /// to the sentence it introduces. Report content is free-form Markdown, so
+  /// the note arrives as often in a bullet as in a paragraph.
+  static final _lineMarker = RegExp(r'^\s*(?:[-*•>]|\d+[.)])\s+');
+
+  static String _withoutAbsentMetadataClauses(String sentence) {
+    final trailingTrimmed = sentence.replaceAll(_absentMetadataClause, '');
+    final clauses = trailingTrimmed
+        .split(
+          RegExp(r';\s+|,\s+(?=(?:and|but)\s+|no\s+)'),
+        )
+        .map((clause) => clause.trim())
+        .where((clause) => clause.isNotEmpty)
+        .toList();
+    if (clauses.length < 2) {
+      return _absentMetadataNote.hasMatch(trailingTrimmed)
+          ? ''
+          : trailingTrimmed;
+    }
+    final kept = clauses
+        .where((clause) => !_absentMetadataNote.hasMatch(clause))
+        .map((clause) => clause.replaceFirst(RegExp(r'^(?:and|but)\s+'), ''))
+        .toList();
+    if (kept.isEmpty) return '';
+    if (kept.length == clauses.length) return trailingTrimmed;
+    final rejoined = kept.join('; ');
+    final ended = RegExp(r'[.!?]$').hasMatch(rejoined)
+        ? rejoined
+        : '$rejoined.';
+    return ended[0].toUpperCase() + ended.substring(1);
+  }
+
+  /// Whether [body] only says the section is empty.
+  ///
+  /// The opening clause, up to a dash or full stop, must itself be the
+  /// negation: "None from you right now — the gate sits with Marta" qualifies,
+  /// while "None of the sensors report, so the swap is blocked" does not,
+  /// because there the negation is the subject of a real statement.
+  static bool _saysNothing(String body) {
+    final opening = body
+        .split(RegExp(r'\s*[—–]\s*|(?<=[.!;:])\s'))
+        .first
+        .trim();
+    if (RegExp(
+      r'^(?:none|nothing)\s+of\b',
+      caseSensitive: false,
+    ).hasMatch(opening)) {
+      return false;
+    }
+    if (opening.split(RegExp(r'\s+')).length > 6) return false;
+    // "None", plus the time and audience fillers models pad it with.
+    final bare = opening
+        .replaceFirst(
+          RegExp(
+            r'^(?:none|nothing|n/?a|no\s+\w+(?:\s+\w+)?\s+(?:is\s+|are\s+)?'
+            r'(?:needed|required|outstanding|pending|open))\b',
+            caseSensitive: false,
+          ),
+          '',
+        )
+        .replaceAll(
+          RegExp(
+            r'\b(?:from|for|at|on|in|to|of|the|this|your|you|us|we|me|i|'
+            'right|now|currently|yet|today|here|moment|time|point|side|'
+            'part|present|stage|outstanding|pending|open|needed|required|'
+            'blocking|left|else|further|additional|new|action|actions|'
+            r'decision|decisions|blocker|blockers|risk|risks)\b',
+            caseSensitive: false,
+          ),
+          '',
+        )
+        .replaceAll(RegExp('[^A-Za-z]'), '');
+    return bare.isEmpty;
+  }
+
+  /// [report] cleaned of notes and empty sections, or unchanged when that
+  /// would leave nothing.
+  ///
+  /// A report whose every sentence is filtered away is a report the model
+  /// wrote badly, not one it did not write: publishing the empty string would
+  /// skip the report a required wake owes and leave the previous one looking
+  /// fresh. The draft is published as it stands instead.
+  static String withoutPublicationNoise(String report) {
+    final cleaned = withoutEmptySections(withoutAbsentMetadataNotes(report));
+    return cleaned.trim().isEmpty ? report : cleaned;
+  }
+
+  /// [report] without Markdown sections whose body only says "none".
+  ///
+  /// The contract already asks for empty sections to be omitted, yet models
+  /// write "## Decision needed" followed by "None from you right now — the gate
+  /// sits with Marta", which repeats what the sections above already say. Four
+  /// of the glm-5.3 control's decision-memo failures on 2026-09-15..18 were
+  /// exactly this. A section with anything else — a bullet list, a second
+  /// paragraph — is kept whole.
+  static String withoutEmptySections(String report) {
+    final lines = report.split('\n');
+    final kept = <String>[];
+    for (var index = 0; index < lines.length; index++) {
+      final heading = RegExp(r'^(#{2,6})\s+\S').firstMatch(lines[index]);
+      if (heading == null) {
+        kept.add(lines[index]);
+        continue;
+      }
+      final level = heading.group(1)!.length;
+      var end = index + 1;
+      while (end < lines.length &&
+          !RegExp('^#{2,$level}\\s+\\S').hasMatch(lines[end])) {
+        end++;
+      }
+      final body = lines
+          .sublist(index + 1, end)
+          .where((line) => line.trim().isNotEmpty)
+          .toList();
+      final isEmptyClaim = body.length == 1 && _saysNothing(body.single.trim());
+      if (body.isEmpty || isEmptyClaim) {
+        index = end - 1;
+        continue;
+      }
+      kept.add(lines[index]);
+    }
+    return kept.join('\n').replaceAll(RegExp(r'\n{3,}'), '\n\n').trim();
+  }
+
+  /// [report] without sentences or clauses that only report absent metadata.
+  ///
+  /// The report contract says to omit absent metadata, yet every efficient
+  /// model still writes "No estimate or due date is set." It caused 7 of the
+  /// 12 failed `task-workflow` gym samples on 2026-09-15..17, across all three
+  /// models, at both temperatures and under both prompt scaffolds. Removing
+  /// the sentence keeps everything the model got right instead of discarding
+  /// or rewriting the report.
+  static String withoutAbsentMetadataNotes(String report) {
+    final kept = <String>[];
+    for (final line in report.split('\n')) {
+      final marker = _lineMarker.stringMatch(line) ?? '';
+      final body = line.substring(marker.length);
+      final sentences = body.split(RegExp(r'(?<=[.!])\s+'));
+      final remaining = sentences
+          .where((sentence) => !_absentMetadataNote.hasMatch(sentence))
+          .map(_withoutAbsentMetadataClauses)
+          .where((sentence) => sentence.isNotEmpty)
+          .join(' ')
+          .trimRight();
+      // A line that was only such a note disappears; one that carried other
+      // prose keeps it. Bullets and headings are lines, so neither is joined
+      // into its neighbour.
+      if (sentences.isNotEmpty && remaining.isEmpty && body.trim().isNotEmpty) {
+        continue;
+      }
+      kept.add(remaining.isEmpty ? line : marker + remaining);
+    }
+    return kept.join('\n').replaceAll(RegExp(r'\n{3,}'), '\n\n').trim();
+  }
+
   /// Housekeeping alone does not stale an existing task report. The model may
   /// still publish when independent evidence changes the task's material state.
   static bool requiresReport({
