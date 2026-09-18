@@ -5,7 +5,7 @@ description: A personal CRM carried by two journal variants — why check-ins ar
 resource: ../../lib/features/relationships
 tags: [relationships, check-ins, journal-entity, privacy]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-09-19T01:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-09-19T01:30:00Z }
 stale_after: 2027-03-01
 sources:
   - id: sync-runtime
@@ -978,6 +978,18 @@ ledger. Pending, confirmed and rejected decisions therefore feed the next wake;
 contact channels remain outside FACTS. The strategy accepts only IDs from that
 rendered window, deduplicates source/title pairs, and queues at most three tasks.
 
+**The user's confirmation decides a proposal; no text is matched.** A
+proposal is grounded by its `sourceCheckInId`, which must name a check-in the
+wake rendered, and the card shows that check-in beside the quoted commitment.
+Nothing compares the quote with the check-in's text. The dispatcher used to
+demand an exact substring at confirmation and withdrew the suggestion on a
+miss — but the model reads narratives whitespace-collapsed and cut at 400
+characters, and quotes a name a later check-in corrected, so suggestions the
+user had read and confirmed failed with *Failed to apply change* and no task.
+A proposal-time check would not help either: the conversation ends after tool
+results (`getContinuationPrompt` returns null), so a rejected proposal is
+silently dropped rather than quoted again.
+
 The workflow persists those items inside its existing output transaction,
 rechecking that the person is live, important and active. A deterministic
 agent/run change-set ID prevents a retry overwriting decisions. A fresh ledger
@@ -998,9 +1010,9 @@ stateDiagram-v2
 ```
 
 [`relationship_tool_dispatcher.dart`](../../lib/features/relationships/workflow/relationship_tool_dispatcher.dart)
-is the only apply path. It rechecks visible evidence, its quoted narrative,
-and current consent; creates a task with the person's category, inherited
-privacy (also preserving private evidence), evidence link and proposed due
+is the only apply path. It rechecks that the source check-in is still visible
+and still the person's, and current consent — not the quote; creates a task
+with the person's category, inherited privacy (also preserving private evidence), evidence link and proposed due
 date; then links it to the person. A link failure tombstones the new task only
 if it is unchanged and has no live links. A refused compensation is
 non-retryable, preserving tasks already edited or linked by another writer. The shared

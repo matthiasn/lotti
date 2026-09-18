@@ -304,23 +304,37 @@ void main() {
     },
   );
 
-  test('a changed quote retracts before creating a task', () async {
-    final result = await dispatcher.dispatch('create_and_link_task', {
-      ...args,
-      'description': 'I promised something else.',
-    }, person.id);
-    expect(result.success, isFalse);
-    expect(result.nonRetryable, isTrue);
-    verifyNever(
-      () => persistence.createTaskEntry(
-        id: any(named: 'id'),
-        data: any(named: 'data'),
-        entryText: any(named: 'entryText'),
-        categoryId: any(named: 'categoryId'),
-        private: any(named: 'private'),
-      ),
-    );
-  });
+  // The user read the suggestion and confirmed it. A check-in edited or
+  // corrected since — the usage session that motivated this corrected a
+  // misheard name — must not withdraw the task the user asked for.
+  test(
+    'confirming creates the task even when the check-in text changed',
+    () async {
+      when(
+        () => relationships.getCheckInsForRelationship(person.id),
+      ).thenAnswer(
+        (_) async => [
+          evidence.copyWith(
+            entryText: const EntryText(
+              plainText: 'Correction: I promised Wanja the checklist.',
+            ),
+          ),
+        ],
+      );
+
+      final result = await withClock(
+        Clock.fixed(now),
+        () => dispatcher.dispatch('create_and_link_task', args, person.id),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.mutatedEntityId, task.id);
+      verify(
+        () =>
+            relationships.linkTask(relationshipId: person.id, taskId: task.id),
+      ).called(1);
+    },
+  );
 
   test(
     'consent withdrawn during creation rolls back without linking',

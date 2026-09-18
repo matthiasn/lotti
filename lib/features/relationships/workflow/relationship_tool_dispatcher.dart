@@ -77,14 +77,12 @@ class RelationshipToolDispatcher {
         permanent: true,
       );
     }
+    // The quote is deliberately not matched against the check-in's text:
+    // the user has read the suggestion beside its source check-in and
+    // confirmed it, and that confirmation is the validation. An exact match
+    // here withdrew suggestions the user wanted whenever the model's
+    // whitespace-collapsed view, or a later correction, changed the wording.
     final quote = (args['description'] as String).trim();
-    final narrative = evidence.entryText?.plainText ?? '';
-    if (!narrative.contains(quote)) {
-      return _failure(
-        'The quoted commitment is no longer in the source check-in',
-        permanent: true,
-      );
-    }
     // One journal identity per evidence-backed commitment, independent of
     // device-local creation timestamps or status UUIDs. Retrying or syncing
     // concurrent confirmations cannot produce a second task row.
