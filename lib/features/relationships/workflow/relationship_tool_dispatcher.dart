@@ -78,8 +78,10 @@ class RelationshipToolDispatcher {
       );
     }
     final quote = (args['description'] as String).trim();
-    final narrative = evidence.entryText?.plainText ?? '';
-    if (!narrative.contains(quote)) {
+    if (!relationshipQuoteAppearsIn(
+      narrative: evidence.entryText?.plainText ?? '',
+      quote: quote,
+    )) {
       return _failure(
         'The quoted commitment is no longer in the source check-in',
         permanent: true,

@@ -5,7 +5,7 @@ description: A personal CRM carried by two journal variants — why check-ins ar
 resource: ../../lib/features/relationships
 tags: [relationships, check-ins, journal-entity, privacy]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-09-19T01:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-09-19T01:30:00Z }
 stale_after: 2027-03-01
 sources:
   - id: sync-runtime
@@ -978,6 +978,22 @@ ledger. Pending, confirmed and rejected decisions therefore feed the next wake;
 contact channels remain outside FACTS. The strategy accepts only IDs from that
 rendered window, deduplicates source/title pairs, and queues at most three tasks.
 
+**The quote must be in its check-in, and both sides check it the same way.**
+`relationshipQuoteAppearsIn` compares the description with the source
+check-in's narrative ignoring case, spacing and line breaks, quotation marks,
+dash and apostrophe styles, an ellipsis, and punctuation at the quote's ends.
+The strategy runs it on every proposal (it holds each rendered check-in's
+narrative, `sourceCheckIns`), so a quote that is not there is rejected
+in-conversation and the model can quote again; the dispatcher runs it again at
+confirmation, because the check-in may have been edited since. Both sides
+matter: the model reads narratives whitespace-collapsed and cut at 400
+characters, and the confirmation check used to demand the stored text's exact
+line breaks — a commitment crossing the blank line between two dictated takes,
+or quoted with a name a later check-in corrected, was withdrawn under the
+user's finger with *Failed to apply change* and no task. The contract tells the
+model to quote as the narrative writes it, even where a later check-in
+corrects it.
+
 The workflow persists those items inside its existing output transaction,
 rechecking that the person is live, important and active. A deterministic
 agent/run change-set ID prevents a retry overwriting decisions. A fresh ledger
@@ -998,8 +1014,8 @@ stateDiagram-v2
 ```
 
 [`relationship_tool_dispatcher.dart`](../../lib/features/relationships/workflow/relationship_tool_dispatcher.dart)
-is the only apply path. It rechecks visible evidence, its quoted narrative,
-and current consent; creates a task with the person's category, inherited
+is the only apply path. It rechecks visible evidence, its quoted narrative
+(with the same `relationshipQuoteAppearsIn`), and current consent; creates a task with the person's category, inherited
 privacy (also preserving private evidence), evidence link and proposed due
 date; then links it to the person. A link failure tombstones the new task only
 if it is unchanged and has no live links. A refused compensation is

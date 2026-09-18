@@ -304,6 +304,34 @@ void main() {
     },
   );
 
+  // The model reads narratives with whitespace collapsed, so a commitment
+  // that crosses the blank line between two dictated takes is quoted on one
+  // line. An exact-substring check withdrew exactly these proposals.
+  test('a quote across two dictated takes still confirms', () async {
+    when(() => relationships.getCheckInsForRelationship(person.id)).thenAnswer(
+      (_) async => [
+        evidence.copyWith(
+          entryText: const EntryText(
+            plainText:
+                'We talked about the launch.\n\nI promised to send '
+                'the\nchecklist before Friday.',
+          ),
+        ),
+      ],
+    );
+
+    final result = await withClock(
+      Clock.fixed(now),
+      () => dispatcher.dispatch('create_and_link_task', {
+        ...args,
+        'description': '„I promised to send the checklist before Friday.“',
+      }, person.id),
+    );
+
+    expect(result.success, isTrue);
+    expect(result.mutatedEntityId, task.id);
+  });
+
   test('a changed quote retracts before creating a task', () async {
     final result = await dispatcher.dispatch('create_and_link_task', {
       ...args,
