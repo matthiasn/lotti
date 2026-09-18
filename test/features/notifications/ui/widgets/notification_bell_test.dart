@@ -527,6 +527,97 @@ void main() {
   );
 
   testWidgets(
+    "tapping a slipped-goal alert opens the goal's page",
+    (tester) async {
+      final navService = _registerNavService();
+      final beamedTo = _captureBeams();
+
+      final entity = _makeGoalOffTrackNotification(
+        id: 'steps',
+        title: 'Daily steps is off track',
+        body: 'A good moment to get back on it.',
+      );
+      final container = ProviderContainer(
+        overrides: [
+          unseenNotificationCountProvider.overrideWith(() => _CountUnseen(1)),
+          inboxNotificationsProvider.overrideWith(
+            () => _StaticInbox([entity]),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        _makeBellHarness(
+          container: container,
+          mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byIcon(LottiIcons.notificationActive));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Daily steps is off track'));
+      await tester.pump();
+
+      // The goal's page, not its chat, and keyed by the agent id.
+      expect(beamedTo, ['/goals/details/goal-steps']);
+      verifyNever(() => navService.pushDesktopTaskDetail(any()));
+      verify(() => repository.markSeen('steps')).called(1);
+    },
+  );
+
+  for (final (label, entity, route) in <(String, NotificationEntity, String)>[
+    (
+      'a plan outcome opens the Daily OS day',
+      _makeDayPlanOutcomeNotification(
+        id: 'plan',
+        title: 'Your day plan is ready',
+      ),
+      '/calendar',
+    ),
+    (
+      'a sync conflict opens the conflicts list',
+      _makeSyncConflictNotification(
+        id: 'sync',
+        title: 'Sync needs your review',
+      ),
+      '/settings/advanced/conflicts',
+    ),
+  ]) {
+    testWidgets('tapping $label', (tester) async {
+      final navService = _registerNavService();
+      final beamedTo = _captureBeams();
+      final container = ProviderContainer(
+        overrides: [
+          unseenNotificationCountProvider.overrideWith(() => _CountUnseen(1)),
+          inboxNotificationsProvider.overrideWith(
+            () => _StaticInbox([entity]),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        _makeBellHarness(
+          container: container,
+          mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byIcon(LottiIcons.notificationActive));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(entity.title));
+      await tester.pump();
+
+      expect(beamedTo, [route]);
+      verifyNever(() => navService.pushDesktopTaskDetail(any()));
+      verify(() => repository.markSeen(entity.id)).called(1);
+    });
+  }
+
+  testWidgets(
     'tapping an auto-completion row opens the habits page',
     (tester) async {
       final navService = _registerNavService();
@@ -791,6 +882,68 @@ NotificationEntity _makeCheckInNotification({
     linkedRelationshipId: 'rel-$id',
     title: title,
     body: body,
+  );
+}
+
+NotificationEntity _makeGoalOffTrackNotification({
+  required String id,
+  required String title,
+  required String body,
+}) {
+  final now = DateTime.utc(2026, 5, 17, 10);
+  return NotificationEntity.goalOffTrack(
+    meta: NotificationMeta(
+      id: id,
+      createdAt: now,
+      updatedAt: now,
+      scheduledFor: now,
+      vectorClock: const VectorClock({'host-A': 1}),
+      originatingHostId: 'host-A',
+    ),
+    linkedGoalAgentId: 'goal-$id',
+    title: title,
+    body: body,
+  );
+}
+
+NotificationEntity _makeDayPlanOutcomeNotification({
+  required String id,
+  required String title,
+}) {
+  final now = DateTime.utc(2026, 5, 17, 10);
+  return NotificationEntity.dayPlanOutcome(
+    meta: NotificationMeta(
+      id: id,
+      createdAt: now,
+      updatedAt: now,
+      scheduledFor: now,
+      vectorClock: const VectorClock({'host-A': 1}),
+      originatingHostId: 'host-A',
+    ),
+    dayId: 'dayplan-2026-05-17',
+    succeeded: true,
+    title: title,
+    body: 'The draft is waiting for your review.',
+  );
+}
+
+NotificationEntity _makeSyncConflictNotification({
+  required String id,
+  required String title,
+}) {
+  final now = DateTime.utc(2026, 5, 17, 10);
+  return NotificationEntity.syncConflict(
+    meta: NotificationMeta(
+      id: id,
+      createdAt: now,
+      updatedAt: now,
+      scheduledFor: now,
+      vectorClock: const VectorClock({'host-A': 1}),
+      originatingHostId: 'host-A',
+    ),
+    conflictCount: 2,
+    title: title,
+    body: '2 entries were edited on two devices',
   );
 }
 

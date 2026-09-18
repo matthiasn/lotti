@@ -240,6 +240,10 @@ void main() {
         '/settings/recording-style',
       );
       expect(
+        pathToBeamUrl(['preferences', 'preferences/notifications']),
+        '/settings/notifications',
+      );
+      expect(
         pathToBeamUrl(['preferences', 'preferences/speech']),
         '/settings/speech',
       );
@@ -382,6 +386,10 @@ void main() {
         'preferences',
         'preferences/recording-style',
       ]);
+      expect(beamUrlToPath('/settings/notifications'), [
+        'preferences',
+        'preferences/notifications',
+      ]);
       expect(beamUrlToPath('/settings/speech'), [
         'preferences',
         'preferences/speech',
@@ -394,6 +402,7 @@ void main() {
       for (final url in const [
         '/settings/theming',
         '/settings/keyboard-shortcuts',
+        '/settings/notifications',
         '/settings/recording-style',
         '/settings/speech',
       ]) {

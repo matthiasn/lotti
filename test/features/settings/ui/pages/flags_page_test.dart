@@ -66,8 +66,8 @@ void main() {
             status: true,
           ),
           const ConfigFlag(
-            name: enableNotificationsFlag,
-            description: 'Enable notifications?',
+            name: recordLocationFlag,
+            description: 'Record geolocation?',
             status: false,
           ),
           const ConfigFlag(
@@ -234,17 +234,17 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(FlagsPage));
-      final notificationsItem = find.widgetWithText(
+      final locationItem = find.widgetWithText(
         DesignSystemListItem,
-        context.messages.configFlagEnableNotifications,
+        context.messages.configFlagRecordLocation,
       );
-      final notificationsSwitch = tester.widget<DesignSystemToggle>(
+      final locationSwitch = tester.widget<DesignSystemToggle>(
         find.descendant(
-          of: notificationsItem,
+          of: locationItem,
           matching: find.byType(DesignSystemToggle),
         ),
       );
-      expect(notificationsSwitch.value, isFalse);
+      expect(locationSwitch.value, isFalse);
     });
 
     testWidgets('toggles flag when switch is tapped', (tester) async {
@@ -283,17 +283,28 @@ void main() {
       final context = tester.element(find.byType(FlagsPage));
 
       // Tap the row itself (not the switch) — the onTap should toggle
-      await tester.tap(
-        find.text(context.messages.configFlagEnableNotifications),
-      );
+      await tester.tap(find.text(context.messages.configFlagRecordLocation));
       await tester.pump();
 
       const expectedFlag = ConfigFlag(
-        name: enableNotificationsFlag,
-        description: 'Enable notifications?',
+        name: recordLocationFlag,
+        description: 'Record geolocation?',
         status: true,
       );
       verify(() => mockPersistenceLogic.setConfigFlag(expectedFlag)).called(1);
+    });
+
+    test('the notification switches are not listed here', () {
+      // They moved to their own Preferences page; a second copy of the
+      // master switch would let the flags page bypass the hook's ordering.
+      expect(
+        FlagsBody.defaultDisplayedItems,
+        isNot(contains(enableNotificationsFlag)),
+      );
+      expect(
+        FlagsBody.defaultDisplayedItems.where((f) => f.startsWith('notify_')),
+        isEmpty,
+      );
     });
 
     testWidgets('shows correct icons for specific flags', (tester) async {
@@ -799,11 +810,6 @@ void main() {
               name: privateFlag,
               description: 'Show private entries?',
               status: true,
-            ),
-            const ConfigFlag(
-              name: enableNotificationsFlag,
-              description: 'Enable notifications?',
-              status: false,
             ),
             const ConfigFlag(
               name: enableEventsFlag,

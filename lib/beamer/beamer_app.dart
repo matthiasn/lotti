@@ -246,6 +246,7 @@ bool settingsRouteHidesBottomNav(BeamLocation<dynamic>? location) {
     // `maintenance` is the legacy `/settings/maintenance` alias.
     'flags' ||
     'theming' ||
+    'notifications' ||
     'recording-style' ||
     'daily-os' ||
     'speech' ||

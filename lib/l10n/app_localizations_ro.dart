@@ -3692,10 +3692,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Activați integrarea Matrix pentru a sincroniza intrările dvs. între dispozitive și cu alți utilizatori Matrix.';
 
   @override
-  String get configFlagEnableNotifications =>
-      'Activați notificările pe desktop?';
-
-  @override
   String get configFlagEnableNotificationsDescription =>
       'Primiți notificări pentru mementouri, actualizări și evenimente importante.';
 
@@ -7336,6 +7332,15 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalNudgeStatusSuperseded => 'Înlocuit';
+
+  @override
+  String get goalOffTrackNotificationBody =>
+      'Un moment bun pentru a reveni pe drumul cel bun.';
+
+  @override
+  String goalOffTrackNotificationTitle(String goal) {
+    return '$goal: sunteți în urmă';
+  }
 
   @override
   String goalPatternBusiestHour(String hour) {
@@ -13839,6 +13844,101 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMeasurableValueKindNumber => 'Număr';
 
   @override
+  String get settingsNotificationsAgentCopyDescription =>
+      'O alertă pentru un obiectiv sau un contact folosește cuvintele bannerului agentului în locul unei linii fixe. Poate menționa detalii și apare pe ecranul de blocare.';
+
+  @override
+  String get settingsNotificationsAgentCopyTitle =>
+      'Alerte în cuvintele agentului';
+
+  @override
+  String get settingsNotificationsAllowTitle => 'Permiteți notificările';
+
+  @override
+  String get settingsNotificationsBadgeDescription =>
+      'Afișează pe pictograma aplicației câte sarcini sunt în lucru.';
+
+  @override
+  String get settingsNotificationsBadgeTitle =>
+      'Numărul de sarcini pe pictograma aplicației';
+
+  @override
+  String get settingsNotificationsCheckInRemindersDescription =>
+      'Când este momentul să luați legătura cu cineva.';
+
+  @override
+  String get settingsNotificationsCheckInRemindersTitle =>
+      'Mementouri de contact';
+
+  @override
+  String get settingsNotificationsDayPlanOutcomesDescription =>
+      'Când un plan al zilei pregătit în fundal este gata sau nu a fost finalizat.';
+
+  @override
+  String get settingsNotificationsDayPlanOutcomesTitle =>
+      'Rezultatele planului zilei';
+
+  @override
+  String get settingsNotificationsExplanation =>
+      'Alertele sosesc prin notificările dispozitivului dumneavoastră. Alegeți ce merită una; oricum, totul rămâne în clopoțelul din Lotti.';
+
+  @override
+  String get settingsNotificationsGoalAlertsDescription =>
+      'Când un obiectiv iese de pe traiectorie.';
+
+  @override
+  String get settingsNotificationsGoalAlertsTitle => 'Alerte pentru obiective';
+
+  @override
+  String get settingsNotificationsHabitAutoCompletionsDescription =>
+      'Când Lotti bifează un obicei în locul dumneavoastră pe baza datelor.';
+
+  @override
+  String get settingsNotificationsHabitAutoCompletionsTitle =>
+      'Obiceiuri bifate automat';
+
+  @override
+  String get settingsNotificationsHabitRemindersDescription =>
+      'La ora pe care ați setat-o pentru un obicei.';
+
+  @override
+  String get settingsNotificationsHabitRemindersTitle =>
+      'Mementouri pentru obiceiuri';
+
+  @override
+  String get settingsNotificationsKindsHeading => 'Alertați-mă despre';
+
+  @override
+  String get settingsNotificationsKindsNote =>
+      'Dezactivarea unui tip oprește doar alertele sale. Intrările sale rămân în clopoțel.';
+
+  @override
+  String get settingsNotificationsSubtitle =>
+      'Ce alerte vă ajung ca notificări';
+
+  @override
+  String get settingsNotificationsSyncConflictsDescription =>
+      'Când o intrare a fost editată pe două dispozitive și necesită verificarea dumneavoastră.';
+
+  @override
+  String get settingsNotificationsSyncConflictsTitle =>
+      'Conflicte de sincronizare';
+
+  @override
+  String get settingsNotificationsTaskSuggestionsDescription =>
+      'Când un agent are sugestii pentru o sarcină sau o sarcină este întârziată.';
+
+  @override
+  String get settingsNotificationsTaskSuggestionsTitle =>
+      'Sugestii pentru sarcini';
+
+  @override
+  String get settingsNotificationsTitle => 'Notificări';
+
+  @override
+  String get settingsNotificationsWordingHeading => 'Formulare';
+
+  @override
   String get settingsOnboardingActionSubtitle =>
       'Redeschideți fluxul de bun venit — conectați-vă creierul AI și creați o sarcină';
 
@@ -13895,7 +13995,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsPreferencesSubtitle =>
-      'Tematică, animații, stil de înregistrare, voce și scurtături';
+      'Tematică, animații, notificări, stil de înregistrare, voce și scurtături';
 
   @override
   String get settingsPreferencesTitle => 'Preferințe';

@@ -31,6 +31,7 @@ import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
+import 'package:lotti/features/notifications/producer/agent_alert_copy.dart';
 import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
@@ -196,6 +197,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
     this._factsRenderer = const RelationshipFactsRenderer(),
     this._domainLogger,
     this._categoryProfileLookup,
+    this._alertCopy,
   });
 
   final AgentRepository _repository;
@@ -211,6 +213,11 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
   /// The person's category default profile, the third step of
   /// [resolveRelationshipAgentModel]. Null skips the category fallback.
   final CategoryProfileLookup? _categoryProfileLookup;
+
+  /// Re-words the check-in reminder Phase A armed with the banner this wake
+  /// authors, when the user allows it (ADR 0063). Optional: without it the
+  /// reminder keeps its template copy, which is where the app stood before.
+  final AgentAlertCopy? _alertCopy;
 
   @override
   DomainLogger? get domainLogger => _domainLogger;
@@ -734,6 +741,9 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
     );
     var attributionFinalized = false;
     var reportHeadAdvanced = false;
+    // The banner this wake created, if any — the words the armed reminder
+    // may take once the transaction holding the banner has committed.
+    NudgeBrief? alertBrief;
 
     await _syncService.runInTransaction(() async {
       // The person may have been deleted while the model was thinking:
@@ -977,6 +987,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
         // nudge LWW tiebreak, and a local instant serializes without an
         // offset, shifting on a syncing peer.
         final brief = sanitizeNudgeBrief(firstAd.brief);
+        alertBrief = brief;
         await _syncService.upsertEntity(
           AgentDomainEntity.relationshipNudge(
             id: relationshipAdId(agentId, runKey),
@@ -997,6 +1008,12 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
         );
       }
     });
+
+    // The reminder in the agent's words — AFTER the transaction, like Phase
+    // A's sink calls, so a rolled-back banner never re-words a reminder.
+    if (alertBrief case final brief?) {
+      await _alertCopy?.restate(subjectId: relationshipId, brief: brief);
+    }
 
     // Finalize AFTER the transaction: the projection must never describe a
     // report the rolled-back (or fenced) transaction did not write.

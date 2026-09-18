@@ -5,7 +5,7 @@ description: How the app starts, which singletons GetIt owns, and why registrati
 resource: ../../lib/get_it.dart
 tags: [architecture, startup, dependency-injection, get-it, riverpod]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-05T16:05:00Z }
+generated: { by: claude-code/fable-5.1, at: 2026-09-16T21:00:00Z }
 stale_after: 2027-01-11
 sources:
   - id: app-bootstrap
@@ -178,14 +178,20 @@ down boot.
 
 **`NotificationService` is lazily registered**, and callers receive a thunk
 (`() => getIt<NotificationService>()`) rather than a resolved instance, so
-start-up itself never initialises the platform plugin — which is what keeps a
-sandboxed build such as the Flatpak startable when plugin registration fails.
+start-up on Linux and Windows never initialises the platform plugin — which is
+what keeps a sandboxed build such as the Flatpak startable when plugin
+registration fails.
 
-What it does *not* mean is that the plugin waits for a notification to be
-scheduled. The first resolution is normally the **first entry write**, because
-`updateBadge()` runs at the end of every `createDbEntity` — before anything has
-been scheduled and regardless of whether notifications are switched on at all.
-Toggling the notifications config flag resolves it too.
+On the platforms Lotti notifies on, start-up *does* resolve it, deliberately:
+`routeNotificationLaunch` reads the launching notification right after
+`restoreNavigationState`, and iOS parks any tap that arrives before the plugin
+is initialised, so an uninitialised plugin would swallow warm taps too (see
+[a tap on the OS alert opens the same place](../features/notifications.md#a-tap-on-the-os-alert-opens-the-same-place)).
+Where the launch read is skipped, the first resolution is the **first entry
+write**, because `updateBadge()` runs at the end of every `createDbEntity` —
+before anything has been scheduled and regardless of whether notifications
+are switched on at all. Toggling the notifications config flag resolves it
+too.
 
 **Construction must therefore be free of user-visible side effects**,
 permission prompts above all: the moment it happens is arbitrary from the

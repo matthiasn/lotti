@@ -1,66 +1,82 @@
 import 'package:flutter/widgets.dart';
+import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
+import 'package:lotti/features/notifications/model/notification_episode_id.dart';
+import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/device_messages.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/notification_service.dart';
 
-/// Raises the ADR 0032 §5 "your plan is ready" OS notification when a durable
-/// draft/refine job completes while the app is not in the foreground.
+/// Records the ADR 0032 §5 "your plan is ready" outcome as a device-local
+/// inbox row when a durable draft/refine job completes while the app is not
+/// in the foreground.
 ///
 /// Wired as `DayProcessingOutboxProcessor.onJobOutcome`: the processor fires
-/// it once per attempt outcome and this filters, so the path is event-driven —
-/// no
-/// polling, and a job that completes after the user backgrounded the app (or
-/// closed the drafting modal) still surfaces its result.
+/// it once per attempt outcome and this filters, so the path is event-driven
+/// — no polling, and a job that completes after the user backgrounded the app
+/// (or closed the drafting modal) still surfaces its result. The row is the
+/// durable record — it sits in the bell until dealt with — and the OS banner
+/// is the scheduler's projection of it; a tap opens the Daily OS day.
+///
+/// The row never syncs: the job ledger is this device's, and "open Lotti to
+/// try again" is only true here. One row per outcome, keyed by the job and
+/// its status, so a job that failed and then succeeded on retry writes both
+/// — and a later outcome for the same day retracts the earlier one, the way
+/// the single OS notification id used to replace it.
 class DayPlanReadyNotifier {
   DayPlanReadyNotifier({
-    NotificationService? notificationService,
+    NotificationRepository? notificationRepository,
     AppLocalizations Function()? messages,
     bool Function()? isAppInForeground,
   }) : // Stored as-is (resolved lazily via `_notifications`); a private named
        // initializing formal isn't valid Dart.
        // ignore: prefer_initializing_formals
-       _notificationService = notificationService,
+       _notificationRepository = notificationRepository,
        _messages = messages ?? deviceMessages,
        _isAppInForeground = isAppInForeground ?? _lifecycleForeground;
 
   /// Foreground check via the widgets binding: `resumed` means the UI is
   /// visible and the in-app Activity timeline is the completion surface, so
-  /// no OS banner. A `null` lifecycle (before the first frame) is treated as
-  /// foreground so startup drains never produce surprise banners.
+  /// no row and no banner. A `null` lifecycle (before the first frame) is
+  /// treated as foreground so startup drains never produce surprise banners.
   static bool _lifecycleForeground() {
     final state = WidgetsBinding.instance.lifecycleState;
     return state == null || state == AppLifecycleState.resumed;
   }
 
-  /// Stable notification id — a newer completion replaces the previous
-  /// banner rather than stacking one per job.
-  static const int notificationId = 0xDA9;
-
-  /// Deep link payload pointing at the Daily OS day surface.
-  static const String deepLink = '/calendar';
-
-  final NotificationService? _notificationService;
+  final NotificationRepository? _notificationRepository;
   final AppLocalizations Function() _messages;
   final bool Function() _isAppInForeground;
 
-  /// Resolved lazily so the lazily-registered [NotificationService] is not
-  /// forced to instantiate during DI bootstrap.
-  NotificationService get _notifications =>
-      _notificationService ?? getIt<NotificationService>();
+  /// Resolved lazily: the notifier is built with the processing runtime,
+  /// which can be earlier than the repository's registration.
+  NotificationRepository get _notifications =>
+      _notificationRepository ?? getIt<NotificationRepository>();
+
+  /// The outcome being recorded, so the next one waits for it.
+  Future<void> _applying = Future<void>.value();
 
   /// Handles one attempt outcome from the outbox processor.
   ///
   /// Not only terminal ones: `failed` is not terminal, and this is the
   /// listener that decides a failed plan job is worth reporting.
   ///
+  /// Outcomes are recorded one at a time. Two for the same day running side
+  /// by side would each arm a row and then retract the other's, leaving
+  /// none; serialised, the later outcome's row is the one that survives.
+  ///
   /// Never throws: the hook is invoked fire-and-forget from the processor's
-  /// completion path, so a delivery failure (service resolution, locale
-  /// lookup, platform plugin) must stay a contained best-effort miss instead
-  /// of surfacing as an unhandled async error on job completion.
-  Future<void> onJobOutcome(DayProcessingJob job) async {
+  /// completion path, so a write failure (repository resolution, locale
+  /// lookup, the notification store) must stay a contained best-effort miss
+  /// instead of surfacing as an unhandled async error on job completion.
+  Future<void> onJobOutcome(DayProcessingJob job) {
+    final run = _applying.then((_) => _record(job));
+    _applying = run;
+    return run;
+  }
+
+  Future<void> _record(DayProcessingJob job) async {
     final succeeded = job.status == DayProcessingJobStatus.succeeded;
     // A job that exhausted its retries is exactly as worth saying out loud as
     // one that worked: the user asked for a plan and is otherwise left with a
@@ -77,35 +93,50 @@ class DayPlanReadyNotifier {
     try {
       final messages = _messages();
       final isDraft = job.kind == DayProcessingJobKind.draftPlan;
-      await _notifications.showNotificationNow(
-        title: switch ((isDraft, succeeded)) {
-          (true, true) => messages.dailyOsNextPlanReadyNotificationTitle,
-          (false, true) =>
-            messages.dailyOsNextPlanChangesReadyNotificationTitle,
-          (true, false) => messages.dailyOsNextPlanFailedNotificationTitle,
-          (false, false) =>
-            messages.dailyOsNextPlanChangesFailedNotificationTitle,
-        },
-        body: switch ((isDraft, succeeded)) {
-          (true, true) => messages.dailyOsNextPlanReadyNotificationBody,
-          (false, true) => messages.dailyOsNextPlanChangesReadyNotificationBody,
-          (true, false) => messages.dailyOsNextPlanFailedNotificationBody,
-          (false, false) =>
-            messages.dailyOsNextPlanChangesFailedNotificationBody,
-        },
-        // Same id for both outcomes: a later result replaces an earlier one
-        // rather than stacking two notifications about the same day.
-        notificationId: notificationId,
-        showOnMobile: true,
-        showOnDesktop: true,
-        deepLink: deepLink,
+      final id = notificationEpisodeId(
+        kind: NotificationKinds.dayPlanOutcome,
+        subjectId: job.dayId,
+        episodeKey: '${job.id}:${job.status.name}',
+      );
+      final notifications = _notifications;
+      await notifications.armEpisode(
+        id: id,
+        scheduledFor: job.updatedAt,
+        build: (meta) => NotificationEntity.dayPlanOutcome(
+          meta: meta,
+          dayId: job.dayId,
+          succeeded: succeeded,
+          title: switch ((isDraft, succeeded)) {
+            (true, true) => messages.dailyOsNextPlanReadyNotificationTitle,
+            (false, true) =>
+              messages.dailyOsNextPlanChangesReadyNotificationTitle,
+            (true, false) => messages.dailyOsNextPlanFailedNotificationTitle,
+            (false, false) =>
+              messages.dailyOsNextPlanChangesFailedNotificationTitle,
+          },
+          body: switch ((isDraft, succeeded)) {
+            (true, true) => messages.dailyOsNextPlanReadyNotificationBody,
+            (false, true) =>
+              messages.dailyOsNextPlanChangesReadyNotificationBody,
+            (true, false) => messages.dailyOsNextPlanFailedNotificationBody,
+            (false, false) =>
+              messages.dailyOsNextPlanChangesFailedNotificationBody,
+          },
+        ),
+      );
+      // A later result replaces an earlier one rather than stacking two
+      // notices about the same day.
+      await notifications.retractOpenRows(
+        linkedEntityId: job.dayId,
+        kind: NotificationKinds.dayPlanOutcome,
+        exceptId: id,
       );
     } catch (e, s) {
       if (getIt.isRegistered<DomainLogger>()) {
         getIt<DomainLogger>().error(
           LogDomain.agentWorkflow,
           e,
-          message: 'failed to raise plan-outcome notification',
+          message: 'failed to record plan-outcome notification',
           stackTrace: s,
         );
       }

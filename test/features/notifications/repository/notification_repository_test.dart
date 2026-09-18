@@ -3,6 +3,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/notifications_db.dart';
+import 'package:lotti/features/notifications/model/notification_episode_id.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -699,14 +700,23 @@ void main() {
       );
     });
 
-    test('a create that produced a row commits the scope', () async {
-      await commitRepository.createRelationshipCheckIn(
+    Future<NotificationEntity?> armCheckIn() => commitRepository.armEpisode(
+      id: notificationEpisodeId(
+        kind: NotificationKinds.relationshipCheckIn,
+        subjectId: 'rel-1',
+        episodeKey: '2026-06-16',
+      ),
+      scheduledFor: DateTime.utc(2026, 6, 16, 9),
+      build: (meta) => NotificationEntity.relationshipCheckIn(
+        meta: meta,
         linkedRelationshipId: 'rel-1',
-        dueDayKey: '2026-06-16',
         title: 'Check in with Anna?',
         body: 'A good moment to reach out.',
-        scheduledFor: DateTime.utc(2026, 6, 16, 9),
-      );
+      ),
+    );
+
+    test('a create that produced a row commits the scope', () async {
+      await armCheckIn();
 
       expect(commitClock.commits, [true]);
     });
@@ -717,26 +727,14 @@ void main() {
       // write that never happened.
       when(() => commitClock.getHost()).thenAnswer((_) async => null);
 
-      final saved = await commitRepository.createRelationshipCheckIn(
-        linkedRelationshipId: 'rel-1',
-        dueDayKey: '2026-06-16',
-        title: 'Check in with Anna?',
-        body: 'A good moment to reach out.',
-        scheduledFor: DateTime.utc(2026, 6, 16, 9),
-      );
+      final saved = await armCheckIn();
 
       expect(saved, isNull);
       expect(commitClock.commits, [false]);
     });
 
     test('a state transition that changed something commits', () async {
-      final saved = await commitRepository.createRelationshipCheckIn(
-        linkedRelationshipId: 'rel-1',
-        dueDayKey: '2026-06-16',
-        title: 'Check in with Anna?',
-        body: 'A good moment to reach out.',
-        scheduledFor: DateTime.utc(2026, 6, 16, 9),
-      );
+      final saved = await armCheckIn();
       commitClock.commits.clear();
 
       await commitRepository.retract(saved!.id);
@@ -745,13 +743,7 @@ void main() {
     });
 
     test('a state transition with no host does not commit', () async {
-      final saved = await commitRepository.createRelationshipCheckIn(
-        linkedRelationshipId: 'rel-1',
-        dueDayKey: '2026-06-16',
-        title: 'Check in with Anna?',
-        body: 'A good moment to reach out.',
-        scheduledFor: DateTime.utc(2026, 6, 16, 9),
-      );
+      final saved = await armCheckIn();
       commitClock.commits.clear();
       when(() => commitClock.getHost()).thenAnswer((_) async => null);
 
@@ -791,91 +783,83 @@ void main() {
         );
       },
     );
+  });
 
-    test(
-      'check-in ids are episode-scoped, not relationship-scoped',
-      () {
-        // Two episodes of the same person must be two rows: the lifecycle
-        // marks are monotonic, so reusing one row would mean a dismissal in
-        // August permanently silences September.
-        final august = repository.notificationIdForRelationshipCheckIn(
-          linkedRelationshipId: 'rel-1',
-          dueDayKey: '2026-08-17',
-        );
-        final september = repository.notificationIdForRelationshipCheckIn(
-          linkedRelationshipId: 'rel-1',
-          dueDayKey: '2026-09-16',
-        );
-        final otherPerson = repository.notificationIdForRelationshipCheckIn(
-          linkedRelationshipId: 'rel-2',
-          dueDayKey: '2026-08-17',
-        );
+  group('NotificationRepository.armEpisode', () {
+    final dueDay = DateTime.utc(2026, 6, 16, 9);
 
-        expect(august, isNot(september));
-        expect(august, isNot(otherPerson));
-        // Deterministic across devices — two phones deriving the same episode
-        // converge on one row instead of double-nudging.
-        expect(
-          august,
-          repository.notificationIdForRelationshipCheckIn(
-            linkedRelationshipId: 'rel-1',
-            dueDayKey: '2026-08-17',
-          ),
-        );
-        expect(
-          august,
-          matches(
-            RegExp(
-              '^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-'
-              r'[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
-            ),
-          ),
-        );
-        // Distinct namespace from the task-suggestion helper, so a
-        // relationship id can never collide with a task id.
-        expect(
-          august,
-          isNot(repository.notificationIdForTaskSuggestion('rel-1')),
+    String episodeId({
+      String subjectId = 'rel-1',
+      String dueDayKey = '2026-06-16',
+    }) => notificationEpisodeId(
+      kind: NotificationKinds.relationshipCheckIn,
+      subjectId: subjectId,
+      episodeKey: dueDayKey,
+    );
+
+    /// Arms a check-in episode the way a producer does, counting how often
+    /// the row builder actually ran.
+    var builds = 0;
+    Future<NotificationEntity?> arm({
+      String subjectId = 'rel-1',
+      String dueDayKey = '2026-06-16',
+      DateTime? scheduledFor,
+    }) => repository.armEpisode(
+      id: episodeId(subjectId: subjectId, dueDayKey: dueDayKey),
+      scheduledFor: scheduledFor ?? dueDay,
+      category: 'cat-1',
+      build: (meta) {
+        builds++;
+        return NotificationEntity.relationshipCheckIn(
+          meta: meta,
+          linkedRelationshipId: subjectId,
+          title: 'Check in with Anna?',
+          body: 'A good moment to reach out.',
         );
       },
     );
-  });
 
-  group('NotificationRepository.createRelationshipCheckIn', () {
-    final dueDay = DateTime.utc(2026, 6, 16, 9);
+    setUp(() => builds = 0);
 
-    Future<NotificationEntity?> arm({
-      String relationshipId = 'rel-1',
-      String dueDayKey = '2026-06-16',
-      String title = 'Check in with Anna?',
-      DateTime? scheduledFor,
-    }) => repository.createRelationshipCheckIn(
-      linkedRelationshipId: relationshipId,
-      dueDayKey: dueDayKey,
-      title: title,
-      body: 'A good moment to reach out.',
-      scheduledFor: scheduledFor ?? dueDay,
-      category: 'cat-1',
-    );
-
-    test('writes a schedulable row carrying the person and category', () async {
+    test('writes the built row around a pending meta', () async {
       final saved = await arm();
 
       expect(saved, isA<RelationshipCheckInNotification>());
-      expect(
-        saved!.meta.id,
-        repository.notificationIdForRelationshipCheckIn(
-          linkedRelationshipId: 'rel-1',
-          dueDayKey: '2026-06-16',
-        ),
-      );
+      expect(saved!.meta.id, episodeId());
       expect(saved.linkedEntityId, 'rel-1');
       expect(saved.meta.scheduledFor, dueDay);
       expect(saved.meta.category, 'cat-1');
-      expect(saved.type, 'relationshipCheckIn');
+      expect(saved.meta.createdAt, fixedNow);
+      expect(saved.meta.updatedAt, fixedNow);
+      expect(saved.meta.seenAt, isNull);
+      expect(saved.meta.actedOnAt, isNull);
+      expect(saved.meta.deletedAt, isNull);
       // Handed straight to the scheduler, which is what puts the alarm on the
       // OS clock while the app is still open.
       verify(() => scheduler.schedule(saved, now: fixedNow)).called(1);
+    });
+
+    test('two concurrent arms of one episode write it once', () async {
+      // A cadence tick racing a write-driven wake for the same subject:
+      // unless the check and the write are chained by episode, both read
+      // "no row" and both write, enqueue, schedule and notify.
+      final results = await Future.wait([arm(), arm()]);
+
+      expect(results.whereType<NotificationEntity>(), hasLength(1));
+      expect(builds, 1);
+      expect(await notificationsDb.notificationById(episodeId()), isNotNull);
+      verify(
+        () => scheduler.schedule(
+          any<NotificationEntity>(),
+          now: any(named: 'now'),
+        ),
+      ).called(1);
+      verify(
+        () => outboxService.enqueueNotification(
+          any<NotificationEntity>(),
+          originatingHostId: any(named: 'originatingHostId'),
+        ),
+      ).called(1);
     });
 
     test('a second arm for the same episode writes nothing', () async {
@@ -890,6 +874,9 @@ void main() {
       // re-notify listeners every single tick — the €0 no-op property of the
       // deterministic tier depends on this returning early.
       expect(again, isNull);
+      // And never even asks for the row: baked copy is not re-rendered for
+      // an episode that already exists.
+      expect(builds, 1);
       verifyNever(
         () => scheduler.schedule(
           any<NotificationEntity>(),
@@ -993,77 +980,519 @@ void main() {
     });
   });
 
-  group('NotificationRepository.retractRelationshipCheckIns', () {
-    Future<NotificationEntity> armEpisode(String dueDayKey) async {
-      final saved = await repository.createRelationshipCheckIn(
-        linkedRelationshipId: 'rel-1',
-        dueDayKey: dueDayKey,
-        title: 'Check in with Anna?',
-        body: 'A good moment to reach out.',
-        scheduledFor: DateTime.utc(2026, 6, 16, 9),
+  // A row about this device's own processing never leaves it — and neither
+  // do its lifecycle marks: a peer receiving a state update for a row it
+  // never got keeps the event pending forever, waiting for a base row that
+  // is never coming (`_applyNotificationStateUpdateMessage` throws to retry).
+  group('NotificationRepository device-local rows', () {
+    Future<NotificationEntity> armConflict() async {
+      final saved = await repository.armEpisode(
+        id: 'conflict-burst-1',
+        scheduledFor: fixedNow,
+        build: (meta) => NotificationEntity.syncConflict(
+          meta: meta,
+          conflictCount: 2,
+          title: 'Sync needs your review',
+          body: '2 entries were edited on two devices',
+        ),
       );
       return saved!;
     }
+
+    void verifyNoStateUpdateEnqueued() => verifyNever(
+      () => outboxService.enqueueNotificationStateUpdate(
+        id: any(named: 'id'),
+        seenAt: any(named: 'seenAt'),
+        actedOnAt: any(named: 'actedOnAt'),
+        deletedAt: any(named: 'deletedAt'),
+        vectorClock: any(named: 'vectorClock'),
+        originatingHostId: any(named: 'originatingHostId'),
+      ),
+    );
+
+    test(
+      'a create is stored, scheduled and announced but never enqueued',
+      () async {
+        final saved = await armConflict();
+
+        expect(saved.isDeviceLocal, isTrue);
+        expect(await notificationsDb.notificationById(saved.id), isNotNull);
+        verify(() => scheduler.schedule(saved, now: fixedNow)).called(1);
+        verify(
+          () => updateNotifications.notify(any(), fromSync: false),
+        ).called(1);
+        verifyNever(
+          () => outboxService.enqueueNotification(
+            any<NotificationEntity>(),
+            originatingHostId: any(named: 'originatingHostId'),
+          ),
+        );
+      },
+    );
+
+    test('marking it seen stays local too', () async {
+      final saved = await armConflict();
+
+      final seen = await repository.markSeen(saved.id);
+
+      expect(seen!.meta.seenAt, isNotNull);
+      verifyNoStateUpdateEnqueued();
+    });
+
+    test('retracting it stays local too', () async {
+      final saved = await armConflict();
+
+      final retracted = await repository.retract(saved.id);
+
+      expect(retracted!.meta.deletedAt, isNotNull);
+      verifyNoStateUpdateEnqueued();
+    });
+
+    test('a synced row still enqueues its create and its marks', () async {
+      // The guard is per variant, not a global switch.
+      final saved = await repository.armEpisode(
+        id: 'checkin-1',
+        scheduledFor: fixedNow,
+        build: (meta) => NotificationEntity.relationshipCheckIn(
+          meta: meta,
+          linkedRelationshipId: 'rel-1',
+          title: 'Check in?',
+          body: 'b',
+        ),
+      );
+      await repository.markSeen(saved!.id);
+
+      verify(
+        () => outboxService.enqueueNotification(
+          saved,
+          originatingHostId: any(named: 'originatingHostId'),
+        ),
+      ).called(1);
+      verify(
+        () => outboxService.enqueueNotificationStateUpdate(
+          id: saved.id,
+          seenAt: any(named: 'seenAt'),
+          actedOnAt: any(named: 'actedOnAt'),
+          deletedAt: any(named: 'deletedAt'),
+          vectorClock: any(named: 'vectorClock'),
+          originatingHostId: any(named: 'originatingHostId'),
+        ),
+      ).called(1);
+    });
+  });
+
+  group('NotificationRepository.restateOpenRows', () {
+    const kind = NotificationKinds.relationshipCheckIn;
+    const newTitle = "Check in with Anna — it's been 2 weeks.";
+    const newBody = 'Last time: the move.';
+    final ahead = fixedNow.add(const Duration(days: 1));
+    final later = fixedNow.add(const Duration(minutes: 5));
+
+    /// The wall clock the restate happens at: after the arm, as in
+    /// production, so the re-worded row wins the content merge outright
+    /// rather than by the tie-break.
+    late DateTime current;
+
+    setUp(() {
+      current = fixedNow;
+      repository = NotificationRepository(
+        notificationsDb: notificationsDb,
+        vectorClockService: vectorClockService,
+        outboxService: outboxService,
+        updateNotifications: updateNotifications,
+        scheduler: scheduler,
+        now: () => current,
+      );
+    });
+
+    Future<NotificationEntity> armEpisode(
+      String dueDayKey, {
+      String subjectId = 'rel-1',
+      DateTime? scheduledFor,
+    }) async {
+      final saved = await repository.armEpisode(
+        id: notificationEpisodeId(
+          kind: kind,
+          subjectId: subjectId,
+          episodeKey: dueDayKey,
+        ),
+        scheduledFor: scheduledFor ?? ahead,
+        build: (meta) => NotificationEntity.relationshipCheckIn(
+          meta: meta,
+          linkedRelationshipId: subjectId,
+          title: 'Check in?',
+          body: 'A good moment to reach out.',
+        ),
+      );
+      return saved!;
+    }
+
+    Future<List<NotificationEntity>> restate({
+      String? body = newBody,
+      String linkedEntityId = 'rel-1',
+      String rowKind = kind,
+    }) {
+      current = later;
+      clearInteractions(scheduler);
+      clearInteractions(outboxService);
+      clearInteractions(updateNotifications);
+      return repository.restateOpenRows(
+        linkedEntityId: linkedEntityId,
+        kind: rowKind,
+        title: newTitle,
+        body: body,
+      );
+    }
+
+    Future<NotificationEntity> stored(String id) async =>
+        (await notificationsDb.notificationById(id))!;
+
+    test('re-words an open future row and stamps the write', () async {
+      final row = await armEpisode('2026-06-16');
+
+      final restated = await restate();
+
+      expect(restated.map((r) => r.id), [row.id]);
+      final saved = await stored(row.id);
+      expect(saved.title, newTitle);
+      expect(saved.body, newBody);
+      expect(saved, isA<RelationshipCheckInNotification>());
+      expect(saved.meta.updatedAt, later);
+      expect(saved.meta.createdAt, row.meta.createdAt);
+      expect(saved.meta.scheduledFor, ahead);
+      expect(saved.meta.originatingHostId, 'host-a');
+    });
+
+    test('re-arms the row under its unchanged id and syncs it whole', () async {
+      final row = await armEpisode('2026-06-16');
+
+      await restate();
+
+      // Same id → the OS alarm is replaced, not doubled; a full row on the
+      // wire → peers converge on the new words by updatedAt.
+      final rearmed =
+          verify(
+                () => scheduler.schedule(
+                  captureAny<NotificationEntity>(),
+                  now: later,
+                ),
+              ).captured.single
+              as NotificationEntity;
+      expect(rearmed.id, row.id);
+      expect(rearmed.title, newTitle);
+      final synced =
+          verify(
+                () => outboxService.enqueueNotification(
+                  captureAny<NotificationEntity>(),
+                  originatingHostId: any(named: 'originatingHostId'),
+                ),
+              ).captured.single
+              as NotificationEntity;
+      expect(synced.title, newTitle);
+      verify(
+        () => updateNotifications.notify({
+          row.id,
+          'rel-1',
+          inboxNotification,
+        }, fromSync: false),
+      ).called(1);
+    });
+
+    test('keeps the body when none is given', () async {
+      final row = await armEpisode('2026-06-16');
+
+      await restate(body: null);
+
+      final saved = await stored(row.id);
+      expect(saved.title, newTitle);
+      expect(saved.body, 'A good moment to reach out.');
+    });
+
+    test('leaves a row already due alone — its alert went out', () async {
+      final due = await armEpisode(
+        '2026-05-16',
+        scheduledFor: fixedNow.subtract(const Duration(hours: 1)),
+      );
+
+      final restated = await restate();
+
+      // Rescheduling a due row would announce it a second time.
+      expect(restated, isEmpty);
+      expect((await stored(due.id)).title, 'Check in?');
+      verifyNever(
+        () => scheduler.schedule(
+          any<NotificationEntity>(),
+          now: any(named: 'now'),
+        ),
+      );
+    });
+
+    test('a row that comes due while being re-worded is left alone', () async {
+      // `restateOpenRows` read it ahead of the clock; by the time the write
+      // is stamped the alert has gone out. Re-arming it would announce it a
+      // second time, so the write is skipped on the clock it would carry.
+      final soon = await armEpisode(
+        '2026-05-17',
+        scheduledFor: fixedNow.add(const Duration(minutes: 1)),
+      );
+      var reads = 0;
+      repository = NotificationRepository(
+        notificationsDb: notificationsDb,
+        vectorClockService: vectorClockService,
+        outboxService: outboxService,
+        updateNotifications: updateNotifications,
+        scheduler: scheduler,
+        // The read sees the row a minute ahead; the write's clock is past it.
+        now: () => reads++ == 0 ? fixedNow : later,
+      );
+
+      final restated = await restate();
+
+      expect(restated, isEmpty);
+      expect((await stored(soon.id)).title, 'Check in?');
+      verifyNever(
+        () => scheduler.schedule(
+          any<NotificationEntity>(),
+          now: any(named: 'now'),
+        ),
+      );
+      verifyNever(
+        () => outboxService.enqueueNotification(
+          any<NotificationEntity>(),
+          originatingHostId: any(named: 'originatingHostId'),
+        ),
+      );
+    });
+
+    test('leaves a seen, acted-on or deleted row alone', () async {
+      final seen = await armEpisode('2026-06-16');
+      await repository.markSeen(seen.id);
+      final retracted = await armEpisode('2026-07-16');
+      await repository.retract(retracted.id);
+
+      final restated = await restate();
+
+      expect(restated, isEmpty);
+      expect((await stored(seen.id)).title, 'Check in?');
+      expect((await stored(retracted.id)).title, 'Check in?');
+    });
+
+    test("leaves another subject's and another kind's rows alone", () async {
+      final theirs = await armEpisode('2026-06-16', subjectId: 'rel-2');
+      final mine = await armEpisode('2026-06-16');
+
+      final restated = await restate();
+      final otherKind = await restate(rowKind: NotificationKinds.goalOffTrack);
+
+      expect(restated.map((r) => r.id), [mine.id]);
+      expect(otherKind, isEmpty);
+      expect((await stored(theirs.id)).title, 'Check in?');
+    });
+
+    test('writes nothing when the words already read this way', () async {
+      await armEpisode('2026-06-16');
+      await restate();
+
+      final again = await restate();
+
+      // A re-run wake must not bump the clock, sync or re-arm for nothing.
+      expect(again, isEmpty);
+      verifyNever(
+        () => outboxService.enqueueNotification(
+          any<NotificationEntity>(),
+          originatingHostId: any(named: 'originatingHostId'),
+        ),
+      );
+      verifyNever(
+        () => scheduler.schedule(
+          any<NotificationEntity>(),
+          now: any(named: 'now'),
+        ),
+      );
+    });
+
+    test('a device-local row is re-worded but never enqueued', () async {
+      final local = await repository.create(
+        NotificationEntity.dayPlanOutcome(
+          meta: NotificationMeta(
+            id: 'plan-row',
+            createdAt: fixedNow,
+            updatedAt: fixedNow,
+            scheduledFor: ahead,
+            vectorClock: const VectorClock({}),
+            originatingHostId: '',
+          ),
+          dayId: 'day-1',
+          succeeded: true,
+          title: 'Your day plan is ready',
+          body: 'The draft is waiting for your review.',
+        ),
+      );
+
+      final restated = await restate(
+        linkedEntityId: 'day-1',
+        rowKind: NotificationKinds.dayPlanOutcome,
+      );
+
+      expect(restated.map((r) => r.id), [local!.id]);
+      expect((await stored(local.id)).title, newTitle);
+      verifyNever(
+        () => outboxService.enqueueNotification(
+          any<NotificationEntity>(),
+          originatingHostId: any(named: 'originatingHostId'),
+        ),
+      );
+    });
+
+    test('without a host nothing is written', () async {
+      final row = await armEpisode('2026-06-16');
+      when(() => vectorClockService.getHost()).thenAnswer((_) async => null);
+
+      final restated = await restate();
+
+      expect(restated, isEmpty);
+      expect((await stored(row.id)).title, 'Check in?');
+    });
+
+    group('commits the clock scope only for a row it wrote', () {
+      late _CommitEvaluatingVectorClockService commitClock;
+
+      setUp(() {
+        commitClock = _CommitEvaluatingVectorClockService();
+        when(() => commitClock.getHost()).thenAnswer((_) async => 'host-a');
+        when(
+          () =>
+              commitClock.getNextVectorClock(previous: any(named: 'previous')),
+        ).thenAnswer((_) async => const VectorClock({'host-a': 1}));
+        repository = NotificationRepository(
+          notificationsDb: notificationsDb,
+          vectorClockService: commitClock,
+          outboxService: outboxService,
+          updateNotifications: updateNotifications,
+          scheduler: scheduler,
+          now: () => current,
+        );
+      });
+
+      test('a re-wording that wrote the row commits', () async {
+        await armEpisode('2026-06-16');
+        commitClock.commits.clear();
+
+        await restate();
+
+        expect(commitClock.commits, [true]);
+      });
+
+      test('a re-wording with no host does not commit', () async {
+        await armEpisode('2026-06-16');
+        commitClock.commits.clear();
+        when(() => commitClock.getHost()).thenAnswer((_) async => null);
+
+        await restate();
+
+        // No clock can be attributed, so no tick may be spent.
+        expect(commitClock.commits, [false]);
+      });
+    });
+  });
+
+  group('NotificationRepository.retractOpenRows', () {
+    const kind = NotificationKinds.relationshipCheckIn;
+
+    Future<NotificationEntity> armEpisode(
+      String dueDayKey, {
+      String subjectId = 'rel-1',
+    }) async {
+      final saved = await repository.armEpisode(
+        id: notificationEpisodeId(
+          kind: kind,
+          subjectId: subjectId,
+          episodeKey: dueDayKey,
+        ),
+        scheduledFor: DateTime.utc(2026, 6, 16, 9),
+        build: (meta) => NotificationEntity.relationshipCheckIn(
+          meta: meta,
+          linkedRelationshipId: subjectId,
+          title: 'Check in?',
+          body: 'A good moment to reach out.',
+        ),
+      );
+      return saved!;
+    }
+
+    Future<List<NotificationEntity>> retractAll({String? exceptId}) =>
+        repository.retractOpenRows(
+          linkedEntityId: 'rel-1',
+          kind: kind,
+          exceptId: exceptId,
+        );
+
+    Future<DateTime?> deletedAtOf(String id) async =>
+        (await notificationsDb.notificationById(id))!.meta.deletedAt;
 
     test('retracts every open episode when nothing is spared', () async {
       final first = await armEpisode('2026-06-16');
       final second = await armEpisode('2026-07-16');
 
-      final retracted = await repository.retractRelationshipCheckIns('rel-1');
+      final retracted = await retractAll();
 
-      expect(
-        retracted.map((row) => row.id).toSet(),
-        {first.id, second.id},
-      );
-      for (final id in [first.id, second.id]) {
-        expect(
-          (await notificationsDb.notificationById(id))!.meta.deletedAt,
-          isNotNull,
-        );
-      }
+      expect(retracted.map((row) => row.id).toSet(), {first.id, second.id});
+      expect(await deletedAtOf(first.id), isNotNull);
+      expect(await deletedAtOf(second.id), isNotNull);
     });
 
     test('spares the episode currently armed', () async {
       final superseded = await armEpisode('2026-06-16');
       final current = await armEpisode('2026-07-16');
 
-      final retracted = await repository.retractRelationshipCheckIns(
-        'rel-1',
-        exceptId: current.id,
-      );
+      final retracted = await retractAll(exceptId: current.id);
 
       expect(retracted.map((row) => row.id), [superseded.id]);
-      expect(
-        (await notificationsDb.notificationById(current.id))!.meta.deletedAt,
-        isNull,
-      );
+      expect(await deletedAtOf(current.id), isNull);
     });
 
-    test("leaves another person's reminders alone", () async {
+    test("leaves another subject's rows alone", () async {
       final mine = await armEpisode('2026-06-16');
-      final theirs = await repository.createRelationshipCheckIn(
-        linkedRelationshipId: 'rel-2',
-        dueDayKey: '2026-06-16',
-        title: 'Check in with Ben?',
-        body: 'A good moment to reach out.',
-        scheduledFor: DateTime.utc(2026, 6, 16, 9),
-      );
+      final theirs = await armEpisode('2026-06-16', subjectId: 'rel-2');
 
-      final retracted = await repository.retractRelationshipCheckIns('rel-1');
+      final retracted = await retractAll();
 
       expect(retracted.map((row) => row.id), [mine.id]);
-      expect(
-        (await notificationsDb.notificationById(theirs!.id))!.meta.deletedAt,
-        isNull,
+      expect(await deletedAtOf(theirs.id), isNull);
+    });
+
+    test('a seen row is still open, and retracted', () async {
+      // A seen row has had its OS alert cancelled but is still in the inbox,
+      // and a superseded episode must leave it.
+      final seen = await armEpisode('2026-06-16');
+      await repository.markSeen(seen.id);
+
+      final retracted = await retractAll();
+
+      expect(retracted.map((row) => row.id), [seen.id]);
+    });
+
+    test('an acted-on row is not open and is left alone', () async {
+      final actedOn = await armEpisode('2026-06-16');
+      await notificationsDb.mergeState(
+        id: actedOn.id,
+        actedOnAt: fixedNow,
+        vectorClock: const VectorClock({'host-a': 2}),
+        originatingHostId: 'host-a',
       );
+
+      final retracted = await retractAll();
+
+      expect(retracted, isEmpty);
+      expect(await deletedAtOf(actedOn.id), isNull);
     });
 
     test('is idempotent — a second pass writes nothing', () async {
       await armEpisode('2026-06-16');
-      await repository.retractRelationshipCheckIns('rel-1');
+      await retractAll();
       clearInteractions(outboxService);
 
-      final second = await repository.retractRelationshipCheckIns('rel-1');
+      final second = await retractAll();
 
       expect(second, isEmpty);
       verifyNever(
@@ -1078,7 +1507,7 @@ void main() {
       );
     });
 
-    test('ignores task rows linked to the same id', () async {
+    test('ignores rows of another kind linked to the same id', () async {
       // `forLinkedEntity` is not variant-scoped, so the filter has to be.
       await repository.createTaskSuggestion(
         linkedTaskId: 'rel-1',
@@ -1088,7 +1517,7 @@ void main() {
       );
       final reminder = await armEpisode('2026-06-16');
 
-      final retracted = await repository.retractRelationshipCheckIns('rel-1');
+      final retracted = await retractAll();
 
       expect(retracted.map((row) => row.id), [reminder.id]);
     });

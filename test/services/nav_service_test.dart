@@ -1125,6 +1125,104 @@ void main() {
       );
     });
 
+    // A notification tap can reach the service before the config-flag
+    // streams have emitted — at boot, when every flag still reads false and a
+    // route into a flag-gated tab would be normalised to Tasks without a word.
+    group('beamToNamedWhenReady', () {
+      test('beams at once when the flags are already known', () {
+        final bench = _NavFlagBench()..emitAll(enabled: true);
+
+        bench.navService.beamToNamedWhenReady('/projects/project-3');
+
+        expect(bench.navService.index, bench.navService.projectsIndex);
+        expect(bench.navService.currentPath, '/projects/project-3');
+      });
+
+      test('parks a route into a flag-gated tab until the flags arrive', () {
+        final bench = _NavFlagBench();
+
+        bench.navService.beamToNamedWhenReady('/projects/project-3');
+
+        // Nothing has moved yet: Projects is not even an enabled tab, and a
+        // plain beamToNamed would have dropped the route to Tasks here.
+        expect(bench.navService.index, 0);
+        expect(bench.navService.currentPath, '/tasks');
+        expect(
+          bench.navService.projectsDelegate.configuration.uri.path,
+          '/projects',
+        );
+
+        bench.emitAll(enabled: true);
+
+        expect(bench.navService.index, bench.navService.projectsIndex);
+        expect(bench.navService.currentPath, '/projects/project-3');
+      });
+
+      test('a parked route lands on top of the restored tab', () async {
+        // Boot shape: the previous session was left on a journal entry, and
+        // the app is now launched from a notification about a project.
+        final first = _NavFlagBench(registerTeardown: false)
+          ..emitAll(enabled: true);
+        first.navService.beamToNamed('/journal/entry-1');
+        await pumpEventQueue();
+        await first.dispose();
+
+        final bench = _NavFlagBench(settingsDb: first.settingsDb);
+        await bench.navService.restoreNavigationState();
+        bench.navService.beamToNamedWhenReady('/projects/project-3');
+
+        bench.emitAll(enabled: true);
+
+        expect(bench.navService.index, bench.navService.projectsIndex);
+        expect(bench.navService.currentPath, '/projects/project-3');
+        // The restored position survives underneath, on its own tab.
+        expect(
+          bench.navService.journalDelegate.configuration.uri.path,
+          '/journal/entry-1',
+        );
+      });
+
+      test('only the newest parked route survives', () {
+        final bench = _NavFlagBench();
+        bench.navService
+          ..beamToNamedWhenReady('/projects/project-3')
+          ..beamToNamedWhenReady('/journal/entry-1');
+
+        bench.emitAll(enabled: true);
+
+        expect(bench.navService.index, bench.navService.journalIndex);
+        expect(bench.navService.currentPath, '/journal/entry-1');
+        expect(
+          bench.navService.projectsDelegate.configuration.uri.path,
+          '/projects',
+        );
+      });
+
+      test('a parked route is consumed once, not re-applied on later flag '
+          'changes', () {
+        final bench = _NavFlagBench();
+        bench.navService.beamToNamedWhenReady('/projects/project-3');
+        bench.emitAll(enabled: true);
+        bench.navService.beamToNamed('/journal');
+        expect(bench.navService.index, bench.navService.journalIndex);
+
+        bench.emitAll(enabled: true);
+
+        expect(bench.navService.index, bench.navService.journalIndex);
+        expect(bench.navService.currentPath, '/journal');
+      });
+
+      test('a parked route into a tab that stays disabled lands on Tasks', () {
+        final bench = _NavFlagBench();
+        bench.navService.beamToNamedWhenReady('/projects/project-3');
+
+        bench.emitAll(enabled: false);
+
+        expect(bench.navService.index, 0);
+        expect(bench.navService.currentPath, '/tasks');
+      });
+    });
+
     group('restoring a flag-gated tab', () {
       /// Persists [route] as the active tab's position through one service
       /// generation, then returns a fresh generation sharing its SettingsDb —

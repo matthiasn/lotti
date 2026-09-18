@@ -391,6 +391,9 @@ void main() {
         cloudInferenceRepositoryProvider.overrideWithValue(
           MockCloudInferenceRepository(),
         ),
+        // The workflow's alert re-wording reads the user's say from the
+        // journal database (ADR 0063), so the graph now needs one.
+        journalDbProvider.overrideWithValue(MockJournalDb()),
       ],
     );
     expect(

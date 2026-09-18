@@ -179,6 +179,9 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
       if (identity.lifecycle != AgentLifecycle.active) {
         _goalAgentService.removeSignalSubscriptions(identity.agentId);
         _checkInNotifier?.unwatch(identity.agentId);
+        // No later tick will retract an alert the goal armed while active:
+        // a paused or archived goal must not notify (ADR 0062).
+        await _goalAgentService.offTrackAlerts?.clearFor(identity.agentId);
         return;
       }
       // Before the criteria gate: a synced identity can arrive ahead of its

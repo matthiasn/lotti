@@ -3638,10 +3638,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Schakel de integratie van Matrix in om uw items te synchroniseren tussen apparaten en met andere Matrix-gebruikers.';
 
   @override
-  String get configFlagEnableNotifications =>
-      'Notificatieberichten inschakelen?';
-
-  @override
   String get configFlagEnableNotificationsDescription =>
       'Ontvang meldingen voor herinneringen, updates en belangrijke gebeurtenissen.';
 
@@ -7215,6 +7211,15 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalNudgeStatusSuperseded => 'Vervangen';
+
+  @override
+  String get goalOffTrackNotificationBody =>
+      'Een goed moment om de draad weer op te pakken.';
+
+  @override
+  String goalOffTrackNotificationTitle(String goal) {
+    return '$goal loopt achter';
+  }
 
   @override
   String goalPatternBusiestHour(String hour) {
@@ -13593,6 +13598,99 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsMeasurableValueKindNumber => 'Getal';
 
   @override
+  String get settingsNotificationsAgentCopyDescription =>
+      'Een doel- of contactwaarschuwing gebruikt de woorden van de banner van de agent in plaats van een vaste regel. Die kan details noemen en verschijnt op het vergrendelscherm.';
+
+  @override
+  String get settingsNotificationsAgentCopyTitle =>
+      'Waarschuwingen in de woorden van de agent';
+
+  @override
+  String get settingsNotificationsAllowTitle => 'Meldingen toestaan';
+
+  @override
+  String get settingsNotificationsBadgeDescription =>
+      'Toont op het app-icoon hoeveel taken in uitvoering zijn.';
+
+  @override
+  String get settingsNotificationsBadgeTitle => 'Aantal taken op het app-icoon';
+
+  @override
+  String get settingsNotificationsCheckInRemindersDescription =>
+      'Wanneer het tijd is om contact op te nemen met iemand.';
+
+  @override
+  String get settingsNotificationsCheckInRemindersTitle =>
+      'Contactherinneringen';
+
+  @override
+  String get settingsNotificationsDayPlanOutcomesDescription =>
+      'Wanneer een op de achtergrond opgesteld dagplan klaar is, of niet is afgerond.';
+
+  @override
+  String get settingsNotificationsDayPlanOutcomesTitle =>
+      'Resultaten van het dagplan';
+
+  @override
+  String get settingsNotificationsExplanation =>
+      'Waarschuwingen komen via de meldingen van je apparaat. Kies welke een melding waard zijn; alles blijft hoe dan ook in de bel in Lotti staan.';
+
+  @override
+  String get settingsNotificationsGoalAlertsDescription =>
+      'Wanneer een doel van koers raakt.';
+
+  @override
+  String get settingsNotificationsGoalAlertsTitle => 'Doelwaarschuwingen';
+
+  @override
+  String get settingsNotificationsHabitAutoCompletionsDescription =>
+      'Wanneer Lotti een gewoonte voor je afvinkt op basis van je gegevens.';
+
+  @override
+  String get settingsNotificationsHabitAutoCompletionsTitle =>
+      'Automatisch afgevinkte gewoontes';
+
+  @override
+  String get settingsNotificationsHabitRemindersDescription =>
+      'Op de tijd die je bij een gewoonte hebt ingesteld.';
+
+  @override
+  String get settingsNotificationsHabitRemindersTitle =>
+      'Gewoonteherinneringen';
+
+  @override
+  String get settingsNotificationsKindsHeading => 'Waarschuw me bij';
+
+  @override
+  String get settingsNotificationsKindsNote =>
+      'Een soort uitzetten stopt alleen de waarschuwingen ervan. De items blijven in de bel staan.';
+
+  @override
+  String get settingsNotificationsSubtitle =>
+      'Welke waarschuwingen je als melding bereiken';
+
+  @override
+  String get settingsNotificationsSyncConflictsDescription =>
+      'Wanneer een item op twee apparaten is bewerkt en jouw beoordeling nodig heeft.';
+
+  @override
+  String get settingsNotificationsSyncConflictsTitle =>
+      'Synchronisatieconflicten';
+
+  @override
+  String get settingsNotificationsTaskSuggestionsDescription =>
+      'Wanneer een agent suggesties heeft bij een taak, of een taak te laat is.';
+
+  @override
+  String get settingsNotificationsTaskSuggestionsTitle => 'Taaksuggesties';
+
+  @override
+  String get settingsNotificationsTitle => 'Meldingen';
+
+  @override
+  String get settingsNotificationsWordingHeading => 'Bewoording';
+
+  @override
   String get settingsOnboardingActionSubtitle =>
       'Open de welkomststroom . . Sluit uw AI-hersenen en maak een taak';
 
@@ -13648,7 +13746,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsPreferencesSubtitle =>
-      'Thema, animaties, opnamestijl, spraak en sneltoetsen';
+      'Thema, animaties, meldingen, opnamestijl, spraak en sneltoetsen';
 
   @override
   String get settingsPreferencesTitle => 'Voorkeuren';

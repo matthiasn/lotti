@@ -2,8 +2,8 @@ import 'package:clock/clock.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/features/notifications/preferences/notification_preference_effects.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
-import 'package:lotti/features/notifications/scheduler/notification_startup_reconcile.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_collaborator_base.dart';
@@ -11,7 +11,6 @@ import 'package:lotti/logic/persistence_logic.dart' show PersistenceLogic;
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
-import 'package:lotti/utils/consts.dart';
 
 /// Entity/dashboard definition and config-flag operations of
 /// [PersistenceLogic].
@@ -157,7 +156,8 @@ class PersistenceDefinitionOps extends PersistenceCollaboratorBase {
   Future<void> setConfigFlagImpl(ConfigFlag configFlag) async {
     final previous = await journalDb.getConfigFlagByName(configFlag.name);
     await journalDb.upsertConfigFlag(configFlag);
-    if (previous?.status != configFlag.status) {
+    final changed = previous?.status != configFlag.status;
+    if (changed) {
       await outboxService.enqueueMessage(
         SyncMessage.configFlag(
           name: configFlag.name,
@@ -169,48 +169,25 @@ class PersistenceDefinitionOps extends PersistenceCollaboratorBase {
     if (configFlag.name == 'private') {
       updateNotifications.notify({privateToggleNotification});
     }
-    if (configFlag.name == enableNotificationsFlag &&
-        previous?.status != configFlag.status) {
-      await _refreshBadgeForNotificationsFlag();
-      if (configFlag.status) {
-        // Rows written while the flag was off carry no OS alarm — the
-        // scheduler's platform calls are gated on the flag, and the
-        // repository's idempotent creates never re-schedule an existing row.
-        // Without this, only the next app start would arm them, so a user
-        // who turns notifications on and keeps the app running would miss
-        // every reminder already sitting in the database.
-        await reconcileScheduledNotifications(
-          scheduler: getIt<NotificationScheduler>(),
-          logger: getIt<DomainLogger>(),
-        );
-      }
+    if (changed) {
+      await _applyNotificationPreference(configFlag);
     }
   }
 
-  /// Makes the app icon reflect the notifications flag the moment it is
-  /// toggled, rather than at the next journal write.
-  ///
-  /// `updateBadge` is the only thing that reconciles the icon with the flag,
-  /// and nothing else calls it outside entry creation — so without this,
-  /// switching notifications off left the task count sitting on the icon until
-  /// the user happened to write something. Turning them *on* is where the
-  /// permission prompt now surfaces, which is the moment the user asked for it.
-  ///
-  /// Failure is logged and swallowed: the user asked to change a setting, and
-  /// that write has already succeeded. A badge refresh that cannot reach the
-  /// platform is not a reason to report the setting as unsaved.
-  Future<void> _refreshBadgeForNotificationsFlag() async {
-    try {
-      await getIt<NotificationService>().updateBadge();
-    } catch (exception, stackTrace) {
-      getIt<DomainLogger>().error(
-        LogDomain.notifications,
-        exception,
-        stackTrace: stackTrace,
-        subDomain: 'setConfigFlag',
-      );
-    }
-  }
+  /// Makes a notification preference take effect the moment it is toggled,
+  /// rather than at the next journal write or the next app start. The
+  /// consequences live in [NotificationPreferenceEffects], shared with the
+  /// sync apply path so a flag flipped on a peer reaches this device's alarms
+  /// as well.
+  Future<void> _applyNotificationPreference(ConfigFlag flag) =>
+      NotificationPreferenceEffects(
+        journalDb: journalDb,
+        // ignore: unnecessary_lambdas
+        notificationService: () => getIt<NotificationService>(),
+        // ignore: unnecessary_lambdas
+        scheduler: () => getIt<NotificationScheduler>(),
+        logger: getIt<DomainLogger>(),
+      ).apply(flag);
 
   Future<int> deleteDashboardDefinitionImpl(
     DashboardDefinition dashboard,

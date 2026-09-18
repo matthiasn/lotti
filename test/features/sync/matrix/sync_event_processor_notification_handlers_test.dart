@@ -2,6 +2,7 @@
 
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/notifications_db.dart';
@@ -95,6 +96,158 @@ void main() {
           fromSync: true,
         ),
       ).called(1);
+    });
+
+    group('a re-worded row arriving from a peer (ADR 0063)', () {
+      // Pinned between the template's 10:00 and a 12:00 alarm, so a row can
+      // be "still ahead" or "already fired" by its scheduledFor alone.
+      final now = DateTime.utc(2026, 5, 17, 11);
+
+      NotificationEntity reworded(NotificationEntity template) => template
+          .copyWithCopy(
+            title: 'Your pedometer misses you.',
+            body: 'Averaging 6k of 10k steps.',
+          )
+          .copyWithMeta(
+            template.meta.copyWith(
+              updatedAt: template.meta.updatedAt.add(
+                const Duration(minutes: 5),
+              ),
+              vectorClock: const VectorClock({'local-host': 2}),
+            ),
+          );
+
+      Future<void> applyRow(NotificationEntity row) => withClock(
+        Clock.fixed(now),
+        () => notificationProcessor.apply(
+          prepared: PreparedSyncEvent.forTesting(
+            event: event,
+            syncMessage: SyncMessage.notification(
+              id: row.meta.id,
+              jsonPath: '/notifications/notification-id.json',
+              vectorClock: row.meta.vectorClock,
+              originatingHostId: 'remote-host',
+            ),
+            resolvedNotification: row,
+          ),
+          journalDb: journalDb,
+        ),
+      );
+
+      test(
+        'overtakes the stored words by updatedAt, whichever order the two '
+        'events arrive in',
+        () async {
+          final template = hNotification(
+            id: 'notification-id',
+            linkedTaskId: 'task-1',
+          );
+
+          await applyRow(template);
+          await applyRow(reworded(template));
+          final afterReword = await notificationsDb.notificationById(
+            template.meta.id,
+          );
+          expect(afterReword?.title, 'Your pedometer misses you.');
+          expect(afterReword?.body, 'Averaging 6k of 10k steps.');
+
+          // The older create replayed afterwards loses on updatedAt.
+          await applyRow(template);
+          final replayed = await notificationsDb.notificationById(
+            template.meta.id,
+          );
+          expect(replayed?.title, 'Your pedometer misses you.');
+          expect(
+            replayed?.meta.vectorClock,
+            const VectorClock({'local-host': 2}),
+          );
+        },
+      );
+
+      test('re-arms a row whose alarm is still ahead, under its id', () async {
+        final template = hNotification(
+          id: 'notification-id',
+          linkedTaskId: 'task-1',
+          scheduledFor: DateTime.utc(2026, 5, 17, 12),
+        );
+        await applyRow(template);
+        clearInteractions(scheduler);
+
+        await applyRow(reworded(template));
+
+        final scheduled =
+            verify(
+                  () => scheduler.schedule(captureAny<NotificationEntity>()),
+                ).captured.single
+                as NotificationEntity;
+        expect(scheduled.id, template.meta.id);
+        expect(scheduled.title, 'Your pedometer misses you.');
+      });
+
+      test(
+        'does not announce again a row whose alarm already fired here',
+        () async {
+          // The device was offline across the alarm; the re-wording lands
+          // afterwards. `schedule` on a due row shows it at once, which would
+          // be the same alert twice. The bell shows the new words regardless.
+          final template = hNotification(
+            id: 'notification-id',
+            linkedTaskId: 'task-1',
+          );
+          await applyRow(template);
+          clearInteractions(scheduler);
+          clearInteractions(updateNotifications);
+
+          await applyRow(reworded(template));
+
+          verifyNever(() => scheduler.schedule(any<NotificationEntity>()));
+          expect(
+            (await notificationsDb.notificationById(template.meta.id))?.title,
+            'Your pedometer misses you.',
+          );
+          verify(
+            () => updateNotifications.notify(
+              {template.meta.id, 'task-1', inboxNotification},
+              fromSync: true,
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'a due row arriving with a mark still schedules — that cancels',
+        () async {
+          final template = hNotification(
+            id: 'notification-id',
+            linkedTaskId: 'task-1',
+          );
+          await applyRow(template);
+          clearInteractions(scheduler);
+          final seen = template.copyWithMeta(
+            template.meta.copyWith(
+              seenAt: now,
+              updatedAt: now,
+              vectorClock: const VectorClock({'local-host': 2}),
+            ),
+          );
+
+          await applyRow(seen);
+
+          verify(
+            () => scheduler.schedule(any<NotificationEntity>()),
+          ).called(1);
+        },
+      );
+
+      test('a brand-new due row is still announced on arrival', () async {
+        await applyRow(
+          hNotification(id: 'notification-id', linkedTaskId: 'task-1'),
+        );
+
+        verify(
+          () => scheduler.schedule(any<NotificationEntity>()),
+        ).called(1);
+      });
     });
 
     test(

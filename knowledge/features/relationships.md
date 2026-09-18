@@ -5,7 +5,7 @@ description: A personal CRM carried by two journal variants — why check-ins ar
 resource: ../../lib/features/relationships
 tags: [relationships, check-ins, journal-entity, privacy]
 status: stable
-generated: { by: claude-code/fable-5.1, at: 2026-09-13T18:00:00Z }
+generated: { by: claude-code/fable-5.1, at: 2026-09-16T17:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: sync-runtime
@@ -103,7 +103,7 @@ sources:
   - id: runtime
     resource: ../../lib/features/relationships/runtime/relationship_agent_phase_a.dart
     title: RelationshipAgentPhaseA — the deterministic tier
-    last_modified: 2026-08-19
+    last_modified: 2026-09-16
   - id: workflow
     resource: ../../lib/features/relationships/workflow/relationship_agent_workflow.dart
     title: RelationshipAgentWorkflow — the LLM tier
@@ -139,7 +139,7 @@ sources:
   - id: reminders
     resource: ../../lib/features/relationships/service/relationship_reminder_service.dart
     title: RelationshipReminderService — the OS-reminder projection
-    last_modified: 2026-08-19
+    last_modified: 2026-09-16
   - id: adr-0039
     resource: ../../docs/adr/0039-relationship-check-in-reminders.md
     title: ADR 0039 — Relationship check-in reminders
@@ -1508,9 +1508,20 @@ producer**. Phase A already derives the cadence on the daily tick, on every
 check-in write and on every relationship save; a separate event-driven service
 (what ADR 0039 Decision 3 originally proposed) would have been a second source
 of truth for "when is this person due", free to disagree with the banner and
-the briefing. `RelationshipReminderSink` is the seam, declared in Phase A's own
-file so the dependency runs one way: the service imports Phase A, and Phase A
-never learns that `features/notifications` exists.
+the briefing. `RelationshipReminderSink` is the seam — Phase A's alias for the
+shared `NotificationEpisodeSink` contract, bound to its own subject and
+derivation and declared in Phase A's own file so the dependency runs one way:
+the service imports Phase A, and Phase A never learns that
+`features/notifications` exists. The service itself is a
+`NotificationEpisodeProducer` supplying only the check-in specifics — the
+kind, the due day as episode key, the reminder hour, the copy — and the
+choreography below is the
+[producer contract's](notifications.md#producers-share-one-episode-contract).
+Phase B touches the reminder in one way only: once its transaction has
+committed a banner, `AgentAlertCopy` may re-word the armed reminder with that
+banner's brief, if the user allows it — never arm or retract one
+([ADR 0063](../../docs/adr/0063-agent-worded-alerts-restate-an-armed-episode.md),
+[the notifications concept](notifications.md#the-agent-may-re-word-an-armed-alert)).
 
 ```mermaid
 flowchart TD
@@ -1518,8 +1529,8 @@ flowchart TD
   E -->|"no — unimportant, dormant,<br/>archived, deleted, unresolvable"| C["clearFor(relationshipId)<br/>retract every open reminder"]
   E -->|yes| TX["agent transaction:<br/>sweep · register · escalation"]
   TX --> NUDGE["ScheduledWakeManager.requestCheck<br/>AFTER the commit"]
-  TX --> ARM["arm(relationship, derivation)<br/>AFTER the commit"]
-  ARM --> ID["id = uuid5(relationshipId, dueDayKey)"]
+  TX --> ARM["arm(subject, derivation)<br/>AFTER the commit"]
+  ARM --> ID["id = uuid5(kind, relationshipId, dueDayKey)"]
   ID --> EX{"row for this episode<br/>already exists?"}
   EX -->|yes| NOOP["no write — the daily tick stays €0,<br/>and a dismissal is never resurrected"]
   EX -->|no| PAST{"due day still ahead?"}

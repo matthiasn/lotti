@@ -33,7 +33,14 @@ class GoalAgentService {
     this.updateNotifications,
     this.goalMirrorService,
     this.checkInNotifier,
+    this.offTrackAlerts,
   });
+
+  /// The alert leg of the deletion cascade. Deletion cannot wait for the
+  /// next tick to retract an armed alert — destroying the agent is what
+  /// stops the ticks — so [deleteGoalAgent] clears it here (the relationship
+  /// precedent). Optional for the same reason as [goalMirrorService].
+  final GoalOffTrackSink? offTrackAlerts;
 
   final AgentService _agentService;
   final AgentRepository _repository;
@@ -192,6 +199,7 @@ class GoalAgentService {
       ..cancelPendingWake(agentId)
       ..abortRunningWake(agentId);
     removeSignalSubscriptions(agentId);
+    await offTrackAlerts?.clearFor(agentId);
     return true;
   }
 

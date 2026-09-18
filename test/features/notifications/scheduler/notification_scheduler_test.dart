@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/notifications_db.dart';
+import 'package:lotti/features/goals/ui/goal_routes.dart';
+import 'package:lotti/features/notifications/model/notification_tap_payload.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
@@ -25,6 +27,7 @@ void main() {
     scheduler = NotificationScheduler(
       notificationsDb: notificationsDb,
       notificationServiceProvider: () => notificationService,
+      isKindEnabled: (_) async => true,
     );
 
     _stubNotificationService(notificationService);
@@ -71,7 +74,7 @@ void main() {
             notificationId: NotificationScheduler.notificationIdFor('due-id'),
             showOnMobile: true,
             showOnDesktop: true,
-            deepLink: '/tasks/task-1',
+            deepLink: _payload(route: '/tasks/task-1', inboxId: 'due-id'),
           ),
         ).called(1);
         verifyNever(
@@ -117,7 +120,7 @@ void main() {
           ),
           showOnMobile: true,
           showOnDesktop: true,
-          deepLink: '/habits',
+          deepLink: _payload(route: '/habits', inboxId: 'habits-auto'),
         ),
       ).called(1);
     });
@@ -141,7 +144,7 @@ void main() {
           notificationId: NotificationScheduler.notificationIdFor('future-id'),
           showOnMobile: true,
           showOnDesktop: true,
-          deepLink: '/tasks/task-2',
+          deepLink: _payload(route: '/tasks/task-2', inboxId: 'future-id'),
         ),
       ).called(1);
       verifyNever(
@@ -220,7 +223,10 @@ void main() {
             ),
             showOnMobile: true,
             showOnDesktop: true,
-            deepLink: '/tasks/task-id',
+            deepLink: _payload(
+              route: '/tasks/task-id',
+              inboxId: 'fallback-now',
+            ),
           ),
         ).called(1);
       },
@@ -265,7 +271,10 @@ void main() {
             ),
             showOnMobile: true,
             showOnDesktop: true,
-            deepLink: '/tasks/task-exact',
+            deepLink: _payload(
+              route: '/tasks/task-exact',
+              inboxId: 'exact-now-id',
+            ),
           ),
         ).called(1);
         verifyNever(
@@ -287,11 +296,14 @@ void main() {
   // Routing is a switch over the union rather than a read of the shared
   // `linkedEntityId` getter, because every variant answers that getter — which
   // is how a relationship id used to be handed to the `/tasks/` route.
-  group('NotificationScheduler deep links', () {
+  // The payload is what the OS hands back on a tap: the route to open and
+  // the row's own id, so the tap can mark the row seen. Decoded here rather
+  // than compared as a string, so the wire format is the payload's business.
+  group('NotificationScheduler tap payloads', () {
     final now = DateTime.utc(2026, 5, 17, 10);
 
-    /// Schedules [entity] in the past and returns the deep link it carried.
-    Future<String?> deepLinkOf(NotificationEntity entity) async {
+    /// Schedules [entity] in the past and returns the payload it carried.
+    Future<NotificationTapPayload?> payloadOf(NotificationEntity entity) async {
       clearInteractions(notificationService);
       await scheduler.schedule(entity, now: now);
       final captured = verify(
@@ -304,35 +316,72 @@ void main() {
           deepLink: captureAny(named: 'deepLink'),
         ),
       ).captured;
-      return captured.single as String?;
+      return NotificationTapPayload.decode(captured.single as String?);
     }
 
     final past = now.subtract(const Duration(minutes: 1));
 
-    test('a task suggestion points at its task', () async {
+    test('a task suggestion points at its task and names its row', () async {
       expect(
-        await deepLinkOf(
+        await payloadOf(
           _suggestion(id: 's', linkedTaskId: 't-1', scheduledFor: past),
         ),
-        '/tasks/t-1',
+        const NotificationTapPayload(route: '/tasks/t-1', inboxId: 's'),
       );
     });
 
-    test('an overdue task points at its task', () async {
+    test('an overdue task points at its task and names its row', () async {
       expect(
-        await deepLinkOf(
+        await payloadOf(
           _notification(id: 'o', linkedTaskId: 't-2', scheduledFor: past),
         ),
-        '/tasks/t-2',
+        const NotificationTapPayload(route: '/tasks/t-2', inboxId: 'o'),
       );
     });
 
     test('a check-in reminder points at the person, not a task', () async {
       expect(
-        await deepLinkOf(
+        await payloadOf(
           _checkIn(id: 'c', linkedRelationshipId: 'rel-9', scheduledFor: past),
         ),
-        '/people/rel-9',
+        const NotificationTapPayload(route: '/people/rel-9', inboxId: 'c'),
+      );
+    });
+
+    test("a slipped goal points at the goal's page", () async {
+      final payload = await payloadOf(
+        _goalOffTrack(
+          id: 'g',
+          linkedGoalAgentId: 'agent-3',
+          scheduledFor: past,
+        ),
+      );
+
+      expect(
+        payload,
+        const NotificationTapPayload(
+          route: '/goals/details/agent-3',
+          inboxId: 'g',
+        ),
+      );
+      // The same route the goals surface builds, so the two cannot drift.
+      expect(payload!.route, goalDetailPath('agent-3'));
+    });
+
+    test('a plan outcome points at the Daily OS day', () async {
+      expect(
+        await payloadOf(_dayPlanOutcome(id: 'p', scheduledFor: past)),
+        const NotificationTapPayload(route: '/calendar', inboxId: 'p'),
+      );
+    });
+
+    test('a sync conflict points at the conflicts list', () async {
+      expect(
+        await payloadOf(_syncConflict(id: 'x', scheduledFor: past)),
+        const NotificationTapPayload(
+          route: '/settings/advanced/conflicts',
+          inboxId: 'x',
+        ),
       );
     });
   });
@@ -340,6 +389,162 @@ void main() {
   // OS-level alarms do not survive an app update, a reinstall or an Android
   // reboot, while the rows describing them do. Nothing else re-arms them:
   // `schedule` only ever runs on a write.
+  group('NotificationScheduler per-kind preference', () {
+    final now = DateTime.utc(2026, 5, 17, 10);
+    late List<NotificationEntity> asked;
+
+    /// A scheduler whose preference answers [enabled] for every kind and
+    /// records which rows it was asked about.
+    NotificationScheduler gated({required bool enabled}) =>
+        NotificationScheduler(
+          notificationsDb: notificationsDb,
+          notificationServiceProvider: () => notificationService,
+          isKindEnabled: (entity) async {
+            asked.add(entity);
+            return enabled;
+          },
+        );
+
+    setUp(() => asked = []);
+
+    void verifyNothingArmed() {
+      verifyNever(
+        () => notificationService.showNotificationNow(
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          notificationId: any(named: 'notificationId'),
+          showOnMobile: any(named: 'showOnMobile'),
+          showOnDesktop: any(named: 'showOnDesktop'),
+          deepLink: any(named: 'deepLink'),
+        ),
+      );
+      verifyNever(
+        () => notificationService.scheduleNotificationAt(
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          notifyAt: any(named: 'notifyAt'),
+          notificationId: any(named: 'notificationId'),
+          showOnMobile: any(named: 'showOnMobile'),
+          showOnDesktop: any(named: 'showOnDesktop'),
+          deepLink: any(named: 'deepLink'),
+        ),
+      );
+    }
+
+    test(
+      'a kind switched off cancels the alarm instead of announcing a due row',
+      () async {
+        final entity = _notification(
+          id: 'due-id',
+          scheduledFor: now.subtract(const Duration(minutes: 1)),
+        );
+
+        await gated(enabled: false).schedule(entity, now: now);
+
+        // The row stays in the inbox; only the OS side is withdrawn.
+        verify(
+          () => notificationService.cancelNotification(
+            NotificationScheduler.notificationIdFor('due-id'),
+          ),
+        ).called(1);
+        verifyNothingArmed();
+      },
+    );
+
+    test(
+      'a kind switched off cancels the alarm instead of arming a future row',
+      () async {
+        final entity = _notification(
+          id: 'future-id',
+          scheduledFor: now.add(const Duration(days: 2)),
+        );
+
+        await gated(enabled: false).schedule(entity, now: now);
+
+        verify(
+          () => notificationService.cancelNotification(
+            NotificationScheduler.notificationIdFor('future-id'),
+          ),
+        ).called(1);
+        verifyNothingArmed();
+      },
+    );
+
+    test('the preference is asked about the row itself', () async {
+      final entity = _notification(id: 'row-id', scheduledFor: now);
+
+      await gated(enabled: true).schedule(entity, now: now);
+
+      expect(asked, [entity]);
+    });
+
+    test(
+      'a row already dealt with is cancelled without consulting the '
+      'preference',
+      () async {
+        final entity = _notification(
+          id: 'seen-id',
+          scheduledFor: now.add(const Duration(hours: 1)),
+          seenAt: now,
+        );
+
+        await gated(enabled: true).schedule(entity, now: now);
+
+        expect(asked, isEmpty);
+        verify(
+          () => notificationService.cancelNotification(
+            NotificationScheduler.notificationIdFor('seen-id'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'reconcile drops the alarm of a future row whose kind was switched off',
+      () async {
+        await notificationsDb.upsertNotification(
+          _notification(
+            id: 'future-id',
+            scheduledFor: now.add(const Duration(days: 1)),
+          ),
+        );
+
+        await gated(enabled: false).reconcile(now: now);
+
+        // This is what the settings hook relies on: flipping a kind off runs
+        // the reconcile, and the reconcile is what reaches the OS.
+        verify(
+          () => notificationService.cancelNotification(
+            NotificationScheduler.notificationIdFor('future-id'),
+          ),
+        ).called(1);
+        verifyNothingArmed();
+      },
+    );
+
+    test('reconcile re-arms a future row once its kind is back on', () async {
+      final notifyAt = now.add(const Duration(days: 1));
+      await notificationsDb.upsertNotification(
+        _notification(id: 'future-id', scheduledFor: notifyAt),
+      );
+
+      await gated(enabled: true).reconcile(now: now);
+
+      verify(
+        () => notificationService.scheduleNotificationAt(
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          notifyAt: notifyAt,
+          notificationId: NotificationScheduler.notificationIdFor('future-id'),
+          showOnMobile: any(named: 'showOnMobile'),
+          showOnDesktop: any(named: 'showOnDesktop'),
+          deepLink: any(named: 'deepLink'),
+        ),
+      ).called(1);
+      verifyNever(() => notificationService.cancelNotification(any()));
+    });
+  });
+
   group('NotificationScheduler.reconcile', () {
     final now = DateTime.utc(2026, 5, 17, 10);
 
@@ -366,7 +571,7 @@ void main() {
           ),
           showOnMobile: true,
           showOnDesktop: true,
-          deepLink: '/people/rel-1',
+          deepLink: _payload(route: '/people/rel-1', inboxId: 'upcoming-row'),
         ),
       ).called(1);
     });
@@ -478,6 +683,7 @@ void main() {
             resolutions++;
             return notificationService;
           },
+          isKindEnabled: (_) async => true,
         );
 
         await lazyScheduler.reconcile(now: now);
@@ -507,6 +713,11 @@ void main() {
     });
   });
 }
+
+/// The payload the scheduler hands the OS for a row: its route plus its own
+/// id, so a tap can mark the row seen.
+String _payload({required String route, required String inboxId}) =>
+    NotificationTapPayload(route: route, inboxId: inboxId).encode();
 
 void _stubNotificationService(MockNotificationService service) {
   when(
@@ -587,6 +798,41 @@ NotificationEntity _suggestion({
     meta: _meta(id: id, scheduledFor: scheduledFor),
     linkedTaskId: linkedTaskId,
     suggestionCount: 2,
+    title: 'Due title',
+    body: 'Due body',
+  );
+}
+
+NotificationEntity _dayPlanOutcome({
+  required String id,
+  DateTime? scheduledFor,
+}) {
+  return NotificationEntity.dayPlanOutcome(
+    meta: _meta(id: id, scheduledFor: scheduledFor),
+    dayId: 'dayplan-2026-05-17',
+    succeeded: true,
+    title: 'Due title',
+    body: 'Due body',
+  );
+}
+
+NotificationEntity _syncConflict({required String id, DateTime? scheduledFor}) {
+  return NotificationEntity.syncConflict(
+    meta: _meta(id: id, scheduledFor: scheduledFor),
+    conflictCount: 2,
+    title: 'Due title',
+    body: 'Due body',
+  );
+}
+
+NotificationEntity _goalOffTrack({
+  required String id,
+  String linkedGoalAgentId = 'agent-id',
+  DateTime? scheduledFor,
+}) {
+  return NotificationEntity.goalOffTrack(
+    meta: _meta(id: id, scheduledFor: scheduledFor),
+    linkedGoalAgentId: linkedGoalAgentId,
     title: 'Due title',
     body: 'Due body',
   );
