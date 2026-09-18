@@ -106,6 +106,24 @@ void main() {
       }
     });
 
+    test('a trailing absence clause is dropped, the sentence is kept', () {
+      // Verbatim glm-5.3 gym report: the sentence says something, its tail
+      // does not.
+      expect(
+        TaskAgentReportPolicy.withoutAbsentMetadataNotes(
+          'No work has been completed yet — the task is open with no due date '
+          'or estimate set.',
+        ),
+        'No work has been completed yet — the task is open.',
+      );
+      expect(
+        TaskAgentReportPolicy.withoutAbsentMetadataNotes(
+          'The migration is ready to start, and no deadline is set yet.',
+        ),
+        'The migration is ready to start.',
+      );
+    });
+
     test('a sentence that carries anything else survives untouched', () {
       const kept = [
         'No deadline is set yet — the March cutoff will drive the timing.',

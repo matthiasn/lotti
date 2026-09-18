@@ -93,7 +93,23 @@ A report already exists. Before publishing, identify a new or corrected task fac
     caseSensitive: false,
   );
 
-  /// [report] without sentences that only report absent metadata.
+  /// A trailing clause that only appends which metadata the task lacks, as in
+  /// "the task is open with no due date or estimate set".
+  ///
+  /// The clause must be introduced by "with" or "and": "No deadline is set yet
+  /// — the March cutoff will drive the timing" keeps its reasoning.
+  static final _absentMetadataClause = RegExp(
+    r'(?:\s*[,;—–-]+\s*|\s+)(?:with|and)\s+no\s+'
+    r'(?:\w+\s+)?(?:estimate|due\s+date|deadline|target\s+date)'
+    r'(?:\s*(?:,|,?\s*(?:or|and))\s*(?:\w+\s+)?'
+    r'(?:estimate|due\s+date|deadline|target\s+date|priority|owner))*'
+    r'\s*(?:is|are|has\s+been|have\s+been)?\s*'
+    '(?:set|recorded|specified|defined|assigned)?'
+    r'(?:\s+yet)?(?=[.!,;]|\s*$)',
+    caseSensitive: false,
+  );
+
+  /// [report] without sentences or clauses that only report absent metadata.
   ///
   /// The report contract says to omit absent metadata, yet every efficient
   /// model still writes "No estimate or due date is set." It caused 7 of the
@@ -107,6 +123,7 @@ A report already exists. Before publishing, identify a new or corrected task fac
       final sentences = line.split(RegExp(r'(?<=[.!])\s+'));
       final remaining = sentences
           .where((sentence) => !_absentMetadataNote.hasMatch(sentence))
+          .map((sentence) => sentence.replaceAll(_absentMetadataClause, ''))
           .join(' ')
           .trimRight();
       // A line that was only such a note disappears; one that carried other
