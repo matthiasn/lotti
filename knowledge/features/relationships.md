@@ -983,7 +983,8 @@ rendered window, deduplicates source/title pairs, and queues at most three tasks
 check-in's narrative ignoring case, spacing and line breaks, the *style* of
 quotation marks, dashes and apostrophes, an ellipsis, and punctuation or
 quotation marks wrapping the quote. Quotation marks inside the quote still
-count, so dropping them is not quoting verbatim.
+count, so dropping them is not quoting verbatim, and the quote must start and
+end on whole words ("check" is not evidence of "checklist").
 The strategy runs it on every proposal (it holds each rendered check-in's
 narrative, `sourceCheckIns`), so a quote that is not there is rejected
 in-conversation and the model can quote again; the dispatcher runs it again at

@@ -20,6 +20,9 @@ void main() {
       ('a corrected name', "Pip's sister – Vanja", false),
       ('a paraphrase', 'I will send the checklist', false),
       ('nothing but punctuation', ' „…“ ', false),
+      // CodeRabbit review on #4344: a cut-off word is not a quote.
+      ('a word cut off at the end', 'send the check', false),
+      ('a word cut off at the start', 'romised to send', false),
     ]) {
       test('${appears ? 'finds' : 'rejects'} $label', () {
         expect(

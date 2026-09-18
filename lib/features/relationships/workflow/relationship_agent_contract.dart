@@ -300,7 +300,8 @@ const Set<String> relationshipDeferredTools = {
 /// case, spacing and line breaks, which quotation mark, dash and apostrophe
 /// *style* is used, an ellipsis, and punctuation or quotation marks wrapping
 /// the quote. Quotation marks *inside* the quote still count: dropping the
-/// quotes from `I "promised" to call` is not quoting it verbatim.
+/// quotes from `I "promised" to call` is not quoting it verbatim. The quote
+/// must start and end on whole words.
 ///
 /// Shared by the strategy (a proposal whose quote is not there is rejected
 /// in-conversation, so the model can quote again) and the dispatcher (the
@@ -313,7 +314,13 @@ bool relationshipQuoteAppearsIn({
   required String quote,
 }) {
   final needle = _comparableEvidence(quote);
-  return needle.isNotEmpty && _comparableEvidence(narrative).contains(needle);
+  if (needle.isEmpty) return false;
+  // Whole words only: "check" is not evidence of "checklist". Punctuation
+  // after the quote still ends it — the narrative keeps its full stops.
+  return RegExp(
+    '(?<![\\p{L}\\p{N}])${RegExp.escape(needle)}(?![\\p{L}\\p{N}])',
+    unicode: true,
+  ).hasMatch(_comparableEvidence(narrative));
 }
 
 final _quotationMarks = RegExp('[“”„‟«»‹›]');
