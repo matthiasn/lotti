@@ -374,7 +374,7 @@ void main() {
       (p) => p.id == note.contentEntryId,
     );
     expect(payload.content['category'], 'grievance');
-    expect(seen.single, contains('first; not facts):\n- none'));
+    expect(seen.single, contains('not evidence:\n- none'));
 
     when(
       () => repository.getMessagesByKind(

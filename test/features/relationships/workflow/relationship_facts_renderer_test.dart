@@ -106,7 +106,9 @@ void main() {
     observations: observations,
   );
 
-  test("the agent's own notes come back labelled as notes, not facts", () {
+  // Codex review on #4345: FACTS are authoritative, so a note that says a
+  // name was misheard must be told to win over the misheard check-in.
+  test("the agent's notes come back with corrections ranked above facts", () {
     final facts = render(
       observations: [
         (
@@ -121,13 +123,14 @@ void main() {
       facts,
       contains(
         'YOUR OBSERVATIONS (your private notes from earlier wakes, newest '
-        'first; not facts):\n'
+        'first). A correction the user made overrides what it corrects; '
+        'any other note is context, not evidence:\n'
         '- 2026-08-14: The user said "Vanja" was misheard; the name is '
         'Wanja.\n'
         '- 2026-08-02: Pip dislikes long calls.\n',
       ),
     );
-    expect(render(), contains('first; not facts):\n- none\n'));
+    expect(render(), contains('not evidence:\n- none\n'));
   });
 
   test('the baseline token is the only way to tell newly-lapsed from '

@@ -220,11 +220,14 @@ class RelationshipFactsRenderer {
       }
     }
 
-    // The agent's own memory, not evidence: labelled so the model never
-    // mistakes a note it wrote for something the user logged.
+    // The agent's own memory, with an exact status: a correction the user
+    // made overrides the check-in or fact it corrects — otherwise a note
+    // saying a name was misheard loses to the misheard check-in, since FACTS
+    // are authoritative — and every other note is context, never evidence.
     buffer.writeln(
       'YOUR OBSERVATIONS (your private notes from earlier wakes, newest '
-      'first; not facts):',
+      'first). A correction the user made overrides what it corrects; '
+      'any other note is context, not evidence:',
     );
     if (observations.isEmpty) buffer.writeln('- none');
     for (final observation in observations) {

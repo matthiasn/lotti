@@ -726,8 +726,10 @@ removed:
   transaction rewrites rather than duplicates. The next wake reads the
   newest `relationshipObservationLookback` (20) back through
   `recallAgentObservations` and renders them under `YOUR OBSERVATIONS`,
-  labelled as the agent's own notes and *not facts*, after the previous
-  briefing. They sit behind the same deletion and consent fences as every
+  after the previous briefing, with an exact status: a correction the user
+  made overrides the check-in or fact it corrects — FACTS are otherwise
+  authoritative, so a note saying a name was misheard would lose to the
+  misheard check-in — and every other note is context, never evidence. They sit behind the same deletion and consent fences as every
   other output. The parsing, recall and persistence live in
   [`agent_observations.dart`](../../lib/features/agents/workflow/agent_observations.dart),
   shared so other agents can move off their own copies.
