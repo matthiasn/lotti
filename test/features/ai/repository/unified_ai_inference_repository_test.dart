@@ -2,6 +2,8 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -9,6 +11,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
@@ -35,6 +38,7 @@ MockAutoChecklistService get mockAutoChecklistService =>
 MockCategoryRepository get mockCategoryRepo => harness.mockCategoryRepo;
 MockPromptCapabilityFilter get mockPromptCapabilityFilter =>
     harness.mockPromptCapabilityFilter;
+MockDirectory get mockDirectory => harness.mockDirectory;
 
 void main() {
   setUpAll(harness.setUpAll);
@@ -1148,6 +1152,194 @@ void main() {
       expect(capturedData!.inputTokens, 50);
       expect(capturedData!.outputTokens, 20);
     });
+  });
+
+  group('runInference – provider-specific media routing', () {
+    test(
+      'routes Melious audio through the impact-collecting call and records '
+      'the credits and energy the adapter reports',
+      () async {
+        Directory(
+          '${mockDirectory.path}/audio',
+        ).createSync(recursive: true);
+        File('${mockDirectory.path}/audio/dock.mp3').writeAsBytesSync([1, 2]);
+        final audioEntity = JournalAudio(
+          meta: createMetadata(categoryId: 'cat-audio'),
+          data: AudioData(
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
+            audioFile: 'dock.mp3',
+            audioDirectory: '/audio/',
+            duration: const Duration(seconds: 12),
+          ),
+        );
+        final model = createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'voxtral-small',
+        );
+        final provider = createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.melious,
+        );
+        stubInferenceContext(
+          mockAiInputRepo: mockAiInputRepo,
+          mockAiConfigRepo: mockAiConfigRepo,
+          entity: audioEntity,
+          model: model,
+          provider: provider,
+        );
+        when(
+          () => mockCloudInferenceRepo.generateWithAudio(
+            any(),
+            provider: any(named: 'provider'),
+            model: any(named: 'model'),
+            audioBase64: any(named: 'audioBase64'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            stream: any(named: 'stream'),
+            audioFormat: any(named: 'audioFormat'),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+            impactCollector: any(named: 'impactCollector'),
+          ),
+        ).thenAnswer((invocation) {
+          (invocation.namedArguments[#impactCollector]
+                  as InferenceImpactCollector?)
+              ?.impact = const MeliousCallImpact(
+            costCredits: 4,
+            energyKwh: 0.5,
+          );
+          return createMockTextStream(['Crates arrived at the dock']);
+        });
+        when(
+          () => mockJournalRepo.getLinkedToEntities(linkedTo: audioEntity.id),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
+        final bench = registerInteractionCapture();
+
+        await repository.runInference(
+          entityId: audioEntity.id,
+          promptConfig: createPrompt(
+            id: 'prompt-audio',
+            name: 'Transcribe',
+            requiredInputData: [InputDataType.audioFiles],
+            aiResponseType: AiResponseType.audioTranscription,
+          ),
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        );
+
+        final collector =
+            verify(
+                  () => mockCloudInferenceRepo.generateWithAudio(
+                    any(),
+                    provider: provider,
+                    model: 'voxtral-small',
+                    audioBase64: base64Encode([1, 2]),
+                    baseUrl: provider.baseUrl,
+                    apiKey: provider.apiKey,
+                    maxCompletionTokens: any(named: 'maxCompletionTokens'),
+                    stream: any(named: 'stream'),
+                    audioFormat: ChatCompletionMessageInputAudioFormat.mp3,
+                    speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+                    impactCollector: captureAny(named: 'impactCollector'),
+                  ),
+                ).captured.single
+                as InferenceImpactCollector?;
+        expect(collector, isNotNull);
+        final event = capturedEvents(bench).single;
+        expect(event.credits, 4);
+        expect(event.energyKwh, 0.5);
+        final updated =
+            verify(
+                  () => mockJournalRepo.updateJournalEntity(captureAny()),
+                ).captured.single
+                as JournalAudio;
+        expect(
+          updated.data.transcripts!.single.transcript,
+          'Crates arrived at the dock',
+        );
+      },
+    );
+
+    test(
+      'stores an attributed image analysis as its own AI response entry '
+      'carrying the attribution envelope',
+      () async {
+        Directory(
+          '${mockDirectory.path}/images',
+        ).createSync(recursive: true);
+        File('${mockDirectory.path}/images/pier.jpg').writeAsBytesSync([9]);
+        final imageEntity = JournalImage(
+          meta: createMetadata(categoryId: 'cat-images'),
+          data: ImageData(
+            capturedAt: DateTime(2024, 3, 15, 10, 30),
+            imageId: 'pier',
+            imageFile: 'pier.jpg',
+            imageDirectory: '/images/',
+          ),
+        );
+        final model = createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'vision-model',
+        );
+        final provider = createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+        stubInferenceContext(
+          mockAiInputRepo: mockAiInputRepo,
+          mockAiConfigRepo: mockAiConfigRepo,
+          entity: imageEntity,
+          model: model,
+          provider: provider,
+        );
+        when(
+          () => mockJournalRepo.getLinkedToEntities(linkedTo: imageEntity.id),
+        ).thenAnswer((_) async => []);
+        stubGenerateWithImages(
+          mockCloudInferenceRepo,
+          stream: createMockTextStream(['Penguins line the pier']),
+        );
+        stubCreateAiResponseEntry(mockAiInputRepo);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
+        final bench = registerInteractionCapture();
+
+        await repository.runInference(
+          entityId: imageEntity.id,
+          promptConfig: createPrompt(
+            id: 'prompt-image',
+            name: 'Describe image',
+            requiredInputData: [InputDataType.images],
+            aiResponseType: AiResponseType.imageAnalysis,
+          ),
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        );
+
+        final captured = verify(
+          () => mockAiInputRepo.createAiResponseEntry(
+            id: any(named: 'id'),
+            data: captureAny(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: captureAny(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).captured;
+        final data = captured[0] as AiResponseData;
+        expect(data.response, 'Penguins line the pier');
+        expect(data.type, AiResponseType.imageAnalysis);
+        expect(data.aiAttribution, isNotNull);
+        expect(captured[1], imageEntity.id);
+        verify(() => bench.service.finalize(any())).called(1);
+      },
+    );
   });
 
   group('extractJsonObjects', () {
