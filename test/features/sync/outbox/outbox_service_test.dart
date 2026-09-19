@@ -342,55 +342,66 @@ void main() {
       });
     });
 
-    test('handles stream errors without crashing the test', () async {
-      when(
-        () => journalDb.getConfigFlag(enableMatrixFlag),
-      ).thenAnswer((_) async => true);
-      final gate = createGate();
-      when(
-        () => processor.processQueue(),
-      ).thenAnswer((_) async => OutboxProcessingResult.none);
+    test(
+      'forwards stream errors and processes subsequent count events',
+      () async {
+        when(
+          () => journalDb.getConfigFlag(enableMatrixFlag),
+        ).thenAnswer((_) async => true);
+        final gate = createGate();
+        when(
+          () => processor.processQueue(),
+        ).thenAnswer((_) async => OutboxProcessingResult.none);
 
-      final countController = StreamController<int>.broadcast();
-      addTearDown(countController.close);
-      when(
-        () => syncDatabase.watchOutboxCount(),
-      ).thenAnswer((_) => countController.stream);
+        final countController = StreamController<int>.broadcast();
+        addTearDown(countController.close);
+        when(
+          () => syncDatabase.watchOutboxCount(),
+        ).thenAnswer((_) => countController.stream);
 
-      fakeAsync((async) {
-        Object? capturedError;
-        StackTrace? capturedSt;
-        OutboxService? svc;
-        runZonedGuarded(
-          () {
-            svc = MatrixOutboxService(
-              syncDatabase: syncDatabase,
-              loggingService: loggingService,
-              vectorClockService: vectorClockService,
-              journalDb: journalDb,
-              documentsDirectory: documentsDirectory,
-              userActivityService: userActivityService,
-              repository: repository,
-              messageSender: messageSender,
-              processor: processor,
-              activityGate: gate,
-              ownsActivityGate: false,
-            );
-            countController.addError(Exception('stream error'));
-          },
-          (e, st) {
-            capturedError = e;
-            capturedSt = st;
-          },
-        );
-        // Allow the stream error to propagate
-        async.flushMicrotasks();
-        expect(capturedError, isNotNull);
-        expect(capturedSt, isNotNull);
-        unawaited(svc!.dispose());
-        async.flushMicrotasks();
-      });
-    });
+        fakeAsync((async) {
+          final failure = StateError('outbox count stream failed');
+          final failureStack = StackTrace.current;
+          final errors = <Object>[];
+          final stacks = <StackTrace>[];
+          OutboxService? svc;
+          runZonedGuarded(
+            () {
+              svc = MatrixOutboxService(
+                syncDatabase: syncDatabase,
+                loggingService: loggingService,
+                vectorClockService: vectorClockService,
+                journalDb: journalDb,
+                documentsDirectory: documentsDirectory,
+                userActivityService: userActivityService,
+                repository: repository,
+                messageSender: messageSender,
+                processor: processor,
+                activityGate: gate,
+                ownsActivityGate: false,
+              );
+              countController.addError(failure, failureStack);
+            },
+            (e, st) {
+              errors.add(e);
+              stacks.add(st);
+            },
+          );
+          // Allow the stream error to propagate
+          async.flushMicrotasks();
+          expect(errors, [same(failure)]);
+          expect(stacks, [same(failureStack)]);
+          verifyNever(() => processor.processQueue());
+
+          countController.add(1);
+          async.elapse(const Duration(milliseconds: 100));
+          verify(() => processor.processQueue()).called(1);
+          expect(errors, [same(failure)]);
+          unawaited(svc!.dispose());
+          async.flushMicrotasks();
+        });
+      },
+    );
   });
 
   group('integration: triggers interplay', () {
