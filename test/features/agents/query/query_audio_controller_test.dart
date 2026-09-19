@@ -670,6 +670,31 @@ void main() {
     },
   );
 
+  test('reading an answer aloud pauses a recording that is playing', () async {
+    when(bench.player.pause).thenAnswer((_) async {});
+    when(
+      () => bench.playerStream.position,
+    ).thenAnswer((_) => const Stream<Duration>.empty());
+    when(
+      () => bench.playerStream.buffer,
+    ).thenAnswer((_) => const Stream<Duration>.empty());
+    container
+        .read(audioPlayerControllerProvider.notifier)
+        .stateForTest = container
+        .read(audioPlayerControllerProvider)
+        .copyWith(status: AudioPlayerStatus.playing);
+
+    await controller.speakAnswer(answerId: 'answer');
+
+    verify(bench.player.pause).called(1);
+    expect(
+      container.read(audioPlayerControllerProvider).status,
+      AudioPlayerStatus.paused,
+    );
+    expect(bench.engine.calls.single.text, 'Keep the feeder latch.');
+    expect(bench.speechPlayer.playCount, 1);
+  });
+
   test('playing another recording stops the query excerpt', () async {
     await play();
     container
