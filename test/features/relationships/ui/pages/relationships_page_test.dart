@@ -822,8 +822,10 @@ void main() {
       expect(navigated, ['/people/rel-anna']);
     });
 
-    testWidgets('the chat takes over the detail pane beside the list, rather '
-        'than stacking over the whole split', (tester) async {
+    // Design panel 2026-09-19: the chat sits beside the person's page, so
+    // what the agent is asked about stays in view.
+    testWidgets('the chat opens as a sidebar beside the person page, and the '
+        'page stays mounted', (tester) async {
       when(
         () => mockRepository.getRelationshipsByRecency(),
       ).thenAnswer((_) async => crew());
@@ -848,9 +850,14 @@ void main() {
       expect(find.byType(RelationshipChatPane), findsOneWidget);
       expect(
         find.byType(RelationshipDetailsPage),
-        findsNothing,
-        reason: 'the chat replaces the page, it does not cover it',
+        findsOneWidget,
+        reason: 'the page stays beside the chat',
       );
+      final page = tester.getRect(find.byType(RelationshipDetailsPage));
+      final chat = tester.getRect(find.byType(RelationshipChatPane));
+      expect(chat.left, greaterThanOrEqualTo(page.right));
+      expect(chat.width, defaultListPaneWidth);
+      final pageState = tester.state(find.byType(RelationshipDetailsPage));
       // The list is still there to switch people from.
       expect(
         find.byKey(const ValueKey('people-row-rel-ben')),
@@ -862,7 +869,8 @@ void main() {
       final navigated = <String>[];
       beamToNamedOverride = navigated.add;
       addTearDown(() => beamToNamedOverride = null);
-      await tester.tap(find.byKey(const ValueKey('person-chat-back')));
+      expect(find.byKey(const ValueKey('person-chat-back')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('person-chat-close')));
       await tester.pump();
       expect(navigated, ['/people/rel-anna']);
 
@@ -871,7 +879,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(RelationshipChatPane), findsNothing);
-      expect(find.byType(RelationshipDetailsPage), findsOneWidget);
+      expect(
+        tester.state(find.byType(RelationshipDetailsPage)),
+        same(pageState),
+        reason: 'closing the chat never rebuilds the page',
+      );
     });
   });
 }

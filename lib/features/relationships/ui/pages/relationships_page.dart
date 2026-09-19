@@ -106,13 +106,15 @@ class RelationshipsPage extends ConsumerWidget {
   }
 }
 
-/// The desktop detail pane's three faces: the person's page, their chat, or
-/// one of their check-ins.
+/// The desktop detail pane: the person's page — with their chat as a
+/// sidebar beside it while it is open — or one of their check-ins.
 ///
-/// The chat replaces the page rather than stacking over it (design
-/// 2026-09-06 §6), so the pane switches on
-/// `NavService.desktopRelationshipChatOpen` — which the location writes from
-/// the URL's `/chat` segment, keeping the address bar and the pane in step.
+/// The chat sits beside the page rather than replacing it (design panel
+/// 2026-09-19): what the agent is asked about stays in view. The pane
+/// follows `NavService.desktopRelationshipChatOpen`, which the location
+/// writes from the URL's `/chat` segment, keeping the address bar and the
+/// pane in step; the page keeps its key, so opening and closing the chat
+/// never rebuilds it.
 class _PersonDetailPane extends StatelessWidget {
   const _PersonDetailPane({required this.relationshipId});
 
@@ -139,21 +141,39 @@ class _PersonDetailPane extends StatelessWidget {
   Widget _personOrChat(NavService navService) {
     return ValueListenableBuilder<bool>(
       valueListenable: navService.desktopRelationshipChatOpen,
-      builder: (context, chatOpen, _) => chatOpen
-          // The pane is raw content, unlike the person page, which brings its
-          // own Scaffold — and the composer's fields need a Material ancestor.
-          ? Scaffold(
-              key: ValueKey('people-chat-$relationshipId'),
-              body: RelationshipChatPane(
-                relationshipId: relationshipId,
-                onBack: () => beamToNamed('/people/$relationshipId'),
-                showInternalsAction: true,
-              ),
-            )
-          : RelationshipDetailsPage(
+      builder: (context, chatOpen, _) => Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: RelationshipDetailsPage(
               key: ValueKey(relationshipId),
               relationshipId: relationshipId,
             ),
+          ),
+          if (chatOpen) ...[
+            VerticalDivider(
+              width: 1,
+              thickness: 1,
+              color: context.designTokens.colors.decorative.level01,
+            ),
+            // As wide as the list pane on the other side of the page. The
+            // sidebar is raw content, unlike the person page, which brings
+            // its own Scaffold — and the composer's field needs a Material
+            // ancestor.
+            SizedBox(
+              key: ValueKey('people-chat-sidebar-$relationshipId'),
+              width: defaultListPaneWidth,
+              child: Scaffold(
+                body: RelationshipChatPane(
+                  relationshipId: relationshipId,
+                  onClose: () => beamToNamed('/people/$relationshipId'),
+                  showInternalsAction: true,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

@@ -48,6 +48,7 @@ void main() {
   Future<void> pumpPane(
     WidgetTester tester, {
     VoidCallback? onBack,
+    VoidCallback? onClose,
     bool showInternalsAction = false,
     Size size = const Size(400, 800),
     List<AgentChatMessage> messages = const [],
@@ -84,6 +85,7 @@ void main() {
               child: RelationshipChatPane(
                 relationshipId: relationshipId,
                 onBack: onBack,
+                onClose: onClose,
                 showInternalsAction: showInternalsAction,
               ),
             ),
@@ -180,6 +182,19 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('person-chat-back')));
     await tester.pump();
     expect(backs, 1);
+  });
+
+  // The desktop sidebar closes; the person page stays beside it.
+  testWidgets('offers close only when the host asks for it', (tester) async {
+    await pumpPane(tester);
+    expect(find.byKey(const ValueKey('person-chat-close')), findsNothing);
+
+    var closes = 0;
+    await pumpPane(tester, onClose: () => closes++);
+
+    await tester.tap(find.byKey(const ValueKey('person-chat-close')));
+    await tester.pump();
+    expect(closes, 1);
   });
 
   testWidgets('the internals action is a label where there is room and an '
