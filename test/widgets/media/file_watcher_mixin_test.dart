@@ -130,21 +130,35 @@ void main() {
       },
     );
 
-    testWidgets('disposeFileWatcher can be called safely', (tester) async {
-      final path = '${tempDir.path}/test.txt';
+    testWidgets(
+      'double disposal cancels polling and permits an explicit restart',
+      (tester) async {
+        final path = '${tempDir.path}/test.txt';
 
-      await tester.pumpWidget(
-        MaterialApp(
-          builder: LegacyMaterialBridge.builder,
-          home: _TestWidget(path: path),
-        ),
-      );
+        await tester.pumpWidget(
+          MaterialApp(
+            builder: LegacyMaterialBridge.builder,
+            home: _TestWidget(path: path),
+          ),
+        );
 
-      tester.state<_TestWidgetState>(find.byType(_TestWidget))
-        // Should not throw
-        ..disposeFileWatcher()
-        ..disposeFileWatcher(); // Double dispose should be safe
-    });
+        final state = tester.state<_TestWidgetState>(find.byType(_TestWidget))
+          ..disposeFileWatcher()
+          ..disposeFileWatcher();
+
+        File(path).writeAsStringSync('test');
+        await tester.pump(const Duration(milliseconds: 150));
+
+        expect(state.fileExists, isFalse);
+        expect(find.text('not exists'), findsOneWidget);
+
+        state.restartFileWatcher(path);
+        await tester.pump();
+
+        expect(state.fileExists, isTrue);
+        expect(find.text('exists'), findsOneWidget);
+      },
+    );
 
     testWidgets('setupFileWatcher is idempotent for same path', (tester) async {
       final file = File('${tempDir.path}/test.txt')..writeAsStringSync('test');
@@ -782,6 +796,10 @@ class _TestWidget extends StatefulWidget {
 }
 
 class _TestWidgetState extends State<_TestWidget> with FileWatcherMixin {
+  void restartFileWatcher(String path) {
+    setState(() => setupFileWatcher(path, forceReset: true));
+  }
+
   @override
   void initState() {
     super.initState();

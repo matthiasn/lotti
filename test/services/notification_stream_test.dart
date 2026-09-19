@@ -352,21 +352,29 @@ void main() {
       });
     });
 
-    test('cleans up subscription on cancel', () {
+    test('stops fetching after the last listener cancels', () {
       fakeAsync((async) {
+        var fetchCount = 0;
         final stream = notificationDrivenStream<String>(
           notifications: notifications,
           notificationKeys: {'TEST_KEY'},
-          fetcher: () async => ['data'],
+          fetcher: () async {
+            fetchCount++;
+            return ['data'];
+          },
         );
 
         final sub = stream.listen((_) {});
         async.flushMicrotasks();
+        expect(fetchCount, 1);
 
-        sub.cancel();
+        unawaited(sub.cancel());
+        async.flushMicrotasks();
 
-        // After cancelling, emitting should not trigger a fetch.
-        // The important thing is that cancel() doesn't throw.
+        notifications.emit({'TEST_KEY'});
+        async.flushMicrotasks();
+
+        expect(fetchCount, 1);
       });
     });
   });

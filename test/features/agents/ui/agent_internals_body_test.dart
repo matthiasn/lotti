@@ -9,6 +9,8 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/ui/agent_activity_log.dart';
+import 'package:lotti/features/agents/ui/agent_conversation_log.dart';
 import 'package:lotti/features/agents/ui/agent_internals_body.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
@@ -23,12 +25,8 @@ import '../test_data/ai_config_factories.dart';
 import '../test_data/entity_factories.dart';
 import '../test_data/template_factories.dart';
 
-/// Minimal smoke coverage for [AgentInternalsBody]. The deep behaviour
-/// of each tab (Stats / Reports / Conversations / Observations /
-/// Activity) is exercised by `agent_detail_page_test.dart`, which
-/// renders the same widget through `AgentDetailPage`. This file confirms
-/// the body can be instantiated standalone (the contract the side-panel
-/// route relies on) and that switching tabs swaps the body content.
+/// Standalone coverage for [AgentInternalsBody], including the side-panel
+/// contract and the mapping between each tab and its visible content.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -84,6 +82,29 @@ void main() {
       // Stats content includes the agent state heading and the wake count.
       expect(find.text('State Info'), findsOneWidget);
       expect(find.text('4'), findsOneWidget);
+    });
+
+    testWidgets('each tab displays its matching content', (tester) async {
+      final state = makeTestState(wakeCounter: 4);
+      await tester.pumpWidget(
+        buildSubject(stateAsync: AsyncValue.data(state)),
+      );
+      await tester.pumpAndSettle();
+
+      final tabs = <(String, Type)>[
+        ('Reports', AgentReportHistoryLog),
+        ('Conversations', AgentConversationLog),
+        ('Observations', AgentObservationLog),
+        ('Activity', AgentActivityLog),
+      ];
+
+      for (final (label, contentType) in tabs) {
+        await tester.tap(find.text(label));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(contentType), findsOneWidget, reason: label);
+        expect(find.text('State Info'), findsNothing, reason: label);
+      }
     });
 
     testWidgets(

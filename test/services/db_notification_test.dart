@@ -900,23 +900,52 @@ void main() {
         await subscription.cancel();
       });
 
-      test('timers should be cleaned up on dispose', () {
+      test('dispose cancels every timer and closes every stream', () {
         fakeAsync((async) {
-          // Trigger both timers
+          final updateEmissions = <Set<String>>[];
+          final localEmissions = <Set<String>>[];
+          final syncEmissions = <Set<String>>[];
+          var updateDone = false;
+          var localDone = false;
+          var syncDone = false;
+          updateNotifications.updateStream.listen(
+            updateEmissions.add,
+            onDone: () => updateDone = true,
+          );
+          updateNotifications.localUpdateStream.listen(
+            localEmissions.add,
+            onDone: () => localDone = true,
+          );
+          updateNotifications.syncUpdateStream.listen(
+            syncEmissions.add,
+            onDone: () => syncDone = true,
+          );
+
+          // Arm all three debounce timers, then dispose before any can fire.
           updateNotifications
             ..notify({_TestConstants.testId1})
-            ..notify({_TestConstants.syncId1}, fromSync: true);
+            ..notify({_TestConstants.syncId1}, fromSync: true)
+            ..notifyUiOnly({_TestConstants.testId2});
+          expect(async.nonPeriodicTimerCount, 3);
 
-          // Dispose before timers fire
           unawaited(updateNotifications.dispose());
+          async.flushMicrotasks();
 
-          // Advance time for both timers; nothing should throw
-          async.elapseAndFlush(
-            const Duration(milliseconds: _TestConstants.regularTimerDelay),
-          );
-          async.elapseAndFlush(
-            const Duration(milliseconds: _TestConstants.syncTimerDelay),
-          );
+          expect(async.nonPeriodicTimerCount, 0);
+          expect(updateDone, isTrue);
+          expect(localDone, isTrue);
+          expect(syncDone, isTrue);
+
+          updateNotifications
+            ..notify({_TestConstants.testId3})
+            ..notify({_TestConstants.syncId2}, fromSync: true)
+            ..notifyUiOnly({_TestConstants.regularId1});
+          async.elapse(const Duration(seconds: 2));
+
+          expect(async.nonPeriodicTimerCount, 0);
+          expect(updateEmissions, isEmpty);
+          expect(localEmissions, isEmpty);
+          expect(syncEmissions, isEmpty);
         });
       });
     });

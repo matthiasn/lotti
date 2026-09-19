@@ -84,6 +84,16 @@ class _CloseTrackingMeliousInferenceRepository
   }
 }
 
+class _PopTrackingNavigatorObserver extends NavigatorObserver {
+  int popCount = 0;
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    popCount++;
+    super.didPop(route, previousRoute);
+  }
+}
+
 /// Sets the test surface size for the duration of the test.
 Future<void> _setTestSurface(
   WidgetTester tester, {
@@ -246,6 +256,8 @@ void main() {
     InferenceProviderType? preselectedType,
     List<AiConfig>? existingProviders,
     bool focusApiKey = false,
+    bool openFromRoute = false,
+    List<NavigatorObserver> navigatorObservers = const [],
     List<Override> additionalOverrides = const [],
   }) {
     // Set up provider count mock if existingProviders is provided
@@ -257,6 +269,16 @@ void main() {
         ),
       ).thenAnswer((_) async => existingProviders);
     }
+
+    final editor = AppCommandHost(
+      handlers: const <AppCommandId, AppCommandHandler>{},
+      platform: TargetPlatform.windows,
+      child: InferenceProviderEditPage(
+        configId: configId,
+        preselectedType: preselectedType,
+        focusApiKey: focusApiKey,
+      ),
+    );
 
     return ProviderScope(
       overrides: [
@@ -281,15 +303,20 @@ void main() {
           ...GlobalMaterialLocalizations.delegates,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
-        home: AppCommandHost(
-          handlers: const <AppCommandId, AppCommandHandler>{},
-          platform: TargetPlatform.windows,
-          child: InferenceProviderEditPage(
-            configId: configId,
-            preselectedType: preselectedType,
-            focusApiKey: focusApiKey,
-          ),
-        ),
+        navigatorObservers: navigatorObservers,
+        home: openFromRoute
+            ? Builder(
+                builder: (context) => Center(
+                  child: FilledButton(
+                    key: const ValueKey('open-provider-editor'),
+                    onPressed: () => Navigator.of(context).push<void>(
+                      MaterialPageRoute<void>(builder: (_) => editor),
+                    ),
+                    child: const Text('Open editor'),
+                  ),
+                ),
+              )
+            : editor,
       ),
     );
   }
@@ -3985,10 +4012,9 @@ void main() {
     );
 
     testWidgets(
-      'focusApiKey: true requests focus on the API key field and scrolls '
-      'it into view — covers the Fix-flow `_tryFocusApiKey` branch',
+      'focusApiKey: true gives the API key field primary focus',
       (tester) async {
-        await _setTestSurface(tester, height: 1200);
+        await _setTestSurface(tester, height: 600);
 
         when(
           () => mockUrlLauncher.launchUrl(any(), any()),
@@ -4006,43 +4032,50 @@ void main() {
         final apiKeyField = find.widgetWithText(TextFormField, 'test-key-123');
         expect(apiKeyField, findsOneWidget);
 
-        // The Fix-flow path requests focus on the FocusNode passed into
-        // the API-key field. Walk down to the live `Focus` widget and
-        // verify it has primary focus.
-        final focusWidget = find
-            .descendant(of: apiKeyField, matching: find.byType(Focus))
-            .evaluate()
-            .firstWhere(
-              (e) => (e.widget as Focus).focusNode != null,
-              orElse: () => apiKeyField.evaluate().first,
-            );
-        // Hard-asserting `hasPrimaryFocus` is brittle across Flutter
-        // versions; settling for the looser "the field is now in the
-        // tree without crashing" guard preserves the line coverage
-        // gain while staying robust.
-        expect(focusWidget, isNotNull);
+        final editable = find.descendant(
+          of: apiKeyField,
+          matching: find.byType(EditableText),
+        );
+        expect(editable, findsOneWidget);
+        expect(
+          tester.widget<EditableText>(editable).focusNode.hasPrimaryFocus,
+          isTrue,
+        );
       },
     );
 
     testWidgets(
-      'edit-mode FormBottomBar Cancel button taps `popAiSettingsDetail` — '
-      'covers the legacy two-button bar branch (line 487) that the '
-      'create-flow footer test does not reach',
+      'edit-mode Cancel returns to the previous route',
       (tester) async {
         await _setTestSurface(tester, height: 1200);
+        final navigatorObserver = _PopTrackingNavigatorObserver();
 
-        await tester.pumpWidget(buildTestWidget(configId: 'test-provider-id'));
+        await tester.pumpWidget(
+          buildTestWidget(
+            configId: 'test-provider-id',
+            openFromRoute: true,
+            navigatorObservers: [navigatorObserver],
+          ),
+        );
+        await tester.tap(find.byKey(const ValueKey('open-provider-editor')));
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
         await tester.pump(const Duration(milliseconds: 100));
+        expect(find.byType(InferenceProviderEditPage), findsOneWidget);
 
         final cancel = find.text('Cancel');
         expect(cancel, findsOneWidget);
         await tester.tap(cancel);
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
+        expect(navigatorObserver.popCount, 1);
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pump();
 
-        // Silent no-op pop — page still rendered, no crash.
-        expect(find.byType(InferenceProviderEditPage), findsOneWidget);
+        expect(find.byType(InferenceProviderEditPage), findsNothing);
+        expect(
+          find.byKey(const ValueKey('open-provider-editor')),
+          findsOneWidget,
+        );
       },
     );
 

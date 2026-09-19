@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -65,23 +67,43 @@ void main() {
 
     test('runs retirement, the reaper and the digest repair, in that '
         'order', () async {
-      when(dayAgents.retirePastDayAgents).thenAnswer((_) async => 2);
+      final retirement = Completer<int>();
+      final reaper = Completer<int>();
+      final digest = Completer<void>();
+      var scanCompleted = false;
+
+      when(dayAgents.retirePastDayAgents).thenAnswer((_) => retirement.future);
       when(
         dayAgents.expireStalePlannerWakeRecords,
-      ).thenAnswer((_) async => 3);
-      when(dayAgents.ensureCoordinatorDigestWake).thenAnswer((_) async {});
+      ).thenAnswer((_) => reaper.future);
+      when(dayAgents.ensureCoordinatorDigestWake).thenAnswer(
+        (_) => digest.future,
+      );
 
-      await maintenance.beforeWakeScan();
+      final scan = maintenance.beforeWakeScan();
+      unawaited(scan.then((_) => scanCompleted = true));
 
       // Order matters: retirement decides which agents may still wake, so it
       // must settle before the digest repair arms a record. The reaper runs
       // between them — it targets the coordinator's records, which retirement
       // never touches.
-      verifyInOrder([
-        dayAgents.retirePastDayAgents,
-        dayAgents.expireStalePlannerWakeRecords,
-        dayAgents.ensureCoordinatorDigestWake,
-      ]);
+      verify(dayAgents.retirePastDayAgents).called(1);
+      verifyNever(dayAgents.expireStalePlannerWakeRecords);
+      verifyNever(dayAgents.ensureCoordinatorDigestWake);
+
+      retirement.complete(2);
+      await Future<void>.microtask(() {});
+      verify(dayAgents.expireStalePlannerWakeRecords).called(1);
+      verifyNever(dayAgents.ensureCoordinatorDigestWake);
+
+      reaper.complete(3);
+      await Future<void>.microtask(() {});
+      verify(dayAgents.ensureCoordinatorDigestWake).called(1);
+      expect(scanCompleted, isFalse);
+
+      digest.complete();
+      await scan;
+      expect(scanCompleted, isTrue);
       verifyNever(
         () => logger.error(
           any<LogDomain>(),
@@ -99,7 +121,7 @@ void main() {
         // the other, nor abort the scan that finds already-due wakes.
         when(
           dayAgents.retirePastDayAgents,
-        ).thenThrow(StateError('retire boom'));
+        ).thenAnswer((_) async => throw StateError('retire boom'));
         when(dayAgents.ensureCoordinatorDigestWake).thenAnswer((_) async {});
 
         await maintenance.beforeWakeScan();
@@ -121,7 +143,7 @@ void main() {
       () async {
         when(
           dayAgents.expireStalePlannerWakeRecords,
-        ).thenThrow(StateError('reaper boom'));
+        ).thenAnswer((_) async => throw StateError('reaper boom'));
 
         await maintenance.beforeWakeScan();
 
@@ -144,7 +166,7 @@ void main() {
         when(dayAgents.retirePastDayAgents).thenAnswer((_) async => 0);
         when(
           dayAgents.ensureCoordinatorDigestWake,
-        ).thenThrow(StateError('digest boom'));
+        ).thenAnswer((_) async => throw StateError('digest boom'));
 
         await maintenance.beforeWakeScan();
 
@@ -160,8 +182,12 @@ void main() {
     );
 
     test('contains both failures without rethrowing', () async {
-      when(dayAgents.retirePastDayAgents).thenThrow(StateError('a'));
-      when(dayAgents.ensureCoordinatorDigestWake).thenThrow(StateError('b'));
+      when(
+        dayAgents.retirePastDayAgents,
+      ).thenAnswer((_) async => throw StateError('a'));
+      when(
+        dayAgents.ensureCoordinatorDigestWake,
+      ).thenAnswer((_) async => throw StateError('b'));
 
       await expectLater(maintenance.beforeWakeScan(), completes);
 
@@ -177,7 +203,9 @@ void main() {
 
     test('works without a logger', () async {
       // The logger is optional, so containment must not depend on it.
-      when(dayAgents.retirePastDayAgents).thenThrow(StateError('boom'));
+      when(
+        dayAgents.retirePastDayAgents,
+      ).thenAnswer((_) async => throw StateError('boom'));
       when(dayAgents.ensureCoordinatorDigestWake).thenAnswer((_) async {});
 
       await expectLater(
