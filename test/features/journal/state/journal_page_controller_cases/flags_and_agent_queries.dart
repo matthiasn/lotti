@@ -39,6 +39,35 @@ void _registerFlagsAndAgentQueries(JournalControllerTestSetup setup) {
         });
       });
 
+      test('joins while the saved selection loads when People is already '
+          'known to be on, and is saved with it', () {
+        fakeAsync((async) {
+          final stored = Completer<String?>();
+          when(
+            () => setup.mockSettingsDb.itemByKey('SELECTED_ENTRY_TYPES'),
+          ).thenAnswer((_) => stored.future);
+          final controller = setup.container.read(
+            journalPageControllerProvider(false).notifier,
+          );
+          setup.configFlagsController.add({enableRelationshipsFlag});
+          settle(async);
+
+          stored.complete('["JournalEntry","Task"]');
+          settle(async);
+
+          expect(
+            controller.state.selectedEntryTypes.toSet(),
+            {'Task', 'JournalEntry', 'CheckIn'},
+          );
+          verify(
+            () => setup.mockSettingsDb.saveSettingsItem(
+              'SELECTED_ENTRY_TYPES',
+              '["CheckIn","JournalEntry","Task"]',
+            ),
+          ).called(1);
+        });
+      });
+
       test('waits while People is off, and joins when People turns on', () {
         fakeAsync((async) {
           stubLegacySelection();
