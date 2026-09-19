@@ -180,7 +180,7 @@ abstract final class AgentToolRegistry {
   };
 
   /// All tools available to the Task Agent.
-  static const List<AgentToolDefinition> taskAgentTools = taskAgentToolList;
+  static final List<AgentToolDefinition> taskAgentTools = taskAgentToolList;
 
   /// Tools available to the soul evolution agent during standalone soul
   /// 1-on-1 sessions. Excludes `propose_directives` since soul sessions

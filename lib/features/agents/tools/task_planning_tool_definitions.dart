@@ -1,11 +1,12 @@
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 
 /// Tools for planning, attention negotiation, reporting, and observations:
 /// related-task lookups, attention requests, report publishing, suggestion
 /// retraction, and recording private observations.
-const taskPlanningTools = <AgentToolDefinition>[
-  AgentToolDefinition(
+final taskPlanningTools = <AgentToolDefinition>[
+  const AgentToolDefinition(
     name: TaskAgentToolNames.getRelatedTaskDetails,
     description:
         'Fetch full details for one related task in the same parent '
@@ -26,7 +27,7 @@ const taskPlanningTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
-  AgentToolDefinition(
+  const AgentToolDefinition(
     name: TaskAgentToolNames.requestAttention,
     description:
         'Ask the day planner to reserve attention/time for this task. '
@@ -120,7 +121,7 @@ const taskPlanningTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
-  AgentToolDefinition(
+  const AgentToolDefinition(
     name: TaskAgentToolNames.resolveAttentionRequest,
     description:
         "Resolve one of this task agent's own active attention requests "
@@ -172,7 +173,7 @@ const taskPlanningTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
-  AgentToolDefinition(
+  const AgentToolDefinition(
     name: TaskAgentToolNames.updateReport,
     description:
         '${TaskAgentReportPolicy.publicationRule} Provide a compact one-liner '
@@ -206,7 +207,7 @@ const taskPlanningTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
-  AgentToolDefinition(
+  const AgentToolDefinition(
     name: TaskAgentToolNames.retractSuggestions,
     description:
         'Withdraw one or more of your own previously-proposed changes that '
@@ -261,59 +262,13 @@ const taskPlanningTools = <AgentToolDefinition>[
         'Record private observations for future wakes. Use this to note '
         'patterns, insights, failure notes, or anything worth remembering. '
         'For grievances and excellence notes, set priority to "critical" '
-        'and include a full paragraph of context explaining the situation.',
-    parameters: {
-      'type': 'object',
-      'properties': {
-        'observations': {
-          'type': 'array',
-          'items': {
-            'type': 'object',
-            'properties': {
-              'text': {
-                'type': 'string',
-                'description':
-                    'The observation text. For critical '
-                    'priority, write a full paragraph explaining the '
-                    'situation, what went wrong (or right), and why '
-                    'it matters.',
-              },
-              'priority': {
-                'type': 'string',
-                'enum': ['routine', 'notable', 'critical'],
-                'description':
-                    'Priority level. Use "critical" for user '
-                    'grievances, excellence notes, and template '
-                    'improvement requests. Default: "routine".',
-              },
-              'category': {
-                'type': 'string',
-                'enum': [
-                  'grievance',
-                  'excellence',
-                  'template_improvement',
-                  'operational',
-                ],
-                'description':
-                    'Category of observation. Required for '
-                    '"critical" and "notable" priorities.',
-              },
-              'target': {
-                'type': 'string',
-                'enum': ['template', 'soul', 'both'],
-                'description':
-                    'Where this observation applies: "template" for '
-                    'skill/operational issues, "soul" for personality '
-                    'issues, "both" for issues spanning both.',
-              },
-            },
-            'required': ['text'],
-          },
-          'description': 'List of observations to persist.',
-        },
-      },
-      'required': ['observations'],
-      'additionalProperties': false,
-    },
+        'and include a full paragraph of context explaining the situation. '
+        'Give "notable" and "critical" observations a category.',
+    parameters: recordObservationsParameters(
+      textDescription:
+          'The observation text. For critical priority, write a full '
+          'paragraph explaining the situation, what went wrong (or right), '
+          'and why it matters.',
+    ),
   ),
 ];

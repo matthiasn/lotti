@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
@@ -192,36 +193,16 @@ class WakeOutputWriter {
         );
       }
 
-      // 10. Persist new observation notes (agentJournal entries).
-      for (final observation in observations) {
-        final payloadId = _idGen.v4();
-        await _sync.upsertEntity(
-          AgentDomainEntity.agentMessagePayload(
-            id: payloadId,
-            agentId: agentId,
-            createdAt: now,
-            vectorClock: null,
-            content: <String, Object?>{
-              'text': observation.text,
-              'priority': observation.priority.name,
-              'category': observation.category.name,
-            },
-          ),
-        );
-
-        await _sync.upsertEntity(
-          AgentDomainEntity.agentMessage(
-            id: _idGen.v4(),
-            agentId: agentId,
-            threadId: threadId,
-            kind: AgentMessageKind.observation,
-            createdAt: now,
-            vectorClock: null,
-            contentEntryId: payloadId,
-            metadata: AgentMessageMetadata(runKey: runKey),
-          ),
-        );
-      }
+      // 10. Persist new observation notes (agentJournal entries), through
+      // the shared contract every agent writes observations with.
+      await persistAgentObservations(
+        _sync,
+        agentId: agentId,
+        threadId: threadId,
+        runKey: runKey,
+        now: now,
+        observations: observations,
+      );
 
       // 10a. Apply any retractions the agent staged during the conversation.
       // Deferred to here so the suggestion list never reads empty: proposals

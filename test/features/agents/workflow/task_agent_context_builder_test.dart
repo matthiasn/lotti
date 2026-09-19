@@ -8,9 +8,11 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/task_agent_context_builder.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:mocktail/mocktail.dart';
@@ -502,7 +504,7 @@ void main() {
   group('buildUserMessage', () {
     Future<({String text, int? logStart, int? logEnd})> build({
       bool hasReport = true,
-      List<AgentMessageEntity> journalObservations = const [],
+      List<RecalledObservation> journalObservations = const [],
       String taskDetails = '{"title":"My Task"}',
       String projectContextJson = '{}',
       String linkedTasksJson = '{}',
@@ -641,28 +643,53 @@ void main() {
       },
     );
 
-    test('surfaces prior critical grievance observations', () async {
-      final observation = makeTestMessage(contentEntryId: 'p1');
-      final payload = makeTestMessagePayload(
-        id: 'p1',
-        content: const {
-          'text': 'User was frustrated by the delay.',
-          'priority': 'critical',
-          'category': 'grievance',
-        },
+    test('surfaces prior critical observations, grievances and excellence '
+        'apart, and lists the journal oldest first', () async {
+      final result = await build(
+        journalObservations: [
+          makeTestRecalledObservation(
+            'User praised the summary.',
+            id: 'o3',
+            at: DateTime(2026, 9, 3),
+            priority: ObservationPriority.critical,
+            category: ObservationCategory.excellence,
+          ),
+          makeTestRecalledObservation(
+            'User was frustrated by the delay.',
+            id: 'o2',
+            at: DateTime(2026, 9, 2),
+            priority: ObservationPriority.critical,
+            category: ObservationCategory.templateImprovement,
+          ),
+          makeTestRecalledObservation(
+            'Routine progress note.',
+            id: 'o1',
+            at: DateTime(2026, 9),
+          ),
+        ],
       );
-      when(
-        () => agentRepository.getEntitiesByIds(any()),
-      ).thenAnswer((_) async => {'p1': payload});
-
-      final result = await build(journalObservations: [observation]);
 
       expect(
         result.text,
-        contains('## Prior Critical Observations (Self-Review)'),
+        contains(
+          '## Prior Critical Observations (Self-Review)\n'
+          'The following critical observations were recorded in your previous '
+          'wakes. Review them and adjust your behavior accordingly.\n\n'
+          '### Grievances\n'
+          '- [2026-09-02T00:00:00.000] User was frustrated by the delay.\n\n'
+          '### Excellence (keep doing this)\n'
+          '- [2026-09-03T00:00:00.000] User praised the summary.\n',
+        ),
       );
-      expect(result.text, contains('### Grievances'));
-      expect(result.text, contains('User was frustrated by the delay.'));
+      expect(
+        result.text,
+        contains(
+          '## Agent Journal\n'
+          '- [2026-09-01T00:00:00.000] Routine progress note.\n'
+          '- [2026-09-02T00:00:00.000] User was frustrated by the delay.\n'
+          '- [2026-09-03T00:00:00.000] User praised the summary.\n',
+        ),
+      );
     });
 
     test('renders the attention requests section', () async {

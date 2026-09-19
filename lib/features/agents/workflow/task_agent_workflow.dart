@@ -26,6 +26,7 @@ import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/task_agent_staged_tool_exposure.dart';
 import 'package:lotti/features/agents/tools/task_agent_tool_gate.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
@@ -409,7 +410,7 @@ class TaskAgentWorkflow with AgentErrorLogging {
   Future<({String text, int? logStart, int? logEnd})> _buildUserMessage({
     required String agentId,
     required bool hasReport,
-    required List<AgentMessageEntity> journalObservations,
+    required List<RecalledObservation> journalObservations,
     required String taskDetails,
     required String projectContextJson,
     required String linkedTasksJson,

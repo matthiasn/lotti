@@ -201,9 +201,10 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       agentId,
       AgentReportScopes.current,
     );
-    final journalObservations = await agentRepository.getMessagesByKind(
+    final journalObservations = await recallAgentObservations(
+      agentRepository,
       agentId,
-      AgentMessageKind.observation,
+      limit: taskObservationLookback,
     );
 
     // 2. Build task context from journal domain (independent fetches in
