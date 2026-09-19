@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/backup_restore/domain/profile_backup_catalog.dart';
 import 'package:lotti/features/backup_restore/domain/profile_backup_manifest.dart';
 
@@ -494,4 +497,126 @@ void main() {
       );
     });
   });
+
+  group('manifest properties', () {
+    glados.Glados2(
+      glados.any.manifestParts,
+      glados.IntAnys(glados.any).intInRange(0, 20),
+      glados.ExploreConfig(numRuns: 300),
+    ).test(
+      'a manifest survives JSON and ignores the order it was given in',
+      (parts, rotation) {
+        ProfileBackupManifest build(
+          List<BackupManifestStore> stores,
+          List<BackupManifestFile> files,
+        ) => ProfileBackupManifest(
+          createdAt: parts.createdAt,
+          appVersion: '1.0.4+4285',
+          profileType: parts.guest ? 'guest' : 'real',
+          stores: stores,
+          files: files,
+        );
+        final manifest = build(parts.stores, parts.files);
+        final shuffled = build(
+          _rotate(parts.stores.reversed.toList(), rotation),
+          _rotate(parts.files.reversed.toList(), rotation),
+        );
+        final wire =
+            jsonDecode(jsonEncode(manifest.toJson())) as Map<String, Object?>;
+
+        expect(ProfileBackupManifest.fromJson(wire), manifest);
+        expect(ProfileBackupManifest.fromJson(manifest.toJson()), manifest);
+        expect(shuffled, manifest);
+        expect(shuffled.toJson(), manifest.toJson());
+        expect(
+          manifest.files.map((f) => f.relativePath).toList(),
+          [...parts.files.map((f) => f.relativePath)]..sort(),
+        );
+      },
+      tags: 'glados',
+    );
+  });
+}
+
+List<T> _rotate<T>(List<T> items, int by) => items.isEmpty
+    ? items
+    : [...items.skip(by % items.length), ...items.take(by % items.length)];
+
+typedef _ManifestParts = ({
+  DateTime createdAt,
+  bool guest,
+  List<BackupManifestStore> stores,
+  List<BackupManifestFile> files,
+});
+
+extension _AnyManifestParts on glados.Any {
+  /// One to four directory stores (`dir-0` → `d0`, …) and a SQLite store,
+  /// with up to eight distinct files spread over them.
+  glados.Generator<_ManifestParts> get manifestParts =>
+      glados.CombinableAny(this).combine4(
+        glados.IntAnys(this).intInRange(0, 4102444800000),
+        glados.BoolAny(this).bool,
+        glados.IntAnys(this).intInRange(1, 5),
+        glados.ListAnys(this).listWithLengthInRange(
+          0,
+          9,
+          glados.CombinableAny(this).combine3(
+            glados.IntAnys(this).intInRange(0, 5),
+            glados.IntAnys(this).intInRange(0, 6),
+            glados.IntAnys(this).intInRange(0, 100000),
+            (int store, int name, int size) => (store, name, size),
+          ),
+        ),
+        (
+          int millis,
+          bool guest,
+          int directories,
+          List<(int, int, int)> fileSpecs,
+        ) {
+          final stores = [
+            for (var i = 0; i < directories; i++)
+              BackupManifestStore(
+                id: 'dir-$i',
+                relativePath: 'd$i',
+                kind: BackupStoreKind.directory,
+                sensitivity: BackupSensitivity.values[i % 3],
+                required: i.isEven,
+              ),
+            const BackupManifestStore(
+              id: 'journal',
+              relativePath: 'db.sqlite',
+              kind: BackupStoreKind.sqliteDatabase,
+              sensitivity: BackupSensitivity.personal,
+              required: true,
+              schemaVersion: 45,
+            ),
+          ];
+          final files = <String, BackupManifestFile>{};
+          for (final (store, name, size) in fileSpecs) {
+            final file = store >= directories
+                ? BackupManifestFile(
+                    storeId: 'journal',
+                    relativePath: 'db.sqlite',
+                    sizeBytes: size,
+                    sha256: 'a' * 64,
+                  )
+                : BackupManifestFile(
+                    storeId: 'dir-$store',
+                    relativePath: 'd$store/sub$name/file$name.bin',
+                    sizeBytes: size,
+                    sha256: (name.toRadixString(16) * 64).substring(0, 64),
+                  );
+            files.putIfAbsent(file.relativePath, () => file);
+          }
+          return (
+            createdAt: DateTime.fromMillisecondsSinceEpoch(
+              millis,
+              isUtc: true,
+            ).add(Duration(microseconds: millis % 1000)),
+            guest: guest,
+            stores: stores,
+            files: files.values.toList(),
+          );
+        },
+      );
 }

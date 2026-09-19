@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/backup_restore/domain/profile_backup_catalog.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_startup.dart';
 
@@ -160,4 +161,118 @@ void main() {
       }
     });
   });
+
+  group('path properties', () {
+    glados.Glados(
+      glados.any.backupPath,
+      glados.ExploreConfig(numRuns: 500),
+    ).test(
+      'a path is accepted exactly when it is canonical and relative',
+      (path) {
+        final segments = path.split('/');
+        final canonical =
+            path.isNotEmpty &&
+            !path.contains(r'\') &&
+            !path.contains(':') &&
+            segments.every((s) => s.isNotEmpty && s != '.' && s != '..');
+
+        if (canonical) {
+          ProfileBackupCatalog.validateRelativePath(path);
+          // A valid path always has a policy, and always the same one.
+          final decision = ProfileBackupCatalog.classify(path);
+          final again = ProfileBackupCatalog.classify(path);
+          expect(
+            (decision.storeId, decision.treatment, decision.kind),
+            (again.storeId, again.treatment, again.kind),
+          );
+          expect(
+            {
+              ...ProfileBackupCatalog.stores.map((s) => s.id),
+              'sqlite-companion',
+              'interrupted-atomic-write',
+            },
+            contains(decision.storeId),
+          );
+        } else {
+          expect(
+            () => ProfileBackupCatalog.validateRelativePath(path),
+            throwsFormatException,
+          );
+          expect(
+            () => ProfileBackupCatalog.classify(path),
+            throwsFormatException,
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados2(
+      glados.AnyUtils(glados.any).choose(
+        ProfileBackupCatalog.stores
+            .where((store) => store.relativePath.isNotEmpty)
+            .toList(),
+      ),
+      glados.any.backupPath,
+      glados.ExploreConfig(numRuns: 300),
+    ).test(
+      'a store’s own path, and for a directory anything under it, is its own',
+      (store, suffix) {
+        expect(
+          ProfileBackupCatalog.classify(store.relativePath).storeId,
+          store.id,
+        );
+        final nested = '${store.relativePath}/$suffix';
+        final isCanonical =
+            !nested.contains(r'\') &&
+            !nested.contains(':') &&
+            nested
+                .split('/')
+                .every(
+                  (s) => s.isNotEmpty && s != '.' && s != '..',
+                );
+        if (store.kind == BackupStoreKind.directory &&
+            isCanonical &&
+            store.treatment != BackupPathTreatment.include) {
+          // Excluded and rebuilt trees swallow everything below them,
+          // companions and temporaries included.
+          expect(ProfileBackupCatalog.classify(nested).storeId, store.id);
+        }
+      },
+      tags: 'glados',
+    );
+  });
+}
+
+extension _AnyBackupPath on glados.Any {
+  /// Up to four segments from a pool mixing ordinary names with every kind
+  /// of segment the validator must refuse.
+  glados.Generator<String> get backupPath =>
+      glados.CombinableAny(this).combine2(
+        glados.BoolAny(this).bool,
+        glados.ListAnys(this).listWithLengthInRange(
+          0,
+          5,
+          glados.AnyUtils(this).choose(const [
+            'images',
+            'audio',
+            'db.sqlite',
+            'db.sqlite-wal',
+            'entry.jpg',
+            'x.bak.3',
+            'matrix',
+            'a',
+            'b',
+            '',
+            '.',
+            '..',
+            'c:d',
+            r'e\f',
+            '.hidden',
+            '...',
+          ]),
+        ),
+        (bool leadingSlash, List<String> segments) =>
+            '${leadingSlash ? '/' : ''}${segments.join('/')}',
+      );
 }
