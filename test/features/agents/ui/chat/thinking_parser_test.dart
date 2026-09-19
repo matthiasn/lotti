@@ -87,6 +87,19 @@ void main() {
       expect(segments[1].text, 'outer<think>inner</think>end');
     });
 
+    test('an outer block still open after its nested block closes stays '
+        'thinking to the end of the stream', () {
+      final segments = splitThinkingSegments(
+        'before<think>outer<think>inner</think>',
+      );
+
+      expect(segments, hasLength(2));
+      expect(segments.first.isThinking, isFalse);
+      expect(segments.first.text, 'before');
+      expect(segments.last.isThinking, isTrue);
+      expect(segments.last.text, 'outer<think>inner</think>');
+    });
+
     test('ignores malformed fence openings and stray closing markers', () {
       for (final content in [
         'pre```think without newline```post',

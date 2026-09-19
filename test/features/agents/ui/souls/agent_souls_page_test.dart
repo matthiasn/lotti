@@ -279,4 +279,30 @@ void main() {
     expect(appleY < bananaY, isTrue);
     expect(bananaY < cherryY, isTrue);
   });
+  testWidgets('souls with the same name keep a stable order by id', (
+    tester,
+  ) async {
+    // "Pip" and "pip" compare equal case-insensitively, so the Name sort
+    // falls back to the id: soul-a ("pip") must precede soul-b ("Pip")
+    // even though the provider lists soul-b first.
+    await pumpPage(
+      tester,
+      souls: [
+        makeTestSoulDocument(
+          id: 'soul-b',
+          agentId: 'soul-b',
+          displayName: 'Pip',
+        ),
+        makeTestSoulDocument(
+          id: 'soul-a',
+          agentId: 'soul-a',
+          displayName: 'pip',
+        ),
+      ],
+    );
+
+    final lowerY = tester.getTopLeft(find.text('pip')).dy;
+    final upperY = tester.getTopLeft(find.text('Pip')).dy;
+    expect(lowerY, lessThan(upperY));
+  });
 }

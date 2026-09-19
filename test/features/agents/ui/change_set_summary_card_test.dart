@@ -486,6 +486,53 @@ void main() {
         );
       },
     );
+
+    testWidgets('a time-entry proposal shows its start, end and summary', (
+      tester,
+    ) async {
+      final changeSet = makeTestChangeSet(
+        agentId: 'agent-010',
+        taskId: 'project-001',
+        items: const [
+          ChangeItem(
+            toolName: 'create_time_entry',
+            args: {
+              'startTime': '2026-03-15T09:00:00',
+              'endTime': '2026-03-15T10:30:00',
+              'summary': 'Counted the colony at the feeder',
+            },
+            humanSummary: 'Raw time entry summary',
+          ),
+        ],
+      );
+
+      await pumpProjectCard(tester, changeSets: [changeSet]);
+
+      expect(find.text('09:00'), findsOneWidget);
+      expect(find.text('10:30'), findsOneWidget);
+      expect(find.text('Counted the colony at the feeder'), findsOneWidget);
+      expect(find.text('Raw time entry summary'), findsNothing);
+    });
+
+    testWidgets('an unrecognised tool falls back to its stored summary', (
+      tester,
+    ) async {
+      final changeSet = makeTestChangeSet(
+        agentId: 'agent-011',
+        taskId: 'project-001',
+        items: const [
+          ChangeItem(
+            toolName: 'schedule_penguin_parade',
+            args: {'when': 'dawn'},
+            humanSummary: 'Schedule the dawn penguin parade',
+          ),
+        ],
+      );
+
+      await pumpProjectCard(tester, changeSets: [changeSet]);
+
+      expect(find.text('Schedule the dawn penguin parade'), findsOneWidget);
+    });
   });
 
   group('ChangeSetSummaryCard.event', () {

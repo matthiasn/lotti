@@ -270,6 +270,45 @@ void main() {
       },
     );
 
+    test(
+      'a required label that cannot clear the chrome sits in the gap with '
+      'the least overlap',
+      () {
+        // Two full-width strips leave a 10px band — narrower than the 28px
+        // label — so no escape clears every reserved rect. The fallback must
+        // still pick the in-viewport option overlapping the chrome least
+        // (18px of height), not leave it centred on the toolbar.
+        const viewport = Rect.fromLTWH(0, 0, 400, 300);
+        const toolbar = Rect.fromLTWH(0, 0, 400, 140);
+        const footer = Rect.fromLTWH(0, 150, 400, 150);
+        const candidate = GraphLabelCandidate(
+          id: 'focus',
+          center: Offset(200, 70),
+          nodeRadius: 20,
+          labelSize: Size(220, 28),
+          priority: 1000,
+          required: true,
+        );
+
+        final result = solveGraphLabelLayout(
+          candidates: const [candidate],
+          viewport: viewport,
+          nodeObstacles: const {},
+          reservedRects: const [toolbar, footer],
+        );
+
+        final rect = result['focus']!.rect;
+        double overlap(Rect chrome) {
+          final i = rect.intersect(chrome);
+          return i.width <= 0 || i.height <= 0 ? 0 : i.width * i.height;
+        }
+
+        expect(viewport.containsRect(rect), isTrue);
+        expect(overlap(toolbar) + overlap(footer), 220 * 18);
+        expect(rect.top, anyOf(122, 140));
+      },
+    );
+
     test('reserved rects still never displace a non-required label', () {
       // Optional labels are dropped rather than relocated — culling keeps the
       // canvas readable when space runs out.

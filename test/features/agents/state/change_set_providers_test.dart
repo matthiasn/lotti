@@ -779,4 +779,62 @@ void main() {
       },
     );
   });
+  group('selfTargetedPendingChangeSetsProvider', () {
+    test('reads sets targeting the agent itself, deduplicated, and refetches '
+        'on an agent update', () async {
+      const agentId = 'goal-agent-001';
+      const revision = ChangeItem(
+        toolName: 'propose_goal_revision',
+        args: {'title': 'Waddle to the feeder daily'},
+        humanSummary: 'Revise the goal',
+      );
+      final older = makeTestChangeSet(
+        id: 'cs-older',
+        agentId: agentId,
+        taskId: agentId,
+        items: const [revision],
+        createdAt: DateTime(2026, 3, 15, 9),
+      );
+      final newer = makeTestChangeSet(
+        id: 'cs-newer',
+        agentId: agentId,
+        taskId: agentId,
+        items: const [revision],
+        createdAt: DateTime(2026, 3, 15, 10),
+      );
+      when(
+        () => mockRepository.getPendingChangeSets(agentId, taskId: agentId),
+      ).thenAnswer((_) async => [older, newer]);
+      final updates = StreamController<Set<String>>.broadcast();
+      addTearDown(updates.close);
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(mockRepository),
+          agentUpdateStreamProvider(agentId).overrideWith(
+            (ref) => updates.stream,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final sub = container.listen(
+        selfTargetedPendingChangeSetsProvider(agentId),
+        (_, _) {},
+      );
+      addTearDown(sub.close);
+
+      final result = await container.read(
+        selfTargetedPendingChangeSetsProvider(agentId).future,
+      );
+      expect(result.map((e) => e.id), ['cs-newer']);
+
+      updates.add({agentId});
+      await container.read(
+        selfTargetedPendingChangeSetsProvider(agentId).future,
+      );
+      await pumpEventQueue();
+      verify(
+        () => mockRepository.getPendingChangeSets(agentId, taskId: agentId),
+      ).called(2);
+    });
+  });
 }

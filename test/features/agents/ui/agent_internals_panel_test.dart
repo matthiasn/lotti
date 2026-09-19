@@ -25,6 +25,7 @@ void main() {
     WidgetTester tester, {
     required List<Override> overrides,
     Size screenSize = const Size(900, 800),
+    bool passAgentName = true,
   }) async {
     final identity = makeTestIdentity();
     await tester.pumpWidget(
@@ -43,7 +44,7 @@ void main() {
                 AgentInternalsPanel.route(
                   context: context,
                   agentId: identity.agentId,
-                  agentName: identity.displayName,
+                  agentName: passAgentName ? identity.displayName : null,
                 ),
               ),
               child: const Text('open'),
@@ -164,10 +165,9 @@ void main() {
       // The panel installs a full-screen GestureDetector behind the
       // panel as the dismissal scrim. We assert the wiring directly:
       // the first descendant `GestureDetector` carries an `onTap` that
-      // pops via `Navigator.maybePop`. (The simulated tap path is
-      // exercised by the close-button test above; verifying the
-      // callback wiring keeps this test deterministic regardless of
-      // hit-testing intricacies inside the test harness.)
+      // pops via `Navigator.maybePop`. Invoking the callback directly keeps
+      // this test deterministic regardless of hit-testing intricacies
+      // inside the test harness.
       final scrimGesture = tester.widget<GestureDetector>(
         find
             .descendant(
@@ -176,8 +176,26 @@ void main() {
             )
             .first,
       );
-      expect(scrimGesture.onTap, isNotNull);
       expect(scrimGesture.behavior, HitTestBehavior.opaque);
+
+      scrimGesture.onTap!();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Agent internals'), findsNothing);
+      expect(find.text('open'), findsOneWidget);
+    });
+
+    testWidgets('without a passed name the header shows the resolved agent '
+        'name', (tester) async {
+      await pumpPanel(
+        tester,
+        passAgentName: false,
+        overrides: [
+          agentStateProvider.overrideWith((ref, agentId) async => null),
+        ],
+      );
+
+      expect(find.text('Test Agent'), findsOneWidget);
     });
 
     testWidgets('panel width is clamped to the configured range', (

@@ -371,6 +371,37 @@ void main() {
       expect(painterOf(tester).scenario.nodes.length, lessThanOrEqualTo(6));
     });
 
+    testWidgets('restyles from tokens when a host replaces category colors', (
+      tester,
+    ) async {
+      final scenario = busyTaskScenario();
+      const iceBlue = Color(0xFF3A7BD5);
+      const krillPink = Color(0xFFE56B8C);
+      var colors = <String, Color>{'colony': iceBlue};
+      late StateSetter updateHost;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          StatefulBuilder(
+            builder: (context, setState) {
+              updateHost = setState;
+              return KnowledgeGraphView(
+                scenario: scenario,
+                categoryColors: colors,
+                showInspector: false,
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(painterOf(tester).style.categoryColor('colony'), iceBlue);
+
+      updateHost(() => colors = {'colony': krillPink});
+      await tester.pump();
+
+      expect(painterOf(tester).style.categoryColor('colony'), krillPink);
+    });
+
     testWidgets('labels collapsed relationship aggregates with their count', (
       tester,
     ) async {

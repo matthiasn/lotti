@@ -1444,4 +1444,54 @@ void main() {
       },
     );
   }
+  for (final hiddenCategory in ['unknown', 'private']) {
+    test(
+      'a category chat whose category is $hiddenCategory refuses to answer '
+      'before any inference',
+      () async {
+        final bench = QueryTestBench();
+        if (hiddenCategory == 'private') {
+          bench.categories
+            ..clear()
+            ..add(categoryMindfulness.copyWith(private: true));
+        }
+        var inferenceCalls = 0;
+        final categoryChat = QueryChatHistory(
+          id: 'chat',
+          scope: QueryScope(
+            kind: QueryScopeKind.category,
+            id: hiddenCategory == 'private'
+                ? categoryMindfulness.id
+                : 'vanished-category',
+          ),
+          title: 'Colony',
+          private: false,
+          archived: false,
+          lastActivity: date,
+          events: [question],
+          unread: false,
+        );
+        await expectLater(
+          QueryAnswerBuilder(
+            crawler: bench.crawler,
+            access: bench.crawler.access,
+            inference: QueryTextInference(
+              generate: (_, _) {
+                inferenceCalls++;
+                return const Stream.empty();
+              },
+            ),
+          ).build(
+            chat: categoryChat,
+            question: question,
+            memories: const [],
+            cancellation: QueryCancellation(),
+            onProgress: (_, {required expanded}) {},
+          ),
+          throwsA(isA<QueryScopeUnavailable>()),
+        );
+        expect(inferenceCalls, 0);
+      },
+    );
+  }
 }

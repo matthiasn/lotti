@@ -80,6 +80,7 @@ class AgentTestBench {
     this._updateNotifications,
     this._taskAgentService,
     this._ttsEngine,
+    this._ttsAudioPlayer,
     this._mediaQueryData = desktopMediaQueryData,
     this.theme,
     this.surfaceConstraints,
@@ -118,6 +119,9 @@ class AgentTestBench {
   /// supported [FakeTtsEngine] so the playback control renders regardless of
   /// the host platform.
   final FakeTtsEngine? _ttsEngine;
+
+  /// Optional audio player so playback tests can drive position and duration.
+  final FakeTtsAudioPlayer? _ttsAudioPlayer;
   final MediaQueryData _mediaQueryData;
   final ThemeData? theme;
   final BoxConstraints? surfaceConstraints;
@@ -225,7 +229,9 @@ class AgentTestBench {
         ttsPlaybackControllerProvider.overrideWith(
           () => TtsPlaybackController(logger: MockDomainLogger()),
         ),
-        ttsAudioPlayerProvider.overrideWithValue(FakeTtsAudioPlayer()),
+        ttsAudioPlayerProvider.overrideWithValue(
+          _ttsAudioPlayer ?? FakeTtsAudioPlayer(),
+        ),
         ttsModelRepositoryProvider.overrideWithValue(FakeTtsModelRepository()),
         ..._extraOverrides,
       ],

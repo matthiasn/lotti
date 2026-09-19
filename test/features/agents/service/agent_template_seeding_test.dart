@@ -1,5 +1,3 @@
-// ignore_for_file: avoid_redundant_argument_values
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -118,38 +116,87 @@ void main() {
   });
 
   group('seedDirectiveFields', () {
-    test(
-      'backfills missing general/report directives by template kind',
-      () async {
-        final taskTemplate = makeTestTemplate(
-          id: 'tpl-task',
-          agentId: 'tpl-task',
-          kind: AgentTemplateKind.taskAgent,
-        );
-        when(
-          () => mockRepo.getAllTemplates(),
-        ).thenAnswer((_) async => [taskTemplate]);
-        // Active version has empty directive fields -> should be backfilled.
-        when(
-          () => mockRepo.getActiveTemplateVersion('tpl-task'),
-        ).thenAnswer(
-          (_) async => makeTestTemplateVersion(
-            id: 'v-task',
-            agentId: 'tpl-task',
-          ),
-        );
+    const directivesByKind = {
+      AgentTemplateKind.taskAgent: (
+        taskAgentGeneralDirective,
+        taskAgentReportDirective,
+      ),
+      AgentTemplateKind.dayAgent: (
+        dayAgentGeneralDirective,
+        dayAgentReportDirective,
+      ),
+      AgentTemplateKind.templateImprover: (
+        templateImproverGeneralDirective,
+        templateImproverReportDirective,
+      ),
+      AgentTemplateKind.projectAgent: (
+        projectAgentGeneralDirective,
+        projectAgentReportDirective,
+      ),
+      AgentTemplateKind.eventAgent: (
+        eventAgentGeneralDirective,
+        eventAgentReportDirective,
+      ),
+    };
+    for (final MapEntry(key: kind, value: (general, report))
+        in directivesByKind.entries) {
+      test(
+        'backfills missing general/report directives for a ${kind.name}',
+        () async {
+          final template = makeTestTemplate(
+            id: 'tpl-${kind.name}',
+            agentId: 'tpl-${kind.name}',
+            kind: kind,
+          );
+          when(
+            () => mockRepo.getAllTemplates(),
+          ).thenAnswer((_) async => [template]);
+          // Active version has empty directive fields -> should be backfilled.
+          when(
+            () => mockRepo.getActiveTemplateVersion(template.id),
+          ).thenAnswer(
+            (_) async => makeTestTemplateVersion(
+              id: 'v-${kind.name}',
+              agentId: template.id,
+            ),
+          );
 
-        await seeding.seedDirectiveFields();
+          await seeding.seedDirectiveFields();
 
-        final captured = verify(
-          () => mockSync.upsertEntity(captureAny()),
-        ).captured.cast<AgentDomainEntity>();
-        expect(captured, hasLength(1));
-        final updated = captured.single as AgentTemplateVersionEntity;
-        expect(updated.generalDirective, taskAgentGeneralDirective);
-        expect(updated.reportDirective, taskAgentReportDirective);
-      },
-    );
+          final captured = verify(
+            () => mockSync.upsertEntity(captureAny()),
+          ).captured.cast<AgentDomainEntity>();
+          expect(captured, hasLength(1));
+          final updated = captured.single as AgentTemplateVersionEntity;
+          expect(updated.generalDirective, general);
+          expect(updated.reportDirective, report);
+        },
+      );
+    }
+
+    test('fills only the empty field and keeps an authored one', () async {
+      final template = makeTestTemplate(id: 'tpl-half', agentId: 'tpl-half');
+      when(
+        () => mockRepo.getAllTemplates(),
+      ).thenAnswer((_) async => [template]);
+      when(() => mockRepo.getActiveTemplateVersion('tpl-half')).thenAnswer(
+        (_) async => makeTestTemplateVersion(
+          id: 'v-half',
+          agentId: 'tpl-half',
+          reportDirective: 'Report the penguin roll call first.',
+        ),
+      );
+
+      await seeding.seedDirectiveFields();
+
+      final updated =
+          verify(
+                () => mockSync.upsertEntity(captureAny()),
+              ).captured.single
+              as AgentTemplateVersionEntity;
+      expect(updated.generalDirective, taskAgentGeneralDirective);
+      expect(updated.reportDirective, 'Report the penguin roll call first.');
+    });
 
     test(
       'leaves versions whose directive fields are already populated',
@@ -174,4 +221,71 @@ void main() {
       },
     );
   });
+  group('seedDayAgentCaptureReconcileDirective', () {
+    test(
+      'creates a new active version with the current directives for a stale '
+      'Shepherd, carrying its directives blob',
+      () async {
+        final sync = _TransactionalSyncService();
+        when(() => sync.upsertEntity(any())).thenAnswer((_) async {});
+        final reconciling = AgentTemplateSeeding(
+          syncService: sync,
+          crud: AgentTemplateCrud(repository: mockRepo, syncService: sync),
+        );
+        final stale = makeTestTemplateVersion(
+          id: 'v-old',
+          agentId: dayAgentTemplateId,
+          directives: 'Keep the colony calendar.',
+          generalDirective: 'An older phase-1 directive.',
+          reportDirective: dayAgentReportDirective,
+        );
+        when(() => mockRepo.getEntity(dayAgentTemplateId)).thenAnswer(
+          (_) async => makeTestTemplate(
+            id: dayAgentTemplateId,
+            agentId: dayAgentTemplateId,
+            kind: AgentTemplateKind.dayAgent,
+          ),
+        );
+        when(
+          () => mockRepo.getActiveTemplateVersion(dayAgentTemplateId),
+        ).thenAnswer((_) async => stale);
+        when(
+          () => mockRepo.getTemplateHead(dayAgentTemplateId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockRepo.getEntitiesByAgentId(
+            dayAgentTemplateId,
+            type: any(named: 'type'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [stale]);
+        when(
+          () => mockRepo.getNextTemplateVersionNumber(dayAgentTemplateId),
+        ).thenAnswer((_) async => 2);
+
+        await reconciling.seedDayAgentCaptureReconcileDirective();
+
+        final written = verify(
+          () => sync.upsertEntity(captureAny()),
+        ).captured.whereType<AgentTemplateVersionEntity>().toList();
+        final created = written.singleWhere((v) => v.id != 'v-old');
+        expect(created.version, 2);
+        expect(created.generalDirective, dayAgentGeneralDirective);
+        expect(created.reportDirective, dayAgentReportDirective);
+        expect(created.directives, 'Keep the colony calendar.');
+        expect(created.authoredBy, 'system');
+        expect(
+          written.singleWhere((v) => v.id == 'v-old').status,
+          AgentTemplateVersionStatus.archived,
+        );
+      },
+    );
+  });
+}
+
+/// Runs the transaction body inline so `createVersion` can be exercised
+/// against the mocked repository.
+class _TransactionalSyncService extends MockAgentSyncService {
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) => action();
 }

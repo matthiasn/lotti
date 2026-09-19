@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:genui/genui.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/agents/genui/evolution_catalog.dart';
 import 'package:lotti/features/agents/genui/genui_bridge.dart';
 import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -71,6 +72,31 @@ void main() {
       // Should not affect proposal or notes.
       expect(strategyWithBridge.latestProposal, isNull);
       expect(strategyWithBridge.pendingNotes, isEmpty);
+    });
+
+    test('a bridge failure answers the tool call with the error type and '
+        'keeps the conversation going', () async {
+      final throwing = EvolutionStrategy(genUiBridge: _ThrowingGenUiBridge());
+      final toolCall = makeToolCall(
+        name: 'render_surface',
+        args: {'surfaceId': 'surf-bad', 'rootType': 'MetricsSummary'},
+      );
+      bridgeManager.addAssistantMessage(toolCalls: [toolCall]);
+
+      final action = await throwing.processToolCalls(
+        toolCalls: [toolCall],
+        manager: bridgeManager,
+      );
+
+      expect(action, ConversationAction.wait);
+      expect(
+        bridgeManager.messages.last,
+        const ChatCompletionMessage.tool(
+          toolCallId: 'call-1',
+          content: 'Error rendering surface (FormatException)',
+        ),
+      );
+      expect(throwing.latestProposal, isNull);
     });
 
     test('processes render_surface alongside other tools', () async {
@@ -518,4 +544,15 @@ void main() {
       tags: 'glados',
     );
   });
+}
+
+/// A bridge whose surface rendering always fails, as a malformed component
+/// payload does inside the GenUI processor.
+class _ThrowingGenUiBridge extends GenUiBridge {
+  _ThrowingGenUiBridge()
+    : super(processor: SurfaceController(catalogs: [buildEvolutionCatalog()]));
+
+  @override
+  String handleToolCall(Map<String, dynamic> args) =>
+      throw const FormatException('malformed surface');
 }

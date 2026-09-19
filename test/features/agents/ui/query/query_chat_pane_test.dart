@@ -29,9 +29,11 @@ import 'package:lotti/features/design_system/components/lists/design_system_list
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
+import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -2500,4 +2502,207 @@ void main() {
       },
     );
   }
+  testWidgets('a citation number beyond the evidence list stays plain text', (
+    tester,
+  ) async {
+    addCitationAnswer(
+      'out-of-range',
+      answerText: 'Recorded [1], unverified [3] and zero [0].',
+    );
+    await pump(tester);
+    expect(
+      tester.widget<AgentMarkdownView>(find.byType(AgentMarkdownView)).text,
+      'Recorded [1](#query-evidence-1), unverified (3) and zero (0).',
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('a non-evidence link in an answer routes through the app', (
+    tester,
+  ) async {
+    final navigation = RecordingMockNavService();
+    getIt.registerSingleton<NavService>(navigation);
+    addCitationAnswer('route', answerText: 'See [the plan](/projects/waddle).');
+    await pump(tester);
+    tester.widget<AgentMarkdownView>(find.byType(AgentMarkdownView)).onLinkTap!(
+      '/projects/waddle',
+      'the plan',
+    );
+    await tester.pump();
+    expect(navigation.navigationHistory, ['/projects/waddle']);
+    expect(find.byType(EntryDetailsPage), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('entering lockdown cancels a running dictation', (tester) async {
+    getIt.registerSingleton<EntitiesCacheService>(MockEntitiesCacheService());
+    var cancelled = 0;
+    await pump(
+      tester,
+      activeRecorder: ProcessingTestController(
+        partialTranscript: null,
+        onCancelCalled: () => cancelled++,
+      ),
+    );
+    expect(cancelled, 0);
+    ProviderScope.containerOf(tester.element(find.byType(QueryChatPane)))
+        .read(lockdownControllerProvider.notifier)
+        .lockToCategory(categoryMindfulness.id);
+    await tester.pump();
+    expect(cancelled, 1);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('system back leaves the chat through its close callback', (
+    tester,
+  ) async {
+    var cancelled = 0;
+    await pump(
+      tester,
+      activeRecorder: ProcessingTestController(
+        partialTranscript: null,
+        onCancelCalled: () => cancelled++,
+      ),
+    );
+    expect(closeCalls, 0);
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+    expect(cancelled, 1);
+    expect(closeCalls, 1);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('home-scope-only narrows the explained reach for a task', (
+    tester,
+  ) async {
+    await pump(tester);
+    const homeReach = 'Searches only this scope and its linked entries.';
+    expect(find.text(homeReach), findsNothing);
+    await tester.tap(find.text('Home scope only'));
+    await tester.pump();
+    expect(find.text(homeReach), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('a dismissed proposal shows its decision instead of actions', (
+    tester,
+  ) async {
+    events.addAll([
+      event('q', 'feeder', const QueryChatQuestion(text: 'Add a check.')),
+      event(
+        'a',
+        'feeder',
+        const QueryChatAnswer(
+          questionId: 'q',
+          text: 'Proposing a check.',
+          coverage: QueryCoverage(),
+          proposedActions: [
+            ChangeItem(
+              toolName: 'add_checklist_item',
+              args: {'title': 'Inspect feeder'},
+              humanSummary: 'Inspect feeder',
+            ),
+          ],
+        ),
+      ),
+      event(
+        'decision',
+        'feeder',
+        const QueryChatEventData.actionDecision(
+          questionId: 'q',
+          approved: false,
+        ),
+      ),
+    ]);
+    await pump(tester, session: const QueryChatSession(selectedId: 'feeder'));
+    expect(find.text('Dismissed'), findsOneWidget);
+    expect(find.text('Accept'), findsNothing);
+    expect(find.text('Dismiss'), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('a cancelled question says it was cancelled, not failed', (
+    tester,
+  ) async {
+    events.addAll([
+      event(
+        'question',
+        'feeder',
+        const QueryChatEventData.question(text: 'Which feeder?'),
+      ),
+      event(
+        'cancelled',
+        'feeder',
+        const QueryChatEventData.cancelled(questionId: 'question'),
+      ),
+    ]);
+    await pump(tester);
+    final recovery = find.byKey(
+      const ValueKey('goal-chat-attachment-question'),
+    );
+    expect(
+      find.descendant(of: recovery, matching: find.text('Cancelled')),
+      findsOneWidget,
+    );
+    expect(
+      find.text('The search could not finish. Try again.'),
+      findsNothing,
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('an unreadable recording that changed category says it moved', (
+    tester,
+  ) async {
+    bench.entries['moved'] = testAudioEntry.copyWith(
+      meta: testAudioEntry.meta.copyWith(
+        id: 'moved',
+        categoryId: categoryMindfulness.id,
+        private: false,
+      ),
+      entryText: null,
+      data: testAudioEntry.data.copyWith(transcripts: []),
+    );
+    const source = QuerySourceRef(
+      id: 'moved',
+      private: false,
+      categoryPrivate: false,
+      categoryId: 'former-category',
+    );
+    events.addAll([
+      event(
+        'question',
+        'feeder',
+        const QueryChatEventData.question(text: 'Feeder decision?'),
+      ),
+      event(
+        'reply',
+        'feeder',
+        const QueryChatEventData.answer(
+          questionId: 'question',
+          text: 'A recording could not be read.',
+          dependencies: [source],
+          coverage: QueryCoverage(
+            checked: 1,
+            homeChecked: 1,
+            categoryChecked: 0,
+            incomplete: true,
+            missingTranscripts: 1,
+            unreadableSources: [source],
+          ),
+        ),
+      ),
+    ]);
+    await pump(tester);
+    await tester.tap(find.text('What was searched'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'No searchable text when this answer was written. Open the recording '
+        'to inspect it.\nSource moved to another category',
+      ),
+      findsOneWidget,
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 }
