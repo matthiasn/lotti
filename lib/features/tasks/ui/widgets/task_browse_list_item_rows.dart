@@ -491,10 +491,7 @@ class SectionHeaderTitle extends StatelessWidget {
         children: [
           TaskShowcasePriorityGlyph(priority: sectionKey.priority!),
           const SizedBox(width: 6),
-          Text(
-            _prioritySectionTitle(context, sectionKey.priority!),
-            style: textStyle,
-          ),
+          Text(_sectionTitle(context, sectionKey), style: textStyle),
         ],
       );
     }

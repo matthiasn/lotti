@@ -116,13 +116,13 @@ Future<void> showTaskFilterModal(
     canCreateSavedFilter: !showTasks
         ? null
         : (draftState) => tasksFilterHasActiveClauses(
-            _draftStateToTasksFilter(draftState, controllerState),
+            _draftStateToTasksFilter(draftState),
           ),
     canUpdateSavedFilter: !showTasks || matchedSavedFilter == null
         ? null
         : (draftState) => !taskFiltersHaveSameSavedShape(
             matchedSavedFilter.filter,
-            _draftStateToTasksFilter(draftState, controllerState),
+            _draftStateToTasksFilter(draftState),
           ),
     onCreateSavedFilter: !showTasks
         ? null
@@ -130,10 +130,7 @@ Future<void> showTaskFilterModal(
             // The persisted filter is built from the route-scoped draft so
             // in-modal edits are captured even before Apply. The modal layer
             // applies and closes only after persistence succeeds.
-            final filter = _draftStateToTasksFilter(
-              draftState,
-              controllerState,
-            );
+            final filter = _draftStateToTasksFilter(draftState);
             final notifier = container.read(
               savedTaskFiltersControllerProvider.notifier,
             );
@@ -162,10 +159,7 @@ Future<void> showTaskFilterModal(
     onUpdateSavedFilter: !showTasks || matchedSavedFilter == null
         ? null
         : (draftState) async {
-            final filter = _draftStateToTasksFilter(
-              draftState,
-              controllerState,
-            );
+            final filter = _draftStateToTasksFilter(draftState);
             try {
               await container
                   .read(savedTaskFiltersControllerProvider.notifier)
@@ -189,11 +183,7 @@ Future<void> showTaskFilterModal(
             }
           },
     onApplied: (sheetState) {
-      _applyFilterState(
-        sheetState,
-        controller: controller,
-        controllerState: controllerState,
-      );
+      _applyFilterState(sheetState, controller: controller);
     },
     modalDecorator: (child) {
       final container = ProviderScope.containerOf(context);
@@ -322,9 +312,8 @@ Future<List<ProjectWithCategory>> _refreshProjectsForFilter({
 Future<void> _applyFilterState(
   DesignSystemTaskFilterState sheetState, {
   required JournalPageController controller,
-  required JournalPageState controllerState,
 }) async {
-  final filter = _draftStateToTasksFilter(sheetState, controllerState);
+  final filter = _draftStateToTasksFilter(sheetState);
   await controller.applyBatchFilterUpdate(
     statuses: sheetState.statusField?.selectedIds,
     categoryIds: sheetState.categoryField?.selectedIds,
@@ -346,19 +335,16 @@ Future<void> _applyFilterState(
 ///
 /// Selection sets fall back to `const {}` because [TasksFilter] is absolute
 /// (a saved filter with an empty status set means "no status constraint").
-/// Display toggles fall back to [controllerState] so toggles the sheet
-/// doesn't expose don't reset to the [TasksFilter] default.
-TasksFilter _draftStateToTasksFilter(
-  DesignSystemTaskFilterState sheetState,
-  JournalPageState controllerState,
-) {
+/// Both display toggles are always present: every draft state descends, via
+/// `copyWith` and `toggleValue`, from `buildTasksFilterSheetState`, which
+/// seeds both from the page's current values.
+TasksFilter _draftStateToTasksFilter(DesignSystemTaskFilterState sheetState) {
   final internalPriorities = <String>{
     for (final displayId in sheetState.selectedPriorityIds)
       ?TasksFilterPriorityIds.toInternalId(displayId),
   };
-  final toggleMap = {
-    for (final toggle in sheetState.toggles) toggle.id: toggle.value,
-  };
+  bool toggle(String id) =>
+      sheetState.toggles.firstWhere((toggle) => toggle.id == id).value;
   return TasksFilter(
     selectedTaskStatuses: sheetState.statusField?.selectedIds ?? const {},
     selectedCategoryIds: sheetState.categoryField?.selectedIds ?? const {},
@@ -369,11 +355,7 @@ TasksFilter _draftStateToTasksFilter(
     agentAssignmentFilter: TasksFilterAgentIds.toFilter(
       sheetState.selectedAgentFilterId,
     ),
-    showCreationDate:
-        toggleMap[TasksFilterToggleIds.showCreationDate] ??
-        controllerState.showCreationDate,
-    showDueDate:
-        toggleMap[TasksFilterToggleIds.showDueDate] ??
-        controllerState.showDueDate,
+    showCreationDate: toggle(TasksFilterToggleIds.showCreationDate),
+    showDueDate: toggle(TasksFilterToggleIds.showDueDate),
   );
 }
