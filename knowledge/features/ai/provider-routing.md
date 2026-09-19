@@ -451,7 +451,29 @@ over the finished text against both lists: a capitalised word that sounds the
 same (Kölner Phonetik) and is spelled almost the same becomes the known term,
 unless it is itself known, is an everyday German or English word (a capital at
 a sentence start does not turn "Dann" into a misheard "Dan"), or more than one
-term fits. The audio's transcript
+term fits.
+
+What sound and spelling cannot reach — "Frostbite" for "Frostbeak", a name
+split into pieces — goes to the profile's **thinking model** in a second,
+text-only call on the phonetic result: the Whisper model transcribes, it never
+corrects. The model gets the caller's `knownTerms` — not the category
+dictionary, which is vocabulary rather than names — and the transcript, and
+must answer through the pinned
+[`correct_misheard_names`](../../../lib/features/ai/skills/transcript_name_correction_tool.dart)
+tool with `heard → term` proposals, each quoting a few words of its
+occurrence; the model proposes, the code decides.
+`applyTranscriptNameCorrections` keeps a proposal only when the term is one of
+the listed names (or one word of one), and what it replaces is written in the
+transcript as at most three whole words, starts with a capital and is not
+itself a known name. Only the occurrence inside the quote changes ("May
+called" becomes "Mae called", "in May" stays); a quote not in the transcript
+rejects the proposal, and without a quote a repeated word is left alone. A
+failed or malformed call leaves the phonetic result.
+The call is recorded as a `textGeneration` interaction under the
+transcription's own attribution, before its completion is prepared, so its
+spend counts with the transcription's.
+
+The audio's transcript
 history keeps the provider's words; `entryText` carries the correction.
 Without `knownTerms` the transcript is stored as returned, so ordinary task
 audio is unaffected. Spoken check-ins are the caller today — see
