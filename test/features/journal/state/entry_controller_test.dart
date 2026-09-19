@@ -3819,6 +3819,35 @@ void main() {
       );
     });
 
+    test(
+      'a refused write reports false and puts the previous cover back',
+      () async {
+        final taskWithCover = testTask.copyWith(
+          data: testTask.data.copyWith(coverArtId: 'existing-image'),
+        );
+        when(
+          () => mockJournalDb.journalEntityById(taskWithCover.meta.id),
+        ).thenAnswer((_) async => taskWithCover);
+        final container = makeProviderContainer();
+        final provider = entryControllerProvider(taskWithCover.meta.id);
+        await container.read(provider.future);
+        when(
+          () => mockPersistenceLogic.updateTask(
+            journalEntityId: any(named: 'journalEntityId'),
+            taskData: any(named: 'taskData'),
+          ),
+        ).thenAnswer((_) async => false);
+
+        final written = await container
+            .read(provider.notifier)
+            .setCoverArt('new-image');
+
+        expect(written, isFalse);
+        final task = container.read(provider).value!.entry! as Task;
+        expect(task.data.coverArtId, 'existing-image');
+      },
+    );
+
     test('updates local state optimistically', () async {
       final container = makeProviderContainer();
       final entryId = testTask.meta.id;
@@ -3848,6 +3877,7 @@ void main() {
     late Directory tempDir;
     late MockSystemClipboard clipboard;
     late MockClipboardReader reader;
+    late MockJournalRepository journalRepository;
     final categorised = testTask.copyWith(
       meta: testTask.meta.copyWith(categoryId: 'cat-cover'),
     );
@@ -3879,7 +3909,11 @@ void main() {
       }
       clipboard = MockSystemClipboard();
       reader = MockClipboardReader();
+      journalRepository = MockJournalRepository();
       when(clipboard.read).thenAnswer((_) async => reader);
+      when(
+        () => journalRepository.deleteJournalEntity(any()),
+      ).thenAnswer((_) async => true);
       when(
         () => mockJournalDb.journalEntityById(categorised.meta.id),
       ).thenAnswer((_) async => categorised);
@@ -3930,7 +3964,10 @@ void main() {
 
     Future<(bool, ProviderContainer)> paste(String entryId) async {
       final container = makeProviderContainer(
-        overrides: [clipboardRepositoryProvider.overrideWithValue(clipboard)],
+        overrides: [
+          clipboardRepositoryProvider.overrideWithValue(clipboard),
+          journalRepositoryProvider.overrideWithValue(journalRepository),
+        ],
       );
       final provider = entryControllerProvider(entryId);
       await container.read(provider.future);
@@ -3973,6 +4010,50 @@ void main() {
                   .entry!
               as Task;
       expect(task.data.coverArtId, 'pasted-cover');
+    });
+
+    // Codex / CodeRabbit review on #4363: a task gone by the time the cover
+    // is written must not read as a paste, nor leave the picture behind.
+    test('a refused task write reports no paste, keeps the old cover and '
+        'takes the pasted picture back out', () async {
+      final item = pngItem();
+      when(() => reader.items).thenReturn([item]);
+      when(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: any(named: 'journalEntityId'),
+          taskData: any(named: 'taskData'),
+        ),
+      ).thenAnswer((_) async => false);
+
+      final (pasted, container) = await paste(categorised.meta.id);
+
+      expect(pasted, isFalse);
+      verify(
+        () => journalRepository.deleteJournalEntity('pasted-cover'),
+      ).called(1);
+      final task =
+          container
+                  .read(entryControllerProvider(categorised.meta.id))
+                  .value!
+                  .entry!
+              as Task;
+      expect(task.data.coverArtId, categorised.data.coverArtId);
+    });
+
+    test('a clipboard that fails to read reports no paste instead of '
+        'throwing', () async {
+      when(clipboard.read).thenThrow(StateError('clipboard gone'));
+
+      final (pasted, _) = await paste(categorised.meta.id);
+
+      expect(pasted, isFalse);
+      verifyNever(() => journalRepository.deleteJournalEntity(any()));
+      verifyNever(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: any(named: 'journalEntityId'),
+          taskData: any(named: 'taskData'),
+        ),
+      );
     });
 
     test('changes nothing when the clipboard holds no image', () async {

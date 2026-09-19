@@ -1995,7 +1995,7 @@
   "coverArtGenerationDismissHint": "Du kan stänga detta – generationen fortsätter i bakgrunden",
   "coverArtPasteFailed": "Det gick inte att klistra in omslaget",
   "coverArtPasteFromClipboard": "Klistra in som omslag",
-  "coverArtPasteFromClipboardHint": "Gör bilden i urklipp till uppgiftens omslag.",
+  "coverArtPasteFromClipboardHint": "Gör bilden i urklippet till uppgiftens omslag.",
   "createButton": "Skapa",
   "createCategoryTitle": "Skapa kategori",
   "createEntryLabel": "Skapa ny post",

@@ -1801,7 +1801,7 @@
   "coverArtGenerationDismissHint": "Puteți închide acest dialog — generarea continuă în fundal",
   "coverArtPasteFailed": "Coperta nu a putut fi lipită",
   "coverArtPasteFromClipboard": "Lipiți ca copertă",
-  "coverArtPasteFromClipboardHint": "Folosește imaginea din clipboard drept coperta acestei sarcini.",
+  "coverArtPasteFromClipboardHint": "Imaginea din clipboard devine coperta acestei sarcini.",
   "createButton": "Creați",
   "createCategoryTitle": "Creare categorie",
   "createEntryLabel": "Creați o intrare nouă",

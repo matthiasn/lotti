@@ -4107,7 +4107,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get coverArtPasteFromClipboardHint =>
-      'Folosește imaginea din clipboard drept coperta acestei sarcini.';
+      'Imaginea din clipboard devine coperta acestei sarcini.';
 
   @override
   String get createButton => 'Creați';

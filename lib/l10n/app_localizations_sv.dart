@@ -4044,7 +4044,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get coverArtPasteFromClipboardHint =>
-      'Gör bilden i urklipp till uppgiftens omslag.';
+      'Gör bilden i urklippet till uppgiftens omslag.';
 
   @override
   String get createButton => 'Skapa';

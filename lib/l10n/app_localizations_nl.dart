@@ -4053,7 +4053,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get coverArtPasteFromClipboardHint =>
-      'Maakt de afbeelding van je klembord de omslag van deze taak.';
+      'Maakt de afbeelding op je klembord tot de omslag van deze taak.';
 
   @override
   String get createButton => 'Aanmaken';

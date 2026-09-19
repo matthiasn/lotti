@@ -140,6 +140,7 @@ class ModernPasteCoverArtItem extends ConsumerWidget {
       subtitle: context.messages.coverArtPasteFromClipboardHint,
       onTap: () async {
         final messages = context.messages;
+        // Never throws: every failure along the way reads as not pasted.
         final pasted = await ref
             .read(entryControllerProvider(taskId).notifier)
             .pasteCoverArt();
