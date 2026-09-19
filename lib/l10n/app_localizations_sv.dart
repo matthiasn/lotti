@@ -3076,21 +3076,8 @@ class AppLocalizationsSv extends AppLocalizations {
       'Inspelningen gjordes, men transkriberingen misslyckades. Försök igen.';
 
   @override
-  String get checkInAddMoreButton => 'Lägg till mer';
-
-  @override
-  String checkInAudioSaved(String length) {
-    return '$length ljud sparat';
-  }
-
-  @override
   String get checkInAudioSavedAsYouGo =>
       'Ljudet sparas på den här enheten medan du spelar in';
-
-  @override
-  String checkInAudioSavedRoute(String length, String route) {
-    return '$length ljud sparat · $route';
-  }
 
   @override
   String get checkInAvoidLabel => 'Bäst att undvika';
@@ -3267,23 +3254,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInRecordingNotSavedTitle => 'Inspelningen kunde inte sparas';
 
   @override
-  String get checkInReRecordButton => 'Spela in igen';
-
-  @override
-  String get checkInReRecordReplaceMessage =>
-      'Ersätta dina redigerade ord med en ny inspelning?';
+  String get checkInRemoveTake => 'Ta bort inspelningen';
 
   @override
   String get checkInSaveBlockedEmpty => 'Lägg till några ord för att spara';
 
   @override
   String get checkInSaveBlockedRecording => 'Stoppa inspelningen för att spara';
-
-  @override
-  String get checkInSaveBlockedRetry => 'Skriv eller försök igen för att spara';
-
-  @override
-  String get checkInSaveBlockedTranscribing => 'Väntar på transkriptionen';
 
   @override
   String get checkInSaveButton => 'Spara avstämning';
@@ -3379,6 +3356,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInStatusTranscriptMissing => 'Ingen transkription mottagen';
 
   @override
+  String get checkInTakeWordsFollow => 'Du kan spara nu – orden kommer sen.';
+
+  @override
   String checkInTimeChipSemantics(String time) {
     return 'Start: $time. Ändra';
   }
@@ -3390,13 +3370,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInTopicsLabel => 'Ämnen';
 
   @override
-  String get checkInTranscribingEta => 'oftast under en minut';
-
-  @override
   String get checkInTranscribingLabel => 'Transkriberar…';
-
-  @override
-  String get checkInTranscriptAdded => 'Transkription tillagd';
 
   @override
   String get checkInTranscriptionUnavailableTitle =>
@@ -3406,9 +3380,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String checkInTranscriptMissingBody(String length) {
     return 'Din inspelning på $length finns kvar i journalen, även om du slänger den här avstämningen. Försök igen om en stund.';
   }
-
-  @override
-  String get checkInTranscriptMissingCalloutTitle => 'Försök igen, eller skriv';
 
   @override
   String get checkInTranscriptUnavailable =>

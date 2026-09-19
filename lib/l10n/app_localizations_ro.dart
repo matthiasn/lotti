@@ -3119,21 +3119,8 @@ class AppLocalizationsRo extends AppLocalizations {
       'Înregistrarea a fost captată, dar transcrierea a eșuat. Vă rugăm să încercați din nou.';
 
   @override
-  String get checkInAddMoreButton => 'Adăugați';
-
-  @override
-  String checkInAudioSaved(String length) {
-    return '$length de sunet salvat';
-  }
-
-  @override
   String get checkInAudioSavedAsYouGo =>
       'Sunetul se salvează pe acest dispozitiv pe măsură ce înregistrați';
-
-  @override
-  String checkInAudioSavedRoute(String length, String route) {
-    return '$length de sunet salvat · $route';
-  }
 
   @override
   String get checkInAvoidLabel => 'De evitat';
@@ -3314,11 +3301,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Înregistrarea nu a putut fi salvată';
 
   @override
-  String get checkInReRecordButton => 'Reînregistrați';
-
-  @override
-  String get checkInReRecordReplaceMessage =>
-      'Înlocuiți cuvintele editate cu o înregistrare nouă?';
+  String get checkInRemoveTake => 'Eliminați înregistrarea';
 
   @override
   String get checkInSaveBlockedEmpty =>
@@ -3327,13 +3310,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get checkInSaveBlockedRecording =>
       'Opriți înregistrarea pentru a salva';
-
-  @override
-  String get checkInSaveBlockedRetry =>
-      'Scrieți sau reîncercați pentru a salva';
-
-  @override
-  String get checkInSaveBlockedTranscribing => 'Se așteaptă transcrierea';
 
   @override
   String get checkInSaveButton => 'Salvați check-in-ul';
@@ -3432,6 +3408,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkInStatusTranscriptMissing => 'Transcrierea nu a fost primită';
 
   @override
+  String get checkInTakeWordsFollow =>
+      'Puteți salva acum — cuvintele vor urma.';
+
+  @override
   String checkInTimeChipSemantics(String time) {
     return 'Început: $time. Schimbați';
   }
@@ -3444,13 +3424,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkInTopicsLabel => 'Subiecte';
 
   @override
-  String get checkInTranscribingEta => 'de obicei sub un minut';
-
-  @override
   String get checkInTranscribingLabel => 'Se transcrie…';
-
-  @override
-  String get checkInTranscriptAdded => 'Transcriere adăugată';
 
   @override
   String get checkInTranscriptionUnavailableTitle =>
@@ -3460,10 +3434,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String checkInTranscriptMissingBody(String length) {
     return 'Înregistrarea dvs. de $length rămâne salvată în jurnal, chiar dacă renunțați la acest check-in. Încercați din nou în scurt timp.';
   }
-
-  @override
-  String get checkInTranscriptMissingCalloutTitle =>
-      'Încercați din nou sau scrieți';
 
   @override
   String get checkInTranscriptUnavailable =>

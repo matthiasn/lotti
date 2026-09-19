@@ -720,7 +720,7 @@ regenerates the briefing anyway.
 `deriveCadenceFacts` reports `lastEvidenceAt`, the newest `updatedAt` among
 the person's check-ins, and a check-in is saved again whenever what it holds
 changes: `RelationshipRepository.addCommentToCheckIn` and
-`attachEntryToCheckIn` touch it, and so does
+`attachEntriesToCheckIn` touch it, and so does
 `CheckInTranscriptionService` once a recording's transcript lands — read
 back from the entry, since a run can end without an error and without words —
 independently of the composer, which may be long closed — through
@@ -1187,23 +1187,25 @@ open **one composer** (design 2026-09-13) in a responsive modal — a bottom
 sheet on a phone, a dialog on desktop — straight onto the narrative. There
 is no Write-or-Record choice first: *Dictate* is a button inside the field,
 so audio stays an explicit choice without a detour, and `startSpeaking` (the
-page's microphone) presses it after the first frame. Editing is the same
-composer prefilled, with one difference: a check-in saved with words offers
-no *Dictate* (`offersDictation`, keyed to the saved narrative rather than the
-live field, so the button never comes and goes under typing). Once it is
-text it is edited as text; a recorder over the saved record would only
-raise the question of what it does to it. A fresh composer keeps *Dictate*,
-and a take lands below whatever was typed (`mergeCheckInNarrative`), never
-over it.
+page's microphone) presses it after the first frame. A dictation is not
+merged into the note: each recording is a **take** (`CheckInTake`) shown
+under the note with its own words, and saving makes it one of the check-in's
+entries (ADR 0062) — so the agent reads the words once, and Save never waits
+for them. Editing is the same composer prefilled, without *Dictate*
+(`offersDictation` is false for a saved check-in): a saved check-in is added
+to from its timeline, where a recording becomes its entry at once, and the
+edit sheet edits the check-in's own fields.
 
 The composer's parts, top to bottom:
 
 * [`CheckInComposerHeader`](../../lib/features/relationships/ui/widgets/check_in_composer_header.dart)
   in the sheet's pinned toolbar slot: the person's avatar, the title and one
   status line — `with Pip · last spoke Sat 1 Aug` at rest, read through
-  `relationshipDetailControllerProvider`, and while speech is in flight what
-  the field is doing (`● Recording`, `Paused`, `Transcribing…`, `Transcript
-  not received`, `Microphone unavailable`) — while a take is live the
+  `relationshipDetailControllerProvider`; what the recorder is doing
+  (`● Recording`, `Paused`, `Microphone unavailable`); and, with the recorder
+  at rest, where the takes' words are (`Transcribing…` while one is on its
+  way, `Transcript not received` when one never came —
+  `checkInComposerStatusOf`) — while a take is live the
   glyph alone carries the tone (the red dot is the design system's
   `danger` presence dot) and the words stay in the quiet ink, so accent on
   text means only pressable; a failure wears its alert ink on the words as
@@ -1228,56 +1230,42 @@ The composer's parts, top to bottom:
   — Wolt reserves the slot up front, so the sheet and the header must agree
   on the number rather than guess it.
 * [`CheckInNarrativeField`](../../lib/features/relationships/ui/widgets/check_in_narrative_field.dart):
-  the text with one caption row (`Transcript added · 26 words`, and on
-  desktop the save shortcut) and *Dictate* in its footer. Every speech
-  phase renders **in place of the text** — the recorder, the transcript
-  skeleton with the saved-audio line and *Type instead*, the landed
-  transcript with *Re-record* · *Add more*, and the failure cards above a
-  field that starts short and says *Or type it here…*. A card offers its
-  own way back to the microphone (*Try again* — also on the refused
-  microphone, whose body says exactly that), so the field's *Dictate* steps
-  aside rather than sit beside it dead; and typing a word under a card is
+  the note, then the takes, then one caption row (`5 words`, and on desktop
+  the save shortcut) with *Dictate* in its footer. The recorder and its
+  failure cards render **in place of the text**; a take never does. Each
+  take is a `CheckInTakeRow` on the next surface up: the length and where
+  its words are on the first line — a `DsTieredText` ladder that sheds the
+  route before the state (`0:23 · Transcribing… · Whisper large v3 · via
+  Groq` → `0:23 · Transcribing…` → `0:23`) — then *You can save now — the
+  words follow* while they are on their way, the words themselves (three
+  lines, a live region as they land), or, when they never came, the
+  provider's own reason (or *Your 0:23 recording is saved in the journal…*)
+  with *Try again*, which asks for the **same** recording's words. *Remove
+  recording* on its trailing edge leaves the take out of the check-in; its
+  audio stays in the journal, linked to the person, as the discard question
+  says. Beside a take the note asks for one line, and the shortcut hint is
+  offered with no words typed, since a take alone is enough to save. The
+  failure cards — the recorder could not record — sit above a field that
+  starts short and says *Or type it here…*; typing a word under one is
   choosing to type instead, so the card goes on its own (the form's
-  `_onNarrativeChanged`) — folding into its retry row when a recording is
-  waiting. The cards are the design system's `DesignSystemInlineCallout`
-  with a title and two actions on the trailing rail, quietest first —
-  *Type instead* in the `quiet` variant (as while transcribing: the way
-  out, not a second accent) and the recommended secondary pill, so the
-  alert tone is the card's one colour, the pill its one shape, and the
-  filled accent stays Save's — and they announce themselves once, whole
-  (`announce: true`). The header already names the state, so a card's
-  title is the *next step*, short enough for one phone line (`Try again, or
-  type it`; `Allow microphone access`); under the refused microphone the
-  field's own *Dictate* is the retry — one tier down, `tertiary`, with the
-  placeholder at `bodyMedium`, so the card's pill is the face's one shape
-  and the field's ladder does not invert beneath it — and the body says so
-  (`…then tap Dictate`). A landed transcript's caption is a live region once,
-  as it lands, pinned to "Transcript added"; edited since, it is old news,
-  and the word count that follows every keystroke is never re-read. Under a card
-  with nothing typed the field is one line and carries no caption. *Type instead* on a
-  **missing transcript** does not forget the take: the phase becomes
-  `CheckInSpeechFailed(cardDismissed: true)`, the card folds into one
-  caption row — `0:23 of audio saved · Try again` — and the retry survives
-  until Save or dismiss. *Re-record* is offered only while the field still
-  holds exactly what landed (`_canReRecord`, checked against
-  `mergeCheckInNarrative`); once the transcript is edited *Re-record* stays
-  but asks first (`checkInReRecordReplaceMessage`), because taking the take
-  back out would take the edits with it. It wears the `quiet` variant with
-  a refresh glyph so it never reads as Add more's twin. The caption row is a
-  `DsTieredText` ladder (`Transcript added · 26 words · ⌘↩ to save` sheds
-  the count before the shortcut: the desktop dialog, where the hint pays
-  off, is where Re-record · Add more leave the caption least room), and the
-  caption and its actions share one corner across phases — transcribing
-  included: beside each other when they fit a line, else the actions on
-  their own line at the trailing edge (`_CaptionAndActions`), always so
-  above `TextScales.large` and always once a transcript has landed, where
-  Re-record · Add more beside the caption would leave it no room for the
-  shortcut even in the dialog. The
-  transcribing caption ends on a time expectation (`· usually under a
-  minute`), the first tier to go, and its *Type instead* is quiet and
-  caption-sized (`dense`, the 48pt target kept) so the wait is what the eye
-  finds. The keyboard-shortcut hint joins the caption only once there are
-  words to save with it — beside a held Save it would be a promise the
+  `_onNarrativeChanged`). The cards are the design system's
+  `DesignSystemInlineCallout` with a title and two actions on the trailing
+  rail, quietest first — *Type instead* in the `quiet` variant (the way out,
+  not a second accent) and the recommended secondary pill, so the alert tone
+  is the card's one colour, the pill its one shape, and the filled accent
+  stays Save's — and they announce themselves once, whole
+  (`announce: true`). The header already names the state, so a card's title
+  is the *next step*, short enough for one phone line (`Allow microphone
+  access`); under the refused microphone the field's own *Dictate* is the
+  retry — one tier down, `tertiary`, with the placeholder at `bodyMedium`,
+  so the card's pill is the face's one shape and the field's ladder does not
+  invert beneath it — and the body says so (`…then tap Dictate`). The
+  caption row is a `DsTieredText` ladder too (`5 words · ⌘↩ to save` sheds
+  the count before the shortcut), and the caption and *Dictate* share one
+  corner: beside each other when they fit a line, else *Dictate* on its own
+  line at the trailing edge (`_CaptionAndActions`), always so above
+  `TextScales.large`. The keyboard-shortcut hint joins the caption only once
+  there is something to save — beside a held Save it would be a promise the
   footer contradicts. The *More* row's caption says what is set — a field's
   name until it has a value, then the value (`Good · 2 topics · next time
   noted`, from the form's `_moreCaption`) — and is a ladder too, shedding a
@@ -1285,17 +1273,19 @@ The composer's parts, top to bottom:
   `subtitle1` and every section — the feeling, and the three inputs —
   carries the same `subtitle2` heading one level under it, one `sectionGap`
   apart. The empty field rests two lines tall in the desktop dialog and
-  three on the phone (`restMinLines`). The field's accent hairline means keyboard focus and
-  nothing else, and it is the field's only frame: the `TextField` inside
-  silences every border the app's `InputDecorationTheme` would fill in
-  (its 2.5 px focused outline used to ring the text inside the hairline): the red dot, the waveform and the filled Stop say "live". The phases swap in
-  place rather than through an `AnimatedSize`: the tiered captions lay
-  themselves out with a `LayoutBuilder`, which re-dirties an animating size
-  box in its own layout pass.
+  three on the phone (`restMinLines`). The field's accent hairline means
+  keyboard focus and nothing else, and it is the field's only frame: the
+  `TextField` inside silences every border the app's
+  `InputDecorationTheme` would fill in (its 2.5 px focused outline used to
+  ring the text inside the hairline): the red dot, the waveform and the
+  filled Stop say "live". The phases swap in place rather than through an
+  `AnimatedSize`: the tiered captions lay themselves out with a
+  `LayoutBuilder`, which re-dirties an animating size box in its own layout
+  pass.
 * [`CheckInContextChips`](../../lib/features/relationships/ui/widgets/check_in_context_chips.dart):
   type · started · duration as one wrapping chip row, each chip opening its
-  picker (the type through a `DsActionModal`), quiet while the recorder or
-  the transcript owns the field. Opened from the post-call offer the chips
+  picker (the type through a `DsActionModal`), quiet while the recorder
+  owns the field. Opened from the post-call offer the chips
   are prefilled and a caption beneath says where the numbers came from.
 * *More*: optional sentiment, topics and next-time guidance, folded unless
   the edited check-in already carries any of them.
@@ -1308,8 +1298,8 @@ The composer's parts, top to bottom:
   leads and Cancel sits centred beneath it, the design system's rule for
   every stacked bar; on the phone Cancel's label sits on the content column
   (`alignsLabelToLeadingEdge`), like the card's quiet actions. The
-  recorder's Discard · Pause · Stop sit on the trailing rail, where Dictate,
-  Try again and Add more live in every other phase, and Discard is quiet
+  recorder's Discard · Pause · Stop sit on the trailing rail, where Dictate
+  lives in every other phase, and Discard is quiet
   too: red on this surface is the live dot alone, and the level meter is
   the prose ink rather than the accent, which means pressable. The clock
   reads to assistive technology in words (`checkInSpokenClockLabel`: "23
@@ -1498,28 +1488,46 @@ need.
 # Voice check-ins (plan v2 phase 6)
 
 The person page's microphone opens the composer with `startSpeaking`, which
-presses *Dictate* after the first frame. From there the composer is a small
+presses *Dictate* after the first frame. From there the recorder is a small
 state machine, `CheckInSpeechPhase` in
 [check_in_speech_state.dart](../../lib/features/relationships/ui/widgets/check_in_speech_state.dart),
-and every phase is drawn in place of the narrative text:
+each phase drawn in place of the note; a finished recording leaves the
+machine as a take:
 
 ```mermaid
 stateDiagram-v2
   [*] --> Idle
-  Idle --> Preparing: Dictate / Add more / Re-record / startSpeaking
+  Idle --> Preparing: Dictate / startSpeaking
   Preparing --> Recording: person read, default profile can transcribe — adopting this person's take if one is still running
   Preparing --> Failed: no transcription slot (transcriptionUnavailable), the reads threw (recordingFailed), or someone else's recording is running (recorderBusy)
-  Recording --> Transcribing: Stop → audio entry saved
+  Recording --> Idle: Stop → audio entry saved, a take added
   Recording --> Idle: Discard (confirmed)
   Recording --> Failed: microphone refused (microphoneDenied), start failed (recordingFailed), stop could not save (recordingNotSaved)
-  Transcribing --> Ready: transcript landed, merged below any typed text
-  Transcribing --> Failed: no transcript (transcriptMissing, keeps the audio entry id)
-  Transcribing --> Idle: Type instead — the wait is abandoned
-  Failed --> Transcribing: Try again on a missing transcript — the same recording, never a second one
-  Failed --> Idle: Type instead / Dismiss
+  Failed --> Idle: Type instead, or typing a word
   Failed --> Preparing: Dictate again
-  Ready --> Preparing: Add more (appends) / Re-record (removes the old transcript once the new take exists)
 ```
+
+Each take then has its own words state, `CheckInTakeWords`:
+
+```mermaid
+stateDiagram-v2
+  [*] --> transcribing: Stop → CheckInTranscriptionService.transcribe
+  transcribing --> heard: words landed
+  transcribing --> missing: no words — timeout, a reported inference failure, or a run that never started
+  missing --> transcribing: Try again — the same recording, never a second one
+  transcribing --> [*]: Remove recording (the wait is cancelled)
+  heard --> [*]: Remove recording
+  missing --> [*]: Remove recording
+```
+
+Saving does not look at that state. `_handleSave` creates the check-in with
+the note, then `RelationshipRepository.attachEntriesToCheckIn` links every
+take in the order it was made and touches the check-in once; a link that
+fails is logged and the others go on, since a "save failed" would be
+answered with a duplicate check-in. Words still on their way land on the
+recording after the sheet has closed: the service's run is not the sheet's,
+and once the words are read back it touches the check-in holding them
+(`touchCheckInsHolding`), so the briefing catches up.
 
 The recorder is [`CheckInInlineRecorder`](../../lib/features/relationships/ui/widgets/check_in_inline_recorder.dart),
 embedded in the field rather than pushed as a sheet: a live level strip,
@@ -1543,19 +1551,14 @@ The recorder's typed refusal (`AudioRecordingFailure`) maps onto the
 composer's own vocabulary, `CheckInSpeechFailure.fromRecorder`: a denied
 microphone is the error card with *Open settings* (through
 `checkInSettingsOpenerProvider`, the seam over `openAppSettings`) and
-*Dismiss*; a failed start is the same card with *Try again*. A transcript
-that never came is the warning card quoting the saved length — *Your 0:23
-recording is saved on this device* — with *Try again* asking
-`CheckInTranscriptionService.transcribe` for the **same** entry's words
-again and a note that the audio stays in the journal even if the check-in
-is cancelled. The provider's own error detail, when it left any, replaces
-the generic body. Preparation reads have a 15-second deadline and land in
-the same failed phase as everything else.
+*Dismiss*; a failed start is the same card with *Try again*. Preparation
+reads have a 15-second deadline and land in the same failed phase as
+everything else.
 
-The saved-audio line during the wait names the route — `Whisper large v3 ·
-via Groq` — from `CheckInTranscriptionService.route()`, model and provider
-names only, resolved after the wait has started so a slow read never holds
-the transcript.
+A take's first line names the route while its words are on their way —
+`Whisper large v3 · via Groq` — from `CheckInTranscriptionService.route()`,
+model and provider names only, resolved after the wait has started so a
+slow read never holds the transcript.
 Spoken check-ins use only the system's selected default inference profile.
 `CheckInTranscriptionService` calls `ProfileResolver.resolveDefaultProfile`,
 which reads the device's selected profile id and resolves that profile. The
@@ -1585,7 +1588,7 @@ sequenceDiagram
   Svc->>Runner: runTranscription(default profile, explicit skill)
   Runner-->>Svc: onError cancels wait on failure
   Svc-->>Sheet: transcript or null
-  Sheet->>Sheet: mergeCheckInNarrative(existing, transcript)
+  Sheet->>Sheet: the take is heard, or missing
 ```
 
 `transcriptionHandledByCaller` belongs to the recording, survives dismissal of
@@ -1606,24 +1609,23 @@ five-minute `checkInTranscriptTimeout`. Disposing the form cancels the listener.
 `onError` callback and inference error controller. The callback ends the wait
 promptly; the form also observes `inferenceErrorControllerProvider` with
 `fireImmediately: true` to show the provider's error detail, including one
-published before the listener was installed. A thrown resolution error is also
-caught and ends the wait. No failure retries with another model or provider.
+published before the listener was installed. The form keeps one wait and one
+error watch per take, keyed by the audio entry id. A thrown resolution error
+is also caught and ends the wait. No failure retries with another model or
+provider.
 
 Three invariants hold regardless of what comes back:
 
-* **Nothing auto-saves.** The transcript populates the text field;
-  the check-in exists only once the user presses save. This is the same rule
-  that keeps `CheckInSentiment` user-set (ADR 0038).
-* **Speaking never destroys typing.** `mergeCheckInNarrative` appends below
-  existing text, blank-line separated, including text entered while the
-  transcript was still arriving.
-* **Re-record takes back only what it added.** The form remembers what the
-  field held before the last take (`CheckInSpeechReady.textBefore`) and
-  restores exactly that once the new take exists — never on the way in, so
-  a discarded or failed retake keeps the words. Edits made on top of the
-  take go with it, which is why a field that no longer matches the merge
-  asks first, in those words ("Replace your edited words with a new take?"),
-  and a declined dialog moves nothing.
+* **Nothing auto-saves.** A take is shown under the note; the check-in
+  exists only once the user presses save. This is the same rule that keeps
+  `CheckInSentiment` user-set (ADR 0038).
+* **Speaking never touches typing.** The words are the take's, never merged
+  into the note, so nothing typed is ever replaced and the agent reads each
+  word once.
+* **Save never waits for words.** `checkInSaveBlockOf` holds Save only for
+  the recorder at work, an empty composer (no words and no take) or a save
+  in flight. A transcript that is slow, or never comes, cannot cost the
+  check-in.
 
 Name accuracy comes from **correcting the transcript**, because the route
 most people use cannot be biased: Melious' Whisper endpoints accept a

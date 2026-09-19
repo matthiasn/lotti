@@ -3077,21 +3077,8 @@ class AppLocalizationsNl extends AppLocalizations {
       'De opname is gelukt, maar het transcriberen is mislukt. Probeer het opnieuw.';
 
   @override
-  String get checkInAddMoreButton => 'Meer toevoegen';
-
-  @override
-  String checkInAudioSaved(String length) {
-    return '$length audio opgeslagen';
-  }
-
-  @override
   String get checkInAudioSavedAsYouGo =>
       'Audio wordt tijdens de opname op dit apparaat opgeslagen';
-
-  @override
-  String checkInAudioSavedRoute(String length, String route) {
-    return '$length audio opgeslagen · $route';
-  }
 
   @override
   String get checkInAvoidLabel => 'Beter vermijden';
@@ -3270,11 +3257,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Opname kon niet worden opgeslagen';
 
   @override
-  String get checkInReRecordButton => 'Opnieuw opnemen';
-
-  @override
-  String get checkInReRecordReplaceMessage =>
-      'Je bewerkte woorden vervangen door een nieuwe opname?';
+  String get checkInRemoveTake => 'Opname verwijderen';
 
   @override
   String get checkInSaveBlockedEmpty =>
@@ -3282,12 +3265,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get checkInSaveBlockedRecording => 'Stop de opname om op te slaan';
-
-  @override
-  String get checkInSaveBlockedRetry => 'Typ of probeer opnieuw om op te slaan';
-
-  @override
-  String get checkInSaveBlockedTranscribing => 'Wachten op het transcript';
 
   @override
   String get checkInSaveButton => 'Check-in opslaan';
@@ -3383,6 +3360,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get checkInStatusTranscriptMissing => 'Geen transcript ontvangen';
 
   @override
+  String get checkInTakeWordsFollow =>
+      'Je kunt nu al opslaan – de woorden volgen.';
+
+  @override
   String checkInTimeChipSemantics(String time) {
     return 'Begin: $time. Wijzigen';
   }
@@ -3394,13 +3375,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get checkInTopicsLabel => 'Onderwerpen';
 
   @override
-  String get checkInTranscribingEta => 'meestal binnen een minuut';
-
-  @override
   String get checkInTranscribingLabel => 'Bezig met transcriberen…';
-
-  @override
-  String get checkInTranscriptAdded => 'Transcript toegevoegd';
 
   @override
   String get checkInTranscriptionUnavailableTitle =>
@@ -3410,10 +3385,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String checkInTranscriptMissingBody(String length) {
     return 'Je opname van $length blijft in het journaal bewaard, ook als je deze check-in weggooit. Probeer het zo nog eens.';
   }
-
-  @override
-  String get checkInTranscriptMissingCalloutTitle =>
-      'Probeer opnieuw, of typ het';
 
   @override
   String get checkInTranscriptUnavailable =>

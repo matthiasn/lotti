@@ -3108,21 +3108,8 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nahrávka se pořídila, ale přepis se nezdařil. Zkus to prosím znovu.';
 
   @override
-  String get checkInAddMoreButton => 'Přidat další';
-
-  @override
-  String checkInAudioSaved(String length) {
-    return '$length zvuku uloženo';
-  }
-
-  @override
   String get checkInAudioSavedAsYouGo =>
       'Zvuk se průběžně ukládá na toto zařízení';
-
-  @override
-  String checkInAudioSavedRoute(String length, String route) {
-    return '$length zvuku uloženo · $route';
-  }
 
   @override
   String get checkInAvoidLabel => 'Raději se vyhnout';
@@ -3300,24 +3287,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInRecordingNotSavedTitle => 'Nahrávku se nepodařilo uložit';
 
   @override
-  String get checkInReRecordButton => 'Nahrát znovu';
-
-  @override
-  String get checkInReRecordReplaceMessage =>
-      'Nahradit upravená slova novou nahrávkou?';
+  String get checkInRemoveTake => 'Odebrat nahrávku';
 
   @override
   String get checkInSaveBlockedEmpty => 'Napiš pár slov, aby šlo uložit';
 
   @override
   String get checkInSaveBlockedRecording => 'Pro uložení zastav nahrávání';
-
-  @override
-  String get checkInSaveBlockedRetry =>
-      'Napiš to nebo to zkus znovu, pak můžeš uložit';
-
-  @override
-  String get checkInSaveBlockedTranscribing => 'Čeká se na přepis';
 
   @override
   String get checkInSaveButton => 'Uložit check-in';
@@ -3415,6 +3391,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInStatusTranscriptMissing => 'Přepis nedorazil';
 
   @override
+  String get checkInTakeWordsFollow =>
+      'Už můžeš uložit – slova dorazí později.';
+
+  @override
   String checkInTimeChipSemantics(String time) {
     return 'Začátek: $time. Změnit';
   }
@@ -3426,13 +3406,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInTopicsLabel => 'Témata';
 
   @override
-  String get checkInTranscribingEta => 'obvykle do minuty';
-
-  @override
   String get checkInTranscribingLabel => 'Přepisuje se…';
-
-  @override
-  String get checkInTranscriptAdded => 'Přepis přidán';
 
   @override
   String get checkInTranscriptionUnavailableTitle =>
@@ -3442,10 +3416,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String checkInTranscriptMissingBody(String length) {
     return 'Tvoje nahrávka ($length) zůstane uložená v deníku, i když tento check-in zahodíš. Zkus to za chvíli znovu.';
   }
-
-  @override
-  String get checkInTranscriptMissingCalloutTitle =>
-      'Zkus to znovu, nebo to napiš';
 
   @override
   String get checkInTranscriptUnavailable =>

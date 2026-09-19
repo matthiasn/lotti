@@ -3067,20 +3067,7 @@ class AppLocalizationsDa extends AppLocalizations {
       'Optagelsen blev gemt, men transskriptionen mislykkedes. Prøv igen.';
 
   @override
-  String get checkInAddMoreButton => 'Tilføj mere';
-
-  @override
-  String checkInAudioSaved(String length) {
-    return '$length lyd gemt';
-  }
-
-  @override
   String get checkInAudioSavedAsYouGo => 'Lyden gemmes løbende på denne enhed';
-
-  @override
-  String checkInAudioSavedRoute(String length, String route) {
-    return '$length lyd gemt · $route';
-  }
 
   @override
   String get checkInAvoidLabel => 'Bedst at undgå';
@@ -3257,23 +3244,13 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInRecordingNotSavedTitle => 'Optagelsen kunne ikke gemmes';
 
   @override
-  String get checkInReRecordButton => 'Optag igen';
-
-  @override
-  String get checkInReRecordReplaceMessage =>
-      'Erstat dine redigerede ord med en ny optagelse?';
+  String get checkInRemoveTake => 'Fjern optagelsen';
 
   @override
   String get checkInSaveBlockedEmpty => 'Tilføj et par ord for at gemme';
 
   @override
   String get checkInSaveBlockedRecording => 'Stop optagelsen for at gemme';
-
-  @override
-  String get checkInSaveBlockedRetry => 'Skriv eller prøv igen for at gemme';
-
-  @override
-  String get checkInSaveBlockedTranscribing => 'Venter på transskriptionen';
 
   @override
   String get checkInSaveButton => 'Gem check-in';
@@ -3370,6 +3347,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInStatusTranscriptMissing => 'Ingen transskription modtaget';
 
   @override
+  String get checkInTakeWordsFollow => 'Du kan gemme nu – ordene følger efter.';
+
+  @override
   String checkInTimeChipSemantics(String time) {
     return 'Start: $time. Skift';
   }
@@ -3381,13 +3361,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInTopicsLabel => 'Emner';
 
   @override
-  String get checkInTranscribingEta => 'som regel under et minut';
-
-  @override
   String get checkInTranscribingLabel => 'Transskriberer…';
-
-  @override
-  String get checkInTranscriptAdded => 'Transskription tilføjet';
 
   @override
   String get checkInTranscriptionUnavailableTitle =>
@@ -3397,10 +3371,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String checkInTranscriptMissingBody(String length) {
     return 'Din optagelse på $length er gemt i journalen, også hvis du kasserer dette check-in. Prøv igen om lidt.';
   }
-
-  @override
-  String get checkInTranscriptMissingCalloutTitle =>
-      'Prøv igen, eller skriv det';
 
   @override
   String get checkInTranscriptUnavailable =>

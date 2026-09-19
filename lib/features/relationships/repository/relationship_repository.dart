@@ -377,17 +377,53 @@ class RelationshipRepository {
     return entry;
   }
 
-  /// Makes an existing recording or photo an entry of [checkInId].
-  Future<bool> attachEntryToCheckIn({
+  /// Makes existing recordings or photos — the composer's takes — entries
+  /// of [checkInId], and touches the check-in once when any link was
+  /// written. A link that fails is logged and the rest go on: the check-in
+  /// is already saved, and what it holds is whatever did link. Returns
+  /// whether every link was written.
+  Future<bool> attachEntriesToCheckIn({
     required String checkInId,
-    required String entryId,
+    required List<String> entryIds,
   }) async {
-    final linked = await _persistenceLogic.createLink(
-      fromId: checkInId,
-      toId: entryId,
-    );
-    if (linked) await touchCheckIn(checkInId);
-    return linked;
+    var linkedAny = false;
+    var linkedAll = true;
+    for (final entryId in entryIds) {
+      var linked = false;
+      try {
+        linked = await _persistenceLogic.createLink(
+          fromId: checkInId,
+          toId: entryId,
+        );
+      } catch (error, stackTrace) {
+        getIt<DomainLogger>().error(
+          LogDomain.persistence,
+          error,
+          message: 'check-in entry link failed for $entryId',
+          stackTrace: stackTrace,
+          subDomain: 'attachEntriesToCheckIn',
+        );
+      }
+      linkedAny |= linked;
+      linkedAll &= linked;
+    }
+    if (linkedAny) {
+      // Past this point everything is saved: a touch that throws must not
+      // surface as a failed save, which a retry would answer with a
+      // duplicate check-in. The next change touches it again.
+      try {
+        await touchCheckIn(checkInId);
+      } catch (error, stackTrace) {
+        getIt<DomainLogger>().error(
+          LogDomain.persistence,
+          error,
+          message: 'check-in touch failed after attaching entries',
+          stackTrace: stackTrace,
+          subDomain: 'attachEntriesToCheckIn',
+        );
+      }
+    }
+    return linkedAll;
   }
 
   /// Records that [checkInId]'s evidence changed — an entry was added, or a

@@ -5190,29 +5190,11 @@ abstract class AppLocalizations {
   /// **'The recording was captured, but transcribing it failed. Please try again.'**
   String get chatInputTranscriptionFailed;
 
-  /// No description provided for @checkInAddMoreButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Add more'**
-  String get checkInAddMoreButton;
-
-  /// No description provided for @checkInAudioSaved.
-  ///
-  /// In en, this message translates to:
-  /// **'{length} of audio saved'**
-  String checkInAudioSaved(String length);
-
   /// No description provided for @checkInAudioSavedAsYouGo.
   ///
   /// In en, this message translates to:
   /// **'Audio saved to this device as you go'**
   String get checkInAudioSavedAsYouGo;
-
-  /// No description provided for @checkInAudioSavedRoute.
-  ///
-  /// In en, this message translates to:
-  /// **'{length} of audio saved · {route}'**
-  String checkInAudioSavedRoute(String length, String route);
 
   /// No description provided for @checkInAvoidLabel.
   ///
@@ -5496,17 +5478,11 @@ abstract class AppLocalizations {
   /// **'Recording couldn\'t be saved'**
   String get checkInRecordingNotSavedTitle;
 
-  /// No description provided for @checkInReRecordButton.
+  /// Tooltip on the button that leaves a recording out of the check-in being composed; the audio stays in the journal.
   ///
   /// In en, this message translates to:
-  /// **'Re-record'**
-  String get checkInReRecordButton;
-
-  /// Confirmation before Re-record when the transcript has been edited since it landed.
-  ///
-  /// In en, this message translates to:
-  /// **'Replace your edited words with a new take?'**
-  String get checkInReRecordReplaceMessage;
+  /// **'Remove recording'**
+  String get checkInRemoveTake;
 
   /// No description provided for @checkInSaveBlockedEmpty.
   ///
@@ -5519,18 +5495,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stop recording to save'**
   String get checkInSaveBlockedRecording;
-
-  /// No description provided for @checkInSaveBlockedRetry.
-  ///
-  /// In en, this message translates to:
-  /// **'Type or retry to save'**
-  String get checkInSaveBlockedRetry;
-
-  /// No description provided for @checkInSaveBlockedTranscribing.
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting for the transcript'**
-  String get checkInSaveBlockedTranscribing;
 
   /// No description provided for @checkInSaveButton.
   ///
@@ -5676,6 +5640,12 @@ abstract class AppLocalizations {
   /// **'Transcript not received'**
   String get checkInStatusTranscriptMissing;
 
+  /// Under a recording in the check-in composer whose transcript is still on its way: saving does not wait for it.
+  ///
+  /// In en, this message translates to:
+  /// **'You can save now — the words follow.'**
+  String get checkInTakeWordsFollow;
+
   /// No description provided for @checkInTimeChipSemantics.
   ///
   /// In en, this message translates to:
@@ -5694,23 +5664,11 @@ abstract class AppLocalizations {
   /// **'Topics'**
   String get checkInTopicsLabel;
 
-  /// The last, first-shed tier of the transcribing caption: a time expectation for the wait.
-  ///
-  /// In en, this message translates to:
-  /// **'usually under a minute'**
-  String get checkInTranscribingEta;
-
   /// Progress label shown on the check-in sheet while a spoken check-in is being transcribed.
   ///
   /// In en, this message translates to:
   /// **'Transcribing…'**
   String get checkInTranscribingLabel;
-
-  /// No description provided for @checkInTranscriptAdded.
-  ///
-  /// In en, this message translates to:
-  /// **'Transcript added'**
-  String get checkInTranscriptAdded;
 
   /// No description provided for @checkInTranscriptionUnavailableTitle.
   ///
@@ -5723,12 +5681,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your {length} recording is saved in the journal, even if you cancel this check-in. Try again in a moment.'**
   String checkInTranscriptMissingBody(String length);
-
-  /// The transcript-not-received card's title: the next step, since the header status already names the state.
-  ///
-  /// In en, this message translates to:
-  /// **'Try again, or type it'**
-  String get checkInTranscriptMissingCalloutTitle;
 
   /// Shown when a spoken check-in cannot run at all because no transcription is configured for the person or their category.
   ///

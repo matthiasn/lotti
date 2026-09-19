@@ -196,24 +196,6 @@ class CheckInFormHandle extends ChangeNotifier {
   }
 }
 
-/// Folds a fresh [transcript] into whatever the narrative field already holds.
-///
-/// Speaking never destroys typing. A transcript arriving on top of text the
-/// user already entered is appended below it, blank-line separated, so a
-/// second recording adds to the account rather than replacing it — the
-/// check-in stays user-authored (ADR 0038) and every word remains editable
-/// before save.
-String mergeCheckInNarrative({
-  required String existing,
-  required String transcript,
-}) {
-  final addition = transcript.trim();
-  if (addition.isEmpty) return existing;
-  final kept = existing.trim();
-  if (kept.isEmpty) return addition;
-  return '$kept\n\n$addition';
-}
-
 /// Opens the check-in composer for a person (design 2026-09-13): one
 /// surface that opens on the narrative, with *Dictate* inside the field.
 /// Resolves to the created [CheckInEntry], or `null` when dismissed.
@@ -410,9 +392,7 @@ class CheckInStickyActions extends StatelessWidget {
     CheckInSaveBlock.none || CheckInSaveBlock.saving => null,
     CheckInSaveBlock.preparing => messages.checkInPreparingLabel,
     CheckInSaveBlock.recording => messages.checkInSaveBlockedRecording,
-    CheckInSaveBlock.transcribing => messages.checkInSaveBlockedTranscribing,
     CheckInSaveBlock.emptyNarrative => messages.checkInSaveBlockedEmpty,
-    CheckInSaveBlock.typeOrRetry => messages.checkInSaveBlockedRetry,
   };
 
   @override
@@ -737,12 +717,6 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   /// open from the start when a check-in being edited already has any of it.
   late bool _moreOpen;
 
-  /// Whether the landed transcript has stopped being news: set the first
-  /// time the field is edited away from it, and kept even if the edit is
-  /// undone back to the exact words — the landing was announced once, and
-  /// matching text again is not a second landing. A new take clears it.
-  bool _landingHeard = false;
-
   /// The folded More row's caption from what is set: a field's name until it
   /// has a value, then the value itself.
   String _moreCaption(AppLocalizations messages) {
@@ -783,32 +757,28 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   /// starting one.
   bool _adoptRunning = false;
 
-  /// The take *Re-record* will take back out of the field — once the new
-  /// take exists, not before, so a discarded or failed retake leaves the
-  /// words the user had.
-  CheckInSpeechReady? _transcriptToReplace;
+  /// The recordings made here, oldest first — the check-in's entries once
+  /// it is saved (ADR 0062).
+  List<CheckInTake> _takes = const [];
 
-  /// The in-flight transcript wait, so dismissing the sheet stops it instead
-  /// of leaving a database listener running out the timeout.
-  CheckInTranscriptWait? _transcriptWait;
+  /// Each take's in-flight transcript wait, so dismissing the sheet stops
+  /// them instead of leaving database listeners running out the timeout.
+  /// The transcription itself runs on: its words land on the recording.
+  final Map<String, CheckInTranscriptWait> _transcriptWaits = {};
 
-  /// Watches the inference-error controller for the recording being
-  /// transcribed, so a failed run ends the wait instead of running it out.
-  ///
-  /// Nulled out the moment it is closed, so the sheet being dismissed
-  /// mid-wait cannot close the same subscription twice.
-  ProviderSubscription<String?>? _transcriptFailureSubscription;
+  /// Watches the inference-error controller for each take being
+  /// transcribed, so a failed run ends its wait instead of running it out.
+  final Map<String, ProviderSubscription<String?>> _transcriptFailures = {};
 
   bool get _isEditing => widget.initial != null;
 
-  /// Whether the composer offers *Dictate*: everywhere but a check-in that
-  /// was saved with words. Keyed to the saved text, not the live field, so
-  /// the button does not come and go under the user's typing.
-  bool get _offersDictation =>
-      (widget.initial?.entryText?.plainText ?? '').trim().isEmpty;
+  /// Whether the composer offers *Dictate*: only for a new check-in. A saved
+  /// one is added to from its timeline, where a recording becomes its entry
+  /// at once.
+  bool get _offersDictation => !_isEditing;
 
   /// Whether leaving now would lose something: text, details or context
-  /// that differ from what the composer opened with, or a take in flight.
+  /// that differ from what the composer opened with, or a recording.
   bool get _isDirty {
     final initial = widget.initial;
     final data = initial?.data;
@@ -829,7 +799,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     }
     if (_avoidController.text.trim() != (data?.avoid ?? '')) return true;
     if (_sentiment != data?.sentiment) return true;
-    return _phase is! CheckInSpeechIdle;
+    return _phase is! CheckInSpeechIdle || _takes.isNotEmpty;
   }
 
   /// Leaves the composer, asking first when [_isDirty]. The question names
@@ -849,9 +819,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
       message: switch (_phase) {
         CheckInSpeechRecording() =>
           messages.checkInDiscardDraftRecordingMessage,
-        CheckInSpeechTranscribing() ||
-        CheckInSpeechReady() => messages.checkInDiscardDraftAudioKeptMessage,
-        CheckInSpeechFailed(:final failure) when failure.hasRecording =>
+        _ when _takes.isNotEmpty =>
           messages.checkInDiscardDraftAudioKeptMessage,
         _ => messages.checkInDiscardDraftMessage,
       },
@@ -929,8 +897,14 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
 
   @override
   void dispose() {
-    _transcriptWait?.cancel();
-    _closeTranscriptFailureSubscription();
+    for (final wait in _transcriptWaits.values) {
+      wait.cancel();
+    }
+    for (final subscription in _transcriptFailures.values) {
+      subscription.close();
+    }
+    _transcriptWaits.clear();
+    _transcriptFailures.clear();
     _narrativeController
       ..removeListener(_onNarrativeChanged)
       ..dispose();
@@ -951,23 +925,15 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
 
   /// The word count and the save rule both read the field, and the pinned
   /// bar reads its focus, so every keystroke and focus change is a state
-  /// change here. Typing under a failure card that has no recording to
-  /// retry is the user choosing to type instead, so the card goes.
+  /// change here. Typing under a failure card is the user choosing to type
+  /// instead, so the card goes.
   void _onNarrativeChanged() {
     if (!mounted) return;
     final text = _narrativeController.text;
     final typed = text != _lastNarrative;
     _lastNarrative = text;
-    if (typed && _transcriptEdited) _landingHeard = true;
-    // Typing under a failure card is choosing to type instead: the card
-    // goes — folding into its retry row when a recording is waiting.
-    if (_phase case CheckInSpeechFailed(
-      :final failure,
-      :final cardDismissed,
-    ) when typed && !cardDismissed && text.trim().isNotEmpty) {
-      _phase = failure.hasRecording
-          ? CheckInSpeechFailed(failure, cardDismissed: true)
-          : const CheckInSpeechIdle();
+    if (_phase is CheckInSpeechFailed && typed && text.trim().isNotEmpty) {
+      _phase = const CheckInSpeechIdle();
     }
     setState(() {});
   }
@@ -989,6 +955,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   CheckInSaveBlock get _block => checkInSaveBlockOf(
     phase: _phase,
     hasWords: _hasWords,
+    hasTakes: _takes.isNotEmpty,
     saving: _isSaving,
   );
 
@@ -1000,6 +967,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     final status = checkInComposerStatusOf(
       _phase,
       recorderPaused: recorderPaused,
+      takes: _takes,
     );
     final summary = messages.checkInContextSummary(
       checkInInteractionLabel(context, _interactionType),
@@ -1134,33 +1102,16 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   }
 
   bool get _speechIdle => switch (_phase) {
-    CheckInSpeechIdle() ||
-    CheckInSpeechReady() ||
-    CheckInSpeechFailed() => true,
+    CheckInSpeechIdle() || CheckInSpeechFailed() => true,
     _ => false,
   };
 
-  /// *Re-record* only while the transcript is exactly what landed: once it
-  /// has been edited, taking it back out would take the edits with it, and
-  /// a button that says one thing and does another is worse than none.
-  bool get _canReRecord => _phase is CheckInSpeechReady;
-
-  /// Whether the field still holds exactly what landed: once edited, taking
-  /// the take back out would take the edits with it, so *Re-record* asks.
-  bool get _transcriptEdited => switch (_phase) {
-    CheckInSpeechReady(:final transcript, :final textBefore) =>
-      _narrativeController.text !=
-          mergeCheckInNarrative(existing: textBefore, transcript: transcript),
-    _ => false,
-  };
-
-  /// *Dictate* / *Add more*: the preflight, then the recorder in place of
-  /// the text.
+  /// *Dictate*: the preflight, then the recorder in place of the text.
   ///
-  /// Audio is linked to the person, while transcription uses only the
-  /// system's selected default inference profile. The recorder's automatic
-  /// path is suppressed, so this explicit request runs once. Words remain
-  /// editable and are only saved as a check-in when the user presses Save.
+  /// Audio is linked to the person — the check-in does not exist yet — and
+  /// becomes the check-in's entry when it is saved. Transcription uses only
+  /// the system's selected default inference profile; the recorder's
+  /// automatic path is suppressed, so this explicit request runs once.
   /// Preflight refuses recording if the default has no transcription slot.
   Future<void> _dictate() async {
     if (!_speechIdle || _isSaving) return;
@@ -1181,10 +1132,6 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
       ).wait.timeout(const Duration(seconds: 15));
       if (!mounted) return;
       if (!canTranscribe) {
-        // A Re-record that never started must not wait for a later take:
-        // the next Dictate is a fresh one, and restoring the abandoned
-        // take's text before it would overwrite what was typed since.
-        _transcriptToReplace = null;
         setState(
           () => _phase = const CheckInSpeechFailed(
             CheckInSpeechFailure(
@@ -1203,7 +1150,6 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
       final running = ref.read(audioRecorderControllerProvider);
       final busy = running.status != AudioRecorderStatus.stopped;
       if (busy && running.linkedId != widget.relationshipId) {
-        _transcriptToReplace = null;
         setState(
           () => _phase = const CheckInSpeechFailed(
             CheckInSpeechFailure(CheckInSpeechFailureKind.recorderBusy),
@@ -1224,7 +1170,6 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
         stackTrace: stackTrace,
       );
       if (!mounted) return;
-      _transcriptToReplace = null;
       setState(
         () => _phase = const CheckInSpeechFailed(
           CheckInSpeechFailure(CheckInSpeechFailureKind.recordingFailed),
@@ -1233,42 +1178,24 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     }
   }
 
-  /// *Re-record*: the recorder returns, and the field goes back to what it
-  /// held before the last take the moment the new one exists. Edits made
-  /// on top of that take go with it — which is why an edited field asks
-  /// first, in those words.
-  Future<void> _reRecord() async {
-    if (_transcriptEdited) {
-      final confirmed = await showConfirmationModal(
-        context: context,
-        message: context.messages.checkInReRecordReplaceMessage,
-        confirmLabel: context.messages.checkInReRecordButton,
-      );
-      if (!confirmed || !mounted) return;
-    }
-    if (_phase case final CheckInSpeechReady ready) {
-      _transcriptToReplace = ready;
-    }
-    await _dictate();
-  }
-
   void _onRecorded(String audioEntryId, Duration length) {
-    if (_transcriptToReplace case final take?) {
-      _transcriptToReplace = null;
-      _narrativeController.text = take.textBefore;
-    }
-    unawaited(_transcribe(audioEntryId: audioEntryId, length: length));
+    setState(() {
+      _phase = const CheckInSpeechIdle();
+      _takes = [
+        ..._takes,
+        CheckInTake(audioEntryId: audioEntryId, length: length),
+      ];
+    });
+    unawaited(_transcribe(audioEntryId));
   }
 
   void _onRecordingDiscarded() {
     if (!mounted) return;
-    _transcriptToReplace = null;
     setState(() => _phase = const CheckInSpeechIdle());
   }
 
   void _onRecordingFailed(CheckInSpeechFailureKind failure) {
     if (!mounted) return;
-    _transcriptToReplace = null;
     // The recorder hid the floating indicator on the way in; a start that
     // never happened has nothing for it to point at, but a stop that could
     // not save may leave the app-wide recorder as it was — either way the
@@ -1277,41 +1204,52 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     setState(() => _phase = CheckInSpeechFailed(CheckInSpeechFailure(failure)));
   }
 
-  /// Asks for the words of [audioEntryId] and folds them into the field
-  /// when they land. The recorder suppressed automatic inference for this
-  /// capture; the transcription service owns the one explicit request.
-  Future<void> _transcribe({
-    required String audioEntryId,
-    required Duration length,
-  }) async {
+  /// Replaces the take for [audioEntryId] through [update], when it is
+  /// still one of this composer's.
+  void _updateTake(
+    String audioEntryId,
+    CheckInTake Function(CheckInTake) update,
+  ) {
+    if (!mounted) return;
+    setState(
+      () => _takes = [
+        for (final take in _takes)
+          if (take.audioEntryId == audioEntryId) update(take) else take,
+      ],
+    );
+  }
+
+  bool _holds(String audioEntryId) =>
+      _takes.any((take) => take.audioEntryId == audioEntryId);
+
+  /// Asks for the words of [audioEntryId] and shows them on its take when
+  /// they land. The recorder suppressed automatic inference for this
+  /// capture; the transcription service owns the one explicit request, and
+  /// runs on after the sheet closes — the words land on the recording, and
+  /// the service tells the saved check-in (ADR 0062).
+  Future<void> _transcribe(String audioEntryId) async {
     final transcription = ref.read(checkInTranscriptionServiceProvider);
     final messages = context.messages;
-    setState(
-      () => _phase = CheckInSpeechTranscribing(
-        audioEntryId: audioEntryId,
-        length: length,
-      ),
-    );
-    // The route is a courtesy on the saved-audio line: a slow read must
-    // never hold the transcript, and a failed one must never fail it.
+    _updateTake(audioEntryId, (take) => take.transcribing());
+    // The route is a courtesy on the take's line: a slow read must never
+    // hold the transcript, and a failed one must never fail it.
     unawaited(
       _labelRoute(
         transcription,
         audioEntryId: audioEntryId,
-        length: length,
         via: messages.taskAgentRouteVia,
       ),
     );
 
-    final wait = _transcriptWait = transcription.transcribe(
+    _closeTranscriptWait(audioEntryId);
+    final wait = _transcriptWaits[audioEntryId] = transcription.transcribe(
       audioEntryId: audioEntryId,
       relationshipId: widget.relationshipId,
     );
-    // Preserve the provider's error detail for the failure card, including
-    // a failure that arrived before this subscription was attached.
+    // Preserve the provider's error detail for the take, including a
+    // failure that arrived before this subscription was attached.
     String? failureDetail;
-    _closeTranscriptFailureSubscription();
-    _transcriptFailureSubscription = ref.listenManual<String?>(
+    _transcriptFailures[audioEntryId] = ref.listenManual<String?>(
       inferenceErrorControllerProvider((
         id: audioEntryId,
         aiResponseType: AiResponseType.audioTranscription,
@@ -1326,45 +1264,23 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     );
     try {
       final transcript = await wait.result;
-      if (!mounted) return;
-      // The wait was abandoned by *Type instead*; the field is theirs.
-      if (_phase is! CheckInSpeechTranscribing) return;
-      if (transcript == null) {
-        setState(
-          () => _phase = CheckInSpeechFailed(
-            CheckInSpeechFailure(
-              CheckInSpeechFailureKind.transcriptMissing,
-              audioEntryId: audioEntryId,
-              length: length,
-              detail: failureDetail,
-            ),
-          ),
-        );
-        return;
-      }
-      final textBefore = _narrativeController.text;
-      _narrativeController.text = mergeCheckInNarrative(
-        existing: textBefore,
-        transcript: transcript,
+      if (!mounted || !_holds(audioEntryId)) return;
+      _updateTake(
+        audioEntryId,
+        (take) => transcript == null
+            ? take.missing(failureDetail)
+            : take.heard(transcript),
       );
-      setState(() {
-        _landingHeard = false;
-        _phase = CheckInSpeechReady(
-          transcript: transcript,
-          textBefore: textBefore,
-          length: length,
-        );
-      });
     } finally {
-      if (identical(_transcriptWait, wait)) _transcriptWait = null;
-      _closeTranscriptFailureSubscription();
+      if (identical(_transcriptWaits[audioEntryId], wait)) {
+        _forgetTranscriptWait(audioEntryId);
+      }
     }
   }
 
   Future<void> _labelRoute(
     CheckInTranscriptionService transcription, {
     required String audioEntryId,
-    required Duration length,
     required String via,
   }) async {
     final CheckInTranscriptionRoute? route;
@@ -1379,62 +1295,45 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
       );
       return;
     }
-    if (!mounted || route == null) return;
+    if (route == null) return;
     final label = '${route.model} · $via ${route.provider}';
-    if (_phase case CheckInSpeechTranscribing(
-      audioEntryId: final current,
-    ) when current == audioEntryId) {
-      setState(
-        () => _phase = CheckInSpeechTranscribing(
-          audioEntryId: audioEntryId,
-          length: length,
-          route: label,
-        ),
-      );
-    }
+    _updateTake(audioEntryId, (take) => take.withRoute(label));
   }
 
-  /// *Try again* on a missing transcript: the same recording, asked for
-  /// once more — never a second recording.
-  Future<void> _retryTranscript() async {
-    if (_phase case CheckInSpeechFailed(
-      failure: CheckInSpeechFailure(
-        kind: CheckInSpeechFailureKind.transcriptMissing,
-        audioEntryId: final audioEntryId?,
-        :final length,
-      ),
-    )) {
-      await _transcribe(
-        audioEntryId: audioEntryId,
-        length: length ?? Duration.zero,
-      );
-    }
-  }
+  /// *Try again* on a take whose words never came: the same recording,
+  /// asked for once more — never a second recording.
+  void _retryTake(String audioEntryId) => unawaited(_transcribe(audioEntryId));
 
-  /// *Type instead* / *Dismiss*: the field comes back as plain text. A
-  /// transcript still in flight is abandoned; the audio stays in the
-  /// journal either way. A transcript that went missing keeps its retry —
-  /// the card folds into a caption row rather than forgetting the take.
-  void _typeInstead() {
-    _transcriptWait?.cancel();
-    _transcriptWait = null;
-    _closeTranscriptFailureSubscription();
+  /// *Remove recording*: the take stays out of the check-in. Its audio stays
+  /// in the journal, linked to the person, as the discard question says.
+  void _removeTake(String audioEntryId) {
+    _closeTranscriptWait(audioEntryId);
     setState(
-      () => _phase = switch (_phase) {
-        CheckInSpeechFailed(:final failure)
-            when failure.kind == CheckInSpeechFailureKind.transcriptMissing =>
-          CheckInSpeechFailed(failure, cardDismissed: true),
-        _ => const CheckInSpeechIdle(),
-      },
+      () => _takes = [
+        for (final take in _takes)
+          if (take.audioEntryId != audioEntryId) take,
+      ],
     );
+  }
+
+  /// *Type instead* on a failure card: the field comes back as plain text.
+  void _typeInstead() {
+    setState(() => _phase = const CheckInSpeechIdle());
     _narrativeFocus.requestFocus();
   }
 
   Future<void> _openSettings() => ref.read(checkInSettingsOpenerProvider)();
 
-  void _closeTranscriptFailureSubscription() {
-    _transcriptFailureSubscription?.close();
-    _transcriptFailureSubscription = null;
+  /// Stops listening for [audioEntryId]'s words.
+  void _closeTranscriptWait(String audioEntryId) {
+    _transcriptWaits[audioEntryId]?.cancel();
+    _forgetTranscriptWait(audioEntryId);
+  }
+
+  /// Drops a wait that has ended, and its failure watch.
+  void _forgetTranscriptWait(String audioEntryId) {
+    _transcriptWaits.remove(audioEntryId);
+    _transcriptFailures.remove(audioEntryId)?.close();
   }
 
   Future<void> _handleSave() async {
@@ -1483,6 +1382,16 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
           dateFrom: _interactionTime,
           dateTo: _interactionTime.add(_duration),
         );
+        // The recordings become the check-in's entries. The check-in is
+        // saved either way: a link that fails is logged by the repository
+        // and must not turn into "save failed", which a retry would answer
+        // with a duplicate check-in.
+        if (created != null && _takes.isNotEmpty) {
+          await repository.attachEntriesToCheckIn(
+            checkInId: created.id,
+            entryIds: [for (final take in _takes) take.audioEntryId],
+          );
+        }
         if (!mounted) return;
         if (created != null) {
           Navigator.of(context).pop(created);
@@ -1653,7 +1562,6 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
           phase: _phase,
           wordCount: checkInWordCount(_narrativeController.text),
           shortcutHint: shortcut?.label,
-          transcriptEdited: _transcriptEdited || _landingHeard,
           restMinLines: widget.dialog ? 2 : 3,
           offersDictation: _offersDictation,
           recorder: recording
@@ -1666,11 +1574,10 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
                   onFailed: _onRecordingFailed,
                 )
               : null,
+          takes: _takes,
           onDictate: speechIdle ? _dictate : null,
-          onAddMore: speechIdle ? _dictate : null,
-          onReRecord: _canReRecord ? _reRecord : null,
-          onTypeInstead: _typeInstead,
-          onRetryTranscript: _retryTranscript,
+          onRetryTake: _isSaving ? null : _retryTake,
+          onRemoveTake: _isSaving ? null : _removeTake,
           onOpenSettings: _openSettings,
           onDismissFailure: _typeInstead,
         ),

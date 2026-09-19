@@ -1877,27 +1877,7 @@
   "chatInputStopRealtime": "Stop live transcription",
   "chatInputStopTranscribe": "Stop and transcribe",
   "chatInputTranscriptionFailed": "The recording was captured, but transcribing it failed. Please try again.",
-  "checkInAddMoreButton": "Add more",
-  "checkInAudioSaved": "{length} of audio saved",
-  "@checkInAudioSaved": {
-    "placeholders": {
-      "length": {
-        "type": "String"
-      }
-    }
-  },
   "checkInAudioSavedAsYouGo": "Audio saved to this device as you go",
-  "checkInAudioSavedRoute": "{length} of audio saved · {route}",
-  "@checkInAudioSavedRoute": {
-    "placeholders": {
-      "length": {
-        "type": "String"
-      },
-      "route": {
-        "type": "String"
-      }
-    }
-  },
   "checkInAvoidLabel": "Better to avoid",
   "checkInComposerSubtitle": "with {name} · last spoke {day}",
   "@checkInComposerSubtitle": {
@@ -2026,15 +2006,12 @@
   "checkInRecordingHint": "Speak normally. Words appear here when you stop.",
   "checkInRecordingNotSavedBody": "The recording could not be saved. Try again, or type the check-in.",
   "checkInRecordingNotSavedTitle": "Recording couldn't be saved",
-  "checkInReRecordButton": "Re-record",
-  "checkInReRecordReplaceMessage": "Replace your edited words with a new take?",
-  "@checkInReRecordReplaceMessage": {
-    "description": "Confirmation before Re-record when the transcript has been edited since it landed."
+  "checkInRemoveTake": "Remove recording",
+  "@checkInRemoveTake": {
+    "description": "Tooltip on the button that leaves a recording out of the check-in being composed; the audio stays in the journal."
   },
   "checkInSaveBlockedEmpty": "Add a few words to save",
   "checkInSaveBlockedRecording": "Stop recording to save",
-  "checkInSaveBlockedRetry": "Type or retry to save",
-  "checkInSaveBlockedTranscribing": "Waiting for the transcript",
   "checkInSaveButton": "Save check-in",
   "checkInSaveShortButton": "Save",
   "checkInSaveShortcutHint": "{shortcut} to save",
@@ -2085,6 +2062,10 @@
   "checkInStatusRecordingNotSaved": "Recording not saved",
   "checkInStatusTranscriptionUnavailable": "No transcription model",
   "checkInStatusTranscriptMissing": "Transcript not received",
+  "checkInTakeWordsFollow": "You can save now — the words follow.",
+  "@checkInTakeWordsFollow": {
+    "description": "Under a recording in the check-in composer whose transcript is still on its way: saving does not wait for it."
+  },
   "checkInTimeChipSemantics": "Started: {time}. Change",
   "@checkInTimeChipSemantics": {
     "placeholders": {
@@ -2095,15 +2076,10 @@
   },
   "checkInTopicsHint": "Comma-separated, e.g. work, travel",
   "checkInTopicsLabel": "Topics",
-  "checkInTranscribingEta": "usually under a minute",
-  "@checkInTranscribingEta": {
-    "description": "The last, first-shed tier of the transcribing caption: a time expectation for the wait."
-  },
   "checkInTranscribingLabel": "Transcribing…",
   "@checkInTranscribingLabel": {
     "description": "Progress label shown on the check-in sheet while a spoken check-in is being transcribed."
   },
-  "checkInTranscriptAdded": "Transcript added",
   "checkInTranscriptionUnavailableTitle": "No transcription model set up",
   "checkInTranscriptMissingBody": "Your {length} recording is saved in the journal, even if you cancel this check-in. Try again in a moment.",
   "@checkInTranscriptMissingBody": {
@@ -2112,10 +2088,6 @@
         "type": "String"
       }
     }
-  },
-  "checkInTranscriptMissingCalloutTitle": "Try again, or type it",
-  "@checkInTranscriptMissingCalloutTitle": {
-    "description": "The transcript-not-received card's title: the next step, since the header status already names the state."
   },
   "checkInTranscriptUnavailable": "Choose a default inference profile with a transcription model in AI settings, or write your check-in.",
   "@checkInTranscriptUnavailable": {
