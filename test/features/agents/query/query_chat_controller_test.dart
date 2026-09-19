@@ -47,6 +47,100 @@ void main() {
   final now = DateTime(2026, 9, 10, 12);
 
   setUpAll(registerAllFallbackValues);
+  ProviderContainer buildContainer(QueryChatKey chatKey) => ProviderContainer(
+    overrides: [
+      configFlagProvider('enable_query_chat').overrideWith((ref) async* {
+        yield true;
+        yield* enabled.stream;
+      }),
+      domainLoggerProvider.overrideWithValue(logger),
+      queryChatStoreProvider.overrideWithValue(bench.store),
+      queryChatDataProvider(chatKey).overrideWith((ref) => history.stream),
+      configFlagProvider(
+        'private',
+      ).overrideWith((ref) async* {
+        yield false;
+        yield* privacy.stream;
+      }),
+      queryBuilderFactoryProvider.overrideWithValue((
+        scope,
+        agentId,
+        chatId,
+      ) async {
+        if (unavailable) throw const QueryInferenceUnavailable();
+        if (setupError case final error?) throw error;
+        return QueryAnswerBuilder(
+          summaryReader: summaryReader,
+          crawler: bench.crawler,
+          access: bench.crawler.access,
+          inference: QueryTextInference(
+            generate: (system, prompt) async* {
+              final input = jsonDecode(prompt) as Map<String, dynamic>;
+              if (system.startsWith('Task-summary orientation.')) {
+                yield jsonEncode({
+                  'taskIds': ['other'],
+                  'useProject': false,
+                  'needsHomeEvidence': false,
+                });
+                return;
+              }
+              if (system.contains('Inspect sources together')) {
+                await inspect(chatId);
+                final sources = (input['sources'] as List)
+                    .cast<Map<String, dynamic>>();
+                yield jsonEncode({
+                  'question': input['question'],
+                  'terms': ['feeder'],
+                  'sufficient': sources.isNotEmpty,
+                  'searchCategory': false,
+                  'memoryIds': <String>[
+                    if (recall)
+                      for (final memory in input['memories'] as List)
+                        (memory as Map<String, dynamic>)['id'] as String,
+                  ],
+                  'passages': [
+                    for (final source in sources)
+                      {
+                        'sourceId': source['id'],
+                        'quote': source['text'],
+                        'summary': 'Feeder decision',
+                      },
+                  ],
+                });
+              } else if (system.contains('Rephrase')) {
+                yield jsonEncode({
+                  'question': input['question'],
+                  'terms': ['feeder'],
+                });
+              } else if (system.contains('Extract passages')) {
+                await inspect(chatId);
+                yield jsonEncode({
+                  'passages': [
+                    {'quote': input['source'], 'summary': 'Feeder decision'},
+                  ],
+                });
+              } else if (system.contains('Select only')) {
+                yield '{"ids":[]}';
+              } else {
+                await compose(chatId);
+                if (synthesis case final stream?) {
+                  yield* stream;
+                  return;
+                }
+                yield malformed
+                    ? 'invalid'
+                    : jsonEncode({
+                        'answer': 'Answer for $chatId [1]',
+                        'conclusion': 'Feeder decision.',
+                      });
+              }
+            },
+          ),
+        );
+      }),
+    ],
+  );
+
   setUp(() {
     logger = MockDomainLogger();
     setupError = null;
@@ -61,99 +155,7 @@ void main() {
     history = StreamController<QueryChatData>.broadcast();
     privacy = StreamController<bool>.broadcast();
     enabled = StreamController<bool>.broadcast();
-    container = ProviderContainer(
-      overrides: [
-        configFlagProvider('enable_query_chat').overrideWith((ref) async* {
-          yield true;
-          yield* enabled.stream;
-        }),
-        domainLoggerProvider.overrideWithValue(logger),
-        queryChatStoreProvider.overrideWithValue(bench.store),
-        queryChatDataProvider(key).overrideWith((ref) => history.stream),
-        configFlagProvider(
-          'private',
-        ).overrideWith((ref) async* {
-          yield false;
-          yield* privacy.stream;
-        }),
-        queryBuilderFactoryProvider.overrideWithValue((
-          scope,
-          agentId,
-          chatId,
-        ) async {
-          if (unavailable) throw const QueryInferenceUnavailable();
-          if (setupError case final error?) throw error;
-          return QueryAnswerBuilder(
-            summaryReader: summaryReader,
-            crawler: bench.crawler,
-            access: bench.crawler.access,
-            inference: QueryTextInference(
-              generate: (system, prompt) async* {
-                final input = jsonDecode(prompt) as Map<String, dynamic>;
-                if (system.startsWith('Task-summary orientation.')) {
-                  yield jsonEncode({
-                    'taskIds': ['other'],
-                    'useProject': false,
-                    'needsHomeEvidence': false,
-                  });
-                  return;
-                }
-                if (system.contains('Inspect sources together')) {
-                  await inspect(chatId);
-                  final sources = (input['sources'] as List)
-                      .cast<Map<String, dynamic>>();
-                  yield jsonEncode({
-                    'question': input['question'],
-                    'terms': ['feeder'],
-                    'sufficient': sources.isNotEmpty,
-                    'searchCategory': false,
-                    'memoryIds': <String>[
-                      if (recall)
-                        for (final memory in input['memories'] as List)
-                          (memory as Map<String, dynamic>)['id'] as String,
-                    ],
-                    'passages': [
-                      for (final source in sources)
-                        {
-                          'sourceId': source['id'],
-                          'quote': source['text'],
-                          'summary': 'Feeder decision',
-                        },
-                    ],
-                  });
-                } else if (system.contains('Rephrase')) {
-                  yield jsonEncode({
-                    'question': input['question'],
-                    'terms': ['feeder'],
-                  });
-                } else if (system.contains('Extract passages')) {
-                  await inspect(chatId);
-                  yield jsonEncode({
-                    'passages': [
-                      {'quote': input['source'], 'summary': 'Feeder decision'},
-                    ],
-                  });
-                } else if (system.contains('Select only')) {
-                  yield '{"ids":[]}';
-                } else {
-                  await compose(chatId);
-                  if (synthesis case final stream?) {
-                    yield* stream;
-                    return;
-                  }
-                  yield malformed
-                      ? 'invalid'
-                      : jsonEncode({
-                          'answer': 'Answer for $chatId [1]',
-                          'conclusion': 'Feeder decision.',
-                        });
-                }
-              },
-            ),
-          );
-        }),
-      ],
-    );
+    container = buildContainer(key);
     controller = container.read(provider.notifier);
   });
   tearDown(() async {
@@ -429,6 +431,79 @@ void main() {
       },
     );
   }
+
+  test(
+    'a category chat keeps its provisional draft across a refresh while its '
+    'category stays visible',
+    () async {
+      await withClock(Clock.fixed(now), () async {
+        final categoryKey = (
+          agentId: 'agent',
+          scope: QueryScope(
+            kind: QueryScopeKind.category,
+            id: categoryMindfulness.id,
+          ),
+        );
+        final categoryProvider = queryChatControllerProvider(categoryKey);
+        bench.add('colony', category: categoryMindfulness.id);
+        final categoryContainer = buildContainer(categoryKey);
+        addTearDown(categoryContainer.dispose);
+        final categoryController = categoryContainer.read(
+          categoryProvider.notifier,
+        );
+        final stream = StreamController<String>();
+        synthesis = stream.stream;
+        final started = Completer<void>();
+        compose = (_) async => started.complete();
+        final chatId = await categoryController.create('Colony');
+        categoryController.updateDraft(chatId, 'What was recorded?');
+        final seen = Completer<void>();
+        final subscription = categoryContainer.listen(categoryProvider, (
+          _,
+          next,
+        ) {
+          if (next.local(chatId).provisional?.text.isNotEmpty == true &&
+              !seen.isCompleted) {
+            seen.complete();
+          }
+        });
+        addTearDown(subscription.close);
+        final request = categoryController.send(chatId);
+        await started.future;
+        stream.add('{"answer":"Recorded [1]');
+        await seen.future;
+        final draft = categoryContainer
+            .read(categoryProvider)
+            .local(chatId)
+            .provisional!;
+
+        // A projection refresh re-checks the draft's visibility, including
+        // the category itself; nothing changed, so the draft survives.
+        history.add(
+          QueryChatData(
+            projection: await bench.store.load('agent'),
+            access: await bench.crawler.access.load([categoryMindfulness.id]),
+          ),
+        );
+        await categoryContainer.pump();
+        expect(
+          categoryContainer.read(categoryProvider).local(chatId).provisional,
+          draft,
+        );
+
+        stream.add('","conclusion":""}');
+        await stream.close();
+        await request;
+        final saved = (await bench.store.load('agent')).chats.firstWhere(
+          (c) => c.id == chatId,
+        );
+        expect(
+          (saved.answerFor(draft.questionId)!.data as QueryChatAnswer).text,
+          'Recorded [1]',
+        );
+      });
+    },
+  );
 
   test(
     'searching changes to answering only at synthesis and resets on retry',
