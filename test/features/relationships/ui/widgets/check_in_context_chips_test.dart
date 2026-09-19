@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
@@ -139,6 +140,141 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('How did you connect?'), findsNothing);
       expect(result(), isNull);
+    });
+  });
+
+  group('the feeling chip', () {
+    Future<void> pumpWith(
+      WidgetTester tester, {
+      CheckInSentiment? sentiment,
+      bool editable = true,
+    }) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          CheckInContextChips(
+            type: CheckInInteractionType.call,
+            startedLabel: 'Now · 14:55',
+            durationLabel: 'Duration',
+            sentiment: sentiment,
+            onPickType: () {},
+            onPickStart: () {},
+            onPickDuration: () {},
+            onPickSentiment: editable ? () => calls.add('sentiment') : null,
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('shows only where it can be edited', (tester) async {
+      await pumpWith(tester, editable: false);
+      expect(
+        find.byKey(const ValueKey('check-in-sentiment-chip')),
+        findsNothing,
+      );
+    });
+
+    testWidgets('reads the feeling, or asks for one, and opens its picker', (
+      tester,
+    ) async {
+      await pumpWith(tester);
+      expect(chip(tester, 'check-in-sentiment-chip').label, 'How did it feel?');
+
+      await pumpWith(tester, sentiment: CheckInSentiment.good);
+      expect(chip(tester, 'check-in-sentiment-chip').label, 'Good');
+      await tester.tap(find.byKey(const ValueKey('check-in-sentiment-chip')));
+      expect(calls, ['sentiment']);
+    });
+  });
+
+  group('showCheckInSentimentPicker', () {
+    Future<({CheckInSentiment? sentiment})? Function()> open(
+      WidgetTester tester, {
+      required CheckInSentiment? current,
+    }) async {
+      ({CheckInSentiment? sentiment})? picked;
+      var resolved = false;
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () async {
+                picked = await showCheckInSentimentPicker(
+                  context: context,
+                  current: current,
+                );
+                resolved = true;
+              },
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      return () {
+        expect(resolved, isTrue, reason: 'the picker has resolved');
+        return picked;
+      };
+    }
+
+    testWidgets('resolves to the tapped feeling; nothing set offers no '
+        'Clear', (tester) async {
+      final result = await open(tester, current: null);
+      expect(
+        find.byKey(const ValueKey('check-in-sentiment-clear')),
+        findsNothing,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('check-in-sentiment-option-strained')),
+      );
+      await tester.pumpAndSettle();
+      expect(result(), (sentiment: CheckInSentiment.strained));
+    });
+
+    // A cleared feeling and a dismissed sheet must not look alike.
+    testWidgets('Clear resolves to no feeling; dismissing to nothing', (
+      tester,
+    ) async {
+      var result = await open(tester, current: CheckInSentiment.good);
+      await tester.tap(find.byKey(const ValueKey('check-in-sentiment-clear')));
+      await tester.pumpAndSettle();
+      expect(result(), (sentiment: null));
+
+      result = await open(tester, current: CheckInSentiment.good);
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pumpAndSettle();
+      expect(result(), isNull);
+    });
+  });
+
+  group('checkInStartedLabelOf', () {
+    final now = DateTime(2026, 8, 14, 14, 55, 30);
+
+    testWidgets('says Now for the current minute, else the day and time', (
+      tester,
+    ) async {
+      late BuildContext context;
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(
+            builder: (c) {
+              context = c;
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+      withClock(Clock.fixed(now), () {
+        expect(
+          checkInStartedLabelOf(context, DateTime(2026, 8, 14, 14, 55)),
+          startsWith('Now · '),
+        );
+        expect(
+          checkInStartedLabelOf(context, DateTime(2026, 8, 1, 12, 44)),
+          isNot(startsWith('Now')),
+        );
+      });
     });
   });
 }

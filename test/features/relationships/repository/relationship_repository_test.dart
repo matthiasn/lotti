@@ -17,7 +17,6 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
-import 'package:lotti/utils/entry_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../database/test_utils.dart';
@@ -1543,8 +1542,10 @@ void main() {
       expect(saved.meta.updatedAt, testDate.add(const Duration(minutes: 1)));
     }
 
-    test('a comment is its own entry, linked from the check-in, and the '
-        'check-in changes', () async {
+    // An empty comment is no evidence: the check-in is saved again once
+    // its words are written, not when the card appears.
+    test('a comment starts as an empty entry of its own, linked from the '
+        'check-in, and the check-in does not change yet', () async {
       when(
         () => mockPersistence.createDbEntity(
           any(),
@@ -1552,35 +1553,74 @@ void main() {
         ),
       ).thenAnswer((_) async => true);
 
-      final entry = await repository.addCommentToCheckIn(
-        checkIn,
-        '  Send krill. ',
-      );
+      final entry = await repository.startCommentOnCheckIn(checkIn);
 
       expect(entry, isA<JournalEntry>());
-      // Saved like every typed entry: the text with its Quill form.
-      expect(entry!.entryText, entryTextFromPlain('Send krill.'));
+      expect(entry!.entryText?.plainText, isEmpty);
       verify(
         () => mockPersistence.createDbEntity(entry, linkedId: 'c-1'),
       ).called(1);
-      expectTouched();
+      verifyNever(() => mockPersistence.updateDbEntity(any()));
     });
 
-    test(
-      'a blank or unsaved comment adds nothing and changes nothing',
-      () async {
-        when(
-          () => mockPersistence.createDbEntity(
-            any(),
-            linkedId: any(named: 'linkedId'),
-          ),
-        ).thenAnswer((_) async => false);
+    // Codex review on #4354: a stray tap on Comment must leave nothing
+    // behind — no phantom comment counted or synced.
+    group('discardCommentIfBlank', () {
+      JournalEntity comment(String text, {bool deleted = false}) =>
+          testTextEntry.copyWith(
+            entryText: EntryText(plainText: text),
+            meta: testTextEntry.meta.copyWith(
+              deletedAt: deleted ? testDate : null,
+            ),
+          );
 
-        expect(await repository.addCommentToCheckIn(checkIn, '   '), isNull);
-        expect(await repository.addCommentToCheckIn(checkIn, 'Lost.'), isNull);
-        verifyNever(() => mockPersistence.updateDbEntity(any()));
-      },
-    );
+      setUp(() {
+        when(
+          () => mockPersistence.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
+      });
+
+      test('removes a comment left blank', () async {
+        when(
+          () => mockDb.journalEntityById('blank'),
+        ).thenAnswer((_) async => comment('  '));
+
+        expect(await repository.discardCommentIfBlank('blank'), isTrue);
+        final tombstone =
+            verify(
+                  () => mockPersistence.updateDbEntity(captureAny()),
+                ).captured.single
+                as JournalEntity;
+        expect(tombstone.meta.deletedAt, isNotNull);
+      });
+
+      for (final (label, entity) in [
+        ('a comment with words', comment('Send krill.')),
+        ('one already gone', comment('', deleted: true)),
+        ('anything but a comment', testAudioEntry),
+        ('nothing at all', null),
+      ]) {
+        test('leaves $label alone', () async {
+          when(
+            () => mockDb.journalEntityById('x'),
+          ).thenAnswer((_) async => entity);
+
+          expect(await repository.discardCommentIfBlank('x'), isFalse);
+          verifyNever(() => mockPersistence.updateDbEntity(any()));
+        });
+      }
+    });
+
+    test('a comment that could not be written is none', () async {
+      when(
+        () => mockPersistence.createDbEntity(
+          any(),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).thenAnswer((_) async => false);
+
+      expect(await repository.startCommentOnCheckIn(checkIn), isNull);
+    });
 
     test("the composer's recordings are attached by links, and the "
         'check-in changes once', () async {

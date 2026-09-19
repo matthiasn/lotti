@@ -11976,6 +11976,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipCheckInsLabel => 'Avstämningar';
 
   @override
+  String relationshipCheckInTitle(String name) {
+    return 'Avstämning med $name';
+  }
+
+  @override
   String get relationshipContactCardAction => 'Kontaktkort';
 
   @override

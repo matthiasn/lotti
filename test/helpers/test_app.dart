@@ -1,3 +1,4 @@
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -79,10 +80,13 @@ Widget _testApp(
         navigatorKey: navigatorKey,
         navigatorObservers: navigatorObservers,
         theme: resolveTestTheme(theme),
+        // The app's own list (beamer_app.dart), so an editor that gains
+        // focus in a test finds its toolbar's localizations.
         localizationsDelegates: const [
           AppLocalizations.delegate,
           FormBuilderLocalizations.delegate,
           ...GlobalMaterialLocalizations.delegates,
+          FlutterQuillLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
         locale: locale,

@@ -1318,10 +1318,57 @@ void main() {
       ],
     );
 
-    expect(find.text('Noted when it was logged'), findsOneWidget);
+    expect(find.byKey(const ValueKey('check-in-detail-note')), findsOneWidget);
     await captureScreenshot(
       tester,
       'check_in_open_mobile_dark',
+      subdir: _subdir,
+    );
+  });
+
+  testWidgets('desktop check-in detail — dark', (tester) async {
+    final held = [pipTake, pipCorrection];
+    // The real entry controller, so the comment opens in its editor the way
+    // it does in the app.
+    for (final entry in held) {
+      when(
+        () => getIt<JournalDb>().journalEntityById(entry.id),
+      ).thenAnswer((_) async => entry);
+    }
+    await pumpSurface(
+      tester,
+      home: const Scaffold(
+        body: SafeArea(
+          child: CheckInDetailView(
+            relationshipId: _pipId,
+            checkInId: 'check-pip-3',
+          ),
+        ),
+      ),
+      device: desktopDevice,
+      brightness: Brightness.dark,
+      overrides: [
+        ...personOverrides(report: briefing()),
+        sortedLinkedEntriesProvider('check-pip-3').overrideWith(
+          (ref) => [
+            for (final entry in held)
+              EntryLink.basic(
+                id: 'check-pip-3->${entry.id}',
+                fromId: 'check-pip-3',
+                toId: entry.id,
+                createdAt: entry.meta.dateFrom,
+                updatedAt: entry.meta.dateFrom,
+                vectorClock: null,
+              ),
+          ],
+        ),
+      ],
+    );
+
+    expect(find.byKey(const ValueKey('check-in-detail-note')), findsOneWidget);
+    await captureScreenshot(
+      tester,
+      'check_in_open_desktop_dark',
       subdir: _subdir,
     );
   });

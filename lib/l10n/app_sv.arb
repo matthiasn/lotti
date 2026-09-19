@@ -5082,6 +5082,7 @@
     }
   },
   "relationshipCheckInsLabel": "Avstämningar",
+  "relationshipCheckInTitle": "Avstämning med {name}",
   "relationshipContactCardAction": "Kontaktkort",
   "@relationshipContactCardAction": {
     "description": "Relationships redesign label."

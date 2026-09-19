@@ -12178,6 +12178,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get relationshipCheckInsLabel => 'Échanges';
 
   @override
+  String relationshipCheckInTitle(String name) {
+    return 'Échange avec $name';
+  }
+
+  @override
   String get relationshipContactCardAction => 'Carte de contact';
 
   @override

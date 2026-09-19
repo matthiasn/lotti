@@ -7017,6 +7017,15 @@
     }
   },
   "relationshipCheckInsLabel": "Check-ins",
+  "relationshipCheckInTitle": "Check-in with {name}",
+  "@relationshipCheckInTitle": {
+    "description": "Title of an opened check-in: who it was with.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipContactCardAction": "Contact card",
   "@relationshipContactCardAction": {
     "description": "Relationships redesign label."

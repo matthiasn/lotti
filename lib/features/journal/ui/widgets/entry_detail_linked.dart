@@ -25,6 +25,7 @@ class LinkedEntriesWidget extends ConsumerWidget {
     this.highlightedEntryId,
     this.activeTimerEntryId,
     this.hideTaskEntries = false,
+    this.showActivityFilters = true,
     super.key,
   });
 
@@ -34,6 +35,11 @@ class LinkedEntriesWidget extends ConsumerWidget {
   final String? activeTimerEntryId;
   final bool hideTaskEntries;
 
+  /// Whether the Timer/Audio/Images pills and the sort sit above the list.
+  /// A short list — a check-in with a recording and a comment — has nothing
+  /// to filter, and the pills would only read as noise.
+  final bool showActivityFilters;
+
   @override
   Widget build(
     BuildContext context,
@@ -41,12 +47,15 @@ class LinkedEntriesWidget extends ConsumerWidget {
   ) {
     final orderedLinks = ref.watch(sortedLinkedEntriesProvider(item.id));
 
-    final activeKinds = ref.watch(
-      linkedEntriesActivityFilterControllerProvider(item.id),
-    );
-    final showFlaggedOnly = ref.watch(
-      showFlaggedOnlyControllerProvider(item.id),
-    );
+    // The filters apply only while their bar is there to undo them: a
+    // list whose host hides the bar shows everything, so a filter set
+    // before the bar went away cannot strand cards out of reach.
+    final activeKinds = showActivityFilters
+        ? ref.watch(linkedEntriesActivityFilterControllerProvider(item.id))
+        : LinkedEntryActivityFilter.values.toSet();
+    final showFlaggedOnly =
+        showActivityFilters &&
+        ref.watch(showFlaggedOnlyControllerProvider(item.id));
 
     if (orderedLinks.isEmpty) {
       return const SizedBox.shrink();
@@ -64,7 +73,8 @@ class LinkedEntriesWidget extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        LinkedEntriesActivityFilterBar(entryId: item.id),
+        if (showActivityFilters)
+          LinkedEntriesActivityFilterBar(entryId: item.id),
         ...List.generate(
           orderedLinks.length,
           (int index) {

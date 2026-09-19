@@ -5082,6 +5082,7 @@
     }
   },
   "relationshipCheckInsLabel": "Check-ins",
+  "relationshipCheckInTitle": "Check-in med {name}",
   "relationshipContactCardAction": "Kontaktkort",
   "@relationshipContactCardAction": {
     "description": "Relationships redesign label."

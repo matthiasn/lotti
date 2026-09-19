@@ -252,22 +252,48 @@ recording carries a link from the person as well.
 
 ## Opening a check-in
 
-A check-in row opens the check-in itself, not its edit sheet.
+A check-in row opens the check-in itself, not its edit sheet, laid out like
+a task's detail page (design panel 2026-09-19).
 [`CheckInDetailView`](../../lib/features/relationships/ui/widgets/check_in_detail_view.dart)
-shows the header (when, how, how long, sentiment, topics, *Next time*), the
-text it was saved with as *Noted when it was logged*, then its entries
-through the journal's own `LinkedEntriesWidget` — the same cards, filter
-pills and sort a task's timeline uses. The bar at the bottom adds to it: a
-typed comment (`addCommentToCheckIn`), a dictation recorded with the
-check-in as its `linkedId`, or photos through `importImagesForPlatform`.
-Each addition touches the check-in, so the briefing catches up — photos only
-when the picker actually added one, since a cancelled picker changed no
-evidence. On phones the route hides the bottom navigation
-(`peopleRouteHidesBottomNav`), as the chat does, so the bar is not covered. *Edit* in
-the header opens the composer for the check-in's own fields. The row itself
-now says what the check-in holds on its meta line (`checkInHoldsLabelOf`: *1 recording · 1
-comment*), fed by `RelationshipDetail.checkInEntries`, the display-filtered
-`getEntriesForCheckIns`.
+centres its content at `kDetailContentMaxWidth`, the task page's reading
+width, and reads top to bottom:
+
+* **The header** names the check-in (*Check-in with Commander Pip
+  Frostbeak*) and carries type · start · length · feeling as the composer's
+  own chip row (`CheckInContextChips`, with its optional feeling chip), each
+  chip editing only its field in place through the composer's pickers
+  (`showCheckInTypePicker`, `pickCheckInStart`, `showCheckInDurationPicker`,
+  `showCheckInSentimentPicker`) and saving the check-in at once. The topics
+  follow as tag pills. Everything no chip carries — topics, the notes for
+  next time, the logged note — stays in the composer, behind *More → Edit
+  check-in*.
+* **Next time** on a card of its own.
+* **The timeline**: the text the check-in was logged with as its first card,
+  in the entry cards' shell and stamped at the check-in's start, then its
+  entries through the journal's own `LinkedEntriesWidget`. The Timer / Audio
+  / Images filters appear only from the fifth entry
+  (`CheckInDetailView.filtersFrom`, via `showActivityFilters`): a short
+  timeline has nothing to filter, and without the bar the list applies no
+  filter at all, so one set earlier cannot strand cards out of reach.
+* **A floating glass action bar** (`DesignSystemGlassStrip` with the shared
+  glass pill and round buttons) adds to the timeline: *Dictate* as the
+  primary pill — a recording made with the check-in as its `linkedId`, the
+  bar becoming the recorder meanwhile — then *Comment*, which starts an
+  empty comment card the way a task's text entry starts
+  (`startCommentOnCheckIn`) and brings it into view with its editor focused
+  — one left blank is removed when the view closes
+  (`discardCommentIfBlank`), and never counted as a comment — and *Photo*
+  through `importImagesForPlatform`. The bar wraps rather than overflows at
+  large text on a narrow phone.
+
+Each change to what the check-in holds touches it, so the briefing catches
+up: a recording at once; a comment once it has words (an empty one is no
+evidence); photos only when the picker actually added one, since a cancelled
+picker changed no evidence. On phones the route hides the bottom navigation
+(`peopleRouteHidesBottomNav`), as the chat does, so the bar is not covered.
+The row in the log says what the check-in holds on its meta line
+(`checkInHoldsLabelOf`: *1 recording · 1 comment*), fed by `RelationshipDetail.checkInEntries`, the
+display-filtered `getEntriesForCheckIns`.
 
 ```mermaid
 stateDiagram-v2
@@ -719,8 +745,9 @@ regenerates the briefing anyway.
 **"Evidence changed" is a check-in's `updatedAt`, not its date** (ADR 0062).
 `deriveCadenceFacts` reports `lastEvidenceAt`, the newest `updatedAt` among
 the person's check-ins, and a check-in is saved again whenever what it holds
-changes: `RelationshipRepository.addCommentToCheckIn` and
-`attachEntriesToCheckIn` touch it, and so does
+changes: `RelationshipRepository.attachEntriesToCheckIn` touches it, the
+check-in's detail view does once a comment written there has words or a
+recording is made there, and so does
 `CheckInTranscriptionService` once a recording's transcript lands — read
 back from the entry, since a run can end without an error and without words —
 independently of the composer, which may be long closed — through

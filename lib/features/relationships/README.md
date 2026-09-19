@@ -110,8 +110,10 @@ independent tasks linked to them.
 
 A check-in holds its comments, recordings and photos as entries of its own;
 the text older check-ins were saved with reads as their first entry. Tapping
-a check-in opens it as a small timeline, where comments, dictations and
-photos are added; its row in the log says what it holds. Adding
+a check-in opens it the way a task opens: its when, how, how long and how it
+felt as chips that edit in place, then its timeline, with a floating bar
+that adds a dictation, a comment or photos; its row in the log says what it
+holds. Adding
 to a check-in, or a recording's transcript arriving later, brings the
 briefing up to date, and everything a check-in holds is part of what the
 agent reads.

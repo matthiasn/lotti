@@ -4586,6 +4586,7 @@
     }
   },
   "relationshipCheckInsLabel": "Check-ins",
+  "relationshipCheckInTitle": "Check-in mit {name}",
   "relationshipContactCardAction": "Visitenkarte",
   "@relationshipContactCardAction": {
     "description": "Relationships redesign label."

@@ -340,6 +340,15 @@ void main() {
         'Send the krill memo.',
         '1 recording · 1 comment',
       ),
+      // Codex review on #4354: a comment started and never written is
+      // not a comment.
+      (
+        'a blank comment is not counted',
+        'Short call.',
+        [comment('  ')],
+        'Short call.',
+        null,
+      ),
       (
         'photos alone lead with nothing',
         null,
