@@ -12175,6 +12175,61 @@ class AppLocalizationsRo extends AppLocalizations {
       'Niciun agent încă — marcați mai întâi această persoană ca importantă.';
 
   @override
+  String get relationshipCheckInAddComment => 'Adăugați un comentariu';
+
+  @override
+  String get relationshipCheckInAddPhoto => 'Fotografie';
+
+  @override
+  String relationshipCheckInCommentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de comentarii',
+      few: '$count comentarii',
+      one: '1 comentariu',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipCheckInCommentHint => 'Adăugați un comentariu…';
+
+  @override
+  String get relationshipCheckInEmpty =>
+      'Nimic adăugat încă. Adăugați un comentariu, o înregistrare sau o fotografie.';
+
+  @override
+  String get relationshipCheckInGone => 'Acest check-in nu mai există.';
+
+  @override
+  String get relationshipCheckInNoteLabel => 'Notat la salvarea check-in-ului';
+
+  @override
+  String relationshipCheckInPhotoCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de fotografii',
+      few: '$count fotografii',
+      one: '1 fotografie',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String relationshipCheckInRecordingCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de înregistrări',
+      few: '$count înregistrări',
+      one: '1 înregistrare',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get relationshipCheckInReminderBody =>
       'Un moment bun pentru a lua legătura.';
 
@@ -16168,59 +16223,4 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
-
-  @override
-  String relationshipCheckInRecordingCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count de înregistrări',
-      few: '$count înregistrări',
-      one: '1 înregistrare',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String relationshipCheckInPhotoCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count de fotografii',
-      few: '$count fotografii',
-      one: '1 fotografie',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String relationshipCheckInCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count de comentarii',
-      few: '$count comentarii',
-      one: '1 comentariu',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get relationshipCheckInNoteLabel => 'Notat la înregistrare';
-
-  @override
-  String get relationshipCheckInCommentHint => 'Adăugați un comentariu…';
-
-  @override
-  String get relationshipCheckInAddComment => 'Adăugați comentariu';
-
-  @override
-  String get relationshipCheckInAddPhoto => 'Fotografie';
-
-  @override
-  String get relationshipCheckInEmpty =>
-      'Nimic adăugat încă. Adăugați un comentariu, o înregistrare sau o fotografie.';
-
-  @override
-  String get relationshipCheckInGone => 'Acest check-in nu mai există.';
 }

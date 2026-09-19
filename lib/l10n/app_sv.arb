@@ -5085,8 +5085,8 @@
   "relationshipCheckInCommentCount": "{count, plural, =1{1 kommentar} other{{count} kommentarer}}",
   "relationshipCheckInCommentHint": "Lägg till en kommentar…",
   "relationshipCheckInEmpty": "Inget tillagt än. Lägg till en kommentar, en inspelning eller ett foto.",
-  "relationshipCheckInGone": "Den här incheckningen finns inte längre.",
-  "relationshipCheckInNoteLabel": "Antecknat vid incheckningen",
+  "relationshipCheckInGone": "Den här avstämningen finns inte längre.",
+  "relationshipCheckInNoteLabel": "Antecknat vid avstämningen",
   "relationshipCheckInPhotoCount": "{count, plural, =1{1 foto} other{{count} foton}}",
   "relationshipCheckInRecordingCount": "{count, plural, =1{1 inspelning} other{{count} inspelningar}}",
   "relationshipCheckInReminderBody": "Ett bra tillfälle att höra av dig.",
@@ -5203,7 +5203,7 @@
   "@relationshipJustAdded": {
     "description": "Relationships redesign label."
   },
-  "relationshipKnownTermsBody": "Personer, djur och platser du nämner i samband med dem, åtskilda med semikolon. Dikterade incheckningar stavar dem så.",
+  "relationshipKnownTermsBody": "Personer, djur och platser du nämner i samband med dem, åtskilda med semikolon. Dikterade avstämningar stavar dem så.",
   "relationshipKnownTermsHint": "Sam; Luna; Lissabon",
   "relationshipKnownTermsLabel": "Namn som dyker upp",
   "relationshipLastSpoke": "pratade senast {time}",

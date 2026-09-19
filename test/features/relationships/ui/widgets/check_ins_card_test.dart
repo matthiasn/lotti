@@ -257,6 +257,15 @@ void main() {
         'Transcribing…',
         '1 recording',
       ),
+      // CodeRabbit review on #4348: a recording still waiting must not
+      // hide a later comment that has words.
+      (
+        'a recording still waiting does not hide a comment with words',
+        null,
+        [recording(), comment('Send the krill memo.')],
+        'Send the krill memo.',
+        '1 recording · 1 comment',
+      ),
       (
         'photos alone lead with nothing',
         null,

@@ -19897,6 +19897,60 @@ abstract class AppLocalizations {
   /// **'No agent yet — mark this person as important first.'**
   String get relationshipChatUnavailable;
 
+  /// No description provided for @relationshipCheckInAddComment.
+  ///
+  /// In en, this message translates to:
+  /// **'Add comment'**
+  String get relationshipCheckInAddComment;
+
+  /// No description provided for @relationshipCheckInAddPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo'**
+  String get relationshipCheckInAddPhoto;
+
+  /// No description provided for @relationshipCheckInCommentCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 comment} other{{count} comments}}'**
+  String relationshipCheckInCommentCount(int count);
+
+  /// No description provided for @relationshipCheckInCommentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a comment…'**
+  String get relationshipCheckInCommentHint;
+
+  /// No description provided for @relationshipCheckInEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing added yet. Add a comment, a recording or a photo.'**
+  String get relationshipCheckInEmpty;
+
+  /// No description provided for @relationshipCheckInGone.
+  ///
+  /// In en, this message translates to:
+  /// **'This check-in no longer exists.'**
+  String get relationshipCheckInGone;
+
+  /// No description provided for @relationshipCheckInNoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Noted when it was logged'**
+  String get relationshipCheckInNoteLabel;
+
+  /// No description provided for @relationshipCheckInPhotoCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 photo} other{{count} photos}}'**
+  String relationshipCheckInPhotoCount(int count);
+
+  /// No description provided for @relationshipCheckInRecordingCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 recording} other{{count} recordings}}'**
+  String relationshipCheckInRecordingCount(int count);
+
   /// No description provided for @relationshipCheckInReminderBody.
   ///
   /// In en, this message translates to:
@@ -26386,60 +26440,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
-
-  /// No description provided for @relationshipCheckInRecordingCount.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 recording} other{{count} recordings}}'**
-  String relationshipCheckInRecordingCount(int count);
-
-  /// No description provided for @relationshipCheckInPhotoCount.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 photo} other{{count} photos}}'**
-  String relationshipCheckInPhotoCount(int count);
-
-  /// No description provided for @relationshipCheckInCommentCount.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 comment} other{{count} comments}}'**
-  String relationshipCheckInCommentCount(int count);
-
-  /// No description provided for @relationshipCheckInNoteLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Noted when it was logged'**
-  String get relationshipCheckInNoteLabel;
-
-  /// No description provided for @relationshipCheckInCommentHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Add a comment…'**
-  String get relationshipCheckInCommentHint;
-
-  /// No description provided for @relationshipCheckInAddComment.
-  ///
-  /// In en, this message translates to:
-  /// **'Add comment'**
-  String get relationshipCheckInAddComment;
-
-  /// No description provided for @relationshipCheckInAddPhoto.
-  ///
-  /// In en, this message translates to:
-  /// **'Photo'**
-  String get relationshipCheckInAddPhoto;
-
-  /// No description provided for @relationshipCheckInEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing added yet. Add a comment, a recording or a photo.'**
-  String get relationshipCheckInEmpty;
-
-  /// No description provided for @relationshipCheckInGone.
-  ///
-  /// In en, this message translates to:
-  /// **'This check-in no longer exists.'**
-  String get relationshipCheckInGone;
 }
 
 class _AppLocalizationsDelegate
