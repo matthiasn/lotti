@@ -376,6 +376,36 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('a live wall shrinks its title until the longest word fits', (
+    tester,
+  ) async {
+    final wordy = PlazaTask(
+      id: 'w-live',
+      createdAt: DateTime.utc(2026, 3, 2, 9),
+      title: 'Recalibrate the interplanetary sardine pods',
+      state: PlazaTaskState.open,
+      progress: 0,
+      checklistItems: 0,
+      linkedTaskIds: const [],
+      categoryColor: 0xFF5C9DFF,
+    );
+    const widthMeters = 6.0;
+    await tester.pumpWidget(_host(wordy, widthMeters: widthMeters));
+
+    final fontSize = tester
+        .widget<Text>(find.text(wordy.title))
+        .style!
+        .fontSize!;
+    // The unshrunk title for a 6 m wall is 0.9 m; "interplanetary" does
+    // not fit the inner measure at that size, so the loop steps it down
+    // until 14 glyphs of ~0.6 em fit between the side paddings.
+    const innerPx = (widthMeters - 2 * 0.08 * widthMeters) * 45;
+    expect(fontSize, lessThan(0.9 * 45));
+    expect(14 * fontSize * 0.6, lessThanOrEqualTo(innerPx));
+    expect(14 * (fontSize / 0.9) * 0.6, greaterThan(innerPx));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('ticking on the wall goes through the shared ticks', (
     tester,
   ) async {

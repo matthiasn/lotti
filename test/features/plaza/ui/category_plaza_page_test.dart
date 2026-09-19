@@ -33,56 +33,70 @@ void main() {
   setUp(() => snapshots = StreamController<CategoryPlazaData?>());
   tearDown(() => unawaited(snapshots.close()));
 
-  Widget page({String? categoryId}) => makeTestableWidgetNoScroll(
-    CategoryPlazaPage(
-      categoryId: categoryId ?? category.id,
-      sceneBuilder:
-          ({
-            required world,
-            required ticks,
-            required onOpenTask,
-            required onExit,
-            initialSkyMode = PlazaSkyMode.night,
-            onSkyModeChanged,
-          }) {
-            if (world.isCategory) {
-              categoryWorld = world;
-            } else {
-              projectWorld = world;
-            }
-            return Scaffold(
-              key: ValueKey(world.isCategory ? 'category' : 'project'),
-              body: Column(
-                children: [
-                  Text(world.projectLabel),
-                  TextButton(
-                    onPressed: () => onOpenTask(world.tasks.first),
-                    child: const Text('Enter'),
-                  ),
-                  TextButton(onPressed: onExit, child: const Text('Return')),
-                ],
-              ),
-            );
-          },
-    ),
-    overrides: [
-      categoryPlazaProvider(
-        category.id,
-      ).overrideWith((ref) => snapshots.stream),
-      categoryPlazaProvider(
-        'other',
-      ).overrideWith((ref) => const Stream.empty()),
-      projectPlazaProvider(project.meta.id).overrideWith(
-        (ref) => Stream.value(
-          ProjectPlazaData(
-            project: project,
-            tasks: tasks,
-            dependencyIds: const {},
-          ),
-        ),
-      ),
-    ],
+  Widget plazaPage({String? categoryId}) => CategoryPlazaPage(
+    categoryId: categoryId ?? category.id,
+    sceneBuilder:
+        ({
+          required world,
+          required ticks,
+          required onOpenTask,
+          required onExit,
+          initialSkyMode = PlazaSkyMode.night,
+          onSkyModeChanged,
+        }) {
+          if (world.isCategory) {
+            categoryWorld = world;
+          } else {
+            projectWorld = world;
+          }
+          return Scaffold(
+            key: ValueKey(world.isCategory ? 'category' : 'project'),
+            body: Column(
+              children: [
+                Text(world.projectLabel),
+                TextButton(
+                  onPressed: () => onOpenTask(world.tasks.first),
+                  child: const Text('Enter'),
+                ),
+                TextButton(onPressed: onExit, child: const Text('Return')),
+              ],
+            ),
+          );
+        },
   );
+
+  Widget page({String? categoryId, bool pushed = false}) =>
+      makeTestableWidgetNoScroll(
+        pushed
+            ? Builder(
+                builder: (context) => TextButton(
+                  onPressed: () => Navigator.of(context).push<void>(
+                    MaterialPageRoute(
+                      builder: (_) => plazaPage(categoryId: categoryId),
+                    ),
+                  ),
+                  child: const Text('Visit plaza'),
+                ),
+              )
+            : plazaPage(categoryId: categoryId),
+        overrides: [
+          categoryPlazaProvider(
+            category.id,
+          ).overrideWith((ref) => snapshots.stream),
+          categoryPlazaProvider(
+            'other',
+          ).overrideWith((ref) => const Stream.empty()),
+          projectPlazaProvider(project.meta.id).overrideWith(
+            (ref) => Stream.value(
+              ProjectPlazaData(
+                project: project,
+                tasks: tasks,
+                dependencyIds: const {},
+              ),
+            ),
+          ),
+        ],
+      );
 
   testWidgets('initial category errors explain the failure and recover', (
     tester,
@@ -150,6 +164,26 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     },
   );
+
+  testWidgets('exiting the category scene pops back to where it opened', (
+    tester,
+  ) async {
+    await tester.pumpWidget(page(pushed: true));
+    await tester.tap(find.text('Visit plaza'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    snapshots.add(snapshot);
+    await tester.pumpAndSettle();
+    expect(find.byType(CategoryPlazaPage), findsOneWidget);
+    expect(find.text('Visit plaza', skipOffstage: false), findsOneWidget);
+
+    await tester.tap(find.text('Return'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CategoryPlazaPage), findsNothing);
+    expect(find.text('Visit plaza'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
 
   testWidgets(
     'background error keeps the category, lost access removes its projects',
