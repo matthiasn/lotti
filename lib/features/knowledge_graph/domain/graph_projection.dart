@@ -173,11 +173,10 @@ GraphProjection buildLocalGraphProjection({
         type: GraphNodeType.mediaCollection,
         label: '',
         categoryId: focus.categoryId,
-        createdAt: directImages.isEmpty
-            ? focus.createdAt
-            : directImages
-                  .map((item) => item.node.createdAt)
-                  .reduce((a, b) => a.isAfter(b) ? a : b),
+        // Newest member; the guard above ensures there is at least one.
+        createdAt: directImages
+            .map((item) => item.node.createdAt)
+            .reduce((a, b) => a.isAfter(b) ? a : b),
         aggregateKind: GraphAggregateKind.photos,
         aggregateCount: memberIds.length,
         memberIds: memberIds,

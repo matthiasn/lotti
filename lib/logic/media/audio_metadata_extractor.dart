@@ -237,9 +237,9 @@ abstract final class AudioMetadataExtractor {
         return await player.stream.duration
             .firstWhere((d) => d > Duration.zero, orElse: () => Duration.zero)
             .timeout(durationStreamTimeout, onTimeout: () => Duration.zero);
-      } on TimeoutException {
-        return Duration.zero;
       } catch (_) {
+        // A timeout already resolves to zero via onTimeout; any stream error
+        // falls back the same way.
         return Duration.zero;
       }
     } finally {

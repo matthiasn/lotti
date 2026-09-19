@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
@@ -442,22 +443,18 @@ abstract final class ProfileBackupCatalog {
       }
     }
 
-    ProfileBackupStore? directoryMatch;
-    for (final store in stores) {
-      if (store.kind != BackupStoreKind.directory ||
-          store.relativePath.isEmpty) {
-        continue;
-      }
-      if (relativePath == store.relativePath ||
-          relativePath.startsWith('${store.relativePath}/')) {
-        if (directoryMatch == null ||
-            store.relativePath.length > directoryMatch.relativePath.length) {
-          // No current directory policies overlap; this preserves the intended
-          // longest-prefix behavior for future nested policies.
-          directoryMatch = store; // coverage:ignore-line
-        }
-      }
-    }
+    // Longest prefix wins. No current directory policies overlap, but a
+    // future nested policy must override its parent.
+    final directoryMatch = maxBy(
+      stores.where(
+        (store) =>
+            store.kind == BackupStoreKind.directory &&
+            store.relativePath.isNotEmpty &&
+            (relativePath == store.relativePath ||
+                relativePath.startsWith('${store.relativePath}/')),
+      ),
+      (store) => store.relativePath.length,
+    );
     if (relativePath.startsWith('$profilesRegistryFileName.tmp.') ||
         relativePath.startsWith('$profilesRegistryFileName.bak.')) {
       return BackupPathDecision.fromStore(
