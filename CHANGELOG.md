@@ -4,6 +4,66 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.18]
+
+### Added
+
+- **Opening a check-in shows everything it holds.** Its recordings, comments
+  and photos appear as a timeline, and you can add a comment, a dictation or
+  photos to it right there. Each check-in in the log says what it holds.
+
+### Changed
+
+- **A dictated check-in saves without waiting for its transcript.** Each
+  recording now sits under your note and is saved as part of the check-in,
+  and its words appear on it when they arrive, even after you have saved. A
+  transcript that is slow, or never comes, no longer keeps the check-in
+  from being saved.
+- **Briefings start as soon as you ask.** *Brief now* and *Update now* no
+  longer ask whether to send to the AI provider every time — the card already
+  names the model and provider — and no toast follows. While a new briefing
+  is written, the previous one stays readable under the spinner instead of
+  being replaced by a time estimate.
+- **The person chat talks to the agent, not the person.** Its prompt, empty
+  state and reply signature now address the briefing agent, about the person.
+
+### Fixed
+
+- **Confirming a task the relationship agent suggested now creates it.**
+  Confirming could fail with "Failed to apply change" and withdraw the
+  suggestion without a task when the check-in's wording did not match the
+  suggestion's quote exactly — for example after a later check-in corrected a
+  misheard name. Your confirmation now stands on its own.
+- **Dictated check-ins spell people's names the way you write them.** The
+  words are now corrected against the person's name and nickname, the other
+  people in their category and the category's speech dictionary, which the
+  default Melious transcription models had been ignoring. The person editor
+  has a new *Names that come up* field for the people, pets and places you
+  mention with them.
+- **The briefing catches up with every check-in you log.** A check-in logged
+  after the briefing but dated earlier — yesterday's call, noted this morning
+  — or a second one on the same day now brings the briefing up to date. It
+  waits for a recording's transcript rather than briefing on a check-in that
+  says nothing yet.
+- **The relationship agent remembers your corrections.** When a check-in or
+  a chat message corrects something — a misheard name, a briefing that got
+  it wrong — the agent now keeps a private note and reads it back next time,
+  instead of narrating the correction once and forgetting it. The notes
+  appear under *Agent internals → Observations*.
+- **Task reports no longer end with "No estimate or due date is set".** A note
+  that only says which fields are empty is dropped before the report is
+  published; everything the report actually says is kept.
+- **The daylight district no longer flickers on the way up to Overview.** In
+  daylight, the teal route ribbons that appear on the roads from the air sat
+  at exactly the height of the shade every building throws, so wherever a
+  shadow crossed a road the two fought over each pixel and the ribbon
+  sparkled as the camera moved. The ribbons now sit just under the shade.
+  The surrounding city blocks that the map view hides also used to leave
+  their shadows behind, so the ground around a district was covered in shade
+  with nothing casting it; their shade now goes with them. And the camera's
+  near plane grows with its altitude, so from the air the shade keeps clear
+  of the pavement however large the project is.
+
 ## [1.1.17]
 
 ### Added
