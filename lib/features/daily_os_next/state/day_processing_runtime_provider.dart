@@ -112,6 +112,20 @@ final Provider<DayAudioReviewFence> dayAudioReviewFenceProvider = Provider((
   return fence;
 });
 
+/// Drains the outbox as two independent lanes: a slow agent wake (drafting
+/// or refining can take tens of seconds) must never block the transcription
+/// lane, and vice versa. Each lane drains serially within itself. Returns the
+/// number of jobs processed across both lanes.
+Future<int> drainDayProcessingLanes(
+  DayProcessingOutboxProcessor processor,
+) async {
+  final counts = await Future.wait([
+    processor.drain(kinds: const {DayProcessingJobKind.transcribeAudio}),
+    processor.drain(kinds: dayAgentJobKinds),
+  ]);
+  return counts[0] + counts[1];
+}
+
 final Provider<DayProcessingRuntime> dayProcessingRuntimeProvider = Provider((
   ref,
 ) {
@@ -120,16 +134,7 @@ final Provider<DayProcessingRuntime> dayProcessingRuntimeProvider = Provider((
   ref.watch(dayAudioReviewFenceProvider);
   final runtime = DayProcessingRuntime(
     repository: outbox,
-    // Two independent lanes: a slow agent wake (drafting/refining can take
-    // tens of seconds) must never block the transcription lane, and vice
-    // versa. Each lane drains serially within itself.
-    drain: () async {
-      final counts = await Future.wait([
-        processor.drain(kinds: const {DayProcessingJobKind.transcribeAudio}),
-        processor.drain(kinds: dayAgentJobKinds),
-      ]);
-      return counts[0] + counts[1];
-    },
+    drain: () => drainDayProcessingLanes(processor),
     repair: () async {
       // Retention (ADR 0044 decision 5) rides the once-per-start repair pass
       // rather than owning a scheduler: terminal ledger rows past the window

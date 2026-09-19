@@ -458,30 +458,25 @@ void main() {
     );
   });
 
-  test('a runtime nudge drains the transcription and agent lanes as '
-      'separate passes', () async {
+  test('drains the transcription and agent lanes as separate passes and '
+      'sums what they processed', () async {
     final processor = MockDayProcessingOutboxProcessor();
     final drainedLanes = <Set<DayProcessingJobKind>?>[];
     when(
       () => processor.drain(kinds: any(named: 'kinds')),
     ).thenAnswer((invocation) async {
-      drainedLanes.add(
-        invocation.namedArguments[#kinds] as Set<DayProcessingJobKind>?,
-      );
-      return 1;
+      final kinds =
+          invocation.namedArguments[#kinds] as Set<DayProcessingJobKind>?;
+      drainedLanes.add(kinds);
+      return kinds!.contains(DayProcessingJobKind.transcribeAudio) ? 2 : 3;
     });
-    final container = ProviderContainer(
-      overrides: [
-        dayProcessingOutboxProcessorProvider.overrideWithValue(processor),
-      ],
-    );
-    addTearDown(container.dispose);
 
-    await container.read(dayProcessingRuntimeProvider).nudge();
+    final processed = await drainDayProcessingLanes(processor);
 
     expect(drainedLanes, [
       {DayProcessingJobKind.transcribeAudio},
       dayAgentJobKinds,
     ]);
+    expect(processed, 5);
   });
 }
