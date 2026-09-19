@@ -301,6 +301,45 @@ void main() {
       },
     );
 
+    test(
+      'revert is a no-op while a per-row accept is in flight — the late '
+      'row result must not resurrect a reverted diff',
+      () async {
+        final gate = Completer<void>();
+        final gatedAgent = _GatedAcceptAgent(gate: gate);
+        final container = makeContainer(overrideAgent: gatedAgent);
+        final notifier = container.read(
+          refineControllerProvider(draft).notifier,
+        )..beginListening(resetTranscript: true);
+        await notifier.finishWithTranscript('move client review later');
+        final diff = container.read(refineControllerProvider(draft)).diff!;
+        expect(diff.changes.length, greaterThan(1));
+        final first = diff.changes.first;
+
+        final resolve = notifier.acceptChange(first.id);
+        expect(
+          container.read(refineControllerProvider(draft)).resolvingChangeId,
+          first.id,
+        );
+        await notifier.revert();
+        gate.complete();
+        await resolve;
+
+        final state = container.read(refineControllerProvider(draft));
+        // The row round-trip owns the plan; the revert never ran, so the
+        // controller is not left in diffReady without a diff to show.
+        expect(gatedAgent.revertCalls, 0);
+        expect(state.phase, RefinePhase.diffReady);
+        expect(state.diff, same(diff));
+        expect(state.decisionFor(first), PlanDiffChangeDecision.accepted);
+        expect(
+          state.decisionFor(diff.changes[1]),
+          PlanDiffChangeDecision.pending,
+        );
+        expect(state.resolvingChangeId, isNull);
+      },
+    );
+
     test('resolves individual diff changes with item indices', () async {
       final acceptedPlan = draft.copyWith(scheduledMinutes: 360);
       final agent = _RecordingRefineAgent(

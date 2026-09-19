@@ -9,6 +9,8 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
 import 'package:lotti/features/daily_os_next/state/day_activity_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
@@ -22,6 +24,9 @@ import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/onboarding/model/onboarding_event.dart';
+import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/utils/device_region.dart';
@@ -112,6 +117,15 @@ void _expectLabelNotTruncated(WidgetTester tester, Finder label) {
         'the reserved slot (${paragraph.size.width}) is narrower than the '
         'string needs ($intrinsic)',
   );
+}
+
+/// Keeps the walkthrough's cadence bookkeeping off SettingsDb.
+class _InMemoryOnboardingCadence extends DailyOsOnboardingCadence {
+  @override
+  Future<void> recordShown() async {}
+
+  @override
+  Future<void> markCompleted() async {}
 }
 
 MockAudioRecorderRepository _permissionlessRecorder() {
@@ -227,6 +241,74 @@ void main() {
         });
       },
     );
+
+    testWidgets('dismissing the check-in modal records the walkthrough '
+        'skip and ends the onboarding session', (tester) async {
+      final metrics = MockOnboardingMetricsRepository();
+      when(
+        () => metrics.recordEvent(
+          OnboardingEventName.dailyOsWalkthroughSkipped,
+          reason: any(named: 'reason'),
+          valueBucket: any(named: 'valueBucket'),
+        ),
+      ).thenAnswer((_) async {});
+      getIt.registerSingleton<OnboardingMetricsRepository>(metrics);
+      addTearDown(getIt.unregister<OnboardingMetricsRepository>);
+
+      await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+        await tester.pumpWidget(
+          _wrap(
+            const DailyOsNextRoot(),
+            overrides: [
+              captureControllerProvider.overrideWith(
+                () => CaptureController(recorder: _permissionlessRecorder()),
+              ),
+              currentDraftPlanProvider.overrideWith((ref, _) async => null),
+              dailyOsOnboardingCadenceProvider.overrideWith(
+                _InMemoryOnboardingCadence.new,
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(DailyOsNextRoot)),
+        );
+        final session = container
+            .read(dailyOsOnboardingSessionControllerProvider.notifier)
+            .start(targetDate: DateTime(2026, 5, 26), sessionId: 's-1');
+
+        await tester.tap(find.byKey(const Key('daily_os_day_check_in_cta')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.byType(CaptureModalContent), findsOneWidget);
+        expect(
+          container.read(dailyOsOnboardingSessionControllerProvider),
+          same(session),
+        );
+
+        // Tap the dim barrier outside the sheet: the modal resolves with no
+        // plan, which the root routes to the session's dismissal.
+        await tester.tapAt(const Offset(5, 5));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(CaptureModalContent), findsNothing);
+        expect(
+          container.read(dailyOsOnboardingSessionControllerProvider),
+          isNull,
+        );
+        verify(
+          () => metrics.recordEvent(
+            OnboardingEventName.dailyOsWalkthroughSkipped,
+            reason: any(named: 'reason'),
+            valueBucket: any(named: 'valueBucket'),
+          ),
+        ).called(1);
+      });
+    });
 
     testWidgets('a route lost before check-in opens Daily OS settings', (
       tester,

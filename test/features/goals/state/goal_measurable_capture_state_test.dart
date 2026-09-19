@@ -86,4 +86,65 @@ void main() {
     expect(decisions['source-1']?.recorded, isFalse);
     expect(decisions['source-1']?.recordedAt, newer);
   });
+
+  test('a recorded decision counts only the string entry ids it saved and '
+      'keeps the agent name it was recorded under', () async {
+    final repository = MockAgentRepository();
+    final at = DateTime(2026, 8, 11, 9);
+    final recorded =
+        AgentDomainEntity.agentMessage(
+              id: 'recorded',
+              agentId: 'goal-1',
+              threadId: 'thread-1',
+              kind: AgentMessageKind.action,
+              createdAt: at,
+              vectorClock: null,
+              contentEntryId: 'payload-recorded',
+              metadata: const AgentMessageMetadata(
+                toolName: GoalMeasurableCaptureToolNames.recorded,
+              ),
+            )
+            as AgentMessageEntity;
+    when(
+      () => repository.getEntitiesByAgentId(
+        'goal-1',
+        type: AgentEntityTypes.agentMessage,
+      ),
+    ).thenAnswer((_) async => [recorded]);
+    when(() => repository.getEntitiesByIds(any())).thenAnswer(
+      (_) async => {
+        'payload-recorded': AgentDomainEntity.agentMessagePayload(
+          id: 'payload-recorded',
+          agentId: 'goal-1',
+          createdAt: at,
+          vectorClock: null,
+          content: {
+            'sourceMessageId': 'source-1',
+            'entryIds': ['measurement-1', 42, 'measurement-2'],
+            'agentName': 'Juno',
+          },
+        ),
+      },
+    );
+    final container = ProviderContainer(
+      overrides: [
+        agentRepositoryProvider.overrideWithValue(repository),
+        agentUpdateStreamProvider(
+          'goal-1',
+        ).overrideWith((ref) => const Stream.empty()),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final decisions = await container.read(
+      goalMeasurableCaptureDecisionsProvider('goal-1').future,
+    );
+
+    final decision = decisions['source-1']!;
+    expect(decision.recorded, isTrue);
+    expect(decision.entryIds, ['measurement-1', 'measurement-2']);
+    expect(decision.entryCount, 2);
+    expect(decision.agentName, 'Juno');
+    expect(decision.recordedAt, at);
+  });
 }

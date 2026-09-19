@@ -452,6 +452,48 @@ void main() {
     });
 
     testWidgets(
+      'revert action button is disabled while a row decision is in flight',
+      (tester) async {
+        final draft = _emptyPlan();
+        final gate = Completer<void>();
+        final agent = RecordingDayAgent(
+          diff: _diffWithTwoChanges(draft),
+          acceptGate: gate.future,
+        );
+        await tester.pumpWidget(
+          _wrap(
+            RefinePage(draft: draft),
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+          ),
+        );
+        await tester.pump();
+
+        _setWideSurface(tester);
+        final notifier = _readNotifier(tester, draft);
+        notifier.beginListening(resetTranscript: true);
+        await notifier.finishWithTranscript('please rearrange');
+        await tester.pump();
+
+        final messages = tester.element(find.byType(RefinePage)).messages;
+        final revert = find.widgetWithText(
+          TextButton,
+          messages.dailyOsNextRefineRevert,
+        );
+        expect(tester.widget<TextButton>(revert).onPressed, isNotNull);
+
+        unawaited(notifier.acceptChange('chg_move'));
+        await tester.pump();
+        expect(tester.widget<TextButton>(revert).onPressed, isNull);
+
+        gate.complete();
+        await tester.pump();
+        await tester.pump();
+        expect(tester.widget<TextButton>(revert).onPressed, isNotNull);
+        expect(agent.revertIndices, isNull);
+      },
+    );
+
+    testWidgets(
       'tap revert action button reverts all pending indices and returns to idle',
       (tester) async {
         final draft = _emptyPlan();
@@ -885,6 +927,79 @@ void main() {
       expect(agent.capturedDiff, same(diff));
       expect(agent.acceptIndices, [0]);
       expect(find.byType(RefineModalContent), findsNothing);
+    });
+
+    testWidgets('thinking dims the words it is working on until the diff '
+        'lands', (tester) async {
+      final draft = _emptyPlan();
+      final gate = Completer<void>();
+      final agent = RecordingDayAgent(
+        diff: _diffWithTwoChanges(draft),
+        proposeGate: gate.future,
+      );
+      await tester.pumpWidget(
+        _wrap(
+          Scaffold(body: RefineModalContent(draft: draft)),
+          overrides: [dayAgentProvider.overrideWithValue(agent)],
+        ),
+      );
+      await tester.pump();
+
+      final notifier = ProviderScope.containerOf(
+        tester.element(find.byType(RefineModalContent)),
+      ).read(refineControllerProvider(draft).notifier);
+      // A reviewed transcript submitted for a proposal keeps its words on
+      // screen while the agent thinks.
+      notifier.reviewTranscript('rearrange the morning');
+      unawaited(notifier.submitReviewedTranscript());
+      await tester.pump();
+
+      final dimmed = tester.widget<AnimatedOpacity>(
+        find.ancestor(
+          of: find.text('rearrange the morning'),
+          matching: find.byType(AnimatedOpacity),
+        ),
+      );
+      expect(dimmed.opacity, 0.55);
+      expect(find.byType(DiffRow), findsNothing);
+
+      gate.complete();
+      await tester.pump();
+      await tester.pump();
+      expect(find.byType(DiffRow), findsNWidgets(2));
+    });
+
+    testWidgets('rejecting one proposed change reverts exactly that change', (
+      tester,
+    ) async {
+      final draft = _emptyPlan();
+      final agent = RecordingDayAgent(diff: _diffWithTwoChanges(draft));
+      await tester.pumpWidget(
+        _wrap(
+          Scaffold(body: RefineModalContent(draft: draft)),
+          overrides: [dayAgentProvider.overrideWithValue(agent)],
+        ),
+      );
+      await tester.pump();
+
+      final element = tester.element(find.byType(RefineModalContent));
+      await ProviderScope.containerOf(element)
+          .read(refineControllerProvider(draft).notifier)
+          .finishWithTranscript('please rearrange');
+      await tester.pump();
+
+      await _tap(
+        tester,
+        find
+            .descendant(
+              of: find.byType(DiffRow).at(1),
+              matching: find.text(element.messages.changeSetSwipeReject),
+            )
+            .first,
+      );
+
+      expect(agent.revertIndices, [1]);
+      expect(agent.acceptIndices, isNull);
     });
   });
 

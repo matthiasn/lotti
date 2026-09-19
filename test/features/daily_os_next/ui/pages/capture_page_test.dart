@@ -15,6 +15,7 @@ import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/reconcile_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/edge_fade.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
@@ -1258,6 +1259,46 @@ void main() {
         },
       );
     }
+
+    testWidgets('past the hide-header text scale the whole capture body, orb '
+        'included, scrolls under a top-edge fade', (tester) async {
+      Future<void> pumpAt(double textScale) async {
+        const size = Size(375, 700);
+        await tester.pumpWidget(
+          _wrap(
+            SizedBox(
+              width: size.width,
+              height: size.height,
+              child: const CaptureModalContent(),
+            ),
+            overrides: [
+              captureControllerProvider.overrideWith(
+                _StubCaptureController.factory(
+                  phasesWithStates[CapturePhase.idle]!,
+                ),
+              ),
+            ],
+            mediaQueryData: MediaQueryData(
+              size: size,
+              textScaler: TextScaler.linear(textScale),
+            ),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+      }
+
+      final fadedOrb = find.ancestor(
+        of: find.byKey(VoiceButton.coreButtonKey),
+        matching: find.byType(EdgeFade),
+      );
+
+      await pumpAt(1.3);
+      expect(fadedOrb, findsNothing);
+
+      await pumpAt(2);
+      expect(fadedOrb, findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('capturedAtForSelectedDate', () {

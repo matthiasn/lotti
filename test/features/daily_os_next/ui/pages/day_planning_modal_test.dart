@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
@@ -7,6 +8,7 @@ import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
+import 'package:lotti/features/daily_os_next/state/refine_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_planning_modal.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_planning_result.dart';
@@ -21,6 +23,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
+import '../../test_utils.dart';
 
 /// Minimal capture controller that pins a fixed [CaptureState] so the modal
 /// renders deterministically without the recorder/transcription stack.
@@ -726,6 +729,95 @@ void main() {
         findsOneWidget,
       );
       expect(find.text(messages.dailyOsNextRefineTitle), findsNothing);
+    });
+  });
+
+  group('showDayPlanningModal — adapt (refine) revert pill', () {
+    const focus = DayAgentCategory(
+      id: 'cat_focus',
+      name: 'Focus',
+      colorHex: '0080FF',
+    );
+
+    testWidgets('is disabled while a row decision is in flight', (
+      tester,
+    ) async {
+      final draft = DraftPlan.emptyForDay(DateTime(2024, 3, 15));
+      final gate = Completer<void>();
+      final agent = RecordingDayAgent(
+        diff: PlanDiff(
+          id: 'diff_1',
+          // Two changes, so resolving one leaves the diff open.
+          changes: const [
+            PlanDiffChange(
+              id: 'chg_move',
+              kind: PlanDiffChangeKind.moved,
+              title: 'Move focus block',
+              category: focus,
+              reason: 'pushes deep work past the standup',
+            ),
+            PlanDiffChange(
+              id: 'chg_add',
+              kind: PlanDiffChangeKind.added,
+              title: 'Add review slot',
+              category: focus,
+              reason: 'adds a wrap-up',
+            ),
+          ],
+          updatedPlan: draft,
+        ),
+        acceptGate: gate.future,
+      );
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Builder(
+            builder: (context) => Center(
+              child: ElevatedButton(
+                onPressed: () => showDayPlanningModal(
+                  context: context,
+                  dayDate: draft.dayDate,
+                  intent: DayPlanningAdapt(draft),
+                ),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+          mediaQueryData: const MediaQueryData(size: Size(420, 900)),
+          overrides: [
+            captureControllerProvider.overrideWith(
+              () => _FakeCaptureController(const CaptureState.idle()),
+            ),
+            dayAgentProvider.overrideWithValue(agent),
+          ],
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final notifier = ProviderScope.containerOf(
+        tester.element(find.byType(RefineModalContent)),
+      ).read(refineControllerProvider(draft).notifier);
+      await (notifier..beginListening(resetTranscript: true))
+          .finishWithTranscript('add a wrap-up');
+      await tester.pump();
+
+      final messages = _l10n(tester);
+      bool revertEnabled() => tester
+          .widget<DsGlassPill>(
+            find.widgetWithText(DsGlassPill, messages.dailyOsNextRefineRevert),
+          )
+          .enabled;
+      expect(revertEnabled(), isTrue);
+
+      unawaited(notifier.acceptChange('chg_move'));
+      await tester.pump();
+      expect(revertEnabled(), isFalse);
+
+      gate.complete();
+      await tester.pump();
+      await tester.pump();
+      expect(revertEnabled(), isTrue);
     });
   });
 

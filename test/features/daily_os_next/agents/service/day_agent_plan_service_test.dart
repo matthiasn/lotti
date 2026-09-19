@@ -1782,6 +1782,53 @@ void main() {
         );
       });
 
+      test("a same-day diff may restate a started block's own start but "
+          'not move work into the past', () async {
+        seedPlan();
+        final noon = DateTime(2026, 5, 25, 12);
+
+        // block-1 began at 09:00; stretching its end keeps that start.
+        final extended = await withClock(Clock.fixed(noon), () {
+          return createService().proposePlanDiff(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            dayId: _dayId,
+            rawChanges: [
+              movedChange(
+                toStart: DateTime(2026, 5, 25, 9),
+                toEnd: DateTime(2026, 5, 25, 13),
+              ),
+            ],
+          );
+        });
+        expect(extended.items.single.toolName, 'move_block');
+
+        await expectLater(
+          withClock(Clock.fixed(noon), () {
+            return createService().proposePlanDiff(
+              agentId: _agentId,
+              threadId: _threadId,
+              runKey: _runKey,
+              dayId: _dayId,
+              rawChanges: [
+                movedChange(
+                  toStart: DateTime(2026, 5, 25, 10),
+                  toEnd: DateTime(2026, 5, 25, 13),
+                ),
+              ],
+            );
+          }),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('must not start before current time'),
+            ),
+          ),
+        );
+      });
+
       test('rejects timestamps outside the plan day', () async {
         seedPlan();
         await expectLater(

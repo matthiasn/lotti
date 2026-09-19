@@ -206,4 +206,87 @@ void main() {
 
     expect(offer, isNull);
   });
+
+  test('links a measurable nested under any-of and at-least-count '
+      'composites', () {
+    AgentChatMessage message(String id) => AgentChatMessage(
+      id: id,
+      role: AgentChatRole.user,
+      text: 'I read 12 pages today.',
+      createdAt: now,
+    );
+    const habit = GoalCriterion.habit(
+      criterionId: 'walk',
+      habitId: 'walk',
+      window: GoalWindow.rollingDays(count: 7),
+      targetCount: 4,
+    );
+    for (final criteria in const [
+      GoalCriterion.anyOf(criterionId: 'any', criteria: [habit, linked]),
+      GoalCriterion.atLeastCount(
+        criterionId: 'two-of',
+        criteria: [habit, linked],
+        successes: 1,
+      ),
+    ]) {
+      final offer = parseGoalMeasurableRecordOffer(
+        message: message(criteria.criterionId),
+        criteria: criteria,
+        measurables: [pages],
+        reference: now,
+        recentDayLabels: const {},
+      );
+
+      expect(offer?.dataTypeId, 'pages', reason: criteria.criterionId);
+      expect(offer!.items.single.value, 12);
+    }
+  });
+
+  test('a unit without a trailing s also matches its plural form', () {
+    final distance = pages.copyWith(
+      id: 'distance',
+      displayName: 'Distance',
+      unitName: 'km',
+    );
+    const criteria = GoalCriterion.measurable(
+      criterionId: 'running',
+      dataTypeId: 'distance',
+      window: GoalWindow.rollingDays(count: 7),
+      aggregation: GoalAggregation.sum,
+      target: 20,
+    );
+    GoalMeasurableRecordOffer? parse(String text) =>
+        parseGoalMeasurableRecordOffer(
+          message: AgentChatMessage(
+            id: text,
+            role: AgentChatRole.user,
+            text: text,
+            createdAt: now,
+          ),
+          criteria: criteria,
+          measurables: [distance],
+          reference: now,
+          recentDayLabels: const {},
+        );
+
+    expect(parse('Ran 5 km this morning')?.items.single.value, 5);
+    expect(parse('Ran 7,5 kms this morning')?.items.single.value, 7.5);
+    expect(parse('Ran 5 kmh this morning'), isNull);
+  });
+
+  test('copyWith replaces only the value and keeps day and estimate', () {
+    final item = GoalMeasurableRecordItem(
+      day: DateTime.utc(2026, 8, 12),
+      value: 20,
+      estimated: true,
+    );
+
+    final edited = item.copyWith(value: 25);
+    final unchanged = item.copyWith();
+
+    expect(edited.value, 25);
+    expect(edited.day, item.day);
+    expect(edited.estimated, isTrue);
+    expect(unchanged.value, 20);
+  });
 }

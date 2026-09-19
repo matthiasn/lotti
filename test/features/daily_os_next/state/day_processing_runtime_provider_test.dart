@@ -457,4 +457,26 @@ void main() {
       dayAgentIdForDate(DateTime(2026, 11, 3)),
     );
   });
+
+  test('drains the transcription and agent lanes as separate passes and '
+      'sums what they processed', () async {
+    final processor = MockDayProcessingOutboxProcessor();
+    final drainedLanes = <Set<DayProcessingJobKind>?>[];
+    when(
+      () => processor.drain(kinds: any(named: 'kinds')),
+    ).thenAnswer((invocation) async {
+      final kinds =
+          invocation.namedArguments[#kinds] as Set<DayProcessingJobKind>?;
+      drainedLanes.add(kinds);
+      return kinds!.contains(DayProcessingJobKind.transcribeAudio) ? 2 : 3;
+    });
+
+    final processed = await drainDayProcessingLanes(processor);
+
+    expect(drainedLanes, [
+      {DayProcessingJobKind.transcribeAudio},
+      dayAgentJobKinds,
+    ]);
+    expect(processed, 5);
+  });
 }

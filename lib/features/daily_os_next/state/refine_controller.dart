@@ -225,9 +225,13 @@ class RefineController extends Notifier<RefineState> {
 
   Future<void> revert() async {
     final diff = state.diff;
-    // `accepting` guard: a revert racing a whole-diff accept would make
-    // `currentPlan` last-write-wins between two agent round-trips.
-    if (diff == null || state.accepting) return;
+    // `accepting` / `resolvingChangeId` guard: a revert racing a whole-diff
+    // accept or a per-row resolve would make `currentPlan` last-write-wins
+    // between two agent round-trips — the late row result would land on a
+    // cleared diff and leave diffReady with nothing to review.
+    if (diff == null || state.accepting || state.resolvingChangeId != null) {
+      return;
+    }
     final agent = ref.read(dayAgentProvider);
     final itemIndices = _indicesForDecision(PlanDiffChangeDecision.pending);
     final restored = await agent.revertDiff(

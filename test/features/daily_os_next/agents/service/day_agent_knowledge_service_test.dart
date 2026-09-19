@@ -147,6 +147,24 @@ void main() {
       );
       // Trimmed, empties dropped, case-insensitive dedup keeps first-seen.
       expect(entry.tags, const ['mornings', 'deep-work']);
+
+      final longTag = 'penguin-logistics-${'x' * 40}';
+      final capped = await service.propose(
+        agentId: agentId,
+        key: 'k2',
+        hook: 'h',
+        statement: 's',
+        tags: [
+          longTag,
+          // Differs only past the 40-character cap, so it collapses into
+          // the first once both are truncated.
+          '${longTag}y',
+          for (var i = 0; i < 10; i++) 'tag-$i',
+        ],
+      );
+      expect(capped.tags.first, longTag.substring(0, 40));
+      expect(capped.tags, hasLength(8));
+      expect(capped.tags.skip(1), [for (var i = 0; i < 7; i++) 'tag-$i']);
     });
 
     test('rejects a malformed scope at the public choke point', () async {
