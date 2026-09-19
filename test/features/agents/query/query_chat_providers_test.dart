@@ -38,6 +38,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
+import '../../ai_consumption/test_utils.dart';
 import '../../projects/test_utils.dart';
 import '../test_data/ai_config_factories.dart';
 import '../test_data/entity_factories.dart';
@@ -305,6 +306,9 @@ void main() {
           final bench = QueryPersistenceBench()
             ..add('task', category: categoryMindfulness.id);
           addTearDown(bench.close);
+          final attribution = AiInteractionCaptureTestBench.create()
+            ..register();
+          addTearDown(attribution.unregister);
           final fts = Fts5Db(inMemoryDatabase: true);
           getIt.registerSingleton<Fts5Db>(fts);
           addTearDown(fts.close);
@@ -449,6 +453,10 @@ void main() {
             ),
             {'passages': <Object>[]},
           );
+          // A registered capture boundary records the query's model call.
+          final captured = attribution.recordedInteractions.single;
+          expect(captured.agentId, 'agent');
+          expect(captured.threadId, 'chat');
           final id = await container
               .read(queryChatStoreProvider)
               .create('agent', scope, 'Feeder');

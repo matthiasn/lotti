@@ -1769,6 +1769,63 @@ turn task metadata or a checklist edit into an accomplishment.
     },
   );
 
+  test(
+    'editor withholds the rejected report when narration was invented from '
+    'an unperformed request',
+    () async {
+      const draft = TaskAgentReportDraft(
+        oneLiner: 'Certificate rotation underway; awaiting Security',
+        tldr: 'Rotation is in progress while awaiting the certificate.',
+        content: 'Rotation is actively underway. Awaiting Security.',
+      );
+      final inferenceRepository = _QueuedInferenceRepository([
+        [
+          _toolCalls([
+            (
+              name: TaskAgentToolNames.updateReport,
+              argumentsJson: jsonEncode({
+                'oneLiner': 'Request the replacement certificate',
+                'tldr': 'Request the Security certificate, then rotate it.',
+                'content':
+                    'Request the replacement certificate from Security, then '
+                    'rotate the certificate.',
+              }),
+            ),
+          ]),
+        ],
+      ]);
+
+      final result =
+          await _createEditor(
+            provider: provider,
+            inferenceRepository: inferenceRepository,
+          ).edit(
+            draft: draft,
+            languageCode: 'en',
+            materialTaskState: const {
+              'newChecklistItems': [
+                'Request replacement certificate from Security',
+                'Rotate certificate and verify webhook deliveries',
+              ],
+            },
+            reportDirective: evolvedReportDirective,
+            initialValidationIssues: const {
+              TaskAgentReportRevisionIssue.processNarration,
+            },
+          );
+
+      expect(result.revision, isNotNull);
+      final messages = jsonEncode(
+        inferenceRepository.requests.single.messages
+            .map((message) => message.toJson())
+            .toList(),
+      ).toLowerCase();
+      expect(messages, contains('requiredcorrections'));
+      expect(messages, isNot(contains('rejectedreport')));
+      expect(messages, isNot(contains('awaiting security')));
+    },
+  );
+
   test('editor removes invented request state from its repair input', () async {
     const draft = TaskAgentReportDraft(
       oneLiner: 'Certificate rotation underway; awaiting Security',

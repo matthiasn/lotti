@@ -2342,6 +2342,76 @@ void main() {
       });
     });
 
+    test(
+      'restoreSubscriptions reports a per-agent failure to the domain logger '
+      'and keeps restoring the rest',
+      () async {
+        final logger = MockDomainLogger();
+        final loggedService = ProjectAgentService(
+          agentService: mockAgentService,
+          repository: mockRepository,
+          orchestrator: mockOrchestrator,
+          syncService: mockSyncService,
+          projectScopeIsCurrent: (_, _) async => true,
+          mutationCoordinator: ProjectAgentMutationCoordinator(),
+          domainLogger: logger,
+        );
+        AgentLink linkFor(String agentId) => AgentLink.agentProject(
+          id: 'link-$agentId',
+          fromId: agentId,
+          toId: 'project-$agentId',
+          createdAt: kAgentTestDate,
+          updatedAt: kAgentTestDate,
+          vectorClock: null,
+        );
+        when(
+          () => mockAgentService.listAgents(lifecycle: AgentLifecycle.active),
+        ).thenAnswer(
+          (_) async => [
+            makeIdentity(agentId: 'pa-iceberg'),
+            makeIdentity(agentId: 'pa-waddle'),
+          ],
+        );
+        when(
+          () => mockRepository.getLinksFromMultiple(
+            ['pa-iceberg', 'pa-waddle'],
+            type: AgentLinkTypes.agentProject,
+          ),
+        ).thenAnswer(
+          (_) async => {
+            'pa-iceberg': [linkFor('pa-iceberg')],
+            'pa-waddle': [linkFor('pa-waddle')],
+          },
+        );
+        var registrations = 0;
+        when(() => mockOrchestrator.addSubscription(any())).thenAnswer((_) {
+          if (registrations++ == 0) {
+            throw StateError('runtime registration failed');
+          }
+        });
+
+        await loggedService.restoreSubscriptions();
+
+        verify(
+          () => logger.error(
+            LogDomain.agentRuntime,
+            any<Object>(that: isA<StateError>()),
+            message:
+                'failed to restore runtime state '
+                'for ${DomainLogger.sanitizeId('pa-iceberg')}',
+            stackTrace: any(named: 'stackTrace'),
+          ),
+        ).called(1);
+        verify(
+          () => logger.log(
+            LogDomain.agentRuntime,
+            'restored 1 project agent(s)',
+            subDomain: 'restore',
+          ),
+        ).called(1);
+      },
+    );
+
     group('null domainLogger fallback', () {
       test(
         'restoreSubscriptions logs to developer.log when domainLogger is null',

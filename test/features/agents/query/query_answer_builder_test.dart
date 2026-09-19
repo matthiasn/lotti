@@ -111,6 +111,146 @@ void main() {
     },
   );
 
+  test(
+    'a source-kind request in a task chat without action context skips the '
+    'summaries and inspects original sources',
+    () async {
+      final bench = QueryTestBench()..add('task');
+      final reports = MockAgentRepository();
+      final systems = <String>[];
+      final result =
+          await QueryAnswerBuilder(
+            maxBatchBytes: 1,
+            crawler: bench.crawler,
+            access: bench.crawler.access,
+            summaryReader: QuerySummaryReader(
+              journal: bench.db,
+              access: bench.crawler.access,
+              repository: reports,
+            ),
+            inference: QueryTextInference(
+              generate: (system, _) {
+                systems.add(system);
+                return Stream.value(
+                  system.contains('Rephrase')
+                      ? '{}'
+                      : jsonEncode({
+                          'answer': 'No recording mentions the feeder.',
+                          'conclusion': '',
+                        }),
+                );
+              },
+            ),
+          ).build(
+            chat: chat,
+            question: question,
+            memories: const [],
+            kind: QuerySourceKind.recording,
+            cancellation: QueryCancellation(),
+            onProgress: (_, {required expanded}) {},
+          );
+      expect(
+        systems.where((s) => s.startsWith('Task-summary orientation.')),
+        isEmpty,
+      );
+      verifyZeroInteractions(reports);
+      expect(result.answer.summaryBased, isFalse);
+      expect(result.answer.text, 'No recording mentions the feeder.');
+    },
+  );
+
+  test(
+    'a category chat with a summary reader keeps only history whose sources '
+    'belong to the category',
+    () async {
+      final bench = QueryTestBench()
+        ..add('colony-note', category: categoryMindfulness.id)
+        ..add('loose-note');
+      final access = await bench.crawler.access.load([
+        'colony-note',
+        'loose-note',
+      ]);
+      final reports = MockAgentRepository();
+      when(
+        () => reports.getLatestTaskReportsForTaskIds(any()),
+      ).thenAnswer((_) async => {});
+      final conversations = <Object?>[];
+      final categoryChat = QueryChatHistory(
+        id: 'chat',
+        scope: QueryScope(
+          kind: QueryScopeKind.category,
+          id: categoryMindfulness.id,
+        ),
+        title: 'Colony',
+        private: false,
+        archived: false,
+        lastActivity: date,
+        unread: false,
+        events: [
+          question.copyWith(
+            id: 'in-category-question',
+            createdAt: date.subtract(const Duration(minutes: 2)),
+            data: QueryChatQuestion(
+              text: 'What did the colony note say?',
+              dependencies: [access.reference(access.entries['colony-note']!)],
+            ),
+          ),
+          question.copyWith(
+            id: 'outside-category-answer',
+            createdAt: date.subtract(const Duration(minutes: 1)),
+            data: QueryChatAnswer(
+              questionId: 'in-category-question',
+              text: 'An uncategorized note said otherwise.',
+              coverage: const QueryCoverage(),
+              dependencies: [access.reference(access.entries['loose-note']!)],
+            ),
+          ),
+          question,
+        ],
+      );
+      await QueryAnswerBuilder(
+        crawler: bench.crawler,
+        access: bench.crawler.access,
+        summaryReader: QuerySummaryReader(
+          journal: bench.db,
+          access: bench.crawler.access,
+          repository: reports,
+        ),
+        inference: QueryTextInference(
+          generate: (system, prompt) {
+            final input = jsonDecode(prompt) as Map<String, dynamic>;
+            conversations.add(input['conversation']);
+            return Stream.value(
+              jsonEncode(
+                system.startsWith('Task-summary orientation.')
+                    ? {
+                        'taskIds': <String>[],
+                        'useProject': false,
+                        'needsHomeEvidence': false,
+                      }
+                    : {
+                        'answer': 'No summary covers that.',
+                        'ownerIds': <String>[],
+                        'unresolved': true,
+                      },
+              ),
+            );
+          },
+        ),
+      ).build(
+        chat: categoryChat,
+        question: question,
+        memories: const [],
+        cancellation: QueryCancellation(),
+        onProgress: (_, {required expanded}) {},
+      );
+      expect(conversations.first, [
+        {'role': 'user', 'text': 'What did the colony note say?'},
+        {'role': 'user', 'text': 'What was decided?'},
+      ]);
+    },
+  );
+
   for (final sourceKind in <QuerySourceKind?>[
     null,
     QuerySourceKind.recording,
