@@ -659,4 +659,29 @@ void main() {
       expect((await deletionArrives).projection.chats, isEmpty);
     }),
   );
+  for (final enabled in [true, false]) {
+    test('a scope pane opens only while query chat is enabled '
+        '(enabled=$enabled)', () {
+      const scope = QueryScope(kind: QueryScopeKind.task, id: 'task-waddle');
+      final container = ProviderContainer(
+        overrides: [queryChatEnabledProvider.overrideWithValue(enabled)],
+      );
+      addTearDown(container.dispose);
+      final pane = container.read(queryPaneOpenProvider(scope).notifier);
+      expect(pane.open, isFalse);
+
+      pane.open = true;
+
+      expect(pane.open, enabled);
+      expect(container.read(queryPaneOpenProvider(scope)), enabled);
+      expect(
+        container.read(
+          queryPaneOpenProvider(
+            const QueryScope(kind: QueryScopeKind.task, id: 'other-task'),
+          ),
+        ),
+        isFalse,
+      );
+    });
+  }
 }

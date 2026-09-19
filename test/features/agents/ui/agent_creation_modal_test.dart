@@ -121,45 +121,56 @@ void main() {
     expect(find.text('Template 1'), findsOneWidget);
   });
 
-  testWidgets('day-agent templates use the localized day-agent label', (
-    tester,
-  ) async {
-    final resultNotifier = ValueNotifier<AgentCreationResult?>(null);
-    final templates = [
-      makeTestTemplate(
-        id: 'day-template',
-        agentId: 'day-template',
-        displayName: 'Shepherd',
-        kind: AgentTemplateKind.dayAgent,
-      ),
-      makeTestTemplate(
-        id: 'task-template',
-        agentId: 'task-template',
-        displayName: 'Task Agent',
-      ),
-    ];
+  final kindLabels = <AgentTemplateKind, String Function(BuildContext)>{
+    AgentTemplateKind.dayAgent: (c) => c.messages.agentTemplateKindDayAgent,
+    AgentTemplateKind.eventAgent: (c) => c.messages.agentTemplateKindEventAgent,
+    AgentTemplateKind.projectAgent: (c) =>
+        c.messages.agentTemplateKindProjectAgent,
+    AgentTemplateKind.templateImprover: (c) =>
+        c.messages.agentTemplateKindImprover,
+  };
+  for (final MapEntry(key: kind, value: label) in kindLabels.entries) {
+    testWidgets('${kind.name} templates use their localized kind label', (
+      tester,
+    ) async {
+      final resultNotifier = ValueNotifier<AgentCreationResult?>(null);
+      final templates = [
+        makeTestTemplate(
+          id: 'kind-template',
+          agentId: 'kind-template',
+          displayName: 'Shepherd',
+          kind: kind,
+        ),
+        makeTestTemplate(
+          id: 'task-template',
+          agentId: 'task-template',
+          displayName: 'Feeder watcher',
+        ),
+      ];
 
-    await tester.pumpWidget(
-      _buildSubject(
-        profiles: [testInferenceProfile()],
-        resultNotifier: resultNotifier,
-        templates: templates,
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpWidget(
+        _buildSubject(
+          profiles: [testInferenceProfile()],
+          resultNotifier: resultNotifier,
+          templates: templates,
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
-    await tester.tap(find.text('Open Modal'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('Open Modal'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
-    final context = tester.element(find.byType(ElevatedButton));
-    expect(find.text('Shepherd'), findsOneWidget);
-    expect(
-      find.text(context.messages.agentTemplateKindDayAgent),
-      findsOneWidget,
-    );
-  });
+      final context = tester.element(find.byType(ElevatedButton));
+      expect(find.text('Shepherd'), findsOneWidget);
+      expect(find.text(label(context)), findsOneWidget);
+      expect(
+        find.text(context.messages.agentTemplateKindTaskAgent),
+        findsOneWidget,
+      );
+    });
+  }
 
   testWidgets('single template auto-skips to profile page', (tester) async {
     final resultNotifier = ValueNotifier<AgentCreationResult?>(null);

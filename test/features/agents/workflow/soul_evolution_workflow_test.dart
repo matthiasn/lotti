@@ -928,6 +928,70 @@ void main() {
       expect(workflow.activeSessions, isEmpty);
     });
 
+    test('approval takes proposed fields and keeps the current ones the '
+        'proposal left blank', () async {
+      stubSoulContext();
+      when(() => mockSoulService.getActiveSoulVersion(any())).thenAnswer(
+        (_) async => makeTestSoulDocumentVersion(
+          voiceDirective: 'Speak like a calm colony elder.',
+          toneBounds: 'Never sarcastic.',
+          coachingStyle: 'Lecture at length.',
+          antiSycophancyPolicy: 'Praise everything.',
+        ),
+      );
+      when(
+        () => mockSoulService.createVersion(
+          soulId: any(named: 'soulId'),
+          voiceDirective: any(named: 'voiceDirective'),
+          authoredBy: any(named: 'authoredBy'),
+          toneBounds: any(named: 'toneBounds'),
+          coachingStyle: any(named: 'coachingStyle'),
+          antiSycophancyPolicy: any(named: 'antiSycophancyPolicy'),
+          sourceSessionId: any(named: 'sourceSessionId'),
+        ),
+      ).thenAnswer(
+        (_) async => makeTestSoulDocumentVersion(id: 'v2', version: 2),
+      );
+      when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
+
+      final workflow = buildSoulWorkflow();
+      await workflow.startSoulSession(soulId: kTestSoulId);
+      final session = workflow.activeSessions.values.first;
+      await session.strategy.processToolCalls(
+        toolCalls: [
+          const ChatCompletionMessageToolCall(
+            id: 'call-1',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'propose_soul_directives',
+              arguments:
+                  '{"coaching_style":"Ask one question at a time.", '
+                  '"anti_sycophancy_policy":"Name weak plans plainly.", '
+                  '"rationale":"Penguins felt lectured."}',
+            ),
+          ),
+        ],
+        manager: ConversationManager(maxTurns: 1)..initialize(),
+      );
+
+      final result = await workflow.completeSoulSession(
+        sessionId: session.sessionId,
+      );
+
+      expect(result?.version, 2);
+      verify(
+        () => mockSoulService.createVersion(
+          soulId: kTestSoulId,
+          voiceDirective: 'Speak like a calm colony elder.',
+          authoredBy: any(named: 'authoredBy'),
+          toneBounds: 'Never sarcastic.',
+          coachingStyle: 'Ask one question at a time.',
+          antiSycophancyPolicy: 'Name weak plans plainly.',
+          sourceSessionId: session.sessionId,
+        ),
+      ).called(1);
+    });
+
     test('returns null when no soul proposal pending', () async {
       stubSoulContext();
       final workflow = buildSoulWorkflow();

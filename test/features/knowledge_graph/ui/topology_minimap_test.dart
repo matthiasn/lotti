@@ -28,6 +28,23 @@ void main() {
     expect(transform.toLocal(const Offset(100, 50)).dx, lessThanOrEqualTo(208));
   });
 
+  test('fitting the same topology twice yields one value-equal transform', () {
+    TopologyTransform fit() => TopologyTransform.fit(
+      positions: const {'a': Offset(-40, 10), 'b': Offset(60, -20)},
+      size: const Size(220, 140),
+      inset: 12,
+    );
+    final first = fit();
+    final second = fit();
+    const moved = TopologyTransform(scale: 1, offset: Offset(3, 4));
+
+    expect(identical(first, second), isFalse);
+    expect(first, second);
+    expect(first.hashCode, second.hashCode);
+    expect({first, second, moved}, hasLength(2));
+    expect(first == moved, isFalse);
+  });
+
   test('empty topology centers the transform and has no nearest node', () {
     final transform = TopologyTransform.fit(
       positions: const {},

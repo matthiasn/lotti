@@ -92,6 +92,25 @@ void main() {
       expect(find.byIcon(LottiIcons.pending), findsOneWidget);
     });
 
+    testWidgets('the waiting pulse stops once the reply arrives and restarts '
+        'for the next wait', (tester) async {
+      await tester.pumpWidget(buildSubject(isWaiting: true));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(tester.hasRunningAnimations, isTrue);
+
+      await tester.pumpWidget(buildSubject());
+      // Settling only completes when the repeating pulse has been stopped.
+      await tester.pumpAndSettle();
+      expect(tester.hasRunningAnimations, isFalse);
+      expect(find.byIcon(LottiIcons.pending), findsNothing);
+      expect(find.byIcon(LottiIcons.mic), findsOneWidget);
+
+      await tester.pumpWidget(buildSubject(isWaiting: true));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(tester.hasRunningAnimations, isTrue);
+      expect(find.byIcon(LottiIcons.pending), findsOneWidget);
+    });
+
     testWidgets('text field is disabled when not enabled', (tester) async {
       await tester.pumpWidget(buildSubject(enabled: false));
       await tester.pumpAndSettle();

@@ -298,6 +298,29 @@ void main() {
     );
   });
 
+  group('getActiveSoulVersion', () {
+    test(
+      'returns the head version for the soul, or null without one',
+      () async {
+        final version = makeTestSoulDocumentVersion(
+          voiceDirective: 'Speak like a calm colony elder.',
+        );
+        when(
+          () => mockRepo.getActiveSoulDocumentVersion(kTestSoulId),
+        ).thenAnswer((_) async => version);
+        when(
+          () => mockRepo.getActiveSoulDocumentVersion('soul-missing'),
+        ).thenAnswer((_) async => null);
+
+        final active = await service.getActiveSoulVersion(kTestSoulId);
+        final missing = await service.getActiveSoulVersion('soul-missing');
+
+        expect(active?.voiceDirective, 'Speak like a calm colony elder.');
+        expect(missing, isNull);
+      },
+    );
+  });
+
   group('resolveActiveSoulForTemplate', () {
     test('returns null when no soul assigned', () async {
       when(

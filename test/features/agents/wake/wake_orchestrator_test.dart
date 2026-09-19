@@ -361,6 +361,75 @@ void main() {
       );
 
       test(
+        'stale signals arriving during a repository write coalesce into one '
+        'follow-up write of the latest time',
+        () async {
+          var now = DateTime(2026, 7, 16, 9, 30);
+          var state =
+              AgentDomainEntity.agentState(
+                    id: 'state-1',
+                    agentId: 'agent-1',
+                    slots: const AgentSlots(activeTaskId: 'entity-1'),
+                    updatedAt: DateTime(2026, 7, 16, 9),
+                    vectorClock: null,
+                  )
+                  as AgentStateEntity;
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+          final writes = <DateTime?>[];
+          final firstWrite = Completer<void>();
+          when(() => mockRepository.upsertEntity(any())).thenAnswer((
+            invocation,
+          ) async {
+            final written =
+                invocation.positionalArguments.single as AgentStateEntity;
+            writes.add(written.reportStaleAt);
+            if (writes.length == 1) await firstWrite.future;
+            state = written;
+          });
+          // No sync writer: the router falls back to a direct repository
+          // upsert.
+          orchestrator =
+              WakeOrchestrator(
+                  repository: mockRepository,
+                  queue: queue,
+                  runner: runner,
+                )
+                ..disableAutomaticUpdatesRuntime('agent-1')
+                ..addSubscription(makeSub());
+          final controller = StreamController<Set<String>>.broadcast();
+
+          await withClock(Clock(() => now), () async {
+            await orchestrator.start(controller.stream);
+            controller.add({'entity-1'});
+            await pumpEventQueue();
+            expect(writes, [DateTime(2026, 7, 16, 9, 30)]);
+
+            now = DateTime(2026, 7, 16, 9, 31);
+            controller.add({'entity-1'});
+            await pumpEventQueue();
+            now = DateTime(2026, 7, 16, 9, 32);
+            controller.add({'entity-1'});
+            await pumpEventQueue();
+            // Both later signals wait behind the in-flight write.
+            expect(writes, hasLength(1));
+
+            firstWrite.complete();
+            await pumpEventQueue();
+          });
+
+          expect(queue.isEmpty, isTrue);
+          expect(writes, [
+            DateTime(2026, 7, 16, 9, 30),
+            DateTime(2026, 7, 16, 9, 32),
+          ]);
+          expect(state.reportStaleAt, DateTime(2026, 7, 16, 9, 32));
+          await controller.close();
+        },
+      );
+
+      test(
         'a stale-only subscription persists freshness without queueing work',
         () async {
           final signalAt = DateTime(2026, 8, 12, 18, 30);
@@ -737,6 +806,64 @@ void main() {
           expect(state.isReportStale, isFalse);
         },
       );
+
+      for (final (label, persistedFreshAt, expectWrite) in [
+        ('an older fresh mark is advanced', DateTime(2026, 7, 16, 8, 30), true),
+        ('a newer fresh mark is kept', DateTime(2026, 7, 16, 9, 5), false),
+      ]) {
+        test('a manual refresh without a sync writer: $label', () async {
+          final refreshStartedAt = DateTime(2026, 7, 16, 9);
+          final state =
+              AgentDomainEntity.agentState(
+                    id: 'state-1',
+                    agentId: 'agent-1',
+                    slots: const AgentSlots(activeTaskId: 'entity-1'),
+                    updatedAt: DateTime(2026, 7, 16, 8, 59),
+                    vectorClock: null,
+                    reportStaleAt: DateTime(2026, 7, 16, 8, 59),
+                    reportFreshAt: persistedFreshAt,
+                  )
+                  as AgentStateEntity;
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+          when(
+            () => mockRepository.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            wakeExecutor: noOpExecutor,
+          );
+          queue.enqueue(
+            WakeJob(
+              runKey: 'manual-refresh',
+              agentId: 'agent-1',
+              reason: WakeReason.reanalysis.name,
+              initiator: WakeInitiator.user,
+              triggerTokens: const {},
+              createdAt: refreshStartedAt,
+            ),
+          );
+
+          await withClock(
+            Clock.fixed(refreshStartedAt),
+            orchestrator.processNext,
+          );
+
+          if (expectWrite) {
+            final written =
+                verify(
+                      () => mockRepository.upsertEntity(captureAny()),
+                    ).captured.single
+                    as AgentStateEntity;
+            expect(written.reportFreshAt, refreshStartedAt);
+          } else {
+            verifyNever(() => mockRepository.upsertEntity(any()));
+          }
+        });
+      }
 
       test(
         'successful maintenance wake keeps a standing report stale when no '

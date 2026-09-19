@@ -426,6 +426,69 @@ void main() {
     );
 
     test(
+      'a cancellation requested while an older batch waits in line rejects '
+      'it before the cancellation itself has run',
+      () async {
+        final coordinator = ProjectActivityCancellationCoordinator();
+        await coordinator.runCancellation<void>(
+          agentId: 'agent-1',
+          action: (_) async {},
+        );
+        final blockingObserved = coordinator.captureActivity();
+        final waitingObserved = coordinator.captureActivity();
+        final releaseBlocking = Completer<void>();
+        final writes = <String>[];
+
+        final blocking = coordinator.runActivityWrite(
+          agentId: 'agent-1',
+          observedSequence: blockingObserved,
+          action: () async {
+            await releaseBlocking.future;
+            writes.add('blocking');
+          },
+        );
+        final waiting = coordinator.runActivityWrite(
+          agentId: 'agent-1',
+          observedSequence: waitingObserved,
+          action: () async => writes.add('waiting'),
+        );
+        // Let the blocking write take its turn before the cancellation arrives.
+        await pumpEventQueue();
+        final cancellation = coordinator.runCancellation<void>(
+          agentId: 'agent-1',
+          action: (_) async => writes.add('cancelled'),
+        );
+
+        releaseBlocking.complete();
+
+        expect(await blocking, isTrue);
+        expect(await waiting, isFalse);
+        await cancellation;
+        expect(writes, ['blocking', 'cancelled']);
+
+        // The second cancellation committed a later cutoff than the first,
+        // so a batch observed before it stays rejected afterwards too.
+        expect(
+          await coordinator.runActivityWrite(
+            agentId: 'agent-1',
+            observedSequence: waitingObserved,
+            action: () async => writes.add('late'),
+          ),
+          isFalse,
+        );
+        expect(
+          await coordinator.runActivityWrite(
+            agentId: 'agent-1',
+            observedSequence: coordinator.captureActivity(),
+            action: () async => writes.add('fresh'),
+          ),
+          isTrue,
+        );
+        expect(writes, ['blocking', 'cancelled', 'fresh']);
+      },
+    );
+
+    test(
       'overlapping failed cancellations leave no stale activity cutoff',
       () async {
         final coordinator = ProjectActivityCancellationCoordinator();

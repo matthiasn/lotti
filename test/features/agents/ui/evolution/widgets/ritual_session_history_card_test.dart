@@ -254,6 +254,49 @@ void main() {
       expect(find.byType(GptMarkdown), findsWidgets);
     });
 
+    testWidgets('the conversation labels each turn by who spoke', (
+      tester,
+    ) async {
+      final session = makeTestEvolutionSession(
+        status: EvolutionSessionStatus.completed,
+      );
+      final recap = makeTestEvolutionSessionRecap(
+        sessionId: session.id,
+        transcript: const [
+          {'role': 'user', 'text': 'The roll-call reminders feel pushy.'},
+          {'role': 'assistant', 'text': 'I will soften the reminder tone.'},
+          {'text': 'A turn without a stored role.'},
+        ],
+      );
+      tester.view
+        ..physicalSize = const Size(800, 2000)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        buildSubject(
+          RitualSessionHistoryEntry(session: session, recap: recap),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(ExpansionTile));
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(RitualSessionHistoryCard));
+      final scheme = Theme.of(context).colorScheme;
+      final you = tester.widget<Text>(find.text('You'));
+      final agents = tester.widgetList<Text>(find.text('Agent')).toList();
+
+      expect(you.style?.color, scheme.tertiary);
+      // The assistant turn and the role-less turn both read as the agent.
+      expect(agents, hasLength(2));
+      expect(agents.every((t) => t.style?.color == scheme.primary), isTrue);
+      expect(
+        find.textContaining('roll-call reminders', findRichText: true),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('does not render section when content is empty', (
       tester,
     ) async {

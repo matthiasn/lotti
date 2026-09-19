@@ -67,6 +67,7 @@ void main() {
     StandingAgreementStatus status = StandingAgreementStatus.active,
     DateTime? activeFrom,
     DateTime? activeUntil,
+    bool openEnded = false,
   }) {
     return AgentDomainEntity.standingAgreement(
           id: id,
@@ -77,7 +78,7 @@ void main() {
           status: status,
           priority: 10,
           activeFrom: activeFrom ?? DateTime(2026, 3),
-          activeUntil: activeUntil ?? DateTime(2026, 4),
+          activeUntil: openEnded ? null : activeUntil ?? DateTime(2026, 4),
           createdAt: testDate,
           updatedAt: testDate,
           vectorClock: const VectorClock({'node-1': 2}),
@@ -149,6 +150,115 @@ void main() {
       expect(inputs.claims.map((c) => c.id), ['claim-p']);
       expect(inputs.standingAgreements.map((a) => a.id), ['agr-p']);
       expect(inputs.isEmpty, isFalse);
+    });
+
+    test('filters agreements by scope and short-circuits an empty scope '
+        'set', () async {
+      await core.upsertEntity(makeAgreement(id: 'agr-fit'));
+      final window = (start: DateTime(2026, 3, 14), end: DateTime(2026, 3, 16));
+
+      final matching = await projection.getStandingAgreementsForWindow(
+        start: window.start,
+        end: window.end,
+        scopes: {StandingAgreementScope.sleep, StandingAgreementScope.fitness},
+      );
+      final otherScope = await projection.getStandingAgreementsForWindow(
+        start: window.start,
+        end: window.end,
+        scopes: {StandingAgreementScope.sleep},
+      );
+      final noScopes = await projection.getStandingAgreementsForWindow(
+        start: window.start,
+        end: window.end,
+        scopes: const {},
+      );
+
+      expect(matching.map((a) => a.id), ['agr-fit']);
+      expect(otherScope, isEmpty);
+      expect(noScopes, isEmpty);
+    });
+
+    test(
+      'an agreement without activeUntil stays visible indefinitely',
+      () async {
+        await core.upsertEntity(makeAgreement(id: 'agr-open', openEnded: true));
+
+        final farFuture = await projection.getStandingAgreementsForWindow(
+          start: DateTime(2040),
+          end: DateTime(2040, 1, 2),
+        );
+        expect(farFuture.map((a) => a.id), ['agr-open']);
+      },
+    );
+
+    test('an agreement whose end is not after its start projects a '
+        'one-minute window', () async {
+      final start = DateTime(2026, 3, 15, 10);
+      await core.upsertEntity(
+        makeAgreement(id: 'agr-inv', activeFrom: start, activeUntil: start),
+      );
+
+      final atStart = await projection.getStandingAgreementsForWindow(
+        start: start.subtract(const Duration(minutes: 5)),
+        end: start.add(const Duration(seconds: 30)),
+      );
+      final twoMinutesLater = await projection.getStandingAgreementsForWindow(
+        start: start.add(const Duration(minutes: 2)),
+        end: start.add(const Duration(hours: 1)),
+      );
+
+      expect(atStart.map((a) => a.id), ['agr-inv']);
+      expect(twoMinutesLater, isEmpty);
+    });
+  });
+
+  group('refreshStandingAgreementProjectionForEntity', () {
+    Future<List<String>> indexedAgreementIds() async {
+      final rows = await db
+          .customSelect('SELECT agreement_id FROM standing_agreement_index')
+          .get();
+      return [for (final row in rows) row.read<String>('agreement_id')];
+    }
+
+    test(
+      'drops the index row when the source entity no longer exists',
+      () async {
+        final agreement = makeAgreement(id: 'agr-gone');
+        await core.upsertEntity(agreement);
+        expect(await indexedAgreementIds(), ['agr-gone']);
+
+        await db.customStatement(
+          'DELETE FROM agent_entities WHERE id = ?',
+          ['agr-gone'],
+        );
+        await projection.refreshStandingAgreementProjectionForEntity(agreement);
+
+        expect(await indexedAgreementIds(), isEmpty);
+      },
+    );
+
+    test(
+      'drops the index row when the id now holds a different entity type',
+      () async {
+        final agreement = makeAgreement(id: 'shared-id');
+        await core.upsertEntity(agreement);
+        await core.upsertEntity(makeClaim(id: 'shared-id'));
+        expect(await indexedAgreementIds(), ['shared-id']);
+
+        await projection.refreshStandingAgreementProjectionForEntity(agreement);
+
+        expect(await indexedAgreementIds(), isEmpty);
+      },
+    );
+
+    test('ignores entities that are not standing agreements', () async {
+      await core.upsertEntity(makeAgreement(id: 'agr-keep'));
+
+      await projection.refreshStandingAgreementProjectionForEntity(
+        makeClaim(id: 'agr-keep'),
+      );
+
+      expect(await indexedAgreementIds(), ['agr-keep']);
     });
   });
 }

@@ -44,16 +44,17 @@ List<AgentListSortAxis> _sortAxes() => [
 /// Stateful host: applies every `onChanged` so the toolbar re-renders with
 /// the new state, mirroring how `AgentListingShell` owns the state.
 class _ToolbarHost extends StatefulWidget {
-  const _ToolbarHost({this.onState});
+  const _ToolbarHost({this.onState, this.initial = _initialState});
 
   final ValueChanged<AgentListFilterState>? onState;
+  final AgentListFilterState initial;
 
   @override
   State<_ToolbarHost> createState() => _ToolbarHostState();
 }
 
 class _ToolbarHostState extends State<_ToolbarHost> {
-  AgentListFilterState state = _initialState;
+  late AgentListFilterState state = widget.initial;
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +85,7 @@ void main() {
   Future<_ToolbarHostState> pumpToolbar(
     WidgetTester tester, {
     ValueChanged<AgentListFilterState>? onState,
+    AgentListFilterState initial = _initialState,
   }) async {
     await tester.binding.setSurfaceSize(const Size(1200, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -93,7 +95,7 @@ void main() {
           body: Builder(
             builder: (context) {
               capturedContext = context;
-              return _ToolbarHost(onState: onState);
+              return _ToolbarHost(onState: onState, initial: initial);
             },
           ),
         ),
@@ -278,6 +280,37 @@ void main() {
       expect(host.state.sortAxisId, 'name');
       expect(find.text('Name'), findsOneWidget);
       expect(find.text('Recent'), findsNothing);
+    });
+
+    testWidgets('axis ids that no longer exist fall back to the first '
+        'group and sort axis', (tester) async {
+      final host = await pumpToolbar(
+        tester,
+        initial: const AgentListFilterState(
+          groupAxisId: 'retired-group',
+          sortAxisId: 'retired-sort',
+        ),
+      );
+      final messages = capturedContext.messages;
+
+      expect(
+        find.text('${messages.agentInstancesToolbarGroupBy} Soul'),
+        findsOneWidget,
+      );
+      expect(find.text('Recent'), findsOneWidget);
+
+      // Opening the sort popover offers the fallback as the current choice,
+      // and picking another axis replaces the stale id.
+      await tester.tap(find.text('Recent'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.tap(find.text('Name').last);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(host.state.sortAxisId, 'name');
+      expect(host.state.groupAxisId, 'retired-group');
     });
 
     testWidgets('typing into the search field updates state.search', (

@@ -767,6 +767,35 @@ void main() {
       );
     });
 
+    testWidgets('a playing summary reports how far it has read', (
+      tester,
+    ) async {
+      final player = FakeTtsAudioPlayer();
+      addTearDown(player.dispose);
+      final bench = AgentTestBench(
+        enableSummaryTts: true,
+        ttsAudioPlayer: player,
+        report: makeTestReport(tldr: 'Tldr line.'),
+      );
+
+      await tester.pumpWidget(bench.build());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(TtsPlayButton));
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      expect(player.playCount, 1);
+
+      player
+        ..emitDuration(const Duration(seconds: 10))
+        ..emitPosition(const Duration(seconds: 4));
+      await tester.pump();
+
+      final button = tester.widget<TtsPlayButton>(find.byType(TtsPlayButton));
+      expect(button.mode, TtsButtonMode.playing);
+      expect(button.progress, closeTo(0.4, 1e-9));
+    });
+
     testWidgets('shows an error toast when synthesis fails', (tester) async {
       final engine = FakeTtsEngine(throwOnSynthesize: true);
       final bench = AgentTestBench(

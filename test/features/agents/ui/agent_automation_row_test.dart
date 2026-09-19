@@ -888,6 +888,37 @@ void main() {
       });
     });
 
+    testWidgets('puts Skip under the countdown when even the bare value '
+        'cannot share its line', (tester) async {
+      await withClock(Clock.fixed(now), () async {
+        await pumpRow(
+          tester,
+          subject(
+            hasReportContent: true,
+            automaticUpdatesEnabled: true,
+            showCountdown: true,
+            nextWakeAt: now.add(const Duration(minutes: 1, seconds: 30)),
+            onRunNow: () {},
+          ),
+          width: 220,
+          locale: const Locale('de'),
+          textScaler: const TextScaler.linear(2),
+        );
+
+        final cluster = tester.getRect(
+          find.byKey(const ValueKey('taskAgentScheduleCluster')),
+        );
+        final skip = tester.getRect(
+          find.byKey(const ValueKey('taskAgentSkipScheduledUpdate')),
+        );
+        // Skip starts its own line at the cluster's leading edge, below the
+        // countdown, rather than being squeezed beside it.
+        expect(skip.left, moreOrLessEquals(cluster.left));
+        expect(skip.top, greaterThan(cluster.top));
+        expect(tester.takeException(), isNull);
+      });
+    });
+
     testWidgets('stacks the trigger and the switch when they cannot share', (
       tester,
     ) async {
