@@ -177,6 +177,12 @@ Three consequences:
   `ImageProvider` whose future the test completes (see
   `test/widgets/media/thumb_hash_backed_image_test.dart`).
 - `tester.runAsync` is the escape hatch when real decoding is the point.
+- To exercise an image's `errorBuilder`, hand it `BrokenImageProvider` from
+  `test/test_utils/broken_image_provider.dart`: its load fails as a plain
+  rejected future, so the fallback renders inside `testWidgets`. An
+  `Image.file` of a missing file fails only on the real event loop — give it
+  a real IO round-trip with `tester.runAsync` and pump until the fallback
+  shows (`entry_detail_header_test.dart`).
 
 The same fake clock stalls `dart:io`: a harness that creates a temp directory,
 opens in-memory databases and seeds them — the full-shell recipe in
