@@ -15,6 +15,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/service/check_in_photo_analysis_trigger.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
@@ -45,6 +46,9 @@ final checkInPhotoImporterProvider = Provider<CheckInPhotoImporter>(
         context,
         linkedId: checkInId,
         categoryId: categoryId,
+        // Describes the photo where the person's profile assigns an
+        // image-analysis skill, and tells the check-in its evidence changed.
+        analysisTrigger: ref.read(checkInPhotoAnalysisTriggerProvider),
       ),
   // coverage:ignore-end
   name: 'checkInPhotoImporterProvider',

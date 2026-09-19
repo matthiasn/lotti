@@ -818,7 +818,14 @@ removed:
   description is its newest image analysis — an `AiResponseEntry` linked
   photo → response, its `tldr` where the model wrote one, else its body —
   read for the window's photos in one batch by
-  `RelationshipRepository.getImageDescriptions`) and — the ADR 0041 §5 boundary
+  `RelationshipRepository.getImageDescriptions`. A photo added to a check-in
+  is described the way a photo dropped on a task is:
+  `CheckInPhotoAnalysisTrigger` runs the shared profile automation with the
+  **person** as the subject — their agent's profile, falling back to their
+  category — so it runs only where an image-analysis skill is assigned and
+  not at all otherwise, and touches the check-in afterwards, since a
+  description landing later is new evidence, exactly as a late transcript is
+  (ADR 0062 Decision 3)) and — the ADR 0041 §5 boundary
   — its `render` signature has **no channel parameter**, so contact
   channels are structurally absent from model context, not filtered out. The
   user-set sentiments in that window also emit the allowed health verdicts in
