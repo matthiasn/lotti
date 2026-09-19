@@ -32,6 +32,7 @@ import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
 import 'package:lotti/features/goals/workflow/goal_criterion_names.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -827,6 +828,233 @@ void main() {
     expect(result.success, isFalse);
     expect(result.error, 'Goal Phase B workflow failed (StateError)');
     expect(conversationRepository.sendMessageDelegateCallCount, 2);
+  });
+
+  test('a rerun answered with a stale cooldown refusal is replaced by a '
+      'forced banner confirmation, and both inferences are billed', () async {
+    stubSpec();
+    stubGlmResolution();
+    _stubBadPrior(repository, agentId, now);
+    workflow = _offTrackWorkflow(
+      repository,
+      syncService,
+      conversationRepository,
+      cloudInferenceRepository,
+      aiConfigRepository,
+    );
+    final library =
+        AgentDomainEntity.goalNudge(
+              id: 'ad-sardines',
+              agentId: agentId,
+              status: NudgeStatus.retired,
+              brief: const NudgeBrief(
+                headline: 'Sardine run at dawn.',
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
+              ),
+              briefDigest: 'd-sardines',
+              createdAt: DateTime(2026, 8),
+              updatedAt: DateTime(2026, 8),
+              vectorClock: null,
+              // A top rating is what puts a retired ad in the reusable
+              // library, so its id is a legal rerun target.
+              ratings: [
+                NudgeRating(
+                  activation: 1,
+                  ratedAt: DateTime(2026, 8, 2),
+                  rating: 5,
+                ),
+              ],
+            )
+            as GoalNudgeEntity;
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer((_) async => [library]);
+    when(
+      () => repository.getEntity('ad-sardines'),
+    ).thenAnswer((_) async => library);
+
+    conversationRepository.maxDelegateCalls = 2;
+    final prompts = <String>[];
+    final offeredTools = <List<String>>[];
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          prompts.add(message);
+          offeredTools.add([for (final tool in tools!) tool.function.name]);
+          final goalStrategy = strategy! as GoalAgentStrategy;
+          if (prompts.length == 1) {
+            // The model reruns the banner (no create) but still answers with
+            // the automatic-cooldown refusal it was primed for.
+            await goalStrategy.processToolCalls(
+              toolCalls: [
+                toolCall(GoalAgentToolNames.rerunGoalAd, {
+                  'adId': 'ad-sardines',
+                  'reason': 'the colony asked for it back',
+                }, id: 'call-rerun'),
+                toolCall(GoalAgentToolNames.updateGoalReport, {
+                  'status': 'offTrack',
+                  'oneLiner': 'The krill tally is behind.',
+                  'tldr': 'Two more fishing trips would close the gap.',
+                }, id: 'call-report'),
+                toolCall(GoalAgentToolNames.replyToUser, {
+                  'message':
+                      "The cooldown is active, so I can't show a banner.",
+                }, id: 'call-refusal'),
+              ],
+              manager: conversationManager,
+            );
+            return const InferenceUsage(inputTokens: 700, outputTokens: 80);
+          }
+          await goalStrategy.processToolCalls(
+            toolCalls: [
+              toolCall(GoalAgentToolNames.replyToUser, {
+                'message': 'The sardine banner is back up for the colony.',
+              }, id: 'call-forced-reply'),
+            ],
+            manager: conversationManager,
+          );
+          return const InferenceUsage(inputTokens: 150, outputTokens: 25);
+        };
+
+    final result = await withClock(
+      fixedClock,
+      () => workflow.execute(
+        agentIdentity: identity,
+        runKey: 'chat-run',
+        triggerTokens: const {},
+        threadId: 'chat-run',
+        pendingUserMessage: 'Bring the old sardine banner back, please.',
+        chatMessageId: 'source-message',
+      ),
+    );
+
+    expect(result.success, isTrue, reason: result.error);
+    expect(prompts, hasLength(2));
+    expect(
+      prompts.last,
+      contains('A banner was created in this wake'),
+      reason: 'a rerun counts as a banner for the forced confirmation',
+    );
+    expect(offeredTools.last, [GoalAgentToolNames.replyToUser]);
+
+    final payloadTexts = [
+      for (final payload in upserts.whereType<AgentMessagePayloadEntity>())
+        ...payload.content.values.whereType<String>(),
+    ];
+    expect(
+      payloadTexts,
+      contains('The sardine banner is back up for the colony.'),
+    );
+    expect(
+      payloadTexts.where((text) => text.contains('cooldown')),
+      isEmpty,
+      reason: 'the stale refusal must never become a visible chat bubble',
+    );
+
+    final rerun = upserts.whereType<GoalNudgeEntity>().single;
+    expect(rerun.id, 'ad-sardines');
+    expect(rerun.status, NudgeStatus.active);
+    expect(rerun.activationCount, 2);
+
+    final usage = upserts.whereType<WakeTokenUsageEntity>().single;
+    expect(usage.inputTokens, 850, reason: 'primary + forced reply merged');
+    expect(usage.outputTokens, 105);
+  });
+
+  test('a forced reply whose inference throws is logged and the interactive '
+      'wake fails without a visible reply', () async {
+    stubSpec();
+    stubGlmResolution();
+    final logger = MockDomainLogger();
+    when(
+      () => logger.error(
+        any(),
+        any<Object>(),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: any(named: 'subDomain'),
+        message: any(named: 'message'),
+      ),
+    ).thenReturn(null);
+    workflow = GoalAgentWorkflow(
+      repository: repository,
+      syncService: syncService,
+      phaseA: GoalAgentPhaseA(
+        repository: repository,
+        syncService: syncService,
+        signalReader: _FakeReader(),
+      ),
+      conversationRepository: conversationRepository,
+      cloudInferenceRepository: cloudInferenceRepository,
+      aiConfigRepository: aiConfigRepository,
+      domainLogger: logger,
+    );
+    final forcedFailure = Exception('the penguin provider is down');
+    conversationRepository
+      ..maxDelegateCalls = 3
+      ..sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            // The primary turn (and the first-evaluation report retry) stay
+            // silent; only the forced reply fails.
+            if (message.contains('The user is waiting for an answer')) {
+              throw forcedFailure;
+            }
+            return null;
+          };
+
+    final result = await withClock(
+      fixedClock,
+      () => workflow.execute(
+        agentIdentity: identity,
+        runKey: 'chat-run',
+        triggerTokens: const {},
+        threadId: 'chat-run',
+        pendingUserMessage: 'How is Project Waddle going?',
+        chatMessageId: 'source-message',
+      ),
+    );
+
+    expect(result.success, isFalse);
+    expect(result.error, 'Goal Phase B workflow failed (StateError)');
+    expect(conversationRepository.sendMessageDelegateCallCount, 3);
+    verify(
+      () => logger.error(
+        LogDomain.agentWorkflow,
+        forcedFailure,
+        message: 'forced interactive reply failed',
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: any(named: 'subDomain'),
+      ),
+    ).called(1);
+    expect(
+      upserts.whereType<AgentMessageEntity>().where(
+        (message) => message.id == goalAgentReplyMessageId(agentId, 'chat-run'),
+      ),
+      isEmpty,
+      reason: 'no reply bubble lands when the forced reply failed',
+    );
   });
 
   test('an accepted reply cannot hide a rejected tool mutation', () async {
@@ -4959,6 +5187,129 @@ void main() {
       written.singleWhere((n) => n.id != 'ad-live').status,
       NudgeStatus.active,
     );
+  });
+
+  test('persistOutputs: a rerun while a fresh active ad is showing is '
+      'suppressed and logged, leaving both rows untouched', () async {
+    final live =
+        AgentDomainEntity.goalNudge(
+              id: 'ad-live',
+              agentId: agentId,
+              status: NudgeStatus.active,
+              brief: const NudgeBrief(
+                headline: 'The krill will not catch themselves.',
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
+              ),
+              briefDigest: 'd-live',
+              createdAt: DateTime(2026, 8),
+              updatedAt: DateTime(2026, 8),
+              vectorClock: null,
+              activatedAt: now.subtract(const Duration(hours: 2)),
+            )
+            as GoalNudgeEntity;
+    final library =
+        AgentDomainEntity.goalNudge(
+              id: 'ad-sardines',
+              agentId: agentId,
+              status: NudgeStatus.retired,
+              brief: const NudgeBrief(
+                headline: 'Sardine run at dawn.',
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
+              ),
+              briefDigest: 'd-sardines',
+              createdAt: DateTime(2026, 8),
+              updatedAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalNudgeEntity;
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer((_) async => [live, library]);
+
+    stubSpec();
+    _stubBadPrior(repository, agentId, now);
+    final version =
+        await repository.getEntity('$agentId:spec-v1')
+            as GoalSpecVersionEntity?;
+    final derivation = await _offTrackDerivation(repository, version!, now);
+
+    final logger = MockDomainLogger();
+    when(
+      () => logger.error(
+        any(),
+        any<Object>(),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: any(named: 'subDomain'),
+        message: any(named: 'message'),
+      ),
+    ).thenReturn(null);
+    final logged = GoalAgentWorkflow(
+      repository: repository,
+      syncService: syncService,
+      phaseA: GoalAgentPhaseA(
+        repository: repository,
+        syncService: syncService,
+        signalReader: _FakeReader(),
+      ),
+      conversationRepository: conversationRepository,
+      cloudInferenceRepository: cloudInferenceRepository,
+      aiConfigRepository: aiConfigRepository,
+      domainLogger: logger,
+    );
+    final strategy = GoalAgentStrategy(
+      syncService: syncService,
+      agentId: agentId,
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {'ad-live', 'ad-sardines'},
+      activeAdIds: const {'ad-live'},
+    );
+    await strategy.processToolCalls(
+      toolCalls: [
+        toolCall(GoalAgentToolNames.rerunGoalAd, {
+          'adId': 'ad-sardines',
+          'reason': 'the colony loved it',
+        }),
+      ],
+      manager: conversationManager,
+    );
+    expect(
+      strategy.rerunRequests.map((action) => action.adId),
+      ['ad-sardines'],
+      reason: 'the tool call itself is valid; only persistence refuses it',
+    );
+
+    await withClock(
+      fixedClock,
+      () => logged.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-1',
+        threadId: 'thread-1',
+        strategy: strategy,
+        derivation: derivation,
+        now: now,
+      ),
+    );
+
+    expect(
+      upserts.whereType<GoalNudgeEntity>(),
+      isEmpty,
+      reason: 'the retired ad stays retired and the live one stays live',
+    );
+    verify(
+      () => logger.error(
+        LogDomain.agentWorkflow,
+        'rerun suppressed: a fresh active ad already exists',
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: any(named: 'subDomain'),
+        message: any(named: 'message'),
+      ),
+    ).called(1);
   });
 
   test('a failed wake re-arms its escalation with a later deadline so the '
