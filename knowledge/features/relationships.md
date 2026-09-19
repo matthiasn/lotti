@@ -832,6 +832,17 @@ removed:
   `RelationshipAgentStrategy`, which rejects an out-of-range report call before
   it can persist. The exact enum stays confined to the `healthBand` tool field
   so it cannot leak into user-facing prose.
+
+  **A photo added to a check-in is described the way a photo dropped on a
+  task is.** `CheckInPhotoAnalysisTrigger` runs the shared profile automation
+  with the **person** as the subject — their agent's profile, falling back to
+  their category — so it describes a photo only where an image-analysis skill
+  is assigned, and not at all otherwise. It then reads the description back
+  and, only if one was written, touches the check-in: a description landing
+  later is new evidence, exactly as a late transcript is (ADR 0062
+  Decision 3), while a run that wrote nothing must not buy another briefing
+  over unchanged evidence. Nothing awaits the trigger, so a failed read or
+  write is logged rather than left as an unhandled asynchronous error.
 - **Outputs accumulate, then persist once.** The contract requires visible
   chat through `reply_to_user`. On an interactive wake, the workflow accepts
   plain assistant content as a defensive visible-reply fallback and forces one

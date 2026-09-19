@@ -100,7 +100,7 @@ void main() {
       verify(
         () => mockDomainLogger.log(
           LogDomain.ai,
-          any<String>(that: contains('No linked task')),
+          any<String>(that: contains('No subject')),
           subDomain: 'triggerAutomaticImageAnalysis',
         ),
       ).called(1);
@@ -122,10 +122,31 @@ void main() {
       verify(
         () => mockDomainLogger.log(
           LogDomain.ai,
-          any<String>(that: contains('No linked task')),
+          any<String>(that: contains('No subject')),
           subDomain: 'triggerAutomaticImageAnalysis',
         ),
       ).called(1);
+    });
+
+    // A picture that belongs to something other than a task — a person's
+    // check-in — resolves its profile against that owner.
+    test('resolves the profile for an explicit subject', () async {
+      final trigger = container.read(automaticImageAnalysisTriggerProvider);
+
+      await trigger.triggerAutomaticImageAnalysis(
+        imageEntryId: 'image-1',
+        linkedTaskId: 'check-in-1',
+        subjectId: 'rel-1',
+      );
+
+      verify(
+        () => mockProfileAutomationService.tryAnalyzeImage(subjectId: 'rel-1'),
+      ).called(1);
+      verifyNever(
+        () => mockProfileAutomationService.tryAnalyzeImage(
+          subjectId: 'check-in-1',
+        ),
+      );
     });
 
     test('handles exception gracefully', () async {

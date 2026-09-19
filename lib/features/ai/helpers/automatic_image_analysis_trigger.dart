@@ -20,18 +20,23 @@ class AutomaticImageAnalysisTrigger {
 
   /// Triggers automatic image analysis via profile-driven automation.
   ///
-  /// Requires a [linkedTaskId] whose agent has a profile with an image
-  /// analysis skill assigned. If no profile handles it, logs and returns
-  /// silently.
+  /// The profile is resolved for [subjectId], defaulting to [linkedTaskId] —
+  /// the task the picture belongs to. A subject whose agent profile (or the
+  /// profile it inherits from its category) assigns an image-analysis skill
+  /// gets one; otherwise this logs and returns silently. [subjectId] is what
+  /// lets a picture belonging to something other than a task — a person's
+  /// check-in — resolve against that owner instead.
   Future<void> triggerAutomaticImageAnalysis({
     required String imageEntryId,
     String? linkedTaskId,
+    String? subjectId,
   }) async {
     try {
-      if (linkedTaskId == null) {
+      final subject = subjectId ?? linkedTaskId;
+      if (subject == null) {
         loggingService.log(
           LogDomain.ai,
-          'No linked task for image $imageEntryId — skipping automatic '
+          'No subject for image $imageEntryId — skipping automatic '
           'image analysis',
           subDomain: 'triggerAutomaticImageAnalysis',
         );
@@ -40,14 +45,14 @@ class AutomaticImageAnalysisTrigger {
 
       final automationService = ref.read(profileAutomationServiceProvider);
       final result = await automationService.tryAnalyzeImage(
-        subjectId: linkedTaskId,
+        subjectId: subject,
       );
 
       if (!result.handled) {
         loggingService.log(
           LogDomain.ai,
           'Profile automation did not handle image analysis for '
-          'task $linkedTaskId',
+          'subject $subject',
           subDomain: 'triggerAutomaticImageAnalysis',
         );
         return;
@@ -55,7 +60,7 @@ class AutomaticImageAnalysisTrigger {
 
       loggingService.log(
         LogDomain.ai,
-        'Profile-driven image analysis for task $linkedTaskId '
+        'Profile-driven image analysis for subject $subject '
         'using skill "${result.skill!.id}"',
         subDomain: 'triggerAutomaticImageAnalysis',
       );
