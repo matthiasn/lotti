@@ -709,26 +709,39 @@ void main() {
       expect(signal.target, isNull);
     });
 
-    testWidgets('ignores a successful runner retained from before opening', (
-      tester,
-    ) async {
-      final staleRunner = verificationRunner(
-        userId: '@alice:example.com',
-        deviceId: existing.single.deviceId,
-      );
-      when(
-        () => mockMatrixService.keyVerificationRunner,
-      ).thenReturn(staleRunner);
-      when(
-        () => mockMatrixService.keyVerificationStream,
-      ).thenAnswer((_) => Stream<KeyVerificationRunner>.value(staleRunner));
-      final signal = newSignal(tester);
-      await pumpAddDevice(tester, signal: signal);
-      await tester.pump();
+    for (final incoming in [false, true]) {
+      final direction = incoming ? 'incoming' : 'outgoing';
+      testWidgets('ignores a successful $direction runner retained from '
+          'before opening', (tester) async {
+        // A device id the roster has never seen: only the "present at open"
+        // guard keeps this finished ceremony from latching as the target.
+        final staleRunner = verificationRunner(
+          userId: '@alice:example.com',
+          deviceId: 'ROOKERY-STALE',
+        );
+        if (incoming) {
+          when(
+            () => mockMatrixService.incomingKeyVerificationRunner,
+          ).thenReturn(staleRunner);
+          when(
+            () => mockMatrixService.incomingKeyVerificationRunnerStream,
+          ).thenAnswer((_) => Stream<KeyVerificationRunner>.value(staleRunner));
+        } else {
+          when(
+            () => mockMatrixService.keyVerificationRunner,
+          ).thenReturn(staleRunner);
+          when(
+            () => mockMatrixService.keyVerificationStream,
+          ).thenAnswer((_) => Stream<KeyVerificationRunner>.value(staleRunner));
+        }
+        final signal = newSignal(tester);
+        await pumpAddDevice(tester, signal: signal);
+        await tester.pump();
 
-      expect(signal.value, AddDeviceJoinState.waiting);
-      expect(signal.target, isNull);
-    });
+        expect(signal.value, AddDeviceJoinState.waiting);
+        expect(signal.target, isNull);
+      });
+    }
 
     testWidgets('stops claiming to wait once the roster keeps failing', (
       tester,

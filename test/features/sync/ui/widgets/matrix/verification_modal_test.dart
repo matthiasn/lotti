@@ -388,13 +388,60 @@ void main() {
     },
   );
 
-  // Lines 76-77: The catch block in _acceptEmojiVerification that resets
-  // _awaitingOtherDevice is guarded by a rethrow (line 79). Because the
-  // onPressed handler calls _acceptEmojiVerification without awaiting, the
-  // rethrown exception propagates as an unhandled async error which the Flutter
-  // test framework reports as a test failure. This branch is structurally
-  // untestable through widget-tap simulation without suppressing the framework
-  // error handler — skipped intentionally.
+  testWidgets(
+    'a failed accept re-enables the match buttons and surfaces the error',
+    (tester) async {
+      final runner = MockKeyVerificationRunner();
+      final keyVerification = MockKeyVerification();
+      final emojis = List.generate(
+        8,
+        (index) => FakeKeyVerificationEmoji('🐧', 'emoji$index'),
+      );
+
+      when(() => runner.lastStep).thenReturn('m.key.verification.key');
+      when(() => runner.emojis).thenReturn(emojis);
+      when(() => runner.keyVerification).thenReturn(keyVerification);
+      when(() => keyVerification.isDone).thenReturn(false);
+      when(
+        runner.acceptEmojiVerification,
+      ).thenAnswer((_) async => throw StateError('homeserver unreachable'));
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          VerificationModal(mockDeviceKeys),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+          ],
+        ),
+      );
+
+      controller.add(runner);
+      await tester.pump();
+
+      await tester.ensureVisible(find.text('They match'));
+      // The tap handler does not await the accept, so the rethrown failure
+      // lands in the zone the tap ran in; catch it there.
+      final zoneErrors = <Object>[];
+      await runZonedGuarded(
+        () => tester.tap(find.text('They match')),
+        (error, _) => zoneErrors.add(error),
+      );
+      await tester.pump();
+
+      verify(runner.acceptEmojiVerification).called(1);
+      // The failure is rethrown to the zone rather than swallowed …
+      expect(zoneErrors, [
+        isA<StateError>().having(
+          (e) => e.message,
+          'message',
+          'homeserver unreachable',
+        ),
+      ]);
+      // … and the modal leaves the waiting state so the user can retry.
+      expect(find.text('Accept on other device to continue'), findsNothing);
+      expect(find.text('They match'), findsOneWidget);
+    },
+  );
 
   testWidgets(
     'tapping restart button when runner exists with empty lastStep calls startVerification',
