@@ -128,22 +128,20 @@ class _PlayerBody extends StatelessWidget {
       controller.play();
     }
 
-    final theme = Theme.of(context);
-    final tokens = theme.extension<DsTokens>();
+    final tokens = context.designTokens;
     // lowEmphasis so the timecode recedes to the same quiet tone as the card's
     // timestamp — it is supporting metadata, not a payload value.
-    final timeColor =
-        tokens?.colors.text.lowEmphasis ?? theme.colorScheme.onSurfaceVariant;
-    final captionStyle = tokens?.typography.styles.others.caption;
+    final timeColor = tokens.colors.text.lowEmphasis;
+    final captionStyle = tokens.typography.styles.others.caption;
     // Shared numeric badge features (tabular + open four/six/nine + slashed
     // zero): constant digit advance so the elapsed counter does not "breathe"
     // as it ticks, and open-digit glyphs that stay legible at this small size.
-    final timeStyle = (captionStyle ?? const TextStyle(fontSize: 12)).copyWith(
+    final timeStyle = captionStyle.copyWith(
       color: timeColor,
       fontFeatures: numericBadgeFontFeatures,
     );
 
-    final controlSpacing = tokens?.spacing.step2 ?? 4.0;
+    final controlSpacing = tokens.spacing.step2;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -198,7 +196,7 @@ class _PlayerBody extends StatelessWidget {
                 overflow: TextOverflow.clip,
               ),
             ),
-            SizedBox(width: tokens?.spacing.step4 ?? 12.0),
+            SizedBox(width: tokens.spacing.step4),
             _SpeedButton(
               controller: controller,
               currentSpeed: state.speed,
@@ -237,9 +235,7 @@ class _WaveformArea extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final width = constraints.hasBoundedWidth
-            ? constraints.maxWidth
-            : MediaQuery.sizeOf(context).width;
+        final width = constraints.maxWidth;
         final estimated =
             width /
             (kAudioWaveformTargetBarWidth + kAudioWaveformTargetBarSpacing);
@@ -312,18 +308,14 @@ class _PlayButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = theme.extension<DsTokens>();
-    final scheme = theme.colorScheme;
+    final tokens = context.designTokens;
     final diameter = isCompact
         ? _playControlDiameterCompact
         : _playControlDiameter;
     final isLoading = status == AudioPlayerStatus.initializing && isActive;
 
-    final iconColor = tokens?.colors.text.highEmphasis ?? scheme.onSurface;
-    final surfaceColor =
-        tokens?.colors.surface.enabled ??
-        scheme.onSurface.withValues(alpha: 0.06);
+    final iconColor = tokens.colors.text.highEmphasis;
+    final surfaceColor = tokens.colors.surface.enabled;
 
     final icon = isLoading
         ? SizedBox(
@@ -358,7 +350,7 @@ class _PlayButton extends StatelessWidget {
             // low-contrast fill alone read as nearly invisible chrome.
             shape: CircleBorder(
               side: BorderSide(
-                color: tokens?.colors.interactive.enabled ?? scheme.primary,
+                color: tokens.colors.interactive.enabled,
                 width: 1.5,
               ),
             ),
@@ -390,26 +382,24 @@ class _SpeedButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final tokens = theme.extension<DsTokens>();
+    final tokens = context.designTokens;
     final label = _speedLabel(currentSpeed);
     final nextSpeed = _nextSpeed(currentSpeed);
 
-    final captionStyle = tokens?.typography.styles.others.caption;
+    final captionStyle = tokens.typography.styles.others.caption;
     final speedTextColor = currentSpeed != 1
         ? scheme.error
-        : (tokens?.colors.text.mediumEmphasis ?? scheme.onSurfaceVariant);
-    final speedTextStyle = (captionStyle ?? const TextStyle(fontSize: 12))
-        .copyWith(
-          color: speedTextColor,
-          fontFeatures: numericBadgeFontFeatures,
-        );
+        : tokens.colors.text.mediumEmphasis;
+    final speedTextStyle = captionStyle.copyWith(
+      color: speedTextColor,
+      fontFeatures: numericBadgeFontFeatures,
+    );
 
     // A filled chip with a mediumEmphasis boundary (well above the WCAG 1.4.11
     // 3:1 floor) so the speed control reads as a real, tappable pill rather than
     // near-invisible chrome — important because the entry card's resting state
     // shows this control while playback is inactive.
-    final pillBorder =
-        tokens?.colors.text.mediumEmphasis ?? scheme.outlineVariant;
+    final pillBorder = tokens.colors.text.mediumEmphasis;
     final child = Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(

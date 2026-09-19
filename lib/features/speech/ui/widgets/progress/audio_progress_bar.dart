@@ -189,9 +189,7 @@ class _AudioProgressBarState extends State<AudioProgressBar> {
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final width = constraints.hasBoundedWidth
-            ? constraints.maxWidth
-            : MediaQuery.sizeOf(context).width;
+        final width = constraints.maxWidth;
 
         final progressRatio = _hasTotal
             ? (widget.progress.inMilliseconds / widget.total.inMilliseconds)
