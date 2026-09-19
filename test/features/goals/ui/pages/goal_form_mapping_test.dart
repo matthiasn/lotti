@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
@@ -853,4 +854,209 @@ void main() {
       [null, null],
     );
   });
+
+  group('mapping properties', () {
+    GoalCriterion? rebuild(
+      GoalFormMapping mapping, {
+      Map<String, int> extraHabits = const {},
+      Map<String, num> extraMeasurables = const {},
+    }) => mapping.buildCriteria(
+      stepsTitle: 'Average steps per day',
+      habitTargets: {...mapping.habitTargets, ...extraHabits},
+      measurableTargets: {...mapping.measurableTargets, ...extraMeasurables},
+      healthTargets: mapping.healthTargets,
+      healthDirections: mapping.healthDirections,
+      categoryTimeTargets: mapping.categoryTimeTargets,
+      categoryTimeDirections: mapping.categoryTimeDirections,
+      labelTimeTargets: mapping.labelTimeTargets,
+      labelTimeDirections: mapping.labelTimeDirections,
+      labelTimeCategoryIds: mapping.labelTimeCategoryIds,
+    );
+
+    List<String> idsOf(GoalCriterion criterion) => [
+      criterion.criterionId,
+      ...switch (criterion) {
+        GoalCriterionAllOf(:final criteria) ||
+        GoalCriterionAnyOf(:final criteria) ||
+        GoalCriterionAtLeastCount(:final criteria) => criteria.expand(idsOf),
+        _ => const <String>[],
+      },
+    ];
+
+    glados.Glados(
+      glados.any.formCriteria,
+      glados.ExploreConfig(numRuns: 400),
+    ).test(
+      'an unedited form rebuilds the tree it was read from',
+      (criteria) {
+        final mapping = GoalFormMapping.fromCriteria(criteria);
+
+        // Editable or read-only, saving untouched controls changes nothing.
+        expect(rebuild(mapping), criteria);
+        if (!mapping.isEditable) {
+          expect(mapping.unsupportedCriteria, same(criteria));
+          expect(
+            rebuild(mapping, extraHabits: const {'new-habit': 3}),
+            same(criteria),
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.formCriteria,
+      glados.ExploreConfig(numRuns: 400),
+    ).test(
+      'criteria added in the form get ids no other criterion has',
+      (criteria) {
+        final mapping = GoalFormMapping.fromCriteria(criteria);
+        if (!mapping.isEditable) return;
+        final rebuilt = rebuild(
+          mapping,
+          extraHabits: const {'new-habit': 3, 'k0': 2},
+          extraMeasurables: const {'new-measure': 4, 'k1': 5},
+        )!;
+
+        final ids = idsOf(rebuilt);
+        expect(ids.toSet(), hasLength(ids.length), reason: '$ids');
+        // Everything the original tree named keeps its id.
+        expect(ids, containsAll(idsOf(criteria)));
+      },
+      tags: 'glados',
+    );
+  });
+}
+
+/// A leaf of kind 0 steps, 1 health, 2 habit, 3 measurable, 4 category
+/// time, 5 label time, 6 a habit the form cannot edit; `key` picks from a
+/// small id pool so keys collide now and then.
+typedef _FormLeafSpec = ({
+  int kind,
+  int key,
+  int target,
+  GoalDirection direction,
+  bool titled,
+});
+
+GoalCriterion _formLeaf(_FormLeafSpec spec, int index) {
+  final id = 'c$index';
+  final key = 'k${spec.key}';
+  final title = spec.titled ? 'Leaf $index' : null;
+  const week = GoalWindow.rollingDays(count: 7);
+  return switch (spec.kind) {
+    0 => GoalCriterion.metric(
+      criterionId: id,
+      dataType: GoalHealthDataTypes.steps,
+      title: title,
+      window: week,
+      aggregation: GoalAggregation.dailySumThenAverage,
+      target: spec.target * 1000,
+    ),
+    1 => GoalCriterion.metric(
+      criterionId: id,
+      dataType: GoalHealthDataTypes.supported.elementAt(spec.key % 3),
+      title: title,
+      window: week,
+      aggregation: GoalAggregation.dailySumThenAverage,
+      target: 60 + spec.target,
+      direction: spec.direction,
+    ),
+    2 => GoalCriterion.habit(
+      criterionId: id,
+      habitId: key,
+      title: title,
+      window: week,
+      targetCount: 1 + spec.target % 7,
+    ),
+    3 => GoalCriterion.measurable(
+      criterionId: id,
+      dataTypeId: key,
+      title: title,
+      window: week,
+      aggregation: GoalAggregation.sum,
+      target: spec.target,
+    ),
+    4 => GoalCriterion.categoryTime(
+      criterionId: id,
+      categoryId: key,
+      title: title,
+      window: week,
+      aggregation: GoalAggregation.sum,
+      targetHours: spec.target,
+      direction: spec.direction,
+    ),
+    5 => GoalCriterion.labelTime(
+      criterionId: id,
+      labelId: key,
+      categoryId: spec.titled ? 'cat-$key' : null,
+      title: title,
+      window: const GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetHours: spec.target,
+      direction: spec.direction,
+    ),
+    _ => GoalCriterion.habit(
+      criterionId: id,
+      habitId: key,
+      title: title,
+      window: const GoalWindow.calendarWeek(),
+      targetCount: spec.target,
+    ),
+  };
+}
+
+extension _AnyFormCriteria on glados.Any {
+  glados.Generator<_FormLeafSpec> get _formLeafSpec =>
+      glados.CombinableAny(this).combine5(
+        // Kind 6 (read-only) is rarer, so most trees stay editable.
+        glados.IntAnys(this).intInRange(0, 13),
+        glados.IntAnys(this).intInRange(0, 4),
+        glados.IntAnys(this).intInRange(1, 13),
+        glados.AnyUtils(this).choose(GoalDirection.values),
+        glados.BoolAny(this).bool,
+        (int kind, int key, int target, GoalDirection direction, bool titled) =>
+            (
+              kind: kind < 12 ? kind % 6 : 6,
+              key: key,
+              target: target,
+              direction: direction,
+              titled: titled,
+            ),
+      );
+
+  /// A bare leaf (kind 3) or an allOf / anyOf / atLeastCount of one to four
+  /// leaves; an atLeastCount asks for between one and all of them.
+  glados.Generator<GoalCriterion> get formCriteria =>
+      glados.CombinableAny(this).combine4(
+        glados.IntAnys(this).intInRange(0, 4),
+        glados.ListAnys(this).listWithLengthInRange(1, 5, _formLeafSpec),
+        glados.IntAnys(this).intInRange(0, 4),
+        glados.BoolAny(this).bool,
+        (int kind, List<_FormLeafSpec> specs, int successes, bool titled) {
+          final leaves = [
+            for (final (i, spec) in specs.indexed) _formLeaf(spec, i),
+          ];
+          final title = titled ? 'Routine' : null;
+          return switch (kind) {
+            0 => GoalCriterion.allOf(
+              criterionId: 'routine',
+              criteria: leaves,
+              title: title,
+            ),
+            1 => GoalCriterion.anyOf(
+              criterionId: 'routine',
+              criteria: leaves,
+              title: title,
+            ),
+            2 => GoalCriterion.atLeastCount(
+              criterionId: 'routine',
+              criteria: leaves,
+              successes: 1 + successes % leaves.length,
+              title: title,
+            ),
+            _ => leaves.first,
+          };
+        },
+      );
 }

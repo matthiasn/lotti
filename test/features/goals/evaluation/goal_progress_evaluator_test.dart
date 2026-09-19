@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
@@ -1100,4 +1101,360 @@ void main() {
       expect(evaluator.shortTermAttainment(gym, signals, saturday), isNull);
     });
   });
+
+  group('evaluation properties', () {
+    // A goal at least zero with a negative aggregate (a measurable can go
+    // below zero) is not met — and must not read as fully attained either.
+    test('an unmet at-least-zero target is not reported as attained', () {
+      const criterion = GoalCriterion.measurable(
+        criterionId: 'balance',
+        dataTypeId: 'balance-type',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        target: 0,
+      );
+      final evaluation = evaluator.evaluate(
+        criterion,
+        GoalSignalWindow(
+          measurableDailySums: {
+            'balance-type': {saturday: -3},
+          },
+        ),
+        saturday,
+      );
+      expect(evaluation.satisfied, isFalse);
+      expect(evaluation.attainment, 0);
+    });
+
+    glados.Glados(
+      glados.any.goalTree,
+      glados.ExploreConfig(numRuns: 400),
+    ).test(
+      'ratios and coverage stay in [0, 1] and a met criterion is fully met',
+      (tree) {
+        final evaluation = evaluator.evaluate(
+          tree.criterion,
+          tree.signals(),
+          saturday,
+        );
+
+        expect(evaluation.attainment, inInclusiveRange(0, 1));
+        expect(evaluation.dataCoverage, inInclusiveRange(0, 1));
+        for (final result in evaluation.results.values) {
+          expect(result.ratio, inInclusiveRange(0, 1), reason: '$result');
+          // Met and fully attained are the same statement.
+          expect(
+            result.ratio == 1,
+            result.satisfied,
+            reason:
+                '${result.criterionId}: ${result.actual} vs '
+                '${result.target}, ratio ${result.ratio}',
+          );
+        }
+        final short = evaluator.shortTermAttainment(
+          tree.criterion,
+          tree.signals(),
+          saturday,
+        );
+        if (short != null) expect(short, inInclusiveRange(0, 1));
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.goalTree,
+      glados.ExploreConfig(numRuns: 400),
+    ).test(
+      'a composite is met exactly when its children say so',
+      (tree) {
+        final evaluation = evaluator.evaluate(
+          tree.criterion,
+          tree.signals(),
+          saturday,
+        );
+        final met = [
+          for (final leaf in tree.leaves)
+            evaluation.results[leaf.id]!.satisfied,
+        ];
+        final metCount = met.where((m) => m).length;
+
+        expect(evaluation.satisfied, switch (tree.criterion) {
+          GoalCriterionAllOf() => metCount == met.length,
+          GoalCriterionAnyOf() => metCount > 0,
+          GoalCriterionAtLeastCount(:final successes) => metCount >= successes,
+          _ => met.single,
+        });
+        for (final leaf in tree.leaves) {
+          if (leaf.isMeasurable && leaf.series.isEmpty) {
+            expect(evaluation.results[leaf.id]!.satisfied, isFalse);
+            expect(evaluation.results[leaf.id]!.ratio, 0);
+          }
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.goalTree,
+      glados.ExploreConfig(numRuns: 300),
+    ).test(
+      'the order signals were recorded in does not matter',
+      (tree) {
+        final forward = evaluator.evaluate(
+          tree.criterion,
+          tree.signals(),
+          saturday,
+        );
+        final reversed = evaluator.evaluate(
+          tree.criterion,
+          tree.signals(reversed: true),
+          saturday,
+        );
+
+        expect(reversed.attainment, forward.attainment);
+        expect(reversed.satisfied, forward.satisfied);
+        expect(reversed.dataCoverage, forward.dataCoverage);
+        Map<String, Object?> fields(GoalEvaluation e) => e.results.map(
+          (id, r) => MapEntry(id, [
+            r.actual,
+            r.target,
+            r.ratio,
+            r.satisfied,
+            r.sampleCount,
+            r.paceFeasible,
+            r.deficit,
+            r.buffer,
+            r.projectedDaysToTarget,
+          ]),
+        );
+        expect(fields(reversed), fields(forward));
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados2(
+      glados.any.goalLeaf,
+      glados.IntAnys(glados.any).intInRange(0, 10),
+      glados.ExploreConfig(numRuns: 400),
+    ).test(
+      'raising the values never hurts an at-least goal nor helps an at-most one',
+      (leaf, bump) {
+        final measurable = leaf.asMeasurable;
+        final tree = _GoalTree(3, [measurable], 1);
+        final raised = _GoalTree(3, [measurable.raisedBy(bump)], 1);
+        final before = evaluator.evaluate(
+          tree.criterion,
+          tree.signals(),
+          saturday,
+        );
+        final after = evaluator.evaluate(
+          raised.criterion,
+          raised.signals(),
+          saturday,
+        );
+
+        if (measurable.direction == GoalDirection.atLeast) {
+          expect(after.attainment, greaterThanOrEqualTo(before.attainment));
+          if (before.satisfied) expect(after.satisfied, isTrue);
+        } else {
+          expect(after.attainment, lessThanOrEqualTo(before.attainment));
+          if (after.satisfied) expect(before.satisfied, isTrue);
+        }
+      },
+      tags: 'glados',
+    );
+  });
+}
+
+/// One generated leaf: a measurable (or a habit when [isMeasurable] is false)
+/// reading series `m<i>` / `h<i>` in days before 2026-08-08.
+class _GoalLeaf {
+  const _GoalLeaf({
+    required this.index,
+    required this.isMeasurable,
+    required this.aggregation,
+    required this.direction,
+    required this.target,
+    required this.window,
+    required this.series,
+  });
+
+  final int index;
+  final bool isMeasurable;
+  final GoalAggregation aggregation;
+  final GoalDirection direction;
+  final int target;
+  final GoalWindow window;
+
+  /// Days before the reference → value.
+  final Map<int, int> series;
+
+  String get id => 'c$index';
+
+  _GoalLeaf withIndex(int i) => _GoalLeaf(
+    index: i,
+    isMeasurable: isMeasurable,
+    aggregation: aggregation,
+    direction: direction,
+    target: target,
+    window: window,
+    series: series,
+  );
+
+  _GoalLeaf get asMeasurable => _GoalLeaf(
+    index: index,
+    isMeasurable: true,
+    aggregation: aggregation,
+    direction: direction,
+    target: target,
+    window: window,
+    series: series,
+  );
+
+  _GoalLeaf raisedBy(int bump) => _GoalLeaf(
+    index: index,
+    isMeasurable: isMeasurable,
+    aggregation: aggregation,
+    direction: direction,
+    target: target,
+    window: window,
+    series: series.map((day, value) => MapEntry(day, value + bump)),
+  );
+
+  GoalCriterion get criterion => isMeasurable
+      ? GoalCriterion.measurable(
+          criterionId: id,
+          dataTypeId: 'm$index',
+          window: window,
+          aggregation: aggregation,
+          target: target,
+          direction: direction,
+        )
+      : GoalCriterion.habit(
+          criterionId: id,
+          habitId: 'h$index',
+          window: window,
+          targetCount: target % 8,
+        );
+
+  @override
+  String toString() => '$criterion $series';
+}
+
+/// A leaf (kind 3) or a composite of kind 0 allOf, 1 anyOf, 2 atLeastCount.
+class _GoalTree {
+  _GoalTree(this.kind, List<_GoalLeaf> leaves, int successes)
+    : leaves = [
+        for (final (i, leaf) in leaves.take(kind == 3 ? 1 : 4).indexed)
+          leaf.withIndex(i),
+      ],
+      successes = 1 + (successes - 1) % leaves.length;
+
+  final int kind;
+  final List<_GoalLeaf> leaves;
+  final int successes;
+
+  GoalCriterion get criterion {
+    final children = [for (final leaf in leaves) leaf.criterion];
+    return switch (kind) {
+      0 => GoalCriterion.allOf(criterionId: 'root', criteria: children),
+      1 => GoalCriterion.anyOf(criterionId: 'root', criteria: children),
+      2 => GoalCriterion.atLeastCount(
+        criterionId: 'root',
+        criteria: children,
+        successes: successes,
+      ),
+      _ => children.first,
+    };
+  }
+
+  GoalSignalWindow signals({bool reversed = false}) {
+    Map<DateTime, T> byDay<T>(_GoalLeaf leaf, T Function(int) value) {
+      final entries = [
+        for (final MapEntry(:key, value: v) in leaf.series.entries)
+          MapEntry(
+            DateTime.utc(2026, 8, 8).subtract(Duration(days: key)),
+            value(v),
+          ),
+      ];
+      return Map.fromEntries(reversed ? entries.reversed : entries);
+    }
+
+    final measurables = [
+      for (final leaf in leaves)
+        if (leaf.isMeasurable)
+          MapEntry('m${leaf.index}', byDay(leaf, (v) => v)),
+    ];
+    final habits = [
+      for (final leaf in leaves)
+        if (!leaf.isMeasurable)
+          MapEntry('h${leaf.index}', byDay(leaf, (v) => v.abs() % 3)),
+    ];
+    return GoalSignalWindow(
+      measurableDailySums: Map.fromEntries(
+        reversed ? measurables.reversed : measurables,
+      ),
+      habitSuccessesByDay: Map.fromEntries(
+        reversed ? habits.reversed : habits,
+      ),
+    );
+  }
+
+  @override
+  String toString() => '_GoalTree($criterion, $leaves)';
+}
+
+extension _AnyGoalTree on glados.Any {
+  glados.Generator<GoalWindow> get _evaluationWindow => glados.IntAnys(this)
+      .intInRange(0, 13)
+      .map(
+        (seed) => switch (seed) {
+          0 => const GoalWindow.day(),
+          11 => const GoalWindow.calendarWeek(),
+          12 => const GoalWindow.calendarMonth(),
+          _ => GoalWindow.rollingDays(count: seed),
+        },
+      );
+
+  glados.Generator<_GoalLeaf> get goalLeaf =>
+      glados.CombinableAny(this).combine6(
+        glados.IntAnys(this).intInRange(0, 4),
+        glados.AnyUtils(this).choose(GoalAggregation.values),
+        glados.AnyUtils(this).choose(GoalDirection.values),
+        glados.IntAnys(this).intInRange(0, 21),
+        _evaluationWindow,
+        glados.ListAnys(this).listWithLengthInRange(
+          0,
+          10,
+          glados.CombinableAny(this).combine2(
+            glados.IntAnys(this).intInRange(0, 14),
+            glados.IntAnys(this).intInRange(-5, 21),
+            MapEntry<int, int>.new,
+          ),
+        ),
+        (
+          int kind,
+          GoalAggregation aggregation,
+          GoalDirection direction,
+          int target,
+          GoalWindow window,
+          List<MapEntry<int, int>> series,
+        ) => _GoalLeaf(
+          index: 0,
+          isMeasurable: kind < 3,
+          aggregation: aggregation,
+          direction: direction,
+          target: target,
+          window: window,
+          series: Map.fromEntries(series),
+        ),
+      );
+
+  glados.Generator<_GoalTree> get goalTree =>
+      glados.CombinableAny(this).combine3(
+        glados.IntAnys(this).intInRange(0, 4),
+        glados.ListAnys(this).listWithLengthInRange(1, 5, goalLeaf),
+        glados.IntAnys(this).intInRange(1, 5),
+        _GoalTree.new,
+      );
 }

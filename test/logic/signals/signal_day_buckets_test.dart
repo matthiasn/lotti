@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/logic/signals/signal_day_buckets.dart';
@@ -179,4 +180,154 @@ void main() {
       expect(habitSuccessDays([stepsEntity(DateTime(2026, 8, 8), 1)]), isEmpty);
     });
   });
+
+  group('bucketing properties', () {
+    glados.Glados3(
+      glados.any.dayValues,
+      glados.IntAnys(glados.any).intInRange(0, 20),
+      glados.IntAnys(glados.any).intInRange(1, 11),
+      glados.ExploreConfig(numRuns: 300),
+    ).test(
+      'a trailing average is null for an empty window, else within its values',
+      (valuesByOffset, targetOffset, days) {
+        final values = {
+          for (final MapEntry(:key, :value) in valuesByOffset.entries)
+            day.subtract(Duration(days: key)): value,
+        };
+        final inWindow = [
+          for (final MapEntry(:key, :value) in valuesByOffset.entries)
+            if (key >= targetOffset && key < targetOffset + days) value,
+        ];
+        final average = trailingAverageOn(
+          values,
+          day: day.subtract(Duration(days: targetOffset)),
+          days: days,
+        );
+
+        if (inWindow.isEmpty) {
+          expect(average, isNull);
+        } else {
+          expect(average, inWindow.reduce((a, b) => a + b) / inWindow.length);
+          expect(
+            average,
+            inInclusiveRange(
+              inWindow.reduce((a, b) => a < b ? a : b),
+              inWindow.reduce((a, b) => a > b ? a : b),
+            ),
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados2(
+      glados.any.signalReadings,
+      glados.IntAnys(glados.any).intInRange(0, 30),
+      glados.ExploreConfig(numRuns: 300),
+    ).test(
+      'measurement totals keep every value on its midnight-UTC day, in any '
+      'order',
+      (readings, rotation) {
+        final entities = [
+          for (final (i, (at, value)) in readings.indexed)
+            measurementEntity(at, value, id: 'm$i'),
+        ];
+        final byDay = bucketMeasurableTotalsByDay(entities);
+
+        expect(
+          bucketMeasurableTotalsByDay(_rotated(entities, rotation)),
+          byDay,
+        );
+        expect(bucketMeasurableTotalsByDay(entities.reversed.toList()), byDay);
+        expect(
+          byDay.values.fold<num>(0, (sum, v) => sum + v),
+          readings.fold<num>(0, (sum, r) => sum + r.$2),
+        );
+        expect(byDay.keys.toSet(), {
+          for (final (at, _) in readings) signalDayKey(at),
+        });
+        for (final key in byDay.keys) {
+          expect(key.isUtc, isTrue);
+          expect(
+            (key.hour, key.minute, key.second, key.millisecond),
+            (0, 0, 0, 0),
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados2(
+      glados.any.signalReadings,
+      glados.IntAnys(glados.any).intInRange(0, 30),
+      glados.ExploreConfig(numRuns: 300),
+    ).test(
+      'a point-sample day keeps the same latest reading in any order',
+      (readings, rotation) {
+        final entities = [
+          for (final (i, (at, value)) in readings.indexed)
+            weightEntity(at, value, id: 'w${i.toString().padLeft(3, '0')}'),
+        ];
+        final byDay = bucketQuantitativeByDay(
+          entities,
+          'HealthDataType.WEIGHT',
+        );
+
+        expect(
+          bucketQuantitativeByDay(
+            _rotated(entities, rotation),
+            'HealthDataType.WEIGHT',
+          ),
+          byDay,
+        );
+        expect(
+          bucketQuantitativeByDay(
+            entities.reversed.toList(),
+            'HealthDataType.WEIGHT',
+          ),
+          byDay,
+        );
+        for (final MapEntry(key: bucket, :value) in byDay.entries) {
+          final sameDay =
+              [
+                for (final (i, (at, v)) in readings.indexed)
+                  if (signalDayKey(at) == bucket) (at: at, i: i, v: v),
+              ]..sort((a, b) {
+                final byTime = a.at.compareTo(b.at);
+                return byTime != 0 ? byTime : a.i.compareTo(b.i);
+              });
+          expect(value, sameDay.last.v);
+        }
+      },
+      tags: 'glados',
+    );
+  });
+}
+
+List<T> _rotated<T>(List<T> items, int by) => items.isEmpty
+    ? items
+    : [...items.skip(by % items.length), ...items.take(by % items.length)];
+
+extension _AnySignalBuckets on glados.Any {
+  /// Days before the reference → an integer reading.
+  glados.Generator<Map<int, int>> get dayValues => glados.MapAnys(this).map(
+    glados.IntAnys(this).intInRange(0, 30),
+    glados.IntAnys(this).intInRange(-50, 200),
+  );
+
+  /// Local instants over five days at half-hour steps — so several share a
+  /// day and some share an instant — each with an integer reading.
+  glados.Generator<List<(DateTime, int)>> get signalReadings =>
+      glados.ListAnys(this).listWithLengthInRange(
+        0,
+        12,
+        glados.CombinableAny(this).combine2(
+          glados.IntAnys(this).intInRange(0, 240),
+          glados.IntAnys(this).intInRange(-20, 120),
+          (int halfHours, int value) => (
+            DateTime(2026, 8, 4).add(Duration(minutes: 30 * halfHours)),
+            value,
+          ),
+        ),
+      );
 }

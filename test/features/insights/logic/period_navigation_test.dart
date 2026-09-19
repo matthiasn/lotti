@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/insights/logic/period_navigation.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
@@ -287,4 +288,182 @@ void main() {
       expect(startOf(elapsed), DateTime(2026, 7));
     });
   });
+
+  group('navigation properties', () {
+    bool contains(InsightsRange r, int day) =>
+        r.startDay <= day && day < r.endDayExclusive;
+
+    glados.Glados3(
+      glados.any.insightsUnit,
+      glados.any.insightsAnchor,
+      glados.IntAnys(glados.any).intInRange(0, 7),
+      glados.ExploreConfig(numRuns: 400),
+    ).test(
+      'the period holds its anchor and snaps to the unit boundaries',
+      (unit, anchor, firstDay) {
+        final r = periodContaining(unit, anchor, firstDayOfWeekIndex: firstDay);
+        final start = startOf(r);
+
+        expect(contains(r, epochDay(anchor)), isTrue);
+        switch (unit) {
+          case InsightsPeriodUnit.day:
+            expect(r.dayCount, 1);
+          case InsightsPeriodUnit.week:
+            expect(r.dayCount, 7);
+            expect(start.weekday % 7, firstDay);
+          case InsightsPeriodUnit.month:
+            expect(r.dayCount, inInclusiveRange(28, 31));
+            expect((start.day, start.month), (1, anchor.month));
+          case InsightsPeriodUnit.quarter:
+            expect(r.dayCount, inInclusiveRange(90, 92));
+            expect((start.day, (start.month - 1) % 3), (1, 0));
+          case InsightsPeriodUnit.year:
+            expect(r.dayCount, inInclusiveRange(365, 366));
+            expect((start.day, start.month, start.year), (1, 1, anchor.year));
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados3(
+      glados.any.insightsUnit,
+      glados.any.insightsAnchor,
+      glados.any.insightsShift,
+      glados.ExploreConfig(numRuns: 400),
+    ).test(
+      'shifting is reversible, stays aligned and tiles without gaps',
+      (unit, anchor, shift) {
+        final (delta, firstDay) = shift;
+        final r = periodContaining(unit, anchor, firstDayOfWeekIndex: firstDay);
+        final shifted = shiftPeriod(r, unit, delta);
+        final next = shiftPeriod(r, unit, delta + 1);
+
+        expect(shiftPeriod(shifted, unit, -delta), r);
+        expect(
+          periodContaining(
+            unit,
+            startOf(shifted),
+            firstDayOfWeekIndex: firstDay,
+          ),
+          shifted,
+        );
+        expect(next.startDay, shifted.endDayExclusive);
+        // The previous period is the one before, cut to no more days than
+        // this one has — so a 29-day February compares with January 1–29.
+        if (delta == -1) {
+          final previous = previousPeriod(r, unit);
+          expect(previous.startDay, shifted.startDay);
+          expect(
+            previous.dayCount,
+            r.dayCount < shifted.dayCount ? r.dayCount : shifted.dayCount,
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados3(
+      glados.any.insightsUnit,
+      glados.any.insightsAnchor,
+      glados.any.insightsShift,
+      glados.ExploreConfig(numRuns: 400),
+    ).test(
+      'the elapsed portion is a non-empty prefix ending by today',
+      (unit, now, shift) {
+        final (delta, firstDay) = shift;
+        final today = epochDay(now);
+        final range = shiftPeriod(
+          periodContaining(unit, now, firstDayOfWeekIndex: firstDay),
+          unit,
+          delta,
+        );
+        final elapsed = elapsedPortion(range, now);
+
+        expect(elapsed.startDay, range.startDay);
+        expect(
+          elapsed.endDayExclusive,
+          lessThanOrEqualTo(range.endDayExclusive),
+        );
+        expect(elapsed.dayCount, greaterThanOrEqualTo(1));
+        if (range.startDay <= today) {
+          expect(elapsed.endDayExclusive, lessThanOrEqualTo(today + 1));
+        } else {
+          expect(elapsed.dayCount, 1);
+        }
+        expect(isInProgress(range, now), contains(range, today));
+        expect(isInProgress(range, now), delta == 0);
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados3(
+      glados.any.insightsUnit,
+      glados.any.insightsAnchor,
+      glados.IntAnys(glados.any).intInRange(0, 7),
+      glados.ExploreConfig(numRuns: 400),
+    ).test(
+      'the previous to-date period is as long and ends before it starts',
+      (unit, now, firstDay) {
+        final toDate = periodToDate(unit, now, firstDayOfWeekIndex: firstDay);
+        final full = periodContaining(
+          unit,
+          now,
+          firstDayOfWeekIndex: firstDay,
+        );
+        final previous = previousPeriod(toDate, unit);
+
+        expect(toDate.startDay, full.startDay);
+        expect(toDate.endDayExclusive, epochDay(now) + 1);
+        expect(previous.startDay, shiftPeriod(full, unit, -1).startDay);
+        expect(previous.endDayExclusive, lessThanOrEqualTo(toDate.startDay));
+        expect(previous.dayCount, lessThanOrEqualTo(toDate.dayCount));
+      },
+      tags: 'glados',
+    );
+  });
+}
+
+/// Days on which clocks change in Europe or North America, where day
+/// arithmetic done in hours would drift.
+final _dstDays = [
+  DateTime(2024, 3, 10),
+  DateTime(2024, 3, 31),
+  DateTime(2024, 10, 27),
+  DateTime(2024, 11, 3),
+  DateTime(2026, 3, 29),
+  DateTime(2026, 10, 25),
+  DateTime(2031, 3, 30),
+];
+
+extension _AnyInsights on glados.Any {
+  glados.Generator<InsightsPeriodUnit> get insightsUnit =>
+      glados.AnyUtils(this).choose(InsightsPeriodUnit.values);
+
+  /// A local instant between 1971 and 2099 at any hour; a quarter of the time
+  /// a clock-change day, a year's last day or a leap day.
+  glados.Generator<DateTime> get insightsAnchor =>
+      glados.CombinableAny(this).combine3(
+        glados.IntAnys(this).intInRange(365, 47100),
+        glados.IntAnys(this).intInRange(0, 12),
+        glados.IntAnys(this).intInRange(0, 24),
+        (int dayIndex, int snap, int hour) {
+          final day = DateTime.utc(1970).add(Duration(days: dayIndex));
+          final leapYear = day.year - day.year % 4;
+          final date = switch (snap) {
+            0 => _dstDays[dayIndex % _dstDays.length],
+            1 => DateTime(day.year, 12, 31),
+            2 when leapYear >= 1972 => DateTime(leapYear, 2, 29),
+            _ => DateTime(day.year, day.month, day.day),
+          };
+          return DateTime(date.year, date.month, date.day, hour);
+        },
+      );
+
+  /// A period delta of −50…50 and a first weekday of 0…6.
+  glados.Generator<(int, int)> get insightsShift =>
+      glados.CombinableAny(this).combine2(
+        glados.IntAnys(this).intInRange(-50, 51),
+        glados.IntAnys(this).intInRange(0, 7),
+        (int delta, int firstDay) => (delta, firstDay),
+      );
 }

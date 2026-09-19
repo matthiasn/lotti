@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/goal_window.dart';
 
 void main() {
@@ -144,4 +145,214 @@ void main() {
       expect(GoalWindow.fromJson(window.toJson()), window);
     }
   });
+
+  group('window properties', () {
+    String dayKey(DateTime day) =>
+        '${day.year.toString().padLeft(4, '0')}-'
+        '${day.month.toString().padLeft(2, '0')}-'
+        '${day.day.toString().padLeft(2, '0')}';
+
+    glados.Glados2(
+      glados.any.goalWindow,
+      glados.any.goalReference,
+      glados.ExploreConfig(numRuns: 400),
+    ).test(
+      'the reference day lies in a well-formed range of the right length',
+      (window, reference) {
+        final day = GoalWindow.dayUtc(reference);
+        final range = window.periodRange(reference);
+
+        expect(range.start.isUtc && range.end.isUtc, isTrue);
+        expect(GoalWindow.dayUtc(range.start), range.start);
+        expect(GoalWindow.dayUtc(range.end), range.end);
+        expect(range.start.isAfter(range.end), isFalse);
+        expect(day.isBefore(range.start), isFalse);
+        expect(day.isAfter(range.end), isFalse);
+
+        final length = window.lengthInDays(reference);
+        switch (window) {
+          case GoalWindowDay():
+            expect(length, 1);
+          case GoalWindowRollingDays(:final count):
+            expect(length, count);
+          case GoalWindowCalendarWeek():
+            expect(length, 7);
+            expect(range.start.weekday, DateTime.monday);
+          case GoalWindowCalendarMonth():
+            expect(length, DateTime.utc(day.year, day.month + 1, 0).day);
+            expect(range.start.day, 1);
+            expect(range.start.month, day.month);
+            expect(range.end.month, day.month);
+        }
+
+        final elapsed = window.elapsedDays(reference);
+        expect(elapsed, day.difference(range.start).inDays + 1);
+        expect(elapsed, inInclusiveRange(1, length));
+        expect(window.elapsedDays(range.end), length);
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados2(
+      glados.any.goalWindow,
+      glados.any.goalReference,
+      glados.ExploreConfig(numRuns: 400),
+    ).test(
+      'every day of a period shares its key and its neighbours do not',
+      (window, reference) {
+        final range = window.periodRange(reference);
+        final key = window.periodKey(reference);
+
+        switch (window) {
+          case GoalWindowDay() || GoalWindowRollingDays():
+            // Each day anchors its own trailing period.
+            expect(key, dayKey(GoalWindow.dayUtc(reference)));
+          case GoalWindowCalendarWeek() || GoalWindowCalendarMonth():
+            for (
+              var day = range.start;
+              !day.isAfter(range.end);
+              day = day.add(const Duration(days: 1))
+            ) {
+              expect(window.periodKey(day), key, reason: '$day');
+            }
+            expect(
+              window.periodKey(range.start.subtract(const Duration(days: 1))),
+              isNot(key),
+            );
+            expect(
+              window.periodKey(range.end.add(const Duration(days: 1))),
+              isNot(key),
+            );
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.goalReference,
+      glados.ExploreConfig(numRuns: 400),
+    ).test(
+      'an ISO week is numbered 1–53 in a year at most one away',
+      (reference) {
+        final day = GoalWindow.dayUtc(reference);
+        final match = RegExp(
+          r'^(\d{4})-W(\d{2})$',
+        ).firstMatch(const GoalWindow.calendarWeek().periodKey(reference))!;
+        final isoYear = int.parse(match.group(1)!);
+        final week = int.parse(match.group(2)!);
+
+        expect(week, inInclusiveRange(1, 53));
+        if (isoYear < day.year) {
+          expect((day.month, week >= 52), (1, true));
+        } else if (isoYear > day.year) {
+          expect((day.month, week), (12, 1));
+        } else {
+          expect(isoYear, day.year);
+        }
+        // Week 53 exists only in a year whose 28 December is in it.
+        if (week == 53) {
+          expect(
+            const GoalWindow.calendarWeek().periodKey(
+              DateTime.utc(isoYear, 12, 28),
+            ),
+            '$isoYear-W53',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados2(
+      glados.IntAnys(glados.any).intInRange(1, 4000),
+      glados.IntAnys(glados.any).intInRange(0, 4),
+      glados.ExploreConfig(numRuns: 300),
+    ).test(
+      'a rolling phrase parses to its count up to a decade, null beyond',
+      (count, style) {
+        final phrase = switch (style) {
+          0 => 'rolling $count days',
+          1 => '  ROLLING   $count   DAYS ',
+          2 => 'Rolling $count day',
+          _ => 'a rolling $count days average',
+        };
+        expect(
+          parseGoalWindowPhrase(phrase),
+          count <= maxGoalRollingDays
+              ? GoalWindow.rollingDays(count: count)
+              : isNull,
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados2(
+      glados.IntAnys(glados.any).intInRange(1, 1000000),
+      glados.IntAnys(glados.any).intInRange(0, 5),
+    ).test(
+      'a positive cadence in any accepted spelling parses to itself',
+      (count, style) {
+        final cadence = switch (style) {
+          0 => count,
+          1 => '$count',
+          2 => ' ${count}x ',
+          3 => '$count times per week',
+          _ => count.toDouble(),
+        };
+        expect(parseGoalCadenceCount(cadence), count);
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.stringOf('0123456789 .-xtimesprwk+'),
+      glados.ExploreConfig(numRuns: 400),
+    ).test(
+      'a cadence is a positive whole count or null, never a throw',
+      (cadence) {
+        final count = parseGoalCadenceCount(cadence);
+        if (count != null) {
+          expect(count, greaterThan(0));
+          expect(
+            int.parse(RegExp(r'\d+').firstMatch(cadence)!.group(0)!),
+            count,
+          );
+        }
+      },
+      tags: 'glados',
+    );
+  });
+}
+
+extension _AnyGoalWindow on glados.Any {
+  glados.Generator<GoalWindow> get goalWindow =>
+      glados.CombinableAny(this).combine2(
+        glados.IntAnys(this).intInRange(0, 4),
+        glados.IntAnys(this).intInRange(1, maxGoalRollingDays + 1),
+        (int kind, int count) => switch (kind) {
+          0 => const GoalWindow.day(),
+          1 => GoalWindow.rollingDays(count: count),
+          2 => const GoalWindow.calendarWeek(),
+          _ => const GoalWindow.calendarMonth(),
+        },
+      );
+
+  /// A local instant between 1970 and 2100, snapped to a year's edge or a
+  /// leap day a third of the time, at any hour.
+  glados.Generator<DateTime> get goalReference =>
+      glados.CombinableAny(this).combine3(
+        glados.IntAnys(this).intInRange(0, 47847),
+        glados.IntAnys(this).intInRange(0, 9),
+        glados.IntAnys(this).intInRange(0, 24),
+        (int dayIndex, int snap, int hour) {
+          final day = DateTime.utc(1970).add(Duration(days: dayIndex));
+          final leapYear = day.year - day.year % 4;
+          final (y, m, d) = switch (snap) {
+            0 => (day.year, 12, 31),
+            1 => (day.year, 1, 1),
+            2 when leapYear != 2100 && leapYear >= 1972 => (leapYear, 2, 29),
+            _ => (day.year, day.month, day.day),
+          };
+          return DateTime(y, m, d, hour);
+        },
+      );
 }

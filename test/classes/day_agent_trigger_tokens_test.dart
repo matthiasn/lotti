@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/day_agent_trigger_tokens.dart';
 
 void main() {
@@ -331,4 +332,197 @@ void main() {
       expect(resolution.isAmbiguous, isFalse);
     });
   });
+
+  group('token properties', () {
+    List<String> kept(Iterable<String> ids) =>
+        [for (final id in ids) id.trim()].where((id) => id.isNotEmpty).toList()
+          ..sort();
+
+    glados.Glados(
+      glados.any.tokenFamilies,
+      glados.ExploreConfig(numRuns: 400),
+    ).test(
+      'each extractor reads its own family, trimmed and sorted, and nothing else',
+      (families) {
+        final tokens = families.tokens;
+
+        expect(captureIdsFromTriggerTokens(tokens), kept(families.captures));
+        expect(
+          decidedTaskIdsFromTriggerTokens(tokens),
+          kept(families.decidedTasks),
+        );
+        expect(
+          decidedCaptureItemIdsFromTriggerTokens(tokens),
+          kept(families.decidedItems),
+        );
+        for (final ids in [
+          captureIdsFromTriggerTokens(tokens),
+          decidedTaskIdsFromTriggerTokens(tokens),
+          decidedCaptureItemIdsFromTriggerTokens(tokens),
+        ]) {
+          for (final id in ids) {
+            expect(id, isNotEmpty);
+            expect(id.trim(), id);
+          }
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.tokenFamilies,
+      glados.ExploreConfig(numRuns: 400),
+    ).test(
+      'a wake resolves to a day only when its day tokens agree on one',
+      (families) {
+        final tokens = families.tokens;
+        final resolution = resolvePlannerWakeDay(tokens);
+        final days = {...kept(families.days.values.expand((ids) => ids))};
+
+        expect(resolution.candidates, days);
+        expect(resolution.isAmbiguous, days.length >= 2);
+        expect(resolution.dayId, days.length == 1 ? days.single : null);
+        for (final day in families.days[_DayFamily.drafting]!) {
+          expect(hasDraftingTokenForDay(tokens, day), isTrue);
+        }
+        for (final day in families.days[_DayFamily.refine]!) {
+          expect(hasRefineTokenForDay(tokens, day), isTrue);
+        }
+        for (final day in families.days[_DayFamily.planning]!) {
+          if (!families.days[_DayFamily.drafting]!.contains(day)) {
+            expect(hasDraftingTokenForDay(tokens, day), isFalse);
+          }
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados2(
+      glados.any.nonEmptyLetterOrDigits,
+      glados.any.letterOrDigits,
+    ).test(
+      'a day workspace key gives its day back; any other key gives none',
+      (dayId, other) {
+        expect(dayIdFromWorkspaceKey(dayAgentWorkspaceKey(dayId)), dayId);
+        expect(dayIdFromWorkspaceKey('x$other'), isNull);
+        expect(dayIdFromWorkspaceKey(coordinatorDigestWorkspaceKey), isNull);
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados3(
+      glados.any.nonEmptyLetterOrDigits,
+      glados.any.nonEmptyLetterOrDigits,
+      glados.IntAnys(glados.any).intInRange(0, 1 << 40),
+    ).test(
+      'one processing job reads back; two distinct jobs are refused',
+      (jobA, jobB, micros) {
+        final at = DateTime.fromMicrosecondsSinceEpoch(micros, isUtc: true);
+        final tokenA = dayAgentProcessingJobToken(jobA, requestedAt: at);
+        final tokenB = dayAgentProcessingJobToken(jobB, requestedAt: at);
+
+        expect(
+          processingJobIdFromTriggerTokens({
+            tokenA,
+            dayAgentPlanningDayToken(jobB),
+          }),
+          dayAgentProcessingIntentId(jobA, requestedAt: at),
+        );
+        if (jobA != jobB) {
+          expect(
+            () => processingJobIdFromTriggerTokens({tokenA, tokenB}),
+            throwsStateError,
+          );
+        }
+      },
+      tags: 'glados',
+    );
+  });
+}
+
+enum _DayFamily { planning, drafting, refine, digest }
+
+class _TokenFamilies {
+  const _TokenFamilies({
+    required this.captures,
+    required this.decidedTasks,
+    required this.decidedItems,
+    required this.days,
+  });
+
+  final List<String> captures;
+  final List<String> decidedTasks;
+  final List<String> decidedItems;
+  final Map<_DayFamily, List<String>> days;
+
+  Set<String> get tokens => {
+    ...captures.map(dayAgentCaptureSubmittedToken),
+    ...decidedTasks.map(dayAgentDecidedTaskToken),
+    ...decidedItems.map(dayAgentDecidedCaptureItemToken),
+    ...days[_DayFamily.planning]!.map(dayAgentPlanningDayToken),
+    ...days[_DayFamily.drafting]!.map(dayAgentDraftingToken),
+    ...days[_DayFamily.refine]!.map(dayAgentRefineToken),
+    ...days[_DayFamily.digest]!.map(dayAgentDigestToken),
+    // Unrelated vocabulary riding on the same wake.
+    'goal-cadence',
+    'goal-escalation:2026-W32',
+    coordinatorDigestWorkspaceKey,
+  };
+
+  @override
+  String toString() =>
+      '_TokenFamilies(captures: $captures, decidedTasks: $decidedTasks, '
+      'decidedItems: $decidedItems, days: $days)';
+}
+
+extension _AnyTokenFamilies on glados.Any {
+  /// Distinct raw ids per family; they may be blank, padded or contain a
+  /// colon, as ids from an older peer might.
+  glados.Generator<List<String>> get _ids => glados.ListAnys(this)
+      .listWithLengthInRange(
+        0,
+        5,
+        glados.AnyUtils(this).choose(const [
+          'dayplan-2026-08-08',
+          'dayplan-2026-08-09',
+          'a',
+          ' a',
+          'a ',
+          'b1',
+          'a:b',
+          '',
+          ' ',
+        ]),
+      )
+      .map((ids) => ids.toSet().toList());
+
+  glados.Generator<_TokenFamilies> get tokenFamilies =>
+      glados.CombinableAny(this).combine7(
+        _ids,
+        _ids,
+        _ids,
+        _ids,
+        _ids,
+        _ids,
+        _ids,
+        (
+          List<String> captures,
+          List<String> decidedTasks,
+          List<String> decidedItems,
+          List<String> planning,
+          List<String> drafting,
+          List<String> refine,
+          List<String> digest,
+        ) => _TokenFamilies(
+          captures: captures,
+          decidedTasks: decidedTasks,
+          decidedItems: decidedItems,
+          days: {
+            _DayFamily.planning: planning,
+            _DayFamily.drafting: drafting,
+            _DayFamily.refine: refine,
+            _DayFamily.digest: digest,
+          },
+        ),
+      );
 }
