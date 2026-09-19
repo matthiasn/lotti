@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/journal/repository/clipboard_images.dart';
+import 'package:lotti/features/journal/repository/clipboard_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/ui/widgets/avatar_crop_sheet.dart';
@@ -7,8 +9,8 @@ import 'package:lotti/features/relationships/ui/widgets/person_photo_actions.dar
 import 'package:lotti/logic/image_import.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// [PersonPhotoActions] over the real repositories, the real picker and the
-/// real crop surface, opened over [context] — the page under the avatar
+/// [PersonPhotoActions] over the real repositories, the real picker, the
+/// real clipboard and the real crop surface, opened over [context] — the page under the avatar
 /// sheet, or the person form.
 ///
 /// Both hosts build theirs here so a picture chosen from the sheet and one
@@ -23,6 +25,11 @@ PersonPhotoActions productionPersonPhotoActions(
   journal: ref.read(journalRepositoryProvider),
   pickImage: () => pickSingleImageEntry(
     context,
+    linkedId: relationship.id,
+    categoryId: relationship.meta.categoryId,
+  ),
+  pasteImage: () => importFirstClipboardImage(
+    ref.read(clipboardRepositoryProvider),
     linkedId: relationship.id,
     categoryId: relationship.meta.categoryId,
   ),

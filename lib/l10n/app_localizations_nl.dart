@@ -4046,6 +4046,16 @@ class AppLocalizationsNl extends AppLocalizations {
       'U kunt deze .. generatie blijft op de achtergrond';
 
   @override
+  String get coverArtPasteFailed => 'Kon de omslag niet plakken';
+
+  @override
+  String get coverArtPasteFromClipboard => 'Plakken als omslag';
+
+  @override
+  String get coverArtPasteFromClipboardHint =>
+      'Maakt de afbeelding van je klembord de omslag van deze taak.';
+
+  @override
   String get createButton => 'Aanmaken';
 
   @override
@@ -12310,6 +12320,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get relationshipPhotoFace => 'Gezicht';
+
+  @override
+  String get relationshipPhotoPaste => 'Plakken';
 
   @override
   String get relationshipPhotoPrivacy =>

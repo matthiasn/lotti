@@ -4062,6 +4062,16 @@ class AppLocalizationsDe extends AppLocalizations {
       'Du kannst dies schließen — die Generierung läuft im Hintergrund weiter';
 
   @override
+  String get coverArtPasteFailed => 'Titelbild konnte nicht eingefügt werden';
+
+  @override
+  String get coverArtPasteFromClipboard => 'Als Titelbild einfügen';
+
+  @override
+  String get coverArtPasteFromClipboardHint =>
+      'Macht das Bild aus deiner Zwischenablage zum Titelbild dieser Aufgabe.';
+
+  @override
   String get createButton => 'Erstellen';
 
   @override
@@ -12364,6 +12374,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get relationshipPhotoFace => 'Gesicht';
+
+  @override
+  String get relationshipPhotoPaste => 'Einfügen';
 
   @override
   String get relationshipPhotoPrivacy =>

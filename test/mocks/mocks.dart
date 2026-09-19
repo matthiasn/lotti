@@ -233,6 +233,13 @@ import 'package:path_provider_platform_interface/path_provider_platform_interfac
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:record/record.dart' as record;
 import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa;
+import 'package:super_clipboard/super_clipboard.dart'
+    show
+        ClipboardDataReader,
+        ClipboardReader,
+        DataReaderFile,
+        ReadProgress,
+        SystemClipboard;
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
@@ -1667,3 +1674,13 @@ class MockScreenshotHost extends Mock implements ScreenshotHost {}
 class MockProcess extends Mock implements io.Process {}
 
 class MockStdout extends Mock implements io.Stdout {}
+
+class MockSystemClipboard extends Mock implements SystemClipboard {}
+
+class MockClipboardReader extends Mock implements ClipboardReader {}
+
+class MockClipboardDataReader extends Mock implements ClipboardDataReader {}
+
+class MockDataReaderFile extends Mock implements DataReaderFile {}
+
+class MockReadProgress extends Mock implements ReadProgress {}

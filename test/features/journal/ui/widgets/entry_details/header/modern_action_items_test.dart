@@ -1271,6 +1271,58 @@ void main() {
     );
   });
 
+  group('ModernPasteCoverArtItem', () {
+    Future<_PasteCoverFakeEntryController> pumpAndTap(
+      WidgetTester tester, {
+      required bool pasted,
+    }) async {
+      final controller = _PasteCoverFakeEntryController(
+        buildTask(),
+        pasted: pasted,
+      );
+      await tester.pumpWidget(
+        _buildWithRoute(
+          overrides: [
+            entryControllerProvider('task-1').overrideWith(() => controller),
+          ],
+          child: const ModernPasteCoverArtItem(taskId: 'task-1'),
+        ),
+      );
+      // One frame fires the post-frame route push; the second advances
+      // past the MaterialPageRoute transition (bounded, no settle).
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+
+      expect(find.text('Paste as cover'), findsOneWidget);
+      expect(
+        find.text("Makes the image on your clipboard this task's cover."),
+        findsOneWidget,
+      );
+      await tester.tap(find.byType(DsActionRow));
+      await tester.pumpAndSettle();
+      return controller;
+    }
+
+    testWidgets('pastes the clipboard image as the cover and closes the menu', (
+      tester,
+    ) async {
+      final controller = await pumpAndTap(tester, pasted: true);
+
+      expect(controller.pasteCalls, 1);
+      expect(find.byType(DsActionRow), findsNothing);
+      expect(find.text("Couldn't paste the cover"), findsNothing);
+    });
+
+    testWidgets('says so when nothing could be pasted, and still closes the '
+        'menu', (tester) async {
+      final controller = await pumpAndTap(tester, pasted: false);
+
+      expect(controller.pasteCalls, 1);
+      expect(find.byType(DsActionRow), findsNothing);
+      expect(find.text("Couldn't paste the cover"), findsOneWidget);
+    });
+  });
+
   group('ModernCopyImageItem — tap behavior', () {
     testWidgets(
       'tapping calls copyImage on the notifier and pops the route',
@@ -2681,6 +2733,23 @@ class _DeletingFakeEntryController extends FakeEntryController {
   Future<bool> delete({required bool beamBack}) async {
     deleteCalls++;
     return true;
+  }
+}
+
+/// Fake EntryController that answers [pasteCoverArt] with [pasted] and
+/// counts the calls.
+class _PasteCoverFakeEntryController extends FakeEntryController {
+  // ignore: use_super_parameters
+  _PasteCoverFakeEntryController(JournalEntity entity, {required this.pasted})
+    : super(entity);
+
+  final bool pasted;
+  int pasteCalls = 0;
+
+  @override
+  Future<bool> pasteCoverArt() async {
+    pasteCalls++;
+    return pasted;
   }
 }
 

@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/journal/repository/clipboard_images.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
@@ -115,7 +116,10 @@ void main() {
   /// The form with the pinned bar its actions now live in — the pairing the
   /// modal builds, so a bare-form test still has a Save to press. Scrollable
   /// because three cards exceed the harness's 800px child.
-  Widget buildForm({RelationshipEntry? initial}) {
+  Widget buildForm({
+    RelationshipEntry? initial,
+    bool clipboardHasImage = false,
+  }) {
     final handle = RelationshipFormHandle();
     return makeTestableWidgetWithScaffold(
       SingleChildScrollView(
@@ -131,6 +135,9 @@ void main() {
         relationshipAgentServiceProvider.overrideWithValue(mockAgentService),
         journalRepositoryProvider.overrideWithValue(mockJournalRepository),
         contactsServiceProvider.overrideWithValue(contactsService),
+        clipboardHasImageProvider.overrideWith(
+          (ref) async => clipboardHasImage,
+        ),
       ],
     );
   }
@@ -177,6 +184,29 @@ void main() {
       expect(
         find.byKey(const ValueKey('person-form-photo-privacy')),
         findsOneWidget,
+      );
+    });
+
+    testWidgets('offers Paste for the banner while the clipboard holds an '
+        'image', (tester) async {
+      await tester.pumpWidget(
+        buildForm(initial: existing(), clipboardHasImage: true),
+      );
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey('person-form-banner-paste')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('offers no Paste while the clipboard holds no image', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildForm(initial: existing()));
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey('person-form-banner-paste')),
+        findsNothing,
       );
     });
 

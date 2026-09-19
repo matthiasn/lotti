@@ -4,6 +4,7 @@
 
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -24,6 +25,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
+import 'package:lotti/features/journal/repository/clipboard_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
@@ -46,6 +48,7 @@ import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:super_clipboard/super_clipboard.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -3838,6 +3841,159 @@ void main() {
       expect(state?.entry, isA<Task>());
       final task = state!.entry! as Task;
       expect(task.data.coverArtId, 'new-image');
+    });
+  });
+
+  group('pasteCoverArt method', () {
+    late Directory tempDir;
+    late MockSystemClipboard clipboard;
+    late MockClipboardReader reader;
+    final categorised = testTask.copyWith(
+      meta: testTask.meta.copyWith(categoryId: 'cat-cover'),
+    );
+
+    /// A clipboard item offering one PNG that the platform delivers.
+    MockClipboardDataReader pngItem() {
+      final item = MockClipboardDataReader();
+      final file = MockDataReaderFile();
+      when(() => item.canProvide(Formats.png)).thenReturn(true);
+      when(() => item.canProvide(Formats.jpeg)).thenReturn(false);
+      when(
+        file.readAll,
+      ).thenAnswer((_) async => Uint8List.fromList(List.filled(64, 7)));
+      when(
+        () => item.getFile(Formats.png, any(), onError: any(named: 'onError')),
+      ).thenAnswer((invocation) {
+        (invocation.positionalArguments[1]
+            as Future<void> Function(DataReaderFile))(file);
+        return null;
+      });
+      return item;
+    }
+
+    setUp(() {
+      reset(mockPersistenceLogic);
+      tempDir = Directory.systemTemp.createTempSync('paste_cover_');
+      if (!getIt.isRegistered<Directory>()) {
+        getIt.registerSingleton<Directory>(tempDir);
+      }
+      clipboard = MockSystemClipboard();
+      reader = MockClipboardReader();
+      when(clipboard.read).thenAnswer((_) async => reader);
+      when(
+        () => mockJournalDb.journalEntityById(categorised.meta.id),
+      ).thenAnswer((_) async => categorised);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockPersistenceLogic.createMetadata(
+          dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
+          uuidV5Input: any(named: 'uuidV5Input'),
+          flag: any(named: 'flag'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((invocation) async {
+        final at = DateTime(2026, 9, 19, 10);
+        return Metadata(
+          id: 'pasted-cover',
+          createdAt: at,
+          updatedAt: at,
+          dateFrom: at,
+          dateTo: at,
+          categoryId: invocation.namedArguments[#categoryId] as String?,
+        );
+      });
+      when(
+        () => mockPersistenceLogic.createDbEntity(
+          any(),
+          linkedId: any(named: 'linkedId'),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          linkCollapsed: any(named: 'linkCollapsed'),
+        ),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: any(named: 'journalEntityId'),
+          taskData: any(named: 'taskData'),
+        ),
+      ).thenAnswer((_) async => true);
+    });
+
+    tearDown(() async {
+      if (getIt.isRegistered<Directory>()) {
+        getIt.unregister<Directory>();
+      }
+      await tempDir.delete(recursive: true);
+    });
+
+    Future<(bool, ProviderContainer)> paste(String entryId) async {
+      final container = makeProviderContainer(
+        overrides: [clipboardRepositoryProvider.overrideWithValue(clipboard)],
+      );
+      final provider = entryControllerProvider(entryId);
+      await container.read(provider.future);
+      final pasted = await container.read(provider.notifier).pasteCoverArt();
+      return (pasted, container);
+    }
+
+    test('imports the clipboard image into the task, collapsed and in its '
+        'category, and makes it the cover', () async {
+      final item = pngItem();
+      when(() => reader.items).thenReturn([item]);
+
+      final (pasted, container) = await paste(categorised.meta.id);
+
+      expect(pasted, isTrue);
+      final image =
+          verify(
+                () => mockPersistenceLogic.createDbEntity(
+                  captureAny(),
+                  linkedId: categorised.meta.id,
+                  shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+                  linkCollapsed: true,
+                ),
+              ).captured.single
+              as JournalImage;
+      expect(image.meta.categoryId, 'cat-cover');
+      final taskData =
+          verify(
+                () => mockPersistenceLogic.updateTask(
+                  journalEntityId: categorised.meta.id,
+                  taskData: captureAny(named: 'taskData'),
+                ),
+              ).captured.single
+              as TaskData;
+      expect(taskData.coverArtId, 'pasted-cover');
+      final task =
+          container
+                  .read(entryControllerProvider(categorised.meta.id))
+                  .value!
+                  .entry!
+              as Task;
+      expect(task.data.coverArtId, 'pasted-cover');
+    });
+
+    test('changes nothing when the clipboard holds no image', () async {
+      when(() => reader.items).thenReturn(const []);
+
+      final (pasted, _) = await paste(categorised.meta.id);
+
+      expect(pasted, isFalse);
+      verifyNever(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: any(named: 'journalEntityId'),
+          taskData: any(named: 'taskData'),
+        ),
+      );
+    });
+
+    test('never reads the clipboard for an entry that is not a task', () async {
+      final (pasted, _) = await paste(testTextEntry.meta.id);
+
+      expect(pasted, isFalse);
+      verifyNever(clipboard.read);
     });
   });
 

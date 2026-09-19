@@ -6731,6 +6731,24 @@ abstract class AppLocalizations {
   /// **'You can close this — generation continues in the background'**
   String get coverArtGenerationDismissHint;
 
+  /// No description provided for @coverArtPasteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t paste the cover'**
+  String get coverArtPasteFailed;
+
+  /// No description provided for @coverArtPasteFromClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste as cover'**
+  String get coverArtPasteFromClipboard;
+
+  /// No description provided for @coverArtPasteFromClipboardHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Makes the image on your clipboard this task\'s cover.'**
+  String get coverArtPasteFromClipboardHint;
+
   /// No description provided for @createButton.
   ///
   /// In en, this message translates to:
@@ -20388,6 +20406,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Face'**
   String get relationshipPhotoFace;
+
+  /// No description provided for @relationshipPhotoPaste.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get relationshipPhotoPaste;
 
   /// No description provided for @relationshipPhotoPrivacy.
   ///

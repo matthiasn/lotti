@@ -22,6 +22,8 @@ import 'package:lotti/features/ai/state/ai_config_initialization.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
+import 'package:lotti/features/journal/repository/clipboard_images.dart';
+import 'package:lotti/features/journal/repository/clipboard_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -794,6 +796,26 @@ class EntryController extends AsyncNotifier<EntryState?> {
         ),
       );
     }
+  }
+
+  /// Makes the clipboard's image this task's cover art. The picture is
+  /// imported as an image entry linked to the task — collapsed, since the
+  /// cover already shows it — in the task's category.
+  ///
+  /// Returns whether a cover was set: false when this is not a task, the
+  /// clipboard holds no image, or the import refused it.
+  Future<bool> pasteCoverArt() async {
+    final entry = state.value?.entry;
+    if (entry is! Task) return false;
+    final imported = await importFirstClipboardImage(
+      ref.read(clipboardRepositoryProvider),
+      linkedId: id,
+      categoryId: entry.meta.categoryId,
+      linkCollapsed: true,
+    );
+    if (imported == null) return false;
+    await setCoverArt(imported.id);
+    return true;
   }
 
   /// Sets or removes the cover art for a task.

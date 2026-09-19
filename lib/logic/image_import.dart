@@ -741,12 +741,17 @@ Future<Geolocation?> extractGpsCoordinates(
 /// Validates file size before importing.
 /// If [analysisTrigger] is provided, triggers automatic image analysis
 /// for the imported image (fire-and-forget, doesn't block import).
-Future<void> importPastedImages({
+/// [linkCollapsed] links the image to [linkedId] as a collapsed row.
+///
+/// Returns the image entry, or null when the data was refused as too large
+/// or the entry could not be written.
+Future<ImportedImage?> importPastedImages({
   required Uint8List data,
   required String fileExtension,
   String? linkedId,
   String? categoryId,
   AutomaticImageAnalysisTrigger? analysisTrigger,
+  bool linkCollapsed = false,
 }) async {
   // Validate file size
   if (data.length > ImageImportConstants.maxFileSizeBytes) {
@@ -755,7 +760,7 @@ Future<void> importPastedImages({
       'Pasted image too large: ${data.length} bytes',
       subDomain: 'importPastedImages',
     );
-    return;
+    return null;
   }
 
   // Extract original timestamp from EXIF data, fallback to current time
@@ -790,12 +795,15 @@ Future<void> importPastedImages({
     geolocation: geolocation,
   );
 
-  await JournalRepository.createImageEntry(
+  final result = await JournalRepository.createImageEntryTracked(
     imageData,
     linkedId: linkedId,
     categoryId: categoryId,
     onCreated: createAnalysisCallback(analysisTrigger, linkedId),
+    linkCollapsed: linkCollapsed,
   );
+  if (result == null) return null;
+  return (id: result.entry.id, created: result.created);
 }
 
 /// Imports AI-generated image bytes and creates journal entry.

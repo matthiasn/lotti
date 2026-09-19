@@ -34,12 +34,14 @@ import 'package:lotti/features/ai/ui/image_generation/cover_art_skill_modal.dart
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/repository/clipboard_images.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_modal.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
 import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
@@ -985,6 +987,46 @@ void main() {
         );
       });
 
+      testWidgets('$viewport task menu, image on clipboard — $theme', (
+        tester,
+      ) async {
+        await _pumpTaskSurface(
+          tester,
+          device: device,
+          brightness: brightness,
+          world: world,
+          pageController: pageController,
+          journalRepository: journalRepository,
+          surface: TaskDetailsPage(
+            taskId: world.orbitalHabitatTask.meta.id,
+          ),
+          clipboardHasImage: true,
+        );
+
+        final context = tester.element(find.byType(TaskDetailsPage));
+        unawaited(
+          ExtendedHeaderModal.show(
+            context: context,
+            entryId: world.orbitalHabitatTask.meta.id,
+            linkedFromId: null,
+            link: null,
+            inLinkedEntries: false,
+          ),
+        );
+        await settleFrames(tester, 8);
+        final messages = AppLocalizations.of(context)!;
+        expect(find.text(messages.entryActions), findsOneWidget);
+        expect(
+          find.text(messages.coverArtPasteFromClipboard),
+          findsOneWidget,
+        );
+        await captureScreenshot(
+          tester,
+          'task_menu_clipboard_image_${viewport}_$theme',
+          subdir: 'manual',
+        );
+      });
+
       testWidgets('$viewport task cover art — $theme', (tester) async {
         late WidgetRef parentRef;
         await _pumpTaskSurface(
@@ -1141,6 +1183,7 @@ Future<void> _pumpTaskSurface(
   required Widget surface,
   bool automaticUpdates = true,
   bool showAgentSuggestions = false,
+  bool clipboardHasImage = false,
 }) async {
   applyScreenshotDevice(tester, device);
   final tasksById = {
@@ -1196,6 +1239,9 @@ Future<void> _pumpTaskSurface(
         child: ProviderScope(
           overrides: [
             journalRepositoryProvider.overrideWithValue(journalRepository),
+            clipboardHasImageProvider.overrideWith(
+              (ref) async => clipboardHasImage,
+            ),
             journalPageScopeProvider.overrideWithValue(true),
             journalPageControllerProvider(
               true,

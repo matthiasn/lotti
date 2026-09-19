@@ -4037,6 +4037,16 @@ class AppLocalizationsSv extends AppLocalizations {
       'Du kan stänga detta – generationen fortsätter i bakgrunden';
 
   @override
+  String get coverArtPasteFailed => 'Det gick inte att klistra in omslaget';
+
+  @override
+  String get coverArtPasteFromClipboard => 'Klistra in som omslag';
+
+  @override
+  String get coverArtPasteFromClipboardHint =>
+      'Gör bilden i urklipp till uppgiftens omslag.';
+
+  @override
   String get createButton => 'Skapa';
 
   @override
@@ -12293,6 +12303,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get relationshipPhotoFace => 'Ansikte';
+
+  @override
+  String get relationshipPhotoPaste => 'Klistra in';
 
   @override
   String get relationshipPhotoPrivacy =>

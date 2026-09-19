@@ -4011,6 +4011,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'You can close this — generation continues in the background';
 
   @override
+  String get coverArtPasteFailed => 'Couldn\'t paste the cover';
+
+  @override
+  String get coverArtPasteFromClipboard => 'Paste as cover';
+
+  @override
+  String get coverArtPasteFromClipboardHint =>
+      'Makes the image on your clipboard this task\'s cover.';
+
+  @override
   String get createButton => 'Create';
 
   @override
@@ -12222,6 +12232,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get relationshipPhotoFace => 'Face';
+
+  @override
+  String get relationshipPhotoPaste => 'Paste';
 
   @override
   String get relationshipPhotoPrivacy =>

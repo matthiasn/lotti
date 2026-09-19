@@ -4100,6 +4100,16 @@ class AppLocalizationsRo extends AppLocalizations {
       'Puteți închide acest dialog — generarea continuă în fundal';
 
   @override
+  String get coverArtPasteFailed => 'Coperta nu a putut fi lipită';
+
+  @override
+  String get coverArtPasteFromClipboard => 'Lipiți ca copertă';
+
+  @override
+  String get coverArtPasteFromClipboardHint =>
+      'Folosește imaginea din clipboard drept coperta acestei sarcini.';
+
+  @override
   String get createButton => 'Creați';
 
   @override
@@ -12538,6 +12548,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipPhotoFace => 'Chip';
+
+  @override
+  String get relationshipPhotoPaste => 'Lipiți';
 
   @override
   String get relationshipPhotoPrivacy =>

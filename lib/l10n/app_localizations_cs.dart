@@ -4082,6 +4082,16 @@ class AppLocalizationsCs extends AppLocalizations {
       'Můžeš to zavřít — generování pokračuje na pozadí';
 
   @override
+  String get coverArtPasteFailed => 'Obálku se nepodařilo vložit';
+
+  @override
+  String get coverArtPasteFromClipboard => 'Vložit jako obálku';
+
+  @override
+  String get coverArtPasteFromClipboardHint =>
+      'Z obrázku ve schránce udělá obálku tohoto úkolu.';
+
+  @override
   String get createButton => 'Vytvořit';
 
   @override
@@ -12467,6 +12477,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipPhotoFace => 'Obličej';
+
+  @override
+  String get relationshipPhotoPaste => 'Vložit';
 
   @override
   String get relationshipPhotoPrivacy =>

@@ -21,7 +21,8 @@ import 'package:material_ui/material_ui.dart';
 /// The person form's Photo card (design 2026-09-08 turn 2): the privacy
 /// line, then **Face** — the avatar at the import review's size with Change ·
 /// Adjust crop · Remove — and **Banner** — a strip the hero's own height,
-/// dragged left or right into place, with Add / Change / Remove.
+/// dragged left or right into place, with Add / Change / Remove, and Paste
+/// while the clipboard holds an image.
 ///
 /// Its actions write *immediately* through [PersonPhotoActions], the same
 /// object the avatar sheet uses, rather than waiting for the form's Save: a
@@ -36,6 +37,7 @@ class PersonPhotoCard extends StatefulWidget {
     required this.person,
     required this.actions,
     required this.onChanged,
+    this.canPasteBanner = false,
     this.readImageSize = readImageFileSize,
     super.key,
   });
@@ -46,6 +48,10 @@ class PersonPhotoCard extends StatefulWidget {
 
   /// Runs after a successful write, before the card settles.
   final Future<void> Function() onChanged;
+
+  /// Whether the clipboard holds an image, which offers *Paste* beside the
+  /// banner's Add / Change.
+  final bool canPasteBanner;
 
   /// How the banner preview learns its picture's size, which a drag moves
   /// against. Production reads the file's header; a test hands in the size.
@@ -225,6 +231,18 @@ class _PersonPhotoCardState extends State<PersonPhotoCard> {
                 )
               else
                 const Spacer(),
+              if (widget.canPasteBanner) ...[
+                DesignSystemButton(
+                  key: const ValueKey('person-form-banner-paste'),
+                  label: messages.relationshipPhotoPaste,
+                  variant: DesignSystemButtonVariant.tertiary,
+                  size: DesignSystemButtonSize.dense,
+                  onPressed: _busy
+                      ? null
+                      : () => _run(widget.actions.pasteBanner),
+                ),
+                SizedBox(width: tokens.spacing.step2),
+              ],
               DesignSystemButton(
                 key: const ValueKey('person-form-banner-change'),
                 label: hasBanner
