@@ -78,13 +78,17 @@ class AttachmentAwareBootstrapSink implements BootstrapSink {
 
   void _ensureWorkers() {
     while (_workers.length < _concurrency && _pending.isNotEmpty) {
-      late Future<void> worker;
-      worker = _runWorker().whenComplete(() => _workers.remove(worker));
-      _workers.add(worker);
+      final done = Completer<void>();
+      _workers.add(done.future);
+      unawaited(_runWorker(done));
     }
   }
 
-  Future<void> _runWorker() async {
+  /// Drains [_pending], then leaves [_workers] in the same synchronous step
+  /// that found the queue empty. So whenever [_pending] holds an event, at
+  /// least one worker is registered to take it — the invariant [drain]
+  /// relies on.
+  Future<void> _runWorker(Completer<void> done) async {
     while (_pending.isNotEmpty) {
       final event = _pending.removeFirst();
       try {
@@ -96,6 +100,8 @@ class AttachmentAwareBootstrapSink implements BootstrapSink {
         // rest of the page.
       }
     }
+    _workers.remove(done.future);
+    done.complete();
   }
 
   /// Awaits all currently-running and queued attachment work. Intended for
@@ -104,15 +110,10 @@ class AttachmentAwareBootstrapSink implements BootstrapSink {
   ///
   /// Safe to call even when nothing is in flight (returns immediately).
   Future<void> drain() async {
-    // Snapshot-and-wait until both the pending queue has been drained and
-    // every worker has exited. A single pass of `Future.wait(_workers)` is
-    // not enough because a worker can finish and the next call to
-    // `_ensureWorkers` is empty-handed only if `_pending` is also empty.
-    while (_pending.isNotEmpty || _workers.isNotEmpty) {
-      if (_workers.isEmpty) {
-        _ensureWorkers();
-      }
-      if (_workers.isEmpty) return;
+    // Queued events always have a registered worker (see [_runWorker]), so
+    // waiting until no worker is left also means the queue is empty. Loop
+    // because events added while waiting may start new workers.
+    while (_workers.isNotEmpty) {
       await Future.wait(_workers.toList());
     }
   }
