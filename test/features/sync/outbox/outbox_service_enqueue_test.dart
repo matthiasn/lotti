@@ -1,5 +1,7 @@
 // ignore_for_file: avoid_redundant_argument_values, unnecessary_lambdas
 
+import 'package:path/path.dart' as path;
+
 import 'outbox_service_test_harness.dart';
 
 void main() {
@@ -334,6 +336,37 @@ void main() {
         jsonDecode(payloadFile.readAsStringSync()) as Map<String, dynamic>,
       );
       expect(payload, notification);
+    },
+  );
+
+  test(
+    'enqueueNotification keeps a hostile id inside the notifications folder',
+    () async {
+      // The id is percent-encoded into a single `<id>.json` segment, so no
+      // separator or `..` in it can move the payload out of notifications/.
+      for (final id in ['../../escape', '..', r'a\b/c', '/abs']) {
+        clearInteractions(syncDatabase);
+        await service.enqueueNotification(
+          _testNotification(id: id, vectorClock: const VectorClock({'a': 1})),
+        );
+
+        final companion =
+            verify(
+                  () =>
+                      syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+                ).captured.single
+                as OutboxCompanion;
+        final payload = File(
+          path.join(
+            documentsDirectory.path,
+            'notifications',
+            '${Uri.encodeComponent(id)}.json',
+          ),
+        );
+        expect(companion.filePath.value, relativeNotificationPath(id));
+        expect(payload.existsSync(), isTrue, reason: id);
+        expect(path.dirname(payload.path), endsWith('notifications'));
+      }
     },
   );
 
