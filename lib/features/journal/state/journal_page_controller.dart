@@ -250,12 +250,13 @@ class JournalPageController extends Notifier<JournalPageState>
       if (consumePostFilterOffset) _postFilterNextRawOffset = null;
       return offset;
     }
-    if (currentPages != null &&
-        currentPages.isNotEmpty &&
-        currentKeys.length == currentPages.length) {
-      return currentKeys.last + currentPages.last.length;
-    }
-    return currentKeys.last;
+    // Keys and pages grow in lockstep; the next raw offset is past the last
+    // page. (`currentKeys` is non-empty here, so equal lengths imply a last
+    // page exists.)
+    return currentKeys.last +
+        (currentPages != null && currentPages.length == currentKeys.length
+            ? currentPages.last.length
+            : 0);
   }
 
   // ---------------------------------------------------------------
