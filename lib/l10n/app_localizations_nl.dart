@@ -15891,12 +15891,12 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String unlinkTaskConfirmNamed(String title) {
-    return 'Unlink “$title”? The task itself is not deleted.';
+    return '„$title“ ontkoppelen? De taak zelf wordt niet verwijderd.';
   }
 
   @override
   String get unlinkTaskFailedMessage =>
-      'Couldn\'t unlink the task. Please try again.';
+      'Ontkoppelen van de taak is mislukt. Probeer het opnieuw.';
 
   @override
   String get unlinkTaskTitle => 'Taak loskoppelen';

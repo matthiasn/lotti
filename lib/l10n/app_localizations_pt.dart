@@ -15992,12 +15992,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String unlinkTaskConfirmNamed(String title) {
-    return 'Unlink “$title”? The task itself is not deleted.';
+    return 'Desvincular «$title»? A tarefa em si não é excluída.';
   }
 
   @override
   String get unlinkTaskFailedMessage =>
-      'Couldn\'t unlink the task. Please try again.';
+      'Não foi possível desvincular a tarefa. Tente novamente.';
 
   @override
   String get unlinkTaskTitle => 'Desvincular tarefa';

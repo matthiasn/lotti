@@ -6159,7 +6159,7 @@
   "unlinkButton": "Zrušit propojení",
   "unlinkTaskConfirm": "Opravdu chcete zrušit propojení tohoto úkolu?",
   "unlinkTaskConfirmNamed": "Odpojit „{title}“? Samotný úkol se nesmaže.",
-  "unlinkTaskFailedMessage": "Propojení úkolu se nepodařilo zrušit. Zkuste to prosím znovu.",
+  "unlinkTaskFailedMessage": "Propojení úkolu se nepodařilo zrušit. Zkus to prosím znovu.",
   "unlinkTaskTitle": "Zrušit propojení úkolu",
   "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} výsledek} few{{elapsed}ms, {count} výsledky} other{{elapsed}ms, {count} výsledků}}",
   "@vectorSearchTiming": {

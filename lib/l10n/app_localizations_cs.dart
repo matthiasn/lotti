@@ -16058,7 +16058,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get unlinkTaskFailedMessage =>
-      'Propojení úkolu se nepodařilo zrušit. Zkuste to prosím znovu.';
+      'Propojení úkolu se nepodařilo zrušit. Zkus to prosím znovu.';
 
   @override
   String get unlinkTaskTitle => 'Zrušit propojení úkolu';
