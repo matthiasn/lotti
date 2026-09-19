@@ -5,6 +5,9 @@ import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
+// CachedStreamController is the concrete return type of
+// Client.onTimelineEvent and is not re-exported from matrix.dart.
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -199,6 +202,18 @@ void main() {
   });
 
   group('MatrixSessionManager', () {
+    test('timelineEvents relays the client timeline event stream', () async {
+      final timeline = CachedStreamController<Event>();
+      addTearDown(timeline.close);
+      when(() => client.onTimelineEvent).thenReturn(timeline);
+      final event = MockEvent();
+
+      final received = sessionManager.timelineEvents.first;
+      timeline.add(event);
+
+      expect(await received, same(event));
+    });
+
     group('connect', () {
       test('returns false when matrixConfig is null', () async {
         sessionManager.matrixConfig = null;
