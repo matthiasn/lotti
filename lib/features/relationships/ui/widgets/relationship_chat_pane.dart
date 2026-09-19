@@ -27,14 +27,20 @@ class RelationshipChatPane extends ConsumerWidget {
   const RelationshipChatPane({
     required this.relationshipId,
     this.onBack,
+    this.onClose,
     this.showInternalsAction = false,
     super.key,
   });
 
   final String relationshipId;
 
-  /// Renders a back affordance in the header when supplied by either host.
+  /// Renders a back affordance in the header — the phone route, where the
+  /// chat is the whole screen.
   final VoidCallback? onBack;
+
+  /// Renders a close affordance on the header's trailing edge — the desktop
+  /// sidebar, where the person page stays beside the chat.
+  final VoidCallback? onClose;
 
   /// Whether the header offers *Agent internals*. The desktop pane does,
   /// because it has the width for a labelled button and no other way in.
@@ -64,6 +70,7 @@ class RelationshipChatPane extends ConsumerWidget {
           agentId: agentId,
           agentName: name,
           onBack: onBack,
+          onClose: onClose,
           showInternalsAction: showInternalsAction && isActive,
         ),
         Expanded(
@@ -160,6 +167,7 @@ class RelationshipChatHeader extends StatelessWidget {
     required this.agentId,
     required this.agentName,
     this.onBack,
+    this.onClose,
     this.showInternalsAction = false,
     super.key,
   });
@@ -167,6 +175,7 @@ class RelationshipChatHeader extends StatelessWidget {
   final String agentId;
   final String agentName;
   final VoidCallback? onBack;
+  final VoidCallback? onClose;
   final bool showInternalsAction;
 
   @override
@@ -245,6 +254,17 @@ class RelationshipChatHeader extends StatelessWidget {
                   agentId: agentId,
                   agentName: agentName,
                   headerWidth: constraints.maxWidth,
+                ),
+              ],
+              if (onClose != null) ...[
+                SizedBox(width: tokens.spacing.step2),
+                IconButton(
+                  key: const ValueKey('person-chat-close'),
+                  tooltip: MaterialLocalizations.of(
+                    context,
+                  ).closeButtonTooltip,
+                  onPressed: onClose,
+                  icon: const Icon(LottiIcons.close),
                 ),
               ],
             ],

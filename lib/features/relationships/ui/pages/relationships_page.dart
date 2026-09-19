@@ -62,57 +62,81 @@ class RelationshipsPage extends ConsumerWidget {
     final listPaneWidth = resolvedListPane.width;
     final paneController = ref.read(paneWidthControllerProvider.notifier);
 
+    final navService = getIt<NavService>();
     return ColoredBox(
       color: tokens.colors.background.level01,
-      child: ValueListenableBuilder<String?>(
-        valueListenable: getIt<NavService>().desktopSelectedRelationshipId,
-        builder: (context, selectedId, _) {
-          final canHideListPane = selectedId != null;
-          final listPaneVisible =
-              !paneWidths.listPaneCollapsed || !canHideListPane;
-          return ListDetailFocusTraversal(
-            debugLabel: 'people-split',
-            listPaneVisible: listPaneVisible,
-            canHideListPane: canHideListPane,
-            onListPaneVisibilityChanged: (visible) {
-              if (visible) {
-                paneController.expandListPane();
-              } else {
-                paneController.collapseListPane();
-              }
-            },
-            listPane: SizedBox(
-              width: listPaneWidth,
-              child: _PeopleListScaffold(selectedRelationshipId: selectedId),
-            ),
-            divider: ResizableDivider(
-              currentValue: listPaneWidth,
-              minValue: minListPaneWidth,
-              maxValue: maxListPaneWidth,
-              onDrag: resolvedListPane.onDrag,
-            ),
-            // The page carries its own show-list-pane control in the hero
-            // while the list is folded away, so nothing is overlaid here.
-            detailPane: selectedId != null
-                ? _PersonDetailPane(relationshipId: selectedId)
-                : DesktopDetailEmptyState(
-                    message: context.messages.relationshipsSelectPersonHint,
-                    icon: LottiIcons.people,
-                  ),
-          );
-        },
+      child: ListenableBuilder(
+        listenable: Listenable.merge([
+          navService.desktopSelectedRelationshipId,
+          navService.desktopRelationshipChatOpen,
+        ]),
+        builder: (context, _) => LayoutBuilder(
+          builder: (context, constraints) {
+            final selectedId = navService.desktopSelectedRelationshipId.value;
+            final canHideListPane = selectedId != null;
+            // The chat docks beside the person page, which needs room of its
+            // own: while the chat is open and the list would squeeze the page
+            // below a pane's width, the list steps aside for now — the
+            // stored preference is untouched, and the page's own control
+            // brings the list back.
+            final makeRoomForChat =
+                navService.desktopRelationshipChatOpen.value &&
+                constraints.maxWidth - listPaneWidth <
+                    chatSidebarMinDetailWidth;
+            final listPaneVisible =
+                (!paneWidths.listPaneCollapsed && !makeRoomForChat) ||
+                !canHideListPane;
+            return ListDetailFocusTraversal(
+              debugLabel: 'people-split',
+              listPaneVisible: listPaneVisible,
+              canHideListPane: canHideListPane,
+              onListPaneVisibilityChanged: (visible) {
+                if (visible) {
+                  paneController.expandListPane();
+                } else {
+                  paneController.collapseListPane();
+                }
+              },
+              listPane: SizedBox(
+                width: listPaneWidth,
+                child: _PeopleListScaffold(selectedRelationshipId: selectedId),
+              ),
+              divider: ResizableDivider(
+                currentValue: listPaneWidth,
+                minValue: minListPaneWidth,
+                maxValue: maxListPaneWidth,
+                onDrag: resolvedListPane.onDrag,
+              ),
+              // The page carries its own show-list-pane control in the hero
+              // while the list is folded away, so nothing is overlaid here.
+              detailPane: selectedId != null
+                  ? _PersonDetailPane(relationshipId: selectedId)
+                  : DesktopDetailEmptyState(
+                      message: context.messages.relationshipsSelectPersonHint,
+                      icon: LottiIcons.people,
+                    ),
+            );
+          },
+        ),
       ),
     );
   }
 }
 
-/// The desktop detail pane's three faces: the person's page, their chat, or
-/// one of their check-ins.
+/// The narrowest detail pane that holds the person page and the chat
+/// sidebar side by side: the sidebar's width, and at least as much again
+/// for the page.
+const double chatSidebarMinDetailWidth = 2 * defaultListPaneWidth;
+
+/// The desktop detail pane: the person's page — with their chat as a
+/// sidebar beside it while it is open — or one of their check-ins.
 ///
-/// The chat replaces the page rather than stacking over it (design
-/// 2026-09-06 §6), so the pane switches on
-/// `NavService.desktopRelationshipChatOpen` — which the location writes from
-/// the URL's `/chat` segment, keeping the address bar and the pane in step.
+/// The chat sits beside the page rather than replacing it (design panel
+/// 2026-09-19): what the agent is asked about stays in view. The pane
+/// follows `NavService.desktopRelationshipChatOpen`, which the location
+/// writes from the URL's `/chat` segment, keeping the address bar and the
+/// pane in step; the page keeps its key, so opening and closing the chat
+/// never rebuilds it.
 class _PersonDetailPane extends StatelessWidget {
   const _PersonDetailPane({required this.relationshipId});
 
@@ -139,21 +163,58 @@ class _PersonDetailPane extends StatelessWidget {
   Widget _personOrChat(NavService navService) {
     return ValueListenableBuilder<bool>(
       valueListenable: navService.desktopRelationshipChatOpen,
-      builder: (context, chatOpen, _) => chatOpen
-          // The pane is raw content, unlike the person page, which brings its
-          // own Scaffold — and the composer's fields need a Material ancestor.
-          ? Scaffold(
+      builder: (context, chatOpen, _) => LayoutBuilder(
+        builder: (context, constraints) {
+          final page = RelationshipDetailsPage(
+            key: ValueKey(relationshipId),
+            relationshipId: relationshipId,
+          );
+          // The chat docks beside the page only while the page keeps at
+          // least a list pane's width of its own; a narrower pane — a
+          // window near the desktop breakpoint, the sidebar expanded —
+          // gives the chat the whole pane instead of squeezing both.
+          if (chatOpen && constraints.maxWidth < chatSidebarMinDetailWidth) {
+            return Scaffold(
               key: ValueKey('people-chat-$relationshipId'),
               body: RelationshipChatPane(
                 relationshipId: relationshipId,
                 onBack: () => beamToNamed('/people/$relationshipId'),
                 showInternalsAction: true,
               ),
-            )
-          : RelationshipDetailsPage(
-              key: ValueKey(relationshipId),
-              relationshipId: relationshipId,
-            ),
+            );
+          }
+          // The page sits in the same Row whether or not the chat is
+          // docked, so opening and closing it never remounts the page.
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: page),
+              if (chatOpen) ...[
+                VerticalDivider(
+                  width: 1,
+                  thickness: 1,
+                  color: context.designTokens.colors.decorative.level01,
+                ),
+                // As wide as the list pane on the other side of the page. The
+                // sidebar is raw content, unlike the person page, which
+                // brings its own Scaffold — and the composer's field needs a
+                // Material ancestor.
+                SizedBox(
+                  key: ValueKey('people-chat-sidebar-$relationshipId'),
+                  width: defaultListPaneWidth,
+                  child: Scaffold(
+                    body: RelationshipChatPane(
+                      relationshipId: relationshipId,
+                      onClose: () => beamToNamed('/people/$relationshipId'),
+                      showInternalsAction: true,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          );
+        },
+      ),
     );
   }
 }

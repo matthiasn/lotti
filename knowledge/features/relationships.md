@@ -1500,21 +1500,29 @@ stateDiagram-v2
     [*] --> Pane: /people/<id> on desktop
     Page --> ChatPage: /people/<id>/chat — RelationshipChatPage stacks
     ChatPage --> Page: back beams to the person
-    Pane --> ChatPane: /people/<id>/chat — the detail pane switches
-    ChatPane --> Pane: back beams to the person
-    note right of ChatPane
-      The list stays beside it: the chat replaces
-      the person page inside the same pane rather
-      than covering the whole split.
+    Pane --> ChatSidebar: /people/<id>/chat — the chat opens beside the page
+    ChatSidebar --> Pane: close beams to the person
+    note right of ChatSidebar
+      The person page stays, keyed and mounted:
+      list · page · chat, the chat as wide as
+      the list pane (defaultListPaneWidth).
     end note
 ```
 
 `RelationshipsLocation` writes `NavService.desktopRelationshipChatOpen` from
 the URL's `/chat` segment and pushes the page only on phones, so the address
 bar stays the single source of truth for both layouts and the desktop pane
-never disagrees with it. The pane carries no `Scaffold` of its own — the
-phone route and the detail pane each supply one, which the composer's fields
-need.
+never disagrees with it. On desktop the chat is a sidebar beside the person
+page rather than a replacement for it (design panel 2026-09-19), so what the
+agent is asked about stays in view; the phone route offers *Back*
+(`onBack`), the sidebar *Close* (`onClose`). The page needs room of its own:
+the sidebar docks only in a detail pane at least `chatSidebarMinDetailWidth`
+wide (the sidebar plus as much again for the page). While the chat is open
+and the People list would squeeze the page below that, the list steps aside,
+without touching its stored preference. Where even the whole pane is
+narrower, the chat takes the pane with *Back*, as on a phone. The pane carries no `Scaffold`
+of its own — the phone route and the sidebar each supply one, which the
+composer's field needs.
 
 # Voice check-ins (plan v2 phase 6)
 

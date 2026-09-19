@@ -389,6 +389,7 @@ void main() {
   late MockNavService navService;
   late ValueNotifier<String?> selectedRelationshipId;
   late ValueNotifier<bool> chatOpen;
+  late ValueNotifier<String?> openCheckInId;
 
   Metadata meta(String id, {DateTime? at, Duration? length}) {
     final from = at ?? _now;
@@ -671,6 +672,7 @@ void main() {
     reminders = MockRelationshipReminderService();
     selectedRelationshipId = ValueNotifier<String?>(null);
     chatOpen = ValueNotifier<bool>(false);
+    openCheckInId = ValueNotifier<String?>(null);
     navService = MockNavService();
 
     when(() => agentService.requestBriefing(any())).thenAnswer((_) async {});
@@ -683,6 +685,9 @@ void main() {
       () => navService.desktopSelectedRelationshipId,
     ).thenReturn(selectedRelationshipId);
     when(() => navService.desktopRelationshipChatOpen).thenReturn(chatOpen);
+    when(
+      () => navService.desktopRelationshipCheckInId,
+    ).thenReturn(openCheckInId);
 
     when(
       () => repository.getRelationshipsByRecency(),
@@ -761,6 +766,7 @@ void main() {
   tearDown(() async {
     selectedRelationshipId.dispose();
     chatOpen.dispose();
+    openCheckInId.dispose();
     await tearDownTestGetIt();
     try {
       documents.deleteSync(recursive: true);
