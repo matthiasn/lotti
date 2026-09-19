@@ -298,10 +298,19 @@ $highPriorityProtocol''';
     }
 
     if (items.isEmpty) {
+      // High-priority items can use up the whole budget; say so rather than
+      // claiming the window held nothing else.
+      final omitted = feedback.items
+          .where((i) => i.observationPriority != ObservationPriority.critical)
+          .length;
       buf
         ..writeln(
-          'All feedback items in this window are high-priority and shown '
-          'in the section above.',
+          omitted == 0
+              ? 'All feedback items in this window are high-priority and '
+                    'shown in the section above.'
+              : 'The high-priority items above fill the feedback budget; '
+                    '$omitted lower-priority items in this window were '
+                    'omitted.',
         )
         ..writeln();
       return;

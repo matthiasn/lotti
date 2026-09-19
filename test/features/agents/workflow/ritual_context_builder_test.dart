@@ -389,6 +389,42 @@ void main() {
       expect(ctx.initialUserMessage, contains('Session abandoned'));
     });
 
+    test('when grievances fill the budget, routine feedback is reported as '
+        'omitted rather than absent', () {
+      final ctx = buildCtx(
+        feedbackItems: [
+          for (var i = 0; i < RitualContextBuilder.maxFeedbackItems; i++)
+            makeTestClassifiedFeedbackItem(
+              sentiment: FeedbackSentiment.negative,
+              detail: 'Critical grievance $i',
+              source: 'observation',
+              observationPriority: ObservationPriority.critical,
+            ),
+          for (var i = 0; i < 3; i++)
+            makeTestClassifiedFeedbackItem(
+              // ignore: avoid_redundant_argument_values
+              sentiment: FeedbackSentiment.positive,
+              detail: 'Routine praise $i',
+            ),
+        ],
+      );
+      final message = ctx.initialUserMessage;
+
+      expect(
+        message,
+        contains('Grievances (${RitualContextBuilder.maxFeedbackItems})'),
+      );
+      expect(message, isNot(contains('Routine praise')));
+      expect(
+        message,
+        contains(
+          'The high-priority items above fill the feedback budget; '
+          '3 lower-priority items in this window were omitted.',
+        ),
+      );
+      expect(message, isNot(contains('All feedback items in this window')));
+    });
+
     test('includes high-priority section when grievances exist', () {
       final ctx = buildCtx(
         feedbackItems: [
