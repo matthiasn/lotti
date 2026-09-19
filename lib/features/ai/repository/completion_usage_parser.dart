@@ -69,7 +69,9 @@ Map<dynamic, dynamic>? _mapValue(Object? value) {
 
 int? _integerValue(Object? value) {
   if (value is int) return value;
-  if (value is num) return value.toInt();
+  // JSON decodes an out-of-range number such as 1e400 to infinity, and
+  // `toInt` throws on it; a count that cannot be read is no count.
+  if (value is num) return value.isFinite ? value.toInt() : null;
   if (value is String) return int.tryParse(value);
   return null;
 }
