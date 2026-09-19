@@ -354,6 +354,19 @@ void main() {
       'or after the given instant',
       () async {
         final since = DateTime.utc(2026, 7, 22, 9);
+        ChangeSetEntity diff(String id, DateTime createdAt) =>
+            AgentDomainEntity.changeSet(
+                  id: id,
+                  agentId: 'agent-1',
+                  taskId: 'day_agent_plan:dayplan-2026-07-22',
+                  threadId: 'thread-1',
+                  runKey: 'run-$id',
+                  status: ChangeSetStatus.pending,
+                  items: const [],
+                  createdAt: createdAt,
+                  vectorClock: null,
+                )
+                as ChangeSetEntity;
         when(
           () => planService.pendingPlanDiffsForDay(
             agentId: 'agent-1',
@@ -368,6 +381,28 @@ void main() {
             since,
           ),
           isNull,
+        );
+
+        when(
+          () => planService.pendingPlanDiffsForDay(
+            agentId: 'agent-1',
+            dayId: 'dayplan-2026-07-22',
+          ),
+        ).thenAnswer(
+          (_) async => [
+            diff('diff-early', since.subtract(const Duration(minutes: 1))),
+            diff('diff-at', since),
+            diff('diff-late', since.add(const Duration(minutes: 5))),
+          ],
+        );
+
+        expect(
+          await executor.pendingDiffCreatedSince(
+            'agent-1',
+            'dayplan-2026-07-22',
+            since,
+          ),
+          'diff-at',
         );
       },
     );
