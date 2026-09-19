@@ -391,6 +391,9 @@ void main() {
         cloudInferenceRepositoryProvider.overrideWithValue(
           MockCloudInferenceRepository(),
         ),
+        updateNotificationsProvider.overrideWithValue(
+          MockUpdateNotifications(),
+        ),
       ],
     );
     expect(
