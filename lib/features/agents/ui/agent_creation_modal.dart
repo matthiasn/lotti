@@ -98,15 +98,6 @@ class _TemplateSelectionPageState extends State<_TemplateSelectionPage> {
   String? _hoveredId;
 
   @override
-  void didUpdateWidget(covariant _TemplateSelectionPage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (_hoveredId != null &&
-        !widget.templates.any((t) => t.id == _hoveredId)) {
-      _hoveredId = null;
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final templates = widget.templates;
