@@ -264,6 +264,193 @@ extension _TranscriptionCases on _SkillInferenceTestSetup {
       );
     }
 
+    group('names the phonetic pass cannot reach', () {
+      const heard = 'Vanja traf Commander Pip Frostbite.';
+      const knownTerms = ['Commander Pip Frostbeak', 'Wanja'];
+
+      CreateChatCompletionStreamResponse correctionChunk(
+        List<Map<String, String>> corrections, {
+        CompletionUsage? usage,
+      }) => CreateChatCompletionStreamResponse(
+        id: 'resp-names',
+        choices: [
+          ChatCompletionStreamResponseChoice(
+            delta: ChatCompletionStreamResponseDelta(
+              toolCalls: [
+                ChatCompletionStreamMessageToolCallChunk(
+                  index: 0,
+                  id: 'call-names',
+                  function: ChatCompletionStreamMessageFunctionCall(
+                    name: transcriptNameCorrectionToolName,
+                    arguments: jsonEncode({
+                      TranscriptNameCorrectionToolArgs.corrections: corrections,
+                    }),
+                  ),
+                ),
+              ],
+            ),
+            index: 0,
+          ),
+        ],
+        object: 'chat.completion.chunk',
+        created: DateTime(2024).millisecondsSinceEpoch ~/ 1000,
+        usage: usage,
+      );
+
+      Future<JournalAudio> transcribe(
+        Stream<CreateChatCompletionStreamResponse> Function() modelAnswer,
+      ) async {
+        final audioEntity = makeAudioEntity();
+        await createStubAudioFile();
+        when(
+          () => mockAiInputRepo.getEntity('audio-1'),
+        ).thenAnswer((_) async => audioEntity);
+        when(
+          () => mockPromptBuilderHelper.getSpeechDictionaryTerms(audioEntity),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockTaskSummaryResolver.resolve(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockCloudRepo.generateWithAudio(
+            any(),
+            model: any(named: 'model'),
+            audioBase64: any(named: 'audioBase64'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+          ),
+        ).thenAnswer((_) => Stream.value(makeStreamChunk(heard)));
+        when(
+          () => mockCloudRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            tools: any(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
+            impactCollector: any(named: 'impactCollector'),
+          ),
+        ).thenAnswer((_) => modelAnswer());
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
+        stubLoggingEvent();
+        stubLoggingException();
+
+        await runner.runTranscription(
+          audioEntryId: 'audio-1',
+          automationResult: makeTranscriptionResult(),
+          knownTerms: knownTerms,
+        );
+        return verify(
+              () => mockJournalRepo.updateJournalEntity(captureAny()),
+            ).captured.single
+            as JournalAudio;
+      }
+
+      test(
+        'the thinking model corrects a name after the phonetic pass, on '
+        'the text that pass left, and history keeps what was heard',
+        () async {
+          final saved = await transcribe(
+            () => Stream.value(
+              correctionChunk([
+                {'heard': 'Frostbite', 'term': 'Frostbeak'},
+                // Refused in code: not a listed name.
+                {'heard': 'Commander', 'term': 'Admiral'},
+              ]),
+            ),
+          );
+
+          expect(
+            saved.entryText?.plainText,
+            'Wanja traf Commander Pip Frostbeak.',
+          );
+          expect(saved.data.transcripts!.last.transcript, heard);
+          final sent =
+              verify(
+                    () => mockCloudRepo.generate(
+                      captureAny(),
+                      model: 'models/gemini-3-flash-preview',
+                      temperature: any(named: 'temperature'),
+                      baseUrl: any(named: 'baseUrl'),
+                      apiKey: any(named: 'apiKey'),
+                      provider: any(named: 'provider'),
+                      systemMessage: any(named: 'systemMessage'),
+                      tools: [transcriptNameCorrectionTool],
+                      toolChoice: any(named: 'toolChoice'),
+                      impactCollector: any(named: 'impactCollector'),
+                    ),
+                  ).captured.single
+                  as String;
+          expect(sent, contains('- Commander Pip Frostbeak'));
+          expect(
+            sent,
+            contains('Wanja traf Commander Pip Frostbite.'),
+            reason: 'the model reads the phonetic pass result',
+          );
+        },
+      );
+
+      test('a failing model call keeps the phonetic result and still saves '
+          'the transcript', () async {
+        final saved = await transcribe(
+          () => Stream.error(Exception('model offline')),
+        );
+
+        expect(
+          saved.entryText?.plainText,
+          'Wanja traf Commander Pip Frostbite.',
+        );
+      });
+
+      test(
+        "the model's call is recorded with the transcription's spend",
+        () async {
+          final attribution = _registerInteractionCapture();
+
+          await transcribe(
+            () => Stream.value(
+              correctionChunk(
+                const [],
+                usage: const CompletionUsage(
+                  promptTokens: 40,
+                  completionTokens: 5,
+                  totalTokens: 45,
+                ),
+              ),
+            ),
+          );
+
+          final events = _capturedEvents(attribution);
+          expect(
+            events.map((e) => e.interactionKind),
+            [
+              AiInteractionKind.audioTranscription,
+              AiInteractionKind.textGeneration,
+            ],
+          );
+          expect(events.last.providerModelId, 'models/gemini-3-flash-preview');
+          expect(events.last.inputTokens, 40);
+          verify(
+            () => attribution.service.prepareCompletion(
+              attributionId: any(named: 'attributionId'),
+              outputs: any(named: 'outputs'),
+              status: any(named: 'status'),
+              errorCode: any(named: 'errorCode'),
+              errorSummary: any(named: 'errorSummary'),
+            ),
+          ).called(1);
+        },
+      );
+    });
+
     for (final accountingFails in [false, true]) {
       test(
         'preserves transcription failure and incurred accounting (writeFails=$accountingFails)',

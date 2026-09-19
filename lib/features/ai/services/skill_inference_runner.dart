@@ -30,6 +30,7 @@ import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/skills/entry_summary_tool.dart';
+import 'package:lotti/features/ai/skills/transcript_name_correction_tool.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/image_generation_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_error_controller.dart';
@@ -305,6 +306,30 @@ class SkillInferenceRunner {
               Error.throwWithStackTrace(error, stackTrace);
             });
 
+        final response = collected.content.trim();
+
+        // With names to expect, the transcript is corrected against them:
+        // first by sound and spelling, then by the profile's thinking model
+        // for what those rules cannot reach. The model's call is part of this
+        // transcription's spend.
+        var text = response;
+        AiConsumptionEvent? nameCorrectionEvent;
+        if (knownTerms.isNotEmpty && response.isNotEmpty) {
+          text = correctTranscriptTerms(response, speechDictionaryTerms).text;
+          final corrected = await _correctNamesWithThinkingModel(
+            profile: profile,
+            transcript: text,
+            terms: speechDictionaryTerms,
+            entity: entity,
+            taskId: linkedTaskId,
+            skillId: skill.id,
+          );
+          if (corrected != null) {
+            text = corrected.text;
+            nameCorrectionEvent = corrected.event;
+          }
+        }
+
         // The Melious chat-audio adapter supplies provider-reported billing
         // and environmental impact through this collector; other providers
         // leave it empty.
@@ -324,9 +349,9 @@ class SkillInferenceRunner {
           requestText:
               '${promptResult.systemMessage}\n${promptResult.userMessage}',
           responseText: collected.content,
+          additionalEvents: [?nameCorrectionEvent],
         );
 
-        final response = collected.content.trim();
         if (response.isEmpty) {
           throw StateError('Empty transcription response for $audioEntryId');
         }
@@ -353,9 +378,6 @@ class SkillInferenceRunner {
           aiAttribution: attributionEnvelope,
         );
 
-        final text = knownTerms.isEmpty
-            ? response
-            : correctTranscriptTerms(response, speechDictionaryTerms).text;
         final existingTranscripts = currentAudio.data.transcripts ?? [];
         final updated = currentAudio.copyWith(
           data: currentAudio.data.copyWith(
@@ -1690,6 +1712,91 @@ class SkillInferenceRunner {
     );
   }
 
+  /// Asks the profile's thinking model which names in [transcript] were
+  /// misheard, against [terms], and applies the proposals a check in code
+  /// accepts ([applyTranscriptNameCorrections]). Returns the corrected text
+  /// and the call's consumption event, or null when the call fails — a
+  /// failed correction leaves the transcript as the phonetic pass left it.
+  Future<({String text, AiConsumptionEvent event})?>
+  _correctNamesWithThinkingModel({
+    required ResolvedProfile profile,
+    required String transcript,
+    required List<String> terms,
+    required JournalAudio entity,
+    required String? taskId,
+    required String skillId,
+  }) async {
+    final provider = profile.thinkingProvider;
+    final modelId = profile.thinkingModelId;
+    final messages = transcriptNameCorrectionMessages(
+      transcript: transcript,
+      terms: terms,
+    );
+    final start = DateTime.now();
+    try {
+      final collector = InferenceImpactCollector();
+      final result = await _collectStream(
+        _cloudRepository.generate(
+          messages.user,
+          model: modelId,
+          temperature: null,
+          baseUrl: provider.baseUrl,
+          apiKey: provider.apiKey,
+          provider: provider,
+          systemMessage: messages.system,
+          tools: [transcriptNameCorrectionTool],
+          toolChoice: transcriptNameCorrectionToolChoiceFor(modelId),
+          impactCollector: collector,
+        ),
+      );
+      final corrected = applyTranscriptNameCorrections(
+        transcript,
+        parseTranscriptNameCorrections(result.toolCalls),
+        terms,
+      );
+      _loggingService.log(
+        LogDomain.ai,
+        'Name correction for ${entity.meta.id}: '
+        '${corrected.corrections.length} applied',
+        subDomain: 'runTranscription.nameCorrection',
+      );
+      final completedAt = DateTime.now();
+      final responseText = result.toolCalls
+          .map((call) => call.function.arguments)
+          .join('\n');
+      return (
+        text: corrected.text,
+        event: _consumptionEvent(
+          id: uuid.v4(),
+          entryId: entity.meta.id,
+          taskId: taskId,
+          categoryId: entity.meta.categoryId,
+          skillId: skillId,
+          provider: provider,
+          modelId: modelId,
+          responseType: AiResponseType.audioTranscription,
+          usage: result.usage,
+          impact: collector.impact,
+          start: start,
+          completedAt: completedAt,
+          interactionKind: AiInteractionKind.textGeneration,
+          requestDigest: sha256
+              .convert(utf8.encode('${messages.system}\n${messages.user}'))
+              .toString(),
+          responseDigest: sha256.convert(utf8.encode(responseText)).toString(),
+        ),
+      );
+    } catch (error, stackTrace) {
+      _loggingService.error(
+        LogDomain.ai,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'runTranscription.nameCorrection',
+      );
+      return null;
+    }
+  }
+
   Future<AiWorkAttribution?> _recordAttributedConsumption({
     required AiAttributionSession? attribution,
     required String entryId,
@@ -1708,6 +1815,7 @@ class SkillInferenceRunner {
     AiWorkStatus status = AiWorkStatus.succeeded,
     String? errorCode,
     String? errorSummary,
+    List<AiConsumptionEvent> additionalEvents = const [],
   }) async {
     if (attribution == null) {
       return null;
@@ -1734,10 +1842,12 @@ class SkillInferenceRunner {
       requestDigest: requestDigest,
       responseDigest: responseDigest,
     );
-    await getIt<AiAttributionService>().recordInteraction(
-      attributionId: attribution.id,
-      event: event,
-    );
+    for (final interaction in [event, ...additionalEvents]) {
+      await getIt<AiAttributionService>().recordInteraction(
+        attributionId: attribution.id,
+        event: interaction,
+      );
+    }
     return getIt<AiAttributionService>().prepareCompletion(
       attributionId: attribution.id,
       outputs: attribution.intendedOutputs,
