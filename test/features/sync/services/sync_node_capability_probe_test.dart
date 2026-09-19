@@ -175,6 +175,31 @@ void main() {
       expect(profile.displayName, 'My Studio Mac');
     });
 
+    test(
+      'names the profile after the host name, or after the OS when the host '
+      'name is empty',
+      () async {
+        Future<String> displayNameFor(String hostname) async {
+          final probe = makeDefaultSyncNodeCapabilityProbe(
+            ollamaProbe:
+                ({Duration timeout = const Duration(seconds: 1)}) async =>
+                    false,
+            omlxProbe:
+                ({Duration timeout = const Duration(seconds: 1)}) async =>
+                    false,
+            localHostname: () => hostname,
+          );
+          return (await probe(hostId: 'h1', now: now)).displayName;
+        }
+
+        expect(await displayNameFor('waddle-desktop'), 'waddle-desktop');
+        expect(
+          await displayNameFor(''),
+          'Lotti on ${Platform.operatingSystem}',
+        );
+      },
+    );
+
     test('forwards a supplied appVersion onto the profile', () async {
       final probe = makeDefaultSyncNodeCapabilityProbe(
         ollamaProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
