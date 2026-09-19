@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/system_health/domain/system_health_range.dart';
 
 void main() {
@@ -132,6 +133,55 @@ void main() {
         end: DateTime(2026, 9, 11),
       ),
       throwsAssertionError,
+    );
+  });
+
+  group('properties', () {
+    // Instants across 2026, biased to the EU and US DST switch weeks.
+    final day = glados.any.oneOf([
+      glados.any
+          .intInRange(0, 365 * 24)
+          .map((h) => DateTime(2026).add(Duration(hours: h))),
+      glados.any.combine2(
+        glados.any.choose([
+          DateTime(2026, 3, 7),
+          DateTime(2026, 3, 27),
+          DateTime(2026, 10, 23),
+          DateTime(2026, 10, 30),
+        ]),
+        glados.any.intInRange(0, 4 * 24),
+        (DateTime base, int h) => base.add(Duration(hours: h)),
+      ),
+    ]);
+
+    glados.Glados2(day, day, glados.ExploreConfig(numRuns: 300)).test(
+      'whole-day windows are ordered, symmetric and list consecutive days',
+      (a, b) {
+        final range = SystemHealthRange.days(firstDay: a, lastDay: b);
+        final swapped = SystemHealthRange.days(firstDay: b, lastDay: a);
+
+        expect(range.start.isAfter(range.end), isFalse);
+        expect((swapped.start, swapped.end), (range.start, range.end));
+        expect(range.contains(range.start), isTrue);
+        expect(range.contains(range.end), isTrue);
+        expect(
+          range.contains(range.end.add(const Duration(microseconds: 1))),
+          isFalse,
+        );
+
+        final days = range.days;
+        final earlier = a.isBefore(b) ? a : b;
+        final later = a.isBefore(b) ? b : a;
+        expect(days.first, DateTime(earlier.year, earlier.month, earlier.day));
+        expect(days.last, DateTime(later.year, later.month, later.day));
+        for (final (i, d) in days.indexed) {
+          expect((d.hour, d.minute), (0, 0));
+          if (i > 0) {
+            expect(d, SystemHealthRange.nextCalendarDay(days[i - 1]));
+          }
+        }
+      },
+      tags: 'glados',
     );
   });
 }

@@ -114,7 +114,10 @@ class SystemHealthReportDocument {
     final window = _windowLine.firstMatch(markdown);
     final windowStart = window == null ? null : _parseInstant(window.group(1)!);
     final windowEnd = window == null ? null : _parseInstant(window.group(2)!);
-    final index = markdown.indexOf(detailsMarker);
+    // The digest block is always the last one written. Model findings are
+    // free Markdown and may open their own `<details>`, so the first marker
+    // is not necessarily the digest's.
+    final index = markdown.lastIndexOf(detailsMarker);
     if (index < 0) {
       return SystemHealthReportDocument(
         markdown: markdown,

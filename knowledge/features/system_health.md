@@ -221,7 +221,9 @@ A run's full Markdown is written by `SystemHealthReportStore` to
 to the files it was built from, and the page shows the path under the report.
 The store never indexes anything: the newest file is the one whose name
 carries the latest stamp, and `loadLatest` splits it back into summary and
-digest at the `<details>` marker (`SystemHealthReportDocument.fromMarkdown`).
+digest at the last `<details>` marker
+(`SystemHealthReportDocument.fromMarkdown`) — the last, because model findings
+may open collapsed sections of their own.
 Saving is best effort — a write failure costs the path, not the report.
 
 The page therefore renders a `SystemHealthReportDocument`, never the report
