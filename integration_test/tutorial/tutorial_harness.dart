@@ -798,6 +798,33 @@ class TutorialAppHarness {
   }
 }
 
+/// The match of [scrollable] with the most actual scroll range
+/// (`maxScrollExtent - minScrollExtent`), or null when none of them can move.
+///
+/// Deliberately NOT "the largest `viewportDimension`": a shrink-wrapped,
+/// `NeverScrollableScrollPhysics` inner list (a checklist's own
+/// `ReorderableListView`, embedded in the page's real scrollable) sizes itself
+/// to its full content height, which can exceed the outer pane's viewport
+/// while having ZERO scroll range of its own — driving it is a silent no-op.
+///
+/// [scrollable] must be a plain (non-`.first`) finder: `.first` finders throw
+/// on evaluate() when empty instead of returning nothing.
+ScrollableState? widestRangeScrollable(Finder scrollable) {
+  ScrollableState? best;
+  var bestRange = 0.0;
+  for (final element in scrollable.evaluate()) {
+    final state = (element as StatefulElement).state as ScrollableState;
+    if (!state.position.hasViewportDimension) continue;
+    final range =
+        state.position.maxScrollExtent - state.position.minScrollExtent;
+    if (range > bestRange) {
+      best = state;
+      bestRange = range;
+    }
+  }
+  return best;
+}
+
 /// Paces steps against the manifest and records the timeline.
 class TutorialDriver {
   TutorialDriver({
@@ -967,18 +994,9 @@ class TutorialDriver {
   /// [target] must already be built somewhere in the tree. A virtualized
   /// list only builds rows near the current scroll offset, so when
   /// [target] isn't there yet this first does a coarse sweep — checking
-  /// bare existence, not `hitTestable` — using the matching [scrollable]
-  /// with the most actual scroll range (`maxScrollExtent -
-  /// minScrollExtent`), then hands off to [Scrollable.ensureVisible] for
-  /// the exact, animated placement.
-  ///
-  /// Deliberately NOT "the largest `viewportDimension`": a shrink-wrapped,
-  /// `NeverScrollableScrollPhysics` inner list (e.g. a checklist's own
-  /// `ReorderableListView`, embedded in — not competing with — the page's
-  /// real scrollable) sizes itself to its full content height, which can
-  /// exceed the outer pane's visible viewport height while having ZERO
-  /// scroll range of its own — driving it is a silent no-op that never
-  /// reaches a target sitting further down the actual page.
+  /// bare existence, not `hitTestable` — using [widestRangeScrollable] of
+  /// the matching [scrollable]s, then hands off to
+  /// [Scrollable.ensureVisible] for the exact, animated placement.
   Future<void> scrollIntoView(
     Finder target, {
     required Finder scrollable,
@@ -1002,20 +1020,7 @@ class TutorialDriver {
           'No scrollable found while scrolling to $target',
         );
       }
-      ScrollableState? best;
-      for (final element in scrollable.evaluate()) {
-        final state = (element as StatefulElement).state as ScrollableState;
-        if (!state.position.hasViewportDimension) continue;
-        final range =
-            state.position.maxScrollExtent - state.position.minScrollExtent;
-        if (range <= 0) continue;
-        final bestRange = best == null
-            ? 0.0
-            : best.position.maxScrollExtent - best.position.minScrollExtent;
-        if (best == null || range > bestRange) {
-          best = state;
-        }
-      }
+      final best = widestRangeScrollable(scrollable);
       if (best == null) {
         await _failWithContext(
           'scroll_no_scrollable',

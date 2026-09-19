@@ -28,7 +28,9 @@
 #   LOTTI_SCREENSHOT_DIR  output directory (default: build/store_screenshots/ios)
 #   LOTTI_STORE_THEMES    space-separated themes (default: "dark light")
 #   LOTTI_MANUAL_LOCALE   fixture locale (default: en)
-#   LOTTI_STORE_STATUS_TIME  status bar clock (default: 9:41)
+#
+# Finding, booting and dressing the simulators is ios_simulator_lib.sh, shared
+# with ios_preview.sh; LOTTI_STORE_STATUS_TIME is documented there.
 set -euo pipefail
 
 FLUTTER=${FLUTTER:-fvm flutter}
@@ -36,68 +38,17 @@ DEVICES=${LOTTI_IOS_DEVICES:-iPhone 17 Pro Max;iPad Pro 13-inch (M5)}
 OUT=${LOTTI_SCREENSHOT_DIR:-build/store_screenshots/ios}
 THEMES=${LOTTI_STORE_THEMES:-dark light}
 LOCALE=${LOTTI_MANUAL_LOCALE:-en}
-STATUS_TIME=${LOTTI_STORE_STATUS_TIME:-9:41}
 
-# "<udid> <state>" of the available simulator called $1: one already booted
-# first, else the one on the newest runtime, so two runs land on the same
-# iOS version when Xcode ships the same device under several. Prints nothing
-# when no simulator carries that name.
-device_for() {
-  xcrun simctl list devices available -j | python3 -c '
-import json, re, sys
-name = sys.argv[1]
-def version(runtime):
-    return tuple(int(n) for n in re.findall(r"\d+", runtime.split(".")[-1]))
-devices = [(version(runtime), d)
-           for runtime, listed in json.load(sys.stdin)["devices"].items()
-           for d in listed if d["name"] == name]
-devices.sort(key=lambda item: (item[1]["state"] != "Booted", tuple(-n for n in item[0])))
-if devices:
-    print(devices[0][1]["udid"], devices[0][1]["state"])
-' "$1"
-}
-
-slug_for() {
-  printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/_/g; s/^_|_$//g'
-}
-
-booted_here=()
-overridden_here=()
-cleanup() {
-  # Every status bar this run dressed is cleared, including on simulators
-  # that were already running — an early exit must not leave one at 9:41.
-  for udid in "${overridden_here[@]:-}"; do
-    [ -n "$udid" ] || continue
-    xcrun simctl status_bar "$udid" clear >/dev/null 2>&1 || true
-  done
-  for udid in "${booted_here[@]:-}"; do
-    [ -n "$udid" ] || continue
-    xcrun simctl shutdown "$udid" >/dev/null 2>&1 || true
-  done
-}
-trap cleanup EXIT
+# shellcheck source=tool/store_screenshots/ios_simulator_lib.sh
+source "$(dirname "$0")/ios_simulator_lib.sh"
+trap release_simulators EXIT
 
 mkdir -p "$OUT"
 IFS=';' read -r -a device_names <<<"$DEVICES"
 
 for name in "${device_names[@]}"; do
-  read -r udid state <<<"$(device_for "$name")"
-  if [ -z "${udid:-}" ]; then
-    echo "No available simulator named '$name'. Available:" >&2
-    xcrun simctl list devices available | grep -E '^\s+(iPhone|iPad)' >&2 || true
-    exit 1
-  fi
-  if [ "$state" != "Booted" ]; then
-    echo "Booting $name ($udid)"
-    xcrun simctl boot "$udid"
-    booted_here+=("$udid")
-  fi
-  xcrun simctl bootstatus "$udid" -b >/dev/null
-  xcrun simctl status_bar "$udid" override \
-    --time "$STATUS_TIME" \
-    --batteryState charged --batteryLevel 100 \
-    --wifiBars 3 --cellularBars 4 --operatorName ''
-  overridden_here+=("$udid")
+  claim_simulator "$name"
+  udid=$SIM_UDID
 
   slug=$(slug_for "$name")
   device_out="$OUT/$slug"

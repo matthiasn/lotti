@@ -214,6 +214,16 @@ store_screenshots_android:
 store_screenshots_ios:
 	FLUTTER="$(FLUTTER_CMD)" ./tool/store_screenshots/ios.sh
 
+# App Store App Preview — the listing's video — recorded on an iOS simulator
+# while integration_test/store_preview_test.dart walks the app by touch, then
+# cut to the 15-30 s and 886x1920 H.264 App Store Connect takes; see
+# tool/store_screenshots/ios_preview.sh for the knobs and for why the footage
+# that ships comes from a phone. Output lands in
+# build/store_preview/ios/<device> (gitignored).
+.PHONY: store_preview_ios
+store_preview_ios:
+	FLUTTER="$(FLUTTER_CMD)" ./tool/store_screenshots/ios_preview.sh
+
 .PHONY: manual_deps
 manual_deps: docs-site/node_modules
 

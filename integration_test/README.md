@@ -101,6 +101,25 @@ in `store-screenshots-android.yml`, on simulators in `store-screenshots-ios.yml`
 (manual dispatch, or a pull request that touches the capture) — and uploads the
 PNGs as workflow artifacts.
 
+#### The App Preview walk (`store_preview_test.dart`)
+
+The App Store listing's video comes from the same world: both walks boot it
+through `bootStoreWorld` in `store_walk.dart`, and this one carries the same
+`store-screenshots` tag. Instead of jumping between routes it moves by touch —
+scrolls the task list, opens a task, ticks a checklist item, completes two
+habits, ends in the logbook — while the script records the simulator and cuts
+the footage between the marks the walk prints:
+
+```bash
+make store_preview_ios                         # iPhone 17 Pro Max, dark, en
+make store_preview_ios LOTTI_STORE_THEME=light LOTTI_MANUAL_LOCALE=de
+```
+
+Output lands in `build/store_preview/ios/<device>/` — the raw recording and the
+886×1920 H.264 cut App Store Connect takes. How the camera is started, how the
+cut is timed, and why the footage that ships comes from a phone are in
+[knowledge/conventions/screenshots.md](../knowledge/conventions/screenshots.md#the-app-preview-is-the-same-world-walked-by-touch).
+
 ### 5. Manual Screenshots (`manual_screenshots_test.dart`)
 
 A legacy full-shell screenshot-capture tool rather than a CI verification suite. It runs the full app shell
