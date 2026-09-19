@@ -168,9 +168,6 @@ String preprocessText(String text, String lang) {
   while (out.contains("''")) {
     out = out.replaceAll("''", "'");
   }
-  while (out.contains('``')) {
-    out = out.replaceAll('``', '`');
-  }
 
   // Collapse whitespace.
   out = out.replaceAll(RegExp(r'\s+'), ' ').trim();

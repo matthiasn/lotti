@@ -20,14 +20,8 @@ class _ThinkingPatterns {
   static const String fenceClose = '```';
 }
 
-// Finds the body start for a fenced block beginning at or after `from`.
-int? _fenceBodyStartFor(String content, int from) {
-  final match = _ThinkingPatterns.fenceOpen.firstMatch(
-    content.substring(from),
-  );
-  if (match == null) return null;
-  return from + match.end;
-}
+/// The marker families a thinking block can open with.
+enum _BlockType { html, bracket, fence }
 
 // Extract a possibly nested block using open/close tokens (case-insensitive).
 // Returns the end index after the close and the extracted body.
@@ -67,7 +61,10 @@ int? _fenceBodyStartFor(String content, int from) {
 
 // Determine the next block type and its index from a given position.
 // Returns null if no further blocks are found.
-({String type, int nextIdx})? _findNextBlockType(String content, int index) {
+({_BlockType type, int nextIdx})? _findNextBlockType(
+  String content,
+  int index,
+) {
   final lower = content.toLowerCase();
 
   // Earliest of <think> or <thinking>
@@ -104,18 +101,18 @@ int? _fenceBodyStartFor(String content, int from) {
   }
 
   var nextIdx = content.length;
-  String? type;
+  _BlockType? type;
   if (htmlIdx >= 0 && htmlIdx < nextIdx) {
     nextIdx = htmlIdx;
-    type = 'html';
+    type = _BlockType.html;
   }
   if (bracketIdx >= 0 && bracketIdx < nextIdx) {
     nextIdx = bracketIdx;
-    type = 'bracket';
+    type = _BlockType.bracket;
   }
   if (fenceIdx >= 0 && fenceIdx < nextIdx) {
     nextIdx = fenceIdx;
-    type = 'fence';
+    type = _BlockType.fence;
   }
 
   if (type == null) return null;
@@ -124,10 +121,10 @@ int? _fenceBodyStartFor(String content, int from) {
 
 // Given a block type and its start index, resolve tokens and body start.
 ({int bodyStart, String openToken, String closeToken, int afterCloseAdvance})
-_resolveTokens(String content, String type, int nextIdx) {
+_resolveTokens(String content, _BlockType type, int nextIdx) {
   final lowerAll = content.toLowerCase();
   switch (type) {
-    case 'html':
+    case _BlockType.html:
       if (lowerAll.startsWith('<thinking>', nextIdx)) {
         const openToken = '<thinking>';
         const closeToken = '</thinking>';
@@ -147,7 +144,7 @@ _resolveTokens(String content, String type, int nextIdx) {
           afterCloseAdvance: closeToken.length,
         );
       }
-    case 'bracket':
+    case _BlockType.bracket:
       if (lowerAll.startsWith('[thinking]', nextIdx)) {
         const openToken = '[thinking]';
         const closeToken = '[/thinking]';
@@ -167,29 +164,22 @@ _resolveTokens(String content, String type, int nextIdx) {
           afterCloseAdvance: closeToken.length,
         );
       }
-    case 'fence':
+    case _BlockType.fence:
       final openToken = lowerAll.startsWith('```thinking', nextIdx)
           ? '```thinking'
           : '```think';
-      // Prefer computed body start (newline after the fence line); otherwise,
-      // fall back to the next newline after `nextIdx`, or end-of-content.
-      final computed = _fenceBodyStartFor(content, nextIdx);
-      final fallbackNl = content.indexOf('\n', nextIdx);
-      final bodyStart =
-          computed ?? (fallbackNl >= 0 ? fallbackNl + 1 : content.length);
+      // `nextIdx` is where `_findNextBlockType` matched the fence opener, so
+      // it matches again right there; the body starts after its newline.
+      final opener = _ThinkingPatterns.fenceOpen.matchAsPrefix(
+        content,
+        nextIdx,
+      )!;
       const closeToken = _ThinkingPatterns.fenceClose;
       return (
-        bodyStart: bodyStart,
+        bodyStart: opener.end,
         openToken: openToken,
         closeToken: closeToken,
         afterCloseAdvance: closeToken.length,
-      );
-    default:
-      return (
-        bodyStart: nextIdx,
-        openToken: '',
-        closeToken: '',
-        afterCloseAdvance: 0,
       );
   }
 }
@@ -225,7 +215,7 @@ List<ThinkingSegment> splitThinkingSegments(String content) {
 
       String segment;
       int nextIndexAfterClose;
-      if (found.type == 'fence') {
+      if (found.type == _BlockType.fence) {
         final closeIdx = content.indexOf(tokens.closeToken, tokens.bodyStart);
         if (closeIdx >= 0) {
           segment = content.substring(tokens.bodyStart, closeIdx);

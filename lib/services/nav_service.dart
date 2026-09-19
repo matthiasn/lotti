@@ -215,7 +215,7 @@ class NavService {
   ///
   /// At construction every flag reads `false`, so a saved tab behind a flag
   /// (`/goals`, `/projects`, …) is not yet in [_enabledTabSpecs] and
-  /// `_normalizePath` would drop it to Tasks. Consumed by the first
+  /// `_resolvePath` would drop it to Tasks. Consumed by the first
   /// [_handleNavigationFlagsUpdated].
   String? _pendingActiveRootPath;
 
@@ -558,8 +558,21 @@ class NavService {
     return null;
   }
 
-  String _normalizePath(String path) {
-    return _specForPath(path) == null ? _enabledTabSpecs.first.rootPath : path;
+  /// Resolves [path] to the enabled tab that owns it, together with the path
+  /// to use: [path] itself when an enabled tab owns it, otherwise the first
+  /// enabled tab's root path.
+  ///
+  /// Unlike [_specForPath] this never comes back empty — the fallback root
+  /// path is owned by the very spec it came from.
+  ({
+    String path,
+    ({bool enabled, String rootPath, BeamerDelegate delegate}) spec,
+  })
+  _resolvePath(String path) {
+    final spec = _specForPath(path);
+    if (spec != null) return (path: path, spec: spec);
+    final fallback = _enabledTabSpecs.first;
+    return (path: fallback.rootPath, spec: fallback);
   }
 
   /// The root path of the tab at [index].
@@ -710,13 +723,9 @@ class NavService {
     if (_consumePendingActiveTab()) return;
 
     final previousPath = currentPath;
-    final normalizedPath = _normalizePath(previousPath);
-    final matchingSpec = _specForPath(normalizedPath);
-    if (matchingSpec == null) {
-      currentPath = _enabledTabSpecs.first.rootPath;
-      _setIndexInternal(0);
-      return;
-    }
+    final (path: normalizedPath, spec: matchingSpec) = _resolvePath(
+      previousPath,
+    );
 
     currentPath = normalizedPath;
     final newIndex = beamerDelegates.indexOf(matchingSpec.delegate);
@@ -735,13 +744,7 @@ class NavService {
   }
 
   void setPath(String path) {
-    final normalizedPath = _normalizePath(path);
-    final matchingSpec = _specForPath(normalizedPath);
-    if (matchingSpec == null) {
-      currentPath = _enabledTabSpecs.first.rootPath;
-      _setIndexInternal(0);
-      return;
-    }
+    final (path: normalizedPath, spec: matchingSpec) = _resolvePath(path);
 
     currentPath = normalizedPath;
     _setIndexInternal(
@@ -855,13 +858,11 @@ class NavService {
   /// front. For navigation originating in a tab that is not the active one,
   /// use [beamWithinTab] instead.
   void beamToNamed(String path, {Object? data}) {
-    final normalizedPath = _normalizePath(path);
+    final (path: normalizedPath, spec: owner) = _resolvePath(path);
     // Refuse a path owned by a tab that may not become active; otherwise
     // `setPath` would leave the index where it is and the *current* tab's
     // delegate would be handed a route it does not own.
-    final owner = _specForPath(normalizedPath);
-    if (owner != null &&
-        !isTabAllowed(beamerDelegates.indexOf(owner.delegate))) {
+    if (!isTabAllowed(beamerDelegates.indexOf(owner.delegate))) {
       return;
     }
     setPath(normalizedPath);

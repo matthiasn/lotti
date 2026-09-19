@@ -74,8 +74,10 @@ void main() {
       expect(preprocessText("it''s", 'en'), isNot(contains("''")));
     });
 
-    test('collapses doubled backticks', () {
-      expect(preprocessText('a``b', 'en'), isNot(contains('``')));
+    test('turns doubled backticks into a single apostrophe', () {
+      // Backticks become apostrophes first, so the apostrophe collapse is
+      // what folds a doubled backtick into one.
+      expect(preprocessText('a``b', 'en'), "<en>a'b.</en>");
     });
   });
 }

@@ -358,13 +358,11 @@ class GeminiUtils {
                         textParts.add(text);
                       }
                     }
-                    // For images, audio, files - add placeholder
+                    // For images and audio - add placeholder
                     else if (partMap['type'] == 'image_url') {
                       textParts.add('[image]');
                     } else if (partMap['type'] == 'input_audio') {
                       textParts.add('[audio]');
-                    } else if (partMap['type'] == 'file') {
-                      textParts.add('[file]');
                     }
                   }
                   return textParts.join();

@@ -521,7 +521,6 @@ void main() {
           );
 
           // Assert - should use template message, not custom message
-          expect(prompt, isNotNull);
           // Verify it doesn't contain the custom message (template was used instead)
           expect(prompt, isNot(contains('Custom user message')));
           // Verify it uses the preconfigured image prompt generation template
@@ -1474,7 +1473,7 @@ void main() {
 
           // gamma (2024-03-01) must appear before beta (2024-02-01) which must
           // appear before alpha (2024-01-01) in the output.
-          final gammaIdx = result!.indexOf('"gamma"');
+          final gammaIdx = result.indexOf('"gamma"');
           final betaIdx = result.indexOf('"beta"');
           final alphaIdx = result.indexOf('"alpha"');
           expect(gammaIdx, lessThan(betaIdx));
@@ -1517,7 +1516,7 @@ void main() {
         );
 
         // Count how many formatted lines are in the output
-        final lineCount = RegExp('- ".*?" → ".*?"').allMatches(result!).length;
+        final lineCount = RegExp('- ".*?" → ".*?"').allMatches(result).length;
         expect(lineCount, equals(500));
       });
 
@@ -2141,7 +2140,6 @@ void main() {
           entity: testAudioWithTranscript,
         );
 
-        expect(result, isNotNull);
         expect(result, contains('This is the original transcript from AI.'));
         expect(result, contains('Generate a prompt.'));
         expect(result, isNot(contains('{{audioTranscript}}')));
@@ -2163,7 +2161,6 @@ void main() {
             entity: testAudioWithEditedText,
           );
 
-          expect(result, isNotNull);
           // Should use edited text, not original transcript
           expect(result, contains('User edited and corrected transcript.'));
           expect(result, isNot(contains('Original transcript.')));
@@ -2184,7 +2181,6 @@ void main() {
           entity: testAudioWithoutTranscript,
         );
 
-        expect(result, isNotNull);
         expect(result, contains('[No transcription available]'));
       });
 
@@ -2202,7 +2198,6 @@ void main() {
           entity: testImageAT,
         );
 
-        expect(result, isNotNull);
         expect(
           result,
           contains('[Audio entry expected but received JournalImage]'),
@@ -2223,7 +2218,6 @@ void main() {
           entity: testTaskAT,
         );
 
-        expect(result, isNotNull);
         expect(result, contains('[Audio entry expected but received Task]'));
       });
 
@@ -2241,7 +2235,6 @@ void main() {
             entity: testImageAT,
           );
 
-          expect(result, isNotNull);
           expect(result, equals('Analyze this image.'));
           // No audioTranscript placeholder to replace
           expect(result, isNot(contains('{{audioTranscript}}')));
@@ -2414,7 +2407,6 @@ void main() {
           entity: testTaskCTS,
         );
 
-        expect(result, isNotNull);
         expect(
           result,
           contains('Latest summary with learnings and annoyances'),
@@ -2440,7 +2432,6 @@ void main() {
           entity: testTaskCTS,
         );
 
-        expect(result, isNotNull);
         expect(result, contains('[No task summary available]'));
       });
 
@@ -2476,7 +2467,6 @@ void main() {
             entity: testAudioCTS,
           );
 
-          expect(result, isNotNull);
           expect(result, contains('Task summary for linked task'));
         },
       );
@@ -2518,7 +2508,6 @@ void main() {
             entity: testAudioCTS,
           );
 
-          expect(result, isNotNull);
           expect(result, contains('Summary via fallback direction'));
           verify(
             () => mockJournalRepositoryCTS.getLinkedToEntities(
@@ -2550,7 +2539,6 @@ void main() {
           entity: testAudioCTS,
         );
 
-        expect(result, isNotNull);
         expect(result, contains('[No task summary available]'));
       });
 
@@ -2586,7 +2574,6 @@ void main() {
             entity: testImageCTS,
           );
 
-          expect(result, isNotNull);
           expect(result, contains('Task summary via image'));
         },
       );
@@ -2628,7 +2615,6 @@ void main() {
           entity: testTaskCTS,
         );
 
-        expect(result, isNotNull);
         // Should return fallback since no taskSummary type found
         expect(result, contains('[No task summary available]'));
       });
@@ -2669,7 +2655,6 @@ void main() {
           entity: testTaskCTS,
         );
 
-        expect(result, isNotNull);
         expect(result, contains('Newest summary'));
         expect(result, isNot(contains('Old summary')));
         expect(result, isNot(contains('Middle summary')));
@@ -2687,7 +2672,6 @@ void main() {
           entity: testTaskCTS,
         );
 
-        expect(result, isNotNull);
         expect(result, equals('Generate something without task summary.'));
         // Should not have called getLinkedToEntities since placeholder absent
         verifyNever(
@@ -2714,7 +2698,6 @@ void main() {
           entity: testTaskCTS,
         );
 
-        expect(result, isNotNull);
         expect(result, contains('[No task summary available]'));
       });
     });
@@ -2925,7 +2908,6 @@ void main() {
           entity: testTaskSD,
         );
 
-        expect(result, isNotNull);
         expect(
           result,
           contains('IMPORTANT - SPEECH DICTIONARY (MUST USE)'),
@@ -2959,7 +2941,6 @@ void main() {
             entity: testAudioSD,
           );
 
-          expect(result, isNotNull);
           expect(
             result,
             contains('["macOS", "iPhone", "Kirkjubaejarklaustur"]'),
@@ -2990,7 +2971,6 @@ void main() {
             entity: testImageSD,
           );
 
-          expect(result, isNotNull);
           expect(
             result,
             contains('["macOS", "iPhone", "Kirkjubaejarklaustur"]'),
@@ -3464,7 +3444,7 @@ void main() {
         // round-trips back to the exact input terms.
         final match = RegExp(
           r'Required spellings: (\[.*\])',
-        ).firstMatch(result!);
+        ).firstMatch(result);
         expect(match, isNotNull, reason: 'terms: $terms');
         final decoded = jsonDecode(match!.group(1)!) as List<dynamic>;
         expect(decoded, terms);
@@ -3518,7 +3498,7 @@ void main() {
 
         // Every injected example line must keep the "- "before" → "after""
         // shape, and unescaping the quotes must recover the original pair.
-        final lines = result!
+        final lines = result
             .split('\n')
             .where((l) => l.startsWith('- "'))
             .toList();

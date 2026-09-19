@@ -255,12 +255,7 @@ class JournalPageController extends Notifier<JournalPageState>
         currentKeys.length == currentPages.length) {
       return currentKeys.last + currentPages.last.length;
     }
-    return currentKeys.last +
-        ((currentPages != null &&
-                currentPages.isNotEmpty &&
-                currentKeys.length == currentPages.length)
-            ? currentPages.last.length
-            : 0);
+    return currentKeys.last;
   }
 
   // ---------------------------------------------------------------

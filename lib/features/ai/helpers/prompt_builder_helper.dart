@@ -67,7 +67,7 @@ class PromptBuilderHelper {
   }
 
   /// Build prompt with entity data
-  Future<String?> buildPromptWithData({
+  Future<String> buildPromptWithData({
     required AiConfigPrompt promptConfig,
     required JournalEntity entity,
     String? linkedEntityId,

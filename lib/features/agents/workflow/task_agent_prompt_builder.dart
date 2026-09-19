@@ -50,16 +50,15 @@ abstract final class TaskAgentPromptBuilder {
 
     final buf = StringBuffer()..write(taskAgentScaffoldCore);
 
-    if (usesBuiltInReportContract(version) &&
-        trimmedReportDirective.isNotEmpty) {
+    // Never empty: the built-in contract resolves to a non-empty model-tuned
+    // constant, and a custom directive only counts as custom when non-empty.
+    if (usesBuiltInReportContract(version)) {
       buf
         ..writeln()
         ..writeln()
         ..writeln('## Report Directive')
         ..writeln()
         ..write(trimmedReportDirective);
-    } else if (trimmedReportDirective.isEmpty) {
-      buf.write(taskAgentScaffoldReport);
     }
 
     buf
@@ -435,97 +434,6 @@ Your job each wake is to:
    tool failure — it is an observation, not report content. Skipping this
    tool means that context is lost forever on the next wake.
 4. FINAL STEP — ${TaskAgentReportPolicy.publicationRule}''';
-
-  /// Default report section of the scaffold, used when the template version
-  /// does not provide its own `reportDirective`.
-  static const taskAgentScaffoldReport =
-      '''
-
-
-## Report
-
-${TaskAgentReportPolicy.publicationRule} Provide `oneLiner`, `tldr`, and `content`. The report must follow
-this standardized structure with emojis for visual consistency:
-
-### Required Sections
-
-1. **One-Liner argument** — A concise task tagline for compact task-card
-   subtitles. Keep it short and meaningful, for example:
-   "Implementation done, release and documentation next" or
-   "At risk of missing the deadline without API review".
-2. **📋 TLDR** — A concise 1-3 sentence overview of the task's current state.
-   This is the first and most important section — it is what the user sees in
-   the collapsed view.
-3. **✅ Achieved** — What has been accomplished (bulleted list). Omit if
-   nothing has been achieved yet.
-4. **📌 What is left to do** — Remaining work items (bulleted list). Omit if
-   the task is complete.
-5. **💡 Learnings** — Key insights, patterns, or decisions worth surfacing to
-   the user. Omit if there are no noteworthy learnings.
-
-Do NOT include a title line (H1) or a status bar — these are already shown in
-the task header UI. Do NOT include a "Goal / Context" section — this is
-redundant with the task description.
-
-You MAY add additional sections if they add value (e.g., ⚠️ Blockers,
-📊 Metrics), but the core sections above should always be present when
-applicable.
-
-### Example report:
-
-```
-## 📋 TLDR
-OAuth2 integration is 60% complete. Login UI is done, logout flow and
-integration tests remain.
-
-## ✅ Achieved
-- Set up OAuth provider configuration
-- Implemented token refresh logic
-- Built login UI with error handling
-
-## 📌 What is left to do
-- Add logout flow with token revocation
-- Write integration tests for auth endpoints
-
-## 💡 Learnings
-- Token refresh needs a 30s buffer before expiry to avoid race conditions
-- Error handling for expired sessions requires a dedicated middleware
-```
-
-### Writing style
-- IMPORTANT: Write the report in the language specified by the task's
-  `languageCode` field (e.g. "de" → German, "fr" → French). Always respect
-  this field — the user may have explicitly chosen a language. If
-  `languageCode` is null, detect the language from the task content.
-- Express your personality and voice as defined in your directives.
-- Keep the report user-facing. No meta-commentary about being an agent.
-- Use present tense for current state, past tense for completed work.
-
-## Report vs Observations — Separation of Concerns
-
-The report (`update_report`) is the PUBLIC, user-facing summary. It should contain:
-- Task status, progress, and key metrics
-- What was achieved and what remains
-- Any deadlines or priorities
-
-The report MUST NOT contain:
-- Internal reasoning or decision logs
-- "I noticed..." or "I decided to..." commentary
-- Debugging notes, failure analysis, or retry logs
-- Agent self-reflection or meta-commentary
-- Internal entity IDs of any kind as visible text. The task context gives you
-  each checklist item's `id` so you can call the checklist tools — those IDs
-  are for tool arguments only. NEVER echo them into the report. Write
-  "Ship the API", never "Ship the API (id: 6af9c4b0-…)". This applies to
-  checklist item, label, and any other entity IDs.
-- Bare internal task IDs or shortened hashes as visible link text. When a
-  provided task context includes a task ID and linking helps the user inspect
-  proof of work, link the readable task title to `/tasks/<taskId>`. Keep the
-  Links section for real external URLs (GitHub, Stack Overflow,
-  documentation, etc.).
-
-Use `record_observations` for ALL internal notes. Observations are private
-and never shown to the user. They persist as your memory across wakes.''';
 
   /// Parent-project and linked-task context guidance for task agents.
   static const taskAgentScaffoldProjectContext = '''

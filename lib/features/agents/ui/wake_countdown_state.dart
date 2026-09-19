@@ -84,12 +84,10 @@ mixin WakeCountdownState<T extends StatefulWidget> on State<T> {
       return;
     }
 
+    // No `mounted` guard needed: this is the only timer, every replacement
+    // cancels its predecessor, and `dispose` cancels it, so a tick never
+    // lands on an unmounted state.
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-
       final updated = _remainingSeconds();
       if (updated == _seconds) {
         return;
