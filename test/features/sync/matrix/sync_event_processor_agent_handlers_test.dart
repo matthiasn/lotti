@@ -15,6 +15,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -30,6 +31,7 @@ import 'package:path/path.dart' as path;
 
 import '../../../mocks/mocks.dart';
 import '../../agents/test_data/entity_factories.dart';
+import '../../ai_consumption/test_utils.dart';
 import 'sync_event_processor_test_helpers.dart';
 
 void main() {
@@ -1415,6 +1417,127 @@ void main() {
         ),
       ).called(1);
     });
+
+    test(
+      'projects the AI attribution a synced report carries into the '
+      'consumption read model',
+      () async {
+        final attribution = makeAiWorkAttribution(
+          attributionId: 'attribution-waddle-report',
+        );
+        final repo = MockConsumptionRepository();
+        when(() => repo.upsertAttribution(any())).thenAnswer((_) async {});
+        processor.consumptionRepository = repo;
+        final entity = AgentDomainEntity.agentReport(
+          id: 'report-attributed',
+          agentId: 'agent-1',
+          scope: 'current',
+          createdAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          content: 'Pip restocked the krill depot.',
+          provenance: {aiAttributionProvenanceKey: attribution.toJson()},
+        );
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentEntity(
+              agentEntity: entity,
+              status: SyncEntryStatus.update,
+            ),
+          ),
+        );
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        final projected =
+            verify(
+                  () => repo.upsertAttribution(captureAny()),
+                ).captured.single
+                as AiWorkAttribution;
+        expect(projected.id, 'attribution-waddle-report');
+        expect(projected.toJson(), attribution.toJson());
+      },
+    );
+
+    test(
+      'an older-client identity rewrite inside a bundle overlays the '
+      'prefetched local setup, or passes through when there is no local row',
+      () async {
+        AgentIdentityEntity identity(
+          String id, {
+          required AgentConfig config,
+          required int counter,
+        }) =>
+            AgentDomainEntity.agent(
+                  id: id,
+                  agentId: id,
+                  kind: 'task_agent',
+                  displayName: 'Waddle Task Agent',
+                  lifecycle: AgentLifecycle.active,
+                  mode: AgentInteractionMode.autonomous,
+                  allowedCategoryIds: const {},
+                  currentStateId: 'state-$id',
+                  config: config,
+                  createdAt: DateTime(2024, 3, 15),
+                  updatedAt: DateTime(2024, 3, 15 + counter),
+                  vectorClock: VectorClock({'host-A': counter}),
+                )
+                as AgentIdentityEntity;
+        const localConfig = AgentConfig(
+          automaticUpdatesEnabled: false,
+          inferenceSetup: AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.disabled,
+            origin: AgentInferenceSetupOrigin.user,
+          ),
+        );
+        final local = identity(
+          'agent-known',
+          config: localConfig,
+          counter: 1,
+        );
+        final incomingKnown = identity(
+          'agent-known',
+          config: const AgentConfig(),
+          counter: 2,
+        );
+        final incomingNew = identity(
+          'agent-new',
+          config: const AgentConfig(),
+          counter: 2,
+        );
+        when(
+          () => mockAgentRepo.getEntitiesByIds(any()),
+        ).thenAnswer((_) async => {'agent-known': local});
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.outboxBundle(
+              children: [
+                SyncMessage.agentEntity(
+                  agentEntity: incomingKnown,
+                  status: SyncEntryStatus.update,
+                ),
+                SyncMessage.agentEntity(
+                  agentEntity: incomingNew,
+                  status: SyncEntryStatus.update,
+                ),
+              ],
+            ),
+          ),
+        );
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        final applied = {
+          for (final entity in verify(
+            () => mockAgentRepo.upsertEntity(captureAny()),
+          ).captured.whereType<AgentIdentityEntity>())
+            entity.id: entity,
+        };
+        expect(applied['agent-known']!.config, localConfig);
+        expect(applied['agent-new']!.config, const AgentConfig());
+        // The prefetch answered for both ids, so neither needs a lookup.
+        verifyNever(() => mockAgentRepo.getEntity(any()));
+      },
+    );
 
     test('processes agent report head entity', () async {
       final entity = AgentDomainEntity.agentReportHead(
@@ -5268,6 +5391,29 @@ void main() {
 
             verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
             verify(descriptorEvent.downloadAndDecryptAttachment).called(1);
+          },
+        );
+
+        test(
+          'an exact attachment whose descriptor names a different path is a '
+          'permanent skip, never a download',
+          () async {
+            // desc-event-id describes agent-desc.json; an envelope that binds
+            // it to another path is malformed and can never succeed on retry.
+            attachmentIndex.record(descriptorEvent);
+            when(() => event.text).thenReturn(
+              encodeMessage(
+                const SyncMessage.agentEntity(
+                  status: SyncEntryStatus.update,
+                  jsonPath: '/agent_entities/agent-other.json',
+                  attachmentEventId: 'desc-event-id',
+                ),
+              ),
+            );
+
+            expect(await processorWithIndex.prepare(event: event), isNull);
+            verifyNever(descriptorEvent.downloadAndDecryptAttachment);
+            verifyNever(() => mockAgentRepo.upsertEntity(any()));
           },
         );
 

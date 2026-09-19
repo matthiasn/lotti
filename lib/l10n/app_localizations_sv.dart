@@ -14650,18 +14650,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get syncStepAiSettings => 'AI-inställningar';
 
   @override
-  String get syncStepBackfillAgentEntityClocks =>
-      'Urtagningsagentens enhetsklockor';
-
-  @override
-  String get syncStepBackfillAgentLinkClocks =>
-      'Klockor för backfill agent link';
-
-  @override
   String get syncStepCategories => 'Kategorier';
-
-  @override
-  String get syncStepComplete => 'Komplett';
 
   @override
   String get syncStepDashboards => 'Instrumentpaneler';

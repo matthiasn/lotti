@@ -578,6 +578,32 @@ void main() {
     },
   );
 
+  test(
+    'an unattributed provider failure that is neither an Exception nor a '
+    'StateError surfaces as an Exception carrying its description',
+    () async {
+      final file = await audioFile();
+      final mockCloud = MockCloudInferenceRepository();
+      _stubGenerateWithAudioStream(
+        mockCloud,
+        () => Stream.error(ArgumentError('bad audio frame')),
+      );
+
+      final svc = buildService(repo: sharedRepo, cloud: mockCloud);
+
+      await expectLater(
+        svc.transcribeStream(file.path).drain<void>(),
+        throwsA(
+          isA<Exception>().having(
+            (error) => error.toString(),
+            'message',
+            contains('bad audio frame'),
+          ),
+        ),
+      );
+    },
+  );
+
   group('batch guard: excludes realtime models', () {
     /// Saves a Mistral provider plus the listed audio models on an isolated
     /// repo, transcribes, and returns the model id the service actually

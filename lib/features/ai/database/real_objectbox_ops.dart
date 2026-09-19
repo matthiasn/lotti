@@ -77,7 +77,7 @@ class RealObjectBoxOps implements ObjectBoxOps {
       return query
           .find()
           .map(
-            (entity) => EntityMetadataRow(
+            (entity) => (
               entityId: entity.entityId,
               taskId: entity.taskId,
             ),

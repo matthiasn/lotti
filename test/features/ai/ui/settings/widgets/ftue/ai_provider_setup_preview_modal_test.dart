@@ -375,6 +375,54 @@ void main() {
       },
     );
 
+    testWidgets(
+      'ticking an unticked model again takes it back out of the excluded set',
+      (tester) async {
+        AiProviderSetupPreviewResult? captured;
+        await tester.pumpWidget(
+          makeTestableWidget(
+            Builder(
+              builder: (context) => TextButton(
+                onPressed: () async {
+                  captured = await Navigator.of(context)
+                      .push<AiProviderSetupPreviewResult>(
+                        MaterialPageRoute(
+                          builder: (_) => Scaffold(
+                            body: SingleChildScrollView(
+                              child: AiProviderSetupPreviewModal(
+                                providerType: InferenceProviderType.gemini,
+                                preset: geminiPreset,
+                                existingModels: const <AiConfigModel>[],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                },
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('open'));
+        await tester.pumpAndSettle();
+        final first = geminiPreset.models.first;
+        final second = geminiPreset.models[1];
+        await tester.tap(find.text(first.name));
+        await tester.tap(find.text(second.name));
+        await tester.pumpAndSettle();
+        // Change of mind: the first model goes back in.
+        await tester.tap(find.text(first.name));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Accept & finish'));
+        await tester.pumpAndSettle();
+
+        expect(captured!.confirmed, isTrue);
+        expect(captured!.excludedProviderModelIds, {second.providerModelId});
+      },
+    );
+
     testWidgets('model cards expose one checked, tappable semantic node', (
       tester,
     ) async {

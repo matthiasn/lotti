@@ -156,7 +156,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
       length: AiSettingsTab.values.length,
       initialIndex: seededTab?.index ?? 0,
       vsync: this,
-    )..addListener(_handleTabControllerChange);
+    );
     _searchController.addListener(_handleSearchChange);
   }
 
@@ -197,14 +197,6 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
         _updateFilterState(_filterState.copyWith(searchQuery: newQuery));
       }
     });
-  }
-
-  void _handleTabControllerChange() {
-    if (_tabController.indexIsChanging) return;
-    final newTab = AiSettingsTab.values[_tabController.index];
-    if (newTab != _filterState.activeTab) {
-      _updateFilterState(_filterState.copyWith(activeTab: newTab));
-    }
   }
 
   void _updateFilterState(AiSettingsFilterState newState) {

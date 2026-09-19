@@ -9,8 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/agents/database/agent_database.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
@@ -1956,11 +1954,7 @@ final skillInferenceRunnerProvider = Provider<SkillInferenceRunner>(
   name: 'skillInferenceRunnerProvider',
 );
 SkillInferenceRunner skillInferenceRunner(Ref ref) {
-  final taskSummaryResolver = TaskSummaryResolver(
-    getIt.isRegistered<AgentDatabase>()
-        ? AgentRepository(getIt<AgentDatabase>())
-        : null,
-  );
+  final taskSummaryResolver = TaskSummaryResolver.fromRegisteredAgentDatabase();
 
   return SkillInferenceRunner(
     ref: ref,

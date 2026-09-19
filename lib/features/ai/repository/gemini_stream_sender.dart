@@ -11,11 +11,11 @@ import 'package:http/http.dart' as http;
 /// living on the repository as private methods.
 class GeminiStreamSender {
   GeminiStreamSender({
-    http.Client? httpClient,
+    required this._httpClient,
     this.maxRetries = kDefaultMaxRetries,
     this.baseDelay = kDefaultRetryBaseDelay,
     this.initialRequestTimeout = kDefaultInitialRequestTimeout,
-  }) : _httpClient = httpClient ?? http.Client();
+  });
 
   final http.Client _httpClient;
 

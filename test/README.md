@@ -233,6 +233,18 @@ failures with `thenAnswer((_) async => throw StateError('x'))`, which rejects
 the returned future the way production code does
 (`test/features/system_health/state/system_health_controller_test.dart`).
 
+## A failing provider reads as loading until its retries run out
+
+Riverpod retries a provider that throws, and reports it as loading while a
+retry is pending. A widget test that overrides a provider with
+`Future.error(...)` and pumps with `makeTestableWidgetWithScaffold` therefore
+never reaches the widget's `error:` branch — and when that branch looks like
+the loading one, the test passes against the wrong state. Build such a test
+with `makeTestableWidgetWithContainer(..., retry: (_, _) => null)` (dispose
+the container in `addTearDown`), and assert something that tells the error
+state from the loading one
+(`test/features/agents/ui/evolution/widgets/evolution_history_dashboard_test.dart`).
+
 ## Semantics handles in widget tests
 
 Dispose a handle from `tester.ensureSemantics()` in a `try/finally` inside the

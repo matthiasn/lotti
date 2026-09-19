@@ -87,6 +87,38 @@ void main() {
         expect(result.geohashString, isNotEmpty);
       });
 
+      test(
+        'the default provider asks the ambient http client when none is '
+        'injected',
+        () async {
+          when(
+            () => mockHttpClient.get(
+              Uri.parse('https://ipapi.co/json/'),
+              headers: any(named: 'headers'),
+            ),
+          ).thenAnswer(
+            (_) async => http.Response(
+              json.encode({
+                'latitude': 69.6492,
+                'longitude': 18.9553,
+                'timezone': 'Europe/Oslo',
+                'utc_offset': '+0100',
+              }),
+              200,
+            ),
+          );
+
+          final result = await http.runWithClient(
+            () => defaultIpGeolocationProvider(),
+            () => mockHttpClient,
+          );
+
+          expect(result?.latitude, 69.6492);
+          expect(result?.longitude, 18.9553);
+          expect(result?.utcOffset, 60);
+        },
+      );
+
       test('falls back to ip-api.com when ipapi.co fails', () async {
         when(
           () => mockHttpClient.get(

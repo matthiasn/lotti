@@ -314,23 +314,18 @@ class MatrixOutboxService extends _OutboxServiceBase
   DateTime? _lastLoggedDbNudgeAt;
 
   /// Persists [entity]'s JSON payload under the documents directory and
-  /// enqueues a `SyncMessage.notification` referencing it. Skips enqueue (and
-  /// logs) if the derived payload path escapes the documents root.
+  /// enqueues a `SyncMessage.notification` referencing it.
   @override
   Future<void> enqueueNotification(
     NotificationEntity entity, {
     String? originatingHostId,
   }) async {
     final relativePath = relativeNotificationPath(entity.id);
-    final fullPath = _safePayloadFullPath(relativePath);
-    if (fullPath == null) {
-      _loggingService.log(
-        LogDomain.sync,
-        'enqueue.skip invalid notification payload path: $relativePath',
-        subDomain: 'enqueueMessage',
-      );
-      return;
-    }
+    // relativeNotificationPath percent-encodes the id into one `<id>.json`
+    // segment below notifications/ — no separator survives the encoding and
+    // no segment ending in `.json` is `..` — so the path always resolves
+    // inside the documents root.
+    final fullPath = _safePayloadFullPath(relativePath)!;
 
     await _saveJson(fullPath, jsonEncode(entity.toJson()));
     await enqueueMessage(

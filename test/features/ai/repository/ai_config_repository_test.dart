@@ -1607,8 +1607,8 @@ void main() {
     );
 
     test(
-      '_invalidateConfig removes config from snapshot when _allConfigsLoaded '
-      'is true and config is not in id-cache (lines 373-376)',
+      '_invalidateConfig filters the snapshot when _allConfigsLoaded is '
+      'true and the config is not in the id-cache',
       () async {
         // Seed DB with a config, load snapshot via getAllConfigs mock.
         final config = AiConfig.inferenceProvider(
@@ -1639,15 +1639,21 @@ void main() {
         // First delete: config IS in _configByIdCache (cached != null path).
         await repository.deleteConfig('inv-target');
 
-        // After first delete _configByIdCache no longer has 'inv-target'.
-        // Second delete: cached == null AND _allConfigsLoaded == true →
-        // exercises lines 373-376 (_replaceAllConfigsSnapshot via the
-        // uncached-but-loaded branch).
-        await repository.deleteConfig('inv-target');
+        // After the first delete _configByIdCache no longer has 'inv-target'.
+        // A repeated hard delete (e.g. the peer's sync message arriving
+        // after the local one) finds nothing cached while the snapshot is
+        // loaded, and must filter the snapshot rather than touch the type
+        // caches. `deleteConfig` would short-circuit on the missing row, so
+        // the replay goes through `hardDeleteConfig` as sync does.
+        await repository.hardDeleteConfig('inv-target', fromSync: true);
 
-        // The snapshot must remain empty; getConfigById returns null.
+        verify(() => mockDb.deleteConfig('inv-target')).called(2);
         final result = await repository.getConfigById('inv-target');
         expect(result, isNull);
+        expect(
+          await repository.getConfigsByType(AiConfigType.inferenceProvider),
+          isEmpty,
+        );
       },
     );
 

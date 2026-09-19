@@ -197,6 +197,15 @@ void main() {
   });
 
   group('AudioPlayerController - Initialization', () {
+    test('the default player factory constructs a media_kit Player', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      // Constructor tear-offs are canonicalised constants, so identity proves
+      // the provider hands out Player's own constructor rather than a stub.
+      expect(container.read(playerFactoryProvider), same(Player.new));
+    });
+
     test('initial state is correct', () {
       final state = container.read(audioPlayerControllerProvider);
 

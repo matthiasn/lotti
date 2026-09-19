@@ -3,6 +3,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_widgets.dart';
 import 'package:lotti/features/ai/ui/settings/provider/ai_provider_models_section.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../../test_utils/material_ui_finders.dart';
@@ -136,6 +137,67 @@ void main() {
 
         expect(tapped, [model]);
         expect(deleted, isEmpty);
+      },
+    );
+  });
+  group('ProfilesUsingProviderSection', () {
+    testWidgets(
+      'lists every dependent profile in order, spaced apart, and forwards '
+      'the tapped one',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final provider = hProvider(type: InferenceProviderType.anthropic);
+        final model = hModel(
+          providerId: provider.id,
+          name: 'Colony Reasoner',
+          providerModelId: 'colony-reasoner',
+        );
+        final waddle = hProfile(
+          id: 'p-waddle',
+          name: 'Waddle Planning',
+          thinking: model.id,
+        );
+        final huddle = hProfile(
+          id: 'p-huddle',
+          name: 'Huddle Review',
+          thinking: model.id,
+        );
+        final tapped = <AiConfigInferenceProfile>[];
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ProfilesUsingProviderSection(
+              profiles: [waddle, huddle],
+              providerType: provider.inferenceProviderType,
+              models: [model],
+              onProfileTap: tapped.add,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final first = tester.getRect(
+          find.ancestor(
+            of: find.text('Waddle Planning'),
+            matching: find.byType(AiProfileCard),
+          ),
+        );
+        final second = tester.getRect(
+          find.ancestor(
+            of: find.text('Huddle Review'),
+            matching: find.byType(AiProfileCard),
+          ),
+        );
+        final tokens = tester
+            .element(find.byType(ProfilesUsingProviderSection))
+            .designTokens;
+        expect(second.top - first.bottom, tokens.spacing.step3);
+
+        await tester.tap(find.text('Huddle Review'));
+        await tester.pump();
+        expect(tapped, [huddle]);
       },
     );
   });

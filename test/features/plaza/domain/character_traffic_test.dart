@@ -56,6 +56,32 @@ void main() {
     }
   }
 
+  test('a gait with no supporting pose within a stride fails loudly', () {
+    // Reserving a step needs a planted pose to end it on; admitting a walker
+    // that never plants would let it glide without contact.
+    final traffic = CharacterTraffic([
+      TrafficCharacter(
+        id: 'gliding-penguin',
+        species: CharacterSpecies.penguin,
+        radius: 0.5,
+        maxSpeed: 2,
+        positionAt: (_) => const CharacterPose(x: 0, z: 0, yaw: 0),
+        supportedAt: (_) => false,
+      ),
+    ]);
+
+    expect(
+      () => update(traffic, 0),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          'No supporting pose for gliding-penguin',
+        ),
+      ),
+    );
+  });
+
   test('different cadences yield at a crossing and both finish it', () {
     final cast = [
       walker(

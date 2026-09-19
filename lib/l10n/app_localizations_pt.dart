@@ -14775,18 +14775,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get syncStepAiSettings => 'Configurações de IA';
 
   @override
-  String get syncStepBackfillAgentEntityClocks =>
-      'Preencher relógios da entidade do agente';
-
-  @override
-  String get syncStepBackfillAgentLinkClocks =>
-      'Relógios de link do agente de preenchimento';
-
-  @override
   String get syncStepCategories => 'Categorias';
-
-  @override
-  String get syncStepComplete => 'Completo';
 
   @override
   String get syncStepDashboards => 'Painéis';

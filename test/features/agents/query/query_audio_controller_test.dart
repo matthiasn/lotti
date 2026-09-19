@@ -802,6 +802,35 @@ void main() {
     expect(bench.speechPlayer.playCount, 0);
   });
 
+  test(
+    'an unexpected failure loading the chat while reading aloud reports a '
+    'failed read-aloud',
+    () async {
+      when(
+        () => bench.store.load(any()),
+      ).thenAnswer((_) async => throw StateError('store offline'));
+      await controller.speakAnswer(answerId: 'answer');
+      expect(container.read(provider).status, QueryAudioStatus.failed);
+      expect(container.read(provider).actionId, 'answer');
+      expect(bench.engine.calls, isEmpty);
+      expect(bench.speechPlayer.playCount, 0);
+    },
+  );
+
+  test(
+    'a listener returning before disposal re-attaches and resumes '
+    'automatic preparation',
+    () async {
+      enablePreparation();
+      // Losing the last listener detaches and discards queued preparation.
+      subscription.close();
+      subscription = container.listen(provider, (_, _) {});
+      await pumpEventQueue();
+      expect(bench.engine.calls, hasLength(1));
+      expect(bench.engine.calls.single.text, 'Keep the feeder latch.');
+    },
+  );
+
   test('synthesis failure becomes a recoverable query audio error', () async {
     bench.engine = FakeTtsEngine(throwOnSynthesize: true);
     await controller.speakAnswer(answerId: 'answer');

@@ -1023,6 +1023,17 @@ void main() {
               'broad-p2-newer',
             ],
           );
+
+          // No starred state selected: the broad path must answer empty
+          // rather than build an invalid `starred IN ()` clause.
+          expect(
+            await db!.getTasks(
+              starredStatuses: const [],
+              taskStatuses: const ['OPEN', 'IN PROGRESS', 'GROOMED'],
+              categoryIds: categories,
+            ),
+            isEmpty,
+          );
         },
       );
 

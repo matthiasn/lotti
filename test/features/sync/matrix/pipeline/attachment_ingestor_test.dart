@@ -14,6 +14,7 @@ import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../../../test_utils/vanishing_file.dart';
 
 Event _makeEvent({
   required String eventId,
@@ -602,6 +603,47 @@ void main() {
         expect(wrote, isTrue);
         // The stale local bytes were overwritten with the downloaded bytes.
         expect(File(filePath).readAsBytesSync(), fileBytes);
+      },
+    );
+
+    test(
+      'a local file that vanishes between the existence check and the size '
+      'read counts as missing, so a repeated event repairs it',
+      () async {
+        const relativePath = '/agent_entities/vanishing.json';
+        final filePath = '${tempDir.path}/agent_entities/vanishing.json';
+        var downloads = 0;
+        final e = _makeEvent(
+          eventId: 'ev-vanishing',
+          relativePath: relativePath,
+          mime: 'application/json',
+          downloadBytes: utf8.encode('{"penguin":"pip"}'),
+          onDownload: () => downloads++,
+        );
+        final ingestor = AttachmentIngestor(
+          documentsDirectory: tempDir,
+          verboseLogging: false,
+        );
+        await ingestor.process(
+          event: e,
+          logging: logging,
+          attachmentIndex: index,
+        );
+        expect(downloads, 1);
+
+        // The repeat observation's repair probe is the first File created for
+        // this path: it is present at existsSync but gone by lengthSync.
+        final probed = await runWithVanishingFile(
+          filePath,
+          () => ingestor.process(
+            event: e,
+            logging: logging,
+            attachmentIndex: index,
+          ),
+        );
+
+        expect(probed, isTrue);
+        expect(downloads, 2);
       },
     );
 

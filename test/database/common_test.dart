@@ -740,6 +740,34 @@ void main() {
         reason: 'Temp directory resolution failure should be logged',
       );
     });
+
+    test(
+      'logs a warning and surfaces the open failure when the DB directory '
+      'cannot be created',
+      () async {
+        // A regular file where the database folder should be: creating the
+        // directory fails, and so does opening the database beneath it.
+        final blocker = File(p.join(testDir.path, 'waddle_blocker'))
+          ..writeAsStringSync('not a directory');
+        final db = EditorDb(
+          documentsDirectoryProvider: () async => Directory(blocker.path),
+          tempDirectoryProvider: () async => testDir,
+        );
+
+        await expectLater(db.allDrafts().get(), throwsA(anything));
+        await db.close();
+
+        expect(
+          DevLogger.capturedLogs.any(
+            (log) =>
+                log.contains('Failed to create DB directory at') &&
+                log.contains(blocker.path),
+          ),
+          isTrue,
+          reason: DevLogger.capturedLogs.join('\n'),
+        );
+      },
+    );
   });
 
   group('Edge Cases and Error Handling', () {

@@ -9,8 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/agents/database/agent_database.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
@@ -61,11 +59,7 @@ class PreparedAudio {
 class UnifiedAiInferenceRepository {
   UnifiedAiInferenceRepository(this.ref, {DateTime Function()? clock})
     : _clock = clock ?? DateTime.now {
-    final resolver = TaskSummaryResolver(
-      getIt.isRegistered<AgentDatabase>()
-          ? AgentRepository(getIt<AgentDatabase>())
-          : null,
-    );
+    final resolver = TaskSummaryResolver.fromRegisteredAgentDatabase();
     promptBuilderHelper = PromptBuilderHelper(
       aiInputRepository: ref.read(aiInputRepositoryProvider),
       journalRepository: ref.read(journalRepositoryProvider),
@@ -582,24 +576,11 @@ class UnifiedAiInferenceRepository {
   }
 
   /// Extract text from stream chunk
-  String _extractTextFromChunk(CreateChatCompletionStreamResponse chunk) {
-    try {
-      // Handle potential null values in Anthropic's response
-      final choices = chunk.choices;
-      if (choices?.isEmpty ?? true) {
-        return '';
-      }
-      return choices?.firstOrNull?.delta?.content ?? '';
-    } catch (e) {
-      // Log error but continue processing stream
-      developer.log(
-        'Error extracting text from chunk',
-        name: 'UnifiedAiInferenceRepository',
-        error: e,
-      );
-      return '';
-    }
-  }
+  ///
+  /// Anthropic-compatible streams may omit `choices` or the delta's content;
+  /// every access is null-aware, so a missing field yields an empty string.
+  String _extractTextFromChunk(CreateChatCompletionStreamResponse chunk) =>
+      chunk.choices?.firstOrNull?.delta?.content ?? '';
 
   // ===========================================================================
   // Completed-response handling: persisting results and post-processing.
@@ -618,11 +599,11 @@ class UnifiedAiInferenceRepository {
     required void Function(String) onProgress,
     required void Function(InferenceStatus) onStatusChange,
     required String outputId,
+    required String effectiveSystemMessage,
     List<ChatCompletionMessageToolCall>? toolCalls,
     CompletionUsage? usage,
     int? durationMs,
     double? temperature,
-    String? effectiveSystemMessage,
     AiAttributionSession? attributionSession,
   }) async {
     var thoughts = '';
@@ -700,7 +681,7 @@ class UnifiedAiInferenceRepository {
     final data = AiResponseData(
       model: model.providerModelId,
       temperature: temperature,
-      systemMessage: effectiveSystemMessage ?? promptConfig.systemMessage,
+      systemMessage: effectiveSystemMessage,
       prompt: prompt,
       promptId: promptConfig.id,
       thoughts: thoughts,
@@ -829,8 +810,12 @@ class UnifiedAiInferenceRepository {
       case AiResponseType.checklistUpdates:
       // ignore: deprecated_member_use_from_same_package
       case AiResponseType.taskSummary:
-        // These response types are now handled by the agent system;
-        // the enum values are kept for DB backwards-compatibility.
+      case AiResponseType.imageGeneration:
+        // Legacy response types: `runInference` rejects them via
+        // `isLegacyType` before any inference runs, so none reaches here.
+        // Summaries and checklists moved to the agent system, cover art to
+        // skills (SkillInferenceRunner); the enum values are kept for DB
+        // backwards-compatibility.
         break;
       case AiResponseType.imageAnalysis:
         if (attributionSession != null) break;
@@ -960,13 +945,6 @@ class UnifiedAiInferenceRepository {
         // is saved as an AiResponseEntry which is handled by the caller
         developer.log(
           'Image prompt generation completed for entity ${entity.id}',
-          name: 'UnifiedAiInferenceRepository',
-        );
-      case AiResponseType.imageGeneration:
-        // Image generation is now handled via skills (SkillInferenceRunner).
-        // This case should not be reached in normal flow.
-        developer.log(
-          'Image generation type received in response processing - no-op',
           name: 'UnifiedAiInferenceRepository',
         );
       case AiResponseType.audioSummary:

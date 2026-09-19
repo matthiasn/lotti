@@ -438,17 +438,19 @@ class ProfileSeedingService {
     AiConfigInferenceProfile template,
     List<AiConfigModel> models,
   ) {
-    String? heal(String? current, String? seedDefault) {
-      if (current == null) return null;
-      if (_slotResolvesToModelRow(current, models)) return current;
-      if (_isKnownProviderNativeModelId(current)) return current;
-      return seedDefault;
-    }
+    bool stillResolves(String current) =>
+        _slotResolvesToModelRow(current, models) ||
+        _isKnownProviderNativeModelId(current);
+
+    String? heal(String? current, String? seedDefault) =>
+        current == null || stillResolves(current) ? current : seedDefault;
 
     return profile.copyWith(
-      thinkingModelId:
-          heal(profile.thinkingModelId, template.thinkingModelId) ??
-          template.thinkingModelId,
+      // The thinking slot is required on both sides, so it heals without
+      // the null passthrough the optional slots need.
+      thinkingModelId: stillResolves(profile.thinkingModelId)
+          ? profile.thinkingModelId
+          : template.thinkingModelId,
       thinkingHighEndModelId: heal(
         profile.thinkingHighEndModelId,
         template.thinkingHighEndModelId,

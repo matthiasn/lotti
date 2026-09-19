@@ -14825,18 +14825,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get syncStepAiSettings => 'Impostazioni dell\'intelligenza';
 
   @override
-  String get syncStepBackfillAgentEntityClocks =>
-      'Backfill agente entità orologi';
-
-  @override
-  String get syncStepBackfillAgentLinkClocks =>
-      'Orologi di collegamento agente di riempimento';
-
-  @override
   String get syncStepCategories => 'Categorie';
-
-  @override
-  String get syncStepComplete => 'Completo';
 
   @override
   String get syncStepDashboards => 'Pannelli';

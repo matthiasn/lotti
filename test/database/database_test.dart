@@ -7,10 +7,15 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/logging_types.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as path;
 import 'package:sqlite3/sqlite3.dart';
 
+import '../mocks/mocks.dart';
 import 'schema_fixtures.dart';
 
 import 'test_utils.dart';
@@ -142,6 +147,77 @@ void main() {
         expect(taskRow.single.read<String>('serialized'), '{}');
         expect(taskRow.single.read<String>('task_priority'), 'P2');
         expect(taskRow.single.read<int>('task_priority_rank'), 2);
+      },
+    );
+  });
+
+  group('JournalDb logger resolution -', () {
+    setUpAll(registerJournalDbTestFallbacks);
+
+    late Directory documentsDirectory;
+    late MockDomainLogger registeredLogger;
+
+    setUp(() {
+      documentsDirectory = Directory.systemTemp.createTempSync(
+        'lotti_logger_',
+      );
+      registeredLogger = MockDomainLogger();
+      registerJournalDbTestServices(
+        updateNotifications: MockUpdateNotifications(),
+        loggingService: registeredLogger,
+        documentsDirectory: documentsDirectory,
+      );
+    });
+
+    tearDown(() {
+      unregisterJournalDbTestServices();
+      if (documentsDirectory.existsSync()) {
+        documentsDirectory.deleteSync(recursive: true);
+      }
+    });
+
+    test(
+      'an injected logger takes precedence over the registered one',
+      () async {
+        final injectedLogger = MockDomainLogger();
+        when(
+          () => injectedLogger.log(
+            any<LogDomain>(),
+            any<String>(),
+            subDomain: any<String?>(named: 'subDomain'),
+            level: any<InsightLevel>(named: 'level'),
+          ),
+        ).thenAnswer((_) async {});
+        final db = JournalDb(
+          inMemoryDatabase: true,
+          loggingService: injectedLogger,
+          documentsDirectory: documentsDirectory,
+        );
+        addTearDown(db.close);
+
+        const clock = VectorClock(<String, int>{'waddle-device': 1});
+        final entry = createJournalEntryWithVclock(clock, id: 'penguin-log');
+        await db.updateJournalEntity(entry);
+        // Same vector clock again: the conflict check reports `equal`, which
+        // the shell logs through whichever logger it resolved.
+        final result = await db.updateJournalEntity(entry);
+
+        expect(result.applied, isFalse);
+        verify(
+          () => injectedLogger.log(
+            LogDomain.database,
+            'equal',
+            subDomain: 'Conflict status',
+          ),
+        ).called(1);
+        verifyNever(
+          () => registeredLogger.log(
+            any<LogDomain>(),
+            any<String>(),
+            subDomain: any<String?>(named: 'subDomain'),
+            level: any<InsightLevel>(named: 'level'),
+          ),
+        );
       },
     );
   });

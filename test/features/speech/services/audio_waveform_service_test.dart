@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:just_waveform/just_waveform.dart';
@@ -1561,6 +1563,103 @@ void main() {
           () => mockDomainLogger.error(
             LogDomain.speech,
             any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'audio_waveform_extractor',
+          ),
+        ).called(1);
+      },
+    );
+  });
+
+  group('default waveform extractor with a native plugin double', () {
+    const channel = MethodChannel('com.ryanheise.just_waveform');
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+
+    /// Plays the native side of just_waveform: writes [waveBytes] to the
+    /// requested output file, then reports 100% progress the way the plugin
+    /// does, which makes the Dart side parse that file.
+    List<String> installNativeExtractor(List<int> waveBytes) {
+      final waveOutPaths = <String>[];
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        final args = call.arguments as Map<Object?, Object?>;
+        final waveOutPath = args['waveOutPath']! as String;
+        waveOutPaths.add(waveOutPath);
+        File(waveOutPath)
+          ..createSync(recursive: true)
+          ..writeAsBytesSync(waveBytes);
+        unawaited(
+          messenger.handlePlatformMessage(
+            channel.name,
+            channel.codec.encodeMethodCall(
+              MethodCall('onProgress', {
+                'progress': 100,
+                'waveOutFile': waveOutPath,
+              }),
+            ),
+            (_) {},
+          ),
+        );
+        return null;
+      });
+      addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+      return waveOutPaths;
+    }
+
+    test('returns the parsed waveform and deletes the temp file', () async {
+      // An audiowaveform header (version, flags, rate, samples/pixel,
+      // length = 2 pixels) padded to the 80 bytes just_waveform's parser
+      // views as its header.
+      final bytes = Uint32List(24)..setAll(0, [1, 0, 48000, 480, 2]);
+      final waveOutPaths = installNativeExtractor(
+        bytes.buffer.asUint8List(),
+      );
+
+      final result = await AudioWaveformService().loadWaveform(
+        createAudio(
+          duration: const Duration(seconds: 5),
+          audioId: 'penguin-waddle-clip',
+          fileName: 'waddle.m4a',
+        ),
+        targetBuckets: 4,
+      );
+
+      expect(result, isNotNull);
+      expect(result!.amplitudes, hasLength(2));
+      expect(waveOutPaths, hasLength(1));
+      expect(File(waveOutPaths.single).existsSync(), isFalse);
+      verifyNever(
+        () => mockDomainLogger.error(
+          LogDomain.speech,
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'audio_waveform_extractor',
+        ),
+      );
+    });
+
+    test(
+      'fails with a StateError when extraction ends without waveform data',
+      () async {
+        // Too short to hold a header: the plugin swallows the RangeError and
+        // closes the stream having emitted no waveform.
+        final waveOutPaths = installNativeExtractor(List<int>.filled(8, 0));
+
+        final result = await AudioWaveformService().loadWaveform(
+          createAudio(
+            duration: const Duration(seconds: 5),
+            audioId: 'penguin-empty-clip',
+            fileName: 'empty.m4a',
+          ),
+          targetBuckets: 4,
+        );
+
+        expect(result, isNull);
+        expect(File(waveOutPaths.single).existsSync(), isFalse);
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.speech,
+            any<StateError>(),
             stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: 'audio_waveform_extractor',
           ),

@@ -974,6 +974,67 @@ void main() {
       );
 
       test(
+        "a disabled agent's own write to its trigger during a wake does not "
+        'mark the report stale',
+        () async {
+          final refreshStartedAt = DateTime(2026, 7, 16, 9);
+          var state =
+              AgentDomainEntity.agentState(
+                    id: 'state-1',
+                    agentId: 'agent-1',
+                    slots: const AgentSlots(activeTaskId: 'entity-1'),
+                    updatedAt: refreshStartedAt,
+                    vectorClock: null,
+                  )
+                  as AgentStateEntity;
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+          final writes = <AgentStateEntity>[];
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator =
+              WakeOrchestrator(
+                  repository: mockRepository,
+                  queue: queue,
+                  runner: runner,
+                  syncEntityWriter: (entity) async {
+                    state = entity as AgentStateEntity;
+                    writes.add(state);
+                  },
+                  wakeExecutor: (_, _, _, _) async {
+                    // The running wake echoes a write to the very entity it
+                    // was triggered by — pre-registered as its own.
+                    controller.add({'entity-1'});
+                    await pumpEventQueue();
+                    return null;
+                  },
+                )
+                ..disableAutomaticUpdatesRuntime('agent-1')
+                ..addSubscription(makeSub());
+          queue.enqueue(
+            WakeJob(
+              runKey: 'manual-self-write',
+              agentId: 'agent-1',
+              reason: WakeReason.reanalysis.name,
+              initiator: WakeInitiator.user,
+              triggerTokens: const {'entity-1'},
+              createdAt: refreshStartedAt,
+            ),
+          );
+
+          await withClock(Clock.fixed(refreshStartedAt), () async {
+            await orchestrator.start(controller.stream);
+            await orchestrator.processNext();
+          });
+
+          expect(writes.where((w) => w.reportStaleAt != null), isEmpty);
+          expect(state.reportStaleAt, isNull);
+          expect(state.isReportStale, isFalse);
+          await controller.close();
+        },
+      );
+
+      test(
         'freshness writes serialize a delayed stale update before wake success',
         () async {
           final refreshStartedAt = DateTime(2026, 7, 16, 9);

@@ -58,15 +58,18 @@ class MediaFileActions {
     return MediaFilePlatform.unsupported;
   }
 
+  /// Reveals [filePath] in [platform]'s file manager. Callers resolve the
+  /// platform once (see [currentPlatform]) so they can hide the action where
+  /// it is unsupported.
   Future<void> revealInFileManager(
     String filePath, {
-    MediaFilePlatform? platform,
+    required MediaFilePlatform platform,
   }) async {
     if (filePath.trim().isEmpty) {
       throw ArgumentError.value(filePath, 'filePath', 'Must not be empty');
     }
 
-    switch (platform ?? currentPlatform()) {
+    switch (platform) {
       case MediaFilePlatform.macos:
         await _invokeMacosFileAction('revealInFileManager', filePath);
       case MediaFilePlatform.windows:

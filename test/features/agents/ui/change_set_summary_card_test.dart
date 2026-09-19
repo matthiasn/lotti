@@ -15,9 +15,8 @@ import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
 
-/// This file covers only the project-agent path. Task-agent suggestions
-/// are rendered by `AgentSuggestionsPanel` + `SuggestionRow`, which have
-/// their own dedicated tests.
+/// Covers the event and self-targeted (goal) paths. Task-agent suggestions
+/// are rendered by `AiSummaryCard`, which has its own dedicated tests.
 
 Future<void> _pumpUi(WidgetTester tester) async {
   await tester.pump();
@@ -41,16 +40,14 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
-  Widget buildProjectWidget({
-    List<AgentDomainEntity> changeSets = const [],
-  }) {
+  Widget buildEventWidget({List<AgentDomainEntity> changeSets = const []}) {
     return makeTestableWidgetWithScaffold(
-      const ChangeSetSummaryCard.project(projectId: 'project-001'),
+      const ChangeSetSummaryCard.event(eventId: 'event-001'),
       overrides: [
-        projectPendingChangeSetsProvider('project-001').overrideWith(
-          (ref) async => changeSets,
-        ),
-        projectChangeSetConfirmationServiceProvider.overrideWithValue(
+        eventPendingChangeSetsProvider(
+          'event-001',
+        ).overrideWith((ref) async => changeSets),
+        eventChangeSetConfirmationServiceProvider.overrideWithValue(
           mockConfirmationService,
         ),
         updateNotificationsProvider.overrideWithValue(mockUpdateNotifications),
@@ -58,29 +55,29 @@ void main() {
     );
   }
 
-  Future<void> pumpProjectCard(
+  Future<void> pumpEventCard(
     WidgetTester tester, {
     List<AgentDomainEntity> changeSets = const [],
   }) async {
-    await tester.pumpWidget(buildProjectWidget(changeSets: changeSets));
+    await tester.pumpWidget(buildEventWidget(changeSets: changeSets));
     await _pumpUi(tester);
   }
 
-  group('ChangeSetSummaryCard.project', () {
+  group('ChangeSetSummaryCard.event', () {
     testWidgets('renders nothing when change sets list is empty', (
       tester,
     ) async {
-      await pumpProjectCard(tester);
+      await pumpEventCard(tester);
 
       expect(find.byType(ChangeSetSummaryCard), findsOneWidget);
       expect(find.text('Proposed changes'), findsNothing);
     });
 
-    testWidgets('swipe right confirms via project confirmation service', (
+    testWidgets('swipe right confirms via the confirmation service', (
       tester,
     ) async {
       final changeSet = makeTestChangeSet(
-        taskId: 'project-001',
+        taskId: 'event-001',
         items: const [
           ChangeItem(
             toolName: 'update_project_status',
@@ -96,7 +93,7 @@ void main() {
         (_) async => const ToolExecutionResult(success: true, output: 'Done'),
       );
 
-      await pumpProjectCard(tester, changeSets: [changeSet]);
+      await pumpEventCard(tester, changeSets: [changeSet]);
 
       await tester.drag(
         find.text('Update project status to Active'),
@@ -108,12 +105,12 @@ void main() {
       verify(() => mockUpdateNotifications.notify({'agent-001'})).called(1);
     });
 
-    testWidgets('swipe left rejects via project confirmation service', (
+    testWidgets('swipe left rejects via the confirmation service', (
       tester,
     ) async {
       final changeSet = makeTestChangeSet(
         agentId: 'agent-002',
-        taskId: 'project-001',
+        taskId: 'event-001',
         items: const [
           ChangeItem(
             toolName: 'update_project_status',
@@ -131,7 +128,7 @@ void main() {
         ),
       ).thenAnswer((_) async => true);
 
-      await pumpProjectCard(tester, changeSets: [changeSet]);
+      await pumpEventCard(tester, changeSets: [changeSet]);
 
       await tester.drag(
         find.text('Update project status to On Hold'),
@@ -148,7 +145,7 @@ void main() {
       (tester) async {
         final changeSet = makeTestChangeSet(
           agentId: 'agent-004',
-          taskId: 'project-001',
+          taskId: 'event-001',
           items: const [
             ChangeItem(
               toolName: 'update_project_status',
@@ -168,7 +165,7 @@ void main() {
           ),
         );
 
-        await pumpProjectCard(tester, changeSets: [changeSet]);
+        await pumpEventCard(tester, changeSets: [changeSet]);
 
         await tester.drag(
           find.text('Update project status to Active'),
@@ -185,7 +182,7 @@ void main() {
       (tester) async {
         final changeSet = makeTestChangeSet(
           agentId: 'agent-005',
-          taskId: 'project-001',
+          taskId: 'event-001',
           items: const [
             ChangeItem(
               toolName: 'update_project_status',
@@ -205,7 +202,7 @@ void main() {
           ),
         );
 
-        await pumpProjectCard(tester, changeSets: [changeSet]);
+        await pumpEventCard(tester, changeSets: [changeSet]);
 
         await tester.drag(
           find.text('Update project status to Active'),
@@ -225,7 +222,7 @@ void main() {
       (tester) async {
         final changeSet = makeTestChangeSet(
           agentId: 'agent-006',
-          taskId: 'project-001',
+          taskId: 'event-001',
           items: const [
             ChangeItem(
               toolName: 'update_project_status',
@@ -241,7 +238,7 @@ void main() {
           (_) async => const ToolExecutionResult(success: true, output: 'Done'),
         );
 
-        await pumpProjectCard(tester, changeSets: [changeSet]);
+        await pumpEventCard(tester, changeSets: [changeSet]);
 
         await tester.drag(
           find.text('Update project status to Active'),
@@ -258,7 +255,7 @@ void main() {
       (tester) async {
         final changeSet = makeTestChangeSet(
           agentId: 'agent-007',
-          taskId: 'project-001',
+          taskId: 'event-001',
           items: const [
             ChangeItem(
               toolName: 'update_project_status',
@@ -272,7 +269,7 @@ void main() {
           () => mockConfirmationService.confirmItem(any(), any()),
         ).thenThrow(Exception('Confirmation service down'));
 
-        await pumpProjectCard(tester, changeSets: [changeSet]);
+        await pumpEventCard(tester, changeSets: [changeSet]);
 
         await tester.drag(
           find.text('Update project status to Active'),
@@ -287,7 +284,7 @@ void main() {
     testWidgets('reject success shows a success toast', (tester) async {
       final changeSet = makeTestChangeSet(
         agentId: 'agent-008',
-        taskId: 'project-001',
+        taskId: 'event-001',
         items: const [
           ChangeItem(
             toolName: 'update_project_status',
@@ -305,7 +302,7 @@ void main() {
         ),
       ).thenAnswer((_) async => true);
 
-      await pumpProjectCard(tester, changeSets: [changeSet]);
+      await pumpEventCard(tester, changeSets: [changeSet]);
 
       await tester.drag(
         find.text('Update project status to On Hold'),
@@ -319,7 +316,7 @@ void main() {
     testWidgets('reject not-applied shows an error toast', (tester) async {
       final changeSet = makeTestChangeSet(
         agentId: 'agent-009',
-        taskId: 'project-001',
+        taskId: 'event-001',
         items: const [
           ChangeItem(
             toolName: 'update_project_status',
@@ -337,7 +334,7 @@ void main() {
         ),
       ).thenAnswer((_) async => false);
 
-      await pumpProjectCard(tester, changeSets: [changeSet]);
+      await pumpEventCard(tester, changeSets: [changeSet]);
 
       await tester.drag(
         find.text('Update project status to On Hold'),
@@ -351,7 +348,7 @@ void main() {
     testWidgets('reject exception shows an error toast', (tester) async {
       final changeSet = makeTestChangeSet(
         agentId: 'agent-010',
-        taskId: 'project-001',
+        taskId: 'event-001',
         items: const [
           ChangeItem(
             toolName: 'update_project_status',
@@ -369,7 +366,7 @@ void main() {
         ),
       ).thenThrow(Exception('Reject service down'));
 
-      await pumpProjectCard(tester, changeSets: [changeSet]);
+      await pumpEventCard(tester, changeSets: [changeSet]);
 
       await tester.drag(
         find.text('Update project status to On Hold'),
@@ -385,7 +382,7 @@ void main() {
       (tester) async {
         final changeSet = makeTestChangeSet(
           agentId: 'agent-011',
-          taskId: 'project-001',
+          taskId: 'event-001',
           items: const [
             ChangeItem(
               toolName: 'update_project_status',
@@ -405,7 +402,7 @@ void main() {
           ],
         );
 
-        await pumpProjectCard(tester, changeSets: [changeSet]);
+        await pumpEventCard(tester, changeSets: [changeSet]);
 
         await tester.tap(find.text('Confirm all'));
         await _pumpUi(tester);
@@ -419,7 +416,7 @@ void main() {
       (tester) async {
         final changeSet = makeTestChangeSet(
           agentId: 'agent-012',
-          taskId: 'project-001',
+          taskId: 'event-001',
           items: const [
             ChangeItem(
               toolName: 'update_project_status',
@@ -433,7 +430,7 @@ void main() {
           () => mockConfirmationService.confirmAll(any()),
         ).thenThrow(Exception('Bulk service down'));
 
-        await pumpProjectCard(tester, changeSets: [changeSet]);
+        await pumpEventCard(tester, changeSets: [changeSet]);
 
         await tester.tap(find.text('Confirm all'));
         await _pumpUi(tester);
@@ -443,11 +440,11 @@ void main() {
     );
 
     testWidgets(
-      'Confirm All routes through project service and surfaces warnings',
+      'Confirm All routes through the event service and surfaces warnings',
       (tester) async {
         final changeSet = makeTestChangeSet(
           agentId: 'agent-003',
-          taskId: 'project-001',
+          taskId: 'event-001',
           items: const [
             ChangeItem(
               toolName: 'update_project_status',
@@ -473,7 +470,7 @@ void main() {
           ],
         );
 
-        await pumpProjectCard(tester, changeSets: [changeSet]);
+        await pumpEventCard(tester, changeSets: [changeSet]);
 
         await tester.tap(find.text('Confirm all'));
         await _pumpUi(tester);
@@ -492,7 +489,7 @@ void main() {
     ) async {
       final changeSet = makeTestChangeSet(
         agentId: 'agent-010',
-        taskId: 'project-001',
+        taskId: 'event-001',
         items: const [
           ChangeItem(
             toolName: 'create_time_entry',
@@ -506,7 +503,7 @@ void main() {
         ],
       );
 
-      await pumpProjectCard(tester, changeSets: [changeSet]);
+      await pumpEventCard(tester, changeSets: [changeSet]);
 
       expect(find.text('09:00'), findsOneWidget);
       expect(find.text('10:30'), findsOneWidget);
@@ -519,7 +516,7 @@ void main() {
     ) async {
       final changeSet = makeTestChangeSet(
         agentId: 'agent-011',
-        taskId: 'project-001',
+        taskId: 'event-001',
         items: const [
           ChangeItem(
             toolName: 'schedule_penguin_parade',
@@ -529,30 +526,13 @@ void main() {
         ],
       );
 
-      await pumpProjectCard(tester, changeSets: [changeSet]);
+      await pumpEventCard(tester, changeSets: [changeSet]);
 
       expect(find.text('Schedule the dawn penguin parade'), findsOneWidget);
     });
   });
 
-  group('ChangeSetSummaryCard.event', () {
-    Widget buildEventWidget({List<AgentDomainEntity> changeSets = const []}) {
-      return makeTestableWidgetWithScaffold(
-        const ChangeSetSummaryCard.event(eventId: 'event-001'),
-        overrides: [
-          eventPendingChangeSetsProvider(
-            'event-001',
-          ).overrideWith((ref) async => changeSets),
-          eventChangeSetConfirmationServiceProvider.overrideWithValue(
-            mockConfirmationService,
-          ),
-          updateNotificationsProvider.overrideWithValue(
-            mockUpdateNotifications,
-          ),
-        ],
-      );
-    }
-
+  group('ChangeSetSummaryCard.event service routing', () {
     testWidgets('renders nothing when there are no event change sets', (
       tester,
     ) async {

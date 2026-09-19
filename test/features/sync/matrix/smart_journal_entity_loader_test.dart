@@ -20,6 +20,7 @@ import 'package:path/path.dart' as path;
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_utils/vanishing_file.dart';
 import '../../../widget_test_utils.dart';
 
 /// Wires the `ev.room → room.client → client.database` purge chain with
@@ -895,6 +896,61 @@ void main() {
               ),
             ),
             subDomain: 'SmartLoader.fetchMedia',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'a media file that vanishes between the existence check and the size '
+      'read is logged and treated as missing',
+      () async {
+        final fixedDate = DateTime(2024, 3, 15);
+        final image = JournalImage(
+          meta: Metadata(
+            id: 'img-vanishing',
+            createdAt: fixedDate,
+            updatedAt: fixedDate,
+            dateFrom: fixedDate,
+            dateTo: fixedDate,
+          ),
+          data: ImageData(
+            imageId: 'img-vanishing',
+            imageDirectory: '/images/2024-01-01/',
+            imageFile: 'waddle.jpg',
+            capturedAt: fixedDate,
+          ),
+        );
+        final relJson = '${getRelativeImagePath(image)}.json';
+        File(path.join(tempDir.path, stripLeadingSlashes(relJson)))
+          ..createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(image.toJson()));
+        final mediaPath = path.join(
+          tempDir.path,
+          stripLeadingSlashes(getRelativeImagePath(image)),
+        );
+        String? pendingPath;
+        final loader = SmartJournalEntityLoader(
+          attachmentIndex: AttachmentIndex(logging: loggingService),
+          loggingService: loggingService,
+        );
+        loader.onMissingMedia = ({required entryId, required relativePath}) {
+          pendingPath = relativePath;
+        };
+
+        final probed = await runWithVanishingFile(
+          mediaPath,
+          () => loader.load(jsonPath: relJson),
+        );
+
+        expect(probed, isTrue);
+        expect(pendingPath, getRelativeImagePath(image));
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(that: isA<FileSystemException>()),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'SmartLoader.pathCheck',
           ),
         ).called(1);
       },

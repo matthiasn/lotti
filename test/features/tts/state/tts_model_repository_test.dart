@@ -1,10 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/features/tts/state/tts_model_repository.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
+
+import '../../../mocks/mocks.dart';
 
 void main() {
   late Directory tempDir;
@@ -100,4 +105,37 @@ void main() {
       throwsA(isA<HttpException>()),
     );
   });
+
+  test(
+    'the production provider downloads into the app support directory '
+    'through the ambient http client',
+    () async {
+      final originalPathProvider = PathProviderPlatform.instance;
+      final pathProvider = MockPathProviderPlatform();
+      PathProviderPlatform.instance = pathProvider;
+      addTearDown(() => PathProviderPlatform.instance = originalPathProvider);
+      when(
+        pathProvider.getApplicationSupportPath,
+      ).thenAnswer((_) async => tempDir.path);
+
+      final requestedHosts = <String>{};
+      final client = MockClient.streaming((request, _) async {
+        requestedHosts.add(request.url.host);
+        return http.StreamedResponse(Stream.value(utf8.encode('x')), 200);
+      });
+
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final repository = http.runWithClient(
+        () => container.read(ttsModelRepositoryProvider),
+        () => client,
+      );
+
+      final dir = await repository.ensureInstalled('supertonic-3');
+
+      expect(dir, '${tempDir.path}/tts_models/supertonic-3');
+      expect(await repository.isInstalled('supertonic-3'), isTrue);
+      expect(requestedHosts, {'huggingface.co'});
+    },
+  );
 }

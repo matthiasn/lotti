@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,8 +11,10 @@ import 'package:lotti/features/ai/state/reference_image_selection_controller.dar
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/utils/image_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fake_image_compress_platform.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -505,6 +508,58 @@ void main() {
         );
         expect(stateAfterProcessing.isProcessing, isFalse);
       });
+
+      test(
+        'returns the processed images whose files decode and drops the ones '
+        'whose files are missing',
+        () async {
+          const taskId = 'test-task';
+          final onDisk = buildTestImage('img-on-disk');
+          final missing = buildTestImage('img-missing');
+          when(
+            () => mockJournalRepo.getLinkedImagesForTask(taskId),
+          ).thenAnswer((_) async => [onDisk, missing]);
+
+          final recorder = ui.PictureRecorder();
+          ui.Canvas(recorder).drawRect(
+            const ui.Rect.fromLTWH(0, 0, 4, 4),
+            ui.Paint()..color = const ui.Color(0xFF4080C0),
+          );
+          final picture = recorder.endRecording();
+          final image = await picture.toImage(4, 4);
+          final png = await image.toByteData(format: ui.ImageByteFormat.png);
+          image.dispose();
+          picture.dispose();
+          final file = File(getFullImagePath(onDisk))
+            ..createSync(recursive: true)
+            ..writeAsBytesSync(png!.buffer.asUint8List());
+          expect(file.existsSync(), isTrue);
+
+          final originalPlatform = installFakeImageCompressPlatform();
+          addTearDown(() => restoreImageCompressPlatform(originalPlatform));
+
+          // Hold the provider alive across the async decode, as the picker
+          // does while it is on screen.
+          final subscription = container.listen(
+            referenceImageSelectionControllerProvider(taskId),
+            (_, _) {},
+          );
+          addTearDown(subscription.close);
+          await waitForLoaded(taskId);
+          final controller =
+              container.read(
+                  referenceImageSelectionControllerProvider(taskId).notifier,
+                )
+                ..toggleImageSelection('img-on-disk')
+                ..toggleImageSelection('img-missing');
+
+          final results = await controller.processSelectedImages();
+
+          expect(results, hasLength(1));
+          expect(results.single.mimeType, 'image/jpeg');
+          expect(results.single.base64Data, isNotEmpty);
+        },
+      );
 
       test('skips images not found in available images', () async {
         const taskId = 'test-task';

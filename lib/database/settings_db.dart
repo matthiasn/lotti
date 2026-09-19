@@ -51,12 +51,13 @@ class SettingsDb extends _$SettingsDb {
     ifAbsent: () => 1,
   );
 
+  /// Completes the read queued for [configKey], if any, with [value].
+  ///
+  /// A completer in [_pendingReadCompleters] is never already completed:
+  /// every completion site removes it from the map first.
   void _resolveQueuedRead(String configKey, String? value) {
-    final completer = _pendingReadCompleters.remove(configKey);
     _pendingReadGenerations.remove(configKey);
-    if (completer != null && !completer.isCompleted) {
-      completer.complete(value);
-    }
+    _pendingReadCompleters.remove(configKey)?.complete(value);
   }
 
   @visibleForTesting
@@ -133,14 +134,12 @@ class SettingsDb extends _$SettingsDb {
       return Future<String?>.value(_cache[configKey]);
     }
 
+    // A queued read is always registered in [_inFlightReads] alongside its
+    // completer, and both are dropped together, so this also joins reads that
+    // are still waiting for the batched flush.
     final inFlightRead = _inFlightReads[configKey];
     if (inFlightRead != null) {
       return inFlightRead;
-    }
-
-    final existingCompleter = _pendingReadCompleters[configKey];
-    if (existingCompleter != null) {
-      return existingCompleter.future;
     }
 
     final completer = Completer<String?>();
@@ -167,12 +166,10 @@ class SettingsDb extends _$SettingsDb {
     Future<void>.microtask(_flushPendingReads);
   }
 
+  /// Resolves every queued read with one batched query. When the queue was
+  /// drained before the flush ran, [loadSettingsItems] answers the empty key
+  /// list without touching the database.
   Future<void> _flushPendingReads() async {
-    if (_pendingReadCompleters.isEmpty) {
-      _isPendingReadFlushScheduled = false;
-      return;
-    }
-
     final pendingReads = Map<String, Completer<String?>>.from(
       _pendingReadCompleters,
     );

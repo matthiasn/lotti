@@ -163,9 +163,7 @@ class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final width = constraints.hasBoundedWidth
-            ? constraints.maxWidth
-            : MediaQuery.sizeOf(context).width;
+        final width = constraints.maxWidth;
 
         return Semantics(
           slider: true,

@@ -123,29 +123,46 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
     required Room room,
     required SyncMessage message,
   }) async {
-    final String? inlineJson;
+    final ({String id, String json})? inline;
     final String? jsonPath;
-    final String Function(String id)? pathBuilder;
+    final String Function(String id) pathBuilder;
     final String logLabel;
+    final SyncMessage Function(String jsonPath, String attachmentEventId)
+    withUpload;
 
     switch (message) {
       case final SyncAgentEntity msg:
-        inlineJson = msg.agentEntity != null
-            ? json.encode(msg.agentEntity!.toJson())
-            : null;
+        final entity = msg.agentEntity;
+        inline = entity == null
+            ? null
+            : (id: entity.id, json: json.encode(entity.toJson()));
         jsonPath = msg.jsonPath;
         pathBuilder = relativeAgentEntityPath;
         logLabel = 'agentEntity';
+        // Agent entities can be large — strip inline, use file only.
+        withUpload = (path, eventId) => msg.copyWith(
+          jsonPath: path,
+          attachmentEventId: eventId,
+          agentEntity: null,
+        );
       case final SyncAgentLink msg:
-        inlineJson = msg.agentLink != null
-            ? json.encode(msg.agentLink!.toJson())
-            : null;
+        final link = msg.agentLink;
+        inline = link == null
+            ? null
+            : (id: link.id, json: json.encode(link.toJson()));
         jsonPath = msg.jsonPath;
         pathBuilder = relativeAgentLinkPath;
         logLabel = 'agentLink';
+        // Agent links are small (like entry links) — keep inline for
+        // reliable sync, avoiding race conditions with file downloads.
+        withUpload = (path, eventId) => msg.copyWith(
+          jsonPath: path,
+          attachmentEventId: eventId,
+        );
       default:
         return message;
     }
+    final inlineJson = inline?.json;
 
     var enrichedPath = jsonPath;
     // A sidecar this send had to rebuild is deleted again once it is up: the
@@ -154,16 +171,11 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
     // reclamation and keep deleted agent data readable on disk.
     var restoredForThisSend = false;
     // Enrich legacy items that lack jsonPath but have inline payload
-    if (enrichedPath == null && inlineJson != null) {
-      final id = switch (message) {
-        final SyncAgentEntity m => m.agentEntity!.id,
-        final SyncAgentLink m => m.agentLink!.id,
-        _ => throw StateError('unreachable'),
-      };
-      enrichedPath = pathBuilder(id);
+    if (enrichedPath == null && inline != null) {
+      enrichedPath = pathBuilder(inline.id);
       await _savePayloadToDisk(
         relativePath: enrichedPath,
-        jsonPayload: inlineJson,
+        jsonPayload: inline.json,
       );
     } else if (enrichedPath != null &&
         inlineJson != null &&
@@ -205,21 +217,7 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
     }
     if (uploaded == null) return null;
 
-    return switch (message) {
-      // Agent entities can be large — strip inline, use file only.
-      final SyncAgentEntity m => m.copyWith(
-        jsonPath: enrichedPath,
-        attachmentEventId: uploaded,
-        agentEntity: null,
-      ),
-      // Agent links are small (like entry links) — keep inline for
-      // reliable sync, avoiding race conditions with file downloads.
-      final SyncAgentLink m => m.copyWith(
-        jsonPath: enrichedPath,
-        attachmentEventId: uploaded,
-      ),
-      _ => throw StateError('unreachable'),
-    };
+    return withUpload(enrichedPath, uploaded);
   }
 
   /// Reads the JSON file at [relativePath] from disk and uploads it via

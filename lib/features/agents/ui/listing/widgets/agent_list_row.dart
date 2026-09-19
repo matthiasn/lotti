@@ -256,26 +256,27 @@ class _Pill extends StatelessWidget {
   }
 
   /// Resolves the (foreground, background) for a [pill] given the
-  /// design tokens. `customColor` overrides the tone's accent only.
+  /// design tokens. `customColor` overrides the tone's accent only; a
+  /// neutral pill has no accent and ignores it.
   (Color, Color) _toneColors(AgentListPill pill, DsColors colors) {
-    if (pill.tone == AgentListPillTone.neutral) {
-      return (colors.text.highEmphasis, colors.surface.enabled);
+    (Color, Color) tinted(Color toneAccent, {double alpha = 0.14}) {
+      final accent = pill.customColor ?? toneAccent;
+      return (accent, accent.withValues(alpha: alpha));
     }
-    final accent = pill.customColor ?? _toneAccent(pill.tone, colors);
-    final bg = pill.tone == AgentListPillTone.muted
-        ? accent.withValues(alpha: 0.06)
-        : accent.withValues(alpha: 0.14);
-    return (accent, bg);
-  }
 
-  Color _toneAccent(AgentListPillTone tone, DsColors colors) {
-    return switch (tone) {
-      AgentListPillTone.interactive => colors.interactive.enabled,
-      AgentListPillTone.warning => colors.alert.warning.ink,
-      AgentListPillTone.error => colors.alert.error.ink,
-      AgentListPillTone.info => colors.alert.info.ink,
-      AgentListPillTone.muted => colors.text.mediumEmphasis,
-      AgentListPillTone.neutral => colors.text.highEmphasis,
+    return switch (pill.tone) {
+      AgentListPillTone.neutral => (
+        colors.text.highEmphasis,
+        colors.surface.enabled,
+      ),
+      AgentListPillTone.interactive => tinted(colors.interactive.enabled),
+      AgentListPillTone.warning => tinted(colors.alert.warning.ink),
+      AgentListPillTone.error => tinted(colors.alert.error.ink),
+      AgentListPillTone.info => tinted(colors.alert.info.ink),
+      AgentListPillTone.muted => tinted(
+        colors.text.mediumEmphasis,
+        alpha: 0.06,
+      ),
     };
   }
 }

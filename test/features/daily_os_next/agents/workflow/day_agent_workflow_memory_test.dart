@@ -349,28 +349,9 @@ void main() {
         expect(response, contains('links: relates:obs-a → obs-b'));
       });
 
-      test('validates a link to a knowledge entry via its key', () async {
-        final ks = MockDayAgentKnowledgeService();
-        when(
-          () => ks.activeFor(dailyOsPlannerAgentId),
-        ).thenAnswer((_) async => const []);
-        when(() => ks.allFor(dailyOsPlannerAgentId)).thenAnswer(
-          (_) async => [
-            AgentDomainEntity.plannerKnowledge(
-                  id: 'k1',
-                  agentId: agentId,
-                  key: 'deep-work',
-                  hook: 'h',
-                  statementText: 's',
-                  source: KnowledgeSource.userStated,
-                  status: KnowledgeStatus.confirmed,
-                  createdAt: now,
-                  updatedAt: now,
-                  vectorClock: null,
-                )
-                as PlannerKnowledgeEntity,
-          ],
-        );
+      /// Stubs an episodic log whose only observation links to the
+      /// `deep-work` knowledge entry by key.
+      void stubTopicMapRecall() {
         when(() => syncService.repository).thenReturn(repository);
         when(
           () => repository.getMessagesByKind(agentId, AgentMessageKind.system),
@@ -419,6 +400,31 @@ void main() {
                   )
                   as AgentMessagePayloadEntity,
         });
+      }
+
+      test('validates a link to a knowledge entry via its key', () async {
+        final ks = MockDayAgentKnowledgeService();
+        when(
+          () => ks.activeFor(dailyOsPlannerAgentId),
+        ).thenAnswer((_) async => const []);
+        when(() => ks.allFor(dailyOsPlannerAgentId)).thenAnswer(
+          (_) async => [
+            AgentDomainEntity.plannerKnowledge(
+                  id: 'k1',
+                  agentId: agentId,
+                  key: 'deep-work',
+                  hook: 'h',
+                  statementText: 's',
+                  source: KnowledgeSource.userStated,
+                  status: KnowledgeStatus.confirmed,
+                  createdAt: now,
+                  updatedAt: now,
+                  vectorClock: null,
+                )
+                as PlannerKnowledgeEntity,
+          ],
+        );
+        stubTopicMapRecall();
 
         conversationRepository.toolCalls = [
           toolCall(
@@ -435,6 +441,35 @@ void main() {
         expect(response, contains('links: relates:deep-work'));
         expect(response, isNot(contains('relates:deep-work (not found)')));
       });
+
+      test(
+        'a knowledge-id load failure still answers, with the knowledge link '
+        'left unresolved',
+        () async {
+          final ks = MockDayAgentKnowledgeService();
+          when(
+            () => ks.activeFor(dailyOsPlannerAgentId),
+          ).thenAnswer((_) async => const []);
+          when(
+            () => ks.allFor(dailyOsPlannerAgentId),
+          ).thenAnswer((_) async => throw StateError('knowledge down'));
+          stubTopicMapRecall();
+
+          conversationRepository.toolCalls = [
+            toolCall(
+              name: DayAgentToolNames.searchMemory,
+              args: {'query': 'topic'},
+            ),
+          ];
+
+          final result = await execute(workflow(knowledgeService: ks));
+          expect(result.success, isTrue);
+          final response = conversationRepository.toolResponses.single;
+          // The recall still answers; only the link widening was lost.
+          expect(response, contains('topic map'));
+          expect(response, contains('relates:deep-work (not found)'));
+        },
+      );
     });
 
     group('propose_knowledge dispatch', () {

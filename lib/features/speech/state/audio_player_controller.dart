@@ -101,9 +101,6 @@ class AudioPlayerController extends Notifier<AudioPlayerState> {
   /// it against a disposed player or clobber a newer selection.
   int _generation = 0;
 
-  @visibleForTesting
-  StreamSubscription<bool>? get completedSubscription => _completedSubscription;
-
   /// Runs [operation] once every previously queued operation has settled, or
   /// after [AudioPlayerConstants.operationQueueTimeout] if one of them hangs.
   ///

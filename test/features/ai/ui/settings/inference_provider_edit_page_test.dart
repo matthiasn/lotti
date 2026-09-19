@@ -1389,6 +1389,52 @@ void main() {
       );
     });
 
+    testWidgets(
+      'a static catalog whose configured models fail to load shows no '
+      'quick-add list rather than a spinner',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            // Riverpod retries a failing stream and reports loading
+            // meanwhile; the error branch only renders without retries.
+            retry: (_, _) => null,
+            overrides: [
+              aiConfigByTypeControllerProvider(
+                AiConfigType.model,
+              ).overrideWith(_ErrorAiConfigByTypeController.new),
+            ],
+            child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
+              theme: ThemeData(
+                useMaterial3: true,
+                extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
+              ),
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                ...GlobalMaterialLocalizations.delegates,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: const Scaffold(
+                body: AvailableModelsSection(
+                  providerId: 'nebius-provider-id',
+                  providerType: InferenceProviderType.nebiusAiStudio,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(find.text('Available Models'), findsNothing);
+        expect(
+          tester.getSize(find.byType(AvailableModelsSection)),
+          Size.zero,
+        );
+      },
+    );
+
     testWidgets('does not show Available Models section for new provider', (
       WidgetTester tester,
     ) async {

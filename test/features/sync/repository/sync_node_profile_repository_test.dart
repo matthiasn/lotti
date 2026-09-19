@@ -6,6 +6,9 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/repository/sync_node_profile_repository.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../helpers/test_get_it.dart';
 
 void main() {
   late SettingsDb settingsDb;
@@ -39,6 +42,19 @@ void main() {
   tearDown(() async {
     await repo.dispose();
     await settingsDb.close();
+  });
+
+  test('defaults to the SettingsDb registered in GetIt', () async {
+    final mocks = await setUpTestGetIt();
+    addTearDown(tearDownTestGetIt);
+    final defaulted = SyncNodeProfileRepository();
+    addTearDown(defaulted.dispose);
+
+    await defaulted.getSelf();
+
+    verify(
+      () => mocks.settingsDb.itemByKey(SyncNodeProfileRepository.selfKey),
+    ).called(1);
   });
 
   group('self profile', () {

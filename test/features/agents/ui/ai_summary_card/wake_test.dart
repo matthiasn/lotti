@@ -505,5 +505,45 @@ void main() {
         expect(find.text('Update now'), findsOneWidget);
       });
     });
+
+    testWidgets('an expired countdown gives way to the automation line', (
+      tester,
+    ) async {
+      final wakeAt = DateTime(2026, 5, 4, 12, 0, 2);
+      var clockNow = DateTime(2026, 5, 4, 12);
+      await withClock(Clock(() => clockNow), () async {
+        final bench = AgentTestBench(
+          identity: makeTestIdentity().copyWith(
+            config: const AgentConfig(automaticUpdatesEnabled: true),
+          ),
+          state: makeTestState(nextWakeAt: wakeAt),
+          report: makeTestReport(tldr: 'Tldr line.'),
+        );
+
+        await tester.pumpWidget(bench.build());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.textContaining('0:02'), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('taskAgentSkipScheduledUpdate')),
+          findsOneWidget,
+        );
+
+        // The deadline passes without a run starting: the card re-derives
+        // the footer, which drops the countdown and its Skip action.
+        for (var second = 1; second <= 3; second++) {
+          clockNow = DateTime(2026, 5, 4, 12, 0, second);
+          await tester.pump(const Duration(seconds: 1));
+        }
+        await tester.pump();
+
+        expect(
+          find.byKey(const ValueKey('taskAgentSkipScheduledUpdate')),
+          findsNothing,
+        );
+        expect(find.text('Updates on changes'), findsOneWidget);
+        expect(find.text('Update now'), findsOneWidget);
+      });
+    });
   });
 }

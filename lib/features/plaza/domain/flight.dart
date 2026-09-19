@@ -284,15 +284,17 @@ class Flight {
 
   /// The leg [d] metres along the way is on, and the fraction of it.
   (_Leg, double) _locate(double d) {
+    // Hand over to the next leg once [d] passes a leg's end; the last leg
+    // absorbs any overshoot. Every flight has at least one leg.
     var start = 0.0;
-    for (final leg in _legs) {
-      if (d <= start + leg.length || identical(leg, _legs.last)) {
-        final f = leg.length == 0 ? 1.0 : ((d - start) / leg.length);
-        return (leg, f.clamp(0.0, 1.0));
-      }
-      start += leg.length;
+    var index = 0;
+    while (index < _legs.length - 1 && d > start + _legs[index].length) {
+      start += _legs[index].length;
+      index++;
     }
-    return (_legs.last, 1);
+    final leg = _legs[index];
+    final f = leg.length == 0 ? 1.0 : ((d - start) / leg.length);
+    return (leg, f.clamp(0.0, 1.0));
   }
 
   /// The curved position at guide distance [d], including obstacle clearance.

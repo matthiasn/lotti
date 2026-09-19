@@ -100,10 +100,15 @@ Future<bool> probeHttpReachability({
 /// installed local binaries that the app doesn't manage, so the user must
 /// opt in via the sync-node settings UI (PR4). False-positives there would
 /// surface broken pin choices.
+///
+/// Without a supplied display name the profile is named after
+/// [localHostname] (the machine's host name by default), or
+/// `Lotti on <os>` when that is empty.
 SyncNodeCapabilityProbe makeDefaultSyncNodeCapabilityProbe({
   OllamaReachabilityProbe ollamaProbe = _defaultOllamaProbe,
   OmlxReachabilityProbe omlxProbe = _defaultOmlxProbe,
   Future<bool> Function()? sherpaProbe,
+  String Function() localHostname = _platformLocalHostname,
 }) {
   return ({
     required String hostId,
@@ -121,7 +126,7 @@ SyncNodeCapabilityProbe makeDefaultSyncNodeCapabilityProbe({
 
     return SyncNodeProfile(
       hostId: hostId,
-      displayName: displayName ?? _defaultDisplayName(),
+      displayName: displayName ?? _defaultDisplayName(localHostname()),
       platform: Platform.operatingSystem,
       osVersion: Platform.operatingSystemVersion,
       appVersion: appVersion,
@@ -150,8 +155,9 @@ Future<SyncNodeProfile> defaultSyncNodeCapabilityProbe({
   );
 }
 
-String _defaultDisplayName() {
-  final host = Platform.localHostname;
+String _platformLocalHostname() => Platform.localHostname;
+
+String _defaultDisplayName(String host) {
   if (host.isNotEmpty) return host;
   return 'Lotti on ${Platform.operatingSystem}';
 }

@@ -85,14 +85,6 @@ class _ConflictsPageState extends State<ConflictsPage> {
               },
             );
       }
-      ..onPause = () {
-        unresolvedSubscription?.pause();
-        resolvedSubscription?.pause();
-      }
-      ..onResume = () {
-        unresolvedSubscription?.resume();
-        resolvedSubscription?.resume();
-      }
       ..onCancel = () async {
         await unresolvedSubscription?.cancel();
         await resolvedSubscription?.cancel();

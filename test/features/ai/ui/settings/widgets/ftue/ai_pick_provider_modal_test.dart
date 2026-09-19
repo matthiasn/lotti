@@ -369,4 +369,68 @@ void main() {
       },
     );
   });
+  group('AiPickProviderModal.show — seeded selection', () {
+    for (final (label, tiles, expected) in [
+      (
+        'the first enabled tile',
+        const [
+          AiPickProviderTileSpec(
+            providerType: InferenceProviderType.ollama,
+            disabled: true,
+          ),
+          AiPickProviderTileSpec(providerType: InferenceProviderType.gemini),
+        ],
+        InferenceProviderType.gemini,
+      ),
+      (
+        'the first tile when every tile is disabled',
+        const [
+          AiPickProviderTileSpec(
+            providerType: InferenceProviderType.ollama,
+            disabled: true,
+          ),
+          AiPickProviderTileSpec(
+            providerType: InferenceProviderType.voxtral,
+            disabled: true,
+          ),
+        ],
+        InferenceProviderType.ollama,
+      ),
+    ]) {
+      testWidgets('without an initial selection, Continue confirms $label', (
+        tester,
+      ) async {
+        await tester.binding.setSurfaceSize(const Size(800, 1100));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        AiPickProviderResult? captured;
+        await tester.pumpWidget(
+          makeTestableWidget(
+            Builder(
+              builder: (ctx) => Center(
+                child: TextButton(
+                  onPressed: () async {
+                    captured = await AiPickProviderModal.show(
+                      context: ctx,
+                      tiles: tiles,
+                    );
+                  },
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('open'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text(hL10n(tester).aiPickProviderContinueButton));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(captured!.isConfirmed, isTrue);
+        expect(captured!.providerType, expected);
+      });
+    }
+  });
 }

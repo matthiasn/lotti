@@ -26,12 +26,20 @@ class _CountingProjectForTaskJournalDb extends JournalDb {
   int fetchCount = 0;
   Set<String> lastMergedIds = const <String>{};
 
+  /// When set, the next fetch fails with this error instead of querying.
+  Error? nextFailure;
+
   @override
   Future<Map<String, ProjectEntry>> runProjectForTaskFetch(
     Set<String> taskIds,
-  ) {
+  ) async {
     fetchCount++;
     lastMergedIds = {...taskIds};
+    final failure = nextFailure;
+    if (failure != null) {
+      nextFailure = null;
+      throw failure;
+    }
     return super.runProjectForTaskFetch(taskIds);
   }
 }
@@ -786,6 +794,28 @@ void main() {
           expect(results[0]?.meta.id, 'p-coalesce-0');
           expect(results[1]?.meta.id, 'p-coalesce-1');
           expect(results[2]?.meta.id, 'p-coalesce-2');
+        },
+      );
+
+      test(
+        'a failed coalesced fetch rejects every caller of the wave and the '
+        'next call starts a fresh wave',
+        () async {
+          final countingDb = _CountingProjectForTaskJournalDb()
+            ..nextFailure = StateError('iceberg ahead');
+          addTearDown(countingDb.close);
+          await initConfigFlags(countingDb, inMemoryDatabase: true);
+
+          final first = countingDb.getProjectForTask('t-fail-0');
+          final second = countingDb.getProjectForTask('t-fail-1');
+
+          await expectLater(first, throwsA(isA<StateError>()));
+          await expectLater(second, throwsA(isA<StateError>()));
+          expect(countingDb.fetchCount, 1);
+
+          // The failed wave was cleared, so a later caller is not stuck on it.
+          expect(await countingDb.getProjectForTask('t-fail-0'), isNull);
+          expect(countingDb.fetchCount, 2);
         },
       );
 

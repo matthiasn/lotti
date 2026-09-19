@@ -1,6 +1,8 @@
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
@@ -63,26 +65,26 @@ Future<Client> createMatrixClient({
   );
 }
 
+/// Builds the display name this device registers with the homeserver: the
+/// platform's own device name (iOS device name, macOS computer name, Android
+/// host) or the operating system name elsewhere, followed by the current
+/// minute and a short random suffix.
+///
+/// [operatingSystem] defaults to [Platform.operatingSystem]; tests pass it to
+/// exercise every platform's branch from one host.
 Future<String> createMatrixDeviceName({
   DeviceInfoPlugin? deviceInfoPlugin,
+  @visibleForTesting String? operatingSystem,
 }) async {
-  final operatingSystem = Platform.operatingSystem;
-  var deviceName = operatingSystem;
-
+  final os = operatingSystem ?? Platform.operatingSystem;
   final deviceInfo = deviceInfoPlugin ?? DeviceInfoPlugin();
-  if (Platform.isIOS) {
-    final iosInfo = await deviceInfo.iosInfo;
-    deviceName = iosInfo.name;
-  }
-  if (Platform.isMacOS) {
-    final macOsInfo = await deviceInfo.macOsInfo;
-    deviceName = macOsInfo.computerName;
-  }
-  if (Platform.isAndroid) {
-    final androidInfo = await deviceInfo.androidInfo;
-    deviceName = androidInfo.host;
-  }
+  final deviceName = switch (os) {
+    'ios' => (await deviceInfo.iosInfo).name,
+    'macos' => (await deviceInfo.macOsInfo).computerName,
+    'android' => (await deviceInfo.androidInfo).host,
+    _ => os,
+  };
 
-  final dateHhMm = DateTime.now().toIso8601String().substring(0, 16);
+  final dateHhMm = clock.now().toIso8601String().substring(0, 16);
   return '$deviceName $dateHhMm ${uuid.v1().substring(0, 4)}';
 }

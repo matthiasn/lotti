@@ -10,7 +10,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:lotti/features/tts/engine/text_preprocessing.dart';
 
 /// Tokenized batch: padded token ids and the matching padding mask.
@@ -31,13 +30,10 @@ class UnicodeProcessor {
   /// code point → token id.
   final Map<int, int> indexer;
 
-  /// Loads the indexer from `unicode_indexer.json` at [path]. Paths starting
-  /// with `assets/` are read from the bundle; otherwise from the filesystem
-  /// (e.g. a downloaded model directory).
+  /// Loads the indexer from `unicode_indexer.json` at the filesystem [path],
+  /// which ships with the downloaded model rather than in the app bundle.
   static Future<UnicodeProcessor> load(String path) async {
-    final raw = path.startsWith('assets/')
-        ? await rootBundle.loadString(path)
-        : await File(path).readAsString();
+    final raw = await File(path).readAsString();
     final json = jsonDecode(raw);
 
     final indexer = json is List

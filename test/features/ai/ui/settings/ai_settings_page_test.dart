@@ -16,6 +16,7 @@ import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_floating_action_button.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/config_error_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_pick_provider_modal.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_header_bar.dart';
@@ -164,8 +165,10 @@ void main() {
     bool hideTabBar = false,
     bool hideHeader = false,
     Widget? home,
+    Duration? Function(int retryCount, Object error)? retry,
   }) {
     return ProviderScope(
+      retry: retry,
       overrides: [
         aiConfigRepositoryProvider.overrideWithValue(mockRepository),
         ...additionalOverrides,
@@ -766,15 +769,6 @@ void main() {
         await settleTimers(tester);
       },
     );
-
-    // Note: the providers-stream error branch is covered structurally by
-    // the empty / populated paths above, but is hard to drive end-to-end
-    // here — Riverpod's generated stream controller keeps the AsyncValue
-    // in `loading` for both `Stream.error(...)` and `broadcastController
-    // .addError(...)` in this harness, so the page never transitions
-    // into the `hasError && providers == null` branch. The branch ships
-    // as defensive code; the cleanup pass after v3 will revisit the
-    // page's async-state handling and add a more durable test then.
 
     testWidgets(
       'Models tab empty list renders the no-models-configured message',
@@ -1852,22 +1846,6 @@ void main() {
   /// callback directly — while the controller is still parked on the
   /// current tab — is the only path that drives the page-owned
   /// `animateTo`.
-  ///
-  /// NOTE: the body of `_handleTabControllerChange` (its
-  /// `_updateFilterState(_filterState.copyWith(activeTab: newTab))`
-  /// line) is unreachable. That listener only runs its body when the
-  /// controller has SETTLED on an index whose tab differs from
-  /// `_filterState.activeTab`. Every code path that moves the
-  /// controller — `_handleTabChange` (updates filter state before
-  /// `animateTo`), `didUpdateWidget` (updates filter state before
-  /// `index =`), and a TabBar tap (whose `onTap` → `_handleTabChange`
-  /// updates filter state while the animation is still running) —
-  /// updates `_filterState.activeTab` to the destination tab BEFORE
-  /// the animation settles. So when the listener finally fires with
-  /// `indexIsChanging == false`, `newTab == _filterState.activeTab`
-  /// always holds and the guarded update never executes. There is no
-  /// `TabBarView` / swipe surface on this page that could move the
-  /// controller without first updating the filter state.
   group('AiSettingsPage — onTabChanged drives the TabController', () {
     testWidgets(
       'invoking AiSettingsTabBar.onTabChanged with a non-current tab '
@@ -2049,25 +2027,44 @@ void main() {
     );
   });
 
-  // NOTE: The providers-stream error branch in `_buildBodySlivers`
-  // (`if (providersAsync.hasError && providers == null)` → renders
-  // `ConfigErrorState` with the RETRY `ref.invalidate(...)` callback)
-  // is unreachable from a test driving the real
-  // `aiConfigByTypeControllerProvider`. That branch is gated behind the
-  // loading branch above it (`if (providersAsync.isLoading && providers
-  // == null)`), and for this stream-backed Riverpod notifier the error
-  // AsyncValue always reports `isLoading == true` AND `hasError == true`
-  // simultaneously — whether the error is raised via a synchronous
-  // `throw` in `build`, a `Stream.error`, or an `async*` generator that
-  // throws (verified empirically). Because `isLoading` never clears to
-  // `false` on a first-load error here, the loading branch always
-  // intercepts first and the error/RETRY branch never executes. Driving
-  // it would require injecting a raw `AsyncError(value: null,
-  // isLoading: false)` state, which Riverpod 3 does not expose for a
-  // generated notifier via `overrideWith`. The branch ships as
-  // defensive code; the standalone `ConfigErrorState` widget (icon /
-  // title / message / RETRY callback) is covered in
-  // `config_error_state_test.dart`.
+  testWidgets(
+    'a first providers load that fails shows the error state, and RETRY '
+    're-subscribes and recovers',
+    (tester) async {
+      var subscriptions = 0;
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) {
+        subscriptions++;
+        return subscriptions == 1
+            ? Stream<List<AiConfig>>.error(StateError('config db locked'))
+            : providersController.stream;
+      });
+
+      // Riverpod would otherwise retry the failed stream on its own and
+      // keep reporting loading, so the error branch could never render.
+      await tester.pumpWidget(buildHarness(retry: (_, _) => null));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(ConfigErrorState), findsOneWidget);
+      expect(find.textContaining('config db locked'), findsOneWidget);
+      expect(subscriptions, 1);
+
+      await tester.tap(find.text('RETRY'));
+      await tester.pump();
+      providersController.add([
+        buildProvider(id: 'p1', type: InferenceProviderType.gemini),
+      ]);
+      await tester.pump();
+      await tester.pump();
+
+      expect(subscriptions, 2);
+      expect(find.byType(ConfigErrorState), findsNothing);
+      expect(find.byType(AiProviderCard), findsOneWidget);
+      await settleTimers(tester);
+    },
+  );
 }
 
 /// NavigatorObserver that captures every `push` so a test can assert

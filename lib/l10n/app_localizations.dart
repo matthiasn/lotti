@@ -24311,29 +24311,11 @@ abstract class AppLocalizations {
   /// **'AI settings'**
   String get syncStepAiSettings;
 
-  /// No description provided for @syncStepBackfillAgentEntityClocks.
-  ///
-  /// In en, this message translates to:
-  /// **'Backfill agent entity clocks'**
-  String get syncStepBackfillAgentEntityClocks;
-
-  /// No description provided for @syncStepBackfillAgentLinkClocks.
-  ///
-  /// In en, this message translates to:
-  /// **'Backfill agent link clocks'**
-  String get syncStepBackfillAgentLinkClocks;
-
   /// No description provided for @syncStepCategories.
   ///
   /// In en, this message translates to:
   /// **'Categories'**
   String get syncStepCategories;
-
-  /// No description provided for @syncStepComplete.
-  ///
-  /// In en, this message translates to:
-  /// **'Complete'**
-  String get syncStepComplete;
 
   /// No description provided for @syncStepDashboards.
   ///

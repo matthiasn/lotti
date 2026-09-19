@@ -90,20 +90,11 @@ extension _OutboxBundleHandler on SyncEventProcessor {
       }
       // Fall back to disk if the descriptor is not yet registered (text
       // event arrived before the file event made it through catch-up).
+      // A failed read — missing file or undecodable bytes alike — surfaces
+      // as the FileSystemException File.readAsString always throws, so the
+      // queue retries it.
       final diskSw = Stopwatch()..start();
-      try {
-        manifestJson = await targetFile.readAsString();
-      } on FileSystemException {
-        rethrow;
-      } catch (e, st) {
-        _loggingService.error(
-          LogDomain.sync,
-          e,
-          stackTrace: st,
-          subDomain: 'processor.resolve.outboxBundle.diskRead',
-        );
-        return null;
-      }
+      manifestJson = await targetFile.readAsString();
       diskFallbackMs = diskSw.elapsedMilliseconds;
     }
     manifestBytes = manifestJson.length;

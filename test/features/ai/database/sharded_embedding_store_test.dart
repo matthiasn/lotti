@@ -472,7 +472,7 @@ void main() {
           ['cat-a'],
           metadata: {
             'cat-a': [
-              const EntityMetadataRow(entityId: 'entity-1', taskId: ''),
+              (entityId: 'entity-1', taskId: ''),
             ],
           },
         );
@@ -517,7 +517,7 @@ void main() {
           ['cat-a'],
           metadata: {
             'cat-a': [
-              const EntityMetadataRow(entityId: 'entity-1', taskId: 'task-1'),
+              (entityId: 'entity-1', taskId: 'task-1'),
             ],
           },
         );
@@ -576,7 +576,7 @@ void main() {
           ['cat-a'],
           metadata: {
             'cat-a': [
-              const EntityMetadataRow(
+              (
                 entityId: 'report-1',
                 taskId: 'task-1',
               ),
@@ -597,7 +597,7 @@ void main() {
           ['cat-a'],
           metadata: {
             'cat-a': [
-              const EntityMetadataRow(entityId: 'entity-1', taskId: ''),
+              (entityId: 'entity-1', taskId: ''),
             ],
           },
         );
@@ -625,7 +625,7 @@ void main() {
           ['cat-a'],
           metadata: {
             'cat-a': [
-              const EntityMetadataRow(entityId: 'entity-1', taskId: ''),
+              (entityId: 'entity-1', taskId: ''),
             ],
           },
         );
@@ -653,7 +653,7 @@ void main() {
           ['cat-a'],
           metadata: {
             'cat-a': [
-              const EntityMetadataRow(entityId: 'entity-1', taskId: ''),
+              (entityId: 'entity-1', taskId: ''),
             ],
           },
         );
@@ -691,10 +691,10 @@ void main() {
           ['cat-a', 'cat-b'],
           metadata: {
             'cat-a': [
-              const EntityMetadataRow(entityId: 'entity-1', taskId: ''),
+              (entityId: 'entity-1', taskId: ''),
             ],
             'cat-b': [
-              const EntityMetadataRow(entityId: 'entity-2', taskId: 'task-1'),
+              (entityId: 'entity-2', taskId: 'task-1'),
             ],
           },
         );
@@ -729,11 +729,11 @@ void main() {
           ['cat-a', 'cat-b'],
           metadata: {
             'cat-a': [
-              const EntityMetadataRow(entityId: 'entity-1', taskId: ''),
-              const EntityMetadataRow(entityId: 'entity-2', taskId: ''),
+              (entityId: 'entity-1', taskId: ''),
+              (entityId: 'entity-2', taskId: ''),
             ],
             'cat-b': [
-              const EntityMetadataRow(entityId: 'entity-3', taskId: 'task-1'),
+              (entityId: 'entity-3', taskId: 'task-1'),
             ],
           },
         );
@@ -750,10 +750,10 @@ void main() {
           ['cat-a', 'cat-b'],
           metadata: {
             'cat-a': [
-              const EntityMetadataRow(entityId: 'entity-1', taskId: ''),
+              (entityId: 'entity-1', taskId: ''),
             ],
             'cat-b': [
-              const EntityMetadataRow(entityId: 'entity-1', taskId: ''),
+              (entityId: 'entity-1', taskId: ''),
             ],
           },
         );
@@ -776,15 +776,15 @@ void main() {
           ['cat-a'],
           metadata: {
             'cat-a': [
-              const EntityMetadataRow(
+              (
                 entityId: 'report-1',
                 taskId: 'task-1',
               ),
-              const EntityMetadataRow(
+              (
                 entityId: 'report-2',
                 taskId: 'task-1',
               ),
-              const EntityMetadataRow(
+              (
                 entityId: 'entry-1',
                 taskId: '',
               ),
@@ -804,7 +804,7 @@ void main() {
           [kDefaultShardKey],
           metadata: {
             kDefaultShardKey: [
-              const EntityMetadataRow(entityId: 'entity-1', taskId: ''),
+              (entityId: 'entity-1', taskId: ''),
             ],
           },
         );
@@ -818,7 +818,7 @@ void main() {
           ['cat-a'],
           metadata: {
             'cat-a': [
-              const EntityMetadataRow(entityId: 'entity-1', taskId: ''),
+              (entityId: 'entity-1', taskId: ''),
             ],
           },
         );
@@ -851,7 +851,7 @@ void main() {
           ['cat-a'],
           metadata: {
             'cat-a': [
-              const EntityMetadataRow(entityId: 'entity-1', taskId: ''),
+              (entityId: 'entity-1', taskId: ''),
             ],
           },
         );
@@ -882,7 +882,7 @@ void main() {
           ['cat-a'],
           metadata: {
             'cat-a': [
-              const EntityMetadataRow(entityId: 'entity-1', taskId: ''),
+              (entityId: 'entity-1', taskId: ''),
             ],
           },
         );
@@ -906,7 +906,7 @@ void main() {
           ['cat-a'],
           metadata: {
             'cat-a': [
-              const EntityMetadataRow(entityId: 'entity-1', taskId: ''),
+              (entityId: 'entity-1', taskId: ''),
             ],
           },
         );
@@ -928,7 +928,7 @@ void main() {
           ['cat-a'],
           metadata: {
             'cat-a': [
-              const EntityMetadataRow(entityId: 'entity-1', taskId: ''),
+              (entityId: 'entity-1', taskId: ''),
             ],
           },
         );
@@ -954,7 +954,7 @@ void main() {
           [kDefaultShardKey],
           metadata: {
             kDefaultShardKey: [
-              const EntityMetadataRow(entityId: 'entity-1', taskId: ''),
+              (entityId: 'entity-1', taskId: ''),
             ],
           },
         );
@@ -978,7 +978,7 @@ void main() {
           ['cat-a'],
           metadata: {
             'cat-a': [
-              const EntityMetadataRow(
+              (
                 entityId: 'report-1',
                 taskId: 'task-1',
               ),
@@ -1027,11 +1027,11 @@ void main() {
           ['cat-a'],
           metadata: {
             'cat-a': [
-              const EntityMetadataRow(
+              (
                 entityId: 'report-1',
                 taskId: 'task-1',
               ),
-              const EntityMetadataRow(
+              (
                 entityId: 'report-2',
                 taskId: 'task-1',
               ),

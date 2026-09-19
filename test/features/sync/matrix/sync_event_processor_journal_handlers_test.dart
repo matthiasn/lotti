@@ -19,11 +19,48 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
+import '../../ai_consumption/test_utils.dart';
 import 'sync_event_processor_test_helpers.dart';
 
 void main() {
   setUpAll(registerSyncProcessorFallbacks);
   setUp(setUpProcessorMocks);
+
+  group('SyncEventProcessor - attribution projection', () {
+    test(
+      'projects the AI attribution an applied journal entry carries into the '
+      'consumption read model',
+      () async {
+        final attribution = makeAiWorkAttribution(
+          attributionId: 'attribution-waddle-image',
+        );
+        final image = testImageEntry.copyWith(
+          data: testImageEntry.data.copyWith(aiAttribution: attribution),
+        );
+        final repo = MockConsumptionRepository();
+        when(() => repo.upsertAttribution(any())).thenAnswer((_) async {});
+        processor.consumptionRepository = repo;
+        when(
+          () => journalEntityLoader.load(jsonPath: '/image.json'),
+        ).thenAnswer((_) async => image);
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.journalEntity(
+              id: image.meta.id,
+              jsonPath: '/image.json',
+              vectorClock: null,
+              status: SyncEntryStatus.initial,
+            ),
+          ),
+        );
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verify(() => repo.upsertAttribution(attribution)).called(1);
+      },
+    );
+  });
 
   group('SyncEventProcessor - Embedded Entry Links', () {
     test(
@@ -1067,6 +1104,49 @@ void main() {
   });
 
   group('_maybeSkipSupersededStaleDescriptor error paths -', () {
+    test(
+      'logs an incomparable clock and rethrows the stale-descriptor error '
+      'instead of skipping',
+      () async {
+        // A negative counter makes the incoming clock invalid, so the
+        // superseded check cannot decide and must not swallow the failure.
+        final entryId = fallbackJournalEntity.meta.id;
+        final message = SyncMessage.journalEntity(
+          id: entryId,
+          jsonPath: '/entity.json',
+          vectorClock: const VectorClock({'a': -1}),
+          status: SyncEntryStatus.initial,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+        when(
+          () => journalEntityLoader.load(
+            jsonPath: '/entity.json',
+            incomingVectorClock: any(named: 'incomingVectorClock'),
+          ),
+        ).thenAnswer(
+          (_) async => throw const FileSystemException(
+            'stale attachment json after refresh',
+          ),
+        );
+        when(
+          () => journalDb.journalEntityById(entryId),
+        ).thenAnswer((_) async => fallbackJournalEntity);
+
+        await expectLater(
+          processor.process(event: event, journalDb: journalDb),
+          throwsA(isA<FileSystemException>()),
+        );
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(that: isA<VclockException>()),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'apply.staleDescriptor.compare',
+          ),
+        ).called(1);
+      },
+    );
+
     test(
       'logs and returns null when journalEntityById throws during stale-skip '
       'lookup',

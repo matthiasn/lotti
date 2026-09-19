@@ -556,10 +556,8 @@ void main() {
     );
 
     testWidgets(
-      'falls back to MediaQuery width when constraints are unbounded',
+      'seeks proportionally inside a horizontally scrolling host',
       (WidgetTester tester) async {
-        // A horizontally-scrolling viewport hands the LayoutBuilder unbounded
-        // width constraints, exercising the MediaQuery.sizeOf fallback path.
         const viewportWidth = 600.0;
         tester.view.physicalSize = const Size(viewportWidth, 800);
         tester.view.devicePixelRatio = 1.0;
@@ -589,8 +587,8 @@ void main() {
           ),
         );
 
-        // Tap near the centre of the visible viewport. Because width came from
-        // MediaQuery (== viewportWidth), the centre maps to ~50% of total.
+        // Tap near the centre of the bar: the width comes from the bar's own
+        // bounded constraints, so the centre maps to ~50% of total.
         await tester.tapAt(const Offset(viewportWidth / 2, 18));
         await tester.pump();
 
