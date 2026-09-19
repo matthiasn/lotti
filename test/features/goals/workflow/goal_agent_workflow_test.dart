@@ -2099,6 +2099,22 @@ void main() {
               ),
             )
             as AgentMessageEntity;
+    // A later reply at the same instant (ties break on id) that carried no
+    // visible text must be skipped, so the affirmation still resolves
+    // against the banner offer above it.
+    final blankReply = priorReply.copyWith(
+      id: 'prior-reply-z',
+      contentEntryId: 'prior-reply-z-payload',
+    );
+    when(() => repository.getEntity('prior-reply-z-payload')).thenAnswer(
+      (_) async => AgentDomainEntity.agentMessagePayload(
+        id: 'prior-reply-z-payload',
+        agentId: agentId,
+        createdAt: now.subtract(const Duration(minutes: 1)),
+        vectorClock: null,
+        content: const {'text': '   '},
+      ),
+    );
     when(
       () => repository.getMessagesByKindAndToolName(
         agentId,
@@ -2106,7 +2122,7 @@ void main() {
         AgentConversationToolNames.replyToUser,
         limit: 12,
       ),
-    ).thenAnswer((_) async => [priorReply]);
+    ).thenAnswer((_) async => [priorReply, blankReply]);
     when(
       () => repository.getMessagesByKind(
         agentId,
