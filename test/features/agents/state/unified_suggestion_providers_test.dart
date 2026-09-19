@@ -750,6 +750,38 @@ void main() {
       return trimmed.isEmpty ? null : trimmed;
     }
 
+    test(
+      'within one change set, keeps the later item for the same timer',
+      () {
+        final items = [
+          for (final note in ['first draft', 'second draft'])
+            ChangeItem(
+              toolName: TaskAgentToolNames.updateRunningTimer,
+              args: {'timerId': 'timer-dock', 'note': note},
+              humanSummary: note,
+            ),
+        ];
+        final changeSet = makeTestChangeSet(
+          id: 'cs-timer',
+          createdAt: DateTime(2026, 5, 24, 9),
+          items: items,
+        );
+        final input = [
+          for (final (index, item) in items.indexed)
+            PendingSuggestion(
+              changeSet: changeSet,
+              itemIndex: index,
+              item: item,
+              fingerprint: 'fp-$index',
+            ),
+        ];
+
+        final result = keepLatestRunningTimerUpdate(input);
+
+        expect(result, [input[1]]);
+      },
+    );
+
     glados.Glados(
       glados.any.timerDedupSpecs,
       glados.ExploreConfig(numRuns: 120),
