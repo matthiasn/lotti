@@ -67,6 +67,10 @@ class RefineState {
   final PlanDiff? diff;
   final Map<String, PlanDiffChangeDecision> decisions;
   final String? resolvingChangeId;
+
+  /// A whole-diff accept or a per-row resolve is awaiting the agent; the
+  /// flow refuses to start listening until it lands.
+  bool get decisionInFlight => accepting || resolvingChangeId != null;
   final RefineProblem? problem;
 
   /// True while the whole-diff [RefineController.accept] round-trip is in
@@ -254,7 +258,7 @@ class RefineController extends Notifier<RefineState> {
     // cleared diff and flip the listening flow to a diffless `diffReady`.
     // This is the choke point for every listening entry, mirroring the
     // guards in accept()/revert()/_resolveChange().
-    if (state.accepting || state.resolvingChangeId != null) return;
+    if (state.decisionInFlight) return;
     _transcriptPrefix = resetTranscript ? '' : state.transcript.trim();
     state = state.copyWith(
       phase: RefinePhase.listening,

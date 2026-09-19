@@ -52,11 +52,20 @@ void main() {
 
   tearDown(() => container.dispose());
 
-  RefineState tapIn(RefinePhase phase) {
+  RefineState tapIn(
+    RefinePhase phase, {
+    bool accepting = false,
+    String? resolvingChangeId,
+  }) {
     final notifier = container.read(refineControllerProvider(draft).notifier);
     final state = container
         .read(refineControllerProvider(draft))
-        .copyWith(phase: phase, transcript: 'move the krill count earlier');
+        .copyWith(
+          phase: phase,
+          transcript: 'move the krill count earlier',
+          accepting: accepting,
+          resolvingChangeId: resolvingChangeId,
+        );
     handleRefineVoiceTap(
       refineState: state,
       refineNotifier: notifier,
@@ -96,4 +105,25 @@ void main() {
       expect(after, same(before));
     });
   }
+
+  test(
+    'a review with a row decision in flight never starts the microphone',
+    () {
+      final before = container.read(refineControllerProvider(draft));
+
+      final after = tapIn(RefinePhase.diffReady, resolvingChangeId: 'chg_move');
+
+      expect(capture.resets, 0);
+      expect(capture.toggles, isEmpty);
+      expect(after, same(before));
+    },
+  );
+
+  test('a review with a whole-diff accept in flight never starts the '
+      'microphone', () {
+    tapIn(RefinePhase.diffReady, accepting: true);
+
+    expect(capture.resets, 0);
+    expect(capture.toggles, isEmpty);
+  });
 }
