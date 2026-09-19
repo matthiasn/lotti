@@ -4,6 +4,73 @@ part of '../journal_page_controller_test.dart';
 
 void _registerFlagsAndAgentQueries(JournalControllerTestSetup setup) {
   group('Feature Flag Selection Semantics', () {
+    // ADR 0064: a saved selection made before CheckIn existed gains it once,
+    // and only once People offers it — never behind a flag that is off,
+    // where the gating would strip it and consume the migration unseen.
+    group('a type added since the selection was saved', () {
+      void stubLegacySelection() {
+        when(
+          () => setup.mockSettingsDb.itemByKey('SELECTED_ENTRY_TYPES'),
+        ).thenAnswer((_) async => '["JournalEntry","Task"]');
+      }
+
+      test('joins the selection at once while People is on, and is saved '
+          'with it', () {
+        fakeAsync((async) {
+          stubLegacySelection();
+          setup.configFlagsController.add({enableRelationshipsFlag});
+          final controller = setup.container.read(
+            journalPageControllerProvider(false).notifier,
+          );
+          settle(async);
+          setup.configFlagsController.add({enableRelationshipsFlag});
+          settle(async);
+
+          expect(
+            controller.state.selectedEntryTypes.toSet(),
+            {'Task', 'JournalEntry', 'CheckIn'},
+          );
+          verify(
+            () => setup.mockSettingsDb.saveSettingsItem(
+              'SELECTED_ENTRY_TYPES',
+              '["CheckIn","JournalEntry","Task"]',
+            ),
+          ).called(greaterThanOrEqualTo(1));
+        });
+      });
+
+      test('waits while People is off, and joins when People turns on', () {
+        fakeAsync((async) {
+          stubLegacySelection();
+          final controller = setup.container.read(
+            journalPageControllerProvider(false).notifier,
+          );
+          settle(async);
+          setup.configFlagsController.add(<String>{});
+          settle(async);
+
+          expect(
+            controller.state.selectedEntryTypes.toSet(),
+            {'Task', 'JournalEntry'},
+          );
+          verifyNever(
+            () => setup.mockSettingsDb.saveSettingsItem(
+              'ENTRY_TYPES_RECONCILED',
+              any(that: contains('CheckIn')),
+            ),
+          );
+
+          setup.configFlagsController.add({enableRelationshipsFlag});
+          settle(async);
+
+          expect(
+            controller.state.selectedEntryTypes.toSet(),
+            {'Task', 'JournalEntry', 'CheckIn'},
+          );
+        });
+      });
+    });
+
     test(
       'empty selection repopulates with all allowed types on flag change',
       () {

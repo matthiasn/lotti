@@ -130,6 +130,39 @@ void main() {
       );
     });
 
+    // Codex review on #4373: a row already on screen must follow a rename,
+    // and a private person going out of view.
+    for (final token in [
+      'rel-1',
+      privateToggleNotification,
+      relationshipEntityUpdateNotification('rel-1'),
+    ]) {
+      test('re-reads on a "$token" notification', () async {
+        when(
+          () => mockRepository.getRelationshipById('rel-1'),
+        ).thenAnswer((_) async => relationship('rel-1', title: 'Wanja'));
+        final subscription = container.listen(
+          relationshipNameProvider('rel-1'),
+          (_, _) {},
+        );
+        addTearDown(subscription.close);
+        expect(
+          await container.read(relationshipNameProvider('rel-1').future),
+          'Wanja',
+        );
+
+        when(
+          () => mockRepository.getRelationshipById('rel-1'),
+        ).thenAnswer((_) async => null);
+        updateStreamController.add({token});
+
+        expect(
+          await container.read(relationshipNameProvider('rel-1').future),
+          isNull,
+        );
+      });
+    }
+
     test('is null for a person who is gone or hidden', () async {
       when(
         () => mockRepository.getRelationshipById('hidden'),

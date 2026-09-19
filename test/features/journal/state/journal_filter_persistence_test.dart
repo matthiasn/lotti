@@ -152,90 +152,98 @@ void main() {
     });
 
     // A type the filter gained after the selection was saved is one the user
-    // never had the chance to deselect: it joins once, and only once.
+    // never had the chance to deselect. It stays pending — the controller
+    // adds it once the filter offers it — and a save records what was on
+    // offer, so a later deselection sticks (ADR 0064).
     group('a type added since the selection was saved', () {
-      void stubStored(List<String> selection, {List<String>? reconciled}) {
-        when(
-          () => mockSettingsDb.itemByKey(
-            JournalFilterPersistence.selectedEntryTypesKey,
-          ),
-        ).thenAnswer((_) async => jsonEncode(selection));
-        when(
-          () => mockSettingsDb.itemByKey(
-            JournalFilterPersistence.reconciledEntryTypesKey,
-          ),
-        ).thenAnswer(
-          (_) async => reconciled == null ? null : jsonEncode(reconciled),
-        );
-      }
+      void stubReconciled(String? raw) => when(
+        () => mockSettingsDb.itemByKey(
+          JournalFilterPersistence.reconciledEntryTypesKey,
+        ),
+      ).thenAnswer((_) async => raw);
 
-      test('joins a selection saved before types were reconciled — CheckIn '
-          'for every existing Logbook selection — and is written back', () {
+      test('the stored selection loads as it was — nothing is added behind '
+          "the filter's back", () {
         fakeAsync((async) {
-          stubStored(['JournalEntry', 'Task']);
-
-          late Set<String>? result;
-          sut.loadEntryTypes().then((v) => result = v);
-          async.flushMicrotasks();
-
-          expect(result, {'Task', 'JournalEntry', 'CheckIn'});
-          verify(
-            () => mockSettingsDb.saveSettingsItem(
+          when(
+            () => mockSettingsDb.itemByKey(
               JournalFilterPersistence.selectedEntryTypesKey,
-              jsonEncode(['CheckIn', 'JournalEntry', 'Task']),
             ),
-          ).called(1);
-          verify(
-            () => mockSettingsDb.saveSettingsItem(
-              JournalFilterPersistence.reconciledEntryTypesKey,
-              jsonEncode([...entryTypes]..sort()),
-            ),
-          ).called(1);
-        });
-      });
-
-      test('stays out once deselected after it was offered', () {
-        fakeAsync((async) {
-          stubStored(['JournalEntry', 'Task'], reconciled: entryTypes);
+          ).thenAnswer((_) async => jsonEncode(['JournalEntry', 'Task']));
 
           late Set<String>? result;
           sut.loadEntryTypes().then((v) => result = v);
           async.flushMicrotasks();
 
           expect(result, {'Task', 'JournalEntry'});
-          // Nothing to reconcile, so an unchanged launch writes nothing.
           verifyNever(() => mockSettingsDb.saveSettingsItem(any(), any()));
         });
       });
 
-      test('a selection saved now counts as made with every type on offer', () {
+      for (final (label, raw) in [
+        ('saved before the record existed', null),
+        ('with a malformed record', 'not json'),
+      ]) {
+        test('CheckIn is pending for a selection $label', () {
+          fakeAsync((async) {
+            stubReconciled(raw);
+
+            late Set<String> pending;
+            sut.loadPendingEntryTypes().then((v) => pending = v);
+            async.flushMicrotasks();
+
+            expect(pending, {'CheckIn'});
+          });
+        });
+      }
+
+      test('nothing is pending once every type was on offer', () {
         fakeAsync((async) {
-          sut.saveEntryTypes({'Task'});
+          stubReconciled(jsonEncode(entryTypes));
+
+          late Set<String> pending;
+          sut.loadPendingEntryTypes().then((v) => pending = v);
+          async.flushMicrotasks();
+
+          expect(pending, isEmpty);
+        });
+      });
+
+      test('a save records the types on offer, and a type not on offer stays '
+          'pending', () {
+        fakeAsync((async) {
+          sut.saveEntryTypes({'Task'}, offered: {'Task', 'JournalEntry'});
+          async.flushMicrotasks();
+
+          // Everything on offer was already on the record: nothing to add.
+          verifyNever(
+            () => mockSettingsDb.saveSettingsItem(
+              JournalFilterPersistence.reconciledEntryTypesKey,
+              any(),
+            ),
+          );
+          late Set<String> pending;
+          sut.loadPendingEntryTypes().then((v) => pending = v);
+          async.flushMicrotasks();
+          expect(pending, {'CheckIn'}, reason: 'CheckIn was not on offer');
+
+          sut.saveEntryTypes({'Task'}, offered: {'Task', 'CheckIn'});
           async.flushMicrotasks();
 
           verify(
             () => mockSettingsDb.saveSettingsItem(
               JournalFilterPersistence.reconciledEntryTypesKey,
-              jsonEncode([...entryTypes]..sort()),
+              jsonEncode(
+                [
+                  ...JournalFilterPersistence.legacyReconciledEntryTypes,
+                  'CheckIn',
+                ]..sort(),
+              ),
             ),
           ).called(1);
-        });
-      });
-
-      test('a malformed record is read as the legacy baseline', () {
-        fakeAsync((async) {
-          stubStored(['Task']);
-          when(
-            () => mockSettingsDb.itemByKey(
-              JournalFilterPersistence.reconciledEntryTypesKey,
-            ),
-          ).thenAnswer((_) async => 'not json');
-
-          late Set<String>? result;
-          sut.loadEntryTypes().then((v) => result = v);
+          sut.loadPendingEntryTypes().then((v) => pending = v);
           async.flushMicrotasks();
-
-          expect(result, {'Task', 'CheckIn'});
+          expect(pending, isEmpty, reason: 'deselected on offer: it sticks');
         });
       });
     });
@@ -492,7 +500,7 @@ void main() {
           () => mockSettingsDb.itemByKey(selectedEntryTypesKey),
         ).thenAnswer((_) async => jsonEncode(['Task', 'JournalEntry']));
 
-        sut.saveEntryTypes({'JournalEntry', 'Task'});
+        sut.saveEntryTypes({'JournalEntry', 'Task'}, offered: const {});
         async.flushMicrotasks();
 
         verifyNever(
@@ -507,9 +515,9 @@ void main() {
           () => mockSettingsDb.itemByKey(selectedEntryTypesKey),
         ).thenAnswer((_) async => 'not json');
 
-        sut.saveEntryTypes({'Task', 'JournalEntry'});
+        sut.saveEntryTypes({'Task', 'JournalEntry'}, offered: const {});
         async.flushMicrotasks();
-        sut.saveEntryTypes({'JournalEntry', 'Task'});
+        sut.saveEntryTypes({'JournalEntry', 'Task'}, offered: const {});
         async.flushMicrotasks();
 
         verify(

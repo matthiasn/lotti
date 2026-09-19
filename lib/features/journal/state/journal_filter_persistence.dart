@@ -19,12 +19,14 @@ class JournalFilterPersistence {
   static const selectedEntryTypesKey = 'SELECTED_ENTRY_TYPES';
 
   /// Key recording every entry type the persisted selection has been
-  /// reconciled against — the types the filter offered when the selection
-  /// was last loaded or saved.
+  /// reconciled against: the types the filter *offered* whenever the
+  /// selection was saved, plus those a migration added.
   ///
-  /// A type the filter gains later is one the user never had the chance to
-  /// deselect, so it joins the selection once, on the next load; from then
-  /// on it is part of this set, and deselecting it sticks.
+  /// A type missing from it is one the user never had the chance to
+  /// deselect. It stays pending — see [loadPendingEntryTypes] — until the
+  /// filter offers it, then joins the selection once; from then on it is part
+  /// of this set, and deselecting it sticks. A type behind a feature flag
+  /// that is off is not offered, so its migration waits for the flag.
   static const reconciledEntryTypesKey = 'ENTRY_TYPES_RECONCILED';
 
   /// What a selection saved before [reconciledEntryTypesKey] existed was
@@ -50,7 +52,7 @@ class JournalFilterPersistence {
   final Set<String> _loadedFilterKeys = {};
   String? _persistedEntryTypesValue;
   bool _hasLoadedEntryTypesValue = false;
-  bool _reconciledEntryTypesCurrent = false;
+  Set<String>? _reconciledEntryTypes;
 
   // ---------------------------------------------------------------
   // Loading
@@ -95,15 +97,9 @@ class JournalFilterPersistence {
 
     try {
       final json = jsonDecode(raw) as List<dynamic>;
-      final stored = List<String>.from(json).toSet();
-      _persistedEntryTypesValue = _encodeEntryTypes(stored);
+      final types = List<String>.from(json).toSet();
+      _persistedEntryTypesValue = _encodeEntryTypes(types);
       _hasLoadedEntryTypesValue = true;
-      final added = entryTypes.toSet().difference(
-        await _loadReconciledEntryTypes(),
-      );
-      final types = stored.union(added);
-      if (added.isNotEmpty) await saveEntryTypes(types);
-      await _markEntryTypesReconciled();
       return types;
     } catch (e) {
       _persistedEntryTypesValue = raw;
@@ -137,8 +133,19 @@ class JournalFilterPersistence {
     }
   }
 
-  /// Persists [entryTypes], skipping the write when unchanged.
-  Future<void> saveEntryTypes(Set<String> entryTypes) async {
+  /// The entry types a persisted selection has not been reconciled against:
+  /// the filter gained them after the selection was saved. Meaningful only
+  /// for a selection that exists — without one, every type is selected.
+  Future<Set<String>> loadPendingEntryTypes() async =>
+      entryTypes.toSet().difference(await _loadReconciledEntryTypes());
+
+  /// Persists [entryTypes], skipping the write when unchanged, and records
+  /// the [offered] types — those the filter showed as it was made — as
+  /// reconciled.
+  Future<void> saveEntryTypes(
+    Set<String> entryTypes, {
+    required Set<String> offered,
+  }) async {
     if (!_hasLoadedEntryTypesValue) {
       _persistedEntryTypesValue = _normalizeEntryTypesValue(
         await _settingsDb.itemByKey(selectedEntryTypesKey),
@@ -151,11 +158,19 @@ class JournalFilterPersistence {
       await _settingsDb.saveSettingsItem(selectedEntryTypesKey, encoded);
       _persistedEntryTypesValue = encoded;
     }
-    // A selection saved now was made with every current type on offer.
-    await _markEntryTypesReconciled();
+    final reconciled = await _loadReconciledEntryTypes();
+    if (reconciled.containsAll(offered)) return;
+    final next = reconciled.union(offered);
+    await _settingsDb.saveSettingsItem(
+      reconciledEntryTypesKey,
+      _encodeEntryTypes(next),
+    );
+    _reconciledEntryTypes = next;
   }
 
   Future<Set<String>> _loadReconciledEntryTypes() async {
+    final cached = _reconciledEntryTypes;
+    if (cached != null) return cached;
     final raw = await _settingsDb.itemByKey(reconciledEntryTypesKey);
     Set<String> reconciled;
     try {
@@ -165,19 +180,7 @@ class JournalFilterPersistence {
     } catch (_) {
       reconciled = legacyReconciledEntryTypes;
     }
-    // Already current: an unchanged launch writes nothing.
-    _reconciledEntryTypesCurrent =
-        raw != null && reconciled.containsAll(entryTypes);
-    return reconciled;
-  }
-
-  Future<void> _markEntryTypesReconciled() async {
-    if (_reconciledEntryTypesCurrent) return;
-    await _settingsDb.saveSettingsItem(
-      reconciledEntryTypesKey,
-      _encodeEntryTypes(entryTypes.toSet()),
-    );
-    _reconciledEntryTypesCurrent = true;
+    return _reconciledEntryTypes = reconciled;
   }
 
   // ---------------------------------------------------------------

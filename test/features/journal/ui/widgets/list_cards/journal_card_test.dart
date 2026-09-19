@@ -1202,6 +1202,8 @@ void main() {
           expect(find.text('Caught up about the move'), findsOneWidget);
           expect(find.byIcon(LottiIcons.video), findsOneWidget);
           expect(find.byIcon(LottiIcons.openExternal), findsOneWidget);
+          // The glyph names the tab the row opens on.
+          expect(find.byTooltip('People'), findsOneWidget);
 
           // Every interaction type maps to its own glyph, shared with the
           // relationship detail page's check-in rows.

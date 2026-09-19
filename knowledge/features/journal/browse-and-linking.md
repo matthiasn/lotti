@@ -50,16 +50,21 @@ agent-assignment filter.
 **Tasks filter persistence is tab-aware**: `TASKS_CATEGORY_FILTERS` for the tasks
 tab, `JOURNAL_CATEGORY_FILTERS` for the journal tab.
 
-**A type added to `entryTypes` joins saved selections once.** The selection
-(`SELECTED_ENTRY_TYPES`) is stored explicitly, so a type the filter gains
-later would otherwise stay hidden for everyone who ever touched the filter.
-`ENTRY_TYPES_RECONCILED` records the types a selection has been reconciled
-against — every current type, written whenever a selection is saved or
-loaded; a selection saved before the record existed counts as reconciled
-against `JournalFilterPersistence.legacyReconciledEntryTypes`, the list
-before `CheckIn`. On load, `entryTypes` minus that record is added to the
-selection and written back; from then on the type is part of the record, so
-deselecting it sticks. An unchanged launch writes nothing.
+**A type added to `entryTypes` joins saved selections once, when it is
+offered** (ADR 0064). The selection (`SELECTED_ENTRY_TYPES`) is stored
+explicitly, so a type the filter gains later would otherwise stay hidden for
+everyone who ever touched the filter. `ENTRY_TYPES_RECONCILED` records the
+types a selection was made with: every save adds the types the filter offered
+at that moment (`saveEntryTypes(offered:)`); a selection saved before the
+record existed counts as made with
+`JournalFilterPersistence.legacyReconciledEntryTypes`, the list before
+`CheckIn`. The rest are **pending**
+(`JournalFilterPersistence.loadPendingEntryTypes`): the controller adds a
+pending type to the selection only while the feature flags allow it —
+on load, or when a flag turns it on (`_adoptPendingEntryTypes`) — and the save
+that follows records it, so a later deselection sticks. A type behind a flag
+that is off stays pending instead of being added, stripped by the flag gating
+and consumed unseen. An unchanged launch writes nothing.
 
 # Two search modes
 

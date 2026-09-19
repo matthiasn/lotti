@@ -124,7 +124,13 @@ class JournalQueryRunner {
       dashboards: params.enableDashboards,
       relationships: params.enableRelationships,
     );
-    final types = params.selectedEntryTypes.where(allowed.contains).toList();
+    // A check-in shows in the feed but is never a search result: its note
+    // describes a third party, whom search must not find outside People
+    // (ADR 0037, ADR 0064).
+    final types = params.selectedEntryTypes
+        .where(allowed.contains)
+        .where((type) => params.query.isEmpty || type != 'CheckIn')
+        .toList();
     final ids = params.query.isNotEmpty ? fullTextMatches.toList() : null;
 
     final starredEntriesOnly = params.filters.contains(

@@ -451,9 +451,12 @@ class _EntryCardContent extends StatelessWidget {
   /// model, so it must not be the faintest ink on the row.
   Widget _opensElsewhereGlyph(BuildContext context) {
     final tokens = context.designTokens;
-    final label = item is Task
-        ? context.messages.navTabTitleTasks
-        : context.messages.navTabTitleEvents;
+    // Names the tab the row opens on.
+    final label = switch (item) {
+      Task() => context.messages.navTabTitleTasks,
+      CheckInEntry() => context.messages.navTabTitlePeople,
+      _ => context.messages.navTabTitleEvents,
+    };
     return Padding(
       padding: EdgeInsets.only(left: tokens.spacing.step2),
       child: Tooltip(

@@ -37,7 +37,7 @@ void main() {
 
     test('saves encoded entry types', () {
       fakeAsync((async) {
-        sut.saveEntryTypes(entryTypes);
+        sut.saveEntryTypes(entryTypes, offered: const {});
         async.flushMicrotasks();
 
         final captured = verify(
@@ -68,7 +68,7 @@ void main() {
         async.flushMicrotasks();
 
         // Save the same set — should skip.
-        sut.saveEntryTypes(entryTypes);
+        sut.saveEntryTypes(entryTypes, offered: const {});
         async.flushMicrotasks();
 
         verifyNever(
@@ -89,7 +89,7 @@ void main() {
         async.flushMicrotasks();
 
         // Save a different set.
-        sut.saveEntryTypes(entryTypes);
+        sut.saveEntryTypes(entryTypes, offered: const {});
         async.flushMicrotasks();
 
         verify(
@@ -112,7 +112,7 @@ void main() {
 
         // saveEntryTypes without prior loadEntryTypes — seeds dedup via
         // _normalizeEntryTypesValue, which catches and returns raw value.
-        sut.saveEntryTypes(entryTypes);
+        sut.saveEntryTypes(entryTypes, offered: const {});
         async.flushMicrotasks();
 
         // The normalize catch returns the raw malformed string, which differs
@@ -188,7 +188,7 @@ void main() {
           async.flushMicrotasks();
 
           // Save in the opposite order.
-          sut.saveEntryTypes({'JournalEntry', 'Task'});
+          sut.saveEntryTypes({'JournalEntry', 'Task'}, offered: const {});
           async.flushMicrotasks();
 
           verifyNever(

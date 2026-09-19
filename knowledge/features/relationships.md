@@ -172,22 +172,24 @@ new infrastructure and no schema change** (ADR 0038 decision 4).
 never mounted; the entities and their queries still exist, so a device that
 syncs relationships in with the flag off stores them and shows nothing.
 
-**Check-ins are in the Logbook; people are not** (ADR 0038 Decision 2, as
-amended). `entryTypes` lists `CheckIn`, gated on `enableRelationshipsFlag`
+**Check-ins are in the Logbook; people are not** (ADR 0064, amending
+ADR 0038 Decision 2). `entryTypes` lists `CheckIn`, gated on `enableRelationshipsFlag`
 like events and habits (`computeAllowedEntryTypes`), so it is a filter chip
 of its own and the feed shows a check-in at its time. `JournalCard` names
 the row for its person — "Check-in with {name}", read through
 `relationshipNameProvider`, falling back to "Check-in" while the name loads
-or for a person hidden as private — puts the note it was logged with below,
+or for a person hidden as private, and re-read on the person's own and the
+private-toggle notifications — puts the note it was logged with below,
 and opens `/people/<relationshipId>/check-ins/<checkInId>` with the
 opens-elsewhere glyph, as an event row does. `Relationship` is not in
 `entryTypes`; its card branch exists only because the switch over the
 sealed union is exhaustive. A Logbook selection saved before `CheckIn`
 existed gains it once (see [browse and linking](journal/browse-and-linking.md)).
-**Global search still indexes neither variant**: FTS title extraction skips
-both, so a person's name is unfindable outside the People tab — a privacy
-posture (ADR 0037: relationship data describes third parties), not an
-oversight. The People list itself is short
+**Search never returns them**: a Logbook text search drops `CheckIn` from
+the queried types (`JournalQueryRunner.runQuery`), and check-ins are not
+embedded, so neither a person's name nor a check-in's note is findable
+outside the People tab — a privacy posture (ADR 0037: relationship data
+describes third parties), not an oversight. The People list itself is short
 by design and needs no local search.
 
 # Bound twice, on purpose

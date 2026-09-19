@@ -68,13 +68,7 @@ The journal core gives us everything needed:
      guidance the briefing later surfaces.
    The narrative ("what we talked about") is the entry's `entryText`; the
    interaction time is `meta.dateFrom`/`dateTo`, so check-ins sit naturally
-   on calendars and timelines. *Amended 2026-09-19 (design panel): check-ins
-   appear in the Logbook as their own filterable type, `CheckIn`, while the
-   relationships flag is on — named for their person and opening on the
-   person's page in People. People themselves stay out of the Logbook, and
-   neither variant is indexed for global search: the ADR 0037 boundary on
-   finding a person by name outside People is unchanged. A Logbook selection
-   saved before the type existed gains it once, on its next load.*
+   on calendars and timelines.
 3. **Linking reuses `linked_entries` with a new `RelationshipLink` variant**
    of `EntryLink`, mirroring `ProjectLink`: relationship → check-in and
    relationship → task (and task → relationship queries via the reverse
