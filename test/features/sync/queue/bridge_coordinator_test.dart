@@ -575,6 +575,45 @@ void main() {
     },
   );
 
+  test(
+    'a bridge pass that throws is logged and the next limited sync still '
+    'runs catch-up',
+    () async {
+      final room = MockRoom();
+      when(() => room.id).thenReturn(roomId);
+      final runner = _RecordingRunner();
+      var resolveFails = true;
+      final coordinator = buildCoordinator(
+        resolveRoom: () async {
+          if (resolveFails) throw StateError('room lookup failed');
+          return room;
+        },
+        runner: runner,
+      )..start();
+
+      syncCtl.add(_limitedSyncFor(roomId));
+      await pumpEventQueue();
+
+      expect(runner.calls, isEmpty);
+      verify(
+        () => logging.error(
+          LogDomain.sync,
+          any<Object>(that: isA<StateError>()),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: any<String>(named: 'subDomain', that: endsWith('.run')),
+        ),
+      ).called(1);
+
+      resolveFails = false;
+      syncCtl.add(_limitedSyncFor(roomId, prevBatch: 'pb-2'));
+      await pumpEventQueue();
+
+      expect(runner.calls, hasLength(1));
+      expect(runner.calls.single.room, same(room));
+      await coordinator.stop();
+    },
+  );
+
   test('other-room limited=true syncs are ignored', () async {
     final coordinator = buildCoordinator()..start();
     syncCtl.add(_limitedSyncFor('!wrongRoom:example.org'));
