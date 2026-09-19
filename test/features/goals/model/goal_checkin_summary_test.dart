@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/goals/model/goal_checkin_summary.dart';
 
 extension on GoalCheckInSummary {
@@ -135,5 +137,100 @@ void main() {
       );
       expect(restored!.sourceDigest, 'abc123');
     });
+  });
+
+  group('properties', () {
+    final slot = glados.any.choose<String?>([
+      null,
+      '',
+      'Walk the loop.',
+      'ü\n"x"',
+    ]);
+    final instant = glados.any.combine2(
+      glados.any.intInRange(0, 3 * 365 * 24 * 60),
+      glados.any.bool,
+      (int minutes, bool utc) {
+        final t = DateTime.utc(2025).add(
+          Duration(minutes: minutes, microseconds: minutes * 7 % 1000000),
+        );
+        return utc ? t : t.toLocal();
+      },
+    );
+
+    glados.Glados3(
+      instant,
+      glados.any.combine5(
+        slot,
+        slot,
+        slot,
+        slot,
+        slot,
+        (
+          String? committedTo,
+          String? blockers,
+          String? mood,
+          String? asks,
+          String? digest,
+        ) => [committedTo, blockers, mood, asks, digest],
+      ),
+      glados.any.choose(['Counted the colony.', '']),
+      glados.ExploreConfig(numRuns: 200),
+    ).test(
+      'fromContent(toContent(s)) restores every field',
+      (recordedAt, slots, whatHappened) {
+        final original = GoalCheckInSummary(
+          id: 'summary-1',
+          sourceEntryId: 'entry-1',
+          recordedAt: recordedAt,
+          whatHappened: whatHappened,
+          committedTo: slots[0],
+          blockers: slots[1],
+          mood: slots[2],
+          asks: slots[3],
+          sourceDigest: slots[4],
+        );
+        final wire =
+            jsonDecode(jsonEncode(original.toContent()))
+                as Map<String, Object?>;
+        final read = GoalCheckInSummary.fromContent('summary-1', wire)!;
+
+        expect(read.recordedAt, recordedAt);
+        expect(read.recordedAt.isUtc, recordedAt.isUtc);
+        expect(read.toContent(), original.toContent());
+      },
+      tags: 'glados',
+    );
+
+    // A peer on another build may send any type in any field.
+    final junk = glados.any.choose<Object?>([
+      null,
+      7,
+      'text',
+      '2026-08-11T10:00:00Z',
+      false,
+      const <Object?>[],
+      const <String, Object?>{},
+    ]);
+    final key = glados.any.choose([
+      'sourceEntryId',
+      'recordedAt',
+      'whatHappened',
+      'committedTo',
+      'sourceDigest',
+    ]);
+
+    glados.Glados(
+      glados.any.map(key, junk),
+      glados.ExploreConfig(numRuns: 200),
+    ).test(
+      'fromContent never throws on malformed content',
+      (content) {
+        expect(
+          () => GoalCheckInSummary.fromContent('summary-1', content),
+          returnsNormally,
+        );
+      },
+      tags: 'glados',
+    );
   });
 }

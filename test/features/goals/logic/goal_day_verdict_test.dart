@@ -1,9 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/goals/logic/goal_day_verdict.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 
 void main() {
   final today = DateTime.utc(2026, 8, 11);
@@ -195,6 +198,100 @@ void main() {
         // clean sweep.
         expect(goalDayOutcome(progress, today), (met: 1, total: 2));
       },
+    );
+  });
+
+  group('properties', () {
+    setUpAll(tz_data.initializeTimeZones);
+
+    // Calendar days in named DST-observing zones — not the process zone, so
+    // the days after the EU and US spring-forward switches (where "yesterday"
+    // is not 24 hours back) exercise the calendar step on any test host,
+    // UTC CI runners included. Built lazily: the zone database loads in
+    // setUpAll, after this group body runs.
+    final day = glados.any
+        .choose([
+          ('Europe/Berlin', 2026, 3, 30),
+          ('Europe/Berlin', 2026, 6, 15),
+          ('Europe/Berlin', 2026, 10, 26),
+          ('America/New_York', 2026, 3, 9),
+          ('America/New_York', 2026, 11, 2),
+        ])
+        .map(
+          (d) =>
+              () => tz.TZDateTime(tz.getLocation(d.$1), d.$2, d.$3, d.$4),
+        );
+    // Per criterion and day: 0 absent, 1 hit, 2 miss, 3 unobserved.
+    final marks = glados.any.combine2(
+      glados.any.intInRange(0, 4),
+      glados.any.intInRange(0, 4),
+      (int yesterday, int today) => (yesterday: yesterday, today: today),
+    );
+
+    glados.Glados3(
+      day,
+      glados.any.listWithLengthInRange(0, 4, marks),
+      glados.any.listWithLengthInRange(0, 3, marks),
+      glados.ExploreConfig(numRuns: 300),
+    ).test(
+      'the suggestion follows the documented rules on every calendar day',
+      (makeDay, habitMarks, metricMarks) {
+        final day = makeDay();
+        final previous = tz.TZDateTime(
+          day.location,
+          day.year,
+          day.month,
+          day.day - 1,
+        );
+
+        List<GoalProgressDay> habitDays(({int yesterday, int today}) m) => [
+          for (final (at, mark) in [(previous, m.yesterday), (day, m.today)])
+            if (mark == 1) hit(at) else if (mark != 0) miss(at),
+        ];
+        List<GoalProgressDay> metricDays(({int yesterday, int today}) m) => [
+          for (final (at, mark) in [(previous, m.yesterday), (day, m.today)])
+            if (mark == 1)
+              GoalProgressDay(day: at, value: 12000)
+            else if (mark == 2)
+              GoalProgressDay(day: at, value: 3000)
+            else if (mark == 3)
+              unobserved(at),
+        ];
+
+        final progress = GoalProgressView(
+          today: day,
+          habits: [
+            for (final (i, m) in habitMarks.indexed)
+              habit('habit-$i', habitDays(m)),
+          ],
+          metrics: [for (final m in metricMarks) steps(metricDays(m))],
+        );
+
+        // Evidence: a habit done, or a metric observed (hit or short).
+        bool evidence(int Function(({int yesterday, int today})) pick) =>
+            habitMarks.any((m) => pick(m) == 1) ||
+            metricMarks.any((m) => pick(m) == 1 || pick(m) == 2);
+        final todayHasEvidence = evidence((m) => m.today);
+        final yesterdayHasEvidence = evidence((m) => m.yesterday);
+
+        final outcome = goalDayOutcome(progress, day);
+        final before = goalDayOutcome(progress, previous);
+        expect(outcome.total, habitMarks.length + metricMarks.length);
+        expect(outcome.met, inInclusiveRange(0, outcome.total));
+
+        final expected =
+            outcome.total == 0 || outcome.met == 0 && !todayHasEvidence
+            ? null
+            : outcome.met == outcome.total
+            ? DayVerdict.met
+            : outcome.met == 0
+            ? DayVerdict.missed
+            : yesterdayHasEvidence && outcome.met > before.met
+            ? DayVerdict.improving
+            : DayVerdict.mixed;
+        expect(suggestedDayVerdict(progress, day), expected);
+      },
+      tags: 'glados',
     );
   });
 }

@@ -37,8 +37,17 @@ class LogDigestBuilder {
     r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?',
   );
   static final RegExp _number = RegExp(r'\d+(?:\.\d+)?');
+
+  /// A signed numeric literal: a minus sign is only a sign where no operand
+  /// precedes it — after `(`, `,` or a comparison — so `a - 1` stays a
+  /// subtraction.
+  static final RegExp _signedNumber = RegExp(
+    r'([(,=<>]\s*)-\s*\d+(?:\.\d+)?',
+  );
   static final RegExp _whitespace = RegExp(r'\s+');
-  static final RegExp _quotedLiteral = RegExp(r"'(?:[^'\\]|\\.)*'");
+
+  /// A single-quoted SQL literal, including `''` and backslash escapes.
+  static final RegExp _quotedLiteral = RegExp(r"'(?:[^'\\]|\\.|'')*'");
   static final RegExp _placeholderList = RegExp(r'\(\s*\?(?:\s*,\s*\?)+\s*\)');
   static final RegExp _appFrame = RegExp('package:lotti/');
 
@@ -87,19 +96,23 @@ class LogDigestBuilder {
         .replaceAll(_number, '#')
         .replaceAll(_whitespace, ' ')
         .trim();
+    // Trim again after the cut so the signature of a signature is itself.
     return collapsed.length <= _signatureLength
         ? collapsed
-        : collapsed.substring(0, _signatureLength);
+        : collapsed.substring(0, _signatureLength).trimRight();
   }
 
   /// Grouping key for a SQL statement: whitespace collapsed, literals and
   /// placeholder lists normalised so `IN (?, ?, ?)` and `IN (?, ?)` match.
+  /// Literals become `?` before lists collapse, so `IN (1, 2)`, `IN (-1, -2)`
+  /// and `IN ('a', ?, 3)` fall into the same bucket as `IN (?, ?)`.
   String statementSignature(String statement) {
     return statement
         .replaceAll(_quotedLiteral, '?')
+        .replaceAllMapped(_signedNumber, (m) => '${m[1]}?')
+        .replaceAll(_number, '?')
         .replaceAll(_whitespace, ' ')
         .replaceAll(_placeholderList, '(?...)')
-        .replaceAll(_number, '?')
         .trim();
   }
 

@@ -151,9 +151,10 @@ from the ARB catalogs.
   seen, the first redacted sample and up to six `package:lotti/` stack frames
   from that sample. Errors sort before warnings, then by count.
 - **Slow queries**: grouped by database file *and* a normalised statement
-  (quoted literals and numbers to `?`, `IN (?, ?, ?)` to `(?...)`, whitespace
-  collapsed), with count, p50 / p95 / max / total elapsed, distinct `EXPLAIN
-  QUERY PLAN` shapes and distinct caller frames. The database is part of the
+  (quoted literals and numbers to `?` first, so any value list of two or more,
+  `IN (?, ?, ?)` or `IN (1, 'a')`, becomes `(?...)`; whitespace collapsed),
+  with count, p50 / p95 / max / total elapsed, distinct `EXPLAIN QUERY PLAN`
+  shapes and distinct caller frames. The database is part of the
   key because a `BEGIN` on the agent database and one on the sync database
   queue behind different writer locks. The caller frame is the first app frame
   below the transaction wrappers (`runInTransaction`, `withVcScope`,
@@ -220,7 +221,9 @@ A run's full Markdown is written by `SystemHealthReportStore` to
 to the files it was built from, and the page shows the path under the report.
 The store never indexes anything: the newest file is the one whose name
 carries the latest stamp, and `loadLatest` splits it back into summary and
-digest at the `<details>` marker (`SystemHealthReportDocument.fromMarkdown`).
+digest at the last `<details>` marker
+(`SystemHealthReportDocument.fromMarkdown`) — the last, because model findings
+may open collapsed sections of their own.
 Saving is best effort — a write failure costs the path, not the report.
 
 The page therefore renders a `SystemHealthReportDocument`, never the report

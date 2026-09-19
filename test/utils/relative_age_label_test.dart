@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/utils/relative_age_label.dart';
 import 'package:material_ui/material_ui.dart';
@@ -75,5 +76,47 @@ void main() {
         expect(after, isNot(before), reason: '$age');
       }
     });
+  });
+
+  group('untilNextAgeBucket properties', () {
+    // Ages up to three days, with sub-second jitter, and biased to the
+    // minute, hour and day boundaries.
+    final age = glados.any.combine2(
+      glados.any.oneOf([
+        glados.any.intInRange(0, 3 * 86400),
+        glados.any.choose([0, 59, 60, 3599, 3600, 86399, 86400]),
+      ]),
+      glados.any.intInRange(0, 1000),
+      (int seconds, int millis) =>
+          Duration(seconds: seconds, milliseconds: millis),
+    );
+
+    glados.Glados(age, glados.ExploreConfig(numRuns: 400)).test(
+      'the label holds until the next boundary and changes by the deadline',
+      (a) {
+        final wait = untilNextAgeBucket(a);
+        final label = relativeAgoLabel(messages, a);
+        expect(wait, greaterThan(Duration.zero));
+        expect(wait, lessThanOrEqualTo(const Duration(days: 1, seconds: 1)));
+
+        // The boundary sits one second of slack before the deadline, less
+        // the sub-second part of the age the bucket arithmetic ignores.
+        final boundary =
+            a +
+            wait -
+            const Duration(seconds: 1) -
+            Duration(microseconds: a.inMicroseconds % 1000000);
+        expect(
+          relativeAgoLabel(
+            messages,
+            boundary - const Duration(microseconds: 1),
+          ),
+          label,
+        );
+        expect(relativeAgoLabel(messages, boundary), isNot(label));
+        expect(relativeAgoLabel(messages, a + wait), isNot(label));
+      },
+      tags: 'glados',
+    );
   });
 }

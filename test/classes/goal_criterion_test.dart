@@ -1,9 +1,11 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_spec_validator.dart';
 import 'package:lotti/classes/goal_window.dart';
 
 void main() {
@@ -322,5 +324,91 @@ void main() {
       'cumulative_step_count',
       'HealthDataType.WEIGHT',
     });
+  });
+
+  group('fromAutoCompleteRule properties', () {
+    // A leaf rule; thresholds always carry at least one bound.
+    final leaf = glados.any.combine3(
+      glados.any.intInRange(0, 4),
+      glados.any.intInRange(0, 3),
+      glados.any.intInRange(0, 20000),
+      (int kind, int bounds, int value) {
+        final minimum = bounds == 1 ? null : value;
+        final maximum = bounds == 0 ? null : value + 500;
+        return switch (kind) {
+          0 => AutoCompleteRule.health(
+            dataType: 'cumulative_step_count',
+            minimum: minimum,
+            maximum: maximum,
+          ),
+          1 => AutoCompleteRule.workout(
+            dataType: 'walking',
+            minimum: minimum,
+            maximum: maximum,
+          ),
+          2 => AutoCompleteRule.measurable(
+            dataTypeId: 'water-ml',
+            minimum: minimum,
+            maximum: maximum,
+          ),
+          _ => AutoCompleteRule.habit(habitId: 'habit-$value'),
+        };
+      },
+    );
+
+    glados.Generator<AutoCompleteRule> rule(int depth) {
+      if (depth == 0) return leaf;
+      return glados.any.oneOf([
+        leaf,
+        glados.any.combine3(
+          glados.any.intInRange(0, 3),
+          glados.any.listWithLengthInRange(1, 4, rule(depth - 1)),
+          glados.any.intInRange(0, 100),
+          (int kind, List<AutoCompleteRule> rules, int quota) => switch (kind) {
+            0 => AutoCompleteRule.and(rules: rules),
+            1 => AutoCompleteRule.or(rules: rules),
+            _ => AutoCompleteRule.multiple(
+              rules: rules,
+              successes: 1 + quota % rules.length,
+            ),
+          },
+        ),
+      ]);
+    }
+
+    Set<String> ruleHabitIds(AutoCompleteRule rule) => switch (rule) {
+      AutoCompleteRuleHabit(:final habitId) => {habitId},
+      AutoCompleteRuleAnd(:final rules) ||
+      AutoCompleteRuleOr(:final rules) ||
+      AutoCompleteRuleMultiple(:final rules) => {
+        for (final child in rules) ...ruleHabitIds(child),
+      },
+      _ => const {},
+    };
+
+    List<String> ids(GoalCriterion criterion) => [
+      criterion.criterionId,
+      ...switch (criterion) {
+        GoalCriterionAllOf(:final criteria) ||
+        GoalCriterionAnyOf(:final criteria) ||
+        GoalCriterionAtLeastCount(:final criteria) => criteria.expand(ids),
+        _ => const <String>[],
+      },
+    ];
+
+    glados.Glados(rule(3), glados.ExploreConfig(numRuns: 150)).test(
+      'imports are deterministic, uniquely keyed, valid and keep every habit',
+      (source) {
+        final criterion = GoalCriterion.fromAutoCompleteRule(source);
+
+        expect(GoalCriterion.fromAutoCompleteRule(source), criterion);
+        final allIds = ids(criterion);
+        expect(allIds.toSet(), hasLength(allIds.length));
+        expect(allIds.first, 'c');
+        expect(GoalSpecValidator.criterionIssues(criterion), isEmpty);
+        expect(goalCriterionHabitIds(criterion), ruleHabitIds(source));
+      },
+      tags: 'glados',
+    );
   });
 }

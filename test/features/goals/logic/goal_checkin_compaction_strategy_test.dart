@@ -1,4 +1,6 @@
+import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/goals/logic/goal_checkin_compaction_strategy.dart';
 import 'package:lotti/features/goals/logic/goal_user_voice.dart';
 import 'package:lotti/features/goals/model/goal_checkin_summary.dart';
@@ -257,6 +259,74 @@ void main() {
 
         expect(context.estimatedTokens, lessThan(full.estimatedTokens ~/ 5));
       },
+    );
+  });
+
+  group('hierarchical properties', () {
+    glados.Glados2(
+      // Distinct days up to six years back, and a verbatim budget from
+      // "nothing fits" to "a handful fit".
+      glados.any.listWithLengthInRange(0, 80, glados.any.intInRange(0, 2200)),
+      glados.any.intInRange(0, 1500),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'partitions the history into a verbatim suffix and bounded digests',
+      (daysBack, budget) async {
+        final days = daysBack.toSet().toList()
+          ..shuffle(Random(daysBack.length));
+        final summaries = [
+          for (final d in days)
+            summary('d$d', reference.subtract(Duration(days: d, hours: 3))),
+        ];
+        final chronologicalIds = [
+          for (final s in [
+            ...summaries,
+          ]..sort((a, b) => a.recordedAt.compareTo(b.recordedAt)))
+            'entry-${s.id}',
+        ];
+
+        final writer = _RecordingDigestWriter();
+        final context = await HierarchicalCheckInCompaction(
+          digestWriter: writer,
+          verbatimBudget: budget,
+        ).build(summaries, reference: reference);
+
+        // Every check-in lands in exactly one place.
+        final digested = writer.requests.fold<int>(
+          0,
+          (sum, r) => sum + r.checkIns.length,
+        );
+        expect(context.verbatimCount + digested, summaries.length);
+        expect(context.digestCount, writer.requests.length);
+        expect(
+          context.entries,
+          hasLength(context.verbatimCount + context.digestCount),
+        );
+
+        // The verbatim entries are the most recent check-ins, in order.
+        final verbatimIds = context.entries
+            .skip(context.digestCount)
+            .map((e) => e['sourceEntryId'])
+            .toList();
+        expect(
+          verbatimIds,
+          chronologicalIds.sublist(
+            chronologicalIds.length - context.verbatimCount,
+          ),
+        );
+
+        // Span labels are unique, and each layer is bounded by its horizon
+        // (defaults 6 / 18 / 36 months), not by how long the history runs.
+        final labels = writer.requests.map((r) => r.periodLabel).toList();
+        expect(labels.toSet(), hasLength(labels.length));
+        int count(GoalCheckInDigestLayer layer) =>
+            writer.requests.where((r) => r.layer == layer).length;
+        expect(count(GoalCheckInDigestLayer.month), lessThanOrEqualTo(7));
+        expect(count(GoalCheckInDigestLayer.quarter), lessThanOrEqualTo(6));
+        expect(count(GoalCheckInDigestLayer.year), lessThanOrEqualTo(3));
+        expect(count(GoalCheckInDigestLayer.earlier), lessThanOrEqualTo(1));
+      },
+      tags: 'glados',
     );
   });
 }

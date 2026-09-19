@@ -1,5 +1,10 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/week_context.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/week_rollup.dart';
 
@@ -223,5 +228,133 @@ void main() {
             'must merge, not overwrite.',
       );
     });
+  });
+
+  group('properties', () {
+    final monday = DateTime(2026, 5, 18);
+    final category = glados.any.choose(['cat-work', 'cat-health', '']);
+    final block = glados.any.combine4(
+      glados.any.intInRange(0, 7),
+      category,
+      glados.any.intInRange(0, 300),
+      glados.any.choose(PlannedBlockState.values),
+      (int day, String categoryId, int minutes, PlannedBlockState state) =>
+          _block(
+            categoryId: categoryId,
+            start: monday.add(Duration(days: day, hours: 8, minutes: minutes)),
+            minutes: minutes,
+            state: state,
+          ),
+    );
+    final span = glados.any.combine3(
+      glados.any.choose(['cat-work', 'cat-health', null]),
+      glados.any.intInRange(0, 7),
+      glados.any.intInRange(0, 20000),
+      (String? categoryId, int day, int seconds) => RecordedSpan(
+        categoryId: categoryId,
+        start: monday.add(Duration(days: day, hours: 9)),
+        duration: Duration(seconds: seconds),
+      ),
+    );
+
+    List<DayPlanEntity> plans(List<PlannedBlock> blocks) => [
+      for (var day = 0; day < 7; day++)
+        if (blocks.any((b) => b.startTime.day == monday.day + day))
+          makeTestDayPlan(
+            id: 'plan-$day',
+            dayId: 'dayplan-2026-05-${18 + day}',
+            planDate: monday.add(Duration(days: day)),
+            data: _data(monday.add(Duration(days: day)), [
+              for (final b in blocks)
+                if (b.startTime.day == monday.day + day) b,
+            ]),
+          ),
+    ];
+
+    glados.Glados3(
+      glados.any.listWithLengthInRange(0, 15, block),
+      glados.any.listWithLengthInRange(0, 15, span),
+      glados.any.intInRange(0, 1000),
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'totals match the inputs, keys are sorted, input order is irrelevant',
+      (blocks, spans, seed) {
+        final result = computeWeekRollupAggregates(
+          dayPlans: plans(blocks),
+          recordedSpans: spans,
+        );
+
+        final plannedTotal = blocks
+            .where((b) => b.state != PlannedBlockState.dropped)
+            .fold<int>(
+              0,
+              (sum, b) => sum + b.endTime.difference(b.startTime).inMinutes,
+            );
+        final recordedTotal = spans.fold<int>(
+          0,
+          (sum, s) => sum + s.duration.inMinutes,
+        );
+        int total(Map<String, int> m) => m.values.fold(0, (a, b) => a + b);
+        expect(total(result.plannedMinutesByCategory), plannedTotal);
+        expect(total(result.recordedMinutesByCategory), recordedTotal);
+        expect(result.daysWithPlans, plans(blocks).length);
+
+        for (final map in [
+          result.plannedMinutesByCategory,
+          result.recordedMinutesByCategory,
+        ]) {
+          expect(map.keys.toList(), [...map.keys]..sort());
+        }
+
+        final random = Random(seed);
+        final reordered = computeWeekRollupAggregates(
+          dayPlans: plans([...blocks]..shuffle(random)).reversed.toList(),
+          recordedSpans: [...spans]..shuffle(random),
+        );
+        String encode(
+          ({
+            int daysWithPlans,
+            Map<String, int> plannedMinutesByCategory,
+            Map<String, int> recordedMinutesByCategory,
+          })
+          r,
+        ) => jsonEncode([
+          r.daysWithPlans,
+          r.plannedMinutesByCategory,
+          r.recordedMinutesByCategory,
+        ]);
+        expect(encode(reordered), encode(result));
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados2(
+      glados.any.listWithLengthInRange(0, 8, glados.any.intInRange(0, 60)),
+      glados.any.intInRange(0, 1000),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'recent weeks render newest first, one object per rollup',
+      (weekOffsets, seed) {
+        final weeks = weekOffsets.toSet().toList()..shuffle(Random(seed));
+        final rendered = renderRecentWeeksJson(
+          rollups: [
+            for (final w in weeks)
+              makeTestWeekRollup(
+                id: 'week-$w',
+                weekStart: DateTime.utc(2026, 5, 18 - 7 * w),
+              ),
+          ],
+          categoryName: (id) => id,
+        );
+        if (weeks.isEmpty) {
+          expect(rendered, isNull);
+          return;
+        }
+        final labels = rendered!.map((w) => w['weekStart']! as String).toList();
+        expect(labels, hasLength(weeks.length));
+        expect(labels, [...labels]..sort((a, b) => b.compareTo(a)));
+      },
+      tags: 'glados',
+    );
   });
 }

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/models/matrix_credentials_input.dart';
 
 void main() {
@@ -135,5 +136,86 @@ void main() {
         MatrixCredentialsField.homeServer,
       );
     });
+  });
+
+  group('properties', () {
+    final server = glados.any.combine5(
+      glados.any.choose(['', ' ', '\t']),
+      glados.any.choose(['', 'https://', 'HTTPS://', 'http://', 'ftp://']),
+      glados.any.choose([
+        'matrix.example.org',
+        'Matrix.Example.ORG',
+        'localhost:8448',
+        '[::1]',
+        'a b.org',
+        '',
+      ]),
+      glados.any.choose(['', '/', '/_matrix', '/a/', '//']),
+      glados.any.choose(['', '?q=1', '#top', '?']),
+      (String pad, String scheme, String host, String path, String tail) =>
+          '$pad$scheme$host$path$tail$pad',
+    );
+    final user = glados.any.choose([
+      '@alice:example.org',
+      ' @bob:matrix.example.org ',
+      '@a:b',
+      'alice:example.org',
+      '@alice',
+      '@:example.org',
+      '@alice:',
+      '@al ice:example.org',
+      '',
+    ]);
+    final password = glados.any.choose(['', 'secret', ' spaced out ']);
+
+    glados.Glados3(
+      server,
+      user,
+      password,
+      glados.ExploreConfig(numRuns: 300),
+    ).test(
+      'valid configs are https, clean and fixed points; else first bad field',
+      (homeServer, user, password) {
+        final result = normalize(
+          homeServer: homeServer,
+          user: user,
+          password: password,
+        );
+
+        // Each field judged on its own, next to known-good neighbours.
+        final serverBad =
+            normalize(homeServer: homeServer) is! MatrixCredentialsValid;
+        final userBad = normalize(user: user) is! MatrixCredentialsValid;
+        final passwordBad = password.isEmpty;
+
+        switch (result) {
+          case MatrixCredentialsValid(:final config):
+            expect([serverBad, userBad, passwordBad], [false, false, false]);
+            final uri = Uri.parse(config.homeServer);
+            expect(uri.scheme, 'https');
+            expect(config.homeServer, isNot(matches(RegExp(r'\s'))));
+            expect(config.user, isNot(matches(RegExp(r'\s'))));
+            expect(uri.hasQuery || uri.hasFragment, isFalse);
+            // A bare root path is dropped, so `host` and `host/` persist alike.
+            expect(uri.path, isNot('/'));
+
+            final again = normalize(
+              homeServer: config.homeServer,
+              user: config.user,
+              password: config.password,
+            );
+            expect((again as MatrixCredentialsValid).config, config);
+          case MatrixCredentialsInvalid(:final field):
+            final expected = serverBad
+                ? MatrixCredentialsField.homeServer
+                : userBad
+                ? MatrixCredentialsField.user
+                : MatrixCredentialsField.password;
+            expect(passwordBad || serverBad || userBad, isTrue);
+            expect(field, expected);
+        }
+      },
+      tags: 'glados',
+    );
   });
 }

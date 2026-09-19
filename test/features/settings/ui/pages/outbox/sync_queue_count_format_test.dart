@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/settings/ui/pages/outbox/sync_queue_count_format.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
@@ -270,5 +271,54 @@ void main() {
         );
       }
     });
+  });
+
+  group('formatSyncQueueCount properties', () {
+    final shape = RegExp(r'^(\d+(?:\.\d)?)([KM]?)$');
+
+    /// The number a reader takes from the label.
+    double represented(String label) {
+      final match = shape.firstMatch(label)!;
+      final unit = switch (match.group(2)) {
+        'K' => 1000,
+        'M' => 1000000,
+        _ => 1,
+      };
+      return double.parse(match.group(1)!) * unit;
+    }
+
+    // Biased to the rounding and unit-promotion boundaries.
+    final count = glados.any.oneOf([
+      glados.any.intInRange(0, 100000000),
+      glados.any.intInRange(990, 1100),
+      glados.any.intInRange(9900, 10100),
+      glados.any.intInRange(999400, 999600),
+    ]);
+
+    glados.Glados2(
+      count,
+      glados.any.intInRange(0, 200),
+      glados.ExploreConfig(numRuns: 400),
+    ).test(
+      'short, never 1000K or x.0, within 5% and monotone in the count',
+      (n, step) {
+        final label = format(n);
+        final match = shape.firstMatch(label);
+        expect(match, isNotNull, reason: label);
+        final mantissa = match!.group(1)!;
+        expect(mantissa.length, lessThanOrEqualTo(4), reason: label);
+        expect(mantissa.endsWith('.0'), isFalse, reason: label);
+        expect(label, isNot('1000K'));
+
+        final value = represented(label);
+        expect((value - n).abs(), lessThanOrEqualTo(n * 0.05), reason: label);
+        expect(
+          represented(format(n + step)),
+          greaterThanOrEqualTo(value),
+          reason: '$n → $label, ${n + step} → ${format(n + step)}',
+        );
+      },
+      tags: 'glados',
+    );
   });
 }

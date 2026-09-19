@@ -1,6 +1,8 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/knowledge_graph/domain/graph_label_layout.dart';
 
 void main() {
@@ -330,6 +332,93 @@ void main() {
 
       expect(result, isEmpty);
     });
+  });
+
+  group('properties', () {
+    const viewport = Rect.fromLTWH(0, 0, 400, 300);
+    const toolbar = Rect.fromLTWH(0, 0, 400, 36);
+    const minimap = Rect.fromLTWH(300, 220, 100, 80);
+
+    // Nodes anywhere in (and slightly beyond) the viewport, with label sizes
+    // from a short word to a long title.
+    final node = glados.any.combine5(
+      glados.any.intInRange(-20, 420),
+      glados.any.intInRange(-20, 320),
+      glados.any.intInRange(0, 4),
+      glados.any.intInRange(20, 160),
+      glados.any.intInRange(0, 5),
+      (int x, int y, int priority, int width, int flags) =>
+          (x: x, y: y, priority: priority, width: width, required: flags == 0),
+    );
+
+    glados.Glados3(
+      glados.any.listWithLengthInRange(0, 14, node),
+      glados.any.choose([
+        const <Rect>[],
+        const [toolbar],
+        const [toolbar, minimap],
+      ]),
+      glados.any.intInRange(0, 1000),
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'clean placements stay clear; required labels always land; order-free',
+      (nodes, reserved, seed) {
+        final candidates = [
+          for (final (i, n) in nodes.indexed)
+            GraphLabelCandidate(
+              id: 'node-$i',
+              center: Offset(n.x.toDouble(), n.y.toDouble()),
+              nodeRadius: 8,
+              labelSize: Size(n.width.toDouble(), 14),
+              priority: n.priority,
+              required: n.required,
+            ),
+        ];
+        final obstacles = {
+          for (final c in candidates)
+            c.id: Rect.fromCircle(center: c.center, radius: c.nodeRadius),
+        };
+
+        Map<String, GraphLabelPlacement> solve(List<GraphLabelCandidate> cs) =>
+            solveGraphLabelLayout(
+              candidates: cs,
+              viewport: viewport,
+              nodeObstacles: obstacles,
+              reservedRects: reserved,
+            );
+
+        final result = solve(candidates);
+
+        for (final c in candidates.where((c) => c.required)) {
+          expect(result.keys, contains(c.id));
+        }
+
+        final clean = [
+          for (final c in candidates)
+            if (!c.required && result[c.id] != null) result[c.id]!,
+        ];
+        for (final placement in clean) {
+          expect(viewport.containsRect(placement.rect), isTrue);
+          expect(reserved.any(placement.rect.overlaps), isFalse);
+          for (final MapEntry(:key, :value) in obstacles.entries) {
+            if (key == placement.id) continue;
+            expect(value.overlaps(placement.rect), isFalse, reason: key);
+          }
+          for (final other in clean) {
+            if (other.id == placement.id) continue;
+            expect(other.rect.overlaps(placement.rect), isFalse);
+          }
+        }
+
+        final shuffled = solve([...candidates]..shuffle(Random(seed)));
+        expect(shuffled.keys.toSet(), result.keys.toSet());
+        for (final id in result.keys) {
+          expect(shuffled[id]!.rect, result[id]!.rect);
+          expect(shuffled[id]!.anchor, result[id]!.anchor);
+        }
+      },
+      tags: 'glados',
+    );
   });
 }
 

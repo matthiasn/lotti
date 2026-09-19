@@ -1,4 +1,6 @@
+import 'dart:math' as math;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/goals/logic/goal_aggregate_rounding.dart';
 
 void main() {
@@ -30,5 +32,45 @@ void main() {
     expect(roundGoalAggregate(10000, against: 10000), 10000);
     // Far from the target, the coarse step is safe and applies.
     expect(roundGoalAggregate(7684.428571, against: 10000), 7700);
+  });
+
+  group('properties', () {
+    // Values with up to three decimals across every magnitude tier.
+    final value = glados.any.combine2(
+      glados.any.intInRange(-2000000, 2000000),
+      glados.any.intInRange(0, 4),
+      (int mantissa, int decimals) => mantissa / math.pow(10, decimals),
+    );
+    final offset = glados.any.intInRange(-200, 201);
+
+    glados.Glados(value, glados.ExploreConfig(numRuns: 400)).test(
+      'without a target: bounded by the tier step, idempotent, int if whole',
+      (x) {
+        final rounded = roundGoalAggregate(x);
+        final bound = x.abs() >= 1000
+            ? 50
+            : x.abs() >= 100
+            ? 0.5
+            : 0.05;
+        expect((rounded - x).abs(), lessThanOrEqualTo(bound + 1e-9));
+        expect(roundGoalAggregate(rounded), rounded);
+        if (rounded is double) {
+          expect(rounded, isNot(rounded.roundToDouble()));
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados2(value, offset, glados.ExploreConfig(numRuns: 400)).test(
+      'against a target: never rounded onto or across it',
+      (target, delta) {
+        // Offsets from a thousandth up to a few hundred units, so the coarse
+        // step regularly collides with the target.
+        final x = target + delta * (delta.isEven ? 1 : 0.001);
+        final rounded = roundGoalAggregate(x, against: target);
+        expect((rounded - target).sign, (x - target).sign, reason: '$x');
+      },
+      tags: 'glados',
+    );
   });
 }

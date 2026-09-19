@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -32,6 +36,19 @@ JournalAudio _audio({
 JournalEntry _entry({String id = 'entry-1', String? text}) => JournalEntry(
   meta: _meta(id),
   entryText: text == null ? null : EntryText(plainText: text),
+);
+
+/// Printable text mixed with every character JSON must escape.
+const _awkwardChars =
+    'ab Z9"\\\n\r\t\b\f\u0000\u0001\u001b\u001fé→\u0085\u2028\u2029';
+
+/// Code units that break a line: C0 controls plus the Unicode line
+/// boundaries NEL, LINE SEPARATOR and PARAGRAPH SEPARATOR.
+bool _breaksLine(int unit) =>
+    unit < 0x20 || unit == 0x85 || unit == 0x2028 || unit == 0x2029;
+
+final glados.Generator<String> _awkwardText = glados.any.stringOf(
+  _awkwardChars,
 );
 
 AudioTranscript _transcript(String text, DateTime created) => AudioTranscript(
@@ -200,5 +217,65 @@ void main() {
       ]);
       expect(out, contains(r'- "say \"hi\"" → "say \"bye\""'));
     });
+  });
+  group('properties', () {
+    glados.Glados(_awkwardText, glados.ExploreConfig(numRuns: 300)).test(
+      'escapeForJsonToken decodes back to the original on a single line',
+      (text) {
+        final escaped = escapeForJsonToken(text);
+        expect(jsonDecode('"$escaped"'), text);
+        expect(escaped.codeUnits.any(_breaksLine), isFalse);
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados2(
+      glados.any.listWithLengthInRange(
+        0,
+        12,
+        glados.any.combine2(
+          _awkwardText,
+          _awkwardText,
+          (String before, String after) => (before, after),
+        ),
+      ),
+      glados.any.intInRange(0, 1000),
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'correction examples render one line each, most recent first',
+      (texts, seed) {
+        // Distinct timestamps, handed over in a shuffled order.
+        final examples = [
+          for (final (i, (before, after)) in texts.indexed)
+            ChecklistCorrectionExample(
+              before: before,
+              after: after,
+              capturedAt: DateTime(2024, 3, 15).add(Duration(minutes: i)),
+            ),
+        ];
+        final shuffled = [...examples]..shuffle(Random(seed));
+
+        final out = formatCorrectionExamplesPrompt(shuffled);
+        if (examples.isEmpty) {
+          expect(out, isEmpty);
+          return;
+        }
+
+        const lead = 'apply these corrections when you see matching patterns.';
+        final block = out.substring(out.indexOf(lead) + lead.length + 2);
+        final lines = block.substring(0, block.length - 1).split('\n');
+        expect(lines, hasLength(min(examples.length, kMaxCorrectionExamples)));
+
+        final linePattern = RegExp(r'^- "(.*)" → "(.*)"$');
+        for (final (i, line) in lines.indexed) {
+          final expected = examples[examples.length - 1 - i];
+          final match = linePattern.firstMatch(line);
+          expect(match, isNotNull, reason: line);
+          expect(jsonDecode('"${match!.group(1)}"'), expected.before);
+          expect(jsonDecode('"${match.group(2)}"'), expected.after);
+        }
+      },
+      tags: 'glados',
+    );
   });
 }

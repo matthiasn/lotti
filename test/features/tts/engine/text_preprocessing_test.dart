@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/tts/engine/text_preprocessing.dart';
 
 void main() {
@@ -79,5 +80,21 @@ void main() {
       // what folds a doubled backtick into one.
       expect(preprocessText('a``b', 'en'), "<en>a'b.</en>");
     });
+  });
+
+  group('applyNfkdDecomposition properties', () {
+    // ASCII, precomposed Latin, Hangul syllables (first, middle, last of the
+    // block) and characters outside every table.
+    final text = glados.any.stringOf('aZ ÅéñçüÜ가닭힣ßø→');
+
+    glados.Glados(text, glados.ExploreConfig(numRuns: 200)).test(
+      'is idempotent and never shortens the text',
+      (input) {
+        final once = applyNfkdDecomposition(input);
+        expect(applyNfkdDecomposition(once), once);
+        expect(once.runes.length, greaterThanOrEqualTo(input.runes.length));
+      },
+      tags: 'glados',
+    );
   });
 }

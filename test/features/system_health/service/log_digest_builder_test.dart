@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/system_health/domain/log_records.dart';
 import 'package:lotti/features/system_health/service/log_digest_builder.dart';
 import 'package:lotti/features/system_health/service/log_file_reader.dart';
@@ -468,5 +471,127 @@ void main() {
     test('no errors means no bursts', () {
       expect(builder.build(input()).errorBursts, isEmpty);
     });
+  });
+
+  test(
+    'statementSignature keeps a subtraction but folds a negative literal',
+    () {
+      expect(
+        builder.statementSignature('SELECT a - 1 FROM t WHERE b = -2'),
+        'SELECT a - ? FROM t WHERE b = ?',
+      );
+    },
+  );
+
+  group('properties', () {
+    // Filler that puts a space on the truncation boundary once it passes
+    // 200 characters, plus the fragments the signature rewrites.
+    final message = glados.any.combine2(
+      glados.any.intInRange(0, 60),
+      glados.any.stringOf('ab 1.9\t[id:0f]-TZ'),
+      (int words, String tail) => '${'word ' * words}$tail',
+    );
+
+    glados.Glados(message, glados.ExploreConfig(numRuns: 200)).test(
+      'messageSignature is bounded and idempotent',
+      (text) {
+        final signature = builder.messageSignature(text);
+        expect(signature.length, lessThanOrEqualTo(200));
+        expect(builder.messageSignature(signature), signature);
+      },
+      tags: 'glados',
+    );
+
+    final listItem = glados.any.choose([
+      '?',
+      "'x'",
+      "'it''s'",
+      '42',
+      '3.5',
+      '-1',
+      '-2.5',
+      '- 7',
+    ]);
+
+    glados.Glados(
+      glados.any.listWithLengthInRange(2, 9, listItem),
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'statementSignature collapses every value list of two or more',
+      (items) {
+        final signature = builder.statementSignature(
+          'SELECT * FROM journal WHERE id IN (${items.join(', ')})',
+        );
+        expect(signature, 'SELECT * FROM journal WHERE id IN (?...)');
+        expect(builder.statementSignature(signature), signature);
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.listWithLengthInRange(1, 12, glados.any.intInRange(0, 40)),
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'bursts clear ten and three times the lower median, busiest first',
+      (perMinute) {
+        final records = [
+          for (final (minute, count) in perMinute.indexed)
+            for (var i = 0; i < count; i++)
+              logRecord(
+                timestamp: t0.add(Duration(minutes: minute, seconds: i % 60)),
+              ),
+        ];
+        final bursts = builder.build(input(records: records)).errorBursts;
+
+        final busy = perMinute.where((c) => c > 0).toList()..sort();
+        if (busy.isEmpty) {
+          expect(bursts, isEmpty);
+          return;
+        }
+        final threshold = math.max(10, busy[(busy.length - 1) ~/ 2] * 3);
+        final qualifying = busy.where((c) => c >= threshold).toList();
+
+        expect(
+          bursts.map((b) => b.count),
+          qualifying.reversed.take(3).toList(),
+        );
+        for (final burst in bursts) {
+          final minute = burst.minute.difference(t0).inMinutes;
+          expect(burst.count, perMinute[minute]);
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.nonEmptyList(glados.any.intInRange(1, 5000)),
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'slow-query percentiles are observed values, ordered up to the max',
+      (elapsed) {
+        final bucket = builder
+            .build(
+              input(
+                slowQueries: [
+                  for (final (i, ms) in elapsed.indexed)
+                    slowQuery(
+                      timestamp: t0.add(Duration(seconds: i)),
+                      elapsedMs: ms.toDouble(),
+                    ),
+                ],
+              ),
+            )
+            .slowQueries
+            .single;
+        final values = elapsed.map((ms) => ms.toDouble()).toSet();
+
+        expect(values, contains(bucket.p50Ms));
+        expect(values, contains(bucket.p95Ms));
+        expect(bucket.p50Ms, lessThanOrEqualTo(bucket.p95Ms));
+        expect(bucket.p95Ms, lessThanOrEqualTo(bucket.maxMs));
+        expect(bucket.count, elapsed.length);
+      },
+      tags: 'glados',
+    );
   });
 }

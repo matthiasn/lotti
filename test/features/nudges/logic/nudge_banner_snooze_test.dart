@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
@@ -364,6 +365,127 @@ void main() {
     expect(
       NudgeEntityView.of(dismissed)!.dismissalHistory.single.id,
       'dismiss-r1',
+    );
+  });
+
+  group('properties', () {
+    final base = DateTime.utc(2026);
+    // Instants across the year, biased to the EU and US DST switch days.
+    final instant = glados.any.oneOf([
+      glados.any
+          .intInRange(0, 366 * 24 * 60)
+          .map((m) => base.add(Duration(minutes: m))),
+      glados.any.combine2(
+        glados.any.choose([
+          DateTime.utc(2026, 3, 8),
+          DateTime.utc(2026, 3, 28),
+          DateTime.utc(2026, 3, 29),
+          DateTime.utc(2026, 10, 24),
+          DateTime.utc(2026, 10, 25),
+          DateTime.utc(2026, 11),
+        ]),
+        glados.any.intInRange(0, 48 * 60 * 60),
+        (DateTime day, int seconds) => day.add(Duration(seconds: seconds)),
+      ),
+    ]);
+    // Up to a week ahead, in whole seconds; staleAt anywhere in ±10 days.
+    final lead = glados.any.intInRange(1, 7 * 24 * 60 * 60);
+    final staleOffsetHours = glados.any.intInRange(-240, 240);
+
+    glados.Glados3(
+      instant,
+      lead,
+      staleOffsetHours,
+      glados.ExploreConfig(numRuns: 200),
+    ).test(
+      'a snooze hides the banner exactly until its deadline',
+      (now, leadSeconds, staleHours) {
+        final until = now.add(Duration(seconds: leadSeconds));
+        final priorStaleAt = now.add(Duration(hours: staleHours));
+        final nudge = makeNudgeView(staleAt: priorStaleAt);
+        final snoozed = NudgeEntityView.of(
+          snoozeNudgeBannerEntity(
+            nudge: nudge,
+            now: now,
+            until: until,
+            eventId: 'snooze-1',
+          ),
+        )!;
+
+        for (final fraction in [0.0, 0.25, 0.5, 0.99]) {
+          final t = now.add(
+            Duration(seconds: (leadSeconds * fraction).floor()),
+          );
+          expect(nudgeBannerIsSnoozed(snoozed, t), isTrue, reason: '$t');
+        }
+        expect(
+          nudgeBannerIsSnoozed(
+            snoozed,
+            until.subtract(const Duration(milliseconds: 1)),
+          ),
+          isTrue,
+        );
+        expect(nudgeBannerIsSnoozed(snoozed, until), isFalse);
+
+        // staleAt never moves earlier, and outlives the quiet period.
+        expect(snoozed.staleAt!.isBefore(priorStaleAt), isFalse);
+        expect(
+          snoozed.staleAt!.isBefore(until.add(nudgeBannerLifetime)),
+          isFalse,
+        );
+
+        // Whole minutes, rounded up.
+        final minutes = snoozed.snoozeHistory.single.durationMinutes;
+        expect(minutes, (leadSeconds + 59) ~/ 60);
+        expect(minutes * 60, greaterThanOrEqualTo(leadSeconds));
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados3(
+      instant,
+      lead,
+      lead,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'replaying a snooze event id changes nothing',
+      (now, firstLead, secondLead) {
+        final once = snoozeNudgeBannerEntity(
+          nudge: makeNudgeView(),
+          now: now,
+          until: now.add(Duration(seconds: firstLead)),
+          eventId: 'snooze-1',
+        );
+        final replayed = snoozeNudgeBannerEntity(
+          nudge: NudgeEntityView.of(once)!,
+          now: now.add(const Duration(minutes: 1)),
+          until: now.add(Duration(seconds: secondLead + 60)),
+          eventId: 'snooze-1',
+        );
+        expect(replayed, once);
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(instant, glados.ExploreConfig(numRuns: 300)).test(
+      'the next local midnight is the start of the next calendar day',
+      (now) {
+        final local = now.toLocal();
+        final midnight = nudgeBannerNextLocalMidnight(now);
+        final tomorrow = DateTime(local.year, local.month, local.day + 1, 12);
+
+        expect(midnight.isAfter(now), isTrue);
+        expect(
+          midnight.difference(now),
+          lessThanOrEqualTo(const Duration(hours: 25)),
+        );
+        expect(
+          (midnight.year, midnight.month, midnight.day),
+          (tomorrow.year, tomorrow.month, tomorrow.day),
+        );
+        expect((midnight.hour, midnight.minute), (0, 0));
+      },
+      tags: 'glados',
     );
   });
 }
