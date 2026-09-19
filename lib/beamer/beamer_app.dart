@@ -54,6 +54,7 @@ import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart'
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
 import 'package:lotti/features/profiles/service/profile_switch_chrome.dart';
 import 'package:lotti/features/projects/ui/pages/projects_tab_page.dart';
+import 'package:lotti/features/relationships/ui/pages/relationships_page.dart';
 import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/sync_queue_counts.dart';
@@ -1255,18 +1256,18 @@ class _AppScreenState extends ConsumerState<AppScreen> {
   /// Exactly the destinations whose list page floats a create button today:
   /// leaving it in the corner would stack two floating controls above the
   /// centred launcher, neither of them looking placed. Daily OS, Dashboards,
-  /// People, Events and Settings float nothing, so they leave the launcher
+  /// Events and Settings float nothing, so they leave the launcher
   /// centred alone — which is what makes a docked action read as belonging
   /// to the page rather than to the shell.
   ///
-  /// The page decides the chip's wording, not this switch: the task list
-  /// words its action, the lists whose own heading says what gets added keep
-  /// the bare glyph (see [MobileNavDockAction]).
+  /// The page decides the chip's wording, not this switch: the task and
+  /// people lists word their actions, the lists whose own heading says what
+  /// gets added keep the bare glyph (see [MobileNavDockAction]).
   ///
   /// Route-sensitive only where a tab's detail page keeps the bar *and* owns
   /// a different action: an entry's own page creates a linked entry, so the
-  /// logbook's action leaves the rail there. The projects, goals and habits
-  /// tabs slide the whole launcher away on their detail routes, so their
+  /// logbook's action leaves the rail there. The projects, goals, habits and
+  /// people tabs slide the whole launcher away on their detail routes, so their
   /// actions need no such check.
   MobileNavDockAction? _launcherDockAction(
     BuildContext context,
@@ -1283,9 +1284,9 @@ class _AppScreenState extends ConsumerState<AppScreen> {
       context,
       ref,
     ),
+    _AppNavigationDestinationKind.people => peopleTabDockAction(context),
     _AppNavigationDestinationKind.dailyOs ||
     _AppNavigationDestinationKind.dashboards ||
-    _AppNavigationDestinationKind.people ||
     _AppNavigationDestinationKind.events ||
     _AppNavigationDestinationKind.settings => null,
   };

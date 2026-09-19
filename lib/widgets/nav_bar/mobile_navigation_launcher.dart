@@ -32,10 +32,10 @@ bool mobileNavigationLauncherOwnsPageActions(BuildContext context) =>
 /// page contributes only what its action *is*, never how it looks.
 ///
 /// The two constructors carry the page's own decision about wording, the
-/// same one its floating button made. The task list words its create action
-/// because the app makes tasks, entries, habits, goals and projects from one
-/// glyph and the plus alone would not say which; the lists whose own title
-/// already answers that keep the bare glyph.
+/// same one its floating button made. The task and people lists word their
+/// create actions because the app makes tasks, people, entries, habits, goals
+/// and projects from one glyph and the plus alone would not say which; the
+/// lists whose own title already answers that keep the bare glyph.
 @immutable
 class MobileNavDockAction {
   /// An action that shows [label] beside [icon] whenever the row has room

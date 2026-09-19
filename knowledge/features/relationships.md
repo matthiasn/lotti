@@ -489,6 +489,15 @@ list pane is folded away, the page's hero carries the control that brings it
 back, so nothing is overlaid on the page's own chrome. The chat stacks as
 its own page on every layout. Phones keep the list alone.
 
+Adding a person is the page's bottom action, as adding a task is, never a
+header control: on desktop the list pane floats a worded "Add person"
+`DesignSystemFloatingActionButton`, on phones the mobile navigation launcher
+docks the same action (`peopleTabDockAction`) beside Navigate — see
+[navigation](../architecture/navigation.md#the-launchers-row-and-the-page-action-docked-on-it).
+It is the one add control on every state of the list, the empty one
+included: the empty state is a message alone. The header keeps only the
+title, the count and, where an address book exists, the contact-import door.
+
 ```mermaid
 flowchart LR
   URL["/people/&lt;id&gt;"] --> Loc[RelationshipsLocation]
