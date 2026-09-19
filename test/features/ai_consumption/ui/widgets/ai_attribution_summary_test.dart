@@ -96,6 +96,42 @@ void main() {
     );
   });
 
+  testWidgets(
+    'a single reported token or impact metric still earns its breakdown row, '
+    'with the unreported ones shown as dashes',
+    (tester) async {
+      final attribution = makeAiWorkAttribution();
+      await pumpSummary(
+        tester,
+        details: AiAttributionDetails(
+          attribution: attribution,
+          interactions: [
+            makeConsumptionEvent(
+              attributionId: attribution.id,
+              inputTokens: null,
+              outputTokens: null,
+              thoughtsTokens: 64,
+              totalTokens: 64,
+              energyKwh: null,
+              carbonGCo2: null,
+            ),
+          ],
+        ),
+      );
+
+      await tester.tap(find.byType(InkWell));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(ExpansionTile));
+      await tester.pump();
+
+      expect(
+        find.text('Input: — · Output: — · Cached: — · Reasoning: 64'),
+        findsOneWidget,
+      );
+      expect(find.text('Impact: — · — CO₂e · 10 mL water'), findsOneWidget);
+    },
+  );
+
   testWidgets('pill presents entry attribution and opens the details modal', (
     tester,
   ) async {

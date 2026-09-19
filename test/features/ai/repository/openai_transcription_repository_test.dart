@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'dart:convert';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/features/ai/repository/openai_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
+import 'package:openai_dart/openai_dart.dart';
 
 /// Streaming 200-OK stub that records the outgoing request — shared by the
 /// prompt-present / prompt-absent multipart-shape tests.
@@ -298,6 +301,46 @@ void main() {
             ),
           ),
         );
+      });
+
+      test('turns a request that outlives its timeout into a 408 '
+          'TranscriptionException naming the timeout', () {
+        fakeAsync((async) {
+          final neverResponds = Completer<http.StreamedResponse>();
+          final repo = OpenAiTranscriptionRepository(
+            httpClient: MockClient.streaming(
+              (request, _) => neverResponds.future,
+            ),
+          );
+          Object? failure;
+          repo
+              .transcribeAudio(
+                model: testModel,
+                audioBase64: testAudioBase64,
+                apiKey: testApiKey,
+                timeout: const Duration(seconds: 90),
+              )
+              .toList()
+              .catchError((Object error) {
+                failure = error;
+                return <CreateChatCompletionStreamResponse>[];
+              });
+
+          async.elapse(const Duration(seconds: 89));
+          expect(failure, isNull);
+          async.elapse(const Duration(seconds: 2));
+
+          expect(
+            failure,
+            isA<TranscriptionException>()
+                .having((e) => e.statusCode, 'statusCode', 408)
+                .having(
+                  (e) => e.message,
+                  'message',
+                  contains('timed out'),
+                ),
+          );
+        });
       });
 
       test('wraps unexpected exceptions in TranscriptionException', () async {

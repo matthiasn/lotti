@@ -642,4 +642,19 @@ void main() {
       const Duration(seconds: 2),
     );
   });
+
+  test('adopts the duration the player reports while playing', () async {
+    final player = FakeTtsAudioPlayer();
+    addTearDown(player.dispose);
+    final h = harness(player: player);
+
+    await controllerOf(h.container).speak(sourceId: 'task-1', text: 'x');
+    player.emitDuration(const Duration(seconds: 42));
+    await pumpEventQueue();
+
+    expect(
+      h.container.read(ttsPlaybackControllerProvider).duration,
+      const Duration(seconds: 42),
+    );
+  });
 }

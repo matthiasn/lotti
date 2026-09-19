@@ -805,6 +805,62 @@ void main() {
     });
 
     testWidgets(
+      'an audio summary skill has no model-override slot, so it dispatches '
+      'straight to triggerSkillProvider without opening a picker',
+      (tester) async {
+        final summarySkill =
+            AiConfig.skill(
+                  id: 'skill-audio-summary',
+                  name: 'Audio Summary Skill',
+                  createdAt: DateTime(2024, 3, 15, 10),
+                  skillType: SkillType.audioSummary,
+                  requiredInputModalities: const [Modality.text],
+                  systemInstructions: 'Summarize the recording.',
+                  userInstructions: 'Summarize this.',
+                )
+                as AiConfigSkill;
+        TriggerSkillParams? capturedParams;
+        var dispatches = 0;
+        await tester.pumpWidget(
+          buildTestWidget(
+            UnifiedAiPopUpMenu(
+              journalEntity: testTaskEntity,
+              linkedFromId: null,
+            ),
+            overrides: [
+              ..._baseOverrides(
+                entity: testTaskEntity,
+                skill: summarySkill,
+                models: const [],
+                resolver: _NullProfileResolver(),
+                configs: const [],
+              ),
+              triggerSkillProvider.overrideWith((ref, params) async {
+                dispatches++;
+                capturedParams = params;
+              }),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.byIcon(LottiIcons.assistant));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Audio Summary Skill'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(UnifiedAiSkillsList), findsNothing);
+        expect(dispatches, 1);
+        expect(capturedParams?.entityId, testTaskEntity.id);
+        expect(capturedParams?.skillId, 'skill-audio-summary');
+        expect(capturedParams?.overrideModelId, isNull);
+        expect(capturedParams?.referenceImages, isNull);
+        expect(capturedParams?.geminiThinkingMode, isNull);
+      },
+    );
+
+    testWidgets(
       'Kimi K3 shows the shared 10-image selector and forwards its selection',
       (tester) async {
         final now = DateTime(2024, 3, 15, 10);

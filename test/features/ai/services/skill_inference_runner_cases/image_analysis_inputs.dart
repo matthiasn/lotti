@@ -69,6 +69,51 @@ extension _ImageAnalysisInputCases on _SkillInferenceTestSetup {
       },
     );
 
+    test(
+      'refuses to send an image whose file resolves outside the documents '
+      'directory (symlink escape) and never calls the model',
+      () async {
+        final outsideDir = await Directory.systemTemp.createTemp(
+          'skill_runner_outside_',
+        );
+        addTearDown(() => outsideDir.delete(recursive: true));
+        final secret = File('${outsideDir.path}/secret.jpg')
+          ..writeAsBytesSync([0xFF, 0xD8]);
+        await Directory('${tempDir.path}/images').create(recursive: true);
+        Link('${tempDir.path}/images/test.jpg').createSync(secret.path);
+        when(
+          () => mockAiInputRepo.getEntity('img-1'),
+        ).thenAnswer((_) async => makeImageEntity());
+        when(
+          () => mockTaskSummaryResolver.resolve(any()),
+        ).thenAnswer((_) async => null);
+        stubLoggingException();
+
+        await runner.runImageAnalysis(
+          imageEntryId: 'img-1',
+          automationResult: makeImageAnalysisResult(),
+        );
+
+        final logged = verify(
+          () => mockLoggingService.error(
+            LogDomain.ai,
+            captureAny<Object>(),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).captured.single;
+        expect(
+          logged,
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            'No image data available for img-1',
+          ),
+        );
+        verifyZeroInteractions(mockCloudRepo);
+      },
+    );
+
     test('returns early when entity is null', () async {
       when(
         () => mockAiInputRepo.getEntity('img-1'),

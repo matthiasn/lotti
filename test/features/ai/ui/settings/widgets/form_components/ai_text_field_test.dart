@@ -117,6 +117,38 @@ void main() {
       expect(find.text('Field is required'), findsOneWidget);
     });
 
+    testWidgets(
+      'an uncontrolled field re-validates when its initial value changes',
+      (tester) async {
+        String? requireValue(String? value) =>
+            value?.isEmpty ?? true ? 'Field is required' : null;
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            AiTextField(
+              label: 'Name',
+              initialValue: '',
+              validator: requireValue,
+            ),
+          ),
+        );
+        await tester.pump();
+        expect(find.text('Field is required'), findsOneWidget);
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            AiTextField(
+              label: 'Name',
+              initialValue: 'Commander Pip Frostbeak',
+              validator: requireValue,
+            ),
+          ),
+        );
+        await tester.pump();
+        expect(find.text('Field is required'), findsNothing);
+      },
+    );
+
     testWidgets('respects readOnly property', (tester) async {
       await tester.pumpWidget(
         buildTestWidget(
