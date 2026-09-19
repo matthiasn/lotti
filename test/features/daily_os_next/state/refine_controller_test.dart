@@ -340,6 +340,62 @@ void main() {
       },
     );
 
+    test(
+      'listening cannot start while a per-row accept is in flight — the late '
+      'row result must not strand the listening flow in a diffless review',
+      () async {
+        final gate = Completer<void>();
+        final gatedAgent = _GatedAcceptAgent(gate: gate);
+        final container = makeContainer(overrideAgent: gatedAgent);
+        final notifier = container.read(
+          refineControllerProvider(draft).notifier,
+        )..beginListening(resetTranscript: true);
+        await notifier.finishWithTranscript('move client review later');
+        final diff = container.read(refineControllerProvider(draft)).diff!;
+        final first = diff.changes.first;
+
+        final resolve = notifier.acceptChange(first.id);
+        // The orb is tapped again while the row round-trip is in flight.
+        notifier.beginListening(resetTranscript: false);
+        expect(
+          container.read(refineControllerProvider(draft)).phase,
+          RefinePhase.diffReady,
+        );
+        gate.complete();
+        await resolve;
+
+        final state = container.read(refineControllerProvider(draft));
+        expect(state.phase, RefinePhase.diffReady);
+        expect(state.diff, same(diff));
+        expect(state.decisionFor(first), PlanDiffChangeDecision.accepted);
+        expect(state.resolvingChangeId, isNull);
+      },
+    );
+
+    test(
+      'a proposal in flight learns that its controller was disposed',
+      () async {
+        final gate = Completer<void>();
+        final probe = _CancellationProbeAgent(gate: gate);
+        final container = ProviderContainer(
+          overrides: [dayAgentProvider.overrideWithValue(probe)],
+        )..listen(refineControllerProvider(draft), (_, _) {});
+        final notifier = container.read(
+          refineControllerProvider(draft).notifier,
+        )..beginListening(resetTranscript: true);
+
+        final proposal = notifier.finishWithTranscript('move the deck review');
+        await Future<void>.value();
+        expect(probe.cancelledAtStart, isFalse);
+
+        container.dispose();
+        gate.complete();
+        await proposal;
+
+        expect(probe.cancelledAfterDispose, isTrue);
+      },
+    );
+
     test('resolves individual diff changes with item indices', () async {
       final acceptedPlan = draft.copyWith(scheduledMinutes: 360);
       final agent = _RecordingRefineAgent(
@@ -793,6 +849,32 @@ class _ThrowingRevertAgent extends _ZeroLatencyAgent {
     List<int>? itemIndices,
   }) async {
     throw StateError('revert failed');
+  }
+}
+
+/// Parks `proposePlanDiff` behind a gate and samples its cancellation
+/// callback before and after, so a test can dispose the controller mid-flight.
+class _CancellationProbeAgent extends _ZeroLatencyAgent {
+  _CancellationProbeAgent({required this.gate});
+
+  final Completer<void> gate;
+  bool? cancelledAtStart;
+  bool? cancelledAfterDispose;
+
+  @override
+  Future<PlanDiff> proposePlanDiff({
+    required DraftPlan currentPlan,
+    required String voiceTranscript,
+    bool Function()? isCancelled,
+  }) async {
+    cancelledAtStart = isCancelled?.call();
+    await gate.future;
+    cancelledAfterDispose = isCancelled?.call();
+    return PlanDiff(
+      id: 'diff-probe',
+      changes: const [],
+      updatedPlan: currentPlan,
+    );
   }
 }
 

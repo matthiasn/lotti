@@ -185,6 +185,7 @@ class RefineController extends Notifier<RefineState> {
         accepting: false,
         currentPlan: next,
         decisions: _resolveMany(
+          diff,
           itemIndices,
           PlanDiffChangeDecision.accepted,
         ),
@@ -210,17 +211,11 @@ class RefineController extends Notifier<RefineState> {
   }
 
   Future<void> acceptChange(String changeId) async {
-    await _resolveChange(
-      changeId: changeId,
-      decision: PlanDiffChangeDecision.accepted,
-    );
+    await _resolveChange(changeId: changeId, accept: true);
   }
 
   Future<void> rejectChange(String changeId) async {
-    await _resolveChange(
-      changeId: changeId,
-      decision: PlanDiffChangeDecision.rejected,
-    );
+    await _resolveChange(changeId: changeId, accept: false);
   }
 
   Future<void> revert() async {
@@ -253,12 +248,13 @@ class RefineController extends Notifier<RefineState> {
   }
 
   void beginListening({required bool resetTranscript}) {
-    // `accepting` guard: starting a listening flow while a whole-diff
-    // accept round-trip is in flight would race `acceptDiff`'s completion
-    // (last-write-wins on `phase`/`transcript`). This is the choke point
-    // for every listening entry, mirroring
-    // the guards in accept()/revert()/_resolveChange().
-    if (state.accepting) return;
+    // `accepting` / `resolvingChangeId` guard: starting a listening flow
+    // while a whole-diff accept or a per-row resolve is in flight would race
+    // that round-trip's completion — the late result would land on the
+    // cleared diff and flip the listening flow to a diffless `diffReady`.
+    // This is the choke point for every listening entry, mirroring the
+    // guards in accept()/revert()/_resolveChange().
+    if (state.accepting || state.resolvingChangeId != null) return;
     _transcriptPrefix = resetTranscript ? '' : state.transcript.trim();
     state = state.copyWith(
       phase: RefinePhase.listening,
@@ -349,7 +345,7 @@ class RefineController extends Notifier<RefineState> {
 
   Future<void> _resolveChange({
     required String changeId,
-    required PlanDiffChangeDecision decision,
+    required bool accept,
   }) async {
     final diff = state.diff;
     // `accepting` guard: a per-row resolve racing a whole-diff accept
@@ -371,18 +367,13 @@ class RefineController extends Notifier<RefineState> {
     final agent = ref.read(dayAgentProvider);
     final DraftPlan next;
     try {
-      switch (decision) {
-        case PlanDiffChangeDecision.accepted:
-          next = await agent.acceptDiff(diff, itemIndices: [itemIndex]);
-        case PlanDiffChangeDecision.rejected:
-          next = await agent.revertDiff(
-            diff: diff,
-            originalPlan: baselinePlan,
-            itemIndices: [itemIndex],
-          );
-        case PlanDiffChangeDecision.pending:
-          return;
-      }
+      next = accept
+          ? await agent.acceptDiff(diff, itemIndices: [itemIndex])
+          : await agent.revertDiff(
+              diff: diff,
+              originalPlan: baselinePlan,
+              itemIndices: [itemIndex],
+            );
     } catch (error, stackTrace) {
       FlutterError.reportError(
         FlutterErrorDetails(
@@ -397,7 +388,13 @@ class RefineController extends Notifier<RefineState> {
       return;
     }
     if (!ref.mounted) return;
-    final decisions = _resolveMany([itemIndex], decision);
+    final decisions = _resolveMany(
+      diff,
+      [itemIndex],
+      accept
+          ? PlanDiffChangeDecision.accepted
+          : PlanDiffChangeDecision.rejected,
+    );
     state = state.copyWith(
       phase: _allResolved(decisions)
           ? RefinePhase.accepted
@@ -420,12 +417,15 @@ class RefineController extends Notifier<RefineState> {
     return indices;
   }
 
+  /// Records [decision] for the [itemIndices] of [diff] — the diff the
+  /// round-trip started from. Every entry that could replace or clear the
+  /// diff (revert, listening, another resolve) refuses to start while an
+  /// accept or a row resolve is in flight, so it is still the current one.
   Map<String, PlanDiffChangeDecision> _resolveMany(
+    PlanDiff diff,
     List<int> itemIndices,
     PlanDiffChangeDecision decision,
   ) {
-    final diff = state.diff;
-    if (diff == null) return state.decisions;
     final next = Map<String, PlanDiffChangeDecision>.of(state.decisions);
     for (final index in itemIndices) {
       if (index >= 0 && index < diff.changes.length) {
