@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/goals/logic/goal_metric_series.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
@@ -344,4 +345,127 @@ void main() {
       expect(goalMetricSevenDayAverageOn(metric(), day: today), isNotNull);
     });
   });
+
+  group('seven-day average properties', () {
+    glados.Glados(
+      glados.any.metricHistory,
+      glados.ExploreConfig(numRuns: 300),
+    ).test(
+      'the one-day reading agrees with the series, and skipped days have none',
+      (history) {
+        final view = history.view(today);
+        final series = goalMetricSevenDayAverage(view, today: today);
+        final byDay = {for (final point in series) point.dateTime: point.value};
+
+        expect(byDay, hasLength(series.length));
+        for (final entry in view.days) {
+          if (entry.day.isAfter(today)) continue;
+          expect(
+            goalMetricSevenDayAverageOn(view, day: entry.day),
+            byDay[entry.day],
+            reason: '${entry.day}',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.metricHistory,
+      glados.ExploreConfig(numRuns: 300),
+    ).test(
+      'each point is sorted, within today, and inside its window’s values',
+      (history) {
+        final view = history.view(today);
+        final series = goalMetricSevenDayAverage(view, today: today);
+        final firstDay = view.days
+            .map((d) => d.day)
+            .where((d) => !d.isAfter(today))
+            .fold<DateTime?>(
+              null,
+              (first, d) => first == null || d.isBefore(first) ? d : first,
+            );
+        // Everything the window may draw on: observed days, plus run-up
+        // strictly before the first rendered day.
+        final values = <DateTime, num>{
+          for (final MapEntry(:key, :value) in view.warmupValues.entries)
+            if (firstDay != null && key.isBefore(firstDay)) key: value,
+          for (final d in view.days)
+            if (d.isObserved && !d.day.isAfter(today)) d.day: d.value,
+        };
+
+        for (var i = 1; i < series.length; i++) {
+          expect(series[i].dateTime.isAfter(series[i - 1].dateTime), isTrue);
+        }
+        for (final point in series) {
+          expect(point.dateTime.isAfter(today), isFalse);
+          final window = [
+            for (final MapEntry(:key, :value) in values.entries)
+              if (!key.isAfter(point.dateTime) &&
+                  point.dateTime.difference(key).inDays < 7)
+                value,
+          ];
+          expect(window, isNotEmpty);
+          expect(
+            point.value,
+            inInclusiveRange(
+              window.reduce((a, b) => a < b ? a : b),
+              window.reduce((a, b) => a > b ? a : b),
+            ),
+          );
+        }
+      },
+      tags: 'glados',
+    );
+  });
+}
+
+class _MetricHistory {
+  const _MetricHistory(this.days, this.warmup);
+
+  /// Days before today → (value, observed); negative offsets lie ahead.
+  final Map<int, (int, bool)> days;
+
+  /// Run-up days before today → value; may overlap the rendered days.
+  final Map<int, int> warmup;
+
+  GoalMetricProgressView view(DateTime today) => GoalMetricProgressView(
+    name: 'Weight',
+    sourceId: GoalHealthDataTypes.weight,
+    target: 88,
+    days: [
+      for (final MapEntry(:key, value: (value, observed)) in days.entries)
+        GoalProgressDay(
+          day: today.subtract(Duration(days: key)),
+          value: value,
+          isObserved: observed,
+        ),
+    ],
+    warmupValues: {
+      for (final MapEntry(:key, :value) in warmup.entries)
+        today.subtract(Duration(days: key)): value,
+    },
+  );
+
+  @override
+  String toString() => '_MetricHistory(days: $days, warmup: $warmup)';
+}
+
+extension _AnyMetricHistory on glados.Any {
+  glados.Generator<_MetricHistory> get metricHistory =>
+      glados.CombinableAny(this).combine2(
+        glados.MapAnys(this).map(
+          glados.IntAnys(this).intInRange(-3, 25),
+          glados.CombinableAny(this).combine2(
+            glados.IntAnys(this).intInRange(60, 100),
+            glados.IntAnys(this).intInRange(0, 4),
+            (int value, int seed) => (value, seed != 0),
+          ),
+        ),
+        glados.MapAnys(this).map(
+          glados.IntAnys(this).intInRange(0, 35),
+          glados.IntAnys(this).intInRange(60, 100),
+        ),
+        _MetricHistory.new,
+      );
 }
