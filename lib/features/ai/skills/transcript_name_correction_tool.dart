@@ -12,7 +12,13 @@ abstract final class TranscriptNameCorrectionToolArgs {
   static const corrections = 'corrections';
   static const heard = 'heard';
   static const term = 'term';
+  static const context = 'context';
 }
+
+/// One proposal: `heard` became `term` where it occurs inside `context`, an
+/// exact quote of a few words around it — which is what says *which*
+/// occurrence the model meant ("May called" is a name, "in May" is not).
+typedef TranscriptNameProposal = ({String heard, String term, String? context});
 
 /// Longest stretch of transcript, in words, one proposal may replace: a name
 /// misheard as a few short words ("Kel son"), never a phrase.
@@ -51,10 +57,19 @@ const ChatCompletionTool transcriptNameCorrectionTool = ChatCompletionTool(
                     'The name from the list that was said instead, spelled '
                     'exactly as in the list.',
               },
+              TranscriptNameCorrectionToolArgs.context: {
+                'type': 'string',
+                'description':
+                    'An exact quote from the transcript of a few words '
+                    'around this occurrence, including the misheard name. '
+                    'Report each misheard occurrence separately, with its '
+                    'own quote.',
+              },
             },
             'required': [
               TranscriptNameCorrectionToolArgs.heard,
               TranscriptNameCorrectionToolArgs.term,
+              TranscriptNameCorrectionToolArgs.context,
             ],
             'additionalProperties': false,
           },
@@ -97,7 +112,7 @@ ChatCompletionToolChoiceOption? transcriptNameCorrectionToolChoiceFor(
 /// Decodes the proposals out of [toolCalls]; empty when there is no usable
 /// call. A failed check is no correction, never an error: the phonetic pass
 /// has already run, and this one only adds to it.
-List<TranscriptTermCorrection> parseTranscriptNameCorrections(
+List<TranscriptNameProposal> parseTranscriptNameCorrections(
   List<ChatCompletionMessageToolCall> toolCalls,
 ) {
   final call = toolCalls
@@ -119,6 +134,11 @@ List<TranscriptTermCorrection> parseTranscriptNameCorrections(
                 .trim(),
             term: (item[TranscriptNameCorrectionToolArgs.term] as String)
                 .trim(),
+            context: switch (item[TranscriptNameCorrectionToolArgs.context]) {
+              final String context when context.trim().isNotEmpty =>
+                context.trim(),
+              _ => null,
+            },
           ),
     ];
   } on FormatException {
@@ -136,13 +156,17 @@ List<TranscriptTermCorrection> parseTranscriptNameCorrections(
 ///   [transcriptNameCorrectionMaxHeardWords] of them, starting with a capital
 ///   — a name, not an ordinary lower-case word;
 /// * what it replaces is not itself a known name, so a correct name is never
-///   swapped for another.
+///   swapped for another;
+/// * it names its occurrence: only the occurrence inside the proposal's
+///   quoted context is replaced, and a context that is not in the transcript
+///   rejects the proposal. Without a context, a word that occurs more than
+///   once is left alone — one proposal must not rewrite an occurrence the
+///   model never looked at ("May called me in May").
 ///
-/// Every occurrence of an accepted proposal is replaced. Returns the text and
-/// the proposals that were applied, in the order given.
+/// Returns the text and the proposals that were applied, in the order given.
 TranscriptTermCorrectionResult applyTranscriptNameCorrections(
   String transcript,
-  List<TranscriptTermCorrection> proposals,
+  List<TranscriptNameProposal> proposals,
   List<String> terms,
 ) {
   final targets = <String>{};
@@ -176,9 +200,20 @@ TranscriptTermCorrectionResult applyTranscriptNameCorrections(
       '(?<![\\p{L}\\p{N}])${RegExp.escape(heard)}(?![\\p{L}\\p{N}])',
       unicode: true,
     );
-    if (!pattern.hasMatch(text)) continue;
-    text = text.replaceAll(pattern, proposal.term);
-    applied.add(proposal);
+    final context = proposal.context;
+    if (context == null) {
+      if (pattern.allMatches(text).length != 1) continue;
+      text = text.replaceFirst(pattern, proposal.term);
+    } else {
+      final at = text.indexOf(context);
+      if (at < 0 || !pattern.hasMatch(context)) continue;
+      text = text.replaceRange(
+        at,
+        at + context.length,
+        context.replaceAll(pattern, proposal.term),
+      );
+    }
+    applied.add((heard: heard, term: proposal.term));
   }
   return (text: text, corrections: applied);
 }

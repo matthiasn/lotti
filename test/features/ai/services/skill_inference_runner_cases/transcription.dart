@@ -307,7 +307,7 @@ extension _TranscriptionCases on _SkillInferenceTestSetup {
         ).thenAnswer((_) async => audioEntity);
         when(
           () => mockPromptBuilderHelper.getSpeechDictionaryTerms(audioEntity),
-        ).thenAnswer((_) async => []);
+        ).thenAnswer((_) async => ['Waddle One']);
         when(
           () => mockTaskSummaryResolver.resolve(any()),
         ).thenAnswer((_) async => null);
@@ -361,9 +361,20 @@ extension _TranscriptionCases on _SkillInferenceTestSetup {
           final saved = await transcribe(
             () => Stream.value(
               correctionChunk([
-                {'heard': 'Frostbite', 'term': 'Frostbeak'},
+                // Refused in code: a category dictionary word is vocabulary,
+                // not a name the model may swap in (CodeRabbit on #4374).
+                {
+                  'heard': 'Frostbite',
+                  'term': 'Waddle',
+                  'context': 'Pip Frostbite',
+                },
                 // Refused in code: not a listed name.
                 {'heard': 'Commander', 'term': 'Admiral'},
+                {
+                  'heard': 'Frostbite',
+                  'term': 'Frostbeak',
+                  'context': 'Pip Frostbite',
+                },
               ]),
             ),
           );

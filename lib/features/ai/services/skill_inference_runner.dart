@@ -309,8 +309,9 @@ class SkillInferenceRunner {
         final response = collected.content.trim();
 
         // With names to expect, the transcript is corrected against them:
-        // first by sound and spelling, then by the profile's thinking model
-        // for what those rules cannot reach. The model's call is part of this
+        // first by sound and spelling (against the names and the category
+        // dictionary), then by the profile's thinking model against the
+        // names alone, for what those rules cannot reach. The model's call is part of this
         // transcription's spend.
         var text = response;
         AiConsumptionEvent? nameCorrectionEvent;
@@ -319,7 +320,9 @@ class SkillInferenceRunner {
           final corrected = await _correctNamesWithThinkingModel(
             profile: profile,
             transcript: text,
-            terms: speechDictionaryTerms,
+            // Only the names the caller expects: a category dictionary
+            // holds ordinary vocabulary, which is no name to swap in.
+            terms: knownTerms,
             entity: entity,
             taskId: linkedTaskId,
             skillId: skill.id,
