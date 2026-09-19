@@ -568,6 +568,16 @@ OpenAIClientException({
         );
       });
 
+      test('extracts a top-level message from a JSON string body', () {
+        final error = TestErrorWithBody(
+          body: '{"message": "Quota exhausted for Waddle One"}',
+        );
+        expect(
+          AiErrorUtils.extractDetailedErrorMessage(error),
+          equals('Quota exhausted for Waddle One'),
+        );
+      });
+
       test('extracts message from nested error.message structure', () {
         final error = TestErrorWithBody(
           body: {

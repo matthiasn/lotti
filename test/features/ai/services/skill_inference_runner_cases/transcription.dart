@@ -427,6 +427,99 @@ extension _TranscriptionCases on _SkillInferenceTestSetup {
     );
 
     test(
+      'hands a Melious transcription an impact collector and records the '
+      'impact the adapter reported into it',
+      () async {
+        final attribution = _registerInteractionCapture();
+        final audioEntity = makeAudioEntity(categoryId: 'cat-audio');
+        await createStubAudioFile();
+        when(
+          () => mockAiInputRepo.getEntity('audio-1'),
+        ).thenAnswer((_) async => audioEntity);
+        when(
+          () => mockPromptBuilderHelper.getSpeechDictionaryTerms(audioEntity),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockTaskSummaryResolver.resolve(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockCloudRepo.generateWithAudio(
+            any(),
+            model: any(named: 'model'),
+            audioBase64: any(named: 'audioBase64'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+            impactCollector: any(named: 'impactCollector'),
+          ),
+        ).thenAnswer((invocation) {
+          // The Melious adapter reports impact out of band by writing into
+          // the collector the runner passed down.
+          (invocation.namedArguments[#impactCollector]
+                  as InferenceImpactCollector?)
+              ?.impact = const MeliousCallImpact(
+            costCredits: 1.5,
+            energyKwh: 0.02,
+            dataCenter: 'DE',
+          );
+          return Stream.value(makeStreamChunk('Waddle One is ready'));
+        });
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
+        stubLoggingEvent();
+
+        await runner.runTranscription(
+          audioEntryId: 'audio-1',
+          automationResult: AutomationResult(
+            handled: true,
+            resolvedProfile: ResolvedProfile(
+              thinkingModelId: 'models/gemini-3-flash-preview',
+              thinkingProvider: testInferenceProvider(),
+              transcriptionModelId: 'voxtral-mini',
+              transcriptionProvider: testInferenceProvider(
+                id: 'p-melious',
+                inferenceProviderType: InferenceProviderType.melious,
+              ),
+            ),
+            skill: testSkill,
+          ),
+        );
+
+        final collector =
+            verify(
+                  () => mockCloudRepo.generateWithAudio(
+                    any(),
+                    model: 'voxtral-mini',
+                    audioBase64: any(named: 'audioBase64'),
+                    baseUrl: any(named: 'baseUrl'),
+                    apiKey: any(named: 'apiKey'),
+                    provider: any(named: 'provider'),
+                    systemMessage: any(named: 'systemMessage'),
+                    speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+                    impactCollector: captureAny(named: 'impactCollector'),
+                  ),
+                ).captured.single
+                as InferenceImpactCollector?;
+        expect(collector, isNotNull);
+
+        final event = _capturedEvents(attribution).single;
+        expect(event.providerType, InferenceProviderType.melious);
+        expect(event.credits, 1.5);
+        expect(event.energyKwh, 0.02);
+        expect(event.dataCenter, 'DE');
+        final saved =
+            verify(
+                  () => mockJournalRepo.updateJournalEntity(captureAny()),
+                ).captured.single
+                as JournalAudio;
+        expect(saved.data.transcripts!.last.transcript, 'Waddle One is ready');
+      },
+    );
+
+    test(
       'forwards the resolved Gemini thinking mode for Gemini 3 targets',
       () async {
         final audioEntity = makeAudioEntity();

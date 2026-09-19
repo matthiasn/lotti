@@ -897,6 +897,91 @@ void main() {
         }
       });
 
+      test('stores an attributed image analysis as its own AI response entry '
+          'carrying the prepared attribution', () async {
+        final tempDir = Directory.systemTemp.createTempSync('image_attrib');
+        overrideTempDirs.add(tempDir);
+        when(() => mockDirectory.path).thenReturn(tempDir.path);
+        Directory('${tempDir.path}/images').createSync(recursive: true);
+        File(
+          '${tempDir.path}/images/test.jpg',
+        ).writeAsBytesSync(Uint8List.fromList([1, 2, 3, 4]));
+        final imageEntity = JournalImage(
+          meta: createMetadata(),
+          data: ImageData(
+            capturedAt: DateTime(2024, 3, 15, 10, 30),
+            imageId: 'test-image',
+            imageFile: 'test.jpg',
+            imageDirectory: '/images/',
+          ),
+        );
+        final promptConfig = createPrompt(
+          id: 'prompt-1',
+          name: 'Image Analysis',
+          requiredInputData: [InputDataType.images],
+          aiResponseType: AiResponseType.imageAnalysis,
+        );
+        final model = createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'gpt-4-vision',
+        );
+        final provider = createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+        stubInferenceContext(
+          mockAiInputRepo: mockAiInputRepo,
+          mockAiConfigRepo: mockAiConfigRepo,
+          entity: imageEntity,
+          model: model,
+          provider: provider,
+        );
+        when(
+          () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+        ).thenAnswer((_) async => []);
+        stubGenerateWithImages(
+          mockCloudInferenceRepo,
+          stream: createMockTextStream(['An emperor penguin on ice']),
+        );
+        stubCreateAiResponseEntry(mockAiInputRepo);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
+        final bench = registerInteractionCapture();
+
+        await repository.runInference(
+          entityId: 'test-id',
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        );
+
+        final outputs =
+            verify(
+                  () => bench.service.prepareCompletion(
+                    attributionId: any(named: 'attributionId'),
+                    outputs: captureAny(named: 'outputs'),
+                  ),
+                ).captured.single
+                as List<AiArtifactReference>;
+        expect(outputs.single.type, AiArtifactType.journalAiResponse);
+        final data =
+            verify(
+                  () => mockAiInputRepo.createAiResponseEntry(
+                    id: outputs.single.id,
+                    data: captureAny(named: 'data'),
+                    start: any(named: 'start'),
+                    linkedId: 'test-id',
+                    categoryId: any(named: 'categoryId'),
+                  ),
+                ).captured.single
+                as AiResponseData;
+        expect(data.response, 'An emperor penguin on ice');
+        expect(data.type, AiResponseType.imageAnalysis);
+        expect(data.aiAttribution, isNotNull);
+      });
+
       test('forwards the model row thinking mode to generateWithImages '
           'for Gemini providers', () async {
         final tempDir = Directory.systemTemp.createTempSync('image_gemini');
@@ -1292,6 +1377,114 @@ void main() {
           // Clean up the temporary directory
           tempDir.deleteSync(recursive: true);
         }
+      });
+
+      test('routes Melious audio through an impact collector and records the '
+          'impact the adapter reported', () async {
+        final tempDir = Directory.systemTemp.createTempSync('audio_melious');
+        overrideTempDirs.add(tempDir);
+        when(() => mockDirectory.path).thenReturn(tempDir.path);
+        Directory('${tempDir.path}/audio').createSync(recursive: true);
+        File(
+          '${tempDir.path}/audio/test.mp3',
+        ).writeAsBytesSync(Uint8List.fromList([1, 2, 3]));
+
+        final audioEntity = JournalAudio(
+          meta: createMetadata(),
+          data: AudioData(
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
+            audioFile: 'test.mp3',
+            audioDirectory: '/audio/',
+            duration: const Duration(seconds: 30),
+          ),
+        );
+        final promptConfig = createPrompt(
+          id: 'prompt-1',
+          name: 'Audio Transcription',
+          requiredInputData: [InputDataType.audioFiles],
+          aiResponseType: AiResponseType.audioTranscription,
+        );
+        final model = createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'voxtral-mini',
+        );
+        final provider = createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.melious,
+        );
+        stubInferenceContext(
+          mockAiInputRepo: mockAiInputRepo,
+          mockAiConfigRepo: mockAiConfigRepo,
+          entity: audioEntity,
+          model: model,
+          provider: provider,
+        );
+        when(
+          () => mockCloudInferenceRepo.generateWithAudio(
+            any(),
+            provider: any(named: 'provider'),
+            model: any(named: 'model'),
+            audioBase64: any(named: 'audioBase64'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            stream: any(named: 'stream'),
+            audioFormat: any(named: 'audioFormat'),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+            impactCollector: any(named: 'impactCollector'),
+          ),
+        ).thenAnswer((invocation) {
+          (invocation.namedArguments[#impactCollector]
+                  as InferenceImpactCollector?)
+              ?.impact = const MeliousCallImpact(
+            costCredits: 0.5,
+            dataCenter: 'SE',
+          );
+          return createMockTextStream(['Pip counted the krill crates']);
+        });
+        stubCreateAiResponseEntry(mockAiInputRepo);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+        ).thenAnswer((_) async => []);
+        final bench = registerInteractionCapture();
+        final progress = <String>[];
+
+        await repository.runInference(
+          entityId: 'test-id',
+          promptConfig: promptConfig,
+          onProgress: progress.add,
+          onStatusChange: (_) {},
+        );
+
+        expect(progress, ['Pip counted the krill crates']);
+        final collector =
+            verify(
+                  () => mockCloudInferenceRepo.generateWithAudio(
+                    any(),
+                    provider: any(named: 'provider'),
+                    model: 'voxtral-mini',
+                    audioBase64: any(named: 'audioBase64'),
+                    baseUrl: any(named: 'baseUrl'),
+                    apiKey: any(named: 'apiKey'),
+                    maxCompletionTokens: any(named: 'maxCompletionTokens'),
+                    stream: any(named: 'stream'),
+                    audioFormat: any(named: 'audioFormat'),
+                    speechDictionaryTerms: any(
+                      named: 'speechDictionaryTerms',
+                    ),
+                    impactCollector: captureAny(named: 'impactCollector'),
+                  ),
+                ).captured.single
+                as InferenceImpactCollector?;
+        expect(collector, isNotNull);
+        final event = capturedEvents(bench).single;
+        expect(event.credits, 0.5);
+        expect(event.dataCenter, 'SE');
       });
 
       test('forwards the model row thinking mode to generateWithAudio '

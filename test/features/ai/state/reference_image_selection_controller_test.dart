@@ -521,17 +521,18 @@ void main() {
             container.read(
                 referenceImageSelectionControllerProvider(taskId).notifier,
               )
-              // Select an image that exists
-              ..toggleImageSelection('img-1');
-
-        // Manually modify selection to include a non-existent image
-        // This simulates a race condition where an image was deleted
+              // A selected id with no matching available image simulates an
+              // image deleted between selection and processing.
+              ..toggleImageSelection('img-deleted');
 
         final results = await controller.processSelectedImages();
 
-        // Since img-1 file doesn't exist on disk, it will return empty
-        // The point is that the method doesn't throw
-        expect(results, isA<List<ProcessedReferenceImage>>());
+        expect(results, isEmpty);
+        final state = container.read(
+          referenceImageSelectionControllerProvider(taskId),
+        );
+        expect(state.selectedImageIds, {'img-deleted'});
+        expect(state.isProcessing, isFalse);
       });
 
       test('uses O(1) map lookup for image retrieval', () async {

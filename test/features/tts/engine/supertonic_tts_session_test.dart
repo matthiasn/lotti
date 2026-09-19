@@ -146,6 +146,24 @@ void main() {
     verifyNever(() => style.dp.dispose());
   });
 
+  test('joins multiple chunks with a silence gap and counts it in the '
+      'reported duration', () async {
+    // Two sentences that together exceed the 300-char chunk limit.
+    final sentence = '${List.filled(40, 'waddle').join(' ')}.';
+    final result = await buildSession().synthesize(
+      text: '$sentence $sentence',
+      language: 'na',
+      style: style,
+      totalStep: 1,
+    );
+
+    // 0.3s of silence at the 10 Hz test sample rate is 3 zero samples.
+    expect(result.samples, [0.1, 0.2, 0, 0, 0, 0.1, 0.2]);
+    // Two 0.1s chunks plus one 0.3s gap.
+    expect(result.durationSeconds, closeTo(0.5, 1e-9));
+    verify(() => vocoder.run(any())).called(2);
+  });
+
   test('returns empty audio when there is nothing to synthesize', () async {
     final result = await buildSession().synthesize(
       text: '',

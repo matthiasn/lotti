@@ -3023,6 +3023,62 @@ void main() {
     });
   });
 
+  group('AI Setup Wizard failure', () {
+    testWidgets(
+      'a failing provider lookup surfaces an error toast and returns the '
+      'Run Setup button to idle instead of escaping the tap handler',
+      (WidgetTester tester) async {
+        await _setTestSurface(tester, height: 1600);
+        final geminiProvider = AiConfig.inferenceProvider(
+          id: 'gemini-provider-id',
+          name: 'My Gemini',
+          baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+          apiKey: 'test-key',
+          createdAt: DateTime(2024, 3, 15),
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
+        var lookupFails = false;
+        when(
+          () => mockRepository.getConfigById(
+            'gemini-provider-id',
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
+        ).thenAnswer((_) async {
+          if (lookupFails) throw StateError('database closed');
+          return geminiProvider;
+        });
+        when(
+          () => mockRepository.watchConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) => Stream.value([]));
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            configId: 'gemini-provider-id',
+            existingProviders: [geminiProvider],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        final strings = l10n(tester);
+        final runSetupButton = find.text(strings.aiSetupWizardRunButton);
+        await tester.ensureVisible(runSetupButton);
+        await tester.pump();
+
+        lookupFails = true;
+        await tester.tap(runSetupButton);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(tester.takeException(), isNull);
+        expect(find.text(strings.commonError), findsOneWidget);
+        expect(find.textContaining('Gemini connected'), findsNothing);
+        expect(find.text(strings.aiSetupWizardRunButton), findsOneWidget);
+        expect(find.text(strings.aiSetupWizardRunningButton), findsNothing);
+      },
+    );
+  });
+
   group('New Provider FTUE Flow', () {
     testWidgets('shows prompt setup dialog after saving new OpenAI provider', (
       WidgetTester tester,

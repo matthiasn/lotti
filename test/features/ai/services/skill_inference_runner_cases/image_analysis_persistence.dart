@@ -246,6 +246,71 @@ extension _ImageAnalysisPersistenceCases on _SkillInferenceTestSetup {
     });
 
     test(
+      'fails the run without finalizing attribution when the attributed '
+      'analysis cannot be persisted',
+      () async {
+        final attribution = _registerInteractionCapture();
+        final imageEntity = makeImageEntity();
+        await createStubImageFile();
+        when(
+          () => mockAiInputRepo.getEntity('img-1'),
+        ).thenAnswer((_) async => imageEntity);
+        when(
+          () => mockTaskSummaryResolver.resolve(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockCloudRepo.generateWithImages(
+            any(),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            images: any(named: 'images'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
+          ),
+        ).thenAnswer((_) => Stream.value(makeStreamChunk('Icy harbour')));
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            id: any(named: 'id'),
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
+        stubLoggingEvent();
+        stubLoggingException();
+
+        await runner.runImageAnalysis(
+          imageEntryId: 'img-1',
+          automationResult: makeImageAnalysisResult(),
+        );
+
+        final loggedError = verify(
+          () => mockLoggingService.error(
+            LogDomain.ai,
+            captureAny<Object>(),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).captured.single;
+        expect(
+          loggedError,
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            'Failed to persist image analysis for img-1',
+          ),
+        );
+        // The billed call is still recorded, but never finalized.
+        expect(_capturedEvents(attribution), hasLength(1));
+        verifyNever(() => attribution.service.finalize(any()));
+      },
+    );
+
+    test(
       'marks every parent task dirty with the standard child-changed '
       'pairs once the attributed analysis is stored, skipping non-task '
       'parents',

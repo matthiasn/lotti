@@ -115,6 +115,41 @@ void main() {
     expect(secondPainter.phase, isNot(equals(firstPainter.phase)));
   });
 
+  testWidgets(
+    'deactivating freezes the pulse at rest and reactivating resumes it',
+    (tester) async {
+      Future<void> pumpOrb({required bool active}) => tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          AudioRecordingOrb(dBFS: -30, active: active),
+        ),
+      );
+      double phase() =>
+          (tester
+                      .widget<CustomPaint>(
+                        find.descendant(
+                          of: find.byType(AudioRecordingOrb),
+                          matching: find.byType(CustomPaint),
+                        ),
+                      )
+                      .painter!
+                  as AudioRecordingOrbPainter)
+              .phase;
+
+      await pumpOrb(active: true);
+      await tester.pump(AudioRecordingOrbConstants.pulseDuration ~/ 3);
+      expect(phase(), isNot(0));
+
+      await pumpOrb(active: false);
+      expect(phase(), 0);
+      await tester.pump(AudioRecordingOrbConstants.pulseDuration ~/ 3);
+      expect(phase(), 0, reason: 'an inactive orb must not keep animating');
+
+      await pumpOrb(active: true);
+      await tester.pump(AudioRecordingOrbConstants.pulseDuration ~/ 3);
+      expect(phase(), isNot(0));
+    },
+  );
+
   testWidgets('uses warning color when dBFS reaches clipping threshold', (
     tester,
   ) async {

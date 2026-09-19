@@ -484,6 +484,55 @@ extension _AudioSummaryCases on _SkillInferenceTestSetup {
       );
 
       test(
+        'reports a summary the repository could not persist as a failure '
+        'and never finalizes its attribution',
+        () async {
+          final attribution = _registerInteractionCapture();
+          final audio = makeAudioEntity(
+            id: 'audio-unsaved',
+            plainText: longTranscript,
+          );
+          stubPersistence(audio);
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              id: any(named: 'id'),
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
+          stubGenerate(() => [makeToolCallChunk()]);
+          stubLoggingEvent();
+          stubLoggingException();
+
+          await runner.runAudioSummary(
+            audioEntryId: 'audio-unsaved',
+            automationResult: makeAudioSummaryResult(),
+            linkedTaskId: 'task-1',
+          );
+
+          final logged = verify(
+            () => mockLoggingService.error(
+              LogDomain.ai,
+              captureAny<Object>(),
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: 'runAudioSummary',
+            ),
+          ).captured.single;
+          expect(
+            logged,
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              'Failed to persist audio summary for audio-unsaved',
+            ),
+          );
+          verifyNever(() => attribution.service.finalize(any()));
+        },
+      );
+
+      test(
         'rejects a non-audio source rather than summarizing whatever it finds',
         () async {
           when(

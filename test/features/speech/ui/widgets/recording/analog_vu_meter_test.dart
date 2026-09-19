@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/vu_meter_constants.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/vu_meter_painter.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -234,6 +235,45 @@ void main() {
       // Allow all animations and timers to complete
       await tester.pump(const Duration(milliseconds: 500));
     });
+
+    testWidgets(
+      'peak holds, decays to the current level, then re-arms so a later '
+      'lower peak is captured again',
+      (tester) async {
+        double paintedPeak() =>
+            (tester
+                        .widget<CustomPaint>(
+                          find.descendant(
+                            of: find.byType(AnalogVuMeter),
+                            matching: find.byType(CustomPaint),
+                          ),
+                        )
+                        .painter!
+                    as VuMeterPainter)
+                .peakValue;
+
+        await tester.pumpWidget(makeTestableWidget(vu: -20, dBFS: -60));
+        // +2 VU maps to 0.6 + 0.4 * 2 / 3 on the meter scale.
+        await tester.pumpWidget(makeTestableWidget(vu: 2, dBFS: -30));
+        await tester.pumpWidget(makeTestableWidget(vu: -10, dBFS: -40));
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(paintedPeak(), closeTo(0.6 + 0.4 * 2 / 3, 1e-9));
+
+        // Hold (800 ms) then the 1500 ms decay back to the current level.
+        await tester.pump(VuMeterConstants.peakHoldDuration);
+        await tester.pump(VuMeterConstants.peakDecayDuration);
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(paintedPeak(), closeTo(0.15, 1e-9));
+
+        // -5 VU (0.35) is below the old peak but above the decayed one.
+        await tester.pumpWidget(makeTestableWidget(vu: -5, dBFS: -40));
+        await tester.pump();
+        expect(paintedPeak(), closeTo(0.35, 1e-9));
+
+        await tester.pump(VuMeterConstants.peakHoldDuration);
+        await tester.pump(VuMeterConstants.peakDecayDuration);
+      },
+    );
 
     testWidgets('disposes animation controllers properly', (tester) async {
       await tester.pumpWidget(makeTestableWidget(vu: 0, dBFS: -60));

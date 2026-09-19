@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_filter_chips.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
@@ -28,9 +29,13 @@ void main() {
       ValueChanged<AiSettingsFilterState>? onFilterChanged,
     }) {
       return AiTestSetup.createTestApp(
-        providerOverrides: AiTestSetup.createControllerOverrides(
-          providers: mockProviders,
-        ),
+        providerOverrides: [
+          ...AiTestSetup.createControllerOverrides(providers: mockProviders),
+          for (final provider in mockProviders)
+            aiConfigByIdProvider(
+              provider.id,
+            ).overrideWith((ref) async => provider),
+        ],
         child: AiSettingsFilterChips(
           filterState: filterState ?? initialFilterState,
           onFilterChanged:
@@ -90,6 +95,35 @@ void main() {
         expect(find.text('Clear'), findsNothing);
         expect(find.byIcon(LottiIcons.close), findsNothing);
       });
+    });
+
+    group('provider filter interaction', () {
+      testWidgets(
+        'tapping a provider chip selects it while keeping the other filters',
+        (WidgetTester tester) async {
+          await tester.pumpWidget(
+            createWidget(
+              filterState: initialFilterState.copyWith(
+                selectedCapabilities: {Modality.audio},
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          await tester.tap(
+            find.ancestor(
+              of: find.text('Test Provider'),
+              matching: find.byType(DesignSystemChip),
+            ),
+          );
+          await tester.pump();
+
+          expect(filterChanges, hasLength(1));
+          expect(filterChanges.single.selectedProviders, {'test-provider'});
+          expect(filterChanges.single.selectedCapabilities, {Modality.audio});
+          expect(filterChanges.single.activeTab, AiSettingsTab.models);
+        },
+      );
     });
 
     group('capability filter interaction', () {

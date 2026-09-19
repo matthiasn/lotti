@@ -263,6 +263,27 @@ void main() {
         verifyNever(() => mockDb.saveConfig(any()));
       });
 
+      // No seeding pass recreates a skill by id, so keeping a tombstone would
+      // only retain (and replicate) instructions the user asked to remove.
+      test('a skill is removed outright, not tombstoned', () async {
+        when(() => mockDb.getConfigById('skill-1')).thenAnswer(
+          (_) async => AiConfig.skill(
+            id: 'skill-1',
+            name: 'Waddle One logbook',
+            createdAt: fixedDate,
+            skillType: SkillType.transcription,
+            requiredInputModalities: const [Modality.audio],
+            systemInstructions: 'Transcribe the audio.',
+            userInstructions: 'Please transcribe.',
+          ),
+        );
+
+        await repository.deleteConfig('skill-1');
+
+        verify(() => mockDb.deleteConfig('skill-1')).called(1);
+        verifyNever(() => mockDb.saveConfig(any()));
+      });
+
       // A legacy delete can arrive before this device has ever seeded the row.
       // Returning without a trace would let seeding recreate exactly what the
       // peer's user deleted.
