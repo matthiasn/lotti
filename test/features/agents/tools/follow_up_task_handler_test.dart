@@ -558,6 +558,38 @@ void main() {
         });
       });
 
+      test('logs that the created task is readable back', () async {
+        final newTask = makeNewTask('new-task-verified');
+        stubSourceTaskLookup(makeSourceTask());
+        stubCreateTask(newTask);
+        stubLinkCreation();
+        when(
+          () => mockJournalDb.journalEntityById('new-task-verified'),
+        ).thenAnswer((_) async => newTask);
+
+        await withClock(Clock.fixed(testDate), () async {
+          final result = await handler.handle(
+            sourceTaskId,
+            {'title': 'Restock herring'},
+          );
+          expect(result.success, isTrue);
+        });
+
+        final messages = verify(
+          () => mockDomainLogger.log(
+            LogDomain.agentWorkflow,
+            captureAny(),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).captured.cast<String>();
+        expect(
+          messages,
+          contains(
+            allOf(contains('verify lookup: Task'), endsWith('(found: true)')),
+          ),
+        );
+      });
+
       test('creates task with custom priority and due date', () async {
         final sourceTask = makeSourceTask();
         final newTask = makeNewTask('new-task-002');
