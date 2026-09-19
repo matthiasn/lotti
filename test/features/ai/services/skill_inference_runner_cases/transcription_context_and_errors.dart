@@ -2,6 +2,104 @@ part of '../skill_inference_runner_test.dart';
 
 extension _TranscriptionContextAndErrorsCases on _SkillInferenceTestSetup {
   void registerTranscriptionContextAndErrors() {
+    test(
+      'hands a Melious transcription an impact collector and records the '
+      'credits and energy the adapter writes into it',
+      () async {
+        final attribution = _registerInteractionCapture();
+        final audioEntity = makeAudioEntity(categoryId: 'cat-audio');
+        await createStubAudioFile();
+        final melious = testInferenceProvider(
+          id: 'p-melious',
+          inferenceProviderType: InferenceProviderType.melious,
+        );
+
+        when(
+          () => mockAiInputRepo.getEntity('audio-1'),
+        ).thenAnswer((_) async => audioEntity);
+        when(
+          () => mockPromptBuilderHelper.getSpeechDictionaryTerms(audioEntity),
+        ).thenAnswer((_) async => ['Waddle']);
+        when(
+          () => mockTaskSummaryResolver.resolve(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockCloudRepo.generateWithAudio(
+            any(),
+            model: any(named: 'model'),
+            audioBase64: any(named: 'audioBase64'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+            impactCollector: any(named: 'impactCollector'),
+          ),
+        ).thenAnswer((invocation) {
+          // The Melious adapter reports impact out of band by writing into
+          // the collector it was handed.
+          (invocation.namedArguments[#impactCollector]
+                  as InferenceImpactCollector?)
+              ?.impact = const MeliousCallImpact(
+            costCredits: 3,
+            energyKwh: 0.25,
+          );
+          return Stream.fromIterable([
+            makeStreamChunk('Crate forty-two reached the colony.'),
+          ]);
+        });
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
+        stubLoggingEvent();
+
+        await runner.runTranscription(
+          audioEntryId: 'audio-1',
+          automationResult: AutomationResult(
+            handled: true,
+            resolvedProfile: ResolvedProfile(
+              thinkingModelId: 'models/gemini-3-flash-preview',
+              thinkingProvider: testInferenceProvider(),
+              transcriptionModelId: 'voxtral-small',
+              transcriptionProvider: melious,
+            ),
+            skill: testSkill,
+          ),
+        );
+
+        final call = verify(
+          () => mockCloudRepo.generateWithAudio(
+            any(),
+            model: 'voxtral-small',
+            audioBase64: any(named: 'audioBase64'),
+            baseUrl: melious.baseUrl,
+            apiKey: melious.apiKey,
+            provider: melious,
+            systemMessage: any(named: 'systemMessage'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
+            speechDictionaryTerms: captureAny(named: 'speechDictionaryTerms'),
+            impactCollector: captureAny(named: 'impactCollector'),
+          ),
+        )..called(1);
+        expect(call.captured[0], ['Waddle']);
+        expect(call.captured[1], isA<InferenceImpactCollector>());
+
+        final event = _capturedEvents(attribution).single;
+        expect(event.credits, 3);
+        expect(event.energyKwh, 0.25);
+        final saved =
+            verify(
+                  () => mockJournalRepo.updateJournalEntity(captureAny()),
+                ).captured.single
+                as JournalAudio;
+        expect(
+          saved.data.transcripts!.last.transcript,
+          'Crate forty-two reached the colony.',
+        );
+      },
+    );
+
     test('builds task context when linkedTaskId is provided', () async {
       final audioEntity = makeAudioEntity();
 
