@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart'
     show DayAgentCaptureException;
@@ -372,4 +374,333 @@ void main() {
       );
     });
   });
+
+  group('plan-diff properties', () {
+    final dayStart = DateTime(2024, 3, 15);
+    final dayEnd = DateTime(2024, 3, 16);
+
+    // Two moves on one block are checked against the block as the first move
+    // left it, not as it stood before the batch: 09–10 is moved to 11–12,
+    // then only its end to 10:30. Checked against the original start (09:00)
+    // the second move looked fine; applied, it made a block ending before it
+    // starts.
+    test('a second move on the same block is checked against the first', () {
+      final original = makeTestDayPlan(
+        planDate: planDate,
+        data: DayPlanData(
+          planDate: planDate,
+          status: const DayPlanStatus.draft(),
+          plannedBlocks: [block()],
+        ),
+      );
+      final batch = [
+        _move('block-1', start: 44, end: 48),
+        _move('block-1', end: 42),
+      ].asMap().entries;
+
+      expect(
+        () => validateApplicablePlanDiffBatch(batch, original, const {}),
+        throwsA(isA<DayAgentCaptureException>()),
+      );
+    });
+
+    glados.Glados(
+      glados.any.planDiffCase,
+      glados.ExploreConfig(numRuns: 300),
+    ).test(
+      'an accepted batch applies cleanly into well-formed in-day blocks',
+      (planCase) {
+        final original = planCase.plan(planDate);
+        final entries = planCase.items.asMap().entries;
+        try {
+          validateApplicablePlanDiffBatch(entries, original, const {});
+        } on DayAgentCaptureException {
+          return;
+        }
+
+        var blocks = List<PlannedBlock>.of(original.data.plannedBlocks);
+        for (final item in planCase.items) {
+          blocks = applyPlanDiffItem(
+            item,
+            blocks,
+            addedBlockState: PlannedBlockState.drafted,
+          );
+        }
+
+        final adds = planCase.items.where((i) => i.toolName == 'add_block');
+        final drops = planCase.items.where((i) => i.toolName == 'drop_block');
+        expect(
+          blocks,
+          hasLength(
+            original.data.plannedBlocks.length + adds.length - drops.length,
+          ),
+        );
+        for (final b in blocks) {
+          expect(b.endTime.isAfter(b.startTime), isTrue, reason: '$b');
+          expect(b.startTime.isBefore(dayStart), isFalse, reason: '$b');
+          expect(b.endTime.isAfter(dayEnd), isFalse, reason: '$b');
+          expect(b.type, isNot(PlannedBlockType.cal), reason: '$b');
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.rawPlanChange,
+      glados.ExploreConfig(numRuns: 300),
+    ).test(
+      'a parsed change re-parses from its own args unchanged',
+      (raw) {
+        final blockById = {'block-1': block()};
+        final PlanDiffChange change;
+        try {
+          change = parsePlanDiffChange(
+            raw: raw,
+            plan: plan,
+            blockById: blockById,
+          );
+        } on DayAgentCaptureException {
+          return;
+        }
+        final args = change.toArgs();
+        final reparsed = parsePlanDiffChange(
+          raw: _rawFromArgs(args),
+          plan: plan,
+          blockById: blockById,
+        );
+
+        expect(reparsed.toArgs(), args);
+        expect(reparsed.toolName, change.toolName);
+        expect(args['action'], change.action.name);
+        expect(args['toStart'], change.to?.start?.toIso8601String());
+        expect(args['toEnd'], change.to?.end?.toIso8601String());
+      },
+      tags: 'glados',
+    );
+  });
+}
+
+/// Fifteen-minute slot [slot] of 2024-03-15; slot 96 is the next midnight.
+DateTime _slot(int slot) =>
+    DateTime(2024, 3, 15).add(Duration(minutes: 15 * slot));
+
+ChangeItem _move(String blockId, {int? start, int? end}) => ChangeItem(
+  toolName: 'move_block',
+  args: {
+    'blockId': blockId,
+    if (start != null) 'toStart': _slot(start).toIso8601String(),
+    if (end != null) 'toEnd': _slot(end).toIso8601String(),
+  },
+  humanSummary: 'move',
+);
+
+/// Reshapes the flat arg map [PlanDiffChange.toArgs] persists back into the
+/// nested shape the model emits.
+Map<String, dynamic> _rawFromArgs(Map<String, dynamic> args) {
+  final from = <String, dynamic>{
+    'start': ?args['fromStart'],
+    'end': ?args['fromEnd'],
+    'title': ?args['fromTitle'],
+    'categoryId': ?args['fromCategoryId'],
+  };
+  final to = <String, dynamic>{
+    'start': ?args['toStart'],
+    'end': ?args['toEnd'],
+    'title': ?args['title'],
+    'categoryId': ?args['categoryId'],
+    'taskId': ?args['taskId'],
+    'type': ?args['type'],
+    'reason': ?args['blockReason'],
+    'remainingMinutes': ?args['remainingMinutes'],
+  };
+  return {
+    'action': args['action'],
+    'reason': args['reason'],
+    'blockId': ?args['blockId'],
+    if (from.isNotEmpty) 'from': from,
+    if (to.isNotEmpty) 'to': to,
+  };
+}
+
+/// One generated change before it is bound to a plan: `kind` 0–1 move, 2 add,
+/// 3 drop; `target` picks an existing block (3 means an unknown id); `a` and
+/// `length` are slots; `mode` makes a move give both times (0), only its start
+/// (1) or only its end (2); `type` indexes [_types].
+typedef _ItemSpec = ({
+  int kind,
+  int target,
+  int a,
+  int length,
+  int mode,
+  int type,
+});
+
+const List<String?> _types = [
+  null,
+  null,
+  null,
+  'ai',
+  'buffer',
+  'manual',
+  'cal',
+];
+
+class _PlanDiffCase {
+  _PlanDiffCase(this.blocks, List<_ItemSpec> specs)
+    : items = [for (final spec in specs) _bind(spec, blocks)];
+
+  /// (start slot, end slot) per block, ids `b0`, `b1`, ….
+  final List<(int, int)> blocks;
+  final List<ChangeItem> items;
+
+  DayPlanEntity plan(DateTime planDate) => makeTestDayPlan(
+    planDate: planDate,
+    data: DayPlanData(
+      planDate: planDate,
+      status: const DayPlanStatus.draft(),
+      plannedBlocks: [
+        for (final (i, (start, end)) in blocks.indexed)
+          PlannedBlock(
+            id: 'b$i',
+            categoryId: 'cat-1',
+            startTime: _slot(start),
+            endTime: _slot(end),
+            title: 'Block $i',
+          ),
+      ],
+    ),
+  );
+
+  // Partial moves are placed relative to the block as the plan holds it — a
+  // start just before its end, an end just after its start — so each looks
+  // valid on its own and the batch decides whether it still is.
+  static ChangeItem _bind(_ItemSpec spec, List<(int, int)> blocks) {
+    final known = spec.target < 3;
+    final index = spec.target % blocks.length;
+    final blockId = known ? 'b$index' : 'b-unknown';
+    final (origStart, origEnd) = blocks[index];
+    final typeName = _types[spec.type];
+    String at(int slot) => _slot(slot.clamp(0, 96)).toIso8601String();
+    switch (spec.kind) {
+      case 0 || 1:
+        final (start, end) = switch (spec.mode) {
+          0 => (at(spec.a), at(spec.a + spec.length)),
+          1 => (at(origEnd - 1 - spec.a % 8), null),
+          _ => (null, at(origStart + 1 + spec.a % 8)),
+        };
+        return ChangeItem(
+          toolName: 'move_block',
+          args: {
+            'blockId': blockId,
+            'toStart': ?start,
+            'toEnd': ?end,
+            'type': ?typeName,
+          },
+          humanSummary: 'move',
+        );
+      case 2:
+        return ChangeItem(
+          toolName: 'add_block',
+          args: {
+            'categoryId': 'cat-1',
+            'title': 'Added',
+            'toStart': at(spec.a),
+            'toEnd': at(spec.a + spec.length),
+            'type': ?typeName,
+          },
+          humanSummary: 'add',
+        );
+      default:
+        return ChangeItem(
+          toolName: 'drop_block',
+          args: {'blockId': blockId},
+          humanSummary: 'drop',
+        );
+    }
+  }
+
+  @override
+  String toString() =>
+      '_PlanDiffCase(blocks: $blocks, items: '
+      '${items.map((i) => '${i.toolName}${i.args}').toList()})';
+}
+
+extension _AnyPlanDiff on glados.Any {
+  glados.Generator<_ItemSpec> get _itemSpec =>
+      glados.CombinableAny(this).combine6(
+        glados.IntAnys(this).intInRange(0, 4),
+        glados.IntAnys(this).intInRange(0, 4),
+        glados.IntAnys(this).intInRange(0, 97),
+        glados.IntAnys(this).intInRange(-2, 16),
+        glados.IntAnys(this).intInRange(0, 3),
+        glados.IntAnys(this).intInRange(0, _types.length),
+        (int kind, int target, int a, int length, int mode, int type) => (
+          kind: kind,
+          target: target,
+          a: a,
+          length: length,
+          mode: mode,
+          type: type,
+        ),
+      );
+
+  // Up to three blocks and up to six items, so the same block is often the
+  // target of more than one item in a batch.
+  glados.Generator<_PlanDiffCase> get planDiffCase =>
+      glados.CombinableAny(this).combine2(
+        glados.ListAnys(this).listWithLengthInRange(
+          1,
+          4,
+          glados.CombinableAny(this).combine2(
+            glados.IntAnys(this).intInRange(0, 95),
+            glados.IntAnys(this).intInRange(1, 24),
+            (int start, int length) => (start, (start + length).clamp(1, 96)),
+          ),
+        ),
+        glados.ListAnys(this).listWithLengthInRange(0, 7, _itemSpec),
+        _PlanDiffCase.new,
+      );
+
+  glados.Generator<Map<String, dynamic>?> get _rawSnapshot =>
+      glados.CombinableAny(this).combine5(
+        glados.IntAnys(this).intInRange(-2, 97),
+        glados.IntAnys(this).intInRange(-1, 97),
+        glados.IntAnys(this).intInRange(0, _types.length),
+        glados.IntAnys(this).intInRange(-2, 90),
+        glados.BoolAny(this).bool,
+        (int start, int end, int type, int remaining, bool full) => start == -2
+            ? null
+            : {
+                if (start >= 0) 'start': _slot(start).toIso8601String(),
+                if (end >= 0) 'end': _slot(end).toIso8601String(),
+                'type': ?_types[type],
+                if (remaining >= -1) 'remainingMinutes': remaining,
+                if (full) ...{
+                  'title': ' Focus ',
+                  'categoryId': 'cat-1',
+                  'taskId': 'task-1',
+                  'reason': 'because',
+                },
+              },
+      );
+
+  glados.Generator<Map<String, dynamic>> get rawPlanChange =>
+      glados.CombinableAny(this).combine4(
+        glados.IntAnys(this).intInRange(0, 3),
+        glados.IntAnys(this).intInRange(0, 3),
+        _rawSnapshot,
+        _rawSnapshot,
+        (
+          int action,
+          int blockId,
+          Map<String, dynamic>? from,
+          Map<String, dynamic>? to,
+        ) => {
+          'action': PlanDiffAction.values[action].name,
+          'reason': 'user asked',
+          'blockId': ?const [null, 'block-1', 'block-x'][blockId],
+          'from': ?from,
+          'to': ?to,
+        },
+      );
 }

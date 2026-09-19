@@ -216,14 +216,15 @@ String formatPlanChangeSummary(
 /// Order-aware validation across a batch of pending items.
 ///
 /// Walks the items in resolution order against a simulated block set so
-/// that one item's effect (e.g. dropping a block) is visible to later
-/// items in the same batch. Also re-runs the propose-time invariants
+/// that one item's effect (e.g. dropping or moving a block) is visible to
+/// later items in the same batch. Also re-runs the propose-time invariants
 /// against the resolving agent's [allowedCategoryIds]:
 ///   * `add_block` carries a full new block — validate shape, parseable
 ///     timestamps, `end > start`, in-day bounds, allowed category.
 ///   * `move_block` may carry partial overrides — validate any provided
 ///     timestamps (parseable + in-day), the effective end > effective
-///     start (using the live block as fallback), and any category
+///     start (falling back to the block as earlier moves in the batch left
+///     it), and any category
 ///     override against [allowedCategoryIds].
 ///   * `drop_block` only needs the blockId still to exist in the
 ///     simulated set.
@@ -352,6 +353,12 @@ void validateApplicablePlanDiffBatch(
         }
         assertNotCalendar(item.args['type'], idx);
         assertAllowedTask(item.args['taskId'], idx);
+        // A later move of the same block starts from where this one leaves
+        // it, exactly as `applyPlanDiffItem` will apply them.
+        blocksById[blockId] = live.copyWith(
+          startTime: effStart,
+          endTime: effEnd,
+        );
         final newCategoryId = item.args['categoryId'];
         if (newCategoryId is String && newCategoryId.isNotEmpty) {
           assertAllowedCategory(newCategoryId, idx);
