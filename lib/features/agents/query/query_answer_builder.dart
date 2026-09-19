@@ -132,32 +132,35 @@ class QueryAnswerBuilder {
               ),
         )
         .toList();
-    final context = history
-        .skip((history.length - 10).clamp(0, history.length))
-        .map(
-          (event) => switch (event.data) {
-            QueryChatQuestion(:final text) => {'role': 'user', 'text': text},
-            QueryChatAnswer(:final text, :final proposedActions) => {
-              'role': 'agent',
-              'text': proposedActions.isEmpty
-                  ? text
-                  : jsonEncode({
-                      'proposedActions': proposedActions
-                          .map(
-                            (item) => {
-                              'toolName': item.toolName,
-                              'args': item.args,
-                            },
-                          )
-                          .toList(),
-                      'executionStatus':
-                          'Not established by a proposal. Check current task state.',
-                    }),
-            },
-            _ => <String, String>{},
+    // History holds only questions and answers (filtered above).
+    final context = [
+      for (final event in history.skip(
+        (history.length - 10).clamp(0, history.length),
+      ))
+        if (event.data case QueryChatQuestion(:final text))
+          {'role': 'user', 'text': text}
+        else if (event.data case QueryChatAnswer(
+          :final text,
+          :final proposedActions,
+        ))
+          {
+            'role': 'agent',
+            'text': proposedActions.isEmpty
+                ? text
+                : jsonEncode({
+                    'proposedActions': proposedActions
+                        .map(
+                          (item) => {
+                            'toolName': item.toolName,
+                            'args': item.args,
+                          },
+                        )
+                        .toList(),
+                    'executionStatus':
+                        'Not established by a proposal. Check current task state.',
+                  }),
           },
-        )
-        .toList();
+    ];
     final historyDependencies = <String, QuerySourceRef>{
       for (final event in history)
         for (final source in queryEventDependencies(event.data))
@@ -425,8 +428,12 @@ class QueryAnswerBuilder {
         expanded: batch == null && outsideHome,
       );
       final source = corpus.access.reference(document.entry);
-      final affiliations = corpus.affiliations[source.id];
-      final sourceDependencies = [source, ...?affiliations?.sources];
+      // The crawler records an affiliation for every document it discovers;
+      // the empty fallback only guards a hand-built corpus.
+      final affiliations =
+          corpus.affiliations[source.id] ??
+          const (labels: <String>[], sources: <QuerySourceRef>[]);
+      final sourceDependencies = [source, ...affiliations.sources];
       for (var offset = 0; offset < document.text.length; offset += 10000) {
         if ((batch == null && calls >= maxSourceCalls) ||
             evidence.length >= 12) {
@@ -520,7 +527,7 @@ class QueryAnswerBuilder {
               relevance: passage['reason'] is String
                   ? passage['reason'] as String
                   : '',
-              affiliations: affiliations?.labels ?? [],
+              affiliations: affiliations.labels,
               outsideHome:
                   chat.scope.kind != QueryScopeKind.category &&
                   !corpus.homeIds.contains(source.id),

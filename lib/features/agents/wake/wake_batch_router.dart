@@ -364,6 +364,9 @@ extension WakeBatchRouter on WakeOrchestrator {
     );
   }
 
+  /// Drains every stale watermark queued for [agentId], including ones
+  /// queued while a write was in flight. [_persistReportStale] never throws,
+  /// so the loop only ends once the queue is empty.
   Future<void> _flushReportStaleWrites(String agentId) async {
     try {
       while (true) {
@@ -373,11 +376,11 @@ extension WakeBatchRouter on WakeOrchestrator {
       }
     } finally {
       _reportStaleWritesInProgress.remove(agentId);
-      final pending = _pendingReportStaleAt[agentId];
-      if (pending != null) _scheduleReportStale(agentId, pending);
     }
   }
 
+  /// Persists [occurredAt] as the report's stale watermark. Never throws:
+  /// every failure is logged and swallowed.
   Future<void> _persistReportStale(
     String agentId,
     DateTime occurredAt,
