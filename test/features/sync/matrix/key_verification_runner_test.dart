@@ -396,6 +396,49 @@ void main() {
       assignedRunner?.stopTimer();
     });
 
+    test('an incoming ceremony that completes reports success to the '
+        "service under the incoming runner's name", () async {
+      KeyVerificationRunner? assignedRunner;
+      when(() => service.incomingKeyVerificationRunner = any()).thenAnswer((
+        invocation,
+      ) {
+        assignedRunner =
+            invocation.positionalArguments.first as KeyVerificationRunner;
+        return null;
+      });
+      when(
+        () => service.onVerificationCompleted(source: any(named: 'source')),
+      ).thenAnswer((_) async {});
+
+      final subscription =
+          await listenForKeyVerificationRequestsWithSubscription(
+            service: service,
+            loggingService: loggingService,
+            requests: requestCachedController.stream,
+          );
+      addTearDown(() async {
+        assignedRunner?.stopTimer();
+        await subscription?.cancel();
+      });
+
+      final request = MockKeyVerification();
+      when(() => request.lastStep).thenReturn('m.key.verification.done');
+      when(() => request.canceled).thenReturn(false);
+      when(() => request.sasEmojis).thenReturn([]);
+      when(() => request.deviceId).thenReturn('device-123');
+      when(() => request.isDone).thenReturn(true);
+
+      // The request controller is synchronous, so the listener has run by
+      // the time add returns.
+      requestCachedController.add(request);
+
+      verify(
+        () => service.onVerificationCompleted(
+          source: 'Incoming KeyVerificationRunner',
+        ),
+      ).called(1);
+    });
+
     test('logs exceptions when listener wiring fails', () async {
       when(() => service.client).thenThrow(Exception('unavailable'));
 
@@ -537,6 +580,49 @@ void main() {
       latestRunner?.stopTimer();
 
       await runnerController.close();
+    });
+
+    test('a ceremony that completes reports success to the service under '
+        "the outgoing runner's name", () async {
+      final service = MockMatrixService();
+      final deviceKeys = MockDeviceKeys();
+      final verification = MockKeyVerification();
+      final runnerController =
+          StreamController<KeyVerificationRunner>.broadcast(sync: true);
+      addTearDown(runnerController.close);
+
+      when(
+        () => service.keyVerificationController,
+      ).thenReturn(runnerController);
+      KeyVerificationRunner? latestRunner;
+      when(() => service.keyVerificationRunner = any()).thenAnswer((
+        invocation,
+      ) {
+        latestRunner =
+            invocation.positionalArguments.first as KeyVerificationRunner;
+        return null;
+      });
+      when(
+        () => service.onVerificationCompleted(source: any(named: 'source')),
+      ).thenAnswer((_) async {});
+      when(
+        deviceKeys.startVerification,
+      ).thenAnswer((_) async => verification);
+      when(
+        () => verification.lastStep,
+      ).thenReturn('m.key.verification.done');
+      when(() => verification.canceled).thenReturn(false);
+      when(() => verification.sasEmojis).thenReturn([]);
+      when(() => verification.isDone).thenReturn(true);
+
+      await verifyMatrixDevice(deviceKeys: deviceKeys, service: service);
+      addTearDown(() => latestRunner?.stopTimer());
+
+      verify(
+        () => service.onVerificationCompleted(
+          source: 'Outgoing KeyVerificationRunner',
+        ),
+      ).called(1);
     });
   });
 

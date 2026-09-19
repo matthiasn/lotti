@@ -973,6 +973,39 @@ void main() {
       },
     );
 
+    test('repeated send exceptions on the same subject increment the repeat '
+        'counter, and a new subject restarts it', () async {
+      final repo = MockOutboxRepository();
+      final sender = MockOutboxMessageSender();
+      final log = MockDomainLogger();
+
+      final s0 = _item(id: 41, subject: 'S', messageId: 'S');
+      final s1 = s0.copyWith(retries: 1);
+      final t0 = _item(id: 42, subject: 'T', messageId: 'T');
+
+      _stubClaimSequence(repo, [s0, s1, t0]);
+      _stubHasMorePending(repo);
+      when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
+      when(() => sender.send(any())).thenThrow(StateError('transport boom'));
+      final events = _captureEvents(log);
+
+      final proc = OutboxProcessor(
+        repository: repo,
+        messageSender: sender,
+        loggingService: log,
+      );
+      await proc.processQueue();
+      await proc.processQueue();
+      await proc.processQueue();
+
+      final exceptions = events
+          .where((e) => e.startsWith('sendException'))
+          .map((e) => RegExp(r'subject=(\S+) .*repeats=(\d+)').firstMatch(e))
+          .map((m) => '${m!.group(1)}:${m.group(2)}')
+          .toList();
+      expect(exceptions, ['S:1', 'S:2', 'T:1']);
+    });
+
     test('repeated failure resets on different subject', () async {
       final repo = MockOutboxRepository();
       final sender = MockOutboxMessageSender();
@@ -1702,6 +1735,37 @@ void main() {
           isTrue,
           reason: 'expected the head-subject repeat counter to increment',
         );
+      },
+    );
+
+    test(
+      'repeated bundle send exceptions on the same head subject increment '
+      'the repeat counter on the exception path too',
+      () async {
+        final repo = MockOutboxRepository();
+        final sender = MockOutboxMessageSender();
+        final log = MockDomainLogger();
+
+        when(() => repo.markRetryBatch(any())).thenAnswer((_) async {});
+        when(() => sender.send(any())).thenThrow(StateError('transport boom'));
+        final events = _captureEvents(log);
+
+        final proc = OutboxProcessor(
+          repository: repo,
+          messageSender: sender,
+          loggingService: log,
+        );
+
+        stubBatchClaimFromQueue(repo, [textItem(id: 1), textItem(id: 2)]);
+        await proc.processQueue();
+        stubBatchClaimFromQueue(repo, [textItem(id: 1), textItem(id: 2)]);
+        await proc.processQueue();
+
+        final repeats = events
+            .where((e) => e.startsWith('bundleSendException'))
+            .map((e) => RegExp(r'repeats=(\d+)').firstMatch(e)!.group(1))
+            .toList();
+        expect(repeats, ['1', '2']);
       },
     );
 

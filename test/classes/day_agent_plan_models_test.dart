@@ -105,6 +105,42 @@ void main() {
       expect(standard.hashCode, isNot(nudge.hashCode));
     });
 
+    test('cards compare equal by value and differ on any bullet change', () {
+      DayAgentLearningCard card(List<DayAgentLearningBullet> bullets) =>
+          DayAgentLearningCard(
+            id: 'card',
+            overline: 'Overline',
+            summary: 'Summary',
+            bullets: bullets,
+          );
+      const info = DayAgentLearningBullet(
+        text: 'A',
+        tone: DayAgentLearningBulletTone.info,
+      );
+      const warning = DayAgentLearningBullet(
+        text: 'A',
+        tone: DayAgentLearningBulletTone.warning,
+      );
+
+      final base = card(const [info]);
+
+      expect(base, card(const [info]));
+      expect(base.hashCode, card(const [info]).hashCode);
+      // Same length, one bullet's tone differs.
+      expect(base, isNot(card(const [warning])));
+      // Differing bullet counts.
+      expect(base, isNot(card(const [info, info])));
+      expect(base, isNot(card(const [])));
+      expect(info, isNot(warning));
+      expect(
+        info,
+        const DayAgentLearningBullet(
+          text: 'A',
+          tone: DayAgentLearningBulletTone.info,
+        ),
+      );
+    });
+
     test('defensively freezes bullets passed at construction', () {
       final bullets = <DayAgentLearningBullet>[
         const DayAgentLearningBullet(

@@ -308,6 +308,23 @@ void main() {
     );
 
     test(
+      'a malformed directory row reads as empty and is replaced by the next '
+      'upsert instead of blocking it',
+      () async {
+        await settingsDb.saveSettingsItem(
+          SyncNodeProfileRepository.directoryKey,
+          '{not valid json',
+        );
+
+        expect(await repo.listKnownNodes(), isEmpty);
+
+        final profile = makeProfile(hostId: 'peer', updatedAt: t0);
+        expect(await repo.upsertNode(profile), isTrue);
+        expect((await repo.listKnownNodes()).map((n) => n.hostId), ['peer']);
+      },
+    );
+
+    test(
       'listKnownNodes returns empty when the directory JSON is not an object',
       () async {
         await settingsDb.saveSettingsItem(

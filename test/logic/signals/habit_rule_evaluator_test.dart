@@ -81,6 +81,38 @@ void main() {
       );
     });
 
+    test(
+      'clears choice bounds inside an "N of" group, keeping its threshold '
+      'and leaving habit leaves untouched',
+      () {
+        const habitLeaf = AutoCompleteRule.habit(habitId: 'habit-waddle');
+        const rule = AutoCompleteRule.multiple(
+          rules: [
+            habitLeaf,
+            AutoCompleteRule.measurable(dataTypeId: 'fish', minimum: 3),
+          ],
+          successes: 1,
+          title: 'Either',
+        );
+
+        final normalized =
+            normalizeChoiceMeasurableBounds(
+                  rule,
+                  isChoice: (id) => id == 'fish',
+                )
+                as AutoCompleteRuleMultiple;
+
+        expect(normalized, isNot(same(rule)));
+        expect(normalized.successes, 1);
+        expect(normalized.title, 'Either');
+        expect(normalized.rules.first, same(habitLeaf));
+        expect(
+          normalized.rules.last,
+          const AutoCompleteRule.measurable(dataTypeId: 'fish'),
+        );
+      },
+    );
+
     test('returns the original tree when no choice bound needs changing', () {
       const rule = AutoCompleteRule.multiple(
         rules: [AutoCompleteRule.measurable(dataTypeId: 'water')],

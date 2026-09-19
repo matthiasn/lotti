@@ -234,4 +234,60 @@ void main() {
       expect(cache.lastSentCacheKey('h', 'e'), 'h::e');
     });
   });
+
+  group('sent bindings', () {
+    void remember(int counter) => cache.rememberSentBinding(
+      hostId: hostId,
+      counter: counter,
+      entryId: 'entry-$counter',
+      payloadType: 1,
+    );
+    bool contains(int counter) => cache.containsSentBinding(
+      hostId: hostId,
+      counter: counter,
+      entryId: 'entry-$counter',
+      payloadType: 1,
+    );
+
+    test('matches only the exact binding and expires after the TTL', () {
+      var now = DateTime(2024, 3, 15, 10);
+      withClock(Clock(() => now), () {
+        remember(1);
+        expect(contains(1), isTrue);
+        expect(
+          cache.containsSentBinding(
+            hostId: hostId,
+            counter: 1,
+            entryId: 'entry-1',
+            payloadType: 2,
+          ),
+          isFalse,
+          reason: 'a different payload type is a different binding',
+        );
+
+        now = now.add(
+          SyncSequenceCache.sentBindingCacheTtl + const Duration(seconds: 1),
+        );
+        expect(contains(1), isFalse);
+      });
+    });
+
+    test('evicts the least recently used binding past capacity; a lookup '
+        'refreshes recency', () {
+      withClock(Clock.fixed(DateTime(2024, 3, 15, 10)), () {
+        const capacity = SyncSequenceCache.sentBindingCacheCapacity;
+        for (var i = 0; i < capacity; i++) {
+          remember(i);
+        }
+        // Touch the oldest so the second-oldest becomes the eviction victim.
+        expect(contains(0), isTrue);
+
+        remember(capacity);
+
+        expect(contains(1), isFalse);
+        expect(contains(0), isTrue);
+        expect(contains(capacity), isTrue);
+      });
+    });
+  });
 }

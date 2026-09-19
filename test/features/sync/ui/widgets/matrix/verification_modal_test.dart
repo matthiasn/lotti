@@ -725,4 +725,59 @@ void main() {
 
     expect(observer.pops, 1);
   });
+
+  testWidgets('confirming a cancelled ceremony stops the runner timer and '
+      'closes the modal without waiting for the auto-dismiss', (tester) async {
+    final runner = MockKeyVerificationRunner();
+    final keyVerification = MockKeyVerification();
+    when(() => keyVerification.canceled).thenReturn(true);
+    when(() => keyVerification.state).thenReturn(KeyVerificationState.error);
+    when(() => runner.lastStep).thenReturn('m.key.verification.cancel');
+    when(() => runner.emojis).thenReturn(null);
+    when(() => runner.keyVerification).thenReturn(keyVerification);
+    when(() => keyVerification.isDone).thenReturn(true);
+    when(runner.stopTimer).thenReturn(null);
+
+    final observer = _PopCountingObserver();
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => VerificationModal(mockDeviceKeys),
+                ),
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+        ],
+        navigatorObservers: [observer],
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    controller.add(runner);
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Cancelled on other device...'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('matrix_cancelled_confirm')));
+    // The confirm handler stops the runner itself, before the route is torn
+    // down (dispose stops it again, which is harmless).
+    verify(runner.stopTimer).called(1);
+    await tester.pumpAndSettle();
+
+    expect(observer.pops, 1);
+    expect(find.byType(VerificationModal), findsNothing);
+
+    // The armed auto-dismiss must not pop a second route once it fires.
+    await tester.pump(const Duration(seconds: 31));
+    expect(observer.pops, 1);
+  });
 }

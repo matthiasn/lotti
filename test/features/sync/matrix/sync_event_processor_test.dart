@@ -612,6 +612,72 @@ void main() {
   });
 
   test(
+    'a failed search reindex is logged but still keeps and announces the '
+    'synced definition',
+    () async {
+      final fts5Db = MockFts5Db();
+      final renamed = measurableHydration.copyWith(
+        choices: [
+          for (final choice in measurableHydration.choices!)
+            if (choice.id == hydrationClear.id)
+              choice.copyWith(title: 'Transparent')
+            else
+              choice,
+        ],
+      );
+      processor = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        savedTaskFiltersRepository: savedTaskFiltersRepository,
+        settingsDb: settingsDb,
+        journalEntityLoader: journalEntityLoader,
+        fts5Db: fts5Db,
+      );
+      when(
+        () => journalDb.getMeasurableDataTypeById(renamed.id),
+      ).thenAnswer((_) async => measurableHydration);
+      when(
+        () => journalDb.getMeasurementsByTypeIncludingPrivate(
+          type: renamed.id,
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => [testMeasurementHydrationEntry]);
+      final failure = StateError('fts5 locked');
+      when(
+        () => fts5Db.reindexMeasurements(any(), any()),
+      ).thenThrow(failure);
+      when(() => event.text).thenReturn(
+        encodeMessage(
+          SyncMessage.entityDefinition(
+            entityDefinition: renamed,
+            status: SyncEntryStatus.update,
+          ),
+        ),
+      );
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(() => journalDb.upsertEntityDefinition(renamed)).called(1);
+      verify(
+        () => loggingService.error(
+          LogDomain.sync,
+          failure,
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'processor.apply.entityDefinition.reindex',
+        ),
+      ).called(1);
+      verify(
+        () => updateNotifications.notify(
+          any(that: contains(measurablesNotification)),
+          fromSync: true,
+        ),
+      ).called(1);
+    },
+  );
+
+  test(
     'a definition the journal refuses as older is neither reindexed nor '
     'announced',
     () async {

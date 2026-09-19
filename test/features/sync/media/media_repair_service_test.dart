@@ -64,6 +64,48 @@ void main() {
     ).thenAnswer((_) async {});
   });
 
+  test('caps tracked pending ids and attempt counters, evicting the oldest '
+      'first so an evicted entry can be requested again', () {
+    fakeAsync((async) {
+      final service = buildService(
+        maxTrackedEntries: 2,
+        maxAttemptsPerEntry: 1,
+      );
+      addTearDown(service.dispose);
+
+      service
+        ..reportMissing(entryId: 'e0', relativePath: '/images/0')
+        ..reportMissing(entryId: 'e1', relativePath: '/images/1');
+      async.elapse(debounce);
+      expect(requests.single.entryIds, ['e0', 'e1']);
+      expect(service.debugAttemptedEntryCount, 2);
+
+      // A third pending id pushes the oldest pending one out.
+      service
+        ..reportMissing(entryId: 'e2', relativePath: '/images/2')
+        ..reportMissing(entryId: 'e3', relativePath: '/images/3')
+        ..reportMissing(entryId: 'e4', relativePath: '/images/4');
+      expect(service.debugPending, {'e3', 'e4'});
+
+      async.elapse(debounce);
+      expect(requests.last.entryIds, ['e3', 'e4']);
+      expect(service.debugAttemptedEntryCount, 4);
+
+      // e0 used its single attempt, so while its counter is tracked a new
+      // miss is given up on.
+      service.reportMissing(entryId: 'e0', relativePath: '/images/0');
+      expect(service.debugPending, isEmpty);
+
+      // The next new miss trims the attempt counters back to the cap,
+      // dropping e0/e1 — so they are requestable again rather than
+      // permanently given up on.
+      service.reportMissing(entryId: 'e5', relativePath: '/images/5');
+      expect(service.debugAttemptedEntryCount, 2);
+      service.reportMissing(entryId: 'e0', relativePath: '/images/0');
+      expect(service.debugPending, {'e5', 'e0'});
+    });
+  });
+
   test('coalesces a burst of misses into one request', () {
     fakeAsync((async) {
       final service = buildService();

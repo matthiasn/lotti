@@ -1324,6 +1324,10 @@ void main() {
         entries: [],
         requesterId: 'host-1',
       ),
+      'mediaRequest': const SyncMessage.mediaRequest(
+        entryIds: ['img-1'],
+        requesterId: 'host-1',
+      ),
       'backfillResponse': const SyncMessage.backfillResponse(
         hostId: 'h1',
         counter: 1,

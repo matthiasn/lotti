@@ -299,6 +299,40 @@ void main() {
       expect(messages, hasLength(2));
       expect(messages.last, contains('observed=1 suppressed=0 total=2'));
     });
+
+    test('bounds the per-key sample state, forgetting the least recently '
+        'used key so it starts a fresh count', () {
+      withClock(Clock(() => now), () {
+        void sample(String key) => logger.logSampled(
+          LogDomain.sync,
+          'op',
+          sampleKey: key,
+          subDomain: 'bounded',
+        );
+
+        sample('key-0');
+        sample('key-0'); // Suppressed: total=2 for a tracked key.
+        // 256 other keys push key-0 past the state capacity.
+        for (var i = 1; i <= 256; i++) {
+          sample('key-$i');
+        }
+        // key-0 was evicted, so it is treated as a first observation again.
+        sample('key-0');
+      });
+
+      final messages = verify(
+        () => mockLoggingService.captureEvent(
+          captureAny<Object>(),
+          domain: 'sync',
+          subDomain: 'bounded',
+        ),
+      ).captured.cast<String>();
+      final key0 = messages
+          .where((m) => m.contains('sampleKey=key-0 '))
+          .toList();
+      expect(key0, hasLength(2));
+      expect(key0.last, contains('observed=1 suppressed=0 total=1'));
+    });
   });
 
   group('DomainLogger.error', () {

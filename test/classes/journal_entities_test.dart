@@ -8,6 +8,9 @@ import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
+import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_data.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
@@ -446,6 +449,38 @@ void main() {
         expect(
           entity.affectedIds,
           <String>{'entity-1', 'rel-001', checkInNotification},
+        );
+      },
+    );
+
+    test(
+      'a goal notifies goalNotification, and a spec snapshot also wakes the '
+      'goal it belongs to',
+      () {
+        GoalData data({String? snapshotOf}) => GoalData(
+          title: 'Waddle more',
+          statement: 'Waddle to the ice shelf five days a week.',
+          criteria: const GoalCriterion.habit(
+            criterionId: 'waddle-daily',
+            habitId: 'habit-waddle',
+            targetCount: 5,
+            window: GoalWindow.rollingDays(count: 7),
+          ),
+          specVersion: 1,
+          specVersionId: 'goal-1:spec-v1',
+          snapshotOf: snapshotOf,
+        );
+
+        expect(
+          JournalEntity.goal(meta: meta, data: data()).affectedIds,
+          <String>{'entity-1', goalNotification},
+        );
+        expect(
+          JournalEntity.goal(
+            meta: meta,
+            data: data(snapshotOf: 'goal-1'),
+          ).affectedIds,
+          <String>{'entity-1', 'goal-1', goalNotification},
         );
       },
     );

@@ -4,6 +4,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix.dart';
+import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/features/sync/state/matrix_stats_provider.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
@@ -125,6 +126,70 @@ void main() {
         expect(result.messageCounts, streamedStats.messageCounts);
       },
     );
+  });
+
+  group('metrics and diagnostics providers', () {
+    late MockMatrixService mockMatrixService;
+    late ProviderContainer container;
+
+    setUp(() {
+      mockMatrixService = MockMatrixService();
+      container = ProviderContainer(
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+        ],
+      );
+      addTearDown(container.dispose);
+    });
+
+    test('matrixSyncMetricsFutureProvider resolves the service metrics and '
+        're-reads them on invalidate', () async {
+      var applied = 3;
+      when(
+        () => mockMatrixService.getSyncMetrics(),
+      ).thenAnswer((_) async => SyncMetrics(dbApplied: applied));
+
+      expect(
+        (await container.read(
+          matrixSyncMetricsFutureProvider.future,
+        ))?.dbApplied,
+        3,
+      );
+
+      applied = 5;
+      container.invalidate(matrixSyncMetricsFutureProvider);
+      expect(
+        (await container.read(
+          matrixSyncMetricsFutureProvider.future,
+        ))?.dbApplied,
+        5,
+      );
+      verify(() => mockMatrixService.getSyncMetrics()).called(2);
+    });
+
+    test('matrixSyncMetricsFutureProvider passes through a missing '
+        'pipeline as null', () async {
+      when(
+        () => mockMatrixService.getSyncMetrics(),
+      ).thenAnswer((_) async => null);
+
+      expect(
+        await container.read(matrixSyncMetricsFutureProvider.future),
+        isNull,
+      );
+    });
+
+    test('matrixDiagnosticsTextProvider exposes the service diagnostics '
+        'text', () async {
+      when(
+        () => mockMatrixService.getSyncDiagnosticsText(),
+      ).thenAnswer((_) async => 'lastIgnored=penguin-1');
+
+      expect(
+        await container.read(matrixDiagnosticsTextProvider.future),
+        'lastIgnored=penguin-1',
+      );
+    });
   });
 
   group('MatrixStats equality', () {

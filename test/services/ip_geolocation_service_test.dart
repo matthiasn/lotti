@@ -124,6 +124,67 @@ void main() {
         expect(result.geohashString, isNotEmpty);
       });
 
+      test('ipapi.co without a utc_offset falls back to the local offset '
+          'at the injected clock', () async {
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://ipapi.co/json/'),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            json.encode({
+              'latitude': -77.85,
+              'longitude': 166.67,
+              'timezone': 'Antarctica/McMurdo',
+            }),
+            200,
+          ),
+        );
+
+        final result = await IpGeolocationService.getLocationFromIp(
+          httpClient: mockHttpClient,
+          clock: clock,
+        );
+
+        expect(result!.timezone, 'Antarctica/McMurdo');
+        expect(result.utcOffset, localUtcOffsetMinutes);
+        expect(result.createdAt, fixedNow);
+      });
+
+      test('ip-api.com offset in seconds is converted to minutes', () async {
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://ipapi.co/json/'),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer((_) async => http.Response('Error', 500));
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://ip-api.com/json'),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            json.encode({
+              'status': 'success',
+              'lat': -77.85,
+              'lon': 166.67,
+              'timezone': 'Antarctica/McMurdo',
+              'offset': 46800,
+            }),
+            200,
+          ),
+        );
+
+        final result = await IpGeolocationService.getLocationFromIp(
+          httpClient: mockHttpClient,
+          clock: clock,
+        );
+
+        expect(result!.utcOffset, 780); // +13h
+      });
+
       test('returns null when both services fail', () async {
         when(
           () => mockHttpClient.get(

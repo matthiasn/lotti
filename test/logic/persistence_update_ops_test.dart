@@ -85,6 +85,47 @@ void main() {
     },
   );
 
+  group('updateJournalEntityTextImpl flag handling', () {
+    for (final (label, entity) in <(String, JournalEntity)>[
+      ('audio', testAudioEntry),
+      ('image', testImageEntry),
+    ]) {
+      for (final (flag, expected) in [
+        (EntryFlag.import, EntryFlag.none),
+        (EntryFlag.followUpNeeded, EntryFlag.followUpNeeded),
+        (null, null),
+      ]) {
+        test('$label entry with flag $flag is written with flag $expected '
+            '(editing text clears only the import marker)', () async {
+          final flagged = entity.copyWith(
+            meta: entity.meta.copyWith(flag: flag),
+          );
+          when(
+            () => mocks.journalDb.journalEntityById(flagged.meta.id),
+          ).thenAnswer((_) async => flagged);
+
+          final result = await ops.updateJournalEntityTextImpl(
+            flagged.meta.id,
+            const EntryText(plainText: 'Penguins waddled to the shore.'),
+            DateTime(2024, 3, 15, 10),
+          );
+
+          expect(result, isTrue);
+          final written =
+              verify(
+                    () => logic.updateDbEntity(captureAny()),
+                  ).captured.single
+                  as JournalEntity;
+          expect(written.meta.flag, expected);
+          expect(
+            written.entryText?.plainText,
+            'Penguins waddled to the shore.',
+          );
+        });
+      }
+    }
+  });
+
   test('updateJournalEntryImpl returns false when no fields change', () async {
     final result = await ops.updateJournalEntryImpl(
       journalEntityId: testTextEntry.meta.id,

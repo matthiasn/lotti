@@ -160,10 +160,11 @@ void main() {
     );
 
     // -----------------------------------------------------------------------
-    // onPause / onResume of the combined stream (lines 89–90, 93–94)
+    // onCancel tears the combined stream down so a remount re-subscribes
     // -----------------------------------------------------------------------
     testWidgets(
-      'stream pause and resume keep page functional',
+      'removing the page cancels its subscriptions and a remount '
+      're-subscribes cleanly',
       (tester) async {
         final unresolvedController =
             StreamController<List<Conflict>>.broadcast();
@@ -185,9 +186,8 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('Unresolved · 1 item'), findsOneWidget);
 
-        // Remove the widget from the tree; this cancels the stream listener
-        // which triggers onCancel and indirectly exercises the pause/resume
-        // lifecycle of the inner subscriptions before cancel is invoked.
+        // Remove the widget from the tree; this cancels the stream listener,
+        // which triggers onCancel and tears down both inner subscriptions.
         await tester.pumpWidget(
           makeTestableWidget(const SizedBox.shrink()),
         );

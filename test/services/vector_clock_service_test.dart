@@ -6,6 +6,7 @@ import 'package:glados/glados.dart' as glados2;
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
+import 'package:lotti/features/sync/utils.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -202,6 +203,22 @@ void main() {
       final counter = await newService.getNextAvailableCounter();
       expect(counter, 50);
     });
+
+    test(
+      'a stored host without a stored counter keeps the host and starts '
+      'the counter at zero, persisting it',
+      () async {
+        await settingsDb.saveSettingsItem(hostKey, 'penguin-host');
+        await settingsDb.removeSettingsItem(nextAvailableCounterKey);
+
+        final newService = VectorClockService();
+        await newService.initialized;
+
+        expect(await newService.getHost(), 'penguin-host');
+        expect(await newService.getNextAvailableCounter(), 0);
+        expect(await settingsDb.itemByKey(nextAvailableCounterKey), '0');
+      },
+    );
 
     test('host persists across service instances', () async {
       final originalHost = await service.getHost();
