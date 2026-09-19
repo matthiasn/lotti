@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -171,5 +173,125 @@ void main() {
     expect(decoded.setupOrigin, isNull);
     expect(decoded.finalizerOutcome, isNull);
     expect(decoded.finalContentAuthor, ReportContentAuthor.executor);
+  });
+
+  group('properties', () {
+    final optionalId = glados.any.choose<String?>([null, 'id-1', '']);
+    final route = glados.any.combine5(
+      optionalId,
+      glados.any.choose(['qwen3.5-plus', 'penguin-small']),
+      glados.any.choose(InferenceProviderType.values),
+      optionalId,
+      // Runtime settings are flat scalars; route equality compares them
+      // shallowly.
+      glados.any.choose(<Map<String, Object?>>[
+        const {},
+        const {'geminiThinkingMode': 'low'},
+        const {'depth': 2, 'enabled': true},
+      ]),
+      (
+        String? configId,
+        String modelId,
+        InferenceProviderType type,
+        String? publisher,
+        Map<String, Object?> settings,
+      ) => InferenceRouteSnapshot(
+        modelConfigId: configId,
+        providerModelId: modelId,
+        modelName: 'Model $modelId',
+        publisherName: publisher,
+        servingProviderConfigId: configId == null ? null : 'provider-1',
+        servingProviderType: type,
+        servingProviderName: 'Provider',
+        runtimeSettings: settings,
+      ),
+    );
+    final provenance = glados.any.combine5(
+      route,
+      glados.any.oneOf<InferenceRouteSnapshot?>([
+        glados.any.always(null),
+        route,
+      ]),
+      glados.any.choose<ReportFinalizerOutcome?>([
+        null,
+        ...ReportFinalizerOutcome.values,
+      ]),
+      glados.any.choose<AgentSetupResolutionSource?>([
+        null,
+        ...AgentSetupResolutionSource.values,
+      ]),
+      glados.any.choose(ReportContentAuthor.values),
+      (
+        InferenceRouteSnapshot executor,
+        InferenceRouteSnapshot? finalizer,
+        ReportFinalizerOutcome? outcome,
+        AgentSetupResolutionSource? source,
+        ReportContentAuthor author,
+      ) => ReportInferenceProvenance(
+        runKey: 'run-1',
+        threadId: 'thread-1',
+        executor: executor,
+        finalizer: finalizer,
+        finalizerOutcome: outcome,
+        setupSource: source,
+        setupOrigin: source == null
+            ? null
+            : AgentInferenceSetupOrigin.values.first,
+        profileId: source == null ? null : 'profile-1',
+        finalContentAuthor: author,
+      ),
+    );
+
+    glados.Glados(provenance, glados.ExploreConfig(numRuns: 200)).test(
+      'survives a JSON round-trip through the report map',
+      (original) {
+        final wire =
+            jsonDecode(jsonEncode(original.toReportMap()))
+                as Map<String, Object?>;
+        final read = ReportInferenceProvenance.tryRead(wire)!;
+
+        expect(jsonEncode(read.toJson()), jsonEncode(original.toJson()));
+        expect(read.executor, original.executor);
+        expect(read.finalizer, original.finalizer);
+        expect(read.finalAuthorRoute, original.finalAuthorRoute);
+      },
+      tags: 'glados',
+    );
+
+    // Whatever a peer on another build wrote: wrong types, missing fields,
+    // nested junk.
+    final junk = glados.any.choose<Object?>([
+      null,
+      1,
+      'text',
+      true,
+      const <Object?>[],
+      const {'providerModelId': 3},
+      const {'runKey': 'r', 'threadId': 't', 'executor': 'x'},
+    ]);
+    final field = glados.any.choose([
+      'runKey',
+      'threadId',
+      'executor',
+      'finalizer',
+      'finalContentAuthor',
+      'setupSource',
+    ]);
+
+    glados.Glados(
+      glados.any.map(field, junk),
+      glados.ExploreConfig(numRuns: 200),
+    ).test(
+      'tryRead never throws on malformed provenance',
+      (payload) {
+        expect(
+          () => ReportInferenceProvenance.tryRead({
+            taskAgentInferenceProvenanceKey: payload,
+          }),
+          returnsNormally,
+        );
+      },
+      tags: 'glados',
+    );
   });
 }
