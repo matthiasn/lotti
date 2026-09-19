@@ -227,5 +227,30 @@ void main() {
       // pill is in the second row (below).
       expect(monoY, lessThan(statusY));
     });
+
+    for (final tappable in [false, true]) {
+      testWidgets(
+        'shows the drill-in chevron only when the compact row is tappable '
+        '(tappable=$tappable)',
+        (tester) async {
+          var taps = 0;
+          await _pump(
+            tester,
+            conflict: _buildConflict(status: ConflictStatus.unresolved),
+            surface: _compactSurface,
+            onTap: tappable ? () => taps++ : null,
+          );
+
+          expect(
+            find.byIcon(LottiIcons.chevronRight),
+            tappable ? findsOneWidget : findsNothing,
+          );
+          if (tappable) {
+            await tester.tap(find.byType(ConflictListItem));
+            expect(taps, 1);
+          }
+        },
+      );
+    }
   });
 }

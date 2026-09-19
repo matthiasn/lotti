@@ -148,5 +148,189 @@ extension _EntityDisappearedCases on _SkillInferenceTestSetup {
         },
       );
     });
+
+    group('response persistence failure', () {
+      void stubResponseEntryNotPersisted() {
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            id: any(named: 'id'),
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
+      }
+
+      void verifyPersistFailureLogged(String message, String subDomain) {
+        verify(
+          () => mockLoggingService.error(
+            LogDomain.ai,
+            any<Object>(
+              that: isA<StateError>().having(
+                (e) => e.message,
+                'message',
+                message,
+              ),
+            ),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: subDomain,
+          ),
+        ).called(1);
+      }
+
+      test(
+        'reports an attributed image analysis whose response entry was not '
+        'stored as a failed run and never finalizes the attribution',
+        () async {
+          final attribution = _registerInteractionCapture();
+          final imageEntity = makeImageEntity();
+          await createStubImageFile();
+          when(
+            () => mockAiInputRepo.getEntity('img-1'),
+          ).thenAnswer((_) async => imageEntity);
+          when(
+            () => mockTaskSummaryResolver.resolve(any()),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockCloudRepo.generateWithImages(
+              any(),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              images: any(named: 'images'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.value(makeStreamChunk('Penguins queue at the dock')),
+          );
+          stubResponseEntryNotPersisted();
+          stubLoggingEvent();
+          stubLoggingException();
+
+          await runner.runImageAnalysis(
+            imageEntryId: 'img-1',
+            automationResult: makeImageAnalysisResult(),
+          );
+
+          verifyPersistFailureLogged(
+            'Failed to persist image analysis for img-1',
+            'runImageAnalysis',
+          );
+          verifyNever(() => attribution.service.finalize(any()));
+          expect(
+            container.read(
+              inferenceStatusControllerProvider((
+                id: 'img-1',
+                aiResponseType: AiResponseType.imageAnalysis,
+              )),
+            ),
+            InferenceStatus.error,
+          );
+        },
+      );
+
+      test(
+        'reports an audio summary whose response entry was not stored as a '
+        'failed run',
+        () async {
+          final summarySkill =
+              AiConfig.skill(
+                    id: 'skill-audio-summary',
+                    name: 'Summarize Recording',
+                    skillType: SkillType.audioSummary,
+                    requiredInputModalities: const [Modality.audio],
+                    systemInstructions: 'You summarize recordings.',
+                    userInstructions: 'Summarize the recording.',
+                    createdAt: DateTime(2024),
+                  )
+                  as AiConfigSkill;
+          final transcript = List.generate(
+            8,
+            (i) => 'Crate $i of herring left the Waddle depot on time.',
+          ).join(' ');
+          final audio = makeAudioEntity(id: 'audio-sum', plainText: transcript);
+          when(
+            () => mockAiInputRepo.getEntity('audio-sum'),
+          ).thenAnswer((_) async => audio);
+          when(
+            () => mockCloudRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              tools: any(named: 'tools'),
+              toolChoice: any(named: 'toolChoice'),
+              geminiThinkingMode: any(named: 'geminiThinkingMode'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.value(
+              CreateChatCompletionStreamResponse(
+                id: 'resp-tool',
+                choices: [
+                  ChatCompletionStreamResponseChoice(
+                    delta: ChatCompletionStreamResponseDelta(
+                      toolCalls: [
+                        ChatCompletionStreamMessageToolCallChunk(
+                          index: 0,
+                          id: 'call-1',
+                          function: ChatCompletionStreamMessageFunctionCall(
+                            name: entrySummaryToolName,
+                            arguments: jsonEncode({
+                              EntrySummaryToolArgs.oneLiner: 'Herring shipped.',
+                              EntrySummaryToolArgs.tldr: 'All crates left.',
+                              EntrySummaryToolArgs.summary: '## Shipping',
+                            }),
+                          ),
+                        ),
+                      ],
+                    ),
+                    index: 0,
+                  ),
+                ],
+                object: 'chat.completion.chunk',
+                created: DateTime(2024).millisecondsSinceEpoch ~/ 1000,
+              ),
+            ),
+          );
+          stubResponseEntryNotPersisted();
+          stubLoggingEvent();
+          stubLoggingException();
+
+          await runner.runAudioSummary(
+            audioEntryId: 'audio-sum',
+            automationResult: AutomationResult(
+              handled: true,
+              resolvedProfile: ResolvedProfile(
+                thinkingModelId: 'models/gemini-flash',
+                thinkingProvider: testInferenceProvider(id: 'p-flash'),
+              ),
+              skill: summarySkill,
+            ),
+          );
+
+          verifyPersistFailureLogged(
+            'Failed to persist audio summary for audio-sum',
+            'runAudioSummary',
+          );
+          expect(
+            container.read(
+              inferenceStatusControllerProvider((
+                id: 'audio-sum',
+                aiResponseType: AiResponseType.audioSummary,
+              )),
+            ),
+            InferenceStatus.error,
+          );
+        },
+      );
+    });
   }
 }

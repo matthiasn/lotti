@@ -627,6 +627,41 @@ void main() {
         expect(toolCalls.first.function.arguments, '{"a": 1}');
       });
 
+      test('keeps accumulated arguments when a repeated-ID continuation '
+          'carries only a late function name', () {
+        accumulator
+          ..processChunk(
+            const ChatCompletionStreamResponseDelta(
+              toolCalls: [
+                ChatCompletionStreamMessageToolCallChunk(
+                  index: 0,
+                  id: 'call_late_name',
+                  function: ChatCompletionStreamMessageFunctionCall(
+                    arguments: '{"crate": 7}',
+                  ),
+                ),
+              ],
+            ),
+          )
+          ..processChunk(
+            const ChatCompletionStreamResponseDelta(
+              toolCalls: [
+                ChatCompletionStreamMessageToolCallChunk(
+                  index: 0,
+                  id: 'call_late_name',
+                  function: ChatCompletionStreamMessageFunctionCall(
+                    name: 'ship_crate',
+                  ),
+                ),
+              ],
+            ),
+          );
+
+        final toolCall = accumulator.toToolCalls().single;
+        expect(toolCall.function.name, 'ship_crate');
+        expect(toolCall.function.arguments, '{"crate": 7}');
+      });
+
       Glados(any.toolCallStream).test(
         'accumulates generated parallel indexed tool-call streams',
         (scenario) {

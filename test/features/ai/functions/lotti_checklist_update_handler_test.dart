@@ -515,6 +515,36 @@ void main() {
         },
       );
 
+      test(
+        'reports an item the repository refused to write as skipped',
+        () async {
+          final item = ChecklistTestDataFactory.createChecklistItem(
+            id: 'item-1',
+            title: 'Count the herring crates',
+            checkedBy: ChangeSource.agent,
+          );
+          stubItemFetch(['item-1'], [item]);
+          stubTaskById();
+          when(
+            () => mockChecklistRepository.updateChecklistItem(
+              checklistItemId: 'item-1',
+              data: any(named: 'data'),
+              taskId: testTask.id,
+            ),
+          ).thenAnswer((_) async => false);
+
+          final count = await handler.executeUpdates(
+            makeUpdateResult([
+              {'id': 'item-1', 'isChecked': true},
+            ]),
+          );
+
+          expect(count, 0);
+          expect(handler.skippedItems.single.id, 'item-1');
+          expect(handler.skippedItems.single.reason, 'Update failed');
+        },
+      );
+
       test('skips an archival that matches the current state', () async {
         final item = ChecklistTestDataFactory.createChecklistItem(
           id: 'item-1',

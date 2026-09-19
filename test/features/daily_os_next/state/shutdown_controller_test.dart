@@ -87,6 +87,31 @@ void main() {
     );
 
     test(
+      'copyWith replaces only the named field and keeps recorded decisions',
+      () async {
+        final container = makeContainer(_RecordingAgent());
+        await container.read(shutdownControllerProvider(forDate).future);
+        await container
+            .read(shutdownControllerProvider(forDate).notifier)
+            .applyCarryover(
+              taskId: 't_invoices',
+              action: CarryoverAction.drop,
+            );
+        final data = container.read(shutdownControllerProvider(forDate)).value!;
+
+        final updated = data.copyWith(
+          tomorrowNote: const TomorrowNote(body: 'Restock the herring shed.'),
+        );
+
+        expect(updated.tomorrowNote.body, 'Restock the herring shed.');
+        expect(updated.decisions, {'t_invoices': CarryoverAction.drop});
+        expect(updated.completed, same(data.completed));
+        expect(updated.carryover, same(data.carryover));
+        expect(updated.metrics, same(data.metrics));
+      },
+    );
+
+    test(
       'submitReflection forwards forDate, text, and source to the agent',
       () async {
         final agent = _RecordingAgent();

@@ -15,6 +15,8 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/image_generation_error.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
+import 'package:lotti/features/ai/repository/ai_input_repository.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
@@ -29,6 +31,7 @@ import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/service/image_path_migration_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -111,6 +114,47 @@ void main() {
         ..registerImageGenerationReferenceImages();
     });
     setup.registerEntityDisappeared();
+
+    test(
+      'skillInferenceRunnerProvider wires the runner to the watched input '
+      'repository and reports its failures on the container it lives in',
+      () async {
+        final providerContainer = ProviderContainer(
+          overrides: [
+            cloudInferenceRepositoryProvider.overrideWithValue(
+              setup.mockCloudRepo,
+            ),
+            aiInputRepositoryProvider.overrideWithValue(setup.mockAiInputRepo),
+            journalRepositoryProvider.overrideWithValue(setup.mockJournalRepo),
+            aiConfigRepositoryProvider.overrideWithValue(
+              setup.mockAiConfigRepo,
+            ),
+          ],
+        );
+        addTearDown(providerContainer.dispose);
+        when(
+          () => setup.mockAiInputRepo.getEntity('audio-gone'),
+        ).thenAnswer((_) async => null);
+
+        await providerContainer
+            .read(skillInferenceRunnerProvider)
+            .runTranscription(
+              audioEntryId: 'audio-gone',
+              automationResult: setup.makeTranscriptionResult(),
+            );
+
+        verify(() => setup.mockAiInputRepo.getEntity('audio-gone')).called(1);
+        expect(
+          providerContainer.read(
+            inferenceStatusControllerProvider((
+              id: 'audio-gone',
+              aiResponseType: AiResponseType.audioTranscription,
+            )),
+          ),
+          InferenceStatus.error,
+        );
+      },
+    );
 
     group('AutomationResult', () {
       test('transcription result has correct fields', () {

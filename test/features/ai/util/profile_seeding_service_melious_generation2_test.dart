@@ -677,6 +677,58 @@ void main() {
     );
 
     test(
+      'a generation-0 profile on the legacy Whisper Turbo and Flux 2 dev '
+      'defaults is moved onto Whisper Large v3 and Flux 2 Klein 9B',
+      () async {
+        stubProfiles([
+          generation1Profile(
+            seedGeneration: 0,
+            thinkingModelId: 'row-mistral',
+            thinkingHighEndModelId: 'row-deepseek-pro',
+            // ignore: avoid_redundant_argument_values
+            imageRecognitionModelId: 'row-mistral',
+            transcriptionModelId: 'row-whisper-turbo',
+            imageGenerationModelId: 'black-forest-labs/flux-2-dev',
+          ),
+        ]);
+
+        await service.upgradeExisting();
+
+        final profile = savedProfile(saved)!;
+        expect(profile.transcriptionModelId, 'row-whisper-v3');
+        expect(profile.imageGenerationModelId, 'row-flux');
+        expect(profile.thinkingModelId, 'row-glm-52');
+        expect(profile.seedGeneration, meliousProfileSeedGeneration2);
+      },
+    );
+
+    test(
+      'a generation-0 profile already on Voxtral transcription still counts '
+      'as untouched and chains to generation 2',
+      () async {
+        stubProfiles([
+          generation1Profile(
+            seedGeneration: 0,
+            thinkingModelId: 'row-mistral',
+            thinkingHighEndModelId: 'row-deepseek-pro',
+            // ignore: avoid_redundant_argument_values
+            imageRecognitionModelId: 'row-mistral',
+            // ignore: avoid_redundant_argument_values
+            transcriptionModelId: 'row-voxtral',
+          ),
+        ]);
+
+        await service.upgradeExisting();
+
+        final profile = savedProfile(saved)!;
+        expect(profile.thinkingModelId, 'row-glm-52');
+        expect(profile.imageRecognitionModelId, 'row-kimi-k3');
+        expect(profile.transcriptionModelId, 'row-whisper-v3');
+        expect(profile.seedGeneration, meliousProfileSeedGeneration2);
+      },
+    );
+
+    test(
       'a generation-0 profile the user edited is stamped straight to '
       'generation 2 with every slot intact',
       () async {

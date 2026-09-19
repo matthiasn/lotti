@@ -621,6 +621,28 @@ void main() {
       expect(builder.items.first.status, ChangeItemStatus.pending);
     });
 
+    test(
+      'refuses a second proposal that would show the user the same summary '
+      'even when its arguments differ',
+      () async {
+        final first = await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 90},
+          humanSummary: 'Set estimate to 90 minutes',
+        );
+        final second = await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 90, 'reason': 'crate count'},
+          humanSummary: '  set   ESTIMATE to 90 minutes ',
+        );
+
+        expect(first, isNull);
+        expect(second, startsWith('Already queued — this exact visible'));
+        expect(builder.items, hasLength(1));
+        expect(builder.items.single.args, {'minutes': 90});
+      },
+    );
+
     test('accumulates multiple items in order', () async {
       await builder.addItem(
         toolName: 'set_task_title',

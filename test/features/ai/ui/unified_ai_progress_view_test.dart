@@ -1624,20 +1624,18 @@ Generate a widget that renders a login form.''',
   // ── onModelInstalled callbacks fire after a successful install ──────────────
   // When a model-not-installed error renders the install dialog inline inside a
   // UnifiedAiProgressContent and the install succeeds, the dialog's
-  // onModelInstalled callback runs. For the typed-exception error that callback
-  // is _handleModelInstalled('Ollama') (lines 137-148+) and for the
-  // string-fallback error it is the inline closure (lines 302-313+); both first
-  // call triggerNewInferenceProvider. We assert that trigger fires, which proves
+  // onModelInstalled callback runs. Both the typed-exception and the
+  // string-fallback error route it to _handleModelInstalled, which first calls
+  // triggerNewInferenceProvider. We assert that trigger fires, which proves
   // the callback was invoked end-to-end.
   //
-  // NOTE: the subsequent "re-show progress modal" branches
-  // (_handleModelInstalled lines 159-170 and the inline callback lines 324-335)
-  // are unreachable here: _installModel calls Navigator.of(context).pop(), which
-  // tears down the route hosting the content that owns the callback, so the
-  // `if (!mounted || !context.mounted) return` guards (lines 157 / 322)
-  // short-circuit before showSingleSliverPageModal is reached. They are only
-  // reachable when the dialog is hosted as a nested route the pop can close
-  // without unmounting the owner, which the inline rendering never produces.
+  // NOTE: the subsequent "re-show progress modal" branch is unreachable here:
+  // _installModel calls Navigator.of(context).pop(), which tears down the route
+  // hosting the content that owns the callback, so the
+  // `if (!mounted || !context.mounted) return` guard short-circuits before
+  // showSingleSliverPageModal is reached. It is only reachable when the dialog
+  // is hosted as a nested route the pop can close without unmounting the
+  // owner, which the inline rendering never produces.
   group('UnifiedAiProgressContent - onModelInstalled callback fires', () {
     const entityId = 'reshow-entity';
     // Must equal testPromptConfig.id so the re-read aiConfigByIdProvider inside
@@ -1655,7 +1653,7 @@ Generate a widget that renders a login form.''',
     Future<void> pumpErrorView(
       WidgetTester tester, {
       required UnifiedAiState controllerState,
-      required void Function() onTrigger,
+      required Future<void> Function() onTrigger,
     }) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -1684,9 +1682,9 @@ Generate a widget that renders a login form.''',
             )).overrideWith(
               () => _TestInferenceStatusController(InferenceStatus.error),
             ),
-            triggerNewInferenceProvider.overrideWith((ref, arg) async {
-              onTrigger();
-            }),
+            triggerNewInferenceProvider.overrideWith(
+              (ref, arg) => onTrigger(),
+            ),
           ],
           child: MaterialApp(
             builder: LegacyMaterialBridge.builder,
@@ -1726,12 +1724,11 @@ Generate a widget that renders a login form.''',
     // both call triggerNewInferenceProvider first. triggerCallCount starts at 1
     // because shouldTriggerOnInit defaults to true and fires once on init.
     final cases = <String, UnifiedAiState>{
-      'typed ModelNotInstalledException (_handleModelInstalled 137-148)':
-          const UnifiedAiState(
-            message: '',
-            error: ModelNotInstalledException('llama3'),
-          ),
-      'string fallback message (inline callback 302-313)': const UnifiedAiState(
+      'typed ModelNotInstalledException': const UnifiedAiState(
+        message: '',
+        error: ModelNotInstalledException('llama3'),
+      ),
+      'string fallback message': const UnifiedAiState(
         message: 'Model "llama3" is not installed. Please install it first.',
       ),
     };
@@ -1755,7 +1752,7 @@ Generate a widget that renders a login form.''',
         await pumpErrorView(
           tester,
           controllerState: state,
-          onTrigger: () => triggerCount++,
+          onTrigger: () async => triggerCount++,
         );
 
         // The install dialog is rendered inline for the model-not-installed
@@ -1772,5 +1769,59 @@ Generate a widget that renders a login form.''',
         expect(triggerCount, 2);
       });
     }
+
+    testWidgets(
+      'swallows a failing re-trigger after install instead of crashing',
+      (tester) async {
+        var triggerCount = 0;
+        when(() => mockCloudRepository.installModel(any(), any())).thenAnswer(
+          (_) => Stream.fromIterable(const [
+            OllamaPullProgress(status: 'success', progress: 1),
+          ]),
+        );
+
+        await pumpErrorView(
+          tester,
+          controllerState: const UnifiedAiState(
+            message: '',
+            error: ModelNotInstalledException('llama3'),
+          ),
+          onTrigger: () async {
+            triggerCount++;
+            // Only the post-install re-trigger fails; the initial run is fine.
+            if (triggerCount > 1) throw StateError('ollama went away');
+          },
+        );
+
+        await tester.tap(find.text('Install'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(triggerCount, 2);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'reads the model name from a typed error whose text carries it, even '
+      'when the state message is empty',
+      (tester) async {
+        await pumpErrorView(
+          tester,
+          controllerState: UnifiedAiState(
+            message: '',
+            error: Exception(
+              'Model "phi3" is not installed. Please install it first.',
+            ),
+          ),
+          onTrigger: () async {},
+        );
+
+        final dialog = tester.widget<OllamaModelInstallDialog>(
+          find.byType(OllamaModelInstallDialog),
+        );
+        expect(dialog.modelName, 'phi3');
+      },
+    );
   });
 }

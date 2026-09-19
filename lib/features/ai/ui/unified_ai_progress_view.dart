@@ -301,50 +301,7 @@ class _UnifiedAiProgressContentState
               // Pass a callback to re-trigger inference and re-show progress modal sheet after install
               return OllamaModelInstallDialog(
                 modelName: modelNameToInstall,
-                onModelInstalled: () async {
-                  try {
-                    // Check if widget is still mounted before proceeding
-                    if (!mounted) return;
-
-                    // Trigger a new inference run
-                    await ref.read(
-                      triggerNewInferenceProvider((
-                        entityId: widget.entityId,
-                        promptId: widget.promptId,
-                        linkedEntityId: null,
-                      )).future,
-                    );
-
-                    // Re-show the progress modal sheet so the user sees the waveform indicator in the correct context
-                    final prompt = await ref.read(
-                      aiConfigByIdProvider(widget.promptId).future,
-                    );
-
-                    // Double-check mounted state after async operation
-                    if (!mounted || !context.mounted) return;
-
-                    if (prompt is AiConfigPrompt) {
-                      await ModalUtils.showSingleSliverPageModal<void>(
-                        context: context,
-                        builder: (ctx) => UnifiedAiProgressUtils.progressPage(
-                          context: ctx,
-                          prompt: prompt,
-                          entityId: widget.entityId,
-                          onTapBack: () => Navigator.of(ctx).pop(),
-                          triggerOnOpen: false,
-                        ),
-                      );
-                    }
-                  } catch (e, stack) {
-                    developer.log(
-                      'Error in onModelInstalled callback: $e',
-                      name: 'UnifiedAiProgressContent',
-                      error: e,
-                      stackTrace: stack,
-                    );
-                    // Don't re-throw - this is a callback error that shouldn't crash the app
-                  }
-                },
+                onModelInstalled: () => _handleModelInstalled('Ollama'),
               );
             }
           }

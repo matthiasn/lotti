@@ -3677,6 +3677,64 @@ void main() {
     },
   );
 
+  testWidgets(
+    'a same-day timing band is one segment and only sessions starting inside '
+    'it are highlighted',
+    (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          SingleChildScrollView(
+            child: GoalProgressCard(
+              progress: GoalProgressView(
+                today: today,
+                metric: GoalMetricProgressView(
+                  criterionId: 'dock',
+                  name: 'Dock shifts',
+                  target: 1,
+                  kind: GoalDimensionKind.categoryTime,
+                  dailyTimeRange: const GoalDailyTimeRange(
+                    startMinute: 9 * 60,
+                    endMinute: 17 * 60,
+                  ),
+                  days: [day(0, 1)],
+                  categoryTimeSessions: [
+                    for (final hour in [10, 20])
+                      GoalCategoryTimeSession(
+                        categoryId: 'dock',
+                        dateFrom: DateTime(2026, 8, 10, hour),
+                        dateTo: DateTime(2026, 8, 10, hour, 45),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
+      final warning = tokens.colors.alert.warning.defaultColor;
+      final bands = tester
+          .widgetList<ColoredBox>(find.byType(ColoredBox))
+          .where(
+            (box) => box.color == warning.withValues(alpha: SurfaceAlphas.tint),
+          );
+      expect(bands, hasLength(1));
+      final sessionColors = tester
+          .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+          .map((box) => box.decoration)
+          .whereType<BoxDecoration>()
+          .map((decoration) => decoration.color)
+          .where(
+            (color) =>
+                color == warning || color == tokens.colors.interactive.enabled,
+          )
+          .toList();
+      expect(sessionColors, contains(warning));
+      expect(sessionColors, contains(tokens.colors.interactive.enabled));
+    },
+  );
+
   testWidgets('agent-recorded bars expose provenance and fallback tooltips', (
     tester,
   ) async {

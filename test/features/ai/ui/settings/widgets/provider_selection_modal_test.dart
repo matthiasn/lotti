@@ -213,6 +213,60 @@ void main() {
         expect(selectedProviderId, equals('provider1'));
       });
 
+      testWidgets(
+        'closes at once when the already-selected provider is tapped and '
+        'skips configs that are not providers',
+        (WidgetTester tester) async {
+          final selections = <String>[];
+          await tester.pumpWidget(
+            AiTestWidgets.createTestWidget(
+              providers: [
+                AiTestDataFactory.createTestProvider(
+                  id: 'provider-dock',
+                  name: 'Dock Provider',
+                ),
+                AiTestDataFactory.createTestModel(
+                  id: 'model-stray',
+                  name: 'Stray Model',
+                ),
+              ],
+              child: Builder(
+                builder: (context) => Scaffold(
+                  body: TextButton(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => Scaffold(
+                          body: ProviderSelectionModal(
+                            onProviderSelected: selections.add,
+                            selectedProviderId: 'provider-dock',
+                          ),
+                        ),
+                      ),
+                    ),
+                    child: const Text('Open picker'),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.tap(find.text('Open picker'));
+          await tester.pumpAndSettle();
+
+          expect(find.text('Stray Model'), findsNothing);
+          await tester.tap(
+            find.ancestor(
+              of: find.text('Dock Provider'),
+              matching: find.byType(InkWell),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(selections, ['provider-dock']);
+          expect(find.byType(ProviderSelectionModal), findsNothing);
+          expect(find.text('Open picker'), findsOneWidget);
+        },
+      );
+
       testWidgets('maintains proper state during interaction', (
         WidgetTester tester,
       ) async {

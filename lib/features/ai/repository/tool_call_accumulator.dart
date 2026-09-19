@@ -144,7 +144,7 @@ class ToolCallAccumulator {
 
     if (chunk.function != null) {
       _toolCalls[key] = existing.copyWith(
-        functionName: chunk.function!.name ?? existing.functionName,
+        functionName: chunk.function!.name,
         functionArguments: chunk.function!.arguments != null
             ? existing.functionArguments + chunk.function!.arguments!
             : null,

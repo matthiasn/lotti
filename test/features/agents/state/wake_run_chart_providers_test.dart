@@ -274,6 +274,33 @@ void main() {
       expect(result.dailyBuckets, isEmpty);
     });
 
+    test(
+      'returns empty without touching the journal when agents have no '
+      'linked tasks',
+      () async {
+        when(
+          () => mockTemplateService.getAgentsForTemplate(kTestTemplateId),
+        ).thenAnswer(
+          (_) async => [
+            makeTestIdentity(id: 'agent-idle', agentId: 'agent-idle'),
+          ],
+        );
+        when(
+          () => mockRepository.getLinksFrom('agent-idle', type: 'agent_task'),
+        ).thenAnswer((_) async => []);
+
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        final result = await container.read(
+          templateTaskResolutionTimeSeriesProvider(kTestTemplateId).future,
+        );
+
+        expect(result.dailyBuckets, isEmpty);
+        verifyNever(() => mockJournalDb.journalEntityById(any()));
+      },
+    );
+
     test('handles unresolved tasks (no DONE/REJECTED status)', () async {
       final agentCreated = DateTime(2024, 3, 15, 10);
 

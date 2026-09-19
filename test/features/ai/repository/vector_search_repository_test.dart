@@ -202,6 +202,41 @@ void main() {
       expect(result.entities, hasLength(1));
     });
 
+    test(
+      'keeps the closest chunk when one task matches with several chunks',
+      () async {
+        when(
+          () => mockEmbeddingRepo.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+          ),
+        ).thenAnswer((_) async => fakeVector);
+        final taskId = testTask.meta.id;
+        when(
+          () => mockEmbeddingStore.search(
+            queryVector: any(named: 'queryVector'),
+            k: any(named: 'k'),
+            categoryIds: any(named: 'categoryIds'),
+          ),
+        ).thenReturn([
+          for (final distance in [0.6, 0.3, 0.45])
+            EmbeddingSearchResult(
+              entityId: taskId,
+              distance: distance,
+              entityType: kEntityTypeTask,
+            ),
+        ]);
+        when(
+          () => mockJournalDb.getJournalEntitiesForIdsUnordered(any()),
+        ).thenAnswer((_) async => [testTask]);
+
+        final result = await sut.searchRelatedTasks(query: 'herring crates');
+
+        expect(result.entities, [testTask]);
+        expect(result.distances, {taskId: 0.3});
+      },
+    );
+
     test('returns empty results when no Ollama provider configured', () async {
       when(
         () => mockAiConfigRepo.resolveOllamaBaseUrl(),

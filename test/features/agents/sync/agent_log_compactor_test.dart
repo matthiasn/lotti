@@ -991,6 +991,34 @@ void main() {
       expect(hits.single.type, 'capture');
       expect(hits.single.text, 'lazy transcript about taxes');
     });
+
+    test('searches structured content with no text field by its JSON', () async {
+      final event = InputEvent.inlineDeferred(
+        position: EventPosition(
+          at: DateTime.utc(2024, 3, 6, 0, 1),
+          sourceAt: DateTime.utc(2024, 3, 6),
+          key: 'capture|cap-json',
+        ),
+        contentEntryId: 'cap-json',
+        sourceCreatedAt: DateTime.utc(2024, 3, 6),
+      );
+      final c = AgentLogCompactor(
+        syncService: sync,
+        inlineEvents: [event],
+        resolveInlineContent: (_) async => <String, Object?>{
+          'entryType': 'capture',
+          'items': ['restock herring', 'oil the conveyor'],
+        },
+      );
+
+      final hits = await c.searchLog(_agentId, query: 'herring');
+
+      expect(hits.single.contentEntryId, 'cap-json');
+      expect(
+        hits.single.text,
+        '{"entryType":"capture","items":["restock herring","oil the conveyor"]}',
+      );
+    });
   });
 
   group('resolveByIds (follow a link)', () {

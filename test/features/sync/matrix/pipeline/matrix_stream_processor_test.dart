@@ -289,6 +289,34 @@ extension _AnyGeneratedProcessorScenario on glados.Any {
 }
 
 void main() {
+  test(
+    'owns its counters when none are injected and counts applied writes '
+    'and entry-link no-ops separately',
+    () {
+      final processor = MatrixStreamProcessor(collectMetrics: true)
+        ..reportDbApplyDiagnostics(
+          SyncApplyDiagnostics(
+            eventId: r'$crate-1',
+            payloadType: 'journalEntity',
+            conflictStatus: 'none',
+            applied: true,
+          ),
+        )
+        ..reportDbApplyDiagnostics(
+          SyncApplyDiagnostics(
+            eventId: r'$link-1',
+            payloadType: 'entryLink',
+            conflictStatus: 'none',
+            applied: false,
+          ),
+        );
+
+      final snapshot = processor.metricsSnapshot();
+      expect(snapshot['dbApplied'], 1);
+      expect(snapshot['dbEntryLinkNoop'], 1);
+    },
+  );
+
   glados.Glados(
     glados.any.processorScenario,
     glados.ExploreConfig(numRuns: 180),

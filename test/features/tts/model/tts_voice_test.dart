@@ -47,6 +47,13 @@ void main() {
     });
   });
 
+  test('describes a voice by id and gender', () {
+    expect(
+      ttsVoiceByIdOrDefault('M4').toString(),
+      'TtsVoice(M4, ${TtsVoiceGender.male})',
+    );
+  });
+
   group('ttsVoiceByIdOrDefault', () {
     test('resolves a known id to its voice', () {
       expect(ttsVoiceByIdOrDefault('M4').id, 'M4');

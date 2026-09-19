@@ -27,9 +27,11 @@ void main() {
   Widget buildSubject({
     List<AiConfig>? initialData,
     bool throwError = false,
+    ThemeData? theme,
   }) {
     return makeTestableWidgetNoScroll(
       const InferenceProfilePage(),
+      theme: theme,
       overrides: [
         inferenceProfileControllerProvider.overrideWith(() {
           return _FakeInferenceProfileController()
@@ -56,6 +58,39 @@ void main() {
       expect(find.byIcon(LottiIcons.tune), findsOneWidget);
       expect(find.text('No inference profiles yet'), findsOneWidget);
     });
+
+    for (final brightness in Brightness.values) {
+      testWidgets('uses the ${brightness.name} page background', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            initialData: [],
+            theme: ThemeData(brightness: brightness),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final scheme = Theme.of(
+          tester.element(find.byType(InferenceProfilePage)),
+        ).colorScheme;
+        expect(
+          tester
+              .widget<Scaffold>(
+                find
+                    .descendant(
+                      of: find.byType(InferenceProfilePage),
+                      matching: find.byType(Scaffold),
+                    )
+                    .first,
+              )
+              .backgroundColor,
+          brightness == Brightness.light
+              ? scheme.surfaceContainerLowest
+              : scheme.scrim,
+        );
+      });
+    }
 
     testWidgets('shows profile cards when profiles exist', (tester) async {
       final profiles = <AiConfig>[

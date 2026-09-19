@@ -1,4 +1,5 @@
 import 'package:clock/clock.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -7,11 +8,16 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -411,4 +417,31 @@ void main() {
       );
     });
   });
+
+  test(
+    'goalHabitCompletionServiceProvider wires the watched agent repository, '
+    'journal database and orchestrator plus the registered persistence logic',
+    () async {
+      await setUpTestGetIt(
+        additionalSetup: () =>
+            getIt.registerSingleton<PersistenceLogic>(persistenceLogic),
+      );
+      addTearDown(tearDownTestGetIt);
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(agentRepository),
+          journalDbProvider.overrideWithValue(journalDb),
+          wakeOrchestratorProvider.overrideWithValue(orchestrator),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final built = container.read(goalHabitCompletionServiceProvider);
+
+      expect(built.agentRepository, same(agentRepository));
+      expect(built.journalDb, same(journalDb));
+      expect(built.persistenceLogic, same(persistenceLogic));
+      expect(built.orchestrator, same(orchestrator));
+    },
+  );
 }

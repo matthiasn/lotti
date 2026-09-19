@@ -8,12 +8,16 @@ import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/day_audio_context.dart';
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/geolocation.dart';
+import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_data.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
@@ -55,6 +59,25 @@ Geolocation _geo(double latitude) {
     latitude: latitude,
     longitude: latitude + 0.1,
     geohashString: 'geo$latitude',
+  );
+}
+
+JournalEntity _goalEntry(String id, {String? snapshotOf}) {
+  return JournalEntity.goal(
+    meta: _meta(id),
+    data: GoalData(
+      title: 'Herring haul',
+      statement: 'Log five herring hauls over a rolling week.',
+      criteria: const GoalCriterion.habit(
+        criterionId: 'haul',
+        habitId: 'habit-haul',
+        targetCount: 5,
+        window: GoalWindow.rollingDays(count: 7),
+      ),
+      specVersion: 1,
+      specVersionId: 'goal-spec-v1',
+      snapshotOf: snapshotOf,
+    ),
   );
 }
 
@@ -257,6 +280,14 @@ void main() {
           interactionType: CheckInInteractionType.call,
         ),
       ),
+      'DayPlanEntry': JournalEntity.dayPlan(
+        meta: _meta('day-plan'),
+        data: DayPlanData(
+          planDate: _baseTime,
+          status: const DayPlanStatus.draft(),
+        ),
+      ),
+      'Goal': _goalEntry('goal'),
     };
 
     entries.forEach((expectedType, entity) {
@@ -316,6 +347,20 @@ void main() {
     final dbEntity = toDbEntity(entry);
     expect(dbEntity.subtype, 'rel-042');
   });
+
+  test(
+    'toDbEntity leaves a goal subtype empty and names the owning goal on a '
+    'spec snapshot',
+    () {
+      expect(toDbEntity(_goalEntry('goal-live')).subtype, '');
+      expect(
+        toDbEntity(
+          _goalEntry('goal-snapshot', snapshotOf: 'goal-live'),
+        ).subtype,
+        'goal-live',
+      );
+    },
+  );
 
   test('toDbEntity sets task flag for task entries', () {
     final entry = _taskEntry(
@@ -908,6 +953,18 @@ void main() {
           isNull,
           reason: 'non-Task row must not have a taskPriority column value',
         );
+      },
+    );
+
+    test(
+      'ignores a stray taskPriority column on a non-Task row',
+      () {
+        final entry = _measurementEntry('measure-stray-priority');
+        final restored = fromDbEntity(
+          makeDbEntity(entry, taskPriorityOverride: 'P0'),
+        );
+
+        expect(restored, entry);
       },
     );
 

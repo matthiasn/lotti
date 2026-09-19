@@ -455,6 +455,29 @@ void main() {
       );
     });
 
+    test('falls back to the HTTP status for a non-JSON error body', () async {
+      final client = _CapturingClient(
+        statusCode: 502,
+        body: '<html>Bad Gateway</html>',
+      );
+
+      await expectLater(
+        generateGeminiImage(
+          httpClient: client,
+          prompt: 'a penguin on an ice floe',
+          model: 'gemini-3-pro-image-preview',
+          provider: _provider(),
+        ),
+        throwsA(
+          isA<ImageGenerationException>().having(
+            (e) => e.providerReason,
+            'providerReason',
+            'HTTP 502',
+          ),
+        ),
+      );
+    });
+
     test(
       'surfaces the provider error message verbatim on HTTP errors',
       () async {

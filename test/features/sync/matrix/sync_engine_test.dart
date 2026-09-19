@@ -51,6 +51,14 @@ void main() {
     when(() => lifecycleCoordinator.dispose()).thenAnswer((_) async {});
   });
 
+  test(
+    'exposes the lifecycle coordinator it drives so callers reconcile the '
+    'same instance',
+    () {
+      expect(engine.lifecycleCoordinator, same(lifecycleCoordinator));
+    },
+  );
+
   test('initialize primes lifecycle coordinator exactly once', () async {
     await engine.initialize(onLogin: () async {}, onLogout: () async {});
 
