@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/evaluation/goal_track_policy.dart';
@@ -187,4 +188,124 @@ void main() {
       GoalTrackStatus.offTrack,
     );
   });
+
+  group('policy properties', () {
+    // Higher is better; recovering and onTrack both mean "no nudge".
+    int rank(GoalTrackStatus status) => switch (status) {
+      GoalTrackStatus.offTrack => 0,
+      GoalTrackStatus.atRisk => 1,
+      GoalTrackStatus.recovering || GoalTrackStatus.onTrack => 2,
+      GoalTrackStatus.achieved => 3,
+      GoalTrackStatus.insufficientData => -1,
+    };
+
+    glados.Glados2(
+      glados.any.policyInput,
+      glados.BoolAny(glados.any).bool,
+      glados.ExploreConfig(numRuns: 400),
+    ).test(
+      'the verdict follows coverage, deadline and satisfaction in that order',
+      (input, targetDatePassed) {
+        final status = policy.derive(
+          evaluation: input.evaluation,
+          shortTermAttainment: input.shortTerm,
+          priorAttainments: input.priors,
+          targetDatePassed: targetDatePassed,
+        );
+
+        if (input.evaluation.dataCoverage < policy.minDataCoverage) {
+          expect(status, GoalTrackStatus.insufficientData);
+        } else if (targetDatePassed) {
+          expect(
+            status,
+            input.evaluation.satisfied
+                ? GoalTrackStatus.achieved
+                : GoalTrackStatus.offTrack,
+          );
+        } else {
+          expect(status, isNot(GoalTrackStatus.achieved));
+          expect(status, isNot(GoalTrackStatus.insufficientData));
+          if (input.evaluation.satisfied) {
+            expect(status, GoalTrackStatus.onTrack);
+          }
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados2(
+      glados.any.policyInput,
+      glados.IntAnys(glados.any).intInRange(0, 80),
+      glados.ExploreConfig(numRuns: 400),
+    ).test(
+      'a further bad prior period never improves the verdict',
+      (input, badPercent) {
+        GoalTrackStatus derive(List<double> priors) => policy.derive(
+          evaluation: input.evaluation,
+          shortTermAttainment: input.shortTerm,
+          priorAttainments: priors,
+        );
+        final before = derive(input.priors);
+        final after = derive([badPercent / 100, ...input.priors]);
+
+        expect(rank(after), lessThanOrEqualTo(rank(before)));
+      },
+      tags: 'glados',
+    );
+  });
+}
+
+class _PolicyInput {
+  const _PolicyInput(this.evaluation, this.shortTerm, this.priors);
+
+  final GoalEvaluation evaluation;
+  final double? shortTerm;
+  final List<double> priors;
+
+  @override
+  String toString() =>
+      '_PolicyInput(attainment: ${evaluation.attainment}, '
+      'satisfied: ${evaluation.satisfied}, '
+      'coverage: ${evaluation.dataCoverage}, '
+      'pace: ${evaluation.paceFeasible}, '
+      'trend: ${evaluation.onTrackByTrend}, '
+      'shortTerm: $shortTerm, priors: $priors)';
+}
+
+extension _AnyPolicyInput on glados.Any {
+  /// Percentages 0–100 as fractions; -1 stands for "absent".
+  glados.Generator<_PolicyInput> get policyInput =>
+      glados.CombinableAny(this).combine7(
+        glados.IntAnys(this).intInRange(0, 101),
+        glados.BoolAny(this).bool,
+        glados.IntAnys(this).intInRange(0, 101),
+        glados.AnyUtils(this).choose<bool?>([null, true, false]),
+        glados.BoolAny(this).bool,
+        glados.IntAnys(this).intInRange(-1, 121),
+        glados.ListAnys(this).listWithLengthInRange(
+          0,
+          5,
+          glados.IntAnys(this).intInRange(0, 101),
+        ),
+        (
+          int attainment,
+          bool satisfied,
+          int coverage,
+          bool? pace,
+          bool trend,
+          int shortTerm,
+          List<int> priors,
+        ) => _PolicyInput(
+          GoalEvaluation(
+            attainment: attainment / 100,
+            satisfied: satisfied,
+            dataCoverage: coverage / 100,
+            results: const {},
+            paceFeasible: pace,
+            onTrackByTrend: trend,
+          ),
+          shortTerm < 0 ? null : shortTerm / 100,
+          [for (final prior in priors) prior / 100],
+        ),
+      );
 }
