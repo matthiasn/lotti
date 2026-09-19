@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
@@ -287,6 +288,65 @@ void main() {
           ),
         ).called(1);
         verifyNever(() => repository.getAgentState(any()));
+      },
+    );
+
+    test(
+      'restoreSubscriptions logs an agent whose wake cannot be restored and '
+      'still restores the rest',
+      () async {
+        final perDayId = perDayAgentId(dayId);
+        final perDayDueAt = DateTime(2026, 5, 25, 7, 15);
+        final brokenDayId = perDayAgentId('dayplan-2026-05-24');
+        when(
+          () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+        ).thenAnswer(
+          (_) async => [identity(id: brokenDayId), identity(id: perDayId)],
+        );
+        when(
+          () => repository.getAgentStatesByAgentIds([brokenDayId, perDayId]),
+        ).thenAnswer(
+          (_) async => {
+            brokenDayId: state(
+              id: 'state-$brokenDayId',
+              stateAgentId: brokenDayId,
+              nextWakeAt: DateTime(2026, 5, 24, 7),
+            ),
+            perDayId: state(
+              id: 'state-$perDayId',
+              stateAgentId: perDayId,
+              nextWakeAt: perDayDueAt,
+            ),
+          },
+        );
+        when(
+          () => orchestrator.restorePendingWake(
+            agentId: brokenDayId,
+            dueAt: any(named: 'dueAt'),
+          ),
+        ).thenThrow(StateError('wake queue closed'));
+
+        await withClock(Clock.fixed(now), service.restoreSubscriptions);
+
+        verify(
+          () => orchestrator.restorePendingWake(
+            agentId: perDayId,
+            dueAt: perDayDueAt,
+          ),
+        ).called(1);
+        verify(
+          () => domainLogger.error(
+            LogDomain.agentRuntime,
+            any(that: isA<StateError>()),
+            message: any(
+              named: 'message',
+              that: startsWith(
+                'failed to restore day-agent runtime state for ',
+              ),
+            ),
+            stackTrace: any(named: 'stackTrace'),
+          ),
+        ).called(1);
       },
     );
 
