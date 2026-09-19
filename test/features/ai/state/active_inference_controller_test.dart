@@ -251,6 +251,29 @@ void main() {
       container.dispose();
     });
 
+    test(
+      'a data copy without new progress keeps the text and shares the '
+      'progress stream',
+      () {
+        final data = ActiveInferenceData(
+          entityId: 'entity-dock',
+          promptId: 'prompt-dock',
+          progressText: 'Counting crates',
+        );
+        addTearDown(data.dispose);
+
+        final copy = data.copyWith();
+
+        expect(copy.progressText, 'Counting crates');
+        expect(copy.entityId, 'entity-dock');
+        expect(copy.promptId, 'prompt-dock');
+        expect(
+          copy.progressStreamController,
+          same(data.progressStreamController),
+        );
+      },
+    );
+
     test('should start and track inference', () {
       const entityId = 'test-entity-id';
       const promptId = 'test-prompt-id';

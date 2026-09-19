@@ -82,6 +82,17 @@ void main() {
     );
   });
 
+  test('a retention result copy keeps the counts it does not replace', () {
+    const result = AgentRetentionResult(dayStatusEvents: 3, observations: 4);
+
+    final withEvents = result.copyWith(dayStatusEvents: 5);
+
+    expect(withEvents.dayStatusEvents, 5);
+    expect(withEvents.observations, 4);
+    expect(withEvents.total, 9);
+    expect(withEvents.toString(), 'dayStatusEvents=5, observations=4');
+  });
+
   test('sweeps each source with the cutoff its own policy implies', () async {
     await withClock(Clock.fixed(now), service.sweep);
 
