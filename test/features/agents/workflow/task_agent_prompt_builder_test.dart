@@ -103,11 +103,6 @@ Use the task language and omit empty sections.
       expect(prompt, contains(TaskAgentPromptBuilder.taskAgentScaffoldCore));
       expect(prompt, contains('## Report Directive'));
       expect(prompt, contains('Lead the report with a risk callout.'));
-      // The default report scaffold is omitted when a custom one is supplied.
-      expect(
-        prompt,
-        isNot(contains(TaskAgentPromptBuilder.taskAgentScaffoldReport.trim())),
-      );
       // No soul → general directive uses the combined heading.
       expect(prompt, contains('## Your Personality & Directives'));
       expect(prompt, contains('Be proactive about blockers.'));

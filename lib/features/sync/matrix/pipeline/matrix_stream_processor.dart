@@ -19,15 +19,7 @@ class MatrixStreamProcessor {
   final bool _collectMetrics;
   final MetricsCounters _metrics;
 
-  Map<String, int> metricsSnapshot() {
-    final map = _metrics.snapshot();
-    final processed = map['processed'] ?? 0;
-    final applied = map['dbApplied'] ?? 0;
-    if (processed > 0 && applied > 0) {
-      map['processedPerAppliedPct'] = (processed / applied * 100).round();
-    }
-    return map;
-  }
+  Map<String, int> metricsSnapshot() => _metrics.snapshot();
 
   /// Folds one DB-apply outcome into the metrics counters: bumps `dbApplied`
   /// when the write landed, or classifies the skip (conflict, missing base,

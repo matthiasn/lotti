@@ -147,10 +147,6 @@ JournalEntity fromDbEntity(JournalDbEntity dbEntity) {
   return entity;
 }
 
-List<JournalEntity> entityStreamMapper(List<JournalDbEntity> dbEntities) {
-  return dbEntities.map(fromDbEntity).toList();
-}
-
 MeasurableDataType measurableDataType(MeasurableDbEntity dbEntity) {
   return MeasurableDataType.fromJson(
     json.decode(dbEntity.serialized) as Map<String, dynamic>,

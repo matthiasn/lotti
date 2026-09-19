@@ -74,11 +74,11 @@ class SentEventRegistry {
     _nextPruneAt = now.add(pruneInterval);
   }
 
+  /// Drops expired entries. The size cap needs no enforcement here:
+  /// [register] is the only writer and trims to [maxEntries] after every
+  /// insert.
   void _prune(DateTime now) {
     _entries.removeWhere((_, entry) => entry.expiry.isBefore(now));
-    while (_entries.length > maxEntries) {
-      _entries.remove(_entries.keys.first);
-    }
   }
 }
 

@@ -26,22 +26,6 @@ typedef ColorByValue = Color Function(Observation);
 /// from a thousand up ("15K"), so no axis label needs four digits of room.
 const double kChartLeftAxisWidth = 40;
 
-/// The laid-out width of [text] in [style], at the ambient text scale.
-///
-/// One helper rather than the private `_textWidth` every surface used to grow
-/// its own: `MediaQuery.textScalerOf` and `Directionality` both have to be
-/// threaded through, and a copy that forgets either mis-sizes only its own
-/// surface, only at raised text scales — the least likely place to look.
-double chartTextWidth(BuildContext context, String text, TextStyle style) {
-  final painter = TextPainter(
-    text: TextSpan(text: text, style: style),
-    textDirection: Directionality.of(context),
-    textScaler: MediaQuery.textScalerOf(context),
-    maxLines: 1,
-  )..layout();
-  return painter.width;
-}
-
 /// The type both axes are drawn in — shared so the value labels a chart
 /// paints and the date labels beneath it cannot drift apart.
 TextStyle chartAxisLabelStyle(BuildContext context) {

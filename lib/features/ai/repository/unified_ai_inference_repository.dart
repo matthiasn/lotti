@@ -221,10 +221,6 @@ class UnifiedAiInferenceRepository {
         linkedEntityId: linkedEntityId,
       );
 
-      if (prompt == null) {
-        throw Exception('Failed to build prompt');
-      }
-
       // Prepare any additional data (images, audio)
       final images = await _prepareImages(promptConfig, entity);
       final preparedAudio = await _prepareAudio(promptConfig, entity, provider);

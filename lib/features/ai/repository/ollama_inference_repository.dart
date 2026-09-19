@@ -200,7 +200,4 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
   /// (mockable class member).
   Stream<OllamaPullProgress> installModel(String modelName, String baseUrl) =>
       _api.installModel(modelName, baseUrl);
-
-  /// Model warm-up. Thin delegator to [OllamaApiClient.warmUpModel]
-  /// (mockable class member).
 }
