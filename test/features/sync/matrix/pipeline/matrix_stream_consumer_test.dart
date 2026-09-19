@@ -460,6 +460,30 @@ void main() {
       expect(snap, isA<Map<String, int>>());
     });
 
+    test('folds reported DB-apply outcomes into the metrics snapshot', () {
+      final consumer = MatrixStreamConsumer(
+        sessionManager: session,
+        roomManager: room,
+        loggingService: logging,
+        settingsDb: settings,
+        eventProcessor: processor,
+        collectMetrics: true,
+      );
+
+      for (final eventId in [r'$crate-1', r'$crate-2']) {
+        consumer.reportDbApplyDiagnostics(
+          SyncApplyDiagnostics(
+            eventId: eventId,
+            payloadType: 'journalEntity',
+            conflictStatus: 'none',
+            applied: true,
+          ),
+        );
+      }
+
+      expect(consumer.metricsSnapshot()['dbApplied'], 2);
+    });
+
     test('diagnosticsStrings returns a map even with no traffic', () {
       final consumer = build();
       expect(consumer.diagnosticsStrings(), isA<Map<String, String>>());
