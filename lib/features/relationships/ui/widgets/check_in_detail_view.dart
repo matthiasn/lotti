@@ -101,9 +101,25 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
   GlobalKey _keyFor(String entryId) =>
       _entryKeys.putIfAbsent(entryId, GlobalKey.new);
 
+  /// Comments started here; any still blank when the view closes are
+  /// removed, so a stray tap on *Comment* leaves nothing behind.
+  final Set<String> _startedComments = {};
+
+  /// Read up front: `dispose` may not use `ref`.
+  late final RelationshipRepository _repository;
+
+  @override
+  void dispose() {
+    for (final id in _startedComments) {
+      unawaited(_repository.discardCommentIfBlank(id));
+    }
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
+    _repository = ref.read(relationshipRepositoryProvider);
     ref.listenManual(
       relationshipDetailControllerProvider(widget.relationshipId),
       (_, next) => _touchIfEntriesChanged(next.value),
@@ -154,6 +170,7 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
       _failed();
       return;
     }
+    _startedComments.add(entry.meta.id);
     final key = _keyFor(entry.meta.id);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final cardContext = key.currentContext;
@@ -708,8 +725,14 @@ class _CheckInActionBar extends StatelessWidget {
             constraints: const BoxConstraints(maxWidth: _actionsMaxWidth),
             child:
                 recorder ??
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                // Wraps rather than overflows: at large text on a narrow
+                // phone the labelled pill and the round buttons take two
+                // lines instead of clipping.
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: tokens.spacing.step3,
+                  runSpacing: tokens.spacing.step3,
                   children: [
                     DsGlassPill(
                       key: const ValueKey('check-in-detail-dictate'),
@@ -719,14 +742,12 @@ class _CheckInActionBar extends StatelessWidget {
                       foregroundColor: tokens.colors.text.onInteractiveAlert,
                       onTap: onDictate,
                     ),
-                    SizedBox(width: tokens.spacing.step3),
                     DsGlassRoundButton(
                       key: const ValueKey('check-in-detail-comment'),
                       icon: LottiIcons.editNote,
                       semanticLabel: messages.relationshipCheckInAddComment,
                       onPressed: onComment,
                     ),
-                    SizedBox(width: tokens.spacing.step3),
                     DsGlassRoundButton(
                       key: const ValueKey('check-in-detail-photo'),
                       icon: LottiIcons.image,

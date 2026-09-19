@@ -1563,6 +1563,54 @@ void main() {
       verifyNever(() => mockPersistence.updateDbEntity(any()));
     });
 
+    // Codex review on #4354: a stray tap on Comment must leave nothing
+    // behind — no phantom comment counted or synced.
+    group('discardCommentIfBlank', () {
+      JournalEntity comment(String text, {bool deleted = false}) =>
+          testTextEntry.copyWith(
+            entryText: EntryText(plainText: text),
+            meta: testTextEntry.meta.copyWith(
+              deletedAt: deleted ? testDate : null,
+            ),
+          );
+
+      setUp(() {
+        when(
+          () => mockPersistence.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
+      });
+
+      test('removes a comment left blank', () async {
+        when(
+          () => mockDb.journalEntityById('blank'),
+        ).thenAnswer((_) async => comment('  '));
+
+        expect(await repository.discardCommentIfBlank('blank'), isTrue);
+        final tombstone =
+            verify(
+                  () => mockPersistence.updateDbEntity(captureAny()),
+                ).captured.single
+                as JournalEntity;
+        expect(tombstone.meta.deletedAt, isNotNull);
+      });
+
+      for (final (label, entity) in [
+        ('a comment with words', comment('Send krill.')),
+        ('one already gone', comment('', deleted: true)),
+        ('anything but a comment', testAudioEntry),
+        ('nothing at all', null),
+      ]) {
+        test('leaves $label alone', () async {
+          when(
+            () => mockDb.journalEntityById('x'),
+          ).thenAnswer((_) async => entity);
+
+          expect(await repository.discardCommentIfBlank('x'), isFalse);
+          verifyNever(() => mockPersistence.updateDbEntity(any()));
+        });
+      }
+    });
+
     test('a comment that could not be written is none', () async {
       when(
         () => mockPersistence.createDbEntity(

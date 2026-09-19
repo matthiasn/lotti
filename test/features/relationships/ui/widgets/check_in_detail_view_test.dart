@@ -110,6 +110,9 @@ void main() {
     photoImports = [];
     links = [];
     when(() => repository.touchCheckIn(any())).thenAnswer((_) async => true);
+    when(
+      () => repository.discardCommentIfBlank(any()),
+    ).thenAnswer((_) async => false);
   });
 
   tearDown(tearDownTestGetIt);
@@ -339,6 +342,26 @@ void main() {
             .hasFocus,
         isTrue,
       );
+    });
+
+    // Codex review on #4354: a stray tap on Comment leaves nothing behind.
+    testWidgets('a comment started here and left blank is discarded when '
+        'the check-in closes', (tester) async {
+      final held = checkIn();
+      stubDetail(held);
+      when(
+        () => repository.startCommentOnCheckIn(held),
+      ).thenAnswer((_) async => testTextEntry);
+      await pump(tester);
+
+      await tester.tap(find.byKey(const ValueKey('check-in-detail-comment')));
+      await tester.pumpAndSettle();
+      verifyNever(() => repository.discardCommentIfBlank(any()));
+
+      await tester.pumpWidget(const SizedBox());
+      verify(
+        () => repository.discardCommentIfBlank(testTextEntry.meta.id),
+      ).called(1);
     });
 
     testWidgets('a comment that could not be started says so', (tester) async {
@@ -593,6 +616,52 @@ void main() {
     await pump(tester);
 
     verifyNever(() => repository.touchCheckIn(any()));
+  });
+
+  // Codex review on #4354: at large text on a narrow phone the bar wraps
+  // instead of overflowing.
+  testWidgets('the action bar wraps at large text on a narrow phone', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(320, 800)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    stubDetail(checkIn());
+    await withClock(Clock.fixed(now), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const Scaffold(
+            body: CheckInDetailView(
+              relationshipId: 'rel-001',
+              checkInId: 'c-1',
+            ),
+          ),
+          mediaQueryData: const MediaQueryData(
+            size: Size(320, 800),
+            textScaler: TextScaler.linear(2),
+          ),
+          overrides: [
+            relationshipRepositoryProvider.overrideWithValue(repository),
+            checkInTranscriptionServiceProvider.overrideWithValue(
+              transcription,
+            ),
+            audioRecorderControllerProvider.overrideWith(() => recorder),
+            sortedLinkedEntriesProvider('c-1').overrideWith((ref) => links),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+    });
+
+    expect(tester.takeException(), isNull);
+    final dictate = tester.getRect(
+      find.byKey(const ValueKey('check-in-detail-dictate')),
+    );
+    final photo = tester.getRect(
+      find.byKey(const ValueKey('check-in-detail-photo')),
+    );
+    expect(photo.top, greaterThan(dictate.top), reason: 'a second line');
   });
 
   group('the header chips edit in place', () {

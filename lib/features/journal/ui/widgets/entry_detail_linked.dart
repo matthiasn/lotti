@@ -47,12 +47,15 @@ class LinkedEntriesWidget extends ConsumerWidget {
   ) {
     final orderedLinks = ref.watch(sortedLinkedEntriesProvider(item.id));
 
-    final activeKinds = ref.watch(
-      linkedEntriesActivityFilterControllerProvider(item.id),
-    );
-    final showFlaggedOnly = ref.watch(
-      showFlaggedOnlyControllerProvider(item.id),
-    );
+    // The filters apply only while their bar is there to undo them: a
+    // list whose host hides the bar shows everything, so a filter set
+    // before the bar went away cannot strand cards out of reach.
+    final activeKinds = showActivityFilters
+        ? ref.watch(linkedEntriesActivityFilterControllerProvider(item.id))
+        : LinkedEntryActivityFilter.values.toSet();
+    final showFlaggedOnly =
+        showActivityFilters &&
+        ref.watch(showFlaggedOnlyControllerProvider(item.id));
 
     if (orderedLinks.isEmpty) {
       return const SizedBox.shrink();

@@ -366,7 +366,11 @@ String? checkInHoldsLabelOf(BuildContext context, List<JournalEntity> entries) {
   final messages = context.messages;
   final recordings = entries.whereType<JournalAudio>().length;
   final photos = entries.whereType<JournalImage>().length;
-  final comments = entries.whereType<JournalEntry>().length;
+  // A blank comment — started and not yet written — holds nothing.
+  final comments = entries
+      .whereType<JournalEntry>()
+      .where((e) => (e.entryText?.plainText.trim() ?? '').isNotEmpty)
+      .length;
   final parts = [
     if (recordings > 0) messages.relationshipCheckInRecordingCount(recordings),
     if (photos > 0) messages.relationshipCheckInPhotoCount(photos),

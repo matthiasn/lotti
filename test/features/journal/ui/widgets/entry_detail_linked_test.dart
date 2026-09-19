@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/journal/state/linked_entries_activity_filter.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
@@ -442,6 +443,33 @@ void main() {
         find.byKey(Key('${testTask.meta.id}-${testTextEntry.meta.id}')),
         findsOneWidget,
       );
+    });
+
+    // Codex review on #4354: a filter set while the bar was there must not
+    // strand cards once the host hides the bar.
+    testWidgets('without its bar the list applies no filters', (tester) async {
+      mockLinkedEntries([testLink]);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          LinkedEntriesWidget(testTask, showActivityFilters: false),
+        ),
+      );
+      await tester.pumpAndSettle();
+      ProviderScope.containerOf(
+            tester.element(find.byType(LinkedEntriesWidget)),
+          )
+          .read(
+            linkedEntriesActivityFilterControllerProvider(
+              testTask.meta.id,
+            ).notifier,
+          )
+          .toggle(LinkedEntryActivityFilter.timer);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EntryDetailsWidget), findsOneWidget);
     });
 
     testWidgets(

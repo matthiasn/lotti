@@ -372,6 +372,17 @@ class RelationshipRepository {
     return (created ?? false) ? entry : null;
   }
 
+  /// Removes the comment [entryId] when it is still blank — started from a
+  /// check-in's bar and left without a word. A blank comment is no evidence
+  /// and must not be counted or synced as one. Returns whether it was
+  /// removed; a comment with words, or anything else, is left alone.
+  Future<bool> discardCommentIfBlank(String entryId) async {
+    final entity = await _journalDb.journalEntityById(entryId);
+    if (entity is! JournalEntry || entity.isDeleted) return false;
+    if ((entity.entryText?.plainText.trim() ?? '').isNotEmpty) return false;
+    return _softDelete(entity, clock.now());
+  }
+
   /// Makes existing recordings or photos — the composer's takes — entries
   /// of [checkInId], and touches the check-in once when any link was
   /// written. A link that fails is logged and the rest go on: the check-in

@@ -273,14 +273,18 @@ width, and reads top to bottom:
   entries through the journal's own `LinkedEntriesWidget`. The Timer / Audio
   / Images filters appear only from the fifth entry
   (`CheckInDetailView.filtersFrom`, via `showActivityFilters`): a short
-  timeline has nothing to filter.
+  timeline has nothing to filter, and without the bar the list applies no
+  filter at all, so one set earlier cannot strand cards out of reach.
 * **A floating glass action bar** (`DesignSystemGlassStrip` with the shared
   glass pill and round buttons) adds to the timeline: *Dictate* as the
   primary pill — a recording made with the check-in as its `linkedId`, the
   bar becoming the recorder meanwhile — then *Comment*, which starts an
   empty comment card the way a task's text entry starts
-  (`startCommentOnCheckIn`) and brings it into view with its editor focused,
-  and *Photo* through `importImagesForPlatform`.
+  (`startCommentOnCheckIn`) and brings it into view with its editor focused
+  — one left blank is removed when the view closes
+  (`discardCommentIfBlank`), and never counted as a comment — and *Photo*
+  through `importImagesForPlatform`. The bar wraps rather than overflows at
+  large text on a narrow phone.
 
 Each change to what the check-in holds touches it, so the briefing catches
 up: a recording at once; a comment once it has words (an empty one is no
