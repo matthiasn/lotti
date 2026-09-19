@@ -24,6 +24,9 @@ import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/onboarding/model/onboarding_event.dart';
+import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/utils/device_region.dart';
@@ -241,6 +244,17 @@ void main() {
 
     testWidgets('dismissing the check-in modal records the walkthrough '
         'skip and ends the onboarding session', (tester) async {
+      final metrics = MockOnboardingMetricsRepository();
+      when(
+        () => metrics.recordEvent(
+          OnboardingEventName.dailyOsWalkthroughSkipped,
+          reason: any(named: 'reason'),
+          valueBucket: any(named: 'valueBucket'),
+        ),
+      ).thenAnswer((_) async {});
+      getIt.registerSingleton<OnboardingMetricsRepository>(metrics);
+      addTearDown(getIt.unregister<OnboardingMetricsRepository>);
+
       await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
         await tester.pumpWidget(
           _wrap(
@@ -286,6 +300,13 @@ void main() {
           container.read(dailyOsOnboardingSessionControllerProvider),
           isNull,
         );
+        verify(
+          () => metrics.recordEvent(
+            OnboardingEventName.dailyOsWalkthroughSkipped,
+            reason: any(named: 'reason'),
+            valueBucket: any(named: 'valueBucket'),
+          ),
+        ).called(1);
       });
     });
 
