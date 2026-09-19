@@ -22,6 +22,20 @@ import '../../../agents/test_utils.dart';
 // day_agent_workflow_test.dart; this file covers the pure schedule helper
 // added for the ADR 0032 digest cadence.
 void main() {
+  group('missing tool-call exceptions', () {
+    test('name the tool a degenerate wake failed to persist', () {
+      expect(
+        const MissingDraftDayPlanException().toString(),
+        'Drafting wake did not persist draft_day_plan after forced retry.',
+      );
+      expect(
+        const MissingCaptureParseException().toString(),
+        'Capture wake did not persist parse_capture_to_items after forced '
+        'retry.',
+      );
+    });
+  });
+
   group('nextDigestTime', () {
     test('before the digest hour resolves to today at 06:00', () {
       expect(

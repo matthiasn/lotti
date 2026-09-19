@@ -46,6 +46,15 @@ void main() {
     });
   });
 
+  test('describes a model by id and Hugging Face repository', () {
+    const option = TtsModelOption(
+      id: 'x',
+      displayName: 'X',
+      huggingFaceRepoId: 'owner/x',
+    );
+    expect(option.toString(), 'TtsModelOption(x, owner/x)');
+  });
+
   group('ttsModelByIdOrDefault', () {
     test('resolves a known id', () {
       expect(ttsModelByIdOrDefault('supertonic-3').id, 'supertonic-3');
