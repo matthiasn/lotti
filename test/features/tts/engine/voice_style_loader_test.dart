@@ -123,4 +123,25 @@ void main() {
 
     expect(built[0], [1.5]); // parsed from the string "1.5"
   });
+
+  test(
+    'reads an assets/ path from the bundle, as the shipped voices do',
+    () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      final shapes = <List<int>>[];
+      await loadVoiceStyle(
+        ['assets/tts/voice_styles/F1.json'],
+        tensorBuilder: (data, shape) async {
+          expect((data as Float32List).length, shape.reduce((a, b) => a * b));
+          shapes.add(shape);
+          return MockOrtValue();
+        },
+      );
+
+      expect(shapes, [
+        [1, 50, 256],
+        [1, 8, 16],
+      ]);
+    },
+  );
 }

@@ -404,6 +404,29 @@ void main() {
     expect((f.poseAt(1).yaw + 0.2).abs() % (2 * math.pi), closeTo(0, 1e-9));
   });
 
+  test(
+    'turning in place to a heading just past opposite takes the short way',
+    () {
+      // Headings arrive unnormalised; one a hair beyond half a turn away is
+      // reached fastest by turning the other way round.
+      for (final (target, direction) in [
+        (math.pi + 0.0005, -1.0),
+        (-math.pi - 0.0005, 1.0),
+      ]) {
+        final f = Flight.plan(
+          const CameraPose(x: 0, y: 0, z: 0, yaw: 0),
+          CameraPose(x: 0, y: 0, z: 0, yaw: target),
+        );
+        final mid = f.poseAt(0.5).yaw;
+        expect(mid.sign, direction, reason: 'target $target');
+        expect(mid.abs(), inExclusiveRange(0, math.pi));
+        final end = f.poseAt(1).yaw;
+        expect(math.cos(end), closeTo(math.cos(target), 1e-9));
+        expect(math.sin(end), closeTo(math.sin(target), 1e-9));
+      }
+    },
+  );
+
   test('yaw takes the short way round the other way too', () {
     final f = Flight.plan(
       const CameraPose(x: 0, y: 0, z: 0, yaw: 2 * math.pi - 0.2),

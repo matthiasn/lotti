@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -306,6 +307,48 @@ void main() {
       );
       expect(stagingParent.listSync(), isEmpty);
     });
+
+    test(
+      'treats an entry that is neither file, directory nor link as a source '
+      'that changed while scanning',
+      () async {
+        createRequiredDatabases();
+        final vanished = File(p.join(sourceRoot.path, 'images/vanished.jpg'))
+          ..createSync(recursive: true)
+          ..writeAsStringSync('gone by the time it is inspected');
+
+        // Play the file disappearing between the directory listing and the
+        // type check. Real lookups run in the root zone, outside the override.
+        final staged = IOOverrides.runZoned(
+          () => service().stage(
+            sourceRoot: sourceRoot,
+            stagingParent: stagingParent,
+            appVersion: '1.0.4+4285',
+            profileType: 'real',
+          ),
+          fseGetTypeSync: (path, followLinks) => p.equals(path, vanished.path)
+              ? FileSystemEntityType.notFound
+              : Zone.root.run(
+                  () => FileSystemEntity.typeSync(
+                    path,
+                    followLinks: followLinks,
+                  ),
+                ),
+        );
+
+        await expectLater(
+          staged,
+          throwsA(
+            isA<ProfileSnapshotSourceChangedException>().having(
+              (error) => error.message,
+              'message',
+              'Snapshot source disappeared while scanning: images/vanished.jpg',
+            ),
+          ),
+        );
+        expect(stagingParent.listSync(), isEmpty);
+      },
+    );
 
     test('rejects a staging symlink that resolves inside the source', () async {
       createRequiredDatabases();

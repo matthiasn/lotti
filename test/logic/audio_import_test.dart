@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:cross_file/cross_file.dart';
@@ -350,6 +351,76 @@ void main() {
       expect(captured.data.duration, Duration.zero);
     });
 
+    group('when copying the source fails', () {
+      /// Imports [source] with its copy failing after the target name has
+      /// been claimed. [beforeFailing] may tamper with the claimed target.
+      Future<void> importWithFailingCopy(
+        File source, {
+        Future<void> Function(String targetPath)? beforeFailing,
+      }) {
+        final xFile = XFile(source.path);
+        return IOOverrides.runZoned(
+          () => importAudioXFiles([xFile]),
+          createFile: (filePath) => filePath == source.path
+              ? _UncopyableFile(
+                  Zone.root.run(() => File(filePath)),
+                  beforeFailing,
+                )
+              : Zone.root.run(() => File(filePath)),
+        );
+      }
+
+      test('the claimed target is removed and no entry is created', () async {
+        final source = await createTestAudioFile('copy-fail.m4a', 1024);
+
+        await importWithFailingCopy(source);
+
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.speech,
+            any<Object>(that: isA<FileSystemException>()),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'importDroppedAudio',
+          ),
+        ).called(1);
+        verifyNever(
+          () => mockPersistenceLogic.createDbEntity(
+            any(that: isA<JournalAudio>()),
+            linkedId: any(named: 'linkedId'),
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+            enqueueSync: any(named: 'enqueueSync'),
+          ),
+        );
+        final remaining = tempDir.listSync(recursive: true).whereType<File>();
+        expect(remaining.map((f) => path.basename(f.path)), ['copy-fail.m4a']);
+      });
+
+      test('a failing cleanup is logged and does not escape', () async {
+        final source = await createTestAudioFile('copy-clean-fail.m4a', 1024);
+
+        await importWithFailingCopy(
+          source,
+          // A non-empty directory where the placeholder was makes the
+          // cleanup's File.delete() fail.
+          beforeFailing: (targetPath) async {
+            await File(targetPath).delete();
+            await File(
+              path.join(targetPath, 'inner.txt'),
+            ).create(recursive: true);
+          },
+        );
+
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.speech,
+            any<Object>(that: isA<FileSystemException>()),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'importDroppedAudio_cleanup',
+          ),
+        ).called(1);
+      });
+    });
+
     test('logs cleanup error when deleting copied file fails', () async {
       // Make entry creation fail so the result==null cleanup branch runs.
       when(
@@ -576,4 +647,25 @@ void main() {
       );
     });
   });
+}
+
+/// A source whose size can be read but whose bytes can no longer be copied,
+/// as when a dropped file vanishes or loses permissions mid-import.
+class _UncopyableFile extends Fake implements File {
+  _UncopyableFile(this._real, this._beforeFailing);
+
+  final File _real;
+  final Future<void> Function(String targetPath)? _beforeFailing;
+
+  @override
+  String get path => _real.path;
+
+  @override
+  Future<int> length() => _real.length();
+
+  @override
+  Future<File> copy(String newPath) async {
+    await _beforeFailing?.call(newPath);
+    throw FileSystemException('Cannot copy', _real.path);
+  }
 }
