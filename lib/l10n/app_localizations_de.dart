@@ -3093,21 +3093,8 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die Aufnahme wurde gespeichert, aber die Transkription ist fehlgeschlagen. Bitte versuche es erneut.';
 
   @override
-  String get checkInAddMoreButton => 'Mehr aufnehmen';
-
-  @override
-  String checkInAudioSaved(String length) {
-    return '$length Audio gespeichert';
-  }
-
-  @override
   String get checkInAudioSavedAsYouGo =>
       'Audio wird laufend auf diesem Gerät gespeichert';
-
-  @override
-  String checkInAudioSavedRoute(String length, String route) {
-    return '$length Audio gespeichert · $route';
-  }
 
   @override
   String get checkInAvoidLabel => 'Besser vermeiden';
@@ -3286,24 +3273,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Aufnahme konnte nicht gespeichert werden';
 
   @override
-  String get checkInReRecordButton => 'Neu aufnehmen';
-
-  @override
-  String get checkInReRecordReplaceMessage =>
-      'Deine bearbeiteten Worte durch eine neue Aufnahme ersetzen?';
+  String get checkInRemoveTake => 'Aufnahme entfernen';
 
   @override
   String get checkInSaveBlockedEmpty => 'Ein paar Worte genügen zum Speichern';
 
   @override
   String get checkInSaveBlockedRecording => 'Zum Speichern Aufnahme stoppen';
-
-  @override
-  String get checkInSaveBlockedRetry =>
-      'Tippen oder erneut versuchen, um zu speichern';
-
-  @override
-  String get checkInSaveBlockedTranscribing => 'Warte auf das Transkript';
 
   @override
   String get checkInSaveButton => 'Check-in speichern';
@@ -3400,6 +3376,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checkInStatusTranscriptMissing => 'Kein Transkript erhalten';
 
   @override
+  String get checkInTakeWordsFollow =>
+      'Du kannst schon speichern – die Worte kommen nach.';
+
+  @override
   String checkInTimeChipSemantics(String time) {
     return 'Beginn: $time. Ändern';
   }
@@ -3411,13 +3391,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checkInTopicsLabel => 'Themen';
 
   @override
-  String get checkInTranscribingEta => 'normalerweise unter einer Minute';
-
-  @override
   String get checkInTranscribingLabel => 'Wird transkribiert…';
-
-  @override
-  String get checkInTranscriptAdded => 'Transkript eingefügt';
 
   @override
   String get checkInTranscriptionUnavailableTitle =>
@@ -3427,10 +3401,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String checkInTranscriptMissingBody(String length) {
     return 'Deine Aufnahme ($length) bleibt im Journal gespeichert, auch wenn du diesen Check-in abbrichst. Versuch es gleich noch einmal.';
   }
-
-  @override
-  String get checkInTranscriptMissingCalloutTitle =>
-      'Noch mal versuchen oder tippen';
 
   @override
   String get checkInTranscriptUnavailable =>

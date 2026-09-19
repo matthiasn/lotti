@@ -6,14 +6,18 @@ import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.da
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// The composer's one field (design 2026-09-13): the narrative, with
-/// *Dictate* inside it. Recording, transcribing, transcript-ready and both
-/// failure cards render **in place of the text**, so the user never leaves
-/// the thing they are writing.
+/// The composer's one field (design 2026-09-13): the note, with *Dictate*
+/// inside it, and beneath the note the recordings made so far. The
+/// recorder and its failure cards render **in place of the text**, so the
+/// user never leaves the thing they are writing.
 ///
-/// Presentational: every phase comes in as [phase] and every way out goes
-/// back as a callback. The form owns the recorder, the transcript wait and
-/// the text; this widget only decides what the box shows for each phase.
+/// A recording is its own entry of the check-in (ADR 0062): its words land
+/// on it, shown as the take's preview, never merged into the note — and
+/// Save does not wait for them.
+///
+/// Presentational: every phase and take comes in, and every way out goes
+/// back as a callback. The form owns the recorder, the transcript waits and
+/// the text; this widget only decides what the box shows.
 class CheckInNarrativeField extends StatelessWidget {
   const CheckInNarrativeField({
     required this.controller,
@@ -22,14 +26,12 @@ class CheckInNarrativeField extends StatelessWidget {
     required this.wordCount,
     required this.recorder,
     required this.onDictate,
-    required this.onAddMore,
-    required this.onReRecord,
-    required this.onTypeInstead,
-    required this.onRetryTranscript,
     required this.onOpenSettings,
     required this.onDismissFailure,
+    this.takes = const [],
+    this.onRetryTake,
+    this.onRemoveTake,
     this.shortcutHint,
-    this.transcriptEdited = false,
     this.restMinLines = 3,
     this.offersDictation = true,
     super.key,
@@ -47,40 +49,31 @@ class CheckInNarrativeField extends StatelessWidget {
   /// *Dictate*: start a recording. Null while the composer cannot.
   final VoidCallback? onDictate;
 
-  /// *Add more*: record again and append below the transcript.
-  final VoidCallback? onAddMore;
-
-  /// *Re-record*: take the transcript back out and record again.
-  final VoidCallback? onReRecord;
-
-  /// *Type instead*: stop waiting for words and hand the field back.
-  final VoidCallback? onTypeInstead;
-
-  /// *Try again* on a missing transcript: ask for it once more.
-  final VoidCallback? onRetryTranscript;
-
   /// *Open settings* on a denied microphone.
   final VoidCallback? onOpenSettings;
 
-  /// *Dismiss* a failure card.
+  /// *Type instead* on a failure card.
   final VoidCallback? onDismissFailure;
+
+  /// The recordings made in this composer, oldest first.
+  final List<CheckInTake> takes;
+
+  /// *Try again* on a take whose words never came, by audio entry id.
+  final ValueChanged<String>? onRetryTake;
+
+  /// *Remove recording*: leave a take out of the check-in, by audio entry
+  /// id. The audio stays in the journal.
+  final ValueChanged<String>? onRemoveTake;
 
   /// `⌘↩ to save`, on a desktop with a keyboard; null elsewhere.
   final String? shortcutHint;
-
-  /// Whether the landed transcript has been edited since: the landing is
-  /// announced once, and never again on top of the user's own typing.
-  final bool transcriptEdited;
 
   /// The empty field's height at rest — shorter in the desktop dialog,
   /// where a tall empty box is dead space beside a working keyboard.
   final int restMinLines;
 
-  /// Whether the field offers *Dictate* at all. Not on a check-in saved
-  /// with words: once it is text it is text, edited by keyboard, and a
-  /// recorder over the record would only raise the question of what it
-  /// does to it. A fresh composer offers it, and a take lands below
-  /// whatever was typed — never over it.
+  /// Whether the field offers *Dictate* at all. Not when editing a saved
+  /// check-in: its timeline is where recordings are added to it.
   final bool offersDictation;
 
   @override
@@ -91,7 +84,7 @@ class CheckInNarrativeField extends StatelessWidget {
       builder: (context, _) {
         // The accent hairline means one thing on the field: keyboard focus,
         // the app-wide convention. The red dot, the waveform and the filled
-        // Stop already say "live"; a landed transcript is ordinary text.
+        // Stop already say "live".
         final border = focusNode.hasFocus
             ? tokens.colors.interactive.enabled
             : tokens.colors.decorative.level01;
@@ -112,15 +105,10 @@ class CheckInNarrativeField extends StatelessWidget {
             CheckInSpeechIdle() => _typing(context),
             CheckInSpeechPreparing() => _typing(context, preparing: true),
             CheckInSpeechRecording() => _recording(context),
-            CheckInSpeechTranscribing(:final length, :final route) =>
-              _transcribing(context, length: length, route: route),
-            CheckInSpeechReady() => _typing(context, ready: true),
-            CheckInSpeechFailed(:final failure, :final cardDismissed) =>
-              _typing(
-                context,
-                failure: failure,
-                cardDismissed: cardDismissed,
-              ),
+            CheckInSpeechFailed(:final failure) => _typing(
+              context,
+              failure: failure,
+            ),
           },
         );
       },
@@ -168,15 +156,12 @@ class CheckInNarrativeField extends StatelessWidget {
     );
   }
 
-  /// The field as text — plain, after a transcript, while preparing, or
-  /// under a failure card — with the word count and the one speech action
-  /// in its footer.
+  /// The field as text — plain, while preparing, or under a failure card —
+  /// then the takes, then the word count and *Dictate* in its footer.
   Widget _typing(
     BuildContext context, {
     bool preparing = false,
-    bool ready = false,
     CheckInSpeechFailure? failure,
-    bool cardDismissed = false,
   }) {
     final tokens = context.designTokens;
     final messages = context.messages;
@@ -185,86 +170,32 @@ class CheckInNarrativeField extends StatelessWidget {
     final caption = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.mediumEmphasis,
     );
-    // *Type instead* on a missing transcript folds the card into one
-    // caption row that keeps the retry.
-    final collapsed = failure != null && cardDismissed;
     // Under a failure card the field is the way out, not the thing to read:
     // it starts short so the chips and More stay on a phone screen, and a
     // "0 words" count says nothing the card and the held Save do not.
-    final underCard = failure != null && !collapsed;
-    // One caption row: what just landed, how much there is, how to save —
-    // a ladder, so a narrow line sheds the count before the shortcut and
-    // never wraps on a separator: the desktop dialog, where the hint pays
-    // off, is exactly where the actions leave the caption least room. A
-    // zero count adds nothing the empty field does not already say.
-    final status = collapsed
-        ? messages.checkInAudioSaved(checkInClockLabel(failure.length!))
-        : ready
-        ? messages.checkInTranscriptAdded
-        : null;
-    // Under a card with nothing typed, the field carries no caption at all:
-    // the card is the message, and a lone shortcut hint only competes.
-    final count = ready || wordCount > 0
-        ? messages.checkInWordCount(wordCount)
-        : null;
-    // The shortcut only once there are words to save with it: beside a held
-    // Save, a working shortcut is a promise the footer contradicts.
+    final underCard = failure != null;
+    // What there is, and how to save — a ladder, so a narrow line sheds the
+    // count before the shortcut and never wraps on a separator. A zero
+    // count adds nothing the empty field does not already say.
+    final count = wordCount > 0 ? messages.checkInWordCount(wordCount) : null;
+    // The shortcut only once there is something to save with it: beside a
+    // held Save, a working shortcut is a promise the footer contradicts.
     final hint = switch (shortcutHint) {
-      final hint? when ready || wordCount > 0 =>
+      final hint? when wordCount > 0 || takes.isNotEmpty =>
         messages.checkInSaveShortcutHint(hint),
       _ => null,
     };
     final ladder = <String>{
       for (final keep in [
-        [status, count, hint],
-        if (count != null && hint != null) [status, hint],
-        if (count != null || hint != null) [status],
+        [count, hint],
+        if (count != null && hint != null) [hint],
       ])
         keep.nonNulls.join(' · '),
     }.where((tier) => tier.isNotEmpty).toList();
-    final meta = ladder.isEmpty ? '' : ladder.first;
-    final captionStyle = caption;
     final actions = <Widget>[
-      if (ready) ...[
-        // Only while the transcript is exactly what landed: once it is
-        // edited, taking it back out would take the edits with it.
-        // Quiet, with its own glyph: the accent is for the way
-        // forward, and Re-record must not read as a twin of Add more.
-        if (onReRecord != null)
-          DesignSystemButton(
-            key: const ValueKey('check-in-re-record'),
-            label: messages.checkInReRecordButton,
-            leadingIcon: LottiIcons.refresh,
-            variant: DesignSystemButtonVariant.quiet,
-            size: DesignSystemButtonSize.medium,
-            tapTargetSize: MaterialTapTargetSize.padded,
-            onPressed: onReRecord,
-          ),
-        DesignSystemButton(
-          key: const ValueKey('check-in-add-more'),
-          label: messages.checkInAddMoreButton,
-          leadingIcon: LottiIcons.mic,
-          variant: DesignSystemButtonVariant.outlined,
-          size: DesignSystemButtonSize.medium,
-          tapTargetSize: MaterialTapTargetSize.padded,
-          onPressed: onAddMore,
-        ),
-      ] else if (collapsed)
-        DesignSystemButton(
-          key: const ValueKey('check-in-retry-transcript'),
-          label: messages.relationshipAgentTryAgain,
-          leadingIcon: LottiIcons.refresh,
-          variant: DesignSystemButtonVariant.tertiary,
-          size: DesignSystemButtonSize.medium,
-          tapTargetSize: MaterialTapTargetSize.padded,
-          onPressed: onRetryTranscript,
-        )
-      // A take waiting for *Try again* has its way forward on the card; a
-      // second recorder button in the field would be a dead door beside a
-      // live one. Under the refused microphone the field's Dictate is the
-      // retry, one tier down: the card's pill is the face's one shape.
-      else if (offersDictation &&
-          (failure == null || _dictatesUnder(failure.kind)))
+      // Under the refused microphone the field's Dictate is the retry, one
+      // tier down: the card's pill is the face's one shape.
+      if (offersDictation)
         DesignSystemButton(
           key: const ValueKey('check-in-dictate'),
           label: messages.checkInDictateButton,
@@ -277,28 +208,22 @@ class CheckInNarrativeField extends StatelessWidget {
           onPressed: preparing ? null : onDictate,
         ),
     ];
-    // The actions sit in one corner across every phase: beside the caption
-    // when both fit a line, else on their own line at the trailing edge —
-    // always at large text, where even a lone button can crowd the caption,
-    // and always once a transcript has landed: Re-record · Add more beside
-    // the caption leave it no room for the shortcut even in the dialog, and
-    // the hint pays off exactly there.
-    final largeText =
+    // The actions sit in one corner: beside the caption when both fit a
+    // line, else on their own line at the trailing edge — always at large
+    // text, where even a lone button can crowd the caption.
+    final stacked =
         MediaQuery.textScalerOf(context).scale(1) > TextScales.large;
-    final stacked = largeText || ready;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (underCard) ...[
+        if (failure != null) ...[
           _FailureCard(
             failure: failure,
-            onRetryTranscript: onRetryTranscript,
             onOpenSettings: onOpenSettings,
             onDictate: onDictate,
             onTypeInstead: onDismissFailure,
-            onDismiss: onDismissFailure,
           ),
           SizedBox(height: tokens.spacing.step4),
         ],
@@ -308,10 +233,24 @@ class CheckInNarrativeField extends StatelessWidget {
               ? messages.checkInOrTypeHint
               : messages.checkInNarrativeHint,
           // "One line is enough": the box says so by not asking for five.
-          minLines: underCard ? 1 : restMinLines,
+          // Neither does it beside a recording, which already says it.
+          minLines: underCard || takes.isNotEmpty ? 1 : restMinLines,
           quietHint: underCard,
         ),
-        if (meta.isNotEmpty || actions.isNotEmpty)
+        for (final take in takes) ...[
+          SizedBox(height: tokens.spacing.step4),
+          CheckInTakeRow(
+            key: ValueKey('check-in-take-${take.audioEntryId}'),
+            take: take,
+            onRetry: onRetryTake == null
+                ? null
+                : () => onRetryTake!(take.audioEntryId),
+            onRemove: onRemoveTake == null
+                ? null
+                : () => onRemoveTake!(take.audioEntryId),
+          ),
+        ],
+        if (ladder.isNotEmpty || actions.isNotEmpty)
           SizedBox(height: tokens.spacing.step4),
         if (preparing)
           Semantics(
@@ -322,66 +261,21 @@ class CheckInNarrativeField extends StatelessWidget {
               style: caption,
             ),
           ),
-        if (meta.isNotEmpty || actions.isNotEmpty)
+        if (ladder.isNotEmpty || actions.isNotEmpty)
           _CaptionAndActions(
             stacked: stacked,
-            // Live once, as the transcript lands — pinned to that sentence,
-            // so a word count that follows every keystroke is not re-read
-            // each time; once the text is edited the landing is old news.
-            caption: meta.isEmpty
+            caption: ladder.isEmpty
                 ? null
-                : Semantics(
-                    liveRegion: ready && !transcriptEdited,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (ready || collapsed) ...[
-                          Icon(
-                            LottiIcons.confirmCircled,
-                            key: ready
-                                ? const ValueKey('check-in-transcript-added')
-                                : const ValueKey('check-in-audio-saved'),
-                            size: IconSizes.s,
-                            color: tokens.colors.text.mediumEmphasis,
-                          ),
-                          SizedBox(width: tokens.spacing.step2),
-                        ],
-                        Flexible(
-                          child: DsTieredText(
-                            textKey: const ValueKey('check-in-word-count'),
-                            tiers: ladder,
-                            semanticsLabel: ready && !transcriptEdited
-                                ? messages.checkInTranscriptAdded
-                                : collapsed
-                                ? messages.checkInAudioSaved(
-                                    checkInSpokenClockLabel(
-                                      messages,
-                                      failure.length!,
-                                    ),
-                                  )
-                                : null,
-                            style: captionStyle,
-                          ),
-                        ),
-                      ],
-                    ),
+                : DsTieredText(
+                    textKey: const ValueKey('check-in-word-count'),
+                    tiers: ladder,
+                    style: caption,
                   ),
             actions: actions,
           ),
       ],
     );
   }
-
-  /// Whether the field keeps its own *Dictate* under a failure card of
-  /// [kind]: not when the card's own retry is the way to record again.
-  static bool _dictatesUnder(CheckInSpeechFailureKind kind) => switch (kind) {
-    CheckInSpeechFailureKind.transcriptMissing => false,
-    CheckInSpeechFailureKind.microphoneDenied ||
-    CheckInSpeechFailureKind.recordingFailed ||
-    CheckInSpeechFailureKind.recordingNotSaved ||
-    CheckInSpeechFailureKind.recorderBusy ||
-    CheckInSpeechFailureKind.transcriptionUnavailable => true,
-  };
 
   /// The recorder in place of the text, under the line that says what
   /// happens next.
@@ -407,186 +301,171 @@ class CheckInNarrativeField extends StatelessWidget {
       ],
     );
   }
-
-  /// Placeholder lines where the words will land, the saved-audio line, and
-  /// the way out for someone who would rather type.
-  Widget _transcribing(
-    BuildContext context, {
-    required Duration length,
-    required String? route,
-  }) {
-    final tokens = context.designTokens;
-    final messages = context.messages;
-    final clock = checkInClockLabel(length);
-    final saved = messages.checkInAudioSaved(clock);
-    final savedWithRoute = route == null
-        ? saved
-        : messages.checkInAudioSavedRoute(clock, route);
-    final eta = messages.checkInTranscribingEta;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Named, not live: the header's status line is the one announcer
-        // of this phase, so a reader hears "Transcribing" once.
-        Semantics(
-          label: messages.checkInTranscribingLabel,
-          child: const ExcludeSemantics(child: _TranscriptSkeleton()),
-        ),
-        // The same step the recorder keeps between its rows: one rhythm
-        // across the field's phases.
-        SizedBox(height: tokens.spacing.step4),
-        // A caption row, like the transcript-added line it precedes — not
-        // a second box inside the field.
-        // One caption row, like every other phase's: the saved line leading
-        // and Type instead on the trailing edge, the route shed first on a
-        // narrow phone.
-        _CaptionAndActions(
-          stacked: MediaQuery.textScalerOf(context).scale(1) > TextScales.large,
-          caption: Row(
-            key: const ValueKey('check-in-audio-saved'),
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                LottiIcons.confirmCircled,
-                size: IconSizes.s,
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-              SizedBox(width: tokens.spacing.step2),
-              Flexible(
-                child: DsTieredText(
-                  // The time expectation is the first tier to go, the
-                  // route the second; the saved length is the fact.
-                  tiers: [
-                    if (route != null) '$savedWithRoute · $eta',
-                    if (route != null) savedWithRoute else '$saved · $eta',
-                    saved,
-                  ],
-                  semanticsLabel: [
-                    messages.checkInAudioSaved(
-                      checkInSpokenClockLabel(messages, length),
-                    ),
-                    ?route,
-                    eta,
-                  ].join(' · '),
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            // Quiet and caption-sized: the wait is the thing to read, not
-            // the exit — the 48pt target stays.
-            DesignSystemButton(
-              key: const ValueKey('check-in-type-instead'),
-              label: messages.checkInTypeInstead,
-              variant: DesignSystemButtonVariant.quiet,
-              size: DesignSystemButtonSize.dense,
-              tapTargetSize: MaterialTapTargetSize.padded,
-              onPressed: onTypeInstead,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
 }
 
-/// Three quiet lines standing in for the transcript, breathing slowly —
-/// and holding still for a reduced-motion reader, who still has the header
-/// and the live region to say what is happening.
-class _TranscriptSkeleton extends StatefulWidget {
-  const _TranscriptSkeleton();
+/// One recording under the note: its length and where its words are on
+/// the first line, then the words themselves, the promise that they
+/// follow, or the way to ask again — and *Remove recording* on the
+/// trailing edge.
+class CheckInTakeRow extends StatelessWidget {
+  const CheckInTakeRow({
+    required this.take,
+    this.onRetry,
+    this.onRemove,
+    super.key,
+  });
 
-  @override
-  State<_TranscriptSkeleton> createState() => _TranscriptSkeletonState();
-}
-
-class _TranscriptSkeletonState extends State<_TranscriptSkeleton>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _pulse = AnimationController(
-    vsync: this,
-    duration: MotionDurations.long2,
-  );
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (MediaQuery.disableAnimationsOf(context)) {
-      _pulse.stop();
-    } else if (!_pulse.isAnimating) {
-      _pulse.repeat(reverse: true);
-    }
-  }
-
-  @override
-  void dispose() {
-    _pulse.dispose();
-    super.dispose();
-  }
+  final CheckInTake take;
+  final VoidCallback? onRetry;
+  final VoidCallback? onRemove;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return FadeTransition(
-      opacity: Tween<double>(
-        begin: SurfaceAlphas.muted,
-        end: 1,
-      ).animate(CurvedAnimation(parent: _pulse, curve: MotionCurves.standard)),
-      child: Column(
-        key: const ValueKey('check-in-transcript-skeleton'),
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final (index, width) in const [0.85, 0.7, 0.55].indexed) ...[
-            if (index > 0) SizedBox(height: tokens.spacing.step4),
-            FractionallySizedBox(
-              widthFactor: width,
-              child: Container(
-                height: tokens.spacing.step4,
-                decoration: BoxDecoration(
-                  color: tokens.colors.background.level03,
-                  borderRadius: BorderRadius.circular(tokens.radii.s),
-                ),
+    final messages = context.messages;
+    final clock = checkInClockLabel(take.length);
+    final meta = tokens.typography.styles.others.caption.copyWith(
+      color: tokens.colors.text.mediumEmphasis,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+    final body = tokens.typography.styles.body.bodyMedium.copyWith(
+      color: tokens.colors.text.highEmphasis,
+    );
+    final quiet = body.copyWith(color: tokens.colors.text.mediumEmphasis);
+    // The route is the first thing a narrow row sheds; the length and the
+    // state are the facts.
+    final state = switch (take.words) {
+      CheckInTakeWords.transcribing => messages.checkInTranscribingLabel,
+      CheckInTakeWords.heard => null,
+      CheckInTakeWords.missing => messages.checkInStatusTranscriptMissing,
+    };
+    final tiers = [
+      if (state != null && take.route != null)
+        '$clock · $state · ${take.route}',
+      if (state != null) '$clock · $state',
+      clock,
+    ];
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level02,
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+      ),
+      child: Padding(
+        padding: EdgeInsetsDirectional.only(
+          start: tokens.spacing.step4,
+          top: tokens.spacing.step3,
+          bottom: tokens.spacing.step4,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: EdgeInsets.only(top: tokens.spacing.step1),
+              child: Icon(
+                LottiIcons.mic,
+                size: IconSizes.s,
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ),
+            SizedBox(width: tokens.spacing.step3),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DsTieredText(
+                    textKey: const ValueKey('check-in-take-meta'),
+                    tiers: tiers,
+                    semanticsLabel: [
+                      checkInSpokenClockLabel(messages, take.length),
+                      ?state,
+                    ].join(' · '),
+                    style: meta,
+                  ),
+                  SizedBox(height: tokens.spacing.step2),
+                  switch (take.words) {
+                    CheckInTakeWords.transcribing => Text(
+                      messages.checkInTakeWordsFollow,
+                      key: const ValueKey('check-in-take-follows'),
+                      style: quiet,
+                    ),
+                    CheckInTakeWords.heard => Semantics(
+                      liveRegion: true,
+                      child: Text(
+                        take.transcript ?? '',
+                        key: const ValueKey('check-in-take-transcript'),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: body,
+                      ),
+                    ),
+                    CheckInTakeWords.missing => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // The provider's own detail, when it left any —
+                        // never a cause the service cannot tell apart.
+                        Text(
+                          take.detail ??
+                              messages.checkInTranscriptMissingBody(clock),
+                          key: const ValueKey('check-in-take-missing'),
+                          style: quiet,
+                        ),
+                        SizedBox(height: tokens.spacing.step2),
+                        DesignSystemButton(
+                          key: const ValueKey('check-in-retry-transcript'),
+                          label: messages.relationshipAgentTryAgain,
+                          leadingIcon: LottiIcons.refresh,
+                          variant: DesignSystemButtonVariant.tertiary,
+                          size: DesignSystemButtonSize.medium,
+                          tapTargetSize: MaterialTapTargetSize.padded,
+                          onPressed: onRetry,
+                        ),
+                      ],
+                    ),
+                  },
+                ],
+              ),
+            ),
+            IconButton(
+              key: const ValueKey('check-in-take-remove'),
+              tooltip: messages.checkInRemoveTake,
+              onPressed: onRemove,
+              icon: Icon(
+                LottiIcons.close,
+                size: IconSizes.s,
+                color: tokens.colors.text.mediumEmphasis,
               ),
             ),
           ],
-        ],
+        ),
       ),
     );
   }
 }
 
-/// The card at the top of the field when speech failed (options 1e / 1f):
-/// tone by kind, the reason in plain words, the one thing to do about it,
-/// and the way out for someone who would rather type.
+/// The card at the top of the field when the recorder could not record
+/// (option 1f): tone by kind, the reason in plain words, the one thing to
+/// do about it, and the way out for someone who would rather type.
 class _FailureCard extends StatelessWidget {
   const _FailureCard({
     required this.failure,
-    required this.onRetryTranscript,
     required this.onOpenSettings,
     required this.onDictate,
     required this.onTypeInstead,
-    required this.onDismiss,
   });
 
   final CheckInSpeechFailure failure;
-  final VoidCallback? onRetryTranscript;
   final VoidCallback? onOpenSettings;
   final VoidCallback? onDictate;
   final VoidCallback? onTypeInstead;
-  final VoidCallback? onDismiss;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
     final alert = tokens.colors.alert;
-    final length = failure.length == null
-        ? null
-        : checkInClockLabel(failure.length!);
 
     final (
       tone,
@@ -679,26 +558,6 @@ class _FailureCard extends StatelessWidget {
           onPressed: onTypeInstead,
         ),
       ),
-      CheckInSpeechFailureKind.transcriptMissing => (
-        alert.warning.defaultColor,
-        LottiIcons.cloudOff,
-        // The header already names the state; the card's title is the next
-        // step. The provider's own detail, when it left any, is the body —
-        // never a cause the service cannot tell apart.
-        messages.checkInTranscriptMissingCalloutTitle,
-        failure.detail ?? messages.checkInTranscriptMissingBody(length ?? ''),
-        (
-          key: const ValueKey('check-in-retry-transcript'),
-          label: messages.relationshipAgentTryAgain,
-          icon: LottiIcons.refresh,
-          onPressed: onRetryTranscript,
-        ),
-        (
-          key: const ValueKey('check-in-dismiss-failure'),
-          label: messages.checkInTypeInstead,
-          onPressed: onTypeInstead,
-        ),
-      ),
     };
 
     // The design system's own callout: the tone on the hairline and the
@@ -713,8 +572,8 @@ class _FailureCard extends StatelessWidget {
       announce: true,
       // The recommended action is the secondary pill: the alert tone is the
       // card's one colour, and the filled accent stays Save's alone. The
-      // way out beside it is quiet, as it is while transcribing — accent on
-      // the escape hatch would make colour and shape point at two buttons.
+      // way out beside it is quiet — accent on the escape hatch would make
+      // colour and shape point at two buttons.
       actions: [
         DesignSystemButton(
           key: secondary.key,
@@ -741,9 +600,8 @@ class _FailureCard extends StatelessWidget {
 
 /// The field's footer: a caption and its actions beside each other when
 /// they share a line, or — [stacked] — the caption above and the actions on
-/// their own line at the trailing edge, so Dictate, Try again and
-/// Re-record · Add more all live in the same corner across phases and text
-/// scales.
+/// their own line at the trailing edge, so Dictate lives in the same
+/// corner across phases and text scales.
 class _CaptionAndActions extends StatelessWidget {
   const _CaptionAndActions({
     required this.stacked,

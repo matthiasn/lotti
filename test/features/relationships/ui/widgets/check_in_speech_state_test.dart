@@ -5,8 +5,7 @@ import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
 
 void main() {
-  const missing = CheckInSpeechFailure(
-    CheckInSpeechFailureKind.transcriptMissing,
+  const take = CheckInTake(
     audioEntryId: 'audio-1',
     length: Duration(seconds: 23),
   );
@@ -17,18 +16,25 @@ void main() {
         checkInSaveBlockOf(
           phase: const CheckInSpeechRecording(),
           hasWords: true,
+          hasTakes: true,
           saving: true,
         ),
         CheckInSaveBlock.saving,
       );
     });
 
-    test('speech in flight holds Save regardless of words', () {
-      for (final hasWords in [true, false]) {
+    test('the recorder at work holds Save, whatever there is', () {
+      for (final (hasWords, hasTakes) in [
+        (true, true),
+        (true, false),
+        (false, true),
+        (false, false),
+      ]) {
         expect(
           checkInSaveBlockOf(
             phase: const CheckInSpeechPreparing(),
             hasWords: hasWords,
+            hasTakes: hasTakes,
             saving: false,
           ),
           CheckInSaveBlock.preparing,
@@ -37,72 +43,88 @@ void main() {
           checkInSaveBlockOf(
             phase: const CheckInSpeechRecording(),
             hasWords: hasWords,
+            hasTakes: hasTakes,
             saving: false,
           ),
           CheckInSaveBlock.recording,
         );
-        expect(
-          checkInSaveBlockOf(
-            phase: const CheckInSpeechTranscribing(
-              audioEntryId: 'audio-1',
-              length: Duration(seconds: 5),
-            ),
-            hasWords: hasWords,
-            saving: false,
-          ),
-          CheckInSaveBlock.transcribing,
-        );
       }
     });
 
-    test('at rest, words are the only thing Save waits for', () {
+    // The point of takes: a recording is enough to save, its words still on
+    // their way or not.
+    test('at rest, words or a recording are enough', () {
       for (final phase in [
         const CheckInSpeechIdle(),
-        const CheckInSpeechReady(
-          transcript: 'x',
-          textBefore: '',
-          length: Duration(seconds: 1),
-        ),
         const CheckInSpeechFailed(
           CheckInSpeechFailure(CheckInSpeechFailureKind.microphoneDenied),
         ),
-        const CheckInSpeechFailed(missing),
       ]) {
-        expect(
-          checkInSaveBlockOf(phase: phase, hasWords: true, saving: false),
-          CheckInSaveBlock.none,
-          reason: '$phase with words',
-        );
+        for (final (hasWords, hasTakes, block) in [
+          (true, false, CheckInSaveBlock.none),
+          (false, true, CheckInSaveBlock.none),
+          (true, true, CheckInSaveBlock.none),
+          (false, false, CheckInSaveBlock.emptyNarrative),
+        ]) {
+          expect(
+            checkInSaveBlockOf(
+              phase: phase,
+              hasWords: hasWords,
+              hasTakes: hasTakes,
+              saving: false,
+            ),
+            block,
+            reason: '$phase words=$hasWords takes=$hasTakes',
+          );
+        }
       }
+    });
+  });
+
+  group('CheckInTake', () {
+    test('starts transcribing, and moves between words states keeping '
+        'what it is', () {
+      expect(take.words, CheckInTakeWords.transcribing);
+
+      final routed = take.withRoute('whisper · via Melious');
+      final heard = routed.heard('Pip wants the krill memo.');
       expect(
-        checkInSaveBlockOf(
-          phase: const CheckInSpeechIdle(),
-          hasWords: false,
-          saving: false,
+        (heard.words, heard.transcript, heard.route, heard.length),
+        (
+          CheckInTakeWords.heard,
+          'Pip wants the krill memo.',
+          'whisper · via Melious',
+          const Duration(seconds: 23),
         ),
-        CheckInSaveBlock.emptyNarrative,
       );
+
+      final missing = routed.missing('HTTP 503');
+      expect(
+        (missing.words, missing.transcript, missing.detail),
+        (CheckInTakeWords.missing, null, 'HTTP 503'),
+      );
+
+      // Try again: back to waiting, the error and any old words gone.
+      final retried = missing.transcribing();
+      expect(
+        (retried.words, retried.detail, retried.route),
+        (CheckInTakeWords.transcribing, null, 'whisper · via Melious'),
+      );
+      expect(missing.withRoute('r').words, CheckInTakeWords.missing);
     });
 
-    test('a missing transcript with no words offers the retry', () {
+    test('is a value', () {
       expect(
-        checkInSaveBlockOf(
-          phase: const CheckInSpeechFailed(missing),
-          hasWords: false,
-          saving: false,
+        take.heard('x'),
+        const CheckInTake(
+          audioEntryId: 'audio-1',
+          length: Duration(seconds: 23),
+          words: CheckInTakeWords.heard,
+          transcript: 'x',
         ),
-        CheckInSaveBlock.typeOrRetry,
       );
-      expect(
-        checkInSaveBlockOf(
-          phase: const CheckInSpeechFailed(
-            CheckInSpeechFailure(CheckInSpeechFailureKind.recordingFailed),
-          ),
-          hasWords: false,
-          saving: false,
-        ),
-        CheckInSaveBlock.emptyNarrative,
-      );
+      expect(take.heard('x').hashCode, take.heard('x').hashCode);
+      expect(take.heard('x'), isNot(take.heard('y')));
     });
   });
 
@@ -187,58 +209,29 @@ void main() {
       );
     });
 
-    test('only a missing transcript has a recording to point at', () {
-      expect(missing.hasRecording, isTrue);
-      expect(
-        const CheckInSpeechFailure(
-          CheckInSpeechFailureKind.microphoneDenied,
-        ).hasRecording,
-        isFalse,
-      );
-      expect(
-        () => CheckInSpeechFailure(CheckInSpeechFailureKind.transcriptMissing),
-        throwsA(isA<AssertionError>()),
-      );
-    });
-
     test('is a value', () {
-      expect(
-        missing,
-        const CheckInSpeechFailure(
-          CheckInSpeechFailureKind.transcriptMissing,
-          audioEntryId: 'audio-1',
-          length: Duration(seconds: 23),
-        ),
+      const denied = CheckInSpeechFailure(
+        CheckInSpeechFailureKind.microphoneDenied,
       );
-      expect(missing.hashCode, isNot(0));
       expect(
-        missing,
+        denied,
+        const CheckInSpeechFailure(CheckInSpeechFailureKind.microphoneDenied),
+      );
+      expect(denied.hashCode, denied.kind.hashCode);
+      expect(
+        denied,
         isNot(
-          const CheckInSpeechFailure(
-            CheckInSpeechFailureKind.transcriptMissing,
-            audioEntryId: 'audio-2',
-          ),
+          const CheckInSpeechFailure(CheckInSpeechFailureKind.recorderBusy),
         ),
       );
     });
   });
 
   group('checkInComposerStatusOf', () {
-    test('rest and ready read as idle; the failures name themselves', () {
+    test('rest reads as idle; the failures name themselves', () {
       expect(
         checkInComposerStatusOf(
           const CheckInSpeechIdle(),
-          recorderPaused: false,
-        ),
-        CheckInComposerStatus.idle,
-      );
-      expect(
-        checkInComposerStatusOf(
-          const CheckInSpeechReady(
-            transcript: 'x',
-            textBefore: '',
-            length: Duration.zero,
-          ),
           recorderPaused: false,
         ),
         CheckInComposerStatus.idle,
@@ -249,16 +242,6 @@ void main() {
           recorderPaused: false,
         ),
         CheckInComposerStatus.preparing,
-      );
-      expect(
-        checkInComposerStatusOf(
-          const CheckInSpeechTranscribing(
-            audioEntryId: 'a',
-            length: Duration.zero,
-          ),
-          recorderPaused: false,
-        ),
-        CheckInComposerStatus.transcribing,
       );
       final byKind = {
         CheckInSpeechFailureKind.microphoneDenied:
@@ -277,16 +260,42 @@ void main() {
           checkInComposerStatusOf(
             CheckInSpeechFailed(CheckInSpeechFailure(entry.key)),
             recorderPaused: false,
+            takes: [take],
           ),
           entry.value,
         );
       }
+    });
+
+    // At rest the takes speak: one still waiting outranks one whose words
+    // never came, and words that arrived say nothing.
+    test('at rest, the takes say where the words are', () {
+      for (final (takes, status) in [
+        (<CheckInTake>[take.heard('x')], CheckInComposerStatus.idle),
+        ([take], CheckInComposerStatus.transcribing),
+        ([take.missing(null)], CheckInComposerStatus.transcriptMissing),
+        (
+          [take.missing(null), take],
+          CheckInComposerStatus.transcribing,
+        ),
+      ]) {
+        expect(
+          checkInComposerStatusOf(
+            const CheckInSpeechIdle(),
+            recorderPaused: false,
+            takes: takes,
+          ),
+          status,
+        );
+      }
+      // The recorder is what the user is doing now.
       expect(
         checkInComposerStatusOf(
-          const CheckInSpeechFailed(missing),
+          const CheckInSpeechRecording(),
           recorderPaused: false,
+          takes: [take],
         ),
-        CheckInComposerStatus.transcriptMissing,
+        CheckInComposerStatus.recording,
       );
     });
 

@@ -61,28 +61,27 @@ is closed. The deterministic cadence tier does not require an AI model.
 
 ## Capturing and linking
 
-Check-ins are user-authored. One composer opens on the narrative, with
-Dictate inside the field; how you connected, when and for how long are one
-row of chips, and optional details fold under More. Recording, the
-transcript wait, the finished transcript and both failure cards render in
-place of the text. Voice capture records against the person, transcribes
-with the system default profile and fills the narrative for review; it
-never saves automatically or overwrites existing typed text. Editing a
-check-in that was saved with words offers no Dictate: the saved text is
-edited as text. A missing
-transcript can be asked for again without recording again. A missing
-transcription model is explained before recording. Dictated words are
-corrected against the person's name and nickname, the names that come up
-with them (set in the person editor), the other people in their category and
-the category's speech dictionary, so a misheard name arrives spelled the way
-the user writes it. Save waits for a few words
-and says so while it waits. Closing the composer with unsaved words, or
-while a recording is running, asks first, and confirming discards the
-recording too; an untouched draft closes at once. A failure card offers
-its own Try again, and typing under one that has nothing to retry
-dismisses it; choosing to type instead of waiting for a missing
-transcript keeps its retry on one line. Re-record is offered only while
-the transcript is unedited. The started chip shows the time in the
+Check-ins are user-authored. One composer opens on the note, with Dictate
+inside the field; how you connected, when and for how long are one row of
+chips, and optional details fold under More. The recorder and its failure
+cards render in place of the text. Each recording then sits under the note
+as its own entry-to-be, with its words once they arrive, and is saved as one
+of the check-in's entries — never merged into the note, so nothing typed is
+replaced. Voice capture records against the person and transcribes with the
+system default profile. Save does not wait for the words: a few words or a
+recording are enough, and words still on their way land on the recording
+after the check-in is saved. A recording whose words never came can be asked
+for again without recording again, or left out. A missing transcription
+model is explained before recording. Dictated words are corrected against
+the person's name and nickname, the names that come up with them (set in the
+person editor), the other people in their category and the category's speech
+dictionary, so a misheard name arrives spelled the way the user writes it.
+Editing a saved check-in edits its own fields; recordings are added from its
+timeline. Closing the composer with unsaved words, a recording, or while one
+is running, asks first; confirming discards a running recording too, while
+finished ones stay in the journal. An untouched draft closes at once. A
+failure card offers its own Try again, and typing under it dismisses it.
+The started chip shows the time in the
 device's own clock format, the same one its picker uses. At a large text setting the header keeps its whole title and
 shortens its status line word by word, keeping the person's name, rather
 than cutting it off.

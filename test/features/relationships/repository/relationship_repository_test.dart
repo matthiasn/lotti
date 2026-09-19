@@ -1582,20 +1582,77 @@ void main() {
       },
     );
 
-    test('a recording or photo is attached by a link, and the check-in '
-        'changes', () async {
+    test("the composer's recordings are attached by links, and the "
+        'check-in changes once', () async {
       when(
-        () => mockPersistence.createLink(fromId: 'c-1', toId: 'take'),
+        () => mockPersistence.createLink(
+          fromId: 'c-1',
+          toId: any(named: 'toId'),
+        ),
       ).thenAnswer((_) async => true);
 
       expect(
-        await repository.attachEntryToCheckIn(
+        await repository.attachEntriesToCheckIn(
           checkInId: 'c-1',
-          entryId: 'take',
+          entryIds: ['take-1', 'take-2'],
         ),
         isTrue,
       );
+      verify(
+        () => mockPersistence.createLink(fromId: 'c-1', toId: 'take-1'),
+      ).called(1);
+      verify(
+        () => mockPersistence.createLink(fromId: 'c-1', toId: 'take-2'),
+      ).called(1);
       expectTouched();
+    });
+
+    // The check-in is already saved: one failed link must not cost the
+    // others, and whatever did link is still news for the briefing.
+    test('a link that fails is logged, the rest still attach, and the '
+        'check-in changes', () async {
+      when(
+        () => mockPersistence.createLink(fromId: 'c-1', toId: 'take-1'),
+      ).thenThrow(StateError('database closed'));
+      when(
+        () => mockPersistence.createLink(fromId: 'c-1', toId: 'take-2'),
+      ).thenAnswer((_) async => true);
+
+      expect(
+        await repository.attachEntriesToCheckIn(
+          checkInId: 'c-1',
+          entryIds: ['take-1', 'take-2'],
+        ),
+        isFalse,
+      );
+      verify(
+        () => getIt<DomainLogger>().error(
+          LogDomain.persistence,
+          any(),
+          message: 'check-in entry link failed for take-1',
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'attachEntriesToCheckIn',
+        ),
+      ).called(1);
+      expectTouched();
+    });
+
+    test('nothing linked changes nothing', () async {
+      when(
+        () => mockPersistence.createLink(
+          fromId: 'c-1',
+          toId: any(named: 'toId'),
+        ),
+      ).thenAnswer((_) async => false);
+
+      expect(
+        await repository.attachEntriesToCheckIn(
+          checkInId: 'c-1',
+          entryIds: ['take-1'],
+        ),
+        isFalse,
+      );
+      verifyNever(() => mockPersistence.updateDbEntity(any()));
     });
 
     // CodeRabbit review on #4347: a synced edit landing between the read

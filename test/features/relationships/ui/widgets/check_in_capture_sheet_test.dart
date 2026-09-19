@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -46,55 +45,6 @@ void main() {
   // The form is a full scroll: give the scaffold a viewport that holds it,
   // the way the modal page does, so nothing overflows or lands off-screen.
   const tallForm = MediaQueryData(size: Size(1000, 2400));
-
-  group('mergeCheckInNarrative', () {
-    test('uses the transcript when the field is empty', () {
-      expect(
-        mergeCheckInNarrative(existing: '', transcript: 'She got the job.'),
-        'She got the job.',
-      );
-    });
-
-    test('appends below text the user already typed', () {
-      expect(
-        mergeCheckInNarrative(
-          existing: 'Called on the way home.',
-          transcript: 'She got the job.',
-        ),
-        'Called on the way home.\n\nShe got the job.',
-      );
-    });
-
-    // A second recording adds to the account; nothing typed is ever lost.
-    test('keeps appending across repeated recordings', () {
-      final once = mergeCheckInNarrative(
-        existing: '',
-        transcript: 'First take.',
-      );
-
-      expect(
-        mergeCheckInNarrative(existing: once, transcript: 'Second take.'),
-        'First take.\n\nSecond take.',
-      );
-    });
-
-    test('leaves the field untouched for a blank transcript', () {
-      expect(
-        mergeCheckInNarrative(existing: 'Typed.', transcript: '   '),
-        'Typed.',
-      );
-    });
-
-    test('trims both sides before joining', () {
-      expect(
-        mergeCheckInNarrative(
-          existing: '  Typed.  \n',
-          transcript: '\n  Spoken.  ',
-        ),
-        'Typed.\n\nSpoken.',
-      );
-    });
-  });
 
   final testDate = DateTime(2026, 8, 13, 10, 30);
 
@@ -148,6 +98,12 @@ void main() {
         invocation.namedArguments[#data] as CheckInData,
       ),
     );
+    when(
+      () => mockRepository.attachEntriesToCheckIn(
+        checkInId: any(named: 'checkInId'),
+        entryIds: any(named: 'entryIds'),
+      ),
+    ).thenAnswer((_) async => true);
     stubTranscription = StubCheckInTranscriptionService(
       transcript: 'Spoken.',
     );
@@ -179,6 +135,10 @@ void main() {
 
   String narrativeText(WidgetTester tester) =>
       tester.widget<TextField>(narrative).controller!.text;
+
+  /// One recording's row under the note.
+  Finder take(String audioEntryId) =>
+      find.byKey(ValueKey('check-in-take-$audioEntryId'));
 
   /// Types into the narrative and drops the keyboard again, the way a
   /// phone user does before reaching for the bar — focus slims the bar to
@@ -973,41 +933,30 @@ void main() {
       expect(updated.meta.dateTo, DateTime(2026, 8, 6, 19, 45));
     });
 
-    testWidgets('a check-in saved with words offers no Dictate: once it is '
-        'text it is edited as text, and a recording can never touch it', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildEditForm());
-      await tester.pumpAndSettle();
-      expect(narrativeText(tester), 'Planned the trip.');
-      expect(dictate, findsNothing);
-
-      // Clearing the field does not bring it back: the saved record decides,
-      // not the keystroke, so the button never flickers under typing.
-      await tester.enterText(
-        find.byKey(const ValueKey('check-in-narrative')),
-        '',
-      );
-      await tester.pumpAndSettle();
-      expect(dictate, findsNothing);
-    });
-
-    testWidgets('a check-in saved without words still offers Dictate', (
-      tester,
-    ) async {
-      final entry = existing();
-      await tester.pumpWidget(
-        buildEditForm(
-          entry: CheckInEntry(
-            meta: entry.meta,
-            data: entry.data,
-            entryText: const EntryText(plainText: '  '),
+    // A saved check-in is added to from its timeline, where a recording
+    // becomes its entry at once; the edit sheet edits its own fields.
+    for (final saved in ['Planned the trip.', '  ']) {
+      testWidgets('editing never offers Dictate (saved text: "$saved")', (
+        tester,
+      ) async {
+        final entry = existing();
+        await tester.pumpWidget(
+          buildEditForm(
+            entry: CheckInEntry(
+              meta: entry.meta,
+              data: entry.data,
+              entryText: EntryText(plainText: saved),
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(dictate, findsOneWidget);
-    });
+        );
+        await tester.pumpAndSettle();
+        expect(dictate, findsNothing);
+
+        await tester.enterText(narrative, '');
+        await tester.pumpAndSettle();
+        expect(dictate, findsNothing, reason: 'never flickers under typing');
+      });
+    }
   });
 
   group('dictation', () {
@@ -1035,6 +984,24 @@ void main() {
       // The field is still there to type into, and Save follows the words.
       await type(tester, 'Typed instead.');
       expect(saveEnabled(tester), isTrue);
+    });
+
+    testWidgets('Type instead on a failure card puts the card away and the '
+        'keyboard in the field', (tester) async {
+      stubTranscription = StubCheckInTranscriptionService(
+        canTranscribeResult: false,
+      );
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await startDictation(tester);
+      final card = find.byKey(const ValueKey('check-in-speech-failure'));
+      expect(card, findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('check-in-dismiss-failure')));
+      await tester.pumpAndSettle();
+
+      expect(card, findsNothing);
+      expect(tester.widget<TextField>(narrative).focusNode!.hasFocus, isTrue);
     });
 
     testWidgets('a preflight that throws is a failed start, not a hang', (
@@ -1098,8 +1065,11 @@ void main() {
       expect(recorder.recordCalls, isEmpty);
     });
 
-    testWidgets('Stop → transcribing in place, then the words land as '
-        'editable text with their provenance, and Save is released', (
+    // The session's reported failure: a transcript that never finished held
+    // Save, and the check-in was lost. A recording is the check-in's entry
+    // (ADR 0062): Save goes at once, and the words land on the recording.
+    testWidgets('Stop → the recording is a take under the note, Save is '
+        "released at once, and saving makes it the check-in's entry", (
       tester,
     ) async {
       final gate = Completer<String?>();
@@ -1111,17 +1081,16 @@ void main() {
       await tester.pump();
       await stopRecording(tester);
 
+      expect(take('audio-1'), findsOneWidget);
       expect(
-        find.byKey(const ValueKey('check-in-transcript-skeleton')),
+        find.text('0:23 · Transcribing… · Whisper large v3 · via Groq'),
         findsOneWidget,
       );
       expect(
-        find.textContaining(
-          '0:23 of audio saved · Whisper large v3 · via Groq',
-        ),
+        find.text('You can save now — the words follow.'),
         findsOneWidget,
       );
-      expect(saveReason(tester), 'Waiting for the transcript');
+      expect(saveEnabled(tester), isTrue);
       expect(stubTranscription.transcribeCalls, ['audio-1']);
       expect(
         stubTranscription.transcribePeople,
@@ -1129,84 +1098,101 @@ void main() {
         reason: "the words are corrected against this person's names",
       );
 
-      gate.complete('She got the job.');
-      await tester.pumpAndSettle();
+      await tapSave(tester);
 
-      expect(narrativeText(tester), 'She got the job.');
-      expect(
-        find.byKey(const ValueKey('check-in-transcript-added')),
-        findsOneWidget,
-      );
-      expect(saveEnabled(tester), isTrue);
-      // The recording's length is the note's, not the call's: the
-      // duration chip is untouched.
-      expect(find.text('Duration'), findsOneWidget);
+      expect(capturedSave().entryText?.plainText, '');
+      verify(
+        () => mockRepository.attachEntriesToCheckIn(
+          checkInId: 'check-created',
+          entryIds: ['audio-1'],
+        ),
+      ).called(1);
     });
 
-    // Speaking never destroys typing — the account grows, it is not replaced.
-    testWidgets('appends below text the user already typed', (tester) async {
+    testWidgets('words that land show on their take and never in the note', (
+      tester,
+    ) async {
+      final gate = Completer<String?>();
+      stubTranscription = StubCheckInTranscriptionService(gate: gate);
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
       await type(tester, 'Called on the way home.');
       await startDictation(tester);
       await stopRecording(tester);
 
-      expect(narrativeText(tester), 'Called on the way home.\n\nSpoken.');
+      gate.complete('She got the job.');
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<Text>(
+              find.descendant(
+                of: take('audio-1'),
+                matching: find.byKey(
+                  const ValueKey('check-in-take-transcript'),
+                ),
+              ),
+            )
+            .data,
+        'She got the job.',
+      );
+      expect(narrativeText(tester), 'Called on the way home.');
+      expect(find.text('Duration'), findsOneWidget);
+
+      await tapSave(tester);
+      expect(capturedSave().entryText?.plainText, 'Called on the way home.');
     });
 
-    testWidgets('Add more records again and appends; Re-record takes the '
-        'transcript back out first', (tester) async {
+    testWidgets('every take is its own entry, in the order they were made', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
-      await type(tester, 'Typed.');
       await startDictation(tester);
       await stopRecording(tester);
-      expect(narrativeText(tester), 'Typed.\n\nSpoken.');
-
-      await tester.tap(find.byKey(const ValueKey('check-in-add-more')));
-      await tester.pumpAndSettle();
-      expect(inlineRecorder, findsOneWidget);
-      await stopRecording(tester);
-      expect(narrativeText(tester), 'Typed.\n\nSpoken.\n\nSpoken.');
-
-      await tester.tap(find.byKey(const ValueKey('check-in-re-record')));
-      await tester.pumpAndSettle();
-      expect(inlineRecorder, findsOneWidget);
-      await stopRecording(tester);
-      expect(
-        narrativeText(tester),
-        'Typed.\n\nSpoken.\n\nSpoken.',
-        reason: 'the last take came out, and the new one went in',
-      );
-      expect(recorder.recordCalls, hasLength(3));
-
-      // Once the text is edited, Re-record stays but asks first, because
-      // taking the last take back out takes the edit with it. Declined,
-      // nothing moves; confirmed, the field is what it held before that
-      // take and the new one goes in — the words the dialog promised.
-      await type(tester, 'Edited. Typed.\n\nSpoken.\n\nSpoken.');
-      await tester.tap(find.byKey(const ValueKey('check-in-re-record')));
-      await tester.pumpAndSettle();
-      expect(
-        find.text('Replace your edited words with a new take?'),
-        findsOneWidget,
-      );
-      await tester.tap(find.text('Cancel').last);
-      await tester.pumpAndSettle();
-      expect(inlineRecorder, findsNothing);
-      expect(narrativeText(tester), 'Edited. Typed.\n\nSpoken.\n\nSpoken.');
-
-      await tester.tap(find.byKey(const ValueKey('check-in-re-record')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Re-record').last);
+      recorder.stopResult = 'audio-2';
+      await tester.tap(dictate);
       await tester.pumpAndSettle();
       await stopRecording(tester);
-      expect(
-        narrativeText(tester),
-        'Typed.\n\nSpoken.\n\nSpoken.',
-        reason: 'the edited take was replaced, not appended to',
+
+      expect(take('audio-1'), findsOneWidget);
+      expect(take('audio-2'), findsOneWidget);
+      expect(recorder.recordCalls, hasLength(2));
+
+      await tapSave(tester);
+      verify(
+        () => mockRepository.attachEntriesToCheckIn(
+          checkInId: 'check-created',
+          entryIds: ['audio-1', 'audio-2'],
+        ),
+      ).called(1);
+    });
+
+    testWidgets('a check-in that could not be saved attaches nothing', (
+      tester,
+    ) async {
+      when(
+        () => mockRepository.createCheckIn(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
+        ),
+      ).thenAnswer((_) async => null);
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await startDictation(tester);
+      await stopRecording(tester);
+
+      await tapSave(tester);
+
+      verifyNever(
+        () => mockRepository.attachEntriesToCheckIn(
+          checkInId: any(named: 'checkInId'),
+          entryIds: any(named: 'entryIds'),
+        ),
       );
-      expect(recorder.recordCalls, hasLength(4));
+      expect(take('audio-1'), findsOneWidget, reason: 'nothing is lost');
     });
 
     testWidgets('a discarded recording leaves the narrative alone', (
@@ -1294,7 +1280,8 @@ void main() {
       expect(recorder.recordCalls, isEmpty);
       expect(recorder.modalVisibleLog, [true]);
       await stopRecording(tester);
-      expect(narrativeText(tester), 'Spoken.');
+      expect(take('audio-1'), findsOneWidget);
+      expect(find.text('Spoken.'), findsOneWidget);
     });
 
     testWidgets("someone else's recording running is refused with the busy "
@@ -1311,83 +1298,6 @@ void main() {
       expect(recorder.modalVisibleLog, isEmpty);
     });
 
-    testWidgets('a landed transcript is announced once: an edit undone back '
-        'to the exact words is not a second landing', (tester) async {
-      await tester.pumpWidget(buildForm());
-      await tester.pumpAndSettle();
-      await startDictation(tester);
-      await stopRecording(tester);
-      expect(narrativeText(tester), 'Spoken.');
-      SemanticsNode caption() => tester.getSemantics(
-        find.byKey(const ValueKey('check-in-word-count')),
-      );
-      expect(caption().flagsCollection.isLiveRegion, isTrue);
-
-      await type(tester, 'Spoken, edited.');
-      expect(caption().flagsCollection.isLiveRegion, isFalse);
-
-      // Undone to the very words that landed: still old news.
-      await type(tester, 'Spoken.');
-      expect(caption().flagsCollection.isLiveRegion, isFalse);
-
-      // A new take is a new landing, and is announced again.
-      await tester.tap(find.byKey(const ValueKey('check-in-add-more')));
-      await tester.pumpAndSettle();
-      await stopRecording(tester);
-      expect(caption().flagsCollection.isLiveRegion, isTrue);
-    });
-
-    testWidgets('Re-record keeps the words until the new take exists: a '
-        'discarded retake leaves them', (tester) async {
-      await tester.pumpWidget(buildForm());
-      await tester.pumpAndSettle();
-      await startDictation(tester);
-      await stopRecording(tester);
-      expect(narrativeText(tester), 'Spoken.');
-
-      await tester.tap(find.byKey(const ValueKey('check-in-re-record')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('check-in-recorder-discard')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Discard').last);
-      await tester.pumpAndSettle();
-      expect(narrativeText(tester), 'Spoken.');
-      expect(saveEnabled(tester), isTrue);
-
-      // And a retake that fails to start keeps them too.
-      recorder.recordFailure = AudioRecordingFailure.permissionDenied;
-      await tester.tap(find.byKey(const ValueKey('check-in-dictate')));
-      await tester.pumpAndSettle();
-      expect(narrativeText(tester), 'Spoken.');
-    });
-
-    testWidgets('a Re-record refused at the preflight forgets the take it '
-        'meant to replace, so a later Dictate keeps the words typed since', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildForm());
-      await tester.pumpAndSettle();
-      await startDictation(tester);
-      await stopRecording(tester);
-      expect(narrativeText(tester), 'Spoken.');
-
-      stubTranscription.canTranscribeResult = false;
-      await tester.tap(find.byKey(const ValueKey('check-in-re-record')));
-      await tester.pumpAndSettle();
-      expect(find.text('No transcription model set up'), findsOneWidget);
-      expect(recorder.recordCalls, hasLength(1), reason: 'nothing recorded');
-
-      // The user types on, a model turns up, and they dictate afresh: the
-      // fresh take appends to everything, the abandoned replacement never
-      // restores the text from before the first take.
-      await type(tester, 'Spoken. And typed since.');
-      stubTranscription.canTranscribeResult = true;
-      await tester.tap(find.byKey(const ValueKey('check-in-dictate')));
-      await tester.pumpAndSettle();
-      await stopRecording(tester);
-      expect(narrativeText(tester), 'Spoken. And typed since.\n\nSpoken.');
-    });
-
     testWidgets('a route lookup that throws never touches the wait', (
       tester,
     ) async {
@@ -1402,20 +1312,18 @@ void main() {
       recorder.tick(progress: const Duration(seconds: 5));
       await tester.pump();
       await stopRecording(tester);
-      expect(find.textContaining('0:05 of audio saved'), findsOneWidget);
+      expect(find.text('0:05 · Transcribing…'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
       gate.complete('Landed anyway.');
       await tester.pumpAndSettle();
-      expect(narrativeText(tester), 'Landed anyway.');
+      expect(find.text('Landed anyway.'), findsOneWidget);
     });
 
-    // No profile, no model, or a run that never finished: the user is told
-    // once and keeps a usable field rather than an empty spinner.
-    testWidgets('no transcript: the card quotes the saved length, Try again '
-        "asks for the same recording's words, and typing releases Save", (
-      tester,
-    ) async {
+    // No profile, no model, or a run that never finished: the take says so
+    // and keeps its retry — and the check-in can be saved all the same.
+    testWidgets('no transcript: the take says so, Try again asks for the '
+        "same recording's words, and Save never waited", (tester) async {
       stubTranscription = StubCheckInTranscriptionService();
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
@@ -1425,14 +1333,14 @@ void main() {
       await stopRecording(tester);
 
       expect(
-        find.text('Try again, or type it'),
+        find.textContaining('0:23 · Transcript not received'),
         findsOneWidget,
       );
       expect(
         find.textContaining('Your 0:23 recording is saved in the journal'),
         findsOneWidget,
       );
-      expect(saveReason(tester), 'Type or retry to save');
+      expect(saveEnabled(tester), isTrue);
 
       await tester.tap(
         find.byKey(const ValueKey('check-in-retry-transcript')),
@@ -1444,44 +1352,6 @@ void main() {
         reason: 'the same recording, asked for again',
       );
       expect(recorder.recordCalls, hasLength(1), reason: 'never re-records');
-
-      await type(tester, 'Typed after all.');
-      expect(saveEnabled(tester), isTrue);
-      expect(saveReason(tester), '');
-    });
-
-    testWidgets('Type instead on a missing transcript folds the card away, '
-        'focuses the field, and keeps the retry', (tester) async {
-      stubTranscription = StubCheckInTranscriptionService();
-      await tester.pumpWidget(buildForm());
-      await tester.pumpAndSettle();
-      await startDictation(tester);
-      recorder.tick(progress: const Duration(seconds: 23));
-      await tester.pump();
-      await stopRecording(tester);
-      final card = find.byKey(const ValueKey('check-in-speech-failure'));
-      expect(card, findsOneWidget);
-
-      await tester.tap(find.byKey(const ValueKey('check-in-dismiss-failure')));
-      await tester.pumpAndSettle();
-      expect(card, findsNothing);
-      expect(
-        tester.widget<TextField>(narrative).focusNode!.hasFocus,
-        isTrue,
-      );
-      expect(find.textContaining('0:23 of audio saved'), findsOneWidget);
-      // The field has focus, so the phone bar has slimmed: Save is still
-      // held, its reason spoken by the header.
-      expect(saveEnabled(tester), isFalse);
-
-      // The take was not forgotten: the caption row's Try again asks for
-      // the same recording's words.
-      await tester.tap(
-        find.byKey(const ValueKey('check-in-retry-transcript')),
-      );
-      await tester.pumpAndSettle();
-      expect(stubTranscription.transcribeCalls, ['audio-1', 'audio-1']);
-      expect(recorder.recordCalls, hasLength(1));
     });
 
     // The HTTP 503 case. A failed run writes no transcript, so the wait
@@ -1499,11 +1369,7 @@ void main() {
       await type(tester, 'Typed only.');
       await startDictation(tester);
       await stopRecording(tester);
-      expect(
-        find.byKey(const ValueKey('check-in-transcript-skeleton')),
-        findsOneWidget,
-        reason: 'wait is open',
-      );
+      expect(find.textContaining('0:00 · Transcribing…'), findsOneWidget);
 
       ProviderScope.containerOf(tester.element(find.byType(CheckInCaptureForm)))
           .read(
@@ -1516,8 +1382,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.byKey(const ValueKey('check-in-transcript-skeleton')),
-        findsNothing,
+        find.textContaining('0:00 · Transcript not received'),
+        findsOneWidget,
         reason: 'must not run out the five-minute timeout',
       );
       expect(stubTranscription.cancelCount, 1);
@@ -1552,8 +1418,8 @@ void main() {
       await stopRecording(tester);
 
       expect(
-        find.byKey(const ValueKey('check-in-transcript-skeleton')),
-        findsNothing,
+        find.textContaining('0:00 · Transcript not received'),
+        findsOneWidget,
       );
       expect(stubTranscription.cancelCount, 1);
       expect(
@@ -1563,30 +1429,40 @@ void main() {
       expect(narrativeText(tester), isEmpty);
     });
 
-    testWidgets('Type instead abandons the wait, focuses the field, and a '
-        'late transcript is ignored', (tester) async {
+    testWidgets('removing a take abandons its wait, leaves it out of the '
+        'check-in, and a late transcript lands nowhere', (tester) async {
       final gate = Completer<String?>();
       stubTranscription = StubCheckInTranscriptionService(gate: gate);
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
       await startDictation(tester);
       await stopRecording(tester);
+      expect(saveEnabled(tester), isTrue);
 
-      await tester.tap(find.byKey(const ValueKey('check-in-type-instead')));
+      await tester.tap(find.byKey(const ValueKey('check-in-take-remove')));
       await tester.pumpAndSettle();
 
       expect(stubTranscription.cancelCount, 1);
-      expect(narrative, findsOneWidget);
+      expect(take('audio-1'), findsNothing);
       expect(
-        tester.widget<TextField>(narrative).focusNode!.hasFocus,
-        isTrue,
+        saveReason(tester),
+        'Add a few words to save',
+        reason: 'nothing is left to save',
       );
-
       // The abandoned wait was completed by its own cancel; whatever the
       // provider still sends lands nowhere.
       await tester.pumpAndSettle();
-      expect(narrativeText(tester), isEmpty);
       expect(gate.isCompleted, isTrue);
+      expect(take('audio-1'), findsNothing);
+
+      await type(tester, 'Typed instead.');
+      await tapSave(tester);
+      verifyNever(
+        () => mockRepository.attachEntriesToCheckIn(
+          checkInId: any(named: 'checkInId'),
+          entryIds: any(named: 'entryIds'),
+        ),
+      );
     });
 
     testWidgets('the preflight holds Save and says so', (tester) async {
@@ -1628,7 +1504,7 @@ void main() {
     });
 
     testWidgets('the route is a courtesy: a transcription with no route '
-        'still shows the saved length', (tester) async {
+        'still shows the length and the wait', (tester) async {
       final gate = Completer<String?>();
       stubTranscription = StubCheckInTranscriptionService(
         gate: gate,
@@ -1640,7 +1516,7 @@ void main() {
       recorder.tick(progress: const Duration(seconds: 5));
       await tester.pump();
       await stopRecording(tester);
-      expect(find.textContaining('0:05 of audio saved'), findsOneWidget);
+      expect(find.text('0:05 · Transcribing…'), findsOneWidget);
       gate.complete('x');
       await tester.pumpAndSettle();
     });
@@ -1815,10 +1691,7 @@ void main() {
       await tester.pump();
       await stopRecording(tester);
       expect(find.text('Transcript not received'), findsOneWidget);
-      expect(
-        find.text('Try again, or type it'),
-        findsOneWidget,
-      );
+      expect(take('audio-1'), findsOneWidget);
 
       await tester.tap(find.byKey(const ValueKey('check-in-close')));
       await tester.pumpAndSettle();

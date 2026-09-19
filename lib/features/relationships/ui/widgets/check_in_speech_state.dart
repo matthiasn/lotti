@@ -2,10 +2,14 @@ import 'package:flutter/foundation.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
-/// Where a spoken check-in is, rendered *in place of* the narrative text
-/// (design 2026-09-13, options 1a–1f): the composer never leaves the thing
-/// the user is writing, so the recorder, the transcript wait and both
-/// failure cards are phases of the one field rather than separate surfaces.
+/// Where the composer's recorder is (design 2026-09-13, options 1a–1f),
+/// rendered *in place of* the narrative text while it records: the composer
+/// never leaves the thing the user is writing.
+///
+/// What a finished recording is waiting for is not a phase of the field but
+/// of the recording itself — a [CheckInTake] — because each recording is
+/// its own entry of the check-in (ADR 0062) and the words land on it, not
+/// in the note.
 ///
 /// A pure model, so the decisions the composer makes from it — what the
 /// field shows, what the header says, why Save is held — are table-testable
@@ -31,95 +35,39 @@ class CheckInSpeechRecording extends CheckInSpeechPhase {
   const CheckInSpeechRecording();
 }
 
-/// The recording is saved and its transcript is on its way (option 1c).
-class CheckInSpeechTranscribing extends CheckInSpeechPhase {
-  const CheckInSpeechTranscribing({
-    required this.audioEntryId,
-    required this.length,
-    this.route,
-  });
-
-  /// The journal audio entry the words will land on.
-  final String audioEntryId;
-
-  /// How long the recording ran — what the saved-audio line quotes.
-  final Duration length;
-
-  /// `model · via provider`, when the transcription service could name it.
-  final String? route;
-}
-
-/// The words landed as ordinary editable text (option 1d). Remembers what
-/// was appended, and what the field held before, so *Re-record* can take
-/// exactly that back out again — and only if nothing has been edited.
-class CheckInSpeechReady extends CheckInSpeechPhase {
-  const CheckInSpeechReady({
-    required this.transcript,
-    required this.textBefore,
-    required this.length,
-  });
-
-  final String transcript;
-
-  /// The field's text before the transcript was merged in.
-  final String textBefore;
-  final Duration length;
-}
-
-/// Something stopped the words from arriving; the card says what and
-/// offers the way out (options 1e / 1f).
+/// The recorder could not record; the card says why and offers the way out
+/// (option 1f).
 class CheckInSpeechFailed extends CheckInSpeechPhase {
-  const CheckInSpeechFailed(this.failure, {this.cardDismissed = false});
+  const CheckInSpeechFailed(this.failure);
 
   final CheckInSpeechFailure failure;
-
-  /// *Type instead* on a missing transcript folds the card away but keeps
-  /// the retry: the field shows one caption row — the recording's length
-  /// and *Try again* — rather than forgetting the take the user made.
-  final bool cardDismissed;
 }
 
-/// What went wrong, in the terms the user needs: whether anything was
-/// recorded, and whether a retry means recording again or only asking for
-/// the transcript again.
+/// Why nothing was recorded, in the terms the user needs.
 enum CheckInSpeechFailureKind {
-  /// The OS refused the microphone. Nothing was recorded.
+  /// The OS refused the microphone.
   microphoneDenied,
 
-  /// The recorder could not start. Nothing was recorded.
+  /// The recorder could not start.
   recordingFailed,
 
   /// The recorder ran but could not be stopped and saved. The take is lost.
   recordingNotSaved,
 
   /// The app-wide recorder is busy with a recording that is not this
-  /// person's — started elsewhere, or for someone else. Nothing new was
-  /// recorded; it has to be stopped from the recording indicator first.
+  /// person's — started elsewhere, or for someone else. It has to be
+  /// stopped from the recording indicator first.
   recorderBusy,
 
-  /// No default inference profile carries a transcription slot. Nothing
-  /// was recorded — the preflight stops before the microphone.
+  /// No default inference profile carries a transcription slot — the
+  /// preflight stops before the microphone.
   transcriptionUnavailable,
-
-  /// The recording is saved, the transcript never came. *Try again* asks
-  /// for the transcript of the same recording.
-  transcriptMissing,
 }
 
-/// A failed spoken check-in: the kind, and — when a recording exists — the
-/// entry to retry against and the length the card quotes.
+/// A recording that did not happen, and why.
 @immutable
 class CheckInSpeechFailure {
-  const CheckInSpeechFailure(
-    this.kind, {
-    this.audioEntryId,
-    this.length,
-    this.detail,
-  }) : assert(
-         kind != CheckInSpeechFailureKind.transcriptMissing ||
-             audioEntryId != null,
-         'a missing transcript needs the recording to retry against',
-       );
+  const CheckInSpeechFailure(this.kind);
 
   /// Maps the recorder's typed refusal onto the composer's vocabulary.
   /// [AudioRecordingFailure.busy] — another recording already running — is
@@ -136,26 +84,100 @@ class CheckInSpeechFailure {
       };
 
   final CheckInSpeechFailureKind kind;
-  final String? audioEntryId;
-  final Duration? length;
-
-  /// The provider's own words about the failure, when it left any.
-  final String? detail;
-
-  /// Whether audio exists in the journal for this failure — the card then
-  /// says so, because the check-in being cancelled does not delete it.
-  bool get hasRecording => audioEntryId != null;
 
   @override
   bool operator ==(Object other) =>
-      other is CheckInSpeechFailure &&
-      other.kind == kind &&
+      other is CheckInSpeechFailure && other.kind == kind;
+
+  @override
+  int get hashCode => kind.hashCode;
+}
+
+/// Where a take's words are.
+enum CheckInTakeWords {
+  /// Asked for, not arrived. Saving does not wait: they land on the
+  /// recording, and the check-in's briefing catches up when they do.
+  transcribing,
+
+  /// Arrived; the composer shows them as the take's preview.
+  heard,
+
+  /// The run ended without words. *Try again* asks for the same
+  /// recording's words once more.
+  missing,
+}
+
+/// One recording made in the composer. Saving the check-in makes it one
+/// of the check-in's entries (ADR 0062); its words land on the recording,
+/// never in the note, so the agent reads them once.
+@immutable
+class CheckInTake {
+  const CheckInTake({
+    required this.audioEntryId,
+    required this.length,
+    this.words = CheckInTakeWords.transcribing,
+    this.transcript,
+    this.route,
+    this.detail,
+  });
+
+  /// The journal audio entry — what the check-in will hold.
+  final String audioEntryId;
+
+  /// How long the recording ran.
+  final Duration length;
+  final CheckInTakeWords words;
+
+  /// The words, once [words] is [CheckInTakeWords.heard].
+  final String? transcript;
+
+  /// `model · via provider`, when the transcription service could name it.
+  final String? route;
+
+  /// The provider's own words about a missing transcript, when it left any.
+  final String? detail;
+
+  CheckInTake transcribing() =>
+      CheckInTake(audioEntryId: audioEntryId, length: length, route: route);
+
+  CheckInTake withRoute(String route) => CheckInTake(
+    audioEntryId: audioEntryId,
+    length: length,
+    words: words,
+    transcript: transcript,
+    route: route,
+    detail: detail,
+  );
+
+  CheckInTake heard(String transcript) => CheckInTake(
+    audioEntryId: audioEntryId,
+    length: length,
+    words: CheckInTakeWords.heard,
+    transcript: transcript,
+    route: route,
+  );
+
+  CheckInTake missing(String? detail) => CheckInTake(
+    audioEntryId: audioEntryId,
+    length: length,
+    words: CheckInTakeWords.missing,
+    route: route,
+    detail: detail,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      other is CheckInTake &&
       other.audioEntryId == audioEntryId &&
       other.length == length &&
+      other.words == words &&
+      other.transcript == transcript &&
+      other.route == route &&
       other.detail == detail;
 
   @override
-  int get hashCode => Object.hash(kind, audioEntryId, length, detail);
+  int get hashCode =>
+      Object.hash(audioEntryId, length, words, transcript, route, detail);
 }
 
 /// Why Save is held, so the action bar can say so instead of going quiet
@@ -170,14 +192,8 @@ enum CheckInSaveBlock {
   /// The recorder is up; stop it first.
   recording,
 
-  /// The transcript is in flight.
-  transcribing,
-
-  /// Nothing to save yet.
+  /// Nothing to save yet: no words and no recording.
   emptyNarrative,
-
-  /// Nothing to save yet, and a transcript retry is on offer.
-  typeOrRetry,
 
   /// A save is already in flight.
   saving,
@@ -185,26 +201,22 @@ enum CheckInSaveBlock {
 
 /// The one rule for whether a check-in can be saved right now. A check-in
 /// is user-authored (ADR 0038), and the composer's whole premise is that a
-/// few words are enough — so words are what it waits for, never a type or
-/// a duration.
+/// few words are enough — or a recording: its words may still be on their
+/// way, and they are the recording's, not the save's, to wait for.
 CheckInSaveBlock checkInSaveBlockOf({
   required CheckInSpeechPhase phase,
   required bool hasWords,
+  required bool hasTakes,
   required bool saving,
 }) {
   if (saving) return CheckInSaveBlock.saving;
   return switch (phase) {
     CheckInSpeechPreparing() => CheckInSaveBlock.preparing,
     CheckInSpeechRecording() => CheckInSaveBlock.recording,
-    CheckInSpeechTranscribing() => CheckInSaveBlock.transcribing,
-    CheckInSpeechIdle() || CheckInSpeechReady() =>
-      hasWords ? CheckInSaveBlock.none : CheckInSaveBlock.emptyNarrative,
-    CheckInSpeechFailed(:final failure) => switch ((hasWords, failure.kind)) {
-      (true, _) => CheckInSaveBlock.none,
-      (false, CheckInSpeechFailureKind.transcriptMissing) =>
-        CheckInSaveBlock.typeOrRetry,
-      (false, _) => CheckInSaveBlock.emptyNarrative,
-    },
+    CheckInSpeechIdle() || CheckInSpeechFailed() =>
+      hasWords || hasTakes
+          ? CheckInSaveBlock.none
+          : CheckInSaveBlock.emptyNarrative,
   };
 }
 
@@ -240,7 +252,7 @@ String checkInClockLabel(Duration length) {
 }
 
 /// What the composer's header says on its second line while speech is in
-/// flight — the phase, sharpened by whether the recorder is paused.
+/// flight — the recorder's phase first, then the takes' words.
 enum CheckInComposerStatus {
   idle,
   preparing,
@@ -255,19 +267,20 @@ enum CheckInComposerStatus {
   recorderBusy,
 }
 
-/// The header status for a [phase]; [recorderPaused] only matters while
-/// recording.
+/// The header status for a [phase] and the [takes] made so far;
+/// [recorderPaused] only matters while recording. The recorder speaks
+/// first — it is what the user is doing now — then a take still waiting
+/// for words, then one whose words never came.
 CheckInComposerStatus checkInComposerStatusOf(
   CheckInSpeechPhase phase, {
   required bool recorderPaused,
+  List<CheckInTake> takes = const [],
 }) => switch (phase) {
-  CheckInSpeechIdle() || CheckInSpeechReady() => CheckInComposerStatus.idle,
   CheckInSpeechPreparing() => CheckInComposerStatus.preparing,
   CheckInSpeechRecording() =>
     recorderPaused
         ? CheckInComposerStatus.paused
         : CheckInComposerStatus.recording,
-  CheckInSpeechTranscribing() => CheckInComposerStatus.transcribing,
   CheckInSpeechFailed(:final failure) => switch (failure.kind) {
     CheckInSpeechFailureKind.microphoneDenied =>
       CheckInComposerStatus.microphoneDenied,
@@ -278,7 +291,11 @@ CheckInComposerStatus checkInComposerStatusOf(
     CheckInSpeechFailureKind.recorderBusy => CheckInComposerStatus.recorderBusy,
     CheckInSpeechFailureKind.transcriptionUnavailable =>
       CheckInComposerStatus.transcriptionUnavailable,
-    CheckInSpeechFailureKind.transcriptMissing =>
-      CheckInComposerStatus.transcriptMissing,
   },
+  CheckInSpeechIdle() =>
+    takes.any((t) => t.words == CheckInTakeWords.transcribing)
+        ? CheckInComposerStatus.transcribing
+        : takes.any((t) => t.words == CheckInTakeWords.missing)
+        ? CheckInComposerStatus.transcriptMissing
+        : CheckInComposerStatus.idle,
 };

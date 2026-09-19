@@ -52,6 +52,7 @@ import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
@@ -1587,9 +1588,9 @@ void main() {
       );
     });
 
-    // Every speech phase the composer renders in place of the text (design
-    // 2026-09-13, options 1b–1f / 2b): the recorder, the transcript wait,
-    // the words landed, and the two failure cards.
+    // The recorder in place of the text (design 2026-09-13, options 1b /
+    // 2b), then the take it leaves under the note (ADR 0062): its words on
+    // their way with Save already free, and the words landed on the take.
     testWidgets('$viewport check-in dictation phases — dark', (tester) async {
       final recorder = FakeAudioRecorderController();
       final gate = Completer<String?>();
@@ -1614,6 +1615,12 @@ void main() {
       // Under the fixed clock throughout, so the start chip keeps reading
       // `Now · 14:05` in every phase.
       await withClock(Clock.fixed(_now), () async {
+        await tester.enterText(
+          find.byKey(const ValueKey('check-in-narrative')),
+          'Krill contract before the freeze.',
+        );
+        FocusManager.instance.primaryFocus?.unfocus();
+        await tester.pumpAndSettle();
         await tester.tap(find.byKey(const ValueKey('check-in-dictate')));
         await tester.pumpAndSettle();
         expect(
@@ -1640,11 +1647,16 @@ void main() {
         for (var i = 0; i < 4; i++) {
           await tester.pump(const Duration(milliseconds: 100));
         }
+        expect(find.byKey(const ValueKey('check-in-take-follows')), findsOne);
         expect(
-          find.byKey(const ValueKey('check-in-transcript-skeleton')),
-          findsOne,
+          tester
+              .widget<DesignSystemButton>(
+                find.byKey(const ValueKey('check-in-save')),
+              )
+              .onPressed,
+          isNotNull,
+          reason: 'Save does not wait for the words',
         );
-        expect(find.text('Waiting for the transcript'), findsOne);
         await captureScreenshot(
           tester,
           'check_in_transcribing_${viewport}_dark',
@@ -1658,14 +1670,14 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(
-          find.byKey(const ValueKey('check-in-transcript-added')),
+          find.byKey(const ValueKey('check-in-take-transcript')),
           findsOne,
         );
-        // The caption keeps its whole ladder on the landed face: Re-record
-        // · Add more take their own line, so the desktop dialog shows the
-        // shortcut it is the one place to use — macOS's, as the theme's
-        // platform now says.
-        expect(find.textContaining('26 words'), findsOne);
+        // The note stays the user's: the words are the take's, and the
+        // count is the note's alone. The desktop dialog shows the shortcut
+        // it is the one place to use — macOS's, as the theme's platform
+        // now says.
+        expect(find.textContaining('5 words'), findsOne);
         if (viewport == 'desktop') {
           expect(find.textContaining('⌘Enter to save'), findsOne);
         }
@@ -1710,9 +1722,9 @@ void main() {
           subdir: _subdir,
         );
 
-        // The microphone allowed after all — the card's own Try again
-        // records again — and then the transcript never comes: the
-        // recording is kept, the retry asks for its words again.
+        // The microphone allowed after all — the field's Dictate records
+        // again — and then the transcript never comes: the take keeps its
+        // retry, and Save does not wait for it.
         recorder.recordFailure = null;
         await tester.tap(find.byKey(const ValueKey('check-in-dictate')));
         await tester.pumpAndSettle();
@@ -1720,13 +1732,19 @@ void main() {
         await tester.pump();
         await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
         await tester.pumpAndSettle();
-        // The header's status line and the card's title say the same thing.
         expect(find.text('Transcript not received'), findsOneWidget);
         expect(
-          find.text('Try again, or type it'),
-          findsOneWidget,
+          find.byKey(const ValueKey('check-in-retry-transcript')),
+          findsOne,
         );
-        expect(find.text('Type or retry to save'), findsOne);
+        expect(
+          tester
+              .widget<DesignSystemButton>(
+                find.byKey(const ValueKey('check-in-save')),
+              )
+              .onPressed,
+          isNotNull,
+        );
         await captureScreenshot(
           tester,
           'check_in_transcript_missing_${viewport}_dark',
