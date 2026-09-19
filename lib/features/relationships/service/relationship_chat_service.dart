@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:uuid/uuid.dart';
 
 const _relationshipChatMessageTokenPrefix = 'relationship-chat-message:';
@@ -34,11 +35,13 @@ class RelationshipChatService {
     required this._repository,
     required this._syncService,
     required this._orchestrator,
+    required this._notifications,
   });
 
   final AgentRepository _repository;
   final AgentSyncService _syncService;
   final WakeOrchestrator _orchestrator;
+  final UpdateNotifications _notifications;
 
   static const _uuid = Uuid();
 
@@ -100,6 +103,10 @@ class RelationshipChatService {
         rethrow;
       }
     }
+    // The turn is durable: show it now. The chat refreshes on the agent's
+    // notifications, and the wake below only sends one once the reply is
+    // written — waiting for it made the user's own words appear late.
+    _notifications.notifyUiOnly({agentId, agentNotification});
 
     await retryMessage(agentId: agentId, messageId: messageId);
   }

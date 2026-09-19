@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/relationships/service/relationship_chat_service.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -40,6 +41,7 @@ void main() {
   late StreamController<WakeRunCompletion> completions;
   late List<AgentDomainEntity> upserts;
   late RelationshipChatService service;
+  late MockUpdateNotifications notifications;
 
   setUp(() {
     syncService = MockAgentSyncService();
@@ -58,10 +60,12 @@ void main() {
       final id = invocation.positionalArguments.first as String;
       return id == agentId ? relationshipIdentity(AgentLifecycle.active) : null;
     });
+    notifications = MockUpdateNotifications();
     service = RelationshipChatService(
       repository: repository,
       syncService: syncService,
       orchestrator: orchestrator,
+      notifications: notifications,
     );
   });
 
@@ -205,6 +209,42 @@ void main() {
     // The turn is still durable, so retry re-enqueues it rather than
     // duplicating it.
     expect(upserts, hasLength(2));
+  });
+
+  // The user's own words appeared only once the reply was written: the
+  // chat refreshes on the agent's notifications, and only the wake sent one.
+  test('announces the stored turn before the wake runs, so the user sees '
+      'their own words at once', () async {
+    final events = <String>[];
+    when(() => notifications.notifyUiOnly(any())).thenAnswer((invocation) {
+      events.add(
+        'notify ${invocation.positionalArguments.first as Set<String>}',
+      );
+    });
+    when(
+      () => orchestrator.enqueueManualWake(
+        agentId: agentId,
+        reason: WakeReason.userMessage.name,
+        triggerTokens: any(named: 'triggerTokens'),
+        supersede: false,
+        initiator: WakeInitiator.user,
+      ),
+    ).thenAnswer((_) {
+      events.add('wake');
+      scheduleMicrotask(
+        () => completions.add(
+          const WakeRunCompletion(
+            runKey: 'chat-run',
+            status: WakeRunStatus.completed,
+          ),
+        ),
+      );
+      return 'chat-run';
+    });
+
+    await service.sendMessage(agentId: agentId, text: 'Update please');
+
+    expect(events, ['notify {$agentId, $agentNotification}', 'wake']);
   });
 
   test('an empty draft is a no-op', () async {

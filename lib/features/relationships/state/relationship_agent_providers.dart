@@ -166,6 +166,7 @@ final relationshipChatServiceProvider = Provider<RelationshipChatService>(
     repository: ref.watch(agentRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     orchestrator: ref.watch(wakeOrchestratorProvider),
+    notifications: ref.watch(updateNotificationsProvider),
   ),
   name: 'relationshipChatServiceProvider',
 );
