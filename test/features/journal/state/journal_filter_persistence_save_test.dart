@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/journal/state/journal_filter_persistence.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/journal/utils/entry_types.dart' as entry_types;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -19,6 +20,13 @@ void main() {
     sut = JournalFilterPersistence(mockSettingsDb);
 
     when(() => mockSettingsDb.itemByKey(any())).thenAnswer((_) async => null);
+    // Reconciled against today's types: these tests are about the dedup, so
+    // no type joins a loaded selection and nothing else is written.
+    when(
+      () => mockSettingsDb.itemByKey(
+        JournalFilterPersistence.reconciledEntryTypesKey,
+      ),
+    ).thenAnswer((_) async => jsonEncode(entry_types.entryTypes));
     when(
       () => mockSettingsDb.saveSettingsItem(any(), any()),
     ).thenAnswer((_) async => 1);
@@ -29,7 +37,7 @@ void main() {
 
     test('saves encoded entry types', () {
       fakeAsync((async) {
-        sut.saveEntryTypes(entryTypes);
+        sut.saveEntryTypes(entryTypes, offered: const {});
         async.flushMicrotasks();
 
         final captured = verify(
@@ -60,7 +68,7 @@ void main() {
         async.flushMicrotasks();
 
         // Save the same set — should skip.
-        sut.saveEntryTypes(entryTypes);
+        sut.saveEntryTypes(entryTypes, offered: const {});
         async.flushMicrotasks();
 
         verifyNever(
@@ -81,7 +89,7 @@ void main() {
         async.flushMicrotasks();
 
         // Save a different set.
-        sut.saveEntryTypes(entryTypes);
+        sut.saveEntryTypes(entryTypes, offered: const {});
         async.flushMicrotasks();
 
         verify(
@@ -104,7 +112,7 @@ void main() {
 
         // saveEntryTypes without prior loadEntryTypes — seeds dedup via
         // _normalizeEntryTypesValue, which catches and returns raw value.
-        sut.saveEntryTypes(entryTypes);
+        sut.saveEntryTypes(entryTypes, offered: const {});
         async.flushMicrotasks();
 
         // The normalize catch returns the raw malformed string, which differs
@@ -180,7 +188,7 @@ void main() {
           async.flushMicrotasks();
 
           // Save in the opposite order.
-          sut.saveEntryTypes({'JournalEntry', 'Task'});
+          sut.saveEntryTypes({'JournalEntry', 'Task'}, offered: const {});
           async.flushMicrotasks();
 
           verifyNever(

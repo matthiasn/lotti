@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/journal/utils/entry_types.dart';
 import 'package:lotti/services/dev_logger.dart';
 
 /// Handles encoding, decoding, loading, and saving of journal/task filter
@@ -17,11 +18,41 @@ class JournalFilterPersistence {
   /// Key used for entry-type persistence.
   static const selectedEntryTypesKey = 'SELECTED_ENTRY_TYPES';
 
+  /// Key recording every entry type the persisted selection has been
+  /// reconciled against: the types the filter *offered* whenever the
+  /// selection was saved, plus those a migration added.
+  ///
+  /// A type missing from it is one the user never had the chance to
+  /// deselect. It stays pending — see [loadPendingEntryTypes] — until the
+  /// filter offers it, then joins the selection once; from then on it is part
+  /// of this set, and deselecting it sticks. A type behind a feature flag
+  /// that is off is not offered, so its migration waits for the flag.
+  static const reconciledEntryTypesKey = 'ENTRY_TYPES_RECONCILED';
+
+  /// What a selection saved before [reconciledEntryTypesKey] existed was
+  /// reconciled against: the filter's types up to, not including, `CheckIn`.
+  static const legacyReconciledEntryTypes = {
+    'Task',
+    'JournalEntry',
+    'JournalEvent',
+    'JournalAudio',
+    'JournalImage',
+    'MeasurementEntry',
+    'SurveyEntry',
+    'WorkoutEntry',
+    'HabitCompletionEntry',
+    'QuantitativeEntry',
+    'Checklist',
+    'ChecklistItem',
+    'AiResponse',
+  };
+
   // Dedup state — avoids redundant DB writes, keyed per persistence key.
   final Map<String, String?> _persistedFiltersByKey = {};
   final Set<String> _loadedFilterKeys = {};
   String? _persistedEntryTypesValue;
   bool _hasLoadedEntryTypesValue = false;
+  Set<String>? _reconciledEntryTypes;
 
   // ---------------------------------------------------------------
   // Loading
@@ -102,8 +133,19 @@ class JournalFilterPersistence {
     }
   }
 
-  /// Persists [entryTypes], skipping the write when unchanged.
-  Future<void> saveEntryTypes(Set<String> entryTypes) async {
+  /// The entry types a persisted selection has not been reconciled against:
+  /// the filter gained them after the selection was saved. Meaningful only
+  /// for a selection that exists — without one, every type is selected.
+  Future<Set<String>> loadPendingEntryTypes() async =>
+      entryTypes.toSet().difference(await _loadReconciledEntryTypes());
+
+  /// Persists [entryTypes], skipping the write when unchanged, and records
+  /// the [offered] types — those the filter showed as it was made — as
+  /// reconciled.
+  Future<void> saveEntryTypes(
+    Set<String> entryTypes, {
+    required Set<String> offered,
+  }) async {
     if (!_hasLoadedEntryTypesValue) {
       _persistedEntryTypesValue = _normalizeEntryTypesValue(
         await _settingsDb.itemByKey(selectedEntryTypesKey),
@@ -112,10 +154,33 @@ class JournalFilterPersistence {
     }
 
     final encoded = _encodeEntryTypes(entryTypes);
-    if (_persistedEntryTypesValue == encoded) return;
+    if (_persistedEntryTypesValue != encoded) {
+      await _settingsDb.saveSettingsItem(selectedEntryTypesKey, encoded);
+      _persistedEntryTypesValue = encoded;
+    }
+    final reconciled = await _loadReconciledEntryTypes();
+    if (reconciled.containsAll(offered)) return;
+    final next = reconciled.union(offered);
+    await _settingsDb.saveSettingsItem(
+      reconciledEntryTypesKey,
+      _encodeEntryTypes(next),
+    );
+    _reconciledEntryTypes = next;
+  }
 
-    await _settingsDb.saveSettingsItem(selectedEntryTypesKey, encoded);
-    _persistedEntryTypesValue = encoded;
+  Future<Set<String>> _loadReconciledEntryTypes() async {
+    final cached = _reconciledEntryTypes;
+    if (cached != null) return cached;
+    final raw = await _settingsDb.itemByKey(reconciledEntryTypesKey);
+    Set<String> reconciled;
+    try {
+      reconciled = raw == null
+          ? legacyReconciledEntryTypes
+          : List<String>.from(jsonDecode(raw) as List<dynamic>).toSet();
+    } catch (_) {
+      reconciled = legacyReconciledEntryTypes;
+    }
+    return _reconciledEntryTypes = reconciled;
   }
 
   // ---------------------------------------------------------------

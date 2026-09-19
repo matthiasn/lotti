@@ -9,6 +9,12 @@ void _registerPaginationAndTelemetry(JournalControllerTestSetup setup) {
         when(
           () => setup.mockSettingsDb.itemByKey('SELECTED_ENTRY_TYPES'),
         ).thenAnswer((_) async => '["Task","JournalEntry"]');
+        // Reconciled against today's types, so nothing joins the selection.
+        when(
+          () => setup.mockSettingsDb.itemByKey(
+            JournalFilterPersistence.reconciledEntryTypesKey,
+          ),
+        ).thenAnswer((_) async => jsonEncode(entryTypes));
 
         setup.container.read(journalPageControllerProvider(false));
 

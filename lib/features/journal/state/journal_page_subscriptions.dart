@@ -16,6 +16,7 @@ typedef JournalConfigFlags = ({
   bool dashboards,
   bool vectorSearch,
   bool projects,
+  bool relationships,
 });
 
 /// Manages the reactive stream subscriptions for the journal page controller,
@@ -55,20 +56,38 @@ class JournalPageSubscriptions {
         );
 
     _configFlagsSub =
-        Rx.combineLatest5<bool, bool, bool, bool, bool, JournalConfigFlags>(
-          _db.watchConfigFlag(enableEventsFlag),
-          _db.watchConfigFlag(enableHabitsPageFlag),
-          _db.watchConfigFlag(enableDashboardsPageFlag),
-          _db.watchConfigFlag(enableVectorSearchFlag),
-          _db.watchConfigFlag(enableProjectsFlag),
-          (events, habits, dashboards, vectorSearch, projects) => (
-            events: events,
-            habits: habits,
-            dashboards: dashboards,
-            vectorSearch: vectorSearch,
-            projects: projects,
-          ),
-        ).listen(onJournalConfigFlagsChanged);
+        Rx.combineLatest6<
+              bool,
+              bool,
+              bool,
+              bool,
+              bool,
+              bool,
+              JournalConfigFlags
+            >(
+              _db.watchConfigFlag(enableEventsFlag),
+              _db.watchConfigFlag(enableHabitsPageFlag),
+              _db.watchConfigFlag(enableDashboardsPageFlag),
+              _db.watchConfigFlag(enableVectorSearchFlag),
+              _db.watchConfigFlag(enableProjectsFlag),
+              _db.watchConfigFlag(enableRelationshipsFlag),
+              (
+                events,
+                habits,
+                dashboards,
+                vectorSearch,
+                projects,
+                relationships,
+              ) => (
+                events: events,
+                habits: habits,
+                dashboards: dashboards,
+                vectorSearch: vectorSearch,
+                projects: projects,
+                relationships: relationships,
+              ),
+            )
+            .listen(onJournalConfigFlagsChanged);
 
     _updatesSub = _updateNotifications.updateStream.listen(
       onUpdateNotification,
@@ -92,6 +111,7 @@ class JournalPageSubscriptions {
     required bool enableEvents,
     required bool enableHabits,
     required bool enableDashboards,
+    required bool enableRelationships,
     required bool enableVectorSearch,
     required bool enableProjects,
     required SearchMode searchMode,
@@ -103,6 +123,7 @@ class JournalPageSubscriptions {
       events: enableEvents,
       habits: enableHabits,
       dashboards: enableDashboards,
+      relationships: enableRelationships,
     ).toSet();
 
     var newSearchMode = searchMode;
@@ -129,6 +150,7 @@ class JournalPageSubscriptions {
       events: flags.events,
       habits: flags.habits,
       dashboards: flags.dashboards,
+      relationships: flags.relationships,
     ).toSet();
 
     final hadAllPreviouslySelected =
@@ -145,6 +167,7 @@ class JournalPageSubscriptions {
       enableEvents: flags.events,
       enableHabits: flags.habits,
       enableDashboards: flags.dashboards,
+      enableRelationships: flags.relationships,
       enableVectorSearch: flags.vectorSearch,
       enableProjects: flags.projects,
       searchMode: newSearchMode,
@@ -161,6 +184,7 @@ class ConfigFlagResult {
     required this.enableEvents,
     required this.enableHabits,
     required this.enableDashboards,
+    required this.enableRelationships,
     required this.enableVectorSearch,
     required this.enableProjects,
     required this.searchMode,
@@ -172,6 +196,7 @@ class ConfigFlagResult {
   final bool enableEvents;
   final bool enableHabits;
   final bool enableDashboards;
+  final bool enableRelationships;
   final bool enableVectorSearch;
   final bool enableProjects;
   final SearchMode searchMode;

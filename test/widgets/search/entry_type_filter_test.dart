@@ -241,6 +241,32 @@ void main() {
       expect(find.text('Health'), findsOneWidget);
     });
 
+    for (final enabled in [false, true]) {
+      testWidgets(
+        'offers the Check-in chip only while People is on '
+        '(enable_relationships=$enabled)',
+        (tester) async {
+          when(() => mockDb.watchConfigFlags()).thenAnswer(
+            (_) => Stream<Set<ConfigFlag>>.fromIterable([
+              {
+                ConfigFlag(
+                  name: enableRelationshipsFlag,
+                  description: 'Enable relationships?',
+                  status: enabled,
+                ),
+              },
+            ]),
+          );
+          await hPumpFilter(tester, mockDb);
+
+          expect(
+            find.text('Check-in'),
+            enabled ? findsOneWidget : findsNothing,
+          );
+        },
+      );
+    }
+
     testWidgets('keeps previous value during loading state', (tester) async {
       final flagController = StreamController<Set<ConfigFlag>>.broadcast();
 

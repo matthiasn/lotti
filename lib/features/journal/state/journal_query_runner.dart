@@ -29,6 +29,7 @@ class JournalQueryParams {
     required this.enableEvents,
     required this.enableHabits,
     required this.enableDashboards,
+    required this.enableRelationships,
   });
 
   final bool showTasks;
@@ -47,6 +48,7 @@ class JournalQueryParams {
   final bool enableEvents;
   final bool enableHabits;
   final bool enableDashboards;
+  final bool enableRelationships;
 }
 
 /// Result of a vector search, wrapping entity results with timing telemetry.
@@ -120,8 +122,15 @@ class JournalQueryRunner {
       events: params.enableEvents,
       habits: params.enableHabits,
       dashboards: params.enableDashboards,
+      relationships: params.enableRelationships,
     );
-    final types = params.selectedEntryTypes.where(allowed.contains).toList();
+    // A check-in shows in the feed but is never a search result: its note
+    // describes a third party, whom search must not find outside People
+    // (ADR 0037, ADR 0064).
+    final types = params.selectedEntryTypes
+        .where(allowed.contains)
+        .where((type) => params.query.isEmpty || type != 'CheckIn')
+        .toList();
     final ids = params.query.isNotEmpty ? fullTextMatches.toList() : null;
 
     final starredEntriesOnly = params.filters.contains(

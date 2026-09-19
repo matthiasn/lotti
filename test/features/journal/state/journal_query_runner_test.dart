@@ -210,6 +210,42 @@ void main() {
     });
   });
 
+  // ADR 0064: a check-in is in the feed, never a search result.
+  group('runQuery - check-ins', () {
+    for (final (query, expected) in [('', true), ('krill', false)]) {
+      test("query '$query' ${expected ? 'keeps' : 'drops'} check-ins", () {
+        fakeAsync((async) {
+          runner.runQuery(
+            hDefaultParams(
+              selectedEntryTypes: {'JournalEntry', 'CheckIn'},
+              query: query,
+            ),
+            0,
+            fullTextMatches: {'entry-1'},
+          );
+          async.flushMicrotasks();
+
+          final types =
+              verify(
+                    () => mockJournalDb.getJournalEntities(
+                      types: captureAny(named: 'types'),
+                      starredStatuses: any(named: 'starredStatuses'),
+                      privateStatuses: any(named: 'privateStatuses'),
+                      flaggedStatuses: any(named: 'flaggedStatuses'),
+                      ids: any(named: 'ids'),
+                      limit: any(named: 'limit'),
+                      offset: any(named: 'offset'),
+                      categoryIds: any(named: 'categoryIds'),
+                    ),
+                  ).captured.single
+                  as List<String>;
+          expect(types, contains('JournalEntry'));
+          expect(types.contains('CheckIn'), expected);
+        });
+      });
+    }
+  });
+
   group('runQuery - tasks without post-filter', () {
     test('calls getTasks with correct params', () {
       fakeAsync((async) {

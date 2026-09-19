@@ -26,6 +26,7 @@ import 'package:lotti/features/journal/ui/widgets/time_span_bar.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart' as entry_tools;
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
+import 'package:lotti/features/relationships/state/relationships_providers.dart';
 import 'package:lotti/features/tasks/state/checklist_completion_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_duration.dart';
 import 'package:lotti/get_it.dart';
@@ -1159,8 +1160,9 @@ void main() {
       );
 
       testWidgets(
-        'check-in card titles from its narrative and picks the glyph from '
-        'the interaction type',
+        'a check-in row is named for its person, with the note it was logged '
+        'with below, picks the glyph from the interaction type and says it '
+        'opens elsewhere',
         (tester) async {
           CheckInEntry checkIn(CheckInInteractionType type, {String? text}) =>
               CheckInEntry(
@@ -1187,11 +1189,21 @@ void main() {
                   text: 'Caught up about the move',
                 ),
               ),
+              overrides: [
+                relationshipNameProvider(
+                  'test-relationship-id',
+                ).overrideWith((ref) async => 'Frida Kjellsen'),
+              ],
             ),
           );
+          await tester.pump();
 
+          expect(find.text('Check-in with Frida Kjellsen'), findsOneWidget);
           expect(find.text('Caught up about the move'), findsOneWidget);
           expect(find.byIcon(LottiIcons.video), findsOneWidget);
+          expect(find.byIcon(LottiIcons.openExternal), findsOneWidget);
+          // The glyph names the tab the row opens on.
+          expect(find.byTooltip('People'), findsOneWidget);
 
           // Every interaction type maps to its own glyph, shared with the
           // relationship detail page's check-in rows.
@@ -1205,6 +1217,11 @@ void main() {
             await tester.pumpWidget(
               makeTestableWidget(
                 ModernJournalCard(item: checkIn(entry.key, text: 'Talked')),
+                overrides: [
+                  relationshipNameProvider(
+                    'test-relationship-id',
+                  ).overrideWith((ref) async => 'Frida Kjellsen'),
+                ],
               ),
             );
             expect(
@@ -1217,7 +1234,8 @@ void main() {
       );
 
       testWidgets(
-        'a check-in with no narrative falls back to the localized type label',
+        'a check-in whose person cannot be read falls back to the localized '
+        'type label',
         (tester) async {
           final bare = CheckInEntry(
             meta: Metadata(
@@ -1235,8 +1253,16 @@ void main() {
           );
 
           await tester.pumpWidget(
-            makeTestableWidget(ModernJournalCard(item: bare)),
+            makeTestableWidget(
+              ModernJournalCard(item: bare),
+              overrides: [
+                relationshipNameProvider(
+                  'test-relationship-id',
+                ).overrideWith((ref) async => null),
+              ],
+            ),
           );
+          await tester.pump();
 
           expect(find.text('Check-in'), findsOneWidget);
         },
@@ -1332,6 +1358,44 @@ void main() {
         expect(
           mockNavService.navigationHistory,
           contains('/events/${testEvent.meta.id}'),
+        );
+      });
+
+      testWidgets("navigates to the check-in on its person's page on tap", (
+        tester,
+      ) async {
+        final checkIn = CheckInEntry(
+          meta: Metadata(
+            id: 'check-in-1',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+          ),
+          data: const CheckInData(
+            relationshipId: 'rel-1',
+            interactionType: CheckInInteractionType.call,
+          ),
+        );
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ModernJournalCard(item: checkIn),
+            overrides: [
+              relationshipNameProvider(
+                'rel-1',
+              ).overrideWith((ref) async => 'Wanja'),
+            ],
+          ),
+        );
+
+        await tester.tap(find.byType(ModernBaseCard));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // A check-in's page is its person's, on the People tab.
+        expect(
+          mockNavService.navigationHistory,
+          contains('/people/rel-1/check-ins/check-in-1'),
         );
       });
 

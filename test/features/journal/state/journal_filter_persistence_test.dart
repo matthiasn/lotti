@@ -6,6 +6,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/journal/state/journal_filter_persistence.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/journal/utils/entry_types.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -136,12 +137,114 @@ void main() {
             JournalFilterPersistence.selectedEntryTypesKey,
           ),
         ).thenAnswer((_) async => '["Task","JournalEntry","JournalAudio"]');
+        when(
+          () => mockSettingsDb.itemByKey(
+            JournalFilterPersistence.reconciledEntryTypesKey,
+          ),
+        ).thenAnswer((_) async => jsonEncode(entryTypes));
 
         late Set<String>? result;
         sut.loadEntryTypes().then((v) => result = v);
         async.flushMicrotasks();
 
         expect(result, {'Task', 'JournalEntry', 'JournalAudio'});
+      });
+    });
+
+    // A type the filter gained after the selection was saved is one the user
+    // never had the chance to deselect. It stays pending — the controller
+    // adds it once the filter offers it — and a save records what was on
+    // offer, so a later deselection sticks (ADR 0064).
+    group('a type added since the selection was saved', () {
+      void stubReconciled(String? raw) => when(
+        () => mockSettingsDb.itemByKey(
+          JournalFilterPersistence.reconciledEntryTypesKey,
+        ),
+      ).thenAnswer((_) async => raw);
+
+      test('the stored selection loads as it was — nothing is added behind '
+          "the filter's back", () {
+        fakeAsync((async) {
+          when(
+            () => mockSettingsDb.itemByKey(
+              JournalFilterPersistence.selectedEntryTypesKey,
+            ),
+          ).thenAnswer((_) async => jsonEncode(['JournalEntry', 'Task']));
+
+          late Set<String>? result;
+          sut.loadEntryTypes().then((v) => result = v);
+          async.flushMicrotasks();
+
+          expect(result, {'Task', 'JournalEntry'});
+          verifyNever(() => mockSettingsDb.saveSettingsItem(any(), any()));
+        });
+      });
+
+      for (final (label, raw) in [
+        ('saved before the record existed', null),
+        ('with a malformed record', 'not json'),
+      ]) {
+        test('CheckIn is pending for a selection $label', () {
+          fakeAsync((async) {
+            stubReconciled(raw);
+
+            late Set<String> pending;
+            sut.loadPendingEntryTypes().then((v) => pending = v);
+            async.flushMicrotasks();
+
+            expect(pending, {'CheckIn'});
+          });
+        });
+      }
+
+      test('nothing is pending once every type was on offer', () {
+        fakeAsync((async) {
+          stubReconciled(jsonEncode(entryTypes));
+
+          late Set<String> pending;
+          sut.loadPendingEntryTypes().then((v) => pending = v);
+          async.flushMicrotasks();
+
+          expect(pending, isEmpty);
+        });
+      });
+
+      test('a save records the types on offer, and a type not on offer stays '
+          'pending', () {
+        fakeAsync((async) {
+          sut.saveEntryTypes({'Task'}, offered: {'Task', 'JournalEntry'});
+          async.flushMicrotasks();
+
+          // Everything on offer was already on the record: nothing to add.
+          verifyNever(
+            () => mockSettingsDb.saveSettingsItem(
+              JournalFilterPersistence.reconciledEntryTypesKey,
+              any(),
+            ),
+          );
+          late Set<String> pending;
+          sut.loadPendingEntryTypes().then((v) => pending = v);
+          async.flushMicrotasks();
+          expect(pending, {'CheckIn'}, reason: 'CheckIn was not on offer');
+
+          sut.saveEntryTypes({'Task'}, offered: {'Task', 'CheckIn'});
+          async.flushMicrotasks();
+
+          verify(
+            () => mockSettingsDb.saveSettingsItem(
+              JournalFilterPersistence.reconciledEntryTypesKey,
+              jsonEncode(
+                [
+                  ...JournalFilterPersistence.legacyReconciledEntryTypes,
+                  'CheckIn',
+                ]..sort(),
+              ),
+            ),
+          ).called(1);
+          sut.loadPendingEntryTypes().then((v) => pending = v);
+          async.flushMicrotasks();
+          expect(pending, isEmpty, reason: 'deselected on offer: it sticks');
+        });
       });
     });
 
@@ -397,10 +500,12 @@ void main() {
           () => mockSettingsDb.itemByKey(selectedEntryTypesKey),
         ).thenAnswer((_) async => jsonEncode(['Task', 'JournalEntry']));
 
-        sut.saveEntryTypes({'JournalEntry', 'Task'});
+        sut.saveEntryTypes({'JournalEntry', 'Task'}, offered: const {});
         async.flushMicrotasks();
 
-        verifyNever(() => mockSettingsDb.saveSettingsItem(any(), any()));
+        verifyNever(
+          () => mockSettingsDb.saveSettingsItem(selectedEntryTypesKey, any()),
+        );
       });
     });
 
@@ -410,9 +515,9 @@ void main() {
           () => mockSettingsDb.itemByKey(selectedEntryTypesKey),
         ).thenAnswer((_) async => 'not json');
 
-        sut.saveEntryTypes({'Task', 'JournalEntry'});
+        sut.saveEntryTypes({'Task', 'JournalEntry'}, offered: const {});
         async.flushMicrotasks();
-        sut.saveEntryTypes({'JournalEntry', 'Task'});
+        sut.saveEntryTypes({'JournalEntry', 'Task'}, offered: const {});
         async.flushMicrotasks();
 
         verify(

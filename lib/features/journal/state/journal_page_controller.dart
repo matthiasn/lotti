@@ -77,6 +77,12 @@ class JournalPageController extends Notifier<JournalPageState>
   bool _enableEvents = false;
   bool _enableHabits = false;
   bool _enableDashboards = false;
+  bool _enableRelationships = false;
+
+  /// Types the filter gained after the persisted selection was saved, not
+  /// yet offered to it — they join the selection once they are (see
+  /// [_adoptPendingEntryTypes]).
+  Set<String> _pendingEntryTypes = {};
   @override
   bool _enableVectorSearch = false;
   bool _enableProjects = false;
@@ -270,6 +276,7 @@ class JournalPageController extends Notifier<JournalPageState>
       enableEvents: _enableEvents,
       enableHabits: _enableHabits,
       enableDashboards: _enableDashboards,
+      enableRelationships: _enableRelationships,
       enableVectorSearch: _enableVectorSearch,
       enableProjects: _enableProjects,
       searchMode: _searchMode,
@@ -282,11 +289,13 @@ class JournalPageController extends Notifier<JournalPageState>
     _enableEvents = result.enableEvents;
     _enableHabits = result.enableHabits;
     _enableDashboards = result.enableDashboards;
+    _enableRelationships = result.enableRelationships;
     _enableVectorSearch = result.enableVectorSearch;
     _enableProjects = result.enableProjects;
     _searchMode = result.searchMode;
     _selectedEntryTypes = result.selectedEntryTypes;
     _selectedProjectIds = result.selectedProjectIds;
+    _adoptPendingEntryTypes();
 
     _emitState();
 
@@ -492,6 +501,7 @@ class JournalPageController extends Notifier<JournalPageState>
     events: _enableEvents,
     habits: _enableHabits,
     dashboards: _enableDashboards,
+    relationships: _enableRelationships,
   );
 
   /// The category filter actually applied: the user's selection, clamped to
@@ -527,6 +537,7 @@ class JournalPageController extends Notifier<JournalPageState>
       enableEvents: _enableEvents,
       enableHabits: _enableHabits,
       enableDashboards: _enableDashboards,
+      enableRelationships: _enableRelationships,
     );
   }
 
@@ -583,8 +594,29 @@ class JournalPageController extends Notifier<JournalPageState>
     final entryTypes = await _persistence.loadEntryTypes();
     if (entryTypes == null) return;
     _selectedEntryTypes = entryTypes;
+    _pendingEntryTypes = await _persistence.loadPendingEntryTypes();
+    final adopted = _adoptPendingEntryTypes();
     _emitState();
-    await refreshQuery();
+    if (adopted) {
+      await persistEntryTypes();
+    } else {
+      await refreshQuery();
+    }
+  }
+
+  /// Adds the pending types the filter now offers to the selection — a type
+  /// added to the Logbook since the selection was saved, which its user
+  /// never had the chance to deselect. A type behind a flag that is off
+  /// stays pending until the flag turns on. Returns whether any joined; the
+  /// caller persists, which records them as reconciled.
+  bool _adoptPendingEntryTypes() {
+    final offered = _pendingEntryTypes.intersection(
+      _allowedEntryTypes().toSet(),
+    );
+    if (offered.isEmpty) return false;
+    _selectedEntryTypes = _selectedEntryTypes.union(offered);
+    _pendingEntryTypes = _pendingEntryTypes.difference(offered);
+    return true;
   }
 
   @override
@@ -618,6 +650,9 @@ class JournalPageController extends Notifier<JournalPageState>
   @override
   Future<void> persistEntryTypes() async {
     await refreshQuery();
-    await _persistence.saveEntryTypes(_selectedEntryTypes);
+    await _persistence.saveEntryTypes(
+      _selectedEntryTypes,
+      offered: _allowedEntryTypes().toSet(),
+    );
   }
 }

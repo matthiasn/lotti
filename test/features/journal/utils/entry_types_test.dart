@@ -14,6 +14,7 @@ void main() {
         'JournalEvent',
         'JournalAudio',
         'JournalImage',
+        'CheckIn',
         'MeasurementEntry',
         'SurveyEntry',
         'WorkoutEntry',
