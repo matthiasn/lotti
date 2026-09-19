@@ -268,6 +268,48 @@ void main() {
     );
 
     test(
+      'heals a thinking slot pointing at a deleted model row back to the '
+      'seed default',
+      () async {
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => [
+            AiTestDataFactory.createTestModel(
+              id: 'model-gemini-flash',
+              providerModelId: 'models/gemini-3-flash-preview',
+            ),
+          ],
+        );
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer(
+          (_) async => [
+            AiConfig.inferenceProfile(
+              id: profileGeminiFlashId,
+              name: 'Gemini Flash',
+              // A row id whose model was removed with its provider.
+              thinkingModelId: 'row-removed-with-provider',
+              transcriptionModelId: 'model-gemini-flash',
+              isDefault: true,
+              createdAt: DateTime(2026),
+            ),
+          ],
+        );
+
+        await service.upgradeExisting();
+
+        final upgraded =
+            verify(
+                  () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+                ).captured.single
+                as AiConfigInferenceProfile;
+        expect(upgraded.thinkingModelId, 'model-gemini-flash');
+        expect(upgraded.transcriptionModelId, 'model-gemini-flash');
+      },
+    );
+
+    test(
       'keeps ambiguous legacy slot values unchanged on upgrade',
       () async {
         // Two model rows share the same providerModelId — rewriting would

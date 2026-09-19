@@ -132,20 +132,13 @@ class PromptBuilderHelper {
     }
 
     // Inject audio transcript if requested (for prompt generation)
+    // Resolution is a pure read of the entity that cannot fail, so unlike
+    // the repository-backed placeholders it needs no failure fallback.
     if (prompt.contains('{{audioTranscript}}')) {
-      String transcriptText;
-      try {
-        transcriptText = resolveAudioTranscript(entity);
-      } catch (error, stackTrace) {
-        _logPlaceholderFailure(
-          entity: entity,
-          placeholder: 'audioTranscript',
-          error: error,
-          stackTrace: stackTrace,
-        );
-        transcriptText = '[No transcription available]';
-      }
-      prompt = prompt.replaceAll('{{audioTranscript}}', transcriptText);
+      prompt = prompt.replaceAll(
+        '{{audioTranscript}}',
+        resolveAudioTranscript(entity),
+      );
     }
 
     // Inject correction examples if requested (audio transcription)
@@ -525,12 +518,10 @@ class PromptBuilderHelper {
     required String placeholder,
     required Object error,
     required StackTrace stackTrace,
-    String? context,
   }) {
-    final suffix = (context == null || context.isEmpty) ? '' : ' $context';
     _loggingService?.error(
       LogDomain.ai,
-      'Failed to inject {{$placeholder}} for entity=${entity.id}$suffix: '
+      'Failed to inject {{$placeholder}} for entity=${entity.id}: '
       '$error',
       stackTrace: stackTrace,
       subDomain: 'placeholder_injection',

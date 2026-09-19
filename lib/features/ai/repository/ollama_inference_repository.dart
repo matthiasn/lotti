@@ -89,23 +89,15 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     // Convert ChatCompletionMessage objects to Ollama format
     final ollamaMessages = messages.map((msg) {
       final content = msg.content;
-      String? contentStr;
-
-      if (content is ChatCompletionUserMessageContent) {
-        // Extract text from ChatCompletionUserMessageContent
-        contentStr = ContentExtractionHelper.extractTextFromUserContent(
-          content,
-        );
-      } else if (content is String) {
-        contentStr = content;
-      } else if (content != null) {
-        // For other types, try to get JSON representation
-        try {
-          contentStr = jsonEncode(content);
-        } catch (_) {
-          contentStr = content.toString();
-        }
-      }
+      // The remaining non-null shape is a developer message's content union,
+      // which is json_serializable throughout, so encoding it cannot fail.
+      final contentStr = switch (content) {
+        ChatCompletionUserMessageContent() =>
+          ContentExtractionHelper.extractTextFromUserContent(content),
+        String() => content,
+        null => null,
+        _ => jsonEncode(content),
+      };
 
       // For tool responses, Ollama expects a different format
       if (msg.role == ChatCompletionMessageRole.tool) {

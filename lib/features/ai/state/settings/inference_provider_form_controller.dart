@@ -121,7 +121,6 @@ class InferenceProviderFormController
   }
 
   void _setAllFields({
-    String? description,
     String? name,
     String? apiKey,
     String? baseUrl,
@@ -149,11 +148,9 @@ class InferenceProviderFormController
                 ? ApiKeyValue.dirty(prev.apiKey.value, inferenceProviderType)
                 : prev.apiKey),
       baseUrl: baseUrl != null ? BaseUrl.dirty(baseUrl) : prev.baseUrl,
-      description: description != null
-          ? DescriptionValue.dirty(description)
-          : (isNonFormzFieldChanging && prev.description.isPure
-                ? DescriptionValue.dirty(prev.description.value)
-                : prev.description),
+      description: isNonFormzFieldChanging && prev.description.isPure
+          ? DescriptionValue.dirty(prev.description.value)
+          : prev.description,
       isSubmitting: prev.isSubmitting,
       submitFailed: prev.submitFailed,
       inferenceProviderType:
