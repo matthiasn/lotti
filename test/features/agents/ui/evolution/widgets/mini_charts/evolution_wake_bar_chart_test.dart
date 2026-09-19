@@ -41,6 +41,23 @@ void main() {
       expect(find.byType(BarChart), findsNothing);
     });
 
+    for (final (count, width) in [(7, 8.0), (14, 5.0), (15, 3.0)]) {
+      testWidgets('draws $width-wide bars for $count days', (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            EvolutionWakeBarChart(buckets: _makeBuckets(count)),
+          ),
+        );
+        await tester.pump();
+
+        final chart = tester.widget<BarChart>(find.byType(BarChart));
+        expect(
+          chart.data.barGroups.map((g) => g.barRods.single.width).toSet(),
+          {width},
+        );
+      });
+    }
+
     testWidgets('creates stacked bars with success and failure counts', (
       tester,
     ) async {
