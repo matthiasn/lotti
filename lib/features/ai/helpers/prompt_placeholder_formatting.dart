@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 
@@ -37,9 +39,12 @@ Examples of what to correct:
 - Any phonetically similar word → use the exact dictionary term''';
 
 /// Escapes a string for safe embedding inside a JSON-style quoted token:
-/// backslashes, double quotes, and newlines.
-String escapeForJsonToken(String s) =>
-    s.replaceAll(r'\', r'\\').replaceAll('"', r'\"').replaceAll('\n', r'\n');
+/// backslashes, double quotes and every control character below U+0020, so
+/// the token decodes back to [s] and never spans more than one line.
+String escapeForJsonToken(String s) {
+  final encoded = jsonEncode(s);
+  return encoded.substring(1, encoded.length - 1);
+}
 
 /// Resolves the best textual content for an entry.
 ///
@@ -100,7 +105,8 @@ String formatSpeechDictionaryPrompt(List<String> terms) {
 /// Formats correction [examples] into the correction-examples prompt fragment.
 ///
 /// Examples are sorted by `capturedAt` descending (most recent first) and
-/// capped at [kMaxCorrectionExamples]. Returns an empty string when [examples]
+/// capped at [kMaxCorrectionExamples]. Each example occupies exactly one line,
+/// with its texts escaped by [escapeForJsonToken]. Returns an empty string when [examples]
 /// is empty.
 String formatCorrectionExamplesPrompt(
   List<ChecklistCorrectionExample> examples,
@@ -117,9 +123,9 @@ String formatCorrectionExamplesPrompt(
 
   final formattedExamples = cappedExamples
       .map((e) {
-        final escapedBefore = e.before.replaceAll('"', r'\"');
-        final escapedAfter = e.after.replaceAll('"', r'\"');
-        return '- "$escapedBefore" → "$escapedAfter"';
+        final before = escapeForJsonToken(e.before);
+        final after = escapeForJsonToken(e.after);
+        return '- "$before" → "$after"';
       })
       .join('\n');
 
