@@ -800,9 +800,13 @@ removed:
   10 check-ins; per check-in its saved narrative and up to
   `relationshipCheckInEntryLookback` (8) of its entries, oldest first —
   comments, recordings with their transcript or "transcript not available
-  yet", photos with their caption or "no description yet" — each a 400-char
-  excerpt; the entries are read unfiltered by
-  `RelationshipRepository.getAllEntriesForCheckIns`) and — the ADR 0041 §5 boundary
+  yet", photos with their description and caption or "no description yet" —
+  each a 400-char excerpt; the entries are read unfiltered by
+  `RelationshipRepository.getAllEntriesForCheckIns`, and a photo's
+  description is its newest image analysis — an `AiResponseEntry` linked
+  photo → response, its `tldr` where the model wrote one, else its body —
+  read for the window's photos in one batch by
+  `RelationshipRepository.getImageDescriptions`) and — the ADR 0041 §5 boundary
   — its `render` signature has **no channel parameter**, so contact
   channels are structurally absent from model context, not filtered out. The
   user-set sentiments in that window also emit the allowed health verdicts in

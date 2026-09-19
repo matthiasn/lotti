@@ -252,6 +252,9 @@ void main() {
       () => relationshipRepository.getAllEntriesForCheckIns(any()),
     ).thenAnswer((_) async => const {});
     when(
+      () => relationshipRepository.getImageDescriptions(any()),
+    ).thenAnswer((_) async => const {});
+    when(
       () => aiConfigRepository.getConfigsByType(any()),
     ).thenAnswer((_) async => []);
     when(
@@ -382,6 +385,52 @@ void main() {
     await run(tokens: {relationshipReportRefreshTriggerToken});
 
     expect(facts, contains('recording (1:00:00): Pip wants the krill memo.'));
+  });
+
+  // ADR 0062 Decision 2: a photo reaches the model as its image analysis,
+  // which the workflow reads for exactly the photos the check-ins hold.
+  test("a check-in photo's image analysis reaches the model's FACTS", () async {
+    stubGlmResolution();
+    final photo = testImageEntry.copyWith(
+      meta: testImageEntry.meta.copyWith(id: 'photo-1'),
+    );
+    when(
+      () => relationshipRepository.getAllEntriesForCheckIns({'c-1'}),
+    ).thenAnswer(
+      (_) async => {
+        'c-1': [
+          photo,
+          testAudioEntry.copyWith(
+            entryText: const EntryText(plainText: 'Pip wants the krill memo.'),
+          ),
+        ],
+      },
+    );
+    when(
+      () => relationshipRepository.getImageDescriptions({'photo-1'}),
+    ).thenAnswer((_) async => {'photo-1': 'Pip at the launch pad.'});
+    String? facts;
+    conversationRepository
+      ..maxDelegateCalls = 1
+      ..sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0,
+            strategy,
+          }) async {
+            facts = message;
+            return null;
+          };
+
+    await run(tokens: {relationshipReportRefreshTriggerToken});
+
+    expect(facts, contains('photo: Pip at the launch pad.'));
   });
 
   // The usage session behind this: the user corrected a misheard name in a

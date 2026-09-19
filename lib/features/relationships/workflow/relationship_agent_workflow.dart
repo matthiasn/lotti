@@ -376,6 +376,12 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
         .getAllEntriesForCheckIns({
           for (final checkIn in relationshipCheckInWindow(checkIns)) checkIn.id,
         });
+    final imageDescriptions = await _relationshipRepository
+        .getImageDescriptions({
+          for (final entries in checkInEntries.values)
+            for (final entry in entries)
+              if (entry is JournalImage) entry.id,
+        });
     final observations = await recallAgentObservations(
       _repository,
       agentId,
@@ -393,6 +399,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       proposals: proposals,
       observations: observations,
       checkInEntries: checkInEntries,
+      imageDescriptions: imageDescriptions,
     );
     if (interactive) {
       factsBlock =

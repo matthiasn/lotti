@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -11,6 +12,7 @@ import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -1371,6 +1373,82 @@ void main() {
           'x': <String>[],
         },
       );
+    });
+
+    // ADR 0062 Decision 2: a photo's description is its image analysis —
+    // written by the skill path as a response of its own, linked from the
+    // photo, which the photo's own text never contains.
+    test("a photo's description is its newest image analysis, summary "
+        'first', () async {
+      JournalEntity analysis(
+        String id,
+        DateTime when, {
+        String response = '',
+        String? tldr,
+        AiResponseType type = AiResponseType.imageAnalysis,
+        DateTime? deletedAt,
+      }) => JournalEntity.aiResponse(
+        meta: entryMeta(id, when, deletedAt: deletedAt),
+        data: AiResponseData(
+          model: 'm',
+          systemMessage: '',
+          prompt: '',
+          thoughts: '',
+          response: response,
+          tldr: tldr,
+          type: type,
+        ),
+      );
+      final bare = testImageEntry.copyWith(meta: entryMeta('bare', at));
+      final other = testImageEntry.copyWith(meta: entryMeta('other', at));
+      for (final entity in [
+        bare,
+        other,
+        analysis('old', at, response: 'Pip on the ice.'),
+        analysis(
+          'new',
+          at.add(const Duration(hours: 1)),
+          response: 'A long analysis of the launch pad.',
+          tldr: 'Pip at the launch pad.',
+        ),
+        analysis(
+          'deleted',
+          at.add(const Duration(hours: 2)),
+          response: 'Deleted.',
+          deletedAt: at,
+        ),
+        analysis(
+          'summary',
+          at.add(const Duration(hours: 3)),
+          response: 'Not a photo description.',
+          type: AiResponseType.audioSummary,
+        ),
+        analysis('unlinked', at.add(const Duration(hours: 4)), response: 'x'),
+        analysis('only-body', at, response: '  Frida waves.  '),
+      ]) {
+        await db.updateJournalEntity(entity);
+      }
+      for (final target in ['old', 'new', 'deleted', 'summary']) {
+        await link('photo', target);
+      }
+      await link('other', 'only-body');
+      await db.upsertEntryLink(
+        EntryLink.basic(
+          id: 'photo->unlinked',
+          fromId: 'photo',
+          toId: 'unlinked',
+          createdAt: at,
+          updatedAt: at,
+          vectorClock: null,
+          deletedAt: at,
+        ),
+      );
+
+      expect(
+        await real.getImageDescriptions({'photo', 'other', 'bare'}),
+        {'photo': 'Pip at the launch pad.', 'other': 'Frida waves.'},
+      );
+      expect(await real.getImageDescriptions(const {}), isEmpty);
     });
 
     // ADR 0037: deleting leaves nothing about the person behind — but an

@@ -54,7 +54,12 @@ inference profiles can pin capability slots to local models.
    fields plus narrative), linked tasks' titles and statuses, and the
    previous report. Nothing else from the journal is included. This keeps
    briefings explainable, keeps token budgets bounded, and minimizes what a
-   cloud model could ever see when one is selected.
+   cloud model could ever see when one is selected. *Amended 2026-09-19:
+   ADR 0062 Decision 2 added the check-ins' own entries; a photo's
+   description among them is its newest image analysis — the AI response
+   linked from the photo, its summary where one was written — followed by
+   any text of the photo's own. Nothing beyond the check-in's entries and
+   their analyses is included.*
 5. **Triggers.** On-demand ("Brief me" on the relationship detail page) and
    an automatic debounced refresh after a new check-in is saved, so the
    briefing is already fresh when a reminder (ADR 0039) brings the user

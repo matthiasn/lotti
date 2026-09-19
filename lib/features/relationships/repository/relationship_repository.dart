@@ -7,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -325,6 +326,58 @@ class RelationshipRepository {
       );
     }
     return result;
+  }
+
+  /// Each photo's description, by photo id, for those of [imageIds] that
+  /// have one: the newest image analysis written for it (ADR 0062
+  /// Decision 2), its short summary where the model wrote one, else the
+  /// analysis itself. A photo with no analysis is absent — the renderer says
+  /// so rather than reading silence.
+  ///
+  /// The analysis is its own AI response, linked photo → response; the
+  /// photo's own text is read with the photo. Deleted responses and
+  /// tombstoned links are skipped.
+  Future<Map<String, String>> getImageDescriptions(Set<String> imageIds) async {
+    if (imageIds.isEmpty) return const {};
+    final links =
+        (await _journalDb.linksFromIds(imageIds.toList(growable: false)).get())
+            .map(entryLinkFromLinkedDbEntry)
+            .where((link) => link.deletedAt == null)
+            .toList();
+    if (links.isEmpty) return const {};
+    final analyses = {
+      for (final row
+          in await _journalDb
+              .journalEntitiesByIdsUnorderedAllPrivate(
+                {for (final link in links) link.toId}.toList(growable: false),
+              )
+              .get())
+        if (fromDbEntity(row) case final AiResponseEntry response
+            when response.data.type == AiResponseType.imageAnalysis)
+          response.id: response,
+    };
+    final newest = <String, AiResponseEntry>{};
+    for (final link in links) {
+      final response = analyses[link.toId];
+      if (response == null) continue;
+      final current = newest[link.fromId];
+      if (current == null ||
+          response.meta.dateFrom.isAfter(current.meta.dateFrom)) {
+        newest[link.fromId] = response;
+      }
+    }
+    return {
+      for (final MapEntry(:key, value: response) in newest.entries)
+        if (_descriptionOf(response) case final String text) key: text,
+    };
+  }
+
+  static String? _descriptionOf(AiResponseEntry response) {
+    for (final text in [response.data.tldr, response.data.response]) {
+      final trimmed = text?.trim() ?? '';
+      if (trimmed.isNotEmpty) return trimmed;
+    }
+    return null;
   }
 
   /// The display read of one check-in's entries, oldest first: like
