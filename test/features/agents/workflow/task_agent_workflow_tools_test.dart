@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/task_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -173,6 +174,13 @@ void main() {
             () => mockAgentRepository.getMessagesByKind(
               agentId,
               AgentMessageKind.observation,
+            ),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockAgentRepository.getMessagesByKind(
+              agentId,
+              AgentMessageKind.observation,
+              limit: taskObservationLookback,
             ),
           ).thenAnswer((_) async => []);
           when(

@@ -4,6 +4,7 @@ import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/project_agent_report_contract.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 
 /// Tool name constants used by the project agent.
 abstract final class ProjectAgentToolNames {
@@ -74,8 +75,8 @@ TaskPriority? parseTaskPriority(Object? rawPriority) {
 }
 
 /// All tools available to the Project Agent.
-const projectAgentTools = <AgentToolDefinition>[
-  AgentToolDefinition(
+final projectAgentTools = <AgentToolDefinition>[
+  const AgentToolDefinition(
     name: ProjectAgentToolNames.updateProjectReport,
     description:
         'Publish the updated project report. You MUST call this tool at '
@@ -140,50 +141,11 @@ const projectAgentTools = <AgentToolDefinition>[
     description:
         'Record private observations for future wakes. Use structured '
         'format with priority and category for important items.',
-    parameters: {
-      'type': 'object',
-      'properties': {
-        'observations': {
-          'type': 'array',
-          'items': {
-            'oneOf': [
-              {'type': 'string'},
-              {
-                'type': 'object',
-                'properties': {
-                  'text': {
-                    'type': 'string',
-                    'description': 'Observation content.',
-                  },
-                  'priority': {
-                    'type': 'string',
-                    'enum': ['routine', 'notable', 'critical'],
-                    'description':
-                        'Urgency level. Use "critical" for blockers or '
-                        'risks that need immediate attention.',
-                  },
-                  'category': {
-                    'type': 'string',
-                    'enum': [
-                      'grievance',
-                      'excellence',
-                      'templateImprovement',
-                      'operational',
-                    ],
-                    'description': 'Category of the observation.',
-                  },
-                },
-                'required': ['text'],
-              },
-            ],
-          },
-          'description': 'List of observations to record.',
-        },
-      },
-      'required': ['observations'],
-    },
+    parameters: recordObservationsParameters(
+      textDescription: 'Observation content.',
+    ),
   ),
-  AgentToolDefinition(
+  const AgentToolDefinition(
     name: ProjectAgentToolNames.recommendNextSteps,
     description:
         'Propose recommended next steps for the project. These are '
@@ -218,7 +180,7 @@ const projectAgentTools = <AgentToolDefinition>[
       'required': ['steps'],
     },
   ),
-  AgentToolDefinition(
+  const AgentToolDefinition(
     name: ProjectAgentToolNames.updateProjectStatus,
     description:
         'Update the project status. This is a deferred tool — the change '
@@ -238,7 +200,7 @@ const projectAgentTools = <AgentToolDefinition>[
       'required': ['status', 'reason'],
     },
   ),
-  AgentToolDefinition(
+  const AgentToolDefinition(
     name: ProjectAgentToolNames.createTask,
     description:
         'Propose a new task to be created under this project. This is a '

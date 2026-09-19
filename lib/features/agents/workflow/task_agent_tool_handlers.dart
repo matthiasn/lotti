@@ -84,50 +84,39 @@ extension TaskAgentToolHandlers on TaskAgentStrategy {
   /// Handles the `record_observations` tool call by accumulating observations
   /// and sending an acknowledgement back to the conversation.
   ///
-  /// Accepts both legacy bare-string items and new structured items with
-  /// `text`, `priority`, and `category` fields. Legacy items default to
-  /// [ObservationPriority.routine] / [ObservationCategory.operational].
+  /// Parsed by the shared [parseRecordObservations]: bare strings and
+  /// structured `{text, priority?, category?}` items are both accepted, and a
+  /// call with nothing usable in it is refused with an error the model can
+  /// act on rather than acknowledged as "Recorded 0".
   Future<void> _handleRecordObservations(
     Map<String, dynamic> args,
     String callId,
     ConversationManager manager,
   ) async {
-    final rawList = args['observations'];
-    if (rawList is List) {
-      var count = 0;
-      for (final item in rawList) {
-        final record = _parseObservationItem(item);
-        if (record != null) {
-          _observations.add(record);
-          count++;
-        }
-      }
-
-      developer.log(
-        'Recorded $count observations',
-        name: 'TaskAgentStrategy',
-      );
-
-      manager.addToolResponse(
-        toolCallId: callId,
-        response: 'Recorded $count observation(s).',
-      );
-
+    final (:records, :error) = parseRecordObservations(args);
+    if (error != null) {
+      manager.addToolResponse(toolCallId: callId, response: error);
       await _recordToolResultMessage(
         toolName: TaskAgentStrategy.observationToolName,
+        errorMessage: error,
       );
-    } else {
-      const errorMsg = 'Error: "observations" must be an array.';
-      manager.addToolResponse(
-        toolCallId: callId,
-        response: errorMsg,
-      );
-
-      await _recordToolResultMessage(
-        toolName: TaskAgentStrategy.observationToolName,
-        errorMessage: errorMsg,
-      );
+      return;
     }
+    _observations.addAll(records);
+
+    developer.log(
+      'Recorded ${records.length} observations',
+      name: 'TaskAgentStrategy',
+    );
+
+    manager.addToolResponse(
+      toolCallId: callId,
+      response: 'Recorded ${records.length} observation(s).',
+    );
+
+    await _recordToolResultMessage(
+      toolName: TaskAgentStrategy.observationToolName,
+    );
   }
 
   /// Handles the read-only related-task drill-down tool.
@@ -302,47 +291,6 @@ extension TaskAgentToolHandlers on TaskAgentStrategy {
     await _recordToolResultMessage(
       toolName: TaskAgentStrategy.retractSuggestionsToolName,
     );
-  }
-
-  /// Parses a single observation item from the tool call arguments.
-  ///
-  /// Handles both legacy bare strings and new structured objects.
-  static ObservationRecord? _parseObservationItem(Object? item) {
-    // Legacy format: bare string.
-    if (item is String) {
-      final trimmed = item.trim();
-      if (trimmed.isNotEmpty) {
-        return ObservationRecord(text: trimmed);
-      }
-    }
-
-    // New structured format: {text, priority?, category?}.
-    if (item is Map<String, dynamic>) {
-      final rawText = item['text'];
-      if (rawText is String) {
-        final text = rawText.trim();
-        if (text.isEmpty) return null;
-        final rawPriority = item['priority'];
-        final rawCategory = item['category'];
-        return ObservationRecord(
-          text: text,
-          priority:
-              parseEnumByName(
-                ObservationPriority.values,
-                rawPriority is String ? rawPriority : null,
-              ) ??
-              ObservationPriority.routine,
-          category:
-              parseEnumByName(
-                ObservationCategory.values,
-                rawCategory is String ? rawCategory : null,
-              ) ??
-              ObservationCategory.operational,
-        );
-      }
-    }
-
-    return null;
   }
 
   // ── Argument parsing ───────────────────────────────────────────────────

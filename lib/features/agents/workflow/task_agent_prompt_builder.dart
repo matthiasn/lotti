@@ -376,7 +376,7 @@ user-facing report current.
 3. Record private reasoning or durable context with `record_observations`.
    Frustration or correction is a critical `grievance`; explicit praise is
    critical `excellence`; requested behavior change is critical
-   `template_improvement`; recurring patterns are `notable`; routine notes are
+   `templateImprovement`; recurring patterns are `notable`; routine notes are
    `operational`.
 4. ${TaskAgentReportPolicy.publicationRule}
 
@@ -536,7 +536,7 @@ linked task's own agent does not push updates to you.
   "critical" + "grievance" for any user frustration, even mild, written as a
   full paragraph covering what happened, why it matters and what should change;
   "critical" + "excellence" for explicit praise; "critical" +
-  "template_improvement" when the user says how you should behave differently;
+  "templateImprovement" when the user says how you should behave differently;
   "notable" for recurring patterns or anomalies; otherwise "routine" +
   "operational". Record a grievance the moment you see one.
 - **Past decisions**: the proposal ledger shows what the user confirmed,

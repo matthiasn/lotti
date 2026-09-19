@@ -101,6 +101,25 @@ kind falls through to the task-agent workflow, and an unrenderable wrap splices
 its log verbatim — so the composition-root registrations are pinned by
 `test/app_bootstrap_test.dart` (the `agent runtime registrations` group).
 
+**Every kind keeps its private notes through one contract**,
+[`agent_observations.dart`](../../../lib/features/agents/workflow/agent_observations.dart):
+the task, project, event, day and relationship agents declare their
+`record_observations`-style tool with `recordObservationsParameters` (a
+non-empty list of `{text, priority?, category?}` objects, closed to other
+properties, enums taken from the model) and parse it with
+`parseRecordObservations`, which refuses an empty or all-blank call so the model
+resends real notes. All of them — the goal agent too, whose one-note
+`record_goal_observation` tool keeps its own contract — write through
+`persistAgentObservations` (ids derived from the agent, run and position, so a
+retried transaction rewrites rather than duplicates) and read back through
+`recallAgentObservations`: the newest N in one batched payload read, newest
+first, with id, time, text, priority and category; an unreadable note is left
+out rather than shown as a placeholder, and a failed payload read recalls
+nothing instead of failing the wake. Each agent keeps its own lookback and
+rendering — the task agent's critical self-review section and chronological
+journal, the day agent's fetch-40/keep-20 chronological replay, the goal
+agent's FACTS list.
+
 **There is no persisted `meta_improver` kind.** A meta-improver is a
 `template_improver` whose `recursionDepth > 0`. `recursionDepth` and the ritual
 cadence `feedbackWindowDays` live on `AgentConfig` — configuration set at

@@ -3,6 +3,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/agent_system_prompt.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -22,6 +23,9 @@ typedef EventLogErrorCallback =
 /// the raw material the recap narrates from. The event's **rating and cover**
 /// are deliberately never rendered into the context, so the model has nothing
 /// to act on there.
+/// How many of its newest observations an event agent's wake reads.
+const eventObservationLookback = 20;
+
 class EventAgentContextBuilder {
   EventAgentContextBuilder({
     required this.agentRepository,
@@ -78,8 +82,7 @@ persist across recaps but are not shown to the user.''';
   String buildUserMessage({
     required JournalEntity eventEntity,
     required AgentReportEntity? lastReport,
-    required List<AgentMessageEntity> observations,
-    required Map<String, AgentMessagePayloadEntity> observationPayloads,
+    required List<RecalledObservation> observations,
     required String linkedEntriesContext,
     required Set<String> triggerTokens,
   }) {
@@ -110,12 +113,8 @@ persist across recaps but are not shown to the user.''';
         ..writeln()
         ..writeln('## Recent Observations')
         ..writeln();
-      for (final obs in observations.take(20)) {
-        final payload = obs.contentEntryId != null
-            ? observationPayloads[obs.contentEntryId]
-            : null;
-        final text = extractPayloadText(payload);
-        buf.writeln('- [${obs.createdAt.toIso8601String()}] $text');
+      for (final obs in observations) {
+        buf.writeln('- [${obs.at.toIso8601String()}] ${obs.text}');
       }
     }
 
@@ -271,47 +270,6 @@ persist across recaps but are not shown to the user.''';
       );
       return '';
     }
-  }
-
-  // ── Observation payload resolution ────────────────────────────────────────
-
-  /// Batch-resolves all observation payloads into a map keyed by payload ID.
-  Future<Map<String, AgentMessagePayloadEntity>> resolveObservationPayloads(
-    List<AgentMessageEntity> observations,
-  ) async {
-    final payloadIds = observations
-        .map((o) => o.contentEntryId)
-        .whereType<String>()
-        .toSet();
-
-    if (payloadIds.isEmpty) {
-      return const <String, AgentMessagePayloadEntity>{};
-    }
-
-    final Map<String, AgentDomainEntity> entitiesById;
-    try {
-      entitiesById = await agentRepository.getEntitiesByIds(payloadIds);
-    } catch (e) {
-      // Non-fatal — observation will render with placeholder text.
-      return const <String, AgentMessagePayloadEntity>{};
-    }
-
-    final result = <String, AgentMessagePayloadEntity>{};
-    for (final entry in entitiesById.entries) {
-      final entity = entry.value;
-      if (entity is AgentMessagePayloadEntity) {
-        result[entry.key] = entity;
-      }
-    }
-    return result;
-  }
-
-  /// Extracts the text content from an observation payload.
-  static String extractPayloadText(AgentMessagePayloadEntity? payload) {
-    if (payload == null) return '(no content)';
-    final text = payload.content['text'];
-    if (text is String && text.isNotEmpty) return text;
-    return '(no content)';
   }
 
   static String _taskStatusLabel(TaskStatus status) {

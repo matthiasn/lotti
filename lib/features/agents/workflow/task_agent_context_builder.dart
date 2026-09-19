@@ -17,6 +17,7 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/correction_examples_builder.dart';
 import 'package:lotti/features/agents/tools/task_agent_tool_gate.dart';
 import 'package:lotti/features/agents/tools/task_label_handler.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/project_agent_context_builder.dart'
     show LogErrorCallback;
 import 'package:lotti/features/agents/workflow/task_agent_evidence_synthesis.dart';
@@ -37,6 +38,9 @@ part 'task_agent_context_builder_formatters.dart';
 /// method here reads from the injected repositories (or transforms its inputs)
 /// and produces a context string / object — none mutate workflow state. The
 /// workflow holds an instance and delegates to it.
+/// How many of its newest observations a task agent's wake reads.
+const taskObservationLookback = 20;
+
 class TaskAgentContextBuilder {
   TaskAgentContextBuilder({
     required this.agentRepository,
@@ -304,42 +308,6 @@ class TaskAgentContextBuilder {
     }
   }
 
-  /// Batch-resolves all observation payloads into a map keyed by payload ID.
-  Future<Map<String, AgentMessagePayloadEntity>> _resolveObservationPayloads(
-    List<AgentMessageEntity> observations,
-  ) async {
-    final payloadIds = observations
-        .map((o) => o.contentEntryId)
-        .whereType<String>()
-        .toSet();
-
-    if (payloadIds.isEmpty) {
-      return const <String, AgentMessagePayloadEntity>{};
-    }
-
-    // Single batched IN-list lookup instead of `Future.wait(map →
-    // getEntity)`. See `AgentRepository.getEntitiesByIds` for the slow-
-    // log evidence behind the rewrite. Non-payload entities (or ids
-    // with no row / soft-deleted) are silently dropped — the caller
-    // renders a placeholder, same as the pre-batch failure mode.
-    final Map<String, AgentDomainEntity> entitiesById;
-    try {
-      entitiesById = await agentRepository.getEntitiesByIds(payloadIds);
-    } catch (e) {
-      // Non-fatal — observation will render with placeholder text.
-      return const <String, AgentMessagePayloadEntity>{};
-    }
-
-    final result = <String, AgentMessagePayloadEntity>{};
-    for (final entry in entitiesById.entries) {
-      final entity = entry.value;
-      if (entity is AgentMessagePayloadEntity) {
-        result[entry.key] = entity;
-      }
-    }
-    return result;
-  }
-
   /// Renders an "Active Running Timer" section describing whatever timer
   /// is currently running.
   ///
@@ -531,7 +499,7 @@ class TaskAgentContextBuilder {
   Future<({String text, int? logStart, int? logEnd})> buildUserMessage({
     required String agentId,
     required bool hasReport,
-    required List<AgentMessageEntity> journalObservations,
+    required List<RecalledObservation> journalObservations,
     required String taskDetails,
     required String projectContextJson,
     required String linkedTasksJson,
@@ -685,25 +653,9 @@ class TaskAgentContextBuilder {
     }
 
     if (journalObservations.isNotEmpty) {
-      // Cap to most recent 20 to prevent unbounded context growth.
-      // journalObservations is ordered newest-first from the DB query.
-      final boundedObservations = journalObservations.length > 20
-          ? journalObservations.sublist(0, 20)
-          : journalObservations;
-
-      // Batch-resolve all observation payloads in parallel to avoid N+1
-      // queries. Used for both the critical section and the journal listing.
-      final allPayloads = await _resolveObservationPayloads(
-        boundedObservations,
-      );
-
       // Inject prior critical observations first so the agent addresses
       // grievances and excellence notes before routine work.
-      _writePriorCriticalObservations(
-        buffer,
-        boundedObservations,
-        allPayloads,
-      );
+      _writePriorCriticalObservations(buffer, journalObservations);
 
       // With compaction on, observations live in the `## Task Log` event tail
       // (interleaved as observation-tagged lines, folded into summaries by
@@ -711,17 +663,10 @@ class TaskAgentContextBuilder {
       // them.
       if (!useCompactedLog) {
         buffer.writeln('## Agent Journal');
-        // Reverse so the LLM sees them in chronological order.
-        final recentObs = boundedObservations.reversed.toList();
-
-        for (var i = 0; i < recentObs.length; i++) {
-          final payload = recentObs[i].contentEntryId != null
-              ? allPayloads[recentObs[i].contentEntryId]
-              : null;
-          final text = _extractPayloadText(payload);
-          buffer.writeln(
-            '- [${recentObs[i].createdAt.toIso8601String()}] $text',
-          );
+        // Recalled newest-first; reversed so the LLM reads them in
+        // chronological order.
+        for (final obs in journalObservations.reversed) {
+          buffer.writeln('- [${obs.at.toIso8601String()}] ${obs.text}');
         }
         buffer.writeln();
       }
@@ -755,48 +700,22 @@ class TaskAgentContextBuilder {
     return (text: buffer.toString(), logStart: logStart, logEnd: logEnd);
   }
 
-  /// Extracts the text content from an observation payload.
-  static String _extractPayloadText(AgentMessagePayloadEntity? payload) {
-    if (payload == null) return '(no content)';
-    final text = payload.content['text'];
-    if (text is String && text.isNotEmpty) return text;
-    return '(no content)';
-  }
-
   /// Writes a dedicated section for prior critical observations so the
   /// task agent can self-correct on grievances and reinforce excellence.
   static void _writePriorCriticalObservations(
     StringBuffer buffer,
-    List<AgentMessageEntity> observations,
-    Map<String, AgentMessagePayloadEntity> payloads,
+    List<RecalledObservation> observations,
   ) {
     final grievances = <(DateTime, String)>[];
     final excellence = <(DateTime, String)>[];
 
     for (final obs in observations) {
-      final payload = obs.contentEntryId != null
-          ? payloads[obs.contentEntryId]
-          : null;
-      if (payload == null) continue;
-
-      final rawPriority = payload.content['priority'];
-      final priority = rawPriority is String
-          ? parseEnumByName(ObservationPriority.values, rawPriority)
-          : null;
-      if (priority != ObservationPriority.critical) continue;
-
-      final text = payload.content['text'];
-      if (text is! String || text.trim().isEmpty) continue;
-
-      final rawCategory = payload.content['category'];
-      final category = rawCategory is String
-          ? parseEnumByName(ObservationCategory.values, rawCategory)
-          : null;
-      if (category == ObservationCategory.excellence) {
-        excellence.add((obs.createdAt, text));
+      if (obs.priority != ObservationPriority.critical) continue;
+      if (obs.category == ObservationCategory.excellence) {
+        excellence.add((obs.at, obs.text));
       } else {
-        // grievance, template_improvement, or unrecognized critical
-        grievances.add((obs.createdAt, text));
+        // grievance, templateImprovement, or an unrecognized category
+        grievances.add((obs.at, obs.text));
       }
     }
 

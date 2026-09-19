@@ -20,6 +20,7 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
 import 'package:lotti/features/agents/workflow/carrierless_attribution.dart';
 import 'package:lotti/features/agents/workflow/deferred_change_items.dart';
@@ -327,8 +328,7 @@ class ProjectAgentWorkflow with AgentErrorLogging {
   ({String text, int? logStart, int? logEnd}) _buildUserMessage({
     required JournalEntity projectEntity,
     required AgentReportEntity? lastReport,
-    required List<AgentMessageEntity> observations,
-    required Map<String, AgentMessagePayloadEntity> observationPayloads,
+    required List<RecalledObservation> observations,
     required String linkedTasksContext,
     required Set<String> triggerTokens,
     required ProposalLedger ledger,
@@ -337,7 +337,6 @@ class ProjectAgentWorkflow with AgentErrorLogging {
     projectEntity: projectEntity,
     lastReport: lastReport,
     observations: observations,
-    observationPayloads: observationPayloads,
     linkedTasksContext: linkedTasksContext,
     triggerTokens: triggerTokens,
     compactedLog: compactedLog,
@@ -378,10 +377,6 @@ class ProjectAgentWorkflow with AgentErrorLogging {
 
   Future<String> _buildLinkedTasksContext(String projectId) =>
       _contextBuilder.buildLinkedTasksContext(projectId);
-
-  Future<Map<String, AgentMessagePayloadEntity>> _resolveObservationPayloads(
-    List<AgentMessageEntity> observations,
-  ) => _contextBuilder.resolveObservationPayloads(observations);
 
   /// Builds a user-readable summary for a deferred tool call.
   static String _buildHumanSummary(

@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/agent_system_prompt.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -26,6 +27,9 @@ typedef LogErrorCallback =
 /// method here reads from the injected repositories (or transforms its inputs)
 /// and builds a prompt string / context object. None of them mutate workflow
 /// state. The workflow holds an instance and delegates to it.
+/// How many of its newest observations a project agent's wake reads.
+const projectObservationLookback = 20;
+
 class ProjectAgentContextBuilder {
   ProjectAgentContextBuilder({
     required this.agentRepository,
@@ -142,8 +146,7 @@ is listed under `## Open Proposal Guard` with its fingerprint.
   ({String text, int? logStart, int? logEnd}) buildUserMessage({
     required JournalEntity projectEntity,
     required AgentReportEntity? lastReport,
-    required List<AgentMessageEntity> observations,
-    required Map<String, AgentMessagePayloadEntity> observationPayloads,
+    required List<RecalledObservation> observations,
     required String linkedTasksContext,
     required Set<String> triggerTokens,
     String? compactedLog,
@@ -201,12 +204,8 @@ is listed under `## Open Proposal Guard` with its fingerprint.
         ..writeln()
         ..writeln('## Recent Observations')
         ..writeln();
-      for (final obs in observations.take(20)) {
-        final payload = obs.contentEntryId != null
-            ? observationPayloads[obs.contentEntryId]
-            : null;
-        final text = extractPayloadText(payload);
-        buf.writeln('- [${obs.createdAt.toIso8601String()}] $text');
+      for (final obs in observations) {
+        buf.writeln('- [${obs.at.toIso8601String()}] ${obs.text}');
       }
     }
 
@@ -426,55 +425,6 @@ is listed under `## Open Proposal Guard` with its fingerprint.
       );
       return '{}';
     }
-  }
-
-  // ── Observation payload resolution ────────────────────────────────────────
-
-  /// Batch-resolves all observation payloads into a map keyed by payload ID.
-  Future<Map<String, AgentMessagePayloadEntity>> resolveObservationPayloads(
-    List<AgentMessageEntity> observations,
-  ) async {
-    final payloadIds = observations
-        .map((o) => o.contentEntryId)
-        .whereType<String>()
-        .toSet();
-
-    if (payloadIds.isEmpty) {
-      return const <String, AgentMessagePayloadEntity>{};
-    }
-
-    // Single batched IN-list lookup instead of `Future.wait(map →
-    // getEntity)`. The fan-out version showed up at 2 484 hits/day in
-    // the 2026-05-10 desktop slow_queries log because each per-row
-    // `WHERE id = ?` queued independently behind the writer lock; the
-    // bulk path makes one round-trip regardless of payload count.
-    // Non-payload entities (or ids that have no row / are soft-deleted)
-    // are silently dropped — the caller renders a placeholder, same as
-    // the pre-batch failure mode.
-    final Map<String, AgentDomainEntity> entitiesById;
-    try {
-      entitiesById = await agentRepository.getEntitiesByIds(payloadIds);
-    } catch (e) {
-      // Non-fatal — observation will render with placeholder text.
-      return const <String, AgentMessagePayloadEntity>{};
-    }
-
-    final result = <String, AgentMessagePayloadEntity>{};
-    for (final entry in entitiesById.entries) {
-      final entity = entry.value;
-      if (entity is AgentMessagePayloadEntity) {
-        result[entry.key] = entity;
-      }
-    }
-    return result;
-  }
-
-  /// Extracts the text content from an observation payload.
-  static String extractPayloadText(AgentMessagePayloadEntity? payload) {
-    if (payload == null) return '(no content)';
-    final text = payload.content['text'];
-    if (text is String && text.isNotEmpty) return text;
-    return '(no content)';
   }
 
   static String _taskStatusLabel(TaskStatus status) {

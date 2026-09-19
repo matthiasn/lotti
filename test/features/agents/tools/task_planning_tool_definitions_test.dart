@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 
 void main() {
   group('task planning, attention & reporting tool definitions', () {
@@ -197,34 +198,21 @@ void main() {
         expect(tool.description, contains('observations'));
       });
 
-      test('requires an array observations parameter with object items', () {
+      test('uses the shared observations schema, closed to other properties '
+          'as every task tool is', () {
         final properties = tool.parameters['properties'] as Map;
-        final obsProp = properties['observations'] as Map;
-        expect(obsProp['type'], equals('array'));
+        final items = (properties['observations'] as Map)['items'] as Map;
+        final text = (items['properties'] as Map)['text'] as Map;
+        final textDescription = text['description'] as String;
 
-        final items = obsProp['items'] as Map;
-        expect(items['type'], equals('object'));
-        expect(items['required'], contains('text'));
-
-        final itemProps = items['properties'] as Map;
-        expect((itemProps['text'] as Map)['type'], equals('string'));
-        expect((itemProps['priority'] as Map)['type'], equals('string'));
         expect(
-          (itemProps['priority'] as Map)['enum'],
-          containsAll(['routine', 'notable', 'critical']),
+          tool.parameters,
+          recordObservationsParameters(textDescription: textDescription),
         );
-        expect((itemProps['category'] as Map)['type'], equals('string'));
         expect(
-          (itemProps['category'] as Map)['enum'],
-          containsAll([
-            'grievance',
-            'excellence',
-            'template_improvement',
-            'operational',
-          ]),
+          textDescription,
+          contains('For critical priority, write a full paragraph'),
         );
-
-        expect(tool.parameters['required'], contains('observations'));
       });
     });
 

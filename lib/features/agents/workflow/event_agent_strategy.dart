@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/agent_message_recording.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/agent_tool_arg_parsing.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -25,7 +26,7 @@ import 'package:openai_dart/openai_dart.dart';
 /// message is persisted to `agent.sqlite` as an [AgentMessageEntity], mirroring
 /// `ProjectAgentStrategy`.
 class EventAgentStrategy extends ConversationStrategy
-    with ObservationRecordParsing, AgentMessageRecording {
+    with AgentMessageRecording {
   EventAgentStrategy({
     required this.syncService,
     required this.agentId,
@@ -224,61 +225,18 @@ class EventAgentStrategy extends ConversationStrategy
     String callId,
     ConversationManager manager,
   ) async {
-    final rawList = args['observations'];
-    if (rawList is! List || rawList.isEmpty) {
+    final (:records, :error) = parseRecordObservations(args);
+    if (error != null) {
       await _rejectToolCall(
         callId: callId,
         toolName: EventAgentToolNames.recordObservations,
-        errorMsg: 'Error: "observations" must be a non-empty array.',
+        errorMsg: error,
         manager: manager,
       );
       return;
     }
-
-    var accepted = 0;
-    for (final item in rawList) {
-      if (item is String) {
-        final trimmed = item.trim();
-        if (trimmed.isNotEmpty) {
-          _observations.add(ObservationRecord(text: trimmed));
-          accepted++;
-        }
-      } else if (item is Map<String, dynamic>) {
-        final textValue = item['text'];
-        final text = textValue is String ? textValue.trim() : '';
-        if (text.isEmpty) continue;
-
-        final priority = parseObservationPriority(
-          item['priority'] is String ? item['priority'] as String : null,
-        );
-        final category = parseObservationCategory(
-          item['category'] is String ? item['category'] as String : null,
-        );
-
-        _observations.add(
-          ObservationRecord(
-            text: text,
-            priority: priority,
-            category: category,
-          ),
-        );
-        accepted++;
-      }
-    }
-
-    // Every array item was empty/invalid: reject rather than acknowledge a
-    // no-op, so the model resends valid observations instead of wasting a turn.
-    if (accepted == 0) {
-      await _rejectToolCall(
-        callId: callId,
-        toolName: EventAgentToolNames.recordObservations,
-        errorMsg:
-            'Error: no valid observations found. '
-            'Provide non-empty observation text.',
-        manager: manager,
-      );
-      return;
-    }
+    _observations.addAll(records);
+    final accepted = records.length;
 
     manager.addToolResponse(
       toolCallId: callId,

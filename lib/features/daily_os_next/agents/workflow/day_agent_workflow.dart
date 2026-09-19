@@ -10,13 +10,13 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/projection/capture_events.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/sync/agent_log_compactor.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
 import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
@@ -366,9 +366,9 @@ class DayAgentWorkflow {
       return const WakeResult(success: true);
     }
 
-    final observations = await agentRepository.getMessagesByKind(
+    final observations = await recallAgentObservations(
+      agentRepository,
       agentId,
-      AgentMessageKind.observation,
       // Newest-first page: the prompt replays at most 20 (see
       // recentObservations). An unlimited read loads and deserializes the
       // coordinator's ENTIRE observation history on every wake — the exact
@@ -378,9 +378,6 @@ class DayAgentWorkflow {
       limit: _observationFetchLimit,
     );
     final recentObs = recentObservations(observations);
-    final observationPayloads = await _resolveObservationPayloads(
-      recentObs,
-    );
     final templateCtx = await _resolveTemplate(agentId);
 
     final profileResolver = ProfileResolver(
@@ -514,7 +511,6 @@ class DayAgentWorkflow {
       now: planningSnapshotAt,
       triggerTokens: triggerTokens,
       observations: recentObs,
-      observationPayloads: observationPayloads,
       captureContext: captureContext,
       draftingContext: draftingContext,
       refineContext: refineContext,
@@ -766,12 +762,13 @@ class DayAgentWorkflow {
           thoughtText: strategy.finalResponse,
           now: now,
         );
-        await _persistObservations(
+        await persistAgentObservations(
+          syncService,
           agentId: agentId,
           threadId: threadId,
           runKey: runKey,
-          observations: strategy.extractObservations(),
           now: now,
+          observations: strategy.extractObservations(),
         );
         final hostId = await syncService.localHost();
         await syncService.upsertEntity(

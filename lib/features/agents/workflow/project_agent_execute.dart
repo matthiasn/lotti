@@ -141,9 +141,10 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
     }
 
     // 4. Load observations.
-    final journalObservations = await agentRepository.getMessagesByKind(
+    final journalObservations = await recallAgentObservations(
+      agentRepository,
       agentId,
-      AgentMessageKind.observation,
+      limit: projectObservationLookback,
     );
 
     // 5. Resolve template and active version.
@@ -185,11 +186,6 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
       retainTokens: compactionTailRetainTokens,
     );
 
-    // 6b. Load observation payloads so we can render actual text.
-    final observationPayloads = await _resolveObservationPayloads(
-      journalObservations,
-    );
-
     // 6c. Load linked tasks and their task-agent reports.
     final linkedTasksContext = await _buildLinkedTasksContext(projectId);
 
@@ -210,7 +206,6 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
       projectEntity: projectEntity,
       lastReport: lastReport,
       observations: journalObservations,
-      observationPayloads: observationPayloads,
       linkedTasksContext: linkedTasksContext,
       triggerTokens: triggerTokens,
       ledger: ledger,
@@ -457,36 +452,14 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
           );
         }
 
-        // Persist observations.
-        for (final observation in observations) {
-          final payloadId = ProjectAgentWorkflow._uuid.v4();
-          await syncService.upsertEntity(
-            AgentDomainEntity.agentMessagePayload(
-              id: payloadId,
-              agentId: agentId,
-              createdAt: now,
-              vectorClock: null,
-              content: <String, Object?>{
-                'text': observation.text,
-                'priority': observation.priority.name,
-                'category': observation.category.name,
-              },
-            ),
-          );
-
-          await syncService.upsertEntity(
-            AgentDomainEntity.agentMessage(
-              id: ProjectAgentWorkflow._uuid.v4(),
-              agentId: agentId,
-              threadId: threadId,
-              kind: AgentMessageKind.observation,
-              createdAt: now,
-              vectorClock: null,
-              contentEntryId: payloadId,
-              metadata: AgentMessageMetadata(runKey: runKey),
-            ),
-          );
-        }
+        await persistAgentObservations(
+          syncService,
+          agentId: agentId,
+          threadId: threadId,
+          runKey: runKey,
+          now: now,
+          observations: observations,
+        );
 
         // Publish current next steps together with the successful report. A run
         // with no steps retracts the previous list; failed runs never get here.

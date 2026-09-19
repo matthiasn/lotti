@@ -4,6 +4,7 @@ import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -133,6 +134,21 @@ AgentMessagePayloadEntity makeTestMessagePayload({
       )
       as AgentMessagePayloadEntity;
 }
+
+/// One recalled observation, as `recallAgentObservations` returns it.
+RecalledObservation makeTestRecalledObservation(
+  String text, {
+  String id = 'observation-001',
+  DateTime? at,
+  ObservationPriority priority = ObservationPriority.routine,
+  ObservationCategory category = ObservationCategory.operational,
+}) => (
+  id: id,
+  at: at ?? kAgentTestDate,
+  text: text,
+  priority: priority,
+  category: category,
+);
 
 AgentReportEntity makeTestReport({
   String id = 'report-001',

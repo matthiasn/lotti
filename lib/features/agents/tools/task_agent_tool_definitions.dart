@@ -9,7 +9,7 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 /// - [taskLinkTools] — typed relationships to other tasks.
 /// - [taskTimeTools] — time entries and running timers.
 /// - [taskPlanningTools] — attention, reporting, and observations.
-const taskAgentToolList = <AgentToolDefinition>[
+final taskAgentToolList = <AgentToolDefinition>[
   ...taskFieldTools,
   ...taskChecklistTools,
   ...taskLinkTools,

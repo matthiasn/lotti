@@ -1,55 +1,20 @@
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 
 /// Foundation-phase tools exposed to the Daily OS day agent.
-const dayAgentTools = <AgentToolDefinition>[
+final dayAgentTools = <AgentToolDefinition>[
   AgentToolDefinition(
     name: DayAgentToolNames.recordObservations,
     description:
         'Record private observations for future Daily OS wakes and template '
         'evolution. Use this for timing preferences, uncertainty, capacity '
         'patterns, and wake outcome notes.',
-    parameters: {
-      'type': 'object',
-      'properties': {
-        'observations': {
-          'type': 'array',
-          'items': {
-            'oneOf': [
-              {'type': 'string'},
-              {
-                'type': 'object',
-                'properties': {
-                  'text': {
-                    'type': 'string',
-                    'description': 'Observation content.',
-                  },
-                  'priority': {
-                    'type': 'string',
-                    'enum': ['routine', 'notable', 'critical'],
-                  },
-                  'category': {
-                    'type': 'string',
-                    'enum': [
-                      'grievance',
-                      'excellence',
-                      'templateImprovement',
-                      'operational',
-                    ],
-                  },
-                },
-                'required': ['text'],
-                'additionalProperties': false,
-              },
-            ],
-          },
-        },
-      },
-      'required': ['observations'],
-      'additionalProperties': false,
-    },
+    parameters: recordObservationsParameters(
+      textDescription: 'Observation content.',
+    ),
   ),
-  AgentToolDefinition(
+  const AgentToolDefinition(
     name: DayAgentToolNames.setNextWake,
     description:
         'Schedule the next useful Daily OS wake. Use ISO-8601 local date-time '
@@ -71,7 +36,7 @@ const dayAgentTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
-  AgentToolDefinition(
+  const AgentToolDefinition(
     name: DayAgentToolNames.searchMemory,
     description:
         'Recall specific past detail from your memory. With `query`, searches '
@@ -104,7 +69,7 @@ const dayAgentTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
-  AgentToolDefinition(
+  const AgentToolDefinition(
     name: DayAgentToolNames.submitCapture,
     description:
         'Persist a user capture transcript and enqueue parsing. capturedAt '
@@ -129,7 +94,7 @@ const dayAgentTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
-  AgentToolDefinition(
+  const AgentToolDefinition(
     name: DayAgentToolNames.parseCaptureToItems,
     description:
         'Persist parsed items for the capture currently being reconciled. '
@@ -170,7 +135,7 @@ const dayAgentTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
-  AgentToolDefinition(
+  const AgentToolDefinition(
     name: DayAgentToolNames.matchToCorpus,
     description:
         'Find existing task candidates for a capture phrase. Use for cheap '
@@ -185,7 +150,7 @@ const dayAgentTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
-  AgentToolDefinition(
+  const AgentToolDefinition(
     name: DayAgentToolNames.linkCapturePhraseToTask,
     description: 'Attach a parsed capture item to an existing task.',
     parameters: {
@@ -198,7 +163,7 @@ const dayAgentTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
-  AgentToolDefinition(
+  const AgentToolDefinition(
     name: DayAgentToolNames.breakCaptureLink,
     description: 'Remove a parsed capture item task link.',
     parameters: {
@@ -210,7 +175,7 @@ const dayAgentTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
-  AgentToolDefinition(
+  const AgentToolDefinition(
     name: DayAgentToolNames.surfacePendingDecisions,
     description:
         'List overdue, in-progress, missed-recurring, and due-today task '
@@ -230,7 +195,7 @@ const dayAgentTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
-  AgentToolDefinition(
+  const AgentToolDefinition(
     name: DayAgentToolNames.applyTriage,
     description:
         'Apply a reconcile triage action. Actions: today, doNow, defer, '
@@ -252,7 +217,7 @@ const dayAgentTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
-  AgentToolDefinition(
+  const AgentToolDefinition(
     name: DayAgentToolNames.createTaskFromPhrase,
     description:
         'Create a real task from a capture phrase and return the new taskId. '
@@ -270,7 +235,7 @@ const dayAgentTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
-  AgentToolDefinition(
+  const AgentToolDefinition(
     name: DayAgentToolNames.draftDayPlan,
     description:
         'Persist a drafted day plan. The model supplies blocks and optional '
@@ -429,7 +394,7 @@ const dayAgentTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
-  AgentToolDefinition(
+  const AgentToolDefinition(
     name: DayAgentToolNames.summarizeRecentPatterns,
     description:
         'Return transient learning-card payloads from recent day-agent '
@@ -446,7 +411,7 @@ const dayAgentTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
-  AgentToolDefinition(
+  const AgentToolDefinition(
     name: DayAgentToolNames.proposePlanDiff,
     description:
         'Propose a structured diff against an existing day plan. Emits a '
@@ -550,7 +515,7 @@ const dayAgentTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
-  AgentToolDefinition(
+  const AgentToolDefinition(
     name: DayAgentToolNames.proposeKnowledge,
     description:
         'Durably remember something about how the user wants to be planned '
@@ -602,7 +567,7 @@ const dayAgentTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
-  AgentToolDefinition(
+  const AgentToolDefinition(
     name: DayAgentToolNames.issueDayDirective,
     description:
         'Issue (or revise) your directive for one day: the distilled ledger '
@@ -729,7 +694,7 @@ const dayAgentTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
-  AgentToolDefinition(
+  const AgentToolDefinition(
     name: DayAgentToolNames.raiseDayStatus,
     description:
         "Raise a typed status event for this wake's day — the upward channel "
@@ -775,7 +740,7 @@ const dayAgentTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
-  AgentToolDefinition(
+  const AgentToolDefinition(
     name: DayAgentToolNames.writeDaySummary,
     description:
         'Write your contemporaneous summary of a day, in your own words, for '

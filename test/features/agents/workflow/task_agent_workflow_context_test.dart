@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
+import 'package:lotti/features/agents/workflow/task_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -137,6 +138,16 @@ void main() {
             AgentMessageKind.observation,
           ),
         ).thenAnswer((_) async => observations);
+        // The bounded recall reads the newest rows, as the query's LIMIT does.
+        when(
+          () => mockAgentRepository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.observation,
+            limit: taskObservationLookback,
+          ),
+        ).thenAnswer(
+          (_) async => observations.take(taskObservationLookback).toList(),
+        );
         when(
           () => mockAiInputRepository.buildProjectContextJsonForTask(taskId),
         ).thenAnswer((_) async => projectContextJson);
@@ -373,7 +384,7 @@ void main() {
       });
 
       test(
-        'shows "(no content)" for observation with missing payload',
+        'leaves out an observation with missing payload',
         () async {
           final obs =
               AgentDomainEntity.agentMessage(
@@ -395,12 +406,13 @@ void main() {
           final message = await executeAndCaptureMessage(observations: [obs]);
 
           expect(message, isNotNull);
-          expect(message, contains('(no content)'));
+          expect(message, isNot(contains('(no content)')));
+          expect(message, isNot(contains('## Agent Journal')));
         },
       );
 
       test(
-        'shows "(no content)" for observation with null contentEntryId',
+        'leaves out an observation with null contentEntryId',
         () async {
           final obs =
               AgentDomainEntity.agentMessage(
@@ -417,7 +429,8 @@ void main() {
           final message = await executeAndCaptureMessage(observations: [obs]);
 
           expect(message, isNotNull);
-          expect(message, contains('(no content)'));
+          expect(message, isNot(contains('(no content)')));
+          expect(message, isNot(contains('## Agent Journal')));
         },
       );
 
@@ -936,7 +949,7 @@ void main() {
       });
 
       test(
-        'shows "(no content)" for observation with empty string text payload',
+        'leaves out an observation with empty string text payload',
         () async {
           final obs =
               AgentDomainEntity.agentMessage(
@@ -966,12 +979,13 @@ void main() {
           final message = await executeAndCaptureMessage(observations: [obs]);
 
           expect(message, isNotNull);
-          expect(message, contains('(no content)'));
+          expect(message, isNot(contains('(no content)')));
+          expect(message, isNot(contains('## Agent Journal')));
         },
       );
 
       test(
-        'shows "(no content)" for observation with non-string text payload',
+        'leaves out an observation with non-string text payload',
         () async {
           final obs =
               AgentDomainEntity.agentMessage(
@@ -1001,7 +1015,8 @@ void main() {
           final message = await executeAndCaptureMessage(observations: [obs]);
 
           expect(message, isNotNull);
-          expect(message, contains('(no content)'));
+          expect(message, isNot(contains('(no content)')));
+          expect(message, isNot(contains('## Agent Journal')));
         },
       );
 
@@ -1724,9 +1739,8 @@ void main() {
         final message = await executeAndCaptureMessage(observations: [obs]);
 
         expect(message, isNotNull);
-        // Should not crash; observation renders with fallback text.
-        expect(message, contains('## Agent Journal'));
-        expect(message, contains('(no content)'));
+        // Should not crash; the wake goes ahead without the unreadable note.
+        expect(message, isNot(contains('## Agent Journal')));
         // No critical section since payload resolution failed.
         expect(message, isNot(contains('Prior Critical Observations')));
       });

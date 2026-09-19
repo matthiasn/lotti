@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/task_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_editor.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
@@ -175,6 +176,13 @@ void main() {
           () => mockAgentRepository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockAgentRepository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.observation,
+            limit: taskObservationLookback,
           ),
         ).thenAnswer((_) async => []);
         // Template + provider resolution now precedes the task-details load

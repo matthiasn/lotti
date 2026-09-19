@@ -4,7 +4,6 @@ import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/event_agent_context_builder.dart';
 import 'package:mocktail/mocktail.dart';
@@ -180,22 +179,15 @@ void main() {
     test('renders event metadata, linked block, recap, observations, '
         'triggers — and never the rating', () {
       final report = makeTestReport(content: '# Earlier recap\nNice night.');
-      final observation = makeTestMessage(
-        kind: AgentMessageKind.observation,
-        contentEntryId: 'payload-1',
+      final observation = makeTestRecalledObservation(
+        'send the album to the group',
+        at: DateTime(2026, 9, 1, 21),
       );
-      final payloads = {
-        'payload-1': makeTestMessagePayload(
-          id: 'payload-1',
-          content: const {'text': 'send the album to the group'},
-        ),
-      };
 
       final message = builder.buildUserMessage(
         eventEntity: eventEntity(note: 'My note about the night.'),
         lastReport: report,
         observations: [observation],
-        observationPayloads: payloads,
         linkedEntriesContext: '### Photos (3)\n- toast on the rooftop',
         triggerTokens: {'event-001', 'img-1'},
       );
@@ -207,7 +199,10 @@ void main() {
       expect(message, contains('### Photos (3)'));
       expect(message, contains('## Previous Recap'));
       expect(message, contains('Nice night.'));
-      expect(message, contains('send the album to the group'));
+      expect(
+        message,
+        contains('- [2026-09-01T21:00:00.000] send the album to the group'),
+      );
       expect(message, contains('## Trigger Tokens'));
       // Rating/cover are deliberately never surfaced to the model.
       expect(message, isNot(contains('4.5')));
@@ -220,7 +215,6 @@ void main() {
         eventEntity: eventEntity(),
         lastReport: null,
         observations: const [],
-        observationPayloads: const {},
         linkedEntriesContext: '',
         triggerTokens: const {},
       );
@@ -238,7 +232,6 @@ void main() {
         eventEntity: note(text: 'not an event', id: 'note-x'),
         lastReport: null,
         observations: const [],
-        observationPayloads: const {},
         linkedEntriesContext: '',
         triggerTokens: const {},
       );
@@ -348,33 +341,6 @@ void main() {
       ]);
 
       expect(builder.extractFinalAssistantContent(manager), 'real content');
-    });
-  });
-
-  group('resolveObservationPayloads', () {
-    test('batch-resolves payloads keyed by id', () async {
-      final observation = makeTestMessage(
-        kind: AgentMessageKind.observation,
-        contentEntryId: 'payload-1',
-      );
-      final payload = makeTestMessagePayload(id: 'payload-1');
-      when(
-        () => agentRepository.getEntitiesByIds(any()),
-      ).thenAnswer((_) async => {'payload-1': payload});
-
-      final result = await builder.resolveObservationPayloads([observation]);
-
-      expect(result.keys, ['payload-1']);
-      expect(result['payload-1'], payload);
-    });
-
-    test('returns empty when there are no payload ids', () async {
-      final result = await builder.resolveObservationPayloads([
-        makeTestMessage(kind: AgentMessageKind.observation),
-      ]);
-
-      expect(result, isEmpty);
-      verifyNever(() => agentRepository.getEntitiesByIds(any()));
     });
   });
 }

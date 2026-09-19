@@ -865,7 +865,9 @@ void main() {
         );
       });
 
-      test('records zero observations from empty array', () async {
+      // An empty call is refused, so the model resends real observations
+      // instead of being told it recorded nothing.
+      test('refuses an empty observations array', () async {
         final toolCalls = [
           ChatCompletionMessageToolCall(
             id: 'call-obs',
@@ -889,7 +891,7 @@ void main() {
         verify(
           () => mockManager.addToolResponse(
             toolCallId: 'call-obs',
-            response: 'Recorded 0 observation(s).',
+            response: 'Error: "observations" must be a non-empty array.',
           ),
         ).called(1);
       });
@@ -951,7 +953,7 @@ void main() {
         verify(
           () => mockManager.addToolResponse(
             toolCallId: 'call-obs',
-            response: 'Error: "observations" must be an array.',
+            response: 'Error: "observations" must be a non-empty array.',
           ),
         ).called(1);
       });

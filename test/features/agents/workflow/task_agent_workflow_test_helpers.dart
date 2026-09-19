@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
+import 'package:lotti/features/agents/workflow/task_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -178,6 +179,13 @@ void stubPreExecuteDefaults({
     () => mockAgentRepository.getMessagesByKind(
       agentId,
       AgentMessageKind.observation,
+    ),
+  ).thenAnswer((_) async => []);
+  when(
+    () => mockAgentRepository.getMessagesByKind(
+      agentId,
+      AgentMessageKind.observation,
+      limit: taskObservationLookback,
     ),
   ).thenAnswer((_) async => []);
   when(
