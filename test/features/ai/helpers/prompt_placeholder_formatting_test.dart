@@ -41,7 +41,9 @@ JournalEntry _entry({String id = 'entry-1', String? text}) => JournalEntry(
 /// Printable text mixed with every character JSON must escape.
 const _awkwardChars = 'ab Z9"\\\n\r\t\b\f\u0000\u0001\u001b\u001fé→';
 
-final _awkwardText = glados.any.stringOf(_awkwardChars);
+final glados.Generator<String> _awkwardText = glados.any.stringOf(
+  _awkwardChars,
+);
 
 AudioTranscript _transcript(String text, DateTime created) => AudioTranscript(
   created: created,

@@ -151,9 +151,10 @@ from the ARB catalogs.
   seen, the first redacted sample and up to six `package:lotti/` stack frames
   from that sample. Errors sort before warnings, then by count.
 - **Slow queries**: grouped by database file *and* a normalised statement
-  (quoted literals and numbers to `?`, `IN (?, ?, ?)` to `(?...)`, whitespace
-  collapsed), with count, p50 / p95 / max / total elapsed, distinct `EXPLAIN
-  QUERY PLAN` shapes and distinct caller frames. The database is part of the
+  (quoted literals and numbers to `?` first, so any value list of two or more,
+  `IN (?, ?, ?)` or `IN (1, 'a')`, becomes `(?...)`; whitespace collapsed),
+  with count, p50 / p95 / max / total elapsed, distinct `EXPLAIN QUERY PLAN`
+  shapes and distinct caller frames. The database is part of the
   key because a `BEGIN` on the agent database and one on the sync database
   queue behind different writer locks. The caller frame is the first app frame
   below the transaction wrappers (`runInTransaction`, `withVcScope`,
