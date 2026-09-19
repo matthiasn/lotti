@@ -373,6 +373,37 @@ void main() {
     );
 
     test(
+      'accept is a no-op while a per-row resolve is in flight — only the row '
+      'round-trip may write the plan',
+      () async {
+        final gate = Completer<void>();
+        final gatedAgent = _GatedAcceptAgent(gate: gate);
+        final container = makeContainer(overrideAgent: gatedAgent);
+        final notifier = container.read(
+          refineControllerProvider(draft).notifier,
+        )..beginListening(resetTranscript: true);
+        await notifier.finishWithTranscript('move client review later');
+        final diff = container.read(refineControllerProvider(draft)).diff!;
+        final first = diff.changes.first;
+
+        final resolve = notifier.rejectChange(first.id);
+        await notifier.accept();
+        gate.complete();
+        await resolve;
+
+        final state = container.read(refineControllerProvider(draft));
+        expect(gatedAgent.acceptCalls, 0);
+        expect(state.accepting, isFalse);
+        expect(state.phase, RefinePhase.diffReady);
+        expect(state.decisionFor(first), PlanDiffChangeDecision.rejected);
+        expect(
+          state.decisionFor(diff.changes[1]),
+          PlanDiffChangeDecision.pending,
+        );
+      },
+    );
+
+    test(
       'a proposal in flight learns that its controller was disposed',
       () async {
         final gate = Completer<void>();

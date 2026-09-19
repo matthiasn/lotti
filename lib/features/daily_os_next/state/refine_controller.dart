@@ -175,8 +175,10 @@ class RefineController extends Notifier<RefineState> {
     final diff = state.diff;
     // Re-entry guard: a second tap while the first round-trip is in
     // flight would start a second future whose completion re-emits
-    // `accepted` and double-pops the host route.
-    if (diff == null || state.accepting) return;
+    // `accepted` and double-pops the host route. A row resolve in flight
+    // blocks it too — whichever round-trip landed last would own
+    // `currentPlan`.
+    if (diff == null || state.decisionInFlight) return;
     final agent = ref.read(dayAgentProvider);
     final itemIndices = _indicesForDecision(PlanDiffChangeDecision.pending);
     if (itemIndices.isEmpty) return;
