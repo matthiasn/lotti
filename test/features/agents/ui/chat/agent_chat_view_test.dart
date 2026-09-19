@@ -934,6 +934,72 @@ void main() {
     expect(find.textContaining('Message 0'), findsNothing);
   });
 
+  testWidgets('switching to an agent that is already sending keeps the '
+      "reader's place instead of treating it as a new send", (tester) async {
+    List<AgentChatMessage> transcript(String agentId) => [
+      for (var index = 0; index < 30; index++)
+        AgentChatMessage(
+          id: '$agentId-$index',
+          role: AgentChatRole.agent,
+          text: 'Message $index with enough text to occupy a row.',
+          createdAt: DateTime(2026, 8, 11, 9, index),
+        ),
+    ];
+    var agentId = 'goal-1';
+    var isSending = false;
+    late StateSetter updateHost;
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        StatefulBuilder(
+          builder: (context, setState) {
+            updateHost = setState;
+            return Scaffold(
+              body: SizedBox(
+                height: 420,
+                child: AgentChatView(
+                  agentId: agentId,
+                  agentName: 'Juno',
+                  draft: '',
+                  isSending: isSending,
+                  history: AsyncData(transcript(agentId)),
+                  scrollOnReplies: false,
+                  onDraftChanged: (_) {},
+                  onSend: () {},
+                  onRetry: () {},
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView), const Offset(0, 5000));
+    await tester.pumpAndSettle();
+
+    ScrollPosition position() => tester
+        .state<ScrollableState>(
+          find.descendant(
+            of: find.byType(ListView),
+            matching: find.byType(Scrollable),
+          ),
+        )
+        .position;
+    expect(position().pixels, 0);
+
+    updateHost(() {
+      agentId = 'goal-2';
+      isSending = true;
+    });
+    await tester.pump();
+    await tester.pump();
+
+    // The other agent's in-flight send predates this view, so it is not
+    // the reader's own send: nothing pulls the transcript down.
+    expect(position().pixels, 0);
+    expect(find.textContaining('Message 0'), findsOneWidget);
+  });
+
   group('voice input', () {
     testWidgets('shows a mic button when idle with no text', (tester) async {
       await tester.pumpWidget(
