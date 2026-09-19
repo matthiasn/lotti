@@ -2000,6 +2000,55 @@ void main() {
     );
   });
 
+  group('AiSettingsPage — Add provider, dismissed picker', () {
+    testWidgets(
+      'dismissing the FTUE picker neither saves the opt-out flag nor opens '
+      'the create-provider form',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        final mockSettingsDb = getIt<SettingsDb>() as MockSettingsDb;
+        final spy = _PushSpy();
+        await pumpWith(
+          tester: tester,
+          providers: [
+            buildProvider(id: 'p1', type: InferenceProviderType.gemini),
+          ],
+          models: const <AiConfig>[],
+          profiles: const <AiConfig>[],
+          navigatorObservers: [spy],
+        );
+        await settleTimers(tester);
+
+        tester
+            .widget<AiSettingsFloatingActionButton>(
+              find.byType(AiSettingsFloatingActionButton),
+            )
+            .onPressed();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.byType(AiPickProviderModal), findsOneWidget);
+        final pushBaseline = spy.pushed.length;
+
+        Navigator.of(tester.element(find.byType(AiPickProviderModal))).pop();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(AiPickProviderModal), findsNothing);
+        expect(find.byType(InferenceProviderEditPage), findsNothing);
+        expect(spy.pushed.length, pushBaseline);
+        verifyNever(
+          () => mockSettingsDb.saveSettingsItem(
+            kAiPickProviderDismissedKey,
+            any(),
+          ),
+        );
+        await settleTimers(tester);
+      },
+    );
+  });
+
   // NOTE: The providers-stream error branch in `_buildBodySlivers`
   // (`if (providersAsync.hasError && providers == null)` → renders
   // `ConfigErrorState` with the RETRY `ref.invalidate(...)` callback)
