@@ -14673,18 +14673,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get syncStepAiSettings => 'AI-instellingen';
 
   @override
-  String get syncStepBackfillAgentEntityClocks =>
-      'Klokken met een eenheid van vulmiddel';
-
-  @override
-  String get syncStepBackfillAgentLinkClocks =>
-      'Klokken met een koppeling tussen backfillmiddel en klokken';
-
-  @override
   String get syncStepCategories => 'Categorieën';
-
-  @override
-  String get syncStepComplete => 'Voltooid';
 
   @override
   String get syncStepDashboards => 'Dashboards';

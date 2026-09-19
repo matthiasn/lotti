@@ -14630,17 +14630,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get syncStepAiSettings => 'AI-indstillinger';
 
   @override
-  String get syncStepBackfillAgentEntityClocks =>
-      'Tilbagefyldningsagent-entitetsure';
-
-  @override
-  String get syncStepBackfillAgentLinkClocks => 'Tilbagefyldningsagent-linkure';
-
-  @override
   String get syncStepCategories => 'Kategorier';
-
-  @override
-  String get syncStepComplete => 'Komplet';
 
   @override
   String get syncStepDashboards => 'Dashboards';

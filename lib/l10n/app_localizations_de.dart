@@ -14740,18 +14740,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncStepAiSettings => 'KI-Einstellungen';
 
   @override
-  String get syncStepBackfillAgentEntityClocks =>
-      'Vektoruhren für Agent-Entitäten nachtragen';
-
-  @override
-  String get syncStepBackfillAgentLinkClocks =>
-      'Vektoruhren für Agent-Links nachtragen';
-
-  @override
   String get syncStepCategories => 'Kategorien';
-
-  @override
-  String get syncStepComplete => 'Abgeschlossen';
 
   @override
   String get syncStepDashboards => 'Dashboards';

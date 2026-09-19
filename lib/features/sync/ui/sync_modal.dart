@@ -5,28 +5,36 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/confirmation_progress_modal.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
 abstract final class SyncModal {
+  /// The steps this modal offers, in display order, with their labels.
+  ///
+  /// Settings only. Agent entities and links are journal-side data and are
+  /// offered on the entries path instead — the "Send message history" sheet
+  /// has one "Agent entities" checkbox covering both. The two agent
+  /// clock-backfill steps are a repair, not a choice of what to send, and
+  /// live on the Backfill sync page.
+  static final List<({SyncStep step, String Function(AppLocalizations) label})>
+  _offeredSteps = [
+    (step: SyncStep.measurables, label: (m) => m.syncStepMeasurables),
+    (step: SyncStep.labels, label: (m) => m.syncStepLabels),
+    (step: SyncStep.categories, label: (m) => m.syncStepCategories),
+    (step: SyncStep.dashboards, label: (m) => m.syncStepDashboards),
+    (step: SyncStep.habits, label: (m) => m.syncStepHabits),
+    (step: SyncStep.aiSettings, label: (m) => m.syncStepAiSettings),
+    (
+      step: SyncStep.savedTaskFilters,
+      label: (m) => m.syncStepSavedTaskFilters,
+    ),
+  ];
+
   static Future<void> show(BuildContext context) async {
     final container = ProviderScope.containerOf(context);
-    // Settings only. Agent entities and links are journal-side data and are
-    // offered on the entries path instead — the "Send message history" sheet
-    // has one "Agent entities" checkbox covering both. The two agent
-    // clock-backfill steps are a repair, not a choice of what to send, and
-    // live on the Backfill sync page.
-    const orderedSteps = <SyncStep>[
-      SyncStep.measurables,
-      SyncStep.labels,
-      SyncStep.categories,
-      SyncStep.dashboards,
-      SyncStep.habits,
-      SyncStep.aiSettings,
-      SyncStep.savedTaskFilters,
-    ];
     final selectedStepsNotifier = ValueNotifier<Set<SyncStep>>(
-      orderedSteps.toSet(),
+      {for (final offered in _offeredSteps) offered.step},
     );
 
     bool hasSelection() => selectedStepsNotifier.value.isNotEmpty;
@@ -45,9 +53,9 @@ abstract final class SyncModal {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              for (final step in orderedSteps)
+              for (final (:step, :label) in _offeredSteps)
                 DesignSystemSelectionRow(
-                  title: _getStepName(context, step),
+                  title: label(context.messages),
                   type: DesignSystemSelectionRowType.multiSelect,
                   selected: selectedSteps.contains(step),
                   showSelectedBackground: false,
@@ -83,9 +91,9 @@ abstract final class SyncModal {
             final selectedSteps = syncState.selectedSteps.isEmpty
                 ? selectedStepsNotifier.value
                 : syncState.selectedSteps;
-            final stepsToShow = orderedSteps
-                .where(selectedSteps.contains)
-                .toList();
+            final stepsToShow = _offeredSteps.where(
+              (offered) => selectedSteps.contains(offered.step),
+            );
             final tokens = context.designTokens;
 
             return Column(
@@ -161,10 +169,11 @@ abstract final class SyncModal {
                     ],
                   ),
                 SizedBox(height: tokens.spacing.step5),
-                for (final step in stepsToShow)
+                for (final (:step, :label) in stepsToShow)
                   _buildStepIndicator(
                     context,
                     step,
+                    label(context.messages),
                     currentStep,
                     isSyncing,
                     syncState.stepProgress[step],
@@ -181,6 +190,7 @@ abstract final class SyncModal {
   static Widget _buildStepIndicator(
     BuildContext context,
     SyncStep step,
+    String label,
     SyncStep currentStep,
     bool isSyncing,
     StepProgress? stepProgress,
@@ -225,7 +235,7 @@ abstract final class SyncModal {
           SizedBox(width: tokens.spacing.step3),
           Expanded(
             child: Text(
-              _getStepName(context, step),
+              label,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: labelColor,
                 fontWeight: isCompleted
@@ -248,30 +258,5 @@ abstract final class SyncModal {
         ],
       ),
     );
-  }
-
-  static String _getStepName(BuildContext context, SyncStep step) {
-    switch (step) {
-      case SyncStep.measurables:
-        return context.messages.syncStepMeasurables;
-      case SyncStep.labels:
-        return context.messages.syncStepLabels;
-      case SyncStep.categories:
-        return context.messages.syncStepCategories;
-      case SyncStep.dashboards:
-        return context.messages.syncStepDashboards;
-      case SyncStep.habits:
-        return context.messages.syncStepHabits;
-      case SyncStep.aiSettings:
-        return context.messages.syncStepAiSettings;
-      case SyncStep.savedTaskFilters:
-        return context.messages.syncStepSavedTaskFilters;
-      case SyncStep.backfillAgentEntityClocks:
-        return context.messages.syncStepBackfillAgentEntityClocks;
-      case SyncStep.backfillAgentLinkClocks:
-        return context.messages.syncStepBackfillAgentLinkClocks;
-      case SyncStep.complete:
-        return context.messages.syncStepComplete;
-    }
   }
 }

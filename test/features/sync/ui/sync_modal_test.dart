@@ -365,13 +365,7 @@ void main() {
       // Agent data is journal-side, not settings: the entries path offers it
       // (one "Agent entities" checkbox in Send message history covering both
       // entities and links), and the two clock backfills are a repair on the
-      // Backfill sync page. None of the four may reappear here.
-      expect(
-        find.text(messages.syncStepBackfillAgentEntityClocks),
-        findsNothing,
-      );
-      expect(find.text(messages.syncStepBackfillAgentLinkClocks), findsNothing);
-
+      // Backfill sync page. Exactly the seven settings steps are offered.
       final rows = tester
           .widgetList<DesignSystemSelectionRow>(
             find.byType(DesignSystemSelectionRow),
