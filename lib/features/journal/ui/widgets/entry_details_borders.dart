@@ -143,9 +143,8 @@ class _PulsingBorderState extends State<PulsingBorder>
 
   @override
   Widget build(BuildContext context) {
-    final dpr =
-        MediaQuery.maybeOf(context)?.devicePixelRatio ??
-        View.of(context).devicePixelRatio;
+    // The root View already provides a MediaQuery, so a ratio is always there.
+    final dpr = MediaQuery.devicePixelRatioOf(context);
     // Derive a slight tint shift based on current opacity to increase visibility
     const low = 0.4;
     final p = ((_opacity.value - low) / (1 - low)).clamp(0.0, 1.0);

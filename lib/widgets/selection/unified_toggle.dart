@@ -97,37 +97,15 @@ class UnifiedToggle extends StatelessWidget {
     }
   }
 
-  Color _getInactiveThumbColor(BuildContext context) {
-    switch (variant) {
-      case UnifiedToggleVariant.cupertino:
-        // CupertinoSwitch default behavior
-        return context.colorScheme.outline;
-      case UnifiedToggleVariant.normal:
-      case UnifiedToggleVariant.warning:
-      case UnifiedToggleVariant.priority:
-      case UnifiedToggleVariant.archived:
-        // FormSwitch default behavior
-        return context.colorScheme.outline;
-    }
-  }
+  // The cupertino variant returns early in [build], so only the material
+  // variants reach these — and they all share FormSwitch's inactive styling.
+  Color _getInactiveThumbColor(BuildContext context) =>
+      context.colorScheme.outline;
 
-  Color _getInactiveTrackColor(BuildContext context) {
-    switch (variant) {
-      case UnifiedToggleVariant.cupertino:
-        // CupertinoSwitch default behavior
-        return context.colorScheme.outline.withValues(
-          alpha: _UnifiedToggleConstants.inactiveTrackOpacity,
-        );
-      case UnifiedToggleVariant.normal:
-      case UnifiedToggleVariant.warning:
-      case UnifiedToggleVariant.priority:
-      case UnifiedToggleVariant.archived:
-        // FormSwitch default behavior - preserve exact opacity
-        return context.colorScheme.outline.withValues(
-          alpha: _UnifiedToggleConstants.inactiveTrackOpacity,
-        );
-    }
-  }
+  Color _getInactiveTrackColor(BuildContext context) =>
+      context.colorScheme.outline.withValues(
+        alpha: _UnifiedToggleConstants.inactiveTrackOpacity,
+      );
 
   @override
   Widget build(BuildContext context) {

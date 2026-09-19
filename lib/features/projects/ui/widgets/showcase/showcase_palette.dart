@@ -17,9 +17,6 @@ class ShowcasePalette {
   static Color groupedCardSurface(BuildContext context) =>
       context.designTokens.colors.background.level02;
 
-  static Color healthSurface(BuildContext context) =>
-      context.designTokens.colors.background.alternative01;
-
   static Color selectedRow(BuildContext context) =>
       context.designTokens.colors.surface.selected;
 
