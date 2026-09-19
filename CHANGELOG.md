@@ -4,6 +4,88 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.19]
+
+### Added
+
+- **Check-ins in the Logbook.** With People turned on, your check-ins appear
+  in the Logbook at their time, named for the person, and open on that
+  person's page. They have their own "Check-in" filter, which is switched on
+  for filters you saved before.
+- **Paste a picture as a task's cover or a person's banner.** With an image
+  on your clipboard, a task's ••• menu offers "Paste as cover", and the
+  Banner row of the person form offers "Paste" beside Add banner / Change.
+
+### Changed
+
+- **An opened check-in looks and works like an opened task.** Its type,
+  start, length and feeling sit in the header as chips you can change in
+  place, the note you logged it with opens its timeline, and a floating bar
+  at the bottom adds a dictation, a comment or photos.
+- **The check-in log on a person's page behaves like the task list.**
+  Hovering highlights the whole row instead of a box inside the card, each
+  row shows that it opens, and what a check-in holds sits on its first line
+  beside the date.
+- **On desktop, the person chat opens beside the person's page.** It used to
+  replace the page; now it is a sidebar with a close button, and the page
+  you are asking about stays in view.
+- **Chat about a task from the top of its AI summary.** The chat button is now
+  a round icon in the summary's header, left of the read-aloud button, and the
+  duplicate chat icon at the top of the task page is gone.
+- **Add a person from the bottom of the People list.** The "Add person" button
+  now sits where "Add a task" does: in the bottom corner of the list on
+  desktop, and beside Navigate at the bottom of the screen on phones. It is no
+  longer in the list's header.
+- **Tapping a check-in reminder now pauses it for an hour.** The reminder
+  used to keep rotating over the person's page you had just opened. Now the
+  page says the reminder is paused and until when, with *Snooze longer* if
+  an hour is not enough; it comes back on its own unless you log a
+  check-in.
+- **Better names in dictated check-ins.** After the sound-alike correction,
+  your profile's thinking model checks the transcript for names it still got
+  wrong, such as a name heard as a different word, and fixes those it can
+  match to the person and the names you listed for them.
+- **A calmer voice waveform in chat.** While you dictate a chat message, the
+  waveform is a row of thin bars right in the message bar: pauses show as
+  dots, speech as bars, the newest on the right. The framed box and the
+  oversized bars that moved with room noise are gone.
+
+### Fixed
+
+- **Your message shows in a chat as soon as you send it.** In both the goal
+  chat and the person chat it used to appear only once the agent's reply was
+  ready, so the chat seemed to ignore you while the agent worked.
+- **A person's briefing reads what their check-in photos show.** When a
+  check-in photo has an AI image analysis, the agent now reads it instead of
+  treating the photo as "no description yet".
+- **Accepting a day-plan change can no longer leave a block that ends before
+  it starts.** When a suggested change moved the same block twice, the second
+  move was checked against where the block used to be rather than where the
+  first move put it. Such a change is now refused instead of breaking the
+  plan.
+- **Talking again while a single plan change was still saving no longer
+  loses the review.** When refining your day, tapping the voice button while
+  an accepted or rejected change was still being applied started a new
+  recording, and when the change landed the panel dropped back to an empty
+  review with nothing on it. The voice button now does nothing until that
+  change has been applied.
+- **A goal to keep a value at or above zero no longer shows as fully reached
+  when the value has dropped below zero.** Its progress now reads empty until
+  the goal is actually met.
+- **A reopened System health report kept its findings and digest apart.** When
+  the model's findings contained a collapsed section of their own, the report
+  shown after a restart split at that section, so part of the findings landed
+  inside the collapsed digest. The report now splits at the digest's own
+  section.
+- **System health groups more repeats of the same slow query together.** A
+  query listing numbers, such as `IN (1, 2, 3)`, or a quoted value with an
+  apostrophe in it, used to count as a new query for every different list, so
+  one busy query was spread over several rows. These now land in one row with
+  their combined count and timings.
+- **Swiping away What's New closes it properly.** On a phone, dragging the
+  What's New sheet down used to slide it off screen but leave it open
+  underneath, so your next tap was swallowed. It now closes fully.
+
 ## [1.1.18]
 
 ### Added
