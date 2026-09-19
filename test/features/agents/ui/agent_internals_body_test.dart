@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_activity_log.dart';
 import 'package:lotti/features/agents/ui/agent_conversation_log.dart';
 import 'package:lotti/features/agents/ui/agent_internals_body.dart';
+import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_inference_setup_sheet.dart';
@@ -139,13 +140,8 @@ void main() {
         // The Stats tab surfaces the template name as an ActionChip.
         expect(find.text(template.displayName), findsOneWidget);
 
-        // Tapping the chip exercises the `onPressed` closure that
-        // pushes `AgentTemplateDetailPage`. The chip lives below the
-        // fold of the test viewport; scroll it into view first so
-        // `tap` resolves to a real hit. We don't assert on the
-        // pushed page's contents (its own tests cover that and it
-        // requires extra provider scaffolding) — only that the
-        // closure runs without throwing.
+        expect(find.byType(AgentTemplateDetailPage), findsNothing);
+        // The chip lives below the fold; hit the actual navigation affordance.
         await tester.scrollUntilVisible(
           find.text(template.displayName),
           200,
@@ -155,6 +151,17 @@ void main() {
         );
         await tester.tap(find.text(template.displayName));
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+
+        final detail = find.byType(AgentTemplateDetailPage);
+        expect(detail, findsOneWidget);
+        expect(
+          tester.widget<AgentTemplateDetailPage>(detail).templateId,
+          template.id,
+        );
+        final route = ModalRoute.of(tester.element(detail));
+        expect(route?.isCurrent, isTrue);
+        expect(route?.canPop, isTrue);
       },
     );
   });

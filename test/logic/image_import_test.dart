@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
 import 'package:file_selector_platform_interface/file_selector_platform_interface.dart';
@@ -56,65 +57,54 @@ Uint8List _createMinimalJpegWithExif() {
   ]);
 }
 
-/// Creates a JPEG with valid GPS EXIF data
-/// GPS coordinates: 37.7749° N, 122.4194° W (San Francisco)
-Uint8List _createJpegWithGpsExif() {
+/// Minimal JPEG metadata with byte-correct TIFF-relative GPS offsets.
+/// Magnitudes are 37° 46′ 29.64″ and 122° 25′ 9.84″; no personal image is used.
+Uint8List _createJpegWithGpsExif({
+  required String latitudeRef,
+  required String longitudeRef,
+}) {
+  final tiff = ByteData(128);
+  void uint16(int offset, int value) =>
+      tiff.setUint16(offset, value, Endian.little);
+  void uint32(int offset, int value) =>
+      tiff.setUint32(offset, value, Endian.little);
+  void entry(int offset, int tag, int type, int count, int value) {
+    uint16(offset, tag);
+    uint16(offset + 2, type);
+    uint32(offset + 4, count);
+    uint32(offset + 8, value);
+  }
+
+  uint16(0, 0x4949); // Little-endian TIFF.
+  uint16(2, 42);
+  uint32(4, 8); // IFD0 immediately follows the header.
+  uint16(8, 1);
+  entry(10, 0x8825, 4, 1, 26); // GPS IFD follows IFD0's zero next pointer.
+  uint16(26, 4);
+  entry(28, 1, 2, 2, latitudeRef.codeUnitAt(0));
+  entry(40, 2, 5, 3, 80); // Three latitude rationals after the GPS IFD.
+  entry(52, 3, 2, 2, longitudeRef.codeUnitAt(0));
+  entry(64, 4, 5, 3, 104); // Three longitude rationals after latitude.
+  final rationals = [
+    (37, 1),
+    (46, 1),
+    (2964, 100),
+    (122, 1),
+    (25, 1),
+    (984, 100),
+  ];
+  for (var index = 0; index < rationals.length; index++) {
+    uint32(80 + index * 8, rationals[index].$1);
+    uint32(84 + index * 8, rationals[index].$2);
+  }
+
+  final app1Length = 2 + 6 + tiff.lengthInBytes;
   return Uint8List.fromList([
-    // JPEG SOI
-    0xFF, 0xD8,
-    // APP1 (EXIF) marker
-    0xFF, 0xE1,
-    // APP1 data length (needs to be large enough for GPS data)
-    0x00, 0xE0,
-    // EXIF header
-    0x45, 0x78, 0x69, 0x66, 0x00, 0x00, // "Exif\0\0"
-    // TIFF header (little-endian)
-    0x49, 0x49, // Byte order
-    0x2A, 0x00, // TIFF magic
-    0x08, 0x00, 0x00, 0x00, // Offset to first IFD
-    // IFD0
-    0x02, 0x00, // Number of entries
-    // Entry 1: DateTime (tag 0x0132)
-    0x32, 0x01, 0x02, 0x00, 0x14, 0x00, 0x00, 0x00, 0x32, 0x00, 0x00, 0x00,
-    // Entry 2: GPS IFD Pointer (tag 0x8825)
-    0x25, 0x88, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00, 0x50, 0x00, 0x00, 0x00,
-    // Next IFD offset
-    0x00, 0x00, 0x00, 0x00,
-    // DateTime value: "2024:01:15 10:20:30\0"
-    0x32, 0x30, 0x32, 0x34, 0x3A, 0x30, 0x31, 0x3A,
-    0x31, 0x35, 0x20, 0x31, 0x30, 0x3A, 0x32, 0x30,
-    0x3A, 0x33, 0x30, 0x00,
-    // GPS IFD (starts at offset 0x50)
-    0x04, 0x00, // Number of GPS entries
-    // GPSLatitudeRef (tag 0x0001) - 'N'
-    0x01, 0x00, 0x02, 0x00, 0x02, 0x00, 0x00, 0x00, 0x4E, 0x00, 0x00, 0x00,
-    // GPSLatitude (tag 0x0002) - 37° 46' 29.64"
-    0x02, 0x00, 0x05, 0x00, 0x03, 0x00, 0x00, 0x00, 0x90, 0x00, 0x00, 0x00,
-    // GPSLongitudeRef (tag 0x0003) - 'W'
-    0x03, 0x00, 0x02, 0x00, 0x02, 0x00, 0x00, 0x00, 0x57, 0x00, 0x00, 0x00,
-    // GPSLongitude (tag 0x0004) - 122° 25' 9.84"
-    0x04, 0x00, 0x05, 0x00, 0x03, 0x00, 0x00, 0x00, 0xA8, 0x00, 0x00, 0x00,
-    // Next IFD offset
-    0x00, 0x00, 0x00, 0x00,
-    // Latitude data: 37/1, 46/1, 2964/100
-    0x25, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, // 37/1
-    0x2E, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, // 46/1
-    0x94, 0x0B, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, // 2964/100
-    // Longitude data: 122/1, 25/1, 984/100
-    0x7A, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, // 122/1
-    0x19, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, // 25/1
-    0xD8, 0x03, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, // 984/100
-    // Padding
-    ...List.filled(50, 0x00),
-    // SOF0
-    0xFF, 0xC0, 0x00, 0x0B, 0x08, 0x00, 0x01, 0x00, 0x01, 0x01, 0x01, 0x11,
-    0x00,
-    // SOS
-    0xFF, 0xDA, 0x00, 0x08, 0x01, 0x01, 0x00, 0x00, 0x3F, 0x00,
-    // Image data
-    0xD2, 0x00,
-    // EOI
-    0xFF, 0xD9,
+    0xff, 0xd8, // JPEG SOI.
+    0xff, 0xe1, app1Length >> 8, app1Length & 0xff,
+    ...'Exif'.codeUnits, 0, 0,
+    ...tiff.buffer.asUint8List(),
+    0xff, 0xd9,
   ]);
 }
 
@@ -1447,32 +1437,27 @@ void main() {
         expect(result, isNull);
       });
 
-      test('attempts to extract GPS from hand-crafted EXIF data', () async {
-        // Note: Hand-crafted EXIF binary data is extremely difficult to get
-        // exactly right for native_exif library parsing. This test demonstrates
-        // that the extraction code handles such data gracefully.
-        //
-        // Expected coordinates if parsed: 37.7749° N, 122.4194° W (San Francisco)
-        // Coordinate parsing is covered by exif_data_extractor_test.dart.
-        final jpegWithGps = _createJpegWithGpsExif();
-        final timestamp = DateTime(2024, 1, 15, 10, 20, 30);
+      for (final (latitudeRef, longitudeRef, latitude, longitude, geohash) in [
+        ('N', 'W', 37.7749, -122.4194, '9q8yyk8ytpxr'),
+        ('S', 'E', -37.7749, 122.4194, 'q9r11er16b28'),
+      ]) {
+        test('extracts exact GPS coordinates from valid JPEG metadata '
+            '$latitudeRef/$longitudeRef', () async {
+          final jpegWithGps = _createJpegWithGpsExif(
+            latitudeRef: latitudeRef,
+            longitudeRef: longitudeRef,
+          );
+          final timestamp = DateTime(2024, 1, 15, 10, 20, 30);
 
-        final result = await extractGpsCoordinates(jpegWithGps, timestamp);
+          final result = await extractGpsCoordinates(jpegWithGps, timestamp);
 
-        // The native_exif library may not parse our hand-crafted bytes correctly,
-        // but the important thing is that extraction doesn't crash and returns
-        // either valid Geolocation or null gracefully.
-        if (result != null) {
-          // If it did parse, verify the structure is valid
-          expect(result.latitude, isA<double>());
-          expect(result.longitude, isA<double>());
-          expect(result.geohashString, isNotEmpty);
+          expect(result, isNotNull);
+          expect(result!.latitude, closeTo(latitude, 1e-8));
+          expect(result.longitude, closeTo(longitude, 1e-8));
+          expect(result.geohashString, geohash);
           expect(result.createdAt, timestamp);
-        } else {
-          // Null is acceptable for hand-crafted EXIF that doesn't parse
-          expect(result, isNull);
-        }
-      });
+        });
+      }
 
       test('returns null for image without GPS EXIF data', () async {
         // Minimal JPEG without GPS

@@ -3796,87 +3796,66 @@ void main() {
     );
   });
 
-  /// Coverage for the no-op back affordances rendered by the create
-  /// chrome. In a single-page test surface `popAiSettingsDetail` bails
-  /// out silently (no NavService registered, no Beamer override) — we
-  /// don't need to assert navigation, just that the tap targets are
-  /// reachable and don't crash the widget. The taps still exercise the
-  /// `onPressed` callbacks lcov was reporting as uncovered.
+  /// Every create-mode back affordance pops a pushed editor or routes a
+  /// desktop detail slot back to the provider list when there is no stack.
   group('Create-mode back affordances', () {
-    testWidgets(
-      'tapping the SliverAppBar chevron does not crash and keeps the '
-      'create chrome rendered — exercises the leading IconButton.onPressed '
-      'arm at the top of the build',
-      (tester) async {
-        await _setTestSurface(tester, height: 1200);
-
-        await tester.pumpWidget(buildTestWidget());
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
-
-        await tester.tap(find.byIcon(LottiIcons.chevronLeft));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
-
-        final strings = l10n(tester);
-        expect(
+    final targets = <String, Finder Function(AppLocalizations)>{
+      'app bar chevron': (_) => find.byIcon(LottiIcons.chevronLeft),
+      'Back to providers': (strings) =>
           find.text(strings.aiProviderConnectBackToProviders),
-          findsOneWidget,
+      'Choose provider': (strings) => find.ancestor(
+        of: find.text(strings.aiProviderConnectStepChoose),
+        matching: find.byType(InkWell),
+      ),
+    };
+    for (final target in targets.entries) {
+      for (final pushed in [true, false]) {
+        testWidgets(
+          '${target.key} ${pushed ? 'pops to the previous route' : 'beams to the provider list'}',
+          (tester) async {
+            await _setTestSurface(tester, height: 1200);
+            final observer = _PopTrackingNavigatorObserver();
+            final beamedPaths = <String>[];
+            nav_service.beamToNamedOverride = beamedPaths.add;
+            addTearDown(() => nav_service.beamToNamedOverride = null);
+
+            await tester.pumpWidget(
+              buildTestWidget(
+                openFromRoute: pushed,
+                navigatorObservers: [observer],
+              ),
+            );
+            if (pushed) {
+              await tester.tap(
+                find.byKey(const ValueKey('open-provider-editor')),
+              );
+            }
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 400));
+            await tester.pump(const Duration(milliseconds: 100));
+            expect(observer.popCount, 0);
+            expect(beamedPaths, isEmpty);
+
+            final back = target.value(l10n(tester));
+            await tester.ensureVisible(back);
+            await tester.tap(back);
+            await tester.pump();
+            await tester.pump(const Duration(seconds: 1));
+            await tester.pump();
+
+            expect(observer.popCount, pushed ? 1 : 0);
+            expect(beamedPaths, pushed ? isEmpty : [aiSettingsParentRoute]);
+            if (pushed) {
+              expect(find.byType(InferenceProviderEditPage), findsNothing);
+              expect(
+                find.byKey(const ValueKey('open-provider-editor')),
+                findsOneWidget,
+              );
+            }
+          },
         );
-      },
-    );
-
-    testWidgets(
-      'tapping the footer "Back to providers" button exercises '
-      '_AddProviderFooterBar.onBack — the silent pop is correct in a '
-      'rootless test surface (no NavService, no Beamer)',
-      (tester) async {
-        await _setTestSurface(tester, height: 1200);
-
-        await tester.pumpWidget(buildTestWidget());
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
-
-        final strings = l10n(tester);
-        final back = find.text(strings.aiProviderConnectBackToProviders);
-        await tester.ensureVisible(back);
-        await tester.tap(back);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
-
-        // Form chrome still rendered — pop was a silent no-op, no crash.
-        expect(find.byType(InferenceProviderEditPage), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'tapping the Choose provider step on a wide viewport exercises '
-      '_AddProviderStepIndicator.onChoosePressed — the non-null branch '
-      'that renders the step as a Semantics button + InkWell, distinct '
-      'from the mobile (plain Text) branch',
-      (tester) async {
-        await _setTestSurface(tester, height: 1200);
-
-        await tester.pumpWidget(buildTestWidget());
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
-
-        final strings = l10n(tester);
-        final choose = find.text(strings.aiProviderConnectStepChoose);
-        expect(choose, findsOneWidget);
-
-        // The wide-viewport branch wraps the step in an InkWell so the
-        // user can re-open the picker without losing the form. Tap the
-        // InkWell parent to exercise the `onChoosePressed` callback.
-        await tester.tap(
-          find.ancestor(of: choose, matching: find.byType(InkWell)),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
-
-        expect(find.byType(InferenceProviderEditPage), findsOneWidget);
-      },
-    );
+      }
+    }
 
     testWidgets(
       'narrow viewports drop the breadcrumb row and still render the '
