@@ -1841,64 +1841,212 @@ void main() {
         },
       );
 
-      test('concurrent chains are isolated — rollback in one does not '
-          'affect the other', () async {
-        // Chain A: will fail; its messages must be discarded.
-        // Chain B: will succeed; its messages must be flushed.
-        final chainA = syncService
-            .runInTransaction<void>(() async {
-              await syncService.upsertEntity(testEntity);
-              throw Exception('chain A rollback');
-            })
-            .then<void>((_) {})
-            .catchError((_) {});
+      for (final rollbackFirst in [true, false]) {
+        test(
+          'concurrent chains isolate rollback when '
+          '${rollbackFirst ? 'rollback' : 'commit'} finishes first',
+          () {
+            fakeAsync((async) {
+              final releaseRollback = Completer<void>();
+              final releaseCommit = Completer<void>();
+              final failure = StateError('chain A rollback');
+              final enqueued = <SyncMessage>[];
+              final bindings =
+                  <(String, VectorClock?, SyncSequencePayloadType)>[];
+              final sequenceLog = MockSyncSequenceLogService();
+              when(
+                () => sequenceLog.recordSentEntry(
+                  entryId: any(named: 'entryId'),
+                  vectorClock: any(named: 'vectorClock'),
+                  payloadType: any(named: 'payloadType'),
+                ),
+              ).thenAnswer((invocation) async {
+                bindings.add((
+                  invocation.namedArguments[#entryId] as String,
+                  invocation.namedArguments[#vectorClock] as VectorClock?,
+                  invocation.namedArguments[#payloadType]
+                      as SyncSequencePayloadType,
+                ));
+              });
+              when(
+                () => mockOutboxService.enqueueMessage(any()),
+              ).thenAnswer((invocation) async {
+                enqueued.add(
+                  invocation.positionalArguments.single as SyncMessage,
+                );
+              });
+              final service = AgentSyncService(
+                repository: mockRepository,
+                outboxService: mockOutboxService,
+                vectorClockService: mockVectorClockService,
+                sequenceLogService: sequenceLog,
+              );
 
-        final chainB = syncService.runInTransaction(() async {
-          await syncService.upsertLink(testBasicLink);
-        });
+              // The repository boundary lets both callbacks overlap. SQLite's
+              // actual write atomicity is checked by agent_repository_test.
+              var rollbackReady = false;
+              var commitReady = false;
+              var rollbackObserved = false;
+              String? committedResult;
+              final rollingBack = service.runInTransaction<void>(() async {
+                await service.upsertEntity(testEntity);
+                rollbackReady = true;
+                await releaseRollback.future;
+                throw failure;
+              });
+              unawaited(
+                expectLater(rollingBack, throwsA(same(failure))).then(
+                  (_) => rollbackObserved = true,
+                ),
+              );
+              unawaited(
+                service
+                    .runInTransaction(() async {
+                      await service.upsertLink(testBasicLink);
+                      commitReady = true;
+                      await releaseCommit.future;
+                      return 'chain B committed';
+                    })
+                    .then((value) => committedResult = value),
+              );
+              try {
+                async.flushMicrotasks();
+                expect(rollbackReady, isTrue);
+                expect(commitReady, isTrue);
+                expect(rollbackObserved, isFalse);
+                expect(committedResult, isNull);
+                expect(enqueued, isEmpty);
+                expect(bindings, isEmpty);
 
-        await Future.wait([chainA, chainB]);
-
-        // Only chain B's single message (the link) should have been flushed.
-        // Chain A's entity message must have been discarded on rollback.
-        verify(
-          () => mockOutboxService.enqueueMessage(
-            any(that: isA<SyncAgentLink>()),
-          ),
-        ).called(1);
-        verifyNever(
-          () => mockOutboxService.enqueueMessage(
-            any(that: isA<SyncAgentEntity>()),
-          ),
+                final expectedMessages = [
+                  SyncMessage.agentLink(
+                    agentLink: testBasicLink.copyWith(vectorClock: testClock),
+                    status: SyncEntryStatus.update,
+                  ),
+                ];
+                final expectedBindings = [
+                  (
+                    testBasicLink.id,
+                    testClock,
+                    SyncSequencePayloadType.agentLink,
+                  ),
+                ];
+                if (rollbackFirst) {
+                  releaseRollback.complete();
+                  async.flushMicrotasks();
+                  expect(rollbackObserved, isTrue);
+                  expect(committedResult, isNull);
+                  expect(enqueued, isEmpty);
+                  expect(bindings, isEmpty);
+                  releaseCommit.complete();
+                } else {
+                  releaseCommit.complete();
+                  async.flushMicrotasks();
+                  expect(committedResult, 'chain B committed');
+                  expect(rollbackObserved, isFalse);
+                  expect(enqueued, expectedMessages);
+                  expect(bindings, expectedBindings);
+                  releaseRollback.complete();
+                }
+                async.flushMicrotasks();
+                expect(rollbackObserved, isTrue);
+                expect(committedResult, 'chain B committed');
+                expect(enqueued, expectedMessages);
+                expect(bindings, expectedBindings);
+                verify(
+                  () => mockRepository.upsertEntity(
+                    testEntity.copyWith(vectorClock: testClock),
+                  ),
+                ).called(1);
+                verify(
+                  () => mockRepository.upsertLink(
+                    testBasicLink.copyWith(vectorClock: testClock),
+                  ),
+                ).called(1);
+              } finally {
+                // Settle the expected failure even when an earlier assertion
+                // fails, so a useful mismatch cannot become a timeout.
+                if (!releaseRollback.isCompleted) releaseRollback.complete();
+                if (!releaseCommit.isCompleted) releaseCommit.complete();
+                async.flushMicrotasks();
+              }
+            });
+          },
         );
-      });
+      }
 
-      test(
-        'partial enqueue failure still attempts all messages',
-        () async {
-          var callCount = 0;
-          when(() => mockOutboxService.enqueueMessage(any())).thenAnswer((
-            _,
-          ) async {
-            callCount++;
-            if (callCount == 1) {
-              throw Exception('outbox write failed');
-            }
-          });
+      for (final failedSlots in [
+        {0},
+        {1},
+        {2},
+        {0, 2},
+      ]) {
+        test(
+          'partial enqueue failure at $failedSlots preserves ordered payloads '
+          'and does not contaminate the next transaction',
+          () async {
+            final attempted = <SyncMessage>[];
+            final accepted = <SyncMessage>[];
+            final failures = List.generate(
+              3,
+              (index) => StateError('outbox slot $index'),
+            );
+            when(
+              () => mockOutboxService.enqueueMessage(any()),
+            ).thenAnswer((invocation) async {
+              final message =
+                  invocation.positionalArguments.single as SyncMessage;
+              final slot = attempted.length;
+              attempted.add(message);
+              if (failedSlots.contains(slot)) throw failures[slot];
+              accepted.add(message);
+            });
+            final expected = [
+              SyncMessage.agentEntity(
+                agentEntity: testEntity.copyWith(vectorClock: testClock),
+                status: SyncEntryStatus.update,
+              ),
+              SyncMessage.agentLink(
+                agentLink: testBasicLink.copyWith(vectorClock: testClock),
+                status: SyncEntryStatus.update,
+              ),
+              SyncMessage.agentEntity(
+                agentEntity: testPayloadEntity.copyWith(vectorClock: testClock),
+                status: SyncEntryStatus.update,
+              ),
+            ];
 
-          await expectLater(
-            syncService.runInTransaction(() async {
-              await syncService.upsertEntity(testEntity);
-              await syncService.upsertLink(testBasicLink);
-            }),
-            throwsA(isA<Exception>()),
-          );
+            await expectLater(
+              syncService.runInTransaction(() async {
+                await syncService.upsertEntity(testEntity);
+                await syncService.upsertLink(testBasicLink);
+                await syncService.upsertEntity(testPayloadEntity);
+                expect(attempted, isEmpty);
+              }),
+              throwsA(same(failures[failedSlots.first])),
+            );
+            expect(attempted, expected);
+            final expectedAccepted = [
+              for (var slot = 0; slot < expected.length; slot++)
+                if (!failedSlots.contains(slot)) expected[slot],
+            ];
+            expect(accepted, expectedAccepted);
 
-          // Both messages should have been attempted despite the first
-          // one failing.
-          verify(() => mockOutboxService.enqueueMessage(any())).called(2);
-        },
-      );
+            final nextLink = testBasicLink.copyWith(
+              id: 'next-transaction-link',
+            );
+            await syncService.runInTransaction(() async {
+              await syncService.upsertLink(nextLink);
+            });
+            final nextMessage = SyncMessage.agentLink(
+              agentLink: nextLink.copyWith(vectorClock: testClock),
+              status: SyncEntryStatus.update,
+            );
+            expect(attempted, [...expected, nextMessage]);
+            expect(accepted, [...expectedAccepted, nextMessage]);
+          },
+        );
+      }
     });
   });
 

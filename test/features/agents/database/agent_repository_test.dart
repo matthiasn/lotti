@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:drift/drift.dart' show Value, Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -18,7 +21,8 @@ import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:sqlite3/sqlite3.dart' show SqliteException;
+import 'package:path/path.dart' as p;
+import 'package:sqlite3/sqlite3.dart' show OpenMode, SqliteException, sqlite3;
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -3621,52 +3625,74 @@ void main() {
   });
 
   group('runInTransaction', () {
-    test('commits all operations atomically', () async {
-      final agent = makeAgent();
-      final state = makeAgentState();
+    for (final rollback in [false, true]) {
+      test(
+        '${rollback ? 'rollback restores' : 'commit publishes'} all writes '
+        'without exposing partial data to another connection',
+        () async {
+          final directory = await Directory.systemTemp.createTemp(
+            'lotti_agent_atomicity_',
+          );
+          addTearDown(() => directory.delete(recursive: true));
+          final previousTempDirectory = sqlite3.tempDirectory;
+          addTearDown(() => sqlite3.tempDirectory = previousTempDirectory);
+          final writerDb = AgentDatabase(
+            background: false,
+            documentsDirectoryProvider: () async => directory,
+            tempDirectoryProvider: () async => directory,
+          );
+          addTearDown(writerDb.close);
+          final writer = AgentRepository(writerDb);
+          final agent = makeAgent();
+          final updated = agent.copyWith(displayName: 'Updated in transaction');
+          final state = makeAgentState();
+          final unrelated = makeAgent(id: 'unrelated', agentId: otherAgentId);
+          await writer.upsertEntity(agent);
+          await writer.upsertEntity(unrelated);
 
-      await repo.runInTransaction(() async {
-        await repo.upsertEntity(agent);
+          // A separate SQLite connection cannot inherit Drift's transaction
+          // zone, even when queried from inside the writer's callback.
+          final reader = sqlite3.open(
+            p.join(directory.path, agentDbFileName),
+            mode: OpenMode.readOnly,
+          );
+          addTearDown(reader.close);
+          Map<String, AgentDomainEntity> readSnapshot() => {
+            for (final row in reader.select(
+              'SELECT id, serialized FROM agent_entities',
+            ))
+              row['id'] as String: AgentDomainEntity.fromJson(
+                jsonDecode(row['serialized'] as String) as Map<String, dynamic>,
+              ),
+          };
 
-        // Mid-transaction: the agent should NOT be visible outside the
-        // transaction yet (verifying true transactional isolation, not
-        // just sequential writes). We open a separate query to check.
-        final midTxVisible = await repo.getEntity(agent.id);
-        // Drift's in-memory SQLite runs in exclusive mode, so the query
-        // actually runs inside the same transaction context. We settle for
-        // verifying the write + read round-trip inside the transaction and
-        // that rollback (tested below) actually discards it.
-        expect(midTxVisible, isNotNull);
+          final before = {agent.id: agent, unrelated.id: unrelated};
+          expect(readSnapshot(), before);
+          final failure = StateError('rollback after update and insert');
+          final transaction = writer.runInTransaction(() async {
+            await writer.upsertEntity(updated);
+            expect(readSnapshot(), before);
+            await writer.upsertEntity(state);
+            expect(
+              await writer.getEntitiesByIds([agent.id, state.id]),
+              {agent.id: updated, state.id: state},
+            );
+            expect(readSnapshot(), before);
+            if (rollback) throw failure;
+          });
+          if (rollback) {
+            await expectLater(transaction, throwsA(same(failure)));
+          } else {
+            await transaction;
+          }
 
-        await repo.upsertEntity(state);
-      });
-
-      final entities = await repo.getEntitiesByAgentId(testAgentId);
-      expect(entities, hasLength(2));
-    });
-
-    test('rolls back all operations when callback throws', () async {
-      final agent = makeAgent();
-
-      // The exception must propagate to the caller.
-      await expectLater(
-        repo.runInTransaction<void>(() async {
-          await repo.upsertEntity(agent);
-          throw Exception('deliberate failure');
-        }),
-        throwsA(
-          isA<Exception>().having(
-            (e) => e.toString(),
-            'message',
-            contains('deliberate failure'),
-          ),
-        ),
+          expect(
+            readSnapshot(),
+            rollback ? before : {...before, agent.id: updated, state.id: state},
+          );
+        },
       );
-
-      // The entity should not have been persisted (rolled back).
-      final entity = await repo.getEntity(agent.id);
-      expect(entity, isNull);
-    });
+    }
 
     test('returns the value produced by the callback', () async {
       final result = await repo.runInTransaction(() async {
