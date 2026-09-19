@@ -145,10 +145,12 @@ pausedRelationshipReminderProvider = FutureProvider.autoDispose
         final view = NudgeEntityView.of(nudge)!;
         final until = nudgeBannerSnoozedUntil(view);
         if (until == null || !until.isAfter(now)) continue;
-        final latest = view.snoozeHistory
-            .where((event) => event.activation == view.activationCount)
-            .lastOrNull;
-        if (latest?.reason != NudgeSnoozeReason.opened) continue;
+        // The event in force, not the newest: concurrent snoozes keep the
+        // later deadline, which a chosen snooze may have set.
+        if (nudgeBannerEffectiveSnooze(view)?.reason !=
+            NudgeSnoozeReason.opened) {
+          continue;
+        }
         final timer = Timer(until.difference(now), ref.invalidateSelf);
         ref.onDispose(timer.cancel);
         return (

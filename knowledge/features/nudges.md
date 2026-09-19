@@ -241,7 +241,12 @@ relationship banner then writes a one-hour snooze
 hiding it on this device at once like the snooze sheet does (ADR 0063, which
 amends ADR 0055 Decision 6 for this kind only). Every snooze event carries its
 `NudgeSnoozeReason`: null means chosen, as for all events recorded before
-reasons existed, and an unknown future reason decodes as none. A failed pause
+reasons existed, and an unknown future reason decodes as none. The merge's
+snooze order ranks a present reason first, so a copy an older client stripped
+never wins over the one that kept it. A reader asking why a banner is quiet
+takes the event *in force* (`nudgeBannerEffectiveSnooze`: the one whose return
+is the current deadline), not the newest — concurrent snoozes keep the later
+deadline, which an earlier event may have set. A failed pause
 is logged and only leaves the banner showing; the page has already opened.
 
 # Concurrent sync: dominance first, then a lossless join

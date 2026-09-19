@@ -381,6 +381,41 @@ void main() {
       });
     }
 
+    // Codex review on #4356: an earlier chosen eight-hour snooze keeps its
+    // later deadline over a concurrent opened pause; the pause is not in
+    // force, so the page must not claim it.
+    test('a chosen snooze whose deadline won over a concurrent opened '
+        'pause says nothing', () async {
+      final chosenUntil = now.add(const Duration(hours: 8));
+      final base = nudge('ad-1', snoozedUntil: chosenUntil);
+      final row = base.copyWith(
+        snoozeHistory: [
+          NudgeSnooze(
+            id: 'chosen',
+            activation: base.activationCount,
+            snoozedAt: now.subtract(const Duration(minutes: 30)),
+            snoozedUntil: chosenUntil,
+            duration: NudgeBannerSnoozeDuration.eightHours,
+            durationMinutes: 480,
+            utcOffsetMinutes: 0,
+            reason: NudgeSnoozeReason.chosen,
+          ),
+          NudgeSnooze(
+            id: 'opened',
+            activation: base.activationCount,
+            snoozedAt: now.subtract(const Duration(minutes: 20)),
+            snoozedUntil: until,
+            duration: NudgeBannerSnoozeDuration.oneHour,
+            durationMinutes: 60,
+            utcOffsetMinutes: 0,
+            reason: NudgeSnoozeReason.opened,
+          ),
+        ],
+      );
+
+      expect(await read(row), isNull);
+    });
+
     test('a person whose agent is gone says nothing', () async {
       when(() => repository.getEntity(agentId)).thenAnswer((_) async => null);
 

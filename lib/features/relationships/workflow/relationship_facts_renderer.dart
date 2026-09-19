@@ -8,6 +8,8 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
+import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
+import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 
@@ -394,11 +396,9 @@ List<CheckInEntry> relationshipCheckInWindow(List<CheckInEntry> checkIns) {
 String _quiet(RelationshipNudgeEntity nudge, DateTime now) {
   final until = nudge.snoozedUntil;
   if (until == null || !until.isAfter(now)) return '';
-  final latest = nudge.snoozeHistory
-      .where((event) => event.activation == nudge.activationCount)
-      .lastOrNull;
+  final inForce = nudgeBannerEffectiveSnooze(NudgeEntityView.of(nudge)!);
   final stamp = until.toIso8601String();
-  return latest?.reason == NudgeSnoozeReason.opened
+  return inForce?.reason == NudgeSnoozeReason.opened
       ? ' | opened by the user, paused until $stamp'
       : ' | snoozed until $stamp';
 }

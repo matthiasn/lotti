@@ -20,6 +20,23 @@ DateTime? nudgeBannerSnoozedUntil(NudgeEntityView nudge) {
   return raw == null ? null : DateTime.tryParse(raw)?.toUtc();
 }
 
+/// The snooze event behind [nudge]'s current deadline, among this
+/// activation's — the one whose return time IS that deadline. Concurrent
+/// snoozes keep the latest deadline, not the latest event, so the newest
+/// event is not necessarily the one in force. Null when no event of this
+/// activation set it (an older client's provenance-only snooze).
+NudgeSnooze? nudgeBannerEffectiveSnooze(NudgeEntityView nudge) {
+  final until = nudgeBannerSnoozedUntil(nudge);
+  if (until == null) return null;
+  return nudge.snoozeHistory
+      .where(
+        (event) =>
+            event.activation == nudge.activationCount &&
+            event.snoozedUntil.isAtSameMomentAs(until),
+      )
+      .lastOrNull;
+}
+
 /// Whether [nudge] is still inside its user-requested quiet interval.
 bool nudgeBannerIsSnoozed(NudgeEntityView nudge, DateTime now) {
   final until = nudgeBannerSnoozedUntil(nudge);

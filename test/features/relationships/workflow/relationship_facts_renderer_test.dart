@@ -668,4 +668,53 @@ void main() {
       }
     });
   }
+
+  // Codex review on #4356: the deadline in force came from a chosen snooze,
+  // so the agent must read it as snoozed, not as opened.
+  test('a newer opened pause that lost the deadline reads as snoozed', () {
+    final chosenUntil = DateTime.utc(2099);
+    final base =
+        AgentDomainEntity.relationshipNudge(
+              id: 'ad-live',
+              agentId: 'agent-1',
+              status: NudgeStatus.active,
+              brief: const NudgeBrief(
+                headline: 'Call Anna.',
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
+              ),
+              briefDigest: 'd',
+              createdAt: testDate,
+              updatedAt: testDate,
+              vectorClock: null,
+              activatedAt: DateTime(2026, 8, 15),
+              snoozedUntil: chosenUntil,
+            )
+            as RelationshipNudgeEntity;
+    NudgeSnooze event(String id, DateTime until, NudgeSnoozeReason reason) =>
+        NudgeSnooze(
+          id: id,
+          activation: base.activationCount,
+          snoozedAt: testDate,
+          snoozedUntil: until,
+          duration: NudgeBannerSnoozeDuration.oneHour,
+          durationMinutes: 60,
+          utcOffsetMinutes: 0,
+          reason: reason,
+        );
+
+    final facts = render(
+      nudges: [
+        base.copyWith(
+          snoozeHistory: [
+            event('chosen', chosenUntil, NudgeSnoozeReason.chosen),
+            event('opened', DateTime.utc(2098), NudgeSnoozeReason.opened),
+          ],
+        ),
+      ],
+    );
+
+    expect(facts, contains('| snoozed until ${chosenUntil.toIso8601String()}'));
+    expect(facts, isNot(contains('opened by the user')));
+  });
 }

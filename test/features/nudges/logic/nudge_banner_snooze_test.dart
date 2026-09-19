@@ -222,6 +222,63 @@ void main() {
     expect(NudgeSnooze.fromJson({...json}..remove('reason')).reason, isNull);
   });
 
+  // Codex review on #4356: concurrent snoozes keep the later deadline, not
+  // the later event — the event in force is the one that set the deadline.
+  group('nudgeBannerEffectiveSnooze', () {
+    final now = DateTime.utc(2026, 8, 11, 10);
+
+    NudgeEntityView snoozed(
+      NudgeEntityView nudge,
+      String id,
+      Duration length,
+      NudgeSnoozeReason? reason, {
+      Duration after = Duration.zero,
+    }) => NudgeEntityView.of(
+      snoozeNudgeBannerEntity(
+        nudge: nudge,
+        now: now.add(after),
+        until: now.add(after).add(length),
+        eventId: id,
+        reason: reason,
+      ),
+    )!;
+
+    test('is the event whose return is the deadline in force', () {
+      // An eight-hour snooze chosen first, then an opened one-hour pause
+      // whose deadline lost the merge.
+      final chosen = snoozed(
+        makeNudgeView(),
+        'chosen',
+        const Duration(hours: 8),
+        NudgeSnoozeReason.chosen,
+      );
+      final both = snoozed(
+        chosen,
+        'opened',
+        const Duration(hours: 1),
+        NudgeSnoozeReason.opened,
+        after: const Duration(minutes: 5),
+      );
+      final merged = NudgeEntityView.of(
+        both.copyWith(snoozedUntil: chosen.snoozedUntil),
+      )!;
+
+      expect(nudgeBannerEffectiveSnooze(merged)?.id, 'chosen');
+      expect(nudgeBannerEffectiveSnooze(both)?.id, 'opened');
+    });
+
+    test('is none without a deadline, or when no event of this activation '
+        'set it', () {
+      expect(nudgeBannerEffectiveSnooze(makeNudgeView()), isNull);
+      expect(
+        nudgeBannerEffectiveSnooze(
+          makeNudgeView(snoozedUntil: DateTime.utc(2026, 8, 11, 12)),
+        ),
+        isNull,
+      );
+    });
+  });
+
   test('a zero or negative snooze interval is rejected', () {
     final now = DateTime.utc(2026, 8, 11, 10);
     for (final until in [now, now.subtract(const Duration(minutes: 1))]) {

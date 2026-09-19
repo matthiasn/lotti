@@ -565,9 +565,17 @@ int _compareNudgeSnoozes(NudgeSnooze a, NudgeSnooze b) {
   final byReturnOffsetPresence = (a.returnUtcOffsetMinutes == null ? 1 : 0)
       .compareTo(b.returnUtcOffsetMinutes == null ? 1 : 0);
   if (byReturnOffsetPresence != 0) return byReturnOffsetPresence;
-  return (a.returnUtcOffsetMinutes ?? a.utcOffsetMinutes).compareTo(
-    b.returnUtcOffsetMinutes ?? b.utcOffsetMinutes,
+  final byReturnOffset = (a.returnUtcOffsetMinutes ?? a.utcOffsetMinutes)
+      .compareTo(b.returnUtcOffsetMinutes ?? b.utcOffsetMinutes);
+  if (byReturnOffset != 0) return byReturnOffset;
+  // An older client re-serializes an event without the reason it does not
+  // know: the copy that still carries one sorts first, so every replica
+  // keeps it (ADR 0063).
+  final byReasonPresence = (a.reason == null ? 1 : 0).compareTo(
+    b.reason == null ? 1 : 0,
   );
+  if (byReasonPresence != 0) return byReasonPresence;
+  return (a.reason?.index ?? 0).compareTo(b.reason?.index ?? 0);
 }
 
 DateTime? _earliestInstant(DateTime? a, DateTime? b) {
