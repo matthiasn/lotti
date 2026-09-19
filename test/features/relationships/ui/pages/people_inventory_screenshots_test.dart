@@ -28,6 +28,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:clock/clock.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -1235,6 +1236,45 @@ void main() {
     await captureScreenshot(
       tester,
       'person_check_ins_mobile_dark',
+      subdir: _subdir,
+    );
+  });
+
+  // The log's rows are the Tasks list's grouped rows: hovered, the fill
+  // spans the row and the divider beside it gives way.
+  testWidgets('desktop person page, a check-in hovered — dark', (
+    tester,
+  ) async {
+    await pumpSurface(
+      tester,
+      home: const RelationshipDetailsPage(relationshipId: _pipId),
+      device: desktopDevice,
+      brightness: Brightness.dark,
+      overrides: personOverrides(
+        report: briefing(),
+        state: makeTestState(agentId: agentId),
+      ),
+    );
+    final firstRow = find.byKey(const ValueKey('check-in-row-check-pip-3'));
+    await tester.scrollUntilVisible(
+      firstRow,
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await Scrollable.ensureVisible(tester.element(firstRow), alignment: 0.12);
+    await tester.pumpAndSettle();
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: tester.getCenter(firstRow));
+    addTearDown(mouse.removePointer);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('check-in-row-background-check-pip-3')),
+      findsOneWidget,
+    );
+    await captureScreenshot(
+      tester,
+      'person_check_ins_hover_desktop_dark',
       subdir: _subdir,
     );
   });

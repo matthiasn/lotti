@@ -1,6 +1,9 @@
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
+import 'package:lotti/features/design_system/components/lists/grouped_card_row_interactions.dart';
+import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/shared/sentiment.dart';
@@ -13,12 +16,18 @@ import 'package:material_ui/material_ui.dart';
 /// section card holding the log, newest first — a count beside the title,
 /// one [CheckInRow] per check-in, or the empty hint.
 ///
+/// The rows are the app's grouped-card rows, the same surface the Tasks and
+/// Projects lists use ([GroupedCardRowSurface]): edge to edge inside the
+/// card, the hover fill spanning the whole row, the last one rounded into the
+/// card's corners, and the divider beside a hovered row giving way to its
+/// fill ([buildGroupedCardRowInteractions]).
+///
 /// A sliver rather than a box because the log grows without bound: the
 /// rows render lazily inside the card's decoration, the same split the
 /// project page makes between its fixed sections and its list. The card's
 /// surface is [DesignSystemSectionCard.decoration], so it is
 /// indistinguishable from the boxed cards above and below it.
-class CheckInsCardSliver extends StatelessWidget {
+class CheckInsCardSliver extends StatefulWidget {
   const CheckInsCardSliver({
     required this.checkIns,
     required this.onOpen,
@@ -36,19 +45,41 @@ class CheckInsCardSliver extends StatelessWidget {
   final ValueChanged<CheckInEntry> onOpen;
 
   @override
+  State<CheckInsCardSliver> createState() => _CheckInsCardSliverState();
+}
+
+class _CheckInsCardSliverState extends State<CheckInsCardSliver> {
+  String? _hoveredId;
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
     final inset = tokens.spacing.step5;
+    final checkIns = widget.checkIns;
+    final interactions = buildGroupedCardRowInteractions(
+      priorities: [
+        for (final checkIn in checkIns)
+          if (checkIn.meta.id == _hoveredId) 1 else 0,
+      ],
+      connectedBelow: [
+        for (var i = 0; i < checkIns.length - 1; i++) true,
+      ],
+    );
 
     return DecoratedSliver(
       key: const ValueKey('person-check-ins-card'),
       decoration: DesignSystemSectionCard.decoration(tokens),
-      sliver: SliverPadding(
-        padding: EdgeInsets.all(inset),
-        sliver: SliverMainAxisGroup(
-          slivers: [
-            SliverToBoxAdapter(
+      sliver: SliverMainAxisGroup(
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(
+              inset,
+              inset,
+              inset,
+              checkIns.isEmpty ? 0 : tokens.spacing.step3,
+            ),
+            sliver: SliverToBoxAdapter(
               child: PersonCardHeader(
                 title: messages.relationshipCheckInsLabel,
                 caption: checkIns.isEmpty
@@ -62,49 +93,66 @@ class CheckInsCardSliver extends StatelessWidget {
                       ),
               ),
             ),
-            if (checkIns.isEmpty)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.only(top: tokens.spacing.step3),
-                  child: Text(
-                    messages.relationshipNoCheckIns,
-                    style: tokens.typography.styles.body.bodyMedium.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
+          ),
+          if (checkIns.isEmpty)
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                inset,
+                tokens.spacing.step3,
+                inset,
+                inset,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: Text(
+                  messages.relationshipNoCheckIns,
+                  style: tokens.typography.styles.body.bodyMedium.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
                   ),
                 ),
-              )
-            else
-              SliverList.separated(
-                itemCount: checkIns.length,
-                separatorBuilder: (_, _) =>
-                    Divider(height: 1, color: tokens.colors.decorative.level01),
-                itemBuilder: (context, index) {
-                  final checkIn = checkIns[index];
-                  return CheckInRow(
-                    key: ValueKey('check-in-row-${checkIn.meta.id}'),
-                    checkIn: checkIn,
-                    entries: entries[checkIn.meta.id] ?? const [],
-                    onTap: () => onOpen(checkIn),
-                  );
-                },
               ),
-          ],
-        ),
+            )
+          else
+            SliverList.builder(
+              itemCount: checkIns.length,
+              itemBuilder: (context, index) {
+                final checkIn = checkIns[index];
+                final last = index == checkIns.length - 1;
+                return CheckInRow(
+                  key: ValueKey('check-in-row-${checkIn.meta.id}'),
+                  checkIn: checkIn,
+                  entries: widget.entries[checkIn.meta.id] ?? const [],
+                  interaction: interactions[index],
+                  isLast: last,
+                  onHoverChanged: (hovered) => setState(() {
+                    if (hovered) {
+                      _hoveredId = checkIn.meta.id;
+                    } else if (_hoveredId == checkIn.meta.id) {
+                      _hoveredId = null;
+                    }
+                  }),
+                  onTap: () => widget.onOpen(checkIn),
+                );
+              },
+            ),
+        ],
       ),
     );
   }
 }
 
 /// One check-in in the log: the interaction glyph in a circle, a mono meta
-/// line (`Today 12:44 · Call · 11 min`) beside the tinted sentiment pill,
-/// the narrative, and the topics as tag pills. The text keeps the row's
-/// width: the glyph column is the only thing beside it.
+/// line (`Today 12:44 · Call · 11 min · 1 recording`) with the tinted
+/// sentiment pill in a fixed trailing slot, up to two lines of what was
+/// said, and the topics as tag pills — with a chevron, because the row opens
+/// the check-in.
 class CheckInRow extends StatelessWidget {
   const CheckInRow({
     required this.checkIn,
     required this.onTap,
     this.entries = const [],
+    this.interaction = const GroupedCardRowInteraction(),
+    this.isLast = true,
+    this.onHoverChanged,
     super.key,
   });
 
@@ -113,6 +161,14 @@ class CheckInRow extends StatelessWidget {
   /// What the check-in holds, oldest first.
   final List<JournalEntity> entries;
   final VoidCallback onTap;
+
+  /// How the row meets its neighbours: seams hidden beside a hovered row,
+  /// a divider between two resting ones.
+  final GroupedCardRowInteraction interaction;
+
+  /// The last row rounds into the section card's bottom corners.
+  final bool isLast;
+  final ValueChanged<bool>? onHoverChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -129,113 +185,151 @@ class CheckInRow extends StatelessWidget {
       relationshipTimestampLabelOf(context, checkIn.meta.dateFrom),
       checkInInteractionLabel(context, data.interactionType),
       ?duration,
+      ?holds,
     ].join(' · ');
+    final inset = tokens.spacing.step5;
+    final radius = Radius.circular(tokens.radii.sectionCards);
 
-    // The row supplies its own ink surface: inside a sliver there is no
-    // section-card Material above it to draw the press on.
-    return Material(
-      type: MaterialType.transparency,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: tokens.spacing.step8,
-                height: tokens.spacing.step8,
-                decoration: BoxDecoration(
-                  color: tokens.colors.background.level03,
-                  shape: BoxShape.circle,
+    return GroupedCardRowSurface(
+      rowKey: ValueKey('check-in-row-surface-${checkIn.meta.id}'),
+      backgroundKey: ValueKey('check-in-row-background-${checkIn.meta.id}'),
+      selected: false,
+      hoverColor: tokens.colors.surface.hover,
+      selectedColor: DesignSystemListPalette.activatedFill(tokens),
+      padding: EdgeInsets.zero,
+      topOverlap: interaction.topOverlap,
+      bottomOverlap: interaction.bottomOverlap,
+      backgroundBorderRadius: isLast
+          ? BorderRadius.vertical(bottom: radius)
+          : null,
+      onHoverChanged: onHoverChanged,
+      onTap: onTap,
+      child: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              inset,
+              tokens.spacing.step4,
+              tokens.spacing.step3,
+              tokens.spacing.step4,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: tokens.spacing.step8,
+                  height: tokens.spacing.step8,
+                  decoration: BoxDecoration(
+                    color: tokens.colors.background.level03,
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    checkInInteractionIcon(data.interactionType),
+                    size: IconSizes.m,
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
                 ),
-                alignment: Alignment.center,
-                child: Icon(
-                  checkInInteractionIcon(data.interactionType),
-                  size: IconSizes.m,
-                  color: tokens.colors.text.mediumEmphasis,
-                ),
-              ),
-              SizedBox(width: tokens.spacing.step4),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Wrap(
-                      spacing: tokens.spacing.step3,
-                      runSpacing: tokens.spacing.step2,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Text(
-                          meta,
-                          key: const ValueKey('check-in-row-meta'),
-                          style: relationshipTimestampStyle(
-                            tokens,
-                            color: tokens.colors.text.lowEmphasis,
-                          ),
-                        ),
-                        if (sentiment != null)
-                          DsPill(
-                            key: const ValueKey('check-in-row-sentiment'),
-                            variant: DsPillVariant.tinted,
-                            shape: DsPillShape.tag,
-                            color: sentimentColor(tokens, sentiment),
-                            labelColor: tokens.colors.text.highEmphasis,
-                            label: checkInSentimentLabel(context, sentiment),
-                          ),
-                      ],
-                    ),
-                    if (narrative != null) ...[
-                      SizedBox(height: tokens.spacing.step2),
-                      Text(
-                        narrative.text,
-                        key: const ValueKey('check-in-row-summary'),
-                        maxLines: 4,
-                        overflow: TextOverflow.ellipsis,
-                        style: tokens.typography.styles.body.bodyMedium
-                            .copyWith(
-                              color: narrative.pending
-                                  ? tokens.colors.text.mediumEmphasis
-                                  : tokens.colors.text.highEmphasis,
-                            ),
-                      ),
-                    ],
-                    if (holds != null) ...[
-                      SizedBox(height: tokens.spacing.step2),
-                      Text(
-                        holds,
-                        key: const ValueKey('check-in-row-holds'),
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: tokens.colors.text.lowEmphasis,
-                        ),
-                      ),
-                    ],
-                    if (data.topics.isNotEmpty) ...[
-                      SizedBox(height: tokens.spacing.step3),
-                      // Topics are this check-in's tags, so they wear the tag
-                      // pill the rest of the app spends on labels — the tight
-                      // corner that says "read-out, not button".
-                      Wrap(
-                        spacing: tokens.spacing.step2,
-                        runSpacing: tokens.spacing.step2,
+                SizedBox(width: tokens.spacing.step4),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          for (final topic in data.topics)
-                            DsPill(
-                              variant: DsPillVariant.filled,
-                              shape: DsPillShape.tag,
-                              bordered: true,
-                              label: topic,
-                              labelColor: tokens.colors.text.mediumEmphasis,
+                          Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.only(
+                                top: tokens.spacing.step1,
+                              ),
+                              child: Text(
+                                meta,
+                                key: const ValueKey('check-in-row-meta'),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: relationshipTimestampStyle(
+                                  tokens,
+                                  color: tokens.colors.text.lowEmphasis,
+                                ),
+                              ),
                             ),
+                          ),
+                          if (sentiment != null) ...[
+                            SizedBox(width: tokens.spacing.step3),
+                            DsPill(
+                              key: const ValueKey('check-in-row-sentiment'),
+                              variant: DsPillVariant.tinted,
+                              shape: DsPillShape.tag,
+                              color: sentimentColor(tokens, sentiment),
+                              labelColor: tokens.colors.text.highEmphasis,
+                              label: checkInSentimentLabel(context, sentiment),
+                            ),
+                          ],
                         ],
                       ),
+                      if (narrative != null) ...[
+                        SizedBox(height: tokens.spacing.step2),
+                        Text(
+                          narrative.text,
+                          key: const ValueKey('check-in-row-summary'),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: tokens.typography.styles.body.bodyMedium
+                              .copyWith(
+                                color: narrative.pending
+                                    ? tokens.colors.text.mediumEmphasis
+                                    : tokens.colors.text.highEmphasis,
+                              ),
+                        ),
+                      ],
+                      if (data.topics.isNotEmpty) ...[
+                        SizedBox(height: tokens.spacing.step3),
+                        // Topics are this check-in's tags, so they wear the
+                        // tag pill the rest of the app spends on labels — the
+                        // tight corner that says "read-out, not button".
+                        Wrap(
+                          spacing: tokens.spacing.step2,
+                          runSpacing: tokens.spacing.step2,
+                          children: [
+                            for (final topic in data.topics)
+                              DsPill(
+                                variant: DsPillVariant.filled,
+                                shape: DsPillShape.tag,
+                                bordered: true,
+                                label: topic,
+                                labelColor: tokens.colors.text.mediumEmphasis,
+                              ),
+                          ],
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-            ],
+                SizedBox(width: tokens.spacing.step2),
+                Padding(
+                  padding: EdgeInsets.only(top: tokens.spacing.step1),
+                  child: Icon(
+                    LottiIcons.chevronRight,
+                    key: const ValueKey('check-in-row-chevron'),
+                    size: IconSizes.m,
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+          if (!isLast)
+            if (interaction.showDividerBelow)
+              Divider(
+                key: ValueKey('check-in-row-divider-${checkIn.meta.id}'),
+                height: 1,
+                thickness: 1,
+                color: tokens.colors.decorative.level01,
+              )
+            else
+              const SizedBox(height: 1),
+        ],
       ),
     );
   }
