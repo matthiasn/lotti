@@ -202,6 +202,23 @@ void main() {
       );
     });
 
+    test('a failed settings read settles on Follow system instead of '
+        'loading forever', () async {
+      when(
+        () => mocks.settingsDb.itemByKey(manualLanguageSettingsKey),
+      ).thenThrow(StateError('settings db closed'));
+
+      final settled = await container.read(
+        manualLanguageControllerProvider.future,
+      );
+
+      expect(settled, isNull);
+      expect(
+        container.read(manualLanguageControllerProvider),
+        isA<AsyncData<ManualLanguage?>>(),
+      );
+    });
+
     test(
       'keeps loading separate from the Follow system preference',
       () async {

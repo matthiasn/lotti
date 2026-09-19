@@ -2158,10 +2158,15 @@ void main() {
       await Future<void>.microtask(() {});
 
       // Two rapid notifications arrive while fetch-1 is still in flight.
+      // Draining the queue lets the (zero-length) debounce fire while the
+      // first fetch is still paused, so the refetch is parked as pending
+      // rather than started — a bare microtask would let fetch-1 finish
+      // first and never exercise the pending path.
       updateStreamController
         ..add({taskNotification})
         ..add({projectNotification});
-      await Future<void>.microtask(() {});
+      await pumpEventQueue();
+      expect(callCount, 1, reason: 'the refetch waits for fetch-1');
 
       // Release the first fetch — the pendingRefetch flag causes a second
       // doFetch() in the finally block.

@@ -104,6 +104,32 @@ void main() {
       expect(tester.getSize(_fillFinder(barKey).first).width, greaterThan(0));
     });
 
+    testWidgets('a chunky segment the value only partly covers fills '
+        'proportionally', (tester) async {
+      const barKey = Key('chunky-progress-bar');
+
+      // Five segments: 0.5 fills two whole segments and half of the third.
+      await _pumpProgressBar(
+        tester,
+        const DesignSystemProgressBar(
+          key: barKey,
+          value: 0.5,
+          style: DesignSystemProgressBarStyle.chunky,
+          label: 'Quest',
+          progressText: '3/6',
+        ),
+      );
+
+      final fills = _fillFinder(barKey);
+      expect(fills, findsNWidgets(3));
+      final fullWidth = tester.getSize(fills.at(0)).width;
+      expect(tester.getSize(fills.at(1)).width, fullWidth);
+      expect(
+        tester.getSize(fills.at(2)).width,
+        moreOrLessEquals(fullWidth / 2, epsilon: 1),
+      );
+    });
+
     testWidgets('renders the off variant without a header and clamps values', (
       tester,
     ) async {

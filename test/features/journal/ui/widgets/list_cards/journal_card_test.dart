@@ -11,6 +11,9 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
+import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_data.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/relationship_data.dart';
@@ -173,6 +176,33 @@ void main() {
           context.designTokens.typography.styles.subtitle.subtitle2;
       expect(text.style?.fontSize, expected.fontSize);
       expect(text.style?.fontWeight, expected.fontWeight);
+    });
+
+    testWidgets('a goal renders as a flag row titled with the goal', (
+      tester,
+    ) async {
+      final goal = GoalEntry(
+        meta: testTextEntry.meta.copyWith(id: 'goal-waddle'),
+        data: const GoalData(
+          title: 'Waddle to the ice shelf daily',
+          statement: 'Keep the colony moving.',
+          criteria: GoalCriterion.habit(
+            criterionId: 'criterion-waddle',
+            habitId: 'habit-waddle',
+            targetCount: 5,
+            window: GoalWindow.rollingDays(count: 7),
+          ),
+          specVersion: 1,
+          specVersionId: 'agent-1:spec-v1',
+        ),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(ModernJournalCard(item: goal)),
+      );
+
+      expect(find.text('Waddle to the ice shelf daily'), findsOneWidget);
+      expect(find.byIcon(LottiIcons.flag), findsOneWidget);
     });
 
     testWidgets('selected flag reaches the base card', (tester) async {

@@ -88,6 +88,24 @@ void main() {
       expect(find.widgetWithText(FilledButton, 'New event'), findsOneWidget);
     });
 
+    testWidgets('the compact header stacks the subtitle under the title', (
+      tester,
+    ) async {
+      await pumpEventScreen(
+        tester,
+        EventsOverviewView(
+          sections: _sections(),
+          subtitle: '47 events',
+          onCreate: () {},
+        ),
+      );
+
+      final titleRect = tester.getRect(find.text('Events'));
+      final subtitleRect = tester.getRect(find.text('47 events'));
+      expect(subtitleRect.top, greaterThanOrEqualTo(titleRect.bottom));
+      expect(subtitleRect.left, titleRect.left);
+    });
+
     testWidgets('renders section headers, featured banner and grid cards', (
       tester,
     ) async {

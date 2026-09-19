@@ -158,6 +158,32 @@ void main() {
       expect(capturedValue, equals(1.0));
     });
 
+    testWidgets('tapping the selected segment clears the answer', (
+      tester,
+    ) async {
+      final captured = <double?>[];
+      await tester.pumpWidget(
+        makeTestableWidget(
+          RatingSegmentedInput(
+            label: 'Test question',
+            segments: const [
+              (label: 'Low', value: 0.0),
+              (label: 'Medium', value: 0.5),
+              (label: 'High', value: 1.0),
+            ],
+            value: 0.5,
+            onChanged: captured.add,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('Medium'));
+      await tester.pump();
+
+      expect(captured, [null]);
+    });
+
     testWidgets('renders with empty selection when value is null', (
       tester,
     ) async {

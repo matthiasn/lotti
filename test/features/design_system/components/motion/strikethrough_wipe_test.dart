@@ -39,6 +39,42 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  testWidgets('a new duration on rebuild paces the next wipe', (
+    tester,
+  ) async {
+    Widget timed({required bool done}) => makeTestableWidget(
+      StrikethroughWipe(
+        done: done,
+        text: 'Buy milk',
+        baseStyle: baseStyle,
+        struckStyle: struckStyle,
+        duration: const Duration(seconds: 1),
+      ),
+    );
+    await tester.pumpWidget(makeTestableWidget(wipe(done: false)));
+    await tester.pumpWidget(timed(done: false));
+    await tester.pumpWidget(timed(done: true));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    final clipper = tester
+        .widget<ClipRect>(
+          find
+              .ancestor(
+                of: find.text('Buy milk').last,
+                matching: find.byType(ClipRect),
+              )
+              .first,
+        )
+        .clipper!;
+    expect(
+      clipper.getClip(const Size(100, 10)).width,
+      moreOrLessEquals(50, epsilon: 1),
+      reason: 'half way through the one-second wipe',
+    );
+    await tester.pump(const Duration(milliseconds: 600));
+  });
+
   testWidgets('already done on first build shows the struck text', (
     tester,
   ) async {

@@ -102,6 +102,29 @@ void main() {
     },
   );
 
+  test('an explicit category selection queries only those categories, '
+      'without the uncategorised sentinel', () async {
+    await sut.count(
+      const TasksFilter(
+        selectedTaskStatuses: {'OPEN'},
+        selectedCategoryIds: {'cat-2'},
+      ),
+    );
+
+    final captured =
+        verify(
+              () => db.getFilteredTasksCount(
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: captureAny(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+              ),
+            ).captured.single
+            as List<String>;
+    expect(captured, ['cat-2']);
+    verifyNever(() => cache.sortedCategories);
+  });
+
   test('uses the SQL COUNT path when no post-filters are active', () async {
     when(
       () => db.getFilteredTasksCount(

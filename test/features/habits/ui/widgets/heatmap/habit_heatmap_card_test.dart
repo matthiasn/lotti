@@ -87,8 +87,12 @@ void main() {
   testWidgets('narrow width stacks the legend below the title', (tester) async {
     await tester.pumpWidget(
       makeTestableWidget(
-        // < 460 forces the header into a Column (title above legend).
-        const SizedBox(width: 400, child: HabitHeatmapCard()),
+        // < 460 forces the header into a Column (title above legend). The
+        // Align loosens the host's tight constraints so the width applies.
+        const Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(width: 400, child: HabitHeatmapCard()),
+        ),
         overrides: [
           habitHeatmapControllerProvider.overrideWith(
             () => _FakeHeatmapController(
@@ -110,7 +114,12 @@ void main() {
     // The legend dropped below the title instead of sitting beside it.
     expect(
       tester.getTopLeft(find.text('Less')).dy,
-      greaterThan(tester.getTopLeft(find.text('Consistency')).dy),
+      greaterThan(tester.getBottomLeft(find.text('Consistency')).dy),
+    );
+    expect(
+      tester.getTopLeft(find.text('Less')).dx,
+      tester.getTopLeft(find.text('Consistency')).dx,
+      reason: 'the stacked legend starts at the title edge',
     );
   });
 

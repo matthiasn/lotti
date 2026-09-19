@@ -508,6 +508,32 @@ void main() {
     });
   });
 
+  group('PaneWidthController list pane toggle', () {
+    test(
+      'toggling from browse mode collapses the list pane and persists it',
+      () {
+        final notifier = container.read(paneWidthControllerProvider.notifier);
+        expect(
+          container.read(paneWidthControllerProvider).listPaneCollapsed,
+          isFalse,
+        );
+
+        notifier.toggleListPaneCollapsed();
+
+        expect(
+          container.read(paneWidthControllerProvider).listPaneCollapsed,
+          isTrue,
+        );
+        verify(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            listPaneCollapsedKey,
+            'true',
+          ),
+        ).called(1);
+      },
+    );
+  });
+
   group('PaneWidthController journal list pane width', () {
     test('hydrates the persisted journal width', () async {
       container.dispose();

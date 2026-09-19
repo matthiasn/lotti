@@ -1298,6 +1298,49 @@ void main() {
       expect(stagingParent.listSync(), isEmpty);
     });
 
+    test('rejects a database whose integrity_check reports problems', () async {
+      // An index whose schema no longer matches its entries opens and
+      // queries fine, but integrity_check returns findings instead of "ok".
+      final journal = File(p.join(sourceRoot.path, 'db.sqlite'));
+      sqlite3.open(journal.path)
+        ..execute('CREATE TABLE probe (a INTEGER, b INTEGER)')
+        ..execute('CREATE INDEX probe_idx ON probe(a)')
+        ..execute('INSERT INTO probe VALUES (1, 100), (2, 200)')
+        ..execute('PRAGMA writable_schema = ON')
+        ..execute(
+          "UPDATE sqlite_schema SET sql = 'CREATE INDEX probe_idx ON probe(b)' "
+          "WHERE name = 'probe_idx'",
+        )
+        ..execute('PRAGMA writable_schema = OFF')
+        ..userVersion = 45
+        ..close();
+      createWalDatabase(
+        'settings.sqlite',
+        schemaVersion: 1,
+        value: 'profile setting',
+      );
+
+      await expectLater(
+        service().stage(
+          sourceRoot: sourceRoot,
+          stagingParent: stagingParent,
+          appVersion: '1.0.4+4285',
+          profileType: 'real',
+        ),
+        throwsA(
+          isA<ProfileSnapshotValidationException>().having(
+            (error) => error.message,
+            'message',
+            allOf(
+              contains('SQLite integrity_check failed'),
+              contains('missing from index probe_idx'),
+            ),
+          ),
+        ),
+      );
+      expect(stagingParent.listSync(), isEmpty);
+    });
+
     test(
       'fails integrity validation for a corrupt required database',
       () async {
