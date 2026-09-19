@@ -18901,12 +18901,6 @@ abstract class AppLocalizations {
   /// **'Category agent'**
   String get queryCategoryAgent;
 
-  /// No description provided for @queryChat.
-  ///
-  /// In en, this message translates to:
-  /// **'Chat'**
-  String get queryChat;
-
   /// No description provided for @queryChats.
   ///
   /// In en, this message translates to:

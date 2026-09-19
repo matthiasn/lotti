@@ -4344,7 +4344,6 @@
   "queryAudioTooLarge": "Tu peux préparer des horodatages pour des enregistrements de 25 Mo maximum. Choisis un enregistrement plus petit.",
   "queryAudioUploadNotice": "La préparation des horodatages envoie cet enregistrement au fournisseur de transcription configuré pour cet agent.",
   "queryCategoryAgent": "Agent de catégorie",
-  "queryChat": "Discuter",
   "queryChats": "Chats",
   "queryChecked": "Sources vérifiées : {count}",
   "queryCloseChat": "Fermer le chat",

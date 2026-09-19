@@ -180,59 +180,6 @@ void main() {
   });
 
   group('TldrBody.bodyStyle', () {
-    testWidgets('a trailing action rides the disclosure row at its end, and '
-        'keeps a row of its own when there is nothing more to read', (
-      tester,
-    ) async {
-      const action = SizedBox(
-        key: ValueKey('trailing-action'),
-        width: 60,
-        height: 32,
-      );
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          TldrBody(
-            tldr: 'Summary first.',
-            expanded: false,
-            additionalReport: 'Full report details.',
-            onToggle: () {},
-            disclosureKey: const ValueKey('disclosure'),
-            trailing: action,
-          ),
-        ),
-      );
-      final body = tester.getRect(find.byType(TldrBody));
-      final trailing = tester.getRect(
-        find.byKey(const ValueKey('trailing-action')),
-      );
-      final link = tester.getRect(find.byKey(const ValueKey('disclosure')));
-      expect(trailing.right, moreOrLessEquals(body.right));
-      expect(trailing.center.dy, moreOrLessEquals(link.center.dy, epsilon: 1));
-
-      // Nothing further to read: no Read more, but the action still stands
-      // at the trailing edge, on its own line under the prose.
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          TldrBody(
-            tldr: 'Summary first.',
-            expanded: false,
-            additionalReport: null,
-            onToggle: () {},
-            disclosureKey: const ValueKey('disclosure'),
-            trailing: action,
-          ),
-        ),
-      );
-      expect(find.byKey(const ValueKey('disclosure')), findsNothing);
-      final lone = tester.getRect(
-        find.byKey(const ValueKey('trailing-action')),
-      );
-      final alone = tester.getRect(find.byType(TldrBody));
-      final prose = tester.getRect(find.byType(AgentMarkdownView));
-      expect(lone.right, moreOrLessEquals(alone.right));
-      expect(lone.top, greaterThanOrEqualTo(prose.bottom));
-    });
-
     testWidgets('reads at the compact summary size unless the host sets its '
         'own tier', (tester) async {
       Future<TextStyle?> styleFor(TextStyle? bodyStyle) async {

@@ -11250,9 +11250,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get queryCategoryAgent => 'Categorie-agent';
 
   @override
-  String get queryChat => 'Chat';
-
-  @override
   String get queryChats => 'Chats';
 
   @override

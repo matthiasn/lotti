@@ -6521,7 +6521,6 @@
   "queryAudioTooLarge": "Preparing timestamps supports recordings up to 25 MB. Choose a smaller recording.",
   "queryAudioUploadNotice": "Preparing timestamps sends this recording to the transcription provider configured for this agent.",
   "queryCategoryAgent": "Category agent",
-  "queryChat": "Chat",
   "queryChats": "Chats",
   "queryChecked": "Sources checked: {count}",
   "@queryChecked": {

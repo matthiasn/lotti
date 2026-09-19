@@ -11377,9 +11377,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get queryCategoryAgent => 'Agent kategorie';
 
   @override
-  String get queryChat => 'Chat';
-
-  @override
   String get queryChats => 'Chaty';
 
   @override

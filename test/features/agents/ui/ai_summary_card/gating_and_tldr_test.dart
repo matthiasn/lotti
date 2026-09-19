@@ -1,8 +1,12 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/query_chat_models.dart';
+import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:lotti/features/tts/ui/widgets/tts_play_button.dart';
 
 import '../../../../test_helper.dart';
 import '../../test_data/entity_factories.dart';
@@ -84,9 +88,10 @@ void main() {
       expect(find.text('Read more'), findsOneWidget);
     });
 
-    testWidgets('Chat shares the Read more row, at its trailing end, and '
-        'is no longer a pill of its own below it', (tester) async {
+    testWidgets('Chat is a disc leading the header rail, left of the '
+        'read-aloud disc, and opens the task chat', (tester) async {
       final bench = AgentTestBench(
+        enableSummaryTts: true,
         report: makeTestReport(
           tldr: 'Card surface is happy.',
           content: '## Goal\nShip the card.\n',
@@ -96,56 +101,58 @@ void main() {
       await tester.pumpWidget(bench.build());
       await tester.pumpAndSettle();
 
-      expect(find.text('Ask about this task'), findsNothing);
-      final chat = find.text('Chat');
-      final readMore = find.text('Read more');
-      expect(chat, findsOneWidget);
-      // One row: both labels on the same line…
-      expect(
-        tester.getCenter(chat).dy,
-        moreOrLessEquals(tester.getCenter(readMore).dy, epsilon: 1),
+      // No pill beside Read more any more: the disc is glyph-only.
+      expect(find.text('Chat'), findsNothing);
+      final chat = find.byWidgetPredicate(
+        (w) => w is DsAiDiscButton && w.icon == LottiIcons.chat,
       );
-      // …Read more leading, Chat against the card's trailing edge.
-      final card = tester.getRect(find.byType(AiSummaryCard));
-      expect(tester.getCenter(chat).dx, greaterThan(card.center.dx));
-      expect(tester.getCenter(readMore).dx, lessThan(card.center.dx));
-      // Still one TldrBody row: the button is its trailing slot.
+      expect(chat, findsOneWidget);
       expect(
-        find.ancestor(of: chat, matching: find.byType(TldrBody)),
+        find.ancestor(of: chat, matching: find.byType(TldrHeader)),
         findsOneWidget,
       );
+      expect(
+        find.ancestor(of: chat, matching: find.byType(TldrBody)),
+        findsNothing,
+      );
+
+      final chatRect = tester.getRect(chat);
+      final ttsRect = tester.getRect(find.byType(TtsPlayButton));
+      expect(chatRect.size, ttsRect.size);
+      expect(chatRect.center.dy, moreOrLessEquals(ttsRect.center.dy));
+      expect(chatRect.right, lessThanOrEqualTo(ttsRect.left));
+      // The rail stays flush to the card's trailing edge.
+      final header = tester.getRect(find.byType(TldrHeader));
+      expect(ttsRect.right, greaterThan(header.center.dx));
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(AiSummaryCard)),
+      );
+      const scope = QueryScope(
+        kind: QueryScopeKind.task,
+        id: AgentTestBench.taskId,
+      );
+      expect(container.read(queryPaneOpenProvider(scope)), isFalse);
+      await tester.tap(chat);
+      expect(container.read(queryPaneOpenProvider(scope)), isTrue);
     });
 
-    for (final locale in const [Locale('ro'), Locale('fr')]) {
-      testWidgets('on a 320 px card in ${locale.languageCode}, the expanded '
-          'links wrap beside Chat instead of overflowing the row', (
-        tester,
-      ) async {
-        tester.view
-          ..physicalSize = const Size(320, 1400)
-          ..devicePixelRatio = 1;
-        addTearDown(tester.view.reset);
-        final bench = AgentTestBench(
-          report: makeTestReport(
-            tldr: 'Tldr line.',
-            content: '## Goal\nShip the card.\n',
-          ),
-          width: 320,
-          locale: locale,
-        );
-        await tester.pumpWidget(bench.build());
-        await tester.pumpAndSettle();
-        await tester.tap(find.byIcon(LottiIcons.expand).first);
-        await tester.pumpAndSettle();
+    testWidgets('without read-aloud, the Chat disc holds the trailing edge '
+        'alone, even before there is a summary', (tester) async {
+      await tester.pumpWidget(AgentTestBench().build());
+      await tester.pumpAndSettle();
 
-        expect(tester.takeException(), isNull);
-        final card = tester.getRect(find.byType(AiSummaryCard));
-        final chat = tester.getRect(find.byIcon(LottiIcons.chat));
-        final internals = tester.getRect(find.byIcon(LottiIcons.tune));
-        expect(chat.right, lessThanOrEqualTo(card.right));
-        expect(internals.right, lessThan(chat.left));
-      });
-    }
+      expect(find.byType(TtsPlayButton), findsNothing);
+      final chat = find.byWidgetPredicate(
+        (w) => w is DsAiDiscButton && w.icon == LottiIcons.chat,
+      );
+      expect(
+        find.ancestor(of: chat, matching: find.byType(TldrHeader)),
+        findsOneWidget,
+      );
+      final header = tester.getRect(find.byType(TldrHeader));
+      expect(tester.getRect(chat).center.dx, greaterThan(header.center.dx));
+    });
 
     testWidgets('Read more toggle expands and collapses the report', (
       tester,

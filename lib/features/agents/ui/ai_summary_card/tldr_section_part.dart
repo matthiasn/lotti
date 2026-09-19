@@ -38,10 +38,10 @@ String? resolveReportAdditional(AgentReportEntity? report) {
 /// target are defined once.
 ///
 /// Report freshness and wake controls live in the stale strip and the card
-/// footer; the header keeps only the report identity and optional playback
-/// control. The whole badge + title + agent-name block is one tap target that
-/// opens the agent internals, so the name no longer needs its own oversized
-/// touch area.
+/// footer; the header keeps only the report identity and the optional chat
+/// and playback controls. The whole badge + title + agent-name block is one
+/// tap target that opens the agent internals, so the name no longer needs its
+/// own oversized touch area.
 class TldrHeader extends StatelessWidget {
   const TldrHeader({
     required this.agentName,
@@ -80,8 +80,9 @@ class TldrHeader extends StatelessWidget {
   final String? title;
 
   /// The header's trailing rail: whatever meta the host card wants beside
-  /// its identity — a TTS playback control on a task, cost and freshness on
-  /// a goal. Bounded to half the header, so pass something that can shrink.
+  /// its identity — the chat and read-aloud discs on a task, cost and
+  /// freshness on a goal. Bounded to half the header, so pass something that
+  /// can shrink.
   final Widget? trailing;
 
   @override
@@ -300,7 +301,6 @@ class TldrBody extends StatelessWidget {
     required this.disclosureKey,
     this.onOpenInternals,
     this.bodyStyle,
-    this.trailing,
     super.key,
   });
 
@@ -314,12 +314,6 @@ class TldrBody extends StatelessWidget {
   /// card reads at bodyMedium on every face, so its briefing must too.
   /// Null keeps the compact summary size the task and goal cards use.
   final TextStyle? bodyStyle;
-
-  /// An action at the trailing end of the disclosure row — the task card's
-  /// *Chat* — so it shares the line with *Read more* instead of costing a
-  /// row of its own. The row renders for it even when there is nothing
-  /// further to read.
-  final Widget? trailing;
 
   /// Key on the Read more / Show less control. Required rather than
   /// defaulted: a default would hand a fourth surface the task card's key
@@ -377,46 +371,33 @@ class TldrBody extends StatelessWidget {
         // carries ~12 px of optical padding on each side, so an explicit gap
         // stacked a second one on top and left a dead band under the prose.
         // The target instead reaches up into the last line's descender area.
-        if (hasDisclosure || trailing != null)
-          Row(
+        if (hasDisclosure)
+          Wrap(
+            spacing: tokens.spacing.step4,
+            runSpacing: tokens.spacing.step2,
             children: [
-              Expanded(
-                child: Wrap(
-                  spacing: tokens.spacing.step4,
-                  runSpacing: tokens.spacing.step2,
-                  children: [
-                    if (hasMore)
-                      _QuietDisclosureLink(
-                        key: disclosureKey,
-                        label: expanded
-                            ? messages.aiCardShowLess
-                            : messages.aiCardReadMore,
-                        icon: expanded
-                            ? LottiIcons.collapse
-                            : LottiIcons.expand,
-                        expanded: expanded,
-                        onPressed: onToggle,
-                      ),
-                    if (expanded && onOpenInternals != null)
-                      _QuietDisclosureLink(
-                        label: messages.aiCardOpenAgentInternals,
-                        icon: LottiIcons.tune,
-                        onPressed: onOpenInternals!,
-                      ),
-                  ],
+              if (hasMore)
+                _QuietDisclosureLink(
+                  key: disclosureKey,
+                  label: expanded
+                      ? messages.aiCardShowLess
+                      : messages.aiCardReadMore,
+                  icon: expanded ? LottiIcons.collapse : LottiIcons.expand,
+                  expanded: expanded,
+                  onPressed: onToggle,
                 ),
-              ),
-              if (trailing case final trailing?) ...[
-                SizedBox(width: tokens.spacing.step4),
-                trailing,
-              ],
+              if (expanded && onOpenInternals != null)
+                _QuietDisclosureLink(
+                  label: messages.aiCardOpenAgentInternals,
+                  icon: LottiIcons.tune,
+                  onPressed: onOpenInternals!,
+                ),
             ],
           ),
         // Without a disclosure row there is no tap target to supply the
         // trailing optical gap, so the body pays for it itself. The card gives
         // this block no bottom padding of its own.
-        if (!hasDisclosure && trailing == null)
-          SizedBox(height: tokens.spacing.step3),
+        if (!hasDisclosure) SizedBox(height: tokens.spacing.step3),
       ],
     );
   }
@@ -463,9 +444,8 @@ class _QuietDisclosureLink extends StatelessWidget {
                 children: [
                   Icon(icon, size: IconSizes.s, color: ink),
                   SizedBox(width: tokens.spacing.step2),
-                  // Flexible: beside the trailing action on a 320 px card, a
-                  // long translation ("Deschideți componentele interne ale
-                  // agentului") wraps inside its tap target instead of
+                  // Flexible: on a 320 px card, a long translation
+                  // ("Deschideți componentele interne ale agentului") wraps inside its tap target instead of
                   // overflowing the row.
                   Flexible(
                     child: Text(

@@ -4811,7 +4811,6 @@
   "queryAudioTooLarge": "Tidsstempler kan klargøres til optagelser på op til 25 MB. Vælg en mindre optagelse.",
   "queryAudioUploadNotice": "Når tidsstempler forberedes, sendes denne optagelse til den transskriptionsudbyder, der er konfigureret for denne agent.",
   "queryCategoryAgent": "Kategoriagent",
-  "queryChat": "Chat",
   "queryChats": "Chats",
   "queryChecked": "Tjekkede kilder: {count}",
   "queryCloseChat": "Luk chat",

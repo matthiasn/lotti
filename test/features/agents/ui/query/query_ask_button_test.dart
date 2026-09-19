@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -49,13 +50,13 @@ void main() {
     expect(find.text('Ask'), findsOneWidget);
     expect(container.read(queryPaneOpenProvider(scope)), isFalse);
   });
-  testWidgets('the chat pill reads Chat, announces its scope, and opens it', (
+  testWidgets('the disc is glyph-only, announces its scope, and opens it', (
     tester,
   ) async {
     const scope = QueryScope(kind: QueryScopeKind.task, id: 'penguin');
     await tester.pumpWidget(
       makeTestableWidget(
-        const QueryAskButton(scope: scope, chat: true),
+        const QueryAskButton(scope: scope, disc: true),
         overrides: [
           configFlagProvider(
             'enable_query_chat',
@@ -64,17 +65,15 @@ void main() {
       ),
     );
     await tester.pump();
-    final button = tester.widget<DesignSystemButton>(
-      find.byType(DesignSystemButton),
-    );
-    expect(button.label, 'Chat');
-    expect(button.semanticsLabel, 'Ask about this task');
-    expect(button.size, DesignSystemButtonSize.small);
-    expect(button.leadingIcon, LottiIcons.chat);
+    expect(find.byType(DesignSystemButton), findsNothing);
+    final disc = tester.widget<DsAiDiscButton>(find.byType(DsAiDiscButton));
+    expect(disc.icon, LottiIcons.chat);
+    expect(disc.label, 'Ask about this task');
+    expect(find.bySemanticsLabel('Ask about this task'), findsOneWidget);
     final container = ProviderScope.containerOf(
       tester.element(find.byType(QueryAskButton)),
     );
-    await tester.tap(find.text('Chat'));
+    await tester.tap(find.byType(DsAiDiscButton));
     expect(container.read(queryPaneOpenProvider(scope)), isTrue);
   });
   for (final kind in QueryScopeKind.values) {
