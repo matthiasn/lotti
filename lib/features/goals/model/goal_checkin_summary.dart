@@ -73,9 +73,12 @@ class GoalCheckInSummary {
   ) {
     final source = content['sourceEntryId'];
     final happened = content['whatHappened'];
-    final recordedAt = DateTime.tryParse(
-      content['recordedAt'] as String? ?? '',
-    );
+    // Type-checked rather than cast, like the optional slots below: one peer's
+    // malformed timestamp drops this summary, not the whole read.
+    final rawRecordedAt = content['recordedAt'];
+    final recordedAt = rawRecordedAt is String
+        ? DateTime.tryParse(rawRecordedAt)
+        : null;
     if (source is! String || happened is! String || recordedAt == null) {
       return null;
     }
