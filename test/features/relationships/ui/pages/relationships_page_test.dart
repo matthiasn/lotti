@@ -137,7 +137,8 @@ void main() {
         ],
       );
 
-  testWidgets('renders the empty state with an add affordance', (tester) async {
+  testWidgets('renders the empty state as a message alone — adding is the '
+      "page's bottom action, never a second button", (tester) async {
     when(
       () => mockRepository.getRelationshipsByRecency(),
     ).thenAnswer((_) async => []);
@@ -149,14 +150,9 @@ void main() {
       find.text('Add the people you want to stay close to.'),
       findsOneWidget,
     );
-    // One: the empty state's own labelled CTA. The header carries no add
-    // affordance any more, and on a phone the launcher docks the page's
-    // bottom action instead of the list floating one.
-    expect(
-      find.byKey(const ValueKey('people-empty-add-person-button')),
-      findsOneWidget,
-    );
-    expect(find.byIcon(LottiIcons.add), findsOneWidget);
+    // On a phone the launcher docks the page's one add action; neither the
+    // header nor the empty state adds a second.
+    expect(find.byIcon(LottiIcons.add), findsNothing);
   });
 
   testWidgets('shows the error text when the first load fails', (tester) async {
@@ -232,27 +228,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(beamedTo, ['/people/rel-1']);
-  });
-
-  testWidgets("the empty state's Add person button opens the create form", (
-    tester,
-  ) async {
-    when(
-      () => mockRepository.getRelationshipsByRecency(),
-    ).thenAnswer((_) async => []);
-
-    await tester.pumpWidget(buildPage());
-    await tester.pumpAndSettle();
-
-    await tester.tap(
-      find.byKey(const ValueKey('people-empty-add-person-button')),
-    );
-    await tester.pumpAndSettle();
-
-    // Create mode: the name field is up, and the edit-only status picker is
-    // not.
-    expect(find.text('Name'), findsOneWidget);
-    expect(find.text('Status'), findsNothing);
   });
 
   testWidgets('on a phone the list floats no add button and the header holds '
@@ -468,9 +443,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byIcon(LottiIcons.contactImport), findsNothing);
-    // Hiding the import door leaves the empty state's add button untouched.
     expect(
-      find.byKey(const ValueKey('people-empty-add-person-button')),
+      find.text('Add the people you want to stay close to.'),
       findsOneWidget,
     );
   });
@@ -707,8 +681,8 @@ void main() {
       expect(find.text('Status'), findsNothing);
     });
 
-    testWidgets('an empty list leaves adding to its inline CTA, with no '
-        'floating copy competing in the corner', (tester) async {
+    testWidgets('an empty list keeps the floating button as its one add '
+        'action', (tester) async {
       when(
         () => mockRepository.getRelationshipsByRecency(),
       ).thenAnswer((_) async => []);
@@ -716,10 +690,10 @@ void main() {
       await pumpDesktop(tester);
 
       expect(
-        find.byKey(const ValueKey('people-empty-add-person-button')),
+        find.byKey(const ValueKey('people-add-person-fab')),
         findsOneWidget,
       );
-      expect(find.byKey(const ValueKey('people-add-person-fab')), findsNothing);
+      expect(find.byIcon(LottiIcons.add), findsOneWidget);
     });
 
     testWidgets('dragging the divider widens the list pane', (tester) async {

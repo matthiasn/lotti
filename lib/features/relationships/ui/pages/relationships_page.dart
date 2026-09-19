@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
@@ -242,13 +241,8 @@ class _PeopleListScaffold extends ConsumerWidget {
     final launcherOwnsCreateAction = mobileNavigationLauncherOwnsPageActions(
       context,
     );
-    // An empty list's own inline CTA is the one primary action there — the
-    // same button in the corner would only compete with it.
-    final showFloatingAction =
-        !launcherOwnsCreateAction && (items == null || items.isNotEmpty);
-
     return Scaffold(
-      floatingActionButton: showFloatingAction
+      floatingActionButton: !launcherOwnsCreateAction
           ? DesignSystemBottomNavigationFabPadding(
               child: DesignSystemFloatingActionButton(
                 key: const ValueKey('people-add-person-fab'),
@@ -471,31 +465,20 @@ class _IconButton extends StatelessWidget {
   }
 }
 
+/// The empty list's message. It carries no add button of its own: adding a
+/// person is the page's bottom action, which is already on screen.
 class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final messages = context.messages;
     return Padding(
       padding: EdgeInsets.only(top: tokens.spacing.sectionGap),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            messages.relationshipsEmptyState,
-            textAlign: TextAlign.center,
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-          ),
-          SizedBox(height: tokens.spacing.step5),
-          DesignSystemButton(
-            key: const ValueKey('people-empty-add-person-button'),
-            label: messages.relationshipCreateTitle,
-            leadingIcon: LottiIcons.add,
-            onPressed: () => showRelationshipCreateModal(context: context),
-          ),
-        ],
+      child: Text(
+        context.messages.relationshipsEmptyState,
+        textAlign: TextAlign.center,
+        style: tokens.typography.styles.body.bodyMedium.copyWith(
+          color: tokens.colors.text.mediumEmphasis,
+        ),
       ),
     );
   }
@@ -507,9 +490,6 @@ class _EmptyState extends StatelessWidget {
 /// The launcher docks it beside Navigate while the People tab is on screen,
 /// which is why the list floats no button of its own there. Worded, like the
 /// task list's: the plus alone would not say that this one adds a person.
-/// Unconditional, where the floating button steps aside for an empty list's
-/// inline CTA: a chip appearing and leaving on the launcher's row would shift
-/// Navigate sideways under the user's thumb.
 MobileNavDockAction peopleTabDockAction(BuildContext context) =>
     MobileNavDockAction.worded(
       label: context.messages.relationshipCreateTitle,

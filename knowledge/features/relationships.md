@@ -494,9 +494,9 @@ header control: on desktop the list pane floats a worded "Add person"
 `DesignSystemFloatingActionButton`, on phones the mobile navigation launcher
 docks the same action (`peopleTabDockAction`) beside Navigate — see
 [navigation](../architecture/navigation.md#the-launchers-row-and-the-page-action-docked-on-it).
-An empty list withholds the floating copy so its own inline "Add person"
-button is the one primary action there. The header keeps only the title,
-the count and, where an address book exists, the contact-import door.
+It is the one add control on every state of the list, the empty one
+included: the empty state is a message alone. The header keeps only the
+title, the count and, where an address book exists, the contact-import door.
 
 ```mermaid
 flowchart LR

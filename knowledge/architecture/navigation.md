@@ -664,9 +664,9 @@ same predicate drops it.
 
 Two deliberate divergences from what the floating button did:
 
-- **The Logbook and People keep their docked actions during the empty
-  state**, where each page withholds the corner button so its inline create
-  CTA ("Create new entry", "Add person") is the single primary action. In the corner a second copy competed; on
+- **The Logbook keeps its docked action during the first-run zero state**,
+  where the page withholds the corner button so its inline "Create new entry"
+  CTA is the single primary action. In the corner a second copy competed; on
   the rail the create chip is persistent chrome beside Navigate, and dropping
   it only there would make the rail inconsistent across tabs.
 - **Projects docks unconditionally**, where the floating button waits for
