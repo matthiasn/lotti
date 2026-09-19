@@ -70,6 +70,20 @@ extension NudgeBannerSnoozeDurationValue on NudgeBannerSnoozeDuration {
   };
 }
 
+/// Why a banner was snoozed — whether the user put it off, or opened it.
+///
+/// A relationship reminder that is tapped opens the person and pauses
+/// itself for an hour (ADR 0063): the user acted on it, and the agent must
+/// not read that pause as the reminder being unwanted.
+enum NudgeSnoozeReason {
+  /// The user chose to put the banner off (the snooze sheet, or the agent at
+  /// the user's request in chat).
+  chosen,
+
+  /// The user tapped the banner to open what it points at.
+  opened,
+}
+
 NudgeBannerSnoozeDuration nudgeBannerSnoozeDurationFor(Duration duration) =>
     NudgeBannerSnoozeDuration.values.firstWhere(
       (preset) => preset.duration == duration,
@@ -141,6 +155,11 @@ abstract class NudgeSnooze with _$NudgeSnooze {
     @JsonKey(fromJson: _decodeUtcOffsetMinutes) required int utcOffsetMinutes,
     @JsonKey(fromJson: _decodeOptionalUtcOffsetMinutes)
     int? returnUtcOffsetMinutes,
+
+    /// Why it was snoozed; null for events recorded before reasons were
+    /// kept, which were all [NudgeSnoozeReason.chosen].
+    @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)
+    NudgeSnoozeReason? reason,
   }) = _NudgeSnooze;
 
   const NudgeSnooze._();

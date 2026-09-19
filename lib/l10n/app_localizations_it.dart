@@ -12520,6 +12520,18 @@ class AppLocalizationsIt extends AppLocalizations {
   String get relationshipRelinkContact => 'Collega un altro contatto';
 
   @override
+  String get relationshipReminderPausedBody =>
+      'Tornerà allora, a meno che tu non registri prima un contatto.';
+
+  @override
+  String relationshipReminderPausedTitle(String time) {
+    return 'Promemoria in pausa fino alle $time';
+  }
+
+  @override
+  String get relationshipReminderSnoozeLonger => 'Posticipa di più';
+
+  @override
   String get relationshipsEmptyState =>
       'Aggiungi le persone a cui vuoi restare vicino.';
 

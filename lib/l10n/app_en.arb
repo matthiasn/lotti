@@ -7358,6 +7358,23 @@
   "@relationshipRelinkContact": {
     "description": "Menu action that replaces the OS contact a person is linked to"
   },
+  "relationshipReminderPausedBody": "It comes back then, unless you log a check-in first.",
+  "@relationshipReminderPausedBody": {
+    "description": "Under the paused-reminder title: what happens when the pause ends."
+  },
+  "relationshipReminderPausedTitle": "Reminder paused until {time}",
+  "@relationshipReminderPausedTitle": {
+    "description": "On the person page after tapping the check-in reminder banner, which paused the reminder for an hour. {time} is the time of day it comes back.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipReminderSnoozeLonger": "Snooze longer",
+  "@relationshipReminderSnoozeLonger": {
+    "description": "Button on the paused-reminder note that opens the snooze options."
+  },
   "relationshipsEmptyState": "Add the people you want to stay close to.",
   "relationshipsGroupDue": "Due",
   "relationshipsPageTitle": "People",

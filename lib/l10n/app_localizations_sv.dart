@@ -12379,6 +12379,18 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipRelinkContact => 'Länka en annan kontakt';
 
   @override
+  String get relationshipReminderPausedBody =>
+      'Den kommer tillbaka då, om du inte loggar en avstämning innan.';
+
+  @override
+  String relationshipReminderPausedTitle(String time) {
+    return 'Påminnelsen pausad till $time';
+  }
+
+  @override
+  String get relationshipReminderSnoozeLonger => 'Snooza längre';
+
+  @override
   String get relationshipsEmptyState =>
       'Lägg till människorna du vill hålla kontakten med.';
 

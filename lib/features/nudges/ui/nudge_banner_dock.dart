@@ -12,7 +12,6 @@ import 'package:lotti/features/nudges/ui/nudge_banner_exposure_tracker.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_style.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// How long one banner holds the dock before the rotation advances — long
@@ -588,7 +587,7 @@ class _DockTenant extends ConsumerWidget {
         },
         child: InkWell(
           key: const ValueKey('nudge-banner-dock-tenant'),
-          onTap: () => beamToNamed(entry.tapRoute),
+          onTap: () => openNudgeBanner(context, ref, entry),
           child: Padding(
             padding: EdgeInsets.only(
               left: tokens.spacing.cardPadding,
@@ -650,7 +649,7 @@ class _DockTenant extends ConsumerWidget {
                   NudgeBannerCtaPill(
                     label: brief.cta!,
                     style: style,
-                    onTap: () => beamToNamed(entry.tapRoute),
+                    onTap: () => openNudgeBanner(context, ref, entry),
                   ),
                 ],
                 if (!compact)

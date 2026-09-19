@@ -887,7 +887,11 @@ removed:
   doubled. Active banners surface through the kind-agnostic nudge channel
   (`activeRelationshipNudgesProvider`, registered at bootstrap) on all
   surfaces, tapping through to `/people/<id>` — the resolved ADR 0059 open
-  question.
+  question. The tap also pauses the reminder for an hour, recorded as
+  *opened* (ADR 0063): the person page then shows *Reminder paused until
+  15:40* with *Snooze longer* (`PausedReminderCallout`, fed by
+  `pausedRelationshipReminderProvider`), and FACTS render the banner as
+  "opened by the user, paused until …" rather than as snoozed.
 - **Chat turns are durable before the wake.** `RelationshipChatService`
   persists the user turn, then enqueues a manual wake whose trigger token
   carries the message id; a failed wake surfaces that id so retry

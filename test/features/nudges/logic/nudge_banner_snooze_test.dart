@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -196,6 +198,85 @@ void main() {
 
     expect(repeated.snoozeHistory, first.snoozeHistory);
     expect(repeated.snoozeHistory, hasLength(1));
+  });
+
+  // The reason survives the JSON round-trip sync puts it through, and an
+  // unknown one from a newer client reads as none rather than failing.
+  test('a snooze reason round-trips, and an unknown one reads as none', () {
+    final event = NudgeEntityView.of(
+      snoozeNudgeBannerEntity(
+        nudge: makeNudgeView(),
+        now: DateTime.utc(2026, 8, 11, 10),
+        until: DateTime.utc(2026, 8, 11, 11),
+        eventId: 'snooze-1',
+        reason: NudgeSnoozeReason.opened,
+      ),
+    )!.snoozeHistory.single;
+
+    final json = jsonDecode(jsonEncode(event.toJson())) as Map<String, dynamic>;
+    expect(NudgeSnooze.fromJson(json).reason, NudgeSnoozeReason.opened);
+    expect(
+      NudgeSnooze.fromJson({...json, 'reason': 'someFutureReason'}).reason,
+      isNull,
+    );
+    expect(NudgeSnooze.fromJson({...json}..remove('reason')).reason, isNull);
+  });
+
+  // Codex review on #4356: concurrent snoozes keep the later deadline, not
+  // the later event — the event in force is the one that set the deadline.
+  group('nudgeBannerEffectiveSnooze', () {
+    final now = DateTime.utc(2026, 8, 11, 10);
+
+    NudgeEntityView snoozed(
+      NudgeEntityView nudge,
+      String id,
+      Duration length,
+      NudgeSnoozeReason? reason, {
+      Duration after = Duration.zero,
+    }) => NudgeEntityView.of(
+      snoozeNudgeBannerEntity(
+        nudge: nudge,
+        now: now.add(after),
+        until: now.add(after).add(length),
+        eventId: id,
+        reason: reason,
+      ),
+    )!;
+
+    test('is the event whose return is the deadline in force', () {
+      // An eight-hour snooze chosen first, then an opened one-hour pause
+      // whose deadline lost the merge.
+      final chosen = snoozed(
+        makeNudgeView(),
+        'chosen',
+        const Duration(hours: 8),
+        NudgeSnoozeReason.chosen,
+      );
+      final both = snoozed(
+        chosen,
+        'opened',
+        const Duration(hours: 1),
+        NudgeSnoozeReason.opened,
+        after: const Duration(minutes: 5),
+      );
+      final merged = NudgeEntityView.of(
+        both.copyWith(snoozedUntil: chosen.snoozedUntil),
+      )!;
+
+      expect(nudgeBannerEffectiveSnooze(merged)?.id, 'chosen');
+      expect(nudgeBannerEffectiveSnooze(both)?.id, 'opened');
+    });
+
+    test('is none without a deadline, or when no event of this activation '
+        'set it', () {
+      expect(nudgeBannerEffectiveSnooze(makeNudgeView()), isNull);
+      expect(
+        nudgeBannerEffectiveSnooze(
+          makeNudgeView(snoozedUntil: DateTime.utc(2026, 8, 11, 12)),
+        ),
+        isNull,
+      );
+    });
   });
 
   test('a zero or negative snooze interval is rejected', () {

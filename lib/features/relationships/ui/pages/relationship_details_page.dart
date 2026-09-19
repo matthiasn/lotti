@@ -17,6 +17,7 @@ import 'package:lotti/features/relationships/state/relationships_providers.dart'
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_ins_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/linked_tasks_card.dart';
+import 'package:lotti/features/relationships/ui/widgets/paused_reminder_callout.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_avatar_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_header.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
@@ -242,7 +243,17 @@ class RelationshipDetailsPage extends ConsumerWidget {
                 padding: insets,
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    for (final section in sections) ...[section, gap],
+                    for (final (index, section) in sections.indexed) ...[
+                      section,
+                      gap,
+                      // Under the person's name: the reminder the user just
+                      // tapped says it is paused, and until when.
+                      if (index == 0)
+                        PausedReminderCallout(
+                          relationshipId: relationshipId,
+                          bottomGap: tokens.spacing.sectionGap,
+                        ),
+                    ],
                     // Renders nothing until the user comes back from a
                     // call placed on this page; then it is the most
                     // time-sensitive thing here, directly above the log

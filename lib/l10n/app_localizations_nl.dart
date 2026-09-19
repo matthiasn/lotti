@@ -12396,6 +12396,18 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipRelinkContact => 'Ander contact koppelen';
 
   @override
+  String get relationshipReminderPausedBody =>
+      'Dan komt hij terug, tenzij je eerst een check-in vastlegt.';
+
+  @override
+  String relationshipReminderPausedTitle(String time) {
+    return 'Herinnering gepauzeerd tot $time';
+  }
+
+  @override
+  String get relationshipReminderSnoozeLonger => 'Langer snoozen';
+
+  @override
   String get relationshipsEmptyState =>
       'Voeg de mensen toe met wie je dichtbij wilt blijven.';
 

@@ -12484,6 +12484,18 @@ class AppLocalizationsPt extends AppLocalizations {
   String get relationshipRelinkContact => 'Associar outro contacto';
 
   @override
+  String get relationshipReminderPausedBody =>
+      'Ele volta nesse horário, a menos que você registre um contato antes.';
+
+  @override
+  String relationshipReminderPausedTitle(String time) {
+    return 'Lembrete pausado até $time';
+  }
+
+  @override
+  String get relationshipReminderSnoozeLonger => 'Adiar mais';
+
+  @override
   String get relationshipsEmptyState =>
       'Adicione as pessoas de quem você quer ficar perto.';
 

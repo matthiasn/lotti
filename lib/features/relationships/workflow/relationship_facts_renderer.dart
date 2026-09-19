@@ -8,6 +8,8 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
+import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
+import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 
@@ -269,7 +271,7 @@ class RelationshipFactsRenderer {
       buffer.writeln(
         '- adId=${nudge.id} | "${nudge.brief.headline}" | activated '
         '${_day(nudge.activatedAt ?? nudge.createdAt)}'
-        '${nudge.snoozedUntil != null && nudge.snoozedUntil!.isAfter(now) ? ' | snoozed until ${nudge.snoozedUntil!.toIso8601String()}' : ''}',
+        '${_quiet(nudge, now)}',
       );
     }
     if (_dismissedToday(nudges, now)) {
@@ -386,4 +388,17 @@ List<CheckInEntry> relationshipCheckInWindow(List<CheckInEntry> checkIns) {
   final sorted = [...checkIns]
     ..sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));
   return sorted.take(relationshipCheckInLookback).toList();
+}
+
+/// A banner's pause, as FACTS reads it: whether the user put it off, or
+/// opened it — a tapped reminder pauses itself (ADR 0063), and reading that
+/// as the reminder being unwanted would teach the agent the wrong thing.
+String _quiet(RelationshipNudgeEntity nudge, DateTime now) {
+  final until = nudge.snoozedUntil;
+  if (until == null || !until.isAfter(now)) return '';
+  final inForce = nudgeBannerEffectiveSnooze(NudgeEntityView.of(nudge)!);
+  final stamp = until.toIso8601String();
+  return inForce?.reason == NudgeSnoozeReason.opened
+      ? ' | opened by the user, paused until $stamp'
+      : ' | snoozed until $stamp';
 }

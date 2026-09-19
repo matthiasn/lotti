@@ -20485,6 +20485,24 @@ abstract class AppLocalizations {
   /// **'Link a different contact'**
   String get relationshipRelinkContact;
 
+  /// Under the paused-reminder title: what happens when the pause ends.
+  ///
+  /// In en, this message translates to:
+  /// **'It comes back then, unless you log a check-in first.'**
+  String get relationshipReminderPausedBody;
+
+  /// On the person page after tapping the check-in reminder banner, which paused the reminder for an hour. {time} is the time of day it comes back.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder paused until {time}'**
+  String relationshipReminderPausedTitle(String time);
+
+  /// Button on the paused-reminder note that opens the snooze options.
+  ///
+  /// In en, this message translates to:
+  /// **'Snooze longer'**
+  String get relationshipReminderSnoozeLonger;
+
   /// No description provided for @relationshipsEmptyState.
   ///
   /// In en, this message translates to:

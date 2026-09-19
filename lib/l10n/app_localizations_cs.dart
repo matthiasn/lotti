@@ -12553,6 +12553,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipRelinkContact => 'Propojit jiný kontakt';
 
   @override
+  String get relationshipReminderPausedBody =>
+      'Pak se vrátí, pokud předtím nezaznamenáš kontakt.';
+
+  @override
+  String relationshipReminderPausedTitle(String time) {
+    return 'Připomínka pozastavena do $time';
+  }
+
+  @override
+  String get relationshipReminderSnoozeLonger => 'Odložit na déle';
+
+  @override
   String get relationshipsEmptyState =>
       'Přidej lidi, se kterými chceš zůstat v kontaktu.';
 

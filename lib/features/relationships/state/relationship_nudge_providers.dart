@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -12,6 +13,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
+import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/services/db_notification.dart' show agentNotification;
 import 'package:lotti/utils/consts.dart';
@@ -107,3 +109,59 @@ final FutureProvider<List<NudgeBannerEntry>> activeRelationshipNudgesProvider =
       }
       return entries;
     }, name: 'activeRelationshipNudgesProvider');
+
+/// This person's reminder while the tap that opened it has paused it
+/// (ADR 0063): the banner, and when it comes back. Null when no reminder is
+/// paused that way — none is active, it was never tapped, or it was put off
+/// on purpose since (a chosen snooze is the user's own answer).
+typedef PausedRelationshipReminder = ({NudgeBannerEntry entry, DateTime until});
+
+final FutureProviderFamily<PausedRelationshipReminder?, String>
+pausedRelationshipReminderProvider = FutureProvider.autoDispose
+    .family<PausedRelationshipReminder?, String>((
+      ref,
+      relationshipId,
+    ) async {
+      final agentId = relationshipAgentIdFor(relationshipId);
+      ref
+        ..watch(agentUpdateStreamProvider(agentId))
+        // The tap hides the banner here the moment its pause is written;
+        // the write itself sends no agent notification.
+        ..watch(locallySnoozedNudgeDeadlinesProvider);
+      final repository = ref.watch(agentRepositoryProvider);
+      // The agent is named after the person: the banner's subject, without
+      // a second read of the person the page already holds.
+      final identity = await repository.getEntity(agentId);
+      if (identity is! AgentIdentityEntity) return null;
+      final nudges = (await repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.relationshipNudge,
+      )).whereType<RelationshipNudgeEntity>();
+      final now = clock.now();
+      for (final nudge in nudges) {
+        if (nudge.deletedAt != null || nudge.status != NudgeStatus.active) {
+          continue;
+        }
+        final view = NudgeEntityView.of(nudge)!;
+        final until = nudgeBannerSnoozedUntil(view);
+        if (until == null || !until.isAfter(now)) continue;
+        // The event in force, not the newest: concurrent snoozes keep the
+        // later deadline, which a chosen snooze may have set.
+        if (nudgeBannerEffectiveSnooze(view)?.reason !=
+            NudgeSnoozeReason.opened) {
+          continue;
+        }
+        final timer = Timer(until.difference(now), ref.invalidateSelf);
+        ref.onDispose(timer.cancel);
+        return (
+          entry: (
+            nudge: view,
+            subjectTitle: identity.displayName,
+            kind: NudgeBannerKind.relationship,
+            tapRoute: '/people/$relationshipId',
+          ),
+          until: until,
+        );
+      }
+      return null;
+    }, name: 'pausedRelationshipReminderProvider');

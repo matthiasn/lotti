@@ -932,6 +932,16 @@ void main() {
         explicitReturnOffset,
         reason: 'two explicit offsets retain their numeric total order',
       );
+
+      // Codex review on #4356: an older client re-serializes the event
+      // without its reason; both replicas must keep the reasoned copy,
+      // whichever side it arrives on.
+      final opened = baseline.copyWith(reason: NudgeSnoozeReason.opened);
+      expect(selected(baseline, opened), opened);
+      expect(selected(opened, baseline), opened);
+      final chosen = baseline.copyWith(reason: NudgeSnoozeReason.chosen);
+      expect(selected(opened, chosen), chosen);
+      expect(selected(chosen, opened), chosen);
     });
 
     test('unions day-dismissal history by id and converges on conflicting '

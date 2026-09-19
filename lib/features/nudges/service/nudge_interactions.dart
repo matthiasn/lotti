@@ -67,11 +67,14 @@ class NudgeInteractions {
       !nudge.ratings.any((r) => r.activation == nudge.activationCount);
 
   /// Temporarily hides an active banner and appends the timing choice used by
-  /// future agent wakes to learn better initial display windows.
+  /// future agent wakes to learn better initial display windows. [reason]
+  /// marks a pause the user did not choose as such — the tap that opened a
+  /// relationship reminder.
   Future<DateTime?> snooze(
     String nudgeId, {
     required NudgeBannerSnoozeDuration duration,
     int? forActivation,
+    NudgeSnoozeReason? reason,
   }) async {
     final exactDuration = duration.duration;
     if (exactDuration == null) {
@@ -98,6 +101,7 @@ class NudgeInteractions {
             now: now,
             until: now.add(exactDuration),
             eventId: eventId,
+            reason: reason,
           );
           await _syncService.upsertEntity(updated);
           persistedUntil = NudgeEntityView.of(updated)!.snoozedUntil;

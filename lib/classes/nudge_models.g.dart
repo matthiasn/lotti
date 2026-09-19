@@ -77,6 +77,11 @@ _NudgeSnooze _$NudgeSnoozeFromJson(Map<String, dynamic> json) => _NudgeSnooze(
   returnUtcOffsetMinutes: _decodeOptionalUtcOffsetMinutes(
     json['returnUtcOffsetMinutes'],
   ),
+  reason: $enumDecodeNullable(
+    _$NudgeSnoozeReasonEnumMap,
+    json['reason'],
+    unknownValue: JsonKey.nullForUndefinedEnumValue,
+  ),
 );
 
 Map<String, dynamic> _$NudgeSnoozeToJson(_NudgeSnooze instance) =>
@@ -89,6 +94,7 @@ Map<String, dynamic> _$NudgeSnoozeToJson(_NudgeSnooze instance) =>
       'durationMinutes': instance.durationMinutes,
       'utcOffsetMinutes': instance.utcOffsetMinutes,
       'returnUtcOffsetMinutes': instance.returnUtcOffsetMinutes,
+      'reason': _$NudgeSnoozeReasonEnumMap[instance.reason],
     };
 
 const _$NudgeBannerSnoozeDurationEnumMap = {
@@ -97,6 +103,11 @@ const _$NudgeBannerSnoozeDurationEnumMap = {
   NudgeBannerSnoozeDuration.sixHours: 'sixHours',
   NudgeBannerSnoozeDuration.eightHours: 'eightHours',
   NudgeBannerSnoozeDuration.custom: 'custom',
+};
+
+const _$NudgeSnoozeReasonEnumMap = {
+  NudgeSnoozeReason.chosen: 'chosen',
+  NudgeSnoozeReason.opened: 'opened',
 };
 
 _NudgeDayDismissal _$NudgeDayDismissalFromJson(Map<String, dynamic> json) =>

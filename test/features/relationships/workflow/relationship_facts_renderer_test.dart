@@ -617,4 +617,104 @@ void main() {
     expect(facts, contains('adId=ad-live'));
     expect(facts, contains('"Call Anna."'));
   });
+
+  // ADR 0063: a reminder the user tapped paused itself; FACTS must not read
+  // that as the user putting it off.
+  for (final (reason, line) in [
+    (NudgeSnoozeReason.opened, 'opened by the user, paused until'),
+    (NudgeSnoozeReason.chosen, 'snoozed until'),
+    (null, 'snoozed until'),
+  ]) {
+    test('a paused banner says why it is quiet: $reason', () {
+      final until = DateTime.utc(2099);
+      final base =
+          AgentDomainEntity.relationshipNudge(
+                id: 'ad-live',
+                agentId: 'agent-1',
+                status: NudgeStatus.active,
+                brief: const NudgeBrief(
+                  headline: 'Call Anna.',
+                  tone: NudgeTone.nudge,
+                  animation: NudgeBannerAnimation.steady,
+                ),
+                briefDigest: 'd',
+                createdAt: testDate,
+                updatedAt: testDate,
+                vectorClock: null,
+                activatedAt: DateTime(2026, 8, 15),
+                snoozedUntil: until,
+              )
+              as RelationshipNudgeEntity;
+      final paused = base.copyWith(
+        snoozeHistory: [
+          NudgeSnooze(
+            id: 'snooze-1',
+            activation: base.activationCount,
+            snoozedAt: testDate,
+            snoozedUntil: until,
+            duration: NudgeBannerSnoozeDuration.oneHour,
+            durationMinutes: 60,
+            utcOffsetMinutes: 0,
+            reason: reason,
+          ),
+        ],
+      );
+
+      final facts = render(nudges: [paused]);
+
+      expect(facts, contains('| $line ${until.toIso8601String()}'));
+      if (reason != NudgeSnoozeReason.opened) {
+        expect(facts, isNot(contains('opened by the user')));
+      }
+    });
+  }
+
+  // Codex review on #4356: the deadline in force came from a chosen snooze,
+  // so the agent must read it as snoozed, not as opened.
+  test('a newer opened pause that lost the deadline reads as snoozed', () {
+    final chosenUntil = DateTime.utc(2099);
+    final base =
+        AgentDomainEntity.relationshipNudge(
+              id: 'ad-live',
+              agentId: 'agent-1',
+              status: NudgeStatus.active,
+              brief: const NudgeBrief(
+                headline: 'Call Anna.',
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
+              ),
+              briefDigest: 'd',
+              createdAt: testDate,
+              updatedAt: testDate,
+              vectorClock: null,
+              activatedAt: DateTime(2026, 8, 15),
+              snoozedUntil: chosenUntil,
+            )
+            as RelationshipNudgeEntity;
+    NudgeSnooze event(String id, DateTime until, NudgeSnoozeReason reason) =>
+        NudgeSnooze(
+          id: id,
+          activation: base.activationCount,
+          snoozedAt: testDate,
+          snoozedUntil: until,
+          duration: NudgeBannerSnoozeDuration.oneHour,
+          durationMinutes: 60,
+          utcOffsetMinutes: 0,
+          reason: reason,
+        );
+
+    final facts = render(
+      nudges: [
+        base.copyWith(
+          snoozeHistory: [
+            event('chosen', chosenUntil, NudgeSnoozeReason.chosen),
+            event('opened', DateTime.utc(2098), NudgeSnoozeReason.opened),
+          ],
+        ),
+      ],
+    );
+
+    expect(facts, contains('| snoozed until ${chosenUntil.toIso8601String()}'));
+    expect(facts, isNot(contains('opened by the user')));
+  });
 }
