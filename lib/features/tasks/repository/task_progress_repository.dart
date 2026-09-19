@@ -127,13 +127,15 @@ class TaskProgressRepository {
     );
   }
 
+  /// Drains every id queued since the batch was scheduled.
+  ///
+  /// The queue is never empty here and never needs a follow-up flush: an id is
+  /// only ever queued by [getTaskProgressData], which schedules a flush in the
+  /// same synchronous step whenever none is pending, and this method clears
+  /// the queue and the scheduled flag together before its first `await`. So
+  /// "queued ids imply a scheduled flush" holds at every suspension point.
   Future<void> _flushPendingTaskProgressBatch() async {
     final taskIds = _pendingTaskIds.toSet();
-    if (taskIds.isEmpty) {
-      _batchScheduled = false;
-      return;
-    }
-
     final completersById =
         <String, List<Completer<(Duration?, Map<String, TimeRange>)?>>>{};
     for (final taskId in taskIds) {
@@ -170,11 +172,6 @@ class TaskProgressRepository {
             completer.completeError(error, stackTrace);
           }
         }
-      }
-    } finally {
-      if (_pendingTaskIds.isNotEmpty && !_batchScheduled) {
-        _batchScheduled = true;
-        scheduleMicrotask(_flushPendingTaskProgressBatch);
       }
     }
   }

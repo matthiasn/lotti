@@ -1218,8 +1218,6 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                               habitTargets: _habitTargets,
                               watchesSteps: _watchesSteps,
                               stepsTarget: _stepsTarget,
-                              matchedHabitIds: _matchedHabitIds,
-                              matchedHealthTypes: _matchedHealthTypes,
                               chosenSignalOrder: _chosenSignalOrder,
                               suggestedSignalOrder: _suggestedSignalOrder,
                               targetErrors: _targetErrors,
@@ -1643,8 +1641,6 @@ class _MappingStep extends StatelessWidget {
     required this.habitTargets,
     required this.watchesSteps,
     required this.stepsTarget,
-    required this.matchedHabitIds,
-    required this.matchedHealthTypes,
     required this.chosenSignalOrder,
     required this.suggestedSignalOrder,
     required this.targetErrors,
@@ -1705,8 +1701,6 @@ class _MappingStep extends StatelessWidget {
   final String? statementError;
   final VoidCallback? onStatementChanged;
   final ValueChanged<String>? onExampleSelected;
-  final Set<String> matchedHabitIds;
-  final Set<String> matchedHealthTypes;
 
   /// Frozen row order for the signals card; see the page state's snapshot.
   final List<String> chosenSignalOrder;
@@ -2042,14 +2036,6 @@ class _MappingStep extends StatelessWidget {
     final messages = context.messages;
     final habitsById = {for (final habit in habits) habit.id: habit};
     final selectedIds = habitTargets.keys.toSet();
-    final visibleHabits = <({String id, String name})>[
-      for (final id in selectedIds) (id: id, name: habitsById[id]?.name ?? id),
-      // Intention-matched habits stay visible when unchecked — a checkbox
-      // must not delete its own row.
-      for (final id in matchedHabitIds)
-        if (!selectedIds.contains(id))
-          (id: id, name: habitsById[id]?.name ?? id),
-    ];
     final noObservableMatch =
         mapping.isEditable &&
         !watchesSteps &&
@@ -2095,14 +2081,10 @@ class _MappingStep extends StatelessWidget {
         labelTimeTargets.length +
         (watchesSteps ? 1 : 0);
     // Rows render in the order frozen at step entry — a tapped row stays
-    // put. Signals selected after the snapshot (via the picker) append to
-    // the chosen group.
-    final bloodPressureSelected =
-        healthTargets.containsKey(GoalHealthDataTypes.bloodPressureSystolic) ||
-        healthTargets.containsKey(GoalHealthDataTypes.bloodPressureDiastolic);
-    final weightSelected = healthTargets.containsKey(
-      GoalHealthDataTypes.weight,
-    );
+    // put. The page appends a signal selected after the snapshot (via the
+    // picker) to the chosen group in the same setState that selects it, and
+    // intention-matched signals are re-snapshotted whenever they change, so
+    // every selected or matched signal already has its place in one group.
     Widget? signalRowFor(String descriptor) {
       if (descriptor == 'blood-pressure') return _bloodPressureRow(context);
       if (descriptor == 'weight') return _weightRow(context);
@@ -2120,18 +2102,8 @@ class _MappingStep extends StatelessWidget {
       );
     }
 
-    final knownDescriptors = {...chosenSignalOrder, ...suggestedSignalOrder};
-    final appendedSignals = <String>[
-      for (final habit in visibleHabits)
-        if (!knownDescriptors.contains('habit:${habit.id}'))
-          'habit:${habit.id}',
-      if (bloodPressureSelected && !knownDescriptors.contains('blood-pressure'))
-        'blood-pressure',
-      if (weightSelected && !knownDescriptors.contains('weight')) 'weight',
-    ];
     final chosenSignals = <Widget>[
-      for (final descriptor in [...chosenSignalOrder, ...appendedSignals])
-        ?signalRowFor(descriptor),
+      for (final descriptor in chosenSignalOrder) ?signalRowFor(descriptor),
     ];
     final suggestedSignals = <Widget>[
       for (final descriptor in suggestedSignalOrder) ?signalRowFor(descriptor),

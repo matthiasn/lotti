@@ -611,11 +611,20 @@ void main() {
       ),
     ];
 
-    test('debug build trips the duplicate-id assert', () {
+    test('reports the duplicate id, then trips the debug assert', () {
+      final printed = <String?>[];
+      final originalDebugPrint = debugPrint;
+      debugPrint = (message, {wrapWidth}) => printed.add(message);
+      addTearDown(() => debugPrint = originalDebugPrint);
+
       expect(
         () => SettingsTreeIndex.build(duplicate),
         throwsA(isA<AssertionError>()),
       );
+      const reported =
+          'Duplicate SettingsNode id "dup" at depth 0. Node ids must be '
+          'unique across the tree.';
+      expect(printed, [reported]);
     });
   });
 }

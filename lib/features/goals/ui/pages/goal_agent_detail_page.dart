@@ -246,11 +246,9 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
     );
   }
 
+  /// Opens the one-tap capture sheet for [progress]'s habits. The banner CTA
+  /// only calls this when there is at least one habit to tick off.
   void _logToday(GoalProgressView progress) {
-    if (progress.habits.isEmpty) {
-      _scrollToProgress();
-      return;
-    }
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,

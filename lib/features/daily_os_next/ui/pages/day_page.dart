@@ -938,7 +938,7 @@ class _NoPlanFooter extends StatelessWidget {
   const _NoPlanFooter({
     required this.onCheckIn,
     required this.needsInferenceSetup,
-    this.ctaKey,
+    required this.ctaKey,
   });
 
   final VoidCallback? onCheckIn;
@@ -946,7 +946,7 @@ class _NoPlanFooter extends StatelessWidget {
 
   /// Measurement key for the onboarding spotlight to anchor to. The stable
   /// [Key] used as a test finder stays on the button regardless.
-  final GlobalKey? ctaKey;
+  final GlobalKey ctaKey;
 
   @override
   Widget build(BuildContext context) {
@@ -988,10 +988,7 @@ class _NoPlanFooter extends StatelessWidget {
           children: [
             // The onboarding spotlight measures the CTA through this wrapper
             // key; the stable Key on the button stays put for test finders.
-            if (ctaKey != null)
-              KeyedSubtree(key: ctaKey, child: button)
-            else
-              button,
+            KeyedSubtree(key: ctaKey, child: button),
           ],
         ),
       ),

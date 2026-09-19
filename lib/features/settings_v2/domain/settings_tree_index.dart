@@ -196,12 +196,6 @@ List<String> _idToPath(String id) {
   return result;
 }
 
-/// Optional reporter for duplicate node ids detected at build time.
-/// Defaults to a `debugPrint` — wire up `LoggingService` via
-/// [SettingsTreeIndex.duplicateReporter] at app start to get release
-/// visibility.
-typedef DuplicateNodeIdReporter = void Function(String message);
-
 /// O(1) lookup over a (flag-gated) settings tree.
 ///
 /// Pre-computed on tree change — the provider in the plan §1 rebuilds
@@ -213,8 +207,8 @@ class SettingsTreeIndex {
   /// depth are an authoring bug: tree data is static, so a collision
   /// means two nodes share a slot by mistake. In debug builds an
   /// assertion fires to surface this during development; in release
-  /// the last occurrence wins AND the collision is reported via
-  /// [duplicateReporter] so the regression is still visible in logs.
+  /// the last occurrence wins. Either way the collision is first printed
+  /// via [debugPrint], so the regression is still visible in logs.
   factory SettingsTreeIndex.build(List<SettingsNode> tree) {
     final byId = <String, SettingsNode>{};
     final ancestors = <String, List<String>>{};
@@ -224,8 +218,8 @@ class SettingsTreeIndex {
           final message =
               'Duplicate SettingsNode id "${node.id}" at depth '
               '${parents.length}. Node ids must be unique across the tree.';
+          debugPrint(message);
           assert(false, message);
-          duplicateReporter(message);
         }
         final trail = List<String>.unmodifiable([...parents, node.id]);
         byId[node.id] = node;
@@ -252,12 +246,6 @@ class SettingsTreeIndex {
   /// at build time so callers don't allocate a fresh view on every
   /// read.
   final Map<String, List<String>> _ancestors;
-
-  /// Reporter invoked when [SettingsTreeIndex.build] detects a
-  /// duplicate node id. Defaults to [debugPrint]; the host app
-  /// replaces it with a `LoggingService.captureException` shim so the
-  /// collision surfaces in production logs.
-  static DuplicateNodeIdReporter duplicateReporter = debugPrint;
 
   /// Returns the node for [id], or `null` when it isn't present in
   /// the current (flag-gated) tree.
