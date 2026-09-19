@@ -1,10 +1,12 @@
 import 'package:clock/clock.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/shared/sentiment.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_ins_card.dart';
@@ -105,6 +107,78 @@ void main() {
         findsNothing,
       );
       expect(find.byType(CheckInRow), findsNothing);
+    });
+
+    // The owner's complaint: hovering drew a square grey slab inside the
+    // card. Rows are the Tasks list's grouped rows now — the fill spans the
+    // row, and the divider beside it gives way.
+    testWidgets('hovering lights the whole row and hides the divider beside '
+        'it', (tester) async {
+      await pump(tester, [checkIn('c1'), checkIn('c2'), checkIn('c3')]);
+      final tokens = tester
+          .element(find.byType(CheckInsCardSliver))
+          .designTokens;
+      final divider = find.byKey(const ValueKey('check-in-row-divider-c1'));
+      final background = find.byKey(
+        const ValueKey('check-in-row-background-c1'),
+      );
+      expect(divider, findsOneWidget);
+      expect(background, findsNothing);
+
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(
+        location: tester.getCenter(
+          find.byKey(const ValueKey('check-in-row-c1')),
+        ),
+      );
+      addTearDown(mouse.removePointer);
+      await tester.pump();
+
+      expect(
+        (tester.widget<DecoratedBox>(background).decoration as BoxDecoration)
+            .color,
+        tokens.colors.surface.hover,
+      );
+      expect(divider, findsNothing);
+      expect(
+        find.byKey(const ValueKey('check-in-row-divider-c2')),
+        findsOneWidget,
+        reason: 'rows away from the hover keep their divider',
+      );
+
+      await mouse.moveTo(Offset.zero);
+      await tester.pump();
+      expect(background, findsNothing);
+      expect(divider, findsOneWidget);
+    });
+
+    testWidgets('the last row rounds into the card and has no divider; every '
+        'row says it opens', (tester) async {
+      await pump(tester, [checkIn('c1'), checkIn('c2')]);
+
+      final lastRow = tester.widget<GroupedCardRowSurface>(
+        find.ancestor(
+          of: find.byKey(const ValueKey('check-in-row-surface-c2')),
+          matching: find.byType(GroupedCardRowSurface),
+        ),
+      );
+      final radius = tester
+          .element(find.byType(CheckInsCardSliver))
+          .designTokens
+          .radii
+          .sectionCards;
+      expect(
+        lastRow.backgroundBorderRadius,
+        BorderRadius.vertical(bottom: Radius.circular(radius)),
+      );
+      expect(
+        find.byKey(const ValueKey('check-in-row-divider-c2')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('check-in-row-chevron')),
+        findsNWidgets(2),
+      );
     });
 
     testWidgets('tapping a row hands that check-in back', (tester) async {
@@ -296,11 +370,14 @@ void main() {
         } else {
           expect(tester.widget<Text>(summaryFinder).data, summary);
         }
-        final holdsFinder = find.byKey(const ValueKey('check-in-row-holds'));
+        // What it holds rides the meta line, after when, how and how long.
+        final meta = tester
+            .widget<Text>(find.byKey(const ValueKey('check-in-row-meta')))
+            .data!;
         if (holds == null) {
-          expect(holdsFinder, findsNothing);
+          expect(meta, isNot(matches(RegExp('recording|photo|comment'))));
         } else {
-          expect(tester.widget<Text>(holdsFinder).data, holds);
+          expect(meta, endsWith(' · $holds'));
         }
       });
     }

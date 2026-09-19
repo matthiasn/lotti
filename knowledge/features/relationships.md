@@ -265,7 +265,7 @@ when the picker actually added one, since a cancelled picker changed no
 evidence. On phones the route hides the bottom navigation
 (`peopleRouteHidesBottomNav`), as the chat does, so the bar is not covered. *Edit* in
 the header opens the composer for the check-in's own fields. The row itself
-now says what the check-in holds (`checkInHoldsLabelOf`: *1 recording · 1
+now says what the check-in holds on its meta line (`checkInHoldsLabelOf`: *1 recording · 1
 comment*), fed by `RelationshipDetail.checkInEntries`, the display-filtered
 `getEntriesForCheckIns`.
 
@@ -487,7 +487,7 @@ under it — the task page's shape, on purpose:
 | Briefing | `RelationshipBriefingCard` | Only when enrolled or a briefing exists; the page reads the report too, so the gap after the card is deterministic. |
 | Next time | `NextTimeCard` in [`person_page_cards.dart`](../../lib/features/relationships/ui/widgets/person_page_cards.dart) | From the latest check-in's *pay attention to* / *avoid*; `NextTimeCard.hasContent` is the one visibility rule, shared with the page. |
 | Post-call offer | `PostInteractionPrompt` | Renders nothing until a marker exists (below). |
-| Check-ins | [`CheckInsCardSliver`](../../lib/features/relationships/ui/widgets/check_ins_card.dart) | A `DecoratedSliver` wearing `DesignSystemSectionCard.decoration`, so the unbounded log stays lazy inside a card that matches the boxed ones. Rows supply their own `Material` — there is no card Material above them in a sliver. |
+| Check-ins | [`CheckInsCardSliver`](../../lib/features/relationships/ui/widgets/check_ins_card.dart) | A `DecoratedSliver` wearing `DesignSystemSectionCard.decoration`, so the unbounded log stays lazy inside a card that matches the boxed ones. The rows are the Tasks and Projects lists' grouped rows (`GroupedCardRowSurface`): edge to edge under the header, the hover fill spanning the row, the last one rounded into the card, and the divider beside a hovered row giving way (`buildGroupedCardRowInteractions`). Each row carries a chevron, the sentiment in a fixed trailing slot, what the check-in holds on its meta line, and at most two lines of what was said. |
 | Reach · Tasks | `ReachCard`, [`LinkedTasksCard`](../../lib/features/relationships/ui/widgets/linked_tasks_card.dart) | Reach only with channels. |
 
 Every section, the check-in sliver and the action bar sit on
