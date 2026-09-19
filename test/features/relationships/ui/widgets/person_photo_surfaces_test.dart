@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:file_selector_platform_interface/file_selector_platform_interface.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/features/journal/repository/clipboard_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
@@ -18,6 +20,7 @@ import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:super_clipboard/super_clipboard.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../helpers/fallbacks.dart';
@@ -154,9 +157,48 @@ void main() {
     },
   );
 
+  /// The category the import stamped on the picture's metadata.
+  String? categoryOnMetadata;
+
+  /// Lets an import write its entry: metadata in the requested category,
+  /// and an insert that succeeds.
+  void stubImageImport() {
+    categoryOnMetadata = null;
+    when(
+      () => persistence.createMetadata(
+        dateFrom: any(named: 'dateFrom'),
+        dateTo: any(named: 'dateTo'),
+        uuidV5Input: any(named: 'uuidV5Input'),
+        private: any(named: 'private'),
+        labelIds: any(named: 'labelIds'),
+        categoryId: any(named: 'categoryId'),
+        starred: any(named: 'starred'),
+        flag: any(named: 'flag'),
+      ),
+    ).thenAnswer((invocation) async {
+      categoryOnMetadata = invocation.namedArguments[#categoryId] as String?;
+      return Metadata(
+        id: 'image-imported',
+        createdAt: at,
+        updatedAt: at,
+        dateFrom: at,
+        dateTo: at,
+        categoryId: categoryOnMetadata,
+      );
+    });
+    when(
+      () => persistence.createDbEntity(
+        any(),
+        shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+        enqueueSync: any(named: 'enqueueSync'),
+        linkedId: any(named: 'linkedId'),
+        linkCollapsed: any(named: 'linkCollapsed'),
+      ),
+    ).thenAnswer((_) async => true);
+  }
+
   group('pickImage', () {
     late FakeFileSelectorPlatform selector;
-    String? categoryOnMetadata;
 
     setUp(() {
       // The desktop picker path: the gallery picker is plugin-bound and
@@ -169,38 +211,7 @@ void main() {
       platform.isLinux = true;
       addTearDown(() => platform.isLinux = wasLinux);
 
-      categoryOnMetadata = null;
-      when(
-        () => persistence.createMetadata(
-          dateFrom: any(named: 'dateFrom'),
-          dateTo: any(named: 'dateTo'),
-          uuidV5Input: any(named: 'uuidV5Input'),
-          private: any(named: 'private'),
-          labelIds: any(named: 'labelIds'),
-          categoryId: any(named: 'categoryId'),
-          starred: any(named: 'starred'),
-          flag: any(named: 'flag'),
-        ),
-      ).thenAnswer((invocation) async {
-        categoryOnMetadata = invocation.namedArguments[#categoryId] as String?;
-        return Metadata(
-          id: 'image-imported',
-          createdAt: at,
-          updatedAt: at,
-          dateFrom: at,
-          dateTo: at,
-          categoryId: categoryOnMetadata,
-        );
-      });
-      when(
-        () => persistence.createDbEntity(
-          any(),
-          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
-          enqueueSync: any(named: 'enqueueSync'),
-          linkedId: any(named: 'linkedId'),
-          linkCollapsed: any(named: 'linkCollapsed'),
-        ),
-      ).thenAnswer((_) async => true);
+      stubImageImport();
     });
 
     testWidgets(
@@ -267,6 +278,85 @@ void main() {
       final actions = await build(tester);
 
       expect(await tester.runAsync(actions.pickImage), isNull);
+      verifyNever(
+        () => persistence.createDbEntity(
+          any(),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
+          linkedId: any(named: 'linkedId'),
+          linkCollapsed: any(named: 'linkCollapsed'),
+        ),
+      );
+    });
+  });
+
+  // The clipboard reader itself is tested in `clipboard_images_test`; what
+  // is pinned here is that the paste lands on the person.
+  group('pasteImage', () {
+    late MockSystemClipboard clipboard;
+    late MockClipboardReader reader;
+
+    setUp(() {
+      stubImageImport();
+      clipboard = MockSystemClipboard();
+      reader = MockClipboardReader();
+      when(clipboard.read).thenAnswer((_) async => reader);
+    });
+
+    testWidgets(
+      "imports the clipboard's picture as an entry linked to the person, in "
+      "the person's category, and hands back its id",
+      (tester) async {
+        final item = MockClipboardDataReader();
+        final file = MockDataReaderFile();
+        when(() => item.canProvide(Formats.png)).thenReturn(true);
+        when(file.readAll).thenAnswer(
+          (_) async => Uint8List.fromList(List.filled(64, 7)),
+        );
+        when(
+          () =>
+              item.getFile(Formats.png, any(), onError: any(named: 'onError')),
+        ).thenAnswer((invocation) {
+          (invocation.positionalArguments[1]
+              as Future<void> Function(DataReaderFile))(file);
+          return null;
+        });
+        when(() => reader.items).thenReturn([item]);
+        final actions = await build(
+          tester,
+          overrides: [clipboardRepositoryProvider.overrideWithValue(clipboard)],
+        );
+
+        // The import writes a real file, which only completes on the real
+        // event loop.
+        final pasted = await tester.runAsync(actions.pasteImage);
+
+        expect(pasted, (id: 'image-imported', created: true));
+        verify(
+          () => persistence.createDbEntity(
+            any(that: isA<JournalImage>()),
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+            enqueueSync: any(named: 'enqueueSync'),
+            linkedId: 'rel-1',
+            // A banner is not collapsed away like a cover: it is the person's.
+            // ignore: avoid_redundant_argument_values
+            linkCollapsed: false,
+          ),
+        ).called(1);
+        expect(categoryOnMetadata, 'cat-1');
+      },
+    );
+
+    testWidgets('a clipboard without a picture imports nothing', (
+      tester,
+    ) async {
+      when(() => reader.items).thenReturn(const []);
+      final actions = await build(
+        tester,
+        overrides: [clipboardRepositoryProvider.overrideWithValue(clipboard)],
+      );
+
+      expect(await tester.runAsync(actions.pasteImage), isNull);
       verifyNever(
         () => persistence.createDbEntity(
           any(),
