@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/goals/logic/goal_day_verdict.dart';
@@ -195,6 +196,84 @@ void main() {
         // clean sweep.
         expect(goalDayOutcome(progress, today), (met: 1, total: 2));
       },
+    );
+  });
+
+  group('properties', () {
+    // Local calendar days, including the days after the EU and US DST
+    // switches, where "yesterday" is not 24 hours back.
+    final day = glados.any.choose([
+      DateTime(2026, 3, 9),
+      DateTime(2026, 3, 30),
+      DateTime(2026, 6, 15),
+      DateTime(2026, 10, 26),
+      DateTime(2026, 11, 2),
+    ]);
+    // Per criterion and day: 0 absent, 1 hit, 2 miss, 3 unobserved.
+    final marks = glados.any.combine2(
+      glados.any.intInRange(0, 4),
+      glados.any.intInRange(0, 4),
+      (int yesterday, int today) => (yesterday: yesterday, today: today),
+    );
+
+    glados.Glados3(
+      day,
+      glados.any.listWithLengthInRange(0, 4, marks),
+      glados.any.listWithLengthInRange(0, 3, marks),
+      glados.ExploreConfig(numRuns: 300),
+    ).test(
+      'the suggestion follows the documented rules on every calendar day',
+      (day, habitMarks, metricMarks) {
+        final previous = DateTime(day.year, day.month, day.day - 1);
+
+        List<GoalProgressDay> habitDays(({int yesterday, int today}) m) => [
+          for (final (at, mark) in [(previous, m.yesterday), (day, m.today)])
+            if (mark == 1) hit(at) else if (mark != 0) miss(at),
+        ];
+        List<GoalProgressDay> metricDays(({int yesterday, int today}) m) => [
+          for (final (at, mark) in [(previous, m.yesterday), (day, m.today)])
+            if (mark == 1)
+              GoalProgressDay(day: at, value: 12000)
+            else if (mark == 2)
+              GoalProgressDay(day: at, value: 3000)
+            else if (mark == 3)
+              unobserved(at),
+        ];
+
+        final progress = GoalProgressView(
+          today: day,
+          habits: [
+            for (final (i, m) in habitMarks.indexed)
+              habit('habit-$i', habitDays(m)),
+          ],
+          metrics: [for (final m in metricMarks) steps(metricDays(m))],
+        );
+
+        // Evidence: a habit done, or a metric observed (hit or short).
+        bool evidence(int Function(({int yesterday, int today})) pick) =>
+            habitMarks.any((m) => pick(m) == 1) ||
+            metricMarks.any((m) => pick(m) == 1 || pick(m) == 2);
+        final todayHasEvidence = evidence((m) => m.today);
+        final yesterdayHasEvidence = evidence((m) => m.yesterday);
+
+        final outcome = goalDayOutcome(progress, day);
+        final before = goalDayOutcome(progress, previous);
+        expect(outcome.total, habitMarks.length + metricMarks.length);
+        expect(outcome.met, inInclusiveRange(0, outcome.total));
+
+        final expected =
+            outcome.total == 0 || outcome.met == 0 && !todayHasEvidence
+            ? null
+            : outcome.met == outcome.total
+            ? DayVerdict.met
+            : outcome.met == 0
+            ? DayVerdict.missed
+            : yesterdayHasEvidence && outcome.met > before.met
+            ? DayVerdict.improving
+            : DayVerdict.mixed;
+        expect(suggestedDayVerdict(progress, day), expected);
+      },
+      tags: 'glados',
     );
   });
 }

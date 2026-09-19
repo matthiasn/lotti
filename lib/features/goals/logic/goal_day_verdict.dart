@@ -1,4 +1,5 @@
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:material_ui/material_ui.dart' show DateUtils;
 
@@ -72,7 +73,9 @@ DayVerdict? suggestedDayVerdict(
   // want of effort, and calling today an improvement on it would be inventing
   // a baseline — then recording that invention as a suggestion the user
   // accepted.
-  final previousDay = day.subtract(const Duration(days: 1));
+  // A calendar step, not 24 hours: after a spring-forward night, 24 hours
+  // before midnight is two dates back.
+  final previousDay = day.addCalendarDays(-1);
   if (!_anyEvidence(progress, previousDay)) return DayVerdict.mixed;
   return today.met > goalDayOutcome(progress, previousDay).met
       ? DayVerdict.improving
