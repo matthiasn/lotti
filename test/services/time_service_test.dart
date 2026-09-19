@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -70,26 +71,25 @@ void main() {
         final entity = testTextEntry;
         final stream = timeService.getStream();
 
-        final startTime = DateTime(2024, 3, 15, 10, 30);
+        final startTime = DateTime(2026, 9, 19, 10, 30);
         List<JournalEntity?>? emissions;
         stream.take(2).toList().then((e) => emissions = e);
 
-        timeService.start(entity, null);
+        withClock(Clock(() => startTime.add(async.elapsed)), () {
+          timeService.start(entity, null);
 
-        async
-          ..elapse(const Duration(seconds: 2))
-          ..flushMicrotasks();
+          async
+            ..elapse(const Duration(seconds: 2))
+            ..flushMicrotasks();
+        });
 
-        final filteredEmissions = emissions!
-            .where((e) => e != null)
-            .cast<JournalEntity>()
-            .toList();
-        expect(filteredEmissions.length, greaterThan(0));
-        for (final emission in filteredEmissions) {
-          final dateTo = emission.meta.dateTo;
-          expect(dateTo, isNotNull);
-          expect(dateTo.isAfter(startTime), true);
-        }
+        expect(
+          emissions?.map((emission) => emission?.meta.dateTo),
+          [
+            startTime.add(const Duration(seconds: 1)),
+            startTime.add(const Duration(seconds: 2)),
+          ],
+        );
       });
     });
 

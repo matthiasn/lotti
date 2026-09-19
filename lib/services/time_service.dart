@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -52,7 +53,7 @@ class TimeService {
       if (_current != null) {
         _controller.add(
           _current!.copyWith(
-            meta: _current!.meta.copyWith(dateTo: DateTime.now()),
+            meta: _current!.meta.copyWith(dateTo: clock.now()),
           ),
         );
       }
