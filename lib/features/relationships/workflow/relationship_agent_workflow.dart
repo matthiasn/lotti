@@ -324,10 +324,10 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
     );
     // The briefing is stale when evidence arrived after it was written —
     // including the very first check-ins before any briefing exists.
-    final reportStale =
-        derivation.lastCheckInAt != null &&
-        (previousReport == null ||
-            derivation.lastCheckInAt!.isAfter(previousReport.createdAt));
+    final reportStale = relationshipEvidenceNewerThan(
+      derivation,
+      previousReport,
+    );
 
     // Re-derive facts FIRST and return before any inference when the armed
     // fact no longer holds (ADR 0059 Decision 3): a check-in landing while
@@ -335,6 +335,13 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
     // consumes itself at €0.
     final cadenceDue = derivation.status == RelationshipCadenceStatus.due;
     if (!interactive && !reportRefresh && !cadenceDue && !reportStale) {
+      return const WakeResult(success: true);
+    }
+    // A refresh armed for evidence that has since changed again stands down:
+    // the newer change armed its own refresh, which briefs on everything.
+    if (!interactive &&
+        !reportRefresh &&
+        relationshipRefreshSuperseded(escalationDueDay, derivation)) {
       return const WakeResult(success: true);
     }
     // Eligibility binds automatic wakes: un-marking important or archiving
@@ -365,6 +372,10 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       agentId,
       taskId: relationshipId,
     );
+    final checkInEntries = await _relationshipRepository
+        .getAllEntriesForCheckIns({
+          for (final checkIn in relationshipCheckInWindow(checkIns)) checkIn.id,
+        });
     final observations = await recallAgentObservations(
       _repository,
       agentId,
@@ -381,6 +392,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       preTransitionStatus: preTransitionStatus,
       proposals: proposals,
       observations: observations,
+      checkInEntries: checkInEntries,
     );
     if (interactive) {
       factsBlock =

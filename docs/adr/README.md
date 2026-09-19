@@ -129,3 +129,4 @@ Each ADR should contain:
 - [`0059-relationship-agent-runtime-and-nudge-generalization.md`](./0059-relationship-agent-runtime-and-nudge-generalization.md)
 - [`0060-banner-dock-as-app-shell-structural-band.md`](./0060-banner-dock-as-app-shell-structural-band.md)
 - [`0061-relationship-briefings-disclose-provider-without-confirmation.md`](./0061-relationship-briefings-disclose-provider-without-confirmation.md)
+- [`0062-check-ins-hold-entries.md`](./0062-check-ins-hold-entries.md)

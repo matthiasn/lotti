@@ -50,19 +50,22 @@ bool isRelationshipEscalationWorkspace(String? workspaceKey) =>
     workspaceKey.startsWith('$relationshipEscalationWorkspacePrefix:');
 
 /// Workspace key of the report-refresh escalation — the episode minted when
-/// a check-in lands after the current briefing was written (ADR 0059
-/// Decision 2's "check-in saved since the last report" fact).
+/// the evidence changed after the current briefing was written (ADR 0059
+/// Decision 2's "check-in saved since the last report" fact): a check-in
+/// saved, backdated or not, or an existing one gaining an entry or a
+/// transcript.
 ///
 /// Its own episode family INSIDE the escalation prefix (so the lease
 /// predicate covers it unchanged), never the lapse episode's key: an
 /// early-fired refresh consuming `relationship-escalation:<dueDayKey>`
 /// would let per-episode idempotence suppress the real cadence-lapse
-/// escalation when that day arrives. Scoped to the newest check-in's UTC
-/// day, so every device arming for the same evidence writes the identical
-/// record, and one refresh per UTC day is the deliberate ceiling.
-String relationshipReportRefreshEscalationWorkspaceKey(
-  String checkInUtcDayKey,
-) => relationshipEscalationWorkspaceKey('refresh-$checkInUtcDayKey');
+/// escalation when that day arrives. Scoped to [evidenceKey], the instant
+/// the evidence last changed, so every device arming for the same synced
+/// evidence writes the identical record and each change is briefed at most
+/// once. (It was scoped to the newest check-in's UTC day, which left a
+/// second or backdated check-in on the same day unbriefed.)
+String relationshipReportRefreshEscalationWorkspaceKey(String evidenceKey) =>
+    relationshipEscalationWorkspaceKey('refresh-$evidenceKey');
 
 /// The due-day key encoded in a wake's trigger tokens, or null when the
 /// tokens carry no escalation marker.

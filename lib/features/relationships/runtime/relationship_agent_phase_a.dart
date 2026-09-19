@@ -11,6 +11,8 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/service/check_in_transcription_service.dart'
+    show checkInTranscriptTimeout;
 
 /// Local hour at which the daily cadence tick fires — offset from the goal
 /// tick (`goalCadenceHour` is 6) so the two families never wake as one
@@ -36,6 +38,22 @@ typedef RelationshipCadenceDerivation = ({
 
   /// UTC — see the normalization note in `deriveCadenceFacts`.
   DateTime? lastCheckInAt,
+
+  /// When the evidence last changed, as a UTC instant: the newest
+  /// `updatedAt` among the person's check-ins, reconstructed from its stored
+  /// wall-clock value and the check-in's own `utcOffset`
+  /// ([relationshipStoredInstant]) so every device derives the same instant.
+  /// Null when there is no check-in. A check-in is saved again whenever it gains an
+  /// entry or one of its recordings or photos is described, so this moves
+  /// for a backdated check-in, a second one on the same day, and a
+  /// transcript arriving after the check-in was saved — none of which move
+  /// [lastCheckInAt]. Null when there is no check-in.
+  DateTime? lastEvidenceAt,
+
+  /// [lastEvidenceAt]'s identity for the refresh episode: its stored date and
+  /// time components ([relationshipEvidenceKey]), which every device reads
+  /// identically whatever its zone.
+  String? lastEvidenceKey,
 
   /// UTC calendar day the cadence lapses, as a midnight-UTC instant.
   /// Zone-free by construction — it is the episode key every device must
@@ -175,9 +193,7 @@ class RelationshipAgentPhaseA {
       agentId,
       AgentReportScopes.current,
     );
-    final reportStale =
-        derivation.lastCheckInAt != null &&
-        (report == null || derivation.lastCheckInAt!.isAfter(report.createdAt));
+    final reportStale = relationshipEvidenceNewerThan(derivation, report);
 
     // Whether this tick armed a NEW escalation record. Read after the
     // transaction: the nudge below must not fire from inside it.
@@ -211,6 +227,10 @@ class RelationshipAgentPhaseA {
             agentId,
             derivation,
             updatedAt: now,
+            notBefore: await _pendingTranscriptDeadline(
+              relationshipId,
+              since: report?.createdAt,
+            ),
           ),
         );
       }
@@ -343,10 +363,20 @@ class RelationshipAgentPhaseA {
     final checkIns = await _relationshipRepository
         .getAllCheckInsForRelationship(relationship.meta.id);
     DateTime? lastCheckInAt;
+    DateTime? lastEvidenceAt;
+    String? lastEvidenceKey;
     for (final checkIn in checkIns) {
       final at = checkIn.meta.dateFrom;
       if (lastCheckInAt == null || at.isAfter(lastCheckInAt)) {
         lastCheckInAt = at;
+      }
+      final changed = relationshipStoredInstant(
+        checkIn.meta.updatedAt,
+        checkIn.meta.utcOffset,
+      );
+      if (lastEvidenceAt == null || changed.isAfter(lastEvidenceAt)) {
+        lastEvidenceAt = changed;
+        lastEvidenceKey = relationshipEvidenceKey(checkIn.meta.updatedAt);
       }
     }
     // Baseline: the newest check-in, or tracking start (ADR 0039 — the
@@ -390,6 +420,8 @@ class RelationshipAgentPhaseA {
       cadenceDays: cadenceDays,
       referenceAt: referenceAt.toUtc(),
       lastCheckInAt: lastCheckInAt?.toUtc(),
+      lastEvidenceAt: lastEvidenceAt,
+      lastEvidenceKey: lastEvidenceKey,
       dueDayUtc: dueDayUtc,
       dueDayKey: const GoalWindow.day().periodKey(dueDayUtc),
     );
@@ -458,6 +490,49 @@ class RelationshipAgentPhaseA {
   /// per-episode id makes arming idempotent — a consumed episode is never
   /// re-armed by a later tick of the same episode. Returns whether a new
   /// record was written.
+  /// The latest instant a recording in a check-in changed since [since] may
+  /// still be waiting for its transcript, or null when none is.
+  ///
+  /// A refresh armed while words are still arriving would brief on a
+  /// check-in that says nothing yet — the "agent looks broken" failure — so
+  /// the refresh waits for the transcript, or for its timeout when it never
+  /// comes. A transcript that does land saves the check-in again, which
+  /// mints a new, earlier-due refresh; this one then finds the briefing
+  /// fresh and ends at €0.
+  Future<DateTime?> _pendingTranscriptDeadline(
+    String relationshipId, {
+    required DateTime? since,
+  }) async {
+    final changed = [
+      for (final checkIn
+          in await _relationshipRepository.getAllCheckInsForRelationship(
+            relationshipId,
+          ))
+        if (since == null ||
+            relationshipStoredInstant(
+              checkIn.meta.updatedAt,
+              checkIn.meta.utcOffset,
+            ).isAfter(since))
+          checkIn.id,
+    ];
+    if (changed.isEmpty) return null;
+    final entries = await _relationshipRepository.getAllEntriesForCheckIns(
+      changed.toSet(),
+    );
+    DateTime? deadline;
+    for (final entry in entries.values.expand((e) => e)) {
+      if (entry is! JournalAudio) continue;
+      final words = entry.entryText?.plainText.trim() ?? '';
+      if (words.isNotEmpty) continue;
+      final until = relationshipStoredInstant(
+        entry.meta.createdAt,
+        entry.meta.utcOffset,
+      ).add(checkInTranscriptTimeout);
+      if (deadline == null || until.isAfter(deadline)) deadline = until;
+    }
+    return deadline;
+  }
+
   Future<bool> _armEscalation(AgentDomainEntity wake) async {
     if (await _repository.getEntity(wake.id) != null) return false;
     await _syncService.upsertEntity(wake);
@@ -545,15 +620,18 @@ AgentDomainEntity relationshipReportRefreshEscalationWake(
   String agentId,
   RelationshipCadenceDerivation derivation, {
   required DateTime updatedAt,
+  DateTime? notBefore,
 }) {
-  final lastCheckInAt = derivation.lastCheckInAt!;
   final workspaceKey = relationshipReportRefreshEscalationWorkspaceKey(
-    _utcDayKey(lastCheckInAt),
+    derivation.lastEvidenceKey!,
   );
+  final settled = derivation.lastEvidenceAt!.add(relationshipEvidenceSettle);
   return AgentDomainEntity.scheduledWake(
     id: scheduledWakeRecordId(agentId, workspaceKey: workspaceKey),
     agentId: agentId,
-    scheduledAt: lastCheckInAt.toUtc(),
+    scheduledAt: notBefore != null && notBefore.isAfter(settled)
+        ? notBefore.toUtc()
+        : settled,
     status: ScheduledWakeStatus.pending,
     reason: WakeReason.scheduled.name,
     updatedAt: updatedAt,
@@ -567,12 +645,72 @@ AgentDomainEntity relationshipReportRefreshEscalationWake(
   );
 }
 
-/// The UTC calendar day of [instant] as a `yyyy-MM-dd` key — deliberately
-/// UTC, never local: the key must be identical on devices in different
-/// timezones.
-String _utcDayKey(DateTime instant) {
-  final utc = instant.toUtc();
-  final month = utc.month.toString().padLeft(2, '0');
-  final day = utc.day.toString().padLeft(2, '0');
-  return '${utc.year}-$month-$day';
+/// How long a refresh waits after the evidence last changed, so a burst —
+/// a dictation, then a photo, then a comment — is briefed once rather than
+/// three times.
+const relationshipEvidenceSettle = Duration(seconds: 30);
+
+/// Whether [derivation]'s evidence changed after [report] was written (or
+/// there is evidence and no report yet) — the "briefing is stale" fact both
+/// tiers read.
+bool relationshipEvidenceNewerThan(
+  RelationshipCadenceDerivation derivation,
+  AgentReportEntity? report,
+) {
+  final evidenceAt = derivation.lastEvidenceAt;
+  return evidenceAt != null &&
+      (report == null || evidenceAt.isAfter(report.createdAt));
+}
+
+/// The refresh episode's key component for evidence that changed at
+/// [evidenceAt]: its stored date and time to the millisecond, from the
+/// components rather than the instant, so every device arming for the same
+/// synced evidence writes the identical record whatever its time zone. Each
+/// distinct change is its own episode — at most one briefing per change.
+String relationshipEvidenceKey(DateTime evidenceAt) {
+  String two(int value) => value.toString().padLeft(2, '0');
+  return '${evidenceAt.year}${two(evidenceAt.month)}${two(evidenceAt.day)}'
+      'T${two(evidenceAt.hour)}${two(evidenceAt.minute)}'
+      '${two(evidenceAt.second)}'
+      '${evidenceAt.millisecond.toString().padLeft(3, '0')}'
+      '${evidenceAt.isUtc ? 'Z' : ''}';
+}
+
+/// Whether the refresh episode a wake was armed for, [escalationKey] (the
+/// part after `relationship-escalation:`), has been overtaken by newer
+/// evidence. A later change arms its own, later-settling episode, so the
+/// earlier one must end at €0 rather than brief twice — the settle delay
+/// only coalesces a burst if the overtaken wakes stand down.
+bool relationshipRefreshSuperseded(
+  String? escalationKey,
+  RelationshipCadenceDerivation derivation,
+) {
+  const prefix = 'refresh-';
+  if (escalationKey == null || !escalationKey.startsWith(prefix)) {
+    return false;
+  }
+  final current = derivation.lastEvidenceKey;
+  return current != null && escalationKey.substring(prefix.length) != current;
+}
+
+/// The instant a journal time [stored] names on every device.
+///
+/// Journal metadata times are written as local wall-clock values without an
+/// offset, so a peer in another zone parses the same components as a
+/// different instant; the entry's own [utcOffsetMinutes] (recorded when it
+/// was created) turns the components back into the instant the writer
+/// meant. A value already in UTC, or one without a recorded offset, is
+/// taken as it is.
+DateTime relationshipStoredInstant(DateTime stored, int? utcOffsetMinutes) {
+  if (stored.isUtc || utcOffsetMinutes == null) return stored.toUtc();
+  return DateTime.utc(
+    stored.year,
+    stored.month,
+    stored.day,
+    stored.hour,
+    stored.minute,
+    stored.second,
+    stored.millisecond,
+    stored.microsecond,
+  ).subtract(Duration(minutes: utcOffsetMinutes));
 }

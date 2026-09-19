@@ -11,6 +11,8 @@ import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/workflow/relationship_facts_renderer.dart';
 
+import '../../../test_data/test_data.dart';
+
 void main() {
   const renderer = RelationshipFactsRenderer();
   final now = DateTime(2026, 8, 16, 12);
@@ -76,12 +78,15 @@ void main() {
   RelationshipCadenceDerivation derivation({
     RelationshipCadenceStatus status = RelationshipCadenceStatus.ok,
     DateTime? lastCheckInAt,
+    DateTime? lastEvidenceAt,
   }) => (
     status: status,
     previousStatus: null,
     cadenceDays: 7,
     referenceAt: lastCheckInAt ?? testDate,
     lastCheckInAt: lastCheckInAt,
+    lastEvidenceAt: lastEvidenceAt ?? lastCheckInAt,
+    lastEvidenceKey: null,
     dueDayUtc: DateTime.utc(2026, 8, 21),
     dueDayKey: '2026-08-21',
   );
@@ -94,6 +99,7 @@ void main() {
     RelationshipCadenceDerivation? d,
     RelationshipCadenceStatus? preTransitionStatus,
     List<RecalledObservation> observations = const [],
+    Map<String, List<JournalEntity>> checkInEntries = const {},
   }) => renderer.render(
     relationship: relationship(),
     derivation: d ?? derivation(),
@@ -104,7 +110,91 @@ void main() {
     now: now,
     preTransitionStatus: preTransitionStatus,
     observations: observations,
+    checkInEntries: checkInEntries,
   );
+
+  group('check-in entries', () {
+    JournalEntity comment(String id, DateTime at, String text) =>
+        testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(id: id, dateFrom: at, dateTo: at),
+          entryText: EntryText(plainText: text),
+        );
+    JournalEntity recording(String id, DateTime at, {String? transcript}) =>
+        testAudioEntry.copyWith(
+          meta: testAudioEntry.meta.copyWith(id: id, dateFrom: at, dateTo: at),
+          data: testAudioEntry.data.copyWith(
+            duration: const Duration(minutes: 1, seconds: 5),
+          ),
+          entryText: transcript == null
+              ? null
+              : EntryText(plainText: transcript),
+        );
+    JournalEntity photo(String id, DateTime at, {String? caption}) =>
+        testImageEntry.copyWith(
+          meta: testImageEntry.meta.copyWith(id: id, dateFrom: at, dateTo: at),
+          entryText: caption == null ? null : EntryText(plainText: caption),
+        );
+
+    final at = DateTime(2026, 8, 14, 20);
+
+    // Everything a check-in holds reaches the agent, in the order it was
+    // added, after the text it was saved with — and a recording or photo
+    // without words says so rather than reading as silence.
+    test('follow the saved text, oldest first, each with its kind', () {
+      final facts = render(
+        checkIns: [checkIn('c-1', at, narrative: 'Call with Pip.')],
+        checkInEntries: {
+          'c-1': [
+            recording(
+              'r-1',
+              at.add(const Duration(minutes: 1)),
+              transcript: 'Pip is\nnervous about the launch.',
+            ),
+            comment('t-1', at.add(const Duration(minutes: 3)), 'Send krill.'),
+            recording('r-2', at.add(const Duration(minutes: 4))),
+            photo('p-1', at.add(const Duration(minutes: 5))),
+            photo(
+              'p-2',
+              at.add(const Duration(minutes: 6)),
+              caption: 'Pip at the launch pad.',
+            ),
+          ],
+        },
+      );
+
+      expect(
+        facts,
+        contains(
+          '  narrative: Call with Pip.\n'
+          '  2026-08-14 20:01 recording (1:05): Pip is nervous about the '
+          'launch.\n'
+          '  2026-08-14 20:03 comment: Send krill.\n'
+          '  2026-08-14 20:04 recording (1:05): transcript not available yet\n'
+          '  2026-08-14 20:05 photo: no description yet\n'
+          '  2026-08-14 20:06 photo: Pip at the launch pad.\n',
+        ),
+      );
+    });
+
+    test('are bounded, and the rest counted', () {
+      final facts = render(
+        checkIns: [checkIn('c-1', at)],
+        checkInEntries: {
+          'c-1': [
+            for (var i = 0; i < relationshipCheckInEntryLookback + 3; i++)
+              comment('t-$i', at.add(Duration(minutes: i)), 'Note $i.'),
+          ],
+        },
+      );
+
+      expect(facts, contains('comment: Note 0.'));
+      expect(
+        facts,
+        isNot(contains('Note $relationshipCheckInEntryLookback.')),
+      );
+      expect(facts, contains('(3 later entries not shown)'));
+    });
+  });
 
   // Codex review on #4345: FACTS are authoritative, so a note that says a
   // name was misheard must be told to win over the misheard check-in.
