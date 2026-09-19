@@ -607,6 +607,46 @@ void main() {
     );
 
     testWidgets(
+      'a planned day marks recorded time on the capacity dial, capped at a '
+      'full dial',
+      (tester) async {
+        final draft = DraftPlan(
+          dayDate: DateTime(2026, 5, 26),
+          blocks: _blocksTotalling(90),
+          bands: const [],
+          capacityMinutes: 240,
+          scheduledMinutes: 90,
+          agendaItems: const [],
+        );
+        TimeBlock tracked(int minutes) => TimeBlock(
+          id: 'tracked-$minutes',
+          title: 'Sort the krill delivery',
+          start: DateTime(2026, 5, 26, 8),
+          end: DateTime(2026, 5, 26, 8).add(Duration(minutes: minutes)),
+          type: TimeBlockType.manual,
+          state: TimeBlockState.completed,
+          category: _category,
+        );
+        double? marker() => tester
+            .widget<CapacityDonut>(find.byType(CapacityDonut))
+            .progressFraction;
+
+        await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
+        expect(marker(), isNull, reason: 'nothing recorded yet');
+
+        await tester.pumpWidget(
+          _wrap(AgendaView(draft: draft, actualBlocks: [tracked(60)])),
+        );
+        expect(marker(), 0.25);
+
+        await tester.pumpWidget(
+          _wrap(AgendaView(draft: draft, actualBlocks: [tracked(300)])),
+        );
+        expect(marker(), 1.0);
+      },
+    );
+
+    testWidgets(
       'category mix renders one legend per used category, dropped blocks excluded',
       (tester) async {
         const work = DayAgentCategory(

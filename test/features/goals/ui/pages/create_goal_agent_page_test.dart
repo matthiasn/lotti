@@ -376,6 +376,38 @@ void main() {
     expect(navigated, ['/goals']);
   });
 
+  testWidgets('a system back that pops the edit page returns the shell to '
+      'the goal it was editing', (tester) async {
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    addTearDown(() => beamToNamedOverride = null);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Builder(
+          builder: (context) => TextButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const CreateGoalAgentPage(agentId: 'goal-1'),
+              ),
+            ),
+            child: const Text('Open edit'),
+          ),
+        ),
+        overrides: overrides(editSpec: _spec()),
+      ),
+    );
+    await tester.tap(find.text('Open edit'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CreateGoalAgentPage), findsOneWidget);
+
+    // Editing opens on its first step, so a system back pops the page.
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CreateGoalAgentPage), findsNothing);
+    expect(navigated, ['/goals/details/goal-1']);
+  });
+
   testWidgets('a matched steps signal can be removed before confirmation', (
     tester,
   ) async {
@@ -623,6 +655,16 @@ void main() {
       find.text('Choose at least one signal the agent can actually observe.'),
       findsNothing,
     );
+
+    // Text that is not a number in the locale's format, nor a plain Dart
+    // number, is no target either.
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-steps-target')),
+      'lots',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(find.text('Set a target to continue.'), findsOneWidget);
 
     await tester.enterText(
       find.byKey(const ValueKey('goal-form-steps-target')),

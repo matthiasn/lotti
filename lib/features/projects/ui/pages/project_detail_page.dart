@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -182,8 +183,9 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
         .targetDate;
 
     final firstDate = DateTime(2020);
-    final lastDate = DateTime.now().add(const Duration(days: 365 * 5));
-    final initialDate = currentDate ?? DateTime.now();
+    final now = clock.now();
+    final lastDate = now.add(const Duration(days: 365 * 5));
+    final initialDate = currentDate ?? now;
     // Clamp to valid range so the date picker assertion doesn't fire
     // when an existing target date falls outside the bounds.
     final clampedInitial = initialDate.isBefore(firstDate)

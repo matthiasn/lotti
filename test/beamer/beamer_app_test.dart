@@ -4789,6 +4789,83 @@ void main() {
     );
 
     testWidgets(
+      'an eligibility that lapses before the frame does not arm the '
+      'walkthrough, and a later eligible emission still can',
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => false,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        final sessionController = _CountingDailyOsOnboardingSessionController();
+        await _pumpAppScreenCustomProviders(
+          tester,
+          navService: mockNavService,
+          whatsNewOverride: _StableUnseenWhatsNewController.new,
+          shouldAutoShowDailyOsOnboarding: (ref) async =>
+              ref.watch(_dailyOsEligibleProvider),
+          dailyOsOnboardingCadenceOverride:
+              _CountingDailyOsOnboardingCadence.new,
+          extraOverrides: [
+            dailyOsOnboardingSessionControllerProvider.overrideWith(
+              () => sessionController,
+            ),
+          ],
+        );
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(sessionController.startCount, 0);
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(AppScreen)),
+        );
+        // A plan sync lands between the eligible emission and the frame
+        // that would arm the walkthrough: the first eligible emission flips
+        // eligibility straight back off.
+        var lapsed = false;
+        final lapse = container.listen(
+          shouldAutoShowDailyOsOnboardingProvider,
+          (_, next) {
+            if (!lapsed && next.value == true) {
+              lapsed = true;
+              container.read(_dailyOsEligibleProvider.notifier).eligible =
+                  false;
+            }
+          },
+        );
+        addTearDown(lapse.close);
+
+        container.read(_dailyOsEligibleProvider.notifier).eligible = true;
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(lapsed, isTrue);
+        expect(
+          sessionController.startCount,
+          0,
+          reason: 'the presentation-time re-read must see the lapsed gate',
+        );
+
+        // The stale attempt released the once-per-lifetime guard, so the
+        // next eligible emission arms the walkthrough.
+        container.read(_dailyOsEligibleProvider.notifier).eligible = true;
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(sessionController.startCount, 1);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
       'FTUE welcome skip closes the welcome without marking it completed '
       '(so the shown-count/window grace period is preserved)',
       (tester) async {
@@ -5581,6 +5658,21 @@ class _CountingOnboardingWelcomeCadence extends OnboardingWelcomeCadence {
 
   @override
   Future<void> markCompleted() async => onMarkCompleted?.call();
+}
+
+/// A test-owned Daily OS eligibility the auto-show gate watches, so a test
+/// can flip the gate and make the provider re-emit.
+final _dailyOsEligibleProvider = NotifierProvider<_DailyOsEligible, bool>(
+  _DailyOsEligible.new,
+);
+
+class _DailyOsEligible extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  bool get eligible => state;
+
+  set eligible(bool value) => state = value;
 }
 
 /// Counts `recordShown` without touching SettingsDb — proves the Daily OS

@@ -31,6 +31,7 @@ import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
 import 'package:lotti/features/goals/service/goal_health_refresh_service.dart';
@@ -55,6 +56,7 @@ import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_exposure_tracker.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/charts/habits/habit_completion_rate_chart.dart';
+import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_cell.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 import 'package:material_ui/material_ui.dart';
@@ -2225,6 +2227,21 @@ void main() {
           agentMessagesByThreadProvider(
             'goal-1',
           ).overrideWith((ref) async => {}),
+          goalTimelineItemsProvider('goal-1').overrideWithValue([
+            GoalReflectionItem(
+              GoalAssessmentRecord(
+                id: 'reflection-aug-10',
+                day: DateTime.utc(2026, 8, 10),
+                specVersionId: 'goal-1:spec-v1',
+                rating: DayVerdict.met,
+                createdAt: DateTime(2026, 8, 10, 21),
+                provenance: DayVerdictProvenance.ratedByUser,
+              ),
+            ),
+          ]),
+          goalCaptureTargetProvider(
+            'goal-1',
+          ).overrideWith((ref) async => 'goal-entry-1'),
         ],
       ),
     );
@@ -2258,6 +2275,17 @@ void main() {
           .first,
     );
     await tester.tap(find.text('Reflect on today'));
+    await tester.pumpAndSettle();
+    expect(find.byType(GoalDayAssessmentSheet), findsOneWidget);
+    Navigator.of(tester.element(find.byType(GoalDayAssessmentSheet))).pop();
+    await tester.pumpAndSettle();
+    expect(find.byType(GoalDayAssessmentSheet), findsNothing);
+
+    // A reflection beat in the check-ins card reopens that day's sheet —
+    // the same sheet the strip opens.
+    await tester.ensureVisible(find.text('DAILY REFLECTION'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('DAILY REFLECTION'));
     await tester.pumpAndSettle();
     expect(find.byType(GoalDayAssessmentSheet), findsOneWidget);
   });

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
@@ -23,6 +24,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
+import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
@@ -126,6 +128,27 @@ class _InMemoryOnboardingCadence extends DailyOsOnboardingCadence {
 
   @override
   Future<void> markCompleted() async {}
+}
+
+/// Counts completions so a test can see the walkthrough retire its cadence.
+class _CountingOnboardingCadence extends _InMemoryOnboardingCadence {
+  _CountingOnboardingCadence(this.onCompleted);
+
+  final void Function() onCompleted;
+
+  @override
+  Future<void> markCompleted() async => onCompleted();
+}
+
+/// Starts on a captured transcript so the create ritual can run straight
+/// through Reconcile and Drafting without the recorder stack.
+class _CapturedCaptureController extends CaptureController {
+  @override
+  CaptureState build() => const CaptureState(
+    phase: CapturePhase.captured,
+    transcript: 'Count the colony before the sardine delivery',
+    amplitudes: [],
+  );
 }
 
 MockAudioRecorderRepository _permissionlessRecorder() {
@@ -307,6 +330,69 @@ void main() {
             valueBucket: any(named: 'valueBucket'),
           ),
         ).called(1);
+      });
+    });
+
+    testWidgets('creating a plan through the check-in modal completes the '
+        'walkthrough and ends the onboarding session', (tester) async {
+      var completed = 0;
+      await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+        await tester.pumpWidget(
+          _wrap(
+            const DailyOsNextRoot(),
+            overrides: [
+              captureControllerProvider.overrideWith(
+                _CapturedCaptureController.new,
+              ),
+              dayAgentProvider.overrideWithValue(
+                MockDayAgent(
+                  parseLatency: Duration.zero,
+                  pendingLatency: Duration.zero,
+                  triageLatency: Duration.zero,
+                  draftLatency: Duration.zero,
+                  summarizeLatency: Duration.zero,
+                ),
+              ),
+              currentDraftPlanProvider.overrideWith((ref, _) async => null),
+              dailyOsOnboardingCadenceProvider.overrideWith(
+                () => _CountingOnboardingCadence(() => completed++),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(DailyOsNextRoot)),
+        );
+        container
+            .read(dailyOsOnboardingSessionControllerProvider.notifier)
+            .start(targetDate: DateTime(2026, 5, 26), sessionId: 's-1');
+
+        await tester.tap(find.byKey(const Key('daily_os_day_check_in_cta')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        final messages = tester.element(find.byType(DayPage)).messages;
+
+        Future<void> tapPill(String label) async {
+          await tester.tap(find.widgetWithText(DsGlassPill, label));
+          for (var i = 0; i < 12; i++) {
+            await tester.pump(const Duration(milliseconds: 80));
+          }
+        }
+
+        await tapPill(messages.dailyOsNextCaptureReconcileCta);
+        await tapPill(messages.dailyOsNextReconcileBuildDayCta);
+
+        // Drafting resolved the modal with a created plan: the walkthrough
+        // retires its cadence for good and the session ends.
+        expect(find.byType(CaptureModalContent), findsNothing);
+        expect(completed, 1);
+        expect(
+          container.read(dailyOsOnboardingSessionControllerProvider),
+          isNull,
+        );
       });
     });
 

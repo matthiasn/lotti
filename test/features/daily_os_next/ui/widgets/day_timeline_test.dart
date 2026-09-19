@@ -2690,22 +2690,25 @@ void main() {
       category: _work,
     );
 
-    Widget tierHarness({required double height, double textScale = 1.0}) =>
-        _wrap(
-          MediaQuery(
-            data: MediaQueryData(
-              size: const Size(1280, 1200),
-              textScaler: TextScaler.linear(textScale),
-            ),
-            child: Center(
-              child: SizedBox(
-                height: height,
-                width: 240,
-                child: DayBlock(block: incident(), tracked: true),
-              ),
-            ),
+    Widget tierHarness({
+      required double height,
+      double textScale = 1.0,
+      bool tracked = true,
+    }) => _wrap(
+      MediaQuery(
+        data: MediaQueryData(
+          size: const Size(1280, 1200),
+          textScaler: TextScaler.linear(textScale),
+        ),
+        child: Center(
+          child: SizedBox(
+            height: height,
+            width: 240,
+            child: DayBlock(block: incident(), tracked: tracked),
           ),
-        );
+        ),
+      ),
+    );
 
     testWidgets(
       'a 22px block at default text scale keeps a FITTED title — the '
@@ -2720,6 +2723,27 @@ void main() {
         // Content area = 22 − 2×step2 vertical padding = 14px; the fitted
         // scaler shrinks the caption line to fit — never shears it.
         expect(tester.getSize(title).height, lessThanOrEqualTo(14.01));
+      },
+    );
+
+    testWidgets(
+      'the sliver line reads at full strength when recorded and recedes a '
+      'step when only planned',
+      (tester) async {
+        _setView(tester, const Size(1280, 1200));
+        Color? titleColor() => tester
+            .widget<Text>(find.text('Production incident triage'))
+            .style
+            ?.color;
+
+        await tester.pumpWidget(tierHarness(height: 22));
+        await tester.pump();
+        final tokens = tester.element(find.byType(DayBlock)).designTokens;
+        expect(titleColor(), tokens.colors.text.highEmphasis);
+
+        await tester.pumpWidget(tierHarness(height: 22, tracked: false));
+        await tester.pump();
+        expect(titleColor(), tokens.colors.text.mediumEmphasis);
       },
     );
 

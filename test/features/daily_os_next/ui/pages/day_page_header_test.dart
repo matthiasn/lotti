@@ -1,10 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_persona_provider.dart';
+import 'package:lotti/features/daily_os_next/state/planner_knowledge_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/knowledge_panel.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_utils/screenshot_harness.dart';
 import '../../../../widget_test_utils.dart';
 import 'day_page_test_helpers.dart';
@@ -161,6 +169,60 @@ void main() {
 
       expect(secondTop, greaterThan(firstTop));
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('DayHeader menu', () {
+    testWidgets('the knowledge entry opens what the planner has learned', (
+      tester,
+    ) async {
+      setTestSurfaceSize(tester, const Size(1024, 900));
+      final learned =
+          AgentDomainEntity.plannerKnowledge(
+                id: 'k-krill',
+                agentId: 'daily_os_planner',
+                key: 'krill-mornings',
+                hook: 'hook',
+                statementText: 'Krill deliveries go better before 10am',
+                source: KnowledgeSource.agentInferred,
+                status: KnowledgeStatus.confirmed,
+                createdAt: DateTime(2026, 5, 20),
+                updatedAt: DateTime(2026, 5, 20),
+                vectorClock: null,
+              )
+              as PlannerKnowledgeEntity;
+      await tester.pumpWidget(
+        wrapDayPage(
+          DayPage(draft: draftedPlan()),
+          mediaQueryData: phoneMediaQueryData.copyWith(
+            size: const Size(1024, 900),
+          ),
+          overrides: [
+            plannerKnowledgeProvider.overrideWith(
+              (ref) async => PlannerKnowledgeView(
+                confirmed: [learned],
+                proposed: const [],
+              ),
+            ),
+            dayAgentKnowledgeServiceProvider.overrideWithValue(
+              MockDayAgentKnowledgeService(),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      final messages = tester.element(find.byType(DayPage)).messages;
+
+      await tester.tap(find.byIcon(LottiIcons.moreVertical));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(messages.dailyOsNextKnowledgeTitle));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(KnowledgePanel), findsOneWidget);
+      expect(
+        find.text('Krill deliveries go better before 10am'),
+        findsOneWidget,
+      );
     });
   });
 }

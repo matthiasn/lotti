@@ -28,6 +28,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/commit_evaluating_vector_clock_service.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
@@ -105,7 +106,7 @@ void main() {
   late MockJournalDb mockDb;
   late MockPersistenceLogic mockPersistence;
   late MockUpdateNotifications mockNotifications;
-  late MockVectorClockService mockVectorClockService;
+  late CommitEvaluatingVectorClockService mockVectorClockService;
   late MockEntitiesCacheService mockEntitiesCacheService;
   late MockOutboxService mockOutboxService;
   late StreamController<Set<String>> updateStreamController;
@@ -183,7 +184,7 @@ void main() {
     mockDb = MockJournalDb();
     mockPersistence = MockPersistenceLogic();
     mockNotifications = MockUpdateNotifications();
-    mockVectorClockService = MockVectorClockService();
+    mockVectorClockService = CommitEvaluatingVectorClockService();
     mockEntitiesCacheService = MockEntitiesCacheService();
     mockOutboxService = MockOutboxService();
     updateStreamController = StreamController<Set<String>>.broadcast();
@@ -1510,6 +1511,8 @@ void main() {
         );
 
         expect(result, isTrue);
+        // A successful relink keeps both reserved vector clocks.
+        expect(mockVectorClockService.commits, [true]);
         // Both writes happen inside the transaction
         verify(() => mockDb.upsertEntryLink(any())).called(2);
         // Sync enqueued for both delete and create after commit
@@ -1565,6 +1568,8 @@ void main() {
         );
 
         expect(result, isFalse);
+        // A rejected relink releases its reserved vector clocks.
+        expect(mockVectorClockService.commits, [false]);
         // Only the soft-delete was attempted; insert skipped
         verify(() => mockDb.upsertEntryLink(any())).called(1);
         // No side effects on failure
@@ -1759,6 +1764,8 @@ void main() {
       final result = await repository.unlinkTaskFromProject('task-001');
 
       expect(result, isTrue);
+      // The soft-delete keeps its reserved vector clock.
+      expect(mockVectorClockService.commits, [true]);
       final captured =
           verify(() => mockDb.upsertEntryLink(captureAny())).captured.single
               as EntryLink;
@@ -1801,6 +1808,8 @@ void main() {
       final result = await repository.unlinkTaskFromProject('task-001');
 
       expect(result, isFalse);
+      // A soft-delete that wrote nothing releases its reserved vector clock.
+      expect(mockVectorClockService.commits, [false]);
       verifyNever(() => mockNotifications.notify(any()));
       verifyNever(() => mockOutboxService.enqueueMessage(any()));
     });

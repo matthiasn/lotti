@@ -979,6 +979,17 @@ void main() {
         isFalse,
         reason: 'baseline: the page must be settled before the rebuild',
       );
+      FloatingActionButtonLocation? fabLocation() => tester
+          .widget<Scaffold>(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is Scaffold &&
+                  widget.floatingActionButtonLocation != null,
+            ),
+          )
+          .floatingActionButtonLocation;
+      final before = fabLocation();
+      expect(before, isNotNull);
 
       // Rebuild the page with an equivalent tree — the Scaffold element is
       // reused, so `didUpdateWidget` compares the old and new FAB locations.
@@ -988,6 +999,13 @@ void main() {
         ),
       );
       await tester.pump();
+
+      // A fresh instance that is value-equal, with a matching hash, so it
+      // behaves as the same key wherever a location is compared or hashed.
+      final after = fabLocation();
+      expect(identical(after, before), isFalse);
+      expect(after, before);
+      expect(after.hashCode, before.hashCode);
 
       // The FAB location is rebuilt from tokens on every build. Without value
       // equality Scaffold reads each fresh instance as a move to a new spot

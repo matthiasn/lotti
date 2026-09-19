@@ -389,6 +389,23 @@ void main() {
         find.byKey(DayPlanningThinkingShader.indicatorKey),
         findsOneWidget,
       );
+
+      // Cancel discards the transcription and returns to the idle bar.
+      await tester.tap(
+        find.widgetWithText(DsGlassPill, messages.cancelButton),
+      );
+      await tester.pump();
+      expect(
+        find.widgetWithText(DsGlassPill, messages.cancelButton),
+        findsNothing,
+      );
+      expect(
+        find.widgetWithText(
+          DsGlassPill,
+          messages.dailyOsNextCaptureTypeInstead,
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('error bar offers the "type instead" fallback', (tester) async {
@@ -729,6 +746,101 @@ void main() {
         findsOneWidget,
       );
       expect(find.text(messages.dailyOsNextRefineTitle), findsNothing);
+    });
+  });
+
+  group('showDayPlanningModal — adapt (refine) Looks good', () {
+    const focus = DayAgentCategory(
+      id: 'cat_focus',
+      name: 'Focus',
+      colorHex: '0080FF',
+    );
+
+    Future<_ResultHolder> openAdapt(
+      WidgetTester tester, {
+      required DraftPlan draft,
+      required RecordingDayAgent agent,
+    }) async {
+      final holder = _ResultHolder();
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Builder(
+            builder: (context) => Center(
+              child: ElevatedButton(
+                onPressed: () async {
+                  holder
+                    ..value = await showDayPlanningModal(
+                      context: context,
+                      dayDate: draft.dayDate,
+                      intent: DayPlanningAdapt(draft),
+                    )
+                    ..settled = true;
+                },
+                child: const Text('open'),
+              ),
+            ),
+          ),
+          mediaQueryData: const MediaQueryData(size: Size(420, 900)),
+          overrides: [
+            captureControllerProvider.overrideWith(
+              () => _FakeCaptureController(const CaptureState.idle()),
+            ),
+            dayAgentProvider.overrideWithValue(agent),
+          ],
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      return holder;
+    }
+
+    testWidgets('with nothing proposed it simply closes the step', (
+      tester,
+    ) async {
+      final draft = DraftPlan.emptyForDay(DateTime(2024, 3, 15));
+      final agent = RecordingDayAgent();
+      final result = await openAdapt(tester, draft: draft, agent: agent);
+
+      await _tapPill(tester, _l10n(tester).dailyOsNextRefineLooksGood);
+
+      expect(find.byType(RefineModalContent), findsNothing);
+      expect(result.settled, isTrue);
+      expect(result.value, isNull);
+      expect(agent.capturedDiff, isNull);
+    });
+
+    testWidgets('with a pending diff it persists the diff before closing', (
+      tester,
+    ) async {
+      final draft = DraftPlan.emptyForDay(DateTime(2024, 3, 15));
+      final diff = PlanDiff(
+        id: 'diff_waddle',
+        changes: const [
+          PlanDiffChange(
+            id: 'chg_add',
+            kind: PlanDiffChangeKind.added,
+            title: 'Add a sardine inventory slot',
+            category: focus,
+            reason: 'the delivery lands at noon',
+          ),
+        ],
+        updatedPlan: draft,
+      );
+      final agent = RecordingDayAgent(diff: diff);
+      final result = await openAdapt(tester, draft: draft, agent: agent);
+      final notifier = ProviderScope.containerOf(
+        tester.element(find.byType(RefineModalContent)),
+      ).read(refineControllerProvider(draft).notifier);
+      await (notifier..beginListening(resetTranscript: true))
+          .finishWithTranscript('add a sardine inventory slot');
+      await tester.pump();
+
+      await _tapPill(tester, _l10n(tester).dailyOsNextRefineLooksGood);
+
+      expect(agent.capturedDiff, same(diff));
+      expect(result.value, isA<DayPlanningAdapted>());
+      expect(find.byType(RefineModalContent), findsNothing);
     });
   });
 

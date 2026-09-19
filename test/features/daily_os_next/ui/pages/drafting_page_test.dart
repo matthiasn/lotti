@@ -688,5 +688,25 @@ void main() {
       expect(find.text(lines[0]), findsOneWidget);
       expect(find.text(lines[1]), findsNothing);
     });
+
+    testWidgets('resumes rotating when drafting starts again', (tester) async {
+      const interval = Duration(milliseconds: 2600);
+      await pumpTicker(tester, active: false);
+      final messages = tester
+          .element(find.byType(DraftingStatusTicker))
+          .messages;
+      final lines = DraftingStatusTicker.linesOf(messages);
+
+      await pumpTicker(tester, active: true);
+      await tester.pump(interval);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text(lines[1]), findsOneWidget);
+
+      // Pausing again freezes the line the rotation reached.
+      await pumpTicker(tester, active: false);
+      await tester.pump(interval * 3);
+      expect(find.text(lines[1]), findsOneWidget);
+      expect(find.text(lines[2]), findsNothing);
+    });
   });
 }
