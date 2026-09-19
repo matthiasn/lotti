@@ -438,9 +438,16 @@ void main() {
           ),
         );
 
+        // The host page's own route barrier; the sheet adds one on top.
+        final baseBarriers = find.byType(ModalBarrier).evaluate().length;
+
         await tester.tap(find.text('Show Modal'));
         await tester.pumpAndSettle();
         expect(find.text('v0.9.980'), findsOneWidget);
+        expect(
+          find.byType(ModalBarrier).evaluate().length,
+          greaterThan(baseBarriers),
+        );
 
         // Drag from the sheet's handle: the body scrolls its own content.
         await tester.fling(
@@ -456,7 +463,7 @@ void main() {
         // The route is really gone — not just slid off-screen behind a
         // barrier that would keep swallowing taps.
         expect(find.text('v0.9.980'), findsNothing);
-        expect(find.byType(ModalBarrier), findsOneWidget);
+        expect(find.byType(ModalBarrier), findsNWidgets(baseBarriers));
         expect(seenVersions, contains('0.9.980'));
 
         await tester.tap(find.text('Show Modal'));

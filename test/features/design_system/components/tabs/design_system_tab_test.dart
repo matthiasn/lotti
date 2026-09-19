@@ -222,9 +222,12 @@ void main() {
         dsTokensLight.colors.surface.enabled,
       );
 
+      // A point clearly outside the tab, wherever the harness places it.
+      final outside =
+          tester.getRect(find.byKey(tabKey)).bottomRight + const Offset(40, 40);
       final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
       addTearDown(mouse.removePointer);
-      await mouse.addPointer(location: Offset.zero);
+      await mouse.addPointer(location: outside);
       await mouse.moveTo(tester.getCenter(find.byKey(tabKey)));
       await tester.pump();
 
@@ -233,7 +236,7 @@ void main() {
         dsTokensLight.colors.surface.hover,
       );
 
-      await mouse.moveTo(Offset.zero);
+      await mouse.moveTo(outside);
       await tester.pump();
 
       expect(

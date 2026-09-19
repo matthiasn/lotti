@@ -813,6 +813,9 @@ void main() {
         () => mockJournalDbSat.journalEntityById(testTextEntry.meta.id),
       ).thenAnswer((_) async => testTextEntry);
       final container = ProviderContainer();
+      // Covers a failure before the explicit disposal below; disposing twice
+      // is a no-op.
+      addTearDown(container.dispose);
       final appBarProvider = taskAppBarControllerProvider(
         testTextEntry.meta.id,
       );

@@ -1003,6 +1003,9 @@ void main() {
         );
 
         expect(result, isNull);
+        // The item was persisted first: this is the partial-failure path,
+        // not a lookup that failed before anything was written.
+        verify(() => mockPersistenceLogic.createDbEntity(any())).called(1);
         verify(
           () => mockDomainLogger.error(
             LogDomain.persistence,
