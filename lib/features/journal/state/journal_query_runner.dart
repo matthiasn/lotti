@@ -29,6 +29,7 @@ class JournalQueryParams {
     required this.enableEvents,
     required this.enableHabits,
     required this.enableDashboards,
+    required this.enableRelationships,
   });
 
   final bool showTasks;
@@ -47,6 +48,7 @@ class JournalQueryParams {
   final bool enableEvents;
   final bool enableHabits;
   final bool enableDashboards;
+  final bool enableRelationships;
 }
 
 /// Result of a vector search, wrapping entity results with timing telemetry.
@@ -120,6 +122,7 @@ class JournalQueryRunner {
       events: params.enableEvents,
       habits: params.enableHabits,
       dashboards: params.enableDashboards,
+      relationships: params.enableRelationships,
     );
     final types = params.selectedEntryTypes.where(allowed.contains).toList();
     final ids = params.query.isNotEmpty ? fullTextMatches.toList() : null;

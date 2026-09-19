@@ -14,12 +14,14 @@ JournalConfigFlags _flags({
   bool dashboards = true,
   bool vectorSearch = false,
   bool projects = true,
+  bool relationships = true,
 }) => (
   events: events,
   habits: habits,
   dashboards: dashboards,
   vectorSearch: vectorSearch,
   projects: projects,
+  relationships: relationships,
 );
 
 /// Convenience: invoke `applyJournalConfigFlags` with sensible defaults so
@@ -30,6 +32,7 @@ ConfigFlagResult _apply({
   bool enableEvents = true,
   bool enableHabits = true,
   bool enableDashboards = true,
+  bool enableRelationships = true,
   bool enableVectorSearch = false,
   bool enableProjects = true,
   SearchMode searchMode = SearchMode.fullText,
@@ -44,6 +47,7 @@ ConfigFlagResult _apply({
         events: enableEvents,
         habits: enableHabits,
         dashboards: enableDashboards,
+        relationships: enableRelationships,
       ).toSet();
 
   return JournalPageSubscriptions.applyJournalConfigFlags(
@@ -52,6 +56,7 @@ ConfigFlagResult _apply({
     enableEvents: enableEvents,
     enableHabits: enableHabits,
     enableDashboards: enableDashboards,
+    enableRelationships: enableRelationships,
     enableVectorSearch: enableVectorSearch,
     enableProjects: enableProjects,
     searchMode: searchMode,
@@ -108,6 +113,7 @@ void main() {
           events: true,
           habits: true,
           dashboards: true,
+          relationships: true,
         ).toSet();
 
         final result = _apply(
@@ -126,6 +132,7 @@ void main() {
         events: true,
         habits: true,
         dashboards: true,
+        relationships: true,
       ).toSet();
 
       // New flags: events disabled.
@@ -134,6 +141,7 @@ void main() {
         events: false,
         habits: true,
         dashboards: true,
+        relationships: true,
       ).toSet();
 
       final result = _apply(
@@ -183,6 +191,7 @@ void main() {
         events: false,
         habits: true,
         dashboards: true,
+        relationships: true,
       ).toSet();
 
       for (final t in result.selectedEntryTypes) {
@@ -310,7 +319,7 @@ void main() {
 
   group('applyJournalConfigFlags — generated invariants', () {
     glados.Glados2(
-      glados.IntAnys(glados.any).intInRange(0, 4096),
+      glados.IntAnys(glados.any).intInRange(0, 16384),
       glados.IntAnys(glados.any).intInRange(0, 3),
       glados.ExploreConfig(numRuns: 160),
     ).test('structural invariants hold across the input cross-product', (
@@ -325,8 +334,10 @@ void main() {
         dashboards: bit(2),
         vectorSearch: bit(3),
         projects: bit(4),
+        relationships: bit(12),
       );
       final enableEvents = bit(5);
+      final enableRelationships = bit(13);
       final enableHabits = bit(6);
       final enableDashboards = bit(7);
       final showTasks = bit(8);
@@ -338,6 +349,7 @@ void main() {
         events: enableEvents,
         habits: enableHabits,
         dashboards: enableDashboards,
+        relationships: enableRelationships,
       ).toSet();
       final selectedEntryTypes = switch (entrySelKind) {
         0 => <String>{},
@@ -356,6 +368,7 @@ void main() {
           enableEvents: enableEvents,
           enableHabits: enableHabits,
           enableDashboards: enableDashboards,
+          enableRelationships: enableRelationships,
           enableVectorSearch: bit(3),
           enableProjects: bit(4),
           searchMode: searchMode,
@@ -368,6 +381,7 @@ void main() {
           events: flags.events,
           habits: flags.habits,
           dashboards: flags.dashboards,
+          relationships: flags.relationships,
         ).toSet();
         final reason = 'bits=$bits entrySelKind=$entrySelKind';
 
@@ -375,6 +389,11 @@ void main() {
         expect(result.enableEvents, flags.events, reason: reason);
         expect(result.enableHabits, flags.habits, reason: reason);
         expect(result.enableDashboards, flags.dashboards, reason: reason);
+        expect(
+          result.enableRelationships,
+          flags.relationships,
+          reason: reason,
+        );
         expect(result.enableVectorSearch, flags.vectorSearch, reason: reason);
         expect(result.enableProjects, flags.projects, reason: reason);
 

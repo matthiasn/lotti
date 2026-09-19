@@ -249,6 +249,7 @@ void _registerLifecycleAndSearch(JournalControllerTestSetup setup) {
               events: true,
               habits: false,
               dashboards: false,
+              relationships: false,
             ),
           ),
         );
@@ -305,6 +306,8 @@ void _registerLifecycleAndSearch(JournalControllerTestSetup setup) {
           expect(capturedTypes!.contains('JournalEvent'), isTrue);
           // Habits should be included
           expect(capturedTypes!.contains('HabitCompletionEntry'), isTrue);
+          // People are off, so their check-ins stay out of the Logbook.
+          expect(capturedTypes!.contains('CheckIn'), isFalse);
         });
       },
     );
@@ -339,6 +342,7 @@ void _registerLifecycleAndSearch(JournalControllerTestSetup setup) {
           enableEventsFlag,
           enableHabitsPageFlag,
           enableDashboardsPageFlag,
+          enableRelationshipsFlag,
         });
 
         async.elapse(const Duration(milliseconds: 100));
@@ -356,6 +360,7 @@ void _registerLifecycleAndSearch(JournalControllerTestSetup setup) {
         expect(capturedTypes!.contains('HabitCompletionEntry'), isTrue);
         expect(capturedTypes!.contains('MeasurementEntry'), isTrue);
         expect(capturedTypes!.contains('QuantitativeEntry'), isTrue);
+        expect(capturedTypes!.contains('CheckIn'), isTrue);
       });
     });
   });

@@ -31,6 +31,7 @@ void _registerFlagsAndAgentQueries(JournalControllerTestSetup setup) {
             events: true,
             habits: false,
             dashboards: false,
+            relationships: false,
           ).toSet();
 
           expect(
@@ -59,6 +60,7 @@ void _registerFlagsAndAgentQueries(JournalControllerTestSetup setup) {
           events: false,
           habits: false,
           dashboards: false,
+          relationships: false,
         ).toSet();
 
         // Select all allowed types
@@ -81,6 +83,7 @@ void _registerFlagsAndAgentQueries(JournalControllerTestSetup setup) {
           events: true,
           habits: false,
           dashboards: false,
+          relationships: false,
         ).toSet();
 
         expect(
@@ -169,6 +172,7 @@ void _registerFlagsAndAgentQueries(JournalControllerTestSetup setup) {
           events: true,
           habits: false,
           dashboards: false,
+          relationships: false,
         ).toSet();
 
         // Select all currently allowed types

@@ -77,6 +77,7 @@ class JournalPageController extends Notifier<JournalPageState>
   bool _enableEvents = false;
   bool _enableHabits = false;
   bool _enableDashboards = false;
+  bool _enableRelationships = false;
   @override
   bool _enableVectorSearch = false;
   bool _enableProjects = false;
@@ -270,6 +271,7 @@ class JournalPageController extends Notifier<JournalPageState>
       enableEvents: _enableEvents,
       enableHabits: _enableHabits,
       enableDashboards: _enableDashboards,
+      enableRelationships: _enableRelationships,
       enableVectorSearch: _enableVectorSearch,
       enableProjects: _enableProjects,
       searchMode: _searchMode,
@@ -282,6 +284,7 @@ class JournalPageController extends Notifier<JournalPageState>
     _enableEvents = result.enableEvents;
     _enableHabits = result.enableHabits;
     _enableDashboards = result.enableDashboards;
+    _enableRelationships = result.enableRelationships;
     _enableVectorSearch = result.enableVectorSearch;
     _enableProjects = result.enableProjects;
     _searchMode = result.searchMode;
@@ -492,6 +495,7 @@ class JournalPageController extends Notifier<JournalPageState>
     events: _enableEvents,
     habits: _enableHabits,
     dashboards: _enableDashboards,
+    relationships: _enableRelationships,
   );
 
   /// The category filter actually applied: the user's selection, clamped to
@@ -527,6 +531,7 @@ class JournalPageController extends Notifier<JournalPageState>
       enableEvents: _enableEvents,
       enableHabits: _enableHabits,
       enableDashboards: _enableDashboards,
+      enableRelationships: _enableRelationships,
     );
   }
 

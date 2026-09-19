@@ -12,6 +12,9 @@ IconData entryTypeIcon(String type) {
     'JournalEvent' => LottiIcons.calendar,
     'JournalAudio' => LottiIcons.mic,
     'JournalImage' => LottiIcons.image,
+    // A check-in row leads with its interaction's glyph (call, message, …);
+    // the filter names the kind as a whole with the People tab's own.
+    'CheckIn' => LottiIcons.people,
     'MeasurementEntry' => LottiIcons.measure,
     'SurveyEntry' => LottiIcons.clipboardText,
     'WorkoutEntry' => LottiIcons.fitness,

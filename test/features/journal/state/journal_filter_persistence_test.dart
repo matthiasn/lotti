@@ -6,6 +6,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/journal/state/journal_filter_persistence.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/journal/utils/entry_types.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -136,12 +137,106 @@ void main() {
             JournalFilterPersistence.selectedEntryTypesKey,
           ),
         ).thenAnswer((_) async => '["Task","JournalEntry","JournalAudio"]');
+        when(
+          () => mockSettingsDb.itemByKey(
+            JournalFilterPersistence.reconciledEntryTypesKey,
+          ),
+        ).thenAnswer((_) async => jsonEncode(entryTypes));
 
         late Set<String>? result;
         sut.loadEntryTypes().then((v) => result = v);
         async.flushMicrotasks();
 
         expect(result, {'Task', 'JournalEntry', 'JournalAudio'});
+      });
+    });
+
+    // A type the filter gained after the selection was saved is one the user
+    // never had the chance to deselect: it joins once, and only once.
+    group('a type added since the selection was saved', () {
+      void stubStored(List<String> selection, {List<String>? reconciled}) {
+        when(
+          () => mockSettingsDb.itemByKey(
+            JournalFilterPersistence.selectedEntryTypesKey,
+          ),
+        ).thenAnswer((_) async => jsonEncode(selection));
+        when(
+          () => mockSettingsDb.itemByKey(
+            JournalFilterPersistence.reconciledEntryTypesKey,
+          ),
+        ).thenAnswer(
+          (_) async => reconciled == null ? null : jsonEncode(reconciled),
+        );
+      }
+
+      test('joins a selection saved before types were reconciled — CheckIn '
+          'for every existing Logbook selection — and is written back', () {
+        fakeAsync((async) {
+          stubStored(['JournalEntry', 'Task']);
+
+          late Set<String>? result;
+          sut.loadEntryTypes().then((v) => result = v);
+          async.flushMicrotasks();
+
+          expect(result, {'Task', 'JournalEntry', 'CheckIn'});
+          verify(
+            () => mockSettingsDb.saveSettingsItem(
+              JournalFilterPersistence.selectedEntryTypesKey,
+              jsonEncode(['CheckIn', 'JournalEntry', 'Task']),
+            ),
+          ).called(1);
+          verify(
+            () => mockSettingsDb.saveSettingsItem(
+              JournalFilterPersistence.reconciledEntryTypesKey,
+              jsonEncode([...entryTypes]..sort()),
+            ),
+          ).called(1);
+        });
+      });
+
+      test('stays out once deselected after it was offered', () {
+        fakeAsync((async) {
+          stubStored(['JournalEntry', 'Task'], reconciled: entryTypes);
+
+          late Set<String>? result;
+          sut.loadEntryTypes().then((v) => result = v);
+          async.flushMicrotasks();
+
+          expect(result, {'Task', 'JournalEntry'});
+          // Nothing to reconcile, so an unchanged launch writes nothing.
+          verifyNever(() => mockSettingsDb.saveSettingsItem(any(), any()));
+        });
+      });
+
+      test('a selection saved now counts as made with every type on offer', () {
+        fakeAsync((async) {
+          sut.saveEntryTypes({'Task'});
+          async.flushMicrotasks();
+
+          verify(
+            () => mockSettingsDb.saveSettingsItem(
+              JournalFilterPersistence.reconciledEntryTypesKey,
+              jsonEncode([...entryTypes]..sort()),
+            ),
+          ).called(1);
+        });
+      });
+
+      test('a malformed record is read as the legacy baseline', () {
+        fakeAsync((async) {
+          stubStored(['Task']);
+          when(
+            () => mockSettingsDb.itemByKey(
+              JournalFilterPersistence.reconciledEntryTypesKey,
+            ),
+          ).thenAnswer((_) async => 'not json');
+
+          late Set<String>? result;
+          sut.loadEntryTypes().then((v) => result = v);
+          async.flushMicrotasks();
+
+          expect(result, {'Task', 'CheckIn'});
+        });
       });
     });
 
@@ -400,7 +495,9 @@ void main() {
         sut.saveEntryTypes({'JournalEntry', 'Task'});
         async.flushMicrotasks();
 
-        verifyNever(() => mockSettingsDb.saveSettingsItem(any(), any()));
+        verifyNever(
+          () => mockSettingsDb.saveSettingsItem(selectedEntryTypesKey, any()),
+        );
       });
     });
 

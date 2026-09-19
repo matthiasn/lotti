@@ -118,6 +118,40 @@ void main() {
     await getIt.unregister<UpdateNotifications>();
   });
 
+  group('relationshipNameProvider', () {
+    test("reads the person's name for a row outside the People tab", () async {
+      when(
+        () => mockRepository.getRelationshipById('rel-1'),
+      ).thenAnswer((_) async => relationship('rel-1', title: 'Wanja'));
+
+      expect(
+        await container.read(relationshipNameProvider('rel-1').future),
+        'Wanja',
+      );
+    });
+
+    test('is null for a person who is gone or hidden', () async {
+      when(
+        () => mockRepository.getRelationshipById('hidden'),
+      ).thenAnswer((_) async => null);
+      final deleted = relationship('gone');
+      when(() => mockRepository.getRelationshipById('gone')).thenAnswer(
+        (_) async => deleted.copyWith(
+          meta: deleted.meta.copyWith(deletedAt: testDate),
+        ),
+      );
+
+      expect(
+        await container.read(relationshipNameProvider('hidden').future),
+        isNull,
+      );
+      expect(
+        await container.read(relationshipNameProvider('gone').future),
+        isNull,
+      );
+    });
+  });
+
   group('relationshipsListControllerProvider', () {
     test('loads relationships from the repository', () async {
       when(() => mockRepository.getRelationshipsByRecency()).thenAnswer(

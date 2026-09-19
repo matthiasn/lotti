@@ -47,6 +47,21 @@ class RelationshipsListController
   }
 }
 
+/// A person's name, for a surface outside the People tab that shows one of
+/// their check-ins — the Logbook's row. Null while loading, and for a person
+/// who is gone or hidden as private: the row then names the kind alone.
+final FutureProviderFamily<String?, String> relationshipNameProvider =
+    FutureProvider.autoDispose.family<String?, String>((
+      ref,
+      relationshipId,
+    ) async {
+      final person = await ref
+          .watch(relationshipRepositoryProvider)
+          .getRelationshipById(relationshipId);
+      if (person == null || person.isDeleted) return null;
+      return person.data.title;
+    }, name: 'relationshipNameProvider');
+
 final relationshipsListControllerProvider =
     AsyncNotifierProvider<
       RelationshipsListController,

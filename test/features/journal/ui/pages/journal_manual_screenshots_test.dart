@@ -21,6 +21,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
+import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -51,6 +52,7 @@ import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
+import 'package:lotti/features/relationships/state/relationships_providers.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/speech_modal.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/transcripts_list_item.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -186,6 +188,8 @@ Widget _app({
     ),
   );
 }
+
+const _pipRelationshipId = 'relationship-pip';
 
 void main() {
   if (!screenshotCaptureEnabled) {
@@ -465,8 +469,25 @@ void main() {
       ),
     );
 
+    // A check-in shows in the Logbook, named for its person (ADR 0038, as
+    // amended).
+    final pipCheckIn = CheckInEntry(
+      meta: metadata('check-in-pip', DateTime(2026, 7, 17, 10, 30)),
+      data: const CheckInData(
+        relationshipId: _pipRelationshipId,
+        interactionType: CheckInInteractionType.videoCall,
+      ),
+      entryText: EntryText(
+        plainText: _t(
+          'Pip wants the launch corridor briefing before Friday.',
+          'Pip möchte das Briefing zum Startkorridor vor Freitag.',
+        ),
+      ),
+    );
+
     final feedEntries = <JournalEntity>[
       launchPhoto,
+      pipCheckIn,
       briefing,
       audioMemo,
       summit,
@@ -604,8 +625,15 @@ void main() {
       () => _ManualJournalPageController(pageState),
     ),
     labelsStreamProvider.overrideWith((ref) => Stream.value(world.labels)),
+    relationshipNameProvider(
+      _pipRelationshipId,
+    ).overrideWith((ref) async => 'Commander Pip Frostbeak'),
     configFlagProvider(
       enableEventsFlag,
+    ).overrideWith((ref) => Stream.value(true)),
+    // People on, so the Logbook offers its check-ins as a type of their own.
+    configFlagProvider(
+      enableRelationshipsFlag,
     ).overrideWith((ref) => Stream.value(true)),
     entryControllerProvider(briefing.id).overrideWith(
       () => _ManualEntryController(briefing),
@@ -721,7 +749,15 @@ void main() {
           brightness: brightness,
           home: const InfiniteJournalPage(),
         );
-        expect(find.byType(CardWrapperWidget), findsNWidgets(5));
+        expect(find.byType(CardWrapperWidget), findsNWidgets(6));
+        expect(
+          find.text(
+            _messages(tester).relationshipCheckInTitle(
+              'Commander Pip Frostbeak',
+            ),
+          ),
+          findsOneWidget,
+        );
         expect(
           find.text(
             _t(
@@ -765,6 +801,7 @@ void main() {
           find.text(messages.journalFilterEntryTypesTitle),
           findsOneWidget,
         );
+        expect(find.text(messages.entryTypeLabelCheckIn), findsOneWidget);
         expect(
           find.text(stripTrailingColon(messages.taskCategoryLabel)),
           findsWidgets,

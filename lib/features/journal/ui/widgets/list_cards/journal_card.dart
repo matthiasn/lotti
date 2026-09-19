@@ -12,6 +12,7 @@ import 'package:lotti/features/journal/ui/widgets/time_span_bar.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
+import 'package:lotti/features/relationships/state/relationships_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/tasks/state/checklist_completion_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_duration.dart';
@@ -70,6 +71,9 @@ class ModernJournalCard extends StatelessWidget {
         beamToNamed('/tasks/${item.meta.id}');
       } else if (item is JournalEvent) {
         beamToNamed('/events/${item.meta.id}');
+      } else if (item case CheckInEntry(:final data)) {
+        // A check-in's page is its person's, on the People tab.
+        beamToNamed('/people/${data.relationshipId}/check-ins/${item.meta.id}');
       } else {
         beamToNamed('/journal/${item.meta.id}');
       }
@@ -283,16 +287,27 @@ class _EntryCardContent extends StatelessWidget {
         title: _titleText(context, r.data.title),
         secondary: _notePreview(context, r.entryText),
       ),
+      // Named for the person, as the check-in's own page is; the note it was
+      // logged with follows. It opens on the People tab.
       final CheckInEntry c => _scaffold(
         context,
         icon: checkInInteractionIcon(c.data.interactionType),
         iconColor: _categoryColor(context, item),
-        title: _contentTitle(
-          context,
-          c.entryText,
-          fallback: context.messages.entryTypeLabelCheckIn,
+        title: Consumer(
+          builder: (context, ref, _) {
+            final name = ref
+                .watch(relationshipNameProvider(c.data.relationshipId))
+                .value;
+            return _titleText(
+              context,
+              name == null
+                  ? context.messages.entryTypeLabelCheckIn
+                  : context.messages.relationshipCheckInTitle(name),
+            );
+          },
         ),
-        secondary: _contentRemainder(context, c.entryText),
+        secondary: _notePreview(context, c.entryText),
+        opensElsewhere: true,
       ),
       // A goal is a container, not a journal moment: its home is the Goals
       // tab, and its own detail surface is far richer than a list row. It is

@@ -50,6 +50,17 @@ agent-assignment filter.
 **Tasks filter persistence is tab-aware**: `TASKS_CATEGORY_FILTERS` for the tasks
 tab, `JOURNAL_CATEGORY_FILTERS` for the journal tab.
 
+**A type added to `entryTypes` joins saved selections once.** The selection
+(`SELECTED_ENTRY_TYPES`) is stored explicitly, so a type the filter gains
+later would otherwise stay hidden for everyone who ever touched the filter.
+`ENTRY_TYPES_RECONCILED` records the types a selection has been reconciled
+against — every current type, written whenever a selection is saved or
+loaded; a selection saved before the record existed counts as reconciled
+against `JournalFilterPersistence.legacyReconciledEntryTypes`, the list
+before `CheckIn`. On load, `entryTypes` minus that record is added to the
+selection and written back; from then on the type is part of the record, so
+deselecting it sticks. An unchanged launch writes nothing.
+
 # Two search modes
 
 `fullText` and `vector`. **Vector mode is feature-gated**, and if the flag is

@@ -21,6 +21,7 @@ void main() {
         events: true,
         habits: true,
         dashboards: true,
+        relationships: true,
       );
       expect(result, equals(entryTypes));
     });
@@ -30,6 +31,7 @@ void main() {
         events: false,
         habits: true,
         dashboards: true,
+        relationships: true,
       );
       expect(result, isNot(contains('JournalEvent')));
       // All other types are present.
@@ -45,6 +47,7 @@ void main() {
         events: true,
         habits: false,
         dashboards: true,
+        relationships: true,
       );
       expect(result, isNot(contains('HabitCompletionEntry')));
       for (final t in entryTypes) {
@@ -60,6 +63,7 @@ void main() {
         events: true,
         habits: true,
         dashboards: false,
+        relationships: true,
       );
       for (final t in _dashboardGatedTypes) {
         expect(result, isNot(contains(t)), reason: 'Should be excluded: $t');
@@ -71,12 +75,23 @@ void main() {
       }
     });
 
+    test('relationships=false excludes CheckIn alone', () {
+      final result = computeAllowedEntryTypes(
+        events: true,
+        habits: true,
+        dashboards: true,
+        relationships: false,
+      );
+      expect(result, equals(entryTypes.where((t) => t != 'CheckIn')));
+    });
+
     test('all flags false excludes JournalEvent, HabitCompletionEntry and all '
         'dashboard types', () {
       final result = computeAllowedEntryTypes(
         events: false,
         habits: false,
         dashboards: false,
+        relationships: true,
       );
       expect(result, isNot(contains('JournalEvent')));
       expect(result, isNot(contains('HabitCompletionEntry')));
@@ -93,6 +108,7 @@ void main() {
               events: events,
               habits: habits,
               dashboards: dashboards,
+              relationships: true,
             );
             for (final t in result) {
               expect(
@@ -116,6 +132,7 @@ void main() {
               events: events,
               habits: habits,
               dashboards: dashboards,
+              relationships: true,
             );
             expect(
               result.length,
@@ -135,6 +152,7 @@ void main() {
         events: true,
         habits: true,
         dashboards: true,
+        relationships: true,
       );
       final indices = result.map(entryTypes.indexOf).toList();
       for (var i = 1; i < indices.length; i++) {

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/journal/state/journal_filter_persistence.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/journal/utils/entry_types.dart' as entry_types;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -19,6 +20,13 @@ void main() {
     sut = JournalFilterPersistence(mockSettingsDb);
 
     when(() => mockSettingsDb.itemByKey(any())).thenAnswer((_) async => null);
+    // Reconciled against today's types: these tests are about the dedup, so
+    // no type joins a loaded selection and nothing else is written.
+    when(
+      () => mockSettingsDb.itemByKey(
+        JournalFilterPersistence.reconciledEntryTypesKey,
+      ),
+    ).thenAnswer((_) async => jsonEncode(entry_types.entryTypes));
     when(
       () => mockSettingsDb.saveSettingsItem(any(), any()),
     ).thenAnswer((_) async => 1);

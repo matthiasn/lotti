@@ -69,6 +69,7 @@ JournalQueryParams hDefaultParams({
   bool enableEvents = true,
   bool enableHabits = true,
   bool enableDashboards = true,
+  bool enableRelationships = true,
 }) {
   return JournalQueryParams(
     showTasks: showTasks,
@@ -87,5 +88,6 @@ JournalQueryParams hDefaultParams({
     enableEvents: enableEvents,
     enableHabits: enableHabits,
     enableDashboards: enableDashboards,
+    enableRelationships: enableRelationships,
   );
 }

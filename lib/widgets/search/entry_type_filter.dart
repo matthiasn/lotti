@@ -27,6 +27,9 @@ class EntryTypeFilter extends ConsumerWidget {
     final enableDashboardsAsync = ref.watch(
       configFlagProvider(enableDashboardsPageFlag),
     );
+    final enableRelationshipsAsync = ref.watch(
+      configFlagProvider(enableRelationshipsFlag),
+    );
 
     // Use unwrapPrevious to keep previous value during loading/error states
     // Default to false (hide features) on initial load with no previous value
@@ -43,10 +46,18 @@ class EntryTypeFilter extends ConsumerWidget {
             .value ??
         false;
 
+    final enableRelationships =
+        enableRelationshipsAsync
+            .unwrapPrevious()
+            .whenData((value) => value)
+            .value ??
+        false;
+
     final filteredEntryTypes = computeAllowedEntryTypes(
       events: enableEvents,
       habits: enableHabits,
       dashboards: enableDashboards,
+      relationships: enableRelationships,
     );
 
     final tokens = context.designTokens;
@@ -151,6 +162,7 @@ String _entryTypeLabel(BuildContext context, String type) {
     'JournalEvent': context.messages.entryTypeLabelJournalEvent,
     'JournalAudio': context.messages.entryTypeLabelJournalAudio,
     'JournalImage': context.messages.entryTypeLabelJournalImage,
+    'CheckIn': context.messages.entryTypeLabelCheckIn,
     'MeasurementEntry': context.messages.entryTypeLabelMeasurementEntry,
     'SurveyEntry': context.messages.entryTypeLabelSurveyEntry,
     'WorkoutEntry': context.messages.entryTypeLabelWorkoutEntry,

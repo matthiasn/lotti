@@ -6,10 +6,12 @@ import 'package:lotti/features/journal/utils/entry_types.dart';
 /// - When [habits] is false, excludes `HabitCompletionEntry`.
 /// - When [dashboards] is false, excludes `MeasurementEntry`, `QuantitativeEntry`,
 ///   `SurveyEntry`, and `WorkoutEntry`.
+/// - When [relationships] is false, excludes `CheckIn`.
 List<String> computeAllowedEntryTypes({
   required bool events,
   required bool habits,
   required bool dashboards,
+  required bool relationships,
 }) {
   final disallowed = <String>{};
 
@@ -18,6 +20,9 @@ List<String> computeAllowedEntryTypes({
   }
   if (!habits) {
     disallowed.add('HabitCompletionEntry');
+  }
+  if (!relationships) {
+    disallowed.add('CheckIn');
   }
   if (!dashboards) {
     disallowed.addAll({

@@ -10,6 +10,7 @@ const List<String> entryTypes = [
   'JournalEvent',
   'JournalAudio',
   'JournalImage',
+  'CheckIn',
   'MeasurementEntry',
   'SurveyEntry',
   'WorkoutEntry',
