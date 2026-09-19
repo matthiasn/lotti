@@ -172,6 +172,23 @@ void main() {
     expect(find.byKey(const ValueKey('check-in-detail-comment')), findsNothing);
   });
 
+  // Codex review on #4348: a failed first load must not spin forever.
+  testWidgets('a detail that fails to load says so', (tester) async {
+    stubDetail(checkIn());
+    when(
+      () => repository.getRelationshipById('rel-001'),
+    ).thenAnswer((_) async => throw StateError('database closed'));
+    await pump(tester);
+
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(
+      tester
+          .widget<Text>(find.byKey(const ValueKey('check-in-detail-gone')))
+          .data,
+      'Error',
+    );
+  });
+
   testWidgets('back leads to the person', (tester) async {
     stubDetail(checkIn());
     final backs = await pump(tester);
@@ -244,10 +261,23 @@ void main() {
       verifyNever(() => repository.addCommentToCheckIn(any(), any()));
     });
 
+    // The importer links each photo as it creates it; the stub below
+    // stands in for that, holding the photo once the import ran.
+    void stubHeld({required bool imports}) {
+      when(() => repository.getAllEntriesForCheckIns({'c-1'})).thenAnswer(
+        (_) async => {
+          'c-1': [
+            if (imports && photoImports.isNotEmpty) testImageEntry,
+          ],
+        },
+      );
+    }
+
     testWidgets('photos are added to the check-in, which then changes', (
       tester,
     ) async {
       stubDetail(checkIn());
+      stubHeld(imports: true);
       await pump(tester);
 
       await tester.tap(find.byKey(const ValueKey('check-in-detail-photo')));
@@ -255,6 +285,22 @@ void main() {
 
       expect(photoImports, ['c-1 in crew']);
       verify(() => repository.touchCheckIn('c-1')).called(1);
+    });
+
+    // Codex review on #4348: the check-in's updatedAt is the agent's
+    // "evidence changed" signal, and a cancelled picker changed nothing.
+    testWidgets('a picker that adds nothing leaves the check-in alone', (
+      tester,
+    ) async {
+      stubDetail(checkIn());
+      stubHeld(imports: false);
+      await pump(tester);
+
+      await tester.tap(find.byKey(const ValueKey('check-in-detail-photo')));
+      await tester.pumpAndSettle();
+
+      expect(photoImports, ['c-1 in crew']);
+      verifyNever(() => repository.touchCheckIn(any()));
     });
 
     // The recording is the entry; its words follow in the background and

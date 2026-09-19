@@ -275,6 +275,9 @@ void main() {
       () => repository.getRelationshipById(any()),
     ).thenAnswer((_) async => null);
     when(
+      () => repository.getEntriesForCheckIns(any()),
+    ).thenAnswer((_) async => const {});
+    when(
       () => repository.getCheckInsForRelationship(any()),
     ).thenAnswer((_) async => [source]);
     when(() => repository.getLinkedTasks(any())).thenAnswer((_) async => []);

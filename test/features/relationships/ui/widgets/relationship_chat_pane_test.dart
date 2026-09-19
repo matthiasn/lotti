@@ -65,6 +65,9 @@ void main() {
       ),
     );
     when(
+      () => repository.getEntriesForCheckIns(any()),
+    ).thenAnswer((_) async => const {});
+    when(
       () => repository.getCheckInsForRelationship(relationshipId),
     ).thenAnswer((_) async => []);
     when(

@@ -52,6 +52,9 @@ void main() {
       () => repository.getRelationshipById(any()),
     ).thenAnswer((_) async => testRelationship);
     when(
+      () => repository.getEntriesForCheckIns(any()),
+    ).thenAnswer((_) async => const {});
+    when(
       () => repository.getCheckInsForRelationship(any()),
     ).thenAnswer((_) async => [checkIn(at)]);
     when(

@@ -142,13 +142,26 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
 
   Future<void> _addPhotos(CheckInEntry checkIn) async {
     final repository = ref.read(relationshipRepositoryProvider);
+    Future<Set<String>> held() async => {
+      for (final entry
+          in (await repository.getAllEntriesForCheckIns({
+                checkIn.id,
+              }))[checkIn.id] ??
+              const <JournalEntity>[])
+        entry.id,
+    };
+    final before = await held();
+    if (!mounted) return;
     await ref.read(checkInPhotoImporterProvider)(
       context,
       checkInId: checkIn.id,
       categoryId: checkIn.meta.categoryId,
     );
     // The photos are linked as they are created; saving the check-in again
-    // is what tells the agent it holds something new.
+    // is what tells the agent it holds something new — so only when it
+    // does: a cancelled picker, or files that were all refused, change
+    // nothing and must not stale the briefing.
+    if ((await held()).difference(before).isEmpty) return;
     await repository.touchCheckIn(checkIn.id);
   }
 
@@ -184,9 +197,11 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final detail = ref
-        .watch(relationshipDetailControllerProvider(widget.relationshipId))
-        .value;
+    final detailAsync = ref.watch(
+      relationshipDetailControllerProvider(widget.relationshipId),
+    );
+    // Keep the last rendered detail during background reloads.
+    final detail = detailAsync.value;
     final checkIn = _checkInOf(detail);
     final person = detail?.relationship.data;
     final title = person == null
@@ -205,10 +220,14 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
         Expanded(
           child: checkIn == null
               ? Center(
-                  child: detail == null
+                  child: detail == null && detailAsync.isLoading
                       ? const CircularProgressIndicator()
                       : Text(
-                          messages.relationshipCheckInGone,
+                          // A failed first load is an error; a person or
+                          // check-in that resolved to nothing is gone.
+                          detail == null && detailAsync.hasError
+                              ? messages.commonError
+                              : messages.relationshipCheckInGone,
                           key: const ValueKey('check-in-detail-gone'),
                           style: tokens.typography.styles.body.bodyMedium
                               .copyWith(

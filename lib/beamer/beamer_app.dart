@@ -322,13 +322,15 @@ bool habitsRouteHidesBottomNav(BeamLocation<dynamic>? location) {
 }
 
 /// True when the PEOPLE beamer location points at one person's own pages —
-/// their detail page (`/people/<id>`) or their agent chat
-/// (`/people/<id>/chat`).
+/// their detail page (`/people/<id>`), their agent chat
+/// (`/people/<id>/chat`) or one of their check-ins
+/// (`/people/<id>/check-ins/<checkInId>`).
 ///
 /// Both are terminal pages you navigate *to*, so they slide the bar away for
 /// the same reason as [goalsRouteHidesBottomNav]. The chat is the pointed
 /// case: `AgentChatView` docks its message composer on the bottom edge, and
-/// the blurred nav pill would sit on top of the field the page exists for.
+/// the blurred nav pill would sit on top of the field the page exists for —
+/// as it would on a check-in's add bar.
 /// Pure function of router state.
 ///
 /// The `/people` list root keeps the bar — it is a tab you navigate *from*,
@@ -337,7 +339,8 @@ bool habitsRouteHidesBottomNav(BeamLocation<dynamic>? location) {
 /// Shapes are matched exactly rather than by prefix, matching
 /// [goalsRouteHidesBottomNav]: [RelationshipsLocation] renders the list for
 /// anything malformed, and that list must keep its tab bar. An empty id is
-/// malformed — `/people//chat` must not pass as a chat route.
+/// malformed — `/people//chat` must not pass as a chat route, nor
+/// `/people/<id>/check-ins/` as a check-in.
 bool peopleRouteHidesBottomNav(BeamLocation<dynamic>? location) {
   if (location is! RelationshipsLocation) return false;
   final segments = location.state.uri.pathSegments;
@@ -345,6 +348,10 @@ bool peopleRouteHidesBottomNav(BeamLocation<dynamic>? location) {
   return switch (segments.length) {
     2 => segments[1].isNotEmpty,
     3 => segments[1].isNotEmpty && segments[2] == 'chat',
+    4 =>
+      segments[1].isNotEmpty &&
+          segments[2] == 'check-ins' &&
+          segments[3].isNotEmpty,
     _ => false,
   };
 }

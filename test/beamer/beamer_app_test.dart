@@ -3125,6 +3125,16 @@ void main() {
       );
     });
 
+    // Codex review on #4348: the check-in's add bar owns the bottom edge.
+    test("a person's check-in hides the bar", () {
+      expect(
+        peopleRouteHidesBottomNav(
+          peopleLocationFor('/people/anna/check-ins/c-1'),
+        ),
+        isTrue,
+      );
+    });
+
     // Malformed shapes render the list, and the list must keep its tab bar.
     test('unknown sub-routes and deeper paths keep the bar', () {
       expect(
@@ -3140,6 +3150,20 @@ void main() {
     test('an empty person id keeps the bar', () {
       expect(
         peopleRouteHidesBottomNav(peopleLocationFor('/people//chat')),
+        isFalse,
+      );
+      expect(
+        peopleRouteHidesBottomNav(peopleLocationFor('/people//check-ins/c-1')),
+        isFalse,
+      );
+      expect(
+        peopleRouteHidesBottomNav(peopleLocationFor('/people/anna/check-ins/')),
+        isFalse,
+      );
+      expect(
+        peopleRouteHidesBottomNav(
+          peopleLocationFor('/people/anna/check-inz/c-1'),
+        ),
         isFalse,
       );
     });
