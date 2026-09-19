@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/models/pairing_check_code.dart';
 
 void main() {
@@ -58,5 +59,31 @@ void main() {
       // pairing between an old and a new build — has to be deliberate.
       expect(code(), '6BA-6DF');
     });
+  });
+
+  group('properties', () {
+    final part = glados.any.stringOf('ab:@!.|é ');
+
+    glados.Glados3(
+      part,
+      part,
+      part,
+      glados.ExploreConfig(numRuns: 200),
+    ).test(
+      'always six upper-case hex digits in two groups, and deterministic',
+      (user, roomId, homeServer) {
+        final first = pairingCheckCode(
+          user: user,
+          roomId: roomId,
+          homeServer: homeServer,
+        );
+        expect(first, matches(RegExp(r'^[0-9A-F]{3}-[0-9A-F]{3}$')));
+        expect(
+          pairingCheckCode(user: user, roomId: roomId, homeServer: homeServer),
+          first,
+        );
+      },
+      tags: 'glados',
+    );
   });
 }
