@@ -1,334 +1,174 @@
-import 'dart:ui' show PictureRecorder;
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/chat/waveform_bars.dart';
-import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Returns the *real* (private) `_WaveformBarsPainter` from the live
-/// `CustomPaint` nested under the [WaveformBars] reachable via [finder].
-///
-/// Material adds unrelated `CustomPaint` widgets to the tree, so we filter on
-/// the painter's runtime type. This lets the tests drive the production
-/// `paint`/`shouldRepaint` implementations directly instead of re-implementing
-/// them.
-CustomPainter _painterUnder(WidgetTester tester, Finder finder) {
-  return tester
-      .widgetList<CustomPaint>(
-        find.descendant(of: finder, matching: find.byType(CustomPaint)),
-      )
-      .map((cp) => cp.painter)
-      .whereType<CustomPainter>()
-      .firstWhere(
-        (p) => p.runtimeType.toString() == '_WaveformBarsPainter',
-        orElse: () => throw StateError('Waveform painter not found'),
-      );
-}
+import '../../../../widget_test_utils.dart';
 
-/// Pumps a single themed [WaveformBars] and returns its real painter.
-Future<CustomPainter> _pumpAndCapturePainter(
-  WidgetTester tester, {
-  required List<double> amplitudes,
-  double barWidth = 2,
-  double barSpacing = 3,
-  double minBarHeight = 2,
-  Color primary = Colors.blue,
-  Color secondary = Colors.green,
-}) async {
-  await tester.pumpWidget(
-    MaterialApp(
-      builder: LegacyMaterialBridge.builder,
-      theme: ThemeData(
-        colorScheme: ColorScheme.light(primary: primary, secondary: secondary),
-      ),
-      home: Scaffold(
-        body: Center(
-          child: SizedBox(
-            width: 300,
-            child: WaveformBars(
-              amplitudesNormalized: amplitudes,
-              barWidth: barWidth,
-              barSpacing: barSpacing,
-              minBarHeight: minBarHeight,
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
-  return _painterUnder(tester, find.byType(WaveformBars));
-}
+/// Records the rounded rectangles a painter draws, in order.
+class _RecordingCanvas implements Canvas {
+  final rects = <RRect>[];
+  final colors = <Color>[];
 
-/// Pumps two [WaveformBars] (keys `a` and `b`) side by side, each wrapped in
-/// its own [Theme]/config, and returns their real painters captured from a
-/// single tree. Sequential `pumpWidget` calls reuse the same element and yield
-/// stale painter references, so coexisting subtrees are used to compare two
-/// independent painter instances reliably.
-Future<(CustomPainter a, CustomPainter b)> _pumpPair(
-  WidgetTester tester, {
-  required _PainterConfig a,
-  required _PainterConfig b,
-}) async {
-  Widget cell(Key key, _PainterConfig cfg) {
-    return Theme(
-      data: ThemeData(
-        colorScheme: ColorScheme.light(
-          primary: cfg.primary,
-          secondary: cfg.secondary,
-        ),
-      ),
-      child: SizedBox(
-        width: 300,
-        child: WaveformBars(
-          key: key,
-          amplitudesNormalized: cfg.amplitudes,
-          barWidth: cfg.barWidth,
-          barSpacing: cfg.barSpacing,
-          minBarHeight: cfg.minBarHeight,
-        ),
-      ),
-    );
+  @override
+  void drawRRect(RRect rrect, Paint paint) {
+    rects.add(rrect);
+    colors.add(paint.color);
   }
 
-  await tester.pumpWidget(
-    MaterialApp(
-      builder: LegacyMaterialBridge.builder,
-      home: Scaffold(
-        body: Column(
-          children: [cell(const Key('a'), a), cell(const Key('b'), b)],
-        ),
-      ),
-    ),
-  );
-
-  return (
-    _painterUnder(tester, find.byKey(const Key('a'))),
-    _painterUnder(tester, find.byKey(const Key('b'))),
-  );
-}
-
-class _PainterConfig {
-  const _PainterConfig({
-    this.amplitudes = const [0.5, 0.7],
-    this.barWidth = 2,
-    this.barSpacing = 3,
-    this.minBarHeight = 2,
-    this.primary = Colors.blue,
-    this.secondary = Colors.green,
-  });
-
-  final List<double> amplitudes;
-  final double barWidth;
-  final double barSpacing;
-  final double minBarHeight;
-  final Color primary;
-  final Color secondary;
-
-  _PainterConfig copyWith({
-    List<double>? amplitudes,
-    double? barWidth,
-    double? barSpacing,
-    double? minBarHeight,
-    Color? primary,
-    Color? secondary,
-  }) {
-    return _PainterConfig(
-      amplitudes: amplitudes ?? this.amplitudes,
-      barWidth: barWidth ?? this.barWidth,
-      barSpacing: barSpacing ?? this.barSpacing,
-      minBarHeight: minBarHeight ?? this.minBarHeight,
-      primary: primary ?? this.primary,
-      secondary: secondary ?? this.secondary,
-    );
-  }
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
 }
 
 void main() {
-  group('WaveformBars widget', () {
-    testWidgets('empty amplitudes build and paint without exception', (
-      tester,
-    ) async {
-      final painter = await _pumpAndCapturePainter(
-        tester,
-        amplitudes: const [],
-      );
-      expect(tester.takeException(), isNull);
+  const barWidth = 3.0;
+  const size = Size(60, 32);
 
-      // Painting an empty list must early-return without drawing/crashing.
-      final recorder = PictureRecorder();
-      painter.paint(Canvas(recorder), const Size(300, 24));
-      recorder.endRecording();
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('CustomPaint size accounts for padding and border', (
-      tester,
-    ) async {
-      await _pumpAndCapturePainter(tester, amplitudes: const [0.5, 0.7]);
-
-      final waveformPaint = tester
-          .widgetList<CustomPaint>(
-            find.descendant(
-              of: find.byType(WaveformBars),
-              matching: find.byType(CustomPaint),
-            ),
-          )
-          .firstWhere(
-            (cp) =>
-                cp.painter?.runtimeType.toString() == '_WaveformBarsPainter',
-          );
-
-      // Container is 300 wide with 12px horizontal padding on each side and a
-      // 1px border on each side: 300 - 24 - 2 = 274. Height is default 48 / 2.
-      expect(waveformPaint.size, const Size(274, 24));
-    });
-
-    testWidgets('respects custom height on the rendered box', (tester) async {
-      const customHeight = 100.0;
-      await tester.pumpWidget(
-        const MaterialApp(
-          builder: LegacyMaterialBridge.builder,
-          home: Scaffold(
-            body: Center(
-              child: SizedBox(
-                width: 200,
-                child: WaveformBars(
-                  amplitudesNormalized: [0.5, 0.7],
-                  height: customHeight,
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-
-      final renderBox = tester.renderObject<RenderBox>(
-        find.byType(WaveformBars),
-      );
-      expect(renderBox.size.height, customHeight);
-    });
-
-    testWidgets('applies border radius, border and right alignment', (
-      tester,
-    ) async {
-      const customBorderRadius = 12.0;
-      await tester.pumpWidget(
-        MaterialApp(
-          builder: LegacyMaterialBridge.builder,
-          theme: ThemeData(dividerColor: Colors.grey),
-          home: const Scaffold(
-            body: Center(
-              child: SizedBox(
-                width: 200,
-                child: WaveformBars(
-                  amplitudesNormalized: [0.5],
-                  borderRadius: customBorderRadius,
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-
-      final container = tester.widget<Container>(
-        find
-            .descendant(
-              of: find.byType(WaveformBars),
-              matching: find.byType(Container),
-            )
-            .first,
-      );
-      final decoration = container.decoration! as BoxDecoration;
-      final radius = decoration.borderRadius! as BorderRadius;
-      expect(radius.topLeft.x, customBorderRadius);
-      expect(decoration.border, isNotNull);
-      expect(container.alignment, Alignment.centerRight);
-    });
-
-    testWidgets('paints a large amplitude list without throwing', (
-      tester,
-    ) async {
-      final amplitudes = List.generate(500, (i) => (i % 100) / 100.0);
-      final painter = await _pumpAndCapturePainter(
-        tester,
+  WaveformBarsPainter painter(List<double> amplitudes, {Color? color}) =>
+      WaveformBarsPainter(
         amplitudes: amplitudes,
+        barWidth: barWidth,
+        barSpacing: barWidth,
+        color: color ?? Colors.white,
       );
 
-      // Exercise the real paint loop (sublist clamping + easing + drawing).
-      final recorder = PictureRecorder();
-      painter.paint(Canvas(recorder), const Size(274, 24));
-      recorder.endRecording();
-      expect(tester.takeException(), isNull);
+  List<RRect> paint(List<double> amplitudes) {
+    final canvas = _RecordingCanvas();
+    painter(amplitudes).paint(canvas, size);
+    return canvas.rects;
+  }
+
+  group('WaveformBarsPainter', () {
+    test('fills the whole row, newest bar flush with the right edge', () {
+      final rects = paint(const [1]);
+
+      // (60 + 3) / 6 = 10 slots.
+      expect(rects, hasLength(10));
+      expect(rects.last.right, size.width);
+      for (var i = 1; i < rects.length; i++) {
+        expect(rects[i].left - rects[i - 1].right, barWidth);
+      }
     });
 
-    testWidgets('clamps out-of-range amplitudes while painting', (
-      tester,
-    ) async {
-      final painter = await _pumpAndCapturePainter(
-        tester,
-        amplitudes: const [-0.5, 0.5, 1.5],
-      );
+    test('slots older than the recording, and silence, are round dots on '
+        'the centre line', () {
+      final rects = paint(const [0, 1]);
 
-      final recorder = PictureRecorder();
-      painter.paint(Canvas(recorder), const Size(274, 24));
-      recorder.endRecording();
-      expect(tester.takeException(), isNull);
+      for (final dot in rects.take(9)) {
+        expect(dot.width, barWidth);
+        expect(dot.height, barWidth, reason: 'as tall as it is wide');
+        expect(dot.tlRadiusX, barWidth / 2);
+        expect(dot.center.dy, size.height / 2);
+      }
+      expect(rects.last.height, size.height, reason: 'full level, full bar');
+      expect(rects.last.center.dy, size.height / 2);
+    });
+
+    test('shows only the newest samples that fit, oldest scrolled off the '
+        'left', () {
+      final amplitudes = [
+        for (var i = 0; i < 25; i++)
+          if (i.isEven) 0.0 else 1.0,
+      ];
+      final rects = paint(amplitudes);
+
+      expect(rects, hasLength(10));
+      // The last sample (index 24) is even: a dot at the right edge.
+      expect(rects.last.height, barWidth);
+      expect(rects[rects.length - 2].height, size.height);
+    });
+
+    test('taller for louder, and quiet stays close to a dot', () {
+      final p = painter(const []);
+      final heights = [
+        for (final level in [0.0, 0.2, 0.5, 0.8, 1.0])
+          p.barHeight(level, size.height),
+      ];
+
+      for (var i = 1; i < heights.length; i++) {
+        expect(heights[i], greaterThan(heights[i - 1]));
+      }
+      expect(heights[1], lessThan(barWidth + (size.height - barWidth) * 0.1));
+      expect(p.barHeight(-1, size.height), barWidth);
+      expect(p.barHeight(2, size.height), size.height);
+    });
+
+    test('draws nothing in a row too narrow for one bar', () {
+      final canvas = _RecordingCanvas();
+      painter(const [1]).paint(canvas, const Size(2, 32));
+      expect(canvas.rects, isEmpty);
+    });
+
+    test('repaints when what it draws changes, and only then', () {
+      final base = painter(const [0.5]);
+      expect(base.shouldRepaint(painter(const [0.5])), isFalse);
+      expect(base.shouldRepaint(painter(const [0.6])), isTrue);
+      expect(
+        base.shouldRepaint(painter(const [0.5], color: Colors.red)),
+        isTrue,
+      );
+      expect(
+        base.shouldRepaint(
+          WaveformBarsPainter(
+            amplitudes: const [0.5],
+            barWidth: 4,
+            barSpacing: barWidth,
+            color: Colors.white,
+          ),
+        ),
+        isTrue,
+      );
+      expect(
+        base.shouldRepaint(
+          WaveformBarsPainter(
+            amplitudes: const [0.5],
+            barWidth: barWidth,
+            barSpacing: 4,
+            color: Colors.white,
+          ),
+        ),
+        isTrue,
+      );
     });
   });
 
-  group('_WaveformBarsPainter.shouldRepaint (real implementation)', () {
-    const baseline = _PainterConfig();
-
-    // Each mutation differs from the baseline in exactly one input and must
-    // make the real production shouldRepaint report that a repaint is needed.
-    final mutations = <String, _PainterConfig>{
-      'amplitudes value': baseline.copyWith(amplitudes: const [0.3, 0.9]),
-      'amplitudes length': baseline.copyWith(amplitudes: const [0.5, 0.7, 0.9]),
-      'primary color': baseline.copyWith(primary: Colors.red),
-      'secondary color': baseline.copyWith(secondary: Colors.yellow),
-      'barWidth': baseline.copyWith(barWidth: 4),
-      'barSpacing': baseline.copyWith(barSpacing: 5),
-      'minBarHeight': baseline.copyWith(minBarHeight: 4),
-    };
-
-    for (final entry in mutations.entries) {
-      testWidgets('returns true when ${entry.key} changes', (tester) async {
-        final (oldPainter, newPainter) = await _pumpPair(
-          tester,
-          a: baseline,
-          b: entry.value,
-        );
-
-        expect(newPainter.shouldRepaint(oldPainter), isTrue);
-      });
-    }
-
-    testWidgets(
-      'returns true when a new amplitude list instance has equal values',
-      (tester) async {
-        // Distinct (non-canonicalized) list instances with identical contents
-        // still trigger a repaint because the painter compares by reference.
-        final (oldPainter, newPainter) = await _pumpPair(
-          tester,
-          a: _PainterConfig(amplitudes: List<double>.of(const [0.5, 0.7])),
-          b: _PainterConfig(amplitudes: List<double>.of(const [0.5, 0.7])),
-        );
-
-        expect(newPainter.shouldRepaint(oldPainter), isTrue);
-      },
+  testWidgets('sits in the composer row unframed: token height, token '
+      'colour, bars as wide as their gaps', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const SizedBox(
+          width: 200,
+          child: WaveformBars(amplitudesNormalized: [0.2, 0.9]),
+        ),
+      ),
     );
 
-    testWidgets('returns false when every input is identical', (tester) async {
-      // The default amplitudes are a const list literal canonicalized to a
-      // single instance, and every scalar/color input matches, so no repaint
-      // is required.
-      final (oldPainter, newPainter) = await _pumpPair(
-        tester,
-        a: const _PainterConfig(),
-        b: const _PainterConfig(),
-      );
-
-      expect(newPainter.shouldRepaint(oldPainter), isFalse);
-    });
+    final tokens = tester.element(find.byType(WaveformBars)).designTokens;
+    expect(
+      tester.getSize(find.byType(WaveformBars)).height,
+      tokens.spacing.step7,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(WaveformBars),
+        matching: find.byType(Container),
+      ),
+      findsNothing,
+      reason: 'no frame, no border around the waveform',
+    );
+    final painter = tester
+        .widgetList<CustomPaint>(
+          find.descendant(
+            of: find.byType(WaveformBars),
+            matching: find.byType(CustomPaint),
+          ),
+        )
+        .map((paint) => paint.painter)
+        .whereType<WaveformBarsPainter>()
+        .single;
+    expect(painter.color, tokens.colors.text.highEmphasis);
+    expect(painter.barWidth, tokens.spacing.step1);
+    expect(painter.barSpacing, tokens.spacing.step1);
+    expect(painter.amplitudes, const [0.2, 0.9]);
   });
 }
