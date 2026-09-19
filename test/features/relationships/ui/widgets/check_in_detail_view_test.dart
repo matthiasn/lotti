@@ -4,18 +4,28 @@ import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
+import 'package:lotti/features/relationships/state/check_in_duration_suggestions_controller.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_detail_view.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/link_service.dart';
+import 'package:lotti/services/time_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -25,6 +35,14 @@ import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 import '../../helpers/check_in_speech_fakes.dart';
 
+class _FixedDurationSuggestions extends CheckInDurationSuggestionsController {
+  _FixedDurationSuggestions(this.values);
+  final List<Duration> values;
+
+  @override
+  Future<List<Duration>> build() async => values;
+}
+
 void main() {
   final now = DateTime(2026, 8, 14, 21);
   final at = DateTime(2026, 8, 14, 20);
@@ -33,6 +51,9 @@ void main() {
   late StubCheckInTranscriptionService transcription;
   late FakeAudioRecorderController recorder;
   late List<String> photoImports;
+
+  /// What the timeline's list renders; empty unless a test needs a card.
+  var links = <EntryLink>[];
 
   final person = testRelationship.copyWith(
     meta: testRelationship.meta.copyWith(id: 'rel-001', categoryId: 'crew'),
@@ -87,6 +108,7 @@ void main() {
     transcription = StubCheckInTranscriptionService(gate: Completer());
     recorder = FakeAudioRecorderController(stopResult: 'take-1');
     photoImports = [];
+    links = [];
     when(() => repository.touchCheckIn(any())).thenAnswer((_) async => true);
   });
 
@@ -110,7 +132,10 @@ void main() {
               transcription,
             ),
             audioRecorderControllerProvider.overrideWith(() => recorder),
-            sortedLinkedEntriesProvider('c-1').overrideWith((ref) => []),
+            sortedLinkedEntriesProvider('c-1').overrideWith((ref) => links),
+            checkInDurationSuggestionsControllerProvider.overrideWith(
+              () => _FixedDurationSuggestions(const [Duration(minutes: 45)]),
+            ),
             checkInPhotoImporterProvider.overrideWithValue(
               (context, {required checkInId, categoryId}) async =>
                   photoImports.add('$checkInId in $categoryId'),
@@ -123,19 +148,19 @@ void main() {
     return backs;
   }
 
-  testWidgets('says how the contact went, whose it is, and what to keep in '
-      'mind next time', (tester) async {
+  testWidgets('names the check-in and carries how it went as chips, then '
+      'what to keep in mind next time', (tester) async {
     stubDetail(checkIn());
     await pump(tester);
 
-    expect(find.text('Check-in'), findsOneWidget);
-    expect(find.text('Pip'), findsOneWidget);
     expect(
       tester
-          .widget<Text>(find.byKey(const ValueKey('check-in-detail-meta')))
+          .widget<Text>(find.byKey(const ValueKey('check-in-detail-title')))
           .data,
-      allOf(contains('Call'), contains('11 min')),
+      'Check-in with Commander Pip Frostbeak',
     );
+    expect(find.text('Call'), findsOneWidget);
+    expect(find.text('11 min'), findsOneWidget);
     expect(find.text('Good'), findsOneWidget);
     expect(find.text('krill contract'), findsOneWidget);
     expect(find.text('Next time'), findsOneWidget);
@@ -143,16 +168,50 @@ void main() {
     expect(find.text('Budget talk.'), findsOneWidget);
   });
 
-  testWidgets('the text a check-in was saved with reads as its first note, '
-      'and an empty one invites the first entry', (tester) async {
+  testWidgets('the text a check-in was logged with is the first card of its '
+      'timeline, stamped at its start', (tester) async {
     stubDetail(checkIn(note: 'Called about the launch.'));
     await pump(tester);
 
-    expect(find.text('Noted when it was logged'), findsOneWidget);
+    expect(
+      tester
+          .widget<Text>(
+            find.byKey(const ValueKey('check-in-detail-note-stamp')),
+          )
+          .data,
+      allOf(contains('Aug 14, 2026'), endsWith('Noted when it was logged')),
+    );
     expect(find.text('Called about the launch.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('check-in-detail-empty')), findsNothing);
+  });
+
+  testWidgets('a check-in with no note and nothing added invites the first '
+      'entry', (tester) async {
+    stubDetail(checkIn());
+    await pump(tester);
+
     expect(find.byKey(const ValueKey('check-in-detail-empty')), findsOneWidget);
     expect(find.byType(LinkedEntriesWidget), findsNothing);
   });
+
+  // A short timeline has nothing to filter: the Timer/Audio/Images pills
+  // come with the fifth entry.
+  for (final (count, filters) in [(1, false), (5, true)]) {
+    testWidgets('$count entries: filters shown is $filters', (tester) async {
+      stubDetail(
+        checkIn(),
+        entries: List.filled(count, testTextEntry),
+      );
+      await pump(tester);
+
+      expect(
+        tester
+            .widget<LinkedEntriesWidget>(find.byType(LinkedEntriesWidget))
+            .showActivityFilters,
+        filters,
+      );
+    });
+  }
 
   testWidgets('what the check-in holds is the nested entry list a task shows', (
     tester,
@@ -199,66 +258,103 @@ void main() {
   });
 
   group('adding to the check-in', () {
-    testWidgets('a comment is added as its own entry and the field clears', (
+    // The comment starts the way a task's text entry does: an empty card
+    // in the timeline, written in place.
+    testWidgets('Comment starts an empty comment on the check-in', (
       tester,
     ) async {
       final held = checkIn();
       stubDetail(held);
       when(
-        () => repository.addCommentToCheckIn(held, 'Send the memo.'),
+        () => repository.startCommentOnCheckIn(held),
       ).thenAnswer((_) async => testTextEntry);
       await pump(tester);
 
-      await tester.enterText(
-        find.byKey(const ValueKey('check-in-detail-comment')),
-        '  Send the memo. ',
-      );
-      await tester.tap(
-        find.byKey(const ValueKey('check-in-detail-send-comment')),
-      );
+      await tester.tap(find.byKey(const ValueKey('check-in-detail-comment')));
       await tester.pumpAndSettle();
 
-      verify(
-        () => repository.addCommentToCheckIn(held, 'Send the memo.'),
-      ).called(1);
-      expect(find.text('Send the memo.'), findsNothing);
+      verify(() => repository.startCommentOnCheckIn(held)).called(1);
+      expect(
+        find.text('Could not save the changes. Please try again.'),
+        findsNothing,
+      );
     });
 
-    testWidgets('a comment that could not be saved keeps its words and says '
-        'so', (tester) async {
+    testWidgets('the new comment is brought into view with its editor '
+        'focused', (tester) async {
       final held = checkIn();
-      stubDetail(held);
+      final comment = testTextEntry.copyWith(
+        entryText: const EntryText(plainText: ''),
+      );
+      stubDetail(held, entries: [comment]);
       when(
-        () => repository.addCommentToCheckIn(any(), any()),
+        () => getIt<JournalDb>().journalEntityById(comment.meta.id),
+      ).thenAnswer((_) async => comment);
+      // The comment renders as the journal's own entry card, with its editor.
+      final editorState = MockEditorStateService();
+      when(
+        () => editorState.getUnsavedStream(any(), any()),
+      ).thenAnswer((_) => Stream.value(false));
+      final timeService = MockTimeService();
+      when(timeService.getStream).thenAnswer((_) => const Stream.empty());
+      if (!getIt.isRegistered<EditorStateService>()) {
+        getIt.registerSingleton<EditorStateService>(editorState);
+      }
+      if (!getIt.isRegistered<TimeService>()) {
+        getIt.registerSingleton<TimeService>(timeService);
+      }
+      if (!getIt.isRegistered<LinkService>()) {
+        getIt.registerSingleton<LinkService>(MockLinkService());
+      }
+      if (!getIt.isRegistered<PersistenceLogic>()) {
+        getIt.registerSingleton<PersistenceLogic>(MockPersistenceLogic());
+      }
+      // The list already holds the new card by the time the frame after the
+      // tap is laid out — in the app the link's notification rebuilds it.
+      links = [
+        EntryLink.basic(
+          id: 'c-1->${comment.meta.id}',
+          fromId: 'c-1',
+          toId: comment.meta.id,
+          createdAt: at,
+          updatedAt: at,
+          vectorClock: null,
+        ),
+      ];
+      when(
+        () => repository.startCommentOnCheckIn(held),
+      ).thenAnswer((_) async => comment);
+      await pump(tester);
+
+      await tester.tap(find.byKey(const ValueKey('check-in-detail-comment')));
+      await tester.pumpAndSettle();
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(CheckInDetailView)),
+      );
+      expect(
+        container
+            .read(entryControllerProvider(comment.meta.id).notifier)
+            .focusNode
+            .hasFocus,
+        isTrue,
+      );
+    });
+
+    testWidgets('a comment that could not be started says so', (tester) async {
+      stubDetail(checkIn());
+      when(
+        () => repository.startCommentOnCheckIn(any()),
       ).thenAnswer((_) async => null);
       await pump(tester);
 
-      await tester.enterText(
-        find.byKey(const ValueKey('check-in-detail-comment')),
-        'Lost words.',
-      );
-      await tester.tap(
-        find.byKey(const ValueKey('check-in-detail-send-comment')),
-      );
+      await tester.tap(find.byKey(const ValueKey('check-in-detail-comment')));
       await tester.pumpAndSettle();
 
-      expect(find.text('Lost words.'), findsOneWidget);
       expect(
         find.text('Could not save the changes. Please try again.'),
         findsOneWidget,
       );
-    });
-
-    testWidgets('an empty comment adds nothing', (tester) async {
-      stubDetail(checkIn());
-      await pump(tester);
-
-      await tester.tap(
-        find.byKey(const ValueKey('check-in-detail-send-comment')),
-      );
-      await tester.pumpAndSettle();
-
-      verifyNever(() => repository.addCommentToCheckIn(any(), any()));
     });
 
     // The importer links each photo as it creates it; the stub below
@@ -347,26 +443,6 @@ void main() {
         findsOneWidget,
       );
     });
-  });
-
-  testWidgets('a comment can be sent from the keyboard', (tester) async {
-    final held = checkIn();
-    stubDetail(held);
-    when(
-      () => repository.addCommentToCheckIn(held, 'Typed and sent.'),
-    ).thenAnswer((_) async => testTextEntry);
-    await pump(tester);
-
-    await tester.enterText(
-      find.byKey(const ValueKey('check-in-detail-comment')),
-      'Typed and sent.',
-    );
-    await tester.testTextInput.receiveAction(TextInputAction.done);
-    await tester.pumpAndSettle();
-
-    verify(
-      () => repository.addCommentToCheckIn(held, 'Typed and sent.'),
-    ).called(1);
   });
 
   testWidgets('a discarded dictation gives the bar back and adds nothing', (
@@ -486,13 +562,159 @@ void main() {
     verifyNever(() => repository.touchCheckIn(any()));
   });
 
-  testWidgets('Edit opens the check-in in the composer', (tester) async {
+  testWidgets('More → Edit check-in opens the composer for the fields no '
+      'chip carries', (tester) async {
     stubDetail(checkIn());
     await pump(tester);
 
+    await tester.tap(find.byKey(const ValueKey('check-in-detail-more')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('check-in-detail-edit')));
     await tester.pumpAndSettle();
 
     expect(find.byType(CheckInCaptureForm), findsOneWidget);
+  });
+
+  // An empty comment is no evidence; only its words are.
+  testWidgets('an empty comment newer than the check-in changes nothing', (
+    tester,
+  ) async {
+    stubDetail(
+      checkIn(),
+      entries: [
+        testTextEntry.copyWith(
+          entryText: const EntryText(plainText: '  '),
+          meta: testTextEntry.meta.copyWith(
+            updatedAt: at.add(const Duration(minutes: 5)),
+          ),
+        ),
+      ],
+    );
+    await pump(tester);
+
+    verifyNever(() => repository.touchCheckIn(any()));
+  });
+
+  group('the header chips edit in place', () {
+    late CheckInEntry held;
+
+    setUp(() {
+      held = checkIn();
+      when(() => repository.updateCheckIn(any())).thenAnswer((_) async => true);
+    });
+
+    CheckInEntry saved() =>
+        verify(() => repository.updateCheckIn(captureAny())).captured.single
+            as CheckInEntry;
+
+    testWidgets('the type', (tester) async {
+      stubDetail(held);
+      await pump(tester);
+
+      await tester.tap(find.byKey(const ValueKey('check-in-type')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('check-in-type-message')));
+      await tester.pumpAndSettle();
+
+      expect(saved().data.interactionType, CheckInInteractionType.message);
+    });
+
+    testWidgets('the same type again saves nothing', (tester) async {
+      stubDetail(held);
+      await pump(tester);
+
+      await tester.tap(find.byKey(const ValueKey('check-in-type')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('check-in-type-call')));
+      await tester.pumpAndSettle();
+
+      verifyNever(() => repository.updateCheckIn(any()));
+    });
+
+    testWidgets('the feeling, and clearing it', (tester) async {
+      stubDetail(held);
+      await pump(tester);
+
+      await tester.tap(find.byKey(const ValueKey('check-in-sentiment-chip')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('check-in-sentiment-option-delightful')),
+      );
+      await tester.pumpAndSettle();
+      expect(saved().data.sentiment, CheckInSentiment.delightful);
+
+      await tester.tap(find.byKey(const ValueKey('check-in-sentiment-chip')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('check-in-sentiment-clear')));
+      await tester.pumpAndSettle();
+      expect(saved().data.sentiment, isNull);
+    });
+
+    testWidgets('the length, kept from the start', (tester) async {
+      stubDetail(held);
+      await pump(tester);
+
+      await tester.tap(find.byKey(const ValueKey('check-in-duration')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('check-in-duration-pick-45')));
+      await tester.pumpAndSettle();
+
+      final meta = saved().meta;
+      expect(meta.dateFrom, held.meta.dateFrom);
+      expect(meta.dateTo, held.meta.dateFrom.add(const Duration(minutes: 45)));
+    });
+
+    testWidgets('the start, keeping the length', (tester) async {
+      stubDetail(held);
+      await pump(tester);
+
+      await withClock(Clock.fixed(now), () async {
+        await tester.tap(find.byKey(const ValueKey('check-in-started')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Done'));
+        await tester.pumpAndSettle();
+        tester
+            .widget<DesignSystemTimeWheel>(
+              find.byKey(const ValueKey('check-in-time-picker')),
+            )
+            .onDateTimeChanged(DateTime(2026, 8, 14, 9, 30));
+        await tester.tap(find.byKey(const ValueKey('check-in-time-done')));
+        await tester.pumpAndSettle();
+      });
+
+      final meta = saved().meta;
+      expect(meta.dateFrom, DateTime(2026, 8, 14, 9, 30));
+      expect(
+        meta.dateTo.difference(meta.dateFrom),
+        const Duration(minutes: 11),
+      );
+    });
+
+    testWidgets('a check-in with no length asks for one', (tester) async {
+      stubDetail(
+        held.copyWith(meta: held.meta.copyWith(dateTo: held.meta.dateFrom)),
+      );
+      await pump(tester);
+
+      expect(find.text('Duration'), findsOneWidget);
+    });
+
+    testWidgets('a change that could not be saved says so', (tester) async {
+      when(
+        () => repository.updateCheckIn(any()),
+      ).thenAnswer((_) async => false);
+      stubDetail(held);
+      await pump(tester);
+
+      await tester.tap(find.byKey(const ValueKey('check-in-type')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('check-in-type-message')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Could not save the changes. Please try again.'),
+        findsOneWidget,
+      );
+    });
   });
 }

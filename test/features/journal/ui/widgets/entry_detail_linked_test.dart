@@ -422,6 +422,28 @@ void main() {
       expect(find.byType(LinkedEntriesActivityFilterBar), findsOneWidget);
     });
 
+    // A check-in with two entries has nothing to filter; its host asks for
+    // the bare list, and the entries still render.
+    testWidgets('a host can leave the filter bar out', (tester) async {
+      mockLinkedEntries([testLink]);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          LinkedEntriesWidget(testTask, showActivityFilters: false),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LinkedEntriesActivityFilterBar), findsNothing);
+      expect(
+        find.byKey(Key('${testTask.meta.id}-${testTextEntry.meta.id}')),
+        findsOneWidget,
+      );
+    });
+
     testWidgets(
       'hideTaskEntries returns SizedBox.shrink when all linked entries are tasks',
       (tester) async {

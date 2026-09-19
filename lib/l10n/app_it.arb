@@ -5082,6 +5082,7 @@
     }
   },
   "relationshipCheckInsLabel": "Contatti registrati",
+  "relationshipCheckInTitle": "Contatto con {name}",
   "relationshipContactCardAction": "Scheda contatto",
   "@relationshipContactCardAction": {
     "description": "Relationships redesign label."

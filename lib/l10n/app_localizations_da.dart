@@ -11966,6 +11966,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipCheckInsLabel => 'Check-ins';
 
   @override
+  String relationshipCheckInTitle(String name) {
+    return 'Check-in med $name';
+  }
+
+  @override
   String get relationshipContactCardAction => 'Kontaktkort';
 
   @override

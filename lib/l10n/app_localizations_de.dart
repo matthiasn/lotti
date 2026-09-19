@@ -12046,6 +12046,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get relationshipCheckInsLabel => 'Check-ins';
 
   @override
+  String relationshipCheckInTitle(String name) {
+    return 'Check-in mit $name';
+  }
+
+  @override
   String get relationshipContactCardAction => 'Visitenkarte';
 
   @override

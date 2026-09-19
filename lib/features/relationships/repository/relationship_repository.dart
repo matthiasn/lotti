@@ -13,7 +13,6 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
-import 'package:lotti/utils/entry_utils.dart';
 
 /// One People-list row: the relationship plus its most recent check-in time
 /// (null when no check-in exists yet).
@@ -349,19 +348,17 @@ class RelationshipRepository {
     };
   }
 
-  /// Adds a typed comment to [checkIn] as its own entry, linked from the
-  /// check-in and inheriting its category and privacy. Returns null when the
-  /// entry could not be written.
-  Future<JournalEntity?> addCommentToCheckIn(
-    CheckInEntry checkIn,
-    String text,
-  ) async {
-    final trimmed = text.trim();
-    if (trimmed.isEmpty) return null;
+  /// Starts a comment on [checkIn]: an empty entry of its own, linked from
+  /// the check-in and inheriting its category and privacy, for the user to
+  /// write in place — the way a task's text entry starts. Returns null when
+  /// the entry could not be written.
+  ///
+  /// The check-in is not touched here: an empty comment is no evidence. Its
+  /// words are, and the check-in is saved again once they are written (see
+  /// [touchCheckIn]).
+  Future<JournalEntity?> startCommentOnCheckIn(CheckInEntry checkIn) async {
     final entry = JournalEntity.journalEntry(
-      // The shape every typed entry is saved in: the text with its Quill
-      // form, which the journal's editor opens directly.
-      entryText: entryTextFromPlain(trimmed),
+      entryText: const EntryText(plainText: ''),
       meta: await _persistenceLogic.createMetadata(
         dateFrom: clock.now(),
         categoryId: checkIn.meta.categoryId,
@@ -372,9 +369,7 @@ class RelationshipRepository {
       entry,
       linkedId: checkIn.id,
     );
-    if (!(created ?? false)) return null;
-    await touchCheckIn(checkIn.id);
-    return entry;
+    return (created ?? false) ? entry : null;
   }
 
   /// Makes existing recordings or photos — the composer's takes — entries

@@ -4586,6 +4586,7 @@
     }
   },
   "relationshipCheckInsLabel": "Registros",
+  "relationshipCheckInTitle": "Contacto con {name}",
   "relationshipContactCardAction": "Tarjeta de contacto",
   "@relationshipContactCardAction": {
     "description": "Relationships redesign label."

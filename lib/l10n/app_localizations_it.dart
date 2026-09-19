@@ -12116,6 +12116,11 @@ class AppLocalizationsIt extends AppLocalizations {
   String get relationshipCheckInsLabel => 'Contatti registrati';
 
   @override
+  String relationshipCheckInTitle(String name) {
+    return 'Contatto con $name';
+  }
+
+  @override
   String get relationshipContactCardAction => 'Scheda contatto';
 
   @override

@@ -13,19 +13,16 @@ import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
-import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
-import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/ui/shortcut_label_formatter.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
-import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_composer_header.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_context_chips.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_duration_picker.dart';
@@ -991,95 +988,14 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     });
   }
 
-  /// *Started*: the day, then the time, as two design-system pickers — a
-  /// check-in edited to another day keeps its time of day, and one edited
-  /// to another time keeps its day.
+  /// *Started*: the day, then the time ([pickCheckInStart]).
   Future<void> _pickStart() async {
-    final messages = context.messages;
-    final now = clock.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final result = await showDesignSystemDatePicker(
+    final picked = await pickCheckInStart(
       context: context,
-      title: messages.checkInStartedLabel,
-      initialDate: _interactionTime,
-      firstDate: DateTime(today.year - 50),
-      lastDate: today,
+      initial: _interactionTime,
     );
-    final picked = result?.date;
     if (!mounted || picked == null) return;
-    setState(() {
-      _interactionTime = _notAfterNow(
-        DateTime(
-          picked.year,
-          picked.month,
-          picked.day,
-          _interactionTime.hour,
-          _interactionTime.minute,
-        ),
-      );
-    });
-    final time = await _pickTime();
-    if (!mounted || time == null) return;
-    setState(() {
-      _interactionTime = _notAfterNow(
-        DateTime(
-          _interactionTime.year,
-          _interactionTime.month,
-          _interactionTime.day,
-          time.hour,
-          time.minute,
-        ),
-      );
-    });
-  }
-
-  /// A check-in started in the past by definition: the date picker stops at
-  /// today, and this stops today's time of day at the current minute, so a
-  /// future start can never become the person's "last contact".
-  static DateTime _notAfterNow(DateTime candidate) {
-    final now = clock.now();
-    final nowMinute = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      now.hour,
-      now.minute,
-    );
-    return candidate.isAfter(nowMinute) ? nowMinute : candidate;
-  }
-
-  Future<TimeOfDay?> _pickTime() {
-    var chosen = TimeOfDay.fromDateTime(_interactionTime);
-    return ModalUtils.showSinglePageModal<TimeOfDay>(
-      context: context,
-      title: context.messages.checkInStartedLabel,
-      // A step of air above and below, so the wheel's outer rows are not
-      // sliced by the sheet's top bar and its pinned Done.
-      builder: (modalContext) => Padding(
-        padding: EdgeInsets.symmetric(
-          vertical: modalContext.designTokens.spacing.step4,
-        ),
-        child: DesignSystemTimeWheel(
-          key: const ValueKey('check-in-time-picker'),
-          initialDateTime: _interactionTime,
-          use24hFormat: MediaQuery.alwaysUse24HourFormatOf(modalContext),
-          semanticsLabel: modalContext.messages.checkInStartedLabel,
-          onDateTimeChanged: (time) => chosen = TimeOfDay.fromDateTime(time),
-        ),
-      ),
-      stickyActionBarBuilder: (modalContext) => DesignSystemModalActionBar(
-        glass: true,
-        padding: EdgeInsets.all(modalContext.designTokens.spacing.step5),
-        primary: DesignSystemButton(
-          key: const ValueKey('check-in-time-done'),
-          label: modalContext.messages.doneButton,
-          leadingIcon: LottiIcons.confirm,
-          size: DesignSystemButtonSize.large,
-          fullWidth: true,
-          onPressed: () => Navigator.of(modalContext).pop(chosen),
-        ),
-      ),
-    );
+    setState(() => _interactionTime = picked);
   }
 
   /// *Duration*: the wheel behind the chip. Zero is "no duration".
@@ -1469,19 +1385,8 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
 
   /// `Now · 12:46` while the start is this very minute, otherwise the day
   /// and the time — what the *Started* chip reads.
-  String _startedLabel(BuildContext context) {
-    final now = clock.now();
-    final sameMinute =
-        _interactionTime.year == now.year &&
-        _interactionTime.month == now.month &&
-        _interactionTime.day == now.day &&
-        _interactionTime.hour == now.hour &&
-        _interactionTime.minute == now.minute;
-    final day = sameMinute
-        ? context.messages.journalDateNowButton
-        : relationshipDayLabelOf(context, _interactionTime);
-    return '$day · ${relationshipTimeLabelOf(context, _interactionTime)}';
-  }
+  String _startedLabel(BuildContext context) =>
+      checkInStartedLabelOf(context, _interactionTime);
 
   /// The save shortcut and its label — desktop only, where a keyboard is a
   /// given and the field's footer has room to say so.

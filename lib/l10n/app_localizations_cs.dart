@@ -12144,6 +12144,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipCheckInsLabel => 'Záznamy kontaktů';
 
   @override
+  String relationshipCheckInTitle(String name) {
+    return 'Kontakt s $name';
+  }
+
+  @override
   String get relationshipContactCardAction => 'Vizitka';
 
   @override

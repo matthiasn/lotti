@@ -19921,6 +19921,12 @@ abstract class AppLocalizations {
   /// **'Check-ins'**
   String get relationshipCheckInsLabel;
 
+  /// Title of an opened check-in: who it was with.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-in with {name}'**
+  String relationshipCheckInTitle(String name);
+
   /// Relationships redesign label.
   ///
   /// In en, this message translates to:
