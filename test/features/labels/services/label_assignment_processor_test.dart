@@ -614,6 +614,44 @@ void main() {
     );
 
     test(
+      'defaults to the registered labels repository and domain logger',
+      () async {
+        final registeredRepo = MockLabelsRepository();
+        await setUpTestGetIt(
+          additionalSetup: () =>
+              getIt.registerSingleton<LabelsRepository>(registeredRepo),
+        );
+        addTearDown(tearDownTestGetIt);
+        when(
+          () => mockDbEdge.getLabelDefinitionById('a'),
+        ).thenAnswer((_) async => makeLabelEdge('a'));
+        when(
+          () => registeredRepo.addLabels(
+            journalEntityId: any(named: 'journalEntityId'),
+            addedLabelIds: any(named: 'addedLabelIds'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        final result =
+            await LabelAssignmentProcessor(
+              db: mockDbEdge,
+            ).processAssignment(
+              taskId: 't1',
+              proposedIds: const ['a'],
+              existingIds: const [],
+            );
+
+        expect(result.assigned, ['a']);
+        verify(
+          () => registeredRepo.addLabels(
+            journalEntityId: 't1',
+            addedLabelIds: ['a'],
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
       'assignment when task is deleted mid-operation (persistence fails)',
       () async {
         when(
