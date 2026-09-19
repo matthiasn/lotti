@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/state/habit_settings_controller.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_category.dart';
 import 'package:lotti/get_it.dart';
@@ -110,4 +111,34 @@ void main() {
       expect(state.habitDefinition.categoryId, categoryMindfulness.id);
     },
   );
+
+  testWidgets('the clear affordance removes the category from the habit', (
+    tester,
+  ) async {
+    when(
+      () => mockEntitiesCacheService.getCategoryById(any()),
+    ).thenReturn(categoryMindfulness);
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final provider = habitSettingsControllerProvider(habitFlossing.id);
+    container.read(provider.notifier).setCategory(categoryMindfulness.id);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: WidgetTestBench(
+          child: SelectCategoryWidget(habitId: habitFlossing.id),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byIcon(LottiIcons.close));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final state = container.read(provider);
+    expect(state.habitDefinition.categoryId, isNull);
+    expect(state.dirty, isTrue);
+  });
 }

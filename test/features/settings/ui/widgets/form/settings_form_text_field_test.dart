@@ -40,6 +40,27 @@ void main() {
     expect(formKey.currentState!.value['name'], 'Running');
   });
 
+  testWidgets('a new initialValue from the parent replaces the visible '
+      'text', (tester) async {
+    final formKey = GlobalKey<FormBuilderState>();
+    Widget field(String initialValue) => makeTestableWidgetWithScaffold(
+      FormBuilder(
+        key: formKey,
+        child: SettingsFormTextField(
+          name: 'name',
+          initialValue: initialValue,
+          labelText: 'Name',
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(field('Running'));
+    await tester.pumpWidget(field('Swimming'));
+
+    expect(find.text('Swimming'), findsOneWidget);
+    expect(find.text('Running'), findsNothing);
+  });
+
   testWidgets('typing updates the form value', (tester) async {
     final formKey = await pumpField(tester);
 

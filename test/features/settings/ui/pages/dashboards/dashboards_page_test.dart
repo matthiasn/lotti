@@ -1,5 +1,9 @@
+import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
@@ -7,6 +11,7 @@ import 'package:lotti/features/design_system/components/search/design_system_sea
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
@@ -399,6 +404,52 @@ void main() {
 
         await expectRowFadesDividerOnHover(tester, find.text('Alpha'));
       });
+    });
+  });
+
+  group('allDashboardsStreamProvider', () {
+    test('lists every dashboard and refetches on dashboard and private-flag '
+        'changes only', () async {
+      final journalDb = getIt<JournalDb>() as MockJournalDb;
+      final notifications =
+          getIt<UpdateNotifications>() as MockUpdateNotifications;
+      final updates = StreamController<Set<String>>.broadcast();
+      addTearDown(updates.close);
+      when(() => notifications.updateStream).thenAnswer((_) => updates.stream);
+      final inactive = testDashboardConfig.copyWith(
+        id: 'inactive-dashboard',
+        active: false,
+      );
+      var fetches = 0;
+      when(journalDb.getAllDashboards).thenAnswer((_) async {
+        fetches++;
+        return fetches == 1
+            ? [testDashboardConfig]
+            : [testDashboardConfig, inactive];
+      });
+
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final emitted = <List<DashboardDefinition>>[];
+      container.listen(
+        allDashboardsStreamProvider,
+        (_, next) => next.whenData(emitted.add),
+        fireImmediately: true,
+      );
+      await pumpEventQueue();
+      expect(emitted.single, [testDashboardConfig]);
+
+      updates.add({'unrelated'});
+      await pumpEventQueue();
+      expect(fetches, 1);
+
+      updates.add({dashboardsNotification});
+      await pumpEventQueue();
+      expect(emitted.last, [testDashboardConfig, inactive]);
+
+      updates.add({privateToggleNotification});
+      await pumpEventQueue();
+      expect(fetches, 3);
     });
   });
 }

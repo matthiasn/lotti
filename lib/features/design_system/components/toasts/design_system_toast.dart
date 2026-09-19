@@ -108,7 +108,7 @@ class DesignSystemToast extends StatefulWidget {
 }
 
 class _DesignSystemToastState extends State<DesignSystemToast>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   AnimationController? _countdown;
 
   @override

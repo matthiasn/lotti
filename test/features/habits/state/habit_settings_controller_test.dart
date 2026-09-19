@@ -385,6 +385,81 @@ void main() {
       });
     });
 
+    group('on a habit with a non-daily schedule', () {
+      final weeklyHabit = habitFlossing.copyWith(
+        habitSchedule: const HabitSchedule.weekly(requiredCompletions: 3),
+      );
+
+      /// Loads [weeklyHabit] into the controller and returns it once the
+      /// database copy has replaced the empty initial definition.
+      Future<(ProviderContainer, HabitSettingsController)>
+      loadWeeklyHabit() async {
+        when(
+          () => mockJournalDb.getHabitById(weeklyHabit.id),
+        ).thenAnswer((_) async => weeklyHabit);
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+        final provider = habitSettingsControllerProvider(weeklyHabit.id);
+        final loaded = Completer<void>();
+        final subscription = container.listen(provider, (_, next) {
+          if (next.habitDefinition.habitSchedule is WeeklyHabitSchedule &&
+              !loaded.isCompleted) {
+            loaded.complete();
+          }
+        });
+        addTearDown(subscription.close);
+        final controller = container.read(provider.notifier);
+        await loaded.future.timeout(const Duration(milliseconds: 100));
+        return (container, controller);
+      }
+
+      DailyHabitSchedule scheduleOf(ProviderContainer container) =>
+          container
+                  .read(habitSettingsControllerProvider(weeklyHabit.id))
+                  .habitDefinition
+                  .habitSchedule
+              as DailyHabitSchedule;
+
+      test('setShowFrom converts it to a once-a-day schedule', () async {
+        final (container, controller) = await loadWeeklyHabit();
+        final showFrom = DateTime(2025, 1, 1, 7);
+
+        controller.setShowFrom(showFrom);
+
+        final schedule = scheduleOf(container);
+        expect(schedule.requiredCompletions, 1);
+        expect(schedule.showFrom, showFrom);
+        expect(schedule.alertAtTime, isNull);
+      });
+
+      test('setAlertAtTime converts it to a once-a-day schedule', () async {
+        final (container, controller) = await loadWeeklyHabit();
+        final alertAt = DateTime(2025, 1, 1, 21);
+
+        controller.setAlertAtTime(alertAt);
+
+        final schedule = scheduleOf(container);
+        expect(schedule.requiredCompletions, 1);
+        expect(schedule.alertAtTime, alertAt);
+        expect(schedule.showFrom, isNull);
+      });
+
+      test('clearAlertAtTime converts it to a plain daily schedule', () async {
+        final (container, controller) = await loadWeeklyHabit();
+
+        controller.clearAlertAtTime();
+
+        expect(
+          scheduleOf(container),
+          const HabitSchedule.daily(requiredCompletions: 1),
+        );
+        expect(
+          container.read(habitSettingsControllerProvider(weeklyHabit.id)).dirty,
+          isTrue,
+        );
+      });
+    });
+
     test('preserves showFrom when setting alertAtTime', () {
       const testHabitId = 'test-habit-id';
       final showFrom = DateTime(2025, 1, 1, 8);

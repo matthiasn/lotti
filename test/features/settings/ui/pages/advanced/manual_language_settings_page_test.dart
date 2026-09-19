@@ -139,6 +139,9 @@ void main() {
     tester,
   ) async {
     for (final language in [
+      ManualLanguage.english,
+      ManualLanguage.czech,
+      ManualLanguage.romanian,
       ManualLanguage.italian,
       ManualLanguage.spanish,
       ManualLanguage.dutch,
@@ -148,6 +151,12 @@ void main() {
       await pumpPage(tester);
       final context = tester.element(find.byType(ManualLanguageSettingsBody));
       final title = switch (language) {
+        ManualLanguage.english =>
+          context.messages.settingsManualLanguageEnglishTitle,
+        ManualLanguage.czech =>
+          context.messages.settingsManualLanguageCzechTitle,
+        ManualLanguage.romanian =>
+          context.messages.settingsManualLanguageRomanianTitle,
         ManualLanguage.italian =>
           context.messages.settingsManualLanguageItalianTitle,
         ManualLanguage.spanish =>

@@ -118,4 +118,42 @@ void main() {
       expect(cancelX, lessThan(saveX));
     },
   );
+
+  group('extra actions', () {
+    const deleteKey = ValueKey('delete-action');
+    SettingsFormActionBar barWithDelete() => SettingsFormActionBar(
+      primaryLabel: 'Save',
+      onPrimary: () {},
+      secondaryLabel: 'Cancel',
+      onSecondary: () {},
+      extraActions: const [SizedBox(key: deleteKey, width: 40, height: 40)],
+    );
+
+    testWidgets('lead the row, left of the cancel and save pills', (
+      tester,
+    ) async {
+      await pumpBar(tester, bar: barWithDelete());
+
+      final deleteRight = tester.getTopRight(find.byKey(deleteKey)).dx;
+      expect(deleteRight, lessThan(tester.getTopLeft(find.text('Cancel')).dx));
+      expect(
+        tester.getCenter(find.byKey(deleteKey)).dy,
+        moreOrLessEquals(tester.getCenter(find.text('Save')).dy, epsilon: 8),
+        reason: 'the extra action shares the row with the pills',
+      );
+    });
+
+    testWidgets('sit on their own row above the stacked pills at large '
+        'text scales', (tester) async {
+      await pumpBar(tester, textScale: 1.6, bar: barWithDelete());
+
+      final deleteBottom = tester.getBottomLeft(find.byKey(deleteKey)).dy;
+      expect(deleteBottom, lessThan(tester.getTopLeft(find.text('Save')).dy));
+      expect(
+        tester.getCenter(find.byKey(deleteKey)).dx,
+        moreOrLessEquals(tester.getCenter(find.text('Save')).dx, epsilon: 1),
+        reason: 'the extra-action row is centred over the full-width pills',
+      );
+    });
+  });
 }

@@ -66,6 +66,24 @@ void main() {
       expect(result[0].value, 72.0);
     });
 
+    test('ignores entities that are not quantitative samples', () {
+      final result = aggregateNone([
+        makeWorkoutEntry(
+          dateFrom: DateTime(2024, 3, 15, 6),
+          dateTo: DateTime(2024, 3, 15, 7),
+          workoutType: 'running',
+        ),
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 15, 7),
+          value: 71,
+          dataType: 'HealthDataType.WEIGHT',
+        ),
+      ], 'HealthDataType.WEIGHT');
+
+      expect(result, hasLength(1));
+      expect(result.single.value, 71);
+    });
+
     test('returns empty list for empty entities', () {
       final result = aggregateNone([], 'HealthDataType.WEIGHT');
       expect(result, isEmpty);

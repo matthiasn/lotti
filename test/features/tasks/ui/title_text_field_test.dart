@@ -149,6 +149,56 @@ void main() {
     });
   });
 
+  group('TitleTextField - discard and IME actions', () {
+    testWidgets('discard without resetToInitialValue empties the field', (
+      tester,
+    ) async {
+      var cancelCount = 0;
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: TitleTextField(
+            initialValue: 'Original title',
+            onSave: (_) {},
+            onCancel: () => cancelCount++,
+          ),
+        ),
+      );
+
+      await tester.enterText(find.byType(TextField), 'Changed title');
+      await tester.pump();
+      await tester.tap(find.byIcon(LottiIcons.closeCircled));
+      await tester.pump();
+
+      final textField = tester.widget<TextField>(find.byType(TextField));
+      expect(textField.controller!.text, isEmpty);
+      expect(cancelCount, 1);
+    });
+
+    testWidgets('the IME done action keeps focus when keepFocusOnSave is set', (
+      tester,
+    ) async {
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: TitleTextField(
+            focusNode: focusNode,
+            keepFocusOnSave: true,
+            onSave: (_) {},
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(TextField));
+      await tester.pump();
+      await tester.enterText(find.byType(TextField), 'next item');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+
+      expect(focusNode.hasFocus, isTrue);
+    });
+  });
+
   group('TitleTextField - Keyboard Shortcuts', () {
     for (final (platform, primaryKey) in [
       (TargetPlatform.windows, LogicalKeyboardKey.control),

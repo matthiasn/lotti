@@ -642,6 +642,22 @@ void main() {
       expect(find.byType(DesignSystemSectionCard), findsOneWidget);
     });
 
+    testWidgets('surfaces a missing title as its own localized error', (
+      tester,
+    ) async {
+      await pumpPage(
+        tester,
+        state: loadedState(error: ProjectDetailError.titleRequired),
+      );
+
+      final context = tester.element(find.byType(ErrorStateWidget));
+      expect(
+        find.text(context.messages.projectTitleRequired),
+        findsOneWidget,
+      );
+      expect(find.byType(DesignSystemSectionCard), findsOneWidget);
+    });
+
     testWidgets('distinguishes a load failure from a missing project', (
       tester,
     ) async {

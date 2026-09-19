@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
 
 HabitCompletionEntry _completion({
@@ -41,6 +42,30 @@ void main() {
       );
 
       expect(success, isNot(equals(fail)));
+    });
+
+    test('toString is the bare day, without a stray closing brace', () {
+      const result = HabitResult(
+        dayString: '2024-03-15',
+        completionType: HabitCompletionType.skip,
+      );
+
+      expect(result.toString(), '2024-03-15');
+    });
+  });
+
+  group('habitCompletionColor', () {
+    test('gives every completion type its own colour', () {
+      expect(habitCompletionColor(HabitCompletionType.fail), alarm);
+      expect(
+        habitCompletionColor(HabitCompletionType.skip),
+        habitSkipColor.withAlpha(102),
+      );
+      expect(habitCompletionColor(HabitCompletionType.success), successColor);
+      expect(
+        habitCompletionColor(HabitCompletionType.open),
+        failColor.withAlpha(153),
+      );
     });
   });
 

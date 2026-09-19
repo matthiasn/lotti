@@ -20,7 +20,7 @@ class HabitResult extends Equatable {
 
   @override
   String toString() {
-    return '$dayString}';
+    return dayString;
   }
 
   @override

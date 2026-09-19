@@ -527,6 +527,42 @@ void main() {
         await tester.pump(const Duration(seconds: 3));
       });
 
+      testWidgets('restarts from the new progress when the countdown '
+          'changes on rebuild', (tester) async {
+        double progress() => tester
+            .widget<LinearProgressIndicator>(
+              find.byType(LinearProgressIndicator),
+            )
+            .value!;
+
+        await _pumpToast(
+          tester,
+          tone: DesignSystemToastTone.warning,
+          description: null,
+          countdownDuration: const Duration(seconds: 4),
+        );
+        await tester.pump(const Duration(seconds: 3));
+        expect(progress(), closeTo(0.25, 0.01));
+
+        // A resumed undo window hands in a fresh starting point.
+        await _pumpToast(
+          tester,
+          tone: DesignSystemToastTone.warning,
+          description: null,
+          countdownDuration: const Duration(seconds: 10),
+          initialCountdownProgress: 0.8,
+        );
+        expect(progress(), closeTo(0.8, 0.001));
+        await tester.pump(const Duration(seconds: 4));
+        expect(
+          progress(),
+          closeTo(0.4, 0.01),
+          reason: 'the new controller drains at the new duration',
+        );
+
+        await tester.pump(const Duration(seconds: 5));
+      });
+
       testWidgets('respects initialCountdownProgress < 1.0', (tester) async {
         await _pumpToast(
           tester,

@@ -1,9 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/celebration_settings_page.dart';
+import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/celebration_preview_stage.dart';
 import 'package:lotti/features/settings/ui/widgets/celebration_variant_picker.dart';
+import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/settings/settings_switch_row.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -54,6 +57,30 @@ void main() {
 
   const masterTitle = 'Celebration animations';
   const hapticsTitle = 'Completion haptics';
+
+  testWidgets('the mobile page wraps the body in a titled back-navigation '
+      'page', (tester) async {
+    // The page chrome (SliverBoxAdapterPage) reports scroll activity.
+    getIt.registerSingleton<UserActivityService>(UserActivityService());
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(const CelebrationSettingsPage()),
+    );
+    await tester.pump(const Duration(milliseconds: 600));
+
+    final context = tester.element(find.byType(CelebrationSettingsPage));
+    final page = tester.widget<SliverBoxAdapterPage>(
+      find.byType(SliverBoxAdapterPage),
+    );
+    expect(page.title, context.messages.settingsCelebrationsTitle);
+    expect(page.showBackButton, isTrue);
+    expect(
+      find.descendant(
+        of: find.byType(SliverBoxAdapterPage),
+        matching: find.byType(CelebrationSettingsBody),
+      ),
+      findsOneWidget,
+    );
+  });
 
   testWidgets('renders master, three event switches and a haptics switch', (
     tester,

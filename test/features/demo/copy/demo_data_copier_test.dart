@@ -1130,6 +1130,86 @@ void main() {
       ).called(1);
     });
 
+    /// Prepares the user-provider AI plan and applies it against a target
+    /// whose existing configs are [existingInTarget]; returns the saved ids.
+    Future<List<String>> applyAgainstTarget(
+      Map<String, AiConfig> existingInTarget,
+    ) async {
+      await seedAiConfigs();
+      final copier = DemoDataCopier(newId: sequentialIds());
+      final plan = await copier.prepare(
+        selectedIds: {},
+        selectedAiProviderIds: {'user-provider'},
+        sourceDb: source.journalDb,
+        sourceAiConfigs: AiConfigRepository(source.aiConfigDb),
+        sourceRoot: sourceRoot,
+        stagingDir: stagingDir,
+      );
+      final targetAi = MockAiConfigRepository();
+      when(
+        () => targetAi.getConfigById(
+          any(),
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer(
+        (invocation) async =>
+            existingInTarget[invocation.positionalArguments.first as String],
+      );
+      final savedIds = <String>[];
+      when(() => targetAi.saveConfig(any())).thenAnswer(
+        (invocation) async => savedIds.add(
+          (invocation.positionalArguments.first as AiConfig).id,
+        ),
+      );
+
+      await copier.apply(
+        plan,
+        persistence: MockPersistenceLogic(),
+        targetJournalDb: MockJournalDb(),
+        targetRoot: targetRoot,
+        targetAiConfigs: targetAi,
+      );
+
+      return savedIds;
+    }
+
+    test('a provider tombstoned in the TARGET drops every carried model on '
+        'it, and the profile thinking with that model with them', () async {
+      final logger = MockDomainLogger();
+      getIt.registerSingleton<DomainLogger>(logger);
+
+      final savedIds = await applyAgainstTarget({
+        'user-provider': provider(
+          'user-provider',
+        ).copyWith(deletedAt: created),
+      });
+
+      expect(savedIds, isEmpty);
+      verify(
+        () => logger.log(
+          LogDomain.general,
+          any(
+            that: contains(
+              'dropping copied model user-model: its provider user-provider '
+              'is deleted in the target',
+            ),
+          ),
+          subDomain: 'demoDataCopier',
+        ),
+      ).called(1);
+    });
+
+    test('a profile already live in the TARGET is not re-saved, but the '
+        'carried skill it assigns still travels', () async {
+      final savedIds = await applyAgainstTarget({
+        'user-profile': profile('user-profile', 'user-model', const [
+          'user-skill',
+        ]),
+      });
+
+      expect(savedIds, ['user-provider', 'user-model', 'user-skill']);
+    });
+
     test('task profileId and category defaultProfileId survive only when the '
         'referenced profile is usable in the target — carried, or already '
         'present there', () async {

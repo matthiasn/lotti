@@ -12,6 +12,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
+import '../../../../../test_data/test_data.dart';
 import '../../../../../test_utils/fake_journal_page_controller.dart';
 import '../../../../../widget_test_utils.dart';
 
@@ -126,6 +127,31 @@ void main() {
     expect(find.text('50'), findsOneWidget);
     expect(find.text('11'), findsOneWidget);
     expect(find.text('2 more saved filters'), findsOneWidget);
+  });
+
+  testWidgets('a category-scoped filter announces its category first', (
+    tester,
+  ) async {
+    final cache = getIt<EntitiesCacheService>() as MockEntitiesCacheService;
+    when(
+      () => cache.getCategoryById(categoryMindfulness.id),
+    ).thenReturn(categoryMindfulness);
+    await _pumpSidebar(
+      tester,
+      saved: [
+        SavedTaskFilter(
+          id: 'alpha',
+          name: 'Alpha',
+          filter: TasksFilter(selectedCategoryIds: {categoryMindfulness.id}),
+        ),
+      ],
+    );
+
+    expect(
+      find.bySemanticsLabel('${categoryMindfulness.name}, Alpha, 11 tasks'),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel('All tasks, 50 tasks'), findsOneWidget);
   });
 
   testWidgets('More expands every filter and Show fewer restores five', (
