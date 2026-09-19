@@ -23,10 +23,10 @@ mixin WakeCountdownState<T extends StatefulWidget> on State<T> {
   /// Number of remaining seconds — read this from `build()`.
   int get countdownSeconds => _seconds;
 
-  /// Override to be notified once when the countdown reaches zero.
-  /// Invoked post-frame so callers can trigger rebuilds without
-  /// colliding with the active build phase.
-  void onCountdownExpired() {}
+  /// Called once when the countdown reaches zero. Invoked post-frame so
+  /// implementers can trigger rebuilds without colliding with the active
+  /// build phase.
+  void onCountdownExpired();
 
   /// Subclasses must call this from their `didUpdateWidget` whenever
   /// [nextWakeAt] could have changed.

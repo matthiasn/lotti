@@ -350,12 +350,12 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     return remaining <= 0 ? 0 : remaining;
   }
 
-  void _openInternals({String? agentName}) {
+  void _openInternals({required String agentName}) {
     Navigator.of(context).push(
       AgentInternalsPanel.route(
         context: context,
         agentId: widget.identity.agentId,
-        agentName: agentName ?? widget.identity.displayName,
+        agentName: agentName,
       ),
     );
   }
