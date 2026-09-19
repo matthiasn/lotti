@@ -8,6 +8,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/duration_widget.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_multipage_modal.dart';
 import 'package:lotti/features/ratings/state/session_ended_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -546,6 +547,39 @@ void main() {
           // no button of any glyph, so this holds independent of the icon.
           expect(find.textContaining('5m'), findsOneWidget);
           expect(find.byType(IconButton), findsNothing);
+        });
+      },
+    );
+
+    testWidgets(
+      'tapping the duration opens the date/time editor for the entry',
+      (tester) async {
+        await withClock(Clock.fixed(fixedNow), () async {
+          final start = fixedNow.subtract(const Duration(hours: 13));
+          final stale = JournalEntity.journalEntry(
+            meta: Metadata(
+              id: entryId,
+              createdAt: start,
+              updatedAt: start,
+              dateFrom: start,
+              dateTo: start.add(const Duration(minutes: 5)),
+            ),
+          );
+          await pumpControls(tester, entry: stale);
+          expect(find.byType(EntryDateTimeEditor), findsNothing);
+
+          await tester.tap(find.textContaining('5m'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 500));
+
+          final editor = tester.widget<EntryDateTimeEditor>(
+            find.byType(EntryDateTimeEditor),
+          );
+          expect(editor.stateNotifier.value.dateFrom, start);
+          expect(
+            editor.stateNotifier.value.dateTo,
+            start.add(const Duration(minutes: 5)),
+          );
         });
       },
     );

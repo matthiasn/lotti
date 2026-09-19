@@ -97,6 +97,24 @@ void main() {
       );
     });
 
+    testWidgets('clearing the search restores the full list', (tester) async {
+      await pumpHarness(tester);
+
+      await tester.enterText(find.byType(TextField), 'German');
+      await tester.pump();
+      expect(find.text('English'), findsNothing);
+
+      await tester.tap(find.byIcon(LottiIcons.closeCircled));
+      await tester.pump();
+
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        isEmpty,
+      );
+      expect(find.text('English'), findsOneWidget);
+      expect(find.text('German'), findsOneWidget);
+    });
+
     testWidgets('filters languages by language code', (tester) async {
       await pumpHarness(tester);
 
@@ -134,6 +152,49 @@ void main() {
       expect(germanInSettings, findsOneWidget);
       expect(find.text('Currently selected'), findsOneWidget);
     });
+
+    testWidgets(
+      'tapping the pinned selected language closes the picker without '
+      'changing the selection',
+      (tester) async {
+        final selectedLanguages = <SupportedLanguage?>[];
+        final queryNotifier = ValueNotifier<String>('');
+        addTearDown(queryNotifier.dispose);
+
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: Builder(
+              builder: (context) => TextButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => Scaffold(
+                      body: SingleChildScrollView(
+                        child: LanguageSelectionModalContent(
+                          initialLanguageCode: 'de',
+                          searchQuery: queryNotifier,
+                          onLanguageSelected: selectedLanguages.add,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                child: const Text('open picker'),
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.text('open picker'));
+        await tester.pumpAndSettle();
+        expect(find.text('Currently selected'), findsOneWidget);
+
+        await tester.tap(find.text('German'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(LanguageSelectionModalContent), findsNothing);
+        expect(find.text('open picker'), findsOneWidget);
+        expect(selectedLanguages, isEmpty);
+      },
+    );
 
     testWidgets('displays clear option when language is selected', (
       tester,

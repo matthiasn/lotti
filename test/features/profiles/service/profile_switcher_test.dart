@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/app_bootstrap.dart';
 import 'package:lotti/database/database.dart';
@@ -8,6 +9,7 @@ import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
 import 'package:lotti/features/profiles/service/profile_switcher.dart';
+import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/service_disposer.dart';
@@ -226,6 +228,34 @@ void main() {
         when(
           windowService.detachForRestart,
         ).thenAnswer((_) async => throw StateError('detach boom'));
+        // A live audio player whose native dispose fails: the switch must
+        // log it and carry on tearing down the rest of the generation.
+        final player = MockPlayer();
+        final playerStream = MockPlayerStream();
+        when(() => player.stream).thenReturn(playerStream);
+        when(
+          () => playerStream.position,
+        ).thenAnswer((_) => const Stream<Duration>.empty());
+        when(
+          () => playerStream.buffer,
+        ).thenAnswer((_) => const Stream<Duration>.empty());
+        when(
+          () => playerStream.completed,
+        ).thenAnswer((_) => const Stream<bool>.empty());
+        var playerDisposals = 0;
+        when(player.dispose).thenAnswer((_) async {
+          // Only the switch's dispose fails; the container teardown below
+          // disposes the already-detached player a second time.
+          if (++playerDisposals == 1) throw StateError('mpv boom');
+        });
+        final audioContainer = ProviderContainer(
+          overrides: [playerFactoryProvider.overrideWithValue(() => player)],
+        );
+        addTearDown(audioContainer.dispose);
+        audioContainer
+            .read(audioPlayerControllerProvider.notifier)
+            .ensurePlayerForTest();
+
         getIt
           ..registerSingleton<DomainLogger>(domainLogger)
           ..registerSingleton<StartupTasks>(_ThrowingStartupTasks())
@@ -249,9 +279,11 @@ void main() {
         expect(bootstrapped, isTrue);
         verify(timeService.stop).called(1);
         verify(windowService.detachForRestart).called(1);
+        expect(playerDisposals, 1);
         for (final failedStep in [
           'profileSwitch_StartupTasks.settle',
           'profileSwitch_TimeService.stop',
+          'profileSwitch_AudioPlayerController.disposeActivePlayer',
           'profileSwitch_WindowService.detachForRestart',
         ]) {
           verify(

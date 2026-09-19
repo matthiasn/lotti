@@ -319,6 +319,23 @@ void main() {
       expect(entry.entryId, testAudioEntry.meta.id);
     });
 
+    test('attaches the injected player widget to an audio entry', () {
+      JournalAudio? resolvedFor;
+      const player = SizedBox(key: Key('penguin-audio-player'));
+      final entry = eventTimelineEntryFor(
+        testAudioEntry,
+        timeLabel: '21:30',
+        formatTime: fakeClock,
+        imageProviderFor: fakeImage,
+        audioPlayerFor: (audio) {
+          resolvedFor = audio;
+          return player;
+        },
+      );
+      expect(entry!.player, same(player));
+      expect(resolvedFor, same(testAudioEntry));
+    });
+
     test('clamps a reversed audio range to a 0:00 duration', () {
       final reversed = testAudioEntry.copyWith(
         data: testAudioEntry.data.copyWith(

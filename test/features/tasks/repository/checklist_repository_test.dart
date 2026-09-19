@@ -985,6 +985,41 @@ void main() {
     }
 
     test(
+      'returns null and logs when the checklist lookup fails after the item '
+      'was created',
+      () async {
+        const checklistId = 'lookup-id';
+        stubCreateItem(checklistId: checklistId, lookedUpEntity: null);
+        final error = StateError('journal db closed');
+        when(
+          () => mockJournalDb.journalEntityById(checklistId),
+        ).thenAnswer((_) async => throw error);
+
+        final result = await repository.addItemToChecklist(
+          checklistId: checklistId,
+          title: 'Count the krill crates',
+          isChecked: false,
+          categoryId: 'category-id',
+        );
+
+        expect(result, isNull);
+        // The item was persisted first: this is the partial-failure path,
+        // not a lookup that failed before anything was written.
+        verify(() => mockPersistenceLogic.createDbEntity(any())).called(1);
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.persistence,
+            error,
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'addItemToChecklist',
+          ),
+        ).called(1);
+        // The checklist is never rewritten with a dangling item id.
+        verifyNever(() => mockPersistenceLogic.updateDbEntity(any()));
+      },
+    );
+
+    test(
       'successfully creates item and updates checklist atomically',
       () async {
         // Arrange

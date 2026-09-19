@@ -19,6 +19,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/commit_evaluating_vector_clock_service.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
@@ -26,7 +27,7 @@ void main() {
   late RatingRepository repository;
   late MockJournalDb mockDb;
   late MockPersistenceLogic mockPersistence;
-  late MockVectorClockService mockVectorClock;
+  late CommitEvaluatingVectorClockService mockVectorClock;
   late MockUpdateNotifications mockNotifications;
   late MockOutboxService mockOutbox;
   late MockDomainLogger mockDomainLogger;
@@ -87,7 +88,7 @@ void main() {
 
     mockDb = MockJournalDb();
     mockPersistence = MockPersistenceLogic();
-    mockVectorClock = MockVectorClockService();
+    mockVectorClock = CommitEvaluatingVectorClockService();
     mockNotifications = MockUpdateNotifications();
     mockOutbox = MockOutboxService();
     mockDomainLogger = MockDomainLogger();
@@ -518,6 +519,8 @@ void main() {
         expect(ratingLink.fromId, equals(testMetadata.id));
         expect(ratingLink.toId, equals(testTimeEntryId));
         expect(ratingLink.hidden, isFalse);
+        // A written link commits its reserved vector-clock tick.
+        expect(mockVectorClock.commits, [true]);
       });
 
       test('enqueues sync message for link', () async {
@@ -766,6 +769,7 @@ void main() {
           // just not modified). Crucially, no outbox/notify side-effects fire
           // because the scope's commitWhen=false short-circuits them.
           expect(result, isA<RatingEntry>());
+          expect(mockVectorClock.commits, [false]);
           verifyNever(() => mockOutbox.enqueueMessage(any()));
           verifyNever(() => mockNotifications.notify(any()));
         },

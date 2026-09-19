@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/model/habit_form_mapping.dart';
 import 'package:lotti/features/habits/ui/widgets/editor/habit_signal_card.dart';
 import 'package:material_ui/material_ui.dart';
@@ -308,6 +309,31 @@ void main() {
     await tester.pump();
     expect(find.text('250'), findsOneWidget);
     expect(find.text('1000'), findsNothing);
+  });
+
+  testWidgets('a persisted energy rule selects the Energy segment', (
+    tester,
+  ) async {
+    final energy = run.copyWith(
+      mode: HabitSignalMode.atLeast,
+      threshold: 400,
+      workoutValueType: WorkoutValueType.energy,
+    );
+    await pump(tester, HabitSignalsForm(signals: [energy]));
+
+    // The last match is the visible label; the first is the segment's
+    // invisible width-reserving ghost, which always wears the selected style.
+    Color? labelColor(String label) =>
+        tester.widget<Text>(find.text(label).last).style?.color;
+    final selected = tester
+        .element(find.byType(HabitSignalCard))
+        .designTokens
+        .colors
+        .interactive
+        .enabled;
+    expect(labelColor('Energy'), selected);
+    expect(labelColor('Distance'), isNot(selected));
+    expect(labelColor('Any workout'), isNot(selected));
   });
 
   group('workout direction', () {

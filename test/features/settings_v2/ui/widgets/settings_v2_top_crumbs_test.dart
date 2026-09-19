@@ -276,6 +276,36 @@ void main() {
         expect(crumbText().style?.color, accent);
       },
     );
+
+    testWidgets(
+      'keyboard focus on a non-leaf crumb paints the accent, and losing it '
+      'restores the resting color',
+      (tester) async {
+        await _pump(
+          tester,
+          initialPath: const ['sync', 'sync/backfill'],
+        );
+
+        final tokens = tester
+            .element(find.byType(SettingsV2TopCrumbs))
+            .designTokens;
+        final accent = tokens.colors.interactive.enabled;
+        final mediumEmphasis = tokens.colors.text.mediumEmphasis;
+        Color? crumbColor() =>
+            tester.widget<Text>(find.text('Sync Settings')).style?.color;
+
+        final focusNode = Focus.of(tester.element(find.text('Sync Settings')))
+          ..requestFocus();
+        await tester.pump();
+        await tester.pump();
+        expect(crumbColor(), accent);
+
+        focusNode.unfocus();
+        await tester.pump();
+        await tester.pump();
+        expect(crumbColor(), mediumEmphasis);
+      },
+    );
   });
 
   group('SettingsV2TopCrumbs — overflow handling', () {

@@ -526,6 +526,59 @@ void main() {
       },
     );
 
+    testWidgets(
+      'removing the only content returns the task to first-run and re-mounts '
+      'the composed fill',
+      (tester) async {
+        final blank = testTask.copyWith(
+          data: testTask.data.copyWith(title: '', checklistIds: const []),
+          entryText: null,
+        );
+        when(
+          () => mockJournalDb.journalEntityById(testTask.meta.id),
+        ).thenAnswer((_) async => blank);
+        final links = _MutableLinkedEntries();
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            TaskDetailsPage(taskId: testTask.id),
+            overrides: [
+              ...hTaskDetailsPageOverrides(),
+              linkedEntriesControllerProvider(
+                testTask.meta.id,
+              ).overrideWith(() => links),
+              taskAgentProvider.overrideWith((ref, id) async => null),
+              entryControllerProvider(
+                testTextEntry.meta.id,
+              ).overrideWith(() => _FixedEntryController(testTextEntry)),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        links.emit([
+          EntryLink.basic(
+            id: 'link-1',
+            fromId: blank.meta.id,
+            toId: testTextEntry.meta.id,
+            createdAt: DateTime(2026, 8, 4),
+            updatedAt: DateTime(2026, 8, 4),
+            vectorClock: null,
+          ),
+        ]);
+        await tester.pumpAndSettle();
+        expect(find.byType(SliverLayoutBuilder), findsNothing);
+
+        // The note is unlinked again: the page is empty once more, so the
+        // first sliver must switch back to its measuring branch rather than
+        // stay on the plain adapter it settled into.
+        links.emit(const []);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(TaskFirstRunActions), findsOneWidget);
+        expect(find.byType(SliverLayoutBuilder), findsWidgets);
+      },
+    );
+
     testWidgets('Task Entry is rendered', (tester) async {
       when(
         () => mockJournalDb.journalEntityById(testTask.meta.id),

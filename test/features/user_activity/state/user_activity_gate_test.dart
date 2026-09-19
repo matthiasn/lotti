@@ -242,6 +242,40 @@ void main() {
     });
   });
 
+  group('UserActivityGate with a zero idle threshold', () {
+    test('activity reopens the gate immediately without a timer', () {
+      fakeAsync((async) {
+        final service = UserActivityService();
+        final gate = UserActivityGate(
+          activityService: service,
+          idleThreshold: Duration.zero,
+        );
+        final emissions = <bool>[];
+        final sub = gate.canProcessStream.listen(emissions.add);
+
+        service.updateActivity();
+        async.flushMicrotasks();
+
+        // The activity closes the gate and the zero-length idle window
+        // reopens it synchronously, without scheduling a timer.
+        expect(gate.canProcess, isTrue);
+        expect(async.pendingTimers, isEmpty);
+
+        var completed = false;
+        gate.waitUntilIdle().then((_) => completed = true);
+        async.flushMicrotasks();
+        expect(completed, isTrue);
+        // The busy flip is still broadcast, immediately followed by idle.
+        expect(emissions, [false, true]);
+
+        unawaited(sub.cancel());
+        unawaited(gate.dispose());
+        unawaited(service.dispose());
+        async.flushMicrotasks();
+      });
+    });
+  });
+
   // The construction-time idle decision is a pure boundary comparison
   // (`elapsed >= idleThreshold`). Property-test it across random elapsed and
   // threshold values, including the equal-boundary case, so the `>=` semantics

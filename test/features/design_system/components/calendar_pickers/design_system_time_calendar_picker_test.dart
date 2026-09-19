@@ -344,10 +344,10 @@ void main() {
       },
     );
 
-    // Line 186: no-op onTap on the GestureDetector wrapping the picker card
-    // inside the month dialog prevents taps on the card from closing the dialog.
+    // The card swallows taps on its non-interactive surface, so only a tap
+    // outside the card dismisses the month dialog.
     testWidgets(
-      'tapping inside the dialog card does not dismiss the month dialog',
+      'tapping the card surface inside the month dialog keeps it open',
       (tester) async {
         await pumpInteractivePicker(
           tester,
@@ -355,17 +355,21 @@ void main() {
           mode: DesignSystemTimeCalendarPickerMode.light,
         );
 
-        // Open the month dialog.
         await tester.tap(find.text('April 2025'));
         await pumpOverlayTransition(tester);
         expect(find.text('2025'), findsOneWidget);
 
-        // Tap a month label inside the card — the inner GestureDetector's no-op
-        // onTap (line 186) prevents the tap from reaching the barrier dismisser.
+        // The year label is plain card surface, not a month button.
+        await tester.tap(find.text('2025'));
+        await pumpOverlayTransition(tester);
+
+        expect(find.text('2025'), findsOneWidget);
+        expect(find.text('Jan'), findsOneWidget);
+
+        // Picking a month still closes it and moves the visible month.
         await tester.tap(find.text('Jan'));
         await pumpOverlayTransition(tester);
 
-        // Dialog is dismissed after selecting a month.
         expect(find.text('2025'), findsNothing);
         expect(find.text('January 2025'), findsOneWidget);
       },

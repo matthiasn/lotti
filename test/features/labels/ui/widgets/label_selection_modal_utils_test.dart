@@ -138,12 +138,48 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(LabelEditorSheet), findsOneWidget);
 
+    // The editor seeds its name from the trimmed query.
+    expect(
+      tester
+          .widget<LabelEditorSheet>(find.byType(LabelEditorSheet))
+          .initialName,
+      'Gamma',
+    );
+
     // Dismiss the editor (returns no label); create-from-search resolves.
-    Navigator.of(
-      tester.element(find.byType(LabelEditorSheet)),
-      rootNavigator: true,
-    ).pop();
+    Navigator.of(tester.element(find.byType(LabelEditorSheet))).pop();
     await tester.pumpAndSettle();
     expect(find.byType(LabelEditorSheet), findsNothing);
+
+    // Nothing was created, so nothing is staged: Apply commits an empty set.
+    await tester.tap(find.byKey(const ValueKey('label-picker-apply')));
+    await tester.pumpAndSettle();
+    verify(
+      () => repo.setLabels(journalEntityId: 'e1', labelIds: <String>[]),
+    ).called(1);
+  });
+
+  testWidgets('a label created from search is staged and applied', (
+    tester,
+  ) async {
+    await openSelector(tester, setLabelsResult: true);
+
+    await tester.enterText(find.byType(TextField), 'Gamma');
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('label-picker-create')));
+    await tester.pumpAndSettle();
+
+    // The editor saves and returns the new definition.
+    Navigator.of(
+      tester.element(find.byType(LabelEditorSheet)),
+    ).pop(testLabelDefinition1.copyWith(id: 'lc', name: 'Gamma'));
+    await tester.pumpAndSettle();
+    expect(find.byType(LabelEditorSheet), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('label-picker-apply')));
+    await tester.pumpAndSettle();
+    verify(
+      () => repo.setLabels(journalEntityId: 'e1', labelIds: ['lc']),
+    ).called(1);
   });
 }

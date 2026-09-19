@@ -57,21 +57,15 @@ class PulsatingRateButton extends ConsumerWidget {
     if (hasRating) return const SizedBox.shrink();
     if (!sessionJustEnded) return const SizedBox.shrink();
 
-    return _AnimatedRateButton(
-      entryId: entryId,
-      shouldPulse: sessionJustEnded,
-    );
+    return _AnimatedRateButton(entryId: entryId);
   }
 }
 
 class _AnimatedRateButton extends StatefulWidget {
-  const _AnimatedRateButton({
-    required this.entryId,
-    required this.shouldPulse,
-  });
+  const _AnimatedRateButton({required this.entryId});
 
+  /// Only built while the session has just ended, so it always pulses once.
   final String entryId;
-  final bool shouldPulse;
 
   @override
   State<_AnimatedRateButton> createState() => _AnimatedRateButtonState();
@@ -123,7 +117,7 @@ class _AnimatedRateButtonState extends State<_AnimatedRateButton>
     // reduced-motion setting is readable.
     if (_pulseStartChecked) return;
     _pulseStartChecked = true;
-    if (widget.shouldPulse) _startPulsing();
+    _startPulsing();
   }
 
   void _startPulsing() {
@@ -141,17 +135,6 @@ class _AnimatedRateButtonState extends State<_AnimatedRateButton>
             setState(() => _isPulsing = false);
           }),
     );
-  }
-
-  @override
-  void didUpdateWidget(_AnimatedRateButton oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.shouldPulse &&
-        !oldWidget.shouldPulse &&
-        !_isPulsing &&
-        !MediaQuery.disableAnimationsOf(context)) {
-      _startPulsing();
-    }
   }
 
   @override

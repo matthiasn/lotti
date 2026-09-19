@@ -365,6 +365,42 @@ void main() {
     });
   });
 
+  group('SavedFilterCountText', () {
+    testWidgets(
+      'prominent counts use the bold body-small token, default the caption',
+      (tester) async {
+        await _pump(
+          tester,
+          const Column(
+            children: [
+              SavedFilterCountText(count: 42, prominent: true),
+              SavedFilterCountText(count: 7),
+            ],
+          ),
+        );
+
+        final typography = dsTokensLight.typography;
+        final prominent = tester.widget<Text>(find.text('42')).style!;
+        expect(
+          prominent.fontSize,
+          typography.styles.body.bodySmall.fontSize,
+        );
+        expect(prominent.fontWeight, typography.weight.bold);
+
+        final regular = tester.widget<Text>(find.text('7')).style!;
+        expect(regular.fontSize, typography.styles.others.caption.fontSize);
+        expect(regular.fontWeight, typography.weight.semiBold);
+        // Both keep tabular figures so digit changes never shift the slot.
+        for (final style in [prominent, regular]) {
+          expect(
+            style.fontFeatures,
+            contains(const FontFeature.tabularFigures()),
+          );
+        }
+      },
+    );
+  });
+
   group('category resolution helpers', () {
     late MockEntitiesCacheService cache;
 

@@ -132,13 +132,12 @@ void main() {
         ),
       ];
 
-      // Setup the second call to return updated links
+      // The initial build sees the original links; the refetch triggered by
+      // the notification sees the updated ones.
+      final responses = [testLinks, updatedLinks];
       when(
         () => mockJournalRepository.getLinksFromId(testId),
-      ).thenAnswer((_) async => testLinks);
-      when(
-        () => mockJournalRepository.getLinksFromId(testId),
-      ).thenAnswer((_) async => updatedLinks);
+      ).thenAnswer((_) async => responses.removeAt(0));
 
       // Act
       final container = ProviderContainer(
@@ -154,7 +153,10 @@ void main() {
       final controller = container.read(
         linkedEntriesControllerProvider(testId).notifier,
       );
-      await container.read(linkedEntriesControllerProvider(testId).future);
+      expect(
+        await container.read(linkedEntriesControllerProvider(testId).future),
+        equals(testLinks),
+      );
 
       // Simulate an update notification for one of the watched IDs
       updateStreamController.add({'linked-id-1'});

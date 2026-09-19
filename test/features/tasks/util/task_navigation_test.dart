@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
+import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/util/task_navigation.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -92,9 +93,15 @@ void main() {
       await tester.tap(find.text('open'));
 
       verifyNever(() => mockNavService.pushDesktopTaskDetail(any()));
+      final route = observer.pushedRoutes
+          .whereType<MaterialPageRoute<void>>()
+          .single;
+      // The route's page is the linked task's detail page. Invoke the
+      // builder directly rather than letting it build the full page.
+      final page = route.builder(tester.element(find.text('open')));
       expect(
-        observer.pushedRoutes.whereType<MaterialPageRoute<void>>(),
-        hasLength(1),
+        page,
+        isA<TaskDetailsPage>().having((p) => p.taskId, 'taskId', 'task-9'),
       );
 
       // Pop before the pushed route ever builds: TaskDetailsPage needs the

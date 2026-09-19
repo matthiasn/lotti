@@ -18,6 +18,7 @@ import 'package:lotti/features/design_system/components/chips/active_filter_chip
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
@@ -2444,6 +2445,76 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(crossFadeState(tester), CrossFadeState.showSecond);
+      },
+    );
+
+    testWidgets(
+      'widening a collapsed pane into the static header clears the collapse, '
+      'so narrowing it again shows the expanded header',
+      (tester) async {
+        final selectedNotifier = ValueNotifier<String?>(null);
+        addTearDown(selectedNotifier.dispose);
+        when(
+          () => mockNavService.desktopSelectedTaskId,
+        ).thenReturn(selectedNotifier);
+        tester.view.physicalSize = const Size(1280, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        final paneWidth = ValueNotifier<double>(400);
+        addTearDown(paneWidth.dispose);
+
+        fakeController = FakeJournalPageController(longListState());
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            AppCommandHost(
+              handlers: const {},
+              platform: TargetPlatform.windows,
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: ValueListenableBuilder<double>(
+                  valueListenable: paneWidth,
+                  builder: (context, width, child) =>
+                      SizedBox(width: width, child: child),
+                  child: const TasksTabPage(),
+                ),
+              ),
+            ),
+            mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+            overrides: [
+              journalPageScopeProvider.overrideWithValue(true),
+              journalPageControllerProvider(
+                true,
+              ).overrideWith(() => fakeController),
+              taskAgentServiceProvider.overrideWithValue(
+                MockTaskAgentService(),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.drag(
+          find.byType(CustomScrollView),
+          const Offset(0, -400),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(crossFadeState(tester), CrossFadeState.showSecond);
+
+        // Widen past the desktop breakpoint: the static header takes over.
+        paneWidth.value = kDesktopBreakpoint + 40;
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.byKey(CollapsingTaskListHeaderKeys.root), findsNothing);
+
+        // Narrow again without scrolling: no stale collapsed flag may spring
+        // the header shut on the user.
+        paneWidth.value = 400;
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(crossFadeState(tester), CrossFadeState.showFirst);
       },
     );
 

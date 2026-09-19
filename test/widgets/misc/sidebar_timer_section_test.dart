@@ -8,6 +8,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/widgets/misc/sidebar_timer_section.dart';
@@ -106,9 +107,14 @@ void main() {
     return captured.isEmpty ? null : captured.last as String;
   }
 
-  JournalEntity makeTimerEntry(String id, {Duration elapsed = Duration.zero}) {
+  JournalEntity makeTimerEntry(
+    String id, {
+    Duration elapsed = Duration.zero,
+    String? text,
+  }) {
     final from = DateTime(2026, 5, 5, 21, 30);
     return JournalEntity.journalEntry(
+      entryText: text == null ? null : EntryText(plainText: text),
       meta: Metadata(
         id: id,
         createdAt: from,
@@ -436,5 +442,35 @@ void main() {
     await tester.pump();
 
     expect(lastBeamedPath(), equals('/journal/linked-6'));
+  });
+
+  group('title without a linked entry', () {
+    Future<void> pumpUnlinked(WidgetTester tester, JournalEntity timer) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(const SidebarTimerSection()),
+      );
+      timeService.emit(timer);
+      await tester.pump();
+      await tester.pump(SidebarTimerSection.animationDuration);
+    }
+
+    testWidgets('shows the text of the running entry itself', (tester) async {
+      await pumpUnlinked(
+        tester,
+        makeTimerEntry('timer-own', text: '  Waddle roll call  '),
+      );
+
+      // Trimmed text of the running entry itself becomes the title.
+      expect(find.text('Waddle roll call'), findsOneWidget);
+    });
+
+    testWidgets('falls back to the untitled label when the entry is blank', (
+      tester,
+    ) async {
+      await pumpUnlinked(tester, makeTimerEntry('timer-blank', text: '   '));
+
+      final context = tester.element(find.byType(SidebarTimerSection));
+      expect(find.text(context.messages.taskUntitled), findsOneWidget);
+    });
   });
 }

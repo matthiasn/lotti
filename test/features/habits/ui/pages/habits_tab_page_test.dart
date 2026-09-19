@@ -349,9 +349,14 @@ void main() {
       expect(find.byKey(Key(habitFlossing.id)), findsOneWidget);
     });
 
-    testWidgets('completing a habit lingers its row, then removes it', (
-      tester,
-    ) async {
+    /// Pumps the page with [habitFlossing] open, then checks it off: it
+    /// leaves the openNow bucket — on the "due" filter it would normally
+    /// vanish instantly — but the page pins it through the linger so its
+    /// celebration can play.
+    Future<void> pumpAndCompleteFlossing(
+      WidgetTester tester, {
+      MediaQueryData? mediaQueryData,
+    }) async {
       final controller = await pump(
         tester,
         HabitsState.initial().copyWith(
@@ -359,12 +364,10 @@ void main() {
           openNow: [habitFlossing],
           displayFilter: HabitDisplayFilter.openNow,
         ),
+        mediaQueryData: mediaQueryData,
       );
       expect(find.byKey(Key(habitFlossing.id)), findsOneWidget);
 
-      // Check it off: it leaves the openNow bucket — on the "due" filter it would
-      // normally vanish instantly — but the page pins it through the linger so
-      // its celebration can play.
       controller.emit(
         HabitsState.initial().copyWith(
           habitDefinitions: [habitFlossing, habitFlossingDueLater],
@@ -379,11 +382,45 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       // Still pinned mid-celebration.
       expect(find.byKey(Key(habitFlossing.id)), findsOneWidget);
+    }
+
+    testWidgets('completing a habit lingers its row, then removes it', (
+      tester,
+    ) async {
+      await pumpAndCompleteFlossing(tester);
 
       // Past the linger window the row collapses out, then leaves the due list.
       await tester.pump(const Duration(milliseconds: 1700));
       await tester.pumpAndSettle();
       expect(find.byKey(Key(habitFlossing.id)), findsNothing);
+    });
+
+    testWidgets('under reduced motion the lingered row leaves without a '
+        'collapse animation', (tester) async {
+      await pumpAndCompleteFlossing(
+        tester,
+        mediaQueryData: const MediaQueryData(disableAnimations: true),
+      );
+
+      // The linger ends; the row is dropped on the very next frame instead of
+      // shrinking out over the 280ms collapse.
+      await tester.pump(const Duration(milliseconds: 1500));
+      expect(find.byKey(Key(habitFlossing.id)), findsOneWidget);
+      await tester.pump();
+      await tester.pump();
+      expect(find.byKey(Key(habitFlossing.id)), findsNothing);
+    });
+
+    testWidgets('leaving the page mid-linger cancels the pending removal', (
+      tester,
+    ) async {
+      await pumpAndCompleteFlossing(tester);
+
+      // Unmount while the linger timer is still pending. The harness fails a
+      // test that leaves a timer behind, so this passing proves dispose
+      // cancelled it.
+      await tester.pumpWidget(const SizedBox.shrink());
+      expect(find.byType(HabitsTabPage), findsNothing);
     });
 
     testWidgets('renders an action row for completed habits', (tester) async {

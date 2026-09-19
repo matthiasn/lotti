@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -468,7 +469,9 @@ void main() {
       expect(capturedNote, equals('great session'));
     });
 
-    testWidgets('tapping Skip dismisses the modal', (tester) async {
+    /// Opens the modal as a pushed route over an 'open' button, so a pop of
+    /// the modal is observable as the button coming back.
+    Future<void> pumpAsPushedRoute(WidgetTester tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           Builder(
@@ -492,16 +495,58 @@ void main() {
       );
       await tester.pump();
 
-      // Open the modal as a pushed route so a pop is observable.
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
       expect(find.byType(RatingModal), findsOneWidget);
       expect(find.text('open'), findsNothing);
+    }
+
+    testWidgets('tapping Skip dismisses the modal', (tester) async {
+      await pumpAsPushedRoute(tester);
 
       // Tapping Skip runs _close() -> Navigator.pop().
       await tester.tap(find.widgetWithText(OutlinedButton, 'Skip'));
       await tester.pumpAndSettle();
 
+      expect(find.byType(RatingModal), findsNothing);
+      expect(find.text('open'), findsOneWidget);
+    });
+
+    testWidgets('a successful save closes the modal', (tester) async {
+      stubPrePopulatedRating(stubSubmit: true);
+      final platformCalls = <MethodCall>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          platformCalls.add(call);
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      await pumpAsPushedRoute(tester);
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      verify(
+        () => mockRepository.createOrUpdateRating(
+          targetId: testTimeEntryId,
+          dimensions: any(named: 'dimensions'),
+          note: any(named: 'note'),
+        ),
+      ).called(1);
+      // The save is confirmed with a heavy haptic before the modal closes.
+      expect(
+        platformCalls.map((call) => (call.method, call.arguments)),
+        contains(('HapticFeedback.vibrate', 'HapticFeedbackType.heavyImpact')),
+      );
       expect(find.byType(RatingModal), findsNothing);
       expect(find.text('open'), findsOneWidget);
     });

@@ -795,6 +795,36 @@ void main() {
       await tester.pumpAndSettle();
     });
 
+    testWidgets('"combine two" layers a distinct second variant', (
+      tester,
+    ) async {
+      await _pumpWithControllers(
+        tester,
+        extraOverrides: [
+          celebrationPreferencesProvider.overrideWithValue(
+            const CelebrationPreferences.allEnabled().copyWith(
+              checklistItemsSelection: CelebrationSelection.combine,
+            ),
+          ),
+        ],
+      );
+      await tester.pump();
+
+      await tester.tap(find.byType(Checkbox));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final burst = tester.widget<CompletionBurst>(
+        find.byType(CompletionBurst),
+      );
+      expect(burst.params, isNotNull);
+      expect(burst.secondParams, isNotNull);
+      expect(burst.secondParams!.variant, isNot(burst.params!.variant));
+
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('tap haptic honours the independent haptics switch', (
       tester,
     ) async {

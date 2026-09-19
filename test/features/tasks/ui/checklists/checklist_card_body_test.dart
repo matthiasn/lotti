@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card_body.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:material_ui/material_ui.dart';
@@ -106,4 +107,65 @@ void main() {
 
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets(
+    'a replaced focus node still drives the add-item pill border',
+    (tester) async {
+      final firstNode = FocusNode();
+      final secondNode = FocusNode();
+      addTearDown(firstNode.dispose);
+      addTearDown(secondNode.dispose);
+      var focusNode = firstNode;
+      late StateSetter outerSetState;
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          StatefulBuilder(
+            builder: (context, setState) {
+              outerSetState = setState;
+              return Body(
+                itemIds: const [],
+                checklistId: 'cl-1',
+                taskId: 'task-1',
+                filter: ChecklistFilter.all,
+                completionRate: 0,
+                activeTotalCount: 0,
+                focusNode: focusNode,
+                onCreateItem: (_) async {},
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pump();
+
+      Color borderColor() {
+        final pill = tester.widget<AnimatedContainer>(
+          find.ancestor(
+            of: find.byType(TextField),
+            matching: find.byType(AnimatedContainer),
+          ),
+        );
+        final border = (pill.decoration! as BoxDecoration).border! as Border;
+        return border.top.color;
+      }
+
+      final tokens = tester.element(find.byType(Body)).designTokens;
+      expect(borderColor(), tokens.colors.decorative.level01);
+
+      outerSetState(() => focusNode = secondNode);
+      await tester.pump();
+
+      // Focus arrives through the new node only; the pill must still light up.
+      secondNode.requestFocus();
+      await tester.pump();
+      await tester.pump();
+      expect(borderColor(), tokens.colors.interactive.enabled);
+
+      secondNode.unfocus();
+      await tester.pump();
+      await tester.pump();
+      expect(borderColor(), tokens.colors.decorative.level01);
+    },
+  );
 }

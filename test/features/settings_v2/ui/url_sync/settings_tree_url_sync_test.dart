@@ -1,3 +1,4 @@
+import 'package:beamer/beamer.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -27,9 +28,9 @@ class _BeamSpy {
   void call(BuildContext context, String uri) => uris.add(uri);
 }
 
-Future<({ProviderContainer container, _BeamSpy spy, _FakeNavService nav})>
-_pumpBridge(
-  WidgetTester tester, {
+/// Registers a [_FakeNavService] (seeded with [initialRoute]) in place of
+/// the default NavService, disposed and unregistered on teardown.
+Future<_FakeNavService> _installFakeNav({
   DesktopSettingsRoute? initialRoute,
 }) async {
   await setUpTestGetIt();
@@ -50,7 +51,15 @@ _pumpBridge(
     }
     nav.desktopSelectedSettingsRoute.dispose();
   });
+  return nav;
+}
 
+Future<({ProviderContainer container, _BeamSpy spy, _FakeNavService nav})>
+_pumpBridge(
+  WidgetTester tester, {
+  DesktopSettingsRoute? initialRoute,
+}) async {
+  final nav = await _installFakeNav(initialRoute: initialRoute);
   final spy = _BeamSpy();
   await tester.pumpWidget(
     makeTestableWidgetNoScroll(
@@ -169,6 +178,52 @@ void main() {
   });
 
   group('SettingsTreeUrlSync — tree → URL', () {
+    testWidgets(
+      'without an override, tree moves replace the enclosing Beamer location',
+      (tester) async {
+        await _installFakeNav();
+        final delegate = BeamerDelegate(
+          setBrowserTabTitle: false,
+          initialPath: '/settings',
+          locationBuilder: RoutesLocationBuilder(
+            routes: {
+              '*': (context, state, data) =>
+                  const Material(child: SettingsTreeUrlSync()),
+            },
+          ).call,
+        );
+        addTearDown(delegate.dispose);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp.router(
+              routerDelegate: delegate,
+              routeInformationParser: BeamerParser(),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        ProviderScope.containerOf(
+              tester.element(find.byType(SettingsTreeUrlSync)),
+              listen: false,
+            )
+            .read(settingsTreePathProvider.notifier)
+            .onNodeTap(
+              'advanced',
+              depth: 0,
+              hasChildren: true,
+            );
+        await tester.pump();
+        await tester.pump();
+
+        expect(delegate.configuration.uri.path, '/settings/advanced');
+        // Replacement, not push: the history does not grow a back entry.
+        expect(delegate.beamingHistory.last.history, hasLength(1));
+      },
+    );
+
     testWidgets(
       'mutating the tree beams to the matching canonical URL',
       (tester) async {

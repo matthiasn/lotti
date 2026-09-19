@@ -423,6 +423,55 @@ void main() {
       },
     );
 
+    testWidgets(
+      'dragging the bottom sheet away closes the route and marks the viewed '
+      'release as seen',
+      (tester) async {
+        final seenVersions = <String>[];
+        await tester.pumpWidget(
+          createTestWidget(
+            controllerBuilder: () => _TrackingWhatsNewController(
+              WhatsNewState(unseenContent: [testContent1]),
+              onMarkAsSeen: seenVersions.add,
+            ),
+            mediaQueryData: const MediaQueryData(size: Size(400, 800)),
+          ),
+        );
+
+        // The host page's own route barrier; the sheet adds one on top.
+        final baseBarriers = find.byType(ModalBarrier).evaluate().length;
+
+        await tester.tap(find.text('Show Modal'));
+        await tester.pumpAndSettle();
+        expect(find.text('v0.9.980'), findsOneWidget);
+        expect(
+          find.byType(ModalBarrier).evaluate().length,
+          greaterThan(baseBarriers),
+        );
+
+        // Drag from the sheet's handle: the body scrolls its own content.
+        await tester.fling(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget.runtimeType.toString() == 'WoltBottomSheetDragHandle',
+          ),
+          const Offset(0, 400),
+          3000,
+        );
+        await tester.pumpAndSettle();
+
+        // The route is really gone — not just slid off-screen behind a
+        // barrier that would keep swallowing taps.
+        expect(find.text('v0.9.980'), findsNothing);
+        expect(find.byType(ModalBarrier), findsNWidgets(baseBarriers));
+        expect(seenVersions, contains('0.9.980'));
+
+        await tester.tap(find.text('Show Modal'));
+        await tester.pumpAndSettle();
+        expect(find.text('v0.9.980'), findsOneWidget);
+      },
+    );
+
     testWidgets('wide screen (>= pageBreakpoint) uses tall dialog modal type '
         'and routeLabel is reachable', (tester) async {
       await tester.pumpWidget(

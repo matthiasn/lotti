@@ -129,6 +129,38 @@ void main() {
       expect(find.text('User Testing'), findsAtLeastNWidgets(2));
     });
 
+    testWidgets('clearing the search restores the full task list', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(1600, 1000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        wrap(
+          container,
+          theme: DesignSystemTheme.dark(),
+        ),
+      );
+      await tester.pump();
+
+      await tester.enterText(find.byType(TextField).first, 'Sprint');
+      await tester.pump();
+      expect(
+        container.read(taskListDetailShowcaseControllerProvider).searchQuery,
+        'Sprint',
+      );
+      expect(find.text('User Testing'), findsNothing);
+
+      await tester.tap(find.byIcon(LottiIcons.closeCircled));
+      await tester.pump();
+
+      expect(
+        container.read(taskListDetailShowcaseControllerProvider).searchQuery,
+        isEmpty,
+      );
+      expect(find.text('User Testing'), findsOneWidget);
+    });
+
     testWidgets('applies the desktop priority filter', (tester) async {
       await tester.binding.setSurfaceSize(const Size(1600, 1000));
       addTearDown(() => tester.binding.setSurfaceSize(null));

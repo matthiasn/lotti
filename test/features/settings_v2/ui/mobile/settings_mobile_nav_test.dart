@@ -1,8 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_nav.dart';
+import 'package:lotti/features/whats_new/model/whats_new_state.dart';
+import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -38,7 +41,23 @@ const _manual = SettingsNode(
   action: SettingsNodeAction.openManual,
 );
 
-Future<void> _tapNode(WidgetTester tester, SettingsNode node) async {
+const _whatsNew = SettingsNode(
+  id: 'whats-new',
+  icon: LottiIcons.verified,
+  title: "What's new",
+  desc: '',
+);
+
+class _CaughtUpWhatsNewController extends WhatsNewController {
+  @override
+  Future<WhatsNewState> build() async => const WhatsNewState();
+}
+
+Future<void> _tapNode(
+  WidgetTester tester,
+  SettingsNode node, {
+  List<Override> overrides = const [],
+}) async {
   await tester.pumpWidget(
     makeTestableWidgetNoScroll(
       Consumer(
@@ -47,6 +66,7 @@ Future<void> _tapNode(WidgetTester tester, SettingsNode node) async {
           child: const Text('go'),
         ),
       ),
+      overrides: overrides,
     ),
   );
   await tester.tap(find.text('go'));
@@ -96,6 +116,25 @@ void main() {
         any(),
       ),
     ).called(1);
+    expect(beamed, isNull);
+  });
+
+  testWidgets("the What's new leaf opens its modal instead of beaming", (
+    tester,
+  ) async {
+    await _tapNode(
+      tester,
+      _whatsNew,
+      overrides: [
+        whatsNewControllerProvider.overrideWith(
+          _CaughtUpWhatsNewController.new,
+        ),
+      ],
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // No unseen releases, so the modal shows its caught-up state.
+    expect(find.text("You're all caught up!"), findsOneWidget);
     expect(beamed, isNull);
   });
 }

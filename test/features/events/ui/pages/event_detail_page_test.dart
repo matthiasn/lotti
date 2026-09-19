@@ -19,7 +19,9 @@ import 'package:lotti/features/events/ui/widgets/event_detail_view.dart';
 import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/state/image_paste_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/create/create_entry_items.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -240,21 +242,23 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
+      // The scope wraps the whole app, as in production, so sheets pushed
+      // onto the root navigator can read providers too.
       await tester.pumpWidget(
-        makeTestableWidget2(
-          ProviderScope(
-            overrides: [
-              entryControllerProvider(_eventId).overrideWith(
-                controllerBuilder ?? () => FakeEntryController(_event()),
-              ),
-              resolvedOutgoingLinkedEntriesProvider(
-                _eventId,
-              ).overrideWithValue(linked),
-              ...extraOverrides,
-            ],
-            child: const EventDetailPage(eventId: _eventId),
+        ProviderScope(
+          overrides: [
+            entryControllerProvider(_eventId).overrideWith(
+              controllerBuilder ?? () => FakeEntryController(_event()),
+            ),
+            resolvedOutgoingLinkedEntriesProvider(
+              _eventId,
+            ).overrideWithValue(linked),
+            ...extraOverrides,
+          ],
+          child: makeTestableWidget2(
+            const EventDetailPage(eventId: _eventId),
+            mediaQueryData: MediaQueryData(size: size),
           ),
-          mediaQueryData: MediaQueryData(size: size),
         ),
       );
       await tester.pump();
@@ -512,6 +516,36 @@ void main() {
         ),
       ).called(1);
     });
+
+    testWidgets(
+      'the Timeline "+ Add" opens the create menu linked to the event',
+      (tester) async {
+        await pumpResolved(
+          tester,
+          linked: const [],
+          extraOverrides: [
+            imagePasteControllerProvider((
+              linkedFromId: _eventId,
+              categoryId: 'cat-1',
+            )).overrideWithBuild((ref, notifier) async => false),
+          ],
+        );
+        expect(find.byType(CreateTextItem), findsNothing);
+
+        // Empty event → Timeline + Tasks each show "+ Add"; the first is
+        // the Timeline.
+        await tester.tap(find.text('Add').first);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+
+        // The new entry is scoped to this event and inherits its category.
+        final textItem = tester.widget<CreateTextItem>(
+          find.byType(CreateTextItem),
+        );
+        expect(textItem.linkedFromId, _eventId);
+        expect(textItem.categoryId, 'cat-1');
+      },
+    );
 
     testWidgets(
       'creating a task assigns the category agent and beams to the new task',

@@ -27,13 +27,14 @@ import '../../test_utils.dart';
 Widget _buildPage({
   required List<LabelDefinition> labels,
   Map<String, int> usageCounts = const {},
+  Widget page = const LabelsListPage(),
 }) {
   return ProviderScope(
     overrides: [
       labelsStreamProvider.overrideWith((ref) => Stream.value(labels)),
       labelUsageStatsProvider.overrideWith((ref) => Stream.value(usageCounts)),
     ],
-    child: makeTestableWidgetWithScaffold(const LabelsListPage()),
+    child: makeTestableWidgetWithScaffold(page),
   );
 }
 
@@ -520,6 +521,28 @@ void main() {
       expect(find.text('1 task'), findsOneWidget);
       // Label 1 has a description, but it is never the subtitle.
       expect(find.text('Requires immediate attention'), findsNothing);
+    });
+
+    testWidgets('LabelsListBody embeds the same label list for the settings '
+        'detail pane', (tester) async {
+      await tester.pumpWidget(
+        _buildPage(
+          labels: [testLabelDefinition1, testLabelDefinition2],
+          usageCounts: {'label-1': 3},
+          page: const LabelsListBody(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byType(LabelsListBody),
+          matching: find.byType(LabelsListPage),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Urgent'), findsWidgets);
+      expect(find.text('3 tasks'), findsOneWidget);
     });
 
     testWidgets('filters list based on search query', (tester) async {

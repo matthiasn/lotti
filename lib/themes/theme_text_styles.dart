@@ -158,12 +158,6 @@ const numericBadgeFontFeatures = <FontFeature>[
   FontFeature.slashedZero(),
 ];
 
-const badgeStyle = TextStyle(
-  fontWeight: FontWeight.w400, // Slightly bolder
-  fontSize: fontSizeSmall,
-  fontFeatures: numericBadgeFontFeatures,
-);
-
 const habitCompletionHeaderStyle = TextStyle(
   fontSize: 22, // Increased
 );
