@@ -60,11 +60,12 @@ Contents:
 
 - **TLDR header** (`AgentReportEntity.tldr`, falling back to the report's first
   paragraph) plus an inline expandable Goal / Achieved / Next / Learnings block
-  under a *Read more / Show less* pill. *Chat* (`QueryAskButton(chat: true)`,
-  a small outlined pill announced as *Ask about this task*) rides the same row
-  at its trailing end through `TldrBody.trailing`. With no summary yet it
-  keeps that trailing corner on a row of its own, and it is absent while
-  query chat is off. The subtitle under *AI summary* is the agent's template
+  under a *Read more / Show less* pill. *Chat* (`QueryAskButton(disc: true)`,
+  a glyph-only `DsAiDiscButton` announced as *Ask about this task*) leads the
+  header's trailing rail, left of the read-aloud `TtsPlayButton`, which wears
+  the same disc. It stands there whether or not a summary exists, and is
+  absent while query chat is off; the task page's app bar carries no chat
+  entry of its own. The subtitle under *AI summary* is the agent's template
   name when it has one (e.g. *Task Laura*), otherwise the agent's display
   name; it is never the task title.
 - **Proposed changes** — rows from `unifiedSuggestionListProvider`, each a

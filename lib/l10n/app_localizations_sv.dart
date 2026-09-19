@@ -11239,9 +11239,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get queryCategoryAgent => 'Kategoriagent';
 
   @override
-  String get queryChat => 'Chatta';
-
-  @override
   String get queryChats => 'Chattar';
 
   @override

@@ -1,4 +1,4 @@
-import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
@@ -7,20 +7,15 @@ import 'package:material_ui/material_ui.dart';
 /// playback state and whether this card is the active source.
 enum TtsButtonMode { idle, preparing, playing }
 
-/// Calm, accessible play/stop control for reading a TL;DR aloud.
+/// Calm, accessible play/stop control for reading a TL;DR aloud — a
+/// [DsAiDiscButton], so it matches the *Chat* disc beside it on the card's
+/// header rail.
 ///
-/// A 44x44 hit target wrapping a ~36px tonal circle (`accentSoft` fill,
-/// `accent` glyph — the same recipe as the header badge and countdown chip).
-/// The filled accent is reserved for the card's primary wake CTA, so this
-/// utility stays quiet. Play vs stop is conveyed by glyph SHAPE (triangle vs
-/// square) plus a semantic label — never by color alone, so it works under
-/// color blindness. While [TtsButtonMode.preparing] it shows an indeterminate
-/// ring; while [TtsButtonMode.playing], a determinate progress arc from
-/// [progress]. Reduced-motion renders the preparing ring static.
-///
-/// Sizes here are fixed control / accessibility dimensions (not layout
-/// spacing), matching the surrounding header's existing convention; layout
-/// gaps come from `tokens.spacing`.
+/// Play vs stop is conveyed by glyph SHAPE plus a semantic label — never by
+/// color alone, so it works under color blindness. While
+/// [TtsButtonMode.preparing] it shows an indeterminate ring; while
+/// [TtsButtonMode.playing], a determinate progress arc from [progress].
+/// Reduced-motion renders the preparing ring static.
 class TtsPlayButton extends StatelessWidget {
   const TtsPlayButton({
     required this.mode,
@@ -41,17 +36,13 @@ class TtsPlayButton extends StatelessWidget {
   /// Playback progress in `[0, 1]` while [mode] is playing; ignored otherwise.
   final double? progress;
 
-  static const double _hitSize = 44;
-  static const double _circleSize = 36;
-  static const double _ringSize = 42;
-  static const double _glyphSize = 20;
-
   @override
   Widget build(BuildContext context) {
     final ai = context.designTokens.colors.aiCard;
     final messages = context.messages;
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final idle = mode == TtsButtonMode.idle;
 
     final label = switch (mode) {
       TtsButtonMode.playing => messages.aiSummaryStopTooltip,
@@ -68,72 +59,23 @@ class TtsPlayButton extends StatelessWidget {
       TtsButtonMode.preparing => LottiIcons.pending,
       TtsButtonMode.idle => LottiIcons.volume,
     };
-    // Idle plays; preparing/playing stop (preparing-stop cancels).
-    final onTap = mode == TtsButtonMode.idle ? onPlay : onStop;
 
-    return Semantics(
-      button: true,
+    return DsAiDiscButton(
+      icon: glyph,
       label: label,
-      child: Tooltip(
-        message: label,
-        // The visible button is the ~36px disc, not the 44px hit circle — a
-        // hover fill over the hit area haloed the disc with a phantom ring.
-        // The disc answers hover/focus/press itself: its border firms a step
-        // and the idle glyph brightens.
-        child: DsQuietInk(
-          customBorder: const CircleBorder(),
-          onTap: onTap,
-          builder: (context, highlighted) => SizedBox(
-            width: _hitSize,
-            height: _hitSize,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                if (mode != TtsButtonMode.idle)
-                  SizedBox(
-                    width: _ringSize,
-                    height: _ringSize,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      value: mode == TtsButtonMode.playing
-                          ? (progress ?? 0).clamp(0.0, 1.0)
-                          : (reduceMotion ? 1.0 : null),
-                      color: ai.accent,
-                      backgroundColor: ai.borderSoft,
-                    ),
-                  ),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    // Idle stays a whispered utility so the header keeps a
-                    // single accent (the sparkle badge); the accent pair is
-                    // earned only while actively preparing/playing.
-                    color: mode == TtsButtonMode.idle
-                        ? ai.subtleWash
-                        : ai.accentSoft,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: mode == TtsButtonMode.idle
-                          ? (highlighted ? ai.border : ai.subtleBorder)
-                          : (highlighted ? ai.accent : ai.border),
-                    ),
-                  ),
-                  child: SizedBox(
-                    width: _circleSize,
-                    height: _circleSize,
-                    child: Icon(
-                      glyph,
-                      size: _glyphSize,
-                      color: mode == TtsButtonMode.idle
-                          ? (highlighted ? ai.bodyText : ai.metaText)
-                          : ai.accent,
-                    ),
-                  ),
-                ),
-              ],
+      // Idle plays; preparing/playing stop (preparing-stop cancels).
+      onPressed: idle ? onPlay : onStop,
+      active: !idle,
+      ring: idle
+          ? null
+          : CircularProgressIndicator(
+              strokeWidth: 2,
+              value: mode == TtsButtonMode.playing
+                  ? (progress ?? 0).clamp(0.0, 1.0)
+                  : (reduceMotion ? 1.0 : null),
+              color: ai.accent,
+              backgroundColor: ai.borderSoft,
             ),
-          ),
-        ),
-      ),
     );
   }
 }

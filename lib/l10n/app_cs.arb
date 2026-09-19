@@ -4351,7 +4351,6 @@
   "queryAudioTooLarge": "Časové značky lze připravit pro nahrávky do 25 MB. Vyber menší nahrávku.",
   "queryAudioUploadNotice": "Při přípravě časových značek se tato nahrávka odešle poskytovateli přepisu nastavenému pro tohoto agenta.",
   "queryCategoryAgent": "Agent kategorie",
-  "queryChat": "Chat",
   "queryChats": "Chaty",
   "queryChecked": "Zkontrolované zdroje: {count}",
   "queryCloseChat": "Zavřít chat",

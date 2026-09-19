@@ -11228,9 +11228,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get queryCategoryAgent => 'Kategoriagent';
 
   @override
-  String get queryChat => 'Chat';
-
-  @override
   String get queryChats => 'Chats';
 
   @override

@@ -4344,7 +4344,6 @@
   "queryAudioTooLarge": "Zeitstempel können für Aufnahmen bis 25 MB vorbereitet werden. Wähle eine kleinere Aufnahme.",
   "queryAudioUploadNotice": "Zum Erstellen der Zeitmarken wird diese Aufnahme an den für diesen Agenten konfigurierten Transkriptionsanbieter gesendet.",
   "queryCategoryAgent": "Kategorie-Agent",
-  "queryChat": "Chat",
   "queryChats": "Chats",
   "queryChecked": "Geprüfte Quellen: {count}",
   "queryCloseChat": "Chat schließen",

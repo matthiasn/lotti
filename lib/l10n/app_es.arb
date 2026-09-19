@@ -4344,7 +4344,6 @@
   "queryAudioTooLarge": "Puedes preparar marcas de tiempo para grabaciones de hasta 25 MB. Elige una grabación más pequeña.",
   "queryAudioUploadNotice": "Al preparar las marcas de tiempo, esta grabación se envía al proveedor de transcripción configurado para este agente.",
   "queryCategoryAgent": "Agente de categoría",
-  "queryChat": "Chat",
   "queryChats": "Chats",
   "queryChecked": "Fuentes comprobadas: {count}",
   "queryCloseChat": "Cerrar chat",

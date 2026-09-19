@@ -11337,9 +11337,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get queryCategoryAgent => 'Agente de categoria';
 
   @override
-  String get queryChat => 'Conversar';
-
-  @override
   String get queryChats => 'Chats';
 
   @override

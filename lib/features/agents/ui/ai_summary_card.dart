@@ -651,16 +651,16 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
         agentId: agentId,
       ),
     );
-    // *Chat* rides the Read more row at its trailing end: a compact pill
-    // beside the quiet links, not a full-width row under them.
-    // Null while query chat is off, so an invisible button never holds the
-    // row open or takes the body's trailing gap.
+    // *Chat* leads the header's trailing rail, a disc beside the read-aloud
+    // disc. Null while query chat is off, so an invisible button never
+    // holds a gap in the rail.
     final chatButton = ref.watch(queryChatEnabledProvider)
         ? QueryAskButton(
             scope: QueryScope(kind: QueryScopeKind.task, id: widget.taskId),
-            chat: true,
+            disc: true,
           )
         : null;
+    final headerControls = [?chatButton, ?playbackControl];
     final reportBody = TldrBody(
       disclosureKey: const ValueKey('taskAgentReportDisclosure'),
       tldr: tldr,
@@ -668,7 +668,6 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       additionalReport: additionalReport,
       onToggle: () => setState(() => _expanded = !_expanded),
       onOpenInternals: () => _openInternals(agentName: subtitle),
-      trailing: chatButton,
     );
     // Nothing to propose, no section: an empty "Proposed changes" band cost a
     // divider and two paddings to say what the missing rows already said. A
@@ -776,7 +775,13 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
         TldrHeader(
           agentName: subtitle,
           onAgentTap: () => _openInternals(agentName: subtitle),
-          trailing: playbackControl,
+          trailing: headerControls.isEmpty
+              ? null
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  spacing: tokens.spacing.step2,
+                  children: headerControls,
+                ),
         ),
         // Reading order: the summary first, then the update CTA for the
         // summary just read, then the proposals. Quiet links already own
@@ -790,19 +795,6 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
               horizontal: tokens.spacing.cardPadding,
             ),
             child: reportBody,
-          ),
-        // No summary yet, so no Read more row to share: Chat keeps the same
-        // trailing corner on a row of its own.
-        if (!hasReportContent && chatButton != null)
-          Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.cardPadding,
-              vertical: tokens.spacing.step2,
-            ),
-            child: Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: chatButton,
-            ),
           ),
         // Both hidden until the first value to avoid flashing empty state.
         ?proposalsBand,

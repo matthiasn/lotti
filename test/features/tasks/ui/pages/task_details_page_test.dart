@@ -257,15 +257,15 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(
-        find.descendant(
-          of: find.byType(TaskActionBar),
-          matching: find.byType(QueryAskButton),
-        ),
-        findsNothing,
-      );
+      // Chat's entry is the agent card's header disc, not the app bar.
+      expect(find.byType(QueryAskButton), findsNothing);
       final taskActions = tester.element(find.byType(TaskActionBar));
-      await tester.tap(find.byType(QueryAskButton).first);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(TaskDetailsPage)),
+      );
+      void openChat() =>
+          container.read(queryPaneOpenProvider(scope).notifier).open = true;
+      openChat();
       await tester.pumpAndSettle();
       expect(
         tester.widget<QueryChatPane>(find.byType(QueryChatPane)).scope,
@@ -277,12 +277,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(QueryChatPane), findsNothing);
       expect(find.text(testTask.data.title), findsOneWidget);
-      await tester.tap(find.byType(QueryAskButton).first);
+      openChat();
       await tester.pumpAndSettle();
       final chatState = tester.state(find.byType(QueryChatPane));
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(TaskDetailsPage)),
-      );
       when(
         () => mockJournalDb.journalEntityById(testTask.id),
       ).thenAnswer((_) async => null);

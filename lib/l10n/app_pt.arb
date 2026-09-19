@@ -4810,7 +4810,6 @@
   "queryAudioTooLarge": "Podes preparar marcas temporais para gravações até 25 MB. Escolhe uma gravação mais pequena.",
   "queryAudioUploadNotice": "A preparação das marcas de tempo envia esta gravação ao provedor de transcrição configurado para este agente.",
   "queryCategoryAgent": "Agente de categoria",
-  "queryChat": "Conversar",
   "queryChats": "Chats",
   "queryChecked": "Fontes verificadas: {count}",
   "queryCloseChat": "Fechar chat",
