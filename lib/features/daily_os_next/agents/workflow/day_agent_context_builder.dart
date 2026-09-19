@@ -64,8 +64,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     required DateTime planDate,
     required DateTime now,
     required Set<String> triggerTokens,
-    required List<AgentMessageEntity> observations,
-    required Map<String, AgentMessagePayloadEntity> observationPayloads,
+    required List<RecalledObservation> observations,
     required CaptureContext? captureContext,
     required DraftingContext? draftingContext,
     required RefineContext? refineContext,
@@ -192,10 +191,8 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
             : [
                 for (final observation in observations)
                   {
-                    'createdAt': observation.createdAt.toIso8601String(),
-                    'text': extractPayloadText(
-                      observationPayloads[observation.contentEntryId],
-                    ),
+                    'createdAt': observation.at.toIso8601String(),
+                    'text': observation.text,
                   },
               ],
       )

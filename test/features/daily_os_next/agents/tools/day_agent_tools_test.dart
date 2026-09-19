@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tools.dart';
 
@@ -443,36 +444,14 @@ void main() {
       expect((properties['reason'] as Map<String, dynamic>)['type'], 'string');
     });
 
-    test(
-      'recordObservations pins the oneOf item shape and its enum contracts',
-      () {
-        final params = parametersFor(DayAgentToolNames.recordObservations);
-        expect(params['required'], ['observations']);
-
-        final items =
-            ((params['properties']! as Map<String, dynamic>)['observations']!
-                    as Map<String, dynamic>)['items']!
-                as Map<String, dynamic>;
-        final oneOf = items['oneOf']! as List<dynamic>;
-        expect(oneOf, hasLength(2));
-        expect((oneOf[0] as Map<String, dynamic>)['type'], 'string');
-
-        final objectShape = oneOf[1] as Map<String, dynamic>;
-        expect(objectShape['type'], 'object');
-        expect(objectShape['required'], ['text']);
-        expect(objectShape['additionalProperties'], isFalse);
-
-        final props = objectShape['properties']! as Map<String, dynamic>;
-        expect(
-          (props['priority']! as Map<String, dynamic>)['enum'],
-          ['routine', 'notable', 'critical'],
-        );
-        expect(
-          (props['category']! as Map<String, dynamic>)['enum'],
-          ['grievance', 'excellence', 'templateImprovement', 'operational'],
-        );
-      },
-    );
+    // The shared observations contract, closed at both levels, with the
+    // model's enums (pinned in agent_observations_test).
+    test('recordObservations uses the shared observations schema', () {
+      expect(
+        parametersFor(DayAgentToolNames.recordObservations),
+        recordObservationsParameters(textDescription: 'Observation content.'),
+      );
+    });
 
     test('applyTriage pins the action enum and the conditional deferTo', () {
       final params = parametersFor(DayAgentToolNames.applyTriage);

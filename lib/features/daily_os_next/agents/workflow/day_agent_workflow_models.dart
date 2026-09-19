@@ -6,6 +6,7 @@ import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/memory/memory_links.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
@@ -715,12 +716,12 @@ void appendSoulPersonality(
 /// The most recent observations to replay into a wake, sorted oldest-first by
 /// `createdAt` (id-tiebroken for stability) and capped to the last 20 so the
 /// prompt stays bounded.
-List<AgentMessageEntity> recentObservations(
-  List<AgentMessageEntity> observations,
+List<RecalledObservation> recentObservations(
+  List<RecalledObservation> observations,
 ) {
   final sorted = observations.toList()
     ..sort((a, b) {
-      final byCreatedAt = a.createdAt.compareTo(b.createdAt);
+      final byCreatedAt = a.at.compareTo(b.at);
       if (byCreatedAt != 0) return byCreatedAt;
       return a.id.compareTo(b.id);
     });
@@ -783,15 +784,6 @@ bool isStalePlannerDay(String dayId, DateTime now) {
   final date = dateFromDayId(dayId);
   if (date == null) return false;
   return date.isBefore(plannerWakeCurrencyCutoff(now));
-}
-
-/// Extracts the `text` field from a message payload, falling back to
-/// `(no content)` when the payload is absent or carries no text.
-String extractPayloadText(AgentMessagePayloadEntity? payload) {
-  if (payload == null) return '(no content)';
-  final text = payload.content['text'];
-  if (text is String && text.isNotEmpty) return text;
-  return '(no content)';
 }
 
 /// Updates the per-day self-scheduled-wake counter map: sets [wakeCountKey] to

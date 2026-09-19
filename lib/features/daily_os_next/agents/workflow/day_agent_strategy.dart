@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -268,53 +269,18 @@ class DayAgentStrategy extends ConversationStrategy {
     String callId,
     ConversationManager manager,
   ) async {
-    final rawList = args['observations'];
-    if (rawList is! List || rawList.isEmpty) {
+    final (:records, :error) = parseRecordObservations(args);
+    if (error != null) {
       await _rejectToolCall(
         callId: callId,
         toolName: DayAgentToolNames.recordObservations,
-        errorMsg: 'Error: "observations" must be a non-empty array.',
+        errorMsg: error,
         manager: manager,
       );
       return;
     }
-
-    var accepted = 0;
-    for (final item in rawList) {
-      if (item is String) {
-        final trimmed = item.trim();
-        if (trimmed.isNotEmpty) {
-          _observations.add(ObservationRecord(text: trimmed));
-          accepted++;
-        }
-        continue;
-      }
-
-      if (item is Map<String, dynamic>) {
-        final textValue = item['text'];
-        final text = textValue is String ? textValue.trim() : '';
-        if (text.isEmpty) continue;
-
-        _observations.add(
-          ObservationRecord(
-            text: text,
-            priority: _parseObservationPriority(item['priority']),
-            category: _parseObservationCategory(item['category']),
-          ),
-        );
-        accepted++;
-      }
-    }
-
-    if (accepted == 0) {
-      await _rejectToolCall(
-        callId: callId,
-        toolName: DayAgentToolNames.recordObservations,
-        errorMsg: 'Error: no valid observations found.',
-        manager: manager,
-      );
-      return;
-    }
+    _observations.addAll(records);
+    final accepted = records.length;
 
     final response = 'Recorded $accepted observation(s).';
     manager.addToolResponse(toolCallId: callId, response: response);
@@ -334,22 +300,6 @@ class DayAgentStrategy extends ConversationStrategy {
       toolName: toolName,
       errorMessage: errorMsg,
     );
-  }
-
-  ObservationPriority _parseObservationPriority(Object? raw) {
-    return parseEnumByName(
-          ObservationPriority.values,
-          raw is String ? raw : null,
-        ) ??
-        ObservationPriority.routine;
-  }
-
-  ObservationCategory _parseObservationCategory(Object? raw) {
-    return parseEnumByName(
-          ObservationCategory.values,
-          raw is String ? raw : null,
-        ) ??
-        ObservationCategory.operational;
   }
 
   Map<String, dynamic> _parseToolArguments(String raw) {

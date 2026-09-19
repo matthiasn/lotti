@@ -104,43 +104,6 @@ extension DayAgentPersistence on DayAgentWorkflow {
     );
   }
 
-  Future<void> _persistObservations({
-    required String agentId,
-    required String threadId,
-    required String runKey,
-    required List<ObservationRecord> observations,
-    required DateTime now,
-  }) async {
-    for (final observation in observations) {
-      final payloadId = workflowUuid.v4();
-      await syncService.upsertEntity(
-        AgentDomainEntity.agentMessagePayload(
-          id: payloadId,
-          agentId: agentId,
-          createdAt: now,
-          vectorClock: null,
-          content: <String, Object?>{
-            'text': observation.text,
-            'priority': observation.priority.name,
-            'category': observation.category.name,
-          },
-        ),
-      );
-      await syncService.upsertEntity(
-        AgentDomainEntity.agentMessage(
-          id: workflowUuid.v4(),
-          agentId: agentId,
-          threadId: threadId,
-          kind: AgentMessageKind.observation,
-          createdAt: now,
-          vectorClock: null,
-          contentEntryId: payloadId,
-          metadata: AgentMessageMetadata(runKey: runKey),
-        ),
-      );
-    }
-  }
-
   Future<void> _persistTokenUsage({
     required InferenceUsage? usage,
     required String agentId,
@@ -171,23 +134,6 @@ extension DayAgentPersistence on DayAgentWorkflow {
         cachedInputTokens: usage.cachedInputTokens,
       ),
     );
-  }
-
-  Future<Map<String, AgentMessagePayloadEntity>> _resolveObservationPayloads(
-    List<AgentMessageEntity> observations,
-  ) async {
-    final payloadIds = observations
-        .map((observation) => observation.contentEntryId)
-        .whereType<String>()
-        .toSet();
-    if (payloadIds.isEmpty) return const <String, AgentMessagePayloadEntity>{};
-
-    final entitiesById = await agentRepository.getEntitiesByIds(payloadIds);
-    return {
-      for (final entry in entitiesById.entries)
-        if (entry.value is AgentMessagePayloadEntity)
-          entry.key: entry.value as AgentMessagePayloadEntity,
-    };
   }
 
   /// Lazily resolves a deferred capture event's inline content (its transcript)
