@@ -1,6 +1,7 @@
 // Tool definitions for the event agent.
 
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 
 /// Tool name constants used by the event agent.
 ///
@@ -28,8 +29,8 @@ abstract final class EventAgentReportToolArgs {
 /// Rating and cover selection are human-only and are deliberately absent — the
 /// event agent has no tool that can touch them. Status / follow-up write
 /// actions arrive later as deferred (accept/reject) tools.
-const eventAgentTools = <AgentToolDefinition>[
-  AgentToolDefinition(
+final eventAgentTools = <AgentToolDefinition>[
+  const AgentToolDefinition(
     name: EventAgentToolNames.updateReport,
     description:
         'Publish the updated event recap. You MUST call this tool exactly '
@@ -72,50 +73,11 @@ const eventAgentTools = <AgentToolDefinition>[
         'Record private observations for future wakes. Use this to note '
         'follow-up ideas, patterns, or anything worth remembering across '
         'recaps. These are never shown to the user.',
-    parameters: {
-      'type': 'object',
-      'properties': {
-        'observations': {
-          'type': 'array',
-          'items': {
-            'oneOf': [
-              {'type': 'string'},
-              {
-                'type': 'object',
-                'properties': {
-                  'text': {
-                    'type': 'string',
-                    'description': 'Observation content.',
-                  },
-                  'priority': {
-                    'type': 'string',
-                    'enum': ['routine', 'notable', 'critical'],
-                    'description':
-                        'Urgency level. Use "critical" only for something '
-                        'that genuinely needs attention.',
-                  },
-                  'category': {
-                    'type': 'string',
-                    'enum': [
-                      'grievance',
-                      'excellence',
-                      'templateImprovement',
-                      'operational',
-                    ],
-                    'description': 'Category of the observation.',
-                  },
-                },
-                'required': ['text'],
-              },
-            ],
-          },
-          'description': 'List of observations to record.',
-        },
-      },
-      'required': ['observations'],
-    },
+    parameters: recordObservationsParameters(
+      textDescription: 'Observation content.',
+    ),
   ),
-  AgentToolDefinition(
+  const AgentToolDefinition(
     name: EventAgentToolNames.suggestFollowUpTask,
     description:
         'Propose a concrete follow-up task the event implies (send a '

@@ -12,6 +12,32 @@ import '../../../mocks/mocks.dart';
 void main() {
   setUpAll(registerAllFallbackValues);
 
+  group('recordObservationsParameters', () {
+    // Every agent's record_observations tool declares this one schema: its
+    // enums are the model's, so they cannot drift, and it is closed at both
+    // levels so strict providers accept it.
+    test('offers the model enums and is closed to unnamed properties', () {
+      final schema = recordObservationsParameters(textDescription: 'A note.');
+      final observations =
+          (schema['properties']! as Map)['observations'] as Map;
+      final items = observations['items'] as Map;
+      final props = items['properties'] as Map;
+
+      expect(schema['additionalProperties'], isFalse);
+      expect(items['additionalProperties'], isFalse);
+      expect(observations['minItems'], 1);
+      expect((props['text'] as Map)['description'], 'A note.');
+      expect(
+        (props['priority'] as Map)['enum'],
+        [for (final p in ObservationPriority.values) p.name],
+      );
+      expect(
+        (props['category'] as Map)['enum'],
+        [for (final c in ObservationCategory.values) c.name],
+      );
+    });
+  });
+
   group('parseRecordObservations', () {
     test('takes structured and bare notes, skipping blanks', () {
       final (:records, :error) = parseRecordObservations({
@@ -81,14 +107,17 @@ void main() {
             )
             as AgentMessageEntity;
 
-    AgentDomainEntity payload(String id, Object? text) =>
-        AgentDomainEntity.agentMessagePayload(
-          id: id,
-          agentId: 'agent',
-          createdAt: at,
-          vectorClock: null,
-          content: {'text': text},
-        );
+    AgentDomainEntity payload(
+      String id,
+      Object? text, {
+      Map<String, Object?> extra = const {},
+    }) => AgentDomainEntity.agentMessagePayload(
+      id: id,
+      agentId: 'agent',
+      createdAt: at,
+      vectorClock: null,
+      content: {'text': text, ...extra},
+    );
 
     test(
       'returns readable notes in the order read, dropping the rest',
@@ -111,7 +140,11 @@ void main() {
         );
         when(() => repository.getEntitiesByIds(any())).thenAnswer(
           (_) async => {
-            'p1': payload('p1', ' Newest note. '),
+            'p1': payload(
+              'p1',
+              ' Newest note. ',
+              extra: const {'priority': 'critical', 'category': 'grievance'},
+            ),
             'p3': payload('p3', ''),
             'p5': payload('p5', 'Oldest note.'),
           },
@@ -124,8 +157,20 @@ void main() {
         );
 
         expect(recalled, [
-          (at: at, text: 'Newest note.'),
-          (at: at, text: 'Oldest note.'),
+          (
+            id: 'm1',
+            at: at,
+            text: 'Newest note.',
+            priority: ObservationPriority.critical,
+            category: ObservationCategory.grievance,
+          ),
+          (
+            id: 'm5',
+            at: at,
+            text: 'Oldest note.',
+            priority: ObservationPriority.routine,
+            category: ObservationCategory.operational,
+          ),
         ]);
         expect(
           verify(
@@ -135,6 +180,26 @@ void main() {
         );
       },
     );
+
+    test('recalls nothing, rather than failing the wake, when the payloads '
+        'cannot be read', () async {
+      final repository = MockAgentRepository();
+      when(
+        () => repository.getMessagesByKind(
+          'agent',
+          AgentMessageKind.observation,
+          limit: 3,
+        ),
+      ).thenAnswer((_) async => [message('m1', 'p1')]);
+      when(
+        () => repository.getEntitiesByIds(any()),
+      ).thenThrow(StateError('database closed'));
+
+      expect(
+        await recallAgentObservations(repository, 'agent', limit: 3),
+        isEmpty,
+      );
+    });
 
     test('reads no payloads when nothing was observed', () async {
       final repository = MockAgentRepository();

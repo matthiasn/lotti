@@ -7,10 +7,11 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/workflow/agent_tool_arg_parsing.dart';
 import 'package:uuid/uuid.dart';
 
-/// The `record_observations` parameters an agent tool schema declares: a
-/// non-empty list of `{text, priority?, category?}` objects, the enums taken
-/// from the model so the schema cannot drift. [parseRecordObservations]
-/// still accepts bare strings, which models send regardless.
+/// The `record_observations` parameters every agent's tool schema declares:
+/// a non-empty list of `{text, priority?, category?}` objects, the enums
+/// taken from the model so the schema cannot drift, closed to properties it
+/// does not name. [parseRecordObservations] still accepts bare strings,
+/// which models send regardless.
 Map<String, Object?> recordObservationsParameters({
   required String textDescription,
 }) => {
@@ -33,10 +34,12 @@ Map<String, Object?> recordObservationsParameters({
           },
         },
         'required': ['text'],
+        'additionalProperties': false,
       },
     },
   },
   'required': ['observations'],
+  'additionalProperties': false,
 };
 
 class _Parser with ObservationRecordParsing {
@@ -87,14 +90,24 @@ class _Parser with ObservationRecordParsing {
       : (records: records, error: null);
 }
 
-/// One earlier observation as an agent's next wake reads it.
-typedef RecalledObservation = ({DateTime at, String text});
+/// One earlier observation as an agent's next wake reads it: the message
+/// `id` (a stable tie-break for notes written in the same instant), when it
+/// was written, its text, and the priority and category it was filed under.
+typedef RecalledObservation = ({
+  String id,
+  DateTime at,
+  String text,
+  ObservationPriority priority,
+  ObservationCategory category,
+});
 
-/// The agent's [limit] newest observations with their text, newest first.
+/// The agent's [limit] newest observations, newest first.
 ///
 /// An observation whose payload cannot be read is left out rather than
 /// shown as a placeholder: a wake is better served by fewer notes than by
-/// noise it has to reason around.
+/// noise it has to reason around. For the same reason a failed payload
+/// read recalls nothing instead of failing the wake — observations are
+/// memory, not the evidence the wake exists to act on.
 Future<List<RecalledObservation>> recallAgentObservations(
   AgentRepository repository,
   String agentId, {
@@ -109,14 +122,32 @@ Future<List<RecalledObservation>> recallAgentObservations(
     for (final message in messages) ?message.contentEntryId,
   };
   if (payloadIds.isEmpty) return const [];
-  final payloads = await repository.getEntitiesByIds(payloadIds);
+  final Map<String, AgentDomainEntity> payloads;
+  try {
+    payloads = await repository.getEntitiesByIds(payloadIds);
+  } on Object {
+    return const [];
+  }
+  const parser = _Parser();
   final recalled = <RecalledObservation>[];
   for (final message in messages) {
     final payload = payloads[message.contentEntryId];
     if (payload is! AgentMessagePayloadEntity) continue;
     final text = payload.content['text'];
     if (text is String && text.trim().isNotEmpty) {
-      recalled.add((at: message.createdAt, text: text.trim()));
+      final priority = payload.content['priority'];
+      final category = payload.content['category'];
+      recalled.add((
+        id: message.id,
+        at: message.createdAt,
+        text: text.trim(),
+        priority: parser.parseObservationPriority(
+          priority is String ? priority : null,
+        ),
+        category: parser.parseObservationCategory(
+          category is String ? category : null,
+        ),
+      ));
     }
   }
   return recalled;

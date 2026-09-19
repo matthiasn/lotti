@@ -12,6 +12,7 @@ import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.
 import 'package:lotti/features/relationships/workflow/relationship_facts_renderer.dart';
 
 import '../../../test_data/test_data.dart';
+import '../../agents/test_data/entity_factories.dart';
 
 void main() {
   const renderer = RelationshipFactsRenderer();
@@ -236,11 +237,14 @@ void main() {
   test("the agent's notes come back with corrections ranked above facts", () {
     final facts = render(
       observations: [
-        (
+        makeTestRecalledObservation(
+          'The user said "Vanja" was misheard;\nthe name is Wanja.',
           at: DateTime(2026, 8, 14, 20),
-          text: 'The user said "Vanja" was misheard;\nthe name is Wanja.',
         ),
-        (at: DateTime(2026, 8, 2, 9), text: 'Pip dislikes long calls.'),
+        makeTestRecalledObservation(
+          'Pip dislikes long calls.',
+          at: DateTime(2026, 8, 2, 9),
+        ),
       ],
     );
 

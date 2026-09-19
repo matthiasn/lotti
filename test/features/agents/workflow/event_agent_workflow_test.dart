@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
+import 'package:lotti/features/agents/workflow/event_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/event_agent_workflow.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
@@ -341,6 +342,7 @@ void main() {
       () => mockAgentRepository.getMessagesByKind(
         agentId,
         AgentMessageKind.observation,
+        limit: eventObservationLookback,
       ),
     ).thenAnswer((_) async => []);
     when(

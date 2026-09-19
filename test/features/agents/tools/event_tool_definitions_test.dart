@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 
 void main() {
   group('eventAgentTools', () {
@@ -30,37 +30,16 @@ void main() {
       }
     });
 
-    // Pins the record_observations wire schema to the model enums, so the
-    // priority/category enum strings can never drift from
-    // ObservationPriority / ObservationCategory.
-    test('record_observations enums stay in sync with the model enums', () {
+    // The event agent records observations through the shared contract,
+    // whose priority/category enums are taken from the model enums.
+    test('record_observations uses the shared observations schema', () {
       final tool = eventAgentTools.firstWhere(
         (t) => t.name == EventAgentToolNames.recordObservations,
       );
-      final properties = tool.parameters['properties'] as Map<String, dynamic>;
-      final observations = properties['observations'] as Map<String, dynamic>;
-      final items = observations['items'] as Map<String, dynamic>;
-      final oneOf = items['oneOf'] as List<dynamic>;
-      final objectSchema = oneOf.cast<Map<String, dynamic>>().firstWhere(
-        (m) => m['type'] == 'object',
-      );
-      final props = objectSchema['properties'] as Map<String, dynamic>;
-      final priorityEnum =
-          ((props['priority'] as Map<String, dynamic>)['enum'] as List<dynamic>)
-              .cast<String>()
-              .toSet();
-      final categoryEnum =
-          ((props['category'] as Map<String, dynamic>)['enum'] as List<dynamic>)
-              .cast<String>()
-              .toSet();
 
       expect(
-        priorityEnum,
-        ObservationPriority.values.map((e) => e.name).toSet(),
-      );
-      expect(
-        categoryEnum,
-        ObservationCategory.values.map((e) => e.name).toSet(),
+        tool.parameters,
+        recordObservationsParameters(textDescription: 'Observation content.'),
       );
     });
   });

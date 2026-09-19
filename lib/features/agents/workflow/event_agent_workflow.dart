@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/carrierless_attribution.dart';
 import 'package:lotti/features/agents/workflow/deferred_change_items.dart';
 import 'package:lotti/features/agents/workflow/event_agent_context_builder.dart';
@@ -125,9 +126,10 @@ class EventAgentWorkflow with AgentErrorLogging {
     }
 
     // 3. Load observations and resolve template + provider.
-    final observations = await agentRepository.getMessagesByKind(
+    final observations = await recallAgentObservations(
+      agentRepository,
       agentId,
-      AgentMessageKind.observation,
+      limit: eventObservationLookback,
     );
 
     final templateCtx = await _resolveTemplate(agentId);
@@ -153,10 +155,6 @@ class EventAgentWorkflow with AgentErrorLogging {
     final provider = resolvedProfile.thinkingProvider;
 
     // 4. Assemble system prompt and user message.
-    final observationPayloads = await _contextBuilder
-        .resolveObservationPayloads(
-          observations,
-        );
     final linkedEntriesContext = await _contextBuilder
         .buildLinkedEntriesContext(
           eventId,
@@ -169,7 +167,6 @@ class EventAgentWorkflow with AgentErrorLogging {
       eventEntity: eventEntity,
       lastReport: lastReport,
       observations: observations,
-      observationPayloads: observationPayloads,
       linkedEntriesContext: linkedEntriesContext,
       triggerTokens: triggerTokens,
     );
@@ -404,35 +401,14 @@ class EventAgentWorkflow with AgentErrorLogging {
           );
         }
 
-        // Persist observations.
-        for (final observation in extractedObservations) {
-          final payloadId = _uuid.v4();
-          await syncService.upsertEntity(
-            AgentDomainEntity.agentMessagePayload(
-              id: payloadId,
-              agentId: agentId,
-              createdAt: now,
-              vectorClock: null,
-              content: <String, Object?>{
-                'text': observation.text,
-                'priority': observation.priority.name,
-                'category': observation.category.name,
-              },
-            ),
-          );
-          await syncService.upsertEntity(
-            AgentDomainEntity.agentMessage(
-              id: _uuid.v4(),
-              agentId: agentId,
-              threadId: threadId,
-              kind: AgentMessageKind.observation,
-              createdAt: now,
-              vectorClock: null,
-              contentEntryId: payloadId,
-              metadata: AgentMessageMetadata(runKey: runKey),
-            ),
-          );
-        }
+        await persistAgentObservations(
+          syncService,
+          agentId: agentId,
+          threadId: threadId,
+          runKey: runKey,
+          now: now,
+          observations: extractedObservations,
+        );
 
         // Persist deferred proposals (follow-up tasks) as a pending change set
         // keyed by the event id, so the detail page can surface them for
