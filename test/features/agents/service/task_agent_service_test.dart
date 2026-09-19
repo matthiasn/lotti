@@ -1701,6 +1701,45 @@ void main() {
       });
 
       test(
+        'a manual-only agent restores its persisted awaiting-content flag',
+        () async {
+          final taskAgent = makeIdentity(agentId: 'ta-1');
+          when(
+            () => mockAgentService.listAgents(
+              lifecycle: AgentLifecycle.active,
+            ),
+          ).thenAnswer((_) async => [taskAgent]);
+          when(
+            () => mockRepository.getAgentStatesByAgentIds(['ta-1']),
+          ).thenAnswer(
+            (_) async => {
+              'ta-1': makeState(agentId: 'ta-1').copyWith(
+                awaitingContent: true,
+              ),
+            },
+          );
+          when(
+            () => mockRepository.getLinksFromMultiple(
+              ['ta-1'],
+              type: AgentLinkTypes.agentTask,
+            ),
+          ).thenAnswer((_) async => const {});
+
+          await service.restoreSubscriptions();
+
+          verify(
+            () => mockOrchestrator.setAwaitingContent('ta-1', awaiting: true),
+          ).called(1);
+          verify(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime('ta-1'),
+          ).called(1);
+          verifyNever(
+            () => mockOrchestrator.enableAutomaticUpdatesRuntime(any()),
+          );
+        },
+      );
+
+      test(
         'enables scheduling for an explicitly opted-in task agent',
         () async {
           final taskAgent = makeIdentity(
@@ -2277,52 +2316,70 @@ void main() {
         verifyNever(() => mockAgentService.getAgent(any()));
       });
 
-      test('reconfiguring a setup-disabled agent reactivates it', () async {
-        final identity = makeIdentity(
-          lifecycle: AgentLifecycle.dormant,
-          config: const AgentConfig(
-            automaticUpdatesEnabled: true,
-            inferenceSetup: AgentInferenceSetup(
-              mode: AgentInferenceSetupMode.disabled,
-              origin: AgentInferenceSetupOrigin.user,
+      for (final automatic in [true, false]) {
+        test('reconfiguring a setup-disabled agent reactivates it and restores '
+            'its automation runtime (automatic=$automatic)', () async {
+          final identity = makeIdentity(
+            lifecycle: AgentLifecycle.dormant,
+            config: AgentConfig(
+              automaticUpdatesEnabled: automatic,
+              inferenceSetup: const AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.disabled,
+                origin: AgentInferenceSetupOrigin.user,
+              ),
             ),
-          ),
-        );
-        when(
-          () => mockAgentService.getAgent('agent-1'),
-        ).thenAnswer((_) async => identity);
-        when(
-          () => mockRepository.getLinksFrom(
-            'agent-1',
-            type: AgentLinkTypes.agentTask,
-          ),
-        ).thenAnswer((_) async => []);
+          );
+          when(
+            () => mockAgentService.getAgent('agent-1'),
+          ).thenAnswer((_) async => identity);
+          when(
+            () => mockRepository.getLinksFrom(
+              'agent-1',
+              type: AgentLinkTypes.agentTask,
+            ),
+          ).thenAnswer((_) async => []);
 
-        await service.updateAgentInferenceSetup(
-          agentId: 'agent-1',
-          setup: const AgentInferenceSetup(
-            mode: AgentInferenceSetupMode.configured,
-            origin: AgentInferenceSetupOrigin.categorySnapshot,
-            baseProfileId: 'profile-1',
-            originEntityId: 'category-1',
-          ),
-        );
+          await service.updateAgentInferenceSetup(
+            agentId: 'agent-1',
+            setup: const AgentInferenceSetup(
+              mode: AgentInferenceSetupMode.configured,
+              origin: AgentInferenceSetupOrigin.categorySnapshot,
+              baseProfileId: 'profile-1',
+              originEntityId: 'category-1',
+            ),
+          );
 
-        final updated =
+          final updated =
+              verify(
+                    () => mockSyncService.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentIdentityEntity;
+          expect(updated.lifecycle, AgentLifecycle.active);
+          expect(updated.config.profileId, 'profile-1');
+          expect(updated.config.automaticUpdatesEnabled, automatic);
+          if (automatic) {
             verify(
-                  () => mockSyncService.upsertEntity(captureAny()),
-                ).captured.single
-                as AgentIdentityEntity;
-        expect(updated.lifecycle, AgentLifecycle.active);
-        expect(updated.config.profileId, 'profile-1');
-        expect(updated.config.automaticUpdatesEnabled, isTrue);
-        verifyNever(
-          () => mockOrchestrator.restorePendingWake(
-            agentId: any(named: 'agentId'),
-            dueAt: any(named: 'dueAt'),
-          ),
-        );
-      });
+              () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-1'),
+            ).called(1);
+            verifyNever(
+              () => mockOrchestrator.disableAutomaticUpdatesRuntime(any()),
+            );
+          } else {
+            verify(
+              () => mockOrchestrator.disableAutomaticUpdatesRuntime('agent-1'),
+            ).called(1);
+            verifyNever(
+              () => mockOrchestrator.enableAutomaticUpdatesRuntime(any()),
+            );
+          }
+          verifyNever(
+            () => mockOrchestrator.restorePendingWake(
+              agentId: any(named: 'agentId'),
+              dueAt: any(named: 'dueAt'),
+            ),
+          );
+        });
+      }
 
       test(
         'disabling project inference clears its local fallback',

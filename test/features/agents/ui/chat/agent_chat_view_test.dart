@@ -867,6 +867,73 @@ void main() {
     expect(find.textContaining('Message 29'), findsNothing);
   });
 
+  testWidgets('without reply scrolling, only the reader’s own message pulls '
+      'a scrolled conversation to the latest', (tester) async {
+    AgentChatMessage message(int index, AgentChatRole role) => AgentChatMessage(
+      id: '$index',
+      role: role,
+      text: 'Message $index with enough text to occupy a row.',
+      createdAt: DateTime(2026, 8, 11, 9, index),
+    );
+    var history = [
+      for (var index = 0; index < 30; index++)
+        message(index, AgentChatRole.agent),
+    ];
+    late StateSetter updateHost;
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        StatefulBuilder(
+          builder: (context, setState) {
+            updateHost = setState;
+            return Scaffold(
+              body: SizedBox(
+                height: 420,
+                child: AgentChatView(
+                  agentId: 'goal-1',
+                  agentName: 'Juno',
+                  draft: '',
+                  isSending: false,
+                  history: AsyncData(history),
+                  scrollOnReplies: false,
+                  onDraftChanged: (_) {},
+                  onSend: () {},
+                  onRetry: () {},
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView), const Offset(0, 5000));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Message 0'), findsOneWidget);
+
+    updateHost(() => history = [...history, message(30, AgentChatRole.agent)]);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Message 0'), findsOneWidget);
+    expect(find.textContaining('Message 30'), findsNothing);
+
+    ScrollPosition position() => tester
+        .state<ScrollableState>(
+          find.descendant(
+            of: find.byType(ListView),
+            matching: find.byType(Scrollable),
+          ),
+        )
+        .position;
+    expect(position().pixels, 0);
+
+    updateHost(() => history = [...history, message(31, AgentChatRole.user)]);
+    await tester.pumpAndSettle();
+    // The jump targets the extent known when the frame ends; lazily laid
+    // out rows can still grow it afterwards, so assert the jump, not an
+    // exact final offset.
+    expect(position().pixels, greaterThan(position().maxScrollExtent / 2));
+    expect(find.textContaining('Message 0'), findsNothing);
+  });
+
   group('voice input', () {
     testWidgets('shows a mic button when idle with no text', (tester) async {
       await tester.pumpWidget(
