@@ -234,6 +234,46 @@ void main() {
   );
 
   test(
+    'without an injected loader, reads journal entities from the documents '
+    'directory it was given',
+    () async {
+      final documents = Directory.systemTemp.createTempSync('sync_proc_docs');
+      addTearDown(() => documents.deleteSync(recursive: true));
+      File(path.join(documents.path, 'entity.json')).writeAsStringSync(
+        jsonEncode(fallbackJournalEntity.toJson()),
+      );
+      final fileBackedProcessor = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        savedTaskFiltersRepository: savedTaskFiltersRepository,
+        settingsDb: settingsDb,
+        documentsDirectory: documents,
+      );
+      when(() => event.text).thenReturn(
+        encodeMessage(
+          const SyncMessage.journalEntity(
+            id: 'entity-id',
+            jsonPath: '/entity.json',
+            vectorClock: null,
+            status: SyncEntryStatus.initial,
+          ),
+        ),
+      );
+
+      await fileBackedProcessor.process(event: event, journalDb: journalDb);
+
+      final applied =
+          verify(
+                () => journalDb.updateJournalEntity(captureAny()),
+              ).captured.single
+              as JournalEntity;
+      expect(applied.meta.id, fallbackJournalEntity.meta.id);
+      expect(applied.toJson(), fallbackJournalEntity.toJson());
+    },
+  );
+
+  test(
     'decodes oversized sync payloads via the compute offload path',
     () async {
       // SyncEventProcessor.process() uses compute() to move large sync

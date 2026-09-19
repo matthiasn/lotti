@@ -929,6 +929,93 @@ void main() {
     );
 
     test(
+      'a failed re-anchoring context lookup stops with an error after the '
+      'page it already emitted',
+      () async {
+        final room = MockRoom();
+        final log = MockDomainLogger();
+        final tl = MockTimeline();
+        when(
+          () => room.getTimeline(eventContextId: r'$anchor', limit: 0),
+        ).thenAnswer((_) async => tl);
+        final failure = StateError('context lookup failed');
+        when(
+          () => room.getTimeline(eventContextId: r'$e1', limit: 0),
+        ).thenAnswer((_) async => throw failure);
+        final events = [buildEvent(r'$anchor', 100), buildEvent(r'$e1', 110)];
+        when(() => tl.events).thenReturn(events);
+        when(() => tl.canRequestFuture).thenReturn(false);
+        when(tl.cancelSubscriptions).thenAnswer((_) {});
+
+        final pages = <List<Event>>[];
+        final result = await CatchUpStrategy.collectForwardForBootstrap(
+          room: room,
+          sink: _CollectingBootstrapSink(pages.add, acceptedPerPage: 1),
+          logging: log,
+          anchorEventId: r'$anchor',
+        );
+
+        expect(result.stopReason, BootstrapStopReason.error);
+        expect(pages.single.map((e) => e.eventId), [r'$e1']);
+        verify(
+          () => log.error(
+            LogDomain.sync,
+            failure,
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'bootstrap.forward.getTimeline',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'a page that spends the event budget while the server still has more '
+      'stops at the boundary instead of requesting the future',
+      () async {
+        final room = MockRoom();
+        final log = MockDomainLogger();
+        final tl = MockTimeline();
+        when(
+          () => room.getTimeline(
+            eventContextId: any(named: 'eventContextId'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => tl);
+        final events = [
+          buildEvent(r'$anchor', 100),
+          buildEvent(r'$e1', 110),
+          buildEvent(r'$e2', 120),
+        ];
+        when(() => tl.events).thenReturn(events);
+        when(() => tl.canRequestFuture).thenReturn(true);
+        when(tl.cancelSubscriptions).thenAnswer((_) {});
+
+        final pages = <List<Event>>[];
+        final result = await CatchUpStrategy.collectForwardForBootstrap(
+          room: room,
+          sink: _CollectingBootstrapSink(pages.add, acceptedPerPage: 2),
+          logging: log,
+          anchorEventId: r'$anchor',
+          forwardEventCap: 2,
+        );
+
+        expect(result.stopReason, BootstrapStopReason.boundaryReached);
+        expect(result.totalEvents, 2);
+        expect(pages.single.map((e) => e.eventId), [r'$e1', r'$e2']);
+        verifyNever(
+          () => tl.requestFuture(historyCount: any(named: 'historyCount')),
+        );
+        verify(
+          () => log.log(
+            LogDomain.sync,
+            any(that: startsWith('bootstrap.forward.capReached')),
+            subDomain: 'bootstrap.forward',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
       'anchor missing from the context chunk returns errorNoProgress '
       'so the coordinator can fall back — simulates a server that '
       'compacted the anchor event out of its timeline',

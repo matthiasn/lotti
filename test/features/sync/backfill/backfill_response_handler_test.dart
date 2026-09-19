@@ -1,5 +1,7 @@
 // ignore_for_file: unnecessary_lambdas, avoid_redundant_argument_values
 
+import 'dart:math' as math;
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -1989,6 +1991,62 @@ void main() {
               .having((r) => r.counter, 'counter', 3)
               .having((r) => r.deleted, 'deleted', false)
               .having((r) => r.unresolvable, 'unresolvable', true),
+        );
+      },
+    );
+
+    test(
+      'sends unresolvable when the own payload VC regresses between the '
+      'exact-row check and the per-type send',
+      () async {
+        // The exact-row check reads the payload once and the per-type path
+        // reads it again; a local write can land between the two awaits. When
+        // the second read no longer covers our own counter, the mapping is
+        // permanently wrong, so the answer must still be unresolvable — never
+        // a hint that points the requester at a payload lacking the counter.
+        const request = SyncBackfillRequest(
+          entries: [
+            BackfillRequestEntry(hostId: aliceHostId, counter: 3),
+          ],
+          requesterId: requesterId,
+        );
+        when(
+          () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 3),
+        ).thenAnswer(
+          (_) async => _createLogItem(aliceHostId, 3, entryId: entryId),
+        );
+        final reads = [
+          _createJournalEntry(
+            entryId,
+            vectorClock: const VectorClock({aliceHostId: 3}),
+          ),
+          _createJournalEntry(
+            entryId,
+            vectorClock: const VectorClock({aliceHostId: 2}),
+          ),
+        ];
+        var read = 0;
+        when(
+          () => mockJournalDb.journalEntityById(entryId),
+        ).thenAnswer((_) async => reads[math.min(read++, reads.length - 1)]);
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenAnswer((_) async {});
+
+        await handler.handleBackfillRequest(request);
+
+        final captured = verify(
+          () => mockOutboxService.enqueueMessage(captureAny()),
+        ).captured;
+        expect(captured, hasLength(2));
+        expect(captured[0], isA<SyncJournalEntity>());
+        expect(
+          captured[1],
+          isA<SyncBackfillResponse>()
+              .having((r) => r.hostId, 'hostId', aliceHostId)
+              .having((r) => r.counter, 'counter', 3)
+              .having((r) => r.unresolvable, 'unresolvable', true)
+              .having((r) => r.payloadId, 'payloadId', isNull),
         );
       },
     );
