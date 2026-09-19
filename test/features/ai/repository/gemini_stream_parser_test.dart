@@ -140,6 +140,22 @@ void main() {
       expect(out.first['z'], 9);
     });
 
+    test(
+      'trimming an over-cap buffer re-aligns to an object that straddles '
+      'the chunk boundary',
+      () {
+        final small = GeminiStreamParser(maxBufferSize: 16);
+
+        expect(small.addChunk('garbage{"k":'), isEmpty);
+        final out = small.addChunk('1}{"m":2}');
+
+        expect(out, [
+          {'k': 1},
+          {'m': 2},
+        ]);
+      },
+    );
+
     Glados(any.geminiPayloads).testWithRandom(
       'parses the same objects regardless of stream chunk boundaries',
       (payloads, random) {
