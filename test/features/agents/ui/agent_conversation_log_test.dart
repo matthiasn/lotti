@@ -346,30 +346,37 @@ void main() {
       expect(find.textContaining('gemini-3-flash-preview'), findsOneWidget);
     });
 
-    testWidgets('shows duration in thread title', (tester) async {
-      final threads = <String, List<AgentDomainEntity>>{
-        'thread-dur': [
-          makeTestMessage(
-            id: 'msg-start',
-            threadId: 'thread-dur',
-            createdAt: DateTime(2024, 3, 15, 10),
-          ),
-          makeTestMessage(
-            id: 'msg-end',
-            threadId: 'thread-dur',
-            createdAt: DateTime(2024, 3, 15, 10, 2, 30),
-          ),
-        ],
-      };
+    for (final (end, label) in [
+      (DateTime(2024, 3, 15, 10, 0, 45), '45s'),
+      (DateTime(2024, 3, 15, 10, 2, 30), '2m 30s'),
+      (DateTime(2024, 3, 15, 11, 5), '1h 5m'),
+    ]) {
+      testWidgets('shows a $label duration in the thread title', (
+        tester,
+      ) async {
+        final threads = <String, List<AgentDomainEntity>>{
+          'thread-dur': [
+            makeTestMessage(
+              id: 'msg-start',
+              threadId: 'thread-dur',
+              createdAt: DateTime(2024, 3, 15, 10),
+            ),
+            makeTestMessage(
+              id: 'msg-end',
+              threadId: 'thread-dur',
+              createdAt: end,
+            ),
+          ],
+        };
 
-      await tester.pumpWidget(
-        buildSubject(threadsValue: AsyncValue.data(threads)),
-      );
-      await tester.pump();
+        await tester.pumpWidget(
+          buildSubject(threadsValue: AsyncValue.data(threads)),
+        );
+        await tester.pump();
 
-      // Duration should be shown as "2m 30s"
-      expect(find.textContaining('2m 30s'), findsOneWidget);
-    });
+        expect(find.textContaining(label), findsOneWidget);
+      });
+    }
 
     testWidgets('shows token count in thread subtitle when available', (
       tester,
