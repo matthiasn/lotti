@@ -67,10 +67,14 @@ void main() {
 
           async.elapse(const Duration(milliseconds: 100));
           expect(runner.lastStep, EventTypes.KeyVerificationDone);
+          expect(async.periodicTimerCount, 0);
 
           final emissionCount = emitted.length;
+          clearInteractions(verification);
           async.elapse(const Duration(milliseconds: 500));
           expect(emitted.length, emissionCount);
+          verifyNever(() => verification.lastStep);
+          verifyNever(() => verification.isDone);
           runner.stopTimer();
         });
       },
@@ -526,11 +530,15 @@ void main() {
 
         async.elapse(const Duration(milliseconds: 100));
         expect(runner.lastStep, 'm.key.verification.cancel');
+        expect(async.periodicTimerCount, 0);
 
-        // Timer should be stopped; no more emissions after this
+        // No timer or SDK polling may survive a terminal state.
         final emissionCount = emitted.length;
+        clearInteractions(verification);
         async.elapse(const Duration(milliseconds: 500));
         expect(emitted.length, emissionCount);
+        verifyNever(() => verification.lastStep);
+        verifyNever(() => verification.isDone);
 
         runner.stopTimer();
       });

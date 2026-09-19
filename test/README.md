@@ -231,12 +231,12 @@ tearDown(() {
 
 ## `thenThrow` on a `Future`-returning mock does not reject the future
 
-Stubbing an async method with `thenThrow` (for example
-`when(() => db.getConfigFlag(any())).thenThrow(StateError('x'))`) leaves the
-awaited call completing normally in this Mocktail version, so a test that
-expects the failure path passes through the success path instead. Stub async
-failures with `thenAnswer((_) async => throw StateError('x'))`, which rejects
-the returned future the way production code does
+Stubbing a Future-returning method with `thenThrow` throws synchronously at
+invocation; it does not return a rejected future. A surrounding `try` can catch
+that exception even when production accidentally omits the `await`, so such a
+test can miss broken asynchronous error handling. Stub async failures with
+`thenAnswer((_) async => throw StateError('x'))`, which rejects the returned
+future the way an async implementation does
 (`test/features/system_health/state/system_health_controller_test.dart`).
 
 ## A failing provider reads as loading until its retries run out

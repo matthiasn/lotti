@@ -10,6 +10,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix/matrix_service_ops.dart';
 import 'package:lotti/features/sync/matrix/stats.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
@@ -1029,8 +1030,9 @@ void main() {
     test(
       'a send started before the rotation finishes waits for it, so no entry '
       'is encrypted with the pre-upgrade session (ADR 0045)',
-      () async {
+      () => fakeAsync((async) {
         final settingsGate = Completer<String?>();
+        final rotationGate = Completer<bool>();
         final encryption = MockEncryption();
         final keyManager = MockKeyManager();
         when(() => sessionManager.client).thenReturn(client);
@@ -1048,7 +1050,7 @@ void main() {
             wipe: any(named: 'wipe'),
             use: any(named: 'use'),
           ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((_) => rotationGate.future);
         when(
           () => settingsDb.saveSettingsItem(any(), any()),
         ).thenAnswer((_) async => 1);
@@ -1067,7 +1069,7 @@ void main() {
               .sendMatrixMsg(const SyncMessage.aiConfigDelete(id: 'abc'))
               .then((_) => sendCompleted = true),
         );
-        await Future<void>.delayed(Duration.zero);
+        async.flushMicrotasks();
 
         // The rotation has not finished, so nothing may have been sent yet.
         expect(sendCompleted, isFalse);
@@ -1080,14 +1082,32 @@ void main() {
         );
 
         settingsGate.complete(null);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+        async.flushMicrotasks();
 
-        verifyInOrder([
+        verify(
           () => keyManager.clearOrUseOutboundGroupSession(
             '!room:server',
             wipe: true,
             use: false,
+          ),
+        ).called(1);
+        expect(sendCompleted, isFalse);
+        verifyNever(() => settingsDb.saveSettingsItem(any(), any()));
+        verifyNever(
+          () => messageSender.sendMatrixMessage(
+            message: any(named: 'message'),
+            context: any(named: 'context'),
+            onSent: any(named: 'onSent'),
+          ),
+        );
+
+        rotationGate.complete(true);
+        async.flushMicrotasks();
+
+        verifyInOrder([
+          () => settingsDb.saveSettingsItem(
+            MatrixServiceOps.megolmRotatedForExclusionKey('!room:server'),
+            'true',
           ),
           () => messageSender.sendMatrixMessage(
             message: any(named: 'message'),
@@ -1095,7 +1115,8 @@ void main() {
             onSent: any(named: 'onSent'),
           ),
         ]);
-      },
+        expect(sendCompleted, isTrue);
+      }),
     );
 
     test(
