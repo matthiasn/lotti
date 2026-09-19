@@ -5,9 +5,7 @@ import 'package:lotti/features/sync/ui/sequence_log_populate_progress.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
-class SequenceLogPopulateModal {
-  const SequenceLogPopulateModal._();
-
+abstract final class SequenceLogPopulateModal {
   static Future<void> show(BuildContext context) async {
     final container = ProviderScope.containerOf(context);
 

@@ -11,9 +11,7 @@ import 'package:lotti/utils/file_utils.dart';
 import 'package:path/path.dart' as path;
 
 /// Constants for audio import operations.
-class AudioImportConstants {
-  const AudioImportConstants._();
-
+abstract final class AudioImportConstants {
   /// Supported audio file extensions for import.
   static const Set<String> supportedExtensions = {'m4a'};
 

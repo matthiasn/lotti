@@ -10,9 +10,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 /// them suitable for privacy-focused applications. Local OpenAI-compatible
 /// providers such as oMLX may still require an API key depending on the server
 /// configuration.
-class ProviderConfig {
-  const ProviderConfig._();
-
+abstract final class ProviderConfig {
   /// Default base URLs for each provider type
   ///
   /// These URLs are used as defaults when creating new provider configurations.

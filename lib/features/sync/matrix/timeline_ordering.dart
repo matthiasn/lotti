@@ -1,9 +1,7 @@
 import 'package:matrix/matrix.dart';
 
 /// Ordering helpers for Matrix timeline events.
-class TimelineEventOrdering {
-  TimelineEventOrdering._();
-
+abstract final class TimelineEventOrdering {
   /// Returns the event timestamp (milliseconds since epoch).
   static num timestamp(Event event) =>
       event.originServerTs.millisecondsSinceEpoch;

@@ -3,9 +3,7 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:material_ui/material_ui.dart';
 
-class ClipboardHelper {
-  const ClipboardHelper._();
-
+abstract final class ClipboardHelper {
   /// Copies [text] to the system clipboard, then shows a [DesignSystemToast].
   ///
   /// The toast uses [title] / [description] / [tone] / [duration]. Callers

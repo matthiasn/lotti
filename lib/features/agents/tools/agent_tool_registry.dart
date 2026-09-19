@@ -144,9 +144,7 @@ abstract final class EvolutionToolNames {
 ///
 /// Each supported agent kind exposes a static list of [AgentToolDefinition]s
 /// that can be serialised into the LLM's tool-call format at call time.
-class AgentToolRegistry {
-  AgentToolRegistry._();
-
+abstract final class AgentToolRegistry {
   /// Tools whose mutations require user confirmation before being applied.
   ///
   /// When the strategy encounters one of these tools, it adds the proposed

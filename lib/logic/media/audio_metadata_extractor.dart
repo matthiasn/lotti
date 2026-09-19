@@ -31,9 +31,7 @@ typedef AudioMetadataReader = Future<Duration> Function(String filePath);
 /// // Extract duration (async)
 /// final duration = await AudioMetadataExtractor.extractDuration(filePath);
 /// ```
-class AudioMetadataExtractor {
-  const AudioMetadataExtractor._();
-
+abstract final class AudioMetadataExtractor {
   /// Timeout for MediaKit player initialization.
   static const Duration playerOpenTimeout = Duration(seconds: 3);
 

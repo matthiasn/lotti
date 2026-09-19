@@ -18,9 +18,7 @@ import 'package:lotti/utils/geohash.dart';
 ///   timestamp ?? DateTime.now(),
 /// );
 /// ```
-class ExifDataExtractor {
-  const ExifDataExtractor._();
-
+abstract final class ExifDataExtractor {
   // EXIF GPS keys
   static const String exifGpsLatitudeKey = 'GPS GPSLatitude';
   static const String exifGpsLongitudeKey = 'GPS GPSLongitude';

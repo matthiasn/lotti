@@ -24,9 +24,7 @@ const kEntityTypeAgentReport = 'agent_report';
 /// Determines which entity types are eligible for embedding and how to
 /// extract their text content. Also provides content hashing for
 /// change detection (skip re-embedding unchanged content).
-class EmbeddingContentExtractor {
-  EmbeddingContentExtractor._();
-
+abstract final class EmbeddingContentExtractor {
   /// Extracts embeddable plain text from a [JournalEntity].
   ///
   /// Returns `null` if:

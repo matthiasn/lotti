@@ -28,9 +28,7 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Adaptive setup for task/project agents and goal-agent profiles.
-class AgentModelSheet {
-  const AgentModelSheet._();
-
+abstract final class AgentModelSheet {
   static Future<void> show({
     required BuildContext context,
     required String agentId,

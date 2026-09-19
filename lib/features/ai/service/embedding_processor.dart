@@ -29,9 +29,7 @@ typedef LabelNameResolver =
 ///
 /// Extracts text from a journal entity, checks for content changes via
 /// SHA-256 hashing, generates an embedding via Ollama, and stores it.
-class EmbeddingProcessor {
-  EmbeddingProcessor._();
-
+abstract final class EmbeddingProcessor {
   /// Processes a single entity for embedding generation.
   ///
   /// Returns `true` if an embedding was generated and stored, `false` if

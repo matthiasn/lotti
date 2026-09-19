@@ -4,9 +4,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Animation timings for [AudioRecordingOrb].
-class AudioRecordingOrbConstants {
-  const AudioRecordingOrbConstants._();
-
+abstract final class AudioRecordingOrbConstants {
   /// Period of one breathing pulse of the orb while recording is active.
   static const Duration pulseDuration = Duration(milliseconds: 1400);
 }

@@ -20,9 +20,7 @@ final int kChunkStrideWords = kChunkTargetWords - kChunkOverlapWords;
 /// Uses sentence-boundary-aware splitting to avoid cutting mid-sentence.
 /// Short texts (≤ [kChunkTargetTokens] estimated tokens) are returned
 /// as a single chunk.
-class TextChunker {
-  TextChunker._();
-
+abstract final class TextChunker {
   /// Splits [text] into overlapping chunks for embedding.
   ///
   /// Returns:

@@ -13,9 +13,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:meta/meta.dart';
 
 /// Tunable timings for [AudioPlayerController] playback handling.
-class AudioPlayerConstants {
-  const AudioPlayerConstants._();
-
+abstract final class AudioPlayerConstants {
   /// Delay before updating progress when playback completes
   static const int completionDelayMs = 50;
 

@@ -1,7 +1,5 @@
 /// Constants and utilities for the VU meter widget
-class VuMeterConstants {
-  VuMeterConstants._();
-
+abstract final class VuMeterConstants {
   /// Duration for needle animation (fast response)
   static const needleAnimationDuration = Duration(milliseconds: 100);
 

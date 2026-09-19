@@ -6,9 +6,7 @@ import 'package:lotti/features/sync/state/fts5_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
-class Fts5RecreateModal {
-  const Fts5RecreateModal._();
-
+abstract final class Fts5RecreateModal {
   static Future<void> show(BuildContext context) async {
     final container = ProviderScope.containerOf(context);
 

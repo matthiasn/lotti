@@ -7,9 +7,7 @@ import 'package:flutter/foundation.dart';
 /// magic numbers and callers can trust a single source of truth. Not
 /// yet promoted into the generated design-token set.
 @immutable
-class SettingsV2Constants {
-  const SettingsV2Constants._();
-
+abstract final class SettingsV2Constants {
   /// Header height (spec §2).
   static const double headerHeight = 56;
 

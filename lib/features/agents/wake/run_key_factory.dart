@@ -9,9 +9,7 @@ import 'package:crypto/crypto.dart';
 /// - Duplicate wake triggers for the same logical event produce the same key.
 /// - The `WakeQueue` can deduplicate before inserting into the run log.
 /// - Tool-call operation IDs are stable across retries.
-class RunKeyFactory {
-  RunKeyFactory._();
-
+abstract final class RunKeyFactory {
   /// Subscription wake: SHA256(agentId | subscriptionId | batchTokensHash |
   /// wakeCounter | timestamp).
   ///

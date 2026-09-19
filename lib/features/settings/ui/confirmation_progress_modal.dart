@@ -18,9 +18,7 @@ import 'package:material_ui/material_ui.dart';
 /// (not surfaced) and the sheet is dismissed when done. Used by maintenance
 /// flows like purge / FTS5 recreate that need a progress phase after the
 /// user commits.
-class ConfirmationProgressModal {
-  const ConfirmationProgressModal._();
-
+abstract final class ConfirmationProgressModal {
   /// Shows the modal and returns `true` if the user confirmed (the
   /// operation then ran), `false` if they cancelled.
   ///
