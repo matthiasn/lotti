@@ -386,7 +386,7 @@ void main() {
     final error = Exception('write failed');
     when(
       () => journalDb.getLabelDefinitionById(any()),
-    ).thenThrow(error);
+    ).thenAnswer((_) async => throw error);
 
     await repository.deleteLabel('label-id');
 

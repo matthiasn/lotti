@@ -566,7 +566,7 @@ void main() {
         'current projects', (tester) async {
       when(
         () => mockJournalDb.getProjectsForCategory(any()),
-      ).thenThrow(Exception('projects unavailable'));
+      ).thenAnswer((_) async => throw Exception('projects unavailable'));
 
       await tester.pumpWidget(buildWithProjects(enableProjects: true));
       await tester.pumpAndSettle();

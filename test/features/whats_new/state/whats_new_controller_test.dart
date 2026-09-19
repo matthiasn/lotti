@@ -102,7 +102,7 @@ void main() {
       );
       addTearDown(tearDownTestGetIt);
       final error = Exception('index unreachable');
-      when(() => mockService.fetchIndex()).thenThrow(error);
+      when(() => mockService.fetchIndex()).thenAnswer((_) async => throw error);
 
       final state = await container.read(whatsNewControllerProvider.future);
 

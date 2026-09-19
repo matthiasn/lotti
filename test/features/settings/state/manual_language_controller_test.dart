@@ -206,7 +206,7 @@ void main() {
         'loading forever', () async {
       when(
         () => mocks.settingsDb.itemByKey(manualLanguageSettingsKey),
-      ).thenThrow(StateError('settings db closed'));
+      ).thenAnswer((_) async => throw StateError('settings db closed'));
 
       final settled = await container.read(
         manualLanguageControllerProvider.future,

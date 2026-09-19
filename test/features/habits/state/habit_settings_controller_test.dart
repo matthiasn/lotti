@@ -104,7 +104,7 @@ void main() {
         habitSettingsControllerProvider(habitFlossing.id).notifier,
       );
 
-      await completer.future.timeout(const Duration(milliseconds: 100));
+      await completer.future;
 
       final state = container.read(
         habitSettingsControllerProvider(habitFlossing.id),
@@ -409,7 +409,7 @@ void main() {
         });
         addTearDown(subscription.close);
         final controller = container.read(provider.notifier);
-        await loaded.future.timeout(const Duration(milliseconds: 100));
+        await loaded.future;
         return (container, controller);
       }
 
