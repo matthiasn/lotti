@@ -624,7 +624,7 @@ void main() {
     tester,
   ) async {
     tester.view
-      ..physicalSize = const Size(320, 800)
+      ..physicalSize = const Size(200, 800)
       ..devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     stubDetail(checkIn());
@@ -638,8 +638,11 @@ void main() {
             ),
           ),
           mediaQueryData: const MediaQueryData(
-            size: Size(320, 800),
-            textScaler: TextScaler.linear(2),
+            // Narrow enough, and large enough, that the pill and the two
+            // 48pt buttons cannot share a line in any font the test runs
+            // with — CI's differs from a developer machine's.
+            size: Size(200, 800),
+            textScaler: TextScaler.linear(3),
           ),
           overrides: [
             relationshipRepositoryProvider.overrideWithValue(repository),
