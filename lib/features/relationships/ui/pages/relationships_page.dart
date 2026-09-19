@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
@@ -23,6 +24,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/nav_bar/bottom_nav_safe_navigator.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
+import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The People tab (design 2026-09-06 §2–3).
@@ -234,21 +236,44 @@ class _PeopleListScaffold extends ConsumerWidget {
     // previous value while the refetch runs.
     final items = itemsAsync.value;
     final failedFirstLoad = items == null && itemsAsync.hasError;
+    // The mobile navigation launcher docks this page's create action on its
+    // own row (see [peopleTabDockAction]); floating a second copy above it
+    // would put two create affordances in the same corner.
+    final launcherOwnsCreateAction = mobileNavigationLauncherOwnsPageActions(
+      context,
+    );
+    // An empty list's own inline CTA is the one primary action there — the
+    // same button in the corner would only compete with it.
+    final showFloatingAction =
+        !launcherOwnsCreateAction && (items == null || items.isNotEmpty);
 
     return Scaffold(
+      floatingActionButton: showFloatingAction
+          ? DesignSystemBottomNavigationFabPadding(
+              child: DesignSystemFloatingActionButton(
+                key: const ValueKey('people-add-person-fab'),
+                semanticLabel: context.messages.relationshipCreateTitle,
+                // Worded like the task list's: the app adds entries, tasks,
+                // habits and people from the same glyph in the same corner.
+                label: context.messages.relationshipCreateTitle,
+                onPressed: () => showRelationshipCreateModal(context: context),
+              ),
+            )
+          : null,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(child: _PeopleHeader(itemCount: items?.length)),
             SliverPadding(
-              // The last row must clear the overlaid bottom navigation.
+              // The last row must clear the overlaid bottom navigation and,
+              // where one floats, the add button's own footprint (step12).
               padding: EdgeInsets.fromLTRB(
                 tokens.spacing.step5,
                 tokens.spacing.step3,
                 tokens.spacing.step5,
                 tokens.spacing.step5 +
                     DesignSystemBottomNavigationBar.occupiedHeight(context) +
-                    tokens.spacing.step12,
+                    (launcherOwnsCreateAction ? 0 : tokens.spacing.step12),
               ),
               sliver: switch (items) {
                 null when failedFirstLoad => SliverToBoxAdapter(
@@ -356,10 +381,13 @@ class _GroupHeading extends StatelessWidget {
   }
 }
 
-/// The left-aligned `People` title with a count caption and the add
-/// affordance: a labelled button on desktop, the teal circle on phones —
-/// beside the import-from-contacts door, which exists only where there is
-/// an address book (ADR 0041 §2).
+/// The left-aligned `People` title with a count caption and the
+/// import-from-contacts door, which exists only where there is an address
+/// book (ADR 0041 §2).
+///
+/// Adding a person is not up here: like adding a task, it is the page's
+/// bottom action — the floating button on desktop, the launcher's docked
+/// chip on phones.
 class _PeopleHeader extends ConsumerWidget {
   const _PeopleHeader({required this.itemCount});
 
@@ -369,7 +397,6 @@ class _PeopleHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final isDesktop = isDesktopLayout(context);
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -396,7 +423,7 @@ class _PeopleHeader extends ConsumerWidget {
             ),
           ],
           const Spacer(),
-          if (ref.read(contactsServiceProvider).isSupported) ...[
+          if (ref.read(contactsServiceProvider).isSupported)
             _IconButton(
               icon: LottiIcons.contactImport,
               tooltip: messages.relationshipImportAction,
@@ -406,62 +433,7 @@ class _PeopleHeader extends ConsumerWidget {
                 ),
               ),
             ),
-            SizedBox(width: tokens.spacing.step2),
-          ],
-          if (isDesktop)
-            DesignSystemButton(
-              key: const ValueKey('people-add-person-button'),
-              label: messages.relationshipCreateTitle,
-              leadingIcon: LottiIcons.add,
-              onPressed: () => showRelationshipCreateModal(context: context),
-            )
-          else
-            _AddPersonButton(
-              onTap: () => showRelationshipCreateModal(context: context),
-            ),
         ],
-      ),
-    );
-  }
-}
-
-class _AddPersonButton extends StatelessWidget {
-  const _AddPersonButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    // The control is a bare glyph, so the name has to come from somewhere:
-    // `Semantics` states it for a screen reader, the tooltip shows the same
-    // words to a pointer, and `excludeFromSemantics` keeps the tooltip from
-    // announcing it a second time.
-    final label = context.messages.relationshipCreateTitle;
-    return Semantics(
-      button: true,
-      label: label,
-      child: Tooltip(
-        message: label,
-        excludeFromSemantics: true,
-        child: Material(
-          color: tokens.colors.interactive.enabled,
-          shape: const CircleBorder(),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: onTap,
-            customBorder: const CircleBorder(),
-            child: SizedBox(
-              width: 34,
-              height: 34,
-              child: Icon(
-                LottiIcons.add,
-                size: 20,
-                color: tokens.colors.background.level01,
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -517,11 +489,30 @@ class _EmptyState extends StatelessWidget {
             ),
           ),
           SizedBox(height: tokens.spacing.step5),
-          _AddPersonButton(
-            onTap: () => showRelationshipCreateModal(context: context),
+          DesignSystemButton(
+            key: const ValueKey('people-empty-add-person-button'),
+            label: messages.relationshipCreateTitle,
+            leadingIcon: LottiIcons.add,
+            onPressed: () => showRelationshipCreateModal(context: context),
           ),
         ],
       ),
     );
   }
 }
+
+/// The People list's create action as the mobile navigation launcher shows
+/// it.
+///
+/// The launcher docks it beside Navigate while the People tab is on screen,
+/// which is why the list floats no button of its own there. Worded, like the
+/// task list's: the plus alone would not say that this one adds a person.
+/// Unconditional, where the floating button steps aside for an empty list's
+/// inline CTA: a chip appearing and leaving on the launcher's row would shift
+/// Navigate sideways under the user's thumb.
+MobileNavDockAction peopleTabDockAction(BuildContext context) =>
+    MobileNavDockAction.worded(
+      label: context.messages.relationshipCreateTitle,
+      icon: LottiIcons.add,
+      onPressed: () => showRelationshipCreateModal(context: context),
+    );

@@ -866,7 +866,7 @@ void main() {
         3: (label: messages.agentsCreateGoal, worded: false),
         4: (label: messages.habitEditorCreateTitle, worded: false),
         5: (label: null, worded: false),
-        6: (label: null, worded: false),
+        6: (label: messages.relationshipCreateTitle, worded: true),
         7: (label: messages.createEntryLabel, worded: false),
         8: (label: null, worded: false),
         9: (label: null, worded: false),

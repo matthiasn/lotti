@@ -620,17 +620,18 @@ leave visible.
 
 `MobileNavigationLauncher.pageAction` is the second slot. The **shell** decides
 who fills it, from the active destination alone
-(`_AppScreenState._launcherDockAction`) — exactly the five destinations whose
+(`_AppScreenState._launcherDockAction`) — exactly the six destinations whose
 list page floats a create button:
 
 | Destination | Factory | Chip |
 |---|---|---|
 | Tasks | `tasksTabDockAction` | worded — "Add a task" |
+| People | `peopleTabDockAction` | worded — "Add person" |
 | Logbook | `logbookDockAction` | glyph |
 | Projects | `projectsTabDockAction` | glyph |
 | Goals | `unifiedGoalsDockAction` | glyph |
 | Habits | `habitsTabDockAction` | glyph |
-| Daily OS, Dashboards, People, Events, Settings | — | none |
+| Daily OS, Dashboards, Events, Settings | — | none |
 
 Nothing is registered from inside a page: the `IndexedStack` keeps every tab
 mounted, so a page-owned registry would keep its action docked on every other
@@ -638,9 +639,9 @@ tab too.
 
 Each page decides its own wording, through the two `MobileNavDockAction`
 constructors, and it is the decision its floating button already made. The task
-list words its action because the app creates tasks, entries, habits, goals and
-projects from one glyph and the plus alone does not say which; the lists whose
-heading already answers that stay glyph-only.
+and people lists word their actions because the app creates tasks, people,
+entries, habits, goals and projects from one glyph and the plus alone does not
+say which; the lists whose heading already answers that stay glyph-only.
 
 Docked actions resolve their page state at *tap* time, not when the shell built
 the row — `createTaskFromTaskListFilters` reads the task list's filters,
@@ -649,23 +650,23 @@ changed since the last shell rebuild still applies.
 
 One predicate decides the handover:
 `mobileNavigationLauncherOwnsPageActions(context)` — a non-desktop window — is
-what each of the five pages reads to drop its own
+what each of the six pages reads to drop its own
 `DesignSystemFloatingActionButton`, on exactly the windows where the shell
 floats the launcher and docks the action on it. One rule, one place; the action
 moves onto the row rather than being duplicated above it.
 
-It decides a third thing on the two lists that reserve scroll clearance for
-their floating button on top of the bar's own height — Goals and Projects both
-add a `spacing.step12` allowance to
+It decides a third thing on the lists that reserve scroll clearance for
+their floating button on top of the bar's own height — Goals, Projects and
+People all add a `spacing.step12` allowance to
 `DesignSystemBottomNavigationBar.occupiedHeight`. With the action docked there
 is no floating button to clear, and that allowance is an empty gutter, so the
 same predicate drops it.
 
 Two deliberate divergences from what the floating button did:
 
-- **The Logbook keeps its docked action during the first-run zero state**,
-  where the page withholds the corner button so its inline "Create new entry"
-  CTA is the single primary action. In the corner a second copy competed; on
+- **The Logbook and People keep their docked actions during the empty
+  state**, where each page withholds the corner button so its inline create
+  CTA ("Create new entry", "Add person") is the single primary action. In the corner a second copy competed; on
   the rail the create chip is persistent chrome beside Navigate, and dropping
   it only there would make the rail inconsistent across tabs.
 - **Projects docks unconditionally**, where the floating button waits for
@@ -673,8 +674,8 @@ Two deliberate divergences from what the floating button did:
   query, and a chip arriving one beat late would shove Navigate sideways under
   the user's thumb; on its own layer in the corner the same delay cost nothing.
 
-Route sensitivity is needed in one place only. Projects, Goals and Habits
-slide the whole launcher away on their detail routes (`slideNavAway`), so a
+Route sensitivity is needed in one place only. Projects, Goals, Habits and
+People slide the whole launcher away on their detail routes (`slideNavAway`), so a
 stale action there is off screen anyway. The journal tab keeps the bar on an
 entry's page — and that page owns a *different* action, an `add linked entry`
 button with its own glyph — so `isLogbookEntryDetailRoute` drops the logbook's
@@ -684,7 +685,7 @@ That check is why `navService.journalDelegate` joins `_routeChangeListenable`.
 ```mermaid
 stateDiagram-v2
   [*] --> Centred
-  Centred --> Worded: Tasks becomes active
+  Centred --> Worded: Tasks or People becomes active
   Centred --> Glyph: Logbook, Projects, Goals or Habits becomes active
   Worded --> Centred: a destination with no create action becomes active
   Glyph --> Centred: a destination with no create action becomes active

@@ -27,11 +27,11 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
-import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 
 /// Counts pushes so a test can tell which navigator a route landed on.
@@ -149,10 +149,14 @@ void main() {
       find.text('Add the people you want to stay close to.'),
       findsOneWidget,
     );
-    // Two: the persistent header circle plus the empty state's own inline
-    // CTA (design plan §1). With people present only the header one remains
-    // — asserted by 'the import door sits beside the add circle' below.
-    expect(find.byIcon(LottiIcons.add), findsNWidgets(2));
+    // One: the empty state's own labelled CTA. The header carries no add
+    // affordance any more, and on a phone the launcher docks the page's
+    // bottom action instead of the list floating one.
+    expect(
+      find.byKey(const ValueKey('people-empty-add-person-button')),
+      findsOneWidget,
+    );
+    expect(find.byIcon(LottiIcons.add), findsOneWidget);
   });
 
   testWidgets('shows the error text when the first load fails', (tester) async {
@@ -230,7 +234,7 @@ void main() {
     expect(beamedTo, ['/people/rel-1']);
   });
 
-  testWidgets('the header add circle opens the add-person form', (
+  testWidgets("the empty state's Add person button opens the create form", (
     tester,
   ) async {
     when(
@@ -240,14 +244,9 @@ void main() {
     await tester.pumpWidget(buildPage());
     await tester.pumpAndSettle();
 
-    // The only add affordances are circles (design plan §0.3): no FAB, no
-    // app-bar person-add icon. With an empty list there are two — the header
-    // circle and the empty state's inline CTA — and the header is built
-    // first, so `.first` is the one this test is about.
-    final addIcons = find.byIcon(LottiIcons.add);
-    expect(addIcons, findsNWidgets(2));
-
-    await tester.tap(addIcons.first);
+    await tester.tap(
+      find.byKey(const ValueKey('people-empty-add-person-button')),
+    );
     await tester.pumpAndSettle();
 
     // Create mode: the name field is up, and the edit-only status picker is
@@ -256,37 +255,50 @@ void main() {
     expect(find.text('Status'), findsNothing);
   });
 
-  testWidgets('the add circle names itself for a screen reader and a pointer', (
-    tester,
-  ) async {
+  testWidgets('on a phone the list floats no add button and the header holds '
+      'none — the launcher docks it (peopleTabDockAction)', (tester) async {
     when(
       () => mockRepository.getRelationshipsByRecency(),
-    ).thenAnswer((_) async => []);
+    ).thenAnswer((_) async => [item('rel-1', title: 'Anna')]);
 
     await tester.pumpWidget(buildPage());
     await tester.pumpAndSettle();
 
-    final context = tester.element(find.byType(RelationshipsPage));
-    final label = context.messages.relationshipCreateTitle;
+    expect(find.text('Anna'), findsOneWidget);
+    expect(find.byKey(const ValueKey('people-add-person-fab')), findsNothing);
+    expect(find.byIcon(LottiIcons.add), findsNothing);
+  });
 
-    // Both add circles — the header one and the empty state's inline CTA —
-    // are the same bare glyph, which tells assistive tech nothing on its
-    // own. Each carries the localized name in both channels, and states it
-    // once rather than twice.
-    final labelled = findMaterialTooltip(label);
-    expect(labelled, findsNWidgets(2));
-    for (var i = 0; i < 2; i++) {
-      expect(
-        tester.getSemantics(labelled.at(i)),
-        matchesSemantics(
-          label: label,
-          isButton: true,
-          isFocusable: true,
-          hasTapAction: true,
-          hasFocusAction: true,
+  testWidgets('peopleTabDockAction is a worded Add person action that opens '
+      'the create form', (tester) async {
+    MobileNavDockAction? action;
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Consumer(
+          builder: (context, ref, _) {
+            action = peopleTabDockAction(context);
+            return const SizedBox.shrink();
+          },
         ),
-      );
-    }
+        overrides: [
+          relationshipRepositoryProvider.overrideWithValue(mockRepository),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    final messages = tester.element(find.byType(Consumer)).messages;
+    // Worded, like the task list's: the plus alone would not say that this
+    // one adds a person.
+    expect(action!.worded, isTrue);
+    expect(action!.icon, LottiIcons.add);
+    expect(action!.label, messages.relationshipCreateTitle);
+
+    action!.onPressed();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Name'), findsOneWidget);
+    expect(find.text('Status'), findsNothing);
   });
 
   testWidgets(
@@ -456,9 +468,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byIcon(LottiIcons.contactImport), findsNothing);
-    // Hiding the import door leaves the add circles untouched: the header's
-    // and, because this case has no people, the empty state's.
-    expect(find.byIcon(LottiIcons.add), findsNWidgets(2));
+    // Hiding the import door leaves the empty state's add button untouched.
+    expect(
+      find.byKey(const ValueKey('people-empty-add-person-button')),
+      findsOneWidget,
+    );
   });
 
   /// Five people across the three bands, seen on Thursday 13 Aug 10:30:
@@ -646,7 +660,7 @@ void main() {
     }
 
     testWidgets('with no selection the list pane sits beside the empty state, '
-        'and the add affordance is a labelled button', (tester) async {
+        'and adding a person is the labelled floating button', (tester) async {
       when(
         () => mockRepository.getRelationshipsByRecency(),
       ).thenAnswer((_) async => crew());
@@ -659,19 +673,26 @@ void main() {
         find.text(context.messages.relationshipsSelectPersonHint),
         findsOneWidget,
       );
+      final fab = find.byKey(const ValueKey('people-add-person-fab'));
+      expect(fab, findsOneWidget);
+      // Worded like the task list's, so the plus says what it adds.
       expect(
-        find.byKey(const ValueKey('people-add-person-button')),
+        find.descendant(
+          of: fab,
+          matching: find.text(context.messages.relationshipCreateTitle),
+        ),
         findsOneWidget,
       );
-      // The phone's bare add circle is gone on desktop.
-      expect(
-        findMaterialTooltip(context.messages.relationshipCreateTitle),
-        findsNothing,
-      );
+      // It floats in the list pane's bottom corner, not in the header.
+      final listPane = tester.getRect(find.byType(CustomScrollView));
+      final fabRect = tester.getRect(fab);
+      expect(fabRect.right, lessThanOrEqualTo(listPane.right));
+      expect(fabRect.center.dy, greaterThan(listPane.center.dy));
+      expect(find.byIcon(LottiIcons.add), findsOneWidget);
       expect(find.byType(RelationshipDetailsPage), findsNothing);
     });
 
-    testWidgets('the labelled Add person button opens the create form', (
+    testWidgets('the floating Add person button opens the create form', (
       tester,
     ) async {
       when(
@@ -679,11 +700,26 @@ void main() {
       ).thenAnswer((_) async => crew());
 
       await pumpDesktop(tester);
-      await tester.tap(find.byKey(const ValueKey('people-add-person-button')));
+      await tester.tap(find.byKey(const ValueKey('people-add-person-fab')));
       await tester.pumpAndSettle();
 
       expect(find.text('Name'), findsOneWidget);
       expect(find.text('Status'), findsNothing);
+    });
+
+    testWidgets('an empty list leaves adding to its inline CTA, with no '
+        'floating copy competing in the corner', (tester) async {
+      when(
+        () => mockRepository.getRelationshipsByRecency(),
+      ).thenAnswer((_) async => []);
+
+      await pumpDesktop(tester);
+
+      expect(
+        find.byKey(const ValueKey('people-empty-add-person-button')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('people-add-person-fab')), findsNothing);
     });
 
     testWidgets('dragging the divider widens the list pane', (tester) async {

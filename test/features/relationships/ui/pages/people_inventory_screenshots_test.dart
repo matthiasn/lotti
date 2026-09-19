@@ -104,6 +104,7 @@ import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/thumbhash.dart';
 import 'package:lotti/widgets/media/journal_image_resolver.dart';
 import 'package:lotti/widgets/media/thumb_hash_image.dart';
+import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -1040,7 +1041,9 @@ void main() {
       testWidgets('$viewport people list — $theme', (tester) async {
         await pumpSurface(
           tester,
-          home: const RelationshipsPage(),
+          home: device.isPhone
+              ? const _PeopleUnderLauncher()
+              : const RelationshipsPage(),
           device: device,
           brightness: brightness,
           overrides: personOverrides(),
@@ -1071,7 +1074,9 @@ void main() {
 
         await pumpSurface(
           tester,
-          home: const RelationshipsPage(),
+          home: device.isPhone
+              ? const _PeopleUnderLauncher()
+              : const RelationshipsPage(),
           device: device,
           brightness: brightness,
           overrides: personOverrides(),
@@ -2547,4 +2552,29 @@ void main() {
       subdir: _subdir,
     );
   });
+}
+
+/// The People list as a phone shows it: the page with the mobile navigation
+/// launcher docked over its bottom edge, carrying the list's create action
+/// exactly as the app shell hands it over.
+class _PeopleUnderLauncher extends StatelessWidget {
+  const _PeopleUnderLauncher();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        const RelationshipsPage(),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: MobileNavigationLauncher(
+            onNavigate: () {},
+            pageAction: peopleTabDockAction(context),
+          ),
+        ),
+      ],
+    );
+  }
 }
