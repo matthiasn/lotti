@@ -24,6 +24,7 @@ void main() {
   late MockRelationshipRepository relationships;
   late MockJournalDb journalDb;
   late MockDomainLogger logger;
+  late MockJournalDb registeredJournalDb;
   late ProviderContainer container;
 
   setUpAll(() => registerFallbackValue(AutomationResult.notHandled));
@@ -64,13 +65,14 @@ void main() {
     journalDb = MockJournalDb();
     logger = MockDomainLogger();
 
-    await setUpTestGetIt(
+    final mocks = await setUpTestGetIt(
       additionalSetup: () {
         getIt
           ..unregister<DomainLogger>()
           ..registerSingleton<DomainLogger>(logger);
       },
     );
+    registeredJournalDb = mocks.journalDb;
     when(
       () => logger.log(
         any<LogDomain>(),
@@ -253,6 +255,28 @@ void main() {
       verifyNever(() => relationships.getImageDescriptions(any()));
     });
   }
+
+  // The provider is what the importer reads: it must reach the repository of
+  // the scope it is read in, and the app's journal database.
+  test('the provider wires the trigger to the scope it is read in', () async {
+    when(
+      () => registeredJournalDb.journalEntityById('check-in-1'),
+    ).thenAnswer((_) async => checkIn());
+    when(
+      () => automation.tryAnalyzeImage(subjectId: 'rel-1'),
+    ).thenAnswer((_) async => handled());
+
+    await container
+        .read(checkInPhotoAnalysisTriggerProvider)
+        .triggerAutomaticImageAnalysis(
+          imageEntryId: 'photo-1',
+          linkedTaskId: 'check-in-1',
+        );
+
+    verify(() => registeredJournalDb.journalEntityById('check-in-1')).called(1);
+    verify(() => automation.tryAnalyzeImage(subjectId: 'rel-1')).called(1);
+    verify(() => relationships.touchCheckInsHolding('photo-1')).called(1);
+  });
 
   test('does nothing for a photo with no owner at all', () async {
     await trigger().triggerAutomaticImageAnalysis(imageEntryId: 'photo-1');
