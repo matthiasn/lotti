@@ -154,6 +154,9 @@ class MediaRepairService {
     for (final id in batch) {
       _attempts[id] = (_attempts[id] ?? 0) + 1;
     }
+    // New counters count against the cap too; without this a run of flushes
+    // with no later miss would keep more than the cap indefinitely.
+    _evictIfOverCapacity();
 
     try {
       await _outbox.enqueueMessage(

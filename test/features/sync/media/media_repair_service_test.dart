@@ -89,20 +89,19 @@ void main() {
 
       async.elapse(debounce);
       expect(requests.last.entryIds, ['e3', 'e4']);
-      expect(service.debugAttemptedEntryCount, 4);
+      // The flush itself trims the attempt counters back to the cap,
+      // dropping the oldest (e0/e1) rather than waiting for a later miss.
+      expect(service.debugAttemptedEntryCount, 2);
 
-      // e0 used its single attempt, so while its counter is tracked a new
-      // miss is given up on.
-      service.reportMissing(entryId: 'e0', relativePath: '/images/0');
+      // e3 used its single attempt and its counter is still tracked, so a
+      // new miss is given up on.
+      service.reportMissing(entryId: 'e3', relativePath: '/images/3');
       expect(service.debugPending, isEmpty);
 
-      // The next new miss trims the attempt counters back to the cap,
-      // dropping e0/e1 — so they are requestable again rather than
+      // e0's counter was evicted, so it is requestable again rather than
       // permanently given up on.
-      service.reportMissing(entryId: 'e5', relativePath: '/images/5');
-      expect(service.debugAttemptedEntryCount, 2);
       service.reportMissing(entryId: 'e0', relativePath: '/images/0');
-      expect(service.debugPending, {'e5', 'e0'});
+      expect(service.debugPending, {'e0'});
     });
   });
 
