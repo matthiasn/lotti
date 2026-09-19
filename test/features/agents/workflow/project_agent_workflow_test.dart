@@ -20,6 +20,7 @@ import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
+import 'package:lotti/features/agents/workflow/project_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/project_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -384,6 +385,7 @@ void main() {
           () => mockAgentRepository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
+            limit: projectObservationLookback,
           ),
         ).thenAnswer((_) async => []);
         when(
@@ -423,6 +425,7 @@ void main() {
           () => mockAgentRepository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
+            limit: projectObservationLookback,
           ),
         ).thenAnswer((_) async => []);
         when(
@@ -469,6 +472,7 @@ void main() {
           () => mockAgentRepository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
+            limit: projectObservationLookback,
           ),
         ).thenAnswer((_) async => []);
         when(
@@ -672,6 +676,15 @@ void main() {
             contentEntryId: 'obs-payload-1',
             metadata: const AgentMessageMetadata(),
           );
+          // Read twice: the wake's recall (bounded) and the log compactor
+          // (every observation).
+          when(
+            () => mockAgentRepository.getMessagesByKind(
+              agentId,
+              AgentMessageKind.observation,
+              limit: projectObservationLookback,
+            ),
+          ).thenAnswer((_) async => [obs as AgentMessageEntity]);
           when(
             () => mockAgentRepository.getMessagesByKind(
               agentId,
@@ -1924,6 +1937,7 @@ void main() {
           () => mockAgentRepository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
+            limit: projectObservationLookback,
           ),
         ).thenAnswer((_) async => [observation]);
 
@@ -1963,7 +1977,7 @@ void main() {
         expect(capturedMessage, contains('Sprint velocity is declining'));
       });
 
-      test('renders placeholder for missing observation payload', () async {
+      test('leaves out an observation whose payload is missing', () async {
         final observation = makeTestMessage(
           id: 'obs-msg-2',
           kind: AgentMessageKind.observation,
@@ -1974,6 +1988,7 @@ void main() {
           () => mockAgentRepository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
+            limit: projectObservationLookback,
           ),
         ).thenAnswer((_) async => [observation]);
 
@@ -2005,15 +2020,15 @@ void main() {
           threadId: threadId,
         );
 
-        expect(capturedMessage, contains('(no content)'));
+        expect(capturedMessage, isNot(contains('(no content)')));
+        expect(capturedMessage, isNot(contains('## Recent Observations')));
       });
 
       test(
-        'renders placeholder when the batch payload lookup throws',
+        'still wakes, without observations, when the payload lookup throws',
         () async {
-          // _resolveObservationPayloads swallows getEntitiesByIds failures
-          // and returns an empty map — the wake proceeds and observations
-          // render as '(no content)' instead of aborting.
+          // recallAgentObservations tolerates a failed getEntitiesByIds: the
+          // wake proceeds without its notes instead of aborting.
           final observation = makeTestMessage(
             id: 'obs-msg-3',
             kind: AgentMessageKind.observation,
@@ -2024,6 +2039,7 @@ void main() {
             () => mockAgentRepository.getMessagesByKind(
               agentId,
               AgentMessageKind.observation,
+              limit: projectObservationLookback,
             ),
           ).thenAnswer((_) async => [observation]);
           when(
@@ -2055,7 +2071,7 @@ void main() {
           );
 
           expect(result.success, isTrue);
-          expect(capturedMessage, contains('(no content)'));
+          expect(capturedMessage, isNot(contains('## Recent Observations')));
         },
       );
 
@@ -2236,6 +2252,7 @@ void main() {
           () => mockAgentRepository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
+            limit: projectObservationLookback,
           ),
         ).thenAnswer((_) async => [observation]);
 
@@ -2908,6 +2925,7 @@ void main() {
           () => mockAgentRepository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
+            limit: projectObservationLookback,
           ),
         ).thenAnswer((_) async => [observation]);
 
@@ -2935,7 +2953,9 @@ void main() {
           threadId: threadId,
         );
 
-        expect(capturedMessage, contains('(no content)'));
+        // An observation with nothing to read is left out, not shown as a
+        // placeholder.
+        expect(capturedMessage, isNot(contains('## Recent Observations')));
       });
 
       test('handles task-agent report resolution error gracefully', () async {

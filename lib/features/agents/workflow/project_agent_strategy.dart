@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/service/suggestion_retraction_service.dart
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/agent_message_recording.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/agent_tool_arg_parsing.dart';
 import 'package:lotti/features/agents/workflow/project_proposal_reconciler.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -27,7 +28,7 @@ import 'package:openai_dart/openai_dart.dart';
 ///
 /// Each message is persisted to `agent.sqlite` as an [AgentMessageEntity].
 class ProjectAgentStrategy extends ConversationStrategy
-    with ObservationRecordParsing, AgentMessageRecording {
+    with AgentMessageRecording {
   ProjectAgentStrategy({
     required this.syncService,
     required this.agentId,
@@ -459,47 +460,18 @@ class ProjectAgentStrategy extends ConversationStrategy
     String callId,
     ConversationManager manager,
   ) async {
-    final rawList = args['observations'];
-    if (rawList is! List || rawList.isEmpty) {
+    final (:records, :error) = parseRecordObservations(args);
+    if (error != null) {
       await _rejectToolCall(
         callId: callId,
         toolName: ProjectAgentToolNames.recordObservations,
-        errorMsg: 'Error: "observations" must be a non-empty array.',
+        errorMsg: error,
         manager: manager,
       );
       return;
     }
-
-    var accepted = 0;
-    for (final item in rawList) {
-      if (item is String) {
-        final trimmed = item.trim();
-        if (trimmed.isNotEmpty) {
-          _observations.add(ObservationRecord(text: trimmed));
-          accepted++;
-        }
-      } else if (item is Map<String, dynamic>) {
-        final textValue = item['text'];
-        final text = textValue is String ? textValue.trim() : '';
-        if (text.isEmpty) continue;
-
-        final priority = parseObservationPriority(
-          item['priority'] is String ? item['priority'] as String : null,
-        );
-        final category = parseObservationCategory(
-          item['category'] is String ? item['category'] as String : null,
-        );
-
-        _observations.add(
-          ObservationRecord(
-            text: text,
-            priority: priority,
-            category: category,
-          ),
-        );
-        accepted++;
-      }
-    }
+    _observations.addAll(records);
+    final accepted = records.length;
 
     manager.addToolResponse(
       toolCallId: callId,

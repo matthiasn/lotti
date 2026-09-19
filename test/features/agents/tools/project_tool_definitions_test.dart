@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 
 void main() {
   group('ProjectAgentToolNames', () {
@@ -183,39 +184,13 @@ void main() {
         expect(tool.name, equals('record_observations'));
       });
 
-      test('requires observations array with oneOf (string or object)', () {
-        final properties = tool.parameters['properties'] as Map;
-        final obsProp = properties['observations'] as Map;
-        expect(obsProp['type'], equals('array'));
-        final items = obsProp['items'] as Map;
-        expect(items['oneOf'], isA<List<dynamic>>());
-        final oneOf = items['oneOf'] as List<dynamic>;
-        expect(oneOf, hasLength(2));
-
-        // First variant: plain string
-        expect((oneOf[0] as Map)['type'], equals('string'));
-
-        // Second variant: structured object
-        final objectVariant = oneOf[1] as Map;
-        expect(objectVariant['type'], equals('object'));
-        final objProps = objectVariant['properties'] as Map;
-        expect((objProps['text'] as Map)['type'], equals('string'));
+      test('uses the shared observations schema', () {
         expect(
-          (objProps['priority'] as Map)['enum'],
-          containsAll(['routine', 'notable', 'critical']),
+          tool.parameters,
+          recordObservationsParameters(
+            textDescription: 'Observation content.',
+          ),
         );
-        expect(
-          (objProps['category'] as Map)['enum'],
-          containsAll([
-            'grievance',
-            'excellence',
-            'templateImprovement',
-            'operational',
-          ]),
-        );
-        expect(objectVariant['required'], contains('text'));
-
-        expect(tool.parameters['required'], contains('observations'));
       });
     });
 

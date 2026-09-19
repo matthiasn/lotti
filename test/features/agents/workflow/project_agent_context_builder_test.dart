@@ -6,7 +6,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
@@ -215,7 +214,6 @@ void main() {
         projectEntity: projectEntity(),
         lastReport: null,
         observations: const [],
-        observationPayloads: const {},
         linkedTasksContext: '{}',
         triggerTokens: const {},
       );
@@ -233,7 +231,6 @@ void main() {
         projectEntity: projectEntity(),
         lastReport: null,
         observations: const [],
-        observationPayloads: const {},
         linkedTasksContext: '{}',
         triggerTokens: const {},
         compactedLog: log,
@@ -251,7 +248,6 @@ void main() {
         projectEntity: projectEntity(),
         lastReport: makeTestReport(content: 'Prior body.'),
         observations: const [],
-        observationPayloads: const {},
         linkedTasksContext: '{"linked_tasks": []}',
         triggerTokens: const {'tok-2', 'tok-1'},
       );
@@ -265,22 +261,23 @@ void main() {
     });
 
     test('lists recent observations only when no compacted log is present', () {
-      final observation = makeTestMessage(contentEntryId: 'payload-1');
-      final payload = makeTestMessagePayload(
-        id: 'payload-1',
-        content: const {'text': 'Noticed a blocker.'},
+      final observation = makeTestRecalledObservation(
+        'Noticed a blocker.',
+        at: DateTime(2026, 9, 1, 9),
       );
 
       final withoutLog = builder.buildUserMessage(
         projectEntity: projectEntity(),
         lastReport: null,
         observations: [observation],
-        observationPayloads: {'payload-1': payload},
         linkedTasksContext: '{}',
         triggerTokens: const {},
       );
       expect(withoutLog.text, contains('## Recent Observations'));
-      expect(withoutLog.text, contains('Noticed a blocker.'));
+      expect(
+        withoutLog.text,
+        contains('- [2026-09-01T09:00:00.000] Noticed a blocker.'),
+      );
 
       // With a compacted log, observations live in the log tail and the
       // separate section is suppressed to avoid duplication.
@@ -288,7 +285,6 @@ void main() {
         projectEntity: projectEntity(),
         lastReport: null,
         observations: [observation],
-        observationPayloads: {'payload-1': payload},
         linkedTasksContext: '{}',
         triggerTokens: const {},
         compactedLog: 'folded log',
@@ -310,7 +306,6 @@ void main() {
         ),
         lastReport: null,
         observations: const [],
-        observationPayloads: const {},
         linkedTasksContext: '{}',
         triggerTokens: const {},
       );
@@ -326,7 +321,6 @@ void main() {
         projectEntity: taskEntity(),
         lastReport: null,
         observations: const [],
-        observationPayloads: const {},
         linkedTasksContext: '{}',
         triggerTokens: const {},
       );
@@ -429,7 +423,6 @@ void main() {
         projectEntity: projectEntity(),
         lastReport: null,
         observations: const [],
-        observationPayloads: const {},
         linkedTasksContext: '{}',
         triggerTokens: const {'entity-a'},
         ledger: ProposalLedger(open: [open], resolved: const []),
@@ -448,7 +441,6 @@ void main() {
         projectEntity: projectEntity(),
         lastReport: null,
         observations: const [],
-        observationPayloads: const {},
         linkedTasksContext: '{}',
         triggerTokens: const {},
       );
@@ -577,72 +569,6 @@ void main() {
         );
       },
     );
-  });
-
-  group('resolveObservationPayloads', () {
-    test('returns empty map when observations carry no payload ids', () async {
-      final result = await builder.resolveObservationPayloads([
-        makeTestMessage(),
-      ]);
-
-      expect(result, isEmpty);
-      verifyNever(() => agentRepository.getEntitiesByIds(any()));
-    });
-
-    test('keeps only payload entities from the batch lookup', () async {
-      final observation = makeTestMessage(contentEntryId: 'payload-1');
-      final payload = makeTestMessagePayload(id: 'payload-1');
-      final report = makeTestReport(id: 'report-x');
-      when(() => agentRepository.getEntitiesByIds(any())).thenAnswer(
-        (_) async => <String, AgentDomainEntity>{
-          'payload-1': payload,
-          'report-x': report,
-        },
-      );
-
-      final result = await builder.resolveObservationPayloads([observation]);
-
-      expect(result.keys, ['payload-1']);
-      expect(result['payload-1'], payload);
-    });
-
-    test('returns empty map when the batch lookup throws', () async {
-      final observation = makeTestMessage(contentEntryId: 'payload-1');
-      when(
-        () => agentRepository.getEntitiesByIds(any()),
-      ).thenThrow(Exception('boom'));
-
-      final result = await builder.resolveObservationPayloads([observation]);
-
-      expect(result, isEmpty);
-    });
-  });
-
-  group('extractPayloadText', () {
-    test('returns placeholder for null payload', () {
-      expect(
-        ProjectAgentContextBuilder.extractPayloadText(null),
-        '(no content)',
-      );
-    });
-
-    test('returns the text field when present', () {
-      final payload = makeTestMessagePayload(
-        content: const {'text': 'hello world'},
-      );
-      expect(
-        ProjectAgentContextBuilder.extractPayloadText(payload),
-        'hello world',
-      );
-    });
-
-    test('returns placeholder when text field is empty', () {
-      final payload = makeTestMessagePayload(content: const {'text': ''});
-      expect(
-        ProjectAgentContextBuilder.extractPayloadText(payload),
-        '(no content)',
-      );
-    });
   });
 
   group('extractFinalAssistantContent', () {
