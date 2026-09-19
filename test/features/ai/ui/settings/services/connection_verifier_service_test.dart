@@ -81,6 +81,22 @@ void main() {
     });
   });
 
+  group('connectionVerifierClientProvider', () {
+    test('hands out a fresh client per probe so each can close its own', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final newClient = container.read(connectionVerifierClientProvider);
+      final first = newClient();
+      final second = newClient();
+      addTearDown(first.close);
+      addTearDown(second.close);
+
+      expect(first, isA<http.Client>());
+      expect(identical(first, second), isFalse);
+    });
+  });
+
   group('ConnectionVerifierController — state dispatch', () {
     test(
       'build() returns idle for any provider type — the resting state '

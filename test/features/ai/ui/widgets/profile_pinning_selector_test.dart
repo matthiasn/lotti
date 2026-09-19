@@ -7,8 +7,12 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/widgets/profile_pinning_selector.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
 
@@ -372,6 +376,40 @@ void main() {
       );
     },
   );
+
+  group('localVectorClockHostIdProvider', () {
+    tearDown(tearDownTestGetIt);
+
+    test(
+      'reads the host id from the registered vector clock service',
+      () async {
+        final vectorClock = MockVectorClockService();
+        when(vectorClock.getHost).thenAnswer((_) async => 'rookery-desktop');
+        await setUpTestGetIt(
+          additionalSetup: () =>
+              getIt.registerSingleton<VectorClockService>(vectorClock),
+        );
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        expect(
+          await container.read(localVectorClockHostIdProvider.future),
+          'rookery-desktop',
+        );
+      },
+    );
+
+    test('is null before a vector clock service is registered', () async {
+      await setUpTestGetIt();
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(
+        await container.read(localVectorClockHostIdProvider.future),
+        isNull,
+      );
+    });
+  });
 
   group('pure helper properties', () {
     // Local-runtime provider types (mapped to node capabilities) plus a few
