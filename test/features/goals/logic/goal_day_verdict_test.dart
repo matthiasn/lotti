@@ -5,6 +5,8 @@ import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/goals/logic/goal_day_verdict.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 
 void main() {
   final today = DateTime.utc(2026, 8, 11);
@@ -200,15 +202,25 @@ void main() {
   });
 
   group('properties', () {
-    // Local calendar days, including the days after the EU and US DST
-    // switches, where "yesterday" is not 24 hours back.
-    final day = glados.any.choose([
-      DateTime(2026, 3, 9),
-      DateTime(2026, 3, 30),
-      DateTime(2026, 6, 15),
-      DateTime(2026, 10, 26),
-      DateTime(2026, 11, 2),
-    ]);
+    setUpAll(tz_data.initializeTimeZones);
+
+    // Calendar days in named DST-observing zones — not the process zone, so
+    // the days after the EU and US spring-forward switches (where "yesterday"
+    // is not 24 hours back) exercise the calendar step on any test host,
+    // UTC CI runners included. Built lazily: the zone database loads in
+    // setUpAll, after this group body runs.
+    final day = glados.any
+        .choose([
+          ('Europe/Berlin', 2026, 3, 30),
+          ('Europe/Berlin', 2026, 6, 15),
+          ('Europe/Berlin', 2026, 10, 26),
+          ('America/New_York', 2026, 3, 9),
+          ('America/New_York', 2026, 11, 2),
+        ])
+        .map(
+          (d) =>
+              () => tz.TZDateTime(tz.getLocation(d.$1), d.$2, d.$3, d.$4),
+        );
     // Per criterion and day: 0 absent, 1 hit, 2 miss, 3 unobserved.
     final marks = glados.any.combine2(
       glados.any.intInRange(0, 4),
@@ -223,8 +235,14 @@ void main() {
       glados.ExploreConfig(numRuns: 300),
     ).test(
       'the suggestion follows the documented rules on every calendar day',
-      (day, habitMarks, metricMarks) {
-        final previous = DateTime(day.year, day.month, day.day - 1);
+      (makeDay, habitMarks, metricMarks) {
+        final day = makeDay();
+        final previous = tz.TZDateTime(
+          day.location,
+          day.year,
+          day.month,
+          day.day - 1,
+        );
 
         List<GoalProgressDay> habitDays(({int yesterday, int today}) m) => [
           for (final (at, mark) in [(previous, m.yesterday), (day, m.today)])
