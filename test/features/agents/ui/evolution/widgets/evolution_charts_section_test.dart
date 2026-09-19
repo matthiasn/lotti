@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/task_resolution_time_series.dart';
 import 'package:lotti/features/agents/model/wake_run_time_series.dart';
@@ -24,25 +25,36 @@ void main() {
     FutureOr<WakeRunTimeSeries> Function(Ref, String)? timeSeriesOverride,
     FutureOr<TaskResolutionTimeSeries> Function(Ref, String)?
     resolutionOverride,
+    bool retryFailures = true,
   }) {
-    return makeTestableWidgetWithScaffold(
-      const EvolutionChartsSection(templateId: kTestTemplateId),
-      overrides: [
-        templateWakeRunTimeSeriesProvider.overrideWith(
-          timeSeriesOverride ??
-              (ref, id) async => WakeRunTimeSeries(
-                dailyBuckets: _makeDaily(5),
-                versionBuckets: _makeVersions(3),
-              ),
-        ),
-        templateTaskResolutionTimeSeriesProvider.overrideWith(
-          resolutionOverride ??
-              (ref, id) async => TaskResolutionTimeSeries(
-                dailyBuckets: _makeResolutionBuckets(5),
-              ),
-        ),
-      ],
+    final overrides = <Override>[
+      templateWakeRunTimeSeriesProvider.overrideWith(
+        timeSeriesOverride ??
+            (ref, id) async => WakeRunTimeSeries(
+              dailyBuckets: _makeDaily(5),
+              versionBuckets: _makeVersions(3),
+            ),
+      ),
+      templateTaskResolutionTimeSeriesProvider.overrideWith(
+        resolutionOverride ??
+            (ref, id) async => TaskResolutionTimeSeries(
+              dailyBuckets: _makeResolutionBuckets(5),
+            ),
+      ),
+    ];
+    const section = EvolutionChartsSection(templateId: kTestTemplateId);
+    if (retryFailures) {
+      return makeTestableWidgetWithScaffold(section, overrides: overrides);
+    }
+    // Riverpod retries a failed provider (reporting it as loading meanwhile),
+    // so an error branch is only reachable with retries disabled.
+    final host = makeTestableWidgetWithContainer(
+      const Scaffold(body: section),
+      overrides: overrides,
+      retry: (_, _) => null,
     );
+    addTearDown(host.container.dispose);
+    return host.widget;
   }
 
   group('EvolutionChartsSection', () {
@@ -119,11 +131,23 @@ void main() {
         buildSubject(
           timeSeriesOverride: (ref, id) =>
               Future<WakeRunTimeSeries>.error(Exception('fail')),
+          retryFailures: false,
         ),
       );
       await tester.pumpAndSettle();
 
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(EvolutionChartsSection)),
+      );
+      expect(
+        container.read(templateWakeRunTimeSeriesProvider(kTestTemplateId)),
+        isA<AsyncError<WakeRunTimeSeries>>(),
+      );
       expect(find.byType(EvolutionSparklineChart), findsNothing);
+      expect(
+        tester.getSize(find.byType(EvolutionChartsSection)).height,
+        0,
+      );
     });
 
     testWidgets('shows MTTR chart even when resolution data loads after '

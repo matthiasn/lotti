@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -28,35 +29,49 @@ void main() {
     FutureOr<WakeRunTimeSeries> Function(Ref, String)? timeSeriesOverride,
     FutureOr<TaskResolutionTimeSeries> Function(Ref, String)?
     resolutionOverride,
+    bool retryFailures = true,
   }) {
-    return makeTestableWidgetWithScaffold(
-      const EvolutionHistoryDashboard(templateId: kTestTemplateId),
-      overrides: [
-        evolutionSessionStatsProvider.overrideWith(
-          statsOverride ??
-              (ref, id) async => const EvolutionSessionStats(
-                totalSessions: 0,
-                approvalRate: 0,
-              ),
-        ),
-        evolutionSessionsProvider.overrideWith(
-          sessionsOverride ?? (ref, id) async => [],
-        ),
-        templateWakeRunTimeSeriesProvider.overrideWith(
-          timeSeriesOverride ??
-              (ref, id) async => const WakeRunTimeSeries(
-                dailyBuckets: [],
-                versionBuckets: [],
-              ),
-        ),
-        templateTaskResolutionTimeSeriesProvider.overrideWith(
-          resolutionOverride ??
-              (ref, id) async =>
-                  const TaskResolutionTimeSeries(dailyBuckets: []),
-        ),
-      ],
+    final overrides = <Override>[
+      evolutionSessionStatsProvider.overrideWith(
+        statsOverride ??
+            (ref, id) async => const EvolutionSessionStats(
+              totalSessions: 0,
+              approvalRate: 0,
+            ),
+      ),
+      evolutionSessionsProvider.overrideWith(
+        sessionsOverride ?? (ref, id) async => [],
+      ),
+      templateWakeRunTimeSeriesProvider.overrideWith(
+        timeSeriesOverride ??
+            (ref, id) async => const WakeRunTimeSeries(
+              dailyBuckets: [],
+              versionBuckets: [],
+            ),
+      ),
+      templateTaskResolutionTimeSeriesProvider.overrideWith(
+        resolutionOverride ??
+            (ref, id) async => const TaskResolutionTimeSeries(dailyBuckets: []),
+      ),
+    ];
+    const dashboard = EvolutionHistoryDashboard(templateId: kTestTemplateId);
+    if (retryFailures) {
+      return makeTestableWidgetWithScaffold(dashboard, overrides: overrides);
+    }
+    // Riverpod retries a failed provider (reporting it as loading meanwhile),
+    // so an error branch is only reachable with retries disabled.
+    final host = makeTestableWidgetWithContainer(
+      const Scaffold(body: SingleChildScrollView(child: dashboard)),
+      overrides: overrides,
+      retry: (_, _) => null,
     );
+    addTearDown(host.container.dispose);
+    return host.widget;
   }
+
+  final statsPlaceholder = find.byWidgetPredicate(
+    (widget) => widget is SizedBox && widget.height == 48,
+  );
 
   group('EvolutionHistoryDashboard', () {
     testWidgets('shows evolution history title', (tester) async {
@@ -195,8 +210,9 @@ void main() {
         find.text(context.messages.agentEvolutionHistoryTitle),
         findsOneWidget,
       );
-      // Session count chip not yet visible
+      // Session count chip not yet visible; the row holds its height.
       expect(find.text('0'), findsNothing);
+      expect(statsPlaceholder, findsOneWidget);
     });
 
     testWidgets('shows session timeline with sessions from provider', (
@@ -245,6 +261,7 @@ void main() {
         buildSubject(
           statsOverride: (ref, id) =>
               Future<EvolutionSessionStats>.error(Exception('db error')),
+          retryFailures: false,
         ),
       );
       await tester.pumpAndSettle();
@@ -259,11 +276,12 @@ void main() {
         find.text(context.messages.agentRitualReviewSessionHistory),
         findsOneWidget,
       );
-      // No stat chips rendered
+      // No stat chips rendered, and no loading placeholder holding space.
       expect(
         find.text(context.messages.agentEvolutionSessionCount),
         findsNothing,
       );
+      expect(statsPlaceholder, findsNothing);
     });
 
     testWidgets('zero approval rate shown as 0%', (tester) async {
