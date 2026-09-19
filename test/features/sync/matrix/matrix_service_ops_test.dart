@@ -977,6 +977,40 @@ void main() {
     );
 
     test(
+      'stops waiting for a device-key load that never settles, logs it, and '
+      'still returns the roster',
+      () {
+        fakeAsync((async) {
+          when(
+            () => client.userDeviceKeysLoading,
+          ).thenAnswer((_) => Completer<void>().future);
+          when(() => gateway.getDevices()).thenAnswer(
+            (_) async => [Device(deviceId: 'THIS_DEVICE')],
+          );
+          when(() => client.userDeviceKeys).thenReturn({});
+
+          List<SyncDeviceInfo>? result;
+          unawaited(
+            buildOps().getSyncDevices().then((devices) => result = devices),
+          );
+          async
+            ..elapse(SyncTuning.deleteDeviceRecoveryTimeout)
+            ..flushMicrotasks();
+
+          expect(result?.single.deviceId, 'THIS_DEVICE');
+          verify(
+            () => logging.error(
+              LogDomain.sync,
+              any<Object>(that: isA<TimeoutException>()),
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: 'getSyncDevices.userDeviceKeysLoading',
+            ),
+          ).called(1);
+        });
+      },
+    );
+
+    test(
       "includes a foreign user's unverified device as a verify-only blocker",
       () async {
         when(() => gateway.getDevices()).thenAnswer(
