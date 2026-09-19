@@ -473,6 +473,16 @@ void main() {
     });
   });
 
+  test(
+    'statementSignature keeps a subtraction but folds a negative literal',
+    () {
+      expect(
+        builder.statementSignature('SELECT a - 1 FROM t WHERE b = -2'),
+        'SELECT a - ? FROM t WHERE b = ?',
+      );
+    },
+  );
+
   group('properties', () {
     // Filler that puts a space on the truncation boundary once it passes
     // 200 characters, plus the fragments the signature rewrites.
@@ -492,7 +502,16 @@ void main() {
       tags: 'glados',
     );
 
-    final listItem = glados.any.choose(['?', "'x'", "'it''s'", '42', '3.5']);
+    final listItem = glados.any.choose([
+      '?',
+      "'x'",
+      "'it''s'",
+      '42',
+      '3.5',
+      '-1',
+      '-2.5',
+      '- 7',
+    ]);
 
     glados.Glados(
       glados.any.listWithLengthInRange(2, 9, listItem),

@@ -39,12 +39,21 @@ Examples of what to correct:
 - Any phonetically similar word → use the exact dictionary term''';
 
 /// Escapes a string for safe embedding inside a JSON-style quoted token:
-/// backslashes, double quotes and every control character below U+0020, so
-/// the token decodes back to [s] and never spans more than one line.
+/// backslashes, double quotes, every control character below U+0020 and the
+/// Unicode line boundaries U+0085, U+2028 and U+2029 (which `jsonEncode`
+/// leaves raw), so the token decodes back to [s] and never spans more than
+/// one line.
 String escapeForJsonToken(String s) {
   final encoded = jsonEncode(s);
-  return encoded.substring(1, encoded.length - 1);
+  return encoded
+      .substring(1, encoded.length - 1)
+      .replaceAllMapped(
+        _unicodeLineBoundary,
+        (m) => '\\u${m[0]!.codeUnitAt(0).toRadixString(16).padLeft(4, '0')}',
+      );
 }
+
+final _unicodeLineBoundary = RegExp('[\u0085\u2028\u2029]');
 
 /// Resolves the best textual content for an entry.
 ///

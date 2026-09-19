@@ -39,7 +39,13 @@ JournalEntry _entry({String id = 'entry-1', String? text}) => JournalEntry(
 );
 
 /// Printable text mixed with every character JSON must escape.
-const _awkwardChars = 'ab Z9"\\\n\r\t\b\f\u0000\u0001\u001b\u001fé→';
+const _awkwardChars =
+    'ab Z9"\\\n\r\t\b\f\u0000\u0001\u001b\u001fé→\u0085\u2028\u2029';
+
+/// Code units that break a line: C0 controls plus the Unicode line
+/// boundaries NEL, LINE SEPARATOR and PARAGRAPH SEPARATOR.
+bool _breaksLine(int unit) =>
+    unit < 0x20 || unit == 0x85 || unit == 0x2028 || unit == 0x2029;
 
 final glados.Generator<String> _awkwardText = glados.any.stringOf(
   _awkwardChars,
@@ -218,7 +224,7 @@ void main() {
       (text) {
         final escaped = escapeForJsonToken(text);
         expect(jsonDecode('"$escaped"'), text);
-        expect(escaped.codeUnits.every((u) => u >= 0x20), isTrue);
+        expect(escaped.codeUnits.any(_breaksLine), isFalse);
       },
       tags: 'glados',
     );

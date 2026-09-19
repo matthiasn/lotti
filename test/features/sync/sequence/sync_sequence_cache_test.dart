@@ -321,7 +321,11 @@ void main() {
           order.add(key);
           values[key] = value;
           while (order.length > capacity) {
-            values.remove(order.removeFirst());
+            final evicted = order.removeFirst();
+            values.remove(evicted);
+            // The cache evicted the same entry the model did; a miss has no
+            // side effect on recency.
+            expect(cache.containsLastSent(evicted), isFalse, reason: evicted);
           }
         }
 
@@ -379,7 +383,22 @@ void main() {
           order.add(entryId);
           recordedAt[entryId] = now;
           while (order.length > capacity) {
-            recordedAt.remove(order.removeFirst());
+            final evicted = order.removeFirst();
+            recordedAt.remove(evicted);
+            // The cache evicted the same binding the model did; a miss has
+            // no side effect on recency.
+            withClock(Clock.fixed(now), () {
+              expect(
+                cache.containsSentBinding(
+                  hostId: 'host-a',
+                  counter: 1,
+                  entryId: evicted,
+                  payloadType: 0,
+                ),
+                isFalse,
+                reason: evicted,
+              );
+            });
           }
         }
 
