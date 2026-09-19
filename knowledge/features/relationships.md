@@ -1511,7 +1511,12 @@ bar stays the single source of truth for both layouts and the desktop pane
 never disagrees with it. On desktop the chat is a sidebar beside the person
 page rather than a replacement for it (design panel 2026-09-19), so what the
 agent is asked about stays in view; the phone route offers *Back*
-(`onBack`), the sidebar *Close* (`onClose`). The pane carries no `Scaffold`
+(`onBack`), the sidebar *Close* (`onClose`). The page needs room of its own:
+the sidebar docks only in a detail pane at least `chatSidebarMinDetailWidth`
+wide (the sidebar plus as much again for the page). While the chat is open
+and the People list would squeeze the page below that, the list steps aside,
+without touching its stored preference. Where even the whole pane is
+narrower, the chat takes the pane with *Back*, as on a phone. The pane carries no `Scaffold`
 of its own — the phone route and the sidebar each supply one, which the
 composer's field needs.
 
