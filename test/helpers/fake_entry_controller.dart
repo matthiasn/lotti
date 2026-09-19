@@ -299,7 +299,7 @@ class TrackingFakeEntryController extends FakeEntryController {
   }
 
   @override
-  Future<void> setCoverArt(String? imageId) async {
+  Future<bool> setCoverArt(String? imageId) async {
     _coverArtTracker.calls.add(imageId);
 
     // Update state if it's a task, preserving existing form state
@@ -312,7 +312,9 @@ class TrackingFakeEntryController extends FakeEntryController {
       if (currentState != null) {
         state = AsyncData(currentState.copyWith(entry: _currentEntity));
       }
+      return true;
     }
+    return false;
   }
 }
 

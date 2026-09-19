@@ -58,6 +58,7 @@ void main() {
       sheetOpenAtPick = Navigator.of(pageContext).canPop();
       return (id: 'image-new', created: true);
     },
+    pasteImage: () async => null,
     chooseCrop: (imageId, initial) async {
       log.add('crop $imageId');
       return const AvatarCrop(x: 0.2, y: 0.3, scale: 2);
@@ -268,6 +269,7 @@ void main() {
                         journal: journal,
                         pickImage: () async =>
                             throw StateError('the picker fell over'),
+                        pasteImage: () async => null,
                         chooseCrop: (imageId, initial) async => null,
                       ),
                     );

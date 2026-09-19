@@ -3,6 +3,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_modal.dart';
+import 'package:lotti/features/journal/repository/clipboard_images.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_toggle_chips.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/modern_action_items.dart';
@@ -68,6 +69,11 @@ class InitialModalPageContent extends ConsumerWidget {
         : null;
     final linkedIsTask = linkedEntryState?.entry is Task;
 
+    // Paste as cover - only on a task, and only while the clipboard holds an
+    // image to paste.
+    final canPasteCover =
+        isTask && (ref.watch(clipboardHasImageProvider).value ?? false);
+
     final enableRatings =
         ref
             .watch(configFlagProvider(enableSessionRatingsFlag))
@@ -115,6 +121,8 @@ class InitialModalPageContent extends ConsumerWidget {
             entryId: entryId,
             linkedFromId: linkedFromId,
           ),
+
+        if (canPasteCover) ModernPasteCoverArtItem(taskId: entryId),
 
         // Set cover art - only for images linked to a task
         if (isImage && linkedFromId != null && linkedIsTask)

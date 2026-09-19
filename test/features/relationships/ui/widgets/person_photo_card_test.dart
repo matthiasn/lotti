@@ -73,6 +73,10 @@ void main() {
               log.add('pick');
               return (id: 'image-new', created: true);
             },
+        pasteImage: () async {
+          log.add('paste');
+          return (id: 'image-pasted', created: true);
+        },
         chooseCrop: (imageId, initial) async {
           log.add('crop $imageId');
           return const AvatarCrop(x: 0.2, y: 0.3, scale: 2);
@@ -120,6 +124,7 @@ void main() {
     Future<ImportedImage?> Function()? pickImage,
     ImageFileSizeReader readImageSize = readImageFileSize,
     Future<void> Function()? onChanged,
+    bool canPasteBanner = false,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -131,6 +136,7 @@ void main() {
               actions: actions(pickImage: pickImage),
               onChanged: onChanged ?? () async => changes++,
               readImageSize: readImageSize,
+              canPasteBanner: canPasteBanner,
             ),
           ),
         ),
@@ -263,6 +269,40 @@ void main() {
             ).captured.single
             as RelationshipEntry;
     expect(written.data.bannerImageId, 'image-new');
+    expect(written.data.bannerCropX, 0.5);
+    expect(changes, 1);
+  });
+
+  testWidgets('Paste is offered beside the banner only while the clipboard '
+      'holds an image', (tester) async {
+    await pumpCard(tester, person());
+    expect(
+      find.byKey(const ValueKey('person-form-banner-paste')),
+      findsNothing,
+    );
+
+    await pumpCard(tester, person(), canPasteBanner: true);
+    expect(buttonLabel(tester, 'person-form-banner-paste'), 'Paste');
+  });
+
+  testWidgets('pasting a banner imports the clipboard image alone and writes '
+      'it centred', (tester) async {
+    await pumpCard(
+      tester,
+      person(bannerImageId: 'banner-1', bannerCropX: 0.2),
+      canPasteBanner: true,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('person-form-banner-paste')));
+    await tester.pumpAndSettle();
+
+    expect(log, ['paste'], reason: 'neither the picker nor a crop surface');
+    final written =
+        verify(
+              () => relationships.updateRelationship(captureAny()),
+            ).captured.single
+            as RelationshipEntry;
+    expect(written.data.bannerImageId, 'image-pasted');
     expect(written.data.bannerCropX, 0.5);
     expect(changes, 1);
   });

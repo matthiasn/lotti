@@ -451,6 +451,38 @@ void main() {
         ).called(1);
       });
 
+      test(
+        'returns the entry it created, linked collapsed when asked',
+        () async {
+          final imported = await importPastedImages(
+            data: Uint8List.fromList(List<int>.filled(300, 0xCC)),
+            fileExtension: 'png',
+            linkedId: 'task-9',
+            linkCollapsed: true,
+          );
+
+          expect(imported, (id: 'test-id', created: true));
+          verify(
+            () => mockPersistenceLogic.createDbEntity(
+              any(that: isA<JournalImage>()),
+              linkedId: 'task-9',
+              shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+              linkCollapsed: true,
+            ),
+          ).called(1);
+        },
+      );
+
+      test('returns null for an image refused as too large', () async {
+        expect(
+          await importPastedImages(
+            data: Uint8List(ImageImportConstants.maxFileSizeBytes + 1),
+            fileExtension: 'png',
+          ),
+          isNull,
+        );
+      });
+
       test('creates image entry without linkedId or categoryId', () async {
         final validData = Uint8List.fromList(List<int>.filled(200, 0xAA));
 

@@ -4070,6 +4070,16 @@ class AppLocalizationsPt extends AppLocalizations {
       'Você pode fechar isto – a geração continua em segundo plano';
 
   @override
+  String get coverArtPasteFailed => 'Não foi possível colar a capa';
+
+  @override
+  String get coverArtPasteFromClipboard => 'Colar como capa';
+
+  @override
+  String get coverArtPasteFromClipboardHint =>
+      'Usa a imagem da sua área de transferência como capa desta tarefa.';
+
+  @override
   String get createButton => 'Criar';
 
   @override
@@ -12398,6 +12408,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get relationshipPhotoFace => 'Rosto';
+
+  @override
+  String get relationshipPhotoPaste => 'Colar';
 
   @override
   String get relationshipPhotoPrivacy =>

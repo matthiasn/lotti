@@ -4079,6 +4079,16 @@ class AppLocalizationsIt extends AppLocalizations {
       'È possibile chiudere questo — la generazione continua in background';
 
   @override
+  String get coverArtPasteFailed => 'Impossibile incollare la copertina';
+
+  @override
+  String get coverArtPasteFromClipboard => 'Incolla come copertina';
+
+  @override
+  String get coverArtPasteFromClipboardHint =>
+      'Usa l\'immagine negli appunti come copertina di questa attività.';
+
+  @override
   String get createButton => 'Creare';
 
   @override
@@ -12434,6 +12444,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get relationshipPhotoFace => 'Volto';
+
+  @override
+  String get relationshipPhotoPaste => 'Incolla';
 
   @override
   String get relationshipPhotoPrivacy =>

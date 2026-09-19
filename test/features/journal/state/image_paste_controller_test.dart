@@ -28,14 +28,6 @@ import '../../../helpers/path_provider.dart';
 import '../../../helpers/target_platform.dart';
 import '../../../mocks/mocks.dart';
 
-class MockSystemClipboard extends Mock implements SystemClipboard {}
-
-class MockClipboardReader extends Mock implements ClipboardReader {}
-
-class MockClipboardDataReader extends Mock implements ClipboardDataReader {}
-
-class MockDataReaderFile extends Mock implements DataReaderFile {}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -312,7 +304,13 @@ void main() {
       when(() => mockItem.canProvide(Formats.png)).thenReturn(true);
       when(() => mockItem.canProvide(Formats.jpeg)).thenReturn(false);
 
-      when(() => mockItem.getFile(Formats.png, any())).thenAnswer((invocation) {
+      when(
+        () => mockItem.getFile(
+          Formats.png,
+          any(),
+          onError: any(named: 'onError'),
+        ),
+      ).thenAnswer((invocation) {
         final callback =
             invocation.positionalArguments[1] as void Function(DataReaderFile);
         callback(mockFile);
@@ -336,7 +334,13 @@ void main() {
       // with tearDown/other suites that may reset GetIt.
       await pumpEventQueue();
 
-      verify(() => mockItem.getFile(Formats.png, any())).called(1);
+      verify(
+        () => mockItem.getFile(
+          Formats.png,
+          any(),
+          onError: any(named: 'onError'),
+        ),
+      ).called(1);
       verify(() => mockFile.readAll()).called(1);
     });
 
@@ -344,7 +348,13 @@ void main() {
       when(() => mockItem.canProvide(Formats.png)).thenReturn(false);
       when(() => mockItem.canProvide(Formats.jpeg)).thenReturn(true);
 
-      when(() => mockItem.getFile(Formats.jpeg, any())).thenAnswer((
+      when(
+        () => mockItem.getFile(
+          Formats.jpeg,
+          any(),
+          onError: any(named: 'onError'),
+        ),
+      ).thenAnswer((
         invocation,
       ) {
         final callback =
@@ -369,7 +379,13 @@ void main() {
       // Ensure any pending async completes before expectations/teardown
       await pumpEventQueue();
 
-      verify(() => mockItem.getFile(Formats.jpeg, any())).called(1);
+      verify(
+        () => mockItem.getFile(
+          Formats.jpeg,
+          any(),
+          onError: any(named: 'onError'),
+        ),
+      ).called(1);
       verify(() => mockFile.readAll()).called(1);
     });
 
@@ -392,7 +408,11 @@ void main() {
             ).thenReturn(scenario.format == Formats.heif);
 
             when(
-              () => mockItem.getFile(scenario.format, any()),
+              () => mockItem.getFile(
+                scenario.format,
+                any(),
+                onError: any(named: 'onError'),
+              ),
             ).thenAnswer((invocation) {
               final callback =
                   invocation.positionalArguments[1]
@@ -429,7 +449,13 @@ void main() {
                     as JournalImage;
 
             expect(capturedImage.data.imageFile, endsWith('.jpg'));
-            verify(() => mockItem.getFile(scenario.format, any())).called(1);
+            verify(
+              () => mockItem.getFile(
+                scenario.format,
+                any(),
+                onError: any(named: 'onError'),
+              ),
+            ).called(1);
             verify(() => mockFile.readAll()).called(1);
           },
         );
@@ -455,7 +481,10 @@ void main() {
 
           verifyNever(() => mockItem.canProvide(Formats.heic));
           verifyNever(() => mockItem.canProvide(Formats.heif));
-          verifyNever(() => mockItem.getFile(any(), any()));
+          verifyNever(
+            () =>
+                mockItem.getFile(any(), any(), onError: any(named: 'onError')),
+          );
         },
       );
     });
@@ -464,7 +493,13 @@ void main() {
       when(() => mockItem.canProvide(Formats.png)).thenReturn(false);
       when(() => mockItem.canProvide(Formats.jpeg)).thenReturn(true);
 
-      when(() => mockItem.getFile(Formats.jpeg, any())).thenAnswer((
+      when(
+        () => mockItem.getFile(
+          Formats.jpeg,
+          any(),
+          onError: any(named: 'onError'),
+        ),
+      ).thenAnswer((
         invocation,
       ) {
         final callback =
@@ -493,7 +528,13 @@ void main() {
         when(() => mockItem.canProvide(Formats.png)).thenReturn(true);
         when(() => mockItem.canProvide(Formats.jpeg)).thenReturn(true);
 
-        when(() => mockItem.getFile(Formats.png, any())).thenAnswer((
+        when(
+          () => mockItem.getFile(
+            Formats.png,
+            any(),
+            onError: any(named: 'onError'),
+          ),
+        ).thenAnswer((
           invocation,
         ) {
           final callback =
@@ -531,9 +572,21 @@ void main() {
                 as JournalImage;
 
         expect(capturedImage.data.imageFile, endsWith('.png'));
-        verify(() => mockItem.getFile(Formats.png, any())).called(1);
+        verify(
+          () => mockItem.getFile(
+            Formats.png,
+            any(),
+            onError: any(named: 'onError'),
+          ),
+        ).called(1);
         verify(() => mockFile.readAll()).called(1);
-        verifyNever(() => mockItem.getFile(Formats.jpeg, any()));
+        verifyNever(
+          () => mockItem.getFile(
+            Formats.jpeg,
+            any(),
+            onError: any(named: 'onError'),
+          ),
+        );
       },
     );
 
@@ -557,7 +610,10 @@ void main() {
         final file = mockFiles[i];
         when(() => item.canProvide(Formats.jpeg)).thenReturn(true);
         when(() => item.canProvide(Formats.png)).thenReturn(false);
-        when(() => item.getFile(Formats.jpeg, any())).thenAnswer((invocation) {
+        when(
+          () =>
+              item.getFile(Formats.jpeg, any(), onError: any(named: 'onError')),
+        ).thenAnswer((invocation) {
           final callback =
               invocation.positionalArguments[1]
                   as void Function(DataReaderFile);
@@ -580,9 +636,27 @@ void main() {
       await pumpEventQueue();
 
       // Verify all 3 items were processed
-      verify(() => mockItem1.getFile(Formats.jpeg, any())).called(1);
-      verify(() => mockItem2.getFile(Formats.jpeg, any())).called(1);
-      verify(() => mockItem3.getFile(Formats.jpeg, any())).called(1);
+      verify(
+        () => mockItem1.getFile(
+          Formats.jpeg,
+          any(),
+          onError: any(named: 'onError'),
+        ),
+      ).called(1);
+      verify(
+        () => mockItem2.getFile(
+          Formats.jpeg,
+          any(),
+          onError: any(named: 'onError'),
+        ),
+      ).called(1);
+      verify(
+        () => mockItem3.getFile(
+          Formats.jpeg,
+          any(),
+          onError: any(named: 'onError'),
+        ),
+      ).called(1);
       verify(() => mockFile1.readAll()).called(1);
       verify(() => mockFile2.readAll()).called(1);
       verify(() => mockFile3.readAll()).called(1);
@@ -604,7 +678,13 @@ void main() {
       when(() => mockItem2.canProvide(Formats.jpeg)).thenReturn(true);
       when(() => mockItem2.canProvide(Formats.png)).thenReturn(false);
 
-      when(() => mockItem1.getFile(Formats.png, any())).thenAnswer((
+      when(
+        () => mockItem1.getFile(
+          Formats.png,
+          any(),
+          onError: any(named: 'onError'),
+        ),
+      ).thenAnswer((
         invocation,
       ) {
         final callback =
@@ -613,7 +693,13 @@ void main() {
         return null;
       });
 
-      when(() => mockItem2.getFile(Formats.jpeg, any())).thenAnswer((
+      when(
+        () => mockItem2.getFile(
+          Formats.jpeg,
+          any(),
+          onError: any(named: 'onError'),
+        ),
+      ).thenAnswer((
         invocation,
       ) {
         final callback =
@@ -639,8 +725,20 @@ void main() {
       await controller.paste();
       await pumpEventQueue();
 
-      verify(() => mockItem1.getFile(Formats.png, any())).called(1);
-      verify(() => mockItem2.getFile(Formats.jpeg, any())).called(1);
+      verify(
+        () => mockItem1.getFile(
+          Formats.png,
+          any(),
+          onError: any(named: 'onError'),
+        ),
+      ).called(1);
+      verify(
+        () => mockItem2.getFile(
+          Formats.jpeg,
+          any(),
+          onError: any(named: 'onError'),
+        ),
+      ).called(1);
       verify(() => mockFile1.readAll()).called(1);
       verify(() => mockFile2.readAll()).called(1);
     });
@@ -660,7 +758,9 @@ void main() {
       await pumpEventQueue();
 
       // No getFile calls should occur
-      verifyNever(() => mockItem.getFile(any(), any()));
+      verifyNever(
+        () => mockItem.getFile(any(), any(), onError: any(named: 'onError')),
+      );
     });
 
     test('paste skips items with no supported formats', () async {
@@ -690,8 +790,12 @@ void main() {
       await pumpEventQueue();
 
       // No getFile calls should occur
-      verifyNever(() => mockItem1.getFile(any(), any()));
-      verifyNever(() => mockItem2.getFile(any(), any()));
+      verifyNever(
+        () => mockItem1.getFile(any(), any(), onError: any(named: 'onError')),
+      );
+      verifyNever(
+        () => mockItem2.getFile(any(), any(), onError: any(named: 'onError')),
+      );
     });
   });
 }

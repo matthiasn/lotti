@@ -57,6 +57,7 @@ import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/repository/clipboard_images.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
@@ -2091,6 +2092,64 @@ void main() {
       await captureScreenshot(
         tester,
         'person_form_edit_${viewport}_dark',
+        subdir: _subdir,
+      );
+    });
+
+    testWidgets('$viewport person form, edit, image on clipboard — dark', (
+      tester,
+    ) async {
+      await pumpSurface(
+        tester,
+        home: _ModalHost(
+          open: (context) =>
+              showRelationshipEditModal(context: context, relationship: pip),
+        ),
+        device: device,
+        brightness: Brightness.dark,
+        overrides: [
+          ...personOverrides(),
+          clipboardHasImageProvider.overrideWith((ref) async => true),
+        ],
+      );
+      // The Photo card's banner strip decodes at the card's width.
+      await warmAfterDryRun(
+        tester,
+        open: () => openModal(tester),
+        close: () =>
+            tester.tap(find.byKey(const ValueKey('person-form-cancel'))),
+        measure: find.byKey(const ValueKey('person-form-banner-preview')),
+        keyFor: (strip) => boundedFileImage(
+          getFullImagePath(_pipBanner),
+          bounds: strip,
+          devicePixelRatio: _mediaQueryFor(device).devicePixelRatio,
+        ),
+      );
+      await openModal(tester);
+
+      expect(
+        find.text('Commander Pip Frostbeak'),
+        findsOneWidget,
+        reason: 'the edit form is prefilled from the person',
+      );
+      expect(
+        find.byKey(const ValueKey('person-form-photo-card')),
+        findsOneWidget,
+        reason: 'editing an existing person offers the Photo card',
+      );
+      expect(
+        find.byKey(const ValueKey('person-form-save')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('person-form-banner-paste')),
+        findsOneWidget,
+        reason: 'an image on the clipboard offers Paste for the banner',
+      );
+      expectPhotosDrawn(tester);
+      await captureScreenshot(
+        tester,
+        'person_form_edit_clipboard_image_${viewport}_dark',
         subdir: _subdir,
       );
     });

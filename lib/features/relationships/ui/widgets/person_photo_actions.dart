@@ -17,7 +17,7 @@ enum PersonPhotoOutcome {
 }
 
 /// Everything a surface can do to a person's two images — choose, re-crop
-/// or remove the avatar; choose, reposition or remove the banner — as one
+/// or remove the avatar; choose, paste, reposition or remove the banner — as one
 /// object whose only dependencies are the two repositories and the two
 /// surfaces it opens, both handed in as functions.
 ///
@@ -31,6 +31,7 @@ class PersonPhotoActions {
     required this.relationships,
     required this.journal,
     required this.pickImage,
+    required this.pasteImage,
     required this.chooseCrop,
   });
 
@@ -41,6 +42,10 @@ class PersonPhotoActions {
   /// the person — its id, and whether the import *created* that entry — or
   /// null when the user backed out.
   final Future<ImportedImage?> Function() pickImage;
+
+  /// Imports the image on the clipboard as a `JournalImage` linked to the
+  /// person, like [pickImage] — or null when there is none to paste.
+  final Future<ImportedImage?> Function() pasteImage;
 
   /// Opens the crop surface over the image, starting from the given framing
   /// (null for the default), and returns the framing the user committed — or
@@ -95,8 +100,18 @@ class PersonPhotoActions {
 
   /// Choose a wide picture for the person's page. It starts centred; the
   /// form's Photo card lets the user drag it into place afterwards.
-  Future<PersonPhotoOutcome> chooseBanner(RelationshipEntry person) async {
-    final picked = await pickImage();
+  Future<PersonPhotoOutcome> chooseBanner(RelationshipEntry person) =>
+      _setBanner(person, pickImage);
+
+  /// [chooseBanner] with the image on the clipboard instead of the picker's.
+  Future<PersonPhotoOutcome> pasteBanner(RelationshipEntry person) =>
+      _setBanner(person, pasteImage);
+
+  Future<PersonPhotoOutcome> _setBanner(
+    RelationshipEntry person,
+    Future<ImportedImage?> Function() source,
+  ) async {
+    final picked = await source();
     if (picked == null) return PersonPhotoOutcome.cancelled;
     return _writeOrDiscard(
       person,

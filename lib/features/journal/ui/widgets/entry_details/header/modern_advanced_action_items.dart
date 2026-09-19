@@ -4,6 +4,8 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/ui/image_generation/cover_art_skill_modal.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/ratings/state/rating_controller.dart';
@@ -118,6 +120,38 @@ class ModernSetCoverArtItem extends ConsumerWidget {
         if (context.mounted) {
           Navigator.of(context).pop();
         }
+      },
+    );
+  }
+}
+
+/// Makes the image on the clipboard the task's cover art. The menu lists it
+/// only on a task, and only while the clipboard holds an image.
+class ModernPasteCoverArtItem extends ConsumerWidget {
+  const ModernPasteCoverArtItem({required this.taskId, super.key});
+
+  final String taskId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return DsActionRow(
+      icon: LottiIcons.image,
+      title: context.messages.coverArtPasteFromClipboard,
+      subtitle: context.messages.coverArtPasteFromClipboardHint,
+      onTap: () async {
+        final messages = context.messages;
+        // Never throws: every failure along the way reads as not pasted.
+        final pasted = await ref
+            .read(entryControllerProvider(taskId).notifier)
+            .pasteCoverArt();
+        if (!context.mounted) return;
+        if (!pasted) {
+          context.showToast(
+            tone: DesignSystemToastTone.error,
+            title: messages.coverArtPasteFailed,
+          );
+        }
+        Navigator.of(context).pop();
       },
     );
   }

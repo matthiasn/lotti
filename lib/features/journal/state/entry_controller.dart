@@ -22,12 +22,15 @@ import 'package:lotti/features/ai/state/ai_config_initialization.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
+import 'package:lotti/features/journal/repository/clipboard_images.dart';
+import 'package:lotti/features/journal/repository/clipboard_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -796,11 +799,53 @@ class EntryController extends AsyncNotifier<EntryState?> {
     }
   }
 
+  /// Makes the clipboard's image this task's cover art. The picture is
+  /// imported as an image entry linked to the task — collapsed, since the
+  /// cover already shows it — in the task's category.
+  ///
+  /// Returns whether a cover was set: false when this is not a task, the
+  /// clipboard holds no image, the import or the read fails, or the task
+  /// could not be written. A picture this paste created is taken back out
+  /// when the cover could not be set, so a failed paste leaves nothing behind.
+  Future<bool> pasteCoverArt() async {
+    final entry = state.value?.entry;
+    if (entry is! Task) return false;
+    ImportedImage? imported;
+    try {
+      imported = await importFirstClipboardImage(
+        ref.read(clipboardRepositoryProvider),
+        linkedId: id,
+        categoryId: entry.meta.categoryId,
+        linkCollapsed: true,
+      );
+      if (imported == null) return false;
+      if (await setCoverArt(imported.id)) return true;
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to paste cover art',
+        name: 'EntryController',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+    if (imported != null && imported.created) {
+      await ref
+          .read(journalRepositoryProvider)
+          .deleteJournalEntity(
+            imported.id,
+          );
+    }
+    return false;
+  }
+
   /// Sets or removes the cover art for a task.
   /// Pass null to remove the cover art.
-  Future<void> setCoverArt(String? imageId) async {
+  ///
+  /// Returns whether the task was written. A refused write — the task gone
+  /// by the time it is saved — puts the previous cover back on screen.
+  Future<bool> setCoverArt(String? imageId) async {
     final entry = state.value?.entry;
-    if (entry is! Task) return;
+    if (entry is! Task) return false;
 
     // Optimistically update local state for immediate UI feedback
     final optimistic = entry.copyWith(
@@ -809,11 +854,16 @@ class EntryController extends AsyncNotifier<EntryState?> {
     state = AsyncData(state.value?.copyWith(entry: optimistic));
 
     // Persist change
-    await _persistenceLogic.updateTask(
+    final written = await _persistenceLogic.updateTask(
       journalEntityId: id,
       taskData: optimistic.data,
     );
+    if (!written) {
+      state = AsyncData(state.value?.copyWith(entry: entry));
+      return false;
+    }
 
     await HapticFeedback.selectionClick();
+    return true;
   }
 }

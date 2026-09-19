@@ -4079,6 +4079,16 @@ class AppLocalizationsEs extends AppLocalizations {
       'Puedes cerrar esto — la generación continúa en segundo plano';
 
   @override
+  String get coverArtPasteFailed => 'No se pudo pegar la portada';
+
+  @override
+  String get coverArtPasteFromClipboard => 'Pegar como portada';
+
+  @override
+  String get coverArtPasteFromClipboardHint =>
+      'Usa la imagen de tu portapapeles como portada de esta tarea.';
+
+  @override
   String get createButton => 'Crear';
 
   @override
@@ -12452,6 +12462,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get relationshipPhotoFace => 'Cara';
+
+  @override
+  String get relationshipPhotoPaste => 'Pegar';
 
   @override
   String get relationshipPhotoPrivacy =>

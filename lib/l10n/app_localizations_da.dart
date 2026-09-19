@@ -4028,6 +4028,16 @@ class AppLocalizationsDa extends AppLocalizations {
       'Du kan lukke dette — generationen fortsætter i baggrunden';
 
   @override
+  String get coverArtPasteFailed => 'Kunne ikke indsætte omslaget';
+
+  @override
+  String get coverArtPasteFromClipboard => 'Indsæt som omslag';
+
+  @override
+  String get coverArtPasteFromClipboardHint =>
+      'Gør billedet fra din udklipsholder til opgavens omslag.';
+
+  @override
   String get createButton => 'Opret';
 
   @override
@@ -12283,6 +12293,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get relationshipPhotoFace => 'Ansigt';
+
+  @override
+  String get relationshipPhotoPaste => 'Indsæt';
 
   @override
   String get relationshipPhotoPrivacy =>

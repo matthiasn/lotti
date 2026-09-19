@@ -171,6 +171,17 @@ and `ImagePasteController` — covering text entries, tasks, events, audio
 recordings, timer entries inside a parent, image import, screenshots, clipboard
 paste, and drag-and-drop onto the detail page.
 
+Clipboard images are read in one place,
+[`clipboard_images.dart`](../../../lib/features/journal/repository/clipboard_images.dart):
+the format order (PNG, JPEG, then HEIC/HEIF where the platform converts them),
+the read of one item's bytes, `clipboardHasImageProvider` for surfaces that
+offer a paste only while there is something to paste, and
+`importFirstClipboardImage` for a paste that makes *one* picture something's
+cover or banner and needs its id back (`importPastedImages` returns the entry
+it created). `ImagePasteController` attaches every image on the clipboard; the
+task's `•••` menu offers *Paste as cover* (`EntryController.pasteCoverArt`),
+and the person form's Photo card offers *Paste* for the banner.
+
 The sheet itself is the design system's action modal — the same
 `DsActionModal` shell, `DsActionRow` rows and row-owned spacing as the entry
 `•••` menu, in the accent tone. See

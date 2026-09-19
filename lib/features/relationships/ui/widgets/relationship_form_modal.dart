@@ -13,6 +13,7 @@ import 'package:lotti/features/design_system/components/cards/design_system_sect
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/repository/clipboard_images.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
@@ -605,6 +606,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
               relationship: _person!,
             ),
             onChanged: _reloadPerson,
+            canPasteBanner: ref.watch(clipboardHasImageProvider).value ?? false,
           ),
           gap(tokens.spacing.step4),
         ],

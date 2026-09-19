@@ -508,6 +508,12 @@ linked-task detail stack. The desktop split also owns the primary search command
 invoking it from the focused detail restores the offstage list, then delegates
 to the still-mounted tab to expand and focus task search on the next frame.
 
+A cover is chosen three ways: *Set cover* in a linked image's `•••` menu, a
+generated one from a linked recording, or *Paste as cover* in the task's own
+`•••` menu, listed only while the clipboard holds an image. The paste imports
+the picture as an image linked to the task — collapsed, since the cover
+already shows it, and in the task's category — then sets `coverArtId`.
+
 When the expandable app bar has cover art, the whole artwork is an interactive
 image surface. A tap opens the same full-screen, zoomable viewer used by linked
 image entries, including rotation, download and zoom controls. The cover uses a

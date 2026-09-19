@@ -22,6 +22,7 @@ void main() {
   late List<String> log;
   late String? pickResult;
   var pickCreated = true;
+  late String? pasteResult;
   late AvatarCrop? cropResult;
 
   RelationshipEntry person({String? avatarImageId, AvatarCrop? avatarCrop}) =>
@@ -53,6 +54,11 @@ void main() {
       final id = pickResult;
       return id == null ? null : (id: id, created: pickCreated);
     },
+    pasteImage: () async {
+      log.add('paste');
+      final id = pasteResult;
+      return id == null ? null : (id: id, created: true);
+    },
     chooseCrop: (imageId, initial) async {
       log.add('crop $imageId from ${initial?.x}');
       return cropResult;
@@ -73,6 +79,7 @@ void main() {
     log = [];
     pickResult = 'image-new';
     pickCreated = true;
+    pasteResult = 'image-pasted';
     cropResult = newCrop;
     when(
       () => relationships.updateRelationship(any()),
@@ -296,6 +303,38 @@ void main() {
         expect(data.bannerCropX, 0.5);
       },
     );
+
+    test('pasting writes the clipboard picture centred, opening neither the '
+        'picker nor a crop surface', () async {
+      expect(
+        await actions().pasteBanner(person()),
+        PersonPhotoOutcome.changed,
+      );
+
+      expect(log, ['paste']);
+      final data = written()!;
+      expect(data.bannerImageId, 'image-pasted');
+      expect(data.bannerCropX, 0.5);
+    });
+
+    test('a paste with no image on the clipboard writes nothing', () async {
+      pasteResult = null;
+      expect(
+        await actions().pasteBanner(person()),
+        PersonPhotoOutcome.cancelled,
+      );
+      verifyNever(() => relationships.updateRelationship(any()));
+    });
+
+    test('a refused write takes the pasted picture back out', () async {
+      when(
+        () => relationships.updateRelationship(any()),
+      ).thenAnswer((_) async => false);
+
+      expect(await actions().pasteBanner(person()), PersonPhotoOutcome.failed);
+
+      verify(() => journal.deleteJournalEntity('image-pasted')).called(1);
+    });
 
     test('backing out of the picker writes nothing', () async {
       pickResult = null;

@@ -34,7 +34,7 @@ sources:
     last_modified: 2026-09-09
   - id: avatar-actions
     resource: ../../lib/features/relationships/ui/widgets/person_photo_actions.dart
-    title: PersonPhotoActions — choose, re-crop, remove, with the surfaces injected
+    title: PersonPhotoActions — choose, paste, re-crop, remove, with the surfaces injected
     last_modified: 2026-09-09
   - id: crop-geometry
     resource: ../../lib/features/relationships/ui/shared/cover_crop_geometry.dart
@@ -403,7 +403,10 @@ fixed on purpose:
 with Change · Adjust crop · Remove. Banner: a strip the hero's own height,
 dragged left or right by `CoverCropGeometry` over the strip's viewport — the
 arithmetic the hero renders with — with the write made once, when the finger
-lifts. Its actions are the same `PersonPhotoActions` the sheet uses, built by
+lifts. While the clipboard holds an image the banner row also offers *Paste*
+(`PersonPhotoActions.pasteBanner`): the same write as choosing one, with the
+clipboard's picture imported in place of the picker's, and the same discard
+when the write is refused. Its actions are the same `PersonPhotoActions` the sheet uses, built by
 `productionPersonPhotoActions` for both, and they write **immediately**, not on
 Save: a picture exists the moment the picker returns, so commit-on-Save would
 mean tracking orphans to delete on Cancel, and every profile editor treats a

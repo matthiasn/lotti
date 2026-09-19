@@ -4086,6 +4086,16 @@ class AppLocalizationsFr extends AppLocalizations {
       'Tu peux fermer ceci — la génération continue en arrière-plan';
 
   @override
+  String get coverArtPasteFailed => 'Impossible de coller la couverture';
+
+  @override
+  String get coverArtPasteFromClipboard => 'Coller comme couverture';
+
+  @override
+  String get coverArtPasteFromClipboardHint =>
+      'Fait de l\'image de ton presse-papiers la couverture de cette tâche.';
+
+  @override
   String get createButton => 'Créer';
 
   @override
@@ -12496,6 +12506,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get relationshipPhotoFace => 'Visage';
+
+  @override
+  String get relationshipPhotoPaste => 'Coller';
 
   @override
   String get relationshipPhotoPrivacy =>

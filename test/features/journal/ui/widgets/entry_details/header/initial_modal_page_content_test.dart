@@ -5,8 +5,10 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/repository/clipboard_images.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/initial_modal_page_content.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/header/modern_action_items.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -60,9 +62,15 @@ void main() {
     await tearDownTestGetIt();
   });
 
-  ProviderScope buildWrapper(JournalEntity? entry) {
+  ProviderScope buildWrapper(
+    JournalEntity? entry, {
+    bool clipboardHasImage = false,
+  }) {
     return ProviderScope(
       overrides: [
+        clipboardHasImageProvider.overrideWith(
+          (ref) async => clipboardHasImage,
+        ),
         entryControllerProvider(entry?.id ?? 'entry-123').overrideWith(
           () => TestEntryController(entry),
         ),
@@ -112,6 +120,45 @@ void main() {
       await tester.pumpWidget(buildWrapper(null));
       await tester.pump();
       expect(find.byIcon(LottiIcons.label), findsNothing);
+    });
+  });
+
+  group('InitialModalPageContent paste as cover', () {
+    testWidgets('offers Paste as cover on a task while the clipboard holds an '
+        'image', (tester) async {
+      await tester.pumpWidget(
+        buildWrapper(taskEntry(), clipboardHasImage: true),
+      );
+      // The entry and the clipboard read resolve on separate frames.
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(ModernPasteCoverArtItem), findsOneWidget);
+      expect(find.text('Paste as cover'), findsOneWidget);
+    });
+
+    testWidgets('offers nothing to paste on a task with an empty clipboard', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildWrapper(taskEntry()));
+      // The entry and the clipboard read resolve on separate frames.
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(ModernPasteCoverArtItem), findsNothing);
+    });
+
+    testWidgets('never offers a cover paste on an entry that is not a task', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildWrapper(textEntry(), clipboardHasImage: true),
+      );
+      // The entry and the clipboard read resolve on separate frames.
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(ModernPasteCoverArtItem), findsNothing);
     });
   });
 
