@@ -10,8 +10,6 @@ import 'package:lotti/features/agents/state/change_set_providers.dart'
     show
         eventChangeSetConfirmationServiceProvider,
         eventPendingChangeSetsProvider,
-        projectChangeSetConfirmationServiceProvider,
-        projectPendingChangeSetsProvider,
         selfTargetedPendingChangeSetsProvider;
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/ui/localized_change_summary.dart';
@@ -24,25 +22,17 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Displays pending change sets for a project agent, allowing the user to
-/// confirm or reject individual items via swipe gestures or buttons.
+/// Whether the card surfaces an event agent's or a goal agent's proposals.
+enum _ChangeSetScope { event, goal }
+
+/// Displays pending change sets for an event agent or a self-targeted (goal)
+/// agent, allowing the user to confirm or reject individual items via swipe
+/// gestures or buttons.
 ///
 /// Renders nothing when no pending change sets exist. Task-level
-/// suggestions are rendered by `AiSummaryCard`, which goes
-/// through the proposal ledger; this card still serves the project-agent
-/// path until the same consolidation lands there.
-/// Whether the card surfaces a project agent's, an event agent's, or a
-/// goal agent's proposals.
-enum _ChangeSetScope { project, event, goal }
-
+/// suggestions are rendered by `AiSummaryCard`, and project recommendations
+/// by `ProjectRecommendationsPanel`; both go through their own surfaces.
 class ChangeSetSummaryCard extends ConsumerWidget {
-  const ChangeSetSummaryCard.project({
-    required String projectId,
-    super.key,
-  }) : _targetId = projectId,
-       _scope = _ChangeSetScope.project,
-       _customConfirmationProvider = null;
-
   const ChangeSetSummaryCard.event({
     required String eventId,
     super.key,
@@ -69,7 +59,6 @@ class ChangeSetSummaryCard extends ConsumerWidget {
 
   Provider<ChangeSetConfirmationService> get _confirmationProvider =>
       switch (_scope) {
-        _ChangeSetScope.project => projectChangeSetConfirmationServiceProvider,
         _ChangeSetScope.event => eventChangeSetConfirmationServiceProvider,
         _ChangeSetScope.goal => _customConfirmationProvider!,
       };
@@ -77,9 +66,6 @@ class ChangeSetSummaryCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final changeSetsAsync = switch (_scope) {
-      _ChangeSetScope.project => ref.watch(
-        projectPendingChangeSetsProvider(_targetId),
-      ),
       _ChangeSetScope.event => ref.watch(
         eventPendingChangeSetsProvider(_targetId),
       ),
@@ -91,7 +77,7 @@ class ChangeSetSummaryCard extends ConsumerWidget {
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     // The card pops between empty (SizedBox.shrink) and a full proposals stack,
     // and shrinks as items are confirmed/rejected. Animate the height change so
-    // the event/project detail content below it eases instead of snapping.
+    // the event/goal detail content below it eases instead of snapping.
     // Width is pinned full so only the height animates.
     return AnimatedSize(
       alignment: Alignment.topCenter,
