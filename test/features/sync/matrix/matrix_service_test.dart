@@ -1672,6 +1672,62 @@ void main() {
         verify(() => eventProcessor.applyObserver = any()).called(1);
       },
     );
+
+    test(
+      'hands the injected config and display name to the default session '
+      'manager, which logs in with them',
+      () async {
+        const config = MatrixConfig(
+          homeServer: 'https://matrix.waddle.example',
+          user: '@pip:waddle.example',
+          password: 'krill',
+        );
+        when(() => gateway.client).thenReturn(client);
+        when(() => client.isLogged()).thenReturn(false);
+        when(() => gateway.connect(config)).thenAnswer((_) async {});
+        when(
+          () => gateway.login(
+            config,
+            deviceDisplayName: any(named: 'deviceDisplayName'),
+          ),
+        ).thenAnswer((_) async => throw StateError('stop after login'));
+
+        final service = buildWithDefaults(
+          matrixConfig: config,
+          deviceDisplayName: 'Waddle Desktop',
+        );
+
+        expect(await service.login(), isFalse);
+        verify(() => gateway.connect(config)).called(1);
+        verify(
+          () => gateway.login(config, deviceDisplayName: 'Waddle Desktop'),
+        ).called(1);
+      },
+    );
+  });
+
+  group('MatrixService with an injected lifecycle coordinator', () {
+    test("adopts the coordinator's pipeline instead of building its own", () {
+      when(() => coordinator.pipeline).thenReturn(pipeline);
+
+      final service = MatrixService(
+        gateway: gateway,
+        loggingService: loggingService,
+        activityGate: activityGate,
+        messageSender: messageSender,
+        settingsDb: settingsDb,
+        eventProcessor: eventProcessor,
+        secureStorage: secureStorage,
+        queueCoordinator: queueCoordinator,
+        sessionManager: sessionManager,
+        roomManager: roomManager,
+        lifecycleCoordinator: coordinator,
+        connectivityStream: const Stream.empty(),
+      );
+
+      expect(service.debugPipeline, same(pipeline));
+      verify(() => eventProcessor.applyObserver = any()).called(1);
+    });
   });
 
   group('MatrixService stats debounce (non-test env)', () {
