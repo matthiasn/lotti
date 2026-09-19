@@ -60,13 +60,16 @@ DateTime _staleAtAfterQuietPeriod(DateTime until) =>
     until.toUtc().add(nudgeBannerLifetime);
 
 /// Applies a durable snooze while preserving unique append-only timing
-/// events. Returns the updated entity in its original variant.
+/// events. Returns the updated entity in its original variant. [reason]
+/// records why — [NudgeSnoozeReason.opened] when the tap that opened the
+/// banner paused it; left null for a snooze the user chose.
 AgentDomainEntity snoozeNudgeBannerEntity({
   required NudgeEntityView nudge,
   required DateTime now,
   required DateTime until,
   required String eventId,
   int? returnUtcOffsetMinutes,
+  NudgeSnoozeReason? reason,
 }) {
   if (nudge.snoozeHistory.any((event) => event.id == eventId)) {
     return nudge.entity;
@@ -86,6 +89,7 @@ AgentDomainEntity snoozeNudgeBannerEntity({
     utcOffsetMinutes: now.timeZoneOffset.inMinutes,
     returnUtcOffsetMinutes:
         returnUtcOffsetMinutes ?? until.timeZoneOffset.inMinutes,
+    reason: reason,
   );
   final staleAfterSnooze = _staleAtAfterQuietPeriod(until);
   return nudge.copyWith(

@@ -12311,6 +12311,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipRelinkContact => 'Link a different contact';
 
   @override
+  String get relationshipReminderPausedBody =>
+      'It comes back then, unless you log a check-in first.';
+
+  @override
+  String relationshipReminderPausedTitle(String time) {
+    return 'Reminder paused until $time';
+  }
+
+  @override
+  String get relationshipReminderSnoozeLonger => 'Snooze longer';
+
+  @override
   String get relationshipsEmptyState =>
       'Add the people you want to stay close to.';
 

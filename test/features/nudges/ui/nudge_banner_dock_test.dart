@@ -123,6 +123,7 @@ void main() {
         any(),
         duration: any(named: 'duration'),
         forActivation: any(named: 'forActivation'),
+        reason: any(named: 'reason'),
       ),
     ).thenAnswer((_) async => DateTime.utc(2030));
     when(
@@ -863,6 +864,92 @@ void main() {
     await tester.pump();
 
     expect(navigated, ['/people/person-anna']);
+  });
+
+  // ADR 0063: a tapped relationship reminder pauses itself for an hour,
+  // recorded as opened; a goal banner only opens (ADR 0055 Decision 6).
+  testWidgets('tapping a relationship reminder opens the person and pauses '
+      'it for an hour, as opened', (tester) async {
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    await pumpDock(
+      tester,
+      [
+        entry(
+          id: 'anna',
+          headline: 'Call Anna — five weeks.',
+          kind: NudgeBannerKind.relationship,
+          subjectTitle: 'Anna',
+        ),
+      ],
+      surface: NudgeBannerSurface.people,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('nudge-banner-dock-tenant')));
+    await tester.pumpAndSettle();
+
+    expect(navigated, ['/people/person-anna']);
+    verify(
+      () => interactions.snooze(
+        'anna',
+        duration: NudgeBannerSnoozeDuration.oneHour,
+        forActivation: any(named: 'forActivation'),
+        reason: NudgeSnoozeReason.opened,
+      ),
+    ).called(1);
+    expect(
+      find.text('Call Anna — five weeks.'),
+      findsNothing,
+      reason: 'hidden here at once, not on the next read',
+    );
+  });
+
+  testWidgets('a reminder that could not be paused still opens', (
+    tester,
+  ) async {
+    when(
+      () => interactions.snooze(
+        any(),
+        duration: any(named: 'duration'),
+        forActivation: any(named: 'forActivation'),
+        reason: any(named: 'reason'),
+      ),
+    ).thenThrow(StateError('database closed'));
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    await pumpDock(tester, [
+      entry(
+        id: 'anna',
+        headline: 'Call Anna — five weeks.',
+        kind: NudgeBannerKind.relationship,
+        subjectTitle: 'Anna',
+      ),
+    ], surface: NudgeBannerSurface.people);
+
+    await tester.tap(find.byKey(const ValueKey('nudge-banner-dock-tenant')));
+    await tester.pumpAndSettle();
+
+    expect(navigated, ['/people/person-anna']);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('tapping a goal banner only opens the goal', (tester) async {
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    await pumpDock(tester, [entry(id: 'a', headline: 'First voice')]);
+
+    await tester.tap(find.byKey(const ValueKey('nudge-banner-dock-tenant')));
+    await tester.pumpAndSettle();
+
+    expect(navigated, ['/goals/details/goal-a']);
+    verifyNever(
+      () => interactions.snooze(
+        any(),
+        duration: any(named: 'duration'),
+        forActivation: any(named: 'forActivation'),
+        reason: any(named: 'reason'),
+      ),
+    );
   });
 
   testWidgets('compact dock has no swipe-dismiss and snoozes from its action', (

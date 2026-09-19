@@ -12629,6 +12629,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipRelinkContact => 'Asociați alt contact';
 
   @override
+  String get relationshipReminderPausedBody =>
+      'Revine atunci, dacă nu înregistrați un contact înainte.';
+
+  @override
+  String relationshipReminderPausedTitle(String time) {
+    return 'Memento întrerupt până la $time';
+  }
+
+  @override
+  String get relationshipReminderSnoozeLonger => 'Amânați mai mult';
+
+  @override
   String get relationshipsEmptyState =>
       'Adăugați persoanele de care doriți să rămâneți aproape.';
 

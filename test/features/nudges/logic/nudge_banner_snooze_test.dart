@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -196,6 +198,28 @@ void main() {
 
     expect(repeated.snoozeHistory, first.snoozeHistory);
     expect(repeated.snoozeHistory, hasLength(1));
+  });
+
+  // The reason survives the JSON round-trip sync puts it through, and an
+  // unknown one from a newer client reads as none rather than failing.
+  test('a snooze reason round-trips, and an unknown one reads as none', () {
+    final event = NudgeEntityView.of(
+      snoozeNudgeBannerEntity(
+        nudge: makeNudgeView(),
+        now: DateTime.utc(2026, 8, 11, 10),
+        until: DateTime.utc(2026, 8, 11, 11),
+        eventId: 'snooze-1',
+        reason: NudgeSnoozeReason.opened,
+      ),
+    )!.snoozeHistory.single;
+
+    final json = jsonDecode(jsonEncode(event.toJson())) as Map<String, dynamic>;
+    expect(NudgeSnooze.fromJson(json).reason, NudgeSnoozeReason.opened);
+    expect(
+      NudgeSnooze.fromJson({...json, 'reason': 'someFutureReason'}).reason,
+      isNull,
+    );
+    expect(NudgeSnooze.fromJson({...json}..remove('reason')).reason, isNull);
   });
 
   test('a zero or negative snooze interval is rejected', () {

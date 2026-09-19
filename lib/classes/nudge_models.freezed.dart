@@ -569,7 +569,9 @@ as bool,
 /// @nodoc
 mixin _$NudgeSnooze {
 
- String get id;@JsonKey(fromJson: _decodeActivation) int get activation; DateTime get snoozedAt; DateTime get snoozedUntil; NudgeBannerSnoozeDuration get duration;@JsonKey(fromJson: _decodePositiveMinutes) int get durationMinutes;@JsonKey(fromJson: _decodeUtcOffsetMinutes) int get utcOffsetMinutes;@JsonKey(fromJson: _decodeOptionalUtcOffsetMinutes) int? get returnUtcOffsetMinutes;
+ String get id;@JsonKey(fromJson: _decodeActivation) int get activation; DateTime get snoozedAt; DateTime get snoozedUntil; NudgeBannerSnoozeDuration get duration;@JsonKey(fromJson: _decodePositiveMinutes) int get durationMinutes;@JsonKey(fromJson: _decodeUtcOffsetMinutes) int get utcOffsetMinutes;@JsonKey(fromJson: _decodeOptionalUtcOffsetMinutes) int? get returnUtcOffsetMinutes;/// Why it was snoozed; null for events recorded before reasons were
+/// kept, which were all [NudgeSnoozeReason.chosen].
+@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) NudgeSnoozeReason? get reason;
 /// Create a copy of NudgeSnooze
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -582,16 +584,16 @@ $NudgeSnoozeCopyWith<NudgeSnooze> get copyWith => _$NudgeSnoozeCopyWithImpl<Nudg
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NudgeSnooze&&(identical(other.id, id) || other.id == id)&&(identical(other.activation, activation) || other.activation == activation)&&(identical(other.snoozedAt, snoozedAt) || other.snoozedAt == snoozedAt)&&(identical(other.snoozedUntil, snoozedUntil) || other.snoozedUntil == snoozedUntil)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.durationMinutes, durationMinutes) || other.durationMinutes == durationMinutes)&&(identical(other.utcOffsetMinutes, utcOffsetMinutes) || other.utcOffsetMinutes == utcOffsetMinutes)&&(identical(other.returnUtcOffsetMinutes, returnUtcOffsetMinutes) || other.returnUtcOffsetMinutes == returnUtcOffsetMinutes));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NudgeSnooze&&(identical(other.id, id) || other.id == id)&&(identical(other.activation, activation) || other.activation == activation)&&(identical(other.snoozedAt, snoozedAt) || other.snoozedAt == snoozedAt)&&(identical(other.snoozedUntil, snoozedUntil) || other.snoozedUntil == snoozedUntil)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.durationMinutes, durationMinutes) || other.durationMinutes == durationMinutes)&&(identical(other.utcOffsetMinutes, utcOffsetMinutes) || other.utcOffsetMinutes == utcOffsetMinutes)&&(identical(other.returnUtcOffsetMinutes, returnUtcOffsetMinutes) || other.returnUtcOffsetMinutes == returnUtcOffsetMinutes)&&(identical(other.reason, reason) || other.reason == reason));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,activation,snoozedAt,snoozedUntil,duration,durationMinutes,utcOffsetMinutes,returnUtcOffsetMinutes);
+int get hashCode => Object.hash(runtimeType,id,activation,snoozedAt,snoozedUntil,duration,durationMinutes,utcOffsetMinutes,returnUtcOffsetMinutes,reason);
 
 @override
 String toString() {
-  return 'NudgeSnooze(id: $id, activation: $activation, snoozedAt: $snoozedAt, snoozedUntil: $snoozedUntil, duration: $duration, durationMinutes: $durationMinutes, utcOffsetMinutes: $utcOffsetMinutes, returnUtcOffsetMinutes: $returnUtcOffsetMinutes)';
+  return 'NudgeSnooze(id: $id, activation: $activation, snoozedAt: $snoozedAt, snoozedUntil: $snoozedUntil, duration: $duration, durationMinutes: $durationMinutes, utcOffsetMinutes: $utcOffsetMinutes, returnUtcOffsetMinutes: $returnUtcOffsetMinutes, reason: $reason)';
 }
 
 
@@ -602,7 +604,7 @@ abstract mixin class $NudgeSnoozeCopyWith<$Res>  {
   factory $NudgeSnoozeCopyWith(NudgeSnooze value, $Res Function(NudgeSnooze) _then) = _$NudgeSnoozeCopyWithImpl;
 @useResult
 $Res call({
- String id,@JsonKey(fromJson: _decodeActivation) int activation, DateTime snoozedAt, DateTime snoozedUntil, NudgeBannerSnoozeDuration duration,@JsonKey(fromJson: _decodePositiveMinutes) int durationMinutes,@JsonKey(fromJson: _decodeUtcOffsetMinutes) int utcOffsetMinutes,@JsonKey(fromJson: _decodeOptionalUtcOffsetMinutes) int? returnUtcOffsetMinutes
+ String id,@JsonKey(fromJson: _decodeActivation) int activation, DateTime snoozedAt, DateTime snoozedUntil, NudgeBannerSnoozeDuration duration,@JsonKey(fromJson: _decodePositiveMinutes) int durationMinutes,@JsonKey(fromJson: _decodeUtcOffsetMinutes) int utcOffsetMinutes,@JsonKey(fromJson: _decodeOptionalUtcOffsetMinutes) int? returnUtcOffsetMinutes,@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) NudgeSnoozeReason? reason
 });
 
 
@@ -619,7 +621,7 @@ class _$NudgeSnoozeCopyWithImpl<$Res>
 
 /// Create a copy of NudgeSnooze
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? activation = null,Object? snoozedAt = null,Object? snoozedUntil = null,Object? duration = null,Object? durationMinutes = null,Object? utcOffsetMinutes = null,Object? returnUtcOffsetMinutes = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? activation = null,Object? snoozedAt = null,Object? snoozedUntil = null,Object? duration = null,Object? durationMinutes = null,Object? utcOffsetMinutes = null,Object? returnUtcOffsetMinutes = freezed,Object? reason = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,activation: null == activation ? _self.activation : activation // ignore: cast_nullable_to_non_nullable
@@ -629,7 +631,8 @@ as DateTime,duration: null == duration ? _self.duration : duration // ignore: ca
 as NudgeBannerSnoozeDuration,durationMinutes: null == durationMinutes ? _self.durationMinutes : durationMinutes // ignore: cast_nullable_to_non_nullable
 as int,utcOffsetMinutes: null == utcOffsetMinutes ? _self.utcOffsetMinutes : utcOffsetMinutes // ignore: cast_nullable_to_non_nullable
 as int,returnUtcOffsetMinutes: freezed == returnUtcOffsetMinutes ? _self.returnUtcOffsetMinutes : returnUtcOffsetMinutes // ignore: cast_nullable_to_non_nullable
-as int?,
+as int?,reason: freezed == reason ? _self.reason : reason // ignore: cast_nullable_to_non_nullable
+as NudgeSnoozeReason?,
   ));
 }
 
@@ -714,10 +717,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(fromJson: _decodeActivation)  int activation,  DateTime snoozedAt,  DateTime snoozedUntil,  NudgeBannerSnoozeDuration duration, @JsonKey(fromJson: _decodePositiveMinutes)  int durationMinutes, @JsonKey(fromJson: _decodeUtcOffsetMinutes)  int utcOffsetMinutes, @JsonKey(fromJson: _decodeOptionalUtcOffsetMinutes)  int? returnUtcOffsetMinutes)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(fromJson: _decodeActivation)  int activation,  DateTime snoozedAt,  DateTime snoozedUntil,  NudgeBannerSnoozeDuration duration, @JsonKey(fromJson: _decodePositiveMinutes)  int durationMinutes, @JsonKey(fromJson: _decodeUtcOffsetMinutes)  int utcOffsetMinutes, @JsonKey(fromJson: _decodeOptionalUtcOffsetMinutes)  int? returnUtcOffsetMinutes, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  NudgeSnoozeReason? reason)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _NudgeSnooze() when $default != null:
-return $default(_that.id,_that.activation,_that.snoozedAt,_that.snoozedUntil,_that.duration,_that.durationMinutes,_that.utcOffsetMinutes,_that.returnUtcOffsetMinutes);case _:
+return $default(_that.id,_that.activation,_that.snoozedAt,_that.snoozedUntil,_that.duration,_that.durationMinutes,_that.utcOffsetMinutes,_that.returnUtcOffsetMinutes,_that.reason);case _:
   return orElse();
 
 }
@@ -735,10 +738,10 @@ return $default(_that.id,_that.activation,_that.snoozedAt,_that.snoozedUntil,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(fromJson: _decodeActivation)  int activation,  DateTime snoozedAt,  DateTime snoozedUntil,  NudgeBannerSnoozeDuration duration, @JsonKey(fromJson: _decodePositiveMinutes)  int durationMinutes, @JsonKey(fromJson: _decodeUtcOffsetMinutes)  int utcOffsetMinutes, @JsonKey(fromJson: _decodeOptionalUtcOffsetMinutes)  int? returnUtcOffsetMinutes)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(fromJson: _decodeActivation)  int activation,  DateTime snoozedAt,  DateTime snoozedUntil,  NudgeBannerSnoozeDuration duration, @JsonKey(fromJson: _decodePositiveMinutes)  int durationMinutes, @JsonKey(fromJson: _decodeUtcOffsetMinutes)  int utcOffsetMinutes, @JsonKey(fromJson: _decodeOptionalUtcOffsetMinutes)  int? returnUtcOffsetMinutes, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  NudgeSnoozeReason? reason)  $default,) {final _that = this;
 switch (_that) {
 case _NudgeSnooze():
-return $default(_that.id,_that.activation,_that.snoozedAt,_that.snoozedUntil,_that.duration,_that.durationMinutes,_that.utcOffsetMinutes,_that.returnUtcOffsetMinutes);case _:
+return $default(_that.id,_that.activation,_that.snoozedAt,_that.snoozedUntil,_that.duration,_that.durationMinutes,_that.utcOffsetMinutes,_that.returnUtcOffsetMinutes,_that.reason);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -755,10 +758,10 @@ return $default(_that.id,_that.activation,_that.snoozedAt,_that.snoozedUntil,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(fromJson: _decodeActivation)  int activation,  DateTime snoozedAt,  DateTime snoozedUntil,  NudgeBannerSnoozeDuration duration, @JsonKey(fromJson: _decodePositiveMinutes)  int durationMinutes, @JsonKey(fromJson: _decodeUtcOffsetMinutes)  int utcOffsetMinutes, @JsonKey(fromJson: _decodeOptionalUtcOffsetMinutes)  int? returnUtcOffsetMinutes)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(fromJson: _decodeActivation)  int activation,  DateTime snoozedAt,  DateTime snoozedUntil,  NudgeBannerSnoozeDuration duration, @JsonKey(fromJson: _decodePositiveMinutes)  int durationMinutes, @JsonKey(fromJson: _decodeUtcOffsetMinutes)  int utcOffsetMinutes, @JsonKey(fromJson: _decodeOptionalUtcOffsetMinutes)  int? returnUtcOffsetMinutes, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  NudgeSnoozeReason? reason)?  $default,) {final _that = this;
 switch (_that) {
 case _NudgeSnooze() when $default != null:
-return $default(_that.id,_that.activation,_that.snoozedAt,_that.snoozedUntil,_that.duration,_that.durationMinutes,_that.utcOffsetMinutes,_that.returnUtcOffsetMinutes);case _:
+return $default(_that.id,_that.activation,_that.snoozedAt,_that.snoozedUntil,_that.duration,_that.durationMinutes,_that.utcOffsetMinutes,_that.returnUtcOffsetMinutes,_that.reason);case _:
   return null;
 
 }
@@ -770,7 +773,7 @@ return $default(_that.id,_that.activation,_that.snoozedAt,_that.snoozedUntil,_th
 @JsonSerializable()
 
 class _NudgeSnooze extends NudgeSnooze {
-  const _NudgeSnooze({required this.id, @JsonKey(fromJson: _decodeActivation) required this.activation, required this.snoozedAt, required this.snoozedUntil, required this.duration, @JsonKey(fromJson: _decodePositiveMinutes) required this.durationMinutes, @JsonKey(fromJson: _decodeUtcOffsetMinutes) required this.utcOffsetMinutes, @JsonKey(fromJson: _decodeOptionalUtcOffsetMinutes) this.returnUtcOffsetMinutes}): super._();
+  const _NudgeSnooze({required this.id, @JsonKey(fromJson: _decodeActivation) required this.activation, required this.snoozedAt, required this.snoozedUntil, required this.duration, @JsonKey(fromJson: _decodePositiveMinutes) required this.durationMinutes, @JsonKey(fromJson: _decodeUtcOffsetMinutes) required this.utcOffsetMinutes, @JsonKey(fromJson: _decodeOptionalUtcOffsetMinutes) this.returnUtcOffsetMinutes, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) this.reason}): super._();
   factory _NudgeSnooze.fromJson(Map<String, dynamic> json) => _$NudgeSnoozeFromJson(json);
 
 @override final  String id;
@@ -781,6 +784,9 @@ class _NudgeSnooze extends NudgeSnooze {
 @override@JsonKey(fromJson: _decodePositiveMinutes) final  int durationMinutes;
 @override@JsonKey(fromJson: _decodeUtcOffsetMinutes) final  int utcOffsetMinutes;
 @override@JsonKey(fromJson: _decodeOptionalUtcOffsetMinutes) final  int? returnUtcOffsetMinutes;
+/// Why it was snoozed; null for events recorded before reasons were
+/// kept, which were all [NudgeSnoozeReason.chosen].
+@override@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) final  NudgeSnoozeReason? reason;
 
 /// Create a copy of NudgeSnooze
 /// with the given fields replaced by the non-null parameter values.
@@ -795,16 +801,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NudgeSnooze&&(identical(other.id, id) || other.id == id)&&(identical(other.activation, activation) || other.activation == activation)&&(identical(other.snoozedAt, snoozedAt) || other.snoozedAt == snoozedAt)&&(identical(other.snoozedUntil, snoozedUntil) || other.snoozedUntil == snoozedUntil)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.durationMinutes, durationMinutes) || other.durationMinutes == durationMinutes)&&(identical(other.utcOffsetMinutes, utcOffsetMinutes) || other.utcOffsetMinutes == utcOffsetMinutes)&&(identical(other.returnUtcOffsetMinutes, returnUtcOffsetMinutes) || other.returnUtcOffsetMinutes == returnUtcOffsetMinutes));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NudgeSnooze&&(identical(other.id, id) || other.id == id)&&(identical(other.activation, activation) || other.activation == activation)&&(identical(other.snoozedAt, snoozedAt) || other.snoozedAt == snoozedAt)&&(identical(other.snoozedUntil, snoozedUntil) || other.snoozedUntil == snoozedUntil)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.durationMinutes, durationMinutes) || other.durationMinutes == durationMinutes)&&(identical(other.utcOffsetMinutes, utcOffsetMinutes) || other.utcOffsetMinutes == utcOffsetMinutes)&&(identical(other.returnUtcOffsetMinutes, returnUtcOffsetMinutes) || other.returnUtcOffsetMinutes == returnUtcOffsetMinutes)&&(identical(other.reason, reason) || other.reason == reason));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,activation,snoozedAt,snoozedUntil,duration,durationMinutes,utcOffsetMinutes,returnUtcOffsetMinutes);
+int get hashCode => Object.hash(runtimeType,id,activation,snoozedAt,snoozedUntil,duration,durationMinutes,utcOffsetMinutes,returnUtcOffsetMinutes,reason);
 
 @override
 String toString() {
-  return 'NudgeSnooze(id: $id, activation: $activation, snoozedAt: $snoozedAt, snoozedUntil: $snoozedUntil, duration: $duration, durationMinutes: $durationMinutes, utcOffsetMinutes: $utcOffsetMinutes, returnUtcOffsetMinutes: $returnUtcOffsetMinutes)';
+  return 'NudgeSnooze(id: $id, activation: $activation, snoozedAt: $snoozedAt, snoozedUntil: $snoozedUntil, duration: $duration, durationMinutes: $durationMinutes, utcOffsetMinutes: $utcOffsetMinutes, returnUtcOffsetMinutes: $returnUtcOffsetMinutes, reason: $reason)';
 }
 
 
@@ -815,7 +821,7 @@ abstract mixin class _$NudgeSnoozeCopyWith<$Res> implements $NudgeSnoozeCopyWith
   factory _$NudgeSnoozeCopyWith(_NudgeSnooze value, $Res Function(_NudgeSnooze) _then) = __$NudgeSnoozeCopyWithImpl;
 @override @useResult
 $Res call({
- String id,@JsonKey(fromJson: _decodeActivation) int activation, DateTime snoozedAt, DateTime snoozedUntil, NudgeBannerSnoozeDuration duration,@JsonKey(fromJson: _decodePositiveMinutes) int durationMinutes,@JsonKey(fromJson: _decodeUtcOffsetMinutes) int utcOffsetMinutes,@JsonKey(fromJson: _decodeOptionalUtcOffsetMinutes) int? returnUtcOffsetMinutes
+ String id,@JsonKey(fromJson: _decodeActivation) int activation, DateTime snoozedAt, DateTime snoozedUntil, NudgeBannerSnoozeDuration duration,@JsonKey(fromJson: _decodePositiveMinutes) int durationMinutes,@JsonKey(fromJson: _decodeUtcOffsetMinutes) int utcOffsetMinutes,@JsonKey(fromJson: _decodeOptionalUtcOffsetMinutes) int? returnUtcOffsetMinutes,@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) NudgeSnoozeReason? reason
 });
 
 
@@ -832,7 +838,7 @@ class __$NudgeSnoozeCopyWithImpl<$Res>
 
 /// Create a copy of NudgeSnooze
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? activation = null,Object? snoozedAt = null,Object? snoozedUntil = null,Object? duration = null,Object? durationMinutes = null,Object? utcOffsetMinutes = null,Object? returnUtcOffsetMinutes = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? activation = null,Object? snoozedAt = null,Object? snoozedUntil = null,Object? duration = null,Object? durationMinutes = null,Object? utcOffsetMinutes = null,Object? returnUtcOffsetMinutes = freezed,Object? reason = freezed,}) {
   return _then(_NudgeSnooze(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,activation: null == activation ? _self.activation : activation // ignore: cast_nullable_to_non_nullable
@@ -842,7 +848,8 @@ as DateTime,duration: null == duration ? _self.duration : duration // ignore: ca
 as NudgeBannerSnoozeDuration,durationMinutes: null == durationMinutes ? _self.durationMinutes : durationMinutes // ignore: cast_nullable_to_non_nullable
 as int,utcOffsetMinutes: null == utcOffsetMinutes ? _self.utcOffsetMinutes : utcOffsetMinutes // ignore: cast_nullable_to_non_nullable
 as int,returnUtcOffsetMinutes: freezed == returnUtcOffsetMinutes ? _self.returnUtcOffsetMinutes : returnUtcOffsetMinutes // ignore: cast_nullable_to_non_nullable
-as int?,
+as int?,reason: freezed == reason ? _self.reason : reason // ignore: cast_nullable_to_non_nullable
+as NudgeSnoozeReason?,
   ));
 }
 

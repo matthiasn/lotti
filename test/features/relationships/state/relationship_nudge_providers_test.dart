@@ -294,4 +294,97 @@ void main() {
     await warmFlag(c);
     expect(await c.read(activeRelationshipNudgesProvider.future), isEmpty);
   });
+
+  // ADR 0063: the person page says a tapped reminder is paused, and until
+  // when — only for a pause the tap made, never for a snooze the user chose.
+  group('pausedRelationshipReminderProvider', () {
+    final until = now.add(const Duration(minutes: 40));
+
+    RelationshipNudgeEntity paused(
+      NudgeSnoozeReason? reason, {
+      DateTime? snoozedUntil,
+      int? activation,
+    }) {
+      final base = nudge('ad-1', snoozedUntil: snoozedUntil ?? until);
+      return base.copyWith(
+        snoozeHistory: [
+          NudgeSnooze(
+            id: 'snooze-1',
+            activation: activation ?? base.activationCount,
+            snoozedAt: now.subtract(const Duration(minutes: 20)),
+            snoozedUntil: snoozedUntil ?? until,
+            duration: NudgeBannerSnoozeDuration.oneHour,
+            durationMinutes: 60,
+            utcOffsetMinutes: 0,
+            reason: reason,
+          ),
+        ],
+      );
+    }
+
+    setUp(() {
+      when(
+        () => repository.getEntity(agentId),
+      ).thenAnswer((_) async => identity());
+    });
+
+    Future<PausedRelationshipReminder?> read(
+      RelationshipNudgeEntity row,
+    ) async {
+      when(
+        () => repository.getEntitiesByAgentId(
+          agentId,
+          type: AgentEntityTypes.relationshipNudge,
+        ),
+      ).thenAnswer((_) async => [row]);
+      final c = container();
+      return withClock(
+        Clock.fixed(now),
+        () => c.read(pausedRelationshipReminderProvider(relationshipId).future),
+      );
+    }
+
+    test(
+      'a reminder the tap paused comes back as its entry and deadline',
+      () async {
+        final result = await read(paused(NudgeSnoozeReason.opened));
+
+        expect(result?.until.isAtSameMomentAs(until), isTrue);
+        expect(result?.entry.nudge.id, 'ad-1');
+        expect(result?.entry.tapRoute, '/people/$relationshipId');
+        expect(result?.entry.subjectTitle, 'Anna');
+      },
+    );
+
+    for (final (label, row) in [
+      ('a snooze the user chose', paused(NudgeSnoozeReason.chosen)),
+      ('an older snooze without a reason', paused(null)),
+      (
+        'a pause that already ended',
+        paused(
+          NudgeSnoozeReason.opened,
+          snoozedUntil: now.subtract(const Duration(minutes: 1)),
+        ),
+      ),
+      (
+        'a pause from an earlier activation',
+        paused(NudgeSnoozeReason.opened, activation: 99),
+      ),
+      ('a banner that was never paused', nudge('ad-1')),
+      (
+        'a retired banner',
+        paused(NudgeSnoozeReason.opened).copyWith(status: NudgeStatus.retired),
+      ),
+    ]) {
+      test('$label says nothing', () async {
+        expect(await read(row), isNull);
+      });
+    }
+
+    test('a person whose agent is gone says nothing', () async {
+      when(() => repository.getEntity(agentId)).thenAnswer((_) async => null);
+
+      expect(await read(paused(NudgeSnoozeReason.opened)), isNull);
+    });
+  });
 }

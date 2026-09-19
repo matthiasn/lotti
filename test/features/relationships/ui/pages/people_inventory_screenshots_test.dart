@@ -37,6 +37,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
@@ -58,6 +59,8 @@ import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
+import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
+import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
@@ -67,6 +70,7 @@ import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/service/pending_interaction_store.dart';
 import 'package:lotti/features/relationships/state/contact_import_controller.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
+import 'package:lotti/features/relationships/state/relationship_nudge_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
 import 'package:lotti/features/relationships/ui/pages/contact_import_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
@@ -1123,6 +1127,56 @@ void main() {
   // the same page in the same column, so a second viewport would say
   // nothing new about these states.
   // -----------------------------------------------------------------
+  // ADR 0063: after tapping the reminder, the page says it is paused and
+  // until when.
+  testWidgets('mobile person page, reminder paused — dark', (tester) async {
+    await pumpSurface(
+      tester,
+      home: const RelationshipDetailsPage(relationshipId: _pipId),
+      device: proDevice,
+      brightness: Brightness.dark,
+      overrides: [
+        ...personOverrides(
+          report: briefing(),
+          state: makeTestState(agentId: agentId),
+        ),
+        pausedRelationshipReminderProvider(_pipId).overrideWith(
+          (ref) async => (
+            entry: (
+              nudge: NudgeEntityView.of(
+                AgentDomainEntity.relationshipNudge(
+                  id: 'ad-pip',
+                  agentId: agentId,
+                  status: NudgeStatus.active,
+                  brief: const NudgeBrief(
+                    headline: 'Check in with Pip.',
+                    tone: NudgeTone.nudge,
+                    animation: NudgeBannerAnimation.steady,
+                  ),
+                  briefDigest: 'd',
+                  createdAt: _now,
+                  updatedAt: _now,
+                  vectorClock: null,
+                ),
+              )!,
+              subjectTitle: 'Commander Pip Frostbeak',
+              kind: NudgeBannerKind.relationship,
+              tapRoute: '/people/$_pipId',
+            ),
+            until: _now.add(const Duration(hours: 1)),
+          ),
+        ),
+      ],
+    );
+
+    expect(find.byKey(const ValueKey('person-reminder-paused')), findsOne);
+    await captureScreenshot(
+      tester,
+      'person_page_reminder_paused_mobile_dark',
+      subdir: _subdir,
+    );
+  });
+
   testWidgets('mobile person page, no briefing yet — dark', (tester) async {
     await pumpSurface(
       tester,

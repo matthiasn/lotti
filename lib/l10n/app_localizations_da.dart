@@ -12372,6 +12372,18 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipRelinkContact => 'Tilknyt en anden kontakt';
 
   @override
+  String get relationshipReminderPausedBody =>
+      'Den kommer igen til den tid, medmindre du registrerer et check-in forinden.';
+
+  @override
+  String relationshipReminderPausedTitle(String time) {
+    return 'Påmindelsen er sat på pause til $time';
+  }
+
+  @override
+  String get relationshipReminderSnoozeLonger => 'Udsæt længere';
+
+  @override
   String get relationshipsEmptyState =>
       'Tilføj de mennesker, du vil holde kontakten med.';
 

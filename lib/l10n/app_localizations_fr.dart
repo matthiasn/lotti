@@ -12586,6 +12586,18 @@ class AppLocalizationsFr extends AppLocalizations {
   String get relationshipRelinkContact => 'Associer un autre contact';
 
   @override
+  String get relationshipReminderPausedBody =>
+      'Il reviendra à ce moment-là, sauf si tu enregistres un échange avant.';
+
+  @override
+  String relationshipReminderPausedTitle(String time) {
+    return 'Rappel en pause jusqu\'à $time';
+  }
+
+  @override
+  String get relationshipReminderSnoozeLonger => 'Reporter plus longtemps';
+
+  @override
   String get relationshipsEmptyState =>
       'Ajoute les personnes dont tu veux rester proche.';
 

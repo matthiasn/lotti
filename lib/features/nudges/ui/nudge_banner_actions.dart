@@ -2,6 +2,8 @@
 /// per-activation rating prompt.
 library;
 
+import 'dart:developer' as developer;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -9,6 +11,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 
 enum _NudgeBannerVisibilityAction {
@@ -138,16 +141,66 @@ Future<bool> showNudgeBannerSnoozeSheet(
     messenger?.showSnackBar(SnackBar(content: Text(failedNotice)));
     return false;
   }
-  if (hiddenUntil == null) {
-    invalidateNudgeBannerSources(container);
-    return false;
-  }
+  return _hideLocally(container, entry, hiddenUntil);
+}
 
-  container
-      .read(locallySnoozedNudgeDeadlinesProvider.notifier)
-      .add(entry.nudge.id, entry.nudge.activationCount, hiddenUntil);
+/// Hides [entry] on this device until [hiddenUntil] at once — the durable
+/// write reaches the sources on their next read — and refreshes them.
+/// Returns whether anything was hidden.
+bool _hideLocally(
+  ProviderContainer container,
+  NudgeBannerEntry entry,
+  DateTime? hiddenUntil,
+) {
+  if (hiddenUntil != null) {
+    container
+        .read(locallySnoozedNudgeDeadlinesProvider.notifier)
+        .add(entry.nudge.id, entry.nudge.activationCount, hiddenUntil);
+  }
   invalidateNudgeBannerSources(container);
-  return true;
+  return hiddenUntil != null;
+}
+
+/// How long a tapped relationship reminder pauses itself (ADR 0063).
+const NudgeBannerSnoozeDuration relationshipReminderOpenedSnooze =
+    NudgeBannerSnoozeDuration.oneHour;
+
+/// Opens what [entry] points at. A relationship reminder also pauses
+/// itself for [relationshipReminderOpenedSnooze] (ADR 0063): the user acted
+/// on it — they cannot always call right away — and a banner that keeps
+/// rotating over the page it just opened reads as a tap that did nothing.
+/// The pause is recorded as [NudgeSnoozeReason.opened], so it is never
+/// mistaken for the reminder being put off. Other kinds only open
+/// (ADR 0055 Decision 6).
+///
+/// The pause is best effort: the page opens first, and a failed write only
+/// leaves the banner where it was.
+Future<void> openNudgeBanner(
+  BuildContext context,
+  WidgetRef ref,
+  NudgeBannerEntry entry,
+) async {
+  beamToNamed(entry.tapRoute);
+  if (entry.kind != NudgeBannerKind.relationship) return;
+  final container = ProviderScope.containerOf(context, listen: false);
+  final interactions = ref.read(nudgeInteractionsProvider);
+  DateTime? pausedUntil;
+  try {
+    pausedUntil = await interactions.snooze(
+      entry.nudge.id,
+      duration: relationshipReminderOpenedSnooze,
+      forActivation: entry.nudge.activationCount,
+      reason: NudgeSnoozeReason.opened,
+    );
+  } on Object catch (error, stackTrace) {
+    developer.log(
+      'Could not pause the opened reminder ${entry.nudge.id}',
+      name: 'openNudgeBanner',
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
+  _hideLocally(container, entry, pausedUntil);
 }
 
 /// Opens the one-outcome-per-activation rating sheet for [entry].

@@ -96,6 +96,38 @@ void main() {
       );
     });
 
+    // ADR 0063: a tapped relationship reminder pauses itself, and the pause
+    // says so, so the agent never reads it as the reminder being put off.
+    test('a pause the user did not choose carries its reason; a chosen '
+        'snooze carries none', () async {
+      when(() => repository.getEntity('ad-1')).thenAnswer((_) async => nudge());
+      await withClock(
+        fixedClock,
+        () => interactions.snooze(
+          'ad-1',
+          duration: NudgeBannerSnoozeDuration.oneHour,
+          reason: NudgeSnoozeReason.opened,
+        ),
+      );
+      expect(
+        upserts.whereType<GoalNudgeEntity>().last.snoozeHistory.single.reason,
+        NudgeSnoozeReason.opened,
+      );
+
+      when(() => repository.getEntity('ad-1')).thenAnswer((_) async => nudge());
+      await withClock(
+        fixedClock,
+        () => interactions.snooze(
+          'ad-1',
+          duration: NudgeBannerSnoozeDuration.oneHour,
+        ),
+      );
+      expect(
+        upserts.whereType<GoalNudgeEntity>().last.snoozeHistory.single.reason,
+        isNull,
+      );
+    });
+
     test('a snooze for a superseded activation is discarded — the tap '
         'targeted a banner sync has already re-run', () async {
       when(() => repository.getEntity('ad-1')).thenAnswer(
