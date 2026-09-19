@@ -100,6 +100,9 @@ void main() {
       () => relationships.touchCheckInsHolding(any()),
     ).thenAnswer((_) async {});
     when(
+      () => relationships.getImageDescriptions(any()),
+    ).thenAnswer((_) async => {'photo-1': 'Pip on the ice.'});
+    when(
       () => journalDb.journalEntityById('check-in-1'),
     ).thenAnswer((_) async => checkIn());
 
@@ -166,6 +169,47 @@ void main() {
     verify(() => relationships.touchCheckInsHolding('photo-1')).called(1);
   });
 
+  // Codex review on #4381: a run that wrote no description — no profile, no
+  // usable model, a provider failure, an empty response — must not mark the
+  // check-in stale and buy another inference over unchanged evidence.
+  test('leaves the check-in alone when no description was written', () async {
+    when(
+      () => relationships.getImageDescriptions(any()),
+    ).thenAnswer((_) async => const {});
+
+    await trigger().triggerAutomaticImageAnalysis(
+      imageEntryId: 'photo-1',
+      linkedTaskId: 'check-in-1',
+    );
+
+    verifyNever(() => relationships.touchCheckInsHolding(any()));
+  });
+
+  // Nothing awaits this trigger, so a failed read or write is logged rather
+  // than left as an unhandled asynchronous error.
+  test('logs, rather than throws, when the check-in cannot be saved', () async {
+    when(
+      () => relationships.touchCheckInsHolding(any()),
+    ).thenThrow(StateError('database closed'));
+
+    await expectLater(
+      trigger().triggerAutomaticImageAnalysis(
+        imageEntryId: 'photo-1',
+        linkedTaskId: 'check-in-1',
+      ),
+      completes,
+    );
+
+    verify(
+      () => logger.error(
+        LogDomain.ai,
+        any<Object>(),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: 'checkInPhotoAnalysis',
+      ),
+    ).called(1);
+  });
+
   test('describes nothing where no profile assigns an image-analysis '
       'skill', () async {
     await trigger().triggerAutomaticImageAnalysis(
@@ -206,6 +250,7 @@ void main() {
         () => automation.tryAnalyzeImage(subjectId: any(named: 'subjectId')),
       );
       verifyNever(() => relationships.touchCheckInsHolding(any()));
+      verifyNever(() => relationships.getImageDescriptions(any()));
     });
   }
 

@@ -56,9 +56,27 @@ class CheckInPhotoAnalysisTrigger extends AutomaticImageAnalysisTrigger {
       subjectId: relationshipId,
     );
 
-    // Whether or not a profile handled it, the touch is cheap and only a
-    // written description changes what the next briefing reads.
-    await _relationships.touchCheckInsHolding(imageEntryId);
+    // Only a written description changes what the next briefing reads. A run
+    // that wrote none — no profile handled it, no usable model, a provider
+    // failure, an empty response — must not mark the check-in stale and buy
+    // another inference over evidence that did not change. The analysis is
+    // its own response entry, so its presence is the answer.
+    try {
+      final described = await _relationships.getImageDescriptions({
+        imageEntryId,
+      });
+      if (described.isEmpty) return;
+      await _relationships.touchCheckInsHolding(imageEntryId);
+    } catch (exception, stackTrace) {
+      // Fire-and-forget: the importer never awaits this, so a failure here
+      // is logged rather than left as an unhandled asynchronous error.
+      loggingService.error(
+        LogDomain.ai,
+        exception,
+        stackTrace: stackTrace,
+        subDomain: 'checkInPhotoAnalysis',
+      );
+    }
   }
 }
 
