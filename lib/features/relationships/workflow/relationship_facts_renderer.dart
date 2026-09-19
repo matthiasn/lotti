@@ -111,6 +111,7 @@ class RelationshipFactsRenderer {
     ProposalLedger proposals = const ProposalLedger.empty(),
     List<RecalledObservation> observations = const [],
     Map<String, List<JournalEntity>> checkInEntries = const {},
+    Map<String, String> imageDescriptions = const {},
   }) {
     final data = relationship.data;
     final buffer = StringBuffer()
@@ -201,7 +202,7 @@ class RelationshipFactsRenderer {
       }
       final entries = checkInEntries[checkIn.id] ?? const <JournalEntity>[];
       for (final entry in entries.take(relationshipCheckInEntryLookback)) {
-        buffer.writeln('  ${_entryLine(entry)}');
+        buffer.writeln('  ${_entryLine(entry, imageDescriptions)}');
       }
       if (entries.length > relationshipCheckInEntryLookback) {
         buffer.writeln(
@@ -344,8 +345,13 @@ class RelationshipFactsRenderer {
   /// One check-in entry as the model reads it: what kind it is, when it was
   /// added, and its words — or, for a recording or photo without words yet,
   /// that they have not arrived, so the model never reads silence as
-  /// "nothing was said".
-  String _entryLine(JournalEntity entry) {
+  /// "nothing was said". A photo's words are its description from
+  /// [imageDescriptions] (its image analysis) followed by any text of its
+  /// own.
+  String _entryLine(
+    JournalEntity entry,
+    Map<String, String> imageDescriptions,
+  ) {
     final at = _minute(entry.meta.dateFrom);
     final words = entry.entryText?.plainText.trim() ?? '';
     return switch (entry) {
@@ -354,10 +360,13 @@ class RelationshipFactsRenderer {
             ? '$at recording (${_clock(data.duration)}): transcript not '
                   'available yet'
             : '$at recording (${_clock(data.duration)}): ${_excerpt(words)}',
-      JournalImage() =>
-        words.isEmpty
-            ? '$at photo: no description yet'
-            : '$at photo: ${_excerpt(words)}',
+      JournalImage() => switch ([
+        ?imageDescriptions[entry.id],
+        if (words.isNotEmpty) words,
+      ].join(' · ')) {
+        '' => '$at photo: no description yet',
+        final described => '$at photo: ${_excerpt(described)}',
+      },
       _ => '$at comment: ${_excerpt(words)}',
     };
   }

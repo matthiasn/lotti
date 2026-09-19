@@ -100,6 +100,7 @@ void main() {
     RelationshipCadenceStatus? preTransitionStatus,
     List<RecalledObservation> observations = const [],
     Map<String, List<JournalEntity>> checkInEntries = const {},
+    Map<String, String> imageDescriptions = const {},
   }) => renderer.render(
     relationship: relationship(),
     derivation: d ?? derivation(),
@@ -111,6 +112,7 @@ void main() {
     preTransitionStatus: preTransitionStatus,
     observations: observations,
     checkInEntries: checkInEntries,
+    imageDescriptions: imageDescriptions,
   );
 
   group('check-in entries', () {
@@ -172,6 +174,39 @@ void main() {
           '  2026-08-14 20:04 recording (1:05): transcript not available yet\n'
           '  2026-08-14 20:05 photo: no description yet\n'
           '  2026-08-14 20:06 photo: Pip at the launch pad.\n',
+        ),
+      );
+    });
+
+    // ADR 0062 Decision 2: the photo's description is its image analysis,
+    // not only its own text — the analysis is a response of its own.
+    test('a photo reads as its description, then any text of its own', () {
+      final facts = render(
+        checkIns: [checkIn('c-1', at)],
+        checkInEntries: {
+          'c-1': [
+            photo('p-1', at.add(const Duration(minutes: 1))),
+            photo(
+              'p-2',
+              at.add(const Duration(minutes: 2)),
+              caption: 'For the newsletter.',
+            ),
+            photo('p-3', at.add(const Duration(minutes: 3))),
+          ],
+        },
+        imageDescriptions: {
+          'p-1': 'Pip at the launch pad.',
+          'p-2': 'Frida holding a krill tin.',
+        },
+      );
+
+      expect(
+        facts,
+        contains(
+          '  2026-08-14 20:01 photo: Pip at the launch pad.\n'
+          '  2026-08-14 20:02 photo: Frida holding a krill tin. · For the '
+          'newsletter.\n'
+          '  2026-08-14 20:03 photo: no description yet\n',
         ),
       );
     });
