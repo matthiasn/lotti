@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -368,6 +370,58 @@ void main() {
           // getBulkLinkedTimeSpans is never reached because the first await
           // throws before it.
           verifyNever(() => mockJournalDb.getBulkLinkedTimeSpans(any()));
+        });
+      },
+    );
+
+    test(
+      'a lookup arriving while a batch is reading the db gets its own batch',
+      () {
+        fakeAsync((async) {
+          const lateId = 'late-task-id';
+          final firstRead = Completer<Map<String, Duration?>>();
+          when(
+            () => mockJournalDb.getTaskEstimatesByIds({testTask.id}),
+          ).thenAnswer((_) => firstRead.future);
+          when(
+            () => mockJournalDb.getBulkLinkedTimeSpans({testTask.id}),
+          ).thenAnswer(
+            (_) async => {testTask.id: const <LinkedEntityTimeSpan>[]},
+          );
+          when(
+            () => mockJournalDb.getTaskEstimatesByIds({lateId}),
+          ).thenAnswer((_) async => {lateId: const Duration(minutes: 20)});
+          when(
+            () => mockJournalDb.getBulkLinkedTimeSpans({lateId}),
+          ).thenAnswer((_) async => {lateId: const <LinkedEntityTimeSpan>[]});
+
+          (Duration?, Map<String, TimeRange>)? first;
+          (Duration?, Map<String, TimeRange>)? late;
+          repository
+              .getTaskProgressData(id: testTask.id)
+              .then((value) => first = value);
+          async.flushMicrotasks();
+          // The first batch is parked on its estimates read.
+          verify(
+            () => mockJournalDb.getTaskEstimatesByIds({testTask.id}),
+          ).called(1);
+
+          repository
+              .getTaskProgressData(id: lateId)
+              .then((value) => late = value);
+          async.flushMicrotasks();
+
+          // The late id did not wait for, or join, the parked batch.
+          expect(late?.$1, const Duration(minutes: 20));
+          expect(first, isNull);
+
+          firstRead.complete({testTask.id: testTask.data.estimate});
+          async.flushMicrotasks();
+
+          expect(first?.$1, testTask.data.estimate);
+          verifyNever(
+            () => mockJournalDb.getTaskEstimatesByIds({testTask.id, lateId}),
+          );
         });
       },
     );

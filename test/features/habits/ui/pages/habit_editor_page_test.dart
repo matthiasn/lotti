@@ -17,6 +17,7 @@ import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
@@ -472,6 +473,26 @@ void main() {
       await tester.pumpAndSettle();
       expect(savedHabit().deletedAt, isNotNull);
       expect(beamedTo, '/habits');
+    });
+
+    testWidgets('a reminder that cannot be scheduled does not fail a save '
+        'that already landed', (tester) async {
+      // macOS rejects some zone abbreviations ("CEST") when scheduling.
+      when(
+        () => notifications.scheduleHabitNotification(any()),
+      ).thenAnswer((_) async => throw StateError('unknown zone CEST'));
+      DevLogger.clear();
+      await pumpEditor(tester, habitId: ruledHabit.id);
+
+      await tester.tap(find.byKey(const ValueKey('habit-editor-primary')));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      verify(() => persistence.upsertEntityDefinition(any())).called(1);
+      expect(beamedTo, '/habits');
+      expect(
+        DevLogger.capturedLogs,
+        contains(contains('onSavePressed.scheduleHabitNotification')),
+      );
     });
 
     testWidgets('a save that throws shows a toast and stays', (tester) async {

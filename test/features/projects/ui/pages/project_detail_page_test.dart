@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -413,6 +414,82 @@ void main() {
       await tester.tap(find.text('Done'));
       await tester.pump(const Duration(milliseconds: 300));
       expect(controller.lastUpdatedTargetDate, isNotNull);
+    });
+
+    testWidgets('a project without a target date opens the picker on today', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(DateTime(2025, 4, 10, 9)), () async {
+        final undated = ProjectDetailState(
+          project: makeTestProject(
+            id: _projectId,
+            title: 'Waddle launch review',
+            categoryId: testCategory.id,
+            createdAt: DateTime(2024, 3, 15),
+          ),
+          linkedTasks: const [],
+          isLoading: false,
+          isSaving: false,
+          hasChanges: false,
+        );
+        final controller = await pumpPage(tester, state: undated);
+
+        await tester.tap(find.text('Target Date').first);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Done'));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final picked = controller.lastUpdatedTargetDate!;
+        expect(
+          DateTime(picked.year, picked.month, picked.day),
+          DateTime(2025, 4, 10),
+        );
+      });
+    });
+
+    testWidgets('Back discards the draft and pops a page pushed on a '
+        'navigator', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(390, 900)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final controller = _TestProjectDetailController(
+        loadedState(hasChanges: true),
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) => TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) =>
+                      const ProjectDetailPage(projectId: _projectId),
+                ),
+              ),
+              child: const Text('Open project'),
+            ),
+          ),
+          overrides: [
+            projectDetailControllerProvider(_projectId).overrideWith(
+              () => controller,
+            ),
+          ],
+        ),
+      );
+      await tester.tap(find.text('Open project'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ProjectDetailPage), findsOneWidget);
+
+      await tester.tap(find.text('Back'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ProjectDetailPage), findsNothing);
+      expect(find.text('Open project'), findsOneWidget);
+      expect(controller.discardChangesCalls, 1);
     });
 
     testWidgets('disables every editor control while saving', (tester) async {

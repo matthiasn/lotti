@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
@@ -127,6 +128,37 @@ void main() {
         'user-testing',
       );
       expect(find.text('User Testing'), findsAtLeastNWidgets(2));
+    });
+
+    testWidgets('the static sidebar stays on Tasks when another destination '
+        'is tapped', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1600, 1000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(wrap(container, theme: DesignSystemTheme.dark()));
+      await tester.pump();
+      final sidebar = find.byType(DesktopNavigationSidebar);
+      final firstDestination = tester
+          .widget<DesktopNavigationSidebar>(sidebar)
+          .destinations
+          .first
+          .label;
+
+      await tester.tap(
+        find.descendant(of: sidebar, matching: find.text(firstDestination)),
+      );
+      await tester.pump();
+
+      expect(tester.widget<DesktopNavigationSidebar>(sidebar).activeIndex, 1);
+      expect(
+        container
+            .read(taskListDetailShowcaseControllerProvider)
+            .selectedTask
+            ?.task
+            .data
+            .title,
+        'Payment confirmation',
+      );
     });
 
     testWidgets('clearing the search restores the full task list', (

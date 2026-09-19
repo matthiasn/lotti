@@ -304,48 +304,64 @@ void main() {
       expect(find.byIcon(LottiIcons.mic), findsOneWidget);
     });
 
-    testWidgets(
-      'AppBar back button pops the navigator (re-record from header)',
-      (tester) async {
-        hSetWideSurface(tester);
-        final agent = hFastAgent();
-        var popped = false;
-        await tester.pumpWidget(
-          hWrap(
-            Builder(
-              builder: (context) => Scaffold(
-                body: ElevatedButton(
-                  onPressed: () async {
-                    await Navigator.of(context).push<void>(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const ReconcilePage(
-                          captureId: CaptureId('cap_x'),
+    for (final trigger in [
+      (
+        name: 'AppBar back button (re-record from header)',
+        finder: (BuildContext _) => find.byIcon(LottiIcons.back).first,
+      ),
+      (
+        name: 'footer re-record button',
+        finder: (BuildContext context) =>
+            find.text(context.messages.dailyOsNextReconcileReRecord),
+      ),
+    ]) {
+      testWidgets(
+        '${trigger.name} pops the navigator back to recording',
+        (tester) async {
+          hSetWideSurface(tester);
+          final agent = hFastAgent();
+          var popped = false;
+          await tester.pumpWidget(
+            hWrap(
+              Builder(
+                builder: (context) => Scaffold(
+                  body: ElevatedButton(
+                    onPressed: () async {
+                      await Navigator.of(context).push<void>(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const ReconcilePage(
+                            captureId: CaptureId('cap_x'),
+                          ),
                         ),
-                      ),
-                    );
-                    popped = true;
-                  },
-                  child: const Text('open'),
+                      );
+                      popped = true;
+                    },
+                    child: const Text('open'),
+                  ),
                 ),
               ),
+              overrides: [dayAgentProvider.overrideWithValue(agent)],
             ),
-            overrides: [dayAgentProvider.overrideWithValue(agent)],
-          ),
-        );
-        await tester.tap(find.text('open'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 400));
-        await tester.pump(const Duration(milliseconds: 200));
+          );
+          await tester.tap(find.text('open'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+          await tester.pump(const Duration(milliseconds: 200));
 
-        await tester.tap(find.byIcon(LottiIcons.back).first);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 400));
-        await tester.pump(const Duration(milliseconds: 400));
+          final target = trigger.finder(
+            tester.element(find.byType(ReconcilePage)),
+          );
+          await tester.ensureVisible(target);
+          await tester.tap(target);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+          await tester.pump(const Duration(milliseconds: 400));
 
-        expect(popped, isTrue);
-        expect(find.byType(ReconcilePage), findsNothing);
-      },
-    );
+          expect(popped, isTrue);
+          expect(find.byType(ReconcilePage), findsNothing);
+        },
+      );
+    }
 
     testWidgets(
       'tapping "Draft my day" keeps task ids and new capture items separate',

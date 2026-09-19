@@ -1199,6 +1199,62 @@ void main() {
       ).called(1);
     });
 
+    test('a target with none of the carried ids receives the whole carried '
+        'set in dependency order, optional model slots still pointing at '
+        'models that made it', () async {
+      await seedAiConfigs();
+      // A second user profile whose optional chat slot uses a carried model.
+      await source.writeAiConfig(
+        profile(
+          'user-chat-profile',
+          'user-model',
+          const [],
+          chatModelId: 'user-model',
+        ),
+      );
+      final copier = DemoDataCopier(newId: sequentialIds());
+      final plan = await copier.prepare(
+        selectedIds: {},
+        selectedAiProviderIds: {'user-provider'},
+        sourceDb: source.journalDb,
+        sourceAiConfigs: AiConfigRepository(source.aiConfigDb),
+        sourceRoot: sourceRoot,
+        stagingDir: stagingDir,
+      );
+      final targetAi = MockAiConfigRepository();
+      when(
+        () => targetAi.getConfigById(
+          any(),
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => null);
+      final saved = <AiConfig>[];
+      when(() => targetAi.saveConfig(any())).thenAnswer(
+        (invocation) async =>
+            saved.add(invocation.positionalArguments.first as AiConfig),
+      );
+
+      await copier.apply(
+        plan,
+        persistence: MockPersistenceLogic(),
+        targetJournalDb: MockJournalDb(),
+        targetRoot: targetRoot,
+        targetAiConfigs: targetAi,
+      );
+
+      expect(saved.map((config) => config.id), [
+        'user-provider',
+        'user-model',
+        'user-profile',
+        'user-chat-profile',
+        'user-skill',
+      ]);
+      final chatProfile = saved
+          .whereType<AiConfigInferenceProfile>()
+          .singleWhere((config) => config.id == 'user-chat-profile');
+      expect(chatProfile.chatModelId, 'user-model');
+    });
+
     test('a profile already live in the TARGET is not re-saved, but the '
         'carried skill it assigns still travels', () async {
       final savedIds = await applyAgainstTarget({

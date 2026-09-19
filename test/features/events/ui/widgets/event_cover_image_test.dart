@@ -1,24 +1,10 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/widgets/event_cover_image.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../test_utils/broken_image_provider.dart';
 import '../../test_utils.dart';
-
-/// An [ImageProvider] whose load fails immediately, to exercise the cover
-/// image's error fallback.
-class _BrokenImage extends ImageProvider<_BrokenImage> {
-  @override
-  Future<_BrokenImage> obtainKey(ImageConfiguration configuration) =>
-      SynchronousFuture<_BrokenImage>(this);
-
-  @override
-  ImageStreamCompleter loadImage(
-    _BrokenImage key,
-    ImageDecoderCallback decode,
-  ) => OneFrameImageStreamCompleter(Future<ImageInfo>.error('broken'));
-}
 
 void main() {
   group('EventCoverImage', () {
@@ -93,7 +79,10 @@ void main() {
     ) async {
       await pumpEventComponent(
         tester,
-        EventCoverImage(image: _BrokenImage(), fallbackColor: Colors.blue),
+        const EventCoverImage(
+          image: BrokenImageProvider(),
+          fallbackColor: Colors.blue,
+        ),
         height: 120,
       );
       await tester.pump();

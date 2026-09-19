@@ -1129,10 +1129,6 @@ class _ActionBarAlignedFabLocation extends StandardFabLocation
   // time, and `Scaffold.didUpdateWidget` reads a changed location as a move —
   // restarting the FAB transition (and its setState) on every rebuild of a
   // page that rebuilds on every journal query result.
-  // Value equality, not identity: `build` constructs a fresh instance every
-  // time, and `Scaffold.didUpdateWidget` reads a changed location as a move —
-  // restarting the FAB transition (and its setState) on every rebuild of a
-  // page that rebuilds on every journal query result.
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

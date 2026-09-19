@@ -183,11 +183,9 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     }
   }
 
+  /// Saves the edit form. Only the edit-mode scaffold wires this up; create
+  /// mode submits through [_handleCreate].
   Future<void> _handleSave() async {
-    if (widget.isCreateMode) {
-      return _handleCreate();
-    }
-
     final controller = ref.read(
       categoryDetailsControllerProvider(widget.categoryId!).notifier,
     );

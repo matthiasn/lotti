@@ -13,6 +13,7 @@ import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../../../test_utils/broken_image_provider.dart';
 import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
@@ -59,6 +60,24 @@ void main() {
       );
       expect(find.byType(Image), findsNWidgets(9));
       expect(find.text('+6'), findsOneWidget);
+    });
+
+    testWidgets('a photo that fails to load keeps its tile as a neutral '
+        'placeholder', (tester) async {
+      await pumpEventComponent(
+        tester,
+        const EventPhotoGrid(
+          photos: [EventPhoto(BrokenImageProvider(), id: 'missing-photo')],
+        ),
+      );
+      await tester.pump();
+
+      final hero = find.byType(Hero);
+      final placeholder = tester.widget<ColoredBox>(
+        find.descendant(of: hero, matching: find.byType(ColoredBox)),
+      );
+      final colorScheme = Theme.of(tester.element(hero)).colorScheme;
+      expect(placeholder.color, colorScheme.surfaceContainerHighest);
     });
 
     testWidgets('badges the chosen cover tile, and only that one', (

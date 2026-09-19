@@ -66,7 +66,7 @@ class SettingsDetailPane extends ConsumerWidget {
       assert(
         ancestorIds != null,
         'SettingsTreeIndex.ancestors returned null for an id that '
-        'findById just resolved: ${focused.id}',
+        'findById just resolved',
       );
       final ancestorNodes = <SettingsNode>[
         for (final id in ancestorIds ?? [focused.id])
@@ -110,7 +110,7 @@ SettingsNode _requireNode(SettingsTreeIndex index, String id) {
   final node = index.findById(id);
   assert(
     node != null,
-    'SettingsTreeIndex is missing an ancestor id it claims to know: $id',
+    'SettingsTreeIndex is missing an ancestor id it claims to know',
   );
   return node!;
 }

@@ -464,11 +464,9 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       if (intent == null) return;
       switch (intent.target) {
         case TaskFocusTarget.entry:
-          final entryId = intent.entryId;
-          if (entryId == null) {
-            ref.read(focusProvider.notifier).clearIntent();
-            return;
-          }
+          // The entry-target constructor requires an id; only the
+          // suggestions target carries none.
+          final entryId = intent.entryId!;
           // The target lives inside the collapsed history — open it first so
           // the entry mounts and the retrying scroll can find its key.
           if (!_historyExpanded) {

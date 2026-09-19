@@ -121,7 +121,7 @@ DemoMediaAsset _attachment({
   String categoryId = _penguinOps,
   int capturedHour = 14,
 }) {
-  final defaultCaption = _taskCaption(taskSeed);
+  final defaultCaption = _taskCaptions[taskSeed]!;
   return DemoMediaAsset(
     id: demoUuid(idSeed),
     fileName: fileName,
@@ -136,121 +136,123 @@ DemoMediaAsset _attachment({
   );
 }
 
-(String, String) _taskCaption(String taskSeed) => switch (taskSeed) {
-  'demo-tutorial-first-steps' => ('Your first mission', 'Deine erste Mission'),
-  'task-emperor-penguin-roll-call' => (
+/// The default English and German caption of each task's evidence photos,
+/// keyed by task seed. Every `_attachment` seed must be listed; the catalog
+/// test builds [demoMediaAssets], so a missing seed fails there.
+const _taskCaptions = <String, (String, String)>{
+  'demo-tutorial-first-steps': ('Your first mission', 'Deine erste Mission'),
+  'task-emperor-penguin-roll-call': (
     'Emperor penguin roll call',
     'Kaiserpinguine durchzählen',
   ),
-  'task-orbital-habitat' => (
+  'task-orbital-habitat': (
     'Inspect orbital penguin habitat',
     'Pinguin-Habitat im Orbit inspizieren',
   ),
-  'task-project-waddle-launch-review' => (
+  'task-project-waddle-launch-review': (
     'Project Waddle launch review',
     'Startprüfung für Project Waddle',
   ),
-  'task-coffee-is-not-a-vegetable' => (
+  'task-coffee-is-not-a-vegetable': (
     'Lunch (coffee is not a vegetable)',
     'Mittagessen (Kaffee ist kein Gemüse)',
   ),
-  'task-negotiate-sardine-futures' => (
+  'task-negotiate-sardine-futures': (
     'Negotiate sardine futures',
     'Sardinen-Futures verhandeln',
   ),
-  'task-zero-gravity-feeder' => (
+  'task-zero-gravity-feeder': (
     'Recalibrate the zero-gravity fish feeder',
     'Schwerelosen Fischfütterer neu kalibrieren',
   ),
-  'task-sardine-cargo' => (
+  'task-sardine-cargo': (
     'Confirm the interplanetary sardine cargo pods',
     'Interplanetare Sardinen-Frachtkapseln bestätigen',
   ),
-  'task-penguin-passenger' => (
+  'task-penguin-passenger': (
     'Ask Legal whether a penguin is a passenger',
     'Rechtsabteilung fragen, ob ein Pinguin Passagier ist',
   ),
-  'task-walk-without-headset' => (
+  'task-walk-without-headset': (
     'Walk without a headset',
     'Spaziergang ohne Headset',
   ),
-  'task-launch-comms-plan' => (
+  'task-launch-comms-plan': (
     'Draft the launch comms plan',
     'Kommunikationsplan entwerfen',
   ),
-  'task-ice-pad-weather' => (
+  'task-ice-pad-weather': (
     'Check the ice-pad weather window',
     'Wetterfenster am Eisstartplatz prüfen',
   ),
-  'task-cold-chain-audit' => (
+  'task-cold-chain-audit': (
     'Audit the cold-chain freezer logs',
     'Kühlketten-Protokolle prüfen',
   ),
-  'task-launch-rehearsal' => (
+  'task-launch-rehearsal': (
     'Run the launch-day rehearsal',
     'Startprobe durchführen',
   ),
-  'task-flight-suit-fitting' => (
+  'task-flight-suit-fitting': (
     'Fit the penguin flight suits',
     'Pinguin-Fluganzüge anpassen',
   ),
-  'task-air-scrubbers' => (
+  'task-air-scrubbers': (
     'Replace the air scrubber cartridges',
     'Filterpatronen der Luftreinigung tauschen',
   ),
-  'task-humidity-spike' => (
+  'task-humidity-spike': (
     'Trace the humidity spike in Bay C',
     'Feuchtigkeitsspitze in Bucht C aufspüren',
   ),
-  'task-ice-rink-resurface' => (
+  'task-ice-rink-resurface': (
     'Resurface the habitat ice rink',
     'Eisbahn im Habitat neu aufbereiten',
   ),
-  'task-solar-array-tilt' => (
+  'task-solar-array-tilt': (
     'Retune the solar array tilt',
     'Neigung der Solarfläche justieren',
   ),
-  'task-water-recycler' => (
+  'task-water-recycler': (
     'Service the water recycler',
     'Wasseraufbereiter warten',
   ),
-  'task-squid-pallet' => (
+  'task-squid-pallet': (
     'Find the missing squid pallet',
     'Verschwundene Tintenfisch-Palette finden',
   ),
-  'task-krill-supplier' => (
+  'task-krill-supplier': (
     'Shortlist a second krill supplier',
     'Zweiten Krill-Lieferanten finden',
   ),
-  'task-shuttle-manifest' => (
+  'task-shuttle-manifest': (
     'Reconcile the shuttle manifest',
     'Frachtliste des Shuttles abgleichen',
   ),
-  'task-pod-seal-order' => (
+  'task-pod-seal-order': (
     'Order replacement pod seals',
     'Ersatzdichtungen für Kapseln bestellen',
   ),
-  'task-customs-europa' => (
+  'task-customs-europa': (
     'Clear customs on Europa',
     'Zoll auf Europa erledigen',
   ),
-  'task-colony-newsletter' => (
+  'task-colony-newsletter': (
     'Write the colony newsletter',
     'Koloniebrief schreiben',
   ),
-  'task-chick-daycare' => (
+  'task-chick-daycare': (
     'Refill the chick daycare rota',
     'Dienstplan der Kükenbetreuung füllen',
   ),
-  'task-movie-night' => (
+  'task-movie-night': (
     'Pick the film for colony night',
     'Film für den Kolonieabend wählen',
   ),
-  'task-tobogganing-league' => (
+  'task-tobogganing-league': (
     'Restart the tobogganing league',
     'Rodel-Liga wieder starten',
   ),
-  _ => throw ArgumentError.value(taskSeed, 'taskSeed'),
 };
 
 /// Complete immutable media fabric for the seeded Penguin Logistics world.

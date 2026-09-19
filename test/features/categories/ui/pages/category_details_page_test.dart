@@ -1124,6 +1124,32 @@ void main() {
         ).called(1);
         expect(beamedTo, '/settings/categories/cat-new');
       });
+
+      testWidgets('a Create tap racing a cleared name still refuses to create '
+          'and explains why', (tester) async {
+        String? beamedTo;
+        beamToNamedOverride = (path) => beamedTo = path;
+
+        await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
+        await tester.enterText(nameFieldFinder(), 'Krill Logistics');
+        await tester.pump();
+
+        // The name is blanked and Create is tapped before the next frame
+        // rebuilds the pill as disabled.
+        await tester.enterText(nameFieldFinder(), '   ');
+        await tester.tap(pillFinder('Create'));
+        await tester.pump();
+
+        expect(find.text('Category name is required'), findsOneWidget);
+        verifyNever(
+          () => mockRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+            icon: any(named: 'icon'),
+          ),
+        );
+        expect(beamedTo, isNull);
+      });
     });
 
     group('Create Mode Navigation', () {

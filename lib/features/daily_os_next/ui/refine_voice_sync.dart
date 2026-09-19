@@ -47,6 +47,10 @@ void handleRefineVoiceTap({
     case RefinePhase.idle:
     case RefinePhase.reviewing:
     case RefinePhase.diffReady:
+      // The refine flow refuses to listen while a decision is in flight;
+      // starting the microphone anyway would record behind a review that
+      // never enters listening.
+      if (refineState.decisionInFlight) return;
       captureNotifier.reset();
       refineNotifier.beginListening(
         resetTranscript: refineState.phase != RefinePhase.diffReady,

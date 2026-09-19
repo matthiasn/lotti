@@ -3,7 +3,9 @@ import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/widgets/modal/sized_wolt_side_sheet_type.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
@@ -163,62 +165,82 @@ void main() {
     expect(find.text('<€0.01'), findsWidgets);
   });
 
-  testWidgets(
-    'group pill aggregates transcript cost and impact into one entry control',
-    (tester) async {
-      final first = makeAiWorkAttribution();
-      final second = makeAiWorkAttribution(attributionId: 'attribution-2');
-      final detailsById = {
-        first.id: AiAttributionDetails(
-          attribution: first,
-          interactions: [
-            makeConsumptionEvent(
-              attributionId: first.id,
-              credits: 0.1,
-              energyKwh: 0.002,
-              carbonGCo2: 0.5,
-            ),
-          ],
-        ),
-        second.id: AiAttributionDetails(
-          attribution: second,
-          interactions: [
-            makeConsumptionEvent(
-              attributionId: second.id,
-              credits: 0.2,
-              energyKwh: 0.01,
-              carbonGCo2: 2.5,
-              waterLiters: 0.02,
-            ),
-          ],
-        ),
-      };
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          AiAttributionSummaryGroup(
-            label: 'Transcription',
-            attributions: [first, second],
+  for (final layout in [
+    (name: 'desktop', size: const Size(1024, 768), bottomSheet: false),
+    (name: 'phone', size: const Size(390, 844), bottomSheet: true),
+  ]) {
+    testWidgets(
+      'group pill aggregates transcript cost and impact into one entry '
+      'control (${layout.name})',
+      (tester) async {
+        await tester.binding.setSurfaceSize(layout.size);
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        final first = makeAiWorkAttribution();
+        final second = makeAiWorkAttribution(attributionId: 'attribution-2');
+        final detailsById = {
+          first.id: AiAttributionDetails(
+            attribution: first,
+            interactions: [
+              makeConsumptionEvent(
+                attributionId: first.id,
+                credits: 0.1,
+                energyKwh: 0.002,
+                carbonGCo2: 0.5,
+              ),
+            ],
           ),
-          overrides: [
-            aiAttributionDetailsProvider.overrideWith(
-              (ref, id) async => detailsById[id],
+          second.id: AiAttributionDetails(
+            attribution: second,
+            interactions: [
+              makeConsumptionEvent(
+                attributionId: second.id,
+                credits: 0.2,
+                energyKwh: 0.01,
+                carbonGCo2: 2.5,
+                waterLiters: 0.02,
+              ),
+            ],
+          ),
+        };
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            AiAttributionSummaryGroup(
+              label: 'Transcription',
+              attributions: [first, second],
             ),
-          ],
-        ),
-      );
-      await tester.pump();
+            overrides: [
+              aiAttributionDetailsProvider.overrideWith(
+                (ref, id) async => detailsById[id],
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
 
-      expect(
-        find.text('Transcription · €0.30 · 12 Wh · 3.0 g'),
-        findsOneWidget,
-      );
+        expect(
+          find.text('Transcription · €0.30 · 12 Wh · 3.0 g'),
+          findsOneWidget,
+        );
 
-      await tester.tap(find.byType(DsPill));
-      await tester.pumpAndSettle();
-      expect(find.text('AI attribution'), findsOneWidget);
-    },
-  );
+        await tester.tap(find.byType(DsPill));
+        await tester.pumpAndSettle();
+        expect(find.text('AI attribution'), findsOneWidget);
+
+        // Phones get a bottom sheet; wider layouts a side sheet.
+        final sheet = find.byWidgetPredicate((w) => w is WoltModalSheet);
+        final modalType = tester
+            .widget<WoltModalSheet<dynamic>>(sheet)
+            .modalTypeBuilder!(tester.element(sheet));
+        expect(
+          modalType,
+          layout.bottomSheet
+              ? isA<WoltBottomSheetType>()
+              : isA<SizedWoltSideSheetType>(),
+        );
+      },
+    );
+  }
 
   testWidgets('renders nothing when neither carrier nor projection exists', (
     tester,

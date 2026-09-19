@@ -23,9 +23,11 @@ import 'package:lotti/services/share_service.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 import '../../../../test_helper.dart';
 import '../../../../widget_test_utils.dart';
+import 'drag_test_fakes.dart';
 
 // ---------------------------------------------------------------------------
 // Test data
@@ -112,13 +114,15 @@ class _FakeChecklistController extends ChecklistController {
   @override
   Future<bool> delete() async => true;
 
+  final drops = <({Object? localData, String? categoryId})>[];
+
   @override
   Future<void> dropChecklistItem(
     Object? localData, {
     String? categoryId,
     int? targetIndex,
     String? targetItemId,
-  }) async {}
+  }) async => drops.add((localData: localData, categoryId: categoryId));
 }
 
 /// An item controller that throws on [build], exercising the
@@ -303,6 +307,64 @@ void main() {
     ) async {
       await _pump(tester);
       expect(find.byType(ChecklistCard), findsOneWidget);
+    });
+
+    group('dropping an item onto the card', () {
+      DropRegion cardDropRegion(WidgetTester tester) =>
+          tester.widget<DropRegion>(find.byType(DropRegion).first);
+
+      Future<void> drop(WidgetTester tester, List<DropItem> items) =>
+          cardDropRegion(tester).onPerformDrop(
+            PerformDropEvent(
+              session: FakeDndDropSession(itemList: items),
+              position: DropPosition(local: Offset.zero, global: Offset.zero),
+              acceptedOperation: DropOperation.move,
+            ),
+          );
+
+      testWidgets('offers a move while an item hovers over the card', (
+        tester,
+      ) async {
+        await _pump(tester);
+
+        final operation = await cardDropRegion(tester).onDropOver(
+          DropOverEvent(
+            session: FakeDndDropSession(itemList: const []),
+            position: DropPosition(local: Offset.zero, global: Offset.zero),
+          ),
+        );
+
+        expect(operation, DropOperation.move);
+      });
+
+      testWidgets('moves the dragged item into this checklist and its '
+          'category', (tester) async {
+        final (:controller, clip: _) = await _pump(
+          tester,
+          categoryId: 'penguin-ops',
+        );
+        const dragged = {
+          'checklistItemId': 'item-krill',
+          'checklistId': 'other-checklist',
+        };
+
+        await drop(tester, [FakeDndDropItem(testLocalData: dragged)]);
+
+        expect(controller.drops, [
+          (localData: dragged, categoryId: 'penguin-ops'),
+        ]);
+      });
+
+      testWidgets('ignores an empty drop and one without app data', (
+        tester,
+      ) async {
+        final (:controller, clip: _) = await _pump(tester);
+
+        await drop(tester, const []);
+        await drop(tester, [FakeDndDropItem()]);
+
+        expect(controller.drops, isEmpty);
+      });
     });
 
     testWidgets('renders SizedBox.shrink when checklist is null', (

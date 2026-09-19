@@ -572,7 +572,7 @@ class _StateMeta extends StatelessWidget {
     assert(
       state == AgendaItemState.inProgress || state == AgendaItemState.overdue,
       'AgendaCard renders open and done rows without a _StateMeta; reaching '
-      'here with $state means one of those paths changed.',
+      'here with either means one of those paths changed.',
     );
     final tokens = context.designTokens;
     final isOverdue = state == AgendaItemState.overdue;

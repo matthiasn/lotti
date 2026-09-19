@@ -11,6 +11,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -490,6 +491,21 @@ void main() {
       expect(find.text('v0.9.980'), findsOneWidget);
       // Verify Done button is accessible (single release → last page)
       expect(find.text('Done'), findsOneWidget);
+
+      // The dialog caps at 500 wide and, when the space it is laid out in is
+      // narrower than that, takes 90% of it; height is capped at 90% too.
+      final sheetFinder = find.byWidgetPredicate((w) => w is WoltModalSheet);
+      final modalType = tester
+          .widget<WoltModalSheet<dynamic>>(sheetFinder)
+          .modalTypeBuilder!(tester.element(sheetFinder));
+      expect(
+        modalType.layoutModal(const Size(1200, 900)),
+        const BoxConstraints(minWidth: 500, maxWidth: 500, maxHeight: 810),
+      );
+      expect(
+        modalType.layoutModal(const Size(480, 700)),
+        const BoxConstraints(minWidth: 432, maxWidth: 432, maxHeight: 630),
+      );
     });
 
     testWidgets('dark theme renders BannerFallback dark gradient', (

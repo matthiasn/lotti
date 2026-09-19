@@ -645,7 +645,10 @@ class _DayTimelineState extends State<DayTimeline> {
     );
     if ((next - currentPxPerMinute).abs() >= 0.01) {
       _markGesturesLearned();
-      final currentOffset = _currentTimelineScrollOffset();
+      // Scale gestures arrive through the Listener that wraps the timeline's
+      // scroll view, and it only receives pointers that hit that scroll view
+      // — so the controller is attached whenever a pinch reaches here.
+      final currentOffset = _timelineScrollController.position.pixels;
       final scrollScale = next / currentPxPerMinute;
       setState(() {
         _pxPerMinute = next;
@@ -682,13 +685,6 @@ class _DayTimelineState extends State<DayTimeline> {
 
   _TimelineComparisonMode get _effectiveComparisonMode =>
       _comparisonModeOverride ?? _lastAutoComparisonMode;
-
-  double _currentTimelineScrollOffset() {
-    if (_timelineScrollController.hasClients) {
-      return _timelineScrollController.position.pixels;
-    }
-    return _timelineScrollOffset;
-  }
 
   void _recordTimelineScrollOffset() {
     if (!_timelineScrollController.hasClients) return;

@@ -6,6 +6,7 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart'
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/desktop/sidebar_saved_task_filters.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filters_sheet.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:material_ui/material_ui.dart';
@@ -199,6 +200,26 @@ void main() {
 
     expect(page.setSelectedTaskStatusesCalls.last, <String>{});
     expect(page.applyBatchFilterUpdateCalled, 2);
+  });
+
+  testWidgets('the manage action opens the saved-filters manager sheet', (
+    tester,
+  ) async {
+    await _pumpSidebar(tester);
+    expect(find.byType(SavedTaskFiltersSheet), findsNothing);
+
+    await tester.tap(find.byKey(SidebarSavedTaskFiltersKeys.manage));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    final sheet = find.byType(SavedTaskFiltersSheet);
+    expect(sheet, findsOneWidget);
+    // The manager lists every saved filter, including the two the sidebar
+    // folds behind "more".
+    expect(
+      find.descendant(of: sheet, matching: find.text('Golf')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('sidebar labels and counts use design-system caption type', (
