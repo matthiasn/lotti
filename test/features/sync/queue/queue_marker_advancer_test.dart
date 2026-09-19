@@ -256,6 +256,30 @@ void main() {
     );
 
     test(
+      'observations retained across repeated failed writes keep the oldest '
+      'floor',
+      () async {
+        await db.customStatement('''
+          CREATE TRIGGER fail_resume_floor
+          BEFORE INSERT ON queue_markers
+          BEGIN
+            SELECT RAISE(ABORT, 'floor write failed');
+          END
+        ''');
+
+        for (final originTs in [5000, 7000, 4000, 6000]) {
+          await expectLater(
+            advancer.lowerResumeFloor(roomId: _roomA, originTs: originTs),
+            throwsA(anything),
+          );
+        }
+        await db.customStatement('DROP TRIGGER fail_resume_floor');
+
+        expect(await advancer.resumeFloorTs(_roomA), 4000);
+      },
+    );
+
+    test(
       'older active row in the same room clamps the marker to '
       'oldestActive - 1 and leaves the event id slot null',
       () async {
