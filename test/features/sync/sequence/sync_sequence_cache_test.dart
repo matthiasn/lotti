@@ -1,5 +1,7 @@
+import 'dart:collection';
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/sequence/sync_sequence_cache.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -289,5 +291,134 @@ void main() {
         expect(contains(capacity), isTrue);
       });
     });
+  });
+
+  group('model-based properties', () {
+    // One step: 0 touch/remember a small-pool key, 1 look it up, 2 advance
+    // the clock by some minutes, 3 flood with fresh keys to force eviction.
+    final step = glados.any.combine2(
+      glados.any.intInRange(0, 4),
+      glados.any.intInRange(0, 12),
+      (int kind, int arg) => (kind: kind, arg: arg),
+    );
+    final start = DateTime(2024, 3, 15, 10);
+
+    glados.Glados(
+      glados.any.listWithLengthInRange(0, 30, step),
+      glados.ExploreConfig(numRuns: 80),
+    ).test(
+      'the last-sent LRU matches a list model and never outgrows capacity',
+      (steps) {
+        const capacity = SyncSequenceCache.lastSentCounterCacheCapacity;
+        final cache = SyncSequenceCache(MockSyncDatabase());
+        // Oldest first. Flood keys are always new, so only pool keys move.
+        final order = ListQueue<String>();
+        final values = <String, int?>{};
+
+        void touch(String key, int? value, {bool isNew = false}) {
+          cache.touchLastSentCache(key, value);
+          if (!isNew) order.remove(key);
+          order.add(key);
+          values[key] = value;
+          while (order.length > capacity) {
+            values.remove(order.removeFirst());
+          }
+        }
+
+        var fresh = 0;
+        for (final s in steps) {
+          final key = cache.lastSentCacheKey('host-a', 'entry-${s.arg}');
+          switch (s.kind) {
+            case 0:
+              touch(key, s.arg.isEven ? s.arg : null);
+            case 1:
+              expect(cache.containsLastSent(key), values.containsKey(key));
+              expect(cache.getLastSent(key), values[key]);
+            case 2:
+              // No clock here: the LRU's time window is the service's.
+              break;
+            default:
+              for (var i = 0; i < capacity ~/ 4 * s.arg ~/ 3; i++) {
+                touch('flood-${fresh++}', i, isNew: true);
+              }
+          }
+        }
+        expect(order.length, lessThanOrEqualTo(capacity));
+        for (final key in values.keys) {
+          expect(cache.getLastSent(key), values[key]);
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.listWithLengthInRange(0, 30, step),
+      glados.ExploreConfig(numRuns: 80),
+    ).test(
+      'a remembered binding is found within its TTL and capacity, not after',
+      (steps) {
+        const capacity = SyncSequenceCache.sentBindingCacheCapacity;
+        const ttl = SyncSequenceCache.sentBindingCacheTtl;
+        final cache = SyncSequenceCache(MockSyncDatabase());
+        // Oldest first. Flood keys are always new, so only pool keys move.
+        final order = ListQueue<String>();
+        final recordedAt = <String, DateTime>{};
+        var now = start;
+        var fresh = 0;
+
+        void remember(String entryId, {bool isNew = false}) {
+          withClock(Clock.fixed(now), () {
+            cache.rememberSentBinding(
+              hostId: 'host-a',
+              counter: 1,
+              entryId: entryId,
+              payloadType: 0,
+            );
+          });
+          if (!isNew) order.remove(entryId);
+          order.add(entryId);
+          recordedAt[entryId] = now;
+          while (order.length > capacity) {
+            recordedAt.remove(order.removeFirst());
+          }
+        }
+
+        for (final s in steps) {
+          final entryId = 'entry-${s.arg}';
+          switch (s.kind) {
+            case 0:
+              remember(entryId);
+            case 1:
+              final at = recordedAt[entryId];
+              final expected = at != null && now.difference(at) <= ttl;
+              // A lookup drops an expired binding; one in force moves to the
+              // most recent end.
+              order.remove(entryId);
+              if (expected) {
+                order.add(entryId);
+              } else {
+                recordedAt.remove(entryId);
+              }
+              final found = withClock(
+                Clock.fixed(now),
+                () => cache.containsSentBinding(
+                  hostId: 'host-a',
+                  counter: 1,
+                  entryId: entryId,
+                  payloadType: 0,
+                ),
+              );
+              expect(found, expected, reason: '$entryId at $now');
+            case 2:
+              now = now.add(Duration(minutes: s.arg));
+            default:
+              for (var i = 0; i < capacity ~/ 4 * s.arg ~/ 3; i++) {
+                remember('flood-${fresh++}', isNew: true);
+              }
+          }
+        }
+      },
+      tags: 'glados',
+    );
   });
 }
