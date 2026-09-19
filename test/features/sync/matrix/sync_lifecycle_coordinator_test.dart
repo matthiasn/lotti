@@ -78,6 +78,13 @@ void main() {
     });
 
     test(
+      'exposes the exact pipeline it drives, so observers share its metrics',
+      () {
+        expect(makeCoordinator().pipeline, same(pipeline));
+      },
+    );
+
+    test(
       'initialize calls pipeline.initialize and activates if already logged in',
       () async {
         when(() => sessionManager.isLoggedIn()).thenReturn(true);
