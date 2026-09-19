@@ -22,8 +22,8 @@ class WaveformBars extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    // Bars are as wide as the gaps between them, each a step and a half.
-    final bar = tokens.spacing.step1 * 1.5;
+    // Bars are as wide as the gaps between them: the smallest spacing step.
+    final bar = tokens.spacing.step1;
     return SizedBox(
       height: tokens.spacing.step7,
       child: LayoutBuilder(

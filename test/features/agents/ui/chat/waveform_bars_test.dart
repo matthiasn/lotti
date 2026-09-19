@@ -167,7 +167,8 @@ void main() {
         .whereType<WaveformBarsPainter>()
         .single;
     expect(painter.color, tokens.colors.text.highEmphasis);
-    expect(painter.barWidth, painter.barSpacing);
+    expect(painter.barWidth, tokens.spacing.step1);
+    expect(painter.barSpacing, tokens.spacing.step1);
     expect(painter.amplitudes, const [0.2, 0.9]);
   });
 }
