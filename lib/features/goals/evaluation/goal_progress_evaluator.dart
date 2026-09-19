@@ -804,8 +804,11 @@ class GoalProgressEvaluator {
     switch (direction) {
       case GoalDirection.atLeast:
         final satisfied = actual >= target;
+        // A non-positive target has no proportion to report — met or not.
+        // A measurable can fall below zero, and "at least 0" missed must not
+        // read as fully attained.
         final ratio = target <= 0
-            ? 1.0
+            ? (satisfied ? 1.0 : 0.0)
             : math.min(1, actual / target).toDouble();
         return (math.max(0, ratio).toDouble(), satisfied);
       case GoalDirection.atMost:

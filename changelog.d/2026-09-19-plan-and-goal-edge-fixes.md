@@ -5,3 +5,6 @@
   move was checked against where the block used to be rather than where the
   first move put it. Such a change is now refused instead of breaking the
   plan.
+- **A goal to keep a value at or above zero no longer shows as fully reached
+  when the value has dropped below zero.** Its progress now reads empty until
+  the goal is actually met.
