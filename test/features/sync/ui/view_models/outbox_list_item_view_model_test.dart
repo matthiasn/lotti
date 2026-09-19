@@ -582,6 +582,14 @@ void main() {
               (ctx) => ctx.messages.syncPayloadThemingSelection,
             ),
             (
+              'mediaRequest',
+              () => const SyncMessage.mediaRequest(
+                entryIds: ['img-1', 'aud-1'],
+                requesterId: 'host-a',
+              ),
+              (ctx) => ctx.messages.syncPayloadMediaRequest,
+            ),
+            (
               'syncNodeProfile',
               () => SyncMessage.syncNodeProfile(
                 profile: SyncNodeProfile(

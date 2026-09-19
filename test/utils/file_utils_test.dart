@@ -6,6 +6,9 @@ import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_data.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
@@ -174,6 +177,27 @@ void main() {
       // ('check_in') via the orElse branch.
       final path = entityPath(testEntity, Directory(''));
       expect(path, '/check_ins/2021-11-30/test-id.check_in.json');
+    });
+
+    test('JSON file name for goal entry should be correct', () async {
+      final testEntity = JournalEntity.goal(
+        meta: testMeta,
+        data: const GoalData(
+          title: 'Waddle more',
+          statement: 'Waddle to the ice shelf five days a week.',
+          criteria: GoalCriterion.habit(
+            criterionId: 'waddle-daily',
+            habitId: 'habit-waddle',
+            targetCount: 5,
+            window: GoalWindow.rollingDays(count: 7),
+          ),
+          specVersion: 1,
+          specVersionId: 'test-id:spec-v1',
+        ),
+      );
+
+      final path = entityPath(testEntity, Directory(''));
+      expect(path, '/goals/2021-11-30/test-id.goal.json');
     });
 
     test('JSON file name for audio entry should be correct', () async {

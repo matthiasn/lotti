@@ -620,6 +620,74 @@ void main() {
     });
 
     test(
+      'concurrent goal-nudge edits with equal lifecycle standing fall to '
+      'wall-clock LWW: the newer local row wins, counters still join',
+      () async {
+        const localVc = VectorClock({'host-A': 2, 'host-B': 1});
+        const incomingVc = VectorClock({'host-A': 1, 'host-B': 2});
+        GoalNudgeEntity nudge({
+          required String headline,
+          required DateTime updatedAt,
+          required VectorClock vectorClock,
+          required GCounter visible,
+        }) =>
+            AgentDomainEntity.goalNudge(
+                  id: 'nudge-lww',
+                  agentId: 'agent-1',
+                  status: NudgeStatus.active,
+                  brief: NudgeBrief(
+                    headline: headline,
+                    tone: NudgeTone.nudge,
+                    animation: NudgeBannerAnimation.steady,
+                  ),
+                  briefDigest: 'd',
+                  createdAt: DateTime(2026, 8),
+                  updatedAt: updatedAt,
+                  vectorClock: vectorClock,
+                  totalVisibleMs: visible,
+                )
+                as GoalNudgeEntity;
+        final local = nudge(
+          headline: 'local copy',
+          // Strictly newer wall clock → local wins the row.
+          updatedAt: DateTime(2026, 8, 3),
+          vectorClock: localVc,
+          visible: const GCounter({'host-A': 100}),
+        );
+        final incoming = nudge(
+          headline: 'incoming copy',
+          updatedAt: DateTime(2026, 8, 2),
+          vectorClock: incomingVc,
+          visible: const GCounter({'host-B': 200}),
+        );
+        when(
+          () => mockAgentRepo.getEntity('nudge-lww'),
+        ).thenAnswer((_) async => local);
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentEntity(
+              agentEntity: incoming,
+              status: SyncEntryStatus.update,
+            ),
+          ),
+        );
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        final upserted =
+            verify(
+                  () => mockAgentRepo.upsertEntity(captureAny()),
+                ).captured.single
+                as GoalNudgeEntity;
+        expect(upserted.brief.headline, 'local copy');
+        expect(
+          upserted.totalVisibleMs.byHost,
+          {'host-A': 100, 'host-B': 200},
+        );
+      },
+    );
+
+    test(
       'concurrent relationship-nudge edits take the same merge path as '
       'goal nudges (ADR 0059): dismissal terminal, counters joined',
       () async {
@@ -4189,6 +4257,67 @@ void main() {
           ).called(1);
           verify(
             () => mockOrchestrator.disableAutomaticUpdatesRuntime('agent-1'),
+          ).called(1);
+        },
+      );
+
+      test(
+        'agent_task link for an opted-in task_agent restores the subscription '
+        'and enables its automatic-updates runtime',
+        () async {
+          final optedIn = AgentDomainEntity.agent(
+            id: 'agent-1',
+            agentId: 'agent-1',
+            kind: 'task_agent',
+            displayName: 'Opted-in Agent',
+            lifecycle: AgentLifecycle.active,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: 'state-1',
+            config: const AgentConfig(automaticUpdatesEnabled: true),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+          when(
+            () => mockAgentRepo.getEntity('agent-1'),
+          ).thenAnswer((_) async => optedIn);
+
+          final link = AgentLink.agentTask(
+            id: 'link-1',
+            fromId: 'agent-1',
+            toId: 'task-42',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+          when(() => event.text).thenReturn(
+            encodeMessage(
+              SyncMessage.agentLink(
+                agentLink: link,
+                status: SyncEntryStatus.update,
+              ),
+            ),
+          );
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          verify(
+            () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-1'),
+          ).called(1);
+          verifyNever(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime(any()),
+          );
+          verify(
+            () => mockOrchestrator.addSubscription(
+              any(
+                that: isA<AgentSubscription>().having(
+                  (s) => s.matchEntityIds,
+                  'matchEntityIds',
+                  {'task-42'},
+                ),
+              ),
+            ),
           ).called(1);
         },
       );

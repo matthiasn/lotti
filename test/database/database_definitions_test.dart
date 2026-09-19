@@ -455,6 +455,50 @@ void main() {
         },
       );
 
+      test(
+        'definitionStamp reads each definition type from its own table',
+        () async {
+          final definitions = <EntityDefinition>[
+            measurableWater.copyWith(
+              updatedAt: base,
+              vectorClock: const VectorClock({'m': 1}),
+            ),
+            habitFlossing.copyWith(
+              updatedAt: base,
+              vectorClock: const VectorClock({'h': 2}),
+            ),
+            testDashboardConfig.copyWith(
+              updatedAt: base,
+              vectorClock: const VectorClock({'d': 3}),
+            ),
+            testLabelDefinition1.copyWith(
+              updatedAt: base,
+              vectorClock: const VectorClock({'l': 4}),
+            ),
+          ];
+
+          for (final definition in definitions) {
+            expect(
+              await db!.definitionStamp(definition),
+              isNull,
+              reason: 'nothing stored yet for ${definition.runtimeType}',
+            );
+            await db!.upsertEntityDefinition(definition);
+          }
+
+          final clocks = [
+            for (final definition in definitions)
+              (await db!.definitionStamp(definition))?.vectorClock?.vclock,
+          ];
+          expect(clocks, [
+            {'m': 1},
+            {'h': 2},
+            {'d': 3},
+            {'l': 4},
+          ]);
+        },
+      );
+
       test('the gate covers every definition table', () async {
         final older = base.subtract(const Duration(minutes: 1));
 

@@ -627,6 +627,26 @@ void main() {
       expect(await getIdFromSavedRoute(), isNull);
     });
 
+    test('getIdFromSavedRoute falls back to the persisted route while the '
+        'index is stale', () async {
+      const uuid = '123e4567-e89b-12d3-a456-426614174000';
+      final navService = getIt<NavService>();
+      final previousIndex = navService.index;
+      addTearDown(() {
+        navService
+          ..index = previousIndex
+          ..beamToNamed('/tasks');
+      });
+
+      navService.beamToNamed('/journal/$uuid');
+      await pumpEventQueue();
+
+      // A shrinking tab list can leave the index past the end of the delegate
+      // list; the live route is then unreadable and the persisted one wins.
+      navService.index = navService.beamerDelegates.length + 5;
+      expect(await getIdFromSavedRoute(), uuid);
+    });
+
     test('creationContextIdForRoute yields NO context on unified Goals '
         'routes — the UUID there is an agent, not a journal parent', () {
       const uuid = '123e4567-e89b-12d3-a456-426614174000';
@@ -1292,6 +1312,29 @@ void main() {
           '/habits/habit-9',
         );
       });
+      test(
+        'getSavedRoute reads a pre-JSON NAV_LAST_ROUTE row when no snapshot '
+        'is stored',
+        () async {
+          final settingsDb = SettingsDb(inMemoryDatabase: true);
+          await settingsDb.saveSettingsItem(lastRouteKey, '/habits/habit-9');
+          final bench = _NavFlagBench(settingsDb: settingsDb);
+
+          expect(await settingsDb.itemByKey(navStateKey), isNull);
+          expect(await bench.navService.getSavedRoute(), '/habits/habit-9');
+        },
+      );
+
+      test(
+        'getSavedRoute ignores a legacy row that matches no tab',
+        () async {
+          final settingsDb = SettingsDb(inMemoryDatabase: true);
+          await settingsDb.saveSettingsItem(lastRouteKey, '/no/such/tab');
+          final bench = _NavFlagBench(settingsDb: settingsDb);
+
+          expect(await bench.navService.getSavedRoute(), isNull);
+        },
+      );
     });
 
     group('routes that bypass NavService', () {

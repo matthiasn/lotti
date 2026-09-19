@@ -459,6 +459,68 @@ void main() {
     });
   });
 
+  group('joinRoom', () {
+    test('joins via the gateway, persists the id only after the join '
+        'succeeds, and returns the hydrated room', () async {
+      final room = MockRoom();
+      when(() => gateway.joinRoom('!room:server')).thenAnswer((_) async {});
+      when(() => gateway.getRoomById('!room:server')).thenReturn(room);
+
+      final joined = await manager.joinRoom('!room:server');
+
+      expect(joined, same(room));
+      expect(manager.currentRoom, same(room));
+      expect(manager.currentRoomId, '!room:server');
+      verifyInOrder([
+        () => gateway.joinRoom('!room:server'),
+        () => settingsDb.saveSettingsItem(matrixRoomKey, '!room:server'),
+      ]);
+      verifyNever(
+        () => loggingService.log(
+          any<LogDomain>(),
+          any<String>(that: contains('not yet hydrated')),
+          subDomain: any<String?>(named: 'subDomain'),
+        ),
+      );
+    });
+
+    test(
+      'returns null and logs when the gateway has no snapshot yet',
+      () async {
+        when(() => gateway.joinRoom('!room:server')).thenAnswer((_) async {});
+        when(() => gateway.getRoomById('!room:server')).thenReturn(null);
+
+        final joined = await manager.joinRoom('!room:server');
+
+        expect(joined, isNull);
+        // The id is still recorded so a later hydrate can resolve the room.
+        expect(manager.currentRoomId, '!room:server');
+        verify(
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(that: contains('not yet hydrated')),
+            subDomain: 'resolveRoom',
+          ),
+        ).called(1);
+      },
+    );
+
+    test('a failed join propagates and persists nothing', () async {
+      when(
+        () => gateway.joinRoom('!room:server'),
+      ).thenThrow(Exception('forbidden'));
+
+      await expectLater(
+        manager.joinRoom('!room:server'),
+        throwsA(isA<Exception>()),
+      );
+      verifyNever(
+        () => settingsDb.saveSettingsItem(any<String>(), any<String>()),
+      );
+      expect(manager.currentRoomId, isNull);
+    });
+  });
+
   group('roomIdChanges', () {
     test('emits on join and on clear, so UI can gate on configured', () async {
       // `currentRoomId` is a plain field. Without this stream the device

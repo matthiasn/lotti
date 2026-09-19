@@ -10,6 +10,7 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_definition_ops.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
@@ -119,6 +120,52 @@ void main() {
         measurablesNotification,
       }),
     ).called(1);
+    verify(() => outboxService.enqueueMessage(any())).called(1);
+  });
+
+  test('a failed search reindex is logged but neither fails the save nor '
+      'stops it from syncing', () async {
+    final previous = measurableHydration;
+    final renamed = previous.copyWith(
+      choices: [
+        for (final choice in previous.choices!)
+          if (choice.id == hydrationClear.id)
+            choice.copyWith(title: 'Transparent')
+          else
+            choice,
+      ],
+    );
+    final entries = [testMeasurementHydrationEntry];
+    when(
+      () => mocks.journalDb.getMeasurableDataTypeById(previous.id),
+    ).thenAnswer((_) async => previous);
+    when(
+      () => mocks.journalDb.upsertEntityDefinition(renamed),
+    ).thenAnswer((_) async => 1);
+    when(
+      () => mocks.journalDb.getMeasurementsByTypeIncludingPrivate(
+        type: previous.id,
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer((_) async => entries);
+    when(
+      () => fts5Db.reindexMeasurements(renamed, entries),
+    ).thenThrow(StateError('fts5 locked'));
+    DevLogger.clear();
+
+    final affected = await ops.upsertEntityDefinitionImpl(renamed);
+
+    expect(affected, 1);
+    expect(
+      DevLogger.capturedLogs,
+      contains(
+        allOf(
+          contains('EXCEPTION'),
+          contains('upsertEntityDefinition.reindexMeasurements'),
+        ),
+      ),
+    );
     verify(() => outboxService.enqueueMessage(any())).called(1);
   });
 

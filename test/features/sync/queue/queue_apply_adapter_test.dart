@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
 import 'package:lotti/features/sync/queue/queue_apply_adapter.dart';
@@ -678,6 +679,36 @@ void main() {
         );
 
         expect(QueueApplyAdapter.writesJournalDb(message), isFalse);
+      },
+    );
+
+    test(
+      'mediaRequest and syncNodeProfile bypass the JournalDb transaction '
+      'wrap — neither writes journal state',
+      () {
+        final messages = <SyncMessage>[
+          const SyncMessage.mediaRequest(
+            entryIds: ['img-1'],
+            requesterId: 'host-a',
+          ),
+          SyncMessage.syncNodeProfile(
+            profile: SyncNodeProfile(
+              hostId: 'host-a',
+              displayName: 'Penguin laptop',
+              platform: 'linux',
+              capabilities: const [],
+              updatedAt: DateTime(2024, 3, 15),
+            ),
+          ),
+        ];
+
+        for (final message in messages) {
+          expect(
+            QueueApplyAdapter.writesJournalDb(message),
+            isFalse,
+            reason: message.runtimeType.toString(),
+          );
+        }
       },
     );
   });

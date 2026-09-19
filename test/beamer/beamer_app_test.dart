@@ -70,6 +70,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -4298,7 +4299,8 @@ void main() {
     });
 
     testWidgets(
-      'outboxLoginGateStreamProvider error arm logs via DomainLogger',
+      'outboxLoginGateStreamProvider error arm logs via DomainLogger once '
+      'retries are exhausted',
       (tester) async {
         final mockNavService = MockNavService();
         await _stubNavService(
@@ -4405,13 +4407,26 @@ void main() {
         // AppScreen should still render its navigation despite the error.
         expect(find.byType(MobileNavigationLauncher), findsOneWidget);
 
+        // Riverpod retries a failing provider (reporting AsyncLoading) before
+        // settling on AsyncError, so the error arm only runs once the retry
+        // budget is spent.
+        DevLogger.clear();
+        await tester.pump(const Duration(minutes: 1));
+        expect(
+          DevLogger.capturedLogs,
+          contains(
+            allOf(contains('EXCEPTION'), contains('notLoggedInGateStream')),
+          ),
+        );
+
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
       },
     );
 
     testWidgets(
-      'shouldAutoShowWhatsNewProvider error arm does not crash AppScreen',
+      'shouldAutoShowWhatsNewProvider error arm logs the failure and does '
+      'not crash AppScreen',
       (tester) async {
         final mockNavService = MockNavService();
         await _stubNavService(
@@ -4436,6 +4451,17 @@ void main() {
         );
 
         // The error arm just logs; AppScreen continues rendering normally.
+        expect(find.byType(MobileNavigationLauncher), findsOneWidget);
+
+        // The error arm runs only after Riverpod's automatic retries give up.
+        DevLogger.clear();
+        await tester.pump(const Duration(minutes: 1));
+        expect(
+          DevLogger.capturedLogs,
+          contains(
+            allOf(contains('EXCEPTION'), contains('shouldAutoShowWhatsNew')),
+          ),
+        );
         expect(find.byType(MobileNavigationLauncher), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox.shrink());
@@ -4665,6 +4691,97 @@ void main() {
           reason:
               'arming alone must not count a walkthrough the user never saw',
         );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'arming the Daily OS walkthrough from another tab switches to the '
+      'Daily OS tab first',
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => false,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+        );
+        // On Tasks (0), not on the Daily OS tab (calendarIndex == 1).
+        when(() => mockNavService.index).thenReturn(0);
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        final sessionController = _CountingDailyOsOnboardingSessionController();
+        await _pumpAppScreenCustomProviders(
+          tester,
+          navService: mockNavService,
+          whatsNewOverride: _StableUnseenWhatsNewController.new,
+          shouldAutoShowDailyOsOnboarding: (ref) async => true,
+          dailyOsOnboardingCadenceOverride:
+              _CountingDailyOsOnboardingCadence.new,
+          extraOverrides: [
+            dailyOsOnboardingSessionControllerProvider.overrideWith(
+              () => sessionController,
+            ),
+          ],
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        verify(() => mockNavService.tapIndex(1)).called(1);
+        expect(sessionController.startCount, 1);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'a failure while arming the Daily OS walkthrough is logged instead of '
+      'escaping as an unhandled error',
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => false,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        DevLogger.clear();
+        await _pumpAppScreenCustomProviders(
+          tester,
+          navService: mockNavService,
+          whatsNewOverride: _StableUnseenWhatsNewController.new,
+          shouldAutoShowDailyOsOnboarding: (ref) async => true,
+          dailyOsOnboardingCadenceOverride:
+              _CountingDailyOsOnboardingCadence.new,
+          extraOverrides: [
+            dailyOsOnboardingSessionControllerProvider.overrideWith(
+              _ThrowingDailyOsOnboardingSessionController.new,
+            ),
+          ],
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(
+          DevLogger.capturedLogs,
+          contains(
+            allOf(contains('EXCEPTION'), contains('showDailyOsOnboarding')),
+          ),
+        );
+        expect(find.byType(MobileNavigationLauncher), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
@@ -5492,6 +5609,16 @@ class _CountingDailyOsOnboardingSessionController
       sessionId: sessionId,
     );
   }
+}
+
+/// Fails the moment the walkthrough is armed, to drive the arming error path.
+class _ThrowingDailyOsOnboardingSessionController
+    extends DailyOsOnboardingSessionController {
+  @override
+  DailyOsOnboardingSession start({
+    required DateTime targetDate,
+    String? sessionId,
+  }) => throw StateError('session start failed');
 }
 
 /// A [WhatsNewController] with no unseen releases, used so the What's New modal
