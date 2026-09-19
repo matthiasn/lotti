@@ -1,11 +1,45 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/features/notifications/model/notification_merge.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'notification_merge_test_helpers.dart';
 
 void main() {
   group('NotificationMerge', () {
+    test(
+      'mergeFull breaks an equal-updatedAt tie on list content the same way '
+      'on both devices',
+      () {
+        NotificationEntity habits(List<String> ids, String host) =>
+            NotificationEntity.habitAutoCompleted(
+              meta: NotificationMeta(
+                id: 'habits-tie',
+                createdAt: DateTime.utc(2026, 5, 17, 8),
+                updatedAt: DateTime.utc(2026, 5, 17, 9),
+                scheduledFor: DateTime.utc(2026, 5, 17, 12),
+                vectorClock: VectorClock({host: 1}),
+                originatingHostId: host,
+              ),
+              linkedHabitIds: ids,
+              dayKey: '2026-05-17',
+              title: 'Habits done',
+              body: 'Waddle walk and fish count',
+            );
+        final local = habits(['habit-fish-count'], 'host-a');
+        final remote = habits(['habit-waddle-walk'], 'host-b');
+
+        final onLocal = NotificationMerge.mergeFull(local, remote);
+        final onRemote = NotificationMerge.mergeFull(remote, local);
+
+        expect(
+          (onLocal as HabitAutoCompletedNotification).linkedHabitIds,
+          ['habit-waddle-walk'],
+        );
+        expect(onRemote, onLocal);
+      },
+    );
+
     test('mergeState preserves vector clock when patch clock is null', () {
       final base = buildNotification(
         id: 'state-null-clock',
