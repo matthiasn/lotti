@@ -200,9 +200,6 @@ class WhatsNewModal {
           child: child,
         ),
       ),
-      onModalDismissedWithDrag: () {
-        unawaited(markViewedAsSeen());
-      },
     );
 
     // Mark releases as seen when modal closes
