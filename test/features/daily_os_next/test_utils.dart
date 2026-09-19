@@ -16,6 +16,7 @@ class RecordingDayAgent implements DayAgentInterface {
     this.acceptedPlan,
     this.proposeError,
     this.proposeGate,
+    this.acceptGate,
     this.renameError,
     this.editError,
     this.editErrorOnCall,
@@ -80,6 +81,10 @@ class RecordingDayAgent implements DayAgentInterface {
   /// keeping callers pinned in their "thinking" phase so tests can observe
   /// the transient state.
   final Future<void>? proposeGate;
+
+  /// When set, [acceptDiff] blocks on this future before returning, keeping
+  /// a whole-diff accept or a per-row resolve in flight.
+  final Future<void>? acceptGate;
 
   /// Result of [submitCapture].
   final CaptureId submitResult;
@@ -157,6 +162,8 @@ class RecordingDayAgent implements DayAgentInterface {
   Future<DraftPlan> acceptDiff(PlanDiff diff, {List<int>? itemIndices}) async {
     capturedDiff = diff;
     acceptIndices = itemIndices;
+    final gate = acceptGate;
+    if (gate != null) await gate;
     return acceptedPlan ?? diff.updatedPlan;
   }
 

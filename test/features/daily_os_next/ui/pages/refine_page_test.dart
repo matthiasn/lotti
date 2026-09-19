@@ -452,6 +452,48 @@ void main() {
     });
 
     testWidgets(
+      'revert action button is disabled while a row decision is in flight',
+      (tester) async {
+        final draft = _emptyPlan();
+        final gate = Completer<void>();
+        final agent = RecordingDayAgent(
+          diff: _diffWithTwoChanges(draft),
+          acceptGate: gate.future,
+        );
+        await tester.pumpWidget(
+          _wrap(
+            RefinePage(draft: draft),
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+          ),
+        );
+        await tester.pump();
+
+        _setWideSurface(tester);
+        final notifier = _readNotifier(tester, draft);
+        notifier.beginListening(resetTranscript: true);
+        await notifier.finishWithTranscript('please rearrange');
+        await tester.pump();
+
+        final messages = tester.element(find.byType(RefinePage)).messages;
+        final revert = find.widgetWithText(
+          TextButton,
+          messages.dailyOsNextRefineRevert,
+        );
+        expect(tester.widget<TextButton>(revert).onPressed, isNotNull);
+
+        unawaited(notifier.acceptChange('chg_move'));
+        await tester.pump();
+        expect(tester.widget<TextButton>(revert).onPressed, isNull);
+
+        gate.complete();
+        await tester.pump();
+        await tester.pump();
+        expect(tester.widget<TextButton>(revert).onPressed, isNotNull);
+        expect(agent.revertIndices, isNull);
+      },
+    );
+
+    testWidgets(
       'tap revert action button reverts all pending indices and returns to idle',
       (tester) async {
         final draft = _emptyPlan();

@@ -296,7 +296,11 @@ class _ActionRow extends ConsumerWidget {
     final tokens = context.designTokens;
     final teal = tokens.colors.interactive.enabled;
     final messages = context.messages;
+    final state = ref.watch(refineControllerProvider(draft));
     final notifier = ref.read(refineControllerProvider(draft).notifier);
+    // The controller no-ops a revert racing an accept or a row resolve;
+    // the button shouldn't look tappable then either.
+    final canRevert = !state.accepting && state.resolvingChangeId == null;
     return Wrap(
       spacing: tokens.spacing.step2,
       runSpacing: tokens.spacing.step2,
@@ -308,7 +312,7 @@ class _ActionRow extends ConsumerWidget {
           style: TextButton.styleFrom(
             foregroundColor: tokens.colors.text.mediumEmphasis,
           ),
-          onPressed: notifier.revert,
+          onPressed: canRevert ? notifier.revert : null,
         ),
         TextButton.icon(
           icon: Icon(LottiIcons.mic, size: 14, color: teal),

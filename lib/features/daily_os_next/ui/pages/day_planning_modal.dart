@@ -719,9 +719,13 @@ class _RefineStepBar extends ConsumerWidget {
           icon: LottiIcons.undo,
           label: messages.dailyOsNextRefineRevert,
           fillColor: tokens.colors.surface.focusPressed,
-          // Disabled during an in-flight accept too — the controller
-          // no-ops the race anyway; the pill shouldn't look tappable.
-          enabled: hasPendingDiff && !state.accepting,
+          // Disabled during an in-flight accept or row resolve too — the
+          // controller no-ops the race anyway; the pill shouldn't look
+          // tappable.
+          enabled:
+              hasPendingDiff &&
+              !state.accepting &&
+              state.resolvingChangeId == null,
           onTap: notifier.revert,
         ),
         DsGlassPill(
