@@ -32,9 +32,7 @@ enum LanguageDetectionConfidence {
 /// AI models sometimes return non-string values for fields that should be
 /// strings (e.g., `{"confidence": true}` instead of `{"confidence": "high"}`).
 /// This class provides safe parsing methods that normalize these values.
-class TaskFunctionArgs {
-  const TaskFunctionArgs._();
-
+abstract final class TaskFunctionArgs {
   /// Normalizes a value to String?, handling non-string types from AI.
   ///
   /// - If the value is already a String, returns it as-is

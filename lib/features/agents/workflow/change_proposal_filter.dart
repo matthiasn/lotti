@@ -34,9 +34,7 @@ typedef ResolveTaskMetadata = Future<TaskMetadataSnapshot?> Function();
 /// 2. **Non-batch deferred tools** (priority, estimate, due date, status,
 ///    title): detected by comparing the proposed value against the current
 ///    task metadata via [checkTaskMetadataRedundancy].
-class ChangeProposalFilter {
-  const ChangeProposalFilter._();
-
+abstract final class ChangeProposalFilter {
   /// Build a [TaskMetadataSnapshot] from a [JournalDb] lookup.
   ///
   /// Returns `null` if the entity is not a [Task].

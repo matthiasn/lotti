@@ -24,9 +24,7 @@ import 'dart:developer' as developer;
 /// // ... run code that logs ...
 /// expect(DevLogger.capturedLogs, contains(contains('expected message')));
 /// ```
-class DevLogger {
-  DevLogger._(); // Private constructor - use static methods
-
+abstract final class DevLogger {
   /// When true, logs are captured but not printed.
   /// Set this to true in test setup to silence debug output.
   static bool suppressOutput = false;

@@ -7,9 +7,7 @@ import 'package:lotti/database/database.dart';
 /// Resolves the task's category, fetches its correction examples, sorts
 /// by recency, caps at [maxExamples], and formats as a markdown section
 /// the agent can reference when editing checklist items.
-class CorrectionExamplesBuilder {
-  CorrectionExamplesBuilder._();
-
+abstract final class CorrectionExamplesBuilder {
   /// Maximum number of correction examples to inject into the agent context.
   static const maxExamples = 50;
 

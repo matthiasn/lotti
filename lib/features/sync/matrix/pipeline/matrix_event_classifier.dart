@@ -7,9 +7,7 @@ import 'package:matrix/matrix.dart';
 /// Stateless predicates for deciding what kind of Matrix [Event] the pipeline
 /// is looking at — used to filter the timeline down to the sync payloads and
 /// attachments this app cares about, ignoring state events, redactions, etc.
-class MatrixEventClassifier {
-  const MatrixEventClassifier._();
-
+abstract final class MatrixEventClassifier {
   /// True if the event is a Lotti sync payload, either by msgtype or fallback
   /// base64 JSON payload containing a runtimeType.
   static bool isSyncPayloadEvent(Event e) {

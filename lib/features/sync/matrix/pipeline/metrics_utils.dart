@@ -2,9 +2,7 @@
 
 /// Pure helpers that flatten the pipeline's counters into the flat
 /// `Map<String, int>` snapshot the Stats UI and diagnostics logs consume.
-class MetricsUtils {
-  const MetricsUtils._();
-
+abstract final class MetricsUtils {
   /// Builds the metrics snapshot map used by the UI and logs, flattening
   /// counters and including diagnostics sizes.
   ///

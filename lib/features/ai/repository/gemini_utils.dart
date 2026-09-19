@@ -13,9 +13,7 @@ import 'package:openai_dart/openai_dart.dart';
 /// - Produce endpoint descriptions that are safe for diagnostics.
 /// - Build request bodies including system instructions, thinking config and tools.
 /// - Strip SSE `data:` prefixes and JSON array framing from mixed-format streams.
-class GeminiUtils {
-  const GeminiUtils._();
-
+abstract final class GeminiUtils {
   /// Builds the streaming `:streamGenerateContent` URI from a provider base URL.
   ///
   /// - Normalizes model IDs to `models/<id>`.

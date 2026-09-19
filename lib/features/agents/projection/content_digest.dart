@@ -23,9 +23,7 @@ import 'package:crypto/crypto.dart';
 /// The result is `'<version>:<base64url>'` with `=` padding stripped, e.g.
 /// `sha256-v1:Ut0c...`. The [version] tag lets a future algorithm change
 /// coexist with already-stored digests instead of silently colliding.
-class ContentDigest {
-  const ContentDigest._(); // coverage:ignore-line — static-only utility
-
+abstract final class ContentDigest {
   /// Algorithm/version tag prefixing every digest.
   static const String version = 'sha256-v1';
 

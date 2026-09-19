@@ -201,9 +201,7 @@ class HabitSignalsForm {
 /// show it: leaves are flattened under the root's composite, a two-bounded
 /// leaf keeps its minimum, and habit leaves are dropped. Saving such a
 /// habit rewrites the tree to what the card shows.
-class HabitFormMapping {
-  const HabitFormMapping._();
-
+abstract final class HabitFormMapping {
   static HabitSignalsForm fromRule(AutoCompleteRule? rule) {
     if (rule == null) return const HabitSignalsForm();
     final leaves = <HabitSignalForm>[];

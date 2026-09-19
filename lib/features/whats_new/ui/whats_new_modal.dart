@@ -21,9 +21,7 @@ import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 /// - 21:9 hero banner (in heroImage slot)
 /// - Scrollable markdown content
 /// - Navigation footer (in stickyActionBar)
-class WhatsNewModal {
-  WhatsNewModal._();
-
+abstract final class WhatsNewModal {
   /// Pattern to extract image URLs from markdown: ![alt](url)
   static final _imageUrlPattern = RegExp(r'!\[[^\]]*\]\((https?://[^)]+)\)');
 

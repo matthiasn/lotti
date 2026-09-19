@@ -27,11 +27,9 @@ List<String>? _getEmojiFontFallback() {
 ///
 /// Maps the light/dark `DsTokens` onto a Material 3 `ColorScheme` and
 /// `TextTheme`, and registers the active `DsTokens` as a theme extension so
-/// widgets can resolve raw tokens via `context.designTokens`. Use the
-/// [light] and [dark] factories rather than constructing it directly.
-class DesignSystemTheme {
-  const DesignSystemTheme._();
-
+/// widgets can resolve raw tokens via `context.designTokens`. Themes come from
+/// the static [light] and [dark] builders; the class is not instantiable.
+abstract final class DesignSystemTheme {
   /// The light-mode theme derived from `dsTokensLight`.
   static ThemeData light() => _build(dsTokensLight, Brightness.light);
 

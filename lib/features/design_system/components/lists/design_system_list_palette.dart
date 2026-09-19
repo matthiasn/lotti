@@ -7,9 +7,7 @@ import 'package:material_ui/material_ui.dart';
 /// list-style surface derive their "activated / selected row" fill from
 /// the same source — avoiding drift between hand-tuned alpha values
 /// scattered across feature modules.
-class DesignSystemListPalette {
-  const DesignSystemListPalette._();
-
+abstract final class DesignSystemListPalette {
   /// Alpha applied to `tokens.colors.interactive.enabled` to produce the
   /// subdued "selected row" fill. 12 % opacity is intentionally lighter
   /// than the generated `surface.selected` token so selection reads as a

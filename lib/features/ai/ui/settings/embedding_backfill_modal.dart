@@ -14,9 +14,7 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// Lets the user pick which categories to (re)embed, then runs the backfill
 /// through `embeddingBackfillControllerProvider` while showing live progress.
-class EmbeddingBackfillModal {
-  const EmbeddingBackfillModal._();
-
+abstract final class EmbeddingBackfillModal {
   /// Opens the confirmation + progress modal. Confirm stays disabled until at
   /// least one category is selected; on confirm it backfills the selected
   /// categories and keeps the sheet open to show progress until completion.

@@ -10,9 +10,7 @@ export 'package:lotti/features/categories/domain/category_icon_names.dart';
 ///
 /// This class provides reusable constants for sizing, spacing, and configuration
 /// of category icon-related widgets to ensure consistent styling throughout the app.
-class CategoryIconConstants {
-  CategoryIconConstants._(); // Private constructor to prevent instantiation
-
+abstract final class CategoryIconConstants {
   /// Default icon size multiplier for category display
   static const double iconSizeMultiplier = 0.56;
 
@@ -115,9 +113,7 @@ class CategoryIconConstants {
 /// throughout the category icon implementation, improving maintainability and localization.
 /// Non-localizable string constants for category icons. All user-visible
 /// icon-picker copy lives in the l10n catalog (`categoryIcon*` keys).
-class CategoryIconStrings {
-  CategoryIconStrings._(); // Private constructor to prevent instantiation
-
+abstract final class CategoryIconStrings {
   /// Default fallback character when category name is empty
   static const String fallbackCharacter = '?';
 

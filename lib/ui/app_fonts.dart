@@ -8,9 +8,7 @@ import 'package:material_ui/material_ui.dart';
 /// environments), these helpers return a plain TextStyle with the requested
 /// attributes so no network fetch or asset lookup is required. When runtime
 /// fetching is allowed, they delegate to google_fonts normally.
-class AppFonts {
-  const AppFonts._();
-
+abstract final class AppFonts {
   static TextStyle inconsolata({
     double? fontSize,
     FontWeight? fontWeight,

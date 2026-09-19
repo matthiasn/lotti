@@ -10,9 +10,7 @@ import 'package:material_ui/material_ui.dart';
 /// (e.g. `colors.alert.success.defaultColor`) for general UI. This palette
 /// exists for compile-time const contexts (chart widgets) and for domain
 /// colors with no direct design-system equivalent (e.g. purple, cyan).
-class AgentPalette {
-  AgentPalette._();
-
+abstract final class AgentPalette {
   /// Success / completed — green
   static const Color green = Color(0xFF58CC02);
 

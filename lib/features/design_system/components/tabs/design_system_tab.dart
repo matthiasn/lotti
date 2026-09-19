@@ -332,9 +332,7 @@ class _TabIcon extends StatelessWidget {
   }
 }
 
-class _TabContentMetrics {
-  const _TabContentMetrics._();
-
+abstract final class _TabContentMetrics {
   static double measure(
     BuildContext context, {
     required _TabSizeSpec sizeSpec,

@@ -21,9 +21,7 @@ import 'package:material_ui/material_ui.dart';
 /// to the entry's category but unioned with already-assigned labels so
 /// out-of-category labels can still be removed. Applying commits the staged set
 /// via [LabelsRepository.setLabels]; dismissing discards it.
-class LabelSelectionModalUtils {
-  LabelSelectionModalUtils._();
-
+abstract final class LabelSelectionModalUtils {
   /// Opens the modal label picker for [entryId], seeded with [initialLabelIds]
   /// and scoped to [categoryId].
   ///

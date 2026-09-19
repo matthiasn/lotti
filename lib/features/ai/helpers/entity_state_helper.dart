@@ -4,9 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 
 /// Helper class for safely fetching current entity state with type checking
-class EntityStateHelper {
-  const EntityStateHelper._();
-
+abstract final class EntityStateHelper {
   /// Fetches the current state of an entity and ensures it matches the expected type.
   ///
   /// This method is used to prevent concurrent modifications by fetching the latest

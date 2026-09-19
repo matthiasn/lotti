@@ -19,9 +19,7 @@ import 'package:lotti/features/sync/vector_clock.dart';
 ///
 /// All methods are side-effect free; persistence and transaction scoping live
 /// in `NotificationsDb` (see its `upsertNotification` / `mergeState`).
-class NotificationMerge {
-  const NotificationMerge._();
-
+abstract final class NotificationMerge {
   /// Merges a fully-formed [incoming] row against the local [existing] one.
   ///
   /// Used by `NotificationsDb.upsertNotification` when a synced create/update

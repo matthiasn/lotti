@@ -13,9 +13,7 @@ import 'package:lotti/services/window_service.dart';
 import 'package:lotti/utils/fd_limits.dart';
 import 'package:material_ui/material_ui.dart';
 
-class AppConstants {
-  const AppConstants._();
-
+abstract final class AppConstants {
   static const Size defaultWindowSize = Size(1280, 720);
   static const Size minimumWindowSize = Size(360, 640);
 }

@@ -5,9 +5,7 @@ import 'package:lotti/features/sync/state/purge_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
-class PurgeModal {
-  const PurgeModal._();
-
+abstract final class PurgeModal {
   static Future<void> show(BuildContext context) async {
     final container = ProviderScope.containerOf(context);
 
