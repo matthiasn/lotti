@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/tts/engine/wav_writer.dart';
 
 void main() {
@@ -41,5 +42,37 @@ void main() {
       expect(sampleAt(3), 32767); // clamped from 2.0
       expect(sampleAt(4), -32767); // clamped from -2.0
     });
+  });
+
+  group('properties', () {
+    // Samples from well outside [-1, 1] in steps of 1/10000.
+    final sample = glados.any.intInRange(-20000, 20001).map((i) => i / 10000);
+
+    glados.Glados2(
+      glados.any.listWithLengthInRange(0, 200, sample),
+      glados.any.choose([8000, 16000, 24000, 44100]),
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'header sizes agree and samples round-trip within one step',
+      (samples, sampleRate) {
+        final bytes = encodeWavBytes(samples, sampleRate);
+        final data = ByteData.sublistView(bytes);
+
+        expect(bytes, hasLength(44 + 2 * samples.length));
+        expect(data.getUint32(4, Endian.little), bytes.length - 8);
+        expect(data.getUint32(24, Endian.little), sampleRate);
+        expect(data.getUint32(28, Endian.little), sampleRate * 2);
+        expect(data.getUint32(40, Endian.little), 2 * samples.length);
+
+        for (final (i, s) in samples.indexed) {
+          final decoded = data.getInt16(44 + 2 * i, Endian.little) / 32767;
+          expect(
+            (decoded - s.clamp(-1.0, 1.0)).abs(),
+            lessThanOrEqualTo(1 / 32767),
+          );
+        }
+      },
+      tags: 'glados',
+    );
   });
 }
