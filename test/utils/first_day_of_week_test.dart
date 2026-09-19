@@ -1,7 +1,76 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/utils/first_day_of_week.dart';
 
 void main() {
+  group('properties', () {
+    glados.Glados3(
+      glados.any.intInRange(1900, 2200),
+      glados.any.intInRange(1, 13),
+      glados.any.intInRange(0, 7),
+      glados.ExploreConfig(numRuns: 300),
+    ).test(
+      'blank cells put the 1st under its own weekday column',
+      (year, month, firstDay) {
+        final blanks = leadingBlankDayCount(
+          year: year,
+          month: month,
+          firstDayOfWeekIndex: firstDay,
+        );
+        expect(blanks, inInclusiveRange(0, 6));
+        // Sunday-based index (0 = Sunday … 6 = Saturday) of the 1st.
+        final firstOfMonth = DateTime.utc(year, month).weekday % 7;
+        expect((blanks + firstDay) % 7, firstOfMonth);
+      },
+      tags: 'glados',
+    );
+
+    final language = glados.any.choose(['en', 'de', 'zh', 'fil', 'C']);
+    final region = glados.any.choose(['DE', 'us', 'Gb', 'hK', null]);
+    final script = glados.any.choose(['Hant', 'Latn', null]);
+    final separator = glados.any.choose(['_', '-']);
+    final suffix = glados.any.choose(['', '.UTF-8', '@euro', '.utf8@euro']);
+
+    glados.Glados(
+      glados.any.combine5(
+        language,
+        script,
+        region,
+        separator,
+        suffix,
+        (String lang, String? script, String? region, String sep, String sfx) =>
+            (
+              name: [lang, ?script, ?region].join(sep) + sfx,
+              region: region?.toUpperCase(),
+            ),
+      ),
+      glados.ExploreConfig(numRuns: 200),
+    ).test(
+      'the region is the two-letter subtag, upper-cased, suffix ignored',
+      (locale) {
+        final extracted = regionFromLocaleName(locale.name);
+        expect(extracted, locale.region, reason: locale.name);
+        if (extracted != null) {
+          expect(extracted, matches(RegExp(r'^[A-Z]{2}$')));
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.stringOf('adeghksuzAEGSUZ'),
+      glados.ExploreConfig(numRuns: 200),
+    ).test(
+      'every country code maps to Sunday, Monday or Saturday, any case',
+      (code) {
+        final index = firstDayOfWeekIndexForCountry(code);
+        expect(index, isIn(const {0, 1, 6}));
+        expect(firstDayOfWeekIndexForCountry(code.toLowerCase()), index);
+      },
+      tags: 'glados',
+    );
+  });
+
   group('firstDayOfWeekIndexForCountry', () {
     test('European/Monday-default regions start on Monday', () {
       // DE/FR/GB are not in the Sunday or Saturday sets, so they fall to the
