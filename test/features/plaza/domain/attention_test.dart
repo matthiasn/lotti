@@ -1,4 +1,6 @@
+import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 
@@ -262,6 +264,137 @@ void main() {
     expect(
       taskMetaBits(_task(due: DateTime.utc(2026, 8, 2), links: const ['a'])),
       ['due Aug 2', 'links 1'],
+    );
+  });
+
+  group('properties', () {
+    // Tasks with every state, due dates from ten weeks late to ten days out,
+    // activity up to a quarter back, and project portals with or without
+    // flags.
+    final task = glados.any.combine5(
+      glados.any.choose(PlazaTaskState.values),
+      glados.any.intInRange(-70, 11),
+      glados.any.intInRange(0, 120),
+      glados.any.combine3(
+        glados.any.intInRange(0, 4),
+        glados.any.intInRange(0, 40),
+        glados.any.bool,
+        (int priority, int items, bool deleted) =>
+            (priority: priority, items: items, deleted: deleted),
+      ),
+      glados.any.intInRange(0, 3),
+      (
+        PlazaTaskState state,
+        int dueIn,
+        int idleDays,
+        ({int priority, int items, bool deleted}) extra,
+        int project,
+      ) => (
+        state: state,
+        dueIn: dueIn == 10 ? null : dueIn,
+        idleDays: idleDays,
+        extra: extra,
+        project: project,
+      ),
+    );
+
+    List<PlazaTask> build(
+      List<
+        ({
+          PlazaTaskState state,
+          int? dueIn,
+          int idleDays,
+          ({int priority, int items, bool deleted}) extra,
+          int project,
+        })
+      >
+      specs,
+    ) => [
+      for (final (i, s) in specs.indexed)
+        PlazaTask(
+          id: 'task-${i.toString().padLeft(2, '0')}',
+          createdAt: _now.subtract(Duration(days: s.idleDays + 30)),
+          title: 'Task $i',
+          state: s.state,
+          progress: 0,
+          checklistItems: s.extra.items,
+          openChecklistItems: List.filled(s.extra.items, 'x'),
+          linkedTaskIds: const [],
+          categoryColor: 0,
+          due: s.dueIn == null ? null : _now.add(Duration(days: s.dueIn!)),
+          priority: s.extra.priority,
+          lastActivityAt: _now.subtract(Duration(days: s.idleDays)),
+          deleted: s.extra.deleted,
+          project: s.project == 0
+              ? null
+              : PlazaProjectInfo(
+                  state: PlazaProjectState.active,
+                  taskCount: 5,
+                  doneCount: 1,
+                  attentionCount: s.project == 1 ? 1 : 0,
+                  overdueCount: s.project == 2 ? 1 : 0,
+                ),
+        ),
+    ];
+
+    glados.Glados2(
+      glados.any.listWithLengthInRange(0, 16, task),
+      glados.any.intInRange(0, 1000),
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'scores are bounded, finished tasks go dark, billboards are stable',
+      (specs, seed) {
+        final tasks = build(specs);
+        final all = attentionForAll(tasks, _now);
+
+        for (final a in all) {
+          final finished =
+              a.task.deleted ||
+              a.task.state == PlazaTaskState.done ||
+              a.task.state == PlazaTaskState.cancelled;
+          if (finished) {
+            expect((a.score, a.lantern, a.reason), (0, LanternState.off, ''));
+          }
+          // project 3 + blocked 3 + overdue 6 + stale 2 + priority 1 +
+          // heft 1; due-soon and overdue exclude each other.
+          expect(a.score, inInclusiveRange(0, 16));
+          expect(a.anomalous, a.score >= anomalyThreshold);
+        }
+
+        // compareAttention is a total order: antisymmetric, and zero only
+        // for the same task.
+        for (final a in all) {
+          for (final b in all) {
+            final ab = compareAttention(a, b);
+            expect(ab.sign, -compareAttention(b, a).sign);
+            expect(ab == 0, identical(a.task, b.task));
+          }
+        }
+
+        final billboards = billboardCandidates(all);
+        expect(billboards.length, lessThanOrEqualTo(billboardSlots));
+        expect(
+          billboards.every((a) => a.score >= billboardThreshold),
+          isTrue,
+        );
+        for (var i = 1; i < billboards.length; i++) {
+          expect(compareAttention(billboards[i - 1], billboards[i]), -1);
+        }
+        final eligible = all.where((a) => a.score >= billboardThreshold);
+        expect(
+          billboards.length,
+          eligible.length < billboardSlots ? eligible.length : billboardSlots,
+        );
+
+        final shuffled = billboardCandidates(
+          attentionForAll([...tasks]..shuffle(Random(seed)), _now),
+        );
+        expect(
+          shuffled.map((a) => a.task.id),
+          billboards.map((a) => a.task.id),
+        );
+      },
+      tags: 'glados',
     );
   });
 }
