@@ -162,16 +162,11 @@ class OllamaModelInstallDialogState
             variant: DesignSystemButtonVariant.tertiary,
             size: DesignSystemButtonSize.large,
           ),
+          // After a failure this is the retry: the error shows above it.
           ElevatedButton(
             onPressed: _installModel,
             child: const Text('Install'),
           ),
-        ] else ...[
-          if (_error != null)
-            ElevatedButton(
-              onPressed: _installModel,
-              child: const Text('Retry'),
-            ),
         ],
       ],
     );
