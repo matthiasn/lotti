@@ -1,130 +1,108 @@
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// WhatsApp-style right-aligned waveform bars.
+/// The live recording waveform, drawn the way a phone's voice composer draws
+/// one: a row of thin capsules in the composer's own row, newest on the
+/// right, scrolling left as the recording goes on. Speech is a tall capsule,
+/// quiet is a dot — so the row reads as "listening" even before a word.
 ///
-/// - Newest amplitude appears on the right and pushes leftward.
-/// - Bars are centered around a horizontal baseline.
-/// - Colors blend between primary and secondary based on amplitude.
+/// No frame and no baseline: the waveform is content of the composer, not a
+/// field inside it. One colour, the high-emphasis text token, in both
+/// themes. Slots older than the recording are dots, so the row is always
+/// full width rather than growing in from the right.
 class WaveformBars extends StatelessWidget {
   const WaveformBars({
     required this.amplitudesNormalized,
     super.key,
-    this.height = 48,
-    this.barWidth = 2,
-    this.barSpacing = 3,
-    this.minBarHeight = 2,
-    this.borderRadius = 24,
   });
 
-  final List<double> amplitudesNormalized; // 0..1, oldest -> newest
-  final double height;
-  final double barWidth;
-  final double barSpacing;
-  final double minBarHeight;
-  final double borderRadius;
+  /// Levels in `0..1`, oldest first — one bar each.
+  final List<double> amplitudesNormalized;
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      height: height,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(color: Theme.of(context).dividerColor),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      alignment: Alignment.centerRight,
+    final tokens = context.designTokens;
+    // Bars are as wide as the gaps between them, each a step and a half.
+    final bar = tokens.spacing.step1 * 1.5;
+    return SizedBox(
+      height: tokens.spacing.step7,
       child: LayoutBuilder(
-        builder: (context, constraints) {
-          return CustomPaint(
-            size: Size(constraints.maxWidth, height / 2),
-            painter: _WaveformBarsPainter(
-              amplitudes: amplitudesNormalized,
-              barWidth: barWidth,
-              barSpacing: barSpacing,
-              minBarHeight: minBarHeight,
-              primary: cs.primary,
-              secondary: cs.secondary,
-            ),
-          );
-        },
+        builder: (context, constraints) => CustomPaint(
+          size: Size(constraints.maxWidth, tokens.spacing.step7),
+          painter: WaveformBarsPainter(
+            amplitudes: amplitudesNormalized,
+            barWidth: bar,
+            barSpacing: bar,
+            color: tokens.colors.text.highEmphasis,
+          ),
+        ),
       ),
     );
   }
 }
 
-class _WaveformBarsPainter extends CustomPainter {
-  _WaveformBarsPainter({
+/// Paints [WaveformBars]. Public so its geometry can be tested directly.
+@visibleForTesting
+class WaveformBarsPainter extends CustomPainter {
+  WaveformBarsPainter({
     required this.amplitudes,
     required this.barWidth,
     required this.barSpacing,
-    required this.minBarHeight,
-    required this.primary,
-    required this.secondary,
+    required this.color,
   });
 
-  final List<double> amplitudes; // normalized 0..1
+  /// Levels in `0..1`, oldest first.
+  final List<double> amplitudes;
   final double barWidth;
   final double barSpacing;
-  final double minBarHeight;
-  final Color primary;
-  final Color secondary;
+  final Color color;
+
+  /// How many bars fit [width], newest at the right edge.
+  int capacity(double width) =>
+      ((width + barSpacing) / (barWidth + barSpacing)).floor();
+
+  /// The height of a bar for [level]: a dot (as tall as it is wide) at the
+  /// bottom of the range, the full [maxHeight] at the top. Eased in, so
+  /// ordinary room noise stays close to a dot and speech stands up.
+  double barHeight(double level, double maxHeight) {
+    final eased = Curves.easeIn.transform(level.clamp(0.0, 1.0));
+    return barWidth + eased * (maxHeight - barWidth);
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (amplitudes.isEmpty) return;
-
-    final baselineY = size.height / 2;
-    final totalBarWidth = barWidth + barSpacing;
-    final maxBars = (size.width / totalBarWidth).floor();
-
-    final visible = amplitudes.length > maxBars
-        ? amplitudes.sublist(amplitudes.length - maxBars)
-        : amplitudes;
-
-    var x = size.width - barWidth; // start from right
-    for (var i = visible.length - 1; i >= 0; i--) {
-      final amp = visible[i].clamp(0.0, 1.0);
-      final eased = Curves.easeOut.transform(amp);
-      final barHeight = (eased * (size.height - minBarHeight)) + minBarHeight;
-      final halfHeight = barHeight / 2;
-
-      final color = Color.lerp(primary, secondary, amp) ?? primary;
-      final paint = Paint()..color = color.withValues(alpha: 0.95);
-
-      final rect = Rect.fromLTWH(
-        x,
-        baselineY - halfHeight,
-        barWidth,
-        barHeight,
-      );
+    final slots = capacity(size.width);
+    if (slots <= 0) return;
+    final paint = Paint()..color = color;
+    final radius = Radius.circular(barWidth / 2);
+    final centreY = size.height / 2;
+    final step = barWidth + barSpacing;
+    // Right-aligned: slot `slots - 1` is the newest sample.
+    final offset = size.width - (slots * step - barSpacing);
+    final firstSample = amplitudes.length - slots;
+    for (var slot = 0; slot < slots; slot++) {
+      final sample = firstSample + slot;
+      final level = sample < 0 ? 0.0 : amplitudes[sample];
+      final height = barHeight(level, size.height);
       canvas.drawRRect(
-        RRect.fromRectAndRadius(rect, const Radius.circular(1)),
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(
+            offset + slot * step,
+            centreY - height / 2,
+            barWidth,
+            height,
+          ),
+          radius,
+        ),
         paint,
       );
-
-      x -= totalBarWidth;
-      if (x < 0) break;
     }
-
-    // Baseline for polish
-    final basePaint = Paint()
-      ..color = Colors.grey.withValues(alpha: 0.25)
-      ..strokeWidth = 1;
-    canvas.drawLine(
-      Offset(0, baselineY),
-      Offset(size.width, baselineY),
-      basePaint,
-    );
   }
 
   @override
-  bool shouldRepaint(covariant _WaveformBarsPainter oldDelegate) {
-    return oldDelegate.amplitudes != amplitudes ||
-        oldDelegate.primary != primary ||
-        oldDelegate.secondary != secondary ||
-        oldDelegate.barWidth != barWidth ||
-        oldDelegate.barSpacing != barSpacing ||
-        oldDelegate.minBarHeight != minBarHeight;
-  }
+  bool shouldRepaint(covariant WaveformBarsPainter oldDelegate) =>
+      oldDelegate.amplitudes != amplitudes ||
+      oldDelegate.color != color ||
+      oldDelegate.barWidth != barWidth ||
+      oldDelegate.barSpacing != barSpacing;
 }

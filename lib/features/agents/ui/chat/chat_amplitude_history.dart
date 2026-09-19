@@ -2,8 +2,9 @@
 /// (~10s at 50ms; the UI samples this down to fit).
 const int chatAmplitudeHistoryMax = 200;
 
-/// dBFS that maps to the bottom of the normalised waveform range.
-const int chatAmplitudeMinDbfs = -80;
+/// dBFS that maps to the bottom of the normalised waveform range: a quiet
+/// room reads as silence (a dot in the waveform), not as half-height noise.
+const int chatAmplitudeMinDbfs = -55;
 
 /// dBFS that maps to the top of the normalised waveform range.
 const int chatAmplitudeMaxDbfs = -10;
@@ -33,7 +34,7 @@ List<double> appendAmplitudeSample(
 /// Normalises a single dBFS reading into the `[minNormalized, maxNormalized]`
 /// waveform range, clamping out-of-range readings to the endpoints.
 double normalizeAmplitudeSample(double dbfs) {
-  const rangeDbfs = chatAmplitudeMaxDbfs - chatAmplitudeMinDbfs; // 70
+  const rangeDbfs = chatAmplitudeMaxDbfs - chatAmplitudeMinDbfs; // 45
   const rangeNormalized =
       chatAmplitudeMaxNormalized - chatAmplitudeMinNormalized; // 0.95
 

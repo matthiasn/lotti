@@ -1410,7 +1410,12 @@ See [profile resolution](ai/profile-resolution.md) for failure and precedence ru
   The chat composer reuses the shared `chatRecorderControllerProvider` (the
   same recorder the task-agent evolution chat uses) for voice input: a mic
   trailing icon, waveform with cancel/stop, streaming partial transcript, and
-  auto-fill on completion. The recorder watch lives inside `_ChatComposer`
+  auto-fill on completion. The waveform (`WaveformBars`) is drawn the way a
+  phone's voice composer draws one: unframed in the composer's row, thin
+  round-capped capsules in the high-emphasis text colour, newest on the
+  right and scrolling left, full width from the start — quiet is a dot and
+  speech stands up. The dBFS range starts at −55 (`chatAmplitudeMinDbfs`), so
+  room noise reads as silence rather than half-height bars. The recorder watch lives inside `_ChatComposer`
   (a `ConsumerWidget`) so the 10 Hz amplitude stream rebuilds only the
   composer subtree, not the full message list.
 

@@ -1570,7 +1570,7 @@ void main() {
     // Exactly min dBFS
     expect(normalized[1], closeTo(0.05, 1e-6));
     // Mid-range maps between 0.05 and 1.0
-    expect(normalized[2], closeTo(0.4571428571, 1e-6));
+    expect(normalized[2], closeTo(0.1555555556, 1e-6));
     // Exactly max dBFS
     expect(normalized[3], closeTo(1.0, 1e-6));
     // Above max clamps to 1.0

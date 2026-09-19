@@ -88,8 +88,8 @@ void main() {
     });
 
     test('maps a mid-range reading onto the scaled band', () {
-      // Matches the controller-level worked example for -50 dBFS.
-      expect(normalizeAmplitudeSample(-50), closeTo(0.4571428571, 1e-9));
+      // -50 dBFS sits just above the quiet floor: 5 of the 45 dB band.
+      expect(normalizeAmplitudeSample(-50), closeTo(0.1555555556, 1e-9));
     });
 
     glados.Glados<double>(
@@ -135,7 +135,7 @@ void main() {
       expect(result, [
         closeTo(0.05, 1e-9),
         closeTo(0.05, 1e-9),
-        closeTo(0.4571428571, 1e-9),
+        closeTo(0.1555555556, 1e-9),
         closeTo(1, 1e-9),
         closeTo(1, 1e-9),
       ]);
