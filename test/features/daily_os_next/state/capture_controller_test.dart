@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/transcript_attribution_coordinator.dart';
 import 'package:lotti/features/daily_os_next/services/day_audio_ids.dart';
@@ -990,6 +991,151 @@ void main() {
           errorCode: 'SocketException',
         ),
       ).called(1);
+    });
+
+    test('a profile target and an attribution session travel to the '
+        'transcriber together', () async {
+      final attribution = _registerTranscriptAttribution();
+      final provider =
+          AiConfig.inferenceProvider(
+                id: 'p-profile',
+                baseUrl: 'http://localhost',
+                apiKey: 'k',
+                name: 'Profile Provider',
+                createdAt: _now,
+                inferenceProviderType: InferenceProviderType.genericOpenAi,
+              )
+              as AiConfigInferenceProvider;
+      final model =
+          AiConfig.model(
+                id: 'm-profile',
+                name: 'Profile Model',
+                providerModelId: 'profile-model',
+                inferenceProviderId: 'p-profile',
+                createdAt: _now,
+                inputModalities: const [Modality.audio],
+                outputModalities: const [Modality.text],
+                isReasoningModel: false,
+              )
+              as AiConfigModel;
+      when(
+        () => bench.transcriber.transcribe(
+          any(),
+          attributionSession: any(named: 'attributionSession'),
+          terminalizeAttributionFailure: false,
+          target: any(named: 'target'),
+        ),
+      ).thenAnswer((_) async => 'targeted and attributed');
+      bench.captureAttachedEntity();
+      final container = bench.aliveContainer(
+        outbox: bench.outbox,
+        transcriptionTarget: (provider: provider, model: model),
+      );
+      addTearDown(container.dispose);
+      final controller = container.read(captureControllerProvider.notifier);
+
+      await controller.toggle();
+      await controller.toggle();
+
+      expect(
+        container.read(captureControllerProvider).transcript,
+        'targeted and attributed',
+      );
+      final captured = verify(
+        () => bench.transcriber.transcribe(
+          any(),
+          attributionSession: captureAny(named: 'attributionSession'),
+          terminalizeAttributionFailure: false,
+          target: captureAny(named: 'target'),
+        ),
+      ).captured;
+      expect(captured[0], isNotNull);
+      expect(
+        (captured[1] as DailyOsTranscriptionTarget?)?.model.providerModelId,
+        'profile-model',
+      );
+      verify(() => attribution.service.finalize(any())).called(1);
+    });
+
+    test('a journal update that throws terminalizes the carrier as a '
+        'persistence failure', () async {
+      final attribution = _registerTranscriptAttribution();
+      stubAttributedTranscribe(bench, 'never lands');
+      when(
+        () => bench.persistenceLogic.updateDbEntity(any()),
+      ).thenAnswer((_) async => throw StateError('db locked'));
+      final container = bench.aliveContainer(outbox: bench.outbox);
+      addTearDown(container.dispose);
+      final controller = container.read(captureControllerProvider.notifier);
+
+      await controller.toggle();
+      await controller.toggle();
+
+      expect(
+        container.read(captureControllerProvider).error,
+        CaptureError.recordingSavedPendingTranscription,
+      );
+      verify(
+        () => attribution.service.prepareCompletion(
+          attributionId: 'attribution-1',
+          outputs: const [],
+          status: AiWorkStatus.failed,
+          errorCode: 'transcript_persistence_failed',
+        ),
+      ).called(1);
+    });
+
+    test('an attributed provider failure with recorded evidence fails the '
+        'output under the cause type; uncertain evidence leaves it '
+        'untouched', () async {
+      for (final evidence in TranscriptionEvidenceState.values) {
+        final attribution = _registerTranscriptAttribution();
+        when(
+          () => bench.transcriber.transcribe(
+            any(),
+            attributionSession: any(named: 'attributionSession'),
+            terminalizeAttributionFailure: false,
+          ),
+        ).thenAnswer(
+          (_) async => throw AttributedTranscriptionException(
+            cause: const SocketException('reset'),
+            evidenceState: evidence,
+          ),
+        );
+        final container = bench.aliveContainer(outbox: bench.outbox);
+        final controller = container.read(captureControllerProvider.notifier);
+
+        await controller.toggle();
+        await controller.toggle();
+
+        expect(
+          container.read(captureControllerProvider).error,
+          CaptureError.recordingSavedPendingTranscription,
+          reason: evidence.name,
+        );
+        if (evidence == TranscriptionEvidenceState.recorded) {
+          verify(
+            () => attribution.service.prepareCompletion(
+              attributionId: 'attribution-1',
+              outputs: const [],
+              status: AiWorkStatus.failed,
+              errorCode: 'SocketException',
+            ),
+          ).called(1);
+        } else {
+          verifyNever(
+            () => attribution.service.prepareCompletion(
+              attributionId: any(named: 'attributionId'),
+              outputs: any(named: 'outputs'),
+              status: any(named: 'status'),
+              errorCode: any(named: 'errorCode'),
+            ),
+          );
+        }
+        container.dispose();
+        getIt.unregister<TranscriptAttributionCoordinator>();
+        attribution.unregister();
+      }
     });
   });
 }

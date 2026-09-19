@@ -576,6 +576,37 @@ void main() {
     expect(view.metric?.name, 'vibe-coding');
   });
 
+  test('a measurable track prefers its own title over the definition name, '
+      'and a blank title falls back to the definition', () {
+    final pages = MeasurableDataType(
+      id: 'pages',
+      createdAt: DateTime(2026, 8),
+      updatedAt: DateTime(2026, 8),
+      displayName: 'Pages read',
+      description: '',
+      unitName: 'pages',
+      version: 1,
+      vectorClock: null,
+    );
+    String? nameFor(String? title) => buildGoalProgressView(
+      criteria: GoalCriterion.measurable(
+        criterionId: 'reading',
+        dataTypeId: 'pages',
+        window: const GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.sum,
+        target: 60,
+        title: title,
+      ),
+      signals: const GoalSignalWindow(),
+      reference: today,
+      measurableDefinitions: {'pages': pages},
+    ).metric?.name;
+
+    expect(nameFor('  Penguin field notes  '), 'Penguin field notes');
+    expect(nameFor('   '), 'Pages read');
+    expect(nameFor(null), 'Pages read');
+  });
+
   test('label time projects daily hours across its stable label id', () {
     final view = buildGoalProgressView(
       criteria: const GoalCriterion.labelTime(

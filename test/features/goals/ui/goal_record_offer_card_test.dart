@@ -516,4 +516,64 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('a record that persisted nothing reports the save error and '
+      'leaves the offer open for another try', (tester) async {
+    final db = MockJournalDb();
+    final service = _MockGoalMeasurableCaptureService();
+    when(
+      () => db.getMeasurementsByType(
+        type: 'pages',
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer((_) async => []);
+    final offer = _offer([
+      GoalMeasurableRecordItem(
+        day: DateTime.utc(2026, 8, 12),
+        value: 20,
+        estimated: false,
+      ),
+    ]);
+    when(
+      () => service.record(
+        agentId: 'goal-1',
+        agentName: 'Juno',
+        offer: offer,
+        items: any(named: 'items'),
+        private: false,
+        provenanceComment: any(named: 'provenanceComment'),
+      ),
+    ).thenAnswer((_) async => null);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: GoalRecordOfferCard(
+            agentId: 'goal-1',
+            agentName: 'Juno',
+            measurable: _measurable(),
+            offer: offer,
+          ),
+        ),
+        overrides: [
+          journalDbProvider.overrideWithValue(db),
+          goalMeasurableCaptureServiceProvider.overrideWithValue(service),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Record entry'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Couldn’t save this measurement. Try again.'),
+      findsOneWidget,
+    );
+    // Saving is released, so the same offer can be confirmed again.
+    final record = tester.widget<DesignSystemButton>(
+      find.widgetWithText(DesignSystemButton, 'Record entry'),
+    );
+    expect(record.onPressed, isNotNull);
+  });
 }

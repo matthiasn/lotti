@@ -171,6 +171,31 @@ void main() {
         ),
       ).called(1);
     });
+
+    test('markTimelineGesturesLearned retires the hint once and persists '
+        'it a single time', () async {
+      final notifier = container.read(
+        dailyOsPreferencesControllerProvider.notifier,
+      );
+      await pumpEventQueue();
+
+      notifier
+        ..markTimelineGesturesLearned()
+        ..markTimelineGesturesLearned();
+
+      expect(
+        container
+            .read(dailyOsPreferencesControllerProvider)
+            .timelineGesturesLearned,
+        isTrue,
+      );
+      verify(
+        () => mocks.settingsDb.saveSettingsItem(
+          dailyOsTimelineGesturesLearnedSettingsKey,
+          'true',
+        ),
+      ).called(1);
+    });
   });
 
   group('DailyOsPreferencesController name sync', () {

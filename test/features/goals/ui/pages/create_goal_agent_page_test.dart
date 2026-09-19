@@ -345,6 +345,37 @@ void main() {
     },
   );
 
+  testWidgets('a system back that pops the first step also returns the '
+      'shell to the goals root', (tester) async {
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    addTearDown(() => beamToNamedOverride = null);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Builder(
+          builder: (context) => TextButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const CreateGoalAgentPage(),
+              ),
+            ),
+            child: const Text('Open create'),
+          ),
+        ),
+        overrides: overrides(),
+      ),
+    );
+    await tester.tap(find.text('Open create'));
+    await tester.pumpAndSettle();
+    expect(find.text('What do you want to work toward?'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CreateGoalAgentPage), findsNothing);
+    expect(navigated, ['/goals']);
+  });
+
   testWidgets('a matched steps signal can be removed before confirmation', (
     tester,
   ) async {

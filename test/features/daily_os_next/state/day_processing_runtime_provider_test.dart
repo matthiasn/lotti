@@ -457,4 +457,31 @@ void main() {
       dayAgentIdForDate(DateTime(2026, 11, 3)),
     );
   });
+
+  test('a runtime nudge drains the transcription and agent lanes as '
+      'separate passes', () async {
+    final processor = MockDayProcessingOutboxProcessor();
+    final drainedLanes = <Set<DayProcessingJobKind>?>[];
+    when(
+      () => processor.drain(kinds: any(named: 'kinds')),
+    ).thenAnswer((invocation) async {
+      drainedLanes.add(
+        invocation.namedArguments[#kinds] as Set<DayProcessingJobKind>?,
+      );
+      return 1;
+    });
+    final container = ProviderContainer(
+      overrides: [
+        dayProcessingOutboxProcessorProvider.overrideWithValue(processor),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container.read(dayProcessingRuntimeProvider).nudge();
+
+    expect(drainedLanes, [
+      {DayProcessingJobKind.transcribeAudio},
+      dayAgentJobKinds,
+    ]);
+  });
 }

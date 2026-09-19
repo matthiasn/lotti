@@ -40,11 +40,13 @@ void main() {
           lastFailureClass: DayProcessingFailureClass.providerBusy,
           lastError: 'busy',
           resultTranscript: 'Gym first, then the proposal.',
+          runKeys: const ['run-1', 'run-2'],
         );
 
     final restored = DayProcessingJob.fromJson(original.toJson());
 
     expect(restored.toJson(), original.toJson());
+    expect(restored.runKeys, ['run-1', 'run-2']);
     expect(restored.claimToken, 'claim-1');
     expect(restored.lastFailureClass, DayProcessingFailureClass.providerBusy);
     expect(restored.resultTranscript, 'Gym first, then the proposal.');

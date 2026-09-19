@@ -149,5 +149,104 @@ void main() {
       expect(node.value, '50%');
       semanticsHandle.dispose();
     });
+
+    RenderObject donutPainter(WidgetTester tester) => tester.renderObject(
+      find.descendant(
+        of: find.byType(CapacityDonut),
+        matching: find.byType(CustomPaint),
+      ),
+    );
+
+    testWidgets('a progress fraction draws the reality tick in the high '
+        'emphasis ink at its fraction of the ring', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const CapacityDonut(
+            scheduledMinutes: 240,
+            capacityMinutes: 480,
+            progressFraction: 0.25,
+          ),
+        ),
+      );
+      final tokens = tester.element(find.byType(CapacityDonut)).designTokens;
+      // size 86, stroke 5 → radius 40.5 around (43, 43). A quarter of the
+      // way round (clockwise from 12 o'clock) is 3 o'clock, so the tick is
+      // a horizontal radial segment spanning the stroke plus 2px each side.
+      expect(
+        donutPainter(tester),
+        paints
+          ..circle()
+          ..arc()
+          ..line(
+            p1: const Offset(43 + 36, 43),
+            p2: const Offset(43 + 45, 43),
+            color: tokens.colors.text.highEmphasis,
+            strokeWidth: 2,
+          ),
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          const CapacityDonut(
+            scheduledMinutes: 240,
+            capacityMinutes: 480,
+          ),
+        ),
+      );
+      expect(donutPainter(tester), isNot(paints..line()));
+    });
+
+    testWidgets('a day at double capacity or more closes the over-arc into a '
+        'full half-alpha circle', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const CapacityDonut(
+            scheduledMinutes: 1200,
+            capacityMinutes: 480,
+          ),
+        ),
+      );
+      final error = tester
+          .element(find.byType(CapacityDonut))
+          .designTokens
+          .colors
+          .alert
+          .error
+          .ink;
+
+      expect(
+        donutPainter(tester),
+        paints
+          ..circle()
+          ..circle(color: error)
+          ..circle(color: error.withValues(alpha: 0.5)),
+      );
+      expect(donutPainter(tester), isNot(paints..arc()));
+    });
+  });
+
+  group('CapacityDonutSegment', () {
+    test('compares by color and minutes', () {
+      const teal = Color(0xFF00897B);
+      const amber = Color(0xFFFFB300);
+      const segment = CapacityDonutSegment(color: teal, minutes: 30);
+
+      expect(
+        segment,
+        const CapacityDonutSegment(color: teal, minutes: 30),
+      );
+      expect(
+        segment.hashCode,
+        const CapacityDonutSegment(color: teal, minutes: 30).hashCode,
+      );
+      expect(
+        segment,
+        isNot(const CapacityDonutSegment(color: teal, minutes: 45)),
+      );
+      expect(
+        segment,
+        isNot(const CapacityDonutSegment(color: amber, minutes: 30)),
+      );
+    });
   });
 }

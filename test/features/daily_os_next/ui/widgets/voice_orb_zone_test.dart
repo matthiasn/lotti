@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/edge_fade.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_orb_zone.dart';
@@ -171,6 +172,73 @@ void main() {
         ),
       );
       expect(find.byKey(LiveTranscriptView.viewportKey), findsNothing);
+    });
+
+    testWidgets('fades the top edge only once lines overflow the cap, and '
+        'drops the fade when the text fits again', (tester) async {
+      Future<void> pumpText(String text) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: SizedBox(
+              width: 300,
+              height: 600,
+              child: LiveTranscriptView(text: text, color: Colors.white),
+            ),
+          ),
+        );
+        // The viewport reports its metrics after layout and the view
+        // applies the overflow in its own post-frame callback, so the fade
+        // lands two frames later.
+        await tester.pump();
+        await tester.pump();
+      }
+
+      await pumpText('one short caption');
+      expect(find.byType(EdgeFade), findsNothing);
+
+      await pumpText(List.generate(12, (i) => 'line $i').join('\n'));
+      expect(find.byType(EdgeFade), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(EdgeFade),
+          matching: find.byKey(LiveTranscriptView.viewportKey),
+        ),
+        findsOneWidget,
+      );
+
+      await pumpText('one short caption');
+      expect(find.byType(EdgeFade), findsNothing);
+    });
+  });
+
+  testWidgets('the idle hint says click on desktop and tap on touch '
+      'platforms', (tester) async {
+    final hints = <TargetPlatform, String>{};
+    for (final platform in TargetPlatform.values) {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: Builder(
+            builder: (context) => Theme(
+              data: Theme.of(context).copyWith(platform: platform),
+              child: Builder(
+                builder: (context) {
+                  hints[platform] = voiceIdleHint(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    expect(hints, {
+      TargetPlatform.android: 'Tap to talk',
+      TargetPlatform.fuchsia: 'Tap to talk',
+      TargetPlatform.iOS: 'Tap to talk',
+      TargetPlatform.linux: 'Click to talk',
+      TargetPlatform.macOS: 'Click to talk',
+      TargetPlatform.windows: 'Click to talk',
     });
   });
 }

@@ -352,6 +352,153 @@ void main() {
     });
   });
 
+  group('validateApplicablePlanDiffBatch', () {
+    ChangeItem item(String toolName, Map<String, dynamic> args) =>
+        ChangeItem(toolName: toolName, args: args, humanSummary: 's');
+    final planWithBlock = makeTestDayPlan(
+      planDate: planDate,
+      data: DayPlanData(
+        planDate: planDate,
+        status: const DayPlanStatus.draft(),
+        plannedBlocks: [block()],
+      ),
+    );
+    String at(int hour) => DateTime(2024, 3, 15, hour).toIso8601String();
+    Map<String, dynamic> addArgs({
+      int startHour = 14,
+      Object? type,
+      Object? taskId,
+    }) => {
+      'categoryId': 'cat-1',
+      'toStart': at(startHour),
+      'toEnd': at(startHour + 1),
+      'type': ?type,
+      'taskId': ?taskId,
+    };
+    void validate(
+      ChangeItem change, {
+      DateTime? earliestStart,
+      Set<String> allowedTaskIds = const {},
+    }) => validateApplicablePlanDiffBatch(
+      [MapEntry(0, change)],
+      planWithBlock,
+      const {'cat-1'},
+      earliestStart: earliestStart,
+      allowedTaskIds: allowedTaskIds,
+    );
+    Matcher refusedWith(String fragment) => throwsA(
+      isA<DayAgentCaptureException>().having(
+        (e) => e.message,
+        'message',
+        contains(fragment),
+      ),
+    );
+
+    test('an add or a relocation into the past is refused once the day is '
+        'under way, but a move that restates its own start is not', () {
+      final now = DateTime(2024, 3, 15, 12);
+
+      expect(
+        () => validate(
+          item('add_block', addArgs(startHour: 11)),
+          earliestStart: now,
+        ),
+        refusedWith('toStart would place the block before the current time'),
+      );
+      expect(
+        () => validate(
+          item('move_block', {
+            'blockId': 'block-1',
+            'toStart': at(8),
+          }),
+          earliestStart: now,
+        ),
+        refusedWith('before the current time'),
+      );
+      // The block already began at 09:00; re-stating that start while
+      // stretching its end is not planning the past.
+      expect(
+        () => validate(
+          item('move_block', {
+            'blockId': 'block-1',
+            'toStart': at(9),
+            'toEnd': at(13),
+          }),
+          earliestStart: now,
+        ),
+        returnsNormally,
+      );
+      // On a day that is not today there is no floor at all.
+      expect(
+        () => validate(item('add_block', addArgs(startHour: 11))),
+        returnsNormally,
+      );
+    });
+
+    test('a calendar-mirror block type is refused on add and move', () {
+      expect(
+        () => validate(item('add_block', addArgs(type: 'cal'))),
+        refusedWith('cal mirrors an imported calendar event'),
+      );
+      expect(
+        () => validate(
+          item('move_block', {'blockId': 'block-1', 'type': 'cal'}),
+        ),
+        refusedWith('cal mirrors an imported calendar event'),
+      );
+      expect(
+        () => validate(item('add_block', addArgs(type: 'buffer'))),
+        returnsNormally,
+      );
+    });
+
+    test('a task link must be one the plan is allowed to reference', () {
+      expect(
+        () => validate(
+          item('add_block', addArgs(taskId: 'task-foreign')),
+          allowedTaskIds: const {'task-ops'},
+        ),
+        refusedWith('taskId task-foreign is not an allowed task'),
+      );
+      expect(
+        () => validate(
+          item('move_block', {'blockId': 'block-1', 'taskId': 'task-x'}),
+        ),
+        refusedWith('taskId task-x is not an allowed task'),
+      );
+      expect(
+        () => validate(
+          item('add_block', addArgs(taskId: 'task-ops')),
+          allowedTaskIds: const {'task-ops'},
+        ),
+        returnsNormally,
+      );
+    });
+  });
+
+  group('applyPlanDiffItem guards', () {
+    test('move_block on a block that is not in the list fails cleanly', () {
+      expect(
+        () => applyPlanDiffItem(
+          const ChangeItem(
+            toolName: 'move_block',
+            args: {'blockId': 'ghost'},
+            humanSummary: 's',
+          ),
+          [block()],
+          addedBlockState: PlannedBlockState.drafted,
+        ),
+        throwsA(
+          isA<DayAgentCaptureException>().having(
+            (e) => e.message,
+            'message',
+            contains('blockId ghost not found in plan'),
+          ),
+        ),
+      );
+    });
+  });
+
   group('stateForAcceptedAddedBlock', () {
     test('commits blocks only for agreed or committed plans', () {
       expect(
