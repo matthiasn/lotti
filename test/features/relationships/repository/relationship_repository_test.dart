@@ -1637,6 +1637,37 @@ void main() {
       expectTouched();
     });
 
+    // Codex review on #4350: the check-in and its links are saved; a touch
+    // that throws must not reach the composer as a failed save.
+    test('a touch that throws after linking is logged, not thrown', () async {
+      when(
+        () => mockPersistence.createLink(
+          fromId: 'c-1',
+          toId: any(named: 'toId'),
+        ),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockDb.journalEntityById('c-1'),
+      ).thenAnswer((_) async => throw StateError('database closed'));
+
+      expect(
+        await repository.attachEntriesToCheckIn(
+          checkInId: 'c-1',
+          entryIds: ['take-1'],
+        ),
+        isTrue,
+      );
+      verify(
+        () => getIt<DomainLogger>().error(
+          LogDomain.persistence,
+          any(),
+          message: 'check-in touch failed after attaching entries',
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'attachEntriesToCheckIn',
+        ),
+      ).called(1);
+    });
+
     test('nothing linked changes nothing', () async {
       when(
         () => mockPersistence.createLink(

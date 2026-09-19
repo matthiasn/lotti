@@ -407,7 +407,22 @@ class RelationshipRepository {
       linkedAny |= linked;
       linkedAll &= linked;
     }
-    if (linkedAny) await touchCheckIn(checkInId);
+    if (linkedAny) {
+      // Past this point everything is saved: a touch that throws must not
+      // surface as a failed save, which a retry would answer with a
+      // duplicate check-in. The next change touches it again.
+      try {
+        await touchCheckIn(checkInId);
+      } catch (error, stackTrace) {
+        getIt<DomainLogger>().error(
+          LogDomain.persistence,
+          error,
+          message: 'check-in touch failed after attaching entries',
+          stackTrace: stackTrace,
+          subDomain: 'attachEntriesToCheckIn',
+        );
+      }
+    }
     return linkedAll;
   }
 
