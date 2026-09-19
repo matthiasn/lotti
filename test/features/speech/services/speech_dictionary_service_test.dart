@@ -1,8 +1,11 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/ui/widgets/category_speech_dictionary.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/speech/services/speech_dictionary_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -139,6 +142,27 @@ void main() {
   });
 
   group('SpeechDictionaryService', () {
+    test(
+      'speechDictionaryServiceProvider builds the service on the watched '
+      'category and journal repositories',
+      () {
+        final container = ProviderContainer(
+          overrides: [
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final built = container.read(speechDictionaryServiceProvider);
+
+        expect(built.categoryRepository, same(mockCategoryRepository));
+        expect(built.journalRepository, same(mockJournalRepository));
+      },
+    );
+
     group('addTermForEntry', () {
       test('successfully adds term to task category', () async {
         when(
