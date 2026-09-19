@@ -724,6 +724,9 @@ void main() {
       testWidgets('shows empty state on error', (tester) async {
         await tester.pumpWidget(
           ProviderScope(
+            // Without this Riverpod retries the failing stream and reports
+            // loading meanwhile, so the error branch would never render.
+            retry: (_, _) => null,
             overrides: [
               aiConfigByTypeControllerProvider(
                 AiConfigType.inferenceProvider,
@@ -749,6 +752,15 @@ void main() {
 
         await tester.pump(const Duration(milliseconds: 50));
 
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(ProviderFilterChipsRow)),
+        );
+        expect(
+          container.read(
+            aiConfigByTypeControllerProvider(AiConfigType.inferenceProvider),
+          ),
+          isA<AsyncError<List<AiConfig>>>(),
+        );
         // Verify error state shows SizedBox.shrink
         expect(find.byType(SizedBox), findsOneWidget);
         expect(find.byType(DesignSystemChip), findsNothing);
