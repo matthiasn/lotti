@@ -889,7 +889,8 @@ removed:
   misheard check-in — and every other note is context, never evidence. They sit behind the same deletion and consent fences as every
   other output. The parsing, recall and persistence live in
   [`agent_observations.dart`](../../lib/features/agents/workflow/agent_observations.dart),
-  shared so other agents can move off their own copies.
+  the contract every agent kind shares (see
+  [agents overview](agents/overview.md)).
 - **The standing head advances by DUE DAY, not by wall clock.** Report rows
   accumulate as history; the `agentReportHead` row is what the UI reads. It
   is stamped with the due day's last instant once that day is over (the

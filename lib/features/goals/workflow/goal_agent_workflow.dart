@@ -16,6 +16,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/agent_system_prompt.dart';
 import 'package:lotti/features/agents/workflow/carrierless_attribution.dart';
 import 'package:lotti/features/agents/workflow/deferred_change_items.dart';
@@ -1328,26 +1329,14 @@ class GoalAgentWorkflow with AgentErrorLogging {
 
   Future<List<GoalObservationFact>> _recentObservationFacts(
     String agentId,
-  ) async {
-    final messages = await _repository.getMessagesByKind(
+  ) async => [
+    for (final observation in await recallAgentObservations(
+      _repository,
       agentId,
-      AgentMessageKind.observation,
       limit: goalObservationLookback,
-    );
-    final facts = <GoalObservationFact>[];
-    for (final message in messages) {
-      final payloadId = message.contentEntryId;
-      if (payloadId == null) continue;
-      final payload = await _repository.getEntity(payloadId);
-      if (payload is AgentMessagePayloadEntity) {
-        final text = payload.content['text'];
-        if (text is String && text.isNotEmpty) {
-          facts.add((recordedAt: message.createdAt, text: text));
-        }
-      }
-    }
-    return facts;
-  }
+    ))
+      (recordedAt: observation.at, text: observation.text),
+  ];
 
   Future<void> _persistUserMessage({
     required String agentId,
@@ -2011,34 +2000,14 @@ class GoalAgentWorkflow with AgentErrorLogging {
       }
 
       // Observations.
-      for (final observation in strategy.observations) {
-        final payloadId = _uuid.v4();
-        await _syncService.upsertEntity(
-          AgentDomainEntity.agentMessagePayload(
-            id: payloadId,
-            agentId: agentId,
-            createdAt: now,
-            vectorClock: null,
-            content: <String, Object?>{
-              'text': observation.text,
-              'priority': observation.priority.name,
-              'category': observation.category.name,
-            },
-          ),
-        );
-        await _syncService.upsertEntity(
-          AgentDomainEntity.agentMessage(
-            id: _uuid.v4(),
-            agentId: agentId,
-            threadId: threadId,
-            kind: AgentMessageKind.observation,
-            createdAt: now,
-            vectorClock: null,
-            contentEntryId: payloadId,
-            metadata: AgentMessageMetadata(runKey: runKey),
-          ),
-        );
-      }
+      await persistAgentObservations(
+        _syncService,
+        agentId: agentId,
+        threadId: threadId,
+        runKey: runKey,
+        now: now,
+        observations: strategy.observations,
+      );
 
       // Revision proposals: ChangeSet-gated — the goal spec NEVER mutates
       // here; PR 4's approval flow mints the new version on accept.

@@ -2980,14 +2980,17 @@ void main() {
             as AgentMessageEntity,
       ],
     );
-    when(() => repository.getEntity('payload-1')).thenAnswer(
-      (_) async => AgentDomainEntity.agentMessagePayload(
-        id: 'payload-1',
-        agentId: agentId,
-        createdAt: DateTime(2026, 8),
-        vectorClock: null,
-        content: const <String, Object?>{'text': 'User prefers roast tone.'},
-      ),
+    // Recalled in one batched read (no per-note lookups).
+    when(() => repository.getEntitiesByIds({'payload-1'})).thenAnswer(
+      (_) async => {
+        'payload-1': AgentDomainEntity.agentMessagePayload(
+          id: 'payload-1',
+          agentId: agentId,
+          createdAt: DateTime(2026, 8),
+          vectorClock: null,
+          content: const <String, Object?>{'text': 'User prefers roast tone.'},
+        ),
+      },
     );
 
     when(() => conversationManager.messages).thenReturn([
