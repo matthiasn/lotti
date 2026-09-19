@@ -472,7 +472,11 @@ See [profile resolution](ai/profile-resolution.md) for failure and precedence ru
   catch-up when the standing report is absent or stale. A durable source chat
   turn instead carries a `goal-chat-message:<messageId>` trigger on a manual
   `userMessage` wake. The source exists before enqueue, the wake bypasses
-  throttling, and no chat UI owns an inference loop. Visible reply rows name
+  throttling, and no chat UI owns an inference loop. Once the turn is durable,
+  `GoalChatService` sends `notifyUiOnly({agentId, agentNotification})` before
+  it enqueues: the chat projection refreshes on the agent's notifications, and
+  the wake sends one only after the reply is written, so waiting for it showed
+  the user's own words late. Visible reply rows name
   that source through `AgentMessageMetadata.operationId`. On startup, sync
   arrival and every pre-wake scan, runtime maintenance re-enqueues the oldest
   source turn without a linked reply; the router also checks for one before it

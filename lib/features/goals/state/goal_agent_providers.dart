@@ -143,6 +143,7 @@ final goalChatServiceProvider = Provider<GoalChatService>(
     repository: ref.watch(agentRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     orchestrator: ref.watch(wakeOrchestratorProvider),
+    notifications: ref.watch(updateNotificationsProvider),
     historyService: ref.watch(goalChatHistoryServiceProvider),
   ),
   name: 'goalChatServiceProvider',
