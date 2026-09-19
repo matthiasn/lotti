@@ -253,6 +253,59 @@ void main() {
     });
   });
 
+  group('entangled vine topology', () {
+    void expectGrownTree(List<NeuralNode> nodes) {
+      for (final (index, node) in nodes.indexed) {
+        final parent = node.parentIndex;
+        if (parent == null) continue;
+        expect(
+          parent,
+          lessThan(index),
+          reason:
+              'node $index grows from '
+              'an earlier node',
+        );
+      }
+    }
+
+    test('a vine that finds no neighbour close enough grafts onto its own '
+        'spine instead', () {
+      // Seed 176 over twelve nodes and two vines is a layout where the
+      // second vine's spine sits further than the graft reach from the
+      // first vine, so its branches fall back to their own spine.
+      final nodes = neuralConstellationNodes(12, 176, 2);
+
+      expect(nodes, hasLength(12));
+      expectGrownTree(nodes);
+      final secondVine = [
+        for (final (index, node) in nodes.indexed)
+          if (node.vineId == 1) index,
+      ];
+      final start = secondVine.first;
+      for (final index in secondVine.skip(1)) {
+        expect(
+          nodes[nodes[index].parentIndex!].vineId,
+          1,
+          reason: 'node $index stays on its own vine',
+        );
+        expect(nodes[index].parentIndex, greaterThanOrEqualTo(start));
+      }
+    });
+
+    test('grafts across vines when a neighbour is close', () {
+      final nodes = neuralConstellationNodes(24, 7, 3);
+
+      expectGrownTree(nodes);
+      final grafts = [
+        for (final node in nodes)
+          if (node.parentIndex case final parent?
+              when nodes[parent].vineId != node.vineId)
+            node,
+      ];
+      expect(grafts, isNotEmpty);
+    });
+  });
+
   group('loop seam continuity', () {
     const size = Size(320, 240);
 

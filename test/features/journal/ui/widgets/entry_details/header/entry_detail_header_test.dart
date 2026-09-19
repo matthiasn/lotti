@@ -27,6 +27,7 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/image_utils.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
@@ -1629,6 +1630,24 @@ void main() {
         expect(thumbnail, isNotEmpty);
         expect(find.byType(ClipRRect), findsOneWidget);
         expect(find.byType(EntryDatetimeWidget), findsOneWidget);
+
+        // The fixture's image file does not exist on disk. The load fails on
+        // the real event loop, and the thumbnail falls back to the image
+        // glyph instead of an empty square.
+        final thumbnailGlyph = find.descendant(
+          of: find.byType(ClipRRect),
+          matching: find.byIcon(LottiIcons.image),
+        );
+        expect(thumbnailGlyph, findsNothing);
+        for (var i = 0; i < 10 && thumbnailGlyph.evaluate().isEmpty; i++) {
+          // One real IO round-trip lets the pending file read report back.
+          await tester.runAsync(
+            // ignore: avoid_slow_async_io
+            () => File(getFullImagePath(testImageEntry)).exists(),
+          );
+          await tester.pump();
+        }
+        expect(thumbnailGlyph, findsOneWidget);
       });
     });
   });

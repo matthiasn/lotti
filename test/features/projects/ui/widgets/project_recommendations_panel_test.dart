@@ -515,6 +515,39 @@ void main() {
     expect(find.textContaining('Show '), findsNothing);
   });
 
+  testWidgets('a step settled without a task reads as done and can be '
+      'taken back', (tester) async {
+    await pumpSubject(
+      tester,
+      subject(
+        width: 1000,
+        items: [
+          steps[0],
+          step(
+            's2',
+            'Count the sardine crates',
+            position: 1,
+            status: ProjectRecommendationStatus.resolved,
+          ),
+        ],
+      ),
+    );
+
+    expect(find.text('Count the sardine crates'), findsOneWidget);
+    expect(find.text('Done'), findsOneWidget);
+    expect(find.text('Open task'), findsNothing);
+    expect(
+      find.text('1 pending'),
+      findsWidgets,
+      reason: 'A settled step no longer counts as open.',
+    );
+    expect(
+      find.text('Undo'),
+      findsOneWidget,
+      reason: 'A step settled without a task can always be reopened.',
+    );
+  });
+
   testWidgets(
     'a run decided before the page opened collapses to a summary with history',
     (tester) async {

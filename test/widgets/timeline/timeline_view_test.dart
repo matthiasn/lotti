@@ -4,6 +4,7 @@ import 'package:lotti/widgets/timeline/timeline_models.dart';
 import 'package:lotti/widgets/timeline/timeline_view.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../test_utils/broken_image_provider.dart';
 import '../../widget_test_utils.dart';
 
 void main() {
@@ -481,6 +482,39 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.text('The reveal moment.'), findsOneWidget);
+    });
+
+    testWidgets('a photo that fails to load leaves a neutral placeholder and '
+        'keeps the caption', (tester) async {
+      await pump(
+        tester,
+        TimelineView(
+          groups: [
+            TimelineGroup(
+              beats: [
+                beat(
+                  content: const TimelineBeatContent.photos(
+                    photos: [TimelinePhoto(BrokenImageProvider())],
+                    caption: 'The colony at dusk.',
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      final image = find.byType(Image);
+      final placeholder = tester.widget<ColoredBox>(
+        find.descendant(of: image, matching: find.byType(ColoredBox)),
+      );
+      expect(
+        placeholder.color,
+        Theme.of(tester.element(image)).colorScheme.surfaceContainerHighest,
+      );
+      expect(find.text('The colony at dusk.'), findsOneWidget);
     });
 
     testWidgets('an empty text beat renders no stray line', (tester) async {

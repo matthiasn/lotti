@@ -514,6 +514,12 @@ class NeuralNode {
       0.5 + 0.5 * math.sin(2 * math.pi * breathCycles * t01 + phase);
 }
 
+/// The seeded node field [NeuralConstellation] grows for [count] nodes over
+/// [vineCount] vines. Public for topology tests.
+@visibleForTesting
+List<NeuralNode> neuralConstellationNodes(int count, int seed, int vineCount) =>
+    _NeuralConstellationState._buildNodes(count, seed, vineCount);
+
 /// The travelling-pulse envelope for pulse [index] at loop phase [t01], given
 /// [pulseCycles] base travels per loop. Public for seam tests.
 ///

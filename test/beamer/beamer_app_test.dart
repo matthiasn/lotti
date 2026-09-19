@@ -6,6 +6,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/beamer/locations/goals_location.dart';
 import 'package:lotti/beamer/locations/habits_location.dart';
@@ -25,7 +27,11 @@ import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/sidebar_wake_queue.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart'
+    as ai_config;
+import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_sidebar_entry.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
@@ -91,6 +97,7 @@ import 'package:matrix/matrix.dart' hide Profile;
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
+import '../helpers/fallbacks.dart';
 import '../helpers/stub_audio_recorder_controller.dart';
 import '../mocks/mocks.dart';
 import '../mocks/sync_config_test_mocks.dart';
@@ -946,6 +953,8 @@ void main() {
     // The AI provider FTUE path stubs AiConfigRepository.getConfigsByType,
     // whose argument is an AiConfigType — mocktail needs a fallback for `any()`.
     registerFallbackValue(AiConfigType.inferenceProvider);
+    // Connecting a provider in the FTUE welcome saves AiConfigs.
+    registerFallbackValue(fallbackAiConfig);
     registerFallbackValue(FakeLaunchOptions());
     // The lockdown guard is set and reset by delegate.
     registerFallbackValue(<BeamerDelegate>{});
@@ -4866,6 +4875,86 @@ void main() {
     );
 
     testWidgets(
+      'connecting a provider in the FTUE welcome retires it for good once '
+      'the welcome closes',
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => false,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        final aiRepo = MockAiConfigRepository();
+        when(() => aiRepo.saveConfig(any())).thenAnswer((_) async {});
+        when(() => aiRepo.restoreConfig(any())).thenAnswer((_) async {});
+        var markCompletedCount = 0;
+        await _pumpAppScreenCustomProviders(
+          tester,
+          navService: mockNavService,
+          whatsNewOverride: _StableUnseenWhatsNewController.new,
+          shouldAutoShowOnboarding: (ref) async => true,
+          onboardingWelcomeCadenceOverride: () =>
+              _CountingOnboardingWelcomeCadence(
+                onMarkCompleted: () => markCompletedCount++,
+              ),
+          extraOverrides: [
+            ai_config.aiConfigRepositoryProvider.overrideWithValue(aiRepo),
+            // The welcome's connect step creates no category of its own.
+            categoryRepositoryProvider.overrideWithValue(
+              MockCategoryRepository(),
+            ),
+            connectionVerifierClientProvider.overrideWith(
+              (ref) =>
+                  () => MockClient((_) async => http.Response('', 200)),
+            ),
+            connectionProbeRegistryProvider.overrideWith(
+              (ref) => {
+                InferenceProviderType.ollama: _VerifiedConnectionProbe(),
+              },
+            ),
+          ],
+        );
+
+        Future<void> step() async {
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+          await tester.pump(const Duration(milliseconds: 800));
+        }
+
+        await step();
+        await tester.tap(find.text('Choose your AI brain'));
+        await step();
+        await tester.tap(find.text('More options'));
+        await step();
+        await tester.tap(find.text('Ollama'));
+        await step();
+        // The reachability probe holds its "checking" state for a moment.
+        await tester.pump(const Duration(milliseconds: 1100));
+        await step();
+        await tester.tap(find.text('Connect'));
+        await step();
+        expect(find.text('Get started'), findsOneWidget);
+        expect(markCompletedCount, 0, reason: 'still open on the success beat');
+
+        // Close the welcome from its success beat.
+        await tester.tapAt(const Offset(5, 5));
+        await step();
+
+        expect(find.text('Get started'), findsNothing);
+        expect(markCompletedCount, 1);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
       'FTUE welcome skip closes the welcome without marking it completed '
       '(so the shown-count/window grace period is preserved)',
       (tester) async {
@@ -5658,6 +5747,21 @@ class _CountingOnboardingWelcomeCadence extends OnboardingWelcomeCadence {
 
   @override
   Future<void> markCompleted() async => onMarkCompleted?.call();
+}
+
+/// Reports every probed connection as verified, so the welcome's connect step
+/// resolves without a network call.
+class _VerifiedConnectionProbe extends ConnectionProbe {
+  @override
+  Future<ConnectionCheckState> probe({
+    required Uri baseUri,
+    required String apiKey,
+    required Duration timeout,
+    required http.Client client,
+  }) async => const ConnectionCheckVerified(
+    modelCount: 2,
+    latency: Duration(milliseconds: 5),
+  );
 }
 
 /// A test-owned Daily OS eligibility the auto-show gate watches, so a test

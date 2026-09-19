@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/dashboards/state/health_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
@@ -327,6 +328,39 @@ void main() {
 
       expect(result, hasLength(1));
       expect(result[0].value, 72.5);
+    });
+
+    test('routes to aggregateDailySum for dailySum aggregation type', () {
+      // No shipped type sums per calendar day, so register one for the test.
+      const dataType = 'HealthDataType.KRILL_SORTED';
+      healthTypes[dataType] = HealthTypeConfig(
+        displayName: 'Krill sorted',
+        healthType: dataType,
+        chartType: HealthChartType.barChart,
+        aggregationType: HealthAggregationType.dailySum,
+        unit: 'kg',
+      );
+      addTearDown(() => healthTypes.remove(dataType));
+      final entities = [
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 15, 8),
+          value: 30,
+          dataType: dataType,
+          id: 'morning',
+        ),
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 15, 18),
+          value: 12,
+          dataType: dataType,
+          id: 'evening',
+        ),
+      ];
+
+      final result = aggregateByType(entities, dataType);
+
+      expect(result.map((o) => (o.dateTime, o.value)), [
+        (DateTime(2024, 3, 15), 42),
+      ]);
     });
 
     test('routes to aggregateDailyMax for dailyMax aggregation type', () {

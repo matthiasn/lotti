@@ -12,6 +12,7 @@ import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../test_helper.dart';
+import '../../../../test_utils/broken_image_provider.dart';
 import '../../../../widget_test_utils.dart';
 import 'test_utils.dart';
 
@@ -84,19 +85,6 @@ final Uint8List _png1x1 = Uint8List.fromList(<int>[
   0x60,
   0x82,
 ]);
-
-class _BrokenImageProvider extends ImageProvider<_BrokenImageProvider> {
-  @override
-  Future<_BrokenImageProvider> obtainKey(
-    ImageConfiguration configuration,
-  ) async => this;
-
-  @override
-  ImageStreamCompleter loadImage(
-    _BrokenImageProvider key,
-    ImageDecoderCallback decode,
-  ) => OneFrameImageStreamCompleter(Future<ImageInfo>.error('broken'));
-}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -491,8 +479,8 @@ void main() {
         MaterialApp(
           builder: LegacyMaterialBridge.builder,
           home: Image(
-            image: CoverResizeImage(
-              _BrokenImageProvider(),
+            image: const CoverResizeImage(
+              BrokenImageProvider(),
               width: 300,
               height: 300,
             ),

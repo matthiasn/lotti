@@ -456,6 +456,9 @@ void main() {
         expect(colorAt(6000), tokens.colors.alert.warning.defaultColor);
         expect(colorAt(3000), tokens.colors.alert.error.defaultColor);
         expect(colorAt(0), tokens.colors.alert.error.defaultColor);
+        // Below the lowest threshold (a negative correction sample) still
+        // lands in the bottom tier rather than escaping the scale.
+        expect(colorAt(-250), tokens.colors.alert.error.defaultColor);
       },
     );
 

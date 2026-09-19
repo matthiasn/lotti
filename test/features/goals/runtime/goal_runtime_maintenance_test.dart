@@ -16,6 +16,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../agents/test_data/entity_factories.dart';
 
 void main() {
   setUpAll(() {
@@ -275,6 +276,39 @@ void main() {
     );
     verify(
       () => chatService.restoreOldestPendingMessage('goal-b'),
+    ).called(1);
+  });
+
+  test('restoreSubscriptions re-arms a report refresh that was pending when '
+      'the app stopped', () async {
+    final dueAt = DateTime(2026, 8, 8, 15);
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer((_) async => [goalIdentity('goal-a')]);
+    stubSpec('goal-a');
+    when(() => repository.getAgentState('goal-a')).thenAnswer(
+      (_) async => makeTestState(agentId: 'goal-a', nextWakeAt: dueAt),
+    );
+    when(
+      () => orchestrator.restorePendingWake(
+        agentId: any(named: 'agentId'),
+        dueAt: any(named: 'dueAt'),
+        triggerTokens: any(named: 'triggerTokens'),
+        workspaceKey: any(named: 'workspaceKey'),
+        reasonId: any(named: 'reasonId'),
+      ),
+    ).thenReturn(null);
+
+    await maintenance.restoreSubscriptions();
+
+    verify(
+      () => orchestrator.restorePendingWake(
+        agentId: 'goal-a',
+        dueAt: dueAt,
+        triggerTokens: const {goalDeferredReportRefreshTriggerToken},
+        workspaceKey: goalReportRefreshTriggerToken,
+        reasonId: goalDeferredReportRefreshTriggerToken,
+      ),
     ).called(1);
   });
 
