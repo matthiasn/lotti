@@ -112,6 +112,7 @@ extension _ImageAnalysisInputCases on _SkillInferenceTestSetup {
         );
         verifyZeroInteractions(mockCloudRepo);
       },
+      skip: Platform.isWindows ? 'requires POSIX symbolic links' : false,
     );
 
     test('returns early when entity is null', () async {
