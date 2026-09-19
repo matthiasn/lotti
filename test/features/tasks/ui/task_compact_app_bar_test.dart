@@ -1,23 +1,31 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/header/initial_modal_page_content.dart';
 import 'package:lotti/features/knowledge_graph/state/task_graph_provider.dart';
 import 'package:lotti/features/knowledge_graph/ui/task_knowledge_graph_page.dart';
+import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/ui/task_compact_app_bar.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgets/app_bar/glass_back_button.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fake_entry_controller.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 /// Test-only TaskAppBarController that emits a pinned scroll offset so the
 /// persistent-title threshold check can be exercised deterministically.
@@ -242,6 +250,53 @@ void main() {
         await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
         expect(find.byType(TaskKnowledgeGraphPage), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'the overflow button opens the entry actions for this task',
+      (tester) async {
+        final task = buildTask(id: 'task-waddle');
+        await setUpTestGetIt(
+          additionalSetup: () {
+            final cache = MockEntitiesCacheService();
+            when(() => cache.showPrivateEntries).thenReturn(true);
+            when(() => cache.getLabelById(any())).thenReturn(null);
+            when(() => cache.getCategoryById(any())).thenReturn(null);
+            getIt
+              ..registerSingleton<EntitiesCacheService>(cache)
+              ..registerSingleton<EditorStateService>(MockEditorStateService())
+              ..registerSingleton<LinkService>(MockLinkService());
+          },
+        );
+        addTearDown(tearDownTestGetIt);
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            task,
+            overrides: [
+              createEntryControllerOverride(task),
+              labelsStreamProvider.overrideWith(
+                (ref) => Stream<List<LabelDefinition>>.value([]),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(InitialModalPageContent), findsNothing);
+
+        await tester.tap(find.byIcon(LottiIcons.more));
+        // Modal entrance animation — settle is genuinely required.
+        await tester.pumpAndSettle();
+
+        final content = tester.widget<InitialModalPageContent>(
+          find.byType(InitialModalPageContent),
+        );
+        expect(content.entryId, 'task-waddle');
+        expect(content.linkedFromId, isNull);
+        expect(content.link, isNull);
+        expect(content.inLinkedEntries, isFalse);
       },
     );
 

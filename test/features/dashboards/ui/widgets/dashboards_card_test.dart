@@ -5,6 +5,7 @@ import 'package:lotti/features/design_system/components/lists/design_system_list
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -133,6 +134,23 @@ void main() {
       await tester.pump();
 
       expect(find.byType(Divider), findsNothing);
+    });
+
+    testWidgets('tapping the card opens that dashboard', (tester) async {
+      final beamedTo = <String>[];
+      beamToNamedOverride = beamedTo.add;
+      addTearDown(() => beamToNamedOverride = null);
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          DashboardCard(dashboard: dashboard, showDivider: false),
+        ),
+      );
+      await tester.pump();
+      await tester.tap(find.text('Health Overview'));
+      await tester.pump();
+
+      expect(beamedTo, ['/dashboards/test-dashboard-id']);
     });
   });
 }

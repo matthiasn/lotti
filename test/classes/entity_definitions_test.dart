@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'entity_definitions_test_helpers.dart';
 
 void main() {
@@ -617,6 +618,24 @@ void main() {
       expect(decoded.choiceId, 'c-clear');
       expect(decoded.value, 1);
       expect(decoded, data);
+    });
+  });
+
+  group('CategoryIconConverter', () {
+    const converter = CategoryIconConverter();
+
+    test('round-trips every icon through its JSON name', () {
+      for (final icon in CategoryIcon.values) {
+        final json = converter.toJson(icon);
+        expect(json, icon.name);
+        expect(converter.fromJson(json), icon);
+      }
+    });
+
+    test('maps a missing icon to null in both directions', () {
+      expect(converter.toJson(null), isNull);
+      expect(converter.fromJson(null), isNull);
+      expect(converter.fromJson('not-an-icon'), isNull);
     });
   });
 }

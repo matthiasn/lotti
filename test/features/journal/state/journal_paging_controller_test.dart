@@ -315,6 +315,44 @@ void main() {
       );
 
       test(
+        'sequential refresh without a post-filter offset advances by the '
+        'page item count and keeps paging open after a full last page',
+        () async {
+          controller.replacePages(
+            [
+              [_makeEntry('krill-1'), _makeEntry('krill-2')],
+              [_makeEntry('krill-3'), _makeEntry('krill-4')],
+            ],
+            keys: [0, 2],
+            hasNextPage: true,
+          );
+
+          final queriedKeys = <int>[];
+          final reportedOffsets = <int?>[];
+          Iterable<JournalEntity>? leadingItems;
+          await controller.refreshLoadedPages(
+            runQuery: (pageKey, {setPostFilterNextRawOffset}) async {
+              queriedKeys.add(pageKey);
+              return [_makeEntry('r-$pageKey-a'), _makeEntry('r-$pageKey-b')];
+            },
+            requiresSequential: true,
+            pageSize: 2,
+            isMounted: () => true,
+            onPostFilterOffset: reportedOffsets.add,
+            onLeadingItems: (items) => leadingItems = items,
+          );
+
+          // No post-filter offset reported, so page two starts right after
+          // page one's two items.
+          expect(queriedKeys, [0, 2]);
+          expect(controller.value.keys, [0, 2]);
+          expect(controller.value.hasNextPage, isTrue);
+          expect(reportedOffsets, [null]);
+          expect(leadingItems!.map((e) => e.meta.id), ['r-0-a', 'r-0-b']);
+        },
+      );
+
+      test(
         'sequential refresh exits early when isMounted() flips to false '
         'mid-loop',
         () async {

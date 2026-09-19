@@ -215,6 +215,59 @@ void main() {
     },
   );
 
+  testWidgets(
+    'turning the tryout back on while a failed stop is still cleaning up '
+    'restarts the mic once the cleanup ends',
+    (tester) async {
+      final repo = MockAudioRecorderRepository();
+      final amps = StreamController<Amplitude>.broadcast();
+      addTearDown(amps.close);
+      _stubLiveRecording(repo, amps);
+      final cleanupStop = Completer<void>();
+      var stopCalls = 0;
+      when(repo.stopRecording).thenAnswer((_) async {
+        stopCalls++;
+        if (stopCalls == 1) throw StateError('recorder busy');
+        if (stopCalls == 2) return cleanupStop.future;
+      });
+
+      final states = <RecordingStyleLivePreviewState>[];
+      await pumpPreview(tester, states: states, repo: repo);
+
+      // On: the mic starts.
+      await tester.tap(find.byType(Switch));
+      await tester.pump();
+      await tester.pump();
+      verify(repo.startRecording).called(1);
+
+      // Off: the stop fails, so the preview forces the toggle off and runs
+      // a second, still-pending cleanup stop.
+      await tester.tap(find.byType(Switch));
+      await tester.pump();
+      await tester.pump();
+      expect(stopCalls, 2);
+      expect(states.last.tryingWithVoice, isFalse);
+
+      // On again while that cleanup is in flight.
+      await tester.tap(find.byType(Switch));
+      await tester.pump();
+      verifyNever(repo.startRecording);
+
+      cleanupStop.complete();
+      await tester.pump();
+      await tester.pump();
+
+      // The toggle made mid-cleanup is honoured: the mic restarts.
+      verify(repo.startRecording).called(1);
+      expect(states.last.tryingWithVoice, isTrue);
+      expect(tester.takeException(), isNull);
+
+      // Tear the live tryout down cleanly.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    },
+  );
+
   testWidgets('startRecording returning null reverts the toggle', (
     tester,
   ) async {

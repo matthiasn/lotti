@@ -447,6 +447,58 @@ void main() {
     );
   });
 
+  for (final canUpdate in [true, false]) {
+    testWidgets(
+      'an unsaveable-as-new draft can still save when updating is '
+      '${canUpdate ? 'allowed' : 'blocked'}',
+      (tester) async {
+        await openModal(
+          tester,
+          onApplied: (_) {},
+          onCreateSavedFilter: (_, _) {},
+          onUpdateSavedFilter: (_) {},
+          canCreateSavedFilter: (_) => false,
+          canUpdateSavedFilter: (_) => canUpdate,
+          existingSavedFilterName: 'Iceberg route',
+        );
+
+        final saveButton = tester.widget<DesignSystemButton>(
+          find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
+        );
+        expect(saveButton.onPressed != null, canUpdate);
+      },
+    );
+  }
+
+  testWidgets('submitting the name from the keyboard saves the filter', (
+    tester,
+  ) async {
+    final creates = <String>[];
+    await openModal(
+      tester,
+      onApplied: (_) {},
+      onCreateSavedFilter: (name, _) => creates.add(name),
+    );
+
+    await tester.tap(find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey));
+    await tester.pump(const Duration(milliseconds: 900));
+
+    await tester.enterText(
+      find.descendant(
+        of: find.byKey(DesignSystemFilterSavePageKeys.nameField),
+        matching: find.byType(TextField),
+      ),
+      'Fish run',
+    );
+    await tester.pump();
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 900));
+
+    expect(creates, ['Fish run']);
+    expect(find.byType(DesignSystemTaskFilterSheet), findsNothing);
+  });
+
   for (final textScale in [1.0, 2.0]) {
     testWidgets(
       'mobile footer leaves the final toggle unobscured at ${textScale}x text',

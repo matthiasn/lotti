@@ -465,7 +465,17 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(HabitCompletionSheet), findsOneWidget);
 
-      // A tap on the transparent area above the form dismisses it.
+      // The sheet is taller than the form it floats: a tap on the sheet's
+      // own transparent space above the form (below the scrim) dismisses it.
+      final sheetTop = tester.getTopLeft(find.byType(HabitCompletionSheet)).dy;
+      expect(sheetTop, greaterThan(20));
+      await tester.tapAt(Offset(400, sheetTop + 4));
+      await tester.pumpAndSettle();
+      expect(find.byType(HabitCompletionSheet), findsNothing);
+
+      // So does a tap on the scrim itself.
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
       await tester.tapAt(const Offset(400, 20));
       await tester.pumpAndSettle();
       expect(find.byType(HabitCompletionSheet), findsNothing);

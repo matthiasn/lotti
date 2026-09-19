@@ -1,5 +1,7 @@
 // ignore_for_file: avoid_redundant_argument_values
 
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,10 +9,13 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/ui/widgets/journal_app_bar.dart';
 import 'package:lotti/features/tasks/ui/task_app_bar.dart';
+import 'package:lotti/features/tasks/ui/task_compact_app_bar.dart';
+import 'package:lotti/features/tasks/ui/task_expandable_app_bar.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
-import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
@@ -19,29 +24,36 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  late Directory documentsDir;
+
   setUp(() async {
-    await getIt.reset();
-    getIt.allowReassignment = true;
-
-    getIt.registerSingleton<TimeService>(TimeService());
-
-    final mockCache = MockEntitiesCacheService();
-    when(() => mockCache.getCategoryById(any())).thenReturn(null);
-    getIt.registerSingleton<EntitiesCacheService>(mockCache);
-
-    final mockNotifications = MockUpdateNotifications();
-    when(
-      () => mockNotifications.updateStream,
-    ).thenAnswer((_) => const Stream.empty());
-    getIt.registerSingleton<UpdateNotifications>(mockNotifications);
+    // The cover image resolves its file against the documents directory;
+    // an empty temp dir means the cover renders its missing-file state.
+    documentsDir = Directory.systemTemp.createTempSync('task_app_bar_test');
+    await setUpTestGetIt(
+      additionalSetup: () {
+        final mockCache = MockEntitiesCacheService();
+        when(() => mockCache.getCategoryById(any())).thenReturn(null);
+        getIt
+          ..registerSingleton<Directory>(documentsDir)
+          ..registerSingleton<TimeService>(TimeService())
+          ..registerSingleton<EntitiesCacheService>(mockCache)
+          // EntryController resolves the editor-state service in a field
+          // initializer; without it the overridden controller fails to
+          // build and every test silently falls back to the journal bar.
+          ..registerSingleton<EditorStateService>(MockEditorStateService());
+      },
+    );
   });
 
   tearDown(() async {
-    await getIt.reset();
+    await tearDownTestGetIt();
+    documentsDir.deleteSync(recursive: true);
   });
 
   Task buildTask({String? coverArtId}) {
@@ -125,7 +137,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(SliverAppBar), findsOneWidget);
+      expect(find.byType(TaskCompactAppBar), findsOneWidget);
+      expect(find.byType(TaskExpandableAppBar), findsNothing);
     });
 
     testWidgets('has back button with chevron_left icon', (tester) async {
@@ -153,7 +166,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(SliverAppBar), findsOneWidget);
+      expect(find.byType(JournalSliverAppBar), findsOneWidget);
+      expect(find.byType(TaskCompactAppBar), findsNothing);
     });
 
     testWidgets('uses JournalSliverAppBar when entry is null', (tester) async {
@@ -164,7 +178,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(SliverAppBar), findsOneWidget);
+      expect(find.byType(JournalSliverAppBar), findsOneWidget);
     });
 
     testWidgets('renders expandable app bar when task has cover art', (
@@ -184,9 +198,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(SliverAppBar), findsOneWidget);
-      // TaskSliverAppBar should render when task has cover art
-      expect(find.byType(TaskSliverAppBar), findsOneWidget);
+      final expandable = tester.widget<TaskExpandableAppBar>(
+        find.byType(TaskExpandableAppBar),
+      );
+      expect(expandable.coverArtId, 'image-1');
+      expect(expandable.task.id, 'task-1');
+      expect(find.byType(TaskCompactAppBar), findsNothing);
     });
 
     testWidgets('expandable app bar has chevron_left icon for back button', (
@@ -230,8 +247,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify the app bar is rendered
-      expect(find.byType(SliverAppBar), findsOneWidget);
+      // The expanded height follows the 16:9 cover at the 400px width.
+      final appBar = tester.widget<SliverAppBar>(find.byType(SliverAppBar));
+      expect(appBar.expandedHeight, 400 * 9 / 16);
 
       // Reset surface size
       await tester.binding.setSurfaceSize(null);
@@ -250,8 +268,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Compact app bar should be rendered
-      expect(find.byType(SliverAppBar), findsOneWidget);
+      // Compact app bar has no expanded cover region.
+      final appBar = tester.widget<SliverAppBar>(find.byType(SliverAppBar));
+      expect(appBar.expandedHeight, isNull);
       // Should still have back button
       expect(find.byIcon(LottiIcons.chevronLeft), findsOneWidget);
     });

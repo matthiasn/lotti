@@ -220,6 +220,29 @@ void main() {
           [1],
         ],
       );
+      const selection = InsightsPeriodSelection(
+        unit: InsightsPeriodUnit.week,
+        range: range,
+        compareEnabled: true,
+      );
+      expect(
+        selection.hashCode,
+        const InsightsPeriodSelection(
+          unit: InsightsPeriodUnit.week,
+          range: InsightsRange(startDay: 10, endDayExclusive: 17),
+          compareEnabled: true,
+        ).hashCode,
+      );
+      // Equal selections collapse in a hashed set; a different compare flag
+      // stays distinct.
+      expect(
+        {
+          selection,
+          selection.copyWith(),
+          selection.copyWith(compareEnabled: false),
+        },
+        hasLength(2),
+      );
       expect(
         chart.hashCode,
         InsightsChartData(

@@ -506,6 +506,51 @@ void main() {
       ).called(1);
     });
 
+    testWidgets('a failing agent provisioning never blocks the new project', (
+      tester,
+    ) async {
+      stubCreateMetadata();
+      stubCreateProject();
+      when(
+        () => mockTemplateService.listTemplates(),
+      ).thenAnswer((_) async => [makeProjectAgentTemplate()]);
+      when(
+        () => mockAgentService.createProjectAgent(
+          projectId: any(named: 'projectId'),
+          templateId: any(named: 'templateId'),
+          displayName: any(named: 'displayName'),
+          allowedCategoryIds: any(named: 'allowedCategoryIds'),
+        ),
+      ).thenAnswer((_) async => throw StateError('agent store offline'));
+
+      await pumpForm(tester);
+      final messages = tester.element(find.byType(ProjectCreateForm)).messages;
+
+      await tester.enterText(
+        find.byType(DesignSystemTextInput),
+        'Iceberg Survey',
+      );
+      await tester.pump();
+
+      await tester.tap(find.text(messages.createButton));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockProjectRepo.createProject(project: any(named: 'project')),
+      ).called(1);
+      verify(
+        () => mockAgentService.createProjectAgent(
+          projectId: 'test-meta-id',
+          templateId: 'tpl-1',
+          displayName: 'Iceberg Survey',
+          allowedCategoryIds: <String>{},
+        ),
+      ).called(1);
+      // The failure is swallowed: the form closed as on a normal save.
+      expect(find.byType(ProjectCreateForm), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('target date can be picked and cleared', (tester) async {
       await pumpForm(tester);
 

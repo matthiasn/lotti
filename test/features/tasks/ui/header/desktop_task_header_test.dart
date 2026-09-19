@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -281,6 +282,35 @@ void main() {
         expect(details, 1);
       },
     );
+    testWidgets(
+      'hovering a tappable crumb lifts its ink from medium to high emphasis',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(category: _categoryFixture),
+            onTitleSaved: (_) {},
+            onCategoryTap: () {},
+          ),
+        );
+
+        Color? crumbColor() =>
+            tester.widget<Text>(find.text('Work')).style?.color;
+        final context = tester.element(find.text('Work'));
+        expect(crumbColor(), TaskShowcasePalette.mediumText(context));
+
+        final gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        addTearDown(gesture.removePointer);
+        await gesture.addPointer(location: Offset.zero);
+        await gesture.moveTo(tester.getCenter(find.text('Work')));
+        await tester.pump();
+
+        expect(crumbColor(), TaskShowcasePalette.highText(context));
+      },
+    );
+
     testWidgets(
       'crumb segments without tap handlers render as plain non-tappable '
       'padding',

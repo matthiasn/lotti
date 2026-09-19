@@ -8,6 +8,7 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/commit_evaluating_vector_clock_service.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
@@ -680,11 +681,11 @@ void main() {
   // The shared mock documents that it runs the action and *ignores* the
   // predicate, so a local subclass is needed to see it at all.
   group('NotificationRepository vector-clock commit rule', () {
-    late _CommitEvaluatingVectorClockService commitClock;
+    late CommitEvaluatingVectorClockService commitClock;
     late NotificationRepository commitRepository;
 
     setUp(() {
-      commitClock = _CommitEvaluatingVectorClockService();
+      commitClock = CommitEvaluatingVectorClockService();
       when(() => commitClock.getHost()).thenAnswer((_) async => 'host-a');
       when(
         () => commitClock.getNextVectorClock(previous: any(named: 'previous')),
@@ -1124,24 +1125,4 @@ NotificationEntity _entityForCreate({
     title: 'Title',
     body: 'Body',
   );
-}
-
-/// [MockVectorClockService] that actually evaluates `commitWhen`.
-///
-/// The shared mock deliberately runs the action and ignores the predicate, so
-/// the commit rule — a write that produced nothing must not commit the scope,
-/// and therefore must not spend a vector-clock tick — is invisible to any test
-/// using it. Overriding one method keeps the rest of the shared stubs.
-class _CommitEvaluatingVectorClockService extends MockVectorClockService {
-  final List<bool> commits = [];
-
-  @override
-  Future<T> withVcScope<T>(
-    Future<T> Function() action, {
-    bool Function(T result)? commitWhen,
-  }) async {
-    final result = await action();
-    if (commitWhen != null) commits.add(commitWhen(result));
-    return result;
-  }
 }

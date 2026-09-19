@@ -416,31 +416,42 @@ void main() {
       expect(lottiTextField.borderRadius, equals(20.0));
     });
 
-    testWidgets('disabled text field shows with reduced opacity', (
+    testWidgets('disabled text field dims its prefix and suffix icons', (
       tester,
     ) async {
+      final disabledController = TextEditingController();
+      addTearDown(disabledController.dispose);
       await tester.pumpWidget(
         WidgetTestBench(
           child: Column(
             children: [
               LottiTextField(
                 controller: controller,
-                // enabled: true, // default value
                 prefixIcon: LottiIcons.search,
+                suffixIcon: LottiIcons.close,
               ),
               LottiTextField(
-                controller: TextEditingController(),
+                controller: disabledController,
                 enabled: false,
                 prefixIcon: LottiIcons.search,
+                suffixIcon: LottiIcons.close,
               ),
             ],
           ),
         ),
       );
 
-      // Both text fields should render
-      expect(find.byType(LottiTextField), findsNWidgets(2));
-      expect(find.byIcon(LottiIcons.search), findsNWidgets(2));
+      final variant = Theme.of(
+        tester.element(find.byType(LottiTextField).first),
+      ).colorScheme.onSurfaceVariant;
+      final dimmed = variant.withValues(alpha: 0.5);
+      Color? colorOf(IconData icon, int index) =>
+          tester.widget<Icon>(find.byIcon(icon).at(index)).color;
+
+      expect(colorOf(LottiIcons.search, 0), variant);
+      expect(colorOf(LottiIcons.close, 0), variant);
+      expect(colorOf(LottiIcons.search, 1), dimmed);
+      expect(colorOf(LottiIcons.close, 1), dimmed);
     });
 
     testWidgets('prefix and suffix icons override prefix and suffix widgets', (

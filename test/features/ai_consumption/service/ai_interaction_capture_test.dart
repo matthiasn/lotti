@@ -56,20 +56,49 @@ void main() {
     late AiInteractionCaptureTestBench bench;
     setUp(() => bench = AiInteractionCaptureTestBench.create());
 
-    Stream<String> captureSource(Stream<String> Function() invoke) =>
-        bench.capture.captureStream(
-          workType: AiWorkType.textGeneration,
-          interactionKind: AiInteractionKind.chatCompletion,
-          responseType: AiConsumptionResponseType.textGeneration,
-          providerType: InferenceProviderType.melious,
-          modelId: 'synthetic-model',
-          requestText: 'synthetic request',
-          invoke: invoke,
-          responseText: (chunk) => chunk,
-          usageForChunk: (chunk) => chunk == 'two'
-              ? const AiCapturedUsage(inputTokens: 12, outputTokens: 2)
-              : null,
-        );
+    Stream<String> captureSource(
+      Stream<String> Function() invoke, {
+      MeliousCallImpact? Function()? impact,
+    }) => bench.capture.captureStream(
+      workType: AiWorkType.textGeneration,
+      interactionKind: AiInteractionKind.chatCompletion,
+      responseType: AiConsumptionResponseType.textGeneration,
+      providerType: InferenceProviderType.melious,
+      modelId: 'synthetic-model',
+      requestText: 'synthetic request',
+      invoke: invoke,
+      responseText: (chunk) => chunk,
+      usageForChunk: (chunk) => chunk == 'two'
+          ? const AiCapturedUsage(inputTokens: 12, outputTokens: 2)
+          : null,
+      impact: impact,
+    );
+
+    test(
+      'a cancelled stream still records the partial response and its cost',
+      () async {
+        final source = StreamController<String>();
+        final firstChunk = Completer<void>();
+        final subscription = captureSource(
+          () => source.stream,
+          impact: () => const MeliousCallImpact(
+            costCredits: 0.25,
+            energyKwh: 0.1,
+          ),
+        ).listen((_) => firstChunk.complete());
+        source.add('one');
+        await firstChunk.future;
+        await subscription.cancel();
+        await source.close();
+
+        final event = bench.recordedInteractions.single;
+        expect(event.interactionStatus, AiInteractionStatus.cancelled);
+        expect(event.errorCode, 'cancelled');
+        // Work the provider already did before the cancel is still billed.
+        expect(event.credits, 0.25);
+        expect(event.energyKwh, 0.1);
+      },
+    );
 
     test('cancellation reaches a provider that has not emitted', () async {
       final listening = Completer<void>();

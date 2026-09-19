@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
@@ -15,9 +16,12 @@ import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
 import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
+import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
 import 'package:lotti/features/tasks/ui/model/task_list_detail_models.dart';
 import 'package:lotti/features/tasks/ui/model/task_list_detail_state.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_list_pane.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_showcase_chips.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:material_ui/material_ui.dart';
@@ -218,9 +222,104 @@ void main() {
 
       expect(find.text('Due task'), findsOneWidget);
     });
+    testWidgets(
+      'byDate sort keys a section by the creation day of its first task',
+      (
+        tester,
+      ) async {
+        final category = CategoryDefinition(
+          id: 'cat-1',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          name: 'Colony',
+          vectorClock: null,
+          private: false,
+          active: true,
+          favorite: false,
+          color: '#3355FF',
+          icon: CategoryIcon.work,
+        );
+
+        await tester.pumpWidget(
+          wrap(
+            TaskListSectionsList(
+              sections: [
+                TaskListSection(
+                  title: 'Created Apr 8',
+                  sectionDate: DateTime(2026, 4, 8),
+                  tasks: [
+                    makeTaskRecord(
+                      id: 'task-created',
+                      title: 'Count the krill crates',
+                      category: category,
+                    ),
+                  ],
+                ),
+              ],
+              sortOption: TaskSortOption.byDate,
+              selectedTaskId: null,
+              bottomPadding: 0,
+              onTaskSelected: (_) {},
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // The visible header keeps the section's own title; the browse entry
+        // is keyed by the first task's creation day.
+        expect(find.text('Created Apr 8'), findsOneWidget);
+        final item = tester.widget<TaskBrowseListItem>(
+          find.byType(TaskBrowseListItem),
+        );
+        expect(item.entry.sectionKey.kind, TaskBrowseSectionKind.createdDate);
+        expect(item.entry.sectionKey.date, DateTime(2026, 4, 8));
+      },
+    );
   });
 
   group('TaskListActiveFilters', () {
+    const glyphForPriorityId = {
+      'p0': TaskPriority.p0Urgent,
+      'p1': TaskPriority.p1High,
+      'p2': TaskPriority.p2Medium,
+      'p3': TaskPriority.p3Low,
+      'p9': null,
+    };
+
+    for (final MapEntry(key: priorityId, value: priority)
+        in glyphForPriorityId.entries) {
+      testWidgets(
+        'an unlisted priority "$priorityId" falls back to its upper-cased id',
+        (tester) async {
+          await tester.pumpWidget(
+            wrap(
+              TaskListActiveFilters(
+                state: TaskListDetailState(
+                  data: const TaskListData(tasks: []),
+                  searchQuery: '',
+                  selectedTaskId: '',
+                  filterState: DesignSystemTaskFilterState(
+                    title: 'Filters',
+                    clearAllLabel: 'Clear',
+                    applyLabel: 'Apply',
+                    selectedPriorityIds: {priorityId},
+                  ),
+                ),
+                onFilterPressed: () {},
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(find.text(priorityId.toUpperCase()), findsOneWidget);
+          final glyphs = tester.widgetList<TaskShowcasePriorityGlyph>(
+            find.byType(TaskShowcasePriorityGlyph),
+          );
+          expect(glyphs.map((glyph) => glyph.priority), [?priority]);
+        },
+      );
+    }
+
     TaskListDetailState buildStateWithPriority(String priorityId) {
       final filterState = DesignSystemTaskFilterState(
         title: 'Filters',

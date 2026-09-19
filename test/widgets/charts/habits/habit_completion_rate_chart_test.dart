@@ -39,12 +39,23 @@ TitleMeta _makeMeta() => TitleMeta(
 
 /// Returns the canned [HabitsState] instead of loading from the database.
 class _FixedStateController extends HabitsController {
-  _FixedStateController(this._state);
+  _FixedStateController(HabitsState state) : _state = state;
 
   final HabitsState _state;
 
   @override
   HabitsState build() => _state;
+}
+
+/// Records the days the chart selects instead of mutating state (the real
+/// controller also arms a 15s idle-clear debounce).
+class _RecordingStateController extends _FixedStateController {
+  _RecordingStateController(super.state);
+
+  final selected = <String>[];
+
+  @override
+  void setInfoYmd(String ymd) => selected.add(ymd);
 }
 
 /// A 14-day window with two habits; [habitFlossing] is kept every day and
@@ -98,13 +109,20 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
-  /// Pumps the chart, optionally pinning the habits state to [state].
-  Future<void> pumpChart(WidgetTester tester, {HabitsState? state}) async {
+  /// Pumps the chart, optionally pinning the habits state to [state] (or
+  /// serving it through [controller]).
+  Future<void> pumpChart(
+    WidgetTester tester, {
+    HabitsState? state,
+    _FixedStateController? controller,
+  }) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const Scaffold(body: HabitCompletionRateChart()),
         overrides: [
-          if (state != null)
+          if (controller != null)
+            habitsControllerProvider.overrideWith(() => controller)
+          else if (state != null)
             habitsControllerProvider.overrideWith(
               () => _FixedStateController(state),
             ),
@@ -469,6 +487,67 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('hovering picks a day; leaving the plot clears it', (
+      tester,
+    ) async {
+      final days = ['2024-03-13', '2024-03-14', '2024-03-15'];
+      final controller = _RecordingStateController(
+        HabitsState.initial().copyWith(
+          days: days,
+          timeSpanDays: 3,
+          successfulByDay: {
+            for (final day in days) day: {'h1'},
+          },
+          allByDay: {
+            for (final day in days) day: {'h1', 'h2'},
+          },
+          selectedInfoYmd: '2024-03-14',
+        ),
+      );
+      await pumpChart(tester, controller: controller);
+      final plot = tester.getRect(find.byType(LineChart));
+
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(mouse.removePointer);
+      await mouse.addPointer(location: plot.topLeft - const Offset(0, 20));
+      // Sweep across the plot: fl_chart only reports a spot once the pointer
+      // is within its touch threshold, and the titles shift the plot area.
+      for (var x = plot.left; x <= plot.right; x += 8) {
+        await mouse.moveTo(Offset(x, plot.center.dy));
+        await tester.pump();
+      }
+      await tester.pump();
+      // The hovered spot's day is selected after paint.
+      expect(controller.selected, isNotEmpty);
+      expect(days, contains(controller.selected.last));
+
+      await mouse.moveTo(plot.topLeft - const Offset(0, 20));
+      await tester.pump();
+      await tester.pump();
+      // Leaving the plot snaps the header back to the headline.
+      expect(controller.selected.last, '');
+    });
+
+    testWidgets('a plain tap does not clear the selected day', (tester) async {
+      final controller = _RecordingStateController(
+        HabitsState.initial().copyWith(selectedInfoYmd: '2025-12-30'),
+      );
+      await pumpChart(tester, controller: controller);
+
+      tester
+          .widget<LineChart>(find.byType(LineChart))
+          .data
+          .lineTouchData
+          .touchCallback!(
+        FlTapUpEvent(TapUpDetails(kind: PointerDeviceKind.touch)),
+        null,
+      );
+      tester.binding.scheduleFrame();
+      await tester.pump();
+
+      expect(controller.selected, isEmpty);
+    });
+
     for (final edgeCase in [
       (
         description: 'handles empty days list without throwing',
@@ -519,6 +598,33 @@ void main() {
       final tooltipData = lineChart.data.lineTouchData.touchTooltipData;
 
       expect(tooltipData.getTooltipItems([]), isEmpty);
+    });
+
+    testWidgets('an in-range spot selects its day after paint, without a '
+        'visible tooltip', (tester) async {
+      final controller = _RecordingStateController(withDaysState);
+      await pumpChart(tester, controller: controller);
+
+      final tooltipData = tester
+          .widget<LineChart>(find.byType(LineChart))
+          .data
+          .lineTouchData
+          .touchTooltipData;
+      final spot = LineBarSpot(
+        LineChartBarData(spots: const [FlSpot(1, 50)]),
+        0,
+        const FlSpot(1, 50),
+      );
+      final items = tooltipData.getTooltipItems([spot]);
+
+      // The breakdown lives in the chart's own header, never a tooltip.
+      expect(items, [null]);
+      expect(tooltipData.getTooltipColor(spot), Colors.transparent);
+      // The state write is deferred past paint: it lands with the next frame.
+      expect(controller.selected, isEmpty);
+      tester.binding.scheduleFrame();
+      await tester.pump();
+      expect(controller.selected, ['2024-03-14']);
     });
 
     testWidgets('does not throw when spot index is out of bounds', (

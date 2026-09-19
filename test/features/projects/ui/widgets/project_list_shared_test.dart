@@ -557,6 +557,71 @@ void main() {
     );
   });
 
+  group('ProjectGroupSection — hover after the group changes', () {
+    testWidgets(
+      'a hovered row that leaves the group does not come back highlighted',
+      (tester) async {
+        final group = makeGroupedProjectsSection();
+        Widget section(ProjectCategoryGroup g) => wrap(
+          ProjectGroupSection(
+            group: g,
+            selectedProjectId: null,
+            onProjectSelected: (_) {},
+          ),
+        );
+
+        await tester.pumpWidget(section(group));
+        await tester.pump();
+
+        final gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        addTearDown(gesture.removePointer);
+        await gesture.addPointer();
+        await gesture.moveTo(
+          tester.getCenter(
+            find.byKey(const ValueKey('project-overview-row-p2')),
+          ),
+        );
+        await tester.pump();
+        // Hovering the last row hides the divider above it.
+        expect(
+          find.byKey(const ValueKey('project-group-divider-slot-0')),
+          findsOneWidget,
+        );
+
+        // A sync drops the hovered project. Its row unmounts without an
+        // exit event, so the section must forget the hover itself.
+        await tester.pumpWidget(
+          section(
+            ProjectCategoryGroup(
+              categoryId: group.categoryId,
+              category: group.category,
+              projects: [group.projects.first],
+            ),
+          ),
+        );
+        await tester.pump();
+        await gesture.moveTo(const Offset(1, 999));
+        await tester.pump();
+
+        // The project comes back while the pointer is elsewhere: nothing
+        // is hovered, so the divider between the rows is drawn again.
+        await tester.pumpWidget(section(group));
+        await tester.pump();
+
+        expect(
+          find.byKey(const ValueKey('project-group-divider-0')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('project-group-divider-slot-0')),
+          findsNothing,
+        );
+      },
+    );
+  });
+
   group('ProjectRow', () {
     testWidgets('Right opens the focused project and enters the detail pane', (
       tester,

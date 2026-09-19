@@ -46,6 +46,13 @@ void main() {
         expect(switchWidget.value, false);
         final context = tester.element(find.byType(Switch));
         expect(switchWidget.activeTrackColor, colorOf(context));
+        // Every material variant shares FormSwitch's inactive styling.
+        final outline = Theme.of(context).colorScheme.outline;
+        expect(switchWidget.inactiveThumbColor, outline);
+        expect(
+          switchWidget.inactiveTrackColor,
+          outline.withValues(alpha: 51 / 255),
+        );
       });
     }
 

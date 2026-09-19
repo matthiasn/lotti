@@ -25,6 +25,7 @@ import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
+import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/correction_undo_snackbar.dart';
 import 'package:lotti/features/tasks/ui/checklists/linked_from_checklist_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/linked_from_task_widget.dart';
@@ -617,48 +618,6 @@ void main() {
         ).called(1);
       },
     );
-
-    // -------------------------------------------------------------------------
-    // Scroll listener / updateOffset (lines 51-54)
-    // -------------------------------------------------------------------------
-    testWidgets(
-      'Scroll controller listener calls updateOffset on scroll',
-      (tester) async {
-        when(
-          () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
-        ).thenAnswer((_) async => testTextEntry);
-
-        // Use a wide-but-short viewport so content overflows vertically and
-        // scrolling is possible without triggering horizontal overflow in the
-        // entry header row.
-        tester.view
-          ..physicalSize = const Size(800, 400)
-          ..devicePixelRatio = 1.0;
-        addTearDown(tester.view.reset);
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            EntryDetailsPage(itemId: testTextEntry.meta.id),
-            mediaQueryData: const MediaQueryData(size: Size(800, 400)),
-          ),
-        );
-
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Drag from a point within the viewport to trigger a scroll event
-        // which fires the _scrollController listeners, exercising lines 51-54.
-        await tester.dragFrom(
-          const Offset(400, 200),
-          const Offset(0, -200),
-        );
-        await tester.pump();
-
-        // The MediaDropTarget (and thus the full page body) is still present,
-        // confirming the widget survived the scroll without error.
-        expect(find.byType(MediaDropTarget), findsOneWidget);
-      },
-    );
   });
 
   group('EntryDetailPage Auto-Scroll Tests - ', () {
@@ -847,34 +806,43 @@ void main() {
       expect(find.byType(EntryDetailsPage), findsOneWidget);
     });
 
-    testWidgets('scroll offset listener is triggered on scroll', (
+    testWidgets('scrolling feeds the offset into the app bar controller', (
       tester,
     ) async {
       when(
         () => mockJournalDbSat.journalEntityById(testTextEntry.meta.id),
       ).thenAnswer((_) async => testTextEntry);
+      final container = ProviderContainer();
+      final appBarProvider = taskAppBarControllerProvider(
+        testTextEntry.meta.id,
+      );
+      // Keep the autoDispose controller alive so its state is observable.
+      final subscription = container.listen(appBarProvider, (_, _) {});
 
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          EntryDetailsPage(itemId: testTextEntry.meta.id),
+        UncontrolledProviderScope(
+          container: container,
+          child: makeTestableWidget2(
+            EntryDetailsPage(itemId: testTextEntry.meta.id),
+          ),
         ),
       );
-
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
+      expect(container.read(appBarProvider).value, 0);
 
-      // Find the CustomScrollView widget
-      final scrollView = find.byType(CustomScrollView);
-      expect(scrollView, findsOneWidget);
-
-      // Trigger scroll to invoke the offset listener
-      await tester.drag(scrollView, const Offset(0, -100));
+      tester
+          .widget<CustomScrollView>(find.byType(CustomScrollView))
+          .controller!
+          .jumpTo(42);
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
 
-      // The scroll offset listener should have been called (line 48-49)
-      // We verify this indirectly by checking the widget still renders correctly
-      expect(find.byType(EntryDetailsPage), findsOneWidget);
+      expect(container.read(appBarProvider).value, 42);
+
+      // Disposing inside the test cancels the providers' cache timers before
+      // the pending-timer check runs.
+      subscription.close();
+      container.dispose();
     });
 
     testWidgets('successfully scrolls to entry when context exists', (

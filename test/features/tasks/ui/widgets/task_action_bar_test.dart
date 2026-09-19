@@ -380,6 +380,39 @@ void main() {
   );
 
   testWidgets(
+    'a stop tapped after the timer already ended elsewhere only clears the '
+    'time service and saves nothing',
+    (tester) async {
+      final timerEntry = _runningTimerEntry(
+        id: 'timer-gone',
+        elapsed: const Duration(seconds: 5),
+      );
+      final (override, tracker) = createEntryControllerOverrideWithTracker(
+        timerEntry,
+      );
+
+      await pumpBar(tester, extraOverrides: [override]);
+
+      fakeTimeService
+        ..linkedFrom = testTask
+        ..emit(timerEntry);
+      await _settleStream(tester);
+      expect(find.byKey(TaskActionBar.trackTimeStopKey), findsOneWidget);
+
+      // The timer ends elsewhere: the stream delivers null to the bar's
+      // state, but the frame that would remove the stop button has not
+      // been drawn yet when the user's tap lands on it.
+      fakeTimeService.emit(null);
+      await tester.idle();
+      await tester.tap(find.byKey(TaskActionBar.trackTimeStopKey));
+      await tester.pump();
+
+      expect(fakeTimeService.stopCount, 1);
+      expect(tracker.saveCalls, isEmpty);
+    },
+  );
+
+  testWidgets(
     'tapping the inset stop button persists dateTo via the running '
     'timer entry controller and routes through save(stopRecording: true)',
     (tester) async {

@@ -20,6 +20,7 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -1565,6 +1566,75 @@ void main() {
           isTrue,
         );
         await tester.pump(const Duration(milliseconds: 200));
+      },
+    );
+
+    testWidgets(
+      'JournalAudio groups only the transcripts that carry an AI attribution',
+      (tester) async {
+        final attribution = makeAiWorkAttribution(
+          output: AiArtifactReference(
+            type: AiArtifactType.journalAudio,
+            id: testAudioEntry.id,
+          ),
+        );
+        AudioTranscript transcript({AiWorkAttribution? aiAttribution}) =>
+            AudioTranscript(
+              created: DateTime(2024, 3, 15, 10),
+              library: 'penguin-whisper',
+              model: 'waddle-1',
+              detectedLanguage: 'en',
+              transcript: 'The colony crossed the ice shelf at dawn.',
+              aiAttribution: aiAttribution,
+            );
+        final transcribedAudio = testAudioEntry.copyWith(
+          data: testAudioEntry.data.copyWith(
+            transcripts: [
+              transcript(),
+              transcript(aiAttribution: attribution),
+            ],
+          ),
+        );
+        final mockJournalRepository = MockJournalRepository();
+        when(
+          () => mockJournalRepository.getLinksFromId(transcribedAudio.meta.id),
+        ).thenAnswer((_) async => <EntryLink>[]);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(
+                  transcribedAudio.meta.id,
+                ).overrideWith(() => _FakeEntryController(transcribedAudio)),
+                journalRepositoryProvider.overrideWithValue(
+                  mockJournalRepository,
+                ),
+                linkedAiResponsesControllerProvider(
+                  transcribedAudio.meta.id,
+                ).overrideWith(
+                  () => _FakeLinkedAiResponsesController(
+                    transcribedAudio.meta.id,
+                    const [],
+                  ),
+                ),
+                aiAttributionDetailsProvider.overrideWith(
+                  (ref, attributionId) async => null,
+                ),
+              ],
+              child: EntryDetailsWidget(
+                itemId: transcribedAudio.meta.id,
+                showAiEntry: false,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final group = tester.widget<AiAttributionSummaryGroup>(
+          find.byType(AiAttributionSummaryGroup),
+        );
+        expect(group.attributions, [attribution]);
       },
     );
 

@@ -386,6 +386,39 @@ void main() {
         expect(find.text('\u2014'), findsOneWidget);
       });
 
+      testWidgets('blanks the subtitle when the task count fails', (
+        tester,
+      ) async {
+        final categories = [
+          CategoryTestUtils.createTestCategory(name: 'Waddle Logistics'),
+        ];
+
+        when(() => mockRepository.watchCategories()).thenAnswer(
+          (_) => Stream.value(categories),
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+              categoryTaskCountProvider.overrideWith(
+                (ref, categoryId) async => throw StateError('count failed'),
+              ),
+            ],
+            child: const CategoriesListPage(),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+
+        final item = tester.widget<DesignSystemListItem>(
+          find.byType(DesignSystemListItem),
+        );
+        expect(item.title, 'Waddle Logistics');
+        expect(item.subtitle, isEmpty);
+        expect(find.text('\u2014'), findsNothing);
+      });
+
       testWidgets('renders chevron trailing icon', (tester) async {
         final categories = [
           CategoryTestUtils.createTestCategory(name: 'Test'),

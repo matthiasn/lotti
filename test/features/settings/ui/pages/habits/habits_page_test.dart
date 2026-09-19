@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
@@ -5,6 +6,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_fl
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/settings/ui/pages/habits/habits_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -427,6 +429,37 @@ void main() {
 
         await expectRowFadesDividerOnHover(tester, find.text('Alpha'));
       });
+    });
+  });
+
+  group('habitDefinitionsStreamProvider', () {
+    test('streams every habit definition from the habits repository, '
+        'inactive ones included', () async {
+      final repository = MockHabitsRepository();
+      final inactive = habitFlossing.copyWith(
+        id: 'habit-inactive',
+        name: 'Iceberg Stretch',
+        active: false,
+      );
+      when(
+        repository.watchHabitDefinitions,
+      ).thenAnswer((_) => Stream.value([habitFlossing, inactive]));
+      final container = ProviderContainer(
+        overrides: [habitsRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      final subscription = container.listen(
+        habitDefinitionsStreamProvider,
+        (_, _) {},
+      );
+      addTearDown(subscription.close);
+
+      final habits = await container.read(
+        habitDefinitionsStreamProvider.future,
+      );
+
+      expect(habits, [habitFlossing, inactive]);
+      verify(repository.watchHabitDefinitions).called(1);
     });
   });
 }

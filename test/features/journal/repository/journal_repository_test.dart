@@ -27,6 +27,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/commit_evaluating_vector_clock_service.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
@@ -79,7 +80,7 @@ void main() {
     late MockPersistenceLogic mockPersistenceLogic;
     late MockNotificationService mockNotificationService;
     late MockDomainLogger mockDomainLogger;
-    late MockVectorClockService mockVectorClockService;
+    late CommitEvaluatingVectorClockService mockVectorClockService;
     late MockUpdateNotifications mockUpdateNotifications;
     late MockOutboxService mockOutboxService;
     late MockTimeService mockTimeService;
@@ -92,7 +93,7 @@ void main() {
       mockPersistenceLogic = MockPersistenceLogic();
       mockNotificationService = MockNotificationService();
       mockDomainLogger = MockDomainLogger();
-      mockVectorClockService = MockVectorClockService();
+      mockVectorClockService = CommitEvaluatingVectorClockService();
       mockUpdateNotifications = MockUpdateNotifications();
       mockOutboxService = MockOutboxService();
       mockTimeService = MockTimeService();
@@ -909,6 +910,8 @@ void main() {
           final result = await repository.updateLink(changed);
 
           expect(result, isFalse);
+          // The reserved vector-clock tick is released, not committed.
+          expect(mockVectorClockService.commits, [false]);
           verifyNever(() => mockUpdateNotifications.notify(any()));
           verifyNever(() => mockOutboxService.enqueueMessage(any()));
         },
@@ -1001,6 +1004,7 @@ void main() {
 
         // Assert
         expect(result, isTrue);
+        expect(mockVectorClockService.commits, [true]);
         verify(() => mockJournalDb.entryLinkById(updatedLink.id)).called(1);
         verify(() => mockVectorClockService.getNextVectorClock()).called(1);
         verify(() => mockJournalDb.upsertEntryLink(any())).called(1);

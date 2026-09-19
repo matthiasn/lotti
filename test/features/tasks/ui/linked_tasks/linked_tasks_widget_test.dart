@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -830,6 +831,29 @@ void main() {
       // didUpdateWidget should have reset _expanded back to true for task-b.
       expect(find.text('Task B linked'), findsOneWidget);
       expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
+    });
+
+    testWidgets('hovering the header brightens the disclosure chevron', (
+      tester,
+    ) async {
+      await pumpWidget(
+        tester,
+        incoming: [],
+        outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+      );
+
+      Color? chevronColor() =>
+          tester.widget<Icon>(find.byIcon(LottiIcons.chevronDown)).color;
+      final tokens = tester.element(find.text('Linked Tasks')).designTokens;
+      expect(chevronColor(), tokens.colors.text.mediumEmphasis);
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(gesture.removePointer);
+      await gesture.addPointer(location: Offset.zero);
+      await gesture.moveTo(tester.getCenter(find.text('Linked Tasks')));
+      await tester.pump();
+
+      expect(chevronColor(), tokens.colors.text.highEmphasis);
     });
 
     testWidgets('starts expanded and toggles on header tap', (tester) async {

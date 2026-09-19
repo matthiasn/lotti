@@ -17,6 +17,7 @@ Future<void> _pumpContent(
   required List<ProjectCategoryGroup> groups,
   required ValueChanged<ProjectListItemData> onProjectTap,
   List<Override> overrides = const [],
+  ScrollController? scrollController,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -29,6 +30,7 @@ Future<void> _pumpContent(
               title: 'Projects',
               groups: groups,
               onProjectTap: onProjectTap,
+              scrollController: scrollController,
             ),
           ),
         ),
@@ -118,4 +120,34 @@ void main() {
 
     expect(tapped?.project.meta.id, 'p-tap');
   });
+
+  testWidgets(
+    'switches from its internal scroll controller to one the host supplies '
+    'later',
+    (tester) async {
+      await _pumpContent(tester, groups: const [], onProjectTap: (_) {});
+      final internal = tester
+          .widget<CustomScrollView>(find.byType(CustomScrollView))
+          .controller;
+      expect(internal, isNotNull);
+
+      final hostController = ScrollController();
+      addTearDown(hostController.dispose);
+      await _pumpContent(
+        tester,
+        groups: const [],
+        onProjectTap: (_) {},
+        scrollController: hostController,
+      );
+
+      final attached = tester
+          .widget<CustomScrollView>(find.byType(CustomScrollView))
+          .controller;
+      expect(attached, same(hostController));
+      expect(hostController.hasClients, isTrue);
+      // The now-unused internal controller was disposed, not leaked.
+      expect(() => internal!.addListener(() {}), throwsFlutterError);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

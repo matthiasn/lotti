@@ -335,6 +335,22 @@ void main() {
     }
   });
 
+  testWidgets('tapping an option in the single-column layout reports the '
+      'toggle', (tester) async {
+    final toggled = <String>[];
+    await pumpView(
+      tester,
+      selected: const {},
+      textScaler: const TextScaler.linear(2),
+      onToggle: toggled.add,
+    );
+
+    await tester.tap(find.text('Family'));
+    await tester.pump();
+
+    expect(toggled, ['Family']);
+  });
+
   testWidgets('add-your-own reports its tap', (tester) async {
     var added = 0;
     await pumpView(tester, selected: const {}, onAddOwn: () => added++);

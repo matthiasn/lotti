@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/tabs/design_system_tab.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -198,6 +199,46 @@ void main() {
       expect(
         _contentDecoration(tester, pressedKey).color,
         dsTokensLight.colors.surface.focusPressed,
+      );
+    });
+
+    testWidgets('a real mouse hover paints the hover surface and clears it', (
+      tester,
+    ) async {
+      const tabKey = Key('mouse-hover-tab');
+
+      await _pumpTab(
+        tester,
+        const DesignSystemTab(
+          key: tabKey,
+          selected: false,
+          label: 'Waddle',
+          onPressed: _noop,
+        ),
+      );
+
+      expect(
+        _contentDecoration(tester, tabKey).color,
+        dsTokensLight.colors.surface.enabled,
+      );
+
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(mouse.removePointer);
+      await mouse.addPointer(location: Offset.zero);
+      await mouse.moveTo(tester.getCenter(find.byKey(tabKey)));
+      await tester.pump();
+
+      expect(
+        _contentDecoration(tester, tabKey).color,
+        dsTokensLight.colors.surface.hover,
+      );
+
+      await mouse.moveTo(Offset.zero);
+      await tester.pump();
+
+      expect(
+        _contentDecoration(tester, tabKey).color,
+        dsTokensLight.colors.surface.enabled,
       );
     });
 

@@ -121,13 +121,12 @@ void main() {
         ), // Changed from linked-from-id-2 to linked-from-id-3
       ];
 
-      // Setup the second call to return updated entities
+      // The initial build sees the original entities; the refetch triggered
+      // by the notification sees the updated ones.
+      final responses = [testEntities, updatedEntities];
       when(
         () => mockJournalRepository.getLinkedToEntities(linkedTo: testId),
-      ).thenAnswer((_) async => testEntities);
-      when(
-        () => mockJournalRepository.getLinkedToEntities(linkedTo: testId),
-      ).thenAnswer((_) async => updatedEntities);
+      ).thenAnswer((_) async => responses.removeAt(0));
 
       // Act
       final container = ProviderContainer(
@@ -140,8 +139,11 @@ void main() {
       final controller = container.read(
         linkedFromEntriesControllerProvider(testId).notifier,
       );
-      await container.read(
-        linkedFromEntriesControllerProvider(testId).future,
+      expect(
+        await container.read(
+          linkedFromEntriesControllerProvider(testId).future,
+        ),
+        equals(testEntities),
       );
 
       // Simulate an update notification for one of the watched IDs

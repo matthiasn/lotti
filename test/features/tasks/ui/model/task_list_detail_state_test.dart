@@ -174,15 +174,19 @@ void main() {
         status: hOpen(DateTime(2026, 4, 1, 9)),
       );
 
-      final state = hStateWith(
+      // Both input orders, so the comparator sees the missing due on either
+      // side of the comparison.
+      for (final input in [
         [withoutDue, withDue],
-        sortId: TaskSortIds.dueDateSort,
-      );
+        [withDue, withoutDue],
+      ]) {
+        final state = hStateWith(input, sortId: TaskSortIds.dueDateSort);
 
-      expect(
-        state.visibleTasks.map((record) => record.task.meta.id),
-        ['with-due', 'without-due'],
-      );
+        expect(
+          state.visibleTasks.map((record) => record.task.meta.id),
+          ['with-due', 'without-due'],
+        );
+      }
     });
 
     test(

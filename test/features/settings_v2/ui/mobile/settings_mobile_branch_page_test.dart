@@ -4,9 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_branch_page.dart';
 import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_shell.dart';
+import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_tree_page.dart';
 import 'package:lotti/features/settings_v2/ui/tree/outbox_count_indicator.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_tree_row.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
+import 'package:lotti/features/tts/ui/speech_settings_body.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 
@@ -267,6 +269,32 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('sync/conflicts')));
       await tester.pump();
       expect(beamed, '/settings/advanced/conflicts');
+    },
+  );
+
+  testWidgets(
+    'a node with a flat (scrollable) landing panel renders it as the header',
+    (tester) async {
+      // No branch carries a landing panel today; the speech leaf is the
+      // stand-in for the contract — a flat body registered with
+      // scrollable: true is dropped straight into the hub above the rows.
+      await setUpTestGetIt();
+      addTearDown(tearDownTestGetIt);
+
+      await _pump(
+        tester,
+        branchId: 'preferences/speech',
+        overrides: _flags(speechTts: true),
+      );
+
+      final header = tester
+          .widget<SettingsMobileTreePage>(
+            find.byType(SettingsMobileTreePage),
+          )
+          .header;
+      expect(header, isA<SpeechSettingsBody>());
+      expect(find.text('Reading speed'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     },
   );
 

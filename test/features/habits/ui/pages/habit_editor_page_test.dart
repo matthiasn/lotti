@@ -372,6 +372,23 @@ void main() {
       await tester.tap(find.byType(BackButton));
       expect(beamedTo, '/habits');
     });
+
+    testWidgets('a system back on step 2 returns to step 1 instead of '
+        'popping the wizard', (tester) async {
+      await pumpEditor(tester);
+      await tester.enterText(find.byKey(const Key('habit_name_field')), 'Swim');
+      await tester.tap(find.byKey(const ValueKey('habit-editor-primary')));
+      await tester.pump();
+      expect(find.text('Step 2 of 2'), findsOneWidget);
+
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+
+      expect(find.text('Step 1 of 2'), findsOneWidget);
+      expect(find.byType(HabitEditorPage), findsOneWidget);
+      expect(find.text('Swim'), findsOneWidget);
+      expect(beamedTo, isNull);
+    });
   });
 
   group('edit', () {

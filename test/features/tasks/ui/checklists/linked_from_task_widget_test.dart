@@ -7,8 +7,15 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
 import 'package:lotti/features/tasks/ui/checklists/linked_from_task_widget.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/time_service.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 // ---------------------------------------------------------------------------
@@ -89,7 +96,26 @@ Future<void> _pump(
 // ---------------------------------------------------------------------------
 
 void main() {
-  setUpAll(setUpTestGetIt);
+  setUpAll(
+    () => setUpTestGetIt(
+      additionalSetup: () {
+        final cache = MockEntitiesCacheService();
+        when(() => cache.getCategoryById(any())).thenReturn(null);
+        when(() => cache.getLabelById(any())).thenReturn(null);
+        when(() => cache.showPrivateEntries).thenReturn(true);
+        // EntryController resolves the editor-state service when it is
+        // constructed; without it the overridden controller fails to build
+        // and no linked task ever resolves.
+        final timeService = MockTimeService();
+        when(timeService.getStream).thenAnswer((_) => const Stream.empty());
+        when(timeService.getCurrent).thenReturn(null);
+        getIt
+          ..registerSingleton<TimeService>(timeService)
+          ..registerSingleton<EditorStateService>(MockEditorStateService())
+          ..registerSingleton<EntitiesCacheService>(cache);
+      },
+    ),
+  );
   tearDownAll(tearDownTestGetIt);
 
   group('LinkedFromTaskWidget', () {
@@ -100,8 +126,7 @@ void main() {
 
         // Widget should collapse to a SizedBox.shrink — no visible content
         expect(find.text('Linked from'), findsNothing);
-        // No Column is visible with linked label
-        expect(find.byType(LinkedFromTaskWidget), findsOneWidget);
+        expect(find.byType(ModernJournalCard), findsNothing);
       },
     );
 
@@ -138,6 +163,11 @@ void main() {
 
         // The "Linked from" label is the localized journalLinkedFromLabel
         expect(find.textContaining('Linked from'), findsOneWidget);
+        final card = tester.widget<ModernJournalCard>(
+          find.byType(ModernJournalCard),
+        );
+        expect(card.item.meta.id, taskId);
+        expect(find.text('Linked Task'), findsOneWidget);
       },
     );
 
@@ -152,9 +182,8 @@ void main() {
 
         // Label still appears because linkedTasks is not empty
         expect(find.textContaining('Linked from'), findsOneWidget);
-        // But no ModernJournalCard is rendered since the entry is null
-        // Verify widget tree doesn't crash
-        expect(find.byType(LinkedFromTaskWidget), findsOneWidget);
+        // But no card is rendered since the entry is null.
+        expect(find.byType(ModernJournalCard), findsNothing);
       },
     );
   });

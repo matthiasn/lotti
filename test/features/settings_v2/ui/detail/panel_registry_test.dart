@@ -51,6 +51,7 @@ import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart'
 import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
 import 'package:lotti/features/system_health/ui/system_health_page.dart';
+import 'package:lotti/features/tts/ui/speech_settings_body.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -254,6 +255,7 @@ void main() {
         );
         expect(build('theming'), isA<ThemingBody>());
         expect(build('keyboard-shortcuts'), isA<KeyboardShortcutsBody>());
+        expect(build('speech'), isA<SpeechSettingsBody>());
         // Renamed from `advanced-animations` when the leaf moved into the
         // Preferences branch; the body it resolves to is unchanged.
         expect(

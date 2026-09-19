@@ -434,6 +434,21 @@ void main() {
           );
         },
       );
+
+      testWidgets(
+        'a new seed term from a route change re-filters the list',
+        (tester) async {
+          const items = AsyncValue.data(['Apple', 'Banana', 'Apricot']);
+          await _pumpPage(tester, itemsAsync: items, initialSearchTerm: 'ap');
+          expect(_rowTitles(tester), ['Apple', 'Apricot']);
+
+          // Same page instance, new deep-link term: the stale 'ap' filter
+          // must not survive.
+          await _pumpPage(tester, itemsAsync: items, initialSearchTerm: 'ban');
+
+          expect(_rowTitles(tester), ['Banana']);
+        },
+      );
     });
 
     group('searchCallback', () {
