@@ -11940,6 +11940,59 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ingen agent än — markera personen som viktig först.';
 
   @override
+  String get relationshipCheckInAddComment => 'Lägg till kommentar';
+
+  @override
+  String get relationshipCheckInAddPhoto => 'Foto';
+
+  @override
+  String relationshipCheckInCommentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count kommentarer',
+      one: '1 kommentar',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipCheckInCommentHint => 'Lägg till en kommentar…';
+
+  @override
+  String get relationshipCheckInEmpty =>
+      'Inget tillagt än. Lägg till en kommentar, en inspelning eller ett foto.';
+
+  @override
+  String get relationshipCheckInGone =>
+      'Den här avstämningen finns inte längre.';
+
+  @override
+  String get relationshipCheckInNoteLabel => 'Antecknat vid avstämningen';
+
+  @override
+  String relationshipCheckInPhotoCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count foton',
+      one: '1 foto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String relationshipCheckInRecordingCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count inspelningar',
+      one: '1 inspelning',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get relationshipCheckInReminderBody =>
       'Ett bra tillfälle att höra av dig.';
 
@@ -12178,7 +12231,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get relationshipKnownTermsBody =>
-      'Personer, djur och platser du nämner i samband med dem, åtskilda med semikolon. Dikterade incheckningar stavar dem så.';
+      'Personer, djur och platser du nämner i samband med dem, åtskilda med semikolon. Dikterade avstämningar stavar dem så.';
 
   @override
   String get relationshipKnownTermsHint => 'Sam; Luna; Lissabon';
@@ -15866,57 +15919,4 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
-
-  @override
-  String relationshipCheckInRecordingCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count inspelningar',
-      one: '1 inspelning',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String relationshipCheckInPhotoCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count foton',
-      one: '1 foto',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String relationshipCheckInCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count kommentarer',
-      one: '1 kommentar',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get relationshipCheckInNoteLabel => 'Antecknat vid incheckningen';
-
-  @override
-  String get relationshipCheckInCommentHint => 'Lägg till en kommentar…';
-
-  @override
-  String get relationshipCheckInAddComment => 'Lägg till kommentar';
-
-  @override
-  String get relationshipCheckInAddPhoto => 'Foto';
-
-  @override
-  String get relationshipCheckInEmpty =>
-      'Inget tillagt än. Lägg till en kommentar, en inspelning eller ett foto.';
-
-  @override
-  String get relationshipCheckInGone =>
-      'Den här incheckningen finns inte längre.';
 }

@@ -4590,7 +4590,7 @@
   "relationshipCheckInCommentHint": "Ajoute un commentaire…",
   "relationshipCheckInEmpty": "Rien pour l'instant. Ajoute un commentaire, un enregistrement ou une photo.",
   "relationshipCheckInGone": "Ce check-in n'existe plus.",
-  "relationshipCheckInNoteLabel": "Noté à l'enregistrement",
+  "relationshipCheckInNoteLabel": "Noté lors de la saisie",
   "relationshipCheckInPhotoCount": "{count, plural, =1{1 photo} other{{count} photos}}",
   "relationshipCheckInRecordingCount": "{count, plural, =1{1 enregistrement} other{{count} enregistrements}}",
   "relationshipCheckInReminderBody": "Un bon moment pour reprendre contact.",

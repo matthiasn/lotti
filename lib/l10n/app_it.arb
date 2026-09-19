@@ -5086,7 +5086,7 @@
   "relationshipCheckInCommentHint": "Aggiungi un commento…",
   "relationshipCheckInEmpty": "Ancora niente. Aggiungi un commento, una registrazione o una foto.",
   "relationshipCheckInGone": "Questo check-in non esiste più.",
-  "relationshipCheckInNoteLabel": "Annotato alla registrazione",
+  "relationshipCheckInNoteLabel": "Annotato al momento del check-in",
   "relationshipCheckInPhotoCount": "{count, plural, =1{1 foto} other{{count} foto}}",
   "relationshipCheckInRecordingCount": "{count, plural, =1{1 registrazione} other{{count} registrazioni}}",
   "relationshipCheckInReminderBody": "Un buon momento per farsi sentire.",

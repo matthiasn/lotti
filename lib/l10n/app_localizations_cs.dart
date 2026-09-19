@@ -12108,6 +12108,61 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zatím žádný agent — nejprve označ tuto osobu jako důležitou.';
 
   @override
+  String get relationshipCheckInAddComment => 'Přidat komentář';
+
+  @override
+  String get relationshipCheckInAddPhoto => 'Fotka';
+
+  @override
+  String relationshipCheckInCommentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count komentářů',
+      few: '$count komentáře',
+      one: '1 komentář',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipCheckInCommentHint => 'Přidej komentář…';
+
+  @override
+  String get relationshipCheckInEmpty =>
+      'Zatím nic. Přidej komentář, nahrávku nebo fotku.';
+
+  @override
+  String get relationshipCheckInGone => 'Tento check-in už neexistuje.';
+
+  @override
+  String get relationshipCheckInNoteLabel => 'Poznamenáno při zápisu';
+
+  @override
+  String relationshipCheckInPhotoCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fotek',
+      few: '$count fotky',
+      one: '1 fotka',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String relationshipCheckInRecordingCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count nahrávek',
+      few: '$count nahrávky',
+      one: '1 nahrávka',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get relationshipCheckInReminderBody => 'Dobrá chvíle se ozvat.';
 
   @override
@@ -16053,59 +16108,4 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
-
-  @override
-  String relationshipCheckInRecordingCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count nahrávek',
-      few: '$count nahrávky',
-      one: '1 nahrávka',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String relationshipCheckInPhotoCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count fotek',
-      few: '$count fotky',
-      one: '1 fotka',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String relationshipCheckInCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count komentářů',
-      few: '$count komentáře',
-      one: '1 komentář',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get relationshipCheckInNoteLabel => 'Poznamenáno při zápisu';
-
-  @override
-  String get relationshipCheckInCommentHint => 'Přidej komentář…';
-
-  @override
-  String get relationshipCheckInAddComment => 'Přidat komentář';
-
-  @override
-  String get relationshipCheckInAddPhoto => 'Fotka';
-
-  @override
-  String get relationshipCheckInEmpty =>
-      'Zatím nic. Přidej komentář, nahrávku nebo fotku.';
-
-  @override
-  String get relationshipCheckInGone => 'Tento check-in už neexistuje.';
 }

@@ -242,9 +242,11 @@ class CheckInRow extends StatelessWidget {
 }
 
 /// The words a check-in row leads with: the text it was saved with, else its
-/// first comment or transcript. A recording whose words have not arrived
-/// yet says so (`pending`), so a fresh dictation never reads as an empty
-/// check-in. Null when the check-in holds no words at all (only photos).
+/// first comment or transcript. Only when nothing it holds has words yet
+/// does a recording without them say so (`pending`), so a fresh dictation
+/// never reads as an empty check-in — and a recording still waiting never
+/// hides a comment that has words. Null when the check-in holds no words
+/// at all (only photos).
 ({String text, bool pending})? checkInSummaryOf(
   BuildContext context,
   CheckInEntry checkIn,
@@ -252,15 +254,16 @@ class CheckInRow extends StatelessWidget {
 ) {
   final saved = checkIn.entryText?.plainText.trim() ?? '';
   if (saved.isNotEmpty) return (text: saved, pending: false);
+  var awaitingWords = false;
   for (final entry in entries) {
     if (entry is JournalImage) continue;
     final words = entry.entryText?.plainText.trim() ?? '';
     if (words.isNotEmpty) return (text: words, pending: false);
-    if (entry is JournalAudio) {
-      return (text: context.messages.checkInTranscribingLabel, pending: true);
-    }
+    if (entry is JournalAudio) awaitingWords = true;
   }
-  return null;
+  return awaitingWords
+      ? (text: context.messages.checkInTranscribingLabel, pending: true)
+      : null;
 }
 
 /// What a check-in holds, as one quiet line — `2 recordings · 1 photo` — or

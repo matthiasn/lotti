@@ -12046,6 +12046,58 @@ class AppLocalizationsPt extends AppLocalizations {
       'Ainda sem agente — marca primeiro esta pessoa como importante.';
 
   @override
+  String get relationshipCheckInAddComment => 'Adicionar comentário';
+
+  @override
+  String get relationshipCheckInAddPhoto => 'Foto';
+
+  @override
+  String relationshipCheckInCommentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count comentários',
+      one: '1 comentário',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipCheckInCommentHint => 'Adicione um comentário…';
+
+  @override
+  String get relationshipCheckInEmpty =>
+      'Nada adicionado ainda. Adicione um comentário, uma gravação ou uma foto.';
+
+  @override
+  String get relationshipCheckInGone => 'Este check-in não existe mais.';
+
+  @override
+  String get relationshipCheckInNoteLabel => 'Anotado ao registrar';
+
+  @override
+  String relationshipCheckInPhotoCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fotos',
+      one: '1 foto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String relationshipCheckInRecordingCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count gravações',
+      one: '1 gravação',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get relationshipCheckInReminderBody =>
       'Um bom momento para dar notícias.';
 
@@ -15994,56 +16046,4 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Pular';
-
-  @override
-  String relationshipCheckInRecordingCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count gravações',
-      one: '1 gravação',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String relationshipCheckInPhotoCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count fotos',
-      one: '1 foto',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String relationshipCheckInCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count comentários',
-      one: '1 comentário',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get relationshipCheckInNoteLabel => 'Anotado ao registrar';
-
-  @override
-  String get relationshipCheckInCommentHint => 'Adicione um comentário…';
-
-  @override
-  String get relationshipCheckInAddComment => 'Adicionar comentário';
-
-  @override
-  String get relationshipCheckInAddPhoto => 'Foto';
-
-  @override
-  String get relationshipCheckInEmpty =>
-      'Nada adicionado ainda. Adicione um comentário, uma gravação ou uma foto.';
-
-  @override
-  String get relationshipCheckInGone => 'Este check-in não existe mais.';
 }
