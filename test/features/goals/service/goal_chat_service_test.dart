@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/goals/service/goal_chat_service.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -41,6 +42,7 @@ void main() {
   late StreamController<WakeRunCompletion> completions;
   late List<AgentDomainEntity> upserts;
   late GoalChatService service;
+  late MockUpdateNotifications notifications;
 
   setUp(() {
     syncService = MockAgentSyncService();
@@ -59,10 +61,12 @@ void main() {
       final id = invocation.positionalArguments.first as String;
       return id == 'goal-1' ? goalIdentity(AgentLifecycle.active) : null;
     });
+    notifications = MockUpdateNotifications();
     service = GoalChatService(
       repository: repository,
       syncService: syncService,
       orchestrator: orchestrator,
+      notifications: notifications,
     );
   });
 
@@ -93,6 +97,46 @@ void main() {
         initiator: any(named: 'initiator'),
       ),
     );
+  });
+
+  // The user's own words appeared only once the reply was written: the
+  // chat refreshes on the agent's notifications, and only the wake sent one.
+  test('announces the stored turn before the wake runs, so the user sees '
+      'their own words at once', () async {
+    final events = <String>[];
+    when(() => notifications.notifyUiOnly(any())).thenAnswer((invocation) {
+      events.add(
+        'notify ${invocation.positionalArguments.first as Set<String>} '
+        'after ${upserts.length} writes',
+      );
+    });
+    when(
+      () => orchestrator.enqueueManualWake(
+        agentId: 'goal-1',
+        reason: WakeReason.userMessage.name,
+        triggerTokens: any(named: 'triggerTokens'),
+        supersede: false,
+        initiator: WakeInitiator.user,
+      ),
+    ).thenAnswer((_) {
+      events.add('wake');
+      scheduleMicrotask(
+        () => completions.add(
+          const WakeRunCompletion(
+            runKey: 'chat-run',
+            status: WakeRunStatus.completed,
+          ),
+        ),
+      );
+      return 'chat-run';
+    });
+
+    await service.sendMessage(agentId: 'goal-1', text: 'How am I doing?');
+
+    expect(events, [
+      'notify {goal-1, $agentNotification} after 2 writes',
+      'wake',
+    ]);
   });
 
   test(
@@ -251,6 +295,7 @@ void main() {
         repository: repository,
         syncService: syncService,
         orchestrator: realOrchestrator,
+        notifications: notifications,
       ).retryMessage(agentId: 'goal-1', messageId: 'message-1');
       await pumpEventQueue();
       expect(queue.length, 1);
@@ -289,6 +334,7 @@ void main() {
       repository: repository,
       syncService: syncService,
       orchestrator: realOrchestrator,
+      notifications: notifications,
     ).retryMessage(agentId: 'goal-1', messageId: 'message-1');
     await pumpEventQueue();
 

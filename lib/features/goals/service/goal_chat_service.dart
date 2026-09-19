@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/goals/service/goal_chat_history_service.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:uuid/uuid.dart';
 
 const _goalChatMessageTokenPrefix = 'goal-chat-message:';
@@ -34,11 +35,13 @@ class GoalChatService {
     required AgentRepository repository,
     required AgentSyncService syncService,
     required WakeOrchestrator orchestrator,
+    required UpdateNotifications notifications,
     GoalChatHistoryService? historyService,
   }) : this._(
          repository,
          syncService,
          orchestrator,
+         notifications,
          historyService ?? GoalChatHistoryService(repository),
        );
 
@@ -46,12 +49,14 @@ class GoalChatService {
     this._repository,
     this._syncService,
     this._orchestrator,
+    this._notifications,
     this._historyService,
   );
 
   final AgentRepository _repository;
   final AgentSyncService _syncService;
   final WakeOrchestrator _orchestrator;
+  final UpdateNotifications _notifications;
   final GoalChatHistoryService _historyService;
   final Set<String> _recoveringMessageIds = {};
 
@@ -114,6 +119,10 @@ class GoalChatService {
         rethrow;
       }
     }
+    // The turn is durable: show it now. The chat refreshes on the agent's
+    // notifications, and the wake below only sends one once the reply is
+    // written — waiting for it made the user's own words appear late.
+    _notifications.notifyUiOnly({agentId, agentNotification});
 
     await retryMessage(agentId: agentId, messageId: messageId);
   }
