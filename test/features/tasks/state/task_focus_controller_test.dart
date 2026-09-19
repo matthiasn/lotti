@@ -37,6 +37,29 @@ void main() {
       expect(intent.entryId, isNull);
       expect(intent.alignment, equals(0.1));
     });
+
+    test('toString names the entry for an entry intent', () {
+      final intent = TaskFocusIntent(
+        taskId: testTaskId,
+        entryId: testEntryId,
+        alignment: 0.5,
+      );
+
+      expect(
+        intent.toString(),
+        'TaskFocusIntent(taskId: test-task-id, entryId: test-entry-id, '
+        'alignment: 0.5)',
+      );
+    });
+
+    test('toString omits the entry for a suggestions intent', () {
+      final intent = TaskFocusIntent.suggestions(taskId: testTaskId);
+
+      expect(
+        intent.toString(),
+        'TaskFocusIntent.suggestions(taskId: test-task-id, alignment: 0.1)',
+      );
+    });
   });
 
   group('TaskFocusController', () {

@@ -98,6 +98,21 @@ void main() {
     expect(find.text('—'), findsOneWidget);
   });
 
+  testWidgets('an upgrading user is shown in the baseline cohort', (
+    tester,
+  ) async {
+    await repo.recordEvent(
+      OnboardingEventName.appFirstSeen,
+      reason: onboardingExistingUserReason,
+    );
+
+    await pumpUntilLoaded(tester, find.text('Baseline cohort (pre-FTUE)'));
+
+    // Baseline is the only "yes": the upgrader never reached the aha moment.
+    expect(find.text('yes'), findsOneWidget);
+    expect(find.text('no'), findsOneWidget);
+  });
+
   testWidgets('localizes summary metrics', (tester) async {
     await repo.recordAppFirstSeenIfAbsent();
     await repo.recordEvent(OnboardingEventName.realAha);

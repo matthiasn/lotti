@@ -59,5 +59,58 @@ void main() {
       expect(semantics.properties.label, 'Health Score');
       expect(semantics.properties.value, '78%');
     });
+
+    for (final (size, dimension, strokeWidth, centerStyle) in [
+      (
+        DesignSystemCircularProgressSize.small,
+        dsTokensLight.spacing.step9,
+        4.0,
+        dsTokensLight.typography.styles.subtitle.subtitle2,
+      ),
+      (
+        DesignSystemCircularProgressSize.medium,
+        dsTokensLight.spacing.step10,
+        5.0,
+        dsTokensLight.typography.styles.subtitle.subtitle1,
+      ),
+    ]) {
+      testWidgets('${size.name} ring is ${dimension}px with a '
+          '${strokeWidth}px stroke and clamps out-of-range values', (
+        tester,
+      ) async {
+        const progressKey = Key('circular-progress');
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            Center(
+              child: DesignSystemCircularProgress(
+                key: progressKey,
+                value: 1.4,
+                size: size,
+                center: const Text('done'),
+              ),
+            ),
+            theme: DesignSystemTheme.light(),
+          ),
+        );
+
+        final progress = tester.widget<CircularProgressIndicator>(
+          find.byType(CircularProgressIndicator),
+        );
+        expect(tester.getSize(find.byKey(progressKey)), Size.square(dimension));
+        expect(progress.strokeWidth, strokeWidth);
+        expect(progress.value, 1.0);
+        final centerText = tester.widget<RichText>(
+          find.descendant(
+            of: find.byKey(progressKey),
+            matching: find.byType(RichText),
+          ),
+        );
+        expect(centerText.text.style?.fontSize, centerStyle.fontSize);
+        expect(
+          tester.getSemantics(find.byKey(progressKey)).value,
+          '100%',
+        );
+      });
+    }
   });
 }

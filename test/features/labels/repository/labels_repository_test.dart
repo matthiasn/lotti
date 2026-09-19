@@ -382,6 +382,40 @@ void main() {
     verifyNever(() => persistenceLogic.upsertEntityDefinition(any()));
   });
 
+  test('deleteLabel logs a failed write instead of throwing', () async {
+    final error = Exception('write failed');
+    when(
+      () => journalDb.getLabelDefinitionById(any()),
+    ).thenAnswer((_) async => throw error);
+
+    await repository.deleteLabel('label-id');
+
+    verify(
+      () => domainLogger.error(
+        LogDomain.labels,
+        error,
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: 'deleteLabel',
+      ),
+    ).called(1);
+  });
+
+  test('getAllLabels returns every definition from the database', () async {
+    final label = LabelDefinition(
+      id: 'label-id',
+      name: 'Label',
+      color: '#123456',
+      createdAt: baseTime,
+      updatedAt: baseTime,
+      vectorClock: const VectorClock(<String, int>{}),
+    );
+    when(
+      () => journalDb.getAllLabelDefinitions(),
+    ).thenAnswer((_) async => [label]);
+
+    expect(await repository.getAllLabels(), [label]);
+  });
+
   test('addLabels short-circuits when no label ids provided', () async {
     final result = await repository.addLabels(
       journalEntityId: 'entity-id',

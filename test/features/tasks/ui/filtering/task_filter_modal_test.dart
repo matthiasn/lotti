@@ -149,6 +149,7 @@ void main() {
     SavedTaskFiltersController Function()? savedTaskFiltersController,
     bool hasUnsavedClauses = false,
     MediaQueryData? mediaQueryData,
+    String? activeSavedFilterId,
   }) {
     fakeController = FakeJournalPageController(mockState);
 
@@ -167,7 +168,9 @@ void main() {
             savedTaskFiltersController ??
                 () => _StubSavedTaskFiltersController(const []),
           ),
-          currentSavedTaskFilterIdProvider.overrideWith((ref) => null),
+          currentSavedTaskFilterIdProvider.overrideWith(
+            (ref) => activeSavedFilterId,
+          ),
           tasksFilterHasUnsavedClausesProvider.overrideWith(
             (ref) => hasUnsavedClauses,
           ),
@@ -559,6 +562,28 @@ void main() {
       );
     });
 
+    testWidgets('a failed project refresh is logged and the sheet keeps its '
+        'current projects', (tester) async {
+      when(
+        () => mockJournalDb.getProjectsForCategory(any()),
+      ).thenAnswer((_) async => throw Exception('projects unavailable'));
+
+      await tester.pumpWidget(buildWithProjects(enableProjects: true));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Filter tasks'), findsOneWidget);
+      verify(
+        () => mockDomainLogger.error(
+          LogDomain.tasks,
+          any(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'loadFilterProjects',
+        ),
+      ).called(1);
+    });
+
     testWidgets('reopens from cache before a warm project refresh completes', (
       tester,
     ) async {
@@ -794,6 +819,66 @@ void main() {
       // Modal should have closed (apply + save + dismiss).
       expect(find.text('Filter tasks'), findsNothing);
     });
+
+    testWidgets(
+      'update error logs via DomainLogger and keeps modal open',
+      (tester) async {
+        const saved = SavedTaskFilter(
+          id: 'sv-1',
+          name: 'Blocked only',
+          filter: TasksFilter(selectedTaskStatuses: {'BLOCKED'}),
+        );
+        await tester.pumpWidget(
+          buildSubject(
+            hasUnsavedClauses: true,
+            activeSavedFilterId: saved.id,
+            savedTaskFiltersController: () =>
+                _ThrowingSavedTaskFiltersController(
+                  throwOnCreate: false,
+                  seed: const [saved],
+                ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final container = ProviderScope.containerOf(
+          tester.element(find.byKey(const ValueKey('open-filter-modal'))),
+        );
+        await container.read(savedTaskFiltersControllerProvider.future);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
+        await tester.pumpAndSettle();
+        final saveBtn = find.byKey(
+          DesignSystemTaskFilterActionBar.saveButtonKey,
+        );
+        await tester.ensureVisible(saveBtn);
+        await tester.tap(saveBtn);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(DesignSystemFilterSavePageKeys.update));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.tasks,
+            any(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'saveFilter',
+          ),
+        ).called(1);
+        // The choice page stays open with the retryable error.
+        expect(
+          find.byKey(DesignSystemFilterSavePageKeys.choicePage),
+          findsOneWidget,
+        );
+        expect(
+          find.text("Couldn't save this filter. Try again."),
+          findsOneWidget,
+        );
+
+        tester.state<NavigatorState>(find.byType(Navigator).last).pop();
+        await tester.pumpAndSettle();
+      },
+    );
 
     testWidgets(
       'save error logs via DomainLogger and keeps modal open',
@@ -1487,12 +1572,21 @@ class _StubSavedTaskFiltersController extends SavedTaskFiltersController {
 
 /// Stubs that either succeed or throw on [create] / [updateFilter].
 class _ThrowingSavedTaskFiltersController extends SavedTaskFiltersController {
-  _ThrowingSavedTaskFiltersController({required this.throwOnCreate});
+  _ThrowingSavedTaskFiltersController({
+    required this.throwOnCreate,
+    this.seed = const [],
+  });
 
   final bool throwOnCreate;
+  final List<SavedTaskFilter> seed;
 
   @override
-  Future<List<SavedTaskFilter>> build() async => const [];
+  Future<List<SavedTaskFilter>> build() async => seed;
+
+  @override
+  Future<void> updateFilter(String id, TasksFilter filter) async {
+    throw Exception('update failed');
+  }
 
   @override
   Future<SavedTaskFilter> create({

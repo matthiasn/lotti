@@ -302,13 +302,14 @@ void main() {
     test(
       'a malformed URL that crashes Uri.parse falls back to the raw input',
       () {
-        // Invalid percent-encoding (`%2`) makes Uri.parse throw a
-        // FormatException; the canonicalizer must catch it and treat
-        // the raw string as the path. The raw input does not match
-        // the /settings prefix, so we expect an empty path — the key
-        // assertion is that the call doesn't throw, exercising the
-        // FormatException catch in _canonicalize.
-        expect(beamUrlToPath('/settings/flags%2'), isEmpty);
+        // A non-numeric port makes Uri.parse throw a FormatException
+        // (a stray `%` in a path does not — Uri.parse re-encodes it);
+        // the canonicalizer must catch it and treat the raw string as
+        // the path. The raw input does not match the /settings prefix,
+        // so we expect an empty path rather than a crash.
+        const malformed = 'http://host:port/settings/advanced';
+        expect(() => Uri.parse(malformed), throwsFormatException);
+        expect(beamUrlToPath(malformed), isEmpty);
       },
     );
   });

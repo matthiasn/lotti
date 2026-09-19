@@ -301,6 +301,36 @@ void main() {
       });
     });
 
+    test('skips the write when the stored value is the same filter in a '
+        'different key and element order', () {
+      fakeAsync((async) {
+        // Same filter as [filter], but unsorted arrays and shuffled keys —
+        // normalisation must treat it as unchanged.
+        final storedJson = jsonEncode(<String, dynamic>{
+          'agentAssignmentFilter': 'noAgent',
+          'selectedPriorities': ['P2', 'P0'],
+          'selectedCategoryIds': ['cat-b', 'cat-a'],
+          'selectedProjectIds': ['proj-1'],
+          'selectedTaskStatuses': ['DONE'],
+          'selectedLabelIds': <String>[],
+          'sortOption': 'byDueDate',
+          'showCreationDate': true,
+          'showDueDate': false,
+          'showCoverArt': true,
+          'showDistances': false,
+        });
+        when(
+          () => mockSettingsDb.itemByKey(filterKey),
+        ).thenAnswer((_) async => storedJson);
+
+        sut.saveFilters(filter, filterKey);
+        async.flushMicrotasks();
+
+        verify(() => mockSettingsDb.itemByKey(filterKey)).called(1);
+        verifyNever(() => mockSettingsDb.saveSettingsItem(any(), any()));
+      });
+    });
+
     test('proceeds when DB contains malformed JSON for tasks filter', () {
       fakeAsync((async) {
         // Stub returns malformed JSON that is not a valid Map.
@@ -355,5 +385,44 @@ void main() {
         });
       },
     );
+  });
+
+  group('saveEntryTypes', () {
+    const selectedEntryTypesKey =
+        JournalFilterPersistence.selectedEntryTypesKey;
+
+    test('skips the write when the stored set only differs in order', () {
+      fakeAsync((async) {
+        when(
+          () => mockSettingsDb.itemByKey(selectedEntryTypesKey),
+        ).thenAnswer((_) async => jsonEncode(['Task', 'JournalEntry']));
+
+        sut.saveEntryTypes({'JournalEntry', 'Task'});
+        async.flushMicrotasks();
+
+        verifyNever(() => mockSettingsDb.saveSettingsItem(any(), any()));
+      });
+    });
+
+    test('writes the sorted set once and dedups the repeat', () {
+      fakeAsync((async) {
+        when(
+          () => mockSettingsDb.itemByKey(selectedEntryTypesKey),
+        ).thenAnswer((_) async => 'not json');
+
+        sut.saveEntryTypes({'Task', 'JournalEntry'});
+        async.flushMicrotasks();
+        sut.saveEntryTypes({'JournalEntry', 'Task'});
+        async.flushMicrotasks();
+
+        verify(
+          () => mockSettingsDb.saveSettingsItem(
+            selectedEntryTypesKey,
+            jsonEncode(['JournalEntry', 'Task']),
+          ),
+        ).called(1);
+        verify(() => mockSettingsDb.itemByKey(selectedEntryTypesKey)).called(1);
+      });
+    });
   });
 }

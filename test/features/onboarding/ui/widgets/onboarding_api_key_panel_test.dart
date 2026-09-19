@@ -133,6 +133,24 @@ void main() {
     expect(find.text('Enter a valid key to continue.'), findsOneWidget);
   });
 
+  testWidgets('the eye toggle reveals and re-hides the key', (tester) async {
+    await pumpPanel(tester, type: InferenceProviderType.gemini);
+    bool obscured() =>
+        tester.widget<EditableText>(find.byType(EditableText)).obscureText;
+
+    expect(obscured(), isTrue);
+    expect(find.byIcon(LottiIcons.visible), findsOneWidget);
+
+    await tester.tap(find.byIcon(LottiIcons.visible));
+    await tester.pump();
+    expect(obscured(), isFalse);
+    expect(find.byIcon(LottiIcons.hidden), findsOneWidget);
+
+    await tester.tap(find.byIcon(LottiIcons.hidden));
+    await tester.pump();
+    expect(obscured(), isTrue);
+  });
+
   testWidgets('the button shows Verifying… while a probe is in flight', (
     tester,
   ) async {

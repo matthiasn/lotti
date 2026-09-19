@@ -7,9 +7,10 @@ import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart';
+import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
+import 'package:lotti/features/journal/ui/widgets/list_cards/journal_image_card.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -17,7 +18,6 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
@@ -62,155 +62,7 @@ JournalDbEntity _journalDbEntity(JournalEntity entity) {
   );
 }
 
-// Simple widget that mimics LinkedFromEntriesWidget structure for testing
-class TestLinkedFromWidget extends StatelessWidget {
-  const TestLinkedFromWidget({
-    required this.hasData,
-    required this.hasImageEntries,
-    super.key,
-  });
-
-  final bool hasData;
-  final bool hasImageEntries;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!hasData) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      children: [
-        Text(
-          context.messages.journalLinkedFromLabel,
-          style: context.textTheme.titleSmall?.copyWith(
-            color: context.colorScheme.outline,
-          ),
-        ),
-        if (hasImageEntries)
-          Padding(
-            padding: const EdgeInsets.only(
-              left: AppTheme.spacingXSmall,
-              right: AppTheme.spacingXSmall,
-              bottom: AppTheme.spacingXSmall,
-            ),
-            child: Container(
-              key: const ValueKey('image-1'),
-              height: 100,
-              color: Colors.grey,
-              child: const Text('Mock Image Card'),
-            ),
-          ),
-        if (!hasImageEntries)
-          Padding(
-            padding: const EdgeInsets.only(
-              left: AppTheme.spacingXSmall,
-              right: AppTheme.spacingXSmall,
-              bottom: AppTheme.spacingXSmall,
-            ),
-            child: Container(
-              key: const ValueKey('text-1'),
-              height: 80,
-              color: Colors.blue,
-              child: const Text('Mock Journal Card'),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
 void main() {
-  group('LinkedFromWidget Structure Tests', () {
-    testWidgets('renders correctly with image entries', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const TestLinkedFromWidget(
-            hasData: true,
-            hasImageEntries: true,
-          ),
-        ),
-      );
-
-      // Verify the section title is rendered
-      expect(find.text('Linked from:'), findsOneWidget);
-
-      // Verify image container is rendered with correct key
-      expect(find.byKey(const ValueKey('image-1')), findsOneWidget);
-
-      // Verify padding is applied correctly
-      final padding = tester.widget<Padding>(
-        find
-            .ancestor(
-              of: find.byKey(const ValueKey('image-1')),
-              matching: find.byType(Padding),
-            )
-            .first,
-      );
-
-      expect(
-        padding.padding,
-        const EdgeInsets.only(
-          left: AppTheme.spacingXSmall,
-          right: AppTheme.spacingXSmall,
-          bottom: AppTheme.spacingXSmall,
-        ),
-      );
-    });
-
-    testWidgets('renders correctly with regular entries', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const TestLinkedFromWidget(
-            hasData: true,
-            hasImageEntries: false,
-          ),
-        ),
-      );
-
-      // Verify the section title is rendered
-      expect(find.text('Linked from:'), findsOneWidget);
-
-      // Verify text container is rendered with correct key
-      expect(find.byKey(const ValueKey('text-1')), findsOneWidget);
-
-      // Verify padding is applied correctly
-      final padding = tester.widget<Padding>(
-        find
-            .ancestor(
-              of: find.byKey(const ValueKey('text-1')),
-              matching: find.byType(Padding),
-            )
-            .first,
-      );
-
-      expect(
-        padding.padding,
-        const EdgeInsets.only(
-          left: AppTheme.spacingXSmall,
-          right: AppTheme.spacingXSmall,
-          bottom: AppTheme.spacingXSmall,
-        ),
-      );
-    });
-
-    testWidgets('renders empty when no data', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const TestLinkedFromWidget(
-            hasData: false,
-            hasImageEntries: false,
-          ),
-        ),
-      );
-
-      // Empty list should show nothing
-      expect(find.text('Linked from:'), findsNothing);
-      expect(find.byKey(const ValueKey('image-1')), findsNothing);
-      expect(find.byKey(const ValueKey('text-1')), findsNothing);
-    });
-  });
-
   group('LinkedFromEntriesWidget', () {
     TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -294,6 +146,28 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Linked from:'), findsOneWidget);
+    });
+
+    testWidgets('renders a linked image as an image card and other entries '
+        'as journal cards', (tester) async {
+      mockLinkedFromEntries([testImageEntry, testTextEntry]);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          LinkedFromEntriesWidget(testTask),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final imageCard = tester.widget<ModernJournalImageCard>(
+        find.byType(ModernJournalImageCard),
+      );
+      expect(imageCard.item, testImageEntry);
+      final textCard = tester.widget<ModernJournalCard>(
+        find.byType(ModernJournalCard),
+      );
+      expect(textCard.item, testTextEntry);
+      expect(textCard.showLinkedDuration, isTrue);
     });
 
     testWidgets('renders SizedBox.shrink when no entries', (tester) async {

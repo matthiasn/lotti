@@ -284,6 +284,37 @@ void main() {
     );
   });
 
+  testWidgets('sort trigger names the current sort order', (tester) async {
+    await pumpBar(tester);
+    final messages = await AppLocalizations.delegate.load(const Locale('en'));
+    final visualFinder = find.byKey(
+      const ValueKey('linked-entries-sort-trigger-visual'),
+    );
+    expect(
+      tester.widget<DsPill>(visualFinder).label,
+      messages.journalLinkedEntriesSortNewestFirst,
+    );
+
+    ProviderScope.containerOf(
+          tester.element(find.byType(LinkedEntriesActivityFilterBar)),
+        ).read(linkedEntriesSortControllerProvider(entryId).notifier).order =
+        LinkedEntriesSortOrder.oldestFirst;
+    await tester.pump();
+
+    expect(
+      tester.widget<DsPill>(visualFinder).label,
+      messages.journalLinkedEntriesSortOldestFirst,
+    );
+    expect(
+      tester
+          .getSemantics(
+            find.byKey(const ValueKey('linked-entries-sort-trigger')),
+          )
+          .label,
+      contains(messages.journalLinkedEntriesSortOldestFirst),
+    );
+  });
+
   testWidgets('tapping a pill toggles its active kind in the controller', (
     tester,
   ) async {

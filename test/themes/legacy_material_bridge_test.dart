@@ -90,4 +90,25 @@ void main() {
       expect(a.copyWith(values: b.values).values, same(b.values));
     },
   );
+
+  test('the legacy elevated button style keeps density and tap target', () {
+    final theme = ThemeData(
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          visualDensity: const VisualDensity(horizontal: -2, vertical: -3),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+      ),
+    );
+
+    final style = legacyMaterialTheme(theme).elevatedButtonTheme.style!;
+
+    expect(style.visualDensity?.horizontal, -2);
+    expect(style.visualDensity?.vertical, -3);
+    expect(style.tapTargetSize, legacy.MaterialTapTargetSize.shrinkWrap);
+  });
+
+  test('a theme without an elevated button style bridges to none', () {
+    expect(legacyMaterialTheme(ThemeData()).elevatedButtonTheme.style, isNull);
+  });
 }

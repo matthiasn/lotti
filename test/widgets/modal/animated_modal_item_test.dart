@@ -426,5 +426,45 @@ void main() {
 
       expect(find.text('Dispose Test'), findsNothing);
     });
+
+    testWidgets('switching between an internal and an external controller '
+        'rewires the tap animation', (tester) async {
+      final external = AnimatedModalItemController(vsync: const TestVSync());
+      addTearDown(external.dispose);
+      Widget item({AnimatedModalItemController? controller}) => MaterialApp(
+        builder: LegacyMaterialBridge.builder,
+        home: Scaffold(
+          body: AnimatedModalItem(
+            controller: controller,
+            onTap: () {},
+            child: const Text('Swap Me'),
+          ),
+        ),
+      );
+      // Internal → external: presses now drive the handed-in controller.
+      await tester.pumpWidget(item());
+      await tester.pumpWidget(item(controller: external));
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.text('Swap Me')),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 75));
+      expect(external.tapAnimationController.value, greaterThan(0));
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      // External → internal: the widget owns a fresh controller again and
+      // leaves the external one alone.
+      await tester.pumpWidget(item());
+      final second = await tester.startGesture(
+        tester.getCenter(find.text('Swap Me')),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 75));
+      expect(external.tapAnimationController.value, 0);
+      await second.up();
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
   });
 }
