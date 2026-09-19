@@ -13,6 +13,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/entry_utils.dart';
 
 /// One People-list row: the relationship plus its most recent check-in time
 /// (null when no check-in exists yet).
@@ -330,14 +331,22 @@ class RelationshipRepository {
   /// The display read of one check-in's entries, oldest first: like
   /// [getAllEntriesForCheckIns], but a private entry is left out while
   /// private entries are hidden.
-  Future<List<JournalEntity>> getCheckInEntries(String checkInId) async {
-    final entries =
-        (await getAllEntriesForCheckIns({checkInId}))[checkInId] ?? const [];
+  Future<List<JournalEntity>> getCheckInEntries(String checkInId) async =>
+      (await getEntriesForCheckIns({checkInId}))[checkInId] ?? const [];
+
+  /// [getCheckInEntries] for several check-ins at once.
+  Future<Map<String, List<JournalEntity>>> getEntriesForCheckIns(
+    Set<String> checkInIds,
+  ) async {
+    final entries = await getAllEntriesForCheckIns(checkInIds);
     if (await _journalDb.getConfigFlag(privateFlag)) return entries;
-    return [
-      for (final entry in entries)
-        if (!(entry.meta.private ?? false)) entry,
-    ];
+    return {
+      for (final MapEntry(:key, :value) in entries.entries)
+        key: [
+          for (final entry in value)
+            if (!(entry.meta.private ?? false)) entry,
+        ],
+    };
   }
 
   /// Adds a typed comment to [checkIn] as its own entry, linked from the
@@ -350,7 +359,9 @@ class RelationshipRepository {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return null;
     final entry = JournalEntity.journalEntry(
-      entryText: EntryText(plainText: trimmed, markdown: trimmed),
+      // The shape every typed entry is saved in: the text with its Quill
+      // form, which the journal's editor opens directly.
+      entryText: entryTextFromPlain(trimmed),
       meta: await _persistenceLogic.createMetadata(
         dateFrom: clock.now(),
         categoryId: checkIn.meta.categoryId,

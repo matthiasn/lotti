@@ -18,6 +18,7 @@ import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationships_page.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_in_detail_view.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_summary_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_chat_pane.dart';
@@ -575,11 +576,16 @@ void main() {
     late MockNavService navService;
     late ValueNotifier<String?> selected;
     late ValueNotifier<bool> chatOpen;
+    late ValueNotifier<String?> checkInOpen;
 
     setUp(() {
       navService = MockNavService();
       selected = ValueNotifier<String?>(null);
       chatOpen = ValueNotifier<bool>(false);
+      checkInOpen = ValueNotifier<String?>(null);
+      when(
+        () => navService.desktopRelationshipCheckInId,
+      ).thenReturn(checkInOpen);
       when(() => navService.isDesktopMode).thenReturn(true);
       when(
         () => navService.desktopSelectedRelationshipId,
@@ -603,6 +609,7 @@ void main() {
     tearDown(() async {
       selected.dispose();
       chatOpen.dispose();
+      checkInOpen.dispose();
       await getIt.unregister<NavService>();
       await getIt.unregister<SettingsDb>();
     });
@@ -707,6 +714,9 @@ void main() {
       when(
         () => mockRepository.getLinkedTasks('rel-anna'),
       ).thenAnswer((_) async => []);
+      when(
+        () => mockRepository.getEntriesForCheckIns(any()),
+      ).thenAnswer((_) async => const {});
       selected.value = 'rel-anna';
 
       await pumpDesktop(tester);
@@ -755,6 +765,9 @@ void main() {
       when(
         () => mockRepository.getLinkedTasks('rel-anna'),
       ).thenAnswer((_) async => []);
+      when(
+        () => mockRepository.getEntriesForCheckIns(any()),
+      ).thenAnswer((_) async => const {});
       selected.value = 'rel-anna';
 
       await pumpDesktop(tester);
@@ -773,6 +786,42 @@ void main() {
       expect(otherRow.selected, isFalse);
     });
 
+    testWidgets('a check-in takes over the detail pane beside the list, and '
+        'back leads to the person', (tester) async {
+      when(
+        () => mockRepository.getRelationshipsByRecency(),
+      ).thenAnswer((_) async => crew());
+      final anna = crew().firstWhere((i) => i.relationship.id == 'rel-anna');
+      final checkIn = anna.lastCheckIn!;
+      when(
+        () => mockRepository.getRelationshipById('rel-anna'),
+      ).thenAnswer((_) async => anna.relationship);
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-anna'),
+      ).thenAnswer((_) async => [checkIn]);
+      when(
+        () => mockRepository.getLinkedTasks('rel-anna'),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepository.getEntriesForCheckIns(any()),
+      ).thenAnswer((_) async => const {});
+      selected.value = 'rel-anna';
+      checkInOpen.value = checkIn.meta.id;
+
+      await pumpDesktop(tester);
+
+      expect(find.byType(CheckInDetailView), findsOneWidget);
+      expect(find.byType(RelationshipDetailsPage), findsNothing);
+      expect(find.byKey(const ValueKey('people-row-rel-ben')), findsOneWidget);
+
+      final navigated = <String>[];
+      beamToNamedOverride = navigated.add;
+      addTearDown(() => beamToNamedOverride = null);
+      await tester.tap(find.byKey(const ValueKey('check-in-detail-back')));
+
+      expect(navigated, ['/people/rel-anna']);
+    });
+
     testWidgets('the chat takes over the detail pane beside the list, rather '
         'than stacking over the whole split', (tester) async {
       when(
@@ -788,6 +837,9 @@ void main() {
       when(
         () => mockRepository.getLinkedTasks('rel-anna'),
       ).thenAnswer((_) async => []);
+      when(
+        () => mockRepository.getEntriesForCheckIns(any()),
+      ).thenAnswer((_) async => const {});
       selected.value = 'rel-anna';
       chatOpen.value = true;
 

@@ -33,10 +33,12 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -52,6 +54,7 @@ import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
@@ -69,6 +72,7 @@ import 'package:lotti/features/relationships/ui/pages/relationships_page.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/widgets/avatar_crop_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_in_detail_view.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_inline_recorder.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_avatar_sheet.dart';
@@ -79,13 +83,17 @@ import 'package:lotti/features/relationships/ui/widgets/relationship_chat_pane.d
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/features/relationships/util/contact_channel_uri.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:lotti/utils/entry_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/thumbhash.dart';
 import 'package:lotti/widgets/media/journal_image_resolver.dart';
@@ -99,6 +107,7 @@ import '../../../../helpers/journal_image_fixtures.dart';
 import '../../../../helpers/manual_demo_world.dart';
 import '../../../../helpers/thumb_hash_fixtures.dart';
 import '../../../../mocks/mocks.dart';
+import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../agents/test_data/ai_config_factories.dart';
 import '../../../agents/test_data/change_set_factories.dart';
@@ -506,6 +515,52 @@ void main() {
       length: const Duration(minutes: 4),
     ),
   ];
+  // What the check-ins hold (ADR 0062): the launch call's recording and the
+  // correction logged against it, the ice-garden photo, and a message whose
+  // dictation is still being transcribed.
+  final pipTake = testAudioEntry.copyWith(
+    meta: testAudioEntry.meta.copyWith(
+      id: 'take-pip-3',
+      dateFrom: DateTime(2026, 8, 1, 12, 58),
+      dateTo: DateTime(2026, 8, 1, 12, 59),
+    ),
+    data: testAudioEntry.data.copyWith(
+      duration: const Duration(seconds: 42),
+    ),
+    entryText: const EntryText(
+      plainText:
+          'Pip asked me to send the krill contract draft tonight. Wanja '
+          'reviews it on Friday.',
+    ),
+  );
+  final pipCorrection = JournalEntity.journalEntry(
+    meta: Metadata(
+      id: 'note-pip-3',
+      createdAt: DateTime(2026, 8, 1, 13, 5),
+      updatedAt: DateTime(2026, 8, 1, 13, 5),
+      dateFrom: DateTime(2026, 8, 1, 13, 5),
+      dateTo: DateTime(2026, 8, 1, 13, 5),
+    ),
+    entryText: entryTextFromPlain(
+      'Correction: it is Wanja, not Vanja, who reviews it.',
+    ),
+  );
+  final pipPendingTake = testAudioEntry.copyWith(
+    meta: testAudioEntry.meta.copyWith(
+      id: 'take-pip-1',
+      dateFrom: DateTime(2026, 7, 11, 18, 6),
+      dateTo: DateTime(2026, 7, 11, 18, 7),
+    ),
+    data: testAudioEntry.data.copyWith(
+      duration: const Duration(seconds: 18),
+    ),
+    entryText: null,
+  );
+  final pipCheckInEntries = <String, List<JournalEntity>>{
+    'check-pip-3': [pipTake, pipCorrection],
+    'check-pip-2': [_pipBanner],
+    'check-pip-1': [pipPendingTake],
+  };
   final pipTasks = [
     task('task-krill', 'Send Pip the krill contract draft'),
     task(
@@ -644,9 +699,16 @@ void main() {
       () => repository.getLinkedTasks(_pipId),
     ).thenAnswer((_) async => pipTasks);
     when(
+      () => repository.getEntriesForCheckIns(any()),
+    ).thenAnswer((_) async => pipCheckInEntries);
+    // The detail view brings a check-in up to date with a newer entry.
+    when(() => repository.touchCheckIn(any())).thenAnswer((_) async => true);
+    when(
       () => repository.updateRelationship(any()),
     ).thenAnswer((_) async => true);
 
+    final timeService = MockTimeService();
+    when(timeService.getStream).thenAnswer((_) => const Stream.empty());
     await setUpTestGetIt(
       additionalSetup: () {
         final cache = MockEntitiesCacheService();
@@ -660,14 +722,25 @@ void main() {
         when(() => cache.sortedCategories).thenReturn(<CategoryDefinition>[
           category,
         ]);
+        // A check-in's comment opens in the entry editor, which asks
+        // whether it holds unsaved edits.
+        final editorState = MockEditorStateService();
+        when(
+          () => editorState.getUnsavedStream(any(), any()),
+        ).thenAnswer((_) => Stream.value(false));
         getIt
           ..registerSingleton<EntitiesCacheService>(cache)
           ..registerSingleton<NavService>(navService)
           // The avatar resolves its picture through EntryController, which
           // reads the documents directory and these two services.
           ..registerSingleton<Directory>(documents)
-          ..registerSingleton<EditorStateService>(MockEditorStateService())
-          ..registerSingleton<PersistenceLogic>(MockPersistenceLogic());
+          ..registerSingleton<EditorStateService>(editorState)
+          ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
+          // A check-in's entries render as the journal's entry cards, whose
+          // footers read the running timer and the link service.
+          ..registerSingleton<TimeService>(timeService)
+          ..registerSingleton<LinkService>(MockLinkService())
+          ..registerSingleton<UserActivityService>(UserActivityService());
       },
     );
     // Only Pip's files exist; Skua's and Tilly's are deliberately absent.
@@ -1127,6 +1200,87 @@ void main() {
     await captureScreenshot(
       tester,
       'person_page_reach_tasks_mobile_dark',
+      subdir: _subdir,
+    );
+  });
+
+  testWidgets('mobile person page, scrolled to the check-ins — dark', (
+    tester,
+  ) async {
+    await pumpSurface(
+      tester,
+      home: const RelationshipDetailsPage(relationshipId: _pipId),
+      device: proDevice,
+      brightness: Brightness.dark,
+      overrides: personOverrides(
+        report: briefing(),
+        state: makeTestState(agentId: agentId),
+      ),
+    );
+
+    final firstRow = find.byKey(const ValueKey('check-in-row-check-pip-3'));
+    await tester.scrollUntilVisible(
+      firstRow,
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await Scrollable.ensureVisible(
+      tester.element(firstRow),
+      alignment: 0.12,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('person-check-ins-card')), findsOneWidget);
+    await captureScreenshot(
+      tester,
+      'person_check_ins_mobile_dark',
+      subdir: _subdir,
+    );
+  });
+
+  testWidgets('mobile check-in detail — dark', (tester) async {
+    final held = [pipTake, pipCorrection];
+    // The real entry controller, so the comment opens in its editor the way
+    // it does in the app.
+    for (final entry in held) {
+      when(
+        () => getIt<JournalDb>().journalEntityById(entry.id),
+      ).thenAnswer((_) async => entry);
+    }
+    await pumpSurface(
+      tester,
+      home: const Scaffold(
+        body: SafeArea(
+          child: CheckInDetailView(
+            relationshipId: _pipId,
+            checkInId: 'check-pip-3',
+          ),
+        ),
+      ),
+      device: proDevice,
+      brightness: Brightness.dark,
+      overrides: [
+        ...personOverrides(report: briefing()),
+        sortedLinkedEntriesProvider('check-pip-3').overrideWith(
+          (ref) => [
+            for (final entry in held)
+              EntryLink.basic(
+                id: 'check-pip-3->${entry.id}',
+                fromId: 'check-pip-3',
+                toId: entry.id,
+                createdAt: entry.meta.dateFrom,
+                updatedAt: entry.meta.dateFrom,
+                vectorClock: null,
+              ),
+          ],
+        ),
+      ],
+    );
+
+    expect(find.text('Noted when it was logged'), findsOneWidget);
+    await captureScreenshot(
+      tester,
+      'check_in_open_mobile_dark',
       subdir: _subdir,
     );
   });

@@ -167,6 +167,9 @@ void main() {
     when(
       () => mockRepository.getLinkedTasks('rel-1'),
     ).thenAnswer((_) async => []);
+    when(
+      () => mockRepository.getEntriesForCheckIns(any()),
+    ).thenAnswer((_) async => const {});
     mockAgentService = MockRelationshipAgentService();
     when(
       () => mockAgentService.handleRelationshipDeleted(any()),
@@ -952,9 +955,9 @@ void main() {
     }
   });
 
-  testWidgets('tapping a check-in row opens the edit sheet prefilled', (
-    tester,
-  ) async {
+  // A check-in holds a timeline of its own now (ADR 0062): the row opens
+  // it; editing the check-in's details is one tap further, from there.
+  testWidgets('tapping a check-in row opens that check-in', (tester) async {
     when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
       (_) async => relationship(),
     );
@@ -965,6 +968,9 @@ void main() {
         checkIn('check-1', narrative: 'Planned the summer trip.'),
       ],
     );
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    addTearDown(() => beamToNamedOverride = null);
 
     await tester.pumpWidget(buildPage());
     await tester.pumpAndSettle();
@@ -972,16 +978,7 @@ void main() {
     await tester.tap(find.text('Planned the summer trip.'));
     await tester.pumpAndSettle();
 
-    // The edit sheet is up with the narrative prefilled in a text field
-    // and the delete affordance that only edit mode carries.
-    expect(find.text('Edit check-in'), findsOneWidget);
-    expect(
-      find.widgetWithText(TextField, 'Planned the summer trip.'),
-      findsOneWidget,
-    );
-    // Exactly one: the page's own delete sits inside its closed menu, so
-    // the icon on screen is the sheet's edit-only one.
-    expect(find.byIcon(LottiIcons.delete), findsOneWidget);
+    expect(navigated, ['/people/rel-1/check-ins/check-1']);
   });
 
   testWidgets('renders contact channels with value and label', (tester) async {

@@ -1661,6 +1661,9 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       when(
+        () => mockRepository.getEntriesForCheckIns(any()),
+      ).thenAnswer((_) async => const {});
+      when(
         () => mockRepository.getCheckInsForRelationship(any()),
       ).thenAnswer((_) async => const []);
       when(

@@ -22,13 +22,17 @@ class CheckInsCardSliver extends StatelessWidget {
   const CheckInsCardSliver({
     required this.checkIns,
     required this.onOpen,
+    this.entries = const {},
     super.key,
   });
 
   /// Newest first, as the repository hands them over.
   final List<CheckInEntry> checkIns;
 
-  /// Opens one check-in for editing.
+  /// Each check-in's comments, recordings and photos, oldest first.
+  final Map<String, List<JournalEntity>> entries;
+
+  /// Opens one check-in.
   final ValueChanged<CheckInEntry> onOpen;
 
   @override
@@ -80,6 +84,7 @@ class CheckInsCardSliver extends StatelessWidget {
                   return CheckInRow(
                     key: ValueKey('check-in-row-${checkIn.meta.id}'),
                     checkIn: checkIn,
+                    entries: entries[checkIn.meta.id] ?? const [],
                     onTap: () => onOpen(checkIn),
                   );
                 },
@@ -96,16 +101,25 @@ class CheckInsCardSliver extends StatelessWidget {
 /// the narrative, and the topics as tag pills. The text keeps the row's
 /// width: the glyph column is the only thing beside it.
 class CheckInRow extends StatelessWidget {
-  const CheckInRow({required this.checkIn, required this.onTap, super.key});
+  const CheckInRow({
+    required this.checkIn,
+    required this.onTap,
+    this.entries = const [],
+    super.key,
+  });
 
   final CheckInEntry checkIn;
+
+  /// What the check-in holds, oldest first.
+  final List<JournalEntity> entries;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final data = checkIn.data;
-    final narrative = checkIn.entryText?.plainText.trim();
+    final narrative = checkInSummaryOf(context, checkIn, entries);
+    final holds = checkInHoldsLabelOf(context, entries);
     final sentiment = data.sentiment;
     final duration = relationshipDurationLabelOf(
       context,
@@ -171,14 +185,29 @@ class CheckInRow extends StatelessWidget {
                           ),
                       ],
                     ),
-                    if (narrative != null && narrative.isNotEmpty) ...[
+                    if (narrative != null) ...[
                       SizedBox(height: tokens.spacing.step2),
                       Text(
-                        narrative,
+                        narrative.text,
+                        key: const ValueKey('check-in-row-summary'),
+                        maxLines: 4,
+                        overflow: TextOverflow.ellipsis,
                         style: tokens.typography.styles.body.bodyMedium
                             .copyWith(
-                              color: tokens.colors.text.highEmphasis,
+                              color: narrative.pending
+                                  ? tokens.colors.text.mediumEmphasis
+                                  : tokens.colors.text.highEmphasis,
                             ),
+                      ),
+                    ],
+                    if (holds != null) ...[
+                      SizedBox(height: tokens.spacing.step2),
+                      Text(
+                        holds,
+                        key: const ValueKey('check-in-row-holds'),
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: tokens.colors.text.lowEmphasis,
+                        ),
                       ),
                     ],
                     if (data.topics.isNotEmpty) ...[
@@ -210,4 +239,41 @@ class CheckInRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The words a check-in row leads with: the text it was saved with, else its
+/// first comment or transcript. A recording whose words have not arrived
+/// yet says so (`pending`), so a fresh dictation never reads as an empty
+/// check-in. Null when the check-in holds no words at all (only photos).
+({String text, bool pending})? checkInSummaryOf(
+  BuildContext context,
+  CheckInEntry checkIn,
+  List<JournalEntity> entries,
+) {
+  final saved = checkIn.entryText?.plainText.trim() ?? '';
+  if (saved.isNotEmpty) return (text: saved, pending: false);
+  for (final entry in entries) {
+    if (entry is JournalImage) continue;
+    final words = entry.entryText?.plainText.trim() ?? '';
+    if (words.isNotEmpty) return (text: words, pending: false);
+    if (entry is JournalAudio) {
+      return (text: context.messages.checkInTranscribingLabel, pending: true);
+    }
+  }
+  return null;
+}
+
+/// What a check-in holds, as one quiet line — `2 recordings · 1 photo` — or
+/// null when it holds nothing but the text it leads with.
+String? checkInHoldsLabelOf(BuildContext context, List<JournalEntity> entries) {
+  final messages = context.messages;
+  final recordings = entries.whereType<JournalAudio>().length;
+  final photos = entries.whereType<JournalImage>().length;
+  final comments = entries.whereType<JournalEntry>().length;
+  final parts = [
+    if (recordings > 0) messages.relationshipCheckInRecordingCount(recordings),
+    if (photos > 0) messages.relationshipCheckInPhotoCount(photos),
+    if (comments > 0) messages.relationshipCheckInCommentCount(comments),
+  ];
+  return parts.isEmpty ? null : parts.join(' · ');
 }

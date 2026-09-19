@@ -110,7 +110,9 @@ independent tasks linked to them.
   underlying capabilities.
 
 A check-in holds its comments, recordings and photos as entries of its own;
-the text older check-ins were saved with reads as their first entry. Adding
+the text older check-ins were saved with reads as their first entry. Tapping
+a check-in opens it as a small timeline, where comments, dictations and
+photos are added; its row in the log says what it holds. Adding
 to a check-in, or a recording's transcript arriving later, brings the
 briefing up to date, and everything a check-in holds is part of what the
 agent reads.

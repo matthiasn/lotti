@@ -1318,7 +1318,8 @@
       "routes": [
         "/people",
         "/people/:relationshipId",
-        "/people/:relationshipId/chat"
+        "/people/:relationshipId/chat",
+        "/people/:relationshipId/check-ins/:checkInId"
       ],
       "page": "organize-and-reflect/people",
       "status": "planned"

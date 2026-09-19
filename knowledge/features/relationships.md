@@ -250,6 +250,41 @@ deleted — another check-in removed earlier — no longer keeps it. The person 
 dictation is recorded against the person before its check-in exists, so its
 recording carries a link from the person as well.
 
+## Opening a check-in
+
+A check-in row opens the check-in itself, not its edit sheet.
+[`CheckInDetailView`](../../lib/features/relationships/ui/widgets/check_in_detail_view.dart)
+shows the header (when, how, how long, sentiment, topics, *Next time*), the
+text it was saved with as *Noted when it was logged*, then its entries
+through the journal's own `LinkedEntriesWidget` — the same cards, filter
+pills and sort a task's timeline uses. The bar at the bottom adds to it: a
+typed comment (`addCommentToCheckIn`), a dictation recorded with the
+check-in as its `linkedId`, or photos through `importImagesForPlatform`.
+Each addition touches the check-in, so the briefing catches up — photos only
+when the picker actually added one, since a cancelled picker changed no
+evidence. On phones the route hides the bottom navigation
+(`peopleRouteHidesBottomNav`), as the chat does, so the bar is not covered. *Edit* in
+the header opens the composer for the check-in's own fields. The row itself
+now says what the check-in holds (`checkInHoldsLabelOf`: *1 recording · 1
+comment*), fed by `RelationshipDetail.checkInEntries`, the display-filtered
+`getEntriesForCheckIns`.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Person: /people/<id>
+    Person --> DetailPage: /people/<id>/check-ins/<checkInId> on a phone — CheckInDetailPage stacks
+    Person --> DetailPane: the same path on desktop — the pane's third face
+    DetailPage --> Person: back beams to the person
+    DetailPane --> Person: back beams to the person
+```
+
+`RelationshipsLocation` writes `NavService.desktopRelationshipCheckInId`
+from the `/check-ins/<id>` segment, exactly as it writes the chat flag, so
+the pane shows the person, the chat or one check-in and never disagrees with
+the address bar. A check-in deleted while open says so (*This check-in no
+longer exists*) instead of rendering empty, and a detail that fails to load
+says *Error* rather than spinning.
+
 # A person's two images
 
 `RelationshipData` carries an **avatar** (`avatarImageId` + `avatarCrop`) and a

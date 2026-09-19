@@ -68,6 +68,9 @@ void main() {
     await setUpTestGetIt();
     repository = MockRelationshipRepository();
     when(
+      () => repository.getEntriesForCheckIns(any()),
+    ).thenAnswer((_) async => const {});
+    when(
       () => repository.getCheckInsForRelationship(any()),
     ).thenAnswer((_) async => const []);
     when(() => repository.getLinkedTasks(any())).thenAnswer((_) async => []);

@@ -257,8 +257,10 @@ class RelationshipDetailsPage extends ConsumerWidget {
                 padding: insets,
                 sliver: CheckInsCardSliver(
                   checkIns: checkIns,
-                  onOpen: (checkIn) =>
-                      showCheckInEditSheet(context: context, checkIn: checkIn),
+                  entries: detail.checkInEntries,
+                  onOpen: (checkIn) => beamToNamed(
+                    '/people/$relationshipId/check-ins/${checkIn.meta.id}',
+                  ),
                 ),
               ),
               SliverPadding(

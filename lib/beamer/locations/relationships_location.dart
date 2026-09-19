@@ -1,4 +1,5 @@
 import 'package:beamer/beamer.dart';
+import 'package:lotti/features/relationships/ui/pages/check_in_detail_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_chat_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationships_page.dart';
@@ -16,7 +17,8 @@ import 'package:material_ui/material_ui.dart';
 /// chat is a second face of that same pane rather than a stacked route
 /// (design 2026-09-06 §6), so `/chat` sets
 /// `NavService.desktopRelationshipChatOpen` there and still pushes a page
-/// only on phones.
+/// only on phones. A check-in (`/check-ins/<id>`) is the pane's third face,
+/// through `NavService.desktopRelationshipCheckInId`.
 class RelationshipsLocation extends BeamLocation<BeamState> {
   RelationshipsLocation(RouteInformation super.routeInformation);
 
@@ -25,6 +27,7 @@ class RelationshipsLocation extends BeamLocation<BeamState> {
     '/people',
     '/people/:relationshipId',
     '/people/:relationshipId/chat',
+    '/people/:relationshipId/check-ins/:checkInId',
   ];
 
   @override
@@ -37,9 +40,13 @@ class RelationshipsLocation extends BeamLocation<BeamState> {
         relationshipId != null &&
         state.uri.pathSegments.length == 3 &&
         state.uri.pathSegments[2] == 'chat';
+    final checkInId = relationshipId == null
+        ? null
+        : state.pathParameters['checkInId'];
     if (isDesktop) {
       navService.desktopSelectedRelationshipId.value = relationshipId;
       navService.desktopRelationshipChatOpen.value = isChat;
+      navService.desktopRelationshipCheckInId.value = checkInId;
     }
     return [
       BeamPage(
@@ -59,6 +66,14 @@ class RelationshipsLocation extends BeamLocation<BeamState> {
         BeamPage(
           key: ValueKey('people-chat-$relationshipId'),
           child: RelationshipChatPage(relationshipId: relationshipId),
+        ),
+      if (!isDesktop && checkInId != null)
+        BeamPage(
+          key: ValueKey('people-check-in-$checkInId'),
+          child: CheckInDetailPage(
+            relationshipId: relationshipId!,
+            checkInId: checkInId,
+          ),
         ),
     ];
   }

@@ -1,6 +1,7 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/relationships_location.dart';
+import 'package:lotti/features/relationships/ui/pages/check_in_detail_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_chat_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationships_page.dart';
@@ -17,11 +18,13 @@ void main() {
     late MockNavService navService;
     late ValueNotifier<String?> selected;
     late ValueNotifier<bool> chatOpen;
+    late ValueNotifier<String?> checkInOpen;
 
     setUp(() {
       navService = MockNavService();
       selected = ValueNotifier<String?>(null);
       chatOpen = ValueNotifier<bool>(false);
+      checkInOpen = ValueNotifier<String?>(null);
       when(() => navService.isDesktopMode).thenReturn(false);
       when(
         () => navService.desktopSelectedRelationshipId,
@@ -29,12 +32,16 @@ void main() {
       when(
         () => navService.desktopRelationshipChatOpen,
       ).thenReturn(chatOpen);
+      when(
+        () => navService.desktopRelationshipCheckInId,
+      ).thenReturn(checkInOpen);
       getIt.registerSingleton<NavService>(navService);
     });
 
     tearDown(() async {
       selected.dispose();
       chatOpen.dispose();
+      checkInOpen.dispose();
       await getIt.unregister<NavService>();
     });
 
@@ -70,6 +77,7 @@ void main() {
         '/people',
         '/people/:relationshipId',
         '/people/:relationshipId/chat',
+        '/people/:relationshipId/check-ins/:checkInId',
       ]);
     });
 
@@ -110,6 +118,19 @@ void main() {
       expect(chat, isA<RelationshipChatPage>());
       expect((chat as RelationshipChatPage).relationshipId, 'rel-1');
       expect(pages[2].key, const ValueKey('people-chat-rel-1'));
+    });
+
+    testWidgets('stacks a check-in above its person for '
+        '/people/<id>/check-ins/<checkInId>', (tester) async {
+      final context = await localizedContext(tester);
+
+      final pages = pagesFor(context, '/people/rel-1/check-ins/c-1');
+
+      expect(pages, hasLength(3));
+      expect(pages[1].child, isA<RelationshipDetailsPage>());
+      final detail = pages[2].child as CheckInDetailPage;
+      expect((detail.relationshipId, detail.checkInId), ('rel-1', 'c-1'));
+      expect(pages[2].key, const ValueKey('people-check-in-c-1'));
     });
 
     testWidgets('a plain detail path never mounts the chat page', (
@@ -161,6 +182,22 @@ void main() {
         expect(pages.single.child, isA<RelationshipsPage>());
         expect(selected.value, 'rel-1');
         expect(chatOpen.value, isTrue);
+      });
+
+      testWidgets('a check-in is the detail pane too, and leaving it closes '
+          'it', (tester) async {
+        final context = await localizedContext(tester);
+
+        final pages = pagesFor(context, '/people/rel-1/check-ins/c-1');
+
+        expect(pages, hasLength(1));
+        expect(selected.value, 'rel-1');
+        expect(checkInOpen.value, 'c-1');
+        expect(chatOpen.value, isFalse);
+
+        pagesFor(context, '/people/rel-1');
+
+        expect(checkInOpen.value, isNull);
       });
 
       testWidgets('leaving the chat route closes the pane again', (

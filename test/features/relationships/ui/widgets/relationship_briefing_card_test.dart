@@ -1433,6 +1433,9 @@ void main() {
         () => repository.getRelationshipById(relationshipId),
       ).thenAnswer((_) async => relationship(channels: const [mobile]));
       when(
+        () => repository.getEntriesForCheckIns(any()),
+      ).thenAnswer((_) async => const {});
+      when(
         () => repository.getCheckInsForRelationship(relationshipId),
       ).thenAnswer((_) async => lapsedCheckIns);
       when(
