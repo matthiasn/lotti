@@ -44,6 +44,12 @@ class AgentPendingWakesPage extends ConsumerWidget {
       (vms) => _AdaptedRows.from(vms, messages),
     );
     final rowsAsync = adapted.whenData((a) => a.rows);
+    // Filters, groups and the axis matcher recover the typed wake kind
+    // through the hints; only the data branch has any.
+    final hints = adapted.maybeWhen(
+      data: (a) => a.hints,
+      orElse: () => const <String, _RowHint>{},
+    );
 
     final ongoing = ongoingAsync.value ?? const <OngoingWakeRecord>[];
 
@@ -54,13 +60,13 @@ class AgentPendingWakesPage extends ConsumerWidget {
         Expanded(
           child: AgentListingShell(
             rowsAsync: rowsAsync,
-            filterAxes: _buildFilterAxes(adapted, messages),
-            groupAxes: _buildGroupAxes(messages, adapted),
+            filterAxes: _buildFilterAxes(hints, messages),
+            groupAxes: _buildGroupAxes(messages, hints),
             sortAxes: _buildSortAxes(messages),
             searchPlaceholder: messages.agentPendingWakesSearchPlaceholder,
             emptyMessage: messages.agentPendingWakesEmptyFiltered,
             axisMatcher: (axisId, selected, row) =>
-                _matchRow(adapted, row, axisId, selected),
+                _matchRow(hints, row, axisId, selected),
           ),
         ),
       ],
@@ -414,13 +420,9 @@ class _PendingWakeTrailingState extends ConsumerState<_PendingWakeTrailing> {
 // ── Axes ────────────────────────────────────────────────────────────────────
 
 List<AgentListFilterAxis> _buildFilterAxes(
-  AsyncValue<_AdaptedRows> adapted,
+  Map<String, _RowHint> hints,
   AppLocalizations messages,
 ) {
-  final hints = adapted.maybeWhen(
-    data: (a) => a.hints,
-    orElse: () => const <String, _RowHint>{},
-  );
   final counts = <PendingWakeType, int>{
     for (final t in PendingWakeType.values) t: 0,
   };
@@ -448,12 +450,8 @@ List<AgentListFilterAxis> _buildFilterAxes(
 
 List<AgentListGroupAxis> _buildGroupAxes(
   AppLocalizations messages,
-  AsyncValue<_AdaptedRows> adapted,
+  Map<String, _RowHint> hints,
 ) {
-  Map<String, _RowHint> hintsOf() => adapted.maybeWhen(
-    data: (a) => a.hints,
-    orElse: () => const <String, _RowHint>{},
-  );
   return [
     AgentListGroupAxis(
       id: _groupNone,
@@ -473,7 +471,7 @@ List<AgentListGroupAxis> _buildGroupAxes(
     AgentListGroupAxis(
       id: _groupByType,
       label: messages.agentPendingWakesGroupByType,
-      buildGroups: (rows) => _groupByTypeFn(rows, hintsOf(), messages),
+      buildGroups: (rows) => _groupByTypeFn(rows, hints, messages),
     ),
   ];
 }
@@ -533,15 +531,11 @@ List<AgentListGroup> _groupByTypeFn(
 // ── Axis matcher ────────────────────────────────────────────────────────────
 
 bool _matchRow(
-  AsyncValue<_AdaptedRows> adapted,
+  Map<String, _RowHint> hints,
   AgentListRowData row,
   String axisId,
   Set<String> selected,
 ) {
-  final hints = adapted.maybeWhen(
-    data: (a) => a.hints,
-    orElse: () => const <String, _RowHint>{},
-  );
   final hint = hints[row.id];
   if (hint == null) return true;
   return switch (axisId) {

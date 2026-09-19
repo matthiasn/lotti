@@ -39,16 +39,22 @@ class AgentInstancesPage extends ConsumerWidget {
       data: (a) => _buildFilterAxes(a, messages),
       orElse: () => const <AgentListFilterAxis>[],
     );
+    // Group builders and the axis matcher recover the typed enums through
+    // the hints; only the data branch has any.
+    final hints = adapted.maybeWhen(
+      data: (a) => a.hints,
+      orElse: () => const <String, _RowHint>{},
+    );
 
     return AgentListingShell(
       rowsAsync: adapted.whenData((a) => a.rows),
       filterAxes: filterAxes,
-      groupAxes: _buildGroupAxes(messages, adapted),
+      groupAxes: _buildGroupAxes(messages, hints),
       sortAxes: _buildSortAxes(messages),
       searchPlaceholder: messages.agentInstancesSearchPlaceholder,
       emptyMessage: messages.agentInstancesEmptyFiltered,
       axisMatcher: (axisId, selected, row) =>
-          _matchRow(adapted, row, axisId, selected),
+          _matchRow(hints, row, axisId, selected),
     );
   }
 }
@@ -63,11 +69,13 @@ class _AdaptedRows {
     final rows = <AgentListRowData>[];
     final hints = <String, _RowHint>{};
     for (final vm in vms) {
-      rows.add(_vmToRow(vm, messages));
+      final soul = _soulLeading(vm);
+      rows.add(_vmToRow(vm, soul, messages));
       hints[vm.id] = _RowHint(
         type: vm.type,
         status: vm.status,
         soulId: vm.soulGroupId(),
+        soul: soul,
       );
     }
     return _AdaptedRows(rows: rows, hints: hints);
@@ -82,13 +90,26 @@ class _RowHint {
     required this.type,
     required this.status,
     required this.soulId,
+    required this.soul,
   });
   final InstanceType type;
   final AgentLifecycle status;
   final String soulId;
+
+  /// The soul avatar the row leads with; soul filters and groups reuse it.
+  final AgentListAvatarLeading soul;
 }
 
-AgentListRowData _vmToRow(InstanceVm vm, AppLocalizations messages) {
+AgentListAvatarLeading _soulLeading(InstanceVm vm) => AgentListAvatarLeading(
+  label: vm.soulName ?? '?',
+  hue: hueForSeed(vm.soulId ?? vm.templateId ?? vm.id),
+);
+
+AgentListRowData _vmToRow(
+  InstanceVm vm,
+  AgentListAvatarLeading soul,
+  AppLocalizations messages,
+) {
   final title = vm.type == InstanceType.evolution && vm.sessionNumber != null
       ? messages.agentEvolutionSessionTitle(vm.sessionNumber!)
       : vm.displayName;
@@ -97,16 +118,11 @@ AgentListRowData _vmToRow(InstanceVm vm, AppLocalizations messages) {
       : (vm.templateName != null && vm.templateName != vm.displayName
             ? vm.templateName
             : null);
-  final soulSeed = vm.soulId ?? vm.templateId ?? vm.id;
-  final leading = AgentListAvatarLeading(
-    label: vm.soulName ?? '?',
-    hue: hueForSeed(soulSeed),
-  );
   return AgentListRowData(
     id: vm.id,
     title: title,
     subtitle: subtitle,
-    leading: leading,
+    leading: soul,
     pills: [
       AgentListPill(label: instanceTypeLabel(messages, vm.type)),
       AgentListPill(
@@ -157,13 +173,8 @@ List<AgentListFilterAxis> _buildFilterAxes(
     statusCounts[hint.status] = (statusCounts[hint.status] ?? 0) + 1;
     soulCounts[hint.soulId] = (soulCounts[hint.soulId] ?? 0) + 1;
     if (!soulLabel.containsKey(hint.soulId)) {
-      final leading = row.leading;
-      soulLabel[hint.soulId] = leading is AgentListAvatarLeading
-          ? leading.label
-          : messages.agentInstancesUnassignedSoul;
-      soulHue[hint.soulId] = leading is AgentListAvatarLeading
-          ? leading.hue
-          : 0;
+      soulLabel[hint.soulId] = hint.soul.label;
+      soulHue[hint.soulId] = hint.soul.hue;
     }
   }
 
@@ -225,30 +236,23 @@ List<AgentListFilterAxis> _buildFilterAxes(
 
 List<AgentListGroupAxis> _buildGroupAxes(
   AppLocalizations messages,
-  AsyncValue<_AdaptedRows> adapted,
+  Map<String, _RowHint> hints,
 ) {
-  // Capture the hints map — group builders need it, but only the data
-  // branch has hints. Inside the closures we look up hints by row id.
-  Map<String, _RowHint> hintsOf() => adapted.maybeWhen(
-    data: (a) => a.hints,
-    orElse: () => const <String, _RowHint>{},
-  );
-
   return [
     AgentListGroupAxis(
       id: _groupBySoul,
       label: messages.agentInstancesGroupBySoul,
-      buildGroups: (rows) => _groupBySoulFn(rows, hintsOf(), messages),
+      buildGroups: (rows) => _groupBySoulFn(rows, hints, messages),
     ),
     AgentListGroupAxis(
       id: _groupByType,
       label: messages.agentInstancesGroupByType,
-      buildGroups: (rows) => _groupByTypeFn(rows, hintsOf(), messages),
+      buildGroups: (rows) => _groupByTypeFn(rows, hints, messages),
     ),
     AgentListGroupAxis(
       id: _groupByStatus,
       label: messages.agentInstancesGroupByStatus,
-      buildGroups: (rows) => _groupByStatusFn(rows, hintsOf(), messages),
+      buildGroups: (rows) => _groupByStatusFn(rows, hints, messages),
     ),
   ];
 }
@@ -294,11 +298,8 @@ List<AgentListGroup> _groupBySoulFn(
     if (!buckets.containsKey(id)) {
       buckets[id] = [];
       order.add(id);
-      final leading = row.leading;
-      labelById[id] = leading is AgentListAvatarLeading
-          ? leading.label
-          : messages.agentInstancesUnassignedSoul;
-      leadingById[id] = leading is AgentListAvatarLeading ? leading : null;
+      labelById[id] = hint?.soul.label ?? messages.agentInstancesUnassignedSoul;
+      leadingById[id] = hint?.soul;
     }
     buckets[id]!.add(row);
   }
@@ -373,15 +374,11 @@ int? _activeCountFor(
 // ── Axis matcher ────────────────────────────────────────────────────────────
 
 bool _matchRow(
-  AsyncValue<_AdaptedRows> adapted,
+  Map<String, _RowHint> hints,
   AgentListRowData row,
   String axisId,
   Set<String> selected,
 ) {
-  final hints = adapted.maybeWhen(
-    data: (a) => a.hints,
-    orElse: () => const <String, _RowHint>{},
-  );
   final hint = hints[row.id];
   if (hint == null) return true;
   return switch (axisId) {
