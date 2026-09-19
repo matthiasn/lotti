@@ -520,6 +520,46 @@ void main() {
     );
 
     testWidgets(
+      'a failed save re-enables Save and surfaces the error to the zone',
+      (tester) async {
+        when(
+          () => mockRepository.saveConfig(any()),
+        ).thenAnswer((_) async => throw StateError('model store offline'));
+
+        await tester.pumpWidget(buildTestWidget(configId: 'test-model-id'));
+        await pumpAndIdle(tester);
+
+        final nameField = find.widgetWithText(TextFormField, 'Test Model');
+        await tester.enterText(nameField, 'Emperor Tracker');
+        await tester.pump();
+
+        // The button handler does not await the save, so the rethrown
+        // failure lands in the zone the tap ran in; catch it there.
+        final zoneErrors = <Object>[];
+        await runZonedGuarded(
+          () => tester.tap(find.text('Save')),
+          (error, _) => zoneErrors.add(error),
+        );
+        await pumpAndIdle(tester);
+
+        expect(zoneErrors, [isA<StateError>()]);
+        final saveButton = tester.widget<DesignSystemButton>(
+          find.ancestor(
+            of: find.text('Save'),
+            matching: find.byType(DesignSystemButton),
+          ),
+        );
+        expect(saveButton.onPressed, isNotNull);
+        // The page stays open with the edit intact so the user can retry.
+        expect(find.byType(InferenceModelEditPage), findsOneWidget);
+        expect(
+          find.widgetWithText(TextFormField, 'Emperor Tracker'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
       'Primary+S invokes the shared save command when the form is valid',
       (tester) async {
         await tester.pumpWidget(buildTestWidget(configId: 'test-model-id'));
