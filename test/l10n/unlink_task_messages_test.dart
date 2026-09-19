@@ -73,6 +73,29 @@ void main() {
       );
     });
 
+    test('each catalog says the failure in its own words', () {
+      expect(
+        AppLocalizationsDa().unlinkTaskFailedMessage,
+        'Opgaven kunne ikke kobles fra. Prøv igen.',
+      );
+      expect(
+        AppLocalizationsIt().unlinkTaskFailedMessage,
+        'Non è stato possibile scollegare l’attività. Riprova.',
+      );
+      expect(
+        AppLocalizationsNl().unlinkTaskFailedMessage,
+        'Ontkoppelen van de taak is mislukt. Probeer het opnieuw.',
+      );
+      expect(
+        AppLocalizationsPt().unlinkTaskFailedMessage,
+        'Não foi possível desvincular a tarefa. Tente novamente.',
+      );
+      expect(
+        AppLocalizationsSv().unlinkTaskFailedMessage,
+        'Det gick inte att koppla bort uppgiften. Försök igen.',
+      );
+    });
+
     test('the failure message keeps the informal register', () {
       // The app addresses users informally everywhere but Romanian, and this
       // Czech string was the catalog's own outlier: "Zkuste" against 35 uses
