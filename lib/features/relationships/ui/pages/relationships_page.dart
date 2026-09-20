@@ -458,7 +458,7 @@ class _IconButton extends StatelessWidget {
           padding: EdgeInsets.all(tokens.spacing.step2),
           child: Icon(
             icon,
-            size: 22,
+            size: IconSizes.m,
             color: tokens.colors.text.mediumEmphasis,
           ),
         ),

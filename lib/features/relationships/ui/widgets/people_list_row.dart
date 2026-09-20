@@ -77,11 +77,18 @@ class PeopleListRow extends StatelessWidget {
                         ),
                         if (data.important) ...[
                           SizedBox(width: tokens.spacing.step2),
-                          Icon(
-                            LottiIcons.aiSpark,
-                            key: const ValueKey('people-row-important'),
-                            size: tokens.spacing.step3,
-                            color: tokens.colors.interactive.enabled,
+                          // The only thing that marks an enrolled person on
+                          // this row, so it carries the word too: colour
+                          // alone says nothing to a screen reader, and the
+                          // import page already labels the same concept.
+                          Semantics(
+                            label: context.messages.relationshipImportantLabel,
+                            child: Icon(
+                              LottiIcons.aiSpark,
+                              key: const ValueKey('people-row-important'),
+                              size: IconSizes.xs,
+                              color: tokens.colors.interactive.enabled,
+                            ),
                           ),
                         ],
                       ],

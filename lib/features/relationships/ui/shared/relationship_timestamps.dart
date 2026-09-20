@@ -177,21 +177,6 @@ int? cadenceOverdueDays({
   return _wholeDaysBetween(due, anchor);
 }
 
-/// The number of whole days since the last check-in, or since tracking
-/// started when no check-in exists yet. Used for the "Quiet for N days"
-/// quiet-streak caption (design plan §0.8).
-int quietStreakDays({
-  required DateTime? lastCheckInAt,
-  required DateTime? trackingStartedAt,
-  DateTime? now,
-}) {
-  final anchor = now ?? clock.now();
-  final base = lastCheckInAt ?? trackingStartedAt;
-  if (base == null) return 0;
-  final days = _wholeDaysBetween(base, anchor);
-  return days < 0 ? 0 : days;
-}
-
 /// Whole days from [from] to [to], floored (a check-in 6 hours ago is 0
 /// days ago, not "today = 1"). Never negative when [from] is before [to].
 int _wholeDaysBetween(DateTime from, DateTime to) {

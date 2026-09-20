@@ -1071,7 +1071,7 @@ class _ChannelEditorRow extends StatelessWidget {
                         children: [
                           Icon(
                             contactChannelTypeIcon(type),
-                            size: tokens.spacing.step4,
+                            size: IconSizes.xs,
                             color: tokens.colors.text.mediumEmphasis,
                           ),
                           SizedBox(width: tokens.spacing.step3),
