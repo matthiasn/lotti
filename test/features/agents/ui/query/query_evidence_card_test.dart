@@ -330,7 +330,8 @@ void main() {
         await tester.tap(find.text('Show exact text'));
         await tester.pump();
         expect(
-          find.text('Saved version: Jul 18, 2026 09:30:00'),
+          // Minutes, not seconds, and the device's date order.
+          find.text('Saved version: 7/18/2026 9:30 AM'),
           findsOneWidget,
         );
         expect(

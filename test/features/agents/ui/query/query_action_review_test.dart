@@ -492,7 +492,8 @@ void main() {
     );
     await pump(tester, response: response, access: access);
     expect(find.textContaining('Feeder supplies'), findsOneWidget);
-    expect(find.textContaining('Sep 12, 2026'), findsOneWidget);
+    // Device-formatted now: numeric order, minute precision.
+    expect(find.textContaining('9/12/2026'), findsOneWidget);
     expect(
       find.textContaining('Corrected maintenance description'),
       findsOneWidget,
