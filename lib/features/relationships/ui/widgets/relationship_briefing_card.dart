@@ -194,6 +194,10 @@ class _RelationshipBriefingCardState
   /// label for hours. One wake per visible change, not a per-second tick.
   Timer? _ageTick;
 
+  /// The timestamp [_ageTick] was armed against, so a rebuild that changes
+  /// nothing about the age leaves the running timer alone.
+  DateTime? _ageTickFor;
+
   /// The face last rendered, so a change of face can be told from a rebuild
   /// of the same one.
   RelationshipAgentCardState? _shownState;
@@ -218,11 +222,32 @@ class _RelationshipBriefingCardState
     super.dispose();
   }
 
+  /// Arms one timer for the instant the "as of" line would read differently.
+  ///
+  /// Armed from `build`, which this card runs on any of six watched providers
+  /// — an agent tick, a token-usage update, an identity arriving. Re-arming
+  /// on each of those is harmless only because [untilNextAgeBucket] measures
+  /// to the next *boundary* from where the age already sits, so a re-arm
+  /// lands on the same instant rather than pushing a fresh bucket out; a
+  /// helper that returned a whole minute would starve the line on a card that
+  /// keeps rebuilding. Rather than leave that resting on the helper, a tick
+  /// already armed for [writtenAt] is left alone, and re-armed only once it
+  /// has fired or the timestamp it measures from has changed.
   void _armAgeTick(DateTime writtenAt) {
-    _ageTick?.cancel();
+    if (_ageTick != null && _ageTickFor == writtenAt) return;
+    _cancelAgeTick();
+    _ageTickFor = writtenAt;
     _ageTick = Timer(untilNextAgeBucket(clock.now().difference(writtenAt)), () {
+      _ageTick = null;
+      _ageTickFor = null;
       if (mounted) setState(() => _arrivedCurrent = false);
     });
+  }
+
+  void _cancelAgeTick() {
+    _ageTick?.cancel();
+    _ageTick = null;
+    _ageTickFor = null;
   }
 
   @override
@@ -413,7 +438,7 @@ class _RelationshipBriefingCardState
     if (aged != null) {
       _armAgeTick(aged);
     } else {
-      _ageTick?.cancel();
+      _cancelAgeTick();
     }
     final setup = ref.watch(taskAgentResolvedSetupProvider(agentId)).value;
     final provenance = report == null
