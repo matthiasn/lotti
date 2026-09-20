@@ -86,7 +86,11 @@ class PeopleListRow extends StatelessWidget {
                             TextSpan(
                               children: [
                                 TextSpan(text: data.title),
-                                if (data.important)
+                                // `isEnrolled`, not the raw flag: a dormant
+                                // person keeps `important` while the
+                                // runtime clears their reminders, and this
+                                // marker is announced as "Reminders on".
+                                if (isEnrolled(relationship))
                                   WidgetSpan(
                                     alignment: PlaceholderAlignment.middle,
                                     // The only thing that marks an enrolled
