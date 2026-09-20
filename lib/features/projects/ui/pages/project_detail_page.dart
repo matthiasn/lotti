@@ -1,6 +1,5 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
@@ -29,6 +28,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/utils/device_datetime.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -439,9 +439,7 @@ class _ProjectEditorContent extends StatelessWidget {
     );
     final targetDateLabel = targetDate == null
         ? messages.projectTargetDateLabel
-        : DateFormat.yMMMd(
-            Localizations.localeOf(context).toString(),
-          ).format(targetDate);
+        : deviceDateLabel(context, targetDate);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
