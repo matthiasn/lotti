@@ -37,6 +37,7 @@ import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_p
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/features/settings/ui/pages/recording_style_settings_page.dart';
+import 'package:lotti/features/settings/ui/pages/sections_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
 import 'package:lotti/features/settings_v2/domain/settings_tree_index.dart';
@@ -118,6 +119,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings/agents/souls/:soulId/review',
     '/settings/agents/instances/:agentId',
     '/settings/daily-os',
+    '/settings/sections',
     '/settings/flags',
     '/settings/recording-style',
     '/settings/theming',
@@ -627,6 +629,15 @@ class SettingsLocation extends BeamLocation<BeamState> {
         const BeamPage(
           key: ValueKey('settings-daily-os'),
           child: DailyOsSettingsPage(),
+        ),
+
+      // Sections — top-level leaf, opens directly. Exact-path match rather
+      // than `pathContains`, which would swallow anything else carrying the
+      // word.
+      if (path == '/settings/sections')
+        const BeamPage(
+          key: ValueKey('settings-sections'),
+          child: SectionsPage(),
         ),
 
       // Flags

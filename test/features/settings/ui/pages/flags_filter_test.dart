@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/settings/domain/config_flag_placement.dart';
 import 'package:lotti/features/settings/ui/pages/flags_page.dart';
+import 'package:lotti/features/settings/ui/widgets/config_flag_labels.dart';
 
 /// Builds a deterministic title/subtitle map from a list of
 /// `(flagName, title, subtitle)` triples and returns the matching
@@ -174,10 +176,10 @@ void main() {
     });
   });
 
-  group('FlagsBody.defaultDisplayedItems — registered flag set', () {
+  group('configFlagsOnFlagsPage — registered flag set', () {
     test('includes the AI summary TTS flag', () {
       expect(
-        FlagsBody.defaultDisplayedItems,
+        configFlagsOnFlagsPage,
         contains('enable_ai_summary_tts'),
       );
     });
@@ -186,14 +188,14 @@ void main() {
       // Locks the wiring contract — the canonical render order must
       // carry `enable_whats_new` so the in-page list and the search
       // filter both see it.
-      expect(FlagsBody.defaultDisplayedItems, contains('enable_whats_new'));
+      expect(configFlagsOnFlagsPage, contains('enable_whats_new'));
     });
 
     test('does not carry the retired onboarding FTUE flag', () {
       // The FTUE welcome is unconditionally on and no longer has a flag; a
       // row here would render a toggle backed by nothing.
       expect(
-        FlagsBody.defaultDisplayedItems,
+        configFlagsOnFlagsPage,
         isNot(contains('enable_onboarding_ftue')),
       );
     });
@@ -203,10 +205,10 @@ void main() {
       // flag twice (the lookup map keeps the last entry but the
       // ordered list still iterates twice).
       expect(
-        FlagsBody.defaultDisplayedItems.toSet().length,
-        FlagsBody.defaultDisplayedItems.length,
+        configFlagsOnFlagsPage.toSet().length,
+        configFlagsOnFlagsPage.length,
       );
-      for (final id in FlagsBody.defaultDisplayedItems) {
+      for (final id in configFlagsOnFlagsPage) {
         expect(id, isNotEmpty);
       }
     });

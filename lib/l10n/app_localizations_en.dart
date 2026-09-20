@@ -13003,6 +13003,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsFlagsEmptySearch => 'No flags match your search';
 
   @override
+  String get settingsFlagsEmptySearchSectionsHint =>
+      'Looking for Habits, Projects or Daily OS? They live under Settings → Sections.';
+
+  @override
+  String get settingsFlagsGroupAdvanced => 'ADVANCED & EXPERIMENTAL';
+
+  @override
+  String get settingsFlagsGroupPreferences => 'PREFERENCES';
+
+  @override
   String get settingsFlagsSearchHint => 'Search flags';
 
   @override
@@ -13652,6 +13662,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsSaveFailedToast => 'Couldn\'t save your changes';
+
+  @override
+  String get settingsSectionsIntro =>
+      'Each section you turn on gets its own place in the navigation. Turning one off just hides it — nothing you have recorded is deleted.';
+
+  @override
+  String get settingsSectionsSubtitle => 'Choose which parts of Lotti you use';
+
+  @override
+  String get settingsSectionsTitle => 'Sections';
 
   @override
   String get settingsSpeechSubtitle => 'Voice and reading aloud';

@@ -1,16 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
-import 'package:lotti/features/design_system/components/lists/hover_divider_index.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
-import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
+import 'package:lotti/features/settings/domain/config_flag_placement.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
-import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
+import 'package:lotti/features/settings/ui/widgets/config_flag_labels.dart';
+import 'package:lotti/features/settings/ui/widgets/config_flag_toggle_list.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -36,13 +35,6 @@ class FlagsPage extends StatelessWidget {
     );
   }
 }
-
-/// Resolves a [ConfigFlag] into a localized (title, subtitle) pair.
-/// Extracted so the search filter and the rendering path share a
-/// single source of truth — and so the per-flag wiring stays
-/// trivially unit-testable.
-typedef FlagLabelResolver =
-    ({String title, String subtitle}) Function(ConfigFlag flag);
 
 /// Filters [flags] by a search [query] applied to each flag's
 /// resolved title and subtitle.
@@ -84,45 +76,20 @@ bool _flagMatchesQuery(
 /// Content body for the feature-flags settings. Extracted from
 /// [FlagsPage] so it can be rendered inside the V2 detail pane
 /// without the surrounding `SliverBoxAdapterPage` chrome. Hosts the
-/// keyword search bar plus the filtered flag list.
+/// keyword search bar plus the filtered, grouped flag list.
 class FlagsBody extends ConsumerStatefulWidget {
   const FlagsBody({
     super.key,
-    this.displayedItems = defaultDisplayedItems,
+    this.displayedGroups = configFlagGroups,
   });
 
-  /// Canonical render order for the flag list. Adding a flag here
-  /// also requires icon + title + subtitle wiring below; the
-  /// modular flag tests assert each end of that chain.
-  static const List<String> defaultDisplayedItems = [
-    privateFlag,
-    enableNotificationsFlag,
-    recordLocationFlag,
-    enableTooltipFlag,
-    enableAiStreamingFlag,
-    enableAiSummaryTtsFlag,
-    enableQueryChatFlag,
-    enableLoggingFlag,
-    enableMatrixFlag,
-    resendAttachments,
-    enableHabitsPageFlag,
-    enableDashboardsPageFlag,
-    enableUnifiedGoalsFlag,
-    enableDailyOsPageFlag,
-    enableEventsFlag,
-    enableRelationshipsFlag,
-    enableSessionRatingsFlag,
-    enableProjectsFlag,
-    enableEmbeddingsFlag,
-    enableVectorSearchFlag,
-    enableWhatsNewFlag,
-    dailyOsOnboardingEnabledFlag,
-    enableForkHealingFlag,
-  ];
+  /// Where the flag assignment lives: [configFlagGroups], outside the UI
+  /// layer, so a test can ask which page a flag belongs to without importing
+  /// a widget. See `config_flag_placement.dart` for the partition rule.
 
-  /// Flag names to render, in display order.
+  /// Flag names to render, grouped, in display order.
   @visibleForTesting
-  final List<String> displayedItems;
+  final Map<ConfigFlagGroup, List<String>> displayedGroups;
 
   /// Flags that only make sense while the Matrix sync stack exists.
   /// Guest/demo worlds never construct it (see `ProfileCapabilities.guest`),
@@ -147,162 +114,12 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
     super.dispose();
   }
 
-  IconData _iconForFlag(String flagName) {
-    switch (flagName) {
-      case privateFlag:
-        return LottiIcons.lock;
-      case enableNotificationsFlag:
-        return LottiIcons.notificationActive;
-      case recordLocationFlag:
-        return LottiIcons.map;
-      case enableTooltipFlag:
-        return LottiIcons.info;
-      case enableAiStreamingFlag:
-        return LottiIcons.bolt;
-      case enableAiSummaryTtsFlag:
-        return LottiIcons.volume;
-      case enableQueryChatFlag:
-        return LottiIcons.chat;
-      case enableLoggingFlag:
-        return LottiIcons.bug;
-      case enableMatrixFlag:
-        return LottiIcons.sync;
-      case resendAttachments:
-        return LottiIcons.refresh;
-      case enableHabitsPageFlag:
-        return LottiIcons.repeat;
-      case enableDashboardsPageFlag:
-        return LottiIcons.dashboard;
-      case enableUnifiedGoalsFlag:
-        return LottiIcons.focus;
-      case enableDailyOsPageFlag:
-        return LottiIcons.today;
-      case enableEventsFlag:
-        return LottiIcons.calendar;
-      case enableRelationshipsFlag:
-        return LottiIcons.people;
-      case enableSessionRatingsFlag:
-        return LottiIcons.star;
-      case enableProjectsFlag:
-        return LottiIcons.folder;
-      case enableEmbeddingsFlag:
-        return LottiIcons.hub;
-      case enableVectorSearchFlag:
-        return LottiIcons.search;
-      case enableWhatsNewFlag:
-        return LottiIcons.verified;
-      case dailyOsOnboardingEnabledFlag:
-        return LottiIcons.tip;
-      case enableForkHealingFlag:
-        return LottiIcons.merge;
-      default:
-        return LottiIcons.settings;
-    }
-  }
-
-  String _subtitleForFlag(BuildContext context, ConfigFlag flag) {
-    switch (flag.name) {
-      case privateFlag:
-        return context.messages.configFlagPrivateDescription;
-      case enableNotificationsFlag:
-        return context.messages.configFlagEnableNotificationsDescription;
-      case recordLocationFlag:
-        return context.messages.configFlagRecordLocationDescription;
-      case enableTooltipFlag:
-        return context.messages.configFlagEnableTooltipDescription;
-      case enableAiStreamingFlag:
-        return context.messages.configFlagEnableAiStreamingDescription;
-      case enableAiSummaryTtsFlag:
-        return context.messages.configFlagEnableAiSummaryTtsDescription;
-      case enableQueryChatFlag:
-        return context.messages.configFlagEnableQueryChatDescription;
-      case enableLoggingFlag:
-        return context.messages.configFlagEnableLoggingDescription;
-      case enableMatrixFlag:
-        return context.messages.configFlagEnableMatrixDescription;
-      case resendAttachments:
-        return context.messages.configFlagResendAttachmentsDescription;
-      case enableHabitsPageFlag:
-        return context.messages.configFlagEnableHabitsPageDescription;
-      case enableDashboardsPageFlag:
-        return context.messages.configFlagEnableDashboardsPageDescription;
-      case enableUnifiedGoalsFlag:
-        return context.messages.configFlagEnableUnifiedGoalsDescription;
-      case enableDailyOsPageFlag:
-        return context.messages.configFlagEnableDailyOsDescription;
-      case enableEventsFlag:
-        return context.messages.configFlagEnableEventsDescription;
-      case enableRelationshipsFlag:
-        return context.messages.configFlagEnableRelationshipsDescription;
-      case enableSessionRatingsFlag:
-        return context.messages.configFlagEnableSessionRatingsDescription;
-      case enableProjectsFlag:
-        return context.messages.configFlagEnableProjectsDescription;
-      case enableEmbeddingsFlag:
-        return context.messages.configFlagAttemptEmbeddingDescription;
-      case enableVectorSearchFlag:
-        return context.messages.configFlagEnableVectorSearchDescription;
-      case enableWhatsNewFlag:
-        return context.messages.configFlagEnableWhatsNewDescription;
-      case dailyOsOnboardingEnabledFlag:
-        return context.messages.configFlagDailyOsOnboardingEnabledDescription;
-      case enableForkHealingFlag:
-        return context.messages.configFlagEnableForkHealingDescription;
-      default:
-        return flag.description;
-    }
-  }
-
-  String _titleForFlag(BuildContext context, ConfigFlag flag) {
-    switch (flag.name) {
-      case privateFlag:
-        return context.messages.configFlagPrivate;
-      case enableNotificationsFlag:
-        return context.messages.configFlagEnableNotifications;
-      case recordLocationFlag:
-        return context.messages.configFlagRecordLocation;
-      case enableTooltipFlag:
-        return context.messages.configFlagEnableTooltip;
-      case enableAiStreamingFlag:
-        return context.messages.configFlagEnableAiStreaming;
-      case enableAiSummaryTtsFlag:
-        return context.messages.configFlagEnableAiSummaryTts;
-      case enableQueryChatFlag:
-        return context.messages.configFlagEnableQueryChat;
-      case enableLoggingFlag:
-        return context.messages.configFlagEnableLogging;
-      case enableMatrixFlag:
-        return context.messages.configFlagEnableMatrix;
-      case resendAttachments:
-        return context.messages.configFlagResendAttachments;
-      case enableHabitsPageFlag:
-        return context.messages.configFlagEnableHabitsPage;
-      case enableDashboardsPageFlag:
-        return context.messages.configFlagEnableDashboardsPage;
-      case enableUnifiedGoalsFlag:
-        return context.messages.configFlagEnableUnifiedGoals;
-      case enableDailyOsPageFlag:
-        return context.messages.configFlagEnableDailyOs;
-      case enableEventsFlag:
-        return context.messages.configFlagEnableEvents;
-      case enableRelationshipsFlag:
-        return context.messages.configFlagEnableRelationships;
-      case enableSessionRatingsFlag:
-        return context.messages.configFlagEnableSessionRatings;
-      case enableProjectsFlag:
-        return context.messages.configFlagEnableProjects;
-      case enableEmbeddingsFlag:
-        return context.messages.configFlagEnableEmbeddings;
-      case enableVectorSearchFlag:
-        return context.messages.configFlagEnableVectorSearch;
-      case enableWhatsNewFlag:
-        return context.messages.configFlagEnableWhatsNew;
-      case dailyOsOnboardingEnabledFlag:
-        return context.messages.configFlagDailyOsOnboardingEnabled;
-      case enableForkHealingFlag:
-        return context.messages.configFlagEnableForkHealing;
-      default:
-        return flag.name;
+  String _groupLabel(BuildContext context, ConfigFlagGroup group) {
+    switch (group) {
+      case ConfigFlagGroup.preferences:
+        return context.messages.settingsFlagsGroupPreferences;
+      case ConfigFlagGroup.advanced:
+        return context.messages.settingsFlagsGroupAdvanced;
     }
   }
 
@@ -341,29 +158,36 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
                   flag.name: flag,
               };
               final syncAvailable = ref.watch(syncFeatureAvailableProvider);
-              final orderedFlags = widget.displayedItems
-                  .where(
-                    (name) =>
-                        syncAvailable ||
-                        !FlagsBody.syncOnlyFlags.contains(name),
-                  )
-                  .map((name) => flagLookup[name])
-                  .nonNulls
-                  .toList();
-              if (orderedFlags.isEmpty) return const SizedBox.shrink();
+              final orderedGroups = <ConfigFlagGroup, List<ConfigFlag>>{
+                for (final group in ConfigFlagGroup.values)
+                  group: (widget.displayedGroups[group] ?? const <String>[])
+                      .where(
+                        (name) =>
+                            syncAvailable ||
+                            !FlagsBody.syncOnlyFlags.contains(name),
+                      )
+                      .map((name) => flagLookup[name])
+                      .nonNulls
+                      .toList(),
+              };
+              if (orderedGroups.values.every((flags) => flags.isEmpty)) {
+                return const SizedBox.shrink();
+              }
 
               return ValueListenableBuilder<TextEditingValue>(
                 valueListenable: _searchController,
                 builder: (context, value, _) {
-                  final filteredFlags = filterDisplayedFlags(
-                    query: value.text,
-                    flags: orderedFlags,
-                    resolver: (flag) => (
-                      title: _titleForFlag(context, flag),
-                      subtitle: _subtitleForFlag(context, flag),
-                    ),
-                  );
-                  if (filteredFlags.isEmpty) {
+                  final resolver = ConfigFlagLabels.resolverFor(context);
+                  final filteredGroups = <ConfigFlagGroup, List<ConfigFlag>>{
+                    for (final entry in orderedGroups.entries)
+                      entry.key: filterDisplayedFlags(
+                        query: value.text,
+                        flags: entry.value,
+                        resolver: resolver,
+                      ),
+                  }..removeWhere((_, flags) => flags.isEmpty);
+
+                  if (filteredGroups.isEmpty) {
                     return Padding(
                       padding: pageGutter,
                       child: const _FlagsEmptySearch(),
@@ -373,11 +197,26 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
                     padding:
                         pageGutter +
                         EdgeInsets.only(bottom: tokens.spacing.step5),
-                    child: _FlagsList(
-                      flags: filteredFlags,
-                      iconFor: _iconForFlag,
-                      titleFor: (flag) => _titleForFlag(context, flag),
-                      subtitleFor: (flag) => _subtitleForFlag(context, flag),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (final (index, entry)
+                            in filteredGroups.entries.indexed) ...[
+                          if (index > 0)
+                            SizedBox(height: tokens.spacing.sectionGap),
+                          Padding(
+                            padding: EdgeInsets.only(
+                              bottom: tokens.spacing.step2,
+                            ),
+                            child: Text(
+                              _groupLabel(context, entry.key),
+                              style: calmEyebrowStyle(tokens),
+                            ),
+                          ),
+                          ConfigFlagToggleList(flags: entry.value),
+                        ],
+                      ],
                     ),
                   );
                 },
@@ -390,86 +229,12 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
   }
 }
 
-/// Renders the bordered, rounded list of flag rows. Pulled out as a
-/// dedicated widget so the empty-search and populated branches stay
-/// readable in [_FlagsBodyState.build] and the list shape is easy to
-/// inspect from tests.
-class _FlagsList extends StatefulWidget {
-  const _FlagsList({
-    required this.flags,
-    required this.iconFor,
-    required this.titleFor,
-    required this.subtitleFor,
-  });
-
-  final List<ConfigFlag> flags;
-  final IconData Function(String flagName) iconFor;
-  final String Function(ConfigFlag flag) titleFor;
-  final String Function(ConfigFlag flag) subtitleFor;
-
-  @override
-  State<_FlagsList> createState() => _FlagsListState();
-}
-
-class _FlagsListState extends State<_FlagsList>
-    with HoverDividerIndex<_FlagsList> {
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final flags = widget.flags;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-        border: Border.all(color: tokens.colors.decorative.level01),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final (index, flag) in flags.indexed)
-              DesignSystemListItem(
-                title: widget.titleFor(flag),
-                subtitle: widget.subtitleFor(flag),
-                // `null` lifts the default single-line cap so long
-                // descriptions ("Generate AI summary for task actions",
-                // etc.) wrap onto a second / third line instead of
-                // truncating with ellipsis.
-                subtitleMaxLines: null,
-                leading: SettingsIcon(icon: widget.iconFor(flag.name)),
-                trailing: DesignSystemToggle(
-                  value: flag.status,
-                  semanticsLabel: widget.titleFor(flag),
-                  onChanged: (bool status) {
-                    getIt<PersistenceLogic>().setConfigFlag(
-                      flag.copyWith(status: status),
-                    );
-                  },
-                ),
-                onTap: () {
-                  getIt<PersistenceLogic>().setConfigFlag(
-                    flag.copyWith(status: !flag.status),
-                  );
-                },
-                onHoverChanged: (hovered) =>
-                    onRowHoverChanged(index, hovered: hovered),
-                // Keep `showDivider` stable so layout doesn't shift by
-                // 1 px on hover; fade the divider to transparent when
-                // either this row or the row below it is hovered, so
-                // the hovered row is never bisected by a hairline.
-                showDivider: index < flags.length - 1,
-                dividerColor: hoverDividerColorFor(index),
-                dividerIndent: SettingsIcon.dividerIndent(tokens),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /// Empty-state shown when the search query matches no flag.
+///
+/// The second line is not decoration: the section toggles (Habits, Projects,
+/// Daily OS, …) used to live on this page, so someone who learned to find
+/// them here searches here first and now finds nothing. Pointing at their new
+/// home is what keeps the move from reading as a removal.
 class _FlagsEmptySearch extends StatelessWidget {
   const _FlagsEmptySearch();
 
@@ -478,14 +243,25 @@ class _FlagsEmptySearch extends StatelessWidget {
     final tokens = context.designTokens;
     return Padding(
       padding: EdgeInsets.symmetric(vertical: tokens.spacing.step6),
-      child: Center(
-        child: Text(
-          context.messages.settingsFlagsEmptySearch,
-          style: tokens.typography.styles.body.bodyMedium.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            context.messages.settingsFlagsEmptySearch,
+            style: tokens.typography.styles.body.bodyMedium.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+            textAlign: TextAlign.center,
           ),
-          textAlign: TextAlign.center,
-        ),
+          SizedBox(height: tokens.spacing.step2),
+          Text(
+            context.messages.settingsFlagsEmptySearchSectionsHint,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.lowEmphasis,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }

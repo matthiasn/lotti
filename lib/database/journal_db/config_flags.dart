@@ -209,9 +209,9 @@ Future<void> initConfigFlags(
 
 /// Flags the app no longer defines, deleted from existing installs on start.
 ///
-/// This is storage cleanup, not a fix for a visible toggle: `FlagsBody`
-/// renders only the names in its `defaultDisplayedItems` whitelist, so a row
-/// the app has stopped defining is already invisible there. Deleting a flag's
+/// This is storage cleanup, not a fix for a visible toggle: the settings
+/// pages render only the names `config_flag_placement.dart` assigns them, so a
+/// row the app has stopped defining is already invisible there. Deleting a flag's
 /// `insertFlagIfNotExists` call stops *new* installs from getting the row, but
 /// upgraded installs keep it forever — still stored, still emitted by
 /// `watchConfigFlags`, and still readable by name. Entries can be dropped from

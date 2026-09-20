@@ -116,6 +116,7 @@ void main() {
     );
     expect(_rowIds(tester), [
       'onboarding',
+      'sections',
       'ai',
       'agents',
       'daily-os',

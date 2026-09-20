@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/settings/domain/config_flag_placement.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
@@ -104,67 +105,29 @@ class NavService {
       spec.delegate.addListener(_schedulePersist);
     }
 
+    // Watched flags come from `sectionFlags`, not from a list spelled out
+    // here. Settings -> Sections renders that same constant and calls itself
+    // the place where the app's navigable parts are switched on; a second
+    // hand-maintained copy in this file would let the two disagree about
+    // which flags produce a tab, with nothing to catch it. Adding a
+    // destination therefore means adding one entry there, and both the
+    // navigation and its settings row follow.
     _navigationFlagsSub =
-        Rx.combineLatest7<
-              bool,
-              bool,
-              bool,
-              bool,
-              bool,
-              bool,
-              bool,
-              ({
-                bool habits,
-                bool dashboards,
-                bool dailyOs,
-                bool projects,
-                bool events,
-                bool unifiedGoals,
-                bool relationships,
-              })
-            >(
-              _journalDb.watchConfigFlag(enableHabitsPageFlag),
-              _journalDb.watchConfigFlag(enableDashboardsPageFlag),
-              _journalDb.watchConfigFlag(enableDailyOsPageFlag),
-              _journalDb.watchConfigFlag(enableProjectsFlag),
-              _journalDb.watchConfigFlag(enableEventsFlag),
-              _journalDb.watchConfigFlag(enableUnifiedGoalsFlag),
-              _journalDb.watchConfigFlag(enableRelationshipsFlag),
-              (
-                habits,
-                dashboards,
-                dailyOs,
-                projects,
-                events,
-                unifiedGoals,
-                relationships,
-              ) => (
-                habits: habits,
-                dashboards: dashboards,
-                dailyOs: dailyOs,
-                projects: projects,
-                events: events,
-                unifiedGoals: unifiedGoals,
-                relationships: relationships,
-              ),
+        Rx.combineLatestList<bool>(
+              sectionFlags.map(_journalDb.watchConfigFlag),
+            )
+            .map(
+              (statuses) => <String, bool>{
+                for (final (index, flagName) in sectionFlags.indexed)
+                  flagName: statuses[index],
+              },
             )
             .listen(_handleNavigationFlagsUpdated);
   }
 
   late final JournalDb _journalDb;
   late final SettingsDb _settingsDb;
-  late final StreamSubscription<
-    ({
-      bool habits,
-      bool dashboards,
-      bool dailyOs,
-      bool projects,
-      bool events,
-      bool unifiedGoals,
-      bool relationships,
-    })
-  >
-  _navigationFlagsSub;
+  late final StreamSubscription<Map<String, bool>> _navigationFlagsSub;
 
   bool _isDesktopMode = false;
 
@@ -694,25 +657,18 @@ class NavService {
     );
   }
 
-  void _handleNavigationFlagsUpdated(
-    ({
-      bool habits,
-      bool dashboards,
-      bool dailyOs,
-      bool projects,
-      bool events,
-      bool unifiedGoals,
-      bool relationships,
-    })
-    flags,
-  ) {
-    _isHabitsPageEnabled = flags.habits;
-    _isUnifiedGoalsPageEnabled = flags.unifiedGoals;
-    _isDashboardsPageEnabled = flags.dashboards;
-    _isDailyOsPageEnabled = flags.dailyOs;
-    _isProjectsPageEnabled = flags.projects;
-    _isEventsPageEnabled = flags.events;
-    _isRelationshipsPageEnabled = flags.relationships;
+  /// [flags] is keyed by config-flag name, one entry per [sectionFlags] entry.
+  /// A name absent from the map reads as disabled rather than throwing, so a
+  /// flag added to `sectionFlags` ahead of its tab wiring degrades to "no
+  /// destination" instead of crashing navigation at startup.
+  void _handleNavigationFlagsUpdated(Map<String, bool> flags) {
+    _isHabitsPageEnabled = flags[enableHabitsPageFlag] ?? false;
+    _isUnifiedGoalsPageEnabled = flags[enableUnifiedGoalsFlag] ?? false;
+    _isDashboardsPageEnabled = flags[enableDashboardsPageFlag] ?? false;
+    _isDailyOsPageEnabled = flags[enableDailyOsPageFlag] ?? false;
+    _isProjectsPageEnabled = flags[enableProjectsFlag] ?? false;
+    _isEventsPageEnabled = flags[enableEventsFlag] ?? false;
+    _isRelationshipsPageEnabled = flags[enableRelationshipsFlag] ?? false;
     _cachedBeamerDelegates = null;
     _flagsReceived = true;
 

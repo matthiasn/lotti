@@ -13191,6 +13191,16 @@ class AppLocalizationsPt extends AppLocalizations {
       'Nenhuma sinalização corresponde à sua pesquisa';
 
   @override
+  String get settingsFlagsEmptySearchSectionsHint =>
+      'Procurando Hábitos, Projetos ou Daily OS? Eles ficam em Configurações → Seções.';
+
+  @override
+  String get settingsFlagsGroupAdvanced => 'AVANÇADO E EXPERIMENTAL';
+
+  @override
+  String get settingsFlagsGroupPreferences => 'PREFERÊNCIAS';
+
+  @override
   String get settingsFlagsSearchHint => 'Sinalizadores de pesquisa';
 
   @override
@@ -13851,6 +13861,17 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get settingsSaveFailedToast =>
       'Não foi possível guardar as tuas alterações';
+
+  @override
+  String get settingsSectionsIntro =>
+      'Cada seção que você ativa ganha seu próprio lugar na navegação. Desativá-la apenas a oculta — nada do que você registrou é excluído.';
+
+  @override
+  String get settingsSectionsSubtitle =>
+      'Escolha quais partes do Lotti você usa';
+
+  @override
+  String get settingsSectionsTitle => 'Seções';
 
   @override
   String get settingsSpeechSubtitle => 'Voz e leitura em voz alta';

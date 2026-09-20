@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:lotti/database/database.dart';
@@ -11,7 +10,9 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
+import 'package:lotti/features/settings/domain/config_flag_placement.dart';
 import 'package:lotti/features/settings/ui/pages/flags_page.dart';
+import 'package:lotti/features/settings/ui/widgets/config_flag_toggle_list.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -26,11 +27,17 @@ import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
-/// How many flags the test fixture feeds into [FlagsBody] — deliberately not
-/// derived from `FlagsBody.defaultDisplayedItems`: these tests supply their own
-/// `displayedItems`, and asserting against the production list would make this
-/// a tautology.
-const _displayedFlagCount = 13;
+/// How many rows the test fixture is expected to produce on the Config Flags
+/// page — deliberately a literal rather than something derived from
+/// `configFlagsOnFlagsPage`, which would make the assertion a
+/// tautology.
+///
+/// The fixture stream carries thirteen flags, three of which ([enableEventsFlag],
+/// [enableDailyOsPageFlag], [enableRelationshipsFlag]) are [sectionFlags] and
+/// render on *Settings → Sections* instead. They stay in the fixture on
+/// purpose: a real database holds them too, and the count is what proves this
+/// page ignores them rather than merely never being handed them.
+const _displayedFlagCount = 10;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -183,7 +190,7 @@ void main() {
       );
     });
 
-    testWidgets('shows correct title and description for relationships flag', (
+    testWidgets('renders both group headings above their rows', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -192,16 +199,43 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(FlagsPage));
-      // The raw DB description ('Enable People Page?') must never reach the
-      // user — the row is titled and explained from the localized catalog.
-      expect(
-        find.text(context.messages.configFlagEnableRelationships),
-        findsOneWidget,
+      // The split into Preferences / Advanced is the whole point of this
+      // page after the section toggles left: one flat list of switches told
+      // a user nothing about which of them they were meant to touch.
+      final preferences = find.text(
+        context.messages.settingsFlagsGroupPreferences,
       );
+      final advanced = find.text(context.messages.settingsFlagsGroupAdvanced);
+      expect(preferences, findsOneWidget);
+      expect(advanced, findsOneWidget);
+      // Preferences comes first: `ConfigFlagGroup.values` order, not map
+      // iteration luck.
       expect(
-        find.text(context.messages.configFlagEnableRelationshipsDescription),
-        findsOneWidget,
+        tester.getTopLeft(preferences).dy,
+        lessThan(tester.getTopLeft(advanced).dy),
       );
+    });
+
+    testWidgets('does not render section flags the database still holds', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(const FlagsPage()),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final context = tester.element(find.byType(FlagsPage));
+      // The fixture stream carries People / Daily OS / Events, which every
+      // real install also has stored. They belong to `SectionsBody` now, and
+      // a row here would give one stored value two homes.
+      for (final title in [
+        context.messages.configFlagEnableRelationships,
+        context.messages.configFlagEnableDailyOs,
+        context.messages.configFlagEnableEvents,
+      ]) {
+        expect(find.text(title), findsNothing, reason: title);
+      }
+      // …and the raw DB descriptions must not leak through either.
       expect(find.text('Enable People Page?'), findsNothing);
     });
 
@@ -303,7 +337,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byIcon(LottiIcons.lock), findsAtLeastNWidgets(1));
-      expect(find.byIcon(LottiIcons.calendar), findsAtLeastNWidgets(1));
+      // Query chat rather than Events: the Events row moved to Sections.
+      expect(find.byIcon(LottiIcons.chat), findsAtLeastNWidgets(1));
       expect(find.byIcon(LottiIcons.bolt), findsAtLeastNWidgets(1));
       expect(find.byIcon(LottiIcons.volume), findsAtLeastNWidgets(1));
       expect(
@@ -375,17 +410,6 @@ void main() {
             expectedToggle: const ConfigFlag(
               name: enableAiSummaryTtsFlag,
               description: 'Enable local AI summary playback?',
-              status: true,
-            ),
-          ),
-          (
-            name: 'daily-os',
-            title: (m) => m.configFlagEnableDailyOs,
-            description: (m) => m.configFlagEnableDailyOsDescription,
-            icon: LottiIcons.today,
-            expectedToggle: const ConfigFlag(
-              name: enableDailyOsPageFlag,
-              description: 'Enable DailyOS Page?',
               status: true,
             ),
           ),
@@ -653,74 +677,25 @@ void main() {
     );
 
     testWidgets(
-      'hovering a row fades the divider beneath it AND beneath the row '
-      'above it so the hovered row is never bisected — and `showDivider` '
-      "stays stable so layout doesn't shift by 1 px",
+      'each group gets its own bordered card, so a divider never spans the '
+      'gap between Preferences and Advanced',
       (tester) async {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(const FlagsPage()),
         );
         await tester.pump(const Duration(milliseconds: 100));
 
-        List<DesignSystemListItem> rows() => tester
-            .widgetList<DesignSystemListItem>(
-              find.byType(DesignSystemListItem),
-            )
-            .toList();
-
-        bool isFaded(DesignSystemListItem item) =>
-            item.dividerColor == Colors.transparent;
-
-        // Idle baseline. `showDivider` is stable for all rows except the
-        // last one (no divider beneath the bottom row); no dividers are
-        // faded.
-        final idleRows = rows();
+        // Two groups, two cards. The row treatment inside a card — hover
+        // dividers, tap targets, toggle wiring — is `ConfigFlagToggleList`'s
+        // contract and is covered by its own test.
+        final cards = tester.widgetList<ConfigFlagToggleList>(
+          find.byType(ConfigFlagToggleList),
+        );
+        expect(cards.length, 2);
         expect(
-          idleRows.length,
-          greaterThanOrEqualTo(3),
-          reason: 'test relies on at least 3 flag rows',
+          cards.map((card) => card.flags.length).reduce((a, b) => a + b),
+          _displayedFlagCount,
         );
-        for (final (index, row) in idleRows.indexed) {
-          expect(
-            row.showDivider,
-            index < idleRows.length - 1,
-            reason: 'showDivider must be stable across hover state',
-          );
-          expect(isFaded(row), isFalse, reason: 'no row faded when idle');
-        }
-
-        // Drive a synthetic mouse hover onto the second row. Hover events
-        // require pointer kind `mouse` — `tester.tap` won't fire
-        // `MouseRegion.onEnter`.
-        final gesture = await tester.createGesture(
-          kind: PointerDeviceKind.mouse,
-        );
-        addTearDown(gesture.removePointer);
-        await gesture.addPointer();
-        await gesture.moveTo(
-          tester.getCenter(find.byType(DesignSystemListItem).at(1)),
-        );
-        await tester.pump();
-
-        // Exactly rows 0 and 1 should fade their divider (above and below
-        // the hovered row); every other row stays unfaded; `showDivider`
-        // is unchanged.
-        final hoveredRows = rows();
-        for (final (index, row) in hoveredRows.indexed) {
-          expect(row.showDivider, index < hoveredRows.length - 1);
-          expect(
-            isFaded(row),
-            index == 0 || index == 1,
-            reason: 'only rows 0 and 1 should fade when row 1 is hovered',
-          );
-        }
-
-        // Move the pointer off the row — fades clear.
-        await gesture.moveTo(Offset.zero);
-        await tester.pump();
-        for (final row in rows()) {
-          expect(isFaded(row), isFalse);
-        }
       },
     );
 
@@ -931,40 +906,10 @@ void main() {
         icon: LottiIcons.refresh,
       ),
       (
-        name: enableHabitsPageFlag,
-        description: 'Enable Habits page?',
-        status: false,
-        icon: LottiIcons.repeat,
-      ),
-      (
-        name: enableDashboardsPageFlag,
-        description: 'Enable Dashboards page?',
-        status: false,
-        icon: LottiIcons.dashboard,
-      ),
-      (
-        name: enableUnifiedGoalsFlag,
-        description: 'Enable unified Goals page?',
-        status: false,
-        icon: LottiIcons.focus,
-      ),
-      (
-        name: enableRelationshipsFlag,
-        description: 'Enable People Page?',
-        status: false,
-        icon: LottiIcons.people,
-      ),
-      (
         name: enableSessionRatingsFlag,
         description: 'Enable Session Ratings?',
         status: false,
         icon: LottiIcons.star,
-      ),
-      (
-        name: enableProjectsFlag,
-        description: 'Enable Projects?',
-        status: false,
-        icon: LottiIcons.folder,
       ),
     ];
 
@@ -1005,29 +950,9 @@ void main() {
               context.messages.configFlagResendAttachments,
               context.messages.configFlagResendAttachmentsDescription,
             ),
-            enableHabitsPageFlag => (
-              context.messages.configFlagEnableHabitsPage,
-              context.messages.configFlagEnableHabitsPageDescription,
-            ),
-            enableDashboardsPageFlag => (
-              context.messages.configFlagEnableDashboardsPage,
-              context.messages.configFlagEnableDashboardsPageDescription,
-            ),
-            enableUnifiedGoalsFlag => (
-              context.messages.configFlagEnableUnifiedGoals,
-              context.messages.configFlagEnableUnifiedGoalsDescription,
-            ),
-            enableRelationshipsFlag => (
-              context.messages.configFlagEnableRelationships,
-              context.messages.configFlagEnableRelationshipsDescription,
-            ),
             enableSessionRatingsFlag => (
               context.messages.configFlagEnableSessionRatings,
               context.messages.configFlagEnableSessionRatingsDescription,
-            ),
-            enableProjectsFlag => (
-              context.messages.configFlagEnableProjects,
-              context.messages.configFlagEnableProjectsDescription,
             ),
             _ => throw StateError('unexpected flag: ${flagCase.name}'),
           };
@@ -1117,7 +1042,11 @@ void main() {
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
-            const FlagsBody(displayedItems: [unknownFlagName]),
+            const FlagsBody(
+              displayedGroups: {
+                ConfigFlagGroup.preferences: [unknownFlagName],
+              },
+            ),
           ),
         );
         await tester.pump(const Duration(milliseconds: 100));

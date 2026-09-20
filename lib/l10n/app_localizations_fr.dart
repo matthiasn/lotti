@@ -13297,6 +13297,16 @@ class AppLocalizationsFr extends AppLocalizations {
       'Aucun indicateur ne correspond à ta recherche';
 
   @override
+  String get settingsFlagsEmptySearchSectionsHint =>
+      'Tu cherches Habitudes, Projets ou Daily OS ? Ils se trouvent dans Paramètres → Sections.';
+
+  @override
+  String get settingsFlagsGroupAdvanced => 'AVANCÉ ET EXPÉRIMENTAL';
+
+  @override
+  String get settingsFlagsGroupPreferences => 'PRÉFÉRENCES';
+
+  @override
   String get settingsFlagsSearchHint => 'Rechercher des indicateurs';
 
   @override
@@ -13960,6 +13970,17 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get settingsSaveFailedToast =>
       'Impossible d\'enregistrer tes modifications';
+
+  @override
+  String get settingsSectionsIntro =>
+      'Chaque section que tu actives obtient sa propre place dans la navigation. La désactiver ne fait que la masquer – rien de ce que tu as enregistré n’est supprimé.';
+
+  @override
+  String get settingsSectionsSubtitle =>
+      'Choisis les parties de Lotti que tu utilises';
+
+  @override
+  String get settingsSectionsTitle => 'Sections';
 
   @override
   String get settingsSpeechSubtitle => 'Voix et lecture à voix haute';

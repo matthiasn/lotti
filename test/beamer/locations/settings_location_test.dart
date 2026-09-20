@@ -38,6 +38,7 @@ import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_p
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/features/settings/ui/pages/recording_style_settings_page.dart';
+import 'package:lotti/features/settings/ui/pages/sections_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
 import 'package:lotti/features/settings_v2/domain/settings_tree_index.dart';
@@ -172,6 +173,7 @@ void main() {
         '/settings/agents/souls/:soulId/review',
         '/settings/agents/instances/:agentId',
         '/settings/daily-os',
+        '/settings/sections',
         '/settings/flags',
         '/settings/recording-style',
         '/settings/theming',
@@ -1640,6 +1642,38 @@ void main() {
           'preferences',
         );
         expect(pages[2].child, isA<CelebrationSettingsPage>());
+      },
+    );
+
+    test('buildPages builds SectionsPage', () {
+      // A pattern declared without a page behind it is a blank destination
+      // that still looks routable — `/settings/maintenance` shipped that way
+      // once. Two pages, not three: Sections is a root leaf, so no branch hub
+      // sits beneath it.
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/sections'),
+      );
+      final location = SettingsLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(routeInformation);
+      final pages = location.buildPages(mockBuildContext, beamState);
+      expect(pages.length, 2);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SectionsPage>());
+    });
+
+    test(
+      'buildPages does NOT render SectionsPage for another settings URL — '
+      'the exact-path guard must not let a path merely containing the word '
+      'fall through to it',
+      () {
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/settings/flags'),
+        );
+        final location = SettingsLocation(routeInformation);
+        final beamState = BeamState.fromRouteInformation(routeInformation);
+        final pages = location.buildPages(mockBuildContext, beamState);
+        expect(pages.any((p) => p.child is SectionsPage), isFalse);
+        expect(pages.any((p) => p.child is FlagsPage), isTrue);
       },
     );
 

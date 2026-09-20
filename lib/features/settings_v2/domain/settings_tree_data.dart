@@ -87,6 +87,19 @@ List<SettingsNode> buildSettingsTree({
       LottiIcons.rocket,
       panel: 'onboarding',
     ),
+    // Sections sits second, directly under the welcome flow, because it is
+    // the page that decides what the rest of the app even contains. The
+    // toggles behind it (Habits, Projects, Daily OS, …) used to be seven
+    // rows among twenty-three on Advanced → Config Flags, which made the
+    // app's progressive disclosure undiscoverable: a feature nobody can find
+    // the switch for is a feature that is off forever. Unconditional and
+    // unflagged — a page whose whole job is turning features on cannot
+    // itself be gated.
+    leaf(
+      'sections',
+      LottiIcons.layers,
+      panel: 'sections',
+    ),
     branch(
       'ai',
       LottiIcons.reasoning,

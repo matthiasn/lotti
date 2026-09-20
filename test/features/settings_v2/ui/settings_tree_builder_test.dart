@@ -99,6 +99,7 @@ void main() {
       tree.map((n) => n.id).toList(),
       [
         'onboarding',
+        'sections',
         'ai',
         'agents',
         'daily-os',

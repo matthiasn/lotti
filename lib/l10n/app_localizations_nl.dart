@@ -13101,6 +13101,16 @@ class AppLocalizationsNl extends AppLocalizations {
       'Geen vlaggen gevonden voor uw zoekopdracht';
 
   @override
+  String get settingsFlagsEmptySearchSectionsHint =>
+      'Zoek je Gewoontes, Projecten of Daily OS? Die vind je onder Instellingen → Onderdelen.';
+
+  @override
+  String get settingsFlagsGroupAdvanced => 'GEAVANCEERD EN EXPERIMENTEEL';
+
+  @override
+  String get settingsFlagsGroupPreferences => 'VOORKEUREN';
+
+  @override
   String get settingsFlagsSearchHint => 'Zoekvlaggen';
 
   @override
@@ -13756,6 +13766,17 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get settingsSaveFailedToast =>
       'Je wijzigingen konden niet worden opgeslagen';
+
+  @override
+  String get settingsSectionsIntro =>
+      'Elk onderdeel dat je inschakelt krijgt zijn eigen plek in de navigatie. Uitschakelen verbergt het alleen – niets van wat je hebt vastgelegd wordt verwijderd.';
+
+  @override
+  String get settingsSectionsSubtitle =>
+      'Kies welke onderdelen van Lotti je gebruikt';
+
+  @override
+  String get settingsSectionsTitle => 'Onderdelen';
 
   @override
   String get settingsSpeechSubtitle => 'Stem en hardop lezen';
