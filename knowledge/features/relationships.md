@@ -1036,7 +1036,19 @@ rides the design system's presence dot (`DesignSystemBadge.dot`, toned by
 judgement is carried by more than its word (*steady* is the hueless
 `neutral` tone, never the accent that means pressable on the same card);
 every status glyph is centred on the first line by a computed offset, so at
-1.6× it still sits on the words. The not-enrolled
+1.6× it still sits on the words.
+
+**The band says why.** Directly under the status line, a current briefing
+renders `RelationshipHealthMetrics.rationale` — the one sentence the contract
+requires of the model ("One sentence tracing the band to specific check-in
+evidence"), stored as report provenance under
+`relationship_health_rationale`. It had been required, produced and persisted
+since the band existed, and read by nothing, so a verdict on a person arrived
+with no way to check it. It sits with the band rather than behind *Read more*
+— an unexplained verdict is not a summary — and is capped at three lines so a
+model that writes an essay cannot push the briefing itself off the card. Only
+the current face carries it: out of date, the status line drops the band for
+its warning, so the sentence would explain something no longer on screen. The not-enrolled
 face wears `TldrHeader`'s plain badge — a neutral tile, not the AI accent it
 disclaims — and its privacy note rides the action row's leading slot. The header's trailing rail holds only an out-of-date
 briefing's age (`6 days old`, an outlined tag in the meta ink, so the status

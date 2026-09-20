@@ -920,6 +920,14 @@ class _AgentCard extends StatelessWidget {
           trailing: _pill(context, messages),
           onTap: onOpenInternals,
         ),
+        // The band above says "Strained"; this says why. The contract has
+        // always required it — "One sentence tracing the band to specific
+        // check-in evidence" — and the workflow has always stored it, but
+        // no widget read it, so a verdict on a person arrived with no way
+        // to check it. It sits with the band rather than behind the
+        // disclosure: an unexplained verdict is not a summary.
+        if (state == RelationshipAgentCardState.current && health != null)
+          _BandRationale(text: health!.rationale, color: ai.metaText),
         if (body != null)
           Padding(
             // No bottom inset under TldrBody: its disclosure row carries the
@@ -999,6 +1007,37 @@ class _BriefingHeader extends StatelessWidget {
       trailing: trailing,
       icon: icon,
       onAgentTap: plain ? null : onTap,
+    );
+  }
+}
+
+/// The sentence under the band: what the briefing read to land on it.
+///
+/// Kept to three lines — the contract asks for one sentence, and a model
+/// that writes an essay must not push the briefing itself off the card.
+class _BandRationale extends StatelessWidget {
+  const _BandRationale({required this.text, required this.color});
+
+  final String text;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        tokens.spacing.cardPadding,
+        0,
+        tokens.spacing.cardPadding,
+        tokens.spacing.step3,
+      ),
+      child: Text(
+        text,
+        key: const ValueKey('relationship-agent-band-rationale'),
+        maxLines: 3,
+        overflow: TextOverflow.ellipsis,
+        style: tokens.typography.styles.body.bodySmall.copyWith(color: color),
+      ),
     );
   }
 }
