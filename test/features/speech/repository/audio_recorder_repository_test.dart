@@ -1,7 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:clock/clock.dart';
-import 'package:flutter/services.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
@@ -11,7 +12,9 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -20,15 +23,13 @@ void main() {
   late MockAudioRecorder mockAudioRecorder;
   late AudioRecorderRepository repository;
 
-  setUpAll(() {
-    registerFallbackValue(const RecordConfig());
-    registerFallbackValue(StackTrace.current);
-    registerFallbackValue(const Duration(milliseconds: 20));
-  });
+  setUpAll(registerAllFallbackValues);
 
-  setUp(() {
+  setUp(() async {
+    await setUpTestGetIt();
     mockDomainLogger = MockDomainLogger();
     mockAudioRecorder = MockAudioRecorder();
+    await getIt.unregister<DomainLogger>();
     getIt.registerSingleton<DomainLogger>(mockDomainLogger);
     repository = AudioRecorderRepository(mockAudioRecorder);
 
@@ -43,7 +44,25 @@ void main() {
     ).thenAnswer((_) async {});
   });
 
-  tearDown(getIt.reset);
+  tearDown(tearDownTestGetIt);
+
+  Future<Directory> prepareRecordingDirectory() async {
+    final directory = await Directory.systemTemp.createTemp(
+      'audio_recorder_repository_test_',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    getIt.registerSingleton<Directory>(directory);
+    addTearDown(getIt.unregister<Directory>);
+    when(
+      () => mockDomainLogger.log(
+        any<LogDomain>(),
+        any<String>(),
+        subDomain: any(named: 'subDomain'),
+        level: any(named: 'level'),
+      ),
+    ).thenReturn(null);
+    return directory;
+  }
 
   group('AudioRecorderRepository', () {
     test('hasPermission returns true when permission granted', () async {
@@ -71,7 +90,7 @@ void main() {
     test('hasPermission returns false and logs exception on error', () async {
       when(
         () => mockAudioRecorder.hasPermission(),
-      ).thenThrow(Exception('Permission error'));
+      ).thenAnswer((_) async => throw Exception('Permission error'));
 
       final result = await repository.hasPermission();
 
@@ -108,7 +127,7 @@ void main() {
     test('isPaused returns false and logs exception on error', () async {
       when(
         () => mockAudioRecorder.isPaused(),
-      ).thenThrow(Exception('Pause check error'));
+      ).thenAnswer((_) async => throw Exception('Pause check error'));
 
       final result = await repository.isPaused();
 
@@ -146,7 +165,7 @@ void main() {
     test('isRecording returns false and logs exception on error', () async {
       when(
         () => mockAudioRecorder.isRecording(),
-      ).thenThrow(Exception('Recording check error'));
+      ).thenAnswer((_) async => throw Exception('Recording check error'));
 
       final result = await repository.isRecording();
 
@@ -162,7 +181,7 @@ void main() {
     });
 
     test(
-      'startRecording returns null due to directory creation in test environment',
+      'startRecording does not call the recorder without a documents directory',
       () async {
         // Stub the mock start method to complete successfully
         when(
@@ -176,6 +195,12 @@ void main() {
         final result = await repository.startRecording();
 
         expect(result, isNull);
+        verifyNever(
+          () => mockAudioRecorder.start(
+            any<RecordConfig>(),
+            path: any(named: 'path'),
+          ),
+        );
         // Verify that exception was logged due to directory creation failure
         verify(
           () => mockDomainLogger.error(
@@ -189,115 +214,121 @@ void main() {
     );
 
     test('startRecording returns null and logs exception on error', () async {
+      final directory = await prepareRecordingDirectory();
+      final failure = StateError('Recording error');
+      final stack = StackTrace.fromString('recorder start stack');
       when(
         () => mockAudioRecorder.start(
           any<RecordConfig>(),
           path: any(named: 'path'),
         ),
-      ).thenThrow(Exception('Recording error'));
+      ).thenAnswer((_) => Future<void>.error(failure, stack));
 
-      final result = await repository.startRecording();
+      final result = await withClock(
+        Clock.fixed(DateTime(2024, 3, 15, 10, 30)),
+        repository.startRecording,
+      );
 
       expect(result, isNull);
       verify(
+        () => mockAudioRecorder.start(
+          const RecordConfig(sampleRate: 48000, autoGain: true),
+          path:
+              '${directory.path}/audio/2024-03-15/2024-03-15_10-30-00-000.m4a',
+        ),
+      ).called(1);
+      verify(
         () => mockDomainLogger.error(
           LogDomain.speech,
-          any<Object>(),
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          any<Object>(that: same(failure)),
+          stackTrace: stack,
           subDomain: 'startRecording',
         ),
       ).called(1);
     });
 
-    test('stopRecording completes successfully', () async {
-      when(
-        () => mockAudioRecorder.stop(),
-      ).thenAnswer((_) async => '/test/path.m4a');
+    for (final operation in ['stop', 'pause', 'resume', 'dispose']) {
+      for (final fails in [false, true]) {
+        test('$operation awaits platform ${fails ? 'failure' : 'success'}', () {
+          fakeAsync((async) {
+            final pending = Completer<void>();
+            final failure = StateError('$operation failed asynchronously');
+            final stack = StackTrace.fromString('$operation platform stack');
+            late Future<void> Function() invoke;
+            switch (operation) {
+              case 'stop':
+                when(mockAudioRecorder.stop).thenAnswer((_) async {
+                  await pending.future;
+                  return '/test/path.m4a';
+                });
+                invoke = repository.stopRecording;
+              case 'pause':
+                when(mockAudioRecorder.pause).thenAnswer((_) => pending.future);
+                invoke = repository.pauseRecording;
+              case 'resume':
+                when(
+                  mockAudioRecorder.resume,
+                ).thenAnswer((_) => pending.future);
+                invoke = repository.resumeRecording;
+              case 'dispose':
+                when(
+                  mockAudioRecorder.dispose,
+                ).thenAnswer((_) => pending.future);
+                invoke = repository.dispose;
+            }
+            var completed = false;
+            unawaited(invoke().then((_) => completed = true));
+            try {
+              async.flushMicrotasks();
+              expect(completed, isFalse);
+              verifyNever(
+                () => mockDomainLogger.error(
+                  any<LogDomain>(),
+                  any<Object>(),
+                  stackTrace: any(named: 'stackTrace'),
+                  subDomain: any(named: 'subDomain'),
+                ),
+              );
 
-      await expectLater(repository.stopRecording(), completes);
-      verify(() => mockAudioRecorder.stop()).called(1);
-    });
-
-    test('stopRecording completes without throwing on error', () async {
-      when(() => mockAudioRecorder.stop()).thenThrow(Exception('Stop error'));
-
-      await expectLater(repository.stopRecording(), completes);
-      verify(
-        () => mockDomainLogger.error(
-          LogDomain.speech,
-          any<Object>(),
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
-          subDomain: 'stopRecording',
-        ),
-      ).called(1);
-    });
-
-    test('pauseRecording completes successfully', () async {
-      when(() => mockAudioRecorder.pause()).thenAnswer((_) async {});
-
-      await expectLater(repository.pauseRecording(), completes);
-      verify(() => mockAudioRecorder.pause()).called(1);
-    });
-
-    test('pauseRecording completes without throwing on error', () async {
-      when(() => mockAudioRecorder.pause()).thenThrow(Exception('Pause error'));
-
-      await expectLater(repository.pauseRecording(), completes);
-      verify(
-        () => mockDomainLogger.error(
-          LogDomain.speech,
-          any<Object>(),
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
-          subDomain: 'pauseRecording',
-        ),
-      ).called(1);
-    });
-
-    test('resumeRecording completes successfully', () async {
-      when(() => mockAudioRecorder.resume()).thenAnswer((_) async {});
-
-      await expectLater(repository.resumeRecording(), completes);
-      verify(() => mockAudioRecorder.resume()).called(1);
-    });
-
-    test('resumeRecording completes without throwing on error', () async {
-      when(
-        () => mockAudioRecorder.resume(),
-      ).thenThrow(Exception('Resume error'));
-
-      await expectLater(repository.resumeRecording(), completes);
-      verify(
-        () => mockDomainLogger.error(
-          LogDomain.speech,
-          any<Object>(),
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
-          subDomain: 'resumeRecording',
-        ),
-      ).called(1);
-    });
-
-    test('dispose completes successfully', () async {
-      when(() => mockAudioRecorder.dispose()).thenAnswer((_) async {});
-
-      await expectLater(repository.dispose(), completes);
-      verify(() => mockAudioRecorder.dispose()).called(1);
-    });
-
-    test('dispose completes without throwing on error', () async {
-      when(
-        () => mockAudioRecorder.dispose(),
-      ).thenThrow(Exception('Dispose error'));
-
-      await expectLater(repository.dispose(), completes);
-      verify(
-        () => mockDomainLogger.error(
-          LogDomain.speech,
-          any<Object>(),
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
-          subDomain: 'dispose',
-        ),
-      ).called(1);
-    });
+              if (fails) {
+                pending.completeError(failure, stack);
+              } else {
+                pending.complete();
+              }
+              async.flushMicrotasks();
+              expect(completed, isTrue);
+              if (fails) {
+                verify(
+                  () => mockDomainLogger.error(
+                    LogDomain.speech,
+                    any<Object>(that: same(failure)),
+                    stackTrace: stack,
+                    subDomain: operation == 'dispose'
+                        ? operation
+                        : '${operation}Recording',
+                  ),
+                ).called(1);
+              }
+              verifyNoMoreInteractions(mockDomainLogger);
+              switch (operation) {
+                case 'stop':
+                  verify(mockAudioRecorder.stop).called(1);
+                case 'pause':
+                  verify(mockAudioRecorder.pause).called(1);
+                case 'resume':
+                  verify(mockAudioRecorder.resume).called(1);
+                case 'dispose':
+                  verify(mockAudioRecorder.dispose).called(1);
+              }
+              verifyNoMoreInteractions(mockAudioRecorder);
+            } finally {
+              if (!pending.isCompleted) pending.complete();
+              async.flushMicrotasks();
+            }
+          });
+        });
+      }
+    }
 
     group('deleteRecording', () {
       late Directory tempDir;
@@ -440,26 +471,7 @@ void main() {
     test(
       'startRecording returns AudioNote with correct fields when successful',
       () async {
-        final tempDir = await Directory.systemTemp.createTemp(
-          'audio_recorder_repository_test_',
-        );
-        addTearDown(() => tempDir.deleteSync(recursive: true));
-
-        getIt.registerSingleton<Directory>(tempDir);
-        addTearDown(() {
-          if (getIt.isRegistered<Directory>()) {
-            getIt.unregister<Directory>();
-          }
-        });
-
-        when(
-          () => mockDomainLogger.log(
-            any<LogDomain>(),
-            any<String>(),
-            subDomain: any(named: 'subDomain'),
-            level: any(named: 'level'),
-          ),
-        ).thenReturn(null);
+        final tempDir = await prepareRecordingDirectory();
 
         when(
           () => mockAudioRecorder.start(
@@ -501,26 +513,7 @@ void main() {
     test(
       'startRecording records with correct config (sampleRate=48000, autoGain=true)',
       () async {
-        final tempDir = await Directory.systemTemp.createTemp(
-          'audio_recorder_repository_test_',
-        );
-        addTearDown(() => tempDir.deleteSync(recursive: true));
-
-        getIt.registerSingleton<Directory>(tempDir);
-        addTearDown(() {
-          if (getIt.isRegistered<Directory>()) {
-            getIt.unregister<Directory>();
-          }
-        });
-
-        when(
-          () => mockDomainLogger.log(
-            any<LogDomain>(),
-            any<String>(),
-            subDomain: any(named: 'subDomain'),
-            level: any(named: 'level'),
-          ),
-        ).thenReturn(null);
+        await prepareRecordingDirectory();
 
         when(
           () => mockAudioRecorder.start(
@@ -562,53 +555,55 @@ void main() {
     );
 
     test(
-      'audioRecorderRepositoryProvider calls dispose on the repository when container disposes',
-      () async {
-        // The real provider function registers `ref.onDispose(() async { await
-        // repository.dispose(); })`.  Because `AudioRecorder()` talks to a
-        // platform channel, we mock it so the constructor call does not throw.
-        const channel = MethodChannel('com.llfbandit.record/messages');
-        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-            .setMockMethodCallHandler(channel, (_) async => null);
-        addTearDown(
-          () => TestDefaultBinaryMessengerBinding
-              .instance
-              .defaultBinaryMessenger
-              .setMockMethodCallHandler(channel, null),
-        );
+      'provider disposal releases exactly the platform recorder it created',
+      () {
+        final platform = MockRecordPlatform();
+        final calls = <(String, String)>[];
+        when(() => platform.create(any())).thenAnswer((invocation) async {
+          calls.add((
+            'create',
+            invocation.positionalArguments.single as String,
+          ));
+        });
+        when(() => platform.dispose(any())).thenAnswer((invocation) async {
+          calls.add((
+            'dispose',
+            invocation.positionalArguments.single as String,
+          ));
+        });
+        // Use the real repository and recorder, replacing only the platform
+        // boundary. Restore this process-wide singleton after the test.
+        final previousPlatform = RecordPlatform.instance;
+        RecordPlatform.instance = platform;
+        addTearDown(() => RecordPlatform.instance = previousPlatform);
 
-        // Also stub DomainLogger.log because the repository logs during normal use.
-        when(
-          () => mockDomainLogger.log(
-            any<LogDomain>(),
-            any<String>(),
-            subDomain: any(named: 'subDomain'),
-            level: any(named: 'level'),
-          ),
-        ).thenReturn(null);
+        fakeAsync((async) {
+          final container = ProviderContainer();
+          var disposed = false;
+          try {
+            final repository = container.read(audioRecorderRepositoryProvider);
+            async.flushMicrotasks();
+            expect(calls.map((call) => call.$1), ['create']);
+            final recorderId = calls.single.$2;
+            expect(
+              recorderId,
+              isA<String>().having((id) => id.isNotEmpty, 'nonempty', isTrue),
+            );
+            expect(
+              container.read(audioRecorderRepositoryProvider),
+              same(repository),
+            );
 
-        // Stub dispose on the mock recorder that will be created internally.
-        // We can't intercept the real AudioRecorder.dispose() easily, so we
-        // use the channel mock to swallow the platform call.
-
-        // Use the real provider function (not overrideWithValue) so that
-        // ref.onDispose is actually registered.
-        final container = ProviderContainer();
-        addTearDown(container.dispose);
-
-        // Read the provider to initialise it — this calls the real create fn.
-        final repo = container.read(audioRecorderRepositoryProvider);
-        expect(repo, isA<AudioRecorderRepository>());
-
-        // Dispose — triggers ref.onDispose.
-        container.dispose();
-
-        // Flush microtasks so the async dispose callback completes.
-        await Future<void>.microtask(() {});
-        await Future<void>.microtask(() {});
-
-        // If we reached here without a MissingPluginException or other error
-        // the onDispose path (lines 21-22) was exercised successfully.
+            container.dispose();
+            disposed = true;
+            async.flushMicrotasks();
+            expect(calls, [('create', recorderId), ('dispose', recorderId)]);
+            verifyNoMoreInteractions(mockDomainLogger);
+          } finally {
+            if (!disposed) container.dispose();
+            async.flushMicrotasks();
+          }
+        });
       },
     );
   });

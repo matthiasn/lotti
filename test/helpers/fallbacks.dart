@@ -47,6 +47,7 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/services/logging_domains.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:record/record.dart';
 import 'package:research_package/model.dart';
 
 import '../mocks/mocks.dart';
@@ -512,6 +513,9 @@ void registerAllFallbackValues() {
       status: drift.Value(OutboxStatus.pending.index),
     ),
   );
+
+  // Recording configuration fallback
+  registerFallbackValue(const RecordConfig());
 
   // Common builtin fallbacks
   registerFallbackValue(StackTrace.empty);
