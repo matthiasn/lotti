@@ -13,9 +13,21 @@ import 'package:material_ui/material_ui.dart';
 /// The due count carries the warning ink only while it is non-zero — a calm
 /// morning reads as a quiet `0 / 4 enrolled`, not as a warning about nothing.
 class PeopleSummaryCard extends StatelessWidget {
-  const PeopleSummaryCard({required this.summary, super.key});
+  const PeopleSummaryCard({
+    required this.summary,
+    this.onOpenNextDue,
+    super.key,
+  });
 
   final PeopleSummary summary;
+
+  /// Opens one of the two people the card is about. The card was the
+  /// largest, most saturated block on the tab and did nothing at all — it
+  /// named a person and then made the reader go and find them.
+  ///
+  /// Each half opens its own subject: the count opens the person it is
+  /// counting (the longest lapse), the right half opens the one it names.
+  final void Function(String relationshipId)? onOpenNextDue;
 
   @override
   Widget build(BuildContext context) {
@@ -28,52 +40,62 @@ class PeopleSummaryCard extends StatelessWidget {
     // user talks about them ("Next due Bo"), and a full name wraps the line.
     final nextDueName =
         nextDue?.relationship.data.nickname ?? nextDue?.relationship.data.title;
-    final nextDueLabel = nextDueName == null || nextDueAt == null
+    // Kept apart so the day can wear the mono face the rows already give
+    // a date: the card sat directly above a column of mono timestamps and
+    // set its own date in proportional type.
+    final nextDueDay = nextDueAt == null
+        ? null
+        : relationshipDayLabelOf(context, nextDueAt);
+    final nextDueLabel = nextDueName == null || nextDueDay == null
         ? messages.relationshipsSummaryNoneDue
-        : messages.relationshipsSummaryNextDue(
-            nextDueName,
-            relationshipDayLabelOf(context, nextDueAt),
-          );
+        : messages.relationshipsSummaryNextDue(nextDueName, nextDueDay);
 
     return DesignSystemSectionCard(
       key: const ValueKey('people-summary-card'),
-      padding: EdgeInsets.all(tokens.spacing.step4),
       child: Row(
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                messages.relationshipsSummaryDueNow,
-                style: styles.others.caption.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
+          _SummaryDoor(
+            relationshipId: summary.mostOverdue?.relationship.meta.id,
+            onOpen: onOpenNextDue,
+            keyValue: const ValueKey('people-summary-due-open'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  messages.relationshipsSummaryDueNow,
+                  style: styles.others.caption.copyWith(
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
                 ),
-              ),
-              SizedBox(height: tokens.spacing.step1),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    '${summary.dueNow}',
-                    key: const ValueKey('people-summary-due-count'),
-                    style: styles.heading.heading1.copyWith(
-                      color: summary.dueNow > 0
-                          ? tokens.colors.alert.warning.defaultColor
-                          : tokens.colors.text.highEmphasis,
+                SizedBox(height: tokens.spacing.step1),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      '${summary.dueNow}',
+                      key: const ValueKey('people-summary-due-count'),
+                      // heading2, not heading1: at 35/700 the loudest glyph
+                      // on the People tab was a KPI, outweighing the page
+                      // title and every person's name on it.
+                      style: styles.heading.heading2.copyWith(
+                        color: summary.dueNow > 0
+                            ? tokens.colors.alert.warning.defaultColor
+                            : tokens.colors.text.highEmphasis,
+                      ),
                     ),
-                  ),
-                  SizedBox(width: tokens.spacing.step2),
-                  Text(
-                    messages.relationshipsSummaryEnrolled(summary.enrolled),
-                    style: styles.body.bodyMedium.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
+                    SizedBox(width: tokens.spacing.step2),
+                    Text(
+                      messages.relationshipsSummaryEnrolled(summary.enrolled),
+                      style: styles.body.bodyMedium.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step4),
@@ -83,34 +105,135 @@ class PeopleSummaryCard extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  nextDueLabel,
-                  key: const ValueKey('people-summary-next-due'),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: styles.body.bodyMedium.copyWith(
-                    color: tokens.colors.text.highEmphasis,
-                  ),
-                ),
-                if (summary.notEnrolled > 0) ...[
-                  SizedBox(height: tokens.spacing.step1),
-                  Text(
-                    messages.relationshipsSummaryNotEnrolled(
-                      summary.notEnrolled,
+            child: _SummaryDoor(
+              relationshipId: nextDue?.relationship.meta.id,
+              onOpen: onOpenNextDue,
+              keyValue: const ValueKey('people-summary-next-due-open'),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Caption, name, day — the shape the left half already
+                  // uses, so the card reads as one object with two facts
+                  // rather than a number beside a sentence.
+                  //
+                  // As one wrapped run it was the *day* that ellipsed
+                  // (`Wed 19 A…`), so the card hid the single fact it owns
+                  // that the bands below do not state. The name gives way
+                  // first now, because a name the reader cannot finish is
+                  // still a name they recognise, and a date they cannot
+                  // finish is nothing.
+                  if (nextDueName == null)
+                    Text(
+                      nextDueLabel,
+                      key: const ValueKey('people-summary-next-due'),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: styles.body.bodyMedium.copyWith(
+                        color: tokens.colors.text.highEmphasis,
+                      ),
+                    )
+                  else ...[
+                    Text(
+                      messages.relationshipsSummaryNextDueCaption,
+                      style: styles.others.caption.copyWith(
+                        color: tokens.colors.text.lowEmphasis,
+                      ),
                     ),
-                    style: styles.others.caption.copyWith(
-                      color: tokens.colors.text.lowEmphasis,
+                    SizedBox(height: tokens.spacing.step1),
+                    Text(
+                      nextDueName,
+                      key: const ValueKey('people-summary-next-due'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      // High-emphasis ink, not the interactive accent: the
+                      // chevron says it opens, and teal has one job.
+                      style: styles.body.bodyMedium.copyWith(
+                        color: tokens.colors.text.highEmphasis,
+                      ),
                     ),
-                  ),
+                    if (nextDueDay != null)
+                      Text(
+                        nextDueDay,
+                        key: const ValueKey('people-summary-next-due-day'),
+                        maxLines: 1,
+                        style: relationshipTimestampStyle(
+                          tokens,
+                          base: styles.others.caption,
+                          color: tokens.colors.text.mediumEmphasis,
+                        ),
+                      ),
+                  ],
+                  if (summary.notEnrolled > 0) ...[
+                    SizedBox(height: tokens.spacing.step1),
+                    Text(
+                      messages.relationshipsSummaryNotEnrolled(
+                        summary.notEnrolled,
+                      ),
+                      style: styles.others.caption.copyWith(
+                        color: tokens.colors.text.lowEmphasis,
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// One half of the card, made the door it already looked like — with a
+/// chevron, so it *looks* like one.
+///
+/// Wraps [child] in a tap target that opens the person that half is about,
+/// but only when there is one and the caller wants the behaviour: a card
+/// reading "Nobody is due" stays inert rather than offering a tap that goes
+/// nowhere. The chevron only appears on the live half, so the affordance
+/// and the behaviour cannot disagree.
+class _SummaryDoor extends StatelessWidget {
+  const _SummaryDoor({
+    required this.relationshipId,
+    required this.onOpen,
+    required this.keyValue,
+    required this.child,
+  });
+
+  final String? relationshipId;
+  final void Function(String relationshipId)? onOpen;
+  final Key keyValue;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final id = relationshipId;
+    final open = onOpen;
+    if (id == null || open == null) return child;
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(tokens.radii.m),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        key: keyValue,
+        onTap: () => open(id),
+        child: Padding(
+          padding: EdgeInsets.all(tokens.spacing.step2),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(child: child),
+              SizedBox(width: tokens.spacing.step1),
+              Icon(
+                LottiIcons.chevronRight,
+                size: IconSizes.s,
+                color: tokens.colors.text.lowEmphasis,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

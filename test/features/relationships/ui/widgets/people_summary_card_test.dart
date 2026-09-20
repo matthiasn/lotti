@@ -37,13 +37,82 @@ void main() {
     int notEnrolled = 0,
     RelationshipListItem? nextDue,
     DateTime? nextDueAt,
+    RelationshipListItem? mostOverdue,
   }) => (
     dueNow: dueNow,
     enrolled: enrolled,
     notEnrolled: notEnrolled,
     nextDue: nextDue,
     nextDueAt: nextDueAt,
+    mostOverdue: mostOverdue,
   );
+
+  group('each half is a door to its own subject', () {
+    testWidgets('the count opens the person it is counting, and the right '
+        'half the one it names', (tester) async {
+      final overdue = person('Pip');
+      final next = person('Tilly');
+      final opened = <String>[];
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          PeopleSummaryCard(
+            summary: summary(
+              dueNow: 1,
+              nextDue: next,
+              nextDueAt: DateTime(2026, 8, 19),
+              mostOverdue: overdue,
+            ),
+            onOpenNextDue: opened.add,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Both halves show the handle that says they are doors. Without it
+      // the card was the largest, most saturated block on the tab and gave
+      // the reader no reason to believe it did anything.
+      expect(find.byIcon(LottiIcons.chevronRight), findsNWidgets(2));
+
+      await tester.tap(find.byKey(const ValueKey('people-summary-due-open')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('people-summary-next-due-open')),
+      );
+      await tester.pumpAndSettle();
+
+      // The count is about the lapse; the sentence is about the next one.
+      // Folding them into one destination would make the card say "next
+      // due" while opening someone already overdue.
+      expect(opened, [
+        overdue.relationship.meta.id,
+        next.relationship.meta.id,
+      ]);
+    });
+
+    testWidgets('a half with nobody behind it is inert and shows no handle', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          PeopleSummaryCard(summary: summary(), onOpenNextDue: (_) {}),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Nothing is due and nobody is next: no chevron may promise a tap
+      // that goes nowhere.
+      expect(
+        find.byKey(const ValueKey('people-summary-due-open')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('people-summary-next-due-open')),
+        findsNothing,
+      );
+      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
+    });
+  });
 
   Future<void> pump(WidgetTester tester, PeopleSummary summary) async {
     await tester.pumpWidget(
@@ -71,10 +140,24 @@ void main() {
 
     expect(find.text('Due now'), findsOneWidget);
     expect(find.text('1'), findsOneWidget);
-    expect(find.text('/ 4 enrolled'), findsOneWidget);
+    expect(find.text('/ 4 with reminders'), findsOneWidget);
+    // Caption, name, day — the day on a line of its own. Wrapped into one
+    // run it was the day that ellipsed, and a date the reader cannot finish
+    // is nothing, while a truncated name is still recognisable.
     // 2026-07-23 is a Thursday; the day carries no time — it is a deadline.
-    expect(find.text('Next due Bo · Thu 23 Jul'), findsOneWidget);
-    expect(find.text('1 person not enrolled'), findsOneWidget);
+    expect(find.text('Next due'), findsOneWidget);
+    expect(find.text('Bo'), findsOneWidget);
+    expect(find.text('Thu 23 Jul'), findsOneWidget);
+    expect(
+      tester
+          .widget<Text>(
+            find.byKey(const ValueKey('people-summary-next-due-day')),
+          )
+          .style
+          ?.fontFamily,
+      'Inconsolata',
+    );
+    expect(find.text('1 person without reminders'), findsOneWidget);
     // A non-zero due count is the one thing on the card that may shout.
     final tokens = tester.element(find.byType(PeopleSummaryCard)).designTokens;
     expect(numeralColor(tester), tokens.colors.alert.warning.defaultColor);
@@ -90,8 +173,9 @@ void main() {
     expect(find.text('0'), findsOneWidget);
     final tokens = tester.element(find.byType(PeopleSummaryCard)).designTokens;
     expect(numeralColor(tester), tokens.colors.text.highEmphasis);
-    expect(find.textContaining('not enrolled'), findsNothing);
-    expect(find.text('Next due Mira · Mon 24 Aug'), findsOneWidget);
+    expect(find.textContaining('without reminders'), findsNothing);
+    expect(find.text('Mira'), findsOneWidget);
+    expect(find.text('Mon 24 Aug'), findsOneWidget);
   });
 
   testWidgets('names the next-due person by nickname when they have one — '
@@ -104,7 +188,8 @@ void main() {
       ),
     );
 
-    expect(find.text('Next due Bo · Thu 23 Jul'), findsOneWidget);
+    expect(find.text('Bo'), findsOneWidget);
+    expect(find.text('Thu 23 Jul'), findsOneWidget);
     expect(find.textContaining('Captain'), findsNothing);
   });
 
@@ -113,6 +198,6 @@ void main() {
     await pump(tester, summary(enrolled: 2, notEnrolled: 3));
 
     expect(find.text('No one due'), findsOneWidget);
-    expect(find.text('3 people not enrolled'), findsOneWidget);
+    expect(find.text('3 people without reminders'), findsOneWidget);
   });
 }

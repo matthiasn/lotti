@@ -212,7 +212,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(CircularProgressIndicator), findsNothing);
-      expect(find.text('Anna'), findsOneWidget);
+      expect(_rowNamed('Anna'), findsOneWidget);
     },
   );
 
@@ -227,7 +227,7 @@ void main() {
     await tester.pumpWidget(buildPage());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Anna'));
+    await tester.tap(_rowNamed('Anna'));
     await tester.pumpAndSettle();
 
     expect(beamedTo, ['/people/rel-1']);
@@ -242,7 +242,7 @@ void main() {
     await tester.pumpWidget(buildPage());
     await tester.pumpAndSettle();
 
-    expect(find.text('Anna'), findsOneWidget);
+    expect(_rowNamed('Anna'), findsOneWidget);
     expect(find.byKey(const ValueKey('people-add-person-fab')), findsNothing);
     expect(find.byIcon(LottiIcons.add), findsNothing);
   });
@@ -418,8 +418,8 @@ void main() {
         await tester.pumpAndSettle();
       });
 
-      expect(find.text('Anna'), findsOneWidget);
-      expect(find.text('Ben'), findsOneWidget);
+      expect(_rowNamed('Anna'), findsOneWidget);
+      expect(_rowNamed('Ben'), findsOneWidget);
       // Persona avatars replace the bare person icon.
       expect(find.byType(PersonaAvatar), findsNWidgets(2));
       // Exactly one sparkle: Anna is important, Ben is not (the star is
@@ -429,11 +429,14 @@ void main() {
         findsOneWidget,
       );
       expect(find.byIcon(LottiIconsFilled.star), findsNothing);
-      // The status line is the last contact — what, when, cadence — in mono,
-      // never "Tracking since …".
+      // The status line is the last contact — what, when, cadence, with
+      // the mono voice on the date alone — never "Tracking since …".
       // Anna is enrolled without a stored cadence: the line names the
       // runtime's monthly default, never "No cadence".
-      expect(find.text('Call · Yesterday 18:00 · Monthly'), findsOneWidget);
+      expect(
+        find.text('Call · Yesterday 18:00 · Monthly', findRichText: true),
+        findsOneWidget,
+      );
       // Ben has no check-in: "Just added", then the cadence.
       final context = tester.element(find.byType(RelationshipsPage));
       expect(
@@ -461,7 +464,7 @@ void main() {
     gate.complete([item('rel-1', title: 'Anna')]);
     await tester.pumpAndSettle();
     expect(find.byType(CircularProgressIndicator), findsNothing);
-    expect(find.text('Anna'), findsOneWidget);
+    expect(_rowNamed('Anna'), findsOneWidget);
   });
 
   testWidgets(
@@ -485,7 +488,7 @@ void main() {
 
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
-      expect(find.text('Anna'), findsOneWidget);
+      expect(_rowNamed('Anna'), findsOneWidget);
 
       updates.add({relationshipNotification});
       await tester.pump();
@@ -493,7 +496,7 @@ void main() {
 
       // Mid-refetch: the established list must stay, with no loading shell.
       expect(calls, 2);
-      expect(find.text('Anna'), findsOneWidget);
+      expect(_rowNamed('Anna'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
 
       second.complete([
@@ -501,7 +504,7 @@ void main() {
         item('rel-2', title: 'Ben'),
       ]);
       await tester.pumpAndSettle();
-      expect(find.text('Ben'), findsOneWidget);
+      expect(_rowNamed('Ben'), findsOneWidget);
     },
   );
 
@@ -629,17 +632,37 @@ void main() {
 
     expect(find.text('Due · 1'), findsOneWidget);
     expect(find.text('On track · 2'), findsOneWidget);
-    expect(find.text('Not enrolled · 2'), findsOneWidget);
+    expect(find.text('No reminders · 2'), findsOneWidget);
 
     // Never "Due Mon" for a lapse that happened last Monday (P5).
     expect(find.text('3 days over'), findsOneWidget);
     expect(find.text('Due Mon'), findsNothing);
     expect(find.text('Due Thu'), findsOneWidget);
-    expect(find.text('On track'), findsOneWidget);
-    expect(find.text('Not enrolled'), findsOneWidget);
+    // `Dormant` says something the *Not enrolled* heading above it does
+    // not, so it stays.
     expect(find.text('Dormant'), findsOneWidget);
 
-    double y(String name) => tester.getCenter(find.text(name)).dy;
+    // A pill that only repeats its own band heading is dropped: it spent
+    // the row's trailing slot, and the width the name needs, to say the
+    // word three rows up already said. `Due Thu` and `3 days over` carry a
+    // time no heading can, so those survive — which is the whole rule.
+    expect(
+      find.text('On track · 2'),
+      findsOneWidget,
+      reason: 'the band heading carries the state',
+    );
+    expect(
+      find.text('On track'),
+      findsNothing,
+      reason: 'no row under that heading repeats it as a pill',
+    );
+    expect(
+      find.text('No reminders'),
+      findsNothing,
+      reason: 'the heading reads `Not enrolled · 2`; no row repeats it',
+    );
+
+    double y(String name) => tester.getCenter(_rowNamed(name)).dy;
     expect(y('Anna'), lessThan(y('Ben')));
     expect(y('Ben'), lessThan(y('Cara')));
     expect(y('Cara'), lessThan(y('Dan')));
@@ -660,9 +683,41 @@ void main() {
 
     expect(find.byType(PeopleSummaryCard), findsOneWidget);
     expect(find.text('1'), findsOneWidget);
-    expect(find.text('/ 3 enrolled'), findsOneWidget);
-    expect(find.text('Next due Ben · Thu 20 Aug'), findsOneWidget);
-    expect(find.text('2 people not enrolled'), findsOneWidget);
+    expect(find.text('/ 3 with reminders'), findsOneWidget);
+    // Caption, name, day — the day on its own line so it is never
+    // the part that ellipses.
+    expect(find.text('Next due'), findsOneWidget);
+    expect(find.text('Ben'), findsOneWidget);
+    expect(find.text('Thu 20 Aug'), findsOneWidget);
+    expect(find.text('2 people without reminders'), findsOneWidget);
+  });
+
+  testWidgets('the summary card opens the person each half is about', (
+    tester,
+  ) async {
+    when(
+      () => mockRepository.getRelationshipsByRecency(),
+    ).thenAnswer((_) async => crew());
+    final beamedTo = <String>[];
+    beamToNamedOverride = beamedTo.add;
+    addTearDown(() => beamToNamedOverride = null);
+
+    await withClock(Clock.fixed(testDate), () async {
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+    });
+
+    // The count is about the longest lapse; the sentence is about the next
+    // one. The card used to name a person and then leave the reader to go
+    // and find them in the list below.
+    await tester.tap(find.byKey(const ValueKey('people-summary-due-open')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('people-summary-next-due-open')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(beamedTo, ['/people/rel-anna', '/people/rel-ben']);
   });
 
   testWidgets('a person who is not important reads Not enrolled, with no '
@@ -674,9 +729,11 @@ void main() {
     await tester.pumpWidget(buildPage());
     await tester.pumpAndSettle();
 
-    expect(find.text('Anna'), findsOneWidget);
-    expect(find.text('Not enrolled · 1'), findsOneWidget);
-    expect(find.text('Not enrolled'), findsOneWidget);
+    expect(_rowNamed('Anna'), findsOneWidget);
+    // The band heading carries the state; the row does not repeat it.
+    expect(find.text('No reminders · 1'), findsOneWidget);
+    expect(find.text('No reminders'), findsNothing);
+    expect(find.byType(PeopleCadencePillWidget), findsNothing);
     expect(find.text('On track'), findsNothing);
     expect(find.byType(PeopleSummaryCard), findsOneWidget);
   });
@@ -762,7 +819,7 @@ void main() {
 
       await pumpDesktop(tester);
 
-      expect(find.text('Anna'), findsOneWidget);
+      expect(_rowNamed('Anna'), findsOneWidget);
       final context = tester.element(find.byType(RelationshipsPage));
       expect(
         find.text(context.messages.relationshipsSelectPersonHint),
@@ -916,9 +973,16 @@ void main() {
       await pumpDesktop(tester);
 
       expect(find.byType(RelationshipDetailsPage), findsOneWidget);
-      // The page's own app bar names the person, so the name appears twice:
-      // once on the list, once on the page.
-      expect(find.text('Anna'), findsNWidgets(2));
+      // The page's own app bar names the person, so the name appears
+      // twice: once on the list row, once on the page beside it.
+      expect(_rowNamed('Anna'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(RelationshipDetailsPage),
+          matching: find.textContaining('Anna', findRichText: true),
+        ),
+        findsWidgets,
+      );
       final selectedRow = tester.widget<PeopleListRow>(
         find.byKey(const ValueKey('people-row-rel-anna')),
       );
@@ -1080,3 +1144,12 @@ class _UnsupportedContactsService implements ContactsService {
   @override
   Future<void> openSystemSettings() async {}
 }
+
+/// The row for [name]. The name is a `Text.rich` (the enrolment sparkle
+/// rides inside it as a `WidgetSpan`, so `toPlainText` carries a placeholder
+/// character), and the summary card names the next-due person as well —
+/// so the lookup is scoped to the rows and matches on a substring.
+Finder _rowNamed(String name) => find.descendant(
+  of: find.byType(PeopleListRow),
+  matching: find.textContaining(name, findRichText: true),
+);

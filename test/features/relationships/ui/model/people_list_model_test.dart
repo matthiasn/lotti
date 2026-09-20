@@ -126,11 +126,84 @@ void main() {
     glados.Glados(
       glados.any.people,
       glados.ExploreConfig(numRuns: 200),
-    ).test('within a band the most recent contact comes first', (specs) {
+    ).test('each band orders by the thing that band is about', (specs) {
       for (final section in peopleListSections(_itemsFrom(specs), now: _now)) {
-        final recency = section.items.map(peopleRecencyOf).toList();
-        for (var i = 1; i < recency.length; i++) {
-          expect(recency[i - 1].isBefore(recency[i]), isFalse);
+        final items = section.items;
+        for (var i = 1; i < items.length; i++) {
+          final prev = items[i - 1];
+          final next = items[i];
+          switch (section.group) {
+            // The band exists to be discharged: the longest wait leads, so
+            // the reader's first row is the one they owe most.
+            case PeopleListGroup.due:
+              expect(
+                peopleOverdueDaysOf(prev, now: _now),
+                greaterThanOrEqualTo(peopleOverdueDaysOf(next, now: _now)!),
+              );
+            // The next commitment leads — the person the summary card
+            // names as next due must be the first row under this heading,
+            // or the list contradicts its own headline.
+            case PeopleListGroup.onTrack:
+              expect(
+                peopleDueDateOf(prev, now: _now)!.isAfter(
+                  peopleDueDateOf(next, now: _now)!,
+                ),
+                isFalse,
+              );
+            // Nobody here has a deadline, so recency is the only honest
+            // order left.
+            case PeopleListGroup.notEnrolled:
+              expect(
+                peopleRecencyOf(prev).isBefore(peopleRecencyOf(next)),
+                isFalse,
+              );
+          }
+        }
+      }
+    }, tags: 'glados');
+
+    glados.Glados(
+      glados.any.people,
+      glados.ExploreConfig(numRuns: 200),
+    ).test('the On track band leads with the person the summary card names '
+        'as next due', (specs) {
+      final items = _itemsFrom(specs);
+      final summary = peopleSummaryOf(items, now: _now);
+      final nextDue = summary.nextDue;
+      if (nextDue == null) return;
+      final onTrack = peopleListSections(items, now: _now)
+          .where((s) => s.group == PeopleListGroup.onTrack)
+          .expand((s) => s.items)
+          .toList();
+      if (onTrack.isEmpty) return;
+      // The *date* is the contract, not the identity: two people due the
+      // same day are both correct leads, and the card and the band break
+      // that tie independently.
+      expect(
+        peopleDueDateOf(onTrack.first, now: _now),
+        summary.nextDueAt,
+        reason:
+            'the card names when the next lapse falls; the band must lead '
+            'with a person due then, not bury them mid-list',
+      );
+      expect(peopleDueDateOf(nextDue, now: _now), summary.nextDueAt);
+    }, tags: 'glados');
+
+    glados.Glados(
+      glados.any.people,
+      glados.ExploreConfig(numRuns: 200),
+    ).test('mostOverdue is the longest lapse, and exists exactly when the '
+        'due count does', (specs) {
+      final items = _itemsFrom(specs);
+      final summary = peopleSummaryOf(items, now: _now);
+      expect(summary.mostOverdue != null, summary.dueNow > 0);
+      final overdue = summary.mostOverdue;
+      if (overdue == null) return;
+      final worst = peopleOverdueDaysOf(overdue, now: _now)!;
+      for (final item in items) {
+        final days = peopleOverdueDaysOf(item, now: _now);
+        if (days != null && days >= 0) {
+          expect(days, lessThanOrEqualTo(worst));
         }
       }
     }, tags: 'glados');

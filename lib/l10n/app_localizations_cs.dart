@@ -11890,6 +11890,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String relationshipAgentEnrolPerson(String name) {
+    return 'Připomínat $name';
+  }
+
+  @override
   String get relationshipAgentFailedBody =>
       'Poskytovatel vrátil chybu dřív, než se briefing napsal. Tvoje check-iny zůstaly beze změny.';
 
@@ -11904,9 +11909,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String relationshipAgentLastRunFailed(String time) {
     return 'Poslední běh selhal · $time';
   }
-
-  @override
-  String get relationshipAgentMarkImportant => 'Označit jako důležité';
 
   @override
   String get relationshipAgentNoAgent => 'Pro tuto osobu není žádný agent';
@@ -11930,12 +11932,8 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Označ $name jako důležitou osobu a získáš chat, připomínky po delší odmlce a briefing.';
+    return 'Zapni připomínky pro $name a získáš chat, pobídku po delší odmlce a briefing.';
   }
-
-  @override
-  String get relationshipAgentOnlyYourStartsUseAi =>
-      'AI používá jen to, co spustíš sám';
 
   @override
   String relationshipAgentOutOfDateNewCheckIn(String day) {
@@ -12303,7 +12301,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipImportantDescription => 'Připomínej mi, ať se ozvu';
 
   @override
-  String get relationshipImportantLabel => 'Důležité';
+  String get relationshipImportantLabel => 'S připomínkami';
 
   @override
   String relationshipImportConfirmButton(int count) {
@@ -12445,7 +12443,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipNoLinkedTasks => 'Zatím žádné propojené úkoly.';
 
   @override
-  String get relationshipNotEnrolled => 'Nesledováno';
+  String get relationshipNotEnrolled => 'Bez připomínek';
 
   @override
   String get relationshipNotFound => 'Tahle osoba už není sledovaná.';
@@ -12600,20 +12598,16 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String relationshipsSummaryEnrolled(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '/ $count sledovaných',
-      few: '/ $count sledované',
-      one: '/ 1 sledovaná',
-    );
-    return '$_temp0';
+    return '/ $count s připomínkami';
   }
 
   @override
   String relationshipsSummaryNextDue(String name, String day) {
     return 'Další: $name · $day';
   }
+
+  @override
+  String get relationshipsSummaryNextDueCaption => 'Další na řadě';
 
   @override
   String get relationshipsSummaryNoneDue => 'Nikdo není na řadě';
@@ -12623,9 +12617,9 @@ class AppLocalizationsCs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count nesledovaných osob',
-      few: '$count nesledované osoby',
-      one: '1 nesledovaná osoba',
+      other: '$count osob bez připomínek',
+      few: '$count osoby bez připomínek',
+      one: '1 osoba bez připomínek',
     );
     return '$_temp0';
   }
@@ -12659,18 +12653,6 @@ class AppLocalizationsCs extends AppLocalizations {
     String cadence,
   ) {
     return '$type · $time · $cadence';
-  }
-
-  @override
-  String relationshipTasksLinkedCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count propojených',
-      few: '$count propojené',
-      one: '1 propojený',
-    );
-    return '$_temp0';
   }
 
   @override

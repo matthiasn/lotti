@@ -11870,6 +11870,11 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String relationshipAgentEnrolPerson(String name) {
+    return 'Ricordami $name';
+  }
+
+  @override
   String get relationshipAgentFailedBody =>
       'Il provider ha restituito un errore prima che il briefing fosse scritto. I tuoi check-in sono invariati.';
 
@@ -11884,9 +11889,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String relationshipAgentLastRunFailed(String time) {
     return 'Ultima esecuzione fallita · $time';
   }
-
-  @override
-  String get relationshipAgentMarkImportant => 'Segna come importante';
 
   @override
   String get relationshipAgentNoAgent => 'Nessun agente per questa persona';
@@ -11908,12 +11910,8 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Segna $name come importante per avere una chat, promemoria quando è passato un po\' di tempo e un briefing.';
+    return 'Attiva i promemoria per $name per avere una chat, un promemoria quando è passato un po’ di tempo e un briefing.';
   }
-
-  @override
-  String get relationshipAgentOnlyYourStartsUseAi =>
-      'Solo ciò che avvii tu usa l’IA';
 
   @override
   String relationshipAgentOutOfDateNewCheckIn(String day) {
@@ -12272,7 +12270,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Ricordami di restare in contatto';
 
   @override
-  String get relationshipImportantLabel => 'Importante';
+  String get relationshipImportantLabel => 'Con promemoria';
 
   @override
   String relationshipImportConfirmButton(int count) {
@@ -12411,7 +12409,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get relationshipNoLinkedTasks => 'Nessuna attività collegata.';
 
   @override
-  String get relationshipNotEnrolled => 'Non seguita';
+  String get relationshipNotEnrolled => 'Senza promemoria';
 
   @override
   String get relationshipNotFound =>
@@ -12567,19 +12565,16 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String relationshipsSummaryEnrolled(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '/ $count seguite',
-      one: '/ 1 seguita',
-    );
-    return '$_temp0';
+    return '/ $count con promemoria';
   }
 
   @override
   String relationshipsSummaryNextDue(String name, String day) {
     return 'Prossima scadenza: $name · $day';
   }
+
+  @override
+  String get relationshipsSummaryNextDueCaption => 'Prossima';
 
   @override
   String get relationshipsSummaryNoneDue => 'Nessuno in scadenza';
@@ -12589,8 +12584,8 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count persone non seguite',
-      one: '1 persona non seguita',
+      other: '$count persone senza promemoria',
+      one: '1 persona senza promemoria',
     );
     return '$_temp0';
   }
@@ -12624,17 +12619,6 @@ class AppLocalizationsIt extends AppLocalizations {
     String cadence,
   ) {
     return '$type · $time · $cadence';
-  }
-
-  @override
-  String relationshipTasksLinkedCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count collegate',
-      one: '1 collegata',
-    );
-    return '$_temp0';
   }
 
   @override

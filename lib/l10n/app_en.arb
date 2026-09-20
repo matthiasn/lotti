@@ -6837,6 +6837,14 @@
       }
     }
   },
+  "relationshipAgentEnrolPerson": "Remind me about {name}",
+  "@relationshipAgentEnrolPerson": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipAgentFailedBody": "The provider returned an error before the briefing was written. Your check-ins are unchanged.",
   "relationshipAgentFailedNoModel": "No model is set up for briefings. Choose one under AI Settings › Agents. Details are in the Activity tab.",
   "relationshipAgentFailedPlain": "Last run failed",
@@ -6848,7 +6856,6 @@
       }
     }
   },
-  "relationshipAgentMarkImportant": "Mark important",
   "relationshipAgentNoAgent": "No agent for this person",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{No briefing yet. Brief now writes one once you have logged a check-in; it never sees the phone number or email.} =1{No briefing yet. Brief now writes one from your check-in; it never sees the phone number or email.} other{No briefing yet. Brief now writes one from your {count} check-ins; it never sees the phone number or email.}}",
   "@relationshipAgentNoBriefingBody": {
@@ -6858,7 +6865,7 @@
       }
     }
   },
-  "relationshipAgentNotEnrolledBody": "Mark {name} as important to get a chat, nudges when it has been a while, and a briefing.",
+  "relationshipAgentNotEnrolledBody": "Turn on reminders for {name} to get a chat, a nudge when it has been a while, and a briefing.",
   "@relationshipAgentNotEnrolledBody": {
     "placeholders": {
       "name": {
@@ -6866,7 +6873,6 @@
       }
     }
   },
-  "relationshipAgentOnlyYourStartsUseAi": "Only what you start yourself uses AI",
   "relationshipAgentOutOfDateNewCheckIn": "Out of date · new check-in {day}",
   "@relationshipAgentOutOfDateNewCheckIn": {
     "placeholders": {
@@ -7153,7 +7159,7 @@
     }
   },
   "relationshipImportantDescription": "Nudge me to stay in touch",
-  "relationshipImportantLabel": "Important",
+  "relationshipImportantLabel": "Reminders on",
   "relationshipImportConfirmButton": "{count, plural, =1{Add 1 person} other{Add {count} people}}",
   "@relationshipImportConfirmButton": {
     "description": "Creates one person per reviewed contact",
@@ -7270,7 +7276,7 @@
   "relationshipNicknameLabel": "Nickname",
   "relationshipNoCheckIns": "No check-ins yet — log one after you next talk.",
   "relationshipNoLinkedTasks": "No tasks linked yet.",
-  "relationshipNotEnrolled": "Not enrolled",
+  "relationshipNotEnrolled": "No reminders",
   "relationshipNotFound": "This person is no longer tracked.",
   "relationshipOnTrackCadence": "On track · {cadence}",
   "@relationshipOnTrackCadence": {
@@ -7388,7 +7394,7 @@
   "relationshipsPageTitle": "People",
   "relationshipsSelectPersonHint": "Select a person to see their page.",
   "relationshipsSummaryDueNow": "Due now",
-  "relationshipsSummaryEnrolled": "/ {count} enrolled",
+  "relationshipsSummaryEnrolled": "/ {count} with reminders",
   "@relationshipsSummaryEnrolled": {
     "placeholders": {
       "count": {
@@ -7407,8 +7413,9 @@
       }
     }
   },
+  "relationshipsSummaryNextDueCaption": "Next due",
   "relationshipsSummaryNoneDue": "No one due",
-  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 person not enrolled} other{{count} people not enrolled}}",
+  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 person without reminders} other{{count} people without reminders}}",
   "@relationshipsSummaryNotEnrolled": {
     "placeholders": {
       "count": {
@@ -7450,14 +7457,6 @@
       },
       "cadence": {
         "type": "String"
-      }
-    }
-  },
-  "relationshipTasksLinkedCount": "{count, plural, =1{1 linked} other{{count} linked}}",
-  "@relationshipTasksLinkedCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
       }
     }
   },

@@ -11729,6 +11729,11 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String relationshipAgentEnrolPerson(String name) {
+    return 'Påminn mig om $name';
+  }
+
+  @override
   String get relationshipAgentFailedBody =>
       'Leverantören svarade med ett fel innan briefingen skrevs. Dina avstämningar är oförändrade.';
 
@@ -11743,9 +11748,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String relationshipAgentLastRunFailed(String time) {
     return 'Senaste körningen misslyckades · $time';
   }
-
-  @override
-  String get relationshipAgentMarkImportant => 'Markera som viktig';
 
   @override
   String get relationshipAgentNoAgent => 'Ingen agent för den här personen';
@@ -11767,12 +11769,8 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Markera $name som viktig för att få en chatt, påminnelser när det gått ett tag och en briefing.';
+    return 'Slå på påminnelser för $name för att få en chatt, en knuff när det gått ett tag och en briefing.';
   }
-
-  @override
-  String get relationshipAgentOnlyYourStartsUseAi =>
-      'Bara det du själv startar använder AI';
 
   @override
   String relationshipAgentOutOfDateNewCheckIn(String day) {
@@ -12133,7 +12131,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Påminn mig om att hålla kontakten';
 
   @override
-  String get relationshipImportantLabel => 'Viktig';
+  String get relationshipImportantLabel => 'Med påminnelser';
 
   @override
   String relationshipImportConfirmButton(int count) {
@@ -12271,7 +12269,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipNoLinkedTasks => 'Inga uppgifter länkade än.';
 
   @override
-  String get relationshipNotEnrolled => 'Följs inte';
+  String get relationshipNotEnrolled => 'Utan påminnelser';
 
   @override
   String get relationshipNotFound => 'Den här personen följs inte längre.';
@@ -12426,19 +12424,16 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String relationshipsSummaryEnrolled(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '/ $count följda',
-      one: '/ 1 följd',
-    );
-    return '$_temp0';
+    return '/ $count med påminnelser';
   }
 
   @override
   String relationshipsSummaryNextDue(String name, String day) {
     return 'Nästa: $name · $day';
   }
+
+  @override
+  String get relationshipsSummaryNextDueCaption => 'Nästa';
 
   @override
   String get relationshipsSummaryNoneDue => 'Ingen väntar';
@@ -12448,8 +12443,8 @@ class AppLocalizationsSv extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count personer följs inte',
-      one: '1 person följs inte',
+      other: '$count personer utan påminnelser',
+      one: '1 person utan påminnelser',
     );
     return '$_temp0';
   }
@@ -12483,17 +12478,6 @@ class AppLocalizationsSv extends AppLocalizations {
     String cadence,
   ) {
     return '$type · $time · $cadence';
-  }
-
-  @override
-  String relationshipTasksLinkedCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count kopplade',
-      one: '1 kopplad',
-    );
-    return '$_temp0';
   }
 
   @override

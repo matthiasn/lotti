@@ -1051,7 +1051,16 @@ void main() {
         );
 
         expect(
-          find.text('Commander Pip Frostbeak'),
+          // The row name is a \`Text.rich\`: the enrolment sparkle rides
+          // inside it as a \`WidgetSpan\`, so the plain text carries a
+          // placeholder character and an exact match would never hit.
+          find.descendant(
+            of: find.byType(PeopleListRow),
+            matching: find.textContaining(
+              'Commander Pip Frostbeak',
+              findRichText: true,
+            ),
+          ),
           findsOneWidget,
           reason: 'the lapsed person leads the Due band',
         );

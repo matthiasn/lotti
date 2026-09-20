@@ -2,24 +2,37 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/contact_quick_actions.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// A section card's title row: the heading, an optional count or caption
-/// beside it, and an optional trailing action — one shape for every card on
-/// the person page.
+/// A section card's title row: the heading, an optional count beside it, an
+/// optional free-form caption, and an optional trailing action — one shape
+/// for every card on the person page.
+///
+/// [count] is text, not a chip. A number of check-ins is metadata about the
+/// heading it follows, and rendering it as a filled pill made it look like
+/// the tinted state chips two centimetres above it — the reader could not
+/// tell which chips meant something and which were tappable. It reads in
+/// the same `Label · N` grammar the page title and the list's band headings
+/// already use, so one count convention covers the feature.
 class PersonCardHeader extends StatelessWidget {
   const PersonCardHeader({
     required this.title,
+    this.count,
+    this.countKey,
     this.caption,
     this.trailing,
     super.key,
   });
 
   final String title;
+  final int? count;
+
+  /// Key for the count text, so a card can name its own count without the
+  /// key existing on a header that has no count to show.
+  final Key? countKey;
   final Widget? caption;
   final Widget? trailing;
 
@@ -30,10 +43,24 @@ class PersonCardHeader extends StatelessWidget {
       children: [
         Text(
           title,
-          style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+          // `subtitle1`, not `subtitle2`: at 14 these titles sat *under*
+          // the 16pt body they head, and under the Briefing card's own
+          // title, so the person page had two heading tiers and the
+          // quieter one led the louder content.
+          style: tokens.typography.styles.subtitle.subtitle1.copyWith(
             color: tokens.colors.text.highEmphasis,
           ),
         ),
+        if (count != null) ...[
+          SizedBox(width: tokens.spacing.step2),
+          Text(
+            '· $count',
+            key: countKey,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.lowEmphasis,
+            ),
+          ),
+        ],
         if (caption != null) ...[
           SizedBox(width: tokens.spacing.step3),
           caption!,
@@ -41,6 +68,38 @@ class PersonCardHeader extends StatelessWidget {
         const Spacer(),
         ?trailing,
       ],
+    );
+  }
+}
+
+/// The filled circle behind a leading glyph on a person-page row — the
+/// check-in log's interaction icon and the Reach card's channel icon are the
+/// same object and now the same widget.
+///
+/// Sized from [ControlSizes.iconChip], not `spacing.step8`. The two are both
+/// 40 today, but one describes a thing on the screen and the other describes
+/// a gap between things, and they retune independently.
+class PersonLeadingGlyph extends StatelessWidget {
+  const PersonLeadingGlyph({required this.icon, super.key});
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Container(
+      width: ControlSizes.iconChip,
+      height: ControlSizes.iconChip,
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level03,
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: Icon(
+        icon,
+        size: IconSizes.m,
+        color: tokens.colors.text.mediumEmphasis,
+      ),
     );
   }
 }
@@ -83,8 +142,13 @@ class NextTimeCard extends StatelessWidget {
       width: double.infinity,
       padding: EdgeInsets.all(tokens.spacing.step4),
       decoration: BoxDecoration(
-        color: tokens.colors.background.level03,
+        // `level03` is the divider gray, not a surface: filling the tiles
+        // with it made the page's quietest content its brightest block —
+        // brighter than the Briefing card it sits under — and gave it the
+        // lift of something pressable, which it is not.
+        color: tokens.colors.background.level02,
         borderRadius: BorderRadius.circular(tokens.radii.m),
+        border: Border.all(color: tokens.colors.decorative.level01),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,13 +175,12 @@ class NextTimeCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          PersonCardHeader(
-            title: messages.relationshipNextTimeTitle,
-            trailing: Text(
-              relationshipTimestampLabelOf(context, latest!.meta.dateFrom),
-              style: relationshipTimestampStyle(tokens),
-            ),
-          ),
+          // No date in this header. It used to carry the timestamp of the
+          // *last* check-in, unlabelled, beside a title that reads as a
+          // future intention — so the one date on the card named the
+          // opposite of what the card is about. The check-in it came from
+          // is the row directly below, with its own date on it.
+          PersonCardHeader(title: messages.relationshipNextTimeTitle),
           SizedBox(height: tokens.spacing.step4),
           if (attention != null)
             tile(
@@ -195,20 +258,7 @@ class _ReachRow extends StatelessWidget {
       padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
       child: Row(
         children: [
-          Container(
-            width: tokens.spacing.step8,
-            height: tokens.spacing.step8,
-            decoration: BoxDecoration(
-              color: tokens.colors.background.level03,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Icon(
-              contactChannelTypeIcon(channel.type),
-              size: IconSizes.m,
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-          ),
+          PersonLeadingGlyph(icon: contactChannelTypeIcon(channel.type)),
           SizedBox(width: tokens.spacing.step4),
           Expanded(
             child: Column(

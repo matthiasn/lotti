@@ -11832,6 +11832,11 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String relationshipAgentEnrolPerson(String name) {
+    return 'Lembrar-me de $name';
+  }
+
+  @override
   String get relationshipAgentFailedBody =>
       'O fornecedor devolveu um erro antes de o briefing ser escrito. Os teus check-ins estão inalterados.';
 
@@ -11846,9 +11851,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String relationshipAgentLastRunFailed(String time) {
     return 'Última execução falhou · $time';
   }
-
-  @override
-  String get relationshipAgentMarkImportant => 'Marcar como importante';
 
   @override
   String get relationshipAgentNoAgent => 'Sem agente para esta pessoa';
@@ -11870,12 +11872,8 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Marca $name como importante para ter um chat, lembretes quando já passou algum tempo e um briefing.';
+    return 'Ativa os lembretes de $name para ter um chat, um aviso quando já passou algum tempo e um briefing.';
   }
-
-  @override
-  String get relationshipAgentOnlyYourStartsUseAi =>
-      'Só o que tu próprio inicias usa IA';
 
   @override
   String relationshipAgentOutOfDateNewCheckIn(String day) {
@@ -12237,7 +12235,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get relationshipImportantDescription => 'Me lembre de manter contato';
 
   @override
-  String get relationshipImportantLabel => 'Importante';
+  String get relationshipImportantLabel => 'Com lembretes';
 
   @override
   String relationshipImportConfirmButton(int count) {
@@ -12376,7 +12374,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get relationshipNoLinkedTasks => 'Nenhuma tarefa vinculada ainda.';
 
   @override
-  String get relationshipNotEnrolled => 'Sem acompanhamento';
+  String get relationshipNotEnrolled => 'Sem lembretes';
 
   @override
   String get relationshipNotFound => 'Esta pessoa não está mais na sua lista.';
@@ -12531,13 +12529,16 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String relationshipsSummaryEnrolled(int count) {
-    return '/ $count em acompanhamento';
+    return '/ $count com lembretes';
   }
 
   @override
   String relationshipsSummaryNextDue(String name, String day) {
     return 'A seguir: $name · $day';
   }
+
+  @override
+  String get relationshipsSummaryNextDueCaption => 'A seguir';
 
   @override
   String get relationshipsSummaryNoneDue => 'Ninguém pendente';
@@ -12547,8 +12548,8 @@ class AppLocalizationsPt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count pessoas sem acompanhamento',
-      one: '1 pessoa sem acompanhamento',
+      other: '$count pessoas sem lembretes',
+      one: '1 pessoa sem lembretes',
     );
     return '$_temp0';
   }
@@ -12582,17 +12583,6 @@ class AppLocalizationsPt extends AppLocalizations {
     String cadence,
   ) {
     return '$type · $time · $cadence';
-  }
-
-  @override
-  String relationshipTasksLinkedCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count ligadas',
-      one: '1 ligada',
-    );
-    return '$_temp0';
   }
 
   @override

@@ -3,14 +3,11 @@ import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
-import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
@@ -33,9 +30,10 @@ import 'package:material_ui/material_ui.dart';
 
 /// One person's page (design 2026-09-06 §2–3), a sibling of the task page:
 /// the cover-style hero with the header actions, the header block with the
-/// cadence fact and the health band as pills, then the section cards in the
-/// design's order — Briefing · Next time · Check-ins · Reach · Tasks — above
-/// the sticky action bar (Log check-in · mic · the actionable channel).
+/// cadence fact as its pill, then the section cards in the design's order —
+/// Briefing · Next time · Check-ins · Reach · Tasks — above the sticky
+/// action bar (Log check-in · mic · the actionable channel). The health
+/// band belongs to the briefing card, which dates it.
 ///
 /// On the desktop split the same page fills the detail pane, with every
 /// section on one centred reading column. Deleting cascades through the
@@ -170,22 +168,13 @@ class RelationshipDetailsPage extends ConsumerWidget {
         ? null
         : getIt<EntitiesCacheService>().getCategoryById(categoryId)?.name;
 
-    // The standing briefing, read here as well as in the card: the header's
-    // band pill and the card's chip must agree on whether one exists.
-    final report = currentRelationshipReport(
-      ref
-          .watch(agentReportProvider(relationshipAgentIdFor(relationshipId)))
-          .value,
-    );
-    final healthBand = report == null
-        ? null
-        : relationshipHealthMetricsFromReport(report)?.band;
+    // The health band is not read here: it belongs to the briefing card,
+    // which is the only surface that can date it ("Thriving · as of 3 h
+    // ago"). An undated copy of the same word in the header said the fact
+    // twice and said it less truthfully, so the page no longer watches the
+    // report at all.
     final sections = <Widget>[
-      PersonHeaderBlock(
-        item: item,
-        categoryName: categoryName,
-        healthBand: healthBand,
-      ),
+      PersonHeaderBlock(item: item, categoryName: categoryName),
       // Always present: an unenrolled person gets the card that explains
       // what *important* turns on, with the switch as its action.
       RelationshipBriefingCard(relationship: relationship, checkIns: checkIns),

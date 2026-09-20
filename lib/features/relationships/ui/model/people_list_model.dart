@@ -67,6 +67,15 @@ typedef PeopleSummary = ({
 
   /// When [nextDue]'s cadence lapses.
   DateTime? nextDueAt,
+
+  /// The enrolled person whose cadence lapsed longest ago — what the due
+  /// count is actually about, and so where the count's own tap leads.
+  ///
+  /// Deliberately separate from [nextDue] rather than folded into it: the
+  /// card says "Next due {name}", and a card that says *next due* while
+  /// pointing at someone already overdue is lying in order to be useful.
+  /// Two facts, two doors.
+  RelationshipListItem? mostOverdue,
 });
 
 /// How far ahead "due soon" looks, in days. A person due within the coming
@@ -153,14 +162,77 @@ PeopleCadencePill peopleCadencePillOf(
   return (kind: PeopleCadencePillKind.onTrack, daysOver: 0, dueAt: null);
 }
 
+/// Whether this pill would only restate the band heading it sits under.
+///
+/// `On track` inside *On track* and `Not enrolled` inside *Not enrolled* are
+/// the same word twice. The band already groups by that state, so the pill
+/// spends the row's trailing slot — and the width the person's name needs —
+/// saying what the heading three rows up has already said.
+///
+/// The informative faces stay: `5 days over` and `Due Wed` carry a time no
+/// heading can, and `Dormant` / `Archived` name a status the *Not enrolled*
+/// heading does not. Each of those kinds occurs in exactly one band, so the
+/// kind alone decides this — the caller does not have to pass its band in.
+bool peopleCadencePillRestatesBand(PeopleCadencePillKind kind) =>
+    kind == PeopleCadencePillKind.onTrack ||
+    kind == PeopleCadencePillKind.notEnrolled;
+
 /// The most recent contact, or the tracking start for a person without one,
 /// so a freshly added person sorts to the top of their band.
 DateTime peopleRecencyOf(RelationshipListItem item) =>
     item.lastCheckInAt ?? item.relationship.meta.dateFrom;
 
-/// The list split into its bands, empty bands omitted, each band most recent
-/// contact first. Favorites do not get a band of their own — `important`
-/// decides enrolment, and the sparkle on the name is a marker.
+/// How a band orders its rows — each by the thing that band is *about*.
+///
+/// Ordering every band by recency made the list argue with its own summary
+/// card: the card named the person whose cadence lapses next, and then the
+/// *On track* band put someone with a later deadline above them. A band
+/// that reports an obligation has to lead with the most urgent instance of
+/// it, or the row the reader is looking for is not the row at the top.
+///
+/// Ties fall back to recency and then to id, so the order is total: two
+/// people due the same day must not swap places between rebuilds.
+int Function(RelationshipListItem, RelationshipListItem) _orderWithin(
+  PeopleListGroup group,
+  DateTime? now,
+) {
+  int byRecency(RelationshipListItem a, RelationshipListItem b) {
+    final recency = peopleRecencyOf(b).compareTo(peopleRecencyOf(a));
+    if (recency != 0) return recency;
+    return a.relationship.meta.id.compareTo(b.relationship.meta.id);
+  }
+
+  return switch (group) {
+    // The band exists to be discharged: the longest wait leads it.
+    PeopleListGroup.due => (a, b) {
+      final over = (peopleOverdueDaysOf(b, now: now) ?? 0).compareTo(
+        peopleOverdueDaysOf(a, now: now) ?? 0,
+      );
+      return over != 0 ? over : byRecency(a, b);
+    },
+    // The next commitment leads — the person the summary card names.
+    PeopleListGroup.onTrack => (a, b) {
+      final dueA = peopleDueDateOf(a, now: now);
+      final dueB = peopleDueDateOf(b, now: now);
+      // Unreachable by construction: every member of this band is enrolled
+      // (`peopleListGroupOf`), and an enrolled person always has a due date
+      // (`effectiveCadenceDaysOf` substitutes the runtime default). Kept as
+      // a guard so a future banding change misorders rather than crashes.
+      // coverage:ignore-start
+      if (dueA == null || dueB == null) return byRecency(a, b);
+      // coverage:ignore-end
+      final due = dueA.compareTo(dueB);
+      return due != 0 ? due : byRecency(a, b);
+    },
+    // Nobody here has a deadline, so recency is the only honest order.
+    PeopleListGroup.notEnrolled => byRecency,
+  };
+}
+
+/// The list split into its bands, empty bands omitted, each band ordered by
+/// what that band is about ([_orderWithin]). Favorites do not get a band of
+/// their own — `important` decides enrolment, and the sparkle on the name is
+/// a marker.
 List<PeopleListSection> peopleListSections(
   List<RelationshipListItem> items, {
   DateTime? now,
@@ -172,11 +244,7 @@ List<PeopleListSection> peopleListSections(
   return [
     for (final group in PeopleListGroup.values)
       if (byGroup[group] case final rows? when rows.isNotEmpty)
-        (
-          group: group,
-          items: rows
-            ..sort((a, b) => peopleRecencyOf(b).compareTo(peopleRecencyOf(a))),
-        ),
+        (group: group, items: rows..sort(_orderWithin(group, now))),
   ];
 }
 
@@ -190,6 +258,8 @@ PeopleSummary peopleSummaryOf(
   var notEnrolled = 0;
   RelationshipListItem? nextDue;
   DateTime? nextDueAt;
+  RelationshipListItem? mostOverdue;
+  var mostOverdueDays = -1;
   for (final item in items) {
     if (!isEnrolled(item.relationship)) {
       notEnrolled++;
@@ -199,6 +269,10 @@ PeopleSummary peopleSummaryOf(
     final overdue = peopleOverdueDaysOf(item, now: now);
     if (overdue != null && overdue >= 0) {
       dueNow++;
+      if (overdue > mostOverdueDays) {
+        mostOverdueDays = overdue;
+        mostOverdue = item;
+      }
       continue;
     }
     final due = peopleDueDateOf(item, now: now);
@@ -213,5 +287,6 @@ PeopleSummary peopleSummaryOf(
     notEnrolled: notEnrolled,
     nextDue: nextDue,
     nextDueAt: nextDueAt,
+    mostOverdue: mostOverdue,
   );
 }

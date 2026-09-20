@@ -83,28 +83,35 @@ void main() {
       expect(find.byKey(const ValueKey('person-next-time-card')), findsNothing);
     });
 
-    testWidgets('shows both tiles with their captions and the check-in time', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          NextTimeCard(
-            latest: checkIn(
-              attention: 'Ask how the fitting went.',
-              avoid: 'The coffee incident.',
+    testWidgets(
+      'shows both tiles with their captions, and no date of its own',
+      (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            NextTimeCard(
+              latest: checkIn(
+                attention: 'Ask how the fitting went.',
+                avoid: 'The coffee incident.',
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('Next time'), findsOneWidget);
-      expect(find.text('Pay attention to'), findsOneWidget);
-      expect(find.text('Ask how the fitting went.'), findsOneWidget);
-      expect(find.text('Better to avoid'), findsOneWidget);
-      expect(find.text('The coffee incident.'), findsOneWidget);
-      // The trailing stamp is the check-in's own day and time.
-      expect(find.textContaining('10:30'), findsOneWidget);
-    });
+        expect(find.text('Next time'), findsOneWidget);
+        expect(find.text('Pay attention to'), findsOneWidget);
+        expect(find.text('Ask how the fitting went.'), findsOneWidget);
+        expect(find.text('Better to avoid'), findsOneWidget);
+        expect(find.text('The coffee incident.'), findsOneWidget);
+        // The trailing stamp is the check-in's own day and time.
+        // The card carries no date of its own. It used to head itself with
+        // the timestamp of the *last* check-in, unlabelled, beside a title
+        // that reads as a future intention — so its one date named the
+        // opposite of what the card is about.
+        expect(find.textContaining('10:30'), findsNothing);
+      },
+    );
 
     testWidgets('a single field renders alone, untrimmed content trimmed', (
       tester,

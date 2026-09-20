@@ -487,8 +487,60 @@ within seven days, `On track`, `Not enrolled`, `Dormant`, `Archived`), the
 summary — covered by Glados properties (partition, per-band order,
 order-invariance, band⇔pill agreement, summary⇔bands agreement). The widgets
 (`PeopleListRow`, `PeopleSummaryCard`) only render what the model says; the
-row's status line composes the interaction label, the mono timestamp and the
+row's status line composes the interaction label, the timestamp and the
 cadence label, and never "Tracking since …".
+
+**The row draws a pill only when it says something the band heading has
+not.** `peopleCadencePillRestatesBand` suppresses the `onTrack` and
+`notEnrolled` faces, because each occurs in exactly one band and repeats its
+heading word for word; `overdue`, `dueSoon`, `dormant` and `archived` carry a
+time or a status no heading does, so they stay. The reclaimed width goes to
+the name, which wraps to two lines rather than truncating — the one string on
+the row a reader cannot reconstruct from anything else on it. The enrolment
+sparkle rides *inside* the name as a `WidgetSpan`, so a wrapped name does not
+strand it in the gap between the name and the pill. The overdue pill carries
+a leading `LottiIcons.warning` in `alert.warning.ink`: on the dark ground its
+tint alone read as an inert brown beside the neutral chip, and the glyph is
+the same one the briefing card's out-of-date line uses, so "needs attention"
+is drawn one way across the feature.
+
+**Each band orders by what that band is about** (`_orderWithin`): *Due* by
+the longest lapse, *On track* by the nearest deadline, *Not enrolled* by
+recency, with ties broken on recency and then id so the order is total and
+rows cannot swap between rebuilds. Ordering everything by recency made the
+list argue with its own summary card — the card named who lapses next and
+the band under it led with someone whose deadline was later. A Glados
+property pins the card and the band to the same date.
+
+The summary also carries `mostOverdue`, kept separate from `nextDue`: the
+card says *Next due {name}*, and a card that says *next due* while pointing
+at someone already overdue is lying in order to be useful. Two facts, two
+doors — the count opens the longest lapse, the sentence opens the person it
+names, and a half with nobody behind it draws no chevron and takes no tap.
+
+**The enrolment axis is named in plain words, not in its own noun.**
+`important` is the stored boolean and `isEnrolled` the runtime predicate,
+but no user-facing string says either: the bands, the pills, the summary and
+the control all speak of **reminders on** / **no reminders**. It went
+through an "enrolled" register first, which was at least consistent — the
+state, the marker and the verb finally agreed — but consistent jargon is
+still jargon to a second-language reader, and every non-English catalog had
+already reached for a plainer verb of its own. The rule that survives is the
+one that mattered: *one phrase for the state, the marker and the control*.
+
+**Mono is confined to dates.** `RelationshipLineWithDate`
+([`ui/shared/relationship_timestamps.dart`](../../lib/features/relationships/ui/shared/relationship_timestamps.dart))
+splits a line so only the timestamp wears Inconsolata **at the size of the
+prose around it** — `relationshipTimestampStyle` takes the host style as its
+base and changes face, tracking and colour only, because pinning the span to
+the caption tier dropped the date a size mid-sentence, which is worse than
+the all-mono line the split replaced. It locates the date by searching for
+its own substring — each line is one catalog message, and a
+locale may put the date first, last or in the middle. A line with no date, or
+one whose date does not occur in it, renders whole in the base style. Mono
+tabulates a timestamp down a column; on `Call`, `Weekly` and `last spoke` it
+only costs measure, which is what wrapped `Every two / weeks` onto a ragged
+second line in the desktop rail.
 
 On desktop `RelationshipsPage` is the Tasks/Projects list-detail split:
 `RelationshipsLocation` mirrors the URL's person id into
@@ -537,7 +589,7 @@ under it — the task page's shape, on purpose:
 | Sliver | Widget | Notes |
 |---|---|---|
 | Hero | [`PersonHeroAppBar`](../../lib/features/relationships/ui/widgets/person_header.dart) | A pinned `SliverPersistentHeader` of its own, not a `SliverAppBar`: the avatar hangs half its diameter below the header, and every layer of an app bar clips that overflow. Slivers paint back to front, so the earlier header paints its overhang over the block scrolling under it. The name appears in the bar only once the wash band has folded (`AnimatedSwitcher`, never an invisible duplicate). |
-| Header block | `PersonHeaderBlock` (same file) | Eyebrow · name · one-liner · pills. The pills come from the list model's rules, so the page and the list never disagree about *due*; the cadence pill names the **effective** cadence (`effectiveCadenceDaysOf`), i.e. the runtime default when none is set. The health band comes from the same `currentRelationshipReport` rule the briefing card uses. |
+| Header block | `PersonHeaderBlock` (same file) | Eyebrow · name · one-liner · pills. The pills come from the list model's rules, so the page and the list never disagree about *due*; the cadence pill names the **effective** cadence (`effectiveCadenceDaysOf`), i.e. the runtime default when none is set. The eyebrow takes `calmEyebrowStyle`, not the mono timestamp style — it is a label, not a clock reading. The one-liner is `text.mediumEmphasis` with the mono voice on its timestamp alone: nothing on it is tappable, and the interactive token on a whole non-interactive line promised a tap that never came while outranking the person's own name. The health band is **not** here — the briefing card owns it, because only the card can date it. |
 | Briefing | `RelationshipBriefingCard` | Only when enrolled or a briefing exists; the page reads the report too, so the gap after the card is deterministic. |
 | Next time | `NextTimeCard` in [`person_page_cards.dart`](../../lib/features/relationships/ui/widgets/person_page_cards.dart) | From the latest check-in's *pay attention to* / *avoid*; `NextTimeCard.hasContent` is the one visibility rule, shared with the page. |
 | Post-call offer | `PostInteractionPrompt` | Renders nothing until a marker exists (below). |
@@ -1033,11 +1085,13 @@ Older reports without that snapshot honestly retain "Attribution unavailable"
 until a new briefing is generated; changing the current setup cannot identify
 which model authored historical text.
 
-The health band no longer has a pill on the card (design 2026-09-13): it is
-the first word on the header's status line — `Thriving · as of 3 h ago`,
-the judgement before its timestamp — and the
-person header directly above the card already carries the tinted band pill
-and the cadence pill, so the card repeats neither — but the band's colour
+The health band has no pill anywhere (design 2026-09-13, revised
+2026-09-20): it is the first word on the card's own status line — `Thriving ·
+as of 3 h ago`, the judgement before its timestamp. The person header above
+the card used to carry an undated copy of the same word, which is the less
+truthful form — a band keeps reading as current long after the briefing it
+came from stopped being so — so the header now carries the cadence fact
+alone and the page no longer watches the report at all. The band's colour
 rides the design system's presence dot (`DesignSystemBadge.dot`, toned by
 `relationshipHealthBandTone`) in the status line's glyph slot, so the
 judgement is carried by more than its word (*steady* is the hueless
@@ -1118,7 +1172,15 @@ so the decision is a table rather than a widget tree:
 
 | Face | When | Status line · body · footer |
 |---|---|---|
-| Not enrolled | not `important`, or dormant/archived | plain section card, people glyph · `No agent for this person` (or the status word while paused) · what *important* turns on · **Mark important** · meta `Only what you start yourself uses AI` |
+| Not enrolled | not `important`, or dormant/archived | plain section card, people glyph · `No agent for this person` (or the status word while paused) · what reminders turn on · **Remind me about {name}** |
+
+The not-enrolled card carries **no privacy caption**. It used to read
+`Only what you start yourself uses AI` in the footer's leading slot, beside
+the control that starts an agent which wakes on a cadence and writes
+briefings without being asked each time — so the one privacy claim on the
+surface described the state the reader was one tap from leaving and said
+nothing about the one they were entering. What the agent sends belongs
+somewhere it can be explained, not in a caption that expires on tap.
 | No briefing | enrolled, no current report | `Agent watching · next look {day}` · how many check-ins *Brief now* would read, and that it never sees a channel · *Log check-in* · **Brief now** |
 | Running | `agentIsRunningProvider` | spinner · `Writing the briefing…` · the briefing being replaced, still readable (TL;DR + Read more), or no body before the first — never a duration estimate · *See activity* · no primary |
 | Failed | `consecutiveFailureCount > 0` and the last wake is newer than the report | `Last run failed · {ago}` in error ink · the provider returned an error, your check-ins are unchanged (or that no model is set up) · *See activity* · **Choose a model** when no route resolves, **Try again** otherwise |
@@ -1136,7 +1198,7 @@ more* — so the folded card stays status · TL;DR · one next step.
 ```mermaid
 stateDiagram-v2
   [*] --> NotEnrolled
-  NotEnrolled --> NoBriefing: Mark important (agent created)
+  NotEnrolled --> NoBriefing: Remind me about {name} (agent created)
   NoBriefing --> Running: Brief now / wake
   Running --> Current: report written
   Running --> Failed: wake failed
@@ -1156,7 +1218,7 @@ inference — before this, no relationship wake ever wrote either, so the
 failed face could never appear and the internals' Stats tab never knew the
 last wake. And the card arms one timer at the next minute/hour/day boundary of the
 briefing's age (`untilNextAgeBucket`, shared with the goal page), so "as of
-just now" does not stay on screen for hours. *Mark important* on the plain
+just now" does not stay on screen for hours. *Remind me about {name}* on the plain
 card also mints the agent through `ensureAgentForRelationship`, the same
 lazy-create call the edit form makes.
 
@@ -1166,11 +1228,11 @@ switch, because the relationship runtime never reads
 and above the footer, including when a later wake fails. Their scope and
 confirmation path are described below.
 
-The pills are the header block's own: [`relationshipCadencePill`](../../lib/features/relationships/ui/widgets/person_header.dart)
-renders the list model's cadence fact, and the health band pill takes
-`relationshipHealthBandColor`; the card names the band on its status line
-(its dot through the badge tones of `relationshipHealthBandTone`) and
-draws neither pill. The token cost sums
+The header's pills are its own: [`relationshipCadencePill`](../../lib/features/relationships/ui/widgets/person_header.dart)
+renders the list model's cadence fact, and the next-due day follows it. The
+card names the band on its status line (its dot through the badge tones of
+`relationshipHealthBandTone`) and draws no pill for it; nor does the header.
+The token cost sums
 `agentTokenUsageSummariesProvider` onto the model row; the "as of" status
 uses the shared [`relativeAgoLabel`](../../lib/utils/relative_age_label.dart).
 

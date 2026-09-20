@@ -8,6 +8,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
+import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
@@ -82,12 +83,39 @@ void main() {
   });
 
   testWidgets('the status line is the last contact — what, when, cadence — '
-      'in the mono caption', (tester) async {
+      'with the mono voice on the date alone', (tester) async {
     await pump(tester, item(lastCheckInAt: DateTime(2026, 8, 13, 9, 5)));
 
-    final line = find.text('Call · Today 09:05 · Weekly');
-    expect(line, findsOneWidget);
-    expect(tester.widget<Text>(line).style?.fontFamily, 'Inconsolata');
+    expect(
+      find.text('Call · Today 09:05 · Weekly', findRichText: true),
+      findsOneWidget,
+    );
+
+    // Mono tabulates a date down the column; on `Call` and `Weekly` it only
+    // costs measure, which is what wrapped the line in the desktop rail.
+    final fonts = _spanFonts(tester);
+    expect(fonts['Today 09:05'], 'Inconsolata');
+    expect(
+      fonts['Call · '],
+      isNot('Inconsolata'),
+      reason: 'the prose around the date is proportional',
+    );
+    expect(fonts[' · Weekly'], isNot('Inconsolata'));
+  });
+
+  testWidgets('a status line with no date in it stays one plain string', (
+    tester,
+  ) async {
+    // Not enrolled and never contacted: `Just added · Weekly`, no date to
+    // set in mono, so the line must not become a one-span RichText.
+    await pump(tester, item(important: false));
+
+    final line = tester.widget<RelationshipLineWithDate>(
+      find.byKey(const ValueKey('people-row-status')),
+    );
+    expect(line.text, 'Just added · Weekly');
+    expect(line.date, isNull);
+    expect(line.style.fontFamily, isNot('Inconsolata'));
   });
 
   testWidgets('a person never contacted reads Just added, the cadence, and '
@@ -96,7 +124,10 @@ void main() {
 
     // Tracking started 1 Jul; a monthly cadence falls due on 31 Jul.
     expect(
-      find.text('Just added · Monthly · first due Fri 31 Jul'),
+      find.text(
+        'Just added · Monthly · first due Fri 31 Jul',
+        findRichText: true,
+      ),
       findsOneWidget,
     );
   });
@@ -161,12 +192,17 @@ void main() {
       expect(find.text('Due Thu'), findsOneWidget);
     });
 
-    testWidgets('further out: on track', (tester) async {
+    testWidgets('further out: nothing — the On track band already said it', (
+      tester,
+    ) async {
       await pump(
         tester,
         item(cadenceDays: 30, lastCheckInAt: DateTime(2026, 8, 1, 9)),
       );
-      expect(find.text('On track'), findsOneWidget);
+      // The row sits under an `On track` heading; a pill repeating the word
+      // spends the width the name needs to say nothing new.
+      expect(find.text('On track'), findsNothing);
+      expect(find.byType(PeopleCadencePillWidget), findsNothing);
     });
 
     testWidgets('due today says so, in the warning tint', (tester) async {
@@ -188,8 +224,11 @@ void main() {
           tester,
           item(cadenceDays: null, lastCheckInAt: DateTime(2026, 8, 3, 9)),
         );
-        expect(find.text('Call · Mon 3 Aug 09:00 · Monthly'), findsOneWidget);
-        expect(find.text('On track'), findsOneWidget);
+        expect(
+          find.text('Call · Mon 3 Aug 09:00 · Monthly', findRichText: true),
+          findsOneWidget,
+        );
+        expect(find.byType(PeopleCadencePillWidget), findsNothing);
       },
     );
 
@@ -200,10 +239,16 @@ void main() {
         tester,
         item(important: false, lastCheckInAt: DateTime(2026, 8, 3, 9)),
       );
-      expect(find.text('Not enrolled'), findsOneWidget);
+      // Under the `Not enrolled` heading the pill would be the same two
+      // words again, so the row drops it.
+      expect(find.text('No reminders'), findsNothing);
+      expect(find.byType(PeopleCadencePillWidget), findsNothing);
       expect(find.textContaining('days over'), findsNothing);
       // The stored setting is still what the line names.
-      expect(find.text('Call · Mon 3 Aug 09:00 · Weekly'), findsOneWidget);
+      expect(
+        find.text('Call · Mon 3 Aug 09:00 · Weekly', findRichText: true),
+        findsOneWidget,
+      );
     });
 
     testWidgets('a person who is not enrolled is never given a first-due '
@@ -259,7 +304,7 @@ void main() {
   testWidgets('tapping anywhere on the row fires onTap', (tester) async {
     var taps = 0;
     await pump(tester, item(), onTap: () => taps++);
-    await tester.tap(find.text('Anna'));
+    await tester.tap(find.textContaining('Anna', findRichText: true));
     expect(taps, 1);
   });
 
@@ -287,4 +332,28 @@ void main() {
       reason: 'the row does not grow because the person has a face',
     );
   });
+}
+
+/// The fonts of the status line's spans, as {text: fontFamily}.
+///
+/// The line is a `Text.rich` so the date can wear the mono face while the
+/// prose around it does not; this reads that tree back rather than trusting
+/// one style on the whole widget.
+Map<String, String?> _spanFonts(WidgetTester tester) {
+  final fonts = <String, String?>{};
+  tester
+      .widget<Text>(
+        find.descendant(
+          of: find.byKey(const ValueKey('people-row-status')),
+          matching: find.byType(Text),
+        ),
+      )
+      .textSpan!
+      .visitChildren((span) {
+        if (span is TextSpan && span.text != null) {
+          fonts[span.text!] = span.style?.fontFamily;
+        }
+        return true;
+      });
+  return fonts;
 }

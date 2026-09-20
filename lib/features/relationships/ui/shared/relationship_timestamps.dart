@@ -13,10 +13,20 @@ import 'package:material_ui/material_ui.dart';
 /// All formatters here are pure functions of a [DateTime] (and the clock),
 /// so they are unit-testable without a widget pump.
 
-/// The mono [TextStyle] for a relationship timestamp, derived from the
-/// design-system caption token with the Inconsolata override.
-TextStyle relationshipTimestampStyle(DsTokens tokens, {Color? color}) =>
-    monoMetaStyle(tokens, tokens.colors, color: color);
+/// The mono [TextStyle] for a relationship timestamp: the Inconsolata
+/// override on [base], or on the design-system caption token when the
+/// caller has no host line to match.
+///
+/// [base] matters wherever a date sits *inside* a line of prose. The style
+/// changes face, tracking and colour and nothing else, so a timestamp in a
+/// 16pt sentence stays 16pt — pinning it to the 12pt caption tier dropped
+/// the date a size mid-sentence, which is worse than the all-mono line the
+/// split replaced.
+TextStyle relationshipTimestampStyle(
+  DsTokens tokens, {
+  Color? color,
+  TextStyle? base,
+}) => monoMetaStyle(tokens, tokens.colors, base: base, color: color);
 
 /// `HH:mm` in 24h, mono — the time component shared by every relationship
 /// timestamp.
@@ -183,4 +193,77 @@ int _wholeDaysBetween(DateTime from, DateTime to) {
   final fromMidnight = DateTime(from.year, from.month, from.day);
   final toMidnight = DateTime(to.year, to.month, to.day);
   return toMidnight.difference(fromMidnight).inDays;
+}
+
+/// A line of prose with a date inside it, where the date — and only the date
+/// — wears the mono voice.
+///
+/// Mono earns its place on a timestamp, which tabulates down a column. It
+/// costs measure on the words around one (`Call`, `Weekly`, `last spoke`),
+/// and setting a whole line in it is what wrapped `Every two / weeks` onto a
+/// ragged second line in the People rail. Splitting the line here keeps the
+/// tabular date and gives the prose its proportional face back.
+///
+/// [date] is located by searching [text] for its own substring rather than
+/// by index, because each line is assembled from one catalog message and a
+/// locale is free to put the date first, last or in the middle. A [date]
+/// that is null — or that does not occur in [text] — renders the whole line
+/// in [style], so a missing match degrades to the plain line rather than to
+/// a wrong one.
+class RelationshipLineWithDate extends StatelessWidget {
+  const RelationshipLineWithDate({
+    required this.text,
+    required this.date,
+    required this.style,
+    this.maxLines,
+    super.key,
+  });
+
+  /// The whole assembled line, including [date].
+  final String text;
+
+  /// The date substring inside [text], or null when the line carries none.
+  final String? date;
+
+  /// The proportional style for the line; the date inherits its colour.
+  final TextStyle style;
+
+  final int? maxLines;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final at = date == null ? -1 : text.indexOf(date!);
+    if (at < 0) {
+      return Text(
+        text,
+        maxLines: maxLines,
+        overflow: maxLines == null ? null : TextOverflow.ellipsis,
+        style: style,
+      );
+    }
+    final match = date!;
+    return Text.rich(
+      TextSpan(
+        style: style,
+        children: [
+          if (at > 0) TextSpan(text: text.substring(0, at)),
+          TextSpan(
+            text: match,
+            // Same size and weight as the prose around it; only the face,
+            // the tracking and nothing else change.
+            style: relationshipTimestampStyle(
+              tokens,
+              base: style,
+              color: style.color,
+            ),
+          ),
+          if (at + match.length < text.length)
+            TextSpan(text: text.substring(at + match.length)),
+        ],
+      ),
+      maxLines: maxLines,
+      overflow: maxLines == null ? TextOverflow.clip : TextOverflow.ellipsis,
+    );
+  }
 }

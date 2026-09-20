@@ -116,7 +116,9 @@ void main() {
       ContactAction.email,
     },
     bool launchSucceeds = true,
+    Size? surface,
   }) async {
+    if (surface != null) setTestSurfaceSize(tester, surface);
     final launcher = _FakeContactLauncher(
       launchable: launchable,
       launchSucceeds: launchSucceeds,
@@ -148,7 +150,9 @@ void main() {
     final pill = tester.widget<DsGlassPill>(
       find.byKey(const ValueKey('person-action-log-check-in')),
     );
-    final tokens = tester.element(find.byType(DsGlassPill)).designTokens;
+    final tokens = tester
+        .element(find.byKey(const ValueKey('person-action-log-check-in')))
+        .designTokens;
     expect(pill.label, 'Log check-in');
     expect(pill.fillColor, tokens.colors.interactive.enabled);
     expect(pill.expand, isTrue);
@@ -200,10 +204,57 @@ void main() {
 
       expect(find.byIcon(LottiIcons.mail), findsOneWidget);
       expect(find.byIcon(LottiIcons.call), findsNothing);
-      expect(
-        tester.widget<DsGlassRoundButton>(channelButton).semanticLabel,
-        'Email',
+      // The control says what it does. A bare glyph did not say whether it
+      // opened a mail client on the tap or asked first, which is what made
+      // it the one control a cautious reader would never press.
+      expect(tester.widget<DsGlassPill>(channelButton).label, 'Email');
+      expect(find.text('Email'), findsOneWidget);
+    });
+
+    testWidgets('too narrow for the words, the controls fall back to glyphs '
+        'rather than squeezing the primary', (tester) async {
+      // The labels are budgeted against the row's real width with the
+      // design system's own `intrinsicWidth`, one control at a time. On a
+      // narrow phone the primary keeps its measure and the two trailing
+      // controls stay discs — still labelled for a screen reader, which is
+      // what `semanticLabel` is for.
+      await pump(
+        tester,
+        channels: const [mobile],
+        surface: const Size(320, 640),
       );
+
+      expect(find.byType(DsGlassPill), findsOneWidget);
+      expect(
+        tester.widget<DsGlassPill>(find.byType(DsGlassPill)).label,
+        'Log check-in',
+      );
+      final channel = tester.widget<DsGlassRoundButton>(channelButton);
+      expect(channel.semanticLabel, 'Call');
+      expect(
+        tester
+            .widget<DsGlassRoundButton>(
+              find.byKey(const ValueKey('person-action-speak')),
+            )
+            .semanticLabel,
+        isNotNull,
+      );
+    });
+
+    testWidgets('the glyph fallback still launches the channel', (
+      tester,
+    ) async {
+      final launcher = await pump(
+        tester,
+        channels: const [mobile],
+        surface: const Size(320, 640),
+      );
+
+      await tester.tap(channelButton);
+      await tester.pumpAndSettle();
+
+      expect(launcher.launched, [(mobile, ContactAction.call)]);
+      expect(store.remembered?.relationshipId, person(const []).id);
     });
 
     testWidgets('a press launches the channel and remembers the interaction '

@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
@@ -294,7 +296,10 @@ class _PeopleListScaffold extends ConsumerWidget {
                     ),
                   ),
                 ),
-                [] => SliverToBoxAdapter(child: _EmptyState()),
+                [] => const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _EmptyState(),
+                ),
                 final list => _PeopleList(
                   items: list,
                   selectedRelationshipId: selectedRelationshipId,
@@ -323,13 +328,21 @@ class _PeopleList extends StatelessWidget {
     final tokens = context.designTokens;
     final sections = peopleListSections(items);
     final children = <Widget>[
-      PeopleSummaryCard(summary: peopleSummaryOf(items)),
+      PeopleSummaryCard(
+        summary: peopleSummaryOf(items),
+        onOpenNextDue: (id) => beamToNamed('/people/$id'),
+      ),
       for (final section in sections) ...[
         Padding(
+          // No horizontal inset of its own: the band heading hangs on the
+          // page's content rail with the title above it, and the row's
+          // internal step4 is the row card's inset, not a second gutter.
+          // The break *above* a band has to beat the gaps inside it, or
+          // three bands read as one list with captions in it.
           padding: EdgeInsets.fromLTRB(
-            tokens.spacing.step4,
-            tokens.spacing.step5,
-            tokens.spacing.step4,
+            0,
+            tokens.spacing.sectionGap,
+            0,
             tokens.spacing.step2,
           ),
           child: _GroupHeading(
@@ -369,10 +382,10 @@ class _GroupHeading extends StatelessWidget {
     return Text(
       '$label · $count',
       key: ValueKey('people-group-${group.name}'),
-      style: tokens.typography.styles.others.caption.copyWith(
-        color: tokens.colors.text.mediumEmphasis,
-        fontWeight: tokens.typography.weight.semiBold,
-      ),
+      // The organising label of the list must not share a tier with the
+      // row metadata it organises: `calmEyebrowStyle` is the design
+      // system's structural voice for exactly this.
+      style: calmEyebrowStyle(tokens),
     );
   }
 }
@@ -405,9 +418,7 @@ class _PeopleHeader extends ConsumerWidget {
         children: [
           Text(
             messages.relationshipsPageTitle,
-            style: tokens.typography.styles.heading.heading2.copyWith(
-              color: tokens.colors.text.highEmphasis,
-            ),
+            style: calmPageTitleStyle(tokens),
           ),
           if (itemCount != null) ...[
             SizedBox(width: tokens.spacing.step2),
@@ -467,21 +478,22 @@ class _IconButton extends StatelessWidget {
   }
 }
 
-/// The empty list's message. It carries no add button of its own: adding a
-/// person is the page's bottom action, which is already on screen.
+/// The empty list's message, in the design system's one empty-state
+/// grammar — the same glyph and ramp the desktop idle pane next to it uses,
+/// so the two ways of showing nothing stop being two different designs.
+///
+/// It carries no add button of its own: adding a person is the page's
+/// bottom action, which is already on screen. It fills the sliver's
+/// remaining extent so the message sits in the space it has rather than
+/// clinging to the top of a screen of void.
 class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Padding(
-      padding: EdgeInsets.only(top: tokens.spacing.sectionGap),
-      child: Text(
-        context.messages.relationshipsEmptyState,
-        textAlign: TextAlign.center,
-        style: tokens.typography.styles.body.bodyMedium.copyWith(
-          color: tokens.colors.text.mediumEmphasis,
-        ),
-      ),
+    return DesignSystemEmptyState(
+      icon: LottiIcons.people,
+      title: context.messages.relationshipsEmptyState,
     );
   }
 }

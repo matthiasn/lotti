@@ -8,16 +8,16 @@ import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/photo_chrome_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
-import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/state/contact_import_controller.dart';
 import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
+import 'package:lotti/features/relationships/ui/shared/cadence_pill.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/contact_link_action.dart';
-import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
@@ -85,10 +85,17 @@ class PersonHeroAppBar extends StatelessWidget {
     required double topPadding,
   }) => _heroMinExtent(topPadding) + bandExtent(tokens);
 
-  /// The wash itself: the interactive accent at the tint alpha over the page
-  /// surface — the same recipe every tone-tinted card fill uses.
+  /// The wash itself: a decorative tint over the page surface — the same
+  /// recipe every tone-tinted card fill uses, on the decorative token
+  /// rather than the interactive one.
+  ///
+  /// It used to blend `interactive.enabled`, which spent the app's one
+  /// accent on a person who simply has no banner yet. On the not-enrolled
+  /// page — the one page with no agent and nothing teal to justify — that
+  /// made the header the most saturated surface in the feature, so teal
+  /// stopped meaning "you can press this" anywhere on it.
   static Color washColor(DsTokens tokens) => Color.alphaBlend(
-    tokens.colors.interactive.enabled.withValues(alpha: SurfaceAlphas.tint),
+    tokens.colors.decorative.level02.withValues(alpha: SurfaceAlphas.tint),
     tokens.colors.background.level01,
   );
 
@@ -153,25 +160,36 @@ class PersonHeroAppBar extends StatelessWidget {
     final actions = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (desktop)
-          DesignSystemButton(
-            key: const ValueKey('person-talk-to-agent'),
-            label: messages.goalChatTalkToAgent,
-            leadingIcon: LottiIcons.chat,
-            variant: DesignSystemButtonVariant.secondary,
-            size: DesignSystemButtonSize.dense,
-            onPressed: onTalkToAgent,
-          )
-        else
-          GlassActionButton(
-            key: const ValueKey('person-talk-to-agent'),
-            tooltip: messages.goalChatTalkToAgent,
-            semanticLabel: messages.goalChatTalkToAgent,
-            fill: glassFill,
-            onTap: onTalkToAgent,
-            child: Icon(LottiIcons.chat, size: IconSizes.l, color: ink),
-          ),
-        SizedBox(width: tokens.spacing.step2),
+        // The agent entry, and only where there is an agent. It carried
+        // `LottiIcons.chat` — the same speech bubble the Reach card spends
+        // on "text this human" — so one page showed two bubbles meaning
+        // two different correspondents. The sparkle already means "the
+        // agent" everywhere else in the app, so it means it here.
+        //
+        // It is hidden, not disabled, for a person who is not enrolled: a
+        // chat bubble above "No agent for this person" offered a
+        // conversation with something that does not exist.
+        if (isEnrolled(relationship)) ...[
+          if (desktop)
+            DesignSystemButton(
+              key: const ValueKey('person-talk-to-agent'),
+              label: messages.goalChatTalkToAgent,
+              leadingIcon: LottiIcons.aiSpark,
+              variant: DesignSystemButtonVariant.secondary,
+              size: DesignSystemButtonSize.dense,
+              onPressed: onTalkToAgent,
+            )
+          else
+            GlassActionButton(
+              key: const ValueKey('person-talk-to-agent'),
+              tooltip: messages.goalChatTalkToAgent,
+              semanticLabel: messages.goalChatTalkToAgent,
+              fill: glassFill,
+              onTap: onTalkToAgent,
+              child: Icon(LottiIcons.aiSpark, size: IconSizes.l, color: ink),
+            ),
+          SizedBox(width: tokens.spacing.step2),
+        ],
         GlassActionButton(
           key: const ValueKey('person-edit'),
           tooltip: messages.relationshipEditTitle,
@@ -188,6 +206,11 @@ class PersonHeroAppBar extends StatelessWidget {
           relationship: relationship,
           onDelete: onDelete,
           glyphColor: ink,
+          // The same disc the back, chat and edit buttons wear. Without it
+          // the kebab — which holds delete — was a bare white glyph on a
+          // user's own photograph, the only hero control with nothing
+          // behind it.
+          fill: glassFill,
         ),
       ],
     );
@@ -465,6 +488,7 @@ class PersonMenuButton extends ConsumerWidget {
     required this.relationship,
     required this.onDelete,
     this.glyphColor,
+    this.fill,
     super.key,
   });
 
@@ -474,6 +498,10 @@ class PersonMenuButton extends ConsumerWidget {
   /// The kebab's glyph. Null is the theme's ink; the hero passes the
   /// photo-neutral glyph while it sits on a banner.
   final Color? glyphColor;
+
+  /// The disc behind the glyph, matching the hero's other actions. Null
+  /// where the trigger does not sit on a photograph.
+  final Color? fill;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -511,6 +539,7 @@ class PersonMenuButton extends ConsumerWidget {
     return PopupMenuButton<PersonMenuAction>(
       key: const ValueKey('person-menu'),
       tooltip: messages.relationshipMoreActions,
+      style: fill == null ? null : IconButton.styleFrom(backgroundColor: fill),
       icon: Icon(LottiIcons.moreVertical, color: triggerInk),
       onSelected: (action) => unawaited(switch (action) {
         PersonMenuAction.linkContact ||
@@ -566,20 +595,21 @@ class PersonMenuButton extends ConsumerWidget {
 
 /// The header block under the hero, starting below the avatar that hangs
 /// off it: the eyebrow (`Penguin Operations · Important`), the full wrapping
-/// name, the teal one-liner (`"Pip" · last spoke Today 12:44`), and the
-/// pills — the cadence fact the deterministic tier always knows, the health
-/// band once a briefing exists, and the next due day.
+/// name, the quiet one-liner (`"Pip" · last spoke Today 12:44`, its
+/// timestamp in the mono voice), and the pills — the cadence fact the
+/// deterministic tier always knows, and the next due day.
+///
+/// The health band is deliberately *not* here: the briefing card carries it
+/// with the age that makes it true.
 class PersonHeaderBlock extends StatelessWidget {
   const PersonHeaderBlock({
     required this.item,
     required this.categoryName,
-    required this.healthBand,
     super.key,
   });
 
   final RelationshipListItem item;
   final String? categoryName;
-  final RelationshipHealthBand? healthBand;
 
   @override
   Widget build(BuildContext context) {
@@ -591,11 +621,16 @@ class PersonHeaderBlock extends StatelessWidget {
       ?categoryName,
       if (data.important) messages.relationshipImportantLabel,
     ].join(' · ');
-    final lastSpoke = item.lastCheckInAt == null
+    // The timestamp inside the one-liner, kept as its own substring so the
+    // mono voice can be confined to it below — the same rule the list row
+    // follows, so one point in time never renders in two typefaces on one
+    // screen.
+    final spokeAt = item.lastCheckInAt == null
+        ? null
+        : relationshipTimestampLabelOf(context, item.lastCheckInAt!);
+    final lastSpoke = spokeAt == null
         ? messages.relationshipJustAdded
-        : messages.relationshipLastSpoke(
-            relationshipTimestampLabelOf(context, item.lastCheckInAt!),
-          );
+        : messages.relationshipLastSpoke(spokeAt);
     final oneLiner = [
       if (data.nickname case final nickname? when nickname.isNotEmpty)
         '"$nickname"',
@@ -608,13 +643,19 @@ class PersonHeaderBlock extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // The hero's own extent already covers the half of the avatar
-        // below the wash; this is only the breathing room under it.
-        SizedBox(height: tokens.spacing.step3),
+        // below the wash; this is only the breathing room under it — and it
+        // is the break between the picture and the identity, so it gets the
+        // section gap rather than the smallest step in the stack.
+        SizedBox(height: tokens.spacing.sectionGap),
         if (eyebrow.isNotEmpty) ...[
           Text(
             eyebrow,
             key: const ValueKey('person-eyebrow'),
-            style: relationshipTimestampStyle(
+            // `Penguin Operations · Important` is a label, not a reading on
+            // a clock. It used to borrow the mono timestamp style, which
+            // made the first string on the page the only monospaced one and
+            // cost it the measure the category name needs.
+            style: calmEyebrowStyle(
               tokens,
               color: tokens.colors.text.lowEmphasis,
             ),
@@ -623,23 +664,26 @@ class PersonHeaderBlock extends StatelessWidget {
         ],
         Text(
           data.title,
-          style: tokens.typography.styles.heading.heading2.copyWith(
-            color: tokens.colors.text.highEmphasis,
-          ),
+          style: calmPageTitleStyle(tokens),
         ),
         SizedBox(height: tokens.spacing.step1),
-        Text(
-          oneLiner,
+        // Quiet, not teal. Nothing on this line is tappable, and the
+        // interactive token on a whole non-interactive line both promised a
+        // tap that never came and outranked the person's own name — the one
+        // string in the block that should win.
+        RelationshipLineWithDate(
           key: const ValueKey('person-one-liner'),
+          text: oneLiner,
+          date: spokeAt,
           style: tokens.typography.styles.body.bodyMedium.copyWith(
-            color: tokens.colors.interactive.enabled,
+            color: tokens.colors.text.mediumEmphasis,
           ),
         ),
         SizedBox(height: tokens.spacing.step4),
         Wrap(
           spacing: tokens.spacing.step2,
           runSpacing: tokens.spacing.step2,
-          children: personHeaderPills(context, item, healthBand: healthBand),
+          children: personHeaderPills(context, item),
         ),
       ],
     );
@@ -647,30 +691,19 @@ class PersonHeaderBlock extends StatelessWidget {
 }
 
 /// The header pills, in order: the cadence fact (on track · cadence, or due
-/// since · days over), the health band, the next due day.
+/// since · days over) and the next due day.
+///
+/// One tinted chip at most, and it is the cadence: the health band lives on
+/// the briefing card, which dates it.
 List<Widget> personHeaderPills(
   BuildContext context,
-  RelationshipListItem item, {
-  required RelationshipHealthBand? healthBand,
-}) {
+  RelationshipListItem item,
+) {
   final tokens = context.designTokens;
   final messages = context.messages;
   final pill = peopleCadencePillOf(item);
   final quiet = tokens.colors.text.mediumEmphasis;
   final pills = <Widget>[relationshipCadencePill(context, item)];
-
-  if (healthBand != null) {
-    pills.add(
-      DsPill(
-        key: const ValueKey('person-pill-health'),
-        variant: DsPillVariant.tinted,
-        shape: DsPillShape.tag,
-        color: relationshipHealthBandColor(tokens, healthBand),
-        labelColor: tokens.colors.text.highEmphasis,
-        label: relationshipHealthBandLabel(context, healthBand),
-      ),
-    );
-  }
 
   final due = peopleDueDateOf(item);
   if (due != null &&
@@ -712,12 +745,12 @@ Widget relationshipCadencePill(
   final quiet = tokens.colors.text.mediumEmphasis;
 
   return switch (pill.kind) {
-    PeopleCadencePillKind.overdue => DsPill(
-      key: ValueKey('$keyPrefix-due'),
-      variant: DsPillVariant.tinted,
-      shape: DsPillShape.tag,
-      color: tokens.colors.alert.warning.defaultColor,
-      labelColor: tokens.colors.text.highEmphasis,
+    // One encoding for a lapsed cadence, shared with the People row: the
+    // header spells more of it out, but it must not *look* like a
+    // different state.
+    PeopleCadencePillKind.overdue => relationshipOverduePill(
+      context,
+      pillKey: ValueKey('$keyPrefix-due'),
       label: messages.relationshipDueSince(
         relationshipWeekdayLabelOf(context, peopleDueDateOf(item)!),
         pill.daysOver,

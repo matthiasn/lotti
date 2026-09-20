@@ -19621,6 +19621,12 @@ abstract class AppLocalizations {
   /// **'Call {name}'**
   String relationshipAgentCall(String name);
 
+  /// No description provided for @relationshipAgentEnrolPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Remind me about {name}'**
+  String relationshipAgentEnrolPerson(String name);
+
   /// No description provided for @relationshipAgentFailedBody.
   ///
   /// In en, this message translates to:
@@ -19645,12 +19651,6 @@ abstract class AppLocalizations {
   /// **'Last run failed · {time}'**
   String relationshipAgentLastRunFailed(String time);
 
-  /// No description provided for @relationshipAgentMarkImportant.
-  ///
-  /// In en, this message translates to:
-  /// **'Mark important'**
-  String get relationshipAgentMarkImportant;
-
   /// No description provided for @relationshipAgentNoAgent.
   ///
   /// In en, this message translates to:
@@ -19666,14 +19666,8 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipAgentNotEnrolledBody.
   ///
   /// In en, this message translates to:
-  /// **'Mark {name} as important to get a chat, nudges when it has been a while, and a briefing.'**
+  /// **'Turn on reminders for {name} to get a chat, a nudge when it has been a while, and a briefing.'**
   String relationshipAgentNotEnrolledBody(String name);
-
-  /// No description provided for @relationshipAgentOnlyYourStartsUseAi.
-  ///
-  /// In en, this message translates to:
-  /// **'Only what you start yourself uses AI'**
-  String get relationshipAgentOnlyYourStartsUseAi;
 
   /// No description provided for @relationshipAgentOutOfDateNewCheckIn.
   ///
@@ -20140,7 +20134,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipImportantLabel.
   ///
   /// In en, this message translates to:
-  /// **'Important'**
+  /// **'Reminders on'**
   String get relationshipImportantLabel;
 
   /// Creates one person per reviewed contact
@@ -20344,7 +20338,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipNotEnrolled.
   ///
   /// In en, this message translates to:
-  /// **'Not enrolled'**
+  /// **'No reminders'**
   String get relationshipNotEnrolled;
 
   /// No description provided for @relationshipNotFound.
@@ -20566,7 +20560,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipsSummaryEnrolled.
   ///
   /// In en, this message translates to:
-  /// **'/ {count} enrolled'**
+  /// **'/ {count} with reminders'**
   String relationshipsSummaryEnrolled(int count);
 
   /// No description provided for @relationshipsSummaryNextDue.
@@ -20574,6 +20568,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Next due {name} · {day}'**
   String relationshipsSummaryNextDue(String name, String day);
+
+  /// No description provided for @relationshipsSummaryNextDueCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Next due'**
+  String get relationshipsSummaryNextDueCaption;
 
   /// No description provided for @relationshipsSummaryNoneDue.
   ///
@@ -20584,7 +20584,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipsSummaryNotEnrolled.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 person not enrolled} other{{count} people not enrolled}}'**
+  /// **'{count, plural, =1{1 person without reminders} other{{count} people without reminders}}'**
   String relationshipsSummaryNotEnrolled(int count);
 
   /// No description provided for @relationshipStatusActive.
@@ -20632,12 +20632,6 @@ abstract class AppLocalizations {
     String time,
     String cadence,
   );
-
-  /// No description provided for @relationshipTasksLinkedCount.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 linked} other{{count} linked}}'**
-  String relationshipTasksLinkedCount(int count);
 
   /// The relative day word in a relationship timestamp, e.g. "Today 14:20".
   ///

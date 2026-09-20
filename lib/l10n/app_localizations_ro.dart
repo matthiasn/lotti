@@ -11957,6 +11957,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String relationshipAgentEnrolPerson(String name) {
+    return 'Amintiți-mi de $name';
+  }
+
+  @override
   String get relationshipAgentFailedBody =>
       'Furnizorul a returnat o eroare înainte ca briefingul să fie scris. Check-in-urile dvs. sunt neschimbate.';
 
@@ -11971,9 +11976,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String relationshipAgentLastRunFailed(String time) {
     return 'Ultima rulare a eșuat · $time';
   }
-
-  @override
-  String get relationshipAgentMarkImportant => 'Marcați persoana ca importantă';
 
   @override
   String get relationshipAgentNoAgent => 'Niciun agent pentru această persoană';
@@ -11997,12 +11999,8 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Marcați $name ca important(ă) pentru a primi un chat, notificări când a trecut ceva timp și un briefing.';
+    return 'Activați memento-urile pentru $name pentru a primi un chat, un îndemn când a trecut ceva timp și un briefing.';
   }
-
-  @override
-  String get relationshipAgentOnlyYourStartsUseAi =>
-      'Doar ce porniți dvs. folosește IA';
 
   @override
   String relationshipAgentOutOfDateNewCheckIn(String day) {
@@ -12372,7 +12370,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Amintiți-mi să păstrez legătura';
 
   @override
-  String get relationshipImportantLabel => 'Important';
+  String get relationshipImportantLabel => 'Cu memento-uri';
 
   @override
   String relationshipImportConfirmButton(int count) {
@@ -12515,7 +12513,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipNoLinkedTasks => 'Nicio sarcină asociată încă.';
 
   @override
-  String get relationshipNotEnrolled => 'Neurmărită';
+  String get relationshipNotEnrolled => 'Fără memento-uri';
 
   @override
   String get relationshipNotFound => 'Această persoană nu mai este urmărită.';
@@ -12673,20 +12671,16 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String relationshipsSummaryEnrolled(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '/ $count de urmărite',
-      few: '/ $count urmărite',
-      one: '/ 1 urmărită',
-    );
-    return '$_temp0';
+    return '/ $count cu memento-uri';
   }
 
   @override
   String relationshipsSummaryNextDue(String name, String day) {
     return 'Urmează: $name · $day';
   }
+
+  @override
+  String get relationshipsSummaryNextDueCaption => 'Următoarea';
 
   @override
   String get relationshipsSummaryNoneDue => 'Nimeni nu este scadent';
@@ -12696,9 +12690,9 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count de persoane neurmărite',
-      few: '$count persoane neurmărite',
-      one: '1 persoană neurmărită',
+      other: '$count de persoane fără memento-uri',
+      few: '$count persoane fără memento-uri',
+      one: '1 persoană fără memento-uri',
     );
     return '$_temp0';
   }
@@ -12732,18 +12726,6 @@ class AppLocalizationsRo extends AppLocalizations {
     String cadence,
   ) {
     return '$type · $time · $cadence';
-  }
-
-  @override
-  String relationshipTasksLinkedCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count de asociate',
-      few: '$count asociate',
-      one: '1 asociată',
-    );
-    return '$_temp0';
   }
 
   @override

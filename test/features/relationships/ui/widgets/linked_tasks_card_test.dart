@@ -4,7 +4,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
-import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
@@ -101,10 +100,11 @@ void main() {
       ),
     ]);
 
-    final count = tester
-        .widgetList<DsPill>(find.byType(DsPill))
-        .firstWhere((pill) => pill.label == '2 linked');
-    expect(count.shape, DsPillShape.tag);
+    // One count grammar across the feature: the page title reads
+    // `People · 5`, the bands read `Due · 1`, and a card heading reads the
+    // same way instead of inventing `2 linked` in a chip of its own.
+    expect(find.text('· 2'), findsOneWidget);
+    expect(find.text('2 linked'), findsNothing);
     expect(find.text('Prepare the call'), findsOneWidget);
     expect(find.text('Draft the comms plan'), findsOneWidget);
     expect(find.text('Open'), findsOneWidget);

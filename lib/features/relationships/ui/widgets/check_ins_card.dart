@@ -82,15 +82,8 @@ class _CheckInsCardSliverState extends State<CheckInsCardSliver> {
             sliver: SliverToBoxAdapter(
               child: PersonCardHeader(
                 title: messages.relationshipCheckInsLabel,
-                caption: checkIns.isEmpty
-                    ? null
-                    : DsPill(
-                        key: const ValueKey('person-check-ins-count'),
-                        variant: DsPillVariant.filled,
-                        shape: DsPillShape.tag,
-                        labelColor: tokens.colors.text.mediumEmphasis,
-                        label: '${checkIns.length}',
-                      ),
+                count: checkIns.isEmpty ? null : checkIns.length,
+                countKey: const ValueKey('person-check-ins-count'),
               ),
             ),
           ),
@@ -181,8 +174,13 @@ class CheckInRow extends StatelessWidget {
       context,
       checkIn.meta.dateTo.difference(checkIn.meta.dateFrom),
     );
+    // The date is kept as its own substring so the mono voice can be
+    // confined to it: `11 min` and `1 recording` are prose, and setting
+    // them in mono cost the line the measure that wrapped it around the
+    // sentiment pill.
+    final at = relationshipTimestampLabelOf(context, checkIn.meta.dateFrom);
     final meta = [
-      relationshipTimestampLabelOf(context, checkIn.meta.dateFrom),
+      at,
       checkInInteractionLabel(context, data.interactionType),
       ?duration,
       ?holds,
@@ -216,57 +214,26 @@ class CheckInRow extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: tokens.spacing.step8,
-                  height: tokens.spacing.step8,
-                  decoration: BoxDecoration(
-                    color: tokens.colors.background.level03,
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(
-                    checkInInteractionIcon(data.interactionType),
-                    size: IconSizes.m,
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
+                PersonLeadingGlyph(
+                  icon: checkInInteractionIcon(data.interactionType),
                 ),
                 SizedBox(width: tokens.spacing.step4),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Padding(
-                              padding: EdgeInsets.only(
-                                top: tokens.spacing.step1,
+                      Padding(
+                        padding: EdgeInsets.only(top: tokens.spacing.step1),
+                        child: RelationshipLineWithDate(
+                          key: const ValueKey('check-in-row-meta'),
+                          text: meta,
+                          date: at,
+                          maxLines: 2,
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: tokens.colors.text.lowEmphasis,
                               ),
-                              child: Text(
-                                meta,
-                                key: const ValueKey('check-in-row-meta'),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: relationshipTimestampStyle(
-                                  tokens,
-                                  color: tokens.colors.text.lowEmphasis,
-                                ),
-                              ),
-                            ),
-                          ),
-                          if (sentiment != null) ...[
-                            SizedBox(width: tokens.spacing.step3),
-                            DsPill(
-                              key: const ValueKey('check-in-row-sentiment'),
-                              variant: DsPillVariant.tinted,
-                              shape: DsPillShape.tag,
-                              color: sentimentColor(tokens, sentiment),
-                              labelColor: tokens.colors.text.highEmphasis,
-                              label: checkInSentimentLabel(context, sentiment),
-                            ),
-                          ],
-                        ],
+                        ),
                       ),
                       if (narrative != null) ...[
                         SizedBox(height: tokens.spacing.step2),
@@ -283,8 +250,13 @@ class CheckInRow extends StatelessWidget {
                               ),
                         ),
                       ],
-                      if (data.topics.isNotEmpty) ...[
+                      if (sentiment != null || data.topics.isNotEmpty) ...[
                         SizedBox(height: tokens.spacing.step3),
+                        // How it felt, then what it was about. The sentiment
+                        // used to share the meta line's row, which left the
+                        // meta too narrow to finish a word; it is a chip, and
+                        // this is where the row keeps its chips.
+                        //
                         // Topics are this check-in's tags, so they wear the
                         // tag pill the rest of the app spends on labels — the
                         // tight corner that says "read-out, not button".
@@ -292,6 +264,18 @@ class CheckInRow extends StatelessWidget {
                           spacing: tokens.spacing.step2,
                           runSpacing: tokens.spacing.step2,
                           children: [
+                            if (sentiment != null)
+                              DsPill(
+                                key: const ValueKey('check-in-row-sentiment'),
+                                variant: DsPillVariant.tinted,
+                                shape: DsPillShape.tag,
+                                color: sentimentColor(tokens, sentiment),
+                                labelColor: tokens.colors.text.highEmphasis,
+                                label: checkInSentimentLabel(
+                                  context,
+                                  sentiment,
+                                ),
+                              ),
                             for (final topic in data.topics)
                               DsPill(
                                 variant: DsPillVariant.filled,

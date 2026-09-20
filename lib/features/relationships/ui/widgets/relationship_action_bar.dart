@@ -103,7 +103,13 @@ class _RelationshipActionBarState extends ConsumerState<RelationshipActionBar> {
               column.right,
               spacing.step4 + safeBottomInset,
             ),
-            child: _controls(context, tokens, messages, reachable),
+            child: _controls(
+              context,
+              tokens,
+              messages,
+              reachable,
+              contentWidth: constraints.maxWidth - column.horizontal,
+            ),
           );
         },
       ),
@@ -114,9 +120,50 @@ class _RelationshipActionBarState extends ConsumerState<RelationshipActionBar> {
     BuildContext context,
     DsTokens tokens,
     AppLocalizations messages,
-    ReachableChannel? reachable,
-  ) {
+    ReachableChannel? reachable, {
+    required double contentWidth,
+  }) {
     final spacing = tokens.spacing;
+
+    // The channel control dials a person, or opens their mail client. A
+    // bare handset glyph does not say which, or that it happens on the
+    // tap rather than after a confirmation — so it wears its word whenever
+    // the row can afford one. `intrinsicWidth` is the design system's own
+    // budgeting helper (the navigation launcher uses it to decide whether
+    // two labelled chips fit), so the decision cannot drift from the
+    // padding and gap the pill actually lays out.
+    final channelLabel = reachable == null
+        ? null
+        : contactActionLabel(context, reachable.action);
+    // The same budgeting for the mic: it records, which is not a thing a
+    // bare glyph announces either.
+    final micLabel = messages.checkInSpeakButton;
+    double pill(String label) =>
+        DsGlassPill.intrinsicWidth(context, label: label);
+    const round = DsGlassRoundButton.defaultDiameter;
+    final gaps = spacing.step4 * (channelLabel == null ? 1 : 2);
+
+    // One control at a time, the channel first, because it is the one that
+    // reaches the outside world. Budgeting both together meant a phone
+    // could afford neither and *both* fell back to glyphs — worse than the
+    // labelled channel alone, which is what the row had before the mic
+    // joined the question. `slack` is the width left once the row has its
+    // gaps, its round controls and the primary's own label.
+    var slack =
+        contentWidth -
+        gaps -
+        round -
+        pill(messages.relationshipLogCheckIn) -
+        (channelLabel == null ? 0 : round);
+
+    /// What labelling a control costs: its pill, less the disc it replaces.
+    double upgrade(String label) => pill(label) - round;
+
+    final labelledChannel =
+        channelLabel != null && slack >= upgrade(channelLabel);
+    if (labelledChannel) slack -= upgrade(channelLabel);
+    final labelledMic = slack >= upgrade(micLabel);
+
     return Row(
       children: [
         Expanded(
@@ -131,28 +178,52 @@ class _RelationshipActionBarState extends ConsumerState<RelationshipActionBar> {
           ),
         ),
         SizedBox(width: spacing.step4),
-        DsGlassRoundButton(
-          key: const ValueKey('person-action-speak'),
-          icon: LottiIcons.mic,
-          semanticLabel: messages.checkInSpeakButton,
-          onPressed: widget.onSpeak,
-        ),
+        if (labelledMic)
+          DsGlassPill(
+            key: const ValueKey('person-action-speak'),
+            label: micLabel,
+            icon: LottiIcons.mic,
+            onTap: widget.onSpeak,
+          )
+        else
+          DsGlassRoundButton(
+            key: const ValueKey('person-action-speak'),
+            icon: LottiIcons.mic,
+            semanticLabel: micLabel,
+            onPressed: widget.onSpeak,
+          ),
         if (reachable != null) ...[
           SizedBox(width: spacing.step4),
-          DsGlassRoundButton(
-            key: const ValueKey('person-action-channel'),
-            icon: contactActionIcon(reachable.action),
-            semanticLabel: contactActionLabel(context, reachable.action),
-            onPressed: () => unawaited(
-              launchContactAction(
-                context,
-                ref,
-                relationshipId: widget.relationship.id,
-                channel: reachable.channel,
-                action: reachable.action,
+          if (labelledChannel)
+            DsGlassPill(
+              key: const ValueKey('person-action-channel'),
+              label: channelLabel,
+              icon: contactActionIcon(reachable.action),
+              onTap: () => unawaited(
+                launchContactAction(
+                  context,
+                  ref,
+                  relationshipId: widget.relationship.id,
+                  channel: reachable.channel,
+                  action: reachable.action,
+                ),
+              ),
+            )
+          else
+            DsGlassRoundButton(
+              key: const ValueKey('person-action-channel'),
+              icon: contactActionIcon(reachable.action),
+              semanticLabel: channelLabel!,
+              onPressed: () => unawaited(
+                launchContactAction(
+                  context,
+                  ref,
+                  relationshipId: widget.relationship.id,
+                  channel: reachable.channel,
+                  action: reachable.action,
+                ),
               ),
             ),
-          ),
         ],
       ],
     );
