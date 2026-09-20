@@ -776,7 +776,9 @@ void main() {
 
       expect(find.text('ghost-pixel'), findsOneWidget);
       expect(
-        find.text('Paired May\u00a014,\u00a02026 · 3f9c01aa'),
+        // Numeric and device-formatted now, so there is no space left in
+        // the date for the non-breaking replacement to protect.
+        find.text('Paired 5/14/2026 · 3f9c01aa'),
         findsOneWidget,
       );
       expect(
@@ -793,7 +795,7 @@ void main() {
       );
 
       expect(
-        find.text('Last seen Jul\u00a024,\u00a02026'),
+        find.text('Last seen 7/24/2026'),
         findsOneWidget,
       );
       expect(find.text('Probably no longer in use'), findsNothing);
@@ -809,7 +811,7 @@ void main() {
       // Hint and evidence sit on two deliberate lines on stale cards.
       expect(find.text('Probably no longer in use'), findsOneWidget);
       expect(
-        find.text('Last seen May\u00a014,\u00a02026'),
+        find.text('Last seen 5/14/2026'),
         findsOneWidget,
       );
     });

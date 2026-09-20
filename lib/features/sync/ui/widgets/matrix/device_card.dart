@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
@@ -17,6 +16,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/device_datetime.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
@@ -65,8 +65,7 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
   /// Formats [date] with non-breaking spaces so a date can never split
   /// across lines — it is the evidence this surface exists to show.
   String _formatDate(BuildContext context, DateTime date) {
-    final locale = Localizations.localeOf(context).toString();
-    return DateFormat.yMMMd(locale).format(date).replaceAll(' ', ' ');
+    return deviceDateLabel(context, date).replaceAll(' ', ' ');
   }
 
   Future<void> _deleteDevice(BuildContext context) async {

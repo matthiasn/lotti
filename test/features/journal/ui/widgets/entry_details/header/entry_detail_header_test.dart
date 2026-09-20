@@ -723,7 +723,8 @@ void main() {
       // widget uses; which clock it picks is asserted in
       // entry_datetime_widget_test.dart, this only needs the stamp present.
       final entryDateFromFinder = find.text(
-        '${DateFormat.yMMMd('en_US').format(local)} '
+        // The device's numeric order now, with its own clock.
+        '${DateFormat.yMd().format(local)} '
         '${TimeOfDay.fromDateTime(local).format(tester.element(find.byType(EntryDetailHeader)))}',
       );
       expect(entryDateFromFinder, findsOneWidget);

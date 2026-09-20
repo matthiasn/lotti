@@ -62,7 +62,7 @@ import '../../../../widget_test_utils.dart';
 String entryDetailDateLabel(WidgetTester tester, DateTime date) {
   final local = date.toLocal();
   final context = tester.element(find.byType(EntryDatetimeWidget));
-  return '${DateFormat.yMMMd('en_US').format(local)} '
+  return '${DateFormat.yMd().format(local)} '
       '${TimeOfDay.fromDateTime(local).format(context)}';
 }
 

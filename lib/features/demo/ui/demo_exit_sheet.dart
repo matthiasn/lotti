@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -16,6 +15,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/device_datetime.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -427,6 +427,5 @@ String demoCopyCandidateTitle(BuildContext context, JournalEntity entity) {
   if (fromTask != null && fromTask.trim().isNotEmpty) return fromTask;
   final text = entity.entryText?.plainText.trim() ?? '';
   if (text.isNotEmpty) return text.split('\n').first;
-  final localeTag = Localizations.localeOf(context).toLanguageTag();
-  return DateFormat.yMMMd(localeTag).format(entity.meta.dateFrom);
+  return deviceDateLabel(context, entity.meta.dateFrom);
 }

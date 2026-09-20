@@ -1785,6 +1785,9 @@ class _ProgressDayCell extends StatelessWidget {
       );
     }
     final locale = Localizations.localeOf(context).toLanguageTag();
+    // Prose, not the device's numeric form: this line is spoken by a screen
+    // reader, where "8/10/2026" reads as "eight slash ten slash …" and the
+    // year is noise in a week view.
     final date = DateFormat.yMMMd(locale).format(day.day);
     final menuDate = DateFormat.MMMEd(locale).format(day.day);
     final measured = switch (completionType) {

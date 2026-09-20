@@ -23,12 +23,14 @@ import 'package:material_ui/material_ui.dart';
 String deviceFormatLocale(BuildContext context) {
   final appLocale = Localizations.localeOf(context).toString();
   final device = WidgetsBinding.instance.platformDispatcher.locale.toString();
+  // Non-null by construction: `verifiedLocale` returns null only when
+  // `onFailure` does, and this one always answers with [appLocale]. A `??`
+  // after it would be a branch nothing can take.
   return Intl.verifiedLocale(
-        device,
-        DateFormat.localeExists,
-        onFailure: (_) => appLocale,
-      ) ??
-      appLocale;
+    device,
+    DateFormat.localeExists,
+    onFailure: (_) => appLocale,
+  )!;
 }
 
 /// A wall-clock reading on the device's own clock: `19:08` where the phone is
