@@ -72,7 +72,15 @@ void main() {
     TextScaler textScaler = TextScaler.noScaling,
     double width = 390,
     bool editing = false,
+    bool unresolved = false,
   }) async {
+    if (unresolved) {
+      // Before the person's row has been read: the header still has to hold
+      // the avatar's place.
+      when(
+        () => repository.getRelationshipById(any()),
+      ).thenAnswer((_) async => null);
+    }
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         Navigator(
@@ -290,8 +298,15 @@ void main() {
     final title = tokens.typography.styles.heading.heading3;
     final status = tokens.typography.styles.body.bodySmall;
     final lines = line(title, 1) + line(status, 1);
-    // step6 above (clear of the sheet's drag handle), step4 below.
-    final atRest = 24 + (lines > 40 ? lines : 40) + 12;
+    // step6 above (clear of the sheet's drag handle), step4 below. The floor
+    // is the avatar's own diameter, so it follows the token rather than a
+    // literal that would quietly stop matching it.
+    final atRest =
+        24 +
+        (lines > ControlSizes.avatarCompact
+            ? lines
+            : ControlSizes.avatarCompact) +
+        12;
     expect(tester.getSize(find.byType(CheckInComposerHeader)).height, atRest);
     expect(CheckInComposerHeader.height(tokens, TextScaler.noScaling), atRest);
 
@@ -306,6 +321,47 @@ void main() {
       ),
       24 + line(title, 2) * 2 + line(status, 2) + 12,
     );
+  });
+
+  // Codex review on #4395: the avatar moved onto its own token while the
+  // slot it sits in still reserved `spacing.step8`. The two are the same 40
+  // today, so nothing looked wrong — until the avatar is retuned, when the
+  // face either overflows the toolbar or leaves a hole, and the header jumps
+  // as the person resolves. Both sides are pinned to the one token here.
+  testWidgets('the avatar fills the slot the token names', (tester) async {
+    await pump(tester);
+
+    expect(
+      tester.widget<PersonaAvatar>(find.byType(PersonaAvatar)).size,
+      ControlSizes.avatarCompact,
+    );
+    expect(
+      CheckInComposerHeader.height(dsTokensDark, TextScaler.noScaling),
+      greaterThanOrEqualTo(ControlSizes.avatarCompact),
+      reason: 'the row is at least as tall as the face it carries',
+    );
+  });
+
+  testWidgets('before the person resolves, the slot is still held', (
+    tester,
+  ) async {
+    await pump(tester, unresolved: true);
+
+    expect(find.byType(PersonaAvatar), findsNothing);
+    final placeholder = tester.widget<SizedBox>(
+      find
+          .descendant(
+            of: find.byType(CheckInComposerHeader),
+            matching: find.byType(SizedBox),
+          )
+          .first,
+    );
+    expect(
+      placeholder.width,
+      ControlSizes.avatarCompact,
+      reason: 'the header must not jump when the person arrives',
+    );
+    expect(placeholder.height, ControlSizes.avatarCompact);
   });
 
   testWidgets('the title is measured against the width it will get: one '

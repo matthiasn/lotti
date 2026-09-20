@@ -101,8 +101,11 @@ class CheckInComposerHeader extends ConsumerWidget {
     final lines =
         line(tokens.typography.styles.heading.heading3) * titleLines +
         line(tokens.typography.styles.body.bodySmall);
+    // The avatar's own diameter, not the gap that happens to match it: the
+    // row is at least as tall as the face it carries, whatever the face is
+    // retuned to.
     return tokens.spacing.step6 +
-        math.max(tokens.spacing.step8, lines) +
+        math.max(ControlSizes.avatarCompact, lines) +
         tokens.spacing.step4;
   }
 
@@ -145,7 +148,9 @@ class CheckInComposerHeader extends ConsumerWidget {
                 crop: data.avatarCrop,
               )
             else
-              SizedBox.square(dimension: tokens.spacing.step8),
+              // Holds exactly the avatar's place, so the header does not
+              // jump when the person resolves.
+              const SizedBox.square(dimension: ControlSizes.avatarCompact),
             SizedBox(width: tokens.spacing.step4),
           ],
           Expanded(
