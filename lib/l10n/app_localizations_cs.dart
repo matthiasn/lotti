@@ -12200,6 +12200,10 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get relationshipDiscardChangesMessage =>
+      'Zahodit změny? Nic z toho, co jsi zadal, se neuložilo.';
+
+  @override
   String relationshipDueDay(String day) {
     return 'Do $day';
   }

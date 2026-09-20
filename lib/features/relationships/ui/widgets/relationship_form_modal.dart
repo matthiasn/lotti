@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
@@ -30,6 +31,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/form/form_widgets.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -87,6 +89,7 @@ String relationshipStatusLabel(
 /// deleted from the page's kebab, never from inside their own edit sheet.
 class RelationshipFormHandle extends ChangeNotifier {
   Future<void> Function()? _save;
+  Future<void> Function()? _dismiss;
   bool _canSave = false;
   bool _isEditing = false;
 
@@ -98,15 +101,26 @@ class RelationshipFormHandle extends ChangeNotifier {
 
   Future<void> save() => _save?.call() ?? Future.value();
 
+  /// Leaves the form the way its own back gesture does: asking first when
+  /// there is unsaved work. Cancel goes through here rather than popping the
+  /// route itself, so every way out asks the same question.
+  Future<void> dismiss() => _dismiss?.call() ?? Future.value();
+
   void publish({
     required Future<void> Function()? save,
+    required Future<void> Function()? dismiss,
     required bool canSave,
     required bool isEditing,
   }) {
+    // The form publishes from `build`, so this arrives on every keystroke.
+    // Only the two values the bar renders are worth a rebuild for; the
+    // callbacks are read when a button is actually pressed.
+    final changed = canSave != _canSave || isEditing != _isEditing;
     _save = save;
+    _dismiss = dismiss;
     _canSave = canSave;
     _isEditing = isEditing;
-    notifyListeners();
+    if (changed) notifyListeners();
   }
 }
 
@@ -181,7 +195,8 @@ class RelationshipFormStickyActions extends StatelessWidget {
             key: const ValueKey('person-form-cancel'),
             label: messages.cancelButton,
             variant: DesignSystemButtonVariant.secondary,
-            onPressed: () => Navigator.of(context).pop(),
+            // Not a bare pop: the form asks before dropping typed work.
+            onPressed: () => unawaited(handle.dismiss()),
           ),
         ],
         primary: DesignSystemButton(
@@ -525,10 +540,58 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
       if (!mounted) return;
       widget.handle.publish(
         save: _handleSave,
+        dismiss: _dismiss,
         canSave: !_isSaving,
         isEditing: _isEditing,
       );
     });
+  }
+
+  /// Whether leaving now would lose typed work: any field that differs from
+  /// what the form opened with.
+  ///
+  /// The Photo card is deliberately not part of this. Its actions write
+  /// straight away (that is why it only appears while editing), so there is
+  /// never a pending picture to lose, and a changed photo must not make
+  /// Cancel start asking questions about work that is already saved.
+  bool get _isDirty {
+    final data = widget.initial?.data;
+    if (_nameController.text.trim() != (data?.title ?? '').trim()) return true;
+    if (_nicknameController.text.trim() != (data?.nickname ?? '').trim()) {
+      return true;
+    }
+    if (_knownTermsController.text.trim() !=
+        formatSpeechTerms(data?.knownTerms).trim()) {
+      return true;
+    }
+    if (_important != (data?.important ?? false)) return true;
+    if (_cadenceDays != data?.checkInCadenceDays) return true;
+    final openingKind = data != null
+        ? _kindOf(data.status)
+        : _StatusKind.active;
+    if (_statusKind != openingKind) return true;
+    if (_categoryId != widget.initial?.meta.categoryId) return true;
+    // Empty rows are dropped on save, so an added-then-abandoned row is not
+    // work — `_editedChannels` applies the same rule.
+    return !listEquals(_editedChannels, data?.contactChannels ?? const []);
+  }
+
+  /// Leaves the form, asking first when [_isDirty]. Cancel, the back gesture,
+  /// the barrier tap and Escape all arrive here, so none of them can drop a
+  /// half-filled person without a word.
+  Future<void> _dismiss() async {
+    if (!_isDirty) {
+      Navigator.of(context).pop();
+      return;
+    }
+    final messages = context.messages;
+    final confirmed = await showConfirmationModal(
+      context: context,
+      message: messages.relationshipDiscardChangesMessage,
+      confirmLabel: messages.editorDiscardChanges,
+    );
+    if (!confirmed || !mounted) return;
+    Navigator.of(context).pop();
   }
 
   /// Folds a picked address-book entry's channels into the drafts, skipping
@@ -590,7 +653,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     // capped itself at `modalMaxHeightFraction` of the SCREEN overflowed the
     // page, and the inner scroll view ate the drag that would have reached
     // the action row.
-    return Column(
+    final body = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -773,6 +836,23 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
           ),
         ),
       ],
+    );
+
+    // The modal's own ways out — the back gesture, the barrier, Escape —
+    // come through here, so typed work is guarded however the user leaves.
+    //
+    // `canPop` is false rather than `!_isDirty` because the form does not
+    // rebuild while you type: its fields are plain controllers with no
+    // onChanged, so a dirtiness computed at build time would still say
+    // "clean" for the name you just entered. Every pop is intercepted and
+    // `_dismiss` decides at the moment of leaving; an untouched sheet still
+    // closes on the first tap, without a question.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) unawaited(_dismiss());
+      },
+      child: body,
     );
   }
 

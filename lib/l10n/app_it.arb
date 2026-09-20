@@ -2843,7 +2843,7 @@
   },
   "doneButton": "Fatto",
   "editMenuTitle": "Modifica",
-  "editorDiscardChanges": "Disattivare le modifiche",
+  "editorDiscardChanges": "Scarta le modifiche",
   "editorInsertDivider": "Inserto divisore",
   "editorMoreFormatting": "Più formattazione",
   "editorPlaceholder": "Inserisci note...",
@@ -5105,6 +5105,7 @@
   },
   "relationshipDeleteConfirmMessage": "Verranno eliminati anche tutti i contatti registrati. L'azione non si può annullare.",
   "relationshipDeleteConfirmTitle": "Eliminare {name}?",
+  "relationshipDiscardChangesMessage": "Scartare le modifiche? Niente di ciò che hai scritto è stato salvato.",
   "relationshipDueDay": "Entro {day}",
   "@relationshipDueDay": {
     "placeholders": {

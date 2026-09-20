@@ -6108,7 +6108,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get editMenuTitle => 'Redigering';
 
   @override
-  String get editorDiscardChanges => 'Smid ændringer';
+  String get editorDiscardChanges => 'Kassér ændringer';
 
   @override
   String get editorInsertDivider => 'Indsæt skillevæg';
@@ -12019,6 +12019,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String relationshipDeleteConfirmTitle(String name) {
     return 'Slet $name?';
   }
+
+  @override
+  String get relationshipDiscardChangesMessage =>
+      'Kassér ændringerne? Intet af det, du har skrevet, er gemt.';
 
   @override
   String relationshipDueDay(String day) {

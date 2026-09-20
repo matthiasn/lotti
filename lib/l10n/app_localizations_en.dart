@@ -11963,6 +11963,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get relationshipDiscardChangesMessage =>
+      'Discard your changes? Nothing you typed has been saved.';
+
+  @override
   String relationshipDueDay(String day) {
     return 'Due $day';
   }

@@ -12101,6 +12101,10 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get relationshipDiscardChangesMessage =>
+      'Änderungen verwerfen? Nichts von dem, was du eingegeben hast, wurde gespeichert.';
+
+  @override
   String relationshipDueDay(String day) {
     return 'Fällig $day';
   }

@@ -4609,6 +4609,7 @@
   },
   "relationshipDeleteConfirmMessage": "Auch alle Check-ins werden gelöscht. Das lässt sich nicht rückgängig machen.",
   "relationshipDeleteConfirmTitle": "{name} löschen?",
+  "relationshipDiscardChangesMessage": "Änderungen verwerfen? Nichts von dem, was du eingegeben hast, wurde gespeichert.",
   "relationshipDueDay": "Fällig {day}",
   "@relationshipDueDay": {
     "placeholders": {

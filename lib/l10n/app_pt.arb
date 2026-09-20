@@ -5104,6 +5104,7 @@
   },
   "relationshipDeleteConfirmMessage": "Todos os registros dessa pessoa também serão excluídos. Isso não pode ser desfeito.",
   "relationshipDeleteConfirmTitle": "Excluir {name}?",
+  "relationshipDiscardChangesMessage": "Descartar suas alterações? Nada do que você digitou foi salvo.",
   "relationshipDueDay": "Até {day}",
   "@relationshipDueDay": {
     "placeholders": {

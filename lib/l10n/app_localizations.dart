@@ -19999,6 +19999,12 @@ abstract class AppLocalizations {
   /// **'Delete {name}?'**
   String relationshipDeleteConfirmTitle(String name);
 
+  /// Asked when the add/edit person sheet is left with unsaved field edits, however it is left: Cancel, the back gesture, the barrier or Escape. The photo is not covered by it — photo actions write immediately.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard your changes? Nothing you typed has been saved.'**
+  String get relationshipDiscardChangesMessage;
+
   /// No description provided for @relationshipDueDay.
   ///
   /// In en, this message translates to:

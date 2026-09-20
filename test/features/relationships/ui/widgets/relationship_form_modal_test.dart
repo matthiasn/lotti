@@ -1665,4 +1665,247 @@ void main() {
       ).called(1);
     });
   });
+  // The sheet could be left by the barrier, the back gesture, Escape or its
+  // own Cancel, and every one of them dropped the typed person without a
+  // word: name, nickname, known terms, category, importance, cadence and
+  // every channel row. The check-in composer next door has always guarded
+  // its draft; this is the same guard.
+  group('leaving with unsaved work', () {
+    RelationshipEntry person() => RelationshipEntry(
+      meta: Metadata(
+        id: 'rel-guard',
+        createdAt: testDate,
+        updatedAt: testDate,
+        dateFrom: testDate,
+        dateTo: testDate,
+      ),
+      data: RelationshipData(
+        title: 'Wanja',
+        nickname: 'Wan',
+        status: RelationshipStatus.active(
+          id: 'status-guard',
+          createdAt: testDate,
+          utcOffset: 0,
+        ),
+      ),
+    );
+
+    Future<void> openSheet(WidgetTester tester, {bool editing = false}) async {
+      tester.view
+        ..physicalSize = const Size(1206, 2622)
+        ..devicePixelRatio = 3;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => editing
+                  ? showRelationshipEditModal(
+                      context: context,
+                      relationship: person(),
+                    )
+                  : showRelationshipCreateModal(context: context),
+              child: const Text('Open'),
+            ),
+          ),
+          overrides: [
+            relationshipRepositoryProvider.overrideWithValue(mockRepository),
+            relationshipAgentServiceProvider.overrideWithValue(
+              mockAgentService,
+            ),
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            contactsServiceProvider.overrideWithValue(contactsService),
+            clipboardHasImageProvider.overrideWith((ref) async => false),
+          ],
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+    }
+
+    const question = 'Discard your changes? Nothing you typed has been saved.';
+
+    /// A system back gesture, which is what the barrier and Escape also
+    /// resolve to. Every exit is intercepted, so this is the real path.
+    Future<void> pressBack(WidgetTester tester) async {
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> typeName(WidgetTester tester, String name) async {
+      await tester.enterText(find.byType(TextField).first, name);
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> tapCancel(WidgetTester tester) async {
+      await tester.tap(find.byKey(const ValueKey('person-form-cancel')));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('an untouched sheet closes without a question', (
+      tester,
+    ) async {
+      await openSheet(tester);
+      await tapCancel(tester);
+
+      expect(find.text(question), findsNothing);
+      expect(find.byType(RelationshipForm), findsNothing);
+    });
+
+    testWidgets('an untouched edit sheet closes without a question', (
+      tester,
+    ) async {
+      // Guards the comparison itself: known terms, channels and status all
+      // round-trip through formatters, and a false positive here would nag
+      // on every Cancel.
+      await openSheet(tester, editing: true);
+      await tapCancel(tester);
+
+      expect(find.text(question), findsNothing);
+      expect(find.byType(RelationshipForm), findsNothing);
+    });
+
+    testWidgets('Cancel asks before dropping a typed person', (tester) async {
+      await openSheet(tester);
+      await typeName(tester, 'Pip Frostbeak');
+      await tapCancel(tester);
+
+      expect(find.text(question), findsOneWidget);
+      expect(
+        find.byType(RelationshipForm),
+        findsOneWidget,
+        reason: 'the form is still there while the question stands',
+      );
+    });
+
+    testWidgets('confirming the question drops the person and closes', (
+      tester,
+    ) async {
+      await openSheet(tester);
+      await typeName(tester, 'Pip Frostbeak');
+      await tapCancel(tester);
+      await tester.tap(find.text('Discard changes'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RelationshipForm), findsNothing);
+      verifyNever(
+        () => mockRepository.createRelationship(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
+        ),
+      );
+    });
+
+    testWidgets('declining the question keeps the form and the text', (
+      tester,
+    ) async {
+      await openSheet(tester);
+      await typeName(tester, 'Pip Frostbeak');
+      await tapCancel(tester);
+      // The form's Cancel and the confirmation's read the same word; the
+      // confirmation's is the one pushed last.
+      final cancels = find.widgetWithText(DesignSystemButton, 'Cancel');
+      expect(cancels, findsNWidgets(2));
+      await tester.tap(cancels.last);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RelationshipForm), findsOneWidget);
+      expect(
+        tester.widget<TextField>(find.byType(TextField).first).controller?.text,
+        'Pip Frostbeak',
+        reason: 'the typed name survives a declined discard',
+      );
+    });
+
+    testWidgets('an untouched sheet closes on the back gesture', (
+      tester,
+    ) async {
+      await openSheet(tester);
+      await pressBack(tester);
+
+      expect(find.text(question), findsNothing);
+      expect(find.byType(RelationshipForm), findsNothing);
+    });
+
+    // The form's fields are plain controllers with no onChanged, so it does
+    // not rebuild while you type: a dirtiness captured at build time would
+    // still read "clean" for the name just entered, and the gesture would
+    // take the person with it.
+    testWidgets('the back gesture asks once something is typed', (
+      tester,
+    ) async {
+      await openSheet(tester);
+      await typeName(tester, 'Pip Frostbeak');
+      await pressBack(tester);
+
+      expect(find.text(question), findsOneWidget);
+      expect(find.byType(RelationshipForm), findsOneWidget);
+    });
+
+    testWidgets('an empty channel row is not unsaved work', (tester) async {
+      await openSheet(tester);
+      await tapVisible(
+        tester,
+        find.byKey(const ValueKey('person-form-add-channel')),
+      );
+      await tester.pumpAndSettle();
+      await tapCancel(tester);
+
+      expect(
+        find.text(question),
+        findsNothing,
+        reason: 'empty rows are dropped on save, so they are not work',
+      );
+    });
+
+    testWidgets('each field counts as work on its own', (tester) async {
+      Future<bool> dirtyAfter(Future<void> Function() edit) async {
+        await openSheet(tester);
+        await edit();
+        await tester.pumpAndSettle();
+        await tapCancel(tester);
+        final asked = find.text(question).evaluate().isNotEmpty;
+        if (asked) {
+          await tester.tap(find.text('Discard changes'));
+          await tester.pumpAndSettle();
+        }
+        return asked;
+      }
+
+      expect(
+        await dirtyAfter(
+          () => tester.enterText(find.byType(TextField).at(1), 'Pip'),
+        ),
+        isTrue,
+        reason: 'nickname',
+      );
+      expect(
+        await dirtyAfter(
+          () => tester.enterText(find.byType(TextField).at(2), 'Pip, Frost'),
+        ),
+        isTrue,
+        reason: 'the names that come up',
+      );
+      expect(
+        await dirtyAfter(() async {
+          await tapVisible(tester, find.byType(Switch));
+        }),
+        isTrue,
+        reason: 'importance',
+      );
+      expect(
+        await dirtyAfter(() async {
+          tester
+              .widget<PersonCategoryRow>(find.byType(PersonCategoryRow))
+              .onChanged('cat-1');
+        }),
+        isTrue,
+        reason: 'category',
+      );
+    });
+  });
 }

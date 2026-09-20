@@ -4616,6 +4616,7 @@
   },
   "relationshipDeleteConfirmMessage": "Smažou se i všechny záznamy kontaktů. Tohle nelze vrátit zpět.",
   "relationshipDeleteConfirmTitle": "Smazat {name}?",
+  "relationshipDiscardChangesMessage": "Zahodit změny? Nic z toho, co jsi zadal, se neuložilo.",
   "relationshipDueDay": "Do {day}",
   "@relationshipDueDay": {
     "placeholders": {

@@ -12047,6 +12047,10 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get relationshipDiscardChangesMessage =>
+      'Je wijzigingen verwerpen? Niets van wat je hebt ingevuld is opgeslagen.';
+
+  @override
   String relationshipDueDay(String day) {
     return 'Voor $day';
   }

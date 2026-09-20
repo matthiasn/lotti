@@ -4609,6 +4609,7 @@
   },
   "relationshipDeleteConfirmMessage": "Se vor șterge și toate înregistrările asociate. Acțiunea nu poate fi anulată.",
   "relationshipDeleteConfirmTitle": "Ștergeți {name}?",
+  "relationshipDiscardChangesMessage": "Renunțați la modificări? Nimic din ce ați introdus nu a fost salvat.",
   "relationshipDueDay": "Până {day}",
   "@relationshipDueDay": {
     "placeholders": {

@@ -5104,6 +5104,7 @@
   },
   "relationshipDeleteConfirmMessage": "Ook alle check-ins worden verwijderd. Dit kan niet ongedaan worden gemaakt.",
   "relationshipDeleteConfirmTitle": "{name} verwijderen?",
+  "relationshipDiscardChangesMessage": "Je wijzigingen verwerpen? Niets van wat je hebt ingevuld is opgeslagen.",
   "relationshipDueDay": "Voor {day}",
   "@relationshipDueDay": {
     "placeholders": {

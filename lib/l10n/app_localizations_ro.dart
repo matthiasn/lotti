@@ -12268,6 +12268,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get relationshipDiscardChangesMessage =>
+      'Renunțați la modificări? Nimic din ce ați introdus nu a fost salvat.';
+
+  @override
   String relationshipDueDay(String day) {
     return 'Până $day';
   }

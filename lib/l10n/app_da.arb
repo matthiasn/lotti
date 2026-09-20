@@ -2843,7 +2843,7 @@
   },
   "doneButton": "Færdig",
   "editMenuTitle": "Redigering",
-  "editorDiscardChanges": "Smid ændringer",
+  "editorDiscardChanges": "Kassér ændringer",
   "editorInsertDivider": "Indsæt skillevæg",
   "editorMoreFormatting": "Mere formatering",
   "editorPlaceholder": "Indtast noter...",
@@ -5105,6 +5105,7 @@
   },
   "relationshipDeleteConfirmMessage": "Deres check-ins slettes også. Det kan ikke fortrydes.",
   "relationshipDeleteConfirmTitle": "Slet {name}?",
+  "relationshipDiscardChangesMessage": "Kassér ændringerne? Intet af det, du har skrevet, er gemt.",
   "relationshipDueDay": "Senest {day}",
   "@relationshipDueDay": {
     "placeholders": {
