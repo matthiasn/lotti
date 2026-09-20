@@ -4609,6 +4609,7 @@
   },
   "relationshipDeleteConfirmMessage": "También se eliminarán todos sus registros. Esta acción no se puede deshacer.",
   "relationshipDeleteConfirmTitle": "¿Eliminar a {name}?",
+  "relationshipDiscardChangesMessage": "¿Descartar los cambios? No se ha guardado nada de lo que escribiste.",
   "relationshipDueDay": "Tope {day}",
   "@relationshipDueDay": {
     "placeholders": {

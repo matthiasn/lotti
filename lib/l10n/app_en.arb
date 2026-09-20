@@ -7067,6 +7067,10 @@
       }
     }
   },
+  "relationshipDiscardChangesMessage": "Discard your changes? Nothing you typed has been saved.",
+  "@relationshipDiscardChangesMessage": {
+    "description": "Asked when the add/edit person sheet is left with unsaved field edits, however it is left: Cancel, the back gesture, the barrier or Escape. The photo is not covered by it — photo actions write immediately."
+  },
   "relationshipDueDay": "Due {day}",
   "@relationshipDueDay": {
     "placeholders": {

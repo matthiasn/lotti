@@ -12136,6 +12136,10 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get relationshipDiscardChangesMessage =>
+      'Descartar suas alterações? Nada do que você digitou foi salvo.';
+
+  @override
   String relationshipDueDay(String day) {
     return 'Até $day';
   }

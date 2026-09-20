@@ -4609,6 +4609,7 @@
   },
   "relationshipDeleteConfirmMessage": "Tous ses échanges seront aussi supprimés. Cette action est irréversible.",
   "relationshipDeleteConfirmTitle": "Supprimer {name} ?",
+  "relationshipDiscardChangesMessage": "Annuler tes modifications ? Rien de ce que tu as saisi n’a été enregistré.",
   "relationshipDueDay": "À relancer {day}",
   "@relationshipDueDay": {
     "placeholders": {

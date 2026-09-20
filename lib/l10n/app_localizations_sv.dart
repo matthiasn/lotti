@@ -6114,7 +6114,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get editMenuTitle => 'Redigering';
 
   @override
-  String get editorDiscardChanges => 'Ändringar i kassering';
+  String get editorDiscardChanges => 'Kasta ändringarna';
 
   @override
   String get editorInsertDivider => 'Insättningsdelare';
@@ -12029,6 +12029,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String relationshipDeleteConfirmTitle(String name) {
     return 'Ta bort $name?';
   }
+
+  @override
+  String get relationshipDiscardChangesMessage =>
+      'Kasta ändringarna? Inget av det du skrivit har sparats.';
 
   @override
   String relationshipDueDay(String day) {

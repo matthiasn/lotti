@@ -12233,6 +12233,10 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get relationshipDiscardChangesMessage =>
+      'Annuler tes modifications ? Rien de ce que tu as saisi n’a été enregistré.';
+
+  @override
   String relationshipDueDay(String day) {
     return 'À relancer $day';
   }

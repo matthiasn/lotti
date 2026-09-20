@@ -12189,6 +12189,10 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get relationshipDiscardChangesMessage =>
+      '¿Descartar los cambios? No se ha guardado nada de lo que escribiste.';
+
+  @override
   String relationshipDueDay(String day) {
     return 'Tope $day';
   }

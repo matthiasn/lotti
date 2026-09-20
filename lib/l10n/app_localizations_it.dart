@@ -6184,7 +6184,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get editMenuTitle => 'Modifica';
 
   @override
-  String get editorDiscardChanges => 'Disattivare le modifiche';
+  String get editorDiscardChanges => 'Scarta le modifiche';
 
   @override
   String get editorInsertDivider => 'Inserto divisore';
@@ -12168,6 +12168,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String relationshipDeleteConfirmTitle(String name) {
     return 'Eliminare $name?';
   }
+
+  @override
+  String get relationshipDiscardChangesMessage =>
+      'Scartare le modifiche? Niente di ciò che hai scritto è stato salvato.';
 
   @override
   String relationshipDueDay(String day) {

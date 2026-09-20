@@ -1492,9 +1492,20 @@ the page's Reach card carries). The category is a name beside a 10px colour
 dot rather than a second large avatar competing with the person's own;
 clearing it goes through the picker's own no-category row, so one component
 owns what the choices are. Like the capture sheet, the form draws no actions:
-it publishes `save` and `canSave` to a `RelationshipFormHandle` and
+it publishes `save`, `dismiss` and `canSave` to a `RelationshipFormHandle` and
 `RelationshipFormStickyActions` renders them in the modal's pinned bar, which
 is what keeps Save reachable over three cards of fields.
+
+Leaving asks first. Cancel, the back gesture, the barrier and Escape all route
+through the form's `_dismiss`, which compares every field against what the
+sheet opened with and shows `showConfirmationModal` only when something would
+be lost; an untouched sheet still closes on the first tap. The `PopScope`
+around the form sets `canPop: false` unconditionally rather than `!_isDirty`,
+because the fields are plain controllers with no `onChanged`: the form does
+not rebuild while you type, so a dirtiness captured at build time would still
+read "clean" for the name just entered. The Photo card is deliberately outside
+the comparison — its actions write immediately, so there is never a pending
+picture to lose.
 
 *Add channel · or from contacts* is one row with two doors. The manual one is
 on every platform (ADR 0041 §2); the address book appears only where there is

@@ -2843,7 +2843,7 @@
   },
   "doneButton": "Klart",
   "editMenuTitle": "Redigering",
-  "editorDiscardChanges": "Ändringar i kassering",
+  "editorDiscardChanges": "Kasta ändringarna",
   "editorInsertDivider": "Insättningsdelare",
   "editorMoreFormatting": "Mer formatering",
   "editorPlaceholder": "Skriv in anteckningarna...",
@@ -5105,6 +5105,7 @@
   },
   "relationshipDeleteConfirmMessage": "Alla avstämningar tas också bort. Det går inte att ångra.",
   "relationshipDeleteConfirmTitle": "Ta bort {name}?",
+  "relationshipDiscardChangesMessage": "Kasta ändringarna? Inget av det du skrivit har sparats.",
   "relationshipDueDay": "Senast {day}",
   "@relationshipDueDay": {
     "placeholders": {
