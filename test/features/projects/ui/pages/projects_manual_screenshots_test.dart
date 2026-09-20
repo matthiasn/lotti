@@ -814,7 +814,10 @@ void main() {
           alignment: 0.15,
         );
         await settleFrames(tester, 4);
-        expect(find.text(_t('On Track', 'Im Plan')), findsOneWidget);
+        expect(
+          find.text(_messages(tester).projectHealthBandOnTrack),
+          findsOneWidget,
+        );
         expect(find.text('Project Waddle Agent'), findsOneWidget);
         await captureScreenshot(
           tester,
