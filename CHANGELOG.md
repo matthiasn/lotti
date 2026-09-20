@@ -4,6 +4,62 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.20]
+
+### Added
+
+- **A Sections page, near the top of Settings.** Daily OS, Projects, Goals,
+  Habits, Dashboards, People and Events are switched on and off there now,
+  instead of being seven rows among twenty-three inside Advanced → Config Flags.
+  Each one you turn on gets its own place in the navigation, in the order the
+  list shows; turning one off hides it without deleting anything you recorded.
+- **A briefing now says why it reached its verdict.** Whatever the health
+  band — *Thriving*, *Steady*, *Needs attention* or *Strained* — the card
+  shows the one sentence the model wrote tracing that band to the check-ins
+  behind it. It was being written and stored all along, and simply never
+  shown.
+- **Photos you add to a check-in get described automatically.** Where the
+  person's AI profile (or the one their category provides) has image analysis
+  assigned, the photo is described and the description reaches their briefing.
+  Without such a profile, nothing is sent anywhere.
+
+### Changed
+
+- **Config Flags is no longer one flat list.** With the section toggles gone, the
+  rest is grouped into Preferences — the things you might reasonably want to
+  change — and Advanced & experimental, which is diagnostics and unfinished work.
+  A search that now finds nothing points you at Sections.
+- **Adding a person now opens that person.** Creating someone used to return
+  you to the list to find the row you had just made; you land on their page
+  instead, where the check-in you came to log is logged. Dismissing the sheet
+  still goes nowhere.
+- **Logging a few things in a row about one person now costs one briefing.**
+  A photo added a minute after the check-in it belongs to used to buy a
+  second briefing, and a dictation after that a third. The agent now waits
+  two minutes for you to finish before it writes.
+- **A collapsed photo now shows who described it.** The line under a photo can
+  come from the app's AI or from your own caption, and nothing distinguished
+  them. Where AI did the work, the photo now carries the same attribution pill
+  the expanded entry has — the model, what it cost, and a tap through to the
+  detail.
+
+### Fixed
+
+- **The add/edit person sheet no longer throws away what you typed.** Tapping
+  Cancel, swiping back, pressing Escape or tapping outside the sheet discarded
+  the name, nickname, known terms, category, importance, cadence and every
+  contact row without a word. It now asks first, and only when there is
+  something to lose.
+- **Unlinking a task now asks in your own language.** The confirmation and its
+  error message were only ever translated into Czech, German, Spanish, French
+  and Romanian, so Danish, Italian, Dutch, Portuguese and Swedish users were
+  asked in English inside an otherwise translated screen. The Czech failure
+  message also now addresses you informally, like the rest of the app.
+- **The mark on an important person is legible, and says what it is.** The
+  sparkle beside their name was drawn at 8px — smaller than any icon the app
+  uses — and carried no label, so it reached neither a screen reader nor
+  anyone who cannot pick it out by colour.
+
 ## [1.1.19]
 
 ### Added
