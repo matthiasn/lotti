@@ -32,14 +32,12 @@ Map<String, dynamic> _reportArgs({
   String oneLiner = 'Things are in a good rhythm with Anna.',
   String tldr = 'You spoke four days ago; the tone has been warm.',
   String content = 'Full briefing: last call covered her job search…',
-  Object? confidence,
 }) => {
   'healthBand': band,
   'healthRationale': rationale,
   'oneLiner': oneLiner,
   'tldr': tldr,
   'content': content,
-  'healthConfidence': ?confidence,
 };
 
 void main() {
@@ -213,19 +211,18 @@ void main() {
   });
 
   group('update_relationship_report', () {
-    test('accumulates the full briefing with band and confidence', () async {
+    test('accumulates the full briefing with its band', () async {
       await strategy.processToolCalls(
         toolCalls: [
           _call(
             name: RelationshipAgentToolNames.updateRelationshipReport,
-            args: _reportArgs(confidence: 0.9),
+            args: _reportArgs(),
           ),
         ],
         manager: manager,
       );
       final briefing = strategy.briefing!;
       expect(briefing.band, RelationshipHealthBand.steady);
-      expect(briefing.confidence, 0.9);
       expect(briefing.tldr, contains('four days ago'));
       expect(strategy.hasBriefing, isTrue);
     });
@@ -302,17 +299,21 @@ void main() {
       expect(strategy.hasBriefing, isTrue);
     });
 
-    test('an out-of-range confidence is dropped, not clamped', () async {
+    // The tool no longer offers healthConfidence, but a model that has seen
+    // an older schema may still send one. It is ignored, not rejected: an
+    // extra argument must never cost a briefing that is otherwise complete.
+    test('a confidence the schema no longer asks for is ignored', () async {
       await strategy.processToolCalls(
         toolCalls: [
           _call(
             name: RelationshipAgentToolNames.updateRelationshipReport,
-            args: _reportArgs(confidence: 3),
+            args: {..._reportArgs(), 'healthConfidence': 0.9},
           ),
         ],
         manager: manager,
       );
-      expect(strategy.briefing!.confidence, isNull);
+      expect(strategy.hasBriefing, isTrue);
+      expect(strategy.briefing!.band, RelationshipHealthBand.steady);
     });
   });
 

@@ -885,9 +885,14 @@ removed:
   may inform a briefing, while banner copy excludes contact details, addresses,
   diagnoses, health details, and third-party names. The briefing lands as an
   `AgentReportEntity` whose
-  provenance carries the health band + rationale + confidence
+  provenance carries the health band and its rationale
   (`RelationshipReportProvenanceKeys`, parsed fail-closed by
-  `relationship_health_metrics.dart`).
+  `relationship_health_metrics.dart`). It carries **no confidence**: the
+  project agent reports one and its card renders it as a percentage, but a
+  briefing does not ask for one, because a model's stated confidence about a
+  person is a number it generates about its own guess, and a percentage under
+  a verdict about someone you know reads as a measurement. Briefings written
+  before it was retired still carry the key; it is simply not read.
 - **The agent keeps private observations, and reads them back.** FACTS hold
   what the user logged; they cannot hold what the agent learned about the
   record itself — that a name was misheard, that the user found a briefing

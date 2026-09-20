@@ -28,7 +28,6 @@ typedef RelationshipAdSnooze = ({
 typedef RelationshipBriefing = ({
   RelationshipHealthBand band,
   String rationale,
-  double? confidence,
   String oneLiner,
   String tldr,
   String content,
@@ -270,18 +269,9 @@ class RelationshipAgentStrategy extends ConversationStrategy
       );
       return;
     }
-    final rawConfidence = args['healthConfidence'];
-    final confidence =
-        rawConfidence is num &&
-            rawConfidence.isFinite &&
-            rawConfidence >= 0 &&
-            rawConfidence <= 1
-        ? rawConfidence.toDouble()
-        : null;
     _briefing = (
       band: band,
       rationale: rationale,
-      confidence: confidence,
       oneLiner: oneLiner,
       tldr: tldr,
       content: content,

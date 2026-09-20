@@ -18,23 +18,25 @@ enum RelationshipHealthBand {
 abstract final class RelationshipReportProvenanceKeys {
   static const healthBand = 'relationship_health_band';
   static const healthRationale = 'relationship_health_rationale';
-  static const healthConfidence = 'relationship_health_confidence';
 }
 
 /// The user-facing health summary parsed from a relationship briefing: the
-/// [band], a free-text [rationale], and an optional model [confidence] in
-/// `[0, 1]`.
+/// [band] and the free-text [rationale] tracing it to evidence.
+///
+/// No confidence. The project agent reports one and its card renders it as a
+/// percentage; a briefing does not ask for one, because a model's stated
+/// confidence about a person is a number it generates about its own guess,
+/// and a percentage under a verdict about someone you know reads as a
+/// measurement rather than the guess it is.
 @immutable
 class RelationshipHealthMetrics {
   const RelationshipHealthMetrics({
     required this.band,
     required this.rationale,
-    this.confidence,
   });
 
   final RelationshipHealthBand band;
   final String rationale;
-  final double? confidence;
 }
 
 /// Parses the health verdict from a briefing report, or null when the
@@ -58,11 +60,8 @@ RelationshipHealthMetrics? relationshipHealthMetricsFromProvenance(
       : null;
   final rationale = rawRationale is String ? rawRationale.trim() : '';
   if (band == null || rationale.isEmpty) return null;
-  return RelationshipHealthMetrics(
-    band: band,
-    rationale: rationale,
-    confidence: parseReportHealthConfidence(
-      provenance[RelationshipReportProvenanceKeys.healthConfidence],
-    ),
-  );
+  // A briefing written before this stopped being collected still carries
+  // `relationship_health_confidence` in its provenance; it is simply not
+  // read, the way any other retired key is not.
+  return RelationshipHealthMetrics(band: band, rationale: rationale);
 }

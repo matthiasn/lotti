@@ -167,10 +167,6 @@ final List<AgentToolDefinition> relationshipAgentTools = [
           'description':
               'One sentence tracing the band to specific check-in evidence.',
         },
-        'healthConfidence': {
-          'type': 'number',
-          'description': 'Optional confidence in the band, 0..1.',
-        },
         'oneLiner': {
           'type': 'string',
           'description': 'One sentence a list row or banner can show.',
