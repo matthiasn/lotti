@@ -266,6 +266,19 @@
       "status": "verified"
     },
     {
+      "id": "settings-sections",
+      "title": "Sections",
+      "kind": "settings-page",
+      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "sourcePattern": "'sections'",
+      "locator": "/settings/sections",
+      "routes": [
+        "/settings/sections"
+      ],
+      "page": "reference/settings",
+      "status": "documented"
+    },
+    {
       "id": "settings-whats-new",
       "title": "What's New",
       "kind": "settings-page",

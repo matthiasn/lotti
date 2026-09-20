@@ -21719,6 +21719,24 @@ abstract class AppLocalizations {
   /// **'No flags match your search'**
   String get settingsFlagsEmptySearch;
 
+  /// No description provided for @settingsFlagsEmptySearchSectionsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Looking for Habits, Projects or Daily OS? They live under Settings → Sections.'**
+  String get settingsFlagsEmptySearchSectionsHint;
+
+  /// No description provided for @settingsFlagsGroupAdvanced.
+  ///
+  /// In en, this message translates to:
+  /// **'ADVANCED & EXPERIMENTAL'**
+  String get settingsFlagsGroupAdvanced;
+
+  /// No description provided for @settingsFlagsGroupPreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'PREFERENCES'**
+  String get settingsFlagsGroupPreferences;
+
   /// No description provided for @settingsFlagsSearchHint.
   ///
   /// In en, this message translates to:
@@ -22816,6 +22834,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t save your changes'**
   String get settingsSaveFailedToast;
+
+  /// No description provided for @settingsSectionsIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Each section you turn on gets its own place in the navigation. Turning one off just hides it — nothing you have recorded is deleted.'**
+  String get settingsSectionsIntro;
+
+  /// No description provided for @settingsSectionsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which parts of Lotti you use'**
+  String get settingsSectionsSubtitle;
+
+  /// No description provided for @settingsSectionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sections'**
+  String get settingsSectionsTitle;
 
   /// No description provided for @settingsSpeechSubtitle.
   ///

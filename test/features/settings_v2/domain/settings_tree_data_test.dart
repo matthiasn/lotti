@@ -105,6 +105,7 @@ void main() {
       expect(_tree().map((n) => n.id).toList(), [
         'whats-new',
         'onboarding',
+        'sections',
         'ai',
         'agents',
         'daily-os',
@@ -149,6 +150,7 @@ void main() {
       expect(rootIds, [
         'whats-new',
         'onboarding',
+        'sections',
         'ai',
         'agents',
         'daily-os',
@@ -568,6 +570,7 @@ void main() {
       expect(leafPanels, {
         'whats-new': 'whats-new',
         'onboarding': 'onboarding',
+        'sections': 'sections',
         // AI Settings v4 added per-tab leaves under `ai` so the
         // sidebar exposes Providers / Models / Profiles directly
         // instead of forcing the user to drill into the AI landing
@@ -705,6 +708,9 @@ void main() {
       expect(ids, [
         // Onboarding has no flag: it is always in the minimal tree.
         'onboarding',
+        // Nor does Sections: the page that turns features on cannot
+        // itself be gated behind one.
+        'sections',
         'ai',
         'agents',
         'daily-os',

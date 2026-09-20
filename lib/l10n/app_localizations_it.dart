@@ -13243,6 +13243,16 @@ class AppLocalizationsIt extends AppLocalizations {
       'Nessuna bandiera corrisponde alla tua ricerca';
 
   @override
+  String get settingsFlagsEmptySearchSectionsHint =>
+      'Cerchi Abitudini, Progetti o Daily OS? Si trovano in Impostazioni → Sezioni.';
+
+  @override
+  String get settingsFlagsGroupAdvanced => 'AVANZATE E SPERIMENTALI';
+
+  @override
+  String get settingsFlagsGroupPreferences => 'PREFERENZE';
+
+  @override
   String get settingsFlagsSearchHint => 'Cerca flag';
 
   @override
@@ -13903,6 +13913,16 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get settingsSaveFailedToast =>
       'Non è stato possibile salvare le tue modifiche';
+
+  @override
+  String get settingsSectionsIntro =>
+      'Ogni sezione che attivi ottiene il proprio posto nella navigazione. Disattivarla la nasconde soltanto: niente di ciò che hai registrato viene eliminato.';
+
+  @override
+  String get settingsSectionsSubtitle => 'Scegli quali parti di Lotti usi';
+
+  @override
+  String get settingsSectionsTitle => 'Sezioni';
 
   @override
   String get settingsSpeechSubtitle => 'Voce e lettura aloud';

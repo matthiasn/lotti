@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Settings
-description: The settings shell — how a URL becomes pages, why desktop pushes one and mobile pushes a stack, and the shared list/detail kit every definition editor reuses.
+description: The settings shell — how a URL becomes pages, why desktop pushes one and mobile pushes a stack, which of the two flag pages a config flag belongs to, and the shared list/detail kit every definition editor reuses.
 resource: ../../lib/features/settings
 tags: [settings, navigation, tree, forms]
 status: stable
@@ -28,6 +28,18 @@ sources:
     resource: ../../lib/features/settings/ui/pages/advanced/maintenance_page.dart
     title: Advanced maintenance actions
     last_modified: 2026-08-15
+  - id: sections-page
+    resource: ../../lib/features/settings/ui/pages/sections_page.dart
+    title: Sections — the app-section toggles
+    last_modified: 2026-09-20
+  - id: flags-page
+    resource: ../../lib/features/settings/ui/pages/flags_page.dart
+    title: Config Flags — preferences and diagnostics
+    last_modified: 2026-09-20
+  - id: flag-definitions
+    resource: ../../lib/database/journal_db/config_flags.dart
+    title: initConfigFlags — the stored flag set
+    last_modified: 2026-09-20
 ---
 
 # From one tree to two page stacks
@@ -78,6 +90,7 @@ everything else beams to its canonical URL from `settingsNodeUrls`, and
 flowchart LR
   Landing["/settings (tree root)"] --> WhatsNew["What's New — if enableWhatsNew"]
   Landing --> Onboarding["Onboarding"]
+  Landing --> Sections["Sections — the app-section toggles"]
   Landing --> AI["AI"]
   Landing --> Agents["Agents"]
   Landing --> DailyOs["Daily OS"]
@@ -118,7 +131,7 @@ flowchart LR
   Preferences --> Speech["Speech — if enableSpeechTts, URL /settings/speech"]
   Preferences --> Keyboard["Keyboard shortcuts — URL /settings/keyboard-shortcuts"]
 
-  Advanced --> Flags["Config flags"]
+  Advanced --> Flags["Config flags — preferences + diagnostics"]
   Advanced --> ManualLanguage["Manual language"]
   Advanced --> Logging["Logging domains"]
   Advanced --> HealthImport["Health import — if enableHealthImport, mobile only"]
@@ -146,13 +159,61 @@ mobile: `_inAdvancedBranch` would claim its URL by prefix, so it defers to
 *tree* says, not the one the URL looks like. See
 [settings_v2](settings_v2.md#a-branch-can-be-added-without-moving-a-single-url).
 
+# One flag set, two pages, one rule
+
+Every stored `ConfigFlag` renders on exactly one of two surfaces, and which one
+is decided mechanically rather than editorially:
+
+| Surface | Holds | Rule |
+|---------|-------|------|
+| **Sections** (`/settings/sections`, second row at the root) | `sectionFlags` in `lib/utils/consts.dart` | The flag adds a **top-level navigation destination** — it is one of the seven `NavService` watches to build `_tabSpecs` |
+| **Config Flags** (`/settings/flags`, under Advanced) | `FlagsBody.groupedFlags`, split into *Preferences* and *Advanced & experimental* | Everything else a user may set |
+| *(neither)* | the per-domain logging toggles and `log_slow_queries` | They have their own page, Advanced → Logging |
+
+The split exists because those two jobs want opposite placement. A switch that
+*reveals a feature* has to be found before the feature can be used at all, so
+burying it three levels down under Advanced made the app's progressive
+disclosure undiscoverable — a user who wanted Habits had to already know where
+the flag was. A switch that *tunes* a feature is only looked for by someone who
+already has it, and is fine where it is.
+
+Row order on Sections is `sectionFlags`, which is `NavService._tabSpecs` order,
+so the list reads top to bottom the way the navigation it produces does.
+
+```mermaid
+flowchart TD
+  Init["initConfigFlags<br/>(journal_db/config_flags.dart)"] --> Store[("config_flags table")]
+  Store --> Sections["SectionsBody<br/>sectionFlags"]
+  Store --> Flags["FlagsBody<br/>groupedFlags"]
+  Store --> Logging["LoggingSettingsBody<br/>LogDomain + slow queries"]
+  Sections --> List["ConfigFlagToggleList"]
+  Flags --> List
+  List --> Labels["ConfigFlagLabels<br/>icon + localized title/subtitle"]
+  List --> Persist["PersistenceLogic.setConfigFlag"]
+  Persist --> Store
+```
+
+Two things keep that honest, and both are tests rather than review:
+
+- **`database_config_flags_test.dart` partitions the set.** It reads the flags a
+  real in-memory database ends up holding and asserts that `sectionFlags` and
+  `FlagsBody.defaultDisplayedItems` are disjoint and, together with the logging
+  set, cover all of them. A flag added to `initConfigFlags` without a home fails
+  there instead of shipping as a toggle nobody can reach.
+- **`ConfigFlagToggleList` and `ConfigFlagLabels` are shared.** Both pages render
+  the same row widget and resolve labels through the same catalog, so a flag that
+  moves between them keeps its glyph, its wording and its tap behaviour without a
+  second edit. The raw `ConfigFlag.description` written by `initConfigFlags` is a
+  developer string and is only ever a fallback for a name the catalog does not
+  know.
+
 # Ownership boundaries
 
 **Settings owns** the layout fork in `settings_root_page.dart`, route composition
 in `SettingsLocation`, the shared presentation widgets, the shared list/detail
 scaffolding, the two-step destructive/long-running modal wrapper, and utility
-pages: theming, flags, logging, manual language, maintenance, about, health
-import, recording style.
+pages: theming, sections, flags, logging, manual language, maintenance, about,
+health import, recording style.
 
 **Settings routes into other features** for AI, agents, categories, labels,
 projects and sync settings — those pages live in their own features.

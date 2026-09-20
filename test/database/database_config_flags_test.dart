@@ -4,6 +4,7 @@ import 'package:drift/drift.dart' as drift;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
+import 'package:lotti/features/settings/ui/pages/flags_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
@@ -199,6 +200,56 @@ void main() {
       () async {
         final flags = await db?.watchConfigFlags().first;
         expect(flags, expectedFlags);
+      },
+    );
+
+    test(
+      'every initialized flag has exactly one settings home',
+      () async {
+        // The authoring guard behind the Sections / Config Flags split: a
+        // flag `initConfigFlags` creates but neither page lists is a stored
+        // value no user can ever reach, and one *both* list is a value that
+        // can disagree with itself across two screens.
+        //
+        // Placed here rather than beside either page because this is where
+        // the definition lives — the test above proves `expectedFlags` is
+        // what a real database ends up holding, so adding a flag forces an
+        // edit here and this assertion then demands it be given a home.
+        final stored = (await db!.watchConfigFlags().first)
+            .map((flag) => flag.name)
+            .toSet();
+
+        // The per-domain logging toggles and the slow-query switch have
+        // their own surface (Advanced → Logging), so neither list carries
+        // them.
+        final loggingOwned = {
+          for (final domain in LogDomain.values) domain.flagName,
+          logSlowQueriesFlag,
+        };
+
+        final onSections = sectionFlags.toSet();
+        final onConfigFlags = FlagsBody.defaultDisplayedItems.toSet();
+
+        expect(
+          onSections.intersection(onConfigFlags),
+          isEmpty,
+          reason: 'a flag must not be listed on both pages',
+        );
+        expect(
+          stored
+              .difference(onSections)
+              .difference(onConfigFlags)
+              .difference(
+                loggingOwned,
+              ),
+          isEmpty,
+          reason: 'flag created by initConfigFlags with no settings row',
+        );
+        expect(
+          onSections.union(onConfigFlags).difference(stored),
+          isEmpty,
+          reason: 'settings row for a flag initConfigFlags never creates',
+        );
       },
     );
 

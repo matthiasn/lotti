@@ -13159,6 +13159,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsFlagsEmptySearch => 'Keine Flags entsprechen deiner Suche';
 
   @override
+  String get settingsFlagsEmptySearchSectionsHint =>
+      'Du suchst Gewohnheiten, Projekte oder Daily OS? Die findest du unter Einstellungen → Bereiche.';
+
+  @override
+  String get settingsFlagsGroupAdvanced => 'ERWEITERT & EXPERIMENTELL';
+
+  @override
+  String get settingsFlagsGroupPreferences => 'PERSÖNLICHE EINSTELLUNGEN';
+
+  @override
   String get settingsFlagsSearchHint => 'Flags durchsuchen';
 
   @override
@@ -13821,6 +13831,17 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get settingsSaveFailedToast =>
       'Deine Änderungen konnten nicht gespeichert werden';
+
+  @override
+  String get settingsSectionsIntro =>
+      'Jeder Bereich, den du einschaltest, bekommt seinen eigenen Platz in der Navigation. Ausschalten blendet ihn nur aus – nichts von dem, was du erfasst hast, wird gelöscht.';
+
+  @override
+  String get settingsSectionsSubtitle =>
+      'Wähle, welche Teile von Lotti du nutzt';
+
+  @override
+  String get settingsSectionsTitle => 'Bereiche';
 
   @override
   String get settingsSpeechSubtitle => 'Stimme und Vorlesen';

@@ -13087,6 +13087,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsFlagsEmptySearch => 'Inga flaggor matchar din sökning';
 
   @override
+  String get settingsFlagsEmptySearchSectionsHint =>
+      'Letar du efter Vanor, Projekt eller Daily OS? De finns under Inställningar → Sektioner.';
+
+  @override
+  String get settingsFlagsGroupAdvanced => 'AVANCERAT OCH EXPERIMENTELLT';
+
+  @override
+  String get settingsFlagsGroupPreferences => 'PREFERENSER';
+
+  @override
   String get settingsFlagsSearchHint => 'Sökflaggor';
 
   @override
@@ -13744,6 +13754,17 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsSaveFailedToast => 'Dina ändringar kunde inte sparas';
+
+  @override
+  String get settingsSectionsIntro =>
+      'Varje sektion du aktiverar får sin egen plats i navigeringen. Att stänga av den döljer den bara – inget av det du har registrerat raderas.';
+
+  @override
+  String get settingsSectionsSubtitle =>
+      'Välj vilka delar av Lotti du använder';
+
+  @override
+  String get settingsSectionsTitle => 'Sektioner';
 
   @override
   String get settingsSpeechSubtitle => 'Röst och högläsning';

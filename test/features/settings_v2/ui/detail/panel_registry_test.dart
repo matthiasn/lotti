@@ -80,6 +80,8 @@ void main() {
       'daily-os',
       // Top-level entry point back to the FTUE welcome flow.
       'onboarding',
+      // The section toggles, near the top of the menu.
+      'sections',
       // Step 7 — simple leaves.
       'flags',
       'recording-style',

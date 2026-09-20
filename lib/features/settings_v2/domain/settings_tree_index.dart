@@ -21,6 +21,7 @@ import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 /// hyphen to a slash.
 const Map<String, String> settingsNodeUrls = {
   'onboarding': '/settings/onboarding',
+  'sections': '/settings/sections',
   'ai': aiSettingsParentRoute,
   'ai/profiles': '/settings/ai/profiles',
   'agents': '/settings/agents',

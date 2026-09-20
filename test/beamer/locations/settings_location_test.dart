@@ -172,6 +172,7 @@ void main() {
         '/settings/agents/souls/:soulId/review',
         '/settings/agents/instances/:agentId',
         '/settings/daily-os',
+        '/settings/sections',
         '/settings/flags',
         '/settings/recording-style',
         '/settings/theming',

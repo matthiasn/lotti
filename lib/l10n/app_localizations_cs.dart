@@ -13258,6 +13258,16 @@ class AppLocalizationsCs extends AppLocalizations {
       'Žádné příznaky neodpovídají vašemu hledání';
 
   @override
+  String get settingsFlagsEmptySearchSectionsHint =>
+      'Hledáš Návyky, Projekty nebo Daily OS? Najdeš je v Nastavení → Sekce.';
+
+  @override
+  String get settingsFlagsGroupAdvanced => 'POKROČILÉ A EXPERIMENTÁLNÍ';
+
+  @override
+  String get settingsFlagsGroupPreferences => 'PŘEDVOLBY';
+
+  @override
   String get settingsFlagsSearchHint => 'Hledat příznaky';
 
   @override
@@ -13915,6 +13925,16 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsSaveFailedToast => 'Změny se nepodařilo uložit';
+
+  @override
+  String get settingsSectionsIntro =>
+      'Každá sekce, kterou zapneš, dostane své vlastní místo v navigaci. Vypnutím se pouze skryje – nic z toho, co jsi zaznamenal, se nesmaže.';
+
+  @override
+  String get settingsSectionsSubtitle => 'Vyber si, které části Lotti používáš';
+
+  @override
+  String get settingsSectionsTitle => 'Sekce';
 
   @override
   String get settingsSpeechSubtitle => 'Hlas a předčítání';

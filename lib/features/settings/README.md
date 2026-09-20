@@ -16,8 +16,14 @@ and list scaffolding they all sit in.
 - **Adapts to the window.** On a wide screen, a navigation tree beside the
   selected page; on a phone, a drill-down where Back walks up one level at a
   time. Both are generated from the same structure, so they can never disagree.
-- **Shows only what applies.** Sections gated behind feature flags simply are not
-  there when the flag is off.
+- **Shows only what applies.** Parts of the app gated behind feature flags simply
+  are not there when the flag is off.
+- **One page for turning the app's parts on.** *Sections*, second from the top of
+  Settings, is where Daily OS, Projects, Goals, Habits, Dashboards, People and
+  Events are switched on or off — the switches that reveal a feature sit where
+  someone looking for that feature will actually find them, not three levels down
+  under Advanced. Config Flags keeps the preferences and the diagnostics, grouped
+  so the two are told apart.
 - **Consistent editors.** Every definition editor looks and behaves the same:
   search and create on the list, grouped form sections, a sticky Save that is
   only enabled when something changed, Primary+S to save, and delete behind a
@@ -33,8 +39,8 @@ and list scaffolding they all sit in.
 The desktop/mobile layout fork; route composition for `/settings/**`; the shared
 settings presentation widgets; the shared list and detail scaffolding every
 definition editor reuses; the confirm-then-progress modal; and its own utility
-pages — theming, flags, logging domains, manual language, maintenance, about,
-health import and recording style. System health lives in its own feature and
+pages — theming, sections, flags, logging domains, manual language, maintenance,
+about, health import and recording style. System health lives in its own feature and
 is only routed to from here.
 
 It does **not** own the AI, agents, categories, labels, projects or sync settings

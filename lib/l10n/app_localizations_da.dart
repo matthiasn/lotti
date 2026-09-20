@@ -13071,6 +13071,16 @@ class AppLocalizationsDa extends AppLocalizations {
   String get settingsFlagsEmptySearch => 'Ingen flag matcher din søgning';
 
   @override
+  String get settingsFlagsEmptySearchSectionsHint =>
+      'Leder du efter Vaner, Projekter eller Daily OS? De findes under Indstillinger → Sektioner.';
+
+  @override
+  String get settingsFlagsGroupAdvanced => 'AVANCERET OG EKSPERIMENTELT';
+
+  @override
+  String get settingsFlagsGroupPreferences => 'PRÆFERENCER';
+
+  @override
   String get settingsFlagsSearchHint => 'Søgeflag';
 
   @override
@@ -13726,6 +13736,16 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get settingsSaveFailedToast => 'Dine ændringer kunne ikke gemmes';
+
+  @override
+  String get settingsSectionsIntro =>
+      'Hver sektion, du slår til, får sin egen plads i navigationen. Slår du den fra, bliver den blot skjult – intet af det, du har registreret, bliver slettet.';
+
+  @override
+  String get settingsSectionsSubtitle => 'Vælg hvilke dele af Lotti du bruger';
+
+  @override
+  String get settingsSectionsTitle => 'Sektioner';
 
   @override
   String get settingsSpeechSubtitle => 'Stemme og højtlæsning';

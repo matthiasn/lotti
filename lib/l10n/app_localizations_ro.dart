@@ -13341,6 +13341,16 @@ class AppLocalizationsRo extends AppLocalizations {
       'Niciun marcaj nu corespunde căutării dvs.';
 
   @override
+  String get settingsFlagsEmptySearchSectionsHint =>
+      'Căutați Obiceiuri, Proiecte sau Daily OS? Le găsiți în Setări → Secțiuni.';
+
+  @override
+  String get settingsFlagsGroupAdvanced => 'AVANSAT ȘI EXPERIMENTAL';
+
+  @override
+  String get settingsFlagsGroupPreferences => 'PREFERINȚE';
+
+  @override
   String get settingsFlagsSearchHint => 'Căutați marcaje';
 
   @override
@@ -14004,6 +14014,16 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get settingsSaveFailedToast =>
       'Modificările dvs. nu au putut fi salvate';
+
+  @override
+  String get settingsSectionsIntro =>
+      'Fiecare secțiune pe care o activați primește propriul loc în navigare. Dezactivarea doar o ascunde — nimic din ce ați înregistrat nu este șters.';
+
+  @override
+  String get settingsSectionsSubtitle => 'Alegeți ce părți din Lotti folosiți';
+
+  @override
+  String get settingsSectionsTitle => 'Secțiuni';
 
   @override
   String get settingsSpeechSubtitle => 'Voce și citire cu voce tare';
