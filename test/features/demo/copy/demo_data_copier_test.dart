@@ -1242,13 +1242,27 @@ void main() {
         targetAiConfigs: targetAi,
       );
 
-      expect(saved.map((config) => config.id), [
+      // The copier promises tiers — providers, then models, then profiles,
+      // then skills — and nothing about the order *within* a tier. Both
+      // profiles here carry the same `created`, and `configsByType` is
+      // ORDER BY created_at DESC, so which of two tied rows comes back
+      // first is SQLite's choice: this asserted one permutation of that tie
+      // and failed on CI the day it broke the other way.
+      final savedIds = saved.map((config) => config.id).toList();
+      int at(String id) => savedIds.indexOf(id);
+      expect(savedIds, hasLength(5));
+      expect(savedIds.toSet(), {
         'user-provider',
         'user-model',
         'user-profile',
         'user-chat-profile',
         'user-skill',
-      ]);
+      });
+      expect(at('user-provider'), lessThan(at('user-model')));
+      expect(at('user-model'), lessThan(at('user-profile')));
+      expect(at('user-model'), lessThan(at('user-chat-profile')));
+      expect(at('user-profile'), lessThan(at('user-skill')));
+      expect(at('user-chat-profile'), lessThan(at('user-skill')));
       final chatProfile = saved
           .whereType<AiConfigInferenceProfile>()
           .singleWhere((config) => config.id == 'user-chat-profile');
