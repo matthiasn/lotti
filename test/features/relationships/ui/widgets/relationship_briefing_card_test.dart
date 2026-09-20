@@ -1096,6 +1096,74 @@ void main() {
       }
     });
 
+    // The contract requires a rationale, the workflow stores it, and
+    // nothing rendered it: the verdict on a person was unfalsifiable by
+    // inspection. "Why does it say that about her?" is the question a
+    // briefing has to be able to answer.
+    testWidgets('the band says why, in the words the briefing wrote', (
+      tester,
+    ) async {
+      await pump(tester, checkIns: onTrackCheckIns, current: report());
+
+      final rationale = find.byKey(
+        const ValueKey('relationship-agent-band-rationale'),
+      );
+      expect(rationale, findsOneWidget);
+      expect(tester.widget<Text>(rationale).data, 'Two good calls in a row.');
+    });
+
+    testWidgets('an essay cannot push the briefing off the card', (
+      tester,
+    ) async {
+      await pump(tester, checkIns: onTrackCheckIns, current: report());
+
+      expect(
+        tester
+            .widget<Text>(
+              find.byKey(
+                const ValueKey('relationship-agent-band-rationale'),
+              ),
+            )
+            .maxLines,
+        3,
+      );
+    });
+
+    testWidgets('a briefing with no band says nothing about one', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        checkIns: onTrackCheckIns,
+        current: report(band: null),
+      );
+
+      expect(
+        find.byKey(const ValueKey('relationship-agent-band-rationale')),
+        findsNothing,
+        reason: 'no verdict, nothing to justify',
+      );
+    });
+
+    // Out of date, the status line drops the band for the warning — so the
+    // sentence explaining that band would be explaining something no
+    // longer on screen.
+    testWidgets('an out-of-date briefing drops it with the band', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        checkIns: onTrackCheckIns,
+        current: report(),
+        state: agentState(staleAt: DateTime(2026, 8, 12, 19, 6)),
+      );
+
+      expect(
+        find.byKey(const ValueKey('relationship-agent-band-rationale')),
+        findsNothing,
+      );
+    });
+
     testWidgets('the band wears its colour as a dot beside its word, centred '
         'on the first line', (tester) async {
       await pump(tester, checkIns: onTrackCheckIns, current: report());
