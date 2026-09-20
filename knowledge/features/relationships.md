@@ -793,7 +793,9 @@ instant, and only the components give every device the identical record
 the entry's own `utcOffset`, so every device schedules the same moment. A
 refresh armed for a change that has since been overtaken stands down before
 inference (`relationshipRefreshSuperseded`), even while the cadence is due;
-the newer change's own refresh briefs on everything. The deadline is the change plus `relationshipEvidenceSettle` (30 s),
+the newer change's own refresh briefs on everything. The deadline is the change plus `relationshipEvidenceSettle` (2 min,
+matching `WakeOrchestrator.throttleWindow`, which coalesces bursty edits
+for the subscription-triggered wakes a refresh is not),
 so a burst — a dictation, then a photo, then a comment — is briefed once;
 and while a changed check-in holds a recording whose transcript has not
 arrived, the deadline moves to that recording's `checkInTranscriptTimeout`,
