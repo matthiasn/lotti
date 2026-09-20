@@ -510,6 +510,13 @@ It is the one add control on every state of the list, the empty one
 included: the empty state is a message alone. The header keeps only the
 title, the count and, where an address book exists, the contact-import door.
 
+Both doors call `createPersonAndOpen`, which beams to `/people/<id>` with what
+the sheet resolved to, the way the task list opens the task it just created.
+Creating used to return to the list, leaving the user to find the row they had
+just made; the page they arrive on is where the first check-in is logged. A
+dismissed sheet resolves to null and navigates nowhere, and so does a refused
+write — the sheet stays open with its toast.
+
 ```mermaid
 flowchart LR
   URL["/people/&lt;id&gt;"] --> Loc[RelationshipsLocation]
