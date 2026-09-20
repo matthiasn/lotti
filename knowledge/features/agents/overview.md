@@ -164,6 +164,17 @@ flowchart TD
 values and due `ScheduledWakeEntity` records — the Daily OS planner's day-scoped
 pre-warms (ADR 0022).
 
+Hourly is the coarse net, not the resolution. Both queries filter to what is
+*already* due, so every pass ends by arming a one-shot re-check for the
+nearest pending record still in the future (`_armNextDeadlineRecheck`),
+capped at the poll interval — beyond that the tick is fine enough, and it
+re-arms as the deadline comes closer. Without it a record due two minutes
+from now waited up to an hour for the next tick, which is what a relationship
+briefing's settle window does: it defers the refresh by two minutes on
+purpose. The one timer serves every caller, so the **earliest** target wins —
+a lease lapsing in ten seconds is never pushed out by a deadline armed for
+two minutes' time.
+
 Every pass — the hourly tick, the settle re-checks and a caller's
 `requestCheck()` — runs in the zone `start()` was called in. A pass is
 un-awaited and queries the agent database across many awaits, and drift routes

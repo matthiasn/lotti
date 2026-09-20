@@ -99,6 +99,10 @@ class ScheduledWakeManager with AgentErrorLogging {
   Timer? _timer;
   Timer? _settleTimer;
 
+  /// When [_settleTimer] is set to fire, so a later request can tell whether
+  /// it is already covered.
+  DateTime? _recheckAt;
+
   /// Incremented by [stop]. A check that was already in flight — awaiting the
   /// host lookup or the claim write — compares against this before arming or
   /// running a settle timer, so a stopped manager cannot resurrect itself and
@@ -156,6 +160,7 @@ class ScheduledWakeManager with AgentErrorLogging {
     _timer = null;
     _settleTimer?.cancel();
     _settleTimer = null;
+    _recheckAt = null;
     _log('stopped');
   }
 
@@ -167,11 +172,59 @@ class ScheduledWakeManager with AgentErrorLogging {
   /// 07:00 tick.
   void _scheduleRecheck(Duration delay, int generation) {
     if (generation != _generation) return;
+    final at = clock.now().add(delay.isNegative ? Duration.zero : delay);
+    // One timer serves every caller, so the earliest target wins: a lease
+    // lapsing in ten seconds must not be pushed out by a deadline armed for
+    // two minutes' time, and the earlier wake-up re-runs the pass that
+    // re-arms whatever is next anyway.
+    final armed = _recheckAt;
+    if (_settleTimer != null && armed != null && !at.isBefore(armed)) return;
     _settleTimer?.cancel();
-    _settleTimer = Timer(delay.isNegative ? Duration.zero : delay, () {
-      if (generation != _generation) return;
-      unawaited(_checkAndEnqueue());
-    });
+    _recheckAt = at;
+    final delayFromNow = at.difference(clock.now());
+    _settleTimer = Timer(
+      delayFromNow.isNegative ? Duration.zero : delayFromNow,
+      () {
+        _settleTimer = null;
+        _recheckAt = null;
+        if (generation != _generation) return;
+        unawaited(_checkAndEnqueue());
+      },
+    );
+  }
+
+  /// Arms a wake-up for the nearest pending deadline still in the future.
+  ///
+  /// Both due queries this pass runs filter to records that are *already*
+  /// due, and the periodic tick is hourly, so without this a record due two
+  /// minutes from now waits up to an hour for one — which is exactly what
+  /// [_scheduleRecheck]'s own contract says must not happen: every branch
+  /// that returns "not yet" owes the record a wake-up of its own.
+  ///
+  /// Nothing is armed beyond [checkInterval]: the periodic tick is already a
+  /// fine enough net at that range, and a timer measured in days is a timer
+  /// nobody can reason about. Covers the workspace-scoped records; a
+  /// state-level `scheduledWakeAt` further out than the tick still waits for
+  /// it, there being no query for the nearest pending one.
+  Future<void> _armNextDeadlineRecheck(DateTime now, int generation) async {
+    final List<ScheduledWakeEntity> pending;
+    try {
+      pending = await _repository.getPendingScheduledWakeRecords();
+    } catch (e, s) {
+      logError('failed to read pending wake records', error: e, stackTrace: s);
+      return;
+    }
+    if (generation != _generation) return;
+    final upcoming =
+        pending
+            .map((record) => record.scheduledAt)
+            .where(
+              (at) => at.isAfter(now) && at.difference(now) <= checkInterval,
+            )
+            .toList()
+          ..sort();
+    if (upcoming.isEmpty) return;
+    _scheduleRecheck(upcoming.first.difference(clock.now()), generation);
   }
 
   /// Runs a due-record pass, coalescing any trigger that arrives during it.
@@ -334,6 +387,10 @@ class ScheduledWakeManager with AgentErrorLogging {
         generation,
         handled,
       );
+
+      // Before the log line, so a pass that finds nothing due still leaves
+      // the next deadline covered.
+      await _armNextDeadlineRecheck(now, generation);
 
       if (dueStates.isNotEmpty || recordsEnqueued > 0) {
         _log(
