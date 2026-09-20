@@ -145,6 +145,10 @@ Future<RelationshipEntry?> showRelationshipCreateModal({
   return ModalUtils.showSinglePageModal<RelationshipEntry>(
     context: context,
     title: context.messages.relationshipCreateTitle,
+    // The generic close button pops the route itself, which bypasses the
+    // form's PopScope and takes the typed person with it. The check-in
+    // composer hides it for the same reason; Cancel is in the pinned bar.
+    showCloseButton: false,
     padding: _formPadding(context),
     stickyActionBarBuilder: (_) => RelationshipFormStickyActions(
       handle: handle,
@@ -163,6 +167,8 @@ Future<RelationshipEntry?> showRelationshipEditModal({
   return ModalUtils.showSinglePageModal<RelationshipEntry>(
     context: context,
     title: context.messages.relationshipEditTitle,
+    // See the create sheet: a close button that pops directly cannot ask.
+    showCloseButton: false,
     padding: _formPadding(context),
     stickyActionBarBuilder: (_) => RelationshipFormStickyActions(
       handle: handle,
@@ -292,6 +298,9 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
   String? _categoryId;
   final List<_ChannelDraft> _channels = [];
   bool _isSaving = false;
+
+  /// Whether a discard question is already on screen; see [_dismiss].
+  bool _dismissing = false;
 
   bool get _isEditing => widget.initial != null;
 
@@ -580,18 +589,28 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
   /// the barrier tap and Escape all arrive here, so none of them can drop a
   /// half-filled person without a word.
   Future<void> _dismiss() async {
+    // A second gesture while the question is still on screen would stack a
+    // second confirmation, and answering the top one would then pop the
+    // other confirmation rather than the form: the user would press
+    // *Discard changes* and stay exactly where they were.
+    if (_dismissing) return;
     if (!_isDirty) {
       Navigator.of(context).pop();
       return;
     }
     final messages = context.messages;
-    final confirmed = await showConfirmationModal(
-      context: context,
-      message: messages.relationshipDiscardChangesMessage,
-      confirmLabel: messages.editorDiscardChanges,
-    );
-    if (!confirmed || !mounted) return;
-    Navigator.of(context).pop();
+    _dismissing = true;
+    try {
+      final confirmed = await showConfirmationModal(
+        context: context,
+        message: messages.relationshipDiscardChangesMessage,
+        confirmLabel: messages.editorDiscardChanges,
+      );
+      if (!confirmed || !mounted) return;
+      Navigator.of(context).pop();
+    } finally {
+      _dismissing = false;
+    }
   }
 
   /// Folds a picked address-book entry's channels into the drafts, skipping

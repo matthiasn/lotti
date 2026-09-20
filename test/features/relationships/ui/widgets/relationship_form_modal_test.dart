@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/theme/icon_tokens.dart';
 import 'package:lotti/features/journal/repository/clipboard_images.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
@@ -1844,6 +1845,23 @@ void main() {
 
       expect(find.text(question), findsOneWidget);
       expect(find.byType(RelationshipForm), findsOneWidget);
+    });
+
+    // Codex review on #4387: the modal's generic close button pops the route
+    // itself, and a direct pop bypasses PopScope — so an X in the top bar
+    // would still take the typed person with it. The check-in composer hides
+    // it for the same reason.
+    testWidgets('offers no close button that could pop unguarded', (
+      tester,
+    ) async {
+      await openSheet(tester);
+
+      expect(find.byIcon(LottiIcons.close), findsNothing);
+      expect(
+        find.byKey(const ValueKey('person-form-cancel')),
+        findsOneWidget,
+        reason: 'Cancel in the pinned bar is the way out, and it asks',
+      );
     });
 
     testWidgets('an empty channel row is not unsaved work', (tester) async {
