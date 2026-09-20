@@ -24,6 +24,7 @@ import 'package:lotti/features/system_health/domain/system_health_report.dart';
 import 'package:lotti/features/system_health/state/system_health_controller.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/device_datetime.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -65,9 +66,12 @@ class _SystemHealthBodyState extends ConsumerState<SystemHealthBody> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final locale = Localizations.localeOf(context).toString();
-    _day = DateFormat.yMMMd(locale);
-    _instant = DateFormat.yMMMd(locale).add_Hm();
+    // The device's numeric order, resolved once here because these two are
+    // cached formatters: a diagnostics page timestamps evidence, and the
+    // reader compares it against what their OS logs say.
+    final locale = deviceFormatLocale(context);
+    _day = DateFormat.yMd(locale);
+    _instant = DateFormat.yMd(locale).add_Hm();
   }
 
   @override

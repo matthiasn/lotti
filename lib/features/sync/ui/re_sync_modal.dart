@@ -588,6 +588,9 @@ class _ReSyncDateRow extends StatelessWidget {
       ),
       showDivider: showDivider,
       onTap: onTap,
+      // Spoken, so prose rather than the device's numeric form: a screen
+      // reader says "6/5/2026" as "six slash five slash …". The visible
+      // subtitle above is the stamp and is device-formatted.
       semanticsLabel: '$label, ${DateFormat.yMMMMd(locale).format(date)}',
     );
   }

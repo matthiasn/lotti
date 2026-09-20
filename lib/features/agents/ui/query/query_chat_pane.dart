@@ -903,7 +903,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                                             titleMaxLines: 2,
                                             subtitleMaxLines: null,
                                             title:
-                                                '${messages.queryRecordings} · ${DateFormat.yMMMd(Localizations.localeOf(context).toString()).add_Hm().format(audio.meta.dateFrom)}',
+                                                '${messages.queryRecordings} · ${deviceTimestampLabel(context, audio.meta.dateFrom)}',
                                             subtitle:
                                                 audio.meta.categoryId ==
                                                     reference.categoryId
