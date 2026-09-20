@@ -156,6 +156,7 @@ void main() {
       List<Override> overrides = const [],
       VoidCallback? onAvatarTap,
       ThemeData? theme,
+      bool hasAgent = true,
     }) async {
       setTestSurfaceSize(tester, size);
       await tester.pumpWidget(
@@ -171,6 +172,7 @@ void main() {
                   // about the hero's chrome, not about enrolment. The gate
                   // itself has a test of its own below.
                   relationship: relationship ?? person(important: true),
+                  hasAgent: hasAgent,
                   onBack: () => backs++,
                   onTalkToAgent: () => chats++,
                   onDelete: () async => deletes++,
@@ -263,12 +265,27 @@ void main() {
     testWidgets('a person with no agent gets no agent entry — a chat bubble '
         'over "No agent for this person" offered a conversation with '
         'something that does not exist', (tester) async {
-      await pump(tester, relationship: person());
+      await pump(tester, relationship: person(), hasAgent: false);
 
       expect(find.byKey(const ValueKey('person-talk-to-agent')), findsNothing);
       // The rest of the hero is untouched: leaving is never gated.
       expect(find.byKey(const ValueKey('person-edit')), findsOneWidget);
       expect(find.byKey(const ValueKey('person-menu')), findsOneWidget);
+    });
+
+    testWidgets('an agent that outlives enrolment keeps its door: reminders '
+        'off is not the same as no agent', (tester) async {
+      // Unmarking someone, or making them dormant, stops the cadence but
+      // deliberately keeps the agent and its history. Gating this on
+      // enrolment would take away the only ordinary way back into a chat
+      // that still exists and still answers at /people/<id>/chat.
+      // ignore: avoid_redundant_argument_values
+      await pump(tester, relationship: person(), hasAgent: true);
+
+      expect(
+        find.byKey(const ValueKey('person-talk-to-agent')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('back and talk-to-agent call back', (tester) async {
@@ -746,6 +763,7 @@ void main() {
             slivers: [
               PersonHeroAppBar(
                 relationship: person(),
+                hasAgent: true,
                 onBack: () {},
                 onTalkToAgent: () {},
                 onDelete: () async {},
@@ -935,6 +953,33 @@ void main() {
         ),
       );
       expect(pill(tester, 'person-pill-status').label, 'Archived');
+    });
+
+    testWidgets('a dormant person is not announced as having reminders on', (
+      tester,
+    ) async {
+      // Enrolment is *important and active*, so the raw flag survives
+      // going dormant while the runtime clears the reminders. Reading the
+      // flag printed "Reminders on" directly above a "Dormant" pill.
+      await pump(
+        tester,
+        relationship: person(
+          important: true,
+          status: RelationshipStatus.dormant(
+            id: 's',
+            createdAt: now,
+            utcOffset: 0,
+          ),
+        ),
+        categoryName: 'Penguin Operations',
+      );
+
+      expect(
+        tester.widget<Text>(find.byKey(const ValueKey('person-eyebrow'))).data,
+        'Penguin Operations',
+      );
+      expect(find.textContaining('Reminders on'), findsNothing);
+      expect(pill(tester, 'person-pill-status').label, 'Dormant');
     });
 
     testWidgets('the header never carries the health band — the briefing '

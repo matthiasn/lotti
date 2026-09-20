@@ -46,6 +46,7 @@ class PersonHeroAppBar extends StatelessWidget {
     required this.onBack,
     required this.onTalkToAgent,
     required this.onDelete,
+    required this.hasAgent,
     this.onAvatarTap,
     this.contentInset = 0,
     super.key,
@@ -55,6 +56,16 @@ class PersonHeroAppBar extends StatelessWidget {
   final VoidCallback onBack;
   final VoidCallback onTalkToAgent;
   final Future<void> Function() onDelete;
+
+  /// Whether this person has an agent to talk to.
+  ///
+  /// Not the same question as whether reminders are on. Unmarking someone,
+  /// or making them dormant, stops the cadence but deliberately keeps the
+  /// agent and its conversation — so gating this entry on enrolment would
+  /// take away the only ordinary way back into a chat that still exists
+  /// and still works at `/people/<id>/chat`. The page resolves it, because
+  /// the page is what watches the agent.
+  final bool hasAgent;
 
   /// Tapping the avatar — the door to the person's photo (design 2026-09-08
   /// turn 2, the avatar tap sheet). Only while the band is open: once the
@@ -166,10 +177,10 @@ class PersonHeroAppBar extends StatelessWidget {
         // two different correspondents. The sparkle already means "the
         // agent" everywhere else in the app, so it means it here.
         //
-        // It is hidden, not disabled, for a person who is not enrolled: a
-        // chat bubble above "No agent for this person" offered a
-        // conversation with something that does not exist.
-        if (isEnrolled(relationship)) ...[
+        // It is hidden, not disabled, when there is no agent: a chat
+        // bubble above "No agent for this person" offered a conversation
+        // with something that does not exist.
+        if (hasAgent) ...[
           if (desktop)
             DesignSystemButton(
               key: const ValueKey('person-talk-to-agent'),
@@ -619,7 +630,11 @@ class PersonHeaderBlock extends StatelessWidget {
 
     final eyebrow = [
       ?categoryName,
-      if (data.important) messages.relationshipImportantLabel,
+      // `isEnrolled`, not the raw flag: enrolment is *important and
+      // active*, so a dormant or archived person keeps `important` while
+      // the runtime clears their reminders. Reading the flag here printed
+      // "Reminders on" directly above a "Dormant" pill.
+      if (isEnrolled(item.relationship)) messages.relationshipImportantLabel,
     ].join(' · ');
     // The timestamp inside the one-liner, kept as its own substring so the
     // mono voice can be confined to it below — the same rule the list row

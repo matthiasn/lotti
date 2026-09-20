@@ -474,8 +474,10 @@ into recency ordering or into the status line.
 
 The list (design 2026-09-06 §2–3) is three bands in display order — **Due**
 (enrolled, cadence lapsed), **On track** (enrolled, not lapsed), **Not
-enrolled** (not important, or dormant/archived) — each most-recent contact
-first, under a summary card that counts the due against the enrolled, names
+enrolled** (not important, or dormant/archived) — **each ordered by what
+that band is about**: Due by the longest lapse, On track by the nearest
+deadline, Not enrolled by recency (`_orderWithin`, detailed below), under a
+summary card that counts the due against the enrolled, names
 who lapses next and on which day, and counts the not-enrolled. *Enrolled*
 means `important` **and** active: the consent switch alone does not enrol a
 dormant person (ADR 0039).
