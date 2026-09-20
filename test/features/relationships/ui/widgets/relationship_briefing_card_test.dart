@@ -972,6 +972,79 @@ void main() {
       });
     });
 
+    // The age tick is armed from `build`, and this card's build watches six
+    // providers — an agent tick, a token-usage update, an identity arriving
+    // all re-arm it. The churn has to stop before the boundary for this to
+    // test anything: while the card is rebuilding, the line is re-read from
+    // the clock on every build and would look right even with a dead timer.
+    // So it rebuilds, then goes quiet, and the boundary is crossed with
+    // nothing but the timer left to move it.
+    testWidgets('a card that has been rebuilding still ages once it goes '
+        'quiet', (tester) async {
+      var current = now;
+      final written = now.subtract(const Duration(seconds: 30));
+      final entry = ValueNotifier<RelationshipEntry>(relationship());
+      addTearDown(entry.dispose);
+      await withClock(Clock(() => current), () async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ValueListenableBuilder<RelationshipEntry>(
+              valueListenable: entry,
+              builder: (context, value, child) => RelationshipBriefingCard(
+                relationship: value,
+                checkIns: onTrackCheckIns,
+              ),
+            ),
+            overrides: [
+              agentReportProvider(agentId).overrideWith(
+                (ref) async => report(createdAt: written),
+              ),
+              agentStateProvider(agentId).overrideWith((ref) async => null),
+              agentIsRunningProvider(
+                agentId,
+              ).overrideWith((ref) => Stream.value(false)),
+              agentIdentityProvider(agentId).overrideWith((ref) async => null),
+              taskAgentResolvedSetupProvider(
+                agentId,
+              ).overrideWith((ref) async => resolvedSetup()),
+              agentTokenUsageSummariesProvider(
+                agentId,
+              ).overrideWith((ref) async => const []),
+              relationshipAgentServiceProvider.overrideWithValue(agentService),
+              relationshipRepositoryProvider.overrideWithValue(repository),
+              contactLauncherProvider.overrideWithValue(
+                _FakeContactLauncher(launchable: const {}),
+              ),
+              pendingInteractionStoreProvider.overrideWithValue(store),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(statusText(tester), 'Thriving · as of just now');
+
+        // Five rebuilds, each one passing through the arming code.
+        for (var second = 1; second <= 5; second++) {
+          current = now.add(Duration(seconds: second));
+          entry.value = relationship(cadenceDays: 7 + second);
+          await tester.pump(const Duration(seconds: 1));
+        }
+        expect(statusText(tester), 'Thriving · as of just now');
+
+        // Now nothing rebuilds it, and the age crosses a minute. Only the
+        // armed timer can move the line.
+        current = now.add(const Duration(seconds: 31));
+        await tester.pump(const Duration(seconds: 26));
+
+        expect(
+          statusText(tester),
+          'Thriving · as of 1 min ago',
+          reason:
+              'the tick a rebuilding card armed still fires on the '
+              'boundary, rather than being pushed a whole bucket out',
+        );
+      });
+    });
+
     testWidgets('a briefing finishing is announced as it arrives, and the '
         'age ticking afterwards is not', (tester) async {
       var current = now;
