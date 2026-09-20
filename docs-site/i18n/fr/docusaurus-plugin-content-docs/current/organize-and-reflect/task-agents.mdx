@@ -45,11 +45,11 @@ Utilise la croix pour **Ignorer** une proposition ou la coche pour **Confirmer**
 
 Ouvre **Historique** pour revoir les résultats récents. Il distingue les modifications confirmées de celles qui ont été ignorées. Une entrée ignorée peut représenter ta décision ou une proposition que l’agent a retirée après qu’un contexte de tâche plus récent l’a rendue obsolète.
 
-Un **Réveiller l’agent** manuel peut produire les mêmes types de rapport et de propositions qu’un réveil automatique. Désactiver les mises à jour automatiques arrête les futurs réveils en arrière-plan ; cela n’applique, ne rejette ni ne résout autrement les propositions qui attendent déjà ta décision.
+Une mise à jour lancée à la main avec **Mettre à jour** produit les mêmes types de rapport et de propositions qu’un réveil automatique. Désactiver les mises à jour automatiques arrête les futurs réveils en arrière-plan ; cela n’applique, ne rejette ni ne résout autrement les propositions qui attendent déjà ta décision.
 
 ## Choisir les mises à jour automatiques ou manuelles
 
-Les nouveaux agents de tâche commencent avec les **mises à jour automatiques désactivées**. L’affectation seule ne consomme aucun jeton en arrière-plan. L’interrupteur, le compte à rebours jusqu’à la prochaine mise à jour et **Ignorer une fois** vivent tous dans **Ouvrir les détails internes de l’agent**, à côté de l’historique des rapports et de l’activité de l’agent. Lorsque les mises à jour sont désactivées, Lotti continue de repérer les changements pertinents de la tâche et de ses entrées liées, indique sur la carte même qu’un résumé plus ancien n’est plus à jour et attend que tu choisisses **Réveiller l’agent**. Un réveil manuel reste disponible dès que l’agent possède une configuration IA fonctionnelle.
+Les nouveaux agents de tâche commencent avec les **mises à jour automatiques désactivées**. L’affectation seule ne consomme aucun jeton en arrière-plan. L’interrupteur, le compte à rebours jusqu’à la prochaine mise à jour et **Ignorer une fois** vivent tous dans **Ouvrir les détails internes de l’agent**, à côté de l’historique des rapports et de l’activité de l’agent. Lorsque les mises à jour sont désactivées, Lotti continue de repérer les changements pertinents de la tâche et de ses entrées liées, indique sur la carte même qu’un résumé plus ancien n’est plus à jour et attend que tu choisisses **Mettre à jour**. Un réveil manuel reste disponible dès que l’agent possède une configuration IA fonctionnelle.
 
 <ManualScreenshot
   caseId="tasks/agent-card-manual"
@@ -57,6 +57,6 @@ Les nouveaux agents de tâche commencent avec les **mises à jour automatiques d
   caption="Le mode manuel observe les changements et signale l’obsolescence sans lancer d’inférence."
 />
 
-Lorsque les **mises à jour automatiques** sont activées, Lotti regroupe les changements de tâche correspondants pendant environ deux minutes avant de programmer une actualisation. Ce regroupement évite un réveil d’agent à chaque petite modification. **Réveiller l’agent** reste disponible pour une actualisation immédiate que tu demandes.
+Lorsque les **mises à jour automatiques** sont activées, Lotti regroupe les changements de tâche correspondants pendant environ deux minutes avant de programmer une actualisation. Ce regroupement évite un réveil d’agent à chaque petite modification. **Mettre à jour** reste disponible pour une actualisation immédiate que tu demandes.
 
 Désactiver les mises à jour automatiques efface son compte à rebours en attente et les actualisations automatiques en file d’attente, mais n’annule pas un réveil que tu as explicitement demandé. Les réactiver s’applique aux changements futurs ; cela ne rejoue pas les changements arrivés lorsque l’automatisation était désactivée.
