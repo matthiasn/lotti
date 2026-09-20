@@ -40,6 +40,10 @@ sources:
     resource: ../../lib/database/journal_db/config_flags.dart
     title: initConfigFlags — the stored flag set
     last_modified: 2026-09-20
+  - id: flag-placement
+    resource: ../../lib/features/settings/domain/config_flag_placement.dart
+    title: Which settings surface each config flag appears on
+    last_modified: 2026-09-20
 ---
 
 # From one tree to two page stacks
@@ -166,8 +170,8 @@ is decided mechanically rather than editorially:
 
 | Surface | Holds | Rule |
 |---------|-------|------|
-| **Sections** (`/settings/sections`, second row at the root) | `sectionFlags` in `lib/utils/consts.dart` | The flag adds a **top-level navigation destination** — it is one of the seven `NavService` watches to build `_tabSpecs` |
-| **Config Flags** (`/settings/flags`, under Advanced) | `FlagsBody.groupedFlags`, split into *Preferences* and *Advanced & experimental* | Everything else a user may set |
+| **Sections** (`/settings/sections`, second row at the root) | `sectionFlags` | The flag adds a **top-level navigation destination** — `NavService` builds its tab watch list from this very constant |
+| **Config Flags** (`/settings/flags`, under Advanced) | `configFlagGroups`, split into *Preferences* and *Advanced & experimental* | Everything else a user may set |
 | *(neither)* | the per-domain logging toggles and `log_slow_queries` | They have their own page, Advanced → Logging |
 
 The split exists because those two jobs want opposite placement. A switch that
@@ -177,14 +181,23 @@ disclosure undiscoverable — a user who wanted Habits had to already know where
 the flag was. A switch that *tunes* a feature is only looked for by someone who
 already has it, and is fine where it is.
 
-Row order on Sections is `sectionFlags`, which is `NavService._tabSpecs` order,
-so the list reads top to bottom the way the navigation it produces does.
+Both lists live in
+[`config_flag_placement.dart`](../../lib/features/settings/domain/config_flag_placement.dart) —
+one file, outside the UI layer, so a test can ask where a flag belongs without
+importing a widget and the two halves of the partition cannot drift into
+separate layers.
+
+Row order on Sections is `sectionFlags`, which is also the order `NavService`
+yields its tab specs in, so the list reads top to bottom the way the navigation
+it produces does. Reordering the constant reorders the app's tabs; that is the
+point, not a side effect.
 
 ```mermaid
 flowchart TD
   Init["initConfigFlags<br/>(journal_db/config_flags.dart)"] --> Store[("config_flags table")]
   Store --> Sections["SectionsBody<br/>sectionFlags"]
-  Store --> Flags["FlagsBody<br/>groupedFlags"]
+  Store --> Nav["NavService<br/>sectionFlags"]
+  Store --> Flags["FlagsBody<br/>configFlagGroups"]
   Store --> Logging["LoggingSettingsBody<br/>LogDomain + slow queries"]
   Sections --> List["ConfigFlagToggleList"]
   Flags --> List
@@ -197,9 +210,14 @@ Two things keep that honest, and both are tests rather than review:
 
 - **`database_config_flags_test.dart` partitions the set.** It reads the flags a
   real in-memory database ends up holding and asserts that `sectionFlags` and
-  `FlagsBody.defaultDisplayedItems` are disjoint and, together with the logging
-  set, cover all of them. A flag added to `initConfigFlags` without a home fails
+  `configFlagsOnFlagsPage` are disjoint and, together with the logging set,
+  cover all of them. A flag added to `initConfigFlags` without a home fails
   there instead of shipping as a toggle nobody can reach.
+- **`nav_service_test.dart` pins the navigation correspondence.** `NavService`
+  derives its watch list from `sectionFlags` rather than spelling the flags out,
+  and the test records which names it asks for and asserts they are exactly that
+  list, in order. Re-hardcoding the list here — the regression that would make
+  the Sections page quietly wrong — fails there.
 - **`ConfigFlagToggleList` and `ConfigFlagLabels` are shared.** Both pages render
   the same row widget and resolve labels through the same catalog, so a flag that
   moves between them keeps its glyph, its wording and its tap behaviour without a

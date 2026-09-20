@@ -22,6 +22,7 @@ import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_metrics_page.dart';
+import 'package:lotti/features/settings/domain/config_flag_placement.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
@@ -74,7 +75,7 @@ const Map<String, bool> _flagValues = {
 };
 
 Set<ConfigFlag> get _manualFlags => {
-  for (final name in FlagsBody.defaultDisplayedItems)
+  for (final name in configFlagsOnFlagsPage)
     ConfigFlag(
       name: name,
       description: _t(

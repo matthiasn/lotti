@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/theme/icon_tokens.dart';
-import 'package:lotti/features/settings/ui/pages/flags_page.dart';
+import 'package:lotti/features/settings/domain/config_flag_placement.dart';
 import 'package:lotti/features/settings/ui/widgets/config_flag_labels.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
@@ -14,7 +14,7 @@ import '../../../../widget_test_utils.dart';
 /// fail here rather than render its bare name and a gear.
 final _listedFlags = <String>[
   ...sectionFlags,
-  ...FlagsBody.defaultDisplayedItems,
+  ...configFlagsOnFlagsPage,
 ];
 
 ConfigFlag _flag(String name) =>
@@ -145,7 +145,7 @@ void main() {
       tester,
     ) async {
       await withContext(tester, (context) {
-        for (final name in FlagsBody.defaultDisplayedItems) {
+        for (final name in configFlagsOnFlagsPage) {
           expect(
             ConfigFlagLabels.sectionTitleFor(context, name),
             isNull,

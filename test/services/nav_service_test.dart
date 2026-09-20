@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/settings/domain/config_flag_placement.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -241,6 +242,36 @@ class _NavFlagBench {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  group('NavService — the flags it watches', () {
+    test('watches exactly sectionFlags, and nothing else', () async {
+      // *Settings -> Sections* renders `sectionFlags` and tells the user it
+      // is where the app's navigable parts are switched on. That claim is
+      // only true while this service watches the same set — a tab flag it
+      // watched but Sections did not list would be a destination with no
+      // switch, and a flag Sections listed but this service ignored would be
+      // a switch that does nothing.
+      final requested = <String>[];
+      final journalDb = mockJournalDbWithMeasurableTypes([]);
+      when(() => journalDb.watchConfigFlag(any())).thenAnswer((invocation) {
+        requested.add(invocation.positionalArguments.first as String);
+        return Stream<bool>.value(false);
+      });
+      final settingsDb = SettingsDb(inMemoryDatabase: true);
+      final navService = NavService(
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+      );
+      addTearDown(() async {
+        await navService.dispose();
+        await settingsDb.close();
+      });
+
+      // Order matters as well as membership: the Sections page renders its
+      // rows in `sectionFlags` order and calls that the navigation order.
+      expect(requested, sectionFlags);
+    });
+  });
 
   group('NavService Tests', () {
     late SettingsDb settingsDb;

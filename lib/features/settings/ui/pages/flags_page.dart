@@ -4,7 +4,7 @@ import 'package:lotti/features/design_system/components/search/design_system_sea
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
-import 'package:lotti/features/settings/ui/pages/sections_page.dart';
+import 'package:lotti/features/settings/domain/config_flag_placement.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/config_flag_labels.dart';
 import 'package:lotti/features/settings/ui/widgets/config_flag_toggle_list.dart';
@@ -12,9 +12,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
-
-export 'package:lotti/features/settings/ui/widgets/config_flag_labels.dart'
-    show FlagLabelResolver;
 
 /// Mobile / legacy wrapper — keeps the `SliverBoxAdapterPage` chrome
 /// (title, back button, page-level padding) and delegates the
@@ -38,17 +35,6 @@ class FlagsPage extends StatelessWidget {
     );
   }
 }
-
-/// The two jobs the Config Flags page still does, after the rows that turn
-/// whole app sections on moved out to [SectionsBody].
-///
-/// The split is what stops this page reading as one undifferentiated list of
-/// switches: a preference is something a user might reasonably want to change
-/// about a feature they already have, while the second group is diagnostics
-/// and unfinished work whose rows a user has no reason to touch unless asked
-/// to. Group membership is declared once in [FlagsBody.groupedFlags] and
-/// rendered in enum-declaration order.
-enum ConfigFlagGroup { preferences, advanced }
 
 /// Filters [flags] by a search [query] applied to each flag's
 /// resolved title and subtitle.
@@ -94,47 +80,12 @@ bool _flagMatchesQuery(
 class FlagsBody extends ConsumerStatefulWidget {
   const FlagsBody({
     super.key,
-    this.displayedGroups = groupedFlags,
+    this.displayedGroups = configFlagGroups,
   });
 
-  /// Canonical render order for the flag list, by group. Adding a flag here
-  /// also requires icon + title + subtitle wiring in `ConfigFlagLabels`; the
-  /// modular flag tests assert each end of that chain.
-  ///
-  /// [sectionFlags] are deliberately absent — they render on *Settings →
-  /// Sections* instead, near the top of the menu where someone looking for
-  /// Habits will actually find them. A flag listed in both places would give
-  /// the same stored value two homes, so the tests assert the two sets stay
-  /// disjoint and that between them they cover every flag the app defines.
-  static const Map<ConfigFlagGroup, List<String>> groupedFlags = {
-    ConfigFlagGroup.preferences: [
-      privateFlag,
-      enableNotificationsFlag,
-      recordLocationFlag,
-      enableTooltipFlag,
-      enableSessionRatingsFlag,
-      enableWhatsNewFlag,
-      enableAiStreamingFlag,
-      enableAiSummaryTtsFlag,
-      enableMatrixFlag,
-    ],
-    ConfigFlagGroup.advanced: [
-      enableQueryChatFlag,
-      enableEmbeddingsFlag,
-      enableVectorSearchFlag,
-      dailyOsOnboardingEnabledFlag,
-      enableForkHealingFlag,
-      enableLoggingFlag,
-      resendAttachments,
-    ],
-  };
-
-  /// Every flag this page renders, flattened across the groups in render
-  /// order — the view the coverage and retirement checks read, and what
-  /// callers that only care *whether* a flag is on this page should use.
-  static List<String> get defaultDisplayedItems => [
-    for (final group in ConfigFlagGroup.values) ...?groupedFlags[group],
-  ];
+  /// Where the flag assignment lives: [configFlagGroups], outside the UI
+  /// layer, so a test can ask which page a flag belongs to without importing
+  /// a widget. See `config_flag_placement.dart` for the partition rule.
 
   /// Flag names to render, grouped, in display order.
   @visibleForTesting

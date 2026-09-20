@@ -10,6 +10,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
+import 'package:lotti/features/settings/domain/config_flag_placement.dart';
 import 'package:lotti/features/settings/ui/pages/flags_page.dart';
 import 'package:lotti/features/settings/ui/widgets/config_flag_toggle_list.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
@@ -28,7 +29,7 @@ import '../../../../widget_test_utils.dart';
 
 /// How many rows the test fixture is expected to produce on the Config Flags
 /// page — deliberately a literal rather than something derived from
-/// `FlagsBody.defaultDisplayedItems`, which would make the assertion a
+/// `configFlagsOnFlagsPage`, which would make the assertion a
 /// tautology.
 ///
 /// The fixture stream carries thirteen flags, three of which ([enableEventsFlag],

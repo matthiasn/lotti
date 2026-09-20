@@ -56,36 +56,43 @@ class _ConfigFlagToggleListState extends State<ConfigFlagToggleList>
           mainAxisSize: MainAxisSize.min,
           children: [
             for (final (index, flag) in flags.indexed)
-              DesignSystemListItem(
-                title: labels(flag).title,
-                subtitle: labels(flag).subtitle,
-                // `null` lifts the default single-line cap so long
-                // descriptions ("Generate AI summary for task actions",
-                // etc.) wrap onto a second / third line instead of
-                // truncating with ellipsis.
-                subtitleMaxLines: null,
-                leading: SettingsIcon(
-                  icon: ConfigFlagLabels.iconFor(flag.name),
-                ),
-                trailing: DesignSystemToggle(
-                  value: flag.status,
-                  semanticsLabel: labels(flag).title,
-                  onChanged: (bool status) => _setStatus(flag, status),
-                ),
-                onTap: () => _setStatus(flag, !flag.status),
-                onHoverChanged: (hovered) =>
-                    onRowHoverChanged(index, hovered: hovered),
-                // Keep `showDivider` stable so layout doesn't shift by
-                // 1 px on hover; fade the divider to transparent when
-                // either this row or the row below it is hovered, so
-                // the hovered row is never bisected by a hairline.
-                showDivider: index < flags.length - 1,
-                dividerColor: hoverDividerColorFor(index),
-                dividerIndent: SettingsIcon.dividerIndent(tokens),
-              ),
+              _row(tokens, index: index, flag: flag, label: labels(flag)),
           ],
         ),
       ),
+    );
+  }
+
+  /// One flag row. [label] is resolved by the caller so the catalog switch
+  /// runs once per row rather than once per field that reads it — the title
+  /// alone is needed twice, visibly and as the toggle's semantics label.
+  Widget _row(
+    DsTokens tokens, {
+    required int index,
+    required ConfigFlag flag,
+    required ({String title, String subtitle}) label,
+  }) {
+    return DesignSystemListItem(
+      title: label.title,
+      subtitle: label.subtitle,
+      // `null` lifts the default single-line cap so long descriptions
+      // ("Generate AI summary for task actions", etc.) wrap onto a second /
+      // third line instead of truncating with ellipsis.
+      subtitleMaxLines: null,
+      leading: SettingsIcon(icon: ConfigFlagLabels.iconFor(flag.name)),
+      trailing: DesignSystemToggle(
+        value: flag.status,
+        semanticsLabel: label.title,
+        onChanged: (bool status) => _setStatus(flag, status),
+      ),
+      onTap: () => _setStatus(flag, !flag.status),
+      onHoverChanged: (hovered) => onRowHoverChanged(index, hovered: hovered),
+      // Keep `showDivider` stable so layout doesn't shift by 1 px on hover;
+      // fade the divider to transparent when either this row or the row below
+      // it is hovered, so the hovered row is never bisected by a hairline.
+      showDivider: index < widget.flags.length - 1,
+      dividerColor: hoverDividerColorFor(index),
+      dividerIndent: SettingsIcon.dividerIndent(tokens),
     );
   }
 
