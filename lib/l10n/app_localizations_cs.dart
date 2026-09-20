@@ -7964,6 +7964,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get helpMenuTitle => 'Nápověda';
 
   @override
+  String get imageAnalysisDescribedByAi => 'Popsáno AI';
+
+  @override
   String get imageGenerationError => 'Nepodařilo se vygenerovat obrázek';
 
   @override

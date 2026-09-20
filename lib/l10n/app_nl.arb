@@ -3421,6 +3421,7 @@
   "helpMenuCommandPalette": "Commandopalet...",
   "helpMenuKeyboardShortcuts": "Sneltoetsen...",
   "helpMenuTitle": "Hulp",
+  "imageAnalysisDescribedByAi": "Beschreven door AI",
   "imageGenerationError": "Kon afbeelding niet aanmaken",
   "imageGenerationGenerating": "Afbeelding aanmaken...",
   "imageGenerationProviderRejectedTitle": "De image provider heeft dit verzoek afgewezen",

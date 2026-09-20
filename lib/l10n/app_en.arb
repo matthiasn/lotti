@@ -4772,6 +4772,10 @@
   "helpMenuCommandPalette": "Command Palette…",
   "helpMenuKeyboardShortcuts": "Keyboard Shortcuts…",
   "helpMenuTitle": "Help",
+  "imageAnalysisDescribedByAi": "Described by AI",
+  "@imageAnalysisDescribedByAi": {
+    "description": "Screen-reader label on the marker under a photo's description, saying the line was written by a model rather than typed by the user. The model and provider follow it as ordinary text when they can be resolved."
+  },
   "imageGenerationError": "Failed to generate image",
   "imageGenerationGenerating": "Generating image...",
   "imageGenerationProviderRejectedTitle": "The image provider rejected this request",

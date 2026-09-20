@@ -3422,6 +3422,7 @@
   "helpMenuCommandPalette": "Comando Palette...",
   "helpMenuKeyboardShortcuts": "Tastiera Scorciatoie...",
   "helpMenuTitle": "Aiuto",
+  "imageAnalysisDescribedByAi": "Descritto dall’IA",
   "imageGenerationError": "Non è riuscito a generare immagine",
   "imageGenerationGenerating": "Generando l'immagine...",
   "imageGenerationProviderRejectedTitle": "Il fornitore di immagini ha respinto questa richiesta",

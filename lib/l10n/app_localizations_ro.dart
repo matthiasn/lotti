@@ -8030,6 +8030,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get helpMenuTitle => 'Ajutor';
 
   @override
+  String get imageAnalysisDescribedByAi => 'Descris de IA';
+
+  @override
   String get imageGenerationError => 'Generarea imaginii a eșuat';
 
   @override

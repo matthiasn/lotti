@@ -7930,6 +7930,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get helpMenuTitle => 'Hilfe';
 
   @override
+  String get imageAnalysisDescribedByAi => 'Von der KI beschrieben';
+
+  @override
   String get imageGenerationError => 'Bildgenerierung fehlgeschlagen';
 
   @override

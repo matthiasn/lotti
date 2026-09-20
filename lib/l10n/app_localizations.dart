@@ -13272,6 +13272,12 @@ abstract class AppLocalizations {
   /// **'Help'**
   String get helpMenuTitle;
 
+  /// Screen-reader label on the marker under a photo's description, saying the line was written by a model rather than typed by the user. The model and provider follow it as ordinary text when they can be resolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Described by AI'**
+  String get imageAnalysisDescribedByAi;
+
   /// No description provided for @imageGenerationError.
   ///
   /// In en, this message translates to:

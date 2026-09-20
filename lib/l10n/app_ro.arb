@@ -3069,6 +3069,7 @@
   "helpMenuCommandPalette": "Paletă de comenzi…",
   "helpMenuKeyboardShortcuts": "Comenzi rapide de la tastatură…",
   "helpMenuTitle": "Ajutor",
+  "imageAnalysisDescribedByAi": "Descris de IA",
   "imageGenerationError": "Generarea imaginii a eșuat",
   "imageGenerationGenerating": "Se generează imaginea...",
   "imageGenerationProviderRejectedTitle": "Furnizorul de imagini a respins această solicitare",

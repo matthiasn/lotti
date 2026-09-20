@@ -820,7 +820,13 @@ class _ImageAnalysisAttribution extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(LottiIcons.aiSpark, size: IconSizes.xs, color: color),
+          // The glyph is the whole distinction for a sighted reader, so it
+          // says the same thing out loud: without it a screen reader hears
+          // a description and a typed caption identically.
+          Semantics(
+            label: context.messages.imageAnalysisDescribedByAi,
+            child: Icon(LottiIcons.aiSpark, size: IconSizes.xs, color: color),
+          ),
           if (route != null) ...[
             SizedBox(width: tokens.spacing.step1),
             Flexible(

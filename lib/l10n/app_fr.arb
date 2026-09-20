@@ -3069,6 +3069,7 @@
   "helpMenuCommandPalette": "Palette de commandes…",
   "helpMenuKeyboardShortcuts": "Raccourcis clavier…",
   "helpMenuTitle": "Aide",
+  "imageAnalysisDescribedByAi": "Décrit par l’IA",
   "imageGenerationError": "Échec de la génération d'image",
   "imageGenerationGenerating": "Génération de l'image...",
   "imageGenerationProviderRejectedTitle": "Le fournisseur d'images a refusé cette demande",

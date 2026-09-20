@@ -7991,6 +7991,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get helpMenuTitle => 'Ayuda';
 
   @override
+  String get imageAnalysisDescribedByAi => 'Descrito por IA';
+
+  @override
   String get imageGenerationError => 'Error al generar imagen';
 
   @override

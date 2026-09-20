@@ -3422,6 +3422,7 @@
   "helpMenuCommandPalette": "Kommandopalette...",
   "helpMenuKeyboardShortcuts": "Tastaturgenveje...",
   "helpMenuTitle": "Hjælp",
+  "imageAnalysisDescribedByAi": "Beskrevet af AI",
   "imageGenerationError": "Kunne ikke generere billede",
   "imageGenerationGenerating": "Genererer billede...",
   "imageGenerationProviderRejectedTitle": "Billedleverandøren afviste denne anmodning",
