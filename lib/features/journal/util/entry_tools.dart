@@ -161,13 +161,15 @@ String deviceTimestampLabel(BuildContext context, DateTime date) {
   // under the closest name it has, so `de_DE` resolves to `de` and a plain
   // existence check on `de_DE` answers false — quietly handing a German
   // phone English dates, which is the whole bug.
-  final locale =
-      Intl.verifiedLocale(
-        device,
-        DateFormat.localeExists,
-        onFailure: (_) => Localizations.localeOf(context).toString(),
-      ) ??
-      Localizations.localeOf(context).toString();
+  //
+  // Non-null by construction: `verifiedLocale` returns null only when
+  // `onFailure` does, and this one always answers with the app's locale. A
+  // `??` after it would be a branch nothing can take.
+  final locale = Intl.verifiedLocale(
+    device,
+    DateFormat.localeExists,
+    onFailure: (_) => Localizations.localeOf(context).toString(),
+  )!;
   return '${DateFormat.yMd(locale).format(local)} '
       '${TimeOfDay.fromDateTime(local).format(context)}';
 }
