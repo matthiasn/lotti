@@ -261,7 +261,7 @@ class _ReviewStep extends ConsumerWidget {
                   PersonaAvatar(
                     initial: name.isEmpty ? '?' : name.characters.first,
                     id: draft.id,
-                    size: tokens.spacing.step9,
+                    size: ControlSizes.avatar,
                   ),
                   SizedBox(width: tokens.spacing.step3),
                   Expanded(

@@ -61,7 +61,7 @@ class PersonaAvatar extends StatelessWidget {
     required this.initial,
     this.id,
     this.accent,
-    this.size = 40,
+    this.size = ControlSizes.avatarCompact,
     this.imageId,
     this.crop,
     this.decodeZoom,

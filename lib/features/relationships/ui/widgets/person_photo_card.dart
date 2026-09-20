@@ -154,7 +154,7 @@ class _PersonPhotoCardState extends State<PersonPhotoCard> {
                 key: const ValueKey('person-form-face-preview'),
                 initial: personaInitial(data.title),
                 id: widget.person.id,
-                size: tokens.spacing.step9,
+                size: ControlSizes.avatar,
                 imageId: data.avatarImageId,
                 crop: data.avatarCrop,
               ),

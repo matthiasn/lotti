@@ -73,7 +73,7 @@ class PersonHeroAppBar extends StatelessWidget {
   static double bandExtent(DsTokens tokens) => tokens.spacing.step12;
 
   /// The avatar diameter; half of it hangs below the hero.
-  static double avatarSize(DsTokens tokens) => tokens.spacing.step11;
+  static const double avatarSize = ControlSizes.avatarHero;
 
   /// The banner strip's height at rest: the folded hero and the whole band —
   /// everything above the avatar's midline. The Photo card's preview mirrors
@@ -208,11 +208,11 @@ class PersonHeroAppBar extends StatelessWidget {
         avatar: PersonaAvatar(
           initial: personaInitial(relationship.data.title),
           id: relationship.id,
-          size: avatarSize(tokens),
+          size: avatarSize,
           imageId: relationship.data.avatarImageId,
           crop: relationship.data.avatarCrop,
         ),
-        avatarSize: avatarSize(tokens),
+        avatarSize: avatarSize,
         avatarInset: contentInset,
         avatarSemanticsLabel: messages.relationshipPhotoSheetTitle(
           relationship.data.title,
