@@ -669,12 +669,13 @@ class ImageViewerDateChip extends StatelessWidget {
     final tokens = context.designTokens;
     // The time as well as the day: a photo is often the only record of when
     // something happened — when an event finished, when a meal was — and the
-    // day alone cannot answer that. `entryDateLabel` is the same timestamp
-    // the list cards show, so the viewer and the list agree.
+    // day alone cannot answer that. In the device's own conventions, so a
+    // phone set to German reads 20.9.2026 19:08 rather than Sep 20, 2026
+    // 7:08 PM.
     return ImageViewerPill(
       alpha: 0.62,
       child: Text(
-        entryDateLabel(context, date),
+        deviceTimestampLabel(context, date),
         style: tokens.typography.styles.body.bodyMedium.copyWith(
           color: Colors.white,
         ),

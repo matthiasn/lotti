@@ -214,7 +214,7 @@ void main() {
       // when something happened — when an event finished, say. Matched in
       // two parts because intl separates the clock from AM/PM with a narrow
       // no-break space, which an exact literal here would silently miss.
-      expect(find.textContaining('Jan 1, 2026'), findsOneWidget);
+      expect(find.textContaining('1/1/2026'), findsOneWidget);
       expect(find.textContaining('5:42'), findsOneWidget);
       expect(findMaterialTooltip('Download image'), findsOneWidget);
       expect(findMaterialTooltip('Close'), findsOneWidget);
@@ -227,7 +227,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('4 / 5'), findsOneWidget);
-      expect(find.textContaining('Jan 4, 2026'), findsOneWidget);
+      expect(find.textContaining('1/4/2026'), findsOneWidget);
       expect(find.textContaining('5:42'), findsOneWidget);
     });
 
@@ -453,7 +453,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350));
 
       expect(find.text('1 / 3'), findsNothing);
-      expect(find.textContaining('Jan 1, 2026'), findsNothing);
+      expect(find.textContaining('1/1/2026'), findsNothing);
       expect(findMaterialTooltip('Download image'), findsNothing);
       expect(findMaterialTooltip('Close'), findsNothing);
 
@@ -461,7 +461,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350));
 
       expect(find.text('1 / 3'), findsOneWidget);
-      expect(find.textContaining('Jan 1, 2026'), findsOneWidget);
+      expect(find.textContaining('1/1/2026'), findsOneWidget);
       expect(findMaterialTooltip('Download image'), findsOneWidget);
       expect(findMaterialTooltip('Close'), findsOneWidget);
     });
@@ -501,7 +501,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.textContaining('Dec 24, 2025'), findsOneWidget);
+      expect(find.textContaining('12/24/2025'), findsOneWidget);
       expect(find.textContaining('11:05'), findsOneWidget);
     });
 
