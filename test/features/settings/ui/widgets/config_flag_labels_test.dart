@@ -116,6 +116,58 @@ void main() {
       expect(ConfigFlagLabels.iconFor(unknown.name), LottiIcons.settings);
     });
 
+    testWidgets('titles every section flag with its navigation label', (
+      tester,
+    ) async {
+      await withContext(tester, (context) {
+        // The contract that makes the Sections page honest: the row and the
+        // destination it switches on are the same string, so they cannot be
+        // worded differently in any locale.
+        expect(
+          {
+            for (final name in sectionFlags)
+              name: ConfigFlagLabels.sectionTitleFor(context, name),
+          },
+          {
+            enableDailyOsPageFlag: context.messages.navTabTitleCalendar,
+            enableProjectsFlag: context.messages.navTabTitleProjects,
+            enableUnifiedGoalsFlag: context.messages.navTabTitleGoals,
+            enableHabitsPageFlag: context.messages.navTabTitleHabits,
+            enableDashboardsPageFlag: context.messages.navTabTitleInsights,
+            enableRelationshipsFlag: context.messages.navTabTitlePeople,
+            enableEventsFlag: context.messages.navTabTitleEvents,
+          },
+        );
+      });
+    });
+
+    testWidgets('a flag with no destination has no section title', (
+      tester,
+    ) async {
+      await withContext(tester, (context) {
+        for (final name in FlagsBody.defaultDisplayedItems) {
+          expect(
+            ConfigFlagLabels.sectionTitleFor(context, name),
+            isNull,
+            reason: '$name is not a section but claims a navigation label',
+          );
+        }
+      });
+    });
+
+    testWidgets('sectionResolverFor falls back rather than rendering blank', (
+      tester,
+    ) async {
+      await withContext(tester, (context) {
+        // Guards the drift case: a name added to `sectionFlags` without a
+        // navigation label still gets its Config Flags title.
+        final resolved = ConfigFlagLabels.sectionResolverFor(context)(
+          _flag(privateFlag),
+        );
+        expect(resolved.title, context.messages.configFlagPrivate);
+      });
+    });
+
     testWidgets('resolverFor bundles the title and subtitle a filter reads', (
       tester,
     ) async {

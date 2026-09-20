@@ -22,10 +22,16 @@ import 'package:material_ui/material_ui.dart';
 /// no local state: the caller rebuilds from `watchConfigFlags()`, so the toggle
 /// reflects what was stored rather than what was tapped.
 class ConfigFlagToggleList extends StatefulWidget {
-  const ConfigFlagToggleList({required this.flags, super.key});
+  const ConfigFlagToggleList({required this.flags, this.labels, super.key});
 
   /// Rows to render, in display order.
   final List<ConfigFlag> flags;
+
+  /// How a row is titled and described. Defaults to
+  /// [ConfigFlagLabels.resolverFor]; Sections passes
+  /// [ConfigFlagLabels.sectionResolverFor] so its rows are named after the
+  /// navigation destinations they switch on.
+  final FlagLabelResolver? labels;
 
   @override
   State<ConfigFlagToggleList> createState() => _ConfigFlagToggleListState();
@@ -37,6 +43,7 @@ class _ConfigFlagToggleListState extends State<ConfigFlagToggleList>
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final flags = widget.flags;
+    final labels = widget.labels ?? ConfigFlagLabels.resolverFor(context);
     return DecoratedBox(
       decoration: BoxDecoration(
         color: tokens.colors.background.level02,
@@ -50,8 +57,8 @@ class _ConfigFlagToggleListState extends State<ConfigFlagToggleList>
           children: [
             for (final (index, flag) in flags.indexed)
               DesignSystemListItem(
-                title: ConfigFlagLabels.titleFor(context, flag),
-                subtitle: ConfigFlagLabels.subtitleFor(context, flag),
+                title: labels(flag).title,
+                subtitle: labels(flag).subtitle,
                 // `null` lifts the default single-line cap so long
                 // descriptions ("Generate AI summary for task actions",
                 // etc.) wrap onto a second / third line instead of
@@ -62,7 +69,7 @@ class _ConfigFlagToggleListState extends State<ConfigFlagToggleList>
                 ),
                 trailing: DesignSystemToggle(
                   value: flag.status,
-                  semanticsLabel: ConfigFlagLabels.titleFor(context, flag),
+                  semanticsLabel: labels(flag).title,
                   onChanged: (bool status) => _setStatus(flag, status),
                 ),
                 onTap: () => _setStatus(flag, !flag.status),

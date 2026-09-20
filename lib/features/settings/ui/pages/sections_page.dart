@@ -1,6 +1,7 @@
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
+import 'package:lotti/features/settings/ui/widgets/config_flag_labels.dart';
 import 'package:lotti/features/settings/ui/widgets/config_flag_toggle_list.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -40,8 +41,9 @@ class SectionsPage extends StatelessWidget {
 ///
 /// The membership rule is [sectionFlags], not taste: a flag shows here when
 /// `NavService` watches it to decide whether a tab exists. Row order matches
-/// that navigation order, so the list reads the way the sidebar it builds
-/// does.
+/// that navigation order, and each row is titled with the navigation label it
+/// switches on (see [ConfigFlagLabels.sectionResolverFor]), so the list reads
+/// the way the sidebar it builds does.
 class SectionsBody extends StatelessWidget {
   const SectionsBody({super.key, this.displayedItems = sectionFlags});
 
@@ -87,7 +89,12 @@ class SectionsBody extends StatelessWidget {
                   .nonNulls
                   .toList();
               if (orderedFlags.isEmpty) return const SizedBox.shrink();
-              return ConfigFlagToggleList(flags: orderedFlags);
+              return ConfigFlagToggleList(
+                flags: orderedFlags,
+                // Rows are named after the navigation destinations they
+                // switch on, not after their flags.
+                labels: ConfigFlagLabels.sectionResolverFor(context),
+              );
             },
           ),
         ],

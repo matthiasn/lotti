@@ -188,4 +188,50 @@ abstract final class ConfigFlagLabels {
         title: titleFor(context, flag),
         subtitle: subtitleFor(context, flag),
       );
+
+  /// The navigation label a section flag switches on, or `null` for a flag
+  /// that adds no destination.
+  ///
+  /// *Settings → Sections* is a list of the app's parts, so a row is titled
+  /// with the part rather than with "Enable … page" — on a page where every
+  /// row is a switch, the verb is noise and the trailing "page" is only on
+  /// some of them. Reusing the `navTabTitle*` strings instead of minting new
+  /// ones is the point: the row cannot end up worded differently from the
+  /// destination it produces, and no catalog needed a new entry.
+  ///
+  /// Dashboards is the case that proves the rule rather than breaking it. Its
+  /// navigation entry reads **Insights**, so that is what the row says; a row
+  /// labelled "Dashboards" that produced an "Insights" tab would be the worse
+  /// of the two mismatches. The flag's own description still says Dashboards —
+  /// that inconsistency predates this page and lives in the ARB catalogs.
+  static String? sectionTitleFor(BuildContext context, String flagName) {
+    final m = context.messages;
+    switch (flagName) {
+      case enableDailyOsPageFlag:
+        return m.navTabTitleCalendar;
+      case enableProjectsFlag:
+        return m.navTabTitleProjects;
+      case enableUnifiedGoalsFlag:
+        return m.navTabTitleGoals;
+      case enableHabitsPageFlag:
+        return m.navTabTitleHabits;
+      case enableDashboardsPageFlag:
+        return m.navTabTitleInsights;
+      case enableRelationshipsFlag:
+        return m.navTabTitlePeople;
+      case enableEventsFlag:
+        return m.navTabTitleEvents;
+      default:
+        return null;
+    }
+  }
+
+  /// [resolverFor] with section rows titled by their navigation label. A flag
+  /// with no destination falls back to its Config Flags title, so a row can
+  /// never render blank if [sectionFlags] and this switch drift apart.
+  static FlagLabelResolver sectionResolverFor(BuildContext context) =>
+      (flag) => (
+        title: sectionTitleFor(context, flag.name) ?? titleFor(context, flag),
+        subtitle: subtitleFor(context, flag),
+      );
 }

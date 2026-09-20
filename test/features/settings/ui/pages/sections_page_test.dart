@@ -40,37 +40,42 @@ Set<ConfigFlag> _storedFlags({Set<String> on = const {}}) => {
   ),
 };
 
-/// The localized (title, description) pair each section row must render,
-/// resolved through the same accessor production code uses so the assertions
-/// are tied to the real ARB values rather than to a copy of them.
+/// The (title, description) pair each section row must render: the navigation
+/// label the flag switches on, over the flag's own description. Resolved
+/// through the same accessors production code uses, so the assertions are tied
+/// to the real ARB values rather than to a copy of them.
+///
+/// Titling a row with its destination is the contract worth pinning: a row
+/// that said "Enable Habits page" while the tab it produced said something
+/// else would be the bug.
 (String, String) _labelsFor(String flagName, AppLocalizations m) =>
     switch (flagName) {
       enableDailyOsPageFlag => (
-        m.configFlagEnableDailyOs,
+        m.navTabTitleCalendar,
         m.configFlagEnableDailyOsDescription,
       ),
       enableProjectsFlag => (
-        m.configFlagEnableProjects,
+        m.navTabTitleProjects,
         m.configFlagEnableProjectsDescription,
       ),
       enableUnifiedGoalsFlag => (
-        m.configFlagEnableUnifiedGoals,
+        m.navTabTitleGoals,
         m.configFlagEnableUnifiedGoalsDescription,
       ),
       enableHabitsPageFlag => (
-        m.configFlagEnableHabitsPage,
+        m.navTabTitleHabits,
         m.configFlagEnableHabitsPageDescription,
       ),
       enableDashboardsPageFlag => (
-        m.configFlagEnableDashboardsPage,
+        m.navTabTitleInsights,
         m.configFlagEnableDashboardsPageDescription,
       ),
       enableRelationshipsFlag => (
-        m.configFlagEnableRelationships,
+        m.navTabTitlePeople,
         m.configFlagEnableRelationshipsDescription,
       ),
       enableEventsFlag => (
-        m.configFlagEnableEvents,
+        m.navTabTitleEvents,
         m.configFlagEnableEventsDescription,
       ),
       _ => throw StateError('unexpected section flag: $flagName'),
