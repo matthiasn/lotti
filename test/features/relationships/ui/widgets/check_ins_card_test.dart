@@ -89,10 +89,14 @@ void main() {
       await pump(tester, [checkIn('c1'), checkIn('c2'), checkIn('c3')]);
 
       expect(find.text('Check-ins'), findsOneWidget);
-      final pill = tester.widget<DsPill>(
+      // The count is caption text, not a chip: a number beside a heading is
+      // metadata about it, and rendering it as a filled pill made it look
+      // like the tinted state chips further up the page.
+      final count = tester.widget<Text>(
         find.byKey(const ValueKey('person-check-ins-count')),
       );
-      expect(pill.label, '3');
+      expect(count.data, '· 3');
+      expect(find.byType(DsPill), findsNothing);
     });
 
     testWidgets('an empty log shows the hint and no count', (tester) async {

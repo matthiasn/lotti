@@ -11800,6 +11800,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String relationshipAgentEnrolPerson(String name) {
+    return '$name in den Blick nehmen';
+  }
+
+  @override
   String get relationshipAgentFailedBody =>
       'Der Anbieter hat einen Fehler gemeldet, bevor das Briefing geschrieben wurde. Deine Check-ins sind unverändert.';
 
@@ -11814,9 +11819,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String relationshipAgentLastRunFailed(String time) {
     return 'Letzter Lauf fehlgeschlagen · $time';
   }
-
-  @override
-  String get relationshipAgentMarkImportant => 'Als wichtig markieren';
 
   @override
   String get relationshipAgentNoAgent => 'Kein Agent für diese Person';
@@ -11838,7 +11840,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Markiere $name als wichtig, um einen Chat, Erinnerungen nach längerer Funkstille und ein Briefing zu bekommen.';
+    return 'Nimm $name in den Blick, um einen Chat, Erinnerungen nach längerer Funkstille und ein Briefing zu bekommen.';
   }
 
   @override
@@ -12203,7 +12205,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Erinnere mich, in Kontakt zu bleiben';
 
   @override
-  String get relationshipImportantLabel => 'Wichtig';
+  String get relationshipImportantLabel => 'Im Blick';
 
   @override
   String relationshipImportConfirmButton(int count) {
@@ -12549,17 +12551,6 @@ class AppLocalizationsDe extends AppLocalizations {
     String cadence,
   ) {
     return '$type · $time · $cadence';
-  }
-
-  @override
-  String relationshipTasksLinkedCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count verknüpfte Aufgaben',
-      one: '1 verknüpfte Aufgabe',
-    );
-    return '$_temp0';
   }
 
   @override

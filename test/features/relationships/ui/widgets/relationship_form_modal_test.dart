@@ -618,7 +618,7 @@ void main() {
   );
 
   group('the three cards (design 2026-09-06 §6)', () {
-    testWidgets('the Important switch is one labelled control, not a switch '
+    testWidgets('the Enrolled switch is one labelled control, not a switch '
         'sitting near a word', (tester) async {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
@@ -626,9 +626,9 @@ void main() {
       // A screen reader reaching the control hears what it changes, and the
       // label toggles it.
       final semantics = tester.getSemantics(find.byType(Switch));
-      expect(semantics.label, contains('Important'));
+      expect(semantics.label, contains('Enrolled'));
 
-      await tester.tap(find.text('Important'));
+      await tester.tap(find.text('Enrolled'));
       await tester.pumpAndSettle();
 
       expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);

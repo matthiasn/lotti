@@ -7,7 +7,6 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_inline_action.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
-import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -235,14 +234,7 @@ class LinkedTasksCard extends ConsumerWidget {
         children: [
           PersonCardHeader(
             title: messages.relationshipLinkedTasksLabel,
-            caption: tasks.isEmpty
-                ? null
-                : DsPill(
-                    variant: DsPillVariant.filled,
-                    shape: DsPillShape.tag,
-                    labelColor: tokens.colors.text.mediumEmphasis,
-                    label: messages.relationshipTasksLinkedCount(tasks.length),
-                  ),
+            count: tasks.isEmpty ? null : tasks.length,
             trailing: DesignSystemInlineAction(
               key: const ValueKey('person-link-task'),
               label: messages.relationshipLinkTaskButton,

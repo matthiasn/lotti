@@ -11720,6 +11720,11 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String relationshipAgentEnrolPerson(String name) {
+    return 'Følg $name';
+  }
+
+  @override
   String get relationshipAgentFailedBody =>
       'Udbyderen svarede med en fejl, før briefingen blev skrevet. Dine check-ins er uændrede.';
 
@@ -11734,9 +11739,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String relationshipAgentLastRunFailed(String time) {
     return 'Seneste kørsel mislykkedes · $time';
   }
-
-  @override
-  String get relationshipAgentMarkImportant => 'Markér som vigtig';
 
   @override
   String get relationshipAgentNoAgent => 'Ingen agent for denne person';
@@ -11758,7 +11760,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Markér $name som vigtig for at få en chat, påmindelser når der er gået et stykke tid, og en briefing.';
+    return 'Følg $name for at få en chat, påmindelser når der er gået et stykke tid, og en briefing.';
   }
 
   @override
@@ -12123,7 +12125,7 @@ class AppLocalizationsDa extends AppLocalizations {
       'Mind mig om at holde kontakten';
 
   @override
-  String get relationshipImportantLabel => 'Vigtig';
+  String get relationshipImportantLabel => 'Følges';
 
   @override
   String relationshipImportConfirmButton(int count) {
@@ -12467,17 +12469,6 @@ class AppLocalizationsDa extends AppLocalizations {
     String cadence,
   ) {
     return '$type · $time · $cadence';
-  }
-
-  @override
-  String relationshipTasksLinkedCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count tilknyttede',
-      one: '1 tilknyttet',
-    );
-    return '$_temp0';
   }
 
   @override

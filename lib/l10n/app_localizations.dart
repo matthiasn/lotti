@@ -19621,6 +19621,12 @@ abstract class AppLocalizations {
   /// **'Call {name}'**
   String relationshipAgentCall(String name);
 
+  /// No description provided for @relationshipAgentEnrolPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Enrol {name}'**
+  String relationshipAgentEnrolPerson(String name);
+
   /// No description provided for @relationshipAgentFailedBody.
   ///
   /// In en, this message translates to:
@@ -19645,12 +19651,6 @@ abstract class AppLocalizations {
   /// **'Last run failed · {time}'**
   String relationshipAgentLastRunFailed(String time);
 
-  /// No description provided for @relationshipAgentMarkImportant.
-  ///
-  /// In en, this message translates to:
-  /// **'Mark important'**
-  String get relationshipAgentMarkImportant;
-
   /// No description provided for @relationshipAgentNoAgent.
   ///
   /// In en, this message translates to:
@@ -19666,7 +19666,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipAgentNotEnrolledBody.
   ///
   /// In en, this message translates to:
-  /// **'Mark {name} as important to get a chat, nudges when it has been a while, and a briefing.'**
+  /// **'Enrol {name} to get a chat, nudges when it has been a while, and a briefing.'**
   String relationshipAgentNotEnrolledBody(String name);
 
   /// No description provided for @relationshipAgentOnlyYourStartsUseAi.
@@ -20140,7 +20140,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipImportantLabel.
   ///
   /// In en, this message translates to:
-  /// **'Important'**
+  /// **'Enrolled'**
   String get relationshipImportantLabel;
 
   /// Creates one person per reviewed contact
@@ -20632,12 +20632,6 @@ abstract class AppLocalizations {
     String time,
     String cadence,
   );
-
-  /// No description provided for @relationshipTasksLinkedCount.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 linked} other{{count} linked}}'**
-  String relationshipTasksLinkedCount(int count);
 
   /// The relative day word in a relationship timestamp, e.g. "Today 14:20".
   ///

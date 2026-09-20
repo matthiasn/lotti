@@ -11890,6 +11890,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String relationshipAgentEnrolPerson(String name) {
+    return 'Sledovat $name';
+  }
+
+  @override
   String get relationshipAgentFailedBody =>
       'Poskytovatel vrátil chybu dřív, než se briefing napsal. Tvoje check-iny zůstaly beze změny.';
 
@@ -11904,9 +11909,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String relationshipAgentLastRunFailed(String time) {
     return 'Poslední běh selhal · $time';
   }
-
-  @override
-  String get relationshipAgentMarkImportant => 'Označit jako důležité';
 
   @override
   String get relationshipAgentNoAgent => 'Pro tuto osobu není žádný agent';
@@ -11930,7 +11932,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Označ $name jako důležitou osobu a získáš chat, připomínky po delší odmlce a briefing.';
+    return 'Začni sledovat $name a získáš chat, připomínky po delší odmlce a briefing.';
   }
 
   @override
@@ -12303,7 +12305,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipImportantDescription => 'Připomínej mi, ať se ozvu';
 
   @override
-  String get relationshipImportantLabel => 'Důležité';
+  String get relationshipImportantLabel => 'Sledováno';
 
   @override
   String relationshipImportConfirmButton(int count) {
@@ -12659,18 +12661,6 @@ class AppLocalizationsCs extends AppLocalizations {
     String cadence,
   ) {
     return '$type · $time · $cadence';
-  }
-
-  @override
-  String relationshipTasksLinkedCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count propojených',
-      few: '$count propojené',
-      one: '1 propojený',
-    );
-    return '$_temp0';
   }
 
   @override

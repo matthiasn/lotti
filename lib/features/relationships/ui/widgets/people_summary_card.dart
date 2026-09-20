@@ -37,7 +37,6 @@ class PeopleSummaryCard extends StatelessWidget {
 
     return DesignSystemSectionCard(
       key: const ValueKey('people-summary-card'),
-      padding: EdgeInsets.all(tokens.spacing.step4),
       child: Row(
         children: [
           Column(

@@ -5016,14 +5016,14 @@
   "relationshipAgentAsOfBand": "{band} · aggiornato {age}",
   "relationshipAgentBriefNow": "Crea il briefing ora",
   "relationshipAgentCall": "Chiama {name}",
+  "relationshipAgentEnrolPerson": "Segui {name}",
   "relationshipAgentFailedBody": "Il provider ha restituito un errore prima che il briefing fosse scritto. I tuoi check-in sono invariati.",
   "relationshipAgentFailedNoModel": "Nessun modello è configurato per i briefing. Scegline uno in Impostazioni IA › Agenti. I dettagli sono nella scheda Attività.",
   "relationshipAgentFailedPlain": "Ultima esecuzione fallita",
   "relationshipAgentLastRunFailed": "Ultima esecuzione fallita · {time}",
-  "relationshipAgentMarkImportant": "Segna come importante",
   "relationshipAgentNoAgent": "Nessun agente per questa persona",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Nessun briefing ancora. „Crea il briefing ora“ ne scrive uno appena registri un check-in; non vede mai numero di telefono né e-mail.} =1{Nessun briefing ancora. „Crea il briefing ora“ ne scrive uno dal tuo check-in; non vede mai numero di telefono né e-mail.} other{Nessun briefing ancora. „Crea il briefing ora“ ne scrive uno dai tuoi {count} check-in; non vede mai numero di telefono né e-mail.}}",
-  "relationshipAgentNotEnrolledBody": "Segna {name} come importante per avere una chat, promemoria quando è passato un po' di tempo e un briefing.",
+  "relationshipAgentNotEnrolledBody": "Segui {name} per avere una chat, promemoria quando è passato un po’ di tempo e un briefing.",
   "relationshipAgentOnlyYourStartsUseAi": "Solo ciò che avvii tu usa l’IA",
   "relationshipAgentOutOfDateNewCheckIn": "Non aggiornato · nuovo check-in {day}",
   "relationshipAgentOutOfDateNewCheckInShort": "Non aggiornato · nuovo check-in",
@@ -5169,7 +5169,7 @@
   "relationshipImportAction": "Importa dai contatti",
   "relationshipImportAdded": "{count, plural, =1{1 persona aggiunta} other{{count} persone aggiunte}}",
   "relationshipImportantDescription": "Ricordami di restare in contatto",
-  "relationshipImportantLabel": "Importante",
+  "relationshipImportantLabel": "Seguita",
   "relationshipImportConfirmButton": "{count, plural, =1{Aggiungi 1 persona} other{Aggiungi {count} persone}}",
   "relationshipImportEmpty": "Nessun contatto su questo dispositivo",
   "relationshipImportFailed": "Non è stato possibile aggiungere nessuno",
@@ -5356,14 +5356,6 @@
       },
       "cadence": {
         "type": "String"
-      }
-    }
-  },
-  "relationshipTasksLinkedCount": "{count, plural, =1{1 collegata} other{{count} collegate}}",
-  "@relationshipTasksLinkedCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
       }
     }
   },

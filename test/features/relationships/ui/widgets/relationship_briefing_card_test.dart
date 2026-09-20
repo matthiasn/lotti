@@ -449,7 +449,7 @@ void main() {
         reason: 'the header above the card already carries the pills',
       );
       expect(
-        find.textContaining('Mark Pip as important to get a chat'),
+        find.textContaining('Enrol Pip to get a chat'),
         findsOneWidget,
       );
       // Prose in the prose ink, like the enrolled faces.
@@ -474,7 +474,12 @@ void main() {
             .bottom,
         tokens.spacing.step4,
       );
-      expect(find.text('Mark important'), findsOneWidget);
+      // One noun for the enrolment axis: the band, the pill and the
+      // summary all say *enrolled*, so the control that ends "Not enrolled"
+      // says it too rather than naming a second concept ("important") the
+      // user has to connect to the first.
+      expect(find.text('Enrol Pip'), findsOneWidget);
+      expect(find.text('Mark important'), findsNothing);
       expect(
         find.text('Only what you start yourself uses AI'),
         findsOneWidget,
@@ -889,7 +894,7 @@ void main() {
   group('current', () {
     testWidgets('the status line says when and which band; the cost rides '
         'the model row; the sources line closes the card; Log check-in '
-        'sits beside a quiet Update now', (tester) async {
+        'sits beside a quiet Update now, with no doing verbs', (tester) async {
       await pump(
         tester,
         checkIns: onTrackCheckIns,
@@ -915,10 +920,19 @@ void main() {
         find.text('Sources: 2 check-ins · contact channels never sent'),
         findsOneWidget,
       );
+      // The footer carries the agent's verbs and only those. Logging a
+      // check-in is the page's verb and lives on the sticky action bar, so
+      // offering it here too put the same action on screen twice — loud in
+      // one place, quiet in the other, primary in neither.
       final quiet = tester.widget<DesignSystemButton>(
-        find.byKey(const ValueKey('relationship-agent-log-check-in')),
+        find.byKey(const ValueKey('relationship-agent-see-activity')),
       );
+      expect(quiet.label, 'See activity');
       expect(quiet.variant, DesignSystemButtonVariant.tertiary);
+      expect(
+        find.byKey(const ValueKey('relationship-agent-log-check-in')),
+        findsNothing,
+      );
       final update = tester.widget<DesignSystemButton>(briefMe);
       expect(update.label, 'Update now');
       expect(update.variant, DesignSystemButtonVariant.secondary);
@@ -1489,77 +1503,43 @@ void main() {
   });
 
   group('due', () {
-    testWidgets('the cadence pill turns warning and the footer offers Log '
-        'check-in and Call', (tester) async {
-      final launcher = await pump(
+    testWidgets('being overdue does not change who owns the doing verbs: '
+        'the footer stays See activity · Update now', (tester) async {
+      await pump(
         tester,
         entry: relationship(channels: const [mobile]),
         checkIns: lapsedCheckIns,
         current: report(),
       );
 
-      final quiet = tester.widget<DesignSystemButton>(
-        find.byKey(const ValueKey('relationship-agent-log-check-in')),
+      // A lapsed cadence changes what the sticky bar's primary is *for*,
+      // not who owns it. The card used to answer it with its own filled
+      // "Call Pip" beside the bar's filled "Log check-in" — two teal
+      // primaries for two different acts in one viewport.
+      expect(find.text('Call Pip'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('relationship-agent-call')),
+        findsNothing,
       );
-      expect(quiet.label, 'Log check-in');
+      expect(
+        find.byKey(const ValueKey('relationship-agent-log-check-in')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('relationship-agent-log-check-in-primary')),
+        findsNothing,
+      );
+
+      final quiet = tester.widget<DesignSystemButton>(
+        find.byKey(const ValueKey('relationship-agent-see-activity')),
+      );
       expect(quiet.variant, DesignSystemButtonVariant.tertiary);
-      expect(find.text('Call Pip'), findsOneWidget);
-      expect(briefMe, findsNothing);
+      expect(tester.widget<DesignSystemButton>(briefMe).label, 'Update now');
       expect(
         statusText(tester),
         'Thriving · as of 1 h ago',
-        reason: 'the status stays in the header; the footer is two actions',
+        reason: 'the status stays in the header',
       );
-
-      await tester.tap(find.byKey(const ValueKey('relationship-agent-call')));
-      await tester.pumpAndSettle();
-
-      expect(launcher.launched, [(mobile, ContactAction.call)]);
-      expect(store.remembered?.relationshipId, relationshipId);
-    });
-
-    testWidgets('a channel that arrives later is offered — the card '
-        're-resolves when the channels change', (tester) async {
-      final launcher = _FakeContactLauncher(
-        launchable: const {ContactAction.call},
-      );
-      Widget card(List<ContactChannel> channels) =>
-          makeTestableWidgetWithScaffold(
-            RelationshipBriefingCard(
-              relationship: relationship(channels: channels),
-              checkIns: lapsedCheckIns,
-            ),
-            overrides: [
-              agentReportProvider(
-                agentId,
-              ).overrideWith((ref) async => report()),
-              agentStateProvider(agentId).overrideWith((ref) async => null),
-              agentIsRunningProvider(
-                agentId,
-              ).overrideWith((ref) => Stream.value(false)),
-              agentIdentityProvider(agentId).overrideWith((ref) async => null),
-              taskAgentResolvedSetupProvider(
-                agentId,
-              ).overrideWith((ref) async => resolvedSetup()),
-              agentTokenUsageSummariesProvider(
-                agentId,
-              ).overrideWith((ref) async => const []),
-              relationshipAgentServiceProvider.overrideWithValue(agentService),
-              relationshipRepositoryProvider.overrideWithValue(repository),
-              contactLauncherProvider.overrideWithValue(launcher),
-              pendingInteractionStoreProvider.overrideWithValue(store),
-            ],
-          );
-
-      await withClock(Clock.fixed(now), () async {
-        await tester.pumpWidget(card(const []));
-        await tester.pumpAndSettle();
-        expect(find.text('Call Pip'), findsNothing);
-
-        await tester.pumpWidget(card(const [mobile]));
-        await tester.pumpAndSettle();
-        expect(find.text('Call Pip'), findsOneWidget);
-      });
     });
 
     testWidgets('Log check-in opens the composer for this person', (
@@ -1582,11 +1562,13 @@ void main() {
       when(
         () => repository.getLinkedTasks(relationshipId),
       ).thenAnswer((_) async => []);
+      // The quiet door before the first briefing: with nothing written
+      // yet, a check-in is what the agent needs, so this face keeps the
+      // verb the enrolled faces hand back to the action bar.
       await pump(
         tester,
         entry: relationship(channels: const [mobile]),
         checkIns: lapsedCheckIns,
-        current: report(),
       );
 
       await tester.tap(
@@ -1606,18 +1588,6 @@ void main() {
         startsWith('with '),
       );
       expect(find.byKey(const ValueKey('check-in-narrative')), findsOneWidget);
-    });
-
-    testWidgets('without a launchable channel, Log check-in is the primary', (
-      tester,
-    ) async {
-      await pump(tester, checkIns: lapsedCheckIns, current: report());
-
-      expect(find.text('Call Pip'), findsNothing);
-      expect(
-        find.byKey(const ValueKey('relationship-agent-log-check-in-primary')),
-        findsOneWidget,
-      );
     });
   });
 }

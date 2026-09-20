@@ -6837,6 +6837,14 @@
       }
     }
   },
+  "relationshipAgentEnrolPerson": "Enrol {name}",
+  "@relationshipAgentEnrolPerson": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipAgentFailedBody": "The provider returned an error before the briefing was written. Your check-ins are unchanged.",
   "relationshipAgentFailedNoModel": "No model is set up for briefings. Choose one under AI Settings › Agents. Details are in the Activity tab.",
   "relationshipAgentFailedPlain": "Last run failed",
@@ -6848,7 +6856,6 @@
       }
     }
   },
-  "relationshipAgentMarkImportant": "Mark important",
   "relationshipAgentNoAgent": "No agent for this person",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{No briefing yet. Brief now writes one once you have logged a check-in; it never sees the phone number or email.} =1{No briefing yet. Brief now writes one from your check-in; it never sees the phone number or email.} other{No briefing yet. Brief now writes one from your {count} check-ins; it never sees the phone number or email.}}",
   "@relationshipAgentNoBriefingBody": {
@@ -6858,7 +6865,7 @@
       }
     }
   },
-  "relationshipAgentNotEnrolledBody": "Mark {name} as important to get a chat, nudges when it has been a while, and a briefing.",
+  "relationshipAgentNotEnrolledBody": "Enrol {name} to get a chat, nudges when it has been a while, and a briefing.",
   "@relationshipAgentNotEnrolledBody": {
     "placeholders": {
       "name": {
@@ -7153,7 +7160,7 @@
     }
   },
   "relationshipImportantDescription": "Nudge me to stay in touch",
-  "relationshipImportantLabel": "Important",
+  "relationshipImportantLabel": "Enrolled",
   "relationshipImportConfirmButton": "{count, plural, =1{Add 1 person} other{Add {count} people}}",
   "@relationshipImportConfirmButton": {
     "description": "Creates one person per reviewed contact",
@@ -7450,14 +7457,6 @@
       },
       "cadence": {
         "type": "String"
-      }
-    }
-  },
-  "relationshipTasksLinkedCount": "{count, plural, =1{1 linked} other{{count} linked}}",
-  "@relationshipTasksLinkedCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
       }
     }
   },

@@ -4520,14 +4520,14 @@
   "relationshipAgentAsOfBand": "{band} · actualizat {age}",
   "relationshipAgentBriefNow": "Creați briefingul acum",
   "relationshipAgentCall": "Sunați pe {name}",
+  "relationshipAgentEnrolPerson": "Urmăriți {name}",
   "relationshipAgentFailedBody": "Furnizorul a returnat o eroare înainte ca briefingul să fie scris. Check-in-urile dvs. sunt neschimbate.",
   "relationshipAgentFailedNoModel": "Nu este configurat niciun model pentru briefinguri. Alegeți unul în Setări AI › Agenți. Detaliile sunt în fila Activitate.",
   "relationshipAgentFailedPlain": "Ultima rulare a eșuat",
   "relationshipAgentLastRunFailed": "Ultima rulare a eșuat · {time}",
-  "relationshipAgentMarkImportant": "Marcați persoana ca importantă",
   "relationshipAgentNoAgent": "Niciun agent pentru această persoană",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Niciun briefing încă. „Creați briefingul acum“ scrie unul de îndată ce înregistrați un check-in; nu vede niciodată telefonul sau e-mailul.} =1{Niciun briefing încă. „Creați briefingul acum“ scrie unul din check-in-ul dumneavoastră; nu vede niciodată telefonul sau e-mailul.} few{Niciun briefing încă. „Creați briefingul acum“ scrie unul din cele {count} check-in-uri; nu vede niciodată telefonul sau e-mailul.} other{Niciun briefing încă. „Creați briefingul acum“ scrie unul din cele {count} de check-in-uri; nu vede niciodată telefonul sau e-mailul.}}",
-  "relationshipAgentNotEnrolledBody": "Marcați {name} ca important(ă) pentru a primi un chat, notificări când a trecut ceva timp și un briefing.",
+  "relationshipAgentNotEnrolledBody": "Urmăriți {name} pentru a primi un chat, notificări când a trecut ceva timp și un briefing.",
   "relationshipAgentOnlyYourStartsUseAi": "Doar ce porniți dvs. folosește IA",
   "relationshipAgentOutOfDateNewCheckIn": "Depășit · check-in nou {day}",
   "relationshipAgentOutOfDateNewCheckInShort": "Depășit · check-in nou",
@@ -4673,7 +4673,7 @@
   "relationshipImportAction": "Importați din contacte",
   "relationshipImportAdded": "{count, plural, =1{1 persoană adăugată} few{{count} persoane adăugate} other{{count} de persoane adăugate}}",
   "relationshipImportantDescription": "Amintiți-mi să păstrez legătura",
-  "relationshipImportantLabel": "Important",
+  "relationshipImportantLabel": "Urmărită",
   "relationshipImportConfirmButton": "{count, plural, =1{Adăugați 1 persoană} few{Adăugați {count} persoane} other{Adăugați {count} de persoane}}",
   "relationshipImportEmpty": "Niciun contact pe acest dispozitiv",
   "relationshipImportFailed": "Nu a putut fi adăugată nicio persoană",
@@ -4860,14 +4860,6 @@
       },
       "cadence": {
         "type": "String"
-      }
-    }
-  },
-  "relationshipTasksLinkedCount": "{count, plural, =1{1 asociată} few{{count} asociate} other{{count} de asociate}}",
-  "@relationshipTasksLinkedCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
       }
     }
   },

@@ -82,15 +82,8 @@ class _CheckInsCardSliverState extends State<CheckInsCardSliver> {
             sliver: SliverToBoxAdapter(
               child: PersonCardHeader(
                 title: messages.relationshipCheckInsLabel,
-                caption: checkIns.isEmpty
-                    ? null
-                    : DsPill(
-                        key: const ValueKey('person-check-ins-count'),
-                        variant: DsPillVariant.filled,
-                        shape: DsPillShape.tag,
-                        labelColor: tokens.colors.text.mediumEmphasis,
-                        label: '${checkIns.length}',
-                      ),
+                count: checkIns.isEmpty ? null : checkIns.length,
+                countKey: const ValueKey('person-check-ins-count'),
               ),
             ),
           ),
@@ -216,19 +209,8 @@ class CheckInRow extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: tokens.spacing.step8,
-                  height: tokens.spacing.step8,
-                  decoration: BoxDecoration(
-                    color: tokens.colors.background.level03,
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(
-                    checkInInteractionIcon(data.interactionType),
-                    size: IconSizes.m,
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
+                PersonLeadingGlyph(
+                  icon: checkInInteractionIcon(data.interactionType),
                 ),
                 SizedBox(width: tokens.spacing.step4),
                 Expanded(

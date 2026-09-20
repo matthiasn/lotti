@@ -22,6 +22,7 @@ import 'package:lotti/features/relationships/repository/relationship_repository.
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
+import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_ins_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_action_bar.dart';
@@ -268,12 +269,14 @@ void main() {
       expect(find.text('Anna'), findsOneWidget);
       expect(
         tester.widget<Text>(find.byKey(const ValueKey('person-eyebrow'))).data,
-        'Important',
+        'Enrolled',
       );
       expect(
         tester
-            .widget<Text>(find.byKey(const ValueKey('person-one-liner')))
-            .data,
+            .widget<RelationshipLineWithDate>(
+              find.byKey(const ValueKey('person-one-liner')),
+            )
+            .text,
         '"Sis" · last spoke Yesterday 10:30',
       );
       expect(
@@ -316,12 +319,12 @@ void main() {
 
     expect(
       tester.widget<Text>(find.byKey(const ValueKey('person-eyebrow'))).data,
-      'Penguin Operations · Important',
+      'Penguin Operations · Enrolled',
     );
   });
 
-  testWidgets('a standing briefing puts the health band on the header as a '
-      'pill, beside the briefing card', (tester) async {
+  testWidgets('a standing briefing shows the band on the card that can date '
+      'it, and nowhere else', (tester) async {
     final agentId = relationshipAgentIdFor('rel-1');
     final report =
         AgentDomainEntity.agentReport(
@@ -352,9 +355,14 @@ void main() {
       ],
     );
 
-    expect(pill(tester, 'person-pill-health').label, 'Thriving');
+    // The header used to carry an undated copy of the same word. The card
+    // states it as "Thriving · as of …", which is the only honest form: a
+    // band keeps reading as current long after the briefing it came from
+    // stopped being so.
+    expect(find.byKey(const ValueKey('person-pill-health')), findsNothing);
     expect(find.byType(RelationshipBriefingCard), findsOneWidget);
     expect(find.text('Anna is in good spirits.'), findsOneWidget);
+    expect(find.textContaining('Thriving'), findsOneWidget);
   });
 
   testWidgets('the Next time card appears only when the latest check-in '

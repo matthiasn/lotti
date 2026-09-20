@@ -31,7 +31,7 @@ contact action.
 The agent card has six states: not enrolled, no briefing, running, failed,
 current and out of date. One status line under the title says which, in
 that state's colour; the footer offers one quiet action (log a check-in, or
-see the activity after a failure) and one primary: mark important, brief
+see the activity after a failure) and one primary: enrol the person, brief
 now, choose a model, retry, update, or call. An out-of-date briefing shows
 its age in the header; open task proposals are counted by their own band
 under the body. The model row carries the inference cost, and a current

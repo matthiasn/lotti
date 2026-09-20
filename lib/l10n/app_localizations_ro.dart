@@ -11957,6 +11957,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String relationshipAgentEnrolPerson(String name) {
+    return 'Urmăriți $name';
+  }
+
+  @override
   String get relationshipAgentFailedBody =>
       'Furnizorul a returnat o eroare înainte ca briefingul să fie scris. Check-in-urile dvs. sunt neschimbate.';
 
@@ -11971,9 +11976,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String relationshipAgentLastRunFailed(String time) {
     return 'Ultima rulare a eșuat · $time';
   }
-
-  @override
-  String get relationshipAgentMarkImportant => 'Marcați persoana ca importantă';
 
   @override
   String get relationshipAgentNoAgent => 'Niciun agent pentru această persoană';
@@ -11997,7 +11999,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Marcați $name ca important(ă) pentru a primi un chat, notificări când a trecut ceva timp și un briefing.';
+    return 'Urmăriți $name pentru a primi un chat, notificări când a trecut ceva timp și un briefing.';
   }
 
   @override
@@ -12372,7 +12374,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Amintiți-mi să păstrez legătura';
 
   @override
-  String get relationshipImportantLabel => 'Important';
+  String get relationshipImportantLabel => 'Urmărită';
 
   @override
   String relationshipImportConfirmButton(int count) {
@@ -12732,18 +12734,6 @@ class AppLocalizationsRo extends AppLocalizations {
     String cadence,
   ) {
     return '$type · $time · $cadence';
-  }
-
-  @override
-  String relationshipTasksLinkedCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count de asociate',
-      few: '$count asociate',
-      one: '1 asociată',
-    );
-    return '$_temp0';
   }
 
   @override

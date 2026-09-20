@@ -8,8 +8,8 @@ import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/photo_chrome_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
-import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/state/contact_import_controller.dart';
@@ -17,7 +17,6 @@ import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/contact_link_action.dart';
-import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
@@ -85,10 +84,17 @@ class PersonHeroAppBar extends StatelessWidget {
     required double topPadding,
   }) => _heroMinExtent(topPadding) + bandExtent(tokens);
 
-  /// The wash itself: the interactive accent at the tint alpha over the page
-  /// surface — the same recipe every tone-tinted card fill uses.
+  /// The wash itself: a decorative tint over the page surface — the same
+  /// recipe every tone-tinted card fill uses, on the decorative token
+  /// rather than the interactive one.
+  ///
+  /// It used to blend `interactive.enabled`, which spent the app's one
+  /// accent on a person who simply has no banner yet. On the not-enrolled
+  /// page — the one page with no agent and nothing teal to justify — that
+  /// made the header the most saturated surface in the feature, so teal
+  /// stopped meaning "you can press this" anywhere on it.
   static Color washColor(DsTokens tokens) => Color.alphaBlend(
-    tokens.colors.interactive.enabled.withValues(alpha: SurfaceAlphas.tint),
+    tokens.colors.decorative.level02.withValues(alpha: SurfaceAlphas.tint),
     tokens.colors.background.level01,
   );
 
@@ -566,20 +572,21 @@ class PersonMenuButton extends ConsumerWidget {
 
 /// The header block under the hero, starting below the avatar that hangs
 /// off it: the eyebrow (`Penguin Operations · Important`), the full wrapping
-/// name, the teal one-liner (`"Pip" · last spoke Today 12:44`), and the
-/// pills — the cadence fact the deterministic tier always knows, the health
-/// band once a briefing exists, and the next due day.
+/// name, the quiet one-liner (`"Pip" · last spoke Today 12:44`, its
+/// timestamp in the mono voice), and the pills — the cadence fact the
+/// deterministic tier always knows, and the next due day.
+///
+/// The health band is deliberately *not* here: the briefing card carries it
+/// with the age that makes it true.
 class PersonHeaderBlock extends StatelessWidget {
   const PersonHeaderBlock({
     required this.item,
     required this.categoryName,
-    required this.healthBand,
     super.key,
   });
 
   final RelationshipListItem item;
   final String? categoryName;
-  final RelationshipHealthBand? healthBand;
 
   @override
   Widget build(BuildContext context) {
@@ -591,11 +598,16 @@ class PersonHeaderBlock extends StatelessWidget {
       ?categoryName,
       if (data.important) messages.relationshipImportantLabel,
     ].join(' · ');
-    final lastSpoke = item.lastCheckInAt == null
+    // The timestamp inside the one-liner, kept as its own substring so the
+    // mono voice can be confined to it below — the same rule the list row
+    // follows, so one point in time never renders in two typefaces on one
+    // screen.
+    final spokeAt = item.lastCheckInAt == null
+        ? null
+        : relationshipTimestampLabelOf(context, item.lastCheckInAt!);
+    final lastSpoke = spokeAt == null
         ? messages.relationshipJustAdded
-        : messages.relationshipLastSpoke(
-            relationshipTimestampLabelOf(context, item.lastCheckInAt!),
-          );
+        : messages.relationshipLastSpoke(spokeAt);
     final oneLiner = [
       if (data.nickname case final nickname? when nickname.isNotEmpty)
         '"$nickname"',
@@ -608,13 +620,19 @@ class PersonHeaderBlock extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // The hero's own extent already covers the half of the avatar
-        // below the wash; this is only the breathing room under it.
-        SizedBox(height: tokens.spacing.step3),
+        // below the wash; this is only the breathing room under it — and it
+        // is the break between the picture and the identity, so it gets the
+        // section gap rather than the smallest step in the stack.
+        SizedBox(height: tokens.spacing.sectionGap),
         if (eyebrow.isNotEmpty) ...[
           Text(
             eyebrow,
             key: const ValueKey('person-eyebrow'),
-            style: relationshipTimestampStyle(
+            // `Penguin Operations · Important` is a label, not a reading on
+            // a clock. It used to borrow the mono timestamp style, which
+            // made the first string on the page the only monospaced one and
+            // cost it the measure the category name needs.
+            style: calmEyebrowStyle(
               tokens,
               color: tokens.colors.text.lowEmphasis,
             ),
@@ -628,18 +646,23 @@ class PersonHeaderBlock extends StatelessWidget {
           ),
         ),
         SizedBox(height: tokens.spacing.step1),
-        Text(
-          oneLiner,
+        // Quiet, not teal. Nothing on this line is tappable, and the
+        // interactive token on a whole non-interactive line both promised a
+        // tap that never came and outranked the person's own name — the one
+        // string in the block that should win.
+        RelationshipLineWithDate(
           key: const ValueKey('person-one-liner'),
+          text: oneLiner,
+          date: spokeAt,
           style: tokens.typography.styles.body.bodyMedium.copyWith(
-            color: tokens.colors.interactive.enabled,
+            color: tokens.colors.text.mediumEmphasis,
           ),
         ),
         SizedBox(height: tokens.spacing.step4),
         Wrap(
           spacing: tokens.spacing.step2,
           runSpacing: tokens.spacing.step2,
-          children: personHeaderPills(context, item, healthBand: healthBand),
+          children: personHeaderPills(context, item),
         ),
       ],
     );
@@ -647,30 +670,19 @@ class PersonHeaderBlock extends StatelessWidget {
 }
 
 /// The header pills, in order: the cadence fact (on track · cadence, or due
-/// since · days over), the health band, the next due day.
+/// since · days over) and the next due day.
+///
+/// One tinted chip at most, and it is the cadence: the health band lives on
+/// the briefing card, which dates it.
 List<Widget> personHeaderPills(
   BuildContext context,
-  RelationshipListItem item, {
-  required RelationshipHealthBand? healthBand,
-}) {
+  RelationshipListItem item,
+) {
   final tokens = context.designTokens;
   final messages = context.messages;
   final pill = peopleCadencePillOf(item);
   final quiet = tokens.colors.text.mediumEmphasis;
   final pills = <Widget>[relationshipCadencePill(context, item)];
-
-  if (healthBand != null) {
-    pills.add(
-      DsPill(
-        key: const ValueKey('person-pill-health'),
-        variant: DsPillVariant.tinted,
-        shape: DsPillShape.tag,
-        color: relationshipHealthBandColor(tokens, healthBand),
-        labelColor: tokens.colors.text.highEmphasis,
-        label: relationshipHealthBandLabel(context, healthBand),
-      ),
-    );
-  }
 
   final due = peopleDueDateOf(item);
   if (due != null &&

@@ -153,6 +153,21 @@ PeopleCadencePill peopleCadencePillOf(
   return (kind: PeopleCadencePillKind.onTrack, daysOver: 0, dueAt: null);
 }
 
+/// Whether this pill would only restate the band heading it sits under.
+///
+/// `On track` inside *On track* and `Not enrolled` inside *Not enrolled* are
+/// the same word twice. The band already groups by that state, so the pill
+/// spends the row's trailing slot — and the width the person's name needs —
+/// saying what the heading three rows up has already said.
+///
+/// The informative faces stay: `5 days over` and `Due Wed` carry a time no
+/// heading can, and `Dormant` / `Archived` name a status the *Not enrolled*
+/// heading does not. Each of those kinds occurs in exactly one band, so the
+/// kind alone decides this — the caller does not have to pass its band in.
+bool peopleCadencePillRestatesBand(PeopleCadencePillKind kind) =>
+    kind == PeopleCadencePillKind.onTrack ||
+    kind == PeopleCadencePillKind.notEnrolled;
+
 /// The most recent contact, or the tracking start for a person without one,
 /// so a freshly added person sorts to the top of their band.
 DateTime peopleRecencyOf(RelationshipListItem item) =>

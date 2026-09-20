@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -29,12 +28,10 @@ import 'package:lotti/features/design_system/components/toasts/toast_messenger.d
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
-import 'package:lotti/features/relationships/service/contact_launcher.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
-import 'package:lotti/features/relationships/ui/widgets/contact_quick_actions.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_suggestions_band.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -150,11 +147,15 @@ RelationshipAgentCardState relationshipAgentCardStateOf({
 /// (tapping it opens the agent internals), [TldrBody] for the briefing prose
 /// — with the cadence fact and the health band as pills, and a footer that
 /// says what the agent is doing and offers the one thing to do about it:
-/// *Brief now* before the first briefing, *Update now* when it is current or
-/// out of date, *Choose a model* or *Try again* after a failure, and *Log
-/// check-in* · *Call* while the cadence is lapsed. An unenrolled person gets
-/// a plain card explaining what *important* turns on, with the switch as
-/// the action.
+/// *Brief now* before the first briefing, *Update now* once there is one to
+/// update, and *Choose a model* or *Try again* after a failure. An
+/// unenrolled person gets a plain card explaining what *important* turns
+/// on, with the switch as the action.
+///
+/// The footer carries only the agent's own verbs. Logging a check-in and
+/// calling are the page's verbs, and the sticky action bar holds both on
+/// every viewport — offering them here too put the same two actions on
+/// screen twice, loud in one place and quiet in the other.
 ///
 /// The chat entry lives in the page's hero, not here. Automatic updates are
 /// not offered as a switch because the relationship runtime does not read
@@ -184,11 +185,6 @@ class _RelationshipBriefingCardState
   bool _requesting = false;
   bool _marking = false;
 
-  /// The channel the due state's *Call* offers, resolved like the action
-  /// bar's; null until asked and when nothing is launchable.
-  ReachableChannel? _reachable;
-  int _resolution = 0;
-
   /// Re-renders the "as of" meta when its displayed bucket next changes:
   /// computed only at build, a briefing rendered "just now" would keep that
   /// label for hours. One wake per visible change, not a per-second tick.
@@ -209,12 +205,6 @@ class _RelationshipBriefingCardState
   bool _arrivedCurrent = false;
 
   String get _agentId => relationshipAgentIdFor(widget.relationship.meta.id);
-
-  @override
-  void initState() {
-    super.initState();
-    unawaited(_resolveReachable());
-  }
 
   @override
   void dispose() {
@@ -248,27 +238,6 @@ class _RelationshipBriefingCardState
     _ageTick?.cancel();
     _ageTick = null;
     _ageTickFor = null;
-  }
-
-  @override
-  void didUpdateWidget(RelationshipBriefingCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!listEquals(
-      oldWidget.relationship.data.contactChannels,
-      widget.relationship.data.contactChannels,
-    )) {
-      unawaited(_resolveReachable());
-    }
-  }
-
-  Future<void> _resolveReachable() async {
-    final generation = ++_resolution;
-    final found = await firstReachableChannel(
-      ref.read(contactLauncherProvider),
-      widget.relationship.data.contactChannels,
-    );
-    if (!mounted || generation != _resolution) return;
-    setState(() => _reachable = found);
   }
 
   void _openInternals(String? agentName) {
@@ -374,14 +343,6 @@ class _RelationshipBriefingCardState
     relationshipId: widget.relationship.meta.id,
   );
 
-  Future<void> _call(ReachableChannel reachable) => launchContactAction(
-    context,
-    ref,
-    relationshipId: widget.relationship.meta.id,
-    channel: reachable.channel,
-    action: reachable.action,
-  );
-
   @override
   Widget build(BuildContext context) {
     final relationship = widget.relationship;
@@ -463,8 +424,6 @@ class _RelationshipBriefingCardState
     final agentName = identity is AgentIdentityEntity
         ? identity.displayName.trim()
         : null;
-    final overdue =
-        peopleCadencePillOf(item).kind == PeopleCadencePillKind.overdue;
     return _AgentCard(
       state: cardState,
       announceArrival: _arrivedCurrent,
@@ -477,8 +436,6 @@ class _RelationshipBriefingCardState
       totalTokens: totalTokens,
       identityData: identityData,
       modelMissing: modelMissing,
-      overdue: overdue,
-      reachable: _reachable,
       expanded: _expanded,
       requesting: _requesting,
       onToggleExpanded: () => setState(() => _expanded = !_expanded),
@@ -490,10 +447,6 @@ class _RelationshipBriefingCardState
         agentId: agentId,
       ),
       onLogCheckIn: _logCheckIn,
-      onCall: switch (_reachable) {
-        null => null,
-        final reachable => () => _call(reachable),
-      },
     );
   }
 }
@@ -582,7 +535,12 @@ class _NotEnrolledCard extends StatelessWidget {
                 : DesignSystemButton(
                     key: const ValueKey('relationship-agent-mark-important'),
                     tapTargetSize: MaterialTapTargetSize.padded,
-                    label: messages.relationshipAgentMarkImportant,
+                    // Named with the same verb the state uses: the band,
+                    // the pill and the summary all say *enrolled*, so the
+                    // control that ends *Not enrolled* says it too.
+                    label: messages.relationshipAgentEnrolPerson(
+                      data.nickname ?? data.title,
+                    ),
                     leadingIcon: LottiIcons.star,
                     isLoading: marking,
                     onPressed: marking ? null : onMarkImportant,
@@ -612,8 +570,6 @@ class _AgentCard extends StatelessWidget {
     required this.totalTokens,
     required this.identityData,
     required this.modelMissing,
-    required this.overdue,
-    required this.reachable,
     required this.expanded,
     required this.requesting,
     required this.onToggleExpanded,
@@ -621,7 +577,6 @@ class _AgentCard extends StatelessWidget {
     required this.onBrief,
     required this.onChooseModel,
     required this.onLogCheckIn,
-    required this.onCall,
   });
 
   final RelationshipAgentCardState state;
@@ -638,8 +593,6 @@ class _AgentCard extends StatelessWidget {
   final int totalTokens;
   final TaskAgentModelIdentityViewData identityData;
   final bool modelMissing;
-  final bool overdue;
-  final ReachableChannel? reachable;
   final bool expanded;
   final bool requesting;
   final VoidCallback onToggleExpanded;
@@ -647,7 +600,6 @@ class _AgentCard extends StatelessWidget {
   final VoidCallback? onBrief;
   final VoidCallback onChooseModel;
   final VoidCallback onLogCheckIn;
-  final VoidCallback? onCall;
 
   /// The header's status line: what the agent is doing, or when the
   /// briefing was written and the band it read, in that state's colour.
@@ -778,9 +730,6 @@ class _AgentCard extends StatelessWidget {
     final ai = tokens.colors.aiCard;
     final messages = context.messages;
     final current = report;
-    final name =
-        item.relationship.data.nickname ?? item.relationship.data.title;
-
     final body = switch (state) {
       RelationshipAgentCardState.noBriefing => Text(
         messages.relationshipAgentNoBriefingBody(checkInCount),
@@ -896,27 +845,16 @@ class _AgentCard extends StatelessWidget {
                 onPressed: onBrief,
               ),
       ),
-      RelationshipAgentCardState.current when overdue => (
-        leading: logCheckIn,
-        action: onCall == null
-            ? DesignSystemButton(
-                key: const ValueKey('relationship-agent-log-check-in-primary'),
-                tapTargetSize: MaterialTapTargetSize.padded,
-                label: messages.relationshipLogCheckIn,
-                leadingIcon: LottiIcons.greeting,
-                onPressed: onLogCheckIn,
-              )
-            : DesignSystemButton(
-                key: const ValueKey('relationship-agent-call'),
-                tapTargetSize: MaterialTapTargetSize.padded,
-                label: messages.relationshipAgentCall(name),
-                leadingIcon: contactActionIcon(reachable!.action),
-                onPressed: onCall,
-              ),
-      ),
+      // Once a briefing exists the card owns only the agent's own verbs.
+      // Logging a check-in and calling are *doing* verbs, and the sticky
+      // action bar carries both of those on every viewport — offering them
+      // here too put the same two actions on screen twice, each one loud in
+      // one place and quiet in the other, so neither read as the primary.
+      // Being overdue changes what the bar's primary is for, not who owns
+      // it, so the two current faces are now one arm.
       RelationshipAgentCardState.current ||
       RelationshipAgentCardState.outOfDate => (
-        leading: logCheckIn,
+        leading: seeActivity,
         action: updateNow,
       ),
       // Unreachable by construction, see _status.

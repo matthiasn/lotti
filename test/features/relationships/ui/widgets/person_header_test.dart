@@ -14,13 +14,12 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/photo_chrome_tokens.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
-import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/state/contact_import_controller.dart';
 import 'package:lotti/features/relationships/state/contact_link_controller.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
+import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_header.dart';
-import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -752,7 +751,6 @@ void main() {
       required RelationshipEntry relationship,
       CheckInEntry? lastCheckIn,
       String? categoryName,
-      RelationshipHealthBand? healthBand,
     }) async {
       await withClock(Clock.fixed(now), () async {
         await tester.pumpWidget(
@@ -760,7 +758,6 @@ void main() {
             PersonHeaderBlock(
               item: (relationship: relationship, lastCheckIn: lastCheckIn),
               categoryName: categoryName,
-              healthBand: healthBand,
             ),
           ),
         );
@@ -768,10 +765,17 @@ void main() {
       });
     }
 
+    /// The one-liner widget: it carries the whole assembled line and the
+    /// date inside it, so a test reads the fields rather than the spans.
+    RelationshipLineWithDate oneLiner(WidgetTester tester) =>
+        tester.widget<RelationshipLineWithDate>(
+          find.byKey(const ValueKey('person-one-liner')),
+        );
+
     DsPill pill(WidgetTester tester, String key) =>
         tester.widget<DsPill>(find.byKey(ValueKey(key)));
 
-    testWidgets('eyebrow joins category and Important; the one-liner joins '
+    testWidgets('eyebrow joins category and Enrolled; the one-liner joins '
         'the nickname and the last contact', (tester) async {
       await pump(
         tester,
@@ -782,15 +786,37 @@ void main() {
 
       expect(
         tester.widget<Text>(find.byKey(const ValueKey('person-eyebrow'))).data,
-        'Penguin Operations · Important',
+        'Penguin Operations · Enrolled',
       );
       expect(find.text('Commander Pip Frostbeak'), findsOneWidget);
+
+      final line = oneLiner(tester);
+      expect(line.text, '"Pip" · last spoke Today 12:44');
+      // The mono face is spent on the timestamp and nothing else, so one
+      // point in time never renders in two typefaces on one screen.
+      expect(line.date, 'Today 12:44');
+      expect(
+        find.text('"Pip" · last spoke Today 12:44', findRichText: true),
+        findsOneWidget,
+      );
+
+      // The eyebrow is a label, not a clock reading, so it takes the calm
+      // eyebrow voice rather than borrowing the timestamp's mono one.
+      final tokens = tester
+          .element(find.byType(PersonHeaderBlock))
+          .designTokens;
       expect(
         tester
-            .widget<Text>(find.byKey(const ValueKey('person-one-liner')))
-            .data,
-        '"Pip" · last spoke Today 12:44',
+            .widget<Text>(find.byKey(const ValueKey('person-eyebrow')))
+            .style
+            ?.fontFamily,
+        isNot('Inconsolata'),
       );
+
+      // Nothing on the line is tappable, so it must not wear the colour
+      // that means "press this" everywhere else in the app.
+      expect(line.style.color, tokens.colors.text.mediumEmphasis);
+      expect(line.style.color, isNot(tokens.colors.interactive.enabled));
     });
 
     testWidgets('no category and not important leaves the eyebrow out; no '
@@ -798,12 +824,10 @@ void main() {
       await pump(tester, relationship: person());
 
       expect(find.byKey(const ValueKey('person-eyebrow')), findsNothing);
-      expect(
-        tester
-            .widget<Text>(find.byKey(const ValueKey('person-one-liner')))
-            .data,
-        'Just added',
-      );
+      // No check-in means no date in the line, so nothing goes mono.
+      final line = oneLiner(tester);
+      expect(line.text, 'Just added');
+      expect(line.date, isNull);
     });
 
     testWidgets('on track: the cadence pill names the effective rhythm and '
@@ -883,25 +907,30 @@ void main() {
       expect(pill(tester, 'person-pill-status').label, 'Archived');
     });
 
-    testWidgets('the health band pill appears only with a briefing, tinted '
-        'with the band colour', (tester) async {
-      await pump(tester, relationship: person(important: true));
-      expect(find.byKey(const ValueKey('person-pill-health')), findsNothing);
-
+    testWidgets('the header never carries the health band — the briefing '
+        'card owns it, because only the card can date it', (tester) async {
       await pump(
         tester,
         relationship: person(important: true),
-        healthBand: RelationshipHealthBand.thriving,
+        lastCheckIn: checkIn(DateTime(2026, 8, 13, 12, 44)),
+        categoryName: 'Penguin Operations',
       );
-      final health = pill(tester, 'person-pill-health');
-      final tokens = tester
-          .element(find.byType(PersonHeaderBlock))
-          .designTokens;
-      expect(health.label, 'Thriving');
+
+      // An undated `Thriving` beside the cadence said a fact the card
+      // already states as "Thriving · as of 3 h ago", and said it less
+      // truthfully — the band keeps reading as current long after the
+      // briefing it came from stopped being so.
+      expect(find.byKey(const ValueKey('person-pill-health')), findsNothing);
+      expect(find.text('Thriving'), findsNothing);
+
+      // What is left is the deterministic pair the runtime always knows:
+      // the cadence fact and the day it next comes due.
+      expect(find.byKey(const ValueKey('person-pill-cadence')), findsOneWidget);
       expect(
-        health.color,
-        relationshipHealthBandColor(tokens, RelationshipHealthBand.thriving),
+        find.byKey(const ValueKey('person-pill-next-due')),
+        findsOneWidget,
       );
+      expect(find.byType(DsPill), findsNWidgets(2));
     });
   });
 }

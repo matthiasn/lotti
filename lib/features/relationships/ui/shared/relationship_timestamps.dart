@@ -184,3 +184,70 @@ int _wholeDaysBetween(DateTime from, DateTime to) {
   final toMidnight = DateTime(to.year, to.month, to.day);
   return toMidnight.difference(fromMidnight).inDays;
 }
+
+/// A line of prose with a date inside it, where the date — and only the date
+/// — wears the mono voice.
+///
+/// Mono earns its place on a timestamp, which tabulates down a column. It
+/// costs measure on the words around one (`Call`, `Weekly`, `last spoke`),
+/// and setting a whole line in it is what wrapped `Every two / weeks` onto a
+/// ragged second line in the People rail. Splitting the line here keeps the
+/// tabular date and gives the prose its proportional face back.
+///
+/// [date] is located by searching [text] for its own substring rather than
+/// by index, because each line is assembled from one catalog message and a
+/// locale is free to put the date first, last or in the middle. A [date]
+/// that is null — or that does not occur in [text] — renders the whole line
+/// in [style], so a missing match degrades to the plain line rather than to
+/// a wrong one.
+class RelationshipLineWithDate extends StatelessWidget {
+  const RelationshipLineWithDate({
+    required this.text,
+    required this.date,
+    required this.style,
+    this.maxLines,
+    super.key,
+  });
+
+  /// The whole assembled line, including [date].
+  final String text;
+
+  /// The date substring inside [text], or null when the line carries none.
+  final String? date;
+
+  /// The proportional style for the line; the date inherits its colour.
+  final TextStyle style;
+
+  final int? maxLines;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final at = date == null ? -1 : text.indexOf(date!);
+    if (at < 0) {
+      return Text(
+        text,
+        maxLines: maxLines,
+        overflow: maxLines == null ? null : TextOverflow.ellipsis,
+        style: style,
+      );
+    }
+    final match = date!;
+    return Text.rich(
+      TextSpan(
+        style: style,
+        children: [
+          if (at > 0) TextSpan(text: text.substring(0, at)),
+          TextSpan(
+            text: match,
+            style: relationshipTimestampStyle(tokens, color: style.color),
+          ),
+          if (at + match.length < text.length)
+            TextSpan(text: text.substring(at + match.length)),
+        ],
+      ),
+      maxLines: maxLines,
+      overflow: maxLines == null ? TextOverflow.clip : TextOverflow.ellipsis,
+    );
+  }
+}

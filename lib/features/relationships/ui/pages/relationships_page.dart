@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
@@ -294,7 +295,10 @@ class _PeopleListScaffold extends ConsumerWidget {
                     ),
                   ),
                 ),
-                [] => SliverToBoxAdapter(child: _EmptyState()),
+                [] => const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _EmptyState(),
+                ),
                 final list => _PeopleList(
                   items: list,
                   selectedRelationshipId: selectedRelationshipId,
@@ -326,10 +330,13 @@ class _PeopleList extends StatelessWidget {
       PeopleSummaryCard(summary: peopleSummaryOf(items)),
       for (final section in sections) ...[
         Padding(
+          // No horizontal inset of its own: the band heading hangs on the
+          // page's content rail with the title above it, and the row's
+          // internal step4 is the row card's inset, not a second gutter.
           padding: EdgeInsets.fromLTRB(
-            tokens.spacing.step4,
+            0,
             tokens.spacing.step5,
-            tokens.spacing.step4,
+            0,
             tokens.spacing.step2,
           ),
           child: _GroupHeading(
@@ -467,21 +474,22 @@ class _IconButton extends StatelessWidget {
   }
 }
 
-/// The empty list's message. It carries no add button of its own: adding a
-/// person is the page's bottom action, which is already on screen.
+/// The empty list's message, in the design system's one empty-state
+/// grammar — the same glyph and ramp the desktop idle pane next to it uses,
+/// so the two ways of showing nothing stop being two different designs.
+///
+/// It carries no add button of its own: adding a person is the page's
+/// bottom action, which is already on screen. It fills the sliver's
+/// remaining extent so the message sits in the space it has rather than
+/// clinging to the top of a screen of void.
 class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Padding(
-      padding: EdgeInsets.only(top: tokens.spacing.sectionGap),
-      child: Text(
-        context.messages.relationshipsEmptyState,
-        textAlign: TextAlign.center,
-        style: tokens.typography.styles.body.bodyMedium.copyWith(
-          color: tokens.colors.text.mediumEmphasis,
-        ),
-      ),
+    return DesignSystemEmptyState(
+      icon: LottiIcons.people,
+      title: context.messages.relationshipsEmptyState,
     );
   }
 }
