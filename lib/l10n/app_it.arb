@@ -5024,7 +5024,6 @@
   "relationshipAgentNoAgent": "Nessun agente per questa persona",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Nessun briefing ancora. „Crea il briefing ora“ ne scrive uno appena registri un check-in; non vede mai numero di telefono né e-mail.} =1{Nessun briefing ancora. „Crea il briefing ora“ ne scrive uno dal tuo check-in; non vede mai numero di telefono né e-mail.} other{Nessun briefing ancora. „Crea il briefing ora“ ne scrive uno dai tuoi {count} check-in; non vede mai numero di telefono né e-mail.}}",
   "relationshipAgentNotEnrolledBody": "Attiva i promemoria per {name} per avere una chat, un promemoria quando è passato un po’ di tempo e un briefing.",
-  "relationshipAgentOnlyYourStartsUseAi": "Solo ciò che avvii tu usa l’IA",
   "relationshipAgentOutOfDateNewCheckIn": "Non aggiornato · nuovo check-in {day}",
   "relationshipAgentOutOfDateNewCheckInShort": "Non aggiornato · nuovo check-in",
   "@relationshipAgentOutOfDateNewCheckInShort": {

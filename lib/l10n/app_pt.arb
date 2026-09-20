@@ -5023,7 +5023,6 @@
   "relationshipAgentNoAgent": "Sem agente para esta pessoa",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Ainda sem briefing. „Criar briefing agora“ escreve um assim que registares um check-in; nunca vê o telefone nem o e-mail.} =1{Ainda sem briefing. „Criar briefing agora“ escreve um a partir do teu check-in; nunca vê o telefone nem o e-mail.} other{Ainda sem briefing. „Criar briefing agora“ escreve um a partir dos teus {count} check-ins; nunca vê o telefone nem o e-mail.}}",
   "relationshipAgentNotEnrolledBody": "Ativa os lembretes de {name} para ter um chat, um aviso quando já passou algum tempo e um briefing.",
-  "relationshipAgentOnlyYourStartsUseAi": "Só o que tu próprio inicias usa IA",
   "relationshipAgentOutOfDateNewCheckIn": "Desatualizado · novo check-in {day}",
   "relationshipAgentOutOfDateNewCheckInShort": "Desatualizado · novo check-in",
   "@relationshipAgentOutOfDateNewCheckInShort": {

@@ -19669,12 +19669,6 @@ abstract class AppLocalizations {
   /// **'Turn on reminders for {name} to get a chat, a nudge when it has been a while, and a briefing.'**
   String relationshipAgentNotEnrolledBody(String name);
 
-  /// No description provided for @relationshipAgentOnlyYourStartsUseAi.
-  ///
-  /// In en, this message translates to:
-  /// **'Only what you start yourself uses AI'**
-  String get relationshipAgentOnlyYourStartsUseAi;
-
   /// No description provided for @relationshipAgentOutOfDateNewCheckIn.
   ///
   /// In en, this message translates to:

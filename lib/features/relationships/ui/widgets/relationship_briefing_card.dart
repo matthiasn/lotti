@@ -503,26 +503,22 @@ class _NotEnrolledCard extends StatelessWidget {
                       data.nickname ?? data.title,
                     ),
               key: const ValueKey('relationship-agent-body'),
-              // Prose in the prose ink, like the six enrolled faces: only
-              // the privacy caption beneath it is metadata.
+              // Prose in the prose ink, like the six enrolled faces.
               style: tokens.typography.styles.body.bodyMedium.copyWith(
                 color: tokens.colors.text.highEmphasis,
               ),
             ),
           ),
-          // The privacy fact rides the action row's leading slot: one row,
-          // not a footer and then a meta line under it.
+          // No privacy caption here. It read "Only what you start yourself
+          // uses AI" and sat in the slot beside the control that starts an
+          // agent which wakes on a cadence and writes briefings without
+          // being asked each time — so it described a state the reader was
+          // one tap from leaving, and said nothing about the one they were
+          // heading into. An unexplained disclaimer in the one place it is
+          // about to stop applying is worse than none; what the agent
+          // sends belongs somewhere it can actually be explained.
           _AgentCardFooter(
             plain: true,
-            leading: Text(
-              messages.relationshipAgentOnlyYourStartsUseAi,
-              key: const ValueKey('relationship-agent-meta'),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-            ),
             action: paused
                 ? null
                 : DesignSystemButton(

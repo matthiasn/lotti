@@ -12003,10 +12003,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get relationshipAgentOnlyYourStartsUseAi =>
-      'Doar ce porniți dvs. folosește IA';
-
-  @override
   String relationshipAgentOutOfDateNewCheckIn(String day) {
     return 'Depășit · check-in nou $day';
   }

@@ -5023,7 +5023,6 @@
   "relationshipAgentNoAgent": "Geen agent voor deze persoon",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Nog geen briefing. „Nu briefen“ schrijft er een zodra je een check-in hebt gelogd; het ziet nooit het telefoonnummer of het e-mailadres.} =1{Nog geen briefing. „Nu briefen“ schrijft er een op basis van je check-in; het ziet nooit het telefoonnummer of het e-mailadres.} other{Nog geen briefing. „Nu briefen“ schrijft er een op basis van je {count} check-ins; het ziet nooit het telefoonnummer of het e-mailadres.}}",
   "relationshipAgentNotEnrolledBody": "Zet herinneringen aan voor {name} voor een chat, een seintje als het even geleden is, en een briefing.",
-  "relationshipAgentOnlyYourStartsUseAi": "Alleen wat je zelf start gebruikt AI",
   "relationshipAgentOutOfDateNewCheckIn": "Verouderd · nieuwe check-in {day}",
   "relationshipAgentOutOfDateNewCheckInShort": "Verouderd · nieuwe check-in",
   "@relationshipAgentOutOfDateNewCheckInShort": {

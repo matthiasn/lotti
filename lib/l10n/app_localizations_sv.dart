@@ -11773,10 +11773,6 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get relationshipAgentOnlyYourStartsUseAi =>
-      'Bara det du själv startar använder AI';
-
-  @override
   String relationshipAgentOutOfDateNewCheckIn(String day) {
     return 'Inaktuell · ny avstämning $day';
   }

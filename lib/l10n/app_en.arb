@@ -6873,7 +6873,6 @@
       }
     }
   },
-  "relationshipAgentOnlyYourStartsUseAi": "Only what you start yourself uses AI",
   "relationshipAgentOutOfDateNewCheckIn": "Out of date · new check-in {day}",
   "@relationshipAgentOutOfDateNewCheckIn": {
     "placeholders": {

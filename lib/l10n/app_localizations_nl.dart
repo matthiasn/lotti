@@ -11790,10 +11790,6 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get relationshipAgentOnlyYourStartsUseAi =>
-      'Alleen wat je zelf start gebruikt AI';
-
-  @override
   String relationshipAgentOutOfDateNewCheckIn(String day) {
     return 'Verouderd · nieuwe check-in $day';
   }

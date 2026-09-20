@@ -5024,7 +5024,6 @@
   "relationshipAgentNoAgent": "Ingen agent for denne person",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Ingen briefing endnu. „Brief nu“ skriver en, når du har logget et check-in; den ser aldrig telefonnummer eller e-mail.} =1{Ingen briefing endnu. „Brief nu“ skriver en ud fra dit check-in; den ser aldrig telefonnummer eller e-mail.} other{Ingen briefing endnu. „Brief nu“ skriver en ud fra dine {count} check-ins; den ser aldrig telefonnummer eller e-mail.}}",
   "relationshipAgentNotEnrolledBody": "Slå påmindelser til for {name} for at få en chat, et prik når der er gået et stykke tid, og en briefing.",
-  "relationshipAgentOnlyYourStartsUseAi": "Kun det, du selv starter, bruger AI",
   "relationshipAgentOutOfDateNewCheckIn": "Forældet · nyt check-in {day}",
   "relationshipAgentOutOfDateNewCheckInShort": "Forældet · nyt check-in",
   "@relationshipAgentOutOfDateNewCheckInShort": {

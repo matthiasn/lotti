@@ -1172,7 +1172,15 @@ so the decision is a table rather than a widget tree:
 
 | Face | When | Status line · body · footer |
 |---|---|---|
-| Not enrolled | not `important`, or dormant/archived | plain section card, people glyph · `No agent for this person` (or the status word while paused) · what reminders turn on · **Remind me about {name}** · meta `Only what you start yourself uses AI` |
+| Not enrolled | not `important`, or dormant/archived | plain section card, people glyph · `No agent for this person` (or the status word while paused) · what reminders turn on · **Remind me about {name}** |
+
+The not-enrolled card carries **no privacy caption**. It used to read
+`Only what you start yourself uses AI` in the footer's leading slot, beside
+the control that starts an agent which wakes on a cadence and writes
+briefings without being asked each time — so the one privacy claim on the
+surface described the state the reader was one tap from leaving and said
+nothing about the one they were entering. What the agent sends belongs
+somewhere it can be explained, not in a caption that expires on tap.
 | No briefing | enrolled, no current report | `Agent watching · next look {day}` · how many check-ins *Brief now* would read, and that it never sees a channel · *Log check-in* · **Brief now** |
 | Running | `agentIsRunningProvider` | spinner · `Writing the briefing…` · the briefing being replaced, still readable (TL;DR + Read more), or no body before the first — never a duration estimate · *See activity* · no primary |
 | Failed | `consecutiveFailureCount > 0` and the last wake is newer than the report | `Last run failed · {ago}` in error ink · the provider returned an error, your check-ins are unchanged (or that no model is set up) · *See activity* · **Choose a model** when no route resolves, **Try again** otherwise |

@@ -480,10 +480,16 @@ void main() {
       // user has to connect to the first.
       expect(find.text('Remind me about Pip'), findsOneWidget);
       expect(find.text('Mark important'), findsNothing);
+
+      // No privacy caption. It read "Only what you start yourself uses AI"
+      // and sat beside the control that starts an agent which wakes on a
+      // cadence — an unexplained disclaimer in the one place it is about
+      // to stop being true.
       expect(
-        find.text('Only what you start yourself uses AI'),
-        findsOneWidget,
+        find.byKey(const ValueKey('relationship-agent-meta')),
+        findsNothing,
       );
+      expect(find.textContaining('uses AI'), findsNothing);
     });
 
     // Codex review on #4346: Brief now starts without asking because this
@@ -515,23 +521,6 @@ void main() {
         startsWith('Gemini · '),
         reason: 'the narrowest tier leads with the provider',
       );
-    });
-
-    testWidgets('at large text the footer stacks the privacy note above the '
-        'primary, so neither squeezes the other', (tester) async {
-      await pump(
-        tester,
-        entry: relationship(important: false),
-        textScaler: const TextScaler.linear(1.6),
-      );
-      final note = tester.getRect(
-        find.byKey(const ValueKey('relationship-agent-meta')),
-      );
-      final action = tester.getRect(
-        find.byKey(const ValueKey('relationship-agent-mark-important')),
-      );
-      expect(action.top, greaterThanOrEqualTo(note.bottom));
-      expect(find.text('Only what you start yourself uses AI'), findsOneWidget);
     });
 
     testWidgets('Mark important switches the person on through the '

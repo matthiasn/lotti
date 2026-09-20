@@ -63,6 +63,11 @@
   day now sit on lines of their own.
 - **The call and record buttons say what they do** wherever the row has room
   for the words, instead of being a bare handset and a bare microphone.
+- **A confusing privacy note is gone.** "Only what you start yourself uses
+  AI" sat on the card for a person you are not being reminded about, right
+  beside the button that turns those reminders on — so the one privacy claim
+  on the page described a state you were one tap away from leaving, and said
+  nothing about the one you were heading into.
 - **A paused reminder stopped shouting.** The quietest card on the page — a
   note that a reminder is asleep — wore the most saturated outline on it, and
   showed its time on a different clock from every other time on the page.

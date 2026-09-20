@@ -11936,10 +11936,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get relationshipAgentOnlyYourStartsUseAi =>
-      'AI používá jen to, co spustíš sám';
-
-  @override
   String relationshipAgentOutOfDateNewCheckIn(String day) {
     return 'Zastaralé · nový check-in $day';
   }
