@@ -908,7 +908,8 @@ void main() {
         });
 
         expect(find.byType(DesktopTaskHeader), findsOneWidget);
-        expect(find.textContaining('Jun'), findsOneWidget);
+        // Numeric and device-ordered now, so the month is a digit.
+        expect(find.textContaining('/2026'), findsOneWidget);
       },
     );
   });
