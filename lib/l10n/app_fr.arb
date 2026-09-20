@@ -4817,6 +4817,7 @@
       }
     }
   },
+  "relationshipsSummaryNextDueCaption": "Prochaine échéance",
   "relationshipsSummaryNoneDue": "Personne à relancer",
   "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 personne non suivie} other{{count} personnes non suivies}}",
   "@relationshipsSummaryNotEnrolled": {

@@ -4817,6 +4817,7 @@
       }
     }
   },
+  "relationshipsSummaryNextDueCaption": "Următoarea",
   "relationshipsSummaryNoneDue": "Nimeni nu este scadent",
   "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 persoană neurmărită} few{{count} persoane neurmărite} other{{count} de persoane neurmărite}}",
   "@relationshipsSummaryNotEnrolled": {

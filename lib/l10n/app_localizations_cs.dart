@@ -12618,6 +12618,9 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get relationshipsSummaryNextDueCaption => 'Další na řadě';
+
+  @override
   String get relationshipsSummaryNoneDue => 'Nikdo není na řadě';
 
   @override

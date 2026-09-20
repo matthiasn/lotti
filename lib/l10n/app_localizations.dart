@@ -20575,6 +20575,12 @@ abstract class AppLocalizations {
   /// **'Next due {name} · {day}'**
   String relationshipsSummaryNextDue(String name, String day);
 
+  /// No description provided for @relationshipsSummaryNextDueCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Next due'**
+  String get relationshipsSummaryNextDueCaption;
+
   /// No description provided for @relationshipsSummaryNoneDue.
   ///
   /// In en, this message translates to:

@@ -5313,6 +5313,7 @@
       }
     }
   },
+  "relationshipsSummaryNextDueCaption": "Nästa",
   "relationshipsSummaryNoneDue": "Ingen väntar",
   "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 person följs inte} other{{count} personer följs inte}}",
   "@relationshipsSummaryNotEnrolled": {

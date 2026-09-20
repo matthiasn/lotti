@@ -12443,6 +12443,9 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get relationshipsSummaryNextDueCaption => 'Nästa';
+
+  @override
   String get relationshipsSummaryNoneDue => 'Ingen väntar';
 
   @override

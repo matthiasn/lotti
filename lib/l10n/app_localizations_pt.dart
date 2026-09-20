@@ -12542,6 +12542,9 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get relationshipsSummaryNextDueCaption => 'A seguir';
+
+  @override
   String get relationshipsSummaryNoneDue => 'Ninguém pendente';
 
   @override

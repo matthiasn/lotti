@@ -684,7 +684,11 @@ void main() {
     expect(find.byType(PeopleSummaryCard), findsOneWidget);
     expect(find.text('1'), findsOneWidget);
     expect(find.text('/ 3 enrolled'), findsOneWidget);
-    expect(find.text('Next due Ben · Thu 20 Aug'), findsOneWidget);
+    // Caption, name, day — the day on its own line so it is never
+    // the part that ellipses.
+    expect(find.text('Next due'), findsOneWidget);
+    expect(find.text('Ben'), findsOneWidget);
+    expect(find.text('Thu 20 Aug'), findsOneWidget);
     expect(find.text('2 people not enrolled'), findsOneWidget);
   });
 

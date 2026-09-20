@@ -4817,6 +4817,7 @@
       }
     }
   },
+  "relationshipsSummaryNextDueCaption": "Als Nächstes",
   "relationshipsSummaryNoneDue": "Niemand fällig",
   "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 Person nicht im Blick} other{{count} Personen nicht im Blick}}",
   "@relationshipsSummaryNotEnrolled": {

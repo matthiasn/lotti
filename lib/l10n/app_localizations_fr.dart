@@ -12641,6 +12641,9 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get relationshipsSummaryNextDueCaption => 'Prochaine échéance';
+
+  @override
   String get relationshipsSummaryNoneDue => 'Personne à relancer';
 
   @override

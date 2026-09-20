@@ -12584,6 +12584,9 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get relationshipsSummaryNextDueCaption => 'Prossima';
+
+  @override
   String get relationshipsSummaryNoneDue => 'Nessuno in scadenza';
 
   @override

@@ -5313,6 +5313,7 @@
       }
     }
   },
+  "relationshipsSummaryNextDueCaption": "Næste gang",
   "relationshipsSummaryNoneDue": "Ingen venter",
   "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 person ikke fulgt} other{{count} personer ikke fulgt}}",
   "@relationshipsSummaryNotEnrolled": {

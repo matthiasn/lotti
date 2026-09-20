@@ -12691,6 +12691,9 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get relationshipsSummaryNextDueCaption => 'Următoarea';
+
+  @override
   String get relationshipsSummaryNoneDue => 'Nimeni nu este scadent';
 
   @override

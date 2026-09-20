@@ -4817,6 +4817,7 @@
       }
     }
   },
+  "relationshipsSummaryNextDueCaption": "Siguiente",
   "relationshipsSummaryNoneDue": "Nadie pendiente",
   "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 persona sin seguimiento} other{{count} personas sin seguimiento}}",
   "@relationshipsSummaryNotEnrolled": {

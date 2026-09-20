@@ -12427,6 +12427,9 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get relationshipsSummaryNextDueCaption => 'Næste gang';
+
+  @override
   String get relationshipsSummaryNoneDue => 'Ingen venter';
 
   @override

@@ -12509,6 +12509,9 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get relationshipsSummaryNextDueCaption => 'Als Nächstes';
+
+  @override
   String get relationshipsSummaryNoneDue => 'Niemand fällig';
 
   @override

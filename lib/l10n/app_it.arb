@@ -5313,6 +5313,7 @@
       }
     }
   },
+  "relationshipsSummaryNextDueCaption": "Prossima",
   "relationshipsSummaryNoneDue": "Nessuno in scadenza",
   "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 persona non seguita} other{{count} persone non seguite}}",
   "@relationshipsSummaryNotEnrolled": {

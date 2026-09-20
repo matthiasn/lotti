@@ -56,6 +56,10 @@
   buttons, so someone who was simply not being tracked could appear in the
   exact orange used for "overdue", or in the colour that elsewhere means
   "you can tap this". They now come from a set of their own.
+- **The summary card shows the date it is about.** Squeezed onto one
+  wrapped line, the day was the part that got cut — so the card hid the
+  single fact the groups below it do not already state. The person and the
+  day now sit on lines of their own.
 - **The call and record buttons say what they do** wherever the row has room
   for the words, instead of being a bare handset and a bare microphone.
 - **A paused reminder stopped shouting.** The quietest card on the page — a

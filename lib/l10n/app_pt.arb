@@ -5312,6 +5312,7 @@
       }
     }
   },
+  "relationshipsSummaryNextDueCaption": "A seguir",
   "relationshipsSummaryNoneDue": "Ninguém pendente",
   "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 pessoa sem acompanhamento} other{{count} pessoas sem acompanhamento}}",
   "@relationshipsSummaryNotEnrolled": {

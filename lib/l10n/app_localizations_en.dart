@@ -12366,6 +12366,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get relationshipsSummaryNextDueCaption => 'Next due';
+
+  @override
   String get relationshipsSummaryNoneDue => 'No one due';
 
   @override

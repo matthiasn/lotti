@@ -113,17 +113,57 @@ class PeopleSummaryCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  RelationshipLineWithDate(
-                    key: const ValueKey('people-summary-next-due'),
-                    text: nextDueLabel,
-                    date: nextDueDay,
-                    maxLines: 2,
-                    style: styles.body.bodyMedium.copyWith(
-                      color: nextDue == null
-                          ? tokens.colors.text.highEmphasis
-                          : tokens.colors.interactive.enabled,
+                  // Caption, name, day — the shape the left half already
+                  // uses, so the card reads as one object with two facts
+                  // rather than a number beside a sentence.
+                  //
+                  // As one wrapped run it was the *day* that ellipsed
+                  // (`Wed 19 A…`), so the card hid the single fact it owns
+                  // that the bands below do not state. The name gives way
+                  // first now, because a name the reader cannot finish is
+                  // still a name they recognise, and a date they cannot
+                  // finish is nothing.
+                  if (nextDueName == null)
+                    Text(
+                      nextDueLabel,
+                      key: const ValueKey('people-summary-next-due'),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: styles.body.bodyMedium.copyWith(
+                        color: tokens.colors.text.highEmphasis,
+                      ),
+                    )
+                  else ...[
+                    Text(
+                      messages.relationshipsSummaryNextDueCaption,
+                      style: styles.others.caption.copyWith(
+                        color: tokens.colors.text.lowEmphasis,
+                      ),
                     ),
-                  ),
+                    SizedBox(height: tokens.spacing.step1),
+                    Text(
+                      nextDueName,
+                      key: const ValueKey('people-summary-next-due'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      // High-emphasis ink, not the interactive accent: the
+                      // chevron says it opens, and teal has one job.
+                      style: styles.body.bodyMedium.copyWith(
+                        color: tokens.colors.text.highEmphasis,
+                      ),
+                    ),
+                    if (nextDueDay != null)
+                      Text(
+                        nextDueDay,
+                        key: const ValueKey('people-summary-next-due-day'),
+                        maxLines: 1,
+                        style: relationshipTimestampStyle(
+                          tokens,
+                          base: styles.others.caption,
+                          color: tokens.colors.text.mediumEmphasis,
+                        ),
+                      ),
+                  ],
                   if (summary.notEnrolled > 0) ...[
                     SizedBox(height: tokens.spacing.step1),
                     Text(

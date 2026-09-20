@@ -12454,6 +12454,9 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get relationshipsSummaryNextDueCaption => 'Eerstvolgende';
+
+  @override
   String get relationshipsSummaryNoneDue => 'Niemand aan de beurt';
 
   @override

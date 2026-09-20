@@ -141,8 +141,22 @@ void main() {
     expect(find.text('Due now'), findsOneWidget);
     expect(find.text('1'), findsOneWidget);
     expect(find.text('/ 4 enrolled'), findsOneWidget);
+    // Caption, name, day — the day on a line of its own. Wrapped into one
+    // run it was the day that ellipsed, and a date the reader cannot finish
+    // is nothing, while a truncated name is still recognisable.
     // 2026-07-23 is a Thursday; the day carries no time — it is a deadline.
-    expect(find.text('Next due Bo · Thu 23 Jul'), findsOneWidget);
+    expect(find.text('Next due'), findsOneWidget);
+    expect(find.text('Bo'), findsOneWidget);
+    expect(find.text('Thu 23 Jul'), findsOneWidget);
+    expect(
+      tester
+          .widget<Text>(
+            find.byKey(const ValueKey('people-summary-next-due-day')),
+          )
+          .style
+          ?.fontFamily,
+      'Inconsolata',
+    );
     expect(find.text('1 person not enrolled'), findsOneWidget);
     // A non-zero due count is the one thing on the card that may shout.
     final tokens = tester.element(find.byType(PeopleSummaryCard)).designTokens;
@@ -160,7 +174,8 @@ void main() {
     final tokens = tester.element(find.byType(PeopleSummaryCard)).designTokens;
     expect(numeralColor(tester), tokens.colors.text.highEmphasis);
     expect(find.textContaining('not enrolled'), findsNothing);
-    expect(find.text('Next due Mira · Mon 24 Aug'), findsOneWidget);
+    expect(find.text('Mira'), findsOneWidget);
+    expect(find.text('Mon 24 Aug'), findsOneWidget);
   });
 
   testWidgets('names the next-due person by nickname when they have one — '
@@ -173,7 +188,8 @@ void main() {
       ),
     );
 
-    expect(find.text('Next due Bo · Thu 23 Jul'), findsOneWidget);
+    expect(find.text('Bo'), findsOneWidget);
+    expect(find.text('Thu 23 Jul'), findsOneWidget);
     expect(find.textContaining('Captain'), findsNothing);
   });
 
