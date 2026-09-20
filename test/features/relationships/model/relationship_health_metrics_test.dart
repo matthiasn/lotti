@@ -15,18 +15,16 @@ void main() {
           )
           as AgentReportEntity;
 
-  test('parses band, rationale and confidence from report provenance', () {
+  test('parses band and rationale from report provenance', () {
     final metrics = relationshipHealthMetricsFromReport(
       report({
         RelationshipReportProvenanceKeys.healthBand: 'needsAttention',
         RelationshipReportProvenanceKeys.healthRationale:
             'Two strained calls in a row, per your own sentiments.',
-        RelationshipReportProvenanceKeys.healthConfidence: 0.8,
       }),
     )!;
     expect(metrics.band, RelationshipHealthBand.needsAttention);
     expect(metrics.rationale, contains('strained calls'));
-    expect(metrics.confidence, 0.8);
   });
 
   test('tolerates varied wire spellings of the band', () {
@@ -65,12 +63,15 @@ void main() {
     expect(relationshipHealthMetricsFromProvenance(const {}), isNull);
   });
 
-  test('an out-of-range confidence is dropped, not clamped', () {
+  // Briefings written before the confidence was retired still carry the key.
+  // Reading one must not fail, and must not resurrect the field either.
+  test('a briefing that still carries a confidence reads as any other', () {
     final metrics = relationshipHealthMetricsFromProvenance({
       RelationshipReportProvenanceKeys.healthBand: 'thriving',
       RelationshipReportProvenanceKeys.healthRationale: 'evidence',
-      RelationshipReportProvenanceKeys.healthConfidence: 7,
+      'relationship_health_confidence': 0.8,
     })!;
-    expect(metrics.confidence, isNull);
+    expect(metrics.band, RelationshipHealthBand.thriving);
+    expect(metrics.rationale, 'evidence');
   });
 }

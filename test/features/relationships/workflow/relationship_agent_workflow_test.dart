@@ -1585,8 +1585,14 @@ void main() {
     expect(result.success, isTrue);
     final report = upserts.whereType<AgentReportEntity>().single;
     expect(
-      report.provenance[RelationshipReportProvenanceKeys.healthConfidence],
-      0.8,
+      report.provenance[RelationshipReportProvenanceKeys.healthRationale],
+      isNotNull,
+      reason: 'the rationale is what the card renders under the band',
+    );
+    expect(
+      report.provenance.keys,
+      isNot(contains('relationship_health_confidence')),
+      reason: 'a confidence is no longer asked for, so none is stored',
     );
     expect(
       upserts.whereType<AgentMessagePayloadEntity>().where(

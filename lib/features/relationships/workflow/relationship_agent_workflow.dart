@@ -944,9 +944,6 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
                     briefing.rationale,
                     stripBareIds: true,
                   ),
-              if (briefing.confidence != null)
-                RelationshipReportProvenanceKeys.healthConfidence:
-                    briefing.confidence,
               if (inferenceSnapshot != null)
                 taskAgentInferenceProvenanceKey:
                     ReportInferenceProvenance.executorOnly(
