@@ -9,6 +9,7 @@ import 'package:lotti/features/relationships/repository/relationship_repository.
 import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -108,6 +109,33 @@ void main() {
 
     await pump(tester, item(important: false));
     expect(find.byKey(const ValueKey('people-row-important')), findsNothing);
+  });
+
+  // It is the one thing distinguishing an enrolled person on this row, and
+  // it used to be an 8px speck — below IconSizes.xs, the smallest tier the
+  // system defines — in a colour, with nothing said about it.
+  testWidgets('the sparkle is legible, and says what it means', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await pump(tester, item());
+
+    final icon = tester.widget<Icon>(
+      find.byKey(const ValueKey('people-row-important')),
+    );
+    expect(icon.size, IconSizes.xs);
+
+    final messages = tester.element(find.byType(PeopleListRow)).messages;
+    expect(
+      tester
+          .getSemantics(find.byKey(const ValueKey('people-row-important')))
+          .label,
+      contains(messages.relationshipImportantLabel),
+      reason:
+          'colour alone reaches neither a screen reader nor a '
+          'colour-blind reader',
+    );
+    semantics.dispose();
   });
 
   group('the pill tells the truth about the cadence', () {

@@ -120,7 +120,13 @@ void main() {
 
       final container = tester.widget<Container>(find.byType(Container));
       final decoration = container.decoration! as BoxDecoration;
-      expect(decoration.color, accent.withValues(alpha: 0.20));
+      // The design system names this wash: SurfaceAlphas.washChip is
+      // documented as "the persona-chip fill behind an accent-coloured
+      // monogram" — literally this widget.
+      expect(
+        decoration.color,
+        accent.withValues(alpha: SurfaceAlphas.washChip),
+      );
     });
 
     testWidgets('asserts when neither id nor accent is given', (tester) async {

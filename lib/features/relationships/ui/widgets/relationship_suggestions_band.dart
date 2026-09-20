@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -97,7 +98,15 @@ class _RelationshipSuggestionsBandState
         ToolExecutionResult result;
         try {
           result = await _confirm(row);
-        } catch (_) {
+        } catch (exception, stackTrace) {
+          // The user hears about it through the toast below; the log is what
+          // says which proposal threw and why.
+          developer.log(
+            'confirming a proposal threw',
+            name: 'RelationshipSuggestionsBand',
+            error: exception,
+            stackTrace: stackTrace,
+          );
           result = const ToolExecutionResult(
             success: false,
             output: 'Confirmation failed',
@@ -138,8 +147,15 @@ class _RelationshipSuggestionsBandState
     var undone = false;
     try {
       undone = await service.undoById(entry.changeSetId, entry.itemIndex);
-    } catch (_) {
-      /* A refused undo leaves the handled row in place. */
+    } catch (exception, stackTrace) {
+      // `undone` stays false, so the toast below still tells the user the row
+      // stayed; this records what actually went wrong.
+      developer.log(
+        'undoing a confirmed proposal threw',
+        name: 'RelationshipSuggestionsBand',
+        error: exception,
+        stackTrace: stackTrace,
+      );
     }
     if (!mounted) return;
     setState(() {

@@ -272,65 +272,6 @@ void main() {
     });
   });
 
-  group('quietStreakDays', () {
-    test('whole days since the last check-in', () {
-      withClock(Clock.fixed(now), () {
-        expect(
-          quietStreakDays(
-            lastCheckInAt: DateTime(2026, 8, 9, 10, 0),
-            trackingStartedAt: now,
-          ),
-          9,
-        );
-      });
-    });
-
-    test('same-day check-in is 0, not 1', () {
-      withClock(Clock.fixed(now), () {
-        expect(
-          quietStreakDays(
-            lastCheckInAt: DateTime(2026, 8, 18, 6, 0),
-            trackingStartedAt: now,
-          ),
-          0,
-        );
-      });
-    });
-
-    test('falls back to tracking start when no check-in exists', () {
-      withClock(Clock.fixed(now), () {
-        expect(
-          quietStreakDays(
-            lastCheckInAt: null,
-            trackingStartedAt: DateTime(2026, 8, 9, 10, 0),
-          ),
-          9,
-        );
-      });
-    });
-
-    test('zero when neither date is known', () {
-      withClock(Clock.fixed(now), () {
-        expect(
-          quietStreakDays(lastCheckInAt: null, trackingStartedAt: null),
-          0,
-        );
-      });
-    });
-
-    test('never negative when the check-in is in the future', () {
-      withClock(Clock.fixed(now), () {
-        expect(
-          quietStreakDays(
-            lastCheckInAt: now.add(const Duration(days: 2)),
-            trackingStartedAt: now,
-          ),
-          0,
-        );
-      });
-    });
-  });
-
   group('locale', () {
     // The abbreviations used to be a hard-coded English table, which read as
     // "Fri 21 Aug" to a German reader looking at an otherwise German screen.

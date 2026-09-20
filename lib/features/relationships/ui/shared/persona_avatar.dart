@@ -178,7 +178,7 @@ class _TintedInitial extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.20),
+        color: accent.withValues(alpha: SurfaceAlphas.washChip),
         shape: BoxShape.circle,
       ),
       alignment: Alignment.center,
