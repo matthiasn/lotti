@@ -1,6 +1,7 @@
 ### Changed
 
-- **A described photo now says which model described it.** The line under a
-  collapsed photo could come from the app's AI or from your own caption, and
-  nothing distinguished them. An AI description now carries the sparkle and
-  the model that wrote it, with the provider that served it.
+- **A collapsed photo now shows who described it.** The line under a photo can
+  come from the app's AI or from your own caption, and nothing distinguished
+  them. Where AI did the work, the photo now carries the same attribution pill
+  the expanded entry has — the model, what it cost, and a tap through to the
+  detail.

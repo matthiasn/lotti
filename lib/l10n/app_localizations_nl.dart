@@ -7890,9 +7890,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get helpMenuTitle => 'Hulp';
 
   @override
-  String get imageAnalysisDescribedByAi => 'Beschreven door AI';
-
-  @override
   String get imageGenerationError => 'Kon afbeelding niet aanmaken';
 
   @override

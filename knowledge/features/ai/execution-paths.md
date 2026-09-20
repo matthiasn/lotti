@@ -367,17 +367,22 @@ transcript is what the user wanted out of the way. The label prefers
 both where the legacy analysis path appends and where a user's caption lives.
 With neither, the thumbnail stands alone.
 
-Which of those two wrote the line decides whether it is **attributed**. A
-description is a model's words about a picture — often of a person the user
-knows — and rendering it in the same ink as their own caption said nothing
-about where it came from. When the line comes from an analysis, the row adds
-the AI glyph and, from `imageAnalysisRouteLabel`, `model · via provider` — the
-grammar the check-in composer uses for a dictated take and the briefing footer
-for a report. `AiResponseData.model` holds a model *id*, so the label resolves
-it through `aiConfigByIdProvider` to the model's own name and its serving
-provider; while those configs load, or once a model's config has been deleted,
-the glyph shows alone rather than a half-resolved id. A caption the user typed
-is never attributed to anyone.
+Which of those two wrote the line decides nothing about attribution, because
+the row does not decide it: the collapsed preview carries the same
+`AiAttributionSummary` pill (`asPill: true`) the expanded image entry already
+carries, reading `JournalImage.data.aiAttribution` and falling back to
+`aiAttributionForArtifactProvider`. It names the model from the **consumption
+record** — `providerModelId`, the wire id the request actually went out with —
+alongside the cost, energy and carbon of the work, and taps through to every
+interaction behind it. A photo with no AI work behind it renders nothing,
+because the widget hides itself.
+
+That is deliberately not a second, cheaper attribution line. `AiResponseData.model`
+stores the wire id rather than the config row's id, so a lookup by row id
+resolves nothing for a generated or user-created model, and a second
+`providerModelId` served by another provider cannot be told apart at all — the
+consumption record already holds both, which is why the pill is the one that
+knows.
 
 Images still default to **expanded**; only audio reads a null `collapsed` as
 collapsed. The row renders whenever a user collapses an image themselves.

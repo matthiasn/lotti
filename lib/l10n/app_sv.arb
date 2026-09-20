@@ -3422,7 +3422,6 @@
   "helpMenuCommandPalette": "Kommandopalett...",
   "helpMenuKeyboardShortcuts": "Tangentbordsgenvägar...",
   "helpMenuTitle": "Hjälp",
-  "imageAnalysisDescribedByAi": "Beskriven av AI",
   "imageGenerationError": "Misslyckades med att generera bilden",
   "imageGenerationGenerating": "Genererar bild...",
   "imageGenerationProviderRejectedTitle": "Bildleverantören avslog denna begäran",

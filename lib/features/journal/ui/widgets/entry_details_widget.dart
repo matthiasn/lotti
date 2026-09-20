@@ -718,19 +718,8 @@ class _CollapsedImagePreview extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
-    // Which of the two wrote this line decides whether it is attributed: an
-    // analysis is a model's words about a picture of someone, and rendering
-    // it in the same ink as the user's own caption says nothing about where
-    // it came from.
-    final analysis = imageAnalysisOneLiner(ref, image.meta.id);
-    final oneLiner = analysis ?? _entryTextPreview(image);
-    final route = analysis == null
-        ? null
-        : imageAnalysisRouteLabel(
-            ref,
-            image.meta.id,
-            via: context.messages.taskAgentRouteVia,
-          );
+    final oneLiner =
+        imageAnalysisOneLiner(ref, image.meta.id) ?? _entryTextPreview(image);
 
     final row = Padding(
       padding: EdgeInsets.only(top: tokens.spacing.step2),
@@ -764,15 +753,24 @@ class _CollapsedImagePreview extends ConsumerWidget {
                           color: tokens.colors.text.mediumEmphasis,
                         ),
                       ),
-                      // The glyph alone already separates a described photo
-                      // from a captioned one, so it shows even where the
-                      // route cannot be resolved — a deleted model config
-                      // must not turn a model's words back into the user's.
-                      if (analysis != null)
-                        _ImageAnalysisAttribution(
+                      // The same pill the expanded card carries, so a
+                      // collapsed photo says who wrote the line above it
+                      // rather than leaving a model's words in the ink of
+                      // the user's own caption. It hides itself when the
+                      // image carries no AI work at all.
+                      Padding(
+                        padding: EdgeInsets.only(top: tokens.spacing.step1),
+                        child: AiAttributionSummary(
                           key: const ValueKey('image-analysis-attribution'),
-                          route: route,
+                          artifact: AiArtifactReference(
+                            type: AiArtifactType.journalImage,
+                            id: image.id,
+                          ),
+                          attribution: image.data.aiAttribution,
+                          asPill: true,
+                          includeTopSpacing: false,
                         ),
+                      ),
                     ],
                   ),
           ),
@@ -797,52 +795,6 @@ class _CollapsedImagePreview extends ConsumerWidget {
     final text = image.entryText?.plainText.trim();
     if (text == null || text.isEmpty) return null;
     return text.replaceAll(RegExp(r'\s+'), ' ');
-  }
-}
-
-/// Says that a model wrote the line above, and which one.
-///
-/// The sparkle is the part that always shows: it is what distinguishes a
-/// description from the user's own caption. [route] — `model · via provider`
-/// — joins it whenever the model's config can still be resolved.
-class _ImageAnalysisAttribution extends StatelessWidget {
-  const _ImageAnalysisAttribution({this.route, super.key});
-
-  final String? route;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final route = this.route;
-    final color = tokens.colors.text.mediumEmphasis;
-    return Padding(
-      padding: EdgeInsets.only(top: tokens.spacing.step1),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // The glyph is the whole distinction for a sighted reader, so it
-          // says the same thing out loud: without it a screen reader hears
-          // a description and a typed caption identically.
-          Semantics(
-            label: context.messages.imageAnalysisDescribedByAi,
-            child: Icon(LottiIcons.aiSpark, size: IconSizes.xs, color: color),
-          ),
-          if (route != null) ...[
-            SizedBox(width: tokens.spacing.step1),
-            Flexible(
-              child: Text(
-                route,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: color,
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
   }
 }
 

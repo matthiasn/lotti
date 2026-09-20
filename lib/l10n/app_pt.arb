@@ -3421,7 +3421,6 @@
   "helpMenuCommandPalette": "Paleta de comandos…",
   "helpMenuKeyboardShortcuts": "Atalhos de teclado…",
   "helpMenuTitle": "Ajuda",
-  "imageAnalysisDescribedByAi": "Descrito por IA",
   "imageGenerationError": "Falha ao gerar imagem",
   "imageGenerationGenerating": "Gerando imagem...",
   "imageGenerationProviderRejectedTitle": "O provedor de imagem rejeitou esta solicitação",

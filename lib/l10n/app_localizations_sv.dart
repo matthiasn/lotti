@@ -7881,9 +7881,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get helpMenuTitle => 'Hjälp';
 
   @override
-  String get imageAnalysisDescribedByAi => 'Beskriven av AI';
-
-  @override
   String get imageGenerationError => 'Misslyckades med att generera bilden';
 
   @override

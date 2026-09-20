@@ -3069,7 +3069,6 @@
   "helpMenuCommandPalette": "Befehlspalette…",
   "helpMenuKeyboardShortcuts": "Tastaturkurzbefehle…",
   "helpMenuTitle": "Hilfe",
-  "imageAnalysisDescribedByAi": "Von der KI beschrieben",
   "imageGenerationError": "Bildgenerierung fehlgeschlagen",
   "imageGenerationGenerating": "Bild wird generiert...",
   "imageGenerationProviderRejectedTitle": "Der Bildanbieter hat diese Anfrage abgelehnt",

@@ -18,9 +18,7 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
@@ -47,7 +45,6 @@ import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -266,16 +263,6 @@ Future<_EntryDetailsMocks> _registerEntryDetailsMocks() async {
     timeService: timeService,
     editorStateService: editorStateService,
   );
-}
-
-/// The model rows the app has configured, without a repository behind them.
-class _FakeAiConfigsByType extends AiConfigByTypeController {
-  _FakeAiConfigsByType(this.configs);
-
-  final List<AiConfig> configs;
-
-  @override
-  Stream<List<AiConfig>> build() => Stream.value(configs);
 }
 
 void main() {
@@ -3806,114 +3793,35 @@ void main() {
       // A description is a model's words about a picture of someone the
       // user knows, and it used to render in the same ink as their own
       // caption — nothing said a model had written it, or which one.
-      // `analysisEntry` persists `model: 'test-model'`, which is what the
-      // runner writes: the WIRE id (`providerModelId`), not the config row's
-      // own id. A fixture whose row id happened to equal it would pass while
-      // production never resolved anything — the trap Codex caught on #4391.
-      AiConfigModel modelRow({
-        String id = 'model-row-uuid',
-        String providerModelId = 'test-model',
-        String providerId = 'provider-1',
-        String name = 'Test Vision',
-      }) =>
-          AiConfig.model(
-                id: id,
-                name: name,
-                providerModelId: providerModelId,
-                inferenceProviderId: providerId,
-                createdAt: DateTime(2024),
-                inputModalities: const [Modality.image],
-                outputModalities: const [Modality.text],
-                isReasoningModel: false,
-              )
-              as AiConfigModel;
-
-      AiConfigInferenceProvider providerRow({
-        String id = 'provider-1',
-        String name = 'Anthropic',
-      }) =>
-          AiConfig.inferenceProvider(
-                id: id,
-                baseUrl: '',
-                apiKey: '',
-                name: name,
-                inferenceProviderType: InferenceProviderType.anthropic,
-                createdAt: DateTime(2024),
-              )
-              as AiConfigInferenceProvider;
-
-      List<Override> route({
-        List<AiConfigModel>? models,
-        AiConfigInferenceProvider? provider,
-      }) {
-        final resolved = provider ?? providerRow();
-        return [
-          aiConfigByTypeControllerProvider(
-            AiConfigType.model,
-          ).overrideWith(() => _FakeAiConfigsByType(models ?? [modelRow()])),
-          aiConfigByIdProvider(resolved.id).overrideWith(
-            (ref) async => resolved,
-          ),
-        ];
-      }
-
-      List<Override> resolvableRoute() => route();
-
-      testWidgets('names the model that described the photo', (tester) async {
-        await pumpCollapsedImage(
-          tester,
-          [
-            analysisEntry(
-              id: 'analysis-1',
-              dateFrom: DateTime(2024, 6),
-              oneLiner: 'Two penguins on the ice.',
+      // The expanded card has always carried AiAttributionSummary for a
+      // JournalImage; the collapsed row did not, so a model's description
+      // sat in exactly the ink the user's own caption uses. It is the same
+      // pill, not a second way of saying the same thing.
+      AiAttributionDetails describedByModel() {
+        final attribution = makeAiWorkAttribution();
+        return AiAttributionDetails(
+          attribution: attribution,
+          interactions: [
+            makeConsumptionEvent(
+              attributionId: attribution.id,
+              providerModelId: 'gpt-5',
+              credits: 0.25,
+              costCreditsDecimal: '0.25',
             ),
           ],
-          extraOverrides: resolvableRoute(),
         );
-        await tester.pump();
+      }
 
-        expect(find.text('Test Vision · via Anthropic'), findsOneWidget);
-        expect(
-          find.byKey(const ValueKey('image-analysis-attribution')),
-          findsOneWidget,
-        );
-      });
+      List<Override> attribution(AiAttributionDetails? details) => [
+        aiAttributionForArtifactProvider.overrideWith(
+          (ref, artifact) async => details,
+        ),
+        aiAttributionDetailsProvider.overrideWith(
+          (ref, id) async => details,
+        ),
+      ];
 
-      testWidgets('marks it as written by a model even where the model '
-          'config is gone', (tester) async {
-        final semantics = tester.ensureSemantics();
-        await pumpCollapsedImage(tester, [
-          analysisEntry(
-            id: 'analysis-1',
-            dateFrom: DateTime(2024, 6),
-            oneLiner: 'Two penguins on the ice.',
-          ),
-        ]);
-        await tester.pump();
-
-        // A deleted model config must not turn a model's words back into
-        // the user's: the glyph stands on its own, and says so out loud —
-        // a screen reader would otherwise hear a description and a typed
-        // caption identically.
-        expect(
-          find.byKey(const ValueKey('image-analysis-attribution')),
-          findsOneWidget,
-        );
-        expect(find.textContaining('· via'), findsNothing);
-        final messages = tester
-            .element(find.byType(EntryDetailsWidget))
-            .messages;
-        // Merged into the row, so a reader hears the description and then
-        // who wrote it, rather than a bare glyph node.
-        expect(
-          tester.getSemantics(find.byIcon(LottiIcons.aiSpark)).label,
-          contains(messages.imageAnalysisDescribedByAi),
-        );
-        semantics.dispose();
-      });
-
-      testWidgets('an ambiguous wire id names no one', (
+      testWidgets('a photo the AI worked on carries the attribution pill', (
         tester,
       ) async {
         await pumpCollapsedImage(
@@ -3925,43 +3833,38 @@ void main() {
               oneLiner: 'Two penguins on the ice.',
             ),
           ],
-          // Two providers serving the same wire id: naming one of them
-          // would be a coin flip, and naming the wrong provider is worse
-          // than naming none.
-          extraOverrides: route(
-            models: [
-              modelRow(),
-              modelRow(
-                id: 'model-row-other',
-                providerId: 'provider-2',
-                name: 'Test Vision (proxy)',
-              ),
-            ],
-          ),
+          extraOverrides: attribution(describedByModel()),
         );
         await tester.pump();
 
+        final pill = find.byKey(
+          const ValueKey('image-analysis-attribution'),
+        );
+        expect(pill, findsOneWidget);
+        // The model that wrote it, named from the consumption record rather
+        // than guessed from the response's wire id — and its cost, which no
+        // surface showed for an automatic description before.
         expect(
-          find.byKey(const ValueKey('image-analysis-attribution')),
+          find.descendant(of: pill, matching: find.textContaining('gpt-5')),
           findsOneWidget,
         );
-        expect(find.textContaining('· via'), findsNothing);
+        expect(
+          find.descendant(of: pill, matching: find.textContaining('€0.25')),
+          findsOneWidget,
+        );
       });
 
-      testWidgets("the user's own caption is not attributed to anyone", (
+      testWidgets('a photo with no AI work behind it shows no pill', (
         tester,
       ) async {
         await pumpCollapsedImage(
           tester,
           const [],
-          extraOverrides: resolvableRoute(),
+          extraOverrides: attribution(null),
         );
         await tester.pump();
 
-        expect(
-          find.byKey(const ValueKey('image-analysis-attribution')),
-          findsNothing,
-        );
+        expect(find.byType(DsPill), findsNothing);
       });
 
       testWidgets(

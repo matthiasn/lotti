@@ -7870,9 +7870,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get helpMenuTitle => 'Hjælp';
 
   @override
-  String get imageAnalysisDescribedByAi => 'Beskrevet af AI';
-
-  @override
   String get imageGenerationError => 'Kunne ikke generere billede';
 
   @override

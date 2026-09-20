@@ -7846,9 +7846,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get helpMenuTitle => 'Help';
 
   @override
-  String get imageAnalysisDescribedByAi => 'Described by AI';
-
-  @override
   String get imageGenerationError => 'Failed to generate image';
 
   @override

@@ -7950,9 +7950,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get helpMenuTitle => 'Ajuda';
 
   @override
-  String get imageAnalysisDescribedByAi => 'Descrito por IA';
-
-  @override
   String get imageGenerationError => 'Falha ao gerar imagem';
 
   @override

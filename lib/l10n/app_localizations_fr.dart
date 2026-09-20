@@ -8005,9 +8005,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get helpMenuTitle => 'Aide';
 
   @override
-  String get imageAnalysisDescribedByAi => 'Décrit par l’IA';
-
-  @override
   String get imageGenerationError => 'Échec de la génération d\'image';
 
   @override
