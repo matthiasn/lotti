@@ -35,6 +35,22 @@ abstract final class ControlSizes {
   /// [iconChip] would out-weigh the title it leads.
   static const double iconChipCompact = 28;
 
+  /// 40 — the person avatar riding a composer header or a dense row, where
+  /// the full [avatar] would out-weigh the line it leads.
+  static const double avatarCompact = 40;
+
+  /// 48 — the standard person avatar: an import row, the Photo card's face
+  /// preview, anywhere a face stands beside a name at reading size.
+  static const double avatar = 48;
+
+  /// 80 — the person page's hero avatar, the one overlapping the banner.
+  ///
+  /// These three are container dimensions for the same reason [iconChip] is:
+  /// a face is a thing on the screen, not a gap between things, and the three
+  /// sizes it comes in must not retune when the spacing scale does. They were
+  /// `spacing.step8`, `step9` and `step11` — the same 40, 48 and 80 today.
+  static const double avatarHero = 80;
+
   /// 64 — the square thumbnail standing in for a media entry that has been
   /// collapsed (the collapsed image card's preview).
   ///
