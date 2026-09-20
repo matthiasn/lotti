@@ -220,7 +220,7 @@ void main() {
       // Values.
       expect(find.text('Open'), findsOneWidget);
       expect(find.text('Medium'), findsOneWidget);
-      expect(find.text('Apr 25, 2026'), findsOneWidget);
+      expect(find.text('4/25/2026'), findsOneWidget);
       expect(find.text('0m of 2h'), findsOneWidget);
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
     });
@@ -431,7 +431,7 @@ void main() {
       await tester.pumpWidget(pumpSection(task: task));
       await settle(tester);
 
-      final finder = find.text('Apr 10, 2026');
+      final finder = find.text('4/10/2026');
       expect(finder, findsOneWidget);
       final context = tester.element(finder);
       final text = tester.widget<Text>(finder);
@@ -449,8 +449,8 @@ void main() {
         await tester.pumpWidget(pumpSection(task: task));
         await settle(tester);
 
-        final text = tester.widget<Text>(find.text('Apr 10, 2026'));
-        final context = tester.element(find.text('Apr 10, 2026'));
+        final text = tester.widget<Text>(find.text('4/10/2026'));
+        final context = tester.element(find.text('4/10/2026'));
         expect(text.style?.color, TaskShowcasePalette.highText(context));
       },
     );
@@ -510,13 +510,13 @@ void main() {
       await settle(tester);
 
       final label = tester.getCenter(find.text('Due date'));
-      final value = tester.getCenter(find.text('Apr 25, 2026'));
+      final value = tester.getCenter(find.text('4/25/2026'));
       // Stacked: the value sits a full line below its label, on the same
       // left edge.
       expect(value.dy - label.dy, greaterThan(10));
       expect(value.dx, greaterThan(label.dx));
       expect(
-        tester.getTopLeft(find.text('Apr 25, 2026')).dx,
+        tester.getTopLeft(find.text('4/25/2026')).dx,
         closeTo(tester.getTopLeft(find.text('Due date')).dx, 0.5),
       );
     });
@@ -530,7 +530,7 @@ void main() {
       await settle(tester);
 
       final label = tester.getCenter(find.text('Due date'));
-      final value = tester.getCenter(find.text('Apr 25, 2026'));
+      final value = tester.getCenter(find.text('4/25/2026'));
       // Side by side: one shared baseline band, value in the second column.
       expect(value.dy, closeTo(label.dy, 1));
       expect(value.dx, greaterThan(label.dx));

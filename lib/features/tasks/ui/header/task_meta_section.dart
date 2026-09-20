@@ -1,6 +1,5 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -24,6 +23,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/utils/device_datetime.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// How a [TaskMetaSection] lays its rows out.
@@ -426,9 +426,7 @@ class _DueDateValue extends StatelessWidget {
       DueDateUrgency.dueToday => TaskShowcasePalette.warning(context),
       DueDateUrgency.normal => TaskShowcasePalette.highText(context),
     };
-    final label = DateFormat.yMMMd(
-      Localizations.localeOf(context).toLanguageTag(),
-    ).format(due);
+    final label = deviceDateLabel(context, due);
     return Text(
       label,
       overflow: TextOverflow.ellipsis,

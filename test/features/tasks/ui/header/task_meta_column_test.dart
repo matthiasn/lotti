@@ -192,7 +192,7 @@ void main() {
     ]) {
       expect(find.text(label), findsOneWidget, reason: '$label row missing');
     }
-    expect(find.text('Apr 25, 2026'), findsOneWidget);
+    expect(find.text('4/25/2026'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

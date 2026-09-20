@@ -54,8 +54,9 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 100));
 
-        // Should show "Due: Jun 20, 2025" format
-        final expectedText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
+        // The device's numeric order, not the app's language: 6/20/2025 on
+        // a US phone, 20.6.2025 on a German one.
+        final expectedText = 'Due: ${DateFormat.yMd().format(dueDate)}';
         expect(find.text(expectedText), findsOneWidget);
       });
     });
@@ -76,7 +77,9 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         expect(
-          find.text('Fällig: ${DateFormat.yMMMd('de').format(dueDate)}'),
+          // German UI, US phone: the words are translated, the date order
+          // belongs to the device.
+          find.text('Fällig: ${DateFormat.yMd().format(dueDate)}'),
           findsOneWidget,
         );
         expect(find.textContaining('Jun 20, 2025'), findsNothing);
@@ -96,7 +99,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         // Initially shows absolute format
-        final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
+        final absoluteText = 'Due: ${DateFormat.yMd().format(dueDate)}';
         expect(find.text(absoluteText), findsOneWidget);
 
         // Tap to toggle - use the Text widget directly to avoid hit test issues
@@ -121,7 +124,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         // Tap to show relative - use the text to avoid hit test issues
-        final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
+        final absoluteText = 'Due: ${DateFormat.yMd().format(dueDate)}';
         await tester.tap(find.text(absoluteText));
         await tester.pump(const Duration(milliseconds: 100));
 
@@ -142,7 +145,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         // Tap to show relative - use the text to avoid hit test issues
-        final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
+        final absoluteText = 'Due: ${DateFormat.yMd().format(dueDate)}';
         await tester.tap(find.text(absoluteText));
         await tester.pump(const Duration(milliseconds: 100));
 
@@ -163,7 +166,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         // Tap to show relative - use the text to avoid hit test issues
-        final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
+        final absoluteText = 'Due: ${DateFormat.yMd().format(dueDate)}';
         await tester.tap(find.text(absoluteText));
         await tester.pump(const Duration(milliseconds: 100));
 
@@ -185,7 +188,7 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 100));
 
-        final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
+        final absoluteText = 'Due: ${DateFormat.yMd().format(dueDate)}';
 
         // First tap - switch to relative
         await tester.tap(find.text(absoluteText));
@@ -270,7 +273,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         // Tap to show relative
-        final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
+        final absoluteText = 'Due: ${DateFormat.yMd().format(dueDate)}';
         await tester.tap(find.text(absoluteText));
         await tester.pump(const Duration(milliseconds: 100));
 
@@ -293,7 +296,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         // Tap to show relative
-        final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
+        final absoluteText = 'Due: ${DateFormat.yMd().format(dueDate)}';
         await tester.tap(find.text(absoluteText));
         await tester.pump(const Duration(milliseconds: 100));
 
