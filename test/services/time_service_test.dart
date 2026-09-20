@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -93,36 +95,117 @@ void main() {
       });
     });
 
-    test('stop clears current entity and stops stream', () async {
-      final entity = testTextEntry;
-      final stream = timeService.getStream();
+    test(
+      'stop cancels periodic work and emits exactly one terminal null',
+      () async {
+        final emissions = <JournalEntity?>[];
+        final start = DateTime(2026, 9, 20, 10);
+        final async = FakeAsync(initialTime: start);
+        late StreamSubscription<JournalEntity?> subscription;
+        try {
+          async
+            ..run((_) {
+              subscription = timeService.getStream().listen(emissions.add);
+              unawaited(timeService.start(testTextEntry, testImageEntry));
+            })
+            ..elapse(const Duration(seconds: 1));
+          expect(emissions, [
+            testTextEntry.copyWith(
+              meta: testTextEntry.meta.copyWith(
+                dateTo: start.add(const Duration(seconds: 1)),
+              ),
+            ),
+          ]);
+          expect(async.periodicTimerCount, 1);
+          // Stream.periodic cancellation uses an SDK-owned future. Await it
+          // outside the fake zone; timer creation and ticks stay fake.
+          await timeService.stop();
+          async.flushMicrotasks();
+          expect(timeService.getCurrent(), isNull);
+          expect(timeService.linkedFrom, isNull);
+          expect(emissions.last, isNull);
+          expect(emissions, hasLength(2));
+          expect(async.periodicTimerCount, 0);
+          await timeService.stop();
+          async.elapse(const Duration(seconds: 5));
+          expect(emissions, hasLength(2));
+        } finally {
+          await timeService.stop();
+          await subscription.cancel();
+          async.flushMicrotasks();
+        }
+      },
+    );
 
-      await timeService.start(entity, null);
+    test(
+      'replacement cancels the old cadence and ticks only the new entry',
+      () async {
+        final emissions = <JournalEntity?>[];
+        final start = DateTime(2026, 9, 20, 10);
+        final async = FakeAsync(initialTime: start);
+        late StreamSubscription<JournalEntity?> subscription;
+        try {
+          async
+            ..run((_) {
+              subscription = timeService.getStream().listen(emissions.add);
+              unawaited(timeService.start(testTextEntry, testImageEntry));
+            })
+            ..elapse(const Duration(milliseconds: 1250));
+          expect(emissions.map((entry) => entry?.id), [testTextEntry.id]);
 
-      // The stream should emit null when stop is called
-      final expectation = expectLater(stream, emits(isNull));
+          var replaced = false;
+          async.run((_) {
+            unawaited(
+              timeService
+                  .start(testImageEntry, testTextEntry)
+                  .then((_) => replaced = true),
+            );
+            async.flushMicrotasks();
+          });
+          // Let the SDK's cancellation completion run, then drain the
+          // replacement's fake-zone continuation without advancing time.
+          await Future<void>.microtask(() {});
+          async.flushMicrotasks();
+          expect(replaced, isTrue);
+          expect(timeService.getCurrent(), testImageEntry);
+          expect(timeService.linkedFrom, testTextEntry);
+          expect(emissions.map((entry) => entry?.id), [
+            testTextEntry.id,
+            null,
+          ]);
+          expect(async.periodicTimerCount, 1);
+          emissions.clear();
 
-      await timeService.stop();
-      await expectation;
+          // Cross the old timer's next deadline, but stop just short of
+          // the new timer's first tick at 2.250 seconds.
+          async.elapse(const Duration(milliseconds: 999));
+          expect(emissions, isEmpty);
+          async
+            ..elapse(const Duration(milliseconds: 1))
+            ..elapse(const Duration(seconds: 2));
+          expect(emissions, [
+            for (final milliseconds in [2250, 3250, 4250])
+              testImageEntry.copyWith(
+                meta: testImageEntry.meta.copyWith(
+                  dateTo: start.add(Duration(milliseconds: milliseconds)),
+                ),
+              ),
+          ]);
 
-      expect(timeService.getCurrent(), isNull);
-      expect(timeService.linkedFrom, isNull);
-    });
-
-    test('start stops existing timer before starting new one', () async {
-      final entity1 = testTextEntry;
-      final entity2 = testImageEntry;
-
-      await timeService.start(entity1, null);
-      expect(timeService.getCurrent()?.id, entity1.id);
-
-      await timeService.start(entity2, null);
-      expect(timeService.getCurrent()?.id, entity2.id);
-
-      // Should only be tracking entity2 now
-      final current = timeService.getCurrent();
-      expect(current?.id, entity2.id);
-    });
+          await timeService.stop();
+          async.flushMicrotasks();
+          expect(emissions.last, isNull);
+          expect(emissions, hasLength(4));
+          async.elapse(const Duration(seconds: 3));
+          expect(emissions, hasLength(4));
+          expect(async.periodicTimerCount, 0);
+        } finally {
+          await timeService.stop();
+          await subscription.cancel();
+          async.flushMicrotasks();
+        }
+      },
+    );
 
     test('updateCurrent updates entity when IDs match', () async {
       final entity = testTextEntry;

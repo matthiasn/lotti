@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -8,11 +9,11 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 // Test data
 const testAudioEntryId = 'audio-entry-123';
@@ -123,13 +124,12 @@ void main() {
   late MockUpdateNotifications mockUpdateNotifications;
   late StreamController<Set<String>> updateStreamController;
 
-  setUpAll(() {
-    registerFallbackValue(const <String>[]);
-  });
+  setUpAll(registerAllFallbackValues);
 
-  setUp(() {
+  setUp(() async {
+    final mocks = await setUpTestGetIt();
     mockJournalRepository = MockJournalRepository();
-    mockUpdateNotifications = MockUpdateNotifications();
+    mockUpdateNotifications = mocks.updateNotifications;
     updateStreamController = StreamController<Set<String>>.broadcast();
 
     when(
@@ -153,14 +153,11 @@ void main() {
       }
       return results;
     });
-
-    getIt.allowReassignment = true;
-    getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
   });
 
-  tearDown(() {
-    updateStreamController.close();
-    getIt.unregister<UpdateNotifications>();
+  tearDown(() async {
+    await updateStreamController.close();
+    await tearDownTestGetIt();
   });
 
   /// Waits for the provider state to change to a value that satisfies the predicate.
@@ -717,30 +714,71 @@ void main() {
       container.dispose();
     });
 
-    test('cleans up subscription on dispose', () async {
-      when(
-        () => mockJournalRepository.getLinksFromId(testAudioEntryId),
-      ).thenAnswer((_) async => []);
+    test('disposal cancels the live subscription and prevents later reads', () {
+      fakeAsync((async) {
+        addTearDown(() {
+          // Drain this fake-zone listener even if a broken dispose leaves it
+          // attached, so a cancellation assertion fails without a timeout.
+          final closed = updateStreamController.close();
+          async.flushMicrotasks();
+          return closed;
+        });
+        var listens = 0;
+        var cancellations = 0;
+        updateStreamController
+          ..onListen = () {
+            listens++;
+          }
+          ..onCancel = () {
+            cancellations++;
+          };
+        when(
+          () => mockJournalRepository.getLinksFromId(testAudioEntryId),
+        ).thenAnswer((_) async => []);
 
-      final container = ProviderContainer(
-        overrides: [
-          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-        ],
-      );
+        final container = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          ],
+        );
+        var disposed = false;
+        try {
+          final provider = linkedAiResponsesControllerProvider(
+            testAudioEntryId,
+          );
+          // Keep the autoDispose provider alive until explicit disposal.
+          container.listen(provider, (_, _) {});
+          async.flushMicrotasks();
+          expect(container.read(provider).requireValue, isEmpty);
+          expect(listens, 1);
+          expect(cancellations, 0);
+          expect(updateStreamController.hasListener, isTrue);
+          verify(
+            () => mockJournalRepository.getLinksFromId(testAudioEntryId),
+          ).called(1);
 
-      await container
-          .read(
-            linkedAiResponsesControllerProvider(testAudioEntryId).notifier,
-          )
-          .future;
+          // Prove the listener reacts before testing its removal.
+          updateStreamController.add({testAudioEntryId});
+          async.flushMicrotasks();
+          verify(
+            () => mockJournalRepository.getLinksFromId(testAudioEntryId),
+          ).called(1);
 
-      // Dispose should not throw
-      container.dispose();
+          container.dispose();
+          disposed = true;
+          async.flushMicrotasks();
+          expect(cancellations, 1);
+          expect(updateStreamController.hasListener, isFalse);
 
-      // Sending notification after dispose should not cause issues
-      updateStreamController.add({testAudioEntryId});
-
-      // No assertion needed - test passes if no exception is thrown
+          updateStreamController.add({testAudioEntryId});
+          async.flushMicrotasks();
+          verifyNoMoreInteractions(mockJournalRepository);
+          expect(cancellations, 1);
+        } finally {
+          if (!disposed) container.dispose();
+          async.flushMicrotasks();
+        }
+      });
     });
 
     test('updates state when list length changes', () async {

@@ -1127,37 +1127,38 @@ void main() {
     );
 
     test(
-      '_runDownload re-queues a superseded pending request after the first '
-      'download finishes (lines 279-285)',
+      'a superseding download replaces the first payload exactly once',
       () async {
         // We need maxConcurrentDownloads=1 and two different event ids for the
         // same path so that the second schedule() call replaces the pending
         // download entry while the first is in flight.
         final downloadCompleter = Completer<void>();
+        final downloadStarted = Completer<void>();
         var firstDownloadCount = 0;
         var secondDownloadCount = 0;
-        final fileBytes = utf8.encode('payload');
+        final firstBytes = utf8.encode('old payload');
+        final secondBytes = utf8.encode('new payload');
 
         final e1 = _makeEvent(
           eventId: 'ev-supersede-1',
-          relativePath: 'attachments/supersede.json',
+          relativePath: '/agent_entities/supersede.json',
           mime: 'application/json',
-          onDownload: () => firstDownloadCount++,
         );
         when(e1.downloadAndDecryptAttachment).thenAnswer((_) async {
           firstDownloadCount++;
+          downloadStarted.complete();
           await downloadCompleter.future;
           return MatrixFile(
-            bytes: Uint8List.fromList(fileBytes),
+            bytes: Uint8List.fromList(firstBytes),
             name: 'supersede.json',
           );
         });
 
         final e2 = _makeEvent(
           eventId: 'ev-supersede-2',
-          relativePath: 'attachments/supersede.json',
+          relativePath: '/agent_entities/supersede.json',
           mime: 'application/json',
-          downloadBytes: fileBytes,
+          downloadBytes: secondBytes,
           onDownload: () => secondDownloadCount++,
         );
 
@@ -1166,6 +1167,11 @@ void main() {
           maxConcurrentDownloads: 1,
           verboseLogging: false,
         );
+        addTearDown(() async {
+          if (!downloadCompleter.isCompleted) downloadCompleter.complete();
+          await ingestor.whenIdle();
+          ingestor.dispose();
+        });
 
         // First schedule: kicks off the download immediately (1 slot available).
         await ingestor.process(
@@ -1175,20 +1181,19 @@ void main() {
           scheduleDownload: true,
         );
 
-        // Pump so the download coroutine starts and the key is in _inFlightKeys.
-        await pumpEventQueue(times: 2);
+        await downloadStarted.future;
 
         // Second schedule: same path, different eventId. Because the key is
-        // in _inFlightKeys, _scheduleDownload records it in _pendingDownloads
-        // but hits the dedup guard (line 243) and returns without adding to
-        // the queue. _runDownload's finally block detects the superseded
-        // pending entry and re-queues it (lines 281-284).
+        // in flight, it updates the pending request without another queued
+        // key. Finishing the first download must queue that newer request.
         await ingestor.process(
           event: e2,
           logging: logging,
           attachmentIndex: index,
           scheduleDownload: true,
         );
+        expect(firstDownloadCount, 1);
+        expect(secondDownloadCount, 0);
 
         // Unblock the first download.
         downloadCompleter.complete();
@@ -1197,61 +1202,73 @@ void main() {
         await ingestor.whenIdle().timeout(const Duration(seconds: 2));
 
         // The file should exist and reflect the second download's bytes.
-        final writtenFile = File('${tempDir.path}/attachments/supersede.json');
-        expect(writtenFile.existsSync(), isTrue);
-        expect(writtenFile.readAsBytesSync(), fileBytes);
+        final writtenFile = File(
+          '${tempDir.path}/agent_entities/supersede.json',
+        );
+        expect(writtenFile.readAsBytesSync(), secondBytes);
+        expect(firstDownloadCount, 1);
+        expect(secondDownloadCount, 1);
       },
     );
   });
 
   group('AttachmentIngestor — LRU eviction', () {
     test(
-      'handled-event LRU evicts oldest entry when capacity is exceeded (line 303)',
+      'handled-event eviction reprocesses the oldest but retains recent events',
       () async {
         // Use a tiny capacity so we can exceed it cheaply.
         const capacity = 3;
+        final downloaded = <String>[];
         final ingestor = AttachmentIngestor(
+          documentsDirectory: tempDir,
           handledEventCapacity: capacity,
           verboseLogging: false,
+        );
+        addTearDown(ingestor.dispose);
+        Event eventFor(int slot) => _makeEvent(
+          eventId: 'ev-lru-$slot',
+          relativePath: '/agent_entities/lru-$slot.json',
+          mime: 'application/json',
+          downloadBytes: utf8.encode('payload $slot'),
+          onDownload: () => downloaded.add('ev-lru-$slot'),
         );
 
         // Process capacity+1 distinct events to trigger the eviction loop.
         for (var i = 0; i <= capacity; i++) {
-          final e = _makeEvent(
-            eventId: 'ev-lru-$i',
-            relativePath: 'images/lru-$i.jpg',
-          );
-          await ingestor.process(
-            event: e,
-            logging: logging,
-            attachmentIndex: index,
+          expect(
+            await ingestor.process(
+              event: eventFor(i),
+              logging: logging,
+              attachmentIndex: index,
+            ),
+            isTrue,
           );
         }
+        expect(downloaded, ['ev-lru-0', 'ev-lru-1', 'ev-lru-2', 'ev-lru-3']);
 
-        // Processing event 0 again should succeed (it was evicted from the
-        // handled set) rather than being treated as a duplicate.  The repair
-        // path is also skipped because documentsDirectory is null, so the
-        // re-processed event triggers the observe log.  However, the most
-        // reliable assertion is that the LRU bookkeeping doesn't throw and
-        // the index recorded all events.
-        for (var i = 0; i <= capacity; i++) {
-          expect(index.find('images/lru-$i.jpg'), isNotNull);
+        // Files remain nonempty, so missing-file repair cannot mask whether
+        // an event was evicted. Agent payloads are mutable: unlike immutable
+        // attachments, an existing file does not suppress a new download.
+        for (final slot in [3, 0, 2, 3]) {
+          expect(
+            await ingestor.process(
+              event: eventFor(slot),
+              logging: logging,
+              attachmentIndex: index,
+            ),
+            slot == 0,
+          );
         }
-
-        // The first event (ev-lru-0) was evicted, so re-processing it is
-        // treated as new and records in the index again (overwriting with
-        // same data is harmless — what matters is no exception).
-        final reprocessed = _makeEvent(
-          eventId: 'ev-lru-0',
-          relativePath: 'images/lru-0.jpg',
-        );
-        await expectLater(
-          ingestor.process(
-            event: reprocessed,
-            logging: logging,
-            attachmentIndex: index,
-          ),
-          completes,
+        expect(downloaded, [
+          'ev-lru-0',
+          'ev-lru-1',
+          'ev-lru-2',
+          'ev-lru-3',
+          'ev-lru-0',
+        ]);
+        expect(
+          File('${tempDir.path}/agent_entities/lru-0.json').readAsBytesSync(),
+          utf8.encode('payload 0'),
         );
       },
     );

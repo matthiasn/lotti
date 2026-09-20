@@ -752,6 +752,8 @@ class MockAudioRecorderRepository extends Mock
 
 class MockAudioRecorder extends Mock implements record.AudioRecorder {}
 
+class MockRecordPlatform extends Mock implements record.RecordPlatform {}
+
 class MockAudioTranscriptionService extends Mock
     implements AudioTranscriptionService {}
 

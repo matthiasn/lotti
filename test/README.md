@@ -259,6 +259,14 @@ callbacks run, so registering only `addTearDown(handle.dispose)` is too late.
 
 ## Streams & async teardown
 
+`Stream.periodic` cancellation can return an SDK-owned future whose completion
+is not driven by a local `FakeAsync.flushMicrotasks()`. Create timers with
+`FakeAsync.run` and advance them with `elapse`, but await an explicit stop outside
+that zone. For replacement, start inside the fake zone, allow a microtask turn
+outside it, then flush the fake continuation and assert completion before
+advancing time. See
+`test/services/time_service_test.dart`; no wall-clock delay is needed.
+
 Holding a `StreamController` open across `tester.runAsync(...)` and widget teardown causes a hard-to-debug hang that surfaces as:
 
 ```
