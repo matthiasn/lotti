@@ -189,6 +189,25 @@ void main() {
       expect(peopleDueDateOf(nextDue, now: _now), summary.nextDueAt);
     }, tags: 'glados');
 
+    glados.Glados(
+      glados.any.people,
+      glados.ExploreConfig(numRuns: 200),
+    ).test('mostOverdue is the longest lapse, and exists exactly when the '
+        'due count does', (specs) {
+      final items = _itemsFrom(specs);
+      final summary = peopleSummaryOf(items, now: _now);
+      expect(summary.mostOverdue != null, summary.dueNow > 0);
+      final overdue = summary.mostOverdue;
+      if (overdue == null) return;
+      final worst = peopleOverdueDaysOf(overdue, now: _now)!;
+      for (final item in items) {
+        final days = peopleOverdueDaysOf(item, now: _now);
+        if (days != null && days >= 0) {
+          expect(days, lessThanOrEqualTo(worst));
+        }
+      }
+    }, tags: 'glados');
+
     glados.Glados2(
       glados.any.people,
       glados.any.int,

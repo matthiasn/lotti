@@ -37,13 +37,82 @@ void main() {
     int notEnrolled = 0,
     RelationshipListItem? nextDue,
     DateTime? nextDueAt,
+    RelationshipListItem? mostOverdue,
   }) => (
     dueNow: dueNow,
     enrolled: enrolled,
     notEnrolled: notEnrolled,
     nextDue: nextDue,
     nextDueAt: nextDueAt,
+    mostOverdue: mostOverdue,
   );
+
+  group('each half is a door to its own subject', () {
+    testWidgets('the count opens the person it is counting, and the right '
+        'half the one it names', (tester) async {
+      final overdue = person('Pip');
+      final next = person('Tilly');
+      final opened = <String>[];
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          PeopleSummaryCard(
+            summary: summary(
+              dueNow: 1,
+              nextDue: next,
+              nextDueAt: DateTime(2026, 8, 19),
+              mostOverdue: overdue,
+            ),
+            onOpenNextDue: opened.add,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Both halves show the handle that says they are doors. Without it
+      // the card was the largest, most saturated block on the tab and gave
+      // the reader no reason to believe it did anything.
+      expect(find.byIcon(LottiIcons.chevronRight), findsNWidgets(2));
+
+      await tester.tap(find.byKey(const ValueKey('people-summary-due-open')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('people-summary-next-due-open')),
+      );
+      await tester.pumpAndSettle();
+
+      // The count is about the lapse; the sentence is about the next one.
+      // Folding them into one destination would make the card say "next
+      // due" while opening someone already overdue.
+      expect(opened, [
+        overdue.relationship.meta.id,
+        next.relationship.meta.id,
+      ]);
+    });
+
+    testWidgets('a half with nobody behind it is inert and shows no handle', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          PeopleSummaryCard(summary: summary(), onOpenNextDue: (_) {}),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Nothing is due and nobody is next: no chevron may promise a tap
+      // that goes nowhere.
+      expect(
+        find.byKey(const ValueKey('people-summary-due-open')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('people-summary-next-due-open')),
+        findsNothing,
+      );
+      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
+    });
+  });
 
   Future<void> pump(WidgetTester tester, PeopleSummary summary) async {
     await tester.pumpWidget(

@@ -222,38 +222,18 @@ class CheckInRow extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Padding(
-                              padding: EdgeInsets.only(
-                                top: tokens.spacing.step1,
+                      Padding(
+                        padding: EdgeInsets.only(top: tokens.spacing.step1),
+                        child: RelationshipLineWithDate(
+                          key: const ValueKey('check-in-row-meta'),
+                          text: meta,
+                          date: at,
+                          maxLines: 2,
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: tokens.colors.text.lowEmphasis,
                               ),
-                              child: RelationshipLineWithDate(
-                                key: const ValueKey('check-in-row-meta'),
-                                text: meta,
-                                date: at,
-                                maxLines: 1,
-                                style: tokens.typography.styles.others.caption
-                                    .copyWith(
-                                      color: tokens.colors.text.lowEmphasis,
-                                    ),
-                              ),
-                            ),
-                          ),
-                          if (sentiment != null) ...[
-                            SizedBox(width: tokens.spacing.step3),
-                            DsPill(
-                              key: const ValueKey('check-in-row-sentiment'),
-                              variant: DsPillVariant.tinted,
-                              shape: DsPillShape.tag,
-                              color: sentimentColor(tokens, sentiment),
-                              labelColor: tokens.colors.text.highEmphasis,
-                              label: checkInSentimentLabel(context, sentiment),
-                            ),
-                          ],
-                        ],
+                        ),
                       ),
                       if (narrative != null) ...[
                         SizedBox(height: tokens.spacing.step2),
@@ -270,8 +250,13 @@ class CheckInRow extends StatelessWidget {
                               ),
                         ),
                       ],
-                      if (data.topics.isNotEmpty) ...[
+                      if (sentiment != null || data.topics.isNotEmpty) ...[
                         SizedBox(height: tokens.spacing.step3),
+                        // How it felt, then what it was about. The sentiment
+                        // used to share the meta line's row, which left the
+                        // meta too narrow to finish a word; it is a chip, and
+                        // this is where the row keeps its chips.
+                        //
                         // Topics are this check-in's tags, so they wear the
                         // tag pill the rest of the app spends on labels — the
                         // tight corner that says "read-out, not button".
@@ -279,6 +264,18 @@ class CheckInRow extends StatelessWidget {
                           spacing: tokens.spacing.step2,
                           runSpacing: tokens.spacing.step2,
                           children: [
+                            if (sentiment != null)
+                              DsPill(
+                                key: const ValueKey('check-in-row-sentiment'),
+                                variant: DsPillVariant.tinted,
+                                shape: DsPillShape.tag,
+                                color: sentimentColor(tokens, sentiment),
+                                labelColor: tokens.colors.text.highEmphasis,
+                                label: checkInSentimentLabel(
+                                  context,
+                                  sentiment,
+                                ),
+                              ),
                             for (final topic in data.topics)
                               DsPill(
                                 variant: DsPillVariant.filled,

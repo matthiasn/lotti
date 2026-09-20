@@ -2,7 +2,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/contact_quick_actions.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -176,13 +175,12 @@ class NextTimeCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          PersonCardHeader(
-            title: messages.relationshipNextTimeTitle,
-            trailing: Text(
-              relationshipTimestampLabelOf(context, latest!.meta.dateFrom),
-              style: relationshipTimestampStyle(tokens),
-            ),
-          ),
+          // No date in this header. It used to carry the timestamp of the
+          // *last* check-in, unlabelled, beside a title that reads as a
+          // future intention — so the one date on the card named the
+          // opposite of what the card is about. The check-in it came from
+          // is the row directly below, with its own date on it.
+          PersonCardHeader(title: messages.relationshipNextTimeTitle),
           SizedBox(height: tokens.spacing.step4),
           if (attention != null)
             tile(

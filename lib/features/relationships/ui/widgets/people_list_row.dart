@@ -263,10 +263,15 @@ class PeopleCadencePillWidget extends StatelessWidget {
     }
     // A quiet read-out on the solid surface fill, never the dashed `muted`
     // shell — that one says "unset", and a cadence that is on track is set.
+    //
+    // High-emphasis ink, like the overdue pill beside it in the same slot:
+    // at medium emphasis `Due Wed` read as a *disabled control* rather than
+    // a read-out, and the two pills differed in two channels at once. Tint
+    // is the only thing that should separate them.
     return DsPill(
       variant: DsPillVariant.filled,
       shape: DsPillShape.tag,
-      labelColor: tokens.colors.text.mediumEmphasis,
+      labelColor: tokens.colors.text.highEmphasis,
       label: label,
     );
   }

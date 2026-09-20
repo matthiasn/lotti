@@ -148,7 +148,9 @@ void main() {
     final pill = tester.widget<DsGlassPill>(
       find.byKey(const ValueKey('person-action-log-check-in')),
     );
-    final tokens = tester.element(find.byType(DsGlassPill)).designTokens;
+    final tokens = tester
+        .element(find.byKey(const ValueKey('person-action-log-check-in')))
+        .designTokens;
     expect(pill.label, 'Log check-in');
     expect(pill.fillColor, tokens.colors.interactive.enabled);
     expect(pill.expand, isTrue);

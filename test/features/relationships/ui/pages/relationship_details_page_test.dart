@@ -720,8 +720,9 @@ void main() {
   });
 
   testWidgets("Talk to agent beams to the person's chat", (tester) async {
+    // Enrolled: the hero offers the agent only where there is one.
     when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
-      (_) async => relationship(),
+      (_) async => relationship(important: true),
     );
     when(
       () => mockRepository.getCheckInsForRelationship('rel-1'),

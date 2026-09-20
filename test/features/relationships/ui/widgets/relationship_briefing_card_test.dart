@@ -935,7 +935,10 @@ void main() {
       );
       final update = tester.widget<DesignSystemButton>(briefMe);
       expect(update.label, 'Update now');
-      expect(update.variant, DesignSystemButtonVariant.secondary);
+      // Tertiary on a current briefing: the card's offer is the reading,
+      // not the rewrite. Accent is reserved for the faces that actually
+      // need regenerating (out of date, failed).
+      expect(update.variant, DesignSystemButtonVariant.tertiary);
     });
 
     testWidgets('the "as of" line moves on its own once the displayed bucket '

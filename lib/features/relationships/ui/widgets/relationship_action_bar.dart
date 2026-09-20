@@ -135,16 +135,34 @@ class _RelationshipActionBarState extends ConsumerState<RelationshipActionBar> {
     final channelLabel = reachable == null
         ? null
         : contactActionLabel(context, reachable.action);
-    final labelledChannel =
-        channelLabel != null &&
+    // The same budgeting for the mic: it records, which is not a thing a
+    // bare glyph announces either.
+    final micLabel = messages.checkInSpeakButton;
+    double pill(String label) =>
+        DsGlassPill.intrinsicWidth(context, label: label);
+    const round = DsGlassRoundButton.defaultDiameter;
+    final gaps = spacing.step4 * (channelLabel == null ? 1 : 2);
+
+    // One control at a time, the channel first, because it is the one that
+    // reaches the outside world. Budgeting both together meant a phone
+    // could afford neither and *both* fell back to glyphs — worse than the
+    // labelled channel alone, which is what the row had before the mic
+    // joined the question. `slack` is the width left once the row has its
+    // gaps, its round controls and the primary's own label.
+    var slack =
         contentWidth -
-                DsGlassPill.intrinsicWidth(context, label: channelLabel) -
-                DsGlassRoundButton.defaultDiameter -
-                spacing.step4 * 2 >=
-            DsGlassPill.intrinsicWidth(
-              context,
-              label: messages.relationshipLogCheckIn,
-            );
+        gaps -
+        round -
+        pill(messages.relationshipLogCheckIn) -
+        (channelLabel == null ? 0 : round);
+
+    /// What labelling a control costs: its pill, less the disc it replaces.
+    double upgrade(String label) => pill(label) - round;
+
+    final labelledChannel =
+        channelLabel != null && slack >= upgrade(channelLabel);
+    if (labelledChannel) slack -= upgrade(channelLabel);
+    final labelledMic = slack >= upgrade(micLabel);
 
     return Row(
       children: [
@@ -160,12 +178,20 @@ class _RelationshipActionBarState extends ConsumerState<RelationshipActionBar> {
           ),
         ),
         SizedBox(width: spacing.step4),
-        DsGlassRoundButton(
-          key: const ValueKey('person-action-speak'),
-          icon: LottiIcons.mic,
-          semanticLabel: messages.checkInSpeakButton,
-          onPressed: widget.onSpeak,
-        ),
+        if (labelledMic)
+          DsGlassPill(
+            key: const ValueKey('person-action-speak'),
+            label: micLabel,
+            icon: LottiIcons.mic,
+            onTap: widget.onSpeak,
+          )
+        else
+          DsGlassRoundButton(
+            key: const ValueKey('person-action-speak'),
+            icon: LottiIcons.mic,
+            semanticLabel: micLabel,
+            onPressed: widget.onSpeak,
+          ),
         if (reachable != null) ...[
           SizedBox(width: spacing.step4),
           if (labelledChannel)

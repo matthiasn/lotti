@@ -337,9 +337,11 @@ class _PeopleList extends StatelessWidget {
           // No horizontal inset of its own: the band heading hangs on the
           // page's content rail with the title above it, and the row's
           // internal step4 is the row card's inset, not a second gutter.
+          // The break *above* a band has to beat the gaps inside it, or
+          // three bands read as one list with captions in it.
           padding: EdgeInsets.fromLTRB(
             0,
-            tokens.spacing.step5,
+            tokens.spacing.sectionGap,
             0,
             tokens.spacing.step2,
           ),

@@ -166,7 +166,11 @@ void main() {
             body: CustomScrollView(
               slivers: [
                 PersonHeroAppBar(
-                  relationship: relationship ?? person(),
+                  // Enrolled by default: the hero's agent entry only exists
+                  // for a person who has an agent, and these tests are
+                  // about the hero's chrome, not about enrolment. The gate
+                  // itself has a test of its own below.
+                  relationship: relationship ?? person(important: true),
                   onBack: () => backs++,
                   onTalkToAgent: () => chats++,
                   onDelete: () async => deletes++,
@@ -210,6 +214,17 @@ void main() {
         PersonHeroAppBar.washColor(tokens),
       );
       expect(find.byKey(const ValueKey('person-talk-to-agent')), findsOne);
+
+      // The sparkle, not a speech bubble: the Reach card spends the bubble
+      // on "text this human", and one page must not show two of them
+      // meaning two different correspondents.
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('person-talk-to-agent')),
+          matching: find.byIcon(LottiIcons.aiSpark),
+        ),
+        findsOneWidget,
+      );
       expect(find.byKey(const ValueKey('person-edit')), findsOneWidget);
       expect(find.byKey(const ValueKey('person-menu')), findsOneWidget);
       // The name belongs to the header block; the open hero shows none.
@@ -243,6 +258,17 @@ void main() {
         findsOneWidget,
         reason: 'the form edits this person, not a blank one',
       );
+    });
+
+    testWidgets('a person with no agent gets no agent entry — a chat bubble '
+        'over "No agent for this person" offered a conversation with '
+        'something that does not exist', (tester) async {
+      await pump(tester, relationship: person());
+
+      expect(find.byKey(const ValueKey('person-talk-to-agent')), findsNothing);
+      // The rest of the hero is untouched: leaving is never gated.
+      expect(find.byKey(const ValueKey('person-edit')), findsOneWidget);
+      expect(find.byKey(const ValueKey('person-menu')), findsOneWidget);
     });
 
     testWidgets('back and talk-to-agent call back', (tester) async {
@@ -443,7 +469,11 @@ void main() {
 
         await pump(
           tester,
-          relationship: person(bannerImageId: image.id, bannerCropX: 0.25),
+          relationship: person(
+            important: true,
+            bannerImageId: image.id,
+            bannerCropX: 0.25,
+          ),
           overrides: [createEntryControllerOverride(image)],
         );
         final tokens = tokensOf(tester);
@@ -511,7 +541,7 @@ void main() {
           // beside the red Delete row, so both inks are on show.
           await pump(
             tester,
-            relationship: person(bannerImageId: image.id),
+            relationship: person(important: true, bannerImageId: image.id),
             contactsSupported: true,
             overrides: [createEntryControllerOverride(image)],
             theme: ThemeData(brightness: Brightness.light),
@@ -557,7 +587,7 @@ void main() {
         await pump(
           tester,
           tall: true,
-          relationship: person(bannerImageId: image.id),
+          relationship: person(important: true, bannerImageId: image.id),
           overrides: [createEntryControllerOverride(image)],
         );
         final tokens = tokensOf(tester);
@@ -603,7 +633,7 @@ void main() {
 
         await pump(
           tester,
-          relationship: person(bannerImageId: image.id),
+          relationship: person(important: true, bannerImageId: image.id),
           overrides: [createEntryControllerOverride(image)],
         );
 
@@ -625,7 +655,7 @@ void main() {
 
         await pump(
           tester,
-          relationship: person(bannerImageId: image.id),
+          relationship: person(important: true, bannerImageId: image.id),
           overrides: [createEntryControllerOverride(image)],
         );
 

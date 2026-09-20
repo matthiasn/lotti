@@ -38,7 +38,10 @@ class PausedReminderCallout extends ConsumerWidget {
       child: DesignSystemInlineCallout(
         key: const ValueKey('person-reminder-paused'),
         icon: LottiIcons.snooze,
-        tone: tokens.colors.alert.info.defaultColor,
+        // The hue stays on the glyph; the shell goes neutral. A saturated
+        // stroke made the page's calmest statement — a reminder is asleep —
+        // shout louder than the overdue pill directly above it.
+        tone: tokens.colors.decorative.level01,
         // The same timestamp form the rest of the feature uses. This
         // read the device's 12/24-hour clock in proportional type, one
         // card above a mono 24-hour one — two clocks, one page.

@@ -67,6 +67,15 @@ typedef PeopleSummary = ({
 
   /// When [nextDue]'s cadence lapses.
   DateTime? nextDueAt,
+
+  /// The enrolled person whose cadence lapsed longest ago — what the due
+  /// count is actually about, and so where the count's own tap leads.
+  ///
+  /// Deliberately separate from [nextDue] rather than folded into it: the
+  /// card says "Next due {name}", and a card that says *next due* while
+  /// pointing at someone already overdue is lying in order to be useful.
+  /// Two facts, two doors.
+  RelationshipListItem? mostOverdue,
 });
 
 /// How far ahead "due soon" looks, in days. A person due within the coming
@@ -243,6 +252,8 @@ PeopleSummary peopleSummaryOf(
   var notEnrolled = 0;
   RelationshipListItem? nextDue;
   DateTime? nextDueAt;
+  RelationshipListItem? mostOverdue;
+  var mostOverdueDays = -1;
   for (final item in items) {
     if (!isEnrolled(item.relationship)) {
       notEnrolled++;
@@ -252,6 +263,10 @@ PeopleSummary peopleSummaryOf(
     final overdue = peopleOverdueDaysOf(item, now: now);
     if (overdue != null && overdue >= 0) {
       dueNow++;
+      if (overdue > mostOverdueDays) {
+        mostOverdueDays = overdue;
+        mostOverdue = item;
+      }
       continue;
     }
     final due = peopleDueDateOf(item, now: now);
@@ -266,5 +281,6 @@ PeopleSummary peopleSummaryOf(
     notEnrolled: notEnrolled,
     nextDue: nextDue,
     nextDueAt: nextDueAt,
+    mostOverdue: mostOverdue,
   );
 }

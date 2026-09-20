@@ -160,25 +160,36 @@ class PersonHeroAppBar extends StatelessWidget {
     final actions = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (desktop)
-          DesignSystemButton(
-            key: const ValueKey('person-talk-to-agent'),
-            label: messages.goalChatTalkToAgent,
-            leadingIcon: LottiIcons.chat,
-            variant: DesignSystemButtonVariant.secondary,
-            size: DesignSystemButtonSize.dense,
-            onPressed: onTalkToAgent,
-          )
-        else
-          GlassActionButton(
-            key: const ValueKey('person-talk-to-agent'),
-            tooltip: messages.goalChatTalkToAgent,
-            semanticLabel: messages.goalChatTalkToAgent,
-            fill: glassFill,
-            onTap: onTalkToAgent,
-            child: Icon(LottiIcons.chat, size: IconSizes.l, color: ink),
-          ),
-        SizedBox(width: tokens.spacing.step2),
+        // The agent entry, and only where there is an agent. It carried
+        // `LottiIcons.chat` — the same speech bubble the Reach card spends
+        // on "text this human" — so one page showed two bubbles meaning
+        // two different correspondents. The sparkle already means "the
+        // agent" everywhere else in the app, so it means it here.
+        //
+        // It is hidden, not disabled, for a person who is not enrolled: a
+        // chat bubble above "No agent for this person" offered a
+        // conversation with something that does not exist.
+        if (isEnrolled(relationship)) ...[
+          if (desktop)
+            DesignSystemButton(
+              key: const ValueKey('person-talk-to-agent'),
+              label: messages.goalChatTalkToAgent,
+              leadingIcon: LottiIcons.aiSpark,
+              variant: DesignSystemButtonVariant.secondary,
+              size: DesignSystemButtonSize.dense,
+              onPressed: onTalkToAgent,
+            )
+          else
+            GlassActionButton(
+              key: const ValueKey('person-talk-to-agent'),
+              tooltip: messages.goalChatTalkToAgent,
+              semanticLabel: messages.goalChatTalkToAgent,
+              fill: glassFill,
+              onTap: onTalkToAgent,
+              child: Icon(LottiIcons.aiSpark, size: IconSizes.l, color: ink),
+            ),
+          SizedBox(width: tokens.spacing.step2),
+        ],
         GlassActionButton(
           key: const ValueKey('person-edit'),
           tooltip: messages.relationshipEditTitle,

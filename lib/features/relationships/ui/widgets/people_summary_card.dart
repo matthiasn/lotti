@@ -21,9 +21,12 @@ class PeopleSummaryCard extends StatelessWidget {
 
   final PeopleSummary summary;
 
-  /// Opens the person the card names as next due. The card was the
-  /// largest, most saturated block on the tab and did nothing at all —
-  /// it named a person and then made the reader go and find them.
+  /// Opens one of the two people the card is about. The card was the
+  /// largest, most saturated block on the tab and did nothing at all — it
+  /// named a person and then made the reader go and find them.
+  ///
+  /// Each half opens its own subject: the count opens the person it is
+  /// counting (the longest lapse), the right half opens the one it names.
   final void Function(String relationshipId)? onOpenNextDue;
 
   @override
@@ -51,43 +54,48 @@ class PeopleSummaryCard extends StatelessWidget {
       key: const ValueKey('people-summary-card'),
       child: Row(
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                messages.relationshipsSummaryDueNow,
-                style: styles.others.caption.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
+          _SummaryDoor(
+            relationshipId: summary.mostOverdue?.relationship.meta.id,
+            onOpen: onOpenNextDue,
+            keyValue: const ValueKey('people-summary-due-open'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  messages.relationshipsSummaryDueNow,
+                  style: styles.others.caption.copyWith(
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
                 ),
-              ),
-              SizedBox(height: tokens.spacing.step1),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    '${summary.dueNow}',
-                    key: const ValueKey('people-summary-due-count'),
-                    // heading2, not heading1: at 35/700 the loudest glyph
-                    // on the People tab was a KPI, outweighing the page
-                    // title and every person's name on it.
-                    style: styles.heading.heading2.copyWith(
-                      color: summary.dueNow > 0
-                          ? tokens.colors.alert.warning.defaultColor
-                          : tokens.colors.text.highEmphasis,
+                SizedBox(height: tokens.spacing.step1),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      '${summary.dueNow}',
+                      key: const ValueKey('people-summary-due-count'),
+                      // heading2, not heading1: at 35/700 the loudest glyph
+                      // on the People tab was a KPI, outweighing the page
+                      // title and every person's name on it.
+                      style: styles.heading.heading2.copyWith(
+                        color: summary.dueNow > 0
+                            ? tokens.colors.alert.warning.defaultColor
+                            : tokens.colors.text.highEmphasis,
+                      ),
                     ),
-                  ),
-                  SizedBox(width: tokens.spacing.step2),
-                  Text(
-                    messages.relationshipsSummaryEnrolled(summary.enrolled),
-                    style: styles.body.bodyMedium.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
+                    SizedBox(width: tokens.spacing.step2),
+                    Text(
+                      messages.relationshipsSummaryEnrolled(summary.enrolled),
+                      style: styles.body.bodyMedium.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step4),
@@ -97,9 +105,10 @@ class PeopleSummaryCard extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: _NextDue(
+            child: _SummaryDoor(
               relationshipId: nextDue?.relationship.meta.id,
               onOpen: onOpenNextDue,
+              keyValue: const ValueKey('people-summary-next-due-open'),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -110,7 +119,9 @@ class PeopleSummaryCard extends StatelessWidget {
                     date: nextDueDay,
                     maxLines: 2,
                     style: styles.body.bodyMedium.copyWith(
-                      color: tokens.colors.text.highEmphasis,
+                      color: nextDue == null
+                          ? tokens.colors.text.highEmphasis
+                          : tokens.colors.interactive.enabled,
                     ),
                   ),
                   if (summary.notEnrolled > 0) ...[
@@ -134,21 +145,25 @@ class PeopleSummaryCard extends StatelessWidget {
   }
 }
 
-/// The card's right half, made the door it already looked like.
+/// One half of the card, made the door it already looked like — with a
+/// chevron, so it *looks* like one.
 ///
-/// Wraps [child] in a tap target that opens the person the card names —
-/// but only when there is one and the caller wants the behaviour, so a
-/// card reading "Nobody is due" stays inert rather than offering a tap
-/// that goes nowhere.
-class _NextDue extends StatelessWidget {
-  const _NextDue({
+/// Wraps [child] in a tap target that opens the person that half is about,
+/// but only when there is one and the caller wants the behaviour: a card
+/// reading "Nobody is due" stays inert rather than offering a tap that goes
+/// nowhere. The chevron only appears on the live half, so the affordance
+/// and the behaviour cannot disagree.
+class _SummaryDoor extends StatelessWidget {
+  const _SummaryDoor({
     required this.relationshipId,
     required this.onOpen,
+    required this.keyValue,
     required this.child,
   });
 
   final String? relationshipId;
   final void Function(String relationshipId)? onOpen;
+  final Key keyValue;
   final Widget child;
 
   @override
@@ -162,11 +177,22 @@ class _NextDue extends StatelessWidget {
       borderRadius: BorderRadius.circular(tokens.radii.m),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        key: const ValueKey('people-summary-next-due-open'),
+        key: keyValue,
         onTap: () => open(id),
         child: Padding(
           padding: EdgeInsets.all(tokens.spacing.step2),
-          child: child,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(child: child),
+              SizedBox(width: tokens.spacing.step1),
+              Icon(
+                LottiIcons.chevronRight,
+                size: IconSizes.s,
+                color: tokens.colors.text.lowEmphasis,
+              ),
+            ],
+          ),
         ),
       ),
     );

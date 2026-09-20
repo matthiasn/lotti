@@ -789,9 +789,17 @@ class _AgentCard extends StatelessWidget {
       tapTargetSize: MaterialTapTargetSize.padded,
       label: messages.taskAgentUpdateNow,
       leadingIcon: LottiIcons.refresh,
-      variant: state == RelationshipAgentCardState.outOfDate
-          ? DesignSystemButtonVariant.primary
-          : DesignSystemButtonVariant.secondary,
+      // Accent only when the briefing actually needs regenerating. On a
+      // current briefing the card's offer is the reading, not the rewrite,
+      // and a filled `Update now` made maintenance the loudest thing on a
+      // card whose job is to be read.
+      variant: switch (state) {
+        RelationshipAgentCardState.outOfDate =>
+          DesignSystemButtonVariant.primary,
+        RelationshipAgentCardState.current =>
+          DesignSystemButtonVariant.tertiary,
+        _ => DesignSystemButtonVariant.secondary,
+      },
       onPressed: onBrief,
     );
     final ({Widget? leading, Widget? action}) footer = switch (state) {

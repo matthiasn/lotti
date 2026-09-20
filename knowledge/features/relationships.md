@@ -504,10 +504,28 @@ tint alone read as an inert brown beside the neutral chip, and the glyph is
 the same one the briefing card's out-of-date line uses, so "needs attention"
 is drawn one way across the feature.
 
+**Each band orders by what that band is about** (`_orderWithin`): *Due* by
+the longest lapse, *On track* by the nearest deadline, *Not enrolled* by
+recency, with ties broken on recency and then id so the order is total and
+rows cannot swap between rebuilds. Ordering everything by recency made the
+list argue with its own summary card — the card named who lapses next and
+the band under it led with someone whose deadline was later. A Glados
+property pins the card and the band to the same date.
+
+The summary also carries `mostOverdue`, kept separate from `nextDue`: the
+card says *Next due {name}*, and a card that says *next due* while pointing
+at someone already overdue is lying in order to be useful. Two facts, two
+doors — the count opens the longest lapse, the sentence opens the person it
+names, and a half with nobody behind it draws no chevron and takes no tap.
+
 **Mono is confined to dates.** `RelationshipLineWithDate`
 ([`ui/shared/relationship_timestamps.dart`](../../lib/features/relationships/ui/shared/relationship_timestamps.dart))
-splits a line so only the timestamp wears Inconsolata, locating the date by
-searching for its own substring — each line is one catalog message, and a
+splits a line so only the timestamp wears Inconsolata **at the size of the
+prose around it** — `relationshipTimestampStyle` takes the host style as its
+base and changes face, tracking and colour only, because pinning the span to
+the caption tier dropped the date a size mid-sentence, which is worse than
+the all-mono line the split replaced. It locates the date by searching for
+its own substring — each line is one catalog message, and a
 locale may put the date first, last or in the middle. A line with no date, or
 one whose date does not occur in it, renders whole in the base style. Mono
 tabulates a timestamp down a column; on `Call`, `Weekly` and `last spoke` it
