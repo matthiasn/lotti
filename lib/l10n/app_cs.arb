@@ -4527,14 +4527,14 @@
   "relationshipAgentAsOfBand": "{band} · aktualizováno {age}",
   "relationshipAgentBriefNow": "Vytvořit briefing teď",
   "relationshipAgentCall": "Zavolat {name}",
-  "relationshipAgentEnrolPerson": "Sledovat {name}",
+  "relationshipAgentEnrolPerson": "Připomínat {name}",
   "relationshipAgentFailedBody": "Poskytovatel vrátil chybu dřív, než se briefing napsal. Tvoje check-iny zůstaly beze změny.",
   "relationshipAgentFailedNoModel": "Pro briefingy není nastaven žádný model. Vyber ho v Nastavení AI › Agenti. Podrobnosti najdeš na kartě Aktivita.",
   "relationshipAgentFailedPlain": "Poslední běh selhal",
   "relationshipAgentLastRunFailed": "Poslední běh selhal · {time}",
   "relationshipAgentNoAgent": "Pro tuto osobu není žádný agent",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Zatím žádný briefing. „Vytvořit briefing teď“ ho napíše, jakmile zaznamenáš check-in; telefon ani e-mail nikdy nevidí.} =1{Zatím žádný briefing. „Vytvořit briefing teď“ ho napíše z tvého check-inu; telefon ani e-mail nikdy nevidí.} few{Zatím žádný briefing. „Vytvořit briefing teď“ ho napíše z tvých {count} check-inů; telefon ani e-mail nikdy nevidí.} other{Zatím žádný briefing. „Vytvořit briefing teď“ ho napíše z tvých {count} check-inů; telefon ani e-mail nikdy nevidí.}}",
-  "relationshipAgentNotEnrolledBody": "Začni sledovat {name} a získáš chat, připomínky po delší odmlce a briefing.",
+  "relationshipAgentNotEnrolledBody": "Zapni připomínky pro {name} a získáš chat, pobídku po delší odmlce a briefing.",
   "relationshipAgentOnlyYourStartsUseAi": "AI používá jen to, co spustíš sám",
   "relationshipAgentOutOfDateNewCheckIn": "Zastaralé · nový check-in {day}",
   "relationshipAgentOutOfDateNewCheckInShort": "Zastaralé · nový check-in",
@@ -4680,7 +4680,7 @@
   "relationshipImportAction": "Importovat z kontaktů",
   "relationshipImportAdded": "{count, plural, =1{Přidána 1 osoba} few{Přidány {count} osoby} other{Přidáno {count} osob}}",
   "relationshipImportantDescription": "Připomínej mi, ať se ozvu",
-  "relationshipImportantLabel": "Sledováno",
+  "relationshipImportantLabel": "S připomínkami",
   "relationshipImportConfirmButton": "{count, plural, =1{Přidat 1 osobu} few{Přidat {count} osoby} other{Přidat {count} osob}}",
   "relationshipImportEmpty": "V tomto zařízení nejsou žádné kontakty",
   "relationshipImportFailed": "Nepodařilo se přidat nikoho",
@@ -4731,7 +4731,7 @@
   "relationshipNicknameLabel": "Přezdívka",
   "relationshipNoCheckIns": "Zatím žádné záznamy — přidej první po dalším rozhovoru.",
   "relationshipNoLinkedTasks": "Zatím žádné propojené úkoly.",
-  "relationshipNotEnrolled": "Nesledováno",
+  "relationshipNotEnrolled": "Bez připomínek",
   "relationshipNotFound": "Tahle osoba už není sledovaná.",
   "relationshipOnTrackCadence": "V rytmu · {cadence}",
   "@relationshipOnTrackCadence": {
@@ -4805,7 +4805,7 @@
   "relationshipsPageTitle": "Lidé",
   "relationshipsSelectPersonHint": "Vyber osobu a zobrazí se její stránka.",
   "relationshipsSummaryDueNow": "Teď na řadě",
-  "relationshipsSummaryEnrolled": "{count, plural, =1{/ 1 sledovaná} few{/ {count} sledované} other{/ {count} sledovaných}}",
+  "relationshipsSummaryEnrolled": "/ {count} s připomínkami",
   "@relationshipsSummaryEnrolled": {
     "placeholders": {
       "count": {
@@ -4826,7 +4826,7 @@
   },
   "relationshipsSummaryNextDueCaption": "Další na řadě",
   "relationshipsSummaryNoneDue": "Nikdo není na řadě",
-  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 nesledovaná osoba} few{{count} nesledované osoby} other{{count} nesledovaných osob}}",
+  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 osoba bez připomínek} few{{count} osoby bez připomínek} other{{count} osob bez připomínek}}",
   "@relationshipsSummaryNotEnrolled": {
     "placeholders": {
       "count": {

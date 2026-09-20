@@ -269,7 +269,7 @@ void main() {
       expect(find.text('Anna'), findsOneWidget);
       expect(
         tester.widget<Text>(find.byKey(const ValueKey('person-eyebrow'))).data,
-        'Enrolled',
+        'Reminders on',
       );
       expect(
         tester
@@ -321,7 +321,7 @@ void main() {
 
     expect(
       tester.widget<Text>(find.byKey(const ValueKey('person-eyebrow'))).data,
-      'Penguin Operations · Enrolled',
+      'Penguin Operations · Reminders on',
     );
   });
 
@@ -470,7 +470,7 @@ void main() {
     );
     // An unimportant person in no category has no eyebrow at all.
     expect(find.byKey(const ValueKey('person-eyebrow')), findsNothing);
-    expect(pill(tester, 'person-pill-status').label, 'Not enrolled');
+    expect(pill(tester, 'person-pill-status').label, 'No reminders');
   });
 
   testWidgets('says the person is no longer tracked when the id is gone — '

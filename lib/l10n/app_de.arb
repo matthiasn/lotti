@@ -4520,14 +4520,14 @@
   "relationshipAgentAsOfBand": "{band} · Stand {age}",
   "relationshipAgentBriefNow": "Jetzt briefen",
   "relationshipAgentCall": "{name} anrufen",
-  "relationshipAgentEnrolPerson": "{name} in den Blick nehmen",
+  "relationshipAgentEnrolPerson": "An {name} erinnern",
   "relationshipAgentFailedBody": "Der Anbieter hat einen Fehler gemeldet, bevor das Briefing geschrieben wurde. Deine Check-ins sind unverändert.",
   "relationshipAgentFailedNoModel": "Für Briefings ist kein Modell eingerichtet. Wähle eins unter KI-Einstellungen › Agenten. Details stehen im Aktivitäts-Tab.",
   "relationshipAgentFailedPlain": "Letzter Lauf fehlgeschlagen",
   "relationshipAgentLastRunFailed": "Letzter Lauf fehlgeschlagen · {time}",
   "relationshipAgentNoAgent": "Kein Agent für diese Person",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Noch kein Briefing. „Jetzt briefen“ schreibt eins, sobald du einen Check-in erfasst hast; Telefonnummer und E-Mail sieht es nie.} =1{Noch kein Briefing. „Jetzt briefen“ schreibt eins aus deinem Check-in; Telefonnummer und E-Mail sieht es nie.} other{Noch kein Briefing. „Jetzt briefen“ schreibt eins aus deinen {count} Check-ins; Telefonnummer und E-Mail sieht es nie.}}",
-  "relationshipAgentNotEnrolledBody": "Nimm {name} in den Blick, um einen Chat, Erinnerungen nach längerer Funkstille und ein Briefing zu bekommen.",
+  "relationshipAgentNotEnrolledBody": "Schalte Erinnerungen für {name} ein, um einen Chat, einen Anstoß nach längerer Funkstille und ein Briefing zu bekommen.",
   "relationshipAgentOnlyYourStartsUseAi": "Nur was du selbst startest, nutzt KI",
   "relationshipAgentOutOfDateNewCheckIn": "Veraltet · neuer Check-in {day}",
   "relationshipAgentOutOfDateNewCheckInShort": "Veraltet · neuer Check-in",
@@ -4673,7 +4673,7 @@
   "relationshipImportAction": "Aus Kontakten importieren",
   "relationshipImportAdded": "{count, plural, =1{1 Person hinzugefügt} other{{count} Personen hinzugefügt}}",
   "relationshipImportantDescription": "Erinnere mich, in Kontakt zu bleiben",
-  "relationshipImportantLabel": "Im Blick",
+  "relationshipImportantLabel": "Mit Erinnerungen",
   "relationshipImportConfirmButton": "{count, plural, =1{1 Person hinzufügen} other{{count} Personen hinzufügen}}",
   "relationshipImportEmpty": "Keine Kontakte auf diesem Gerät",
   "relationshipImportFailed": "Es konnte niemand hinzugefügt werden",
@@ -4724,7 +4724,7 @@
   "relationshipNicknameLabel": "Spitzname",
   "relationshipNoCheckIns": "Noch keine Check-ins — erfasse einen nach eurem nächsten Gespräch.",
   "relationshipNoLinkedTasks": "Noch keine Aufgaben verknüpft.",
-  "relationshipNotEnrolled": "Nicht im Blick",
+  "relationshipNotEnrolled": "Ohne Erinnerungen",
   "relationshipNotFound": "Diese Person ist nicht mehr in deiner Liste.",
   "relationshipOnTrackCadence": "Im Rhythmus · {cadence}",
   "@relationshipOnTrackCadence": {
@@ -4798,7 +4798,7 @@
   "relationshipsPageTitle": "Menschen",
   "relationshipsSelectPersonHint": "Wähle eine Person, um ihre Seite zu sehen.",
   "relationshipsSummaryDueNow": "Jetzt fällig",
-  "relationshipsSummaryEnrolled": "/ {count} im Blick",
+  "relationshipsSummaryEnrolled": "/ {count} mit Erinnerungen",
   "@relationshipsSummaryEnrolled": {
     "placeholders": {
       "count": {
@@ -4819,7 +4819,7 @@
   },
   "relationshipsSummaryNextDueCaption": "Als Nächstes",
   "relationshipsSummaryNoneDue": "Niemand fällig",
-  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 Person nicht im Blick} other{{count} Personen nicht im Blick}}",
+  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 Person ohne Erinnerungen} other{{count} Personen ohne Erinnerungen}}",
   "@relationshipsSummaryNotEnrolled": {
     "placeholders": {
       "count": {

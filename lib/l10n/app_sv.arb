@@ -5016,14 +5016,14 @@
   "relationshipAgentAsOfBand": "{band} · uppdaterad {age}",
   "relationshipAgentBriefNow": "Briefa nu",
   "relationshipAgentCall": "Ring {name}",
-  "relationshipAgentEnrolPerson": "Följ {name}",
+  "relationshipAgentEnrolPerson": "Påminn mig om {name}",
   "relationshipAgentFailedBody": "Leverantören svarade med ett fel innan briefingen skrevs. Dina avstämningar är oförändrade.",
   "relationshipAgentFailedNoModel": "Ingen modell är inställd för briefingar. Välj en under AI-inställningar › Agenter. Detaljer finns under fliken Aktivitet.",
   "relationshipAgentFailedPlain": "Senaste körningen misslyckades",
   "relationshipAgentLastRunFailed": "Senaste körningen misslyckades · {time}",
   "relationshipAgentNoAgent": "Ingen agent för den här personen",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Ingen briefing än. „Briefa nu“ skriver en så fort du loggat en avstämning; den ser aldrig telefonnummer eller e-post.} =1{Ingen briefing än. „Briefa nu“ skriver en utifrån din avstämning; den ser aldrig telefonnummer eller e-post.} other{Ingen briefing än. „Briefa nu“ skriver en utifrån dina {count} avstämningar; den ser aldrig telefonnummer eller e-post.}}",
-  "relationshipAgentNotEnrolledBody": "Följ {name} för att få en chatt, påminnelser när det gått ett tag och en briefing.",
+  "relationshipAgentNotEnrolledBody": "Slå på påminnelser för {name} för att få en chatt, en knuff när det gått ett tag och en briefing.",
   "relationshipAgentOnlyYourStartsUseAi": "Bara det du själv startar använder AI",
   "relationshipAgentOutOfDateNewCheckIn": "Inaktuell · ny avstämning {day}",
   "relationshipAgentOutOfDateNewCheckInShort": "Inaktuell · ny avstämning",
@@ -5169,7 +5169,7 @@
   "relationshipImportAction": "Importera från kontakter",
   "relationshipImportAdded": "{count, plural, =1{1 person tillagd} other{{count} personer tillagda}}",
   "relationshipImportantDescription": "Påminn mig om att hålla kontakten",
-  "relationshipImportantLabel": "Följs",
+  "relationshipImportantLabel": "Med påminnelser",
   "relationshipImportConfirmButton": "{count, plural, =1{Lägg till 1 person} other{Lägg till {count} personer}}",
   "relationshipImportEmpty": "Inga kontakter på den här enheten",
   "relationshipImportFailed": "Kunde inte lägga till någon",
@@ -5220,7 +5220,7 @@
   "relationshipNicknameLabel": "Smeknamn",
   "relationshipNoCheckIns": "Inga avstämningar än — logga en efter ert nästa samtal.",
   "relationshipNoLinkedTasks": "Inga uppgifter länkade än.",
-  "relationshipNotEnrolled": "Följs inte",
+  "relationshipNotEnrolled": "Utan påminnelser",
   "relationshipNotFound": "Den här personen följs inte längre.",
   "relationshipOnTrackCadence": "I fas · {cadence}",
   "@relationshipOnTrackCadence": {
@@ -5294,7 +5294,7 @@
   "relationshipsPageTitle": "Personer",
   "relationshipsSelectPersonHint": "Välj en person för att se deras sida.",
   "relationshipsSummaryDueNow": "Dags nu",
-  "relationshipsSummaryEnrolled": "{count, plural, =1{/ 1 följd} other{/ {count} följda}}",
+  "relationshipsSummaryEnrolled": "/ {count} med påminnelser",
   "@relationshipsSummaryEnrolled": {
     "placeholders": {
       "count": {
@@ -5315,7 +5315,7 @@
   },
   "relationshipsSummaryNextDueCaption": "Nästa",
   "relationshipsSummaryNoneDue": "Ingen väntar",
-  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 person följs inte} other{{count} personer följs inte}}",
+  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 person utan påminnelser} other{{count} personer utan påminnelser}}",
   "@relationshipsSummaryNotEnrolled": {
     "placeholders": {
       "count": {

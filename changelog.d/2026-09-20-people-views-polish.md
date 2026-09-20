@@ -15,12 +15,13 @@
   next and how many people are due, then did nothing — you had to go and
   find them. Each half opens what it is about: the count opens the person
   who has been waiting longest, the sentence opens the one it names.
-- **One word for one thing on a person's page.** The button that starts the
-  agent watching someone said "Mark important" while everything around it —
-  the band, the pill, the summary — said "enrolled", leaving the one action a
-  new user has to find as the only thing not named after it. It now reads
-  "Enrol {name}", and the marker beside an enrolled person's name reads
-  "Enrolled" too.
+- **One plain phrase for one thing.** Whether the app watches a person and
+  nudges you about them was called three things at once: the groups said
+  "Not enrolled", the switch said "Important", and the button that changes
+  it said "Mark important" — so the one thing a new user has to find was the
+  only thing not named after the state it changes. It is now the same plain
+  wording everywhere: a person has **reminders on** or **no reminders**, and
+  the button reads "Remind me about {name}".
 - **The person page no longer offers the same action twice.** *Log check-in*
   and the call button appeared both in the briefing card's footer and in the
   bar at the bottom of the page, each one prominent in one place and quiet in

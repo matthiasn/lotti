@@ -632,7 +632,7 @@ void main() {
 
     expect(find.text('Due · 1'), findsOneWidget);
     expect(find.text('On track · 2'), findsOneWidget);
-    expect(find.text('Not enrolled · 2'), findsOneWidget);
+    expect(find.text('No reminders · 2'), findsOneWidget);
 
     // Never "Due Mon" for a lapse that happened last Monday (P5).
     expect(find.text('3 days over'), findsOneWidget);
@@ -657,7 +657,7 @@ void main() {
       reason: 'no row under that heading repeats it as a pill',
     );
     expect(
-      find.text('Not enrolled'),
+      find.text('No reminders'),
       findsNothing,
       reason: 'the heading reads `Not enrolled · 2`; no row repeats it',
     );
@@ -683,13 +683,13 @@ void main() {
 
     expect(find.byType(PeopleSummaryCard), findsOneWidget);
     expect(find.text('1'), findsOneWidget);
-    expect(find.text('/ 3 enrolled'), findsOneWidget);
+    expect(find.text('/ 3 with reminders'), findsOneWidget);
     // Caption, name, day — the day on its own line so it is never
     // the part that ellipses.
     expect(find.text('Next due'), findsOneWidget);
     expect(find.text('Ben'), findsOneWidget);
     expect(find.text('Thu 20 Aug'), findsOneWidget);
-    expect(find.text('2 people not enrolled'), findsOneWidget);
+    expect(find.text('2 people without reminders'), findsOneWidget);
   });
 
   testWidgets('a person who is not important reads Not enrolled, with no '
@@ -703,8 +703,8 @@ void main() {
 
     expect(_rowNamed('Anna'), findsOneWidget);
     // The band heading carries the state; the row does not repeat it.
-    expect(find.text('Not enrolled · 1'), findsOneWidget);
-    expect(find.text('Not enrolled'), findsNothing);
+    expect(find.text('No reminders · 1'), findsOneWidget);
+    expect(find.text('No reminders'), findsNothing);
     expect(find.byType(PeopleCadencePillWidget), findsNothing);
     expect(find.text('On track'), findsNothing);
     expect(find.byType(PeopleSummaryCard), findsOneWidget);

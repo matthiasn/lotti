@@ -816,7 +816,7 @@ void main() {
 
       expect(
         tester.widget<Text>(find.byKey(const ValueKey('person-eyebrow'))).data,
-        'Penguin Operations · Enrolled',
+        'Penguin Operations · Reminders on',
       );
       expect(find.text('Commander Pip Frostbeak'), findsOneWidget);
 
@@ -908,7 +908,7 @@ void main() {
       tester,
     ) async {
       await pump(tester, relationship: person(cadenceDays: 7));
-      expect(pill(tester, 'person-pill-status').label, 'Not enrolled');
+      expect(pill(tester, 'person-pill-status').label, 'No reminders');
 
       await pump(
         tester,

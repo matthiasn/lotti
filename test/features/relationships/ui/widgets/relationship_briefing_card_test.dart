@@ -449,7 +449,7 @@ void main() {
         reason: 'the header above the card already carries the pills',
       );
       expect(
-        find.textContaining('Enrol Pip to get a chat'),
+        find.textContaining('Turn on reminders for Pip'),
         findsOneWidget,
       );
       // Prose in the prose ink, like the enrolled faces.
@@ -478,7 +478,7 @@ void main() {
       // summary all say *enrolled*, so the control that ends "Not enrolled"
       // says it too rather than naming a second concept ("important") the
       // user has to connect to the first.
-      expect(find.text('Enrol Pip'), findsOneWidget);
+      expect(find.text('Remind me about Pip'), findsOneWidget);
       expect(find.text('Mark important'), findsNothing);
       expect(
         find.text('Only what you start yourself uses AI'),

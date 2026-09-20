@@ -241,7 +241,7 @@ void main() {
       );
       // Under the `Not enrolled` heading the pill would be the same two
       // words again, so the row drops it.
-      expect(find.text('Not enrolled'), findsNothing);
+      expect(find.text('No reminders'), findsNothing);
       expect(find.byType(PeopleCadencePillWidget), findsNothing);
       expect(find.textContaining('days over'), findsNothing);
       // The stored setting is still what the line names.

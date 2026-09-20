@@ -11721,7 +11721,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String relationshipAgentEnrolPerson(String name) {
-    return 'Følg $name';
+    return 'Mind mig om $name';
   }
 
   @override
@@ -11760,7 +11760,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Følg $name for at få en chat, påmindelser når der er gået et stykke tid, og en briefing.';
+    return 'Slå påmindelser til for $name for at få en chat, et prik når der er gået et stykke tid, og en briefing.';
   }
 
   @override
@@ -12125,7 +12125,7 @@ class AppLocalizationsDa extends AppLocalizations {
       'Mind mig om at holde kontakten';
 
   @override
-  String get relationshipImportantLabel => 'Følges';
+  String get relationshipImportantLabel => 'Med påmindelser';
 
   @override
   String relationshipImportConfirmButton(int count) {
@@ -12263,7 +12263,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipNoLinkedTasks => 'Ingen opgaver linket endnu.';
 
   @override
-  String get relationshipNotEnrolled => 'Ikke fulgt';
+  String get relationshipNotEnrolled => 'Uden påmindelser';
 
   @override
   String get relationshipNotFound => 'Denne person følges ikke længere.';
@@ -12418,7 +12418,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String relationshipsSummaryEnrolled(int count) {
-    return '/ $count fulgt';
+    return '/ $count med påmindelser';
   }
 
   @override
@@ -12437,8 +12437,8 @@ class AppLocalizationsDa extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count personer ikke fulgt',
-      one: '1 person ikke fulgt',
+      other: '$count personer uden påmindelser',
+      one: '1 person uden påmindelser',
     );
     return '$_temp0';
   }

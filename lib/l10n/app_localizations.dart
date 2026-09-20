@@ -19624,7 +19624,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipAgentEnrolPerson.
   ///
   /// In en, this message translates to:
-  /// **'Enrol {name}'**
+  /// **'Remind me about {name}'**
   String relationshipAgentEnrolPerson(String name);
 
   /// No description provided for @relationshipAgentFailedBody.
@@ -19666,7 +19666,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipAgentNotEnrolledBody.
   ///
   /// In en, this message translates to:
-  /// **'Enrol {name} to get a chat, nudges when it has been a while, and a briefing.'**
+  /// **'Turn on reminders for {name} to get a chat, a nudge when it has been a while, and a briefing.'**
   String relationshipAgentNotEnrolledBody(String name);
 
   /// No description provided for @relationshipAgentOnlyYourStartsUseAi.
@@ -20140,7 +20140,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipImportantLabel.
   ///
   /// In en, this message translates to:
-  /// **'Enrolled'**
+  /// **'Reminders on'**
   String get relationshipImportantLabel;
 
   /// Creates one person per reviewed contact
@@ -20344,7 +20344,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipNotEnrolled.
   ///
   /// In en, this message translates to:
-  /// **'Not enrolled'**
+  /// **'No reminders'**
   String get relationshipNotEnrolled;
 
   /// No description provided for @relationshipNotFound.
@@ -20566,7 +20566,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipsSummaryEnrolled.
   ///
   /// In en, this message translates to:
-  /// **'/ {count} enrolled'**
+  /// **'/ {count} with reminders'**
   String relationshipsSummaryEnrolled(int count);
 
   /// No description provided for @relationshipsSummaryNextDue.
@@ -20590,7 +20590,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipsSummaryNotEnrolled.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 person not enrolled} other{{count} people not enrolled}}'**
+  /// **'{count, plural, =1{1 person without reminders} other{{count} people without reminders}}'**
   String relationshipsSummaryNotEnrolled(int count);
 
   /// No description provided for @relationshipStatusActive.

@@ -5015,14 +5015,14 @@
   "relationshipAgentAsOfBand": "{band} · atualizado {age}",
   "relationshipAgentBriefNow": "Criar briefing agora",
   "relationshipAgentCall": "Ligar a {name}",
-  "relationshipAgentEnrolPerson": "Acompanhar {name}",
+  "relationshipAgentEnrolPerson": "Lembrar-me de {name}",
   "relationshipAgentFailedBody": "O fornecedor devolveu um erro antes de o briefing ser escrito. Os teus check-ins estão inalterados.",
   "relationshipAgentFailedNoModel": "Não há nenhum modelo configurado para briefings. Escolhe um em Definições de IA › Agentes. Os detalhes estão no separador Atividade.",
   "relationshipAgentFailedPlain": "Última execução falhou",
   "relationshipAgentLastRunFailed": "Última execução falhou · {time}",
   "relationshipAgentNoAgent": "Sem agente para esta pessoa",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Ainda sem briefing. „Criar briefing agora“ escreve um assim que registares um check-in; nunca vê o telefone nem o e-mail.} =1{Ainda sem briefing. „Criar briefing agora“ escreve um a partir do teu check-in; nunca vê o telefone nem o e-mail.} other{Ainda sem briefing. „Criar briefing agora“ escreve um a partir dos teus {count} check-ins; nunca vê o telefone nem o e-mail.}}",
-  "relationshipAgentNotEnrolledBody": "Acompanha {name} para ter um chat, lembretes quando já passou algum tempo e um briefing.",
+  "relationshipAgentNotEnrolledBody": "Ativa os lembretes de {name} para ter um chat, um aviso quando já passou algum tempo e um briefing.",
   "relationshipAgentOnlyYourStartsUseAi": "Só o que tu próprio inicias usa IA",
   "relationshipAgentOutOfDateNewCheckIn": "Desatualizado · novo check-in {day}",
   "relationshipAgentOutOfDateNewCheckInShort": "Desatualizado · novo check-in",
@@ -5168,7 +5168,7 @@
   "relationshipImportAction": "Importar dos contactos",
   "relationshipImportAdded": "{count, plural, =1{1 pessoa adicionada} other{{count} pessoas adicionadas}}",
   "relationshipImportantDescription": "Me lembre de manter contato",
-  "relationshipImportantLabel": "Com acompanhamento",
+  "relationshipImportantLabel": "Com lembretes",
   "relationshipImportConfirmButton": "{count, plural, =1{Adicionar 1 pessoa} other{Adicionar {count} pessoas}}",
   "relationshipImportEmpty": "Sem contactos neste dispositivo",
   "relationshipImportFailed": "Não foi possível adicionar ninguém",
@@ -5219,7 +5219,7 @@
   "relationshipNicknameLabel": "Apelido",
   "relationshipNoCheckIns": "Nenhum registro ainda — adicione um após a próxima conversa.",
   "relationshipNoLinkedTasks": "Nenhuma tarefa vinculada ainda.",
-  "relationshipNotEnrolled": "Sem acompanhamento",
+  "relationshipNotEnrolled": "Sem lembretes",
   "relationshipNotFound": "Esta pessoa não está mais na sua lista.",
   "relationshipOnTrackCadence": "Em dia · {cadence}",
   "@relationshipOnTrackCadence": {
@@ -5293,7 +5293,7 @@
   "relationshipsPageTitle": "Pessoas",
   "relationshipsSelectPersonHint": "Escolhe uma pessoa para ver a página dela.",
   "relationshipsSummaryDueNow": "Pendentes agora",
-  "relationshipsSummaryEnrolled": "/ {count} em acompanhamento",
+  "relationshipsSummaryEnrolled": "/ {count} com lembretes",
   "@relationshipsSummaryEnrolled": {
     "placeholders": {
       "count": {
@@ -5314,7 +5314,7 @@
   },
   "relationshipsSummaryNextDueCaption": "A seguir",
   "relationshipsSummaryNoneDue": "Ninguém pendente",
-  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 pessoa sem acompanhamento} other{{count} pessoas sem acompanhamento}}",
+  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 pessoa sem lembretes} other{{count} pessoas sem lembretes}}",
   "@relationshipsSummaryNotEnrolled": {
     "placeholders": {
       "count": {

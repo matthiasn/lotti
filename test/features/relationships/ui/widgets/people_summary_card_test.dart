@@ -140,7 +140,7 @@ void main() {
 
     expect(find.text('Due now'), findsOneWidget);
     expect(find.text('1'), findsOneWidget);
-    expect(find.text('/ 4 enrolled'), findsOneWidget);
+    expect(find.text('/ 4 with reminders'), findsOneWidget);
     // Caption, name, day — the day on a line of its own. Wrapped into one
     // run it was the day that ellipsed, and a date the reader cannot finish
     // is nothing, while a truncated name is still recognisable.
@@ -157,7 +157,7 @@ void main() {
           ?.fontFamily,
       'Inconsolata',
     );
-    expect(find.text('1 person not enrolled'), findsOneWidget);
+    expect(find.text('1 person without reminders'), findsOneWidget);
     // A non-zero due count is the one thing on the card that may shout.
     final tokens = tester.element(find.byType(PeopleSummaryCard)).designTokens;
     expect(numeralColor(tester), tokens.colors.alert.warning.defaultColor);
@@ -173,7 +173,7 @@ void main() {
     expect(find.text('0'), findsOneWidget);
     final tokens = tester.element(find.byType(PeopleSummaryCard)).designTokens;
     expect(numeralColor(tester), tokens.colors.text.highEmphasis);
-    expect(find.textContaining('not enrolled'), findsNothing);
+    expect(find.textContaining('without reminders'), findsNothing);
     expect(find.text('Mira'), findsOneWidget);
     expect(find.text('Mon 24 Aug'), findsOneWidget);
   });
@@ -198,6 +198,6 @@ void main() {
     await pump(tester, summary(enrolled: 2, notEnrolled: 3));
 
     expect(find.text('No one due'), findsOneWidget);
-    expect(find.text('3 people not enrolled'), findsOneWidget);
+    expect(find.text('3 people without reminders'), findsOneWidget);
   });
 }

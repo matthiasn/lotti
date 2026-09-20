@@ -5015,14 +5015,14 @@
   "relationshipAgentAsOfBand": "{band} · bijgewerkt {age}",
   "relationshipAgentBriefNow": "Nu briefen",
   "relationshipAgentCall": "{name} bellen",
-  "relationshipAgentEnrolPerson": "{name} volgen",
+  "relationshipAgentEnrolPerson": "Herinner me aan {name}",
   "relationshipAgentFailedBody": "De provider gaf een fout voordat de briefing geschreven was. Je check-ins zijn ongewijzigd.",
   "relationshipAgentFailedNoModel": "Er is geen model ingesteld voor briefings. Kies er een onder AI-instellingen › Agents. Details staan op het tabblad Activiteit.",
   "relationshipAgentFailedPlain": "Laatste run mislukt",
   "relationshipAgentLastRunFailed": "Laatste run mislukt · {time}",
   "relationshipAgentNoAgent": "Geen agent voor deze persoon",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Nog geen briefing. „Nu briefen“ schrijft er een zodra je een check-in hebt gelogd; het ziet nooit het telefoonnummer of het e-mailadres.} =1{Nog geen briefing. „Nu briefen“ schrijft er een op basis van je check-in; het ziet nooit het telefoonnummer of het e-mailadres.} other{Nog geen briefing. „Nu briefen“ schrijft er een op basis van je {count} check-ins; het ziet nooit het telefoonnummer of het e-mailadres.}}",
-  "relationshipAgentNotEnrolledBody": "Volg {name} voor een chat, een seintje als het even geleden is, en een briefing.",
+  "relationshipAgentNotEnrolledBody": "Zet herinneringen aan voor {name} voor een chat, een seintje als het even geleden is, en een briefing.",
   "relationshipAgentOnlyYourStartsUseAi": "Alleen wat je zelf start gebruikt AI",
   "relationshipAgentOutOfDateNewCheckIn": "Verouderd · nieuwe check-in {day}",
   "relationshipAgentOutOfDateNewCheckInShort": "Verouderd · nieuwe check-in",
@@ -5168,7 +5168,7 @@
   "relationshipImportAction": "Importeren uit contacten",
   "relationshipImportAdded": "{count, plural, =1{1 persoon toegevoegd} other{{count} personen toegevoegd}}",
   "relationshipImportantDescription": "Herinner me eraan contact te houden",
-  "relationshipImportantLabel": "Gevolgd",
+  "relationshipImportantLabel": "Met herinneringen",
   "relationshipImportConfirmButton": "{count, plural, =1{1 persoon toevoegen} other{{count} personen toevoegen}}",
   "relationshipImportEmpty": "Geen contacten op dit apparaat",
   "relationshipImportFailed": "Kon niemand toevoegen",
@@ -5219,7 +5219,7 @@
   "relationshipNicknameLabel": "Bijnaam",
   "relationshipNoCheckIns": "Nog geen check-ins — leg er een vast na jullie volgende gesprek.",
   "relationshipNoLinkedTasks": "Nog geen gekoppelde taken.",
-  "relationshipNotEnrolled": "Niet gevolgd",
+  "relationshipNotEnrolled": "Zonder herinneringen",
   "relationshipNotFound": "Deze persoon staat niet meer in je lijst.",
   "relationshipOnTrackCadence": "Op schema · {cadence}",
   "@relationshipOnTrackCadence": {
@@ -5293,7 +5293,7 @@
   "relationshipsPageTitle": "Mensen",
   "relationshipsSelectPersonHint": "Kies iemand om de pagina te zien.",
   "relationshipsSummaryDueNow": "Nu aan de beurt",
-  "relationshipsSummaryEnrolled": "/ {count} gevolgd",
+  "relationshipsSummaryEnrolled": "/ {count} met herinneringen",
   "@relationshipsSummaryEnrolled": {
     "placeholders": {
       "count": {
@@ -5314,7 +5314,7 @@
   },
   "relationshipsSummaryNextDueCaption": "Eerstvolgende",
   "relationshipsSummaryNoneDue": "Niemand aan de beurt",
-  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 persoon niet gevolgd} other{{count} personen niet gevolgd}}",
+  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 persoon zonder herinneringen} other{{count} personen zonder herinneringen}}",
   "@relationshipsSummaryNotEnrolled": {
     "placeholders": {
       "count": {

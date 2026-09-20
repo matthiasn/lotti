@@ -335,7 +335,7 @@ void main() {
       );
 
       // The label toggles the switch it belongs to, not its neighbour.
-      await tester.tap(find.text('Enrolled').first);
+      await tester.tap(find.text('Reminders on').first);
       await tester.pumpAndSettle();
       final switches = tester.widgetList<Switch>(find.byType(Switch)).toList();
       expect(switches.first.value, isTrue);

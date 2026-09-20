@@ -11891,7 +11891,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String relationshipAgentEnrolPerson(String name) {
-    return 'Sledovat $name';
+    return 'Připomínat $name';
   }
 
   @override
@@ -11932,7 +11932,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Začni sledovat $name a získáš chat, připomínky po delší odmlce a briefing.';
+    return 'Zapni připomínky pro $name a získáš chat, pobídku po delší odmlce a briefing.';
   }
 
   @override
@@ -12305,7 +12305,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipImportantDescription => 'Připomínej mi, ať se ozvu';
 
   @override
-  String get relationshipImportantLabel => 'Sledováno';
+  String get relationshipImportantLabel => 'S připomínkami';
 
   @override
   String relationshipImportConfirmButton(int count) {
@@ -12447,7 +12447,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipNoLinkedTasks => 'Zatím žádné propojené úkoly.';
 
   @override
-  String get relationshipNotEnrolled => 'Nesledováno';
+  String get relationshipNotEnrolled => 'Bez připomínek';
 
   @override
   String get relationshipNotFound => 'Tahle osoba už není sledovaná.';
@@ -12602,14 +12602,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String relationshipsSummaryEnrolled(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '/ $count sledovaných',
-      few: '/ $count sledované',
-      one: '/ 1 sledovaná',
-    );
-    return '$_temp0';
+    return '/ $count s připomínkami';
   }
 
   @override
@@ -12628,9 +12621,9 @@ class AppLocalizationsCs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count nesledovaných osob',
-      few: '$count nesledované osoby',
-      one: '1 nesledovaná osoba',
+      other: '$count osob bez připomínek',
+      few: '$count osoby bez připomínek',
+      one: '1 osoba bez připomínek',
     );
     return '$_temp0';
   }

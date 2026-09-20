@@ -11958,7 +11958,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String relationshipAgentEnrolPerson(String name) {
-    return 'Urmăriți $name';
+    return 'Amintiți-mi de $name';
   }
 
   @override
@@ -11999,7 +11999,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Urmăriți $name pentru a primi un chat, notificări când a trecut ceva timp și un briefing.';
+    return 'Activați memento-urile pentru $name pentru a primi un chat, un îndemn când a trecut ceva timp și un briefing.';
   }
 
   @override
@@ -12374,7 +12374,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Amintiți-mi să păstrez legătura';
 
   @override
-  String get relationshipImportantLabel => 'Urmărită';
+  String get relationshipImportantLabel => 'Cu memento-uri';
 
   @override
   String relationshipImportConfirmButton(int count) {
@@ -12517,7 +12517,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipNoLinkedTasks => 'Nicio sarcină asociată încă.';
 
   @override
-  String get relationshipNotEnrolled => 'Neurmărită';
+  String get relationshipNotEnrolled => 'Fără memento-uri';
 
   @override
   String get relationshipNotFound => 'Această persoană nu mai este urmărită.';
@@ -12675,14 +12675,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String relationshipsSummaryEnrolled(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '/ $count de urmărite',
-      few: '/ $count urmărite',
-      one: '/ 1 urmărită',
-    );
-    return '$_temp0';
+    return '/ $count cu memento-uri';
   }
 
   @override
@@ -12701,9 +12694,9 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count de persoane neurmărite',
-      few: '$count persoane neurmărite',
-      one: '1 persoană neurmărită',
+      other: '$count de persoane fără memento-uri',
+      few: '$count persoane fără memento-uri',
+      one: '1 persoană fără memento-uri',
     );
     return '$_temp0';
   }

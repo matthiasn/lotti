@@ -518,6 +518,16 @@ at someone already overdue is lying in order to be useful. Two facts, two
 doors — the count opens the longest lapse, the sentence opens the person it
 names, and a half with nobody behind it draws no chevron and takes no tap.
 
+**The enrolment axis is named in plain words, not in its own noun.**
+`important` is the stored boolean and `isEnrolled` the runtime predicate,
+but no user-facing string says either: the bands, the pills, the summary and
+the control all speak of **reminders on** / **no reminders**. It went
+through an "enrolled" register first, which was at least consistent — the
+state, the marker and the verb finally agreed — but consistent jargon is
+still jargon to a second-language reader, and every non-English catalog had
+already reached for a plainer verb of its own. The rule that survives is the
+one that mattered: *one phrase for the state, the marker and the control*.
+
 **Mono is confined to dates.** `RelationshipLineWithDate`
 ([`ui/shared/relationship_timestamps.dart`](../../lib/features/relationships/ui/shared/relationship_timestamps.dart))
 splits a line so only the timestamp wears Inconsolata **at the size of the
@@ -1162,7 +1172,7 @@ so the decision is a table rather than a widget tree:
 
 | Face | When | Status line · body · footer |
 |---|---|---|
-| Not enrolled | not `important`, or dormant/archived | plain section card, people glyph · `No agent for this person` (or the status word while paused) · what enrolling turns on · **Enrol {name}** · meta `Only what you start yourself uses AI` |
+| Not enrolled | not `important`, or dormant/archived | plain section card, people glyph · `No agent for this person` (or the status word while paused) · what reminders turn on · **Remind me about {name}** · meta `Only what you start yourself uses AI` |
 | No briefing | enrolled, no current report | `Agent watching · next look {day}` · how many check-ins *Brief now* would read, and that it never sees a channel · *Log check-in* · **Brief now** |
 | Running | `agentIsRunningProvider` | spinner · `Writing the briefing…` · the briefing being replaced, still readable (TL;DR + Read more), or no body before the first — never a duration estimate · *See activity* · no primary |
 | Failed | `consecutiveFailureCount > 0` and the last wake is newer than the report | `Last run failed · {ago}` in error ink · the provider returned an error, your check-ins are unchanged (or that no model is set up) · *See activity* · **Choose a model** when no route resolves, **Try again** otherwise |
@@ -1180,7 +1190,7 @@ more* — so the folded card stays status · TL;DR · one next step.
 ```mermaid
 stateDiagram-v2
   [*] --> NotEnrolled
-  NotEnrolled --> NoBriefing: Enrol {name} (agent created)
+  NotEnrolled --> NoBriefing: Remind me about {name} (agent created)
   NoBriefing --> Running: Brief now / wake
   Running --> Current: report written
   Running --> Failed: wake failed
@@ -1200,7 +1210,7 @@ inference — before this, no relationship wake ever wrote either, so the
 failed face could never appear and the internals' Stats tab never knew the
 last wake. And the card arms one timer at the next minute/hour/day boundary of the
 briefing's age (`untilNextAgeBucket`, shared with the goal page), so "as of
-just now" does not stay on screen for hours. *Enrol {name}* on the plain
+just now" does not stay on screen for hours. *Remind me about {name}* on the plain
 card also mints the agent through `ensureAgentForRelationship`, the same
 lazy-create call the edit form makes.
 

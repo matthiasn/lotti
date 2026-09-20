@@ -626,9 +626,9 @@ void main() {
       // A screen reader reaching the control hears what it changes, and the
       // label toggles it.
       final semantics = tester.getSemantics(find.byType(Switch));
-      expect(semantics.label, contains('Enrolled'));
+      expect(semantics.label, contains('Reminders on'));
 
-      await tester.tap(find.text('Enrolled'));
+      await tester.tap(find.text('Reminders on'));
       await tester.pumpAndSettle();
 
       expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);

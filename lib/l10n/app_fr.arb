@@ -4520,14 +4520,14 @@
   "relationshipAgentAsOfBand": "{band} · mis à jour {age}",
   "relationshipAgentBriefNow": "Briefer maintenant",
   "relationshipAgentCall": "Appeler {name}",
-  "relationshipAgentEnrolPerson": "Suivre {name}",
+  "relationshipAgentEnrolPerson": "Me rappeler {name}",
   "relationshipAgentFailedBody": "Le fournisseur a renvoyé une erreur avant que le briefing soit rédigé. Tes points sont inchangés.",
   "relationshipAgentFailedNoModel": "Aucun modèle n'est configuré pour les briefings. Choisis-en un dans Réglages IA › Agents. Les détails sont dans l'onglet Activité.",
   "relationshipAgentFailedPlain": "Dernière exécution échouée",
   "relationshipAgentLastRunFailed": "Dernière exécution échouée · {time}",
   "relationshipAgentNoAgent": "Aucun agent pour cette personne",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Pas encore de briefing. « Briefer maintenant » en rédige un dès que tu as consigné un check-in ; il ne voit jamais le numéro ni l'e-mail.} =1{Pas encore de briefing. « Briefer maintenant » en rédige un à partir de ton check-in ; il ne voit jamais le numéro ni l'e-mail.} other{Pas encore de briefing. « Briefer maintenant » en rédige un à partir de tes {count} check-ins ; il ne voit jamais le numéro ni l'e-mail.}}",
-  "relationshipAgentNotEnrolledBody": "Suis {name} pour avoir un chat, des rappels quand ça fait un moment, et un briefing.",
+  "relationshipAgentNotEnrolledBody": "Active les rappels pour {name} pour avoir un chat, un rappel quand ça fait un moment, et un briefing.",
   "relationshipAgentOnlyYourStartsUseAi": "Seul ce que tu lances toi-même utilise l’IA",
   "relationshipAgentOutOfDateNewCheckIn": "Obsolète · nouveau check-in {day}",
   "relationshipAgentOutOfDateNewCheckInShort": "Obsolète · nouveau check-in",
@@ -4673,7 +4673,7 @@
   "relationshipImportAction": "Importer depuis les contacts",
   "relationshipImportAdded": "{count, plural, =1{1 personne ajoutée} other{{count} personnes ajoutées}}",
   "relationshipImportantDescription": "Rappelle-moi de garder le contact",
-  "relationshipImportantLabel": "Suivie",
+  "relationshipImportantLabel": "Avec rappels",
   "relationshipImportConfirmButton": "{count, plural, =1{Ajouter 1 personne} other{Ajouter {count} personnes}}",
   "relationshipImportEmpty": "Aucun contact sur cet appareil",
   "relationshipImportFailed": "Impossible d’ajouter qui que ce soit",
@@ -4724,7 +4724,7 @@
   "relationshipNicknameLabel": "Surnom",
   "relationshipNoCheckIns": "Aucun échange noté — ajoute le premier après votre prochaine conversation.",
   "relationshipNoLinkedTasks": "Aucune tâche liée pour l'instant.",
-  "relationshipNotEnrolled": "Non suivie",
+  "relationshipNotEnrolled": "Sans rappels",
   "relationshipNotFound": "Cette personne n'est plus dans ta liste.",
   "relationshipOnTrackCadence": "Dans le rythme · {cadence}",
   "@relationshipOnTrackCadence": {
@@ -4798,7 +4798,7 @@
   "relationshipsPageTitle": "Proches",
   "relationshipsSelectPersonHint": "Choisis une personne pour voir sa page.",
   "relationshipsSummaryDueNow": "À relancer maintenant",
-  "relationshipsSummaryEnrolled": "/ {count} suivies",
+  "relationshipsSummaryEnrolled": "/ {count} avec rappels",
   "@relationshipsSummaryEnrolled": {
     "placeholders": {
       "count": {
@@ -4819,7 +4819,7 @@
   },
   "relationshipsSummaryNextDueCaption": "Prochaine échéance",
   "relationshipsSummaryNoneDue": "Personne à relancer",
-  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 personne non suivie} other{{count} personnes non suivies}}",
+  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 personne sans rappels} other{{count} personnes sans rappels}}",
   "@relationshipsSummaryNotEnrolled": {
     "placeholders": {
       "count": {

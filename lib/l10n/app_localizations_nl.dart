@@ -11747,7 +11747,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String relationshipAgentEnrolPerson(String name) {
-    return '$name volgen';
+    return 'Herinner me aan $name';
   }
 
   @override
@@ -11786,7 +11786,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Volg $name voor een chat, een seintje als het even geleden is, en een briefing.';
+    return 'Zet herinneringen aan voor $name voor een chat, een seintje als het even geleden is, en een briefing.';
   }
 
   @override
@@ -12151,7 +12151,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Herinner me eraan contact te houden';
 
   @override
-  String get relationshipImportantLabel => 'Gevolgd';
+  String get relationshipImportantLabel => 'Met herinneringen';
 
   @override
   String relationshipImportConfirmButton(int count) {
@@ -12289,7 +12289,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipNoLinkedTasks => 'Nog geen gekoppelde taken.';
 
   @override
-  String get relationshipNotEnrolled => 'Niet gevolgd';
+  String get relationshipNotEnrolled => 'Zonder herinneringen';
 
   @override
   String get relationshipNotFound =>
@@ -12445,7 +12445,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String relationshipsSummaryEnrolled(int count) {
-    return '/ $count gevolgd';
+    return '/ $count met herinneringen';
   }
 
   @override
@@ -12464,8 +12464,8 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count personen niet gevolgd',
-      one: '1 persoon niet gevolgd',
+      other: '$count personen zonder herinneringen',
+      one: '1 persoon zonder herinneringen',
     );
     return '$_temp0';
   }
