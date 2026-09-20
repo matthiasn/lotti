@@ -283,6 +283,65 @@ void main() {
     );
   }
 
+  testWidgets(
+    'a report with no separate summary still counts as content',
+    (tester) async {
+      // `hasReportContent` reads the summary first and the report body
+      // second; a project whose agent wrote only a body must still be able
+      // to say that body is out of date.
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: ProjectAgentSummaryCard(
+              projectId: 'project-1',
+              record: makeTestProjectRecord(
+                aiSummary: '',
+                reportContent: 'Launch is on track.',
+              ),
+              identity: makeIdentity(),
+              hasProjectAgent: true,
+              isMutating: false,
+              onRefresh: () {},
+            ),
+          ),
+          overrides: [
+            agentReportProvider.overrideWith(
+              (ref, id) async => makeTestReport(agentId: id),
+            ),
+            agentIdentityProvider.overrideWith((ref, id) async => null),
+            agentStateProvider.overrideWith(
+              (ref, id) async => makeTestState(agentId: id).copyWith(
+                reportStaleAt: DateTime(2026, 9, 4, 12),
+                reportFreshAt: DateTime(2026, 9, 4, 11),
+              ),
+            ),
+            agentIsRunningProvider.overrideWith(
+              (ref, id) => Stream.value(false),
+            ),
+            taskAgentResolvedSetupProvider.overrideWith(
+              (ref, id) async => ResolvedAgentSetup(
+                status: AgentSetupResolutionStatus.resolved,
+                profile: ResolvedProfile(
+                  thinkingModelId: testAiModel().providerModelId,
+                  thinkingProvider: testInferenceProvider(),
+                  thinkingModel: testAiModel(),
+                ),
+              ),
+            ),
+            templateForAgentProvider.overrideWith((ref, id) async => null),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(ProjectAgentSummaryCard));
+      expect(
+        find.text(context.messages.taskAgentStatusOutOfDate),
+        findsOneWidget,
+      );
+    },
+  );
+
   testWidgets('keeps the task-style assignment row single-flight', (
     tester,
   ) async {

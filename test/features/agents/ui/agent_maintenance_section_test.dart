@@ -237,32 +237,71 @@ void main() {
       });
     });
 
-    testWidgets('a failed cancellation says so instead of going quiet', (
-      tester,
-    ) async {
-      final taskAgentService = MockTaskAgentService();
-      when(
-        () => taskAgentService.cancelScheduledWake(any()),
-      ).thenThrow(StateError('cancel failed'));
+    testWidgets(
+      'a failed cancellation says so and gives the countdown back',
+      (tester) async {
+        // The wake is still scheduled and about to fire, so hiding its
+        // countdown would leave the band reading "Updates on changes" over a
+        // pending run, with no way to retry the skip.
+        final taskAgentService = MockTaskAgentService();
+        when(
+          () => taskAgentService.cancelScheduledWake(any()),
+        ).thenThrow(StateError('cancel failed'));
 
-      await withClock(Clock.fixed(DateTime(2026, 5, 4, 12)), () async {
-        await tester.pumpWidget(
-          build(
-            automaticUpdates: true,
-            state: makeTestState(nextWakeAt: DateTime(2026, 5, 4, 12, 0, 30)),
-            taskAgentService: taskAgentService,
-            report: makeTestReport(tldr: 'Tldr line.'),
-          ),
-        );
-        await tester.pumpAndSettle();
-        await tester.tap(
-          find.byKey(const ValueKey('taskAgentSkipScheduledUpdate')),
-        );
-        await tester.pump();
+        await withClock(Clock.fixed(DateTime(2026, 5, 4, 12)), () async {
+          await tester.pumpWidget(
+            build(
+              automaticUpdates: true,
+              state: makeTestState(nextWakeAt: DateTime(2026, 5, 4, 12, 0, 30)),
+              taskAgentService: taskAgentService,
+              report: makeTestReport(tldr: 'Tldr line.'),
+            ),
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(
+            find.byKey(const ValueKey('taskAgentSkipScheduledUpdate')),
+          );
+          await tester.pumpAndSettle();
 
-        expect(find.text('Error'), findsOneWidget);
-      });
-    });
+          expect(find.text('Error'), findsOneWidget);
+          expect(find.text('Skip once'), findsOneWidget);
+          expect(find.textContaining('0:30'), findsOneWidget);
+        });
+      },
+    );
+
+    testWidgets(
+      'a project cancellation that rejects also restores the countdown',
+      (tester) async {
+        // The project service returns a Future, so its failure arrives
+        // asynchronously — a case a synchronous throw would not exercise.
+        final projectAgentService = MockProjectAgentService();
+        when(() => projectAgentService.cancelScheduledWake(any())).thenAnswer(
+          (_) => Future<void>.error(StateError('cancel failed')),
+        );
+
+        await withClock(Clock.fixed(DateTime(2026, 5, 4, 12)), () async {
+          await tester.pumpWidget(
+            build(
+              kind: AgentMaintenanceKind.project,
+              automaticUpdates: true,
+              state: makeTestState(nextWakeAt: DateTime(2026, 5, 4, 12, 0, 30)),
+              projectAgentService: projectAgentService,
+              report: makeTestReport(tldr: 'Tldr line.'),
+            ),
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(
+            find.byKey(const ValueKey('taskAgentSkipScheduledUpdate')),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('Error'), findsOneWidget);
+          expect(find.text('Skip once'), findsOneWidget);
+          expect(find.textContaining('0:30'), findsOneWidget);
+        });
+      },
+    );
 
     testWidgets(
       'a wake rescheduled after a skip brings its countdown back',
@@ -365,12 +404,16 @@ void main() {
       tester,
     ) async {
       final taskAgentService = MockTaskAgentService();
+      // A rejected future rather than `thenThrow`: the method returns a
+      // Future, so a synchronous throw would still be caught if production
+      // stopped awaiting it, and the test would pass without proving the
+      // asynchronous path it exists for.
       when(
         () => taskAgentService.updateAutomaticUpdates(
           agentId: any(named: 'agentId'),
           enabled: any(named: 'enabled'),
         ),
-      ).thenThrow(StateError('write failed'));
+      ).thenAnswer((_) => Future<void>.error(StateError('write failed')));
 
       await tester.pumpWidget(
         build(

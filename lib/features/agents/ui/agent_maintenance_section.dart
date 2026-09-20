@@ -230,18 +230,29 @@ class _AgentMaintenanceSectionState
 
   Future<void> _skipScheduledUpdate(DateTime? wakeAt) async {
     setState(() => _skippedWakeAt = wakeAt);
-    await _guarded('Failed to cancel scheduled wake', () async {
-      switch (widget.scope.kind) {
-        case AgentMaintenanceKind.task:
-          ref
-              .read(taskAgentServiceProvider)
-              .cancelScheduledWake(widget.agentId);
-        case AgentMaintenanceKind.project:
-          await ref
-              .read(projectAgentServiceProvider)
-              .cancelScheduledWake(widget.agentId);
-      }
-    });
+    final cancelled = await _guarded(
+      'Failed to cancel scheduled wake',
+      () async {
+        switch (widget.scope.kind) {
+          case AgentMaintenanceKind.task:
+            ref
+                .read(taskAgentServiceProvider)
+                .cancelScheduledWake(widget.agentId);
+          case AgentMaintenanceKind.project:
+            await ref
+                .read(projectAgentServiceProvider)
+                .cancelScheduledWake(widget.agentId);
+        }
+      },
+    );
+    // The latch is optimistic — it hides the countdown on the tap rather than
+    // on the round trip. A cancellation that did not happen leaves the wake
+    // scheduled and about to fire, so the countdown and its Skip action have
+    // to come back; otherwise the band reads "Updates on changes" over a
+    // pending run and the user is left with a toast and no way to retry.
+    if (!cancelled && mounted) {
+      setState(() => _skippedWakeAt = null);
+    }
   }
 
   Future<void> _updateAutomaticUpdates({required bool enabled}) async {
@@ -269,9 +280,13 @@ class _AgentMaintenanceSectionState
   /// Runs [action], reporting a failure once — in the log for the developer
   /// and as a toast for the user — rather than letting it surface as an
   /// unhandled error from a fire-and-forget tap.
-  Future<void> _guarded(String what, Future<void> Function() action) async {
+  ///
+  /// Returns whether the action completed, so a caller that moved the UI
+  /// ahead of the round trip can put it back.
+  Future<bool> _guarded(String what, Future<void> Function() action) async {
     try {
       await action();
+      return true;
     } catch (error, stackTrace) {
       developer.log(
         what,
@@ -279,11 +294,13 @@ class _AgentMaintenanceSectionState
         error: error,
         stackTrace: stackTrace,
       );
-      if (!mounted) return;
-      context.showToast(
-        tone: DesignSystemToastTone.error,
-        title: context.messages.commonError,
-      );
+      if (mounted) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.commonError,
+        );
+      }
+      return false;
     }
   }
 }
