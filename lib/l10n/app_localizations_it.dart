@@ -16045,12 +16045,12 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String unlinkTaskConfirmNamed(String title) {
-    return 'Unlink “$title”? The task itself is not deleted.';
+    return 'Scollegare «$title»? L’attività non viene eliminata.';
   }
 
   @override
   String get unlinkTaskFailedMessage =>
-      'Couldn\'t unlink the task. Please try again.';
+      'Non è stato possibile scollegare l’attività. Riprova.';
 
   @override
   String get unlinkTaskTitle => 'Scollega attività';

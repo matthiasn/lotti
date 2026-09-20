@@ -6740,6 +6740,8 @@
   "unifiedGoalsUngroupedHabitsHeader": "Zonder doel",
   "unlinkButton": "Verbinding verbreken",
   "unlinkTaskConfirm": "Weet u zeker dat u deze taak wilt losmaken?",
+  "unlinkTaskConfirmNamed": "„{title}“ ontkoppelen? De taak zelf wordt niet verwijderd.",
+  "unlinkTaskFailedMessage": "Ontkoppelen van de taak is mislukt. Probeer het opnieuw.",
   "unlinkTaskTitle": "Taak loskoppelen",
   "vectorSearchTiming": "{count, plural, =1{{elapsed}ms. {count} resultaat} other{{elapsed}ms. {count} resultaten}}",
   "@vectorSearchTiming": {

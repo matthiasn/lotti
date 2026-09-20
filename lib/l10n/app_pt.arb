@@ -6740,6 +6740,8 @@
   "unifiedGoalsUngroupedHabitsHeader": "Sem objetivo",
   "unlinkButton": "Desvincular",
   "unlinkTaskConfirm": "Tem certeza de que deseja desvincular esta tarefa?",
+  "unlinkTaskConfirmNamed": "Desvincular «{title}»? A tarefa em si não é excluída.",
+  "unlinkTaskFailedMessage": "Não foi possível desvincular a tarefa. Tente novamente.",
   "unlinkTaskTitle": "Desvincular tarefa",
   "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} resultado} other{{elapsed}ms, {count} resultados}}",
   "@vectorSearchTiming": {

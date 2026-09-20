@@ -6741,6 +6741,8 @@
   "unifiedGoalsUngroupedHabitsHeader": "Uden mål",
   "unlinkButton": "Afbryd forbindelsen",
   "unlinkTaskConfirm": "Er du sikker på, at du vil koble denne opgave fra?",
+  "unlinkTaskConfirmNamed": "Koble „{title}“ fra? Selve opgaven bliver ikke slettet.",
+  "unlinkTaskFailedMessage": "Opgaven kunne ikke kobles fra. Prøv igen.",
   "unlinkTaskTitle": "Afkoblingsopgave",
   "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} result} other{{elapsed}ms, {count} results}}",
   "@vectorSearchTiming": {

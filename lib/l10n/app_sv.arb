@@ -6741,6 +6741,8 @@
   "unifiedGoalsUngroupedHabitsHeader": "Utan mål",
   "unlinkButton": "Avlänka",
   "unlinkTaskConfirm": "Är du säker på att du vill koppla bort denna uppgift?",
+  "unlinkTaskConfirmNamed": "Koppla bort „{title}“? Själva uppgiften raderas inte.",
+  "unlinkTaskFailedMessage": "Det gick inte att koppla bort uppgiften. Försök igen.",
   "unlinkTaskTitle": "Koppla bort uppgiften",
   "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} resultat} other{{elapsed}ms, {count} resultat}}",
   "@vectorSearchTiming": {
