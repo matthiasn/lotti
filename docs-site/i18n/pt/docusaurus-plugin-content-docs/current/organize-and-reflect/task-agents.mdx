@@ -14,25 +14,28 @@ você confirmar ou rejeitar. Para a visão geral do sistema em todos os agentes
 em execução, consulte [Executar e monitorar agentes](../ai-and-automation/agents.mdx).
 
 O agente atribuído aparece abaixo das listas de verificação e das tarefas
-vinculadas da tarefa. Seu cartão recolhido mantém visíveis o resumo mais
-recente, o controle de atualização automática, a ação **Ativar agente** e a
-rota do modelo ativo, sem fazer a página da tarefa parecer um console de IA.
+vinculadas da tarefa. Seu cartão mantém o resumo mais recente e as
+eventuais alterações propostas, e nada mais. Seus controles de atualização e a
+configuração de IA ficam atrás de **Abra os internos do agente**, para que a
+página da tarefa se leia como uma tarefa e não como um console de IA.
 
 <ManualScreenshot
   caseId="tasks/agent-card"
-  alt="Agente de tarefa Habitat Watcher atribuído à tarefa do habitat orbital dos pinguins, mostrando seu resumo atual, atualizações automáticas, ação de despertar e rota do modelo do Project Waddle"
-  caption="O Habitat Watcher está atribuído a esta tarefa; a atribuição e as atualizações automáticas são escolhas separadas."
+  alt="Agente de tarefa Habitat Watcher atribuído à tarefa do habitat orbital dos pinguins, mostrando seu resumo atual e o controle Leia mais"
+  caption="O Habitat Watcher está atribuído a esta tarefa; a atribuição e as atualizações automáticas continuam sendo escolhas separadas, e os controles das duas ficam nos internos do agente."
 />
 
-No telefone, o cartão segue uma única ordem de leitura: identidade, controles
-de atualização, configuração de IA, relatório e, depois, alterações propostas
-e histórico. No desktop, o relatório e as propostas formam a coluna de
-leitura, enquanto os controles compactos permanecem por perto.
+Em qualquer tamanho de tela o cartão segue uma única ordem de leitura:
+identidade, relatório e, depois, alterações propostas e histórico. Quando o
+resumo fica para trás da tarefa, surgem entre os dois o aviso **Desatualizado**
+e a ação **Atualizar agora**; enquanto o resumo está em dia, o cartão não diz
+nada sobre sua atualidade.
 
 Escolha **Leia mais** para expandir o relatório completo ali mesmo. O cartão
 expandido mantém a tarefa visível, adiciona a avaliação de apoio do relatório e
-a próxima etapa recomendada, e oferece **Abrir detalhes internos do agente**
-quando você precisar de relatórios, conversas, observações ou detalhes de
+a próxima etapa recomendada, e oferece **Abra os internos do agente**
+quando você precisar dos controles de atualização e da configuração de IA do
+agente, ou de seus relatórios, conversas, observações e detalhes de
 execução.
 
 <ManualScreenshot
@@ -43,8 +46,10 @@ execução.
 
 ## Escolha a configuração de IA do agente
 
-A linha **Configuração atual** do cartão identifica o perfil, o modelo e o
-provedor usados no próximo despertar. Selecione-a para escolher um perfil de
+Abra **Abra os internos do agente** — pelo nome do agente no cabeçalho do
+cartão ou pelo link abaixo do relatório expandido: ali a linha **Configuração
+atual** identifica o perfil, o modelo e o provedor usados no próximo
+despertar. Selecione-a para escolher um perfil de
 inferência salvo, substituir apenas o modelo de pensamento, voltar ao padrão
 do perfil, copiar a configuração atual da categoria ou desligar a IA somente
 para este agente. A escolha permanece com esse agente para as próximas
@@ -91,16 +96,19 @@ nem resolve de outra forma as propostas que já aguardam sua decisão.
 ## Escolha atualizações automáticas ou manuais
 
 Novos agentes de tarefa começam com **Atualizações automáticas desativadas**. A
-atribuição por si só não gasta tokens em segundo plano. Enquanto as
-atualizações estão desativadas, a Lotti continua percebendo alterações
-relevantes na tarefa e em suas entradas vinculadas, marca um resumo mais antigo
-como desatualizado e espera você escolher **Ativar agente**. Um despertar
+atribuição por si só não gasta tokens em segundo plano. O botão, a contagem
+regressiva até a próxima atualização e **Ignorar uma vez** ficam todos em
+**Abra os internos do agente**, ao lado do histórico de relatórios e da
+atividade do agente. Enquanto as atualizações estão desativadas, a Lotti
+continua percebendo alterações relevantes na tarefa e em suas entradas
+vinculadas, marca no próprio cartão um resumo mais antigo como desatualizado e
+espera você escolher **Ativar agente**. Um despertar
 manual continua disponível sempre que o agente tiver uma configuração de IA
 funcional.
 
 <ManualScreenshot
   caseId="tasks/agent-card-manual"
-  alt="Cartão do agente de tarefa Habitat Watcher com atualizações automáticas desativadas, um aviso de relatório desatualizado e uma ação manual Ativar agente"
+  alt="Cartão do agente de tarefa Habitat Watcher com um aviso de relatório desatualizado e uma ação de atualização manual"
   caption="O modo manual observa alterações e relata a desatualização sem iniciar a inferência."
 />
 

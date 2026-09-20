@@ -12,21 +12,25 @@ předložit změny úkolu nebo kontrolního seznamu, které potvrdíš či odmí
 Souhrnný pohled napříč všemi běžícími agenty najdeš v části [Spouštění a
 sledování agentů](../ai-and-automation/agents.mdx).
 
-Přiřazený agent se zobrazí pod kontrolními seznamy a propojenými úkoly. Jeho
-sbalená karta udržuje viditelné nejnovější shrnutí, ovládání automatických
-aktualizací, akci **Probudit agenta** a aktivní trasu modelu, aniž by ze stránky
-úkolu dělala konzoli AI.
+Přiřazený agent se zobrazí pod kontrolními seznamy a propojenými úkoly. Jeho karta
+udržuje nejnovější shrnutí a případné navržené změny, a nic jiného. Ovládání
+aktualizací a nastavení AI žijí za odkazem **Otevřít interní informace
+agenta**, aby se stránka úkolu četla jako úkol, a ne jako konzole AI. Jakmile
+shrnutí zaostane za úkolem, objeví se mezi zprávou a návrhy upozornění
+**Neaktuální** a akce **Aktualizovat nyní**; dokud je shrnutí aktuální, karta
+o své čerstvosti neříká nic.
 
 <ManualScreenshot
   caseId="tasks/agent-card"
-  alt="Agent úkolu Habitat Watcher přiřazený ke kontrole orbitálního obydlí, se shrnutím, automatickými aktualizacemi, probuzením a trasou modelu Project Waddle"
-  caption="Habitat Watcher je přiřazen k tomuto úkolu; přiřazení a automatické aktualizace jsou dvě samostatná rozhodnutí."
+  alt="Agent úkolu Habitat Watcher přiřazený ke kontrole orbitálního obydlí, se shrnutím a ovládacím prvkem Číst více"
+  caption="Habitat Watcher je přiřazen k tomuto úkolu; přiřazení a automatické aktualizace zůstávají dvě samostatná rozhodnutí a ovládání obojího je v interních informacích agenta."
 />
 
 Volbou **Číst více** rozbalíš celou zprávu na místě. Rozbalená karta ponechá
 úkol viditelný, přidá podpůrné vyhodnocení a doporučený další krok a nabídne
-**Otevřít interní informace agenta**, pokud potřebuješ zprávy, konverzace,
-pozorování nebo podrobnosti běhu.
+**Otevřít interní informace agenta**, pokud potřebuješ ovládání aktualizací a
+nastavení AI agenta nebo jeho zprávy, konverzace, pozorování a podrobnosti
+běhu.
 
 <ManualScreenshot
   caseId="tasks/agent-card-expanded"
@@ -36,8 +40,9 @@ pozorování nebo podrobnosti běhu.
 
 ## Vyber nastavení AI agenta
 
-Řádek **Aktuální nastavení** na kartě identifikuje profil, model a
-poskytovatele použité pro příští probuzení. Jeho výběrem zvolíš uložený profil
+Otevři **Otevřít interní informace agenta** — přes jméno agenta v záhlaví
+karty nebo přes odkaz pod rozbalenou zprávou: tam řádek **Aktuální nastavení**
+identifikuje profil, model a poskytovatele použité pro příští probuzení. Jeho výběrem zvolíš uložený profil
 inference, přepíšeš jen model přemýšlení, vrátíš se k výchozímu nastavení
 profilu, zkopíruješ aktuální nastavení kategorie nebo pro tohoto jednoho
 agenta vypneš AI. Volba zůstává u agenta pro budoucí aktualizace; zkopírování
@@ -79,14 +84,17 @@ rozhodnutí.
 ## Vyber automatické nebo ruční aktualizace
 
 Noví agenti úkolů začínají s vypnutými **Automatickými aktualizacemi**. Samotné
-přiřazení nespotřebovává tokeny na pozadí. Když jsou aktualizace vypnuté, Lotti
-dál sleduje relevantní změny úkolu a propojených záznamů, označí starší shrnutí
-za zastaralé a čeká na volbu **Probudit agenta**. Ruční probuzení je dostupné,
+přiřazení nespotřebovává tokeny na pozadí. Přepínač, odpočet do další
+aktualizace i **Přeskočit jednou** žijí všechny v **Otevřít interní informace
+agenta**, vedle historie zpráv a aktivity agenta. Když jsou aktualizace
+vypnuté, Lotti dál sleduje relevantní změny úkolu a propojených záznamů,
+označí starší shrnutí přímo na kartě za zastaralé a čeká na volbu **Probudit
+agenta**. Ruční probuzení je dostupné,
 kdykoli má agent funkční nastavení AI.
 
 <ManualScreenshot
   caseId="tasks/agent-card-manual"
-  alt="Karta agenta Habitat Watcher s vypnutými automatickými aktualizacemi, upozorněním na zastaralou zprávu a ruční akcí Probudit agenta"
+  alt="Karta agenta Habitat Watcher s upozorněním na zastaralou zprávu a ruční akcí aktualizace"
   caption="Ruční režim sleduje změny a hlásí zastarání, aniž by spustil inferenci."
 />
 

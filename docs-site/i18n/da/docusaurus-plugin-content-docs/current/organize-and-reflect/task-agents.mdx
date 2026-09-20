@@ -13,26 +13,28 @@ destillerer den aktuelle situation til en kort rapport og kan foreslå
 det systemdækkende overblik over alle kørende agenter, se [Kør og overvåg
 agenter](../ai-and-automation/agents.mdx).
 
-Den tildelte agent vises under opgavens tjeklister og tilknyttede opgaver. Det
-sammenfoldede kort holder det seneste resumé, kontrollen for automatiske
-opdateringer, handlingen **Væk agent** og den aktive modelrute synlige uden at
-få opgavesiden til at føles som en AI-konsol.
+Den tildelte agent vises under opgavens tjeklister og tilknyttede opgaver. Kortet
+holder det seneste resumé og eventuelle foreslåede ændringer, og intet andet.
+Opdateringskontrollerne og AI-opsætningen ligger bag **Åbne agent-internals**,
+så opgavesiden læses som en opgave og ikke som en AI-konsol.
 
 <ManualScreenshot
   caseId="tasks/agent-card"
-  alt="Tildelt task agent Habitat Watcher på opgaven om det kredsende pingvinhabitat, med dens aktuelle resumé, automatiske opdateringer, vågehandling og Project Waddle-modelruten"
-  caption="Habitat Watcher er tildelt denne opgave; tildeling og automatiske opdateringer er to separate valg."
+  alt="Tildelt task agent Habitat Watcher på opgaven om det kredsende pingvinhabitat, med dens aktuelle resumé og knappen Læs mere"
+  caption="Habitat Watcher er tildelt denne opgave; tildeling og automatiske opdateringer er fortsat to separate valg, og betjeningen af begge ligger i agent-internals."
 />
 
-På en telefon følger kortet én læserækkefølge: identitet,
-opdateringskontroller, AI-opsætning, rapport og derefter foreslåede ændringer
-og historik. På skrivebordet udgør rapporten og forslagene læsekolonnen, mens
-de kompakte kontroller forbliver i nærheden.
+Uanset skærmstørrelse følger kortet én læserækkefølge: identitet, rapport og
+derefter foreslåede ændringer og historik. Er resuméet kommet bagud i forhold
+til opgaven, dukker meddelelsen **Forældet** og handlingen **Opdater nu** op
+imellem de to; så længe resuméet er aktuelt, siger kortet intet om sin
+aktualitet.
 
 Vælg **Læs mere** for at udvide hele rapporten på stedet. Det udvidede kort
 holder opgaven synlig, tilføjer rapportens understøttende vurdering og
-anbefalede næste skridt, og tilbyder **Åbne agent-internals**, når du
-har brug for rapporter, samtaler, observationer eller detaljer om kørslen.
+anbefalede næste skridt, og tilbyder **Åbne agent-internals**, når du har
+brug for agentens opdateringskontroller og AI-opsætning eller for dens
+rapporter, samtaler, observationer og detaljer om kørslen.
 
 <ManualScreenshot
   caseId="tasks/agent-card-expanded"
@@ -42,8 +44,9 @@ har brug for rapporter, samtaler, observationer eller detaljer om kørslen.
 
 ## Vælg agentens AI-opsætning
 
-Kortets række **Nuværende opsætning** viser den profil, model og udbyder, der
-bruges til agentens næste vågning. Vælg den for at vælge en gemt
+Åbn **Åbne agent-internals** — fra agentens navn øverst på kortet eller fra
+linket under den udvidede rapport: dér viser rækken **Nuværende opsætning** den
+profil, model og udbyder, der bruges til agentens næste vågning. Vælg den for at vælge en gemt
 inferensprofil, kun overstyre tænkemodellen, gå tilbage til profilens
 standard, kopiere kategoriens aktuelle opsætning eller slå AI fra for netop
 denne agent. Et valg følger agenten ved fremtidige opdateringer; at kopiere en
@@ -89,15 +92,17 @@ vis afgør forslag, der allerede venter på din beslutning.
 ## Vælg automatiske eller manuelle opdateringer
 
 Nye task agents starter med **Automatiske opdateringer slået fra**. Tildeling
-alene bruger ikke tokens i baggrunden. Mens opdateringerne er slået fra,
-bliver Lotti ved med at bemærke relevante ændringer i opgaven og dens
-tilknyttede poster, markerer et ældre resumé som forældet og venter på, at du
-vælger **Væk agent**. En manuel vågning forbliver tilgængelig, så længe
+alene bruger ikke tokens i baggrunden. Kontakten, nedtællingen til næste
+opdatering og **Spring over én gang** ligger alle i **Åbne agent-internals**,
+ved siden af agentens rapporthistorik og aktivitet. Mens opdateringerne er
+slået fra, bliver Lotti ved med at bemærke relevante ændringer i opgaven og
+dens tilknyttede poster, markerer et ældre resumé som forældet på selve kortet
+og venter på, at du vælger **Væk agent**. En manuel vågning forbliver tilgængelig, så længe
 agenten har en fungerende AI-opsætning.
 
 <ManualScreenshot
   caseId="tasks/agent-card-manual"
-  alt="Task agent-kort for Habitat Watcher med automatiske opdateringer slået fra, en meddelelse om en forældet rapport og en manuel Væk agent-handling"
+  alt="Task agent-kort for Habitat Watcher med en meddelelse om en forældet rapport og en manuel opdateringshandling"
   caption="Manuel tilstand observerer ændringer og rapporterer, at data er forældede, uden at igangsætte inferens."
 />
 

@@ -701,14 +701,18 @@ void main() {
         );
         expect(find.text(_manualTaskAgentName), findsOneWidget);
         expect(find.text(_manualTaskAgentTldr), findsOneWidget);
+        // The card is a reading surface: the automatic-updates switch and the
+        // model route are in the agent internals panel, and a current summary
+        // is not even told it is current.
         expect(
           find.text(messages.taskAgentAutomaticUpdatesLabel),
-          findsOneWidget,
+          findsNothing,
         );
         expect(
           find.textContaining(_t('Waddle Command 70B', 'Watschelkommando 70B')),
-          findsOneWidget,
+          findsNothing,
         );
+        expect(find.text(messages.taskAgentStatusUpToDate), findsNothing);
         expect(find.text(messages.aiCardReadMore), findsOneWidget);
         await captureScreenshot(
           tester,
