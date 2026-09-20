@@ -292,10 +292,9 @@ void main() {
 
       final hero = find.byKey(const ValueKey('person-hero-wash'));
       final avatar = find.byType(PersonaAvatar);
-      final tokens = tester.element(hero).designTokens;
       expect(
         tester.getBottomLeft(avatar).dy,
-        tester.getBottomLeft(hero).dy + PersonHeroAppBar.avatarSize(tokens) / 2,
+        tester.getBottomLeft(hero).dy + PersonHeroAppBar.avatarSize / 2,
       );
       expect(tester.getTopLeft(avatar).dx, 0);
     });
@@ -326,10 +325,7 @@ void main() {
       expect(avatar.imageId, 'image-1');
       expect(avatar.crop, crop);
       expect(avatar.id, 'rel-1', reason: 'the accent still comes from the id');
-      final tokens = tester
-          .element(find.byKey(const ValueKey('person-hero-wash')))
-          .designTokens;
-      expect(avatar.size, PersonHeroAppBar.avatarSize(tokens));
+      expect(avatar.size, PersonHeroAppBar.avatarSize);
       expect(
         find.byKey(const ValueKey('persona-avatar-ring')),
         findsOneWidget,
@@ -569,10 +565,13 @@ void main() {
         // Spelled out rather than read from the static, so this pins the
         // shape: the picture is the toolbar and the whole band.
         final strip = kToolbarHeight + PersonHeroAppBar.bandExtent(tokens);
-        final overhang = PersonHeroAppBar.avatarSize(tokens) / 2;
+        const overhang = PersonHeroAppBar.avatarSize / 2;
 
         // Past the overhang: the avatar has tucked up, the picture is whole.
-        await tester.drag(find.byType(CustomScrollView), Offset(0, -overhang));
+        await tester.drag(
+          find.byType(CustomScrollView),
+          const Offset(0, -overhang),
+        );
         await tester.pumpAndSettle();
         expect(tester.getSize(banner).height, closeTo(strip, 1e-9));
 

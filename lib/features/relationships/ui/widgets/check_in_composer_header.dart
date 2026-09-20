@@ -143,7 +143,6 @@ class CheckInComposerHeader extends ConsumerWidget {
                 id: relationship.meta.id,
                 imageId: data.avatarImageId,
                 crop: data.avatarCrop,
-                size: tokens.spacing.step8,
               )
             else
               SizedBox.square(dimension: tokens.spacing.step8),
