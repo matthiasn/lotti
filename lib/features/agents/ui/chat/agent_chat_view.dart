@@ -1,7 +1,6 @@
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_error_message.dart';
@@ -14,6 +13,7 @@ import 'package:lotti/features/design_system/components/toasts/toast_messenger.d
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/device_datetime.dart';
 import 'package:material_ui/material_ui.dart';
 
 typedef AgentChatMessageAttachmentBuilder =
@@ -881,9 +881,9 @@ class _MessageBubble extends StatelessWidget {
     final tokens = context.designTokens;
     final isUser = message.role == AgentChatRole.user;
     final author = isUser ? context.messages.goalChatYou : agentName;
-    final time = DateFormat.jm(
-      Localizations.localeOf(context).toString(),
-    ).format(message.createdAt);
+    // `DateFormat.jm` is hard-wired to 12-hour for an English locale, so a
+    // message sent at 19:08 read "7:08 PM" on a 24-hour phone.
+    final time = deviceClockLabel(context, message.createdAt);
     return Semantics(
       container: true,
       explicitChildNodes: !isUser,

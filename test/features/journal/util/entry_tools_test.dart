@@ -245,27 +245,6 @@ void main() {
     });
   });
 
-  group('formatEntryTimestamp', () {
-    test('renders the full date and time for the locale', () {
-      final result = formatEntryTimestamp(
-        DateTime(2024, 3, 15, 10, 30),
-        locale: 'en_US',
-      );
-      // A full timestamp keeps both the date and the time of day.
-      expect(result, contains('Mar 15, 2024'));
-      expect(result, contains('10:30'));
-    });
-
-    test('keeps the date and time for an afternoon timestamp', () {
-      final result = formatEntryTimestamp(
-        DateTime(2024, 12, 1, 14, 5),
-        locale: 'en_US',
-      );
-      expect(result, contains('Dec 1, 2024'));
-      expect(result, contains('2:05'));
-    });
-  });
-
   group('humanHealthTypeName', () {
     test('uses the curated display name for a known type', () {
       expect(
@@ -327,22 +306,15 @@ void main() {
     });
   });
 
-  group('formatEntryTimestamp', () {
+  group('entryDateLabel', () {
     // ICU separates the meridiem with a narrow no-break space in newer data;
     // the assertion is about the words and their order, not the space.
     String plainSpaces(String? s) =>
         s!.replaceAll('\u202F', ' ').replaceAll('\u00A0', ' ');
 
-    test('renders a locale-aware date and time', () {
-      expect(
-        plainSpaces(
-          formatEntryTimestamp(DateTime(2024, 3, 15, 10, 30), locale: 'en_US'),
-        ),
-        'Mar 15, 2024 10:30 AM',
-      );
-    });
-
-    testWidgets('entryDateLabel resolves the widget locale', (tester) async {
+    // The list cards' timestamp follows the DEVICE, not the app's language:
+    // a phone set to German dates a card 15.3.2024, whatever the app speaks.
+    testWidgets("reads in the device's own conventions", (tester) async {
       String? label;
       await tester.pumpWidget(
         makeTestableWidget(
@@ -355,7 +327,7 @@ void main() {
         ),
       );
 
-      expect(plainSpaces(label), 'Mar 15, 2024 10:30 AM');
+      expect(plainSpaces(label), '3/15/2024 10:30 AM');
     });
   });
 

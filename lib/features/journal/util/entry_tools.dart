@@ -3,6 +3,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
+import 'package:lotti/utils/device_datetime.dart';
 import 'package:material_ui/material_ui.dart';
 
 NumberFormat nf = NumberFormat('###.##');
@@ -140,45 +141,12 @@ String formatEntryTimestamp(DateTime date, {String? locale}) {
   return DateFormat.yMMMd(locale).add_jm().format(date.toLocal());
 }
 
-/// A timestamp in the **device's** conventions rather than the app's
-/// language: a phone set to German reads `20.9.2026 19:08` while the app
-/// still speaks English.
-///
-/// Language and region are separate settings on every platform Lotti runs
-/// on, and a timestamp is a regional convention rather than a translated
-/// string — so the date takes the platform locale, falling back to the app's
-/// when that locale's symbols were never loaded.
-///
-/// The time goes through [TimeOfDay.format] rather than `DateFormat.jm`:
-/// only the former honours the device's 24-hour switch. `DateFormat.jm('en_US')`
-/// is hard-wired to 12-hour, so 19:08 reads back as "7:08 PM" for anyone
-/// running an English app on a 24-hour device — the same note the journal
-/// header carries in `entry_datetime_widget.dart`.
-String deviceTimestampLabel(BuildContext context, DateTime date) {
-  final local = date.toLocal();
-  final device = WidgetsBinding.instance.platformDispatcher.locale.toString();
-  // Through `verifiedLocale`, not a bare `localeExists`: intl files symbols
-  // under the closest name it has, so `de_DE` resolves to `de` and a plain
-  // existence check on `de_DE` answers false — quietly handing a German
-  // phone English dates, which is the whole bug.
-  final locale =
-      Intl.verifiedLocale(
-        device,
-        DateFormat.localeExists,
-        onFailure: (_) => Localizations.localeOf(context).toString(),
-      ) ??
-      Localizations.localeOf(context).toString();
-  return '${DateFormat.yMd(locale).format(local)} '
-      '${TimeOfDay.fromDateTime(local).format(context)}';
-}
-
-/// [formatEntryTimestamp] resolved against the active locale. Used by list cards.
-String entryDateLabel(BuildContext context, DateTime date) {
-  return formatEntryTimestamp(
-    date,
-    locale: Localizations.localeOf(context).toString(),
-  );
-}
+/// A full, locale-aware timestamp for list cards, in the **device's** own
+/// conventions — `20.9.2026 19:08` on a German phone, whatever language the
+/// app is running in. See `device_datetime.dart` for why that is not the
+/// app's locale.
+String entryDateLabel(BuildContext context, DateTime date) =>
+    deviceTimestampLabel(context, date);
 
 /// Renders a quantitative (health) entry as `type: value unit`, handling both
 /// cumulative and discrete data shapes.
