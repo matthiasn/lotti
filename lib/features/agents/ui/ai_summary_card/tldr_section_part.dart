@@ -347,7 +347,7 @@ class TldrBody extends StatelessWidget {
           color: ai.bodyText,
         );
     final hasMore = additionalReport?.trim().isNotEmpty ?? false;
-    final hasDisclosure = hasMore || expanded;
+    final hasDisclosure = hasMore || expanded || onOpenInternals != null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -387,7 +387,14 @@ class TldrBody extends StatelessWidget {
                   expanded: expanded,
                   onPressed: onToggle,
                 ),
-              if (expanded && onOpenInternals != null)
+              // Not gated on [expanded] any more. It reads as a footnote to
+              // the full report, but it is the only door to the agent's
+              // schedule, automatic-updates switch and AI setup — everything
+              // the card used to pin under the summary. A door you have to
+              // expand a report to find is not a door; the one place a
+              // reader looks for more about this report is the row that
+              // already says "Read more", and it costs no height there.
+              if (onOpenInternals != null)
                 _QuietDisclosureLink(
                   label: messages.aiCardOpenAgentInternals,
                   icon: LottiIcons.tune,

@@ -167,6 +167,11 @@ void main() {
       await tester.pumpWidget(bench.build());
       await tester.pumpAndSettle();
 
+      // The internals link rides the same row in both states: it is the only
+      // door to the agent's schedule and AI setup, so collapsing the report
+      // must not take it away.
+      expect(find.text('Open agent internals'), findsOneWidget);
+
       await tester.tap(find.text('Read more'));
       await tester.pumpAndSettle();
       expect(find.text('Show less'), findsOneWidget);
@@ -175,7 +180,7 @@ void main() {
       await tester.tap(find.text('Show less'));
       await tester.pumpAndSettle();
       expect(find.text('Read more'), findsOneWidget);
-      expect(find.text('Open agent internals'), findsNothing);
+      expect(find.text('Open agent internals'), findsOneWidget);
     });
 
     testWidgets('Read more pill is hidden when there is no TLDR or report', (

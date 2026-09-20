@@ -281,10 +281,11 @@ void main() {
         // The content surfaces directly as the TLDR line.
         expect(find.text('Bare content becomes the tldr.'), findsOneWidget);
 
-        // There is no extra body to reveal, so the disclosure control stays
-        // hidden rather than offering an empty interaction.
+        // There is no extra body to reveal, so the Read more control stays
+        // hidden rather than offering an empty interaction. The internals
+        // link is not about the report, and stays.
         expect(find.text('Read more'), findsNothing);
-        expect(find.text('Open agent internals'), findsNothing);
+        expect(find.text('Open agent internals'), findsOneWidget);
         // Still exactly one copy of the content — no duplicated report body.
         expect(find.text('Bare content becomes the tldr.'), findsOneWidget);
       },

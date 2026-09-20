@@ -308,7 +308,7 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
         isRunning: widget.isRunning,
         onRunNow: widget.inferenceAvailable ? widget.onRunNow : null,
       );
-      return Row(
+      final row = Row(
         key: const ValueKey('agentAutomationRowCompact'),
         mainAxisAlignment: freshnessLabel == null
             ? MainAxisAlignment.end
@@ -325,6 +325,18 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
             ),
           trigger,
         ],
+      );
+      // A band in a reading column pays for the air under it, and this pair
+      // brings none of its own: the dense trigger is a 24-high box and the
+      // word beside it is bare text, so without this the status sat four
+      // pixels off the card's bottom edge while every other edge paid the
+      // card inset. Only the silent-capable form pays it — a host that keeps
+      // the row permanently (the goal page's hero) already spaces it, and an
+      // inset there would be charged twice.
+      if (widget.showsFreshConfirmation) return row;
+      return Padding(
+        padding: EdgeInsets.only(bottom: tokens.spacing.step4),
+        child: row,
       );
     }
 
