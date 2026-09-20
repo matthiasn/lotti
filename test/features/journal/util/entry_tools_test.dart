@@ -342,6 +342,35 @@ void main() {
       );
     });
 
+    // The fallback: a device locale intl has no data for at all must not
+    // leave the label empty or throw — it drops back to the app's locale.
+    // Both the onFailure closure and the null coalesce sit on this path.
+    testWidgets('falls back to the app locale for an unknown device one', (
+      tester,
+    ) async {
+      tester.platformDispatcher.localeTestValue = const Locale('zz', 'ZZ');
+      addTearDown(tester.platformDispatcher.clearLocaleTestValue);
+
+      String? label;
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Builder(
+            builder: (context) {
+              label = deviceTimestampLabel(
+                context,
+                DateTime(2024, 3, 15, 10, 30),
+              );
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      // The fallback swaps the LOCALE, not the format: still the device
+      // style, now resolved against the app's locale instead.
+      expect(plainSpaces(label), '3/15/2024 10:30 AM');
+    });
+
     testWidgets('entryDateLabel resolves the widget locale', (tester) async {
       String? label;
       await tester.pumpWidget(

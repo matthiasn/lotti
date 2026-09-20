@@ -1,4 +1,3 @@
-import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/health.dart';
@@ -139,6 +138,40 @@ String _titleCaseTokens(String raw) {
 /// `Mar 15, 2024 10:30 AM`. Deterministic given a date and locale.
 String formatEntryTimestamp(DateTime date, {String? locale}) {
   return DateFormat.yMMMd(locale).add_jm().format(date.toLocal());
+}
+
+/// A timestamp in the **device's** conventions rather than the app's
+/// language: a phone set to German reads `20.9.2026 19:08` while the app
+/// still speaks English.
+///
+/// Language and region are separate settings on every platform Lotti runs
+/// on, and a timestamp is a regional convention rather than a translated
+/// string — so the date takes the platform locale, falling back to the app's
+/// when that locale's symbols were never loaded.
+///
+/// The time goes through [TimeOfDay.format] rather than `DateFormat.jm`:
+/// only the former honours the device's 24-hour switch. `DateFormat.jm('en_US')`
+/// is hard-wired to 12-hour, so 19:08 reads back as "7:08 PM" for anyone
+/// running an English app on a 24-hour device — the same note the journal
+/// header carries in `entry_datetime_widget.dart`.
+String deviceTimestampLabel(BuildContext context, DateTime date) {
+  final local = date.toLocal();
+  final device = WidgetsBinding.instance.platformDispatcher.locale.toString();
+  // Through `verifiedLocale`, not a bare `localeExists`: intl files symbols
+  // under the closest name it has, so `de_DE` resolves to `de` and a plain
+  // existence check on `de_DE` answers false — quietly handing a German
+  // phone English dates, which is the whole bug.
+  //
+  // Non-null by construction: `verifiedLocale` returns null only when
+  // `onFailure` does, and this one always answers with the app's locale. A
+  // `??` after it would be a branch nothing can take.
+  final locale = Intl.verifiedLocale(
+    device,
+    DateFormat.localeExists,
+    onFailure: (_) => Localizations.localeOf(context).toString(),
+  )!;
+  return '${DateFormat.yMd(locale).format(local)} '
+      '${TimeOfDay.fromDateTime(local).format(context)}';
 }
 
 /// [formatEntryTimestamp] resolved against the active locale. Used by list cards.

@@ -25,7 +25,7 @@ List<EventPhoto> _photos(int n, {int? coverIndex}) => [
       id: 'photo-$i',
       isCover: i == coverIndex,
       filePath: '/tmp/event-photo-$i.png',
-      capturedAt: DateTime(2026, 1, i + 1),
+      capturedAt: DateTime(2026, 1, i + 1, 17, 42),
     ),
 ];
 
@@ -210,7 +210,12 @@ void main() {
       await tester.pump();
 
       expect(find.text('1 / 5'), findsOneWidget);
-      expect(find.text('Jan 1, 2026'), findsOneWidget);
+      // The time as well as the day: a photo is often the only record of
+      // when something happened — when an event finished, say. Matched in
+      // two parts because intl separates the clock from AM/PM with a narrow
+      // no-break space, which an exact literal here would silently miss.
+      expect(find.textContaining('1/1/2026'), findsOneWidget);
+      expect(find.textContaining('5:42'), findsOneWidget);
       expect(findMaterialTooltip('Download image'), findsOneWidget);
       expect(findMaterialTooltip('Close'), findsOneWidget);
 
@@ -222,7 +227,8 @@ void main() {
       await tester.pump();
 
       expect(find.text('4 / 5'), findsOneWidget);
-      expect(find.text('Jan 4, 2026'), findsOneWidget);
+      expect(find.textContaining('1/4/2026'), findsOneWidget);
+      expect(find.textContaining('5:42'), findsOneWidget);
     });
 
     // The place to say "this one" is while looking at it: the pill names the
@@ -447,7 +453,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350));
 
       expect(find.text('1 / 3'), findsNothing);
-      expect(find.text('Jan 1, 2026'), findsNothing);
+      expect(find.textContaining('1/1/2026'), findsNothing);
       expect(findMaterialTooltip('Download image'), findsNothing);
       expect(findMaterialTooltip('Close'), findsNothing);
 
@@ -455,7 +461,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350));
 
       expect(find.text('1 / 3'), findsOneWidget);
-      expect(find.text('Jan 1, 2026'), findsOneWidget);
+      expect(find.textContaining('1/1/2026'), findsOneWidget);
       expect(findMaterialTooltip('Download image'), findsOneWidget);
       expect(findMaterialTooltip('Close'), findsOneWidget);
     });
@@ -487,7 +493,7 @@ void main() {
             photos: [
               EventPhoto(
                 testImage(),
-                fileDate: DateTime(2025, 12, 24),
+                fileDate: DateTime(2025, 12, 24, 23, 5),
               ),
             ],
           ),
@@ -495,7 +501,8 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Dec 24, 2025'), findsOneWidget);
+      expect(find.textContaining('12/24/2025'), findsOneWidget);
+      expect(find.textContaining('11:05'), findsOneWidget);
     });
 
     testWidgets('hides the page indicator for a single photo', (tester) async {

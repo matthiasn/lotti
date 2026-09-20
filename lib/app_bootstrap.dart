@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'dart:ui' as ui;
+
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -74,6 +77,21 @@ void registerProcessLogging() {
 // coverage:ignore-start
 Future<void> initPlatformOnce() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Timestamps follow the DEVICE's region, not the app's language (see
+  // `deviceTimestampLabel`), and `flutter_localizations` only loads date
+  // symbols for the locale the UI is running in. Without this, an English
+  // app on a German phone has no `de_DE` symbols to format with and falls
+  // back to English dates — the bug this exists to prevent.
+  final deviceLocale = ui.PlatformDispatcher.instance.locale.toString();
+  try {
+    await initializeDateFormatting(deviceLocale);
+  } catch (e) {
+    getIt<DomainLogger>().error(
+      LogDomain.general,
+      e,
+      subDomain: 'date symbols unavailable for $deviceLocale',
+    );
+  }
   // Platform startup call; controller behavior is covered by focused tests.
   await appOrientationController.lockToPortrait();
   try {

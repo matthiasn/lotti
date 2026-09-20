@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
@@ -521,13 +522,48 @@ void main() {
       },
     );
 
-    testWidgets('shows the photo date in the viewer overlay', (tester) async {
+    testWidgets('shows the photo date AND time in the viewer overlay', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        buildWrapper(date: DateTime(2026, 2, 3)),
+        buildWrapper(date: DateTime(2026, 2, 3, 19, 8)),
       );
       await tester.pump();
 
-      expect(find.text('Feb 3, 2026'), findsOneWidget);
+      // Matched in two parts: intl separates the clock from AM/PM with a
+      // narrow no-break space, so an exact literal misses for the wrong
+      // reason.
+      expect(find.textContaining('2/3/2026'), findsOneWidget);
+      expect(
+        find.textContaining('7:08'),
+        findsOneWidget,
+        reason: 'a photo is often the only record of when something happened',
+      );
+    });
+
+    // Language and region are separate settings on every platform Lotti runs
+    // on. An English app on a German phone showed "Feb 3, 2026 7:08 PM" for
+    // a photo the phone itself would date 3.2.2026, 19:08.
+    testWidgets('follows the phone, not the app language', (tester) async {
+      await initializeDateFormatting('de_DE');
+      tester.platformDispatcher.localeTestValue = const Locale('de', 'DE');
+      addTearDown(tester.platformDispatcher.clearLocaleTestValue);
+
+      await tester.pumpWidget(
+        buildWrapper(
+          date: DateTime(2026, 2, 3, 19, 8),
+          // What a 24-hour phone reports.
+          mediaQueryData: const MediaQueryData(alwaysUse24HourFormat: true),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.textContaining('3.2.2026'), findsOneWidget);
+      expect(
+        find.textContaining('19:08'),
+        findsOneWidget,
+        reason: 'the phone says 24 hours, so 7:08 PM is the wrong answer',
+      );
     });
 
     testWidgets('single taps hide and restore all viewer chrome', (
@@ -545,14 +581,14 @@ void main() {
       await tester.pump(const Duration(milliseconds: 600));
       expect(findMaterialTooltip('Download image'), findsNothing);
       expect(findMaterialTooltip('Close'), findsNothing);
-      expect(find.text('Feb 3, 2026'), findsNothing);
+      expect(find.textContaining('2/3/2026'), findsNothing);
       expect(findMaterialTooltip('Zoom In'), findsNothing);
 
       await tester.tapAt(canvasPoint);
       await tester.pump(const Duration(milliseconds: 600));
       expect(findMaterialTooltip('Download image'), findsOneWidget);
       expect(findMaterialTooltip('Close'), findsOneWidget);
-      expect(find.text('Feb 3, 2026'), findsOneWidget);
+      expect(find.textContaining('2/3/2026'), findsOneWidget);
       expect(findMaterialTooltip('Zoom In'), findsOneWidget);
     });
 
@@ -1115,10 +1151,10 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.text('Jan 1, 2026'), findsOneWidget);
+        expect(find.textContaining('1/1/2026'), findsOneWidget);
         _pressIconButton(tester, LottiIcons.chevronRight);
         await tester.pump();
-        expect(find.text('Feb 1, 2026'), findsOneWidget);
+        expect(find.textContaining('2/1/2026'), findsOneWidget);
       });
 
       testWidgets(

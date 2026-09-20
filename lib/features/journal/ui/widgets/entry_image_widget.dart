@@ -4,10 +4,10 @@ import 'dart:io';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/journal/util/image_export_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -667,11 +667,15 @@ class ImageViewerDateChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final locale = Localizations.localeOf(context).toString();
+    // The time as well as the day: a photo is often the only record of when
+    // something happened — when an event finished, when a meal was — and the
+    // day alone cannot answer that. In the device's own conventions, so a
+    // phone set to German reads 20.9.2026 19:08 rather than Sep 20, 2026
+    // 7:08 PM.
     return ImageViewerPill(
       alpha: 0.62,
       child: Text(
-        DateFormat.yMMMd(locale).format(date.toLocal()),
+        deviceTimestampLabel(context, date),
         style: tokens.typography.styles.body.bodyMedium.copyWith(
           color: Colors.white,
         ),
