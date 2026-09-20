@@ -1541,53 +1541,5 @@ void main() {
         reason: 'the status stays in the header',
       );
     });
-
-    testWidgets('Log check-in opens the composer for this person', (
-      tester,
-    ) async {
-      setTestSurfaceSize(tester, const Size(1000, 1400));
-      // The composer's header reads the person through the detail
-      // controller, which listens to the update bus.
-      await setUpTestGetIt();
-      addTearDown(tearDownTestGetIt);
-      when(
-        () => repository.getRelationshipById(relationshipId),
-      ).thenAnswer((_) async => relationship(channels: const [mobile]));
-      when(
-        () => repository.getEntriesForCheckIns(any()),
-      ).thenAnswer((_) async => const {});
-      when(
-        () => repository.getCheckInsForRelationship(relationshipId),
-      ).thenAnswer((_) async => lapsedCheckIns);
-      when(
-        () => repository.getLinkedTasks(relationshipId),
-      ).thenAnswer((_) async => []);
-      // The quiet door before the first briefing: with nothing written
-      // yet, a check-in is what the agent needs, so this face keeps the
-      // verb the enrolled faces hand back to the action bar.
-      await pump(
-        tester,
-        entry: relationship(channels: const [mobile]),
-        checkIns: lapsedCheckIns,
-      );
-
-      await tester.tap(
-        find.byKey(const ValueKey('relationship-agent-log-check-in')),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Log check-in'), findsNWidgets(2));
-      // The status line tiers its wording by width; whatever the test font
-      // leaves room for, the person is the tier that never goes.
-      expect(
-        tester
-            .widget<Text>(
-              find.byKey(const ValueKey('check-in-composer-status')),
-            )
-            .data,
-        startsWith('with '),
-      );
-      expect(find.byKey(const ValueKey('check-in-narrative')), findsOneWidget);
-    });
   });
 }

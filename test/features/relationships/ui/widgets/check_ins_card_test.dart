@@ -8,6 +8,7 @@ import 'package:lotti/features/design_system/components/cards/design_system_sect
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/shared/sentiment.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_ins_card.dart';
 import 'package:material_ui/material_ui.dart';
@@ -199,23 +200,47 @@ void main() {
   });
 
   group('the row', () {
-    testWidgets('meta line reads timestamp · type · duration in mono', (
-      tester,
-    ) async {
-      await pump(tester, [
-        checkIn(
-          'c1',
-          at: DateTime(2026, 8, 13, 12, 44),
-          length: const Duration(minutes: 11),
-        ),
-      ]);
+    testWidgets(
+      'meta line reads timestamp · type · duration, mono on the date alone',
+      (
+        tester,
+      ) async {
+        await pump(tester, [
+          checkIn(
+            'c1',
+            at: DateTime(2026, 8, 13, 12, 44),
+            length: const Duration(minutes: 11),
+          ),
+        ]);
 
-      final meta = tester.widget<Text>(
-        find.byKey(const ValueKey('check-in-row-meta')),
-      );
-      expect(meta.data, 'Today 12:44 · Call · 11 min');
-      expect(meta.style?.fontFamily, 'Inconsolata');
-    });
+        final meta = tester.widget<RelationshipLineWithDate>(
+          find.byKey(const ValueKey('check-in-row-meta')),
+        );
+        expect(meta.text, 'Today 12:44 · Call · 11 min');
+        // Mono on the timestamp and nothing else: `11 min` and `1 recording`
+        // are prose, and setting them in mono cost the line the measure that
+        // wrapped it around the sentiment pill.
+        expect(meta.date, 'Today 12:44');
+        expect(meta.style.fontFamily, isNot('Inconsolata'));
+        final fonts = <String, String?>{};
+        tester
+            .widget<Text>(
+              find.descendant(
+                of: find.byKey(const ValueKey('check-in-row-meta')),
+                matching: find.byType(Text),
+              ),
+            )
+            .textSpan!
+            .visitChildren((span) {
+              if (span is TextSpan && span.text != null) {
+                fonts[span.text!] = span.style?.fontFamily;
+              }
+              return true;
+            });
+        expect(fonts['Today 12:44'], 'Inconsolata');
+        expect(fonts[' · Call · 11 min'], isNot('Inconsolata'));
+      },
+    );
 
     testWidgets('a check-in with no duration leaves the duration out', (
       tester,
@@ -228,10 +253,10 @@ void main() {
         ),
       ]);
 
-      final meta = tester.widget<Text>(
+      final meta = tester.widget<RelationshipLineWithDate>(
         find.byKey(const ValueKey('check-in-row-meta')),
       );
-      expect(meta.data, 'Yesterday 19:05 · Video call');
+      expect(meta.text, 'Yesterday 19:05 · Video call');
     });
 
     testWidgets('the sentiment pill is tinted with the sentiment colour and '
@@ -385,8 +410,10 @@ void main() {
         }
         // What it holds rides the meta line, after when, how and how long.
         final meta = tester
-            .widget<Text>(find.byKey(const ValueKey('check-in-row-meta')))
-            .data!;
+            .widget<RelationshipLineWithDate>(
+              find.byKey(const ValueKey('check-in-row-meta')),
+            )
+            .text;
         if (holds == null) {
           expect(meta, isNot(matches(RegExp('recording|photo|comment'))));
         } else {

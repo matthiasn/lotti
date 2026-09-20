@@ -173,9 +173,51 @@ bool peopleCadencePillRestatesBand(PeopleCadencePillKind kind) =>
 DateTime peopleRecencyOf(RelationshipListItem item) =>
     item.lastCheckInAt ?? item.relationship.meta.dateFrom;
 
-/// The list split into its bands, empty bands omitted, each band most recent
-/// contact first. Favorites do not get a band of their own — `important`
-/// decides enrolment, and the sparkle on the name is a marker.
+/// How a band orders its rows — each by the thing that band is *about*.
+///
+/// Ordering every band by recency made the list argue with its own summary
+/// card: the card named the person whose cadence lapses next, and then the
+/// *On track* band put someone with a later deadline above them. A band
+/// that reports an obligation has to lead with the most urgent instance of
+/// it, or the row the reader is looking for is not the row at the top.
+///
+/// Ties fall back to recency and then to id, so the order is total: two
+/// people due the same day must not swap places between rebuilds.
+int Function(RelationshipListItem, RelationshipListItem) _orderWithin(
+  PeopleListGroup group,
+  DateTime? now,
+) {
+  int byRecency(RelationshipListItem a, RelationshipListItem b) {
+    final recency = peopleRecencyOf(b).compareTo(peopleRecencyOf(a));
+    if (recency != 0) return recency;
+    return a.relationship.meta.id.compareTo(b.relationship.meta.id);
+  }
+
+  return switch (group) {
+    // The band exists to be discharged: the longest wait leads it.
+    PeopleListGroup.due => (a, b) {
+      final over = (peopleOverdueDaysOf(b, now: now) ?? 0).compareTo(
+        peopleOverdueDaysOf(a, now: now) ?? 0,
+      );
+      return over != 0 ? over : byRecency(a, b);
+    },
+    // The next commitment leads — the person the summary card names.
+    PeopleListGroup.onTrack => (a, b) {
+      final dueA = peopleDueDateOf(a, now: now);
+      final dueB = peopleDueDateOf(b, now: now);
+      if (dueA == null || dueB == null) return byRecency(a, b);
+      final due = dueA.compareTo(dueB);
+      return due != 0 ? due : byRecency(a, b);
+    },
+    // Nobody here has a deadline, so recency is the only honest order.
+    PeopleListGroup.notEnrolled => byRecency,
+  };
+}
+
+/// The list split into its bands, empty bands omitted, each band ordered by
+/// what that band is about ([_orderWithin]). Favorites do not get a band of
+/// their own — `important` decides enrolment, and the sparkle on the name is
+/// a marker.
 List<PeopleListSection> peopleListSections(
   List<RelationshipListItem> items, {
   DateTime? now,
@@ -187,11 +229,7 @@ List<PeopleListSection> peopleListSections(
   return [
     for (final group in PeopleListGroup.values)
       if (byGroup[group] case final rows? when rows.isNotEmpty)
-        (
-          group: group,
-          items: rows
-            ..sort((a, b) => peopleRecencyOf(b).compareTo(peopleRecencyOf(a))),
-        ),
+        (group: group, items: rows..sort(_orderWithin(group, now))),
   ];
 }
 

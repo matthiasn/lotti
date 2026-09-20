@@ -289,8 +289,10 @@ void main() {
 
       expect(
         tester
-            .widget<Text>(find.byKey(const ValueKey('check-in-row-meta')))
-            .data,
+            .widget<RelationshipLineWithDate>(
+              find.byKey(const ValueKey('check-in-row-meta')),
+            )
+            .text,
         'Yesterday 10:30 · Call · 11 min',
       );
       expect(find.text('Good'), findsOneWidget);

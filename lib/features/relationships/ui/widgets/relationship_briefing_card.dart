@@ -31,7 +31,6 @@ import 'package:lotti/features/relationships/repository/relationship_repository.
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
-import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_suggestions_band.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -338,11 +337,6 @@ class _RelationshipBriefingCardState
     }
   }
 
-  Future<void> _logCheckIn() => showCheckInCaptureSheet(
-    context: context,
-    relationshipId: widget.relationship.meta.id,
-  );
-
   @override
   Widget build(BuildContext context) {
     final relationship = widget.relationship;
@@ -446,7 +440,6 @@ class _RelationshipBriefingCardState
         entityId: relationship.meta.id,
         agentId: agentId,
       ),
-      onLogCheckIn: _logCheckIn,
     );
   }
 }
@@ -576,7 +569,6 @@ class _AgentCard extends StatelessWidget {
     required this.onOpenInternals,
     required this.onBrief,
     required this.onChooseModel,
-    required this.onLogCheckIn,
   });
 
   final RelationshipAgentCardState state;
@@ -599,7 +591,6 @@ class _AgentCard extends StatelessWidget {
   final VoidCallback onOpenInternals;
   final VoidCallback? onBrief;
   final VoidCallback onChooseModel;
-  final VoidCallback onLogCheckIn;
 
   /// The header's status line: what the agent is doing, or when the
   /// briefing was written and the band it read, in that state's colour.
@@ -785,14 +776,6 @@ class _AgentCard extends StatelessWidget {
 
     // The quiet text actions start the footer's row: their label sits on
     // the card's content column, not a button inset in from it.
-    final logCheckIn = DesignSystemButton(
-      key: const ValueKey('relationship-agent-log-check-in'),
-      label: messages.relationshipLogCheckIn,
-      variant: DesignSystemButtonVariant.tertiary,
-      alignsLabelToLeadingEdge: true,
-      tapTargetSize: MaterialTapTargetSize.padded,
-      onPressed: onLogCheckIn,
-    );
     final seeActivity = DesignSystemButton(
       key: const ValueKey('relationship-agent-see-activity'),
       label: messages.relationshipAgentSeeActivity,
@@ -814,8 +797,11 @@ class _AgentCard extends StatelessWidget {
     final ({Widget? leading, Widget? action}) footer = switch (state) {
       // Every face has its quiet door: a check-in before the first
       // briefing, the activity log while one is being written.
+      // Even here the card does not borrow the bar's verb: the body
+      // already says a check-in is what the agent needs, and the bar
+      // below offers it as the page's primary.
       RelationshipAgentCardState.noBriefing => (
-        leading: logCheckIn,
+        leading: seeActivity,
         action: DesignSystemButton(
           key: const ValueKey('relationship-brief-me'),
           tapTargetSize: MaterialTapTargetSize.padded,

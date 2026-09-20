@@ -75,7 +75,10 @@ void main() {
       findsOneWidget,
     );
     expect(find.textContaining('Reminder paused until'), findsOneWidget);
-    expect(find.textContaining('3:40'), findsOneWidget);
+    // The feature's one timestamp form, not the device's 12/24-hour clock
+    // in proportional type: the callout sat one card above a mono 24-hour
+    // timestamp, so the page read two clocks.
+    expect(find.textContaining('15:40'), findsOneWidget);
     expect(
       find.text('It comes back then, unless you log a check-in first.'),
       findsOneWidget,

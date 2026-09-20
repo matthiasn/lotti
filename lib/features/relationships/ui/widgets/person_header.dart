@@ -14,6 +14,7 @@ import 'package:lotti/features/relationships/repository/relationship_repository.
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/state/contact_import_controller.dart';
 import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
+import 'package:lotti/features/relationships/ui/shared/cadence_pill.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/contact_link_action.dart';
@@ -194,6 +195,11 @@ class PersonHeroAppBar extends StatelessWidget {
           relationship: relationship,
           onDelete: onDelete,
           glyphColor: ink,
+          // The same disc the back, chat and edit buttons wear. Without it
+          // the kebab — which holds delete — was a bare white glyph on a
+          // user's own photograph, the only hero control with nothing
+          // behind it.
+          fill: glassFill,
         ),
       ],
     );
@@ -471,6 +477,7 @@ class PersonMenuButton extends ConsumerWidget {
     required this.relationship,
     required this.onDelete,
     this.glyphColor,
+    this.fill,
     super.key,
   });
 
@@ -480,6 +487,10 @@ class PersonMenuButton extends ConsumerWidget {
   /// The kebab's glyph. Null is the theme's ink; the hero passes the
   /// photo-neutral glyph while it sits on a banner.
   final Color? glyphColor;
+
+  /// The disc behind the glyph, matching the hero's other actions. Null
+  /// where the trigger does not sit on a photograph.
+  final Color? fill;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -517,6 +528,7 @@ class PersonMenuButton extends ConsumerWidget {
     return PopupMenuButton<PersonMenuAction>(
       key: const ValueKey('person-menu'),
       tooltip: messages.relationshipMoreActions,
+      style: fill == null ? null : IconButton.styleFrom(backgroundColor: fill),
       icon: Icon(LottiIcons.moreVertical, color: triggerInk),
       onSelected: (action) => unawaited(switch (action) {
         PersonMenuAction.linkContact ||
@@ -641,9 +653,7 @@ class PersonHeaderBlock extends StatelessWidget {
         ],
         Text(
           data.title,
-          style: tokens.typography.styles.heading.heading2.copyWith(
-            color: tokens.colors.text.highEmphasis,
-          ),
+          style: calmPageTitleStyle(tokens),
         ),
         SizedBox(height: tokens.spacing.step1),
         // Quiet, not teal. Nothing on this line is tappable, and the
@@ -724,12 +734,12 @@ Widget relationshipCadencePill(
   final quiet = tokens.colors.text.mediumEmphasis;
 
   return switch (pill.kind) {
-    PeopleCadencePillKind.overdue => DsPill(
-      key: ValueKey('$keyPrefix-due'),
-      variant: DsPillVariant.tinted,
-      shape: DsPillShape.tag,
-      color: tokens.colors.alert.warning.defaultColor,
-      labelColor: tokens.colors.text.highEmphasis,
+    // One encoding for a lapsed cadence, shared with the People row: the
+    // header spells more of it out, but it must not *look* like a
+    // different state.
+    PeopleCadencePillKind.overdue => relationshipOverduePill(
+      context,
+      pillKey: ValueKey('$keyPrefix-due'),
       label: messages.relationshipDueSince(
         relationshipWeekdayLabelOf(context, peopleDueDateOf(item)!),
         pill.daysOver,

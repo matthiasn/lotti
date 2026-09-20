@@ -9,6 +9,7 @@ import 'package:lotti/features/design_system/components/navigation/resizable_div
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
@@ -327,7 +328,10 @@ class _PeopleList extends StatelessWidget {
     final tokens = context.designTokens;
     final sections = peopleListSections(items);
     final children = <Widget>[
-      PeopleSummaryCard(summary: peopleSummaryOf(items)),
+      PeopleSummaryCard(
+        summary: peopleSummaryOf(items),
+        onOpenNextDue: (id) => beamToNamed('/people/$id'),
+      ),
       for (final section in sections) ...[
         Padding(
           // No horizontal inset of its own: the band heading hangs on the
@@ -376,10 +380,10 @@ class _GroupHeading extends StatelessWidget {
     return Text(
       '$label · $count',
       key: ValueKey('people-group-${group.name}'),
-      style: tokens.typography.styles.others.caption.copyWith(
-        color: tokens.colors.text.mediumEmphasis,
-        fontWeight: tokens.typography.weight.semiBold,
-      ),
+      // The organising label of the list must not share a tier with the
+      // row metadata it organises: `calmEyebrowStyle` is the design
+      // system's structural voice for exactly this.
+      style: calmEyebrowStyle(tokens),
     );
   }
 }
@@ -412,9 +416,7 @@ class _PeopleHeader extends ConsumerWidget {
         children: [
           Text(
             messages.relationshipsPageTitle,
-            style: tokens.typography.styles.heading.heading2.copyWith(
-              color: tokens.colors.text.highEmphasis,
-            ),
+            style: calmPageTitleStyle(tokens),
           ),
           if (itemCount != null) ...[
             SizedBox(width: tokens.spacing.step2),

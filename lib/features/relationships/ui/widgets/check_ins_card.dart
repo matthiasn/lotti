@@ -174,8 +174,13 @@ class CheckInRow extends StatelessWidget {
       context,
       checkIn.meta.dateTo.difference(checkIn.meta.dateFrom),
     );
+    // The date is kept as its own substring so the mono voice can be
+    // confined to it: `11 min` and `1 recording` are prose, and setting
+    // them in mono cost the line the measure that wrapped it around the
+    // sentiment pill.
+    final at = relationshipTimestampLabelOf(context, checkIn.meta.dateFrom);
     final meta = [
-      relationshipTimestampLabelOf(context, checkIn.meta.dateFrom),
+      at,
       checkInInteractionLabel(context, data.interactionType),
       ?duration,
       ?holds,
@@ -225,15 +230,15 @@ class CheckInRow extends StatelessWidget {
                               padding: EdgeInsets.only(
                                 top: tokens.spacing.step1,
                               ),
-                              child: Text(
-                                meta,
+                              child: RelationshipLineWithDate(
                                 key: const ValueKey('check-in-row-meta'),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: relationshipTimestampStyle(
-                                  tokens,
-                                  color: tokens.colors.text.lowEmphasis,
-                                ),
+                                text: meta,
+                                date: at,
+                                maxLines: 1,
+                                style: tokens.typography.styles.others.caption
+                                    .copyWith(
+                                      color: tokens.colors.text.lowEmphasis,
+                                    ),
                               ),
                             ),
                           ),

@@ -32,3 +32,58 @@ abstract final class GoalAccentHues {
   static Color aurora(Brightness brightness) =>
       brightness == Brightness.dark ? _auroraDark : _auroraLight;
 }
+
+/// Six identity hues for a person's avatar, one per persona slot.
+///
+/// A person's accent is identity, not status. The People surfaces used to
+/// draw it from `alert.warning.ink`, `alert.info.ink`, `alert.success.ink`
+/// and `interactive.enabled` — so a person could wear the exact orange the
+/// overdue pill wears, or the teal that means "you can press this", and the
+/// colour said something about them that was not true. A semantic token
+/// borrowed for decoration stops being semantic.
+///
+/// These are deliberately **lower chroma than the alert ramp** (0.095 dark /
+/// 0.105 light, against the alert colours' far more saturated values). Status
+/// colours are few and loud; identity colours are many and quiet, and the
+/// difference in saturation is what keeps a ring of six from reading as six
+/// warnings. Hue angles are spread to stay clear of the semantic anchors
+/// (error ~25, warning ~68, success ~145, info ~235, interactive ~175).
+///
+/// Hand-authored for the same reason [GoalAccentHues] is — the Figma export
+/// carries no persona ramp — and with the same intent: they graduate into
+/// `tokens.json` and this file dissolves into the generated palette.
+/// Maintainer-approved 2026-09-20.
+///
+/// | hue    | dark `oklch(0.76 0.095 h)` | light `oklch(0.52 0.105 h)` |
+/// |--------|----------------------------|------------------------------|
+/// | rose   | `h 10`  → `#E698A3`        | `#9B4D5B`                    |
+/// | amber  | `h 75`  → `#D5A96A`        | `#8C5F0E`                    |
+/// | fern   | `h 140` → `#91C086`        | `#46773B`                    |
+/// | teal   | `h 195` → `#5EC4C4`        | `#007B7C`                    |
+/// | azure  | `h 255` → `#88B4ED`        | `#3C6AA4`                    |
+/// | violet | `h 310` → `#C4A0DF`        | `#7B5696`                    |
+abstract final class PersonaAccentHues {
+  static const List<Color> _dark = [
+    Color(0xFFE698A3),
+    Color(0xFFD5A96A),
+    Color(0xFF91C086),
+    Color(0xFF5EC4C4),
+    Color(0xFF88B4ED),
+    Color(0xFFC4A0DF),
+  ];
+
+  static const List<Color> _light = [
+    Color(0xFF9B4D5B),
+    Color(0xFF8C5F0E),
+    Color(0xFF46773B),
+    Color(0xFF007B7C),
+    Color(0xFF3C6AA4),
+    Color(0xFF7B5696),
+  ];
+
+  /// The ramp for [brightness], in a stable order — an avatar's hue is
+  /// chosen by index, so the order is part of the contract: reordering it
+  /// would recolour every person already on screen.
+  static List<Color> ramp(Brightness brightness) =>
+      brightness == Brightness.dark ? _dark : _light;
+}

@@ -39,8 +39,11 @@ class PausedReminderCallout extends ConsumerWidget {
         key: const ValueKey('person-reminder-paused'),
         icon: LottiIcons.snooze,
         tone: tokens.colors.alert.info.defaultColor,
+        // The same timestamp form the rest of the feature uses. This
+        // read the device's 12/24-hour clock in proportional type, one
+        // card above a mono 24-hour one — two clocks, one page.
         title: messages.relationshipReminderPausedTitle(
-          relationshipTimeLabelOf(context, paused.until.toLocal()),
+          relationshipTimestampLabelOf(context, paused.until.toLocal()),
         ),
         text: messages.relationshipReminderPausedBody,
         actions: [

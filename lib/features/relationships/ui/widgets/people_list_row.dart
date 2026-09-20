@@ -3,6 +3,7 @@ import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
+import 'package:lotti/features/relationships/ui/shared/cadence_pill.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
@@ -71,62 +72,80 @@ class PeopleListRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // The sparkle rides *inside* the name, as the last
-                    // thing on its last line. Beside it in a Row it was
-                    // pushed to the far right of a full-width column, so a
-                    // wrapped name left it stranded in the gap between the
-                    // name and the pill, marking neither.
-                    Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(text: data.title),
-                          if (data.important)
-                            WidgetSpan(
-                              alignment: PlaceholderAlignment.middle,
-                              // The only thing that marks an enrolled
-                              // person on this row, so it carries the word
-                              // too: colour alone says nothing to a screen
-                              // reader, and the import page already labels
-                              // the same concept.
-                              child: Padding(
-                                padding: EdgeInsetsDirectional.only(
-                                  start: tokens.spacing.step2,
-                                ),
-                                child: Semantics(
-                                  label: context
-                                      .messages
-                                      .relationshipImportantLabel,
-                                  child: Icon(
-                                    LottiIcons.aiSpark,
-                                    key: const ValueKey('people-row-important'),
-                                    size: IconSizes.xs,
-                                    color: tokens.colors.interactive.enabled,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Flexible(
+                          // The sparkle rides *inside* the name, as the
+                          // last thing on its last line. Beside it in a
+                          // Row it was pushed to the far right of a
+                          // full-width column, so a wrapped name left it
+                          // stranded in the gap between the name and the
+                          // pill, marking neither.
+                          child: Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(text: data.title),
+                                if (data.important)
+                                  WidgetSpan(
+                                    alignment: PlaceholderAlignment.middle,
+                                    // The only thing that marks an enrolled
+                                    // person on this row, so it carries the word
+                                    // too: colour alone says nothing to a screen
+                                    // reader, and the import page already labels
+                                    // the same concept.
+                                    child: Padding(
+                                      padding: EdgeInsetsDirectional.only(
+                                        start: tokens.spacing.step2,
+                                      ),
+                                      child: Semantics(
+                                        label: context
+                                            .messages
+                                            .relationshipImportantLabel,
+                                        child: Icon(
+                                          LottiIcons.aiSpark,
+                                          key: const ValueKey(
+                                            'people-row-important',
+                                          ),
+                                          size: IconSizes.xs,
+                                          color:
+                                              tokens.colors.interactive.enabled,
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
+                              ],
                             ),
+                            // The name is the row. It wraps rather than
+                            // truncating, because `Commander Pip Fr…` is the one
+                            // string on this row the reader cannot reconstruct
+                            // from anything else on it.
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: tokens.typography.styles.body.bodyLarge
+                                .copyWith(
+                                  fontWeight: tokens.typography.weight.semiBold,
+                                  color: tokens.colors.text.highEmphasis,
+                                ),
+                          ),
+                        ),
+                        if (!peopleCadencePillRestatesBand(pill.kind)) ...[
+                          SizedBox(width: tokens.spacing.step3),
+                          PeopleCadencePillWidget(pill: pill),
                         ],
-                      ),
-                      // The name is the row. It wraps rather than
-                      // truncating, because `Commander Pip Fr…` is the one
-                      // string on this row the reader cannot reconstruct
-                      // from anything else on it.
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: tokens.typography.styles.body.bodyLarge.copyWith(
-                        fontWeight: tokens.typography.weight.semiBold,
-                        color: tokens.colors.text.highEmphasis,
-                      ),
+                      ],
                     ),
-                    SizedBox(height: tokens.spacing.step1),
+                    // step2, not step1: the design system records this gap
+                    // between a row's name and its caption
+                    // (design_system_list_item.dart), and at step1 the two
+                    // lines read as one block.
+                    SizedBox(height: tokens.spacing.step2),
+                    // Full column width — the pill is on the line above, so
+                    // it no longer takes its measure out of the cadence.
                     _StatusLine(item: item),
                   ],
                 ),
               ),
-              if (!peopleCadencePillRestatesBand(pill.kind)) ...[
-                SizedBox(width: tokens.spacing.step3),
-                PeopleCadencePillWidget(pill: pill),
-              ],
             ],
           ),
         ),
@@ -236,24 +255,10 @@ class PeopleCadencePillWidget extends StatelessWidget {
       PeopleCadencePillKind.archived => messages.relationshipStatusArchived,
     };
     if (pill.kind == PeopleCadencePillKind.overdue) {
-      return DsPill(
-        key: const ValueKey('people-row-pill-overdue'),
-        variant: DsPillVariant.tinted,
-        shape: DsPillShape.tag,
-        color: tokens.colors.alert.warning.defaultColor,
-        // The warning hue as ink on its own wash fails contrast; the colour
-        // identity rides the tint (the health chip's rule). On the dark
-        // ground that tint alone reads as an inert brown next to the
-        // neutral chip, so the glyph carries the urgency at glance
-        // distance — the same one the briefing card's out-of-date line
-        // uses, so "needs attention" is drawn one way across the feature.
-        leading: Icon(
-          LottiIcons.warning,
-          size: IconSizes.xs,
-          color: tokens.colors.alert.warning.ink,
-        ),
-        labelColor: tokens.colors.text.highEmphasis,
+      return relationshipOverduePill(
+        context,
         label: label,
+        pillKey: const ValueKey('people-row-pill-overdue'),
       );
     }
     // A quiet read-out on the solid surface fill, never the dashed `muted`

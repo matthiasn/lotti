@@ -13,9 +13,18 @@ import 'package:material_ui/material_ui.dart';
 /// The due count carries the warning ink only while it is non-zero — a calm
 /// morning reads as a quiet `0 / 4 enrolled`, not as a warning about nothing.
 class PeopleSummaryCard extends StatelessWidget {
-  const PeopleSummaryCard({required this.summary, super.key});
+  const PeopleSummaryCard({
+    required this.summary,
+    this.onOpenNextDue,
+    super.key,
+  });
 
   final PeopleSummary summary;
+
+  /// Opens the person the card names as next due. The card was the
+  /// largest, most saturated block on the tab and did nothing at all —
+  /// it named a person and then made the reader go and find them.
+  final void Function(String relationshipId)? onOpenNextDue;
 
   @override
   Widget build(BuildContext context) {
@@ -28,12 +37,15 @@ class PeopleSummaryCard extends StatelessWidget {
     // user talks about them ("Next due Bo"), and a full name wraps the line.
     final nextDueName =
         nextDue?.relationship.data.nickname ?? nextDue?.relationship.data.title;
-    final nextDueLabel = nextDueName == null || nextDueAt == null
+    // Kept apart so the day can wear the mono face the rows already give
+    // a date: the card sat directly above a column of mono timestamps and
+    // set its own date in proportional type.
+    final nextDueDay = nextDueAt == null
+        ? null
+        : relationshipDayLabelOf(context, nextDueAt);
+    final nextDueLabel = nextDueName == null || nextDueDay == null
         ? messages.relationshipsSummaryNoneDue
-        : messages.relationshipsSummaryNextDue(
-            nextDueName,
-            relationshipDayLabelOf(context, nextDueAt),
-          );
+        : messages.relationshipsSummaryNextDue(nextDueName, nextDueDay);
 
     return DesignSystemSectionCard(
       key: const ValueKey('people-summary-card'),
@@ -57,7 +69,10 @@ class PeopleSummaryCard extends StatelessWidget {
                   Text(
                     '${summary.dueNow}',
                     key: const ValueKey('people-summary-due-count'),
-                    style: styles.heading.heading1.copyWith(
+                    // heading2, not heading1: at 35/700 the loudest glyph
+                    // on the People tab was a KPI, outweighing the page
+                    // title and every person's name on it.
+                    style: styles.heading.heading2.copyWith(
                       color: summary.dueNow > 0
                           ? tokens.colors.alert.warning.defaultColor
                           : tokens.colors.text.highEmphasis,
@@ -82,34 +97,77 @@ class PeopleSummaryCard extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  nextDueLabel,
-                  key: const ValueKey('people-summary-next-due'),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: styles.body.bodyMedium.copyWith(
-                    color: tokens.colors.text.highEmphasis,
-                  ),
-                ),
-                if (summary.notEnrolled > 0) ...[
-                  SizedBox(height: tokens.spacing.step1),
-                  Text(
-                    messages.relationshipsSummaryNotEnrolled(
-                      summary.notEnrolled,
-                    ),
-                    style: styles.others.caption.copyWith(
-                      color: tokens.colors.text.lowEmphasis,
+            child: _NextDue(
+              relationshipId: nextDue?.relationship.meta.id,
+              onOpen: onOpenNextDue,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  RelationshipLineWithDate(
+                    key: const ValueKey('people-summary-next-due'),
+                    text: nextDueLabel,
+                    date: nextDueDay,
+                    maxLines: 2,
+                    style: styles.body.bodyMedium.copyWith(
+                      color: tokens.colors.text.highEmphasis,
                     ),
                   ),
+                  if (summary.notEnrolled > 0) ...[
+                    SizedBox(height: tokens.spacing.step1),
+                    Text(
+                      messages.relationshipsSummaryNotEnrolled(
+                        summary.notEnrolled,
+                      ),
+                      style: styles.others.caption.copyWith(
+                        color: tokens.colors.text.lowEmphasis,
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The card's right half, made the door it already looked like.
+///
+/// Wraps [child] in a tap target that opens the person the card names —
+/// but only when there is one and the caller wants the behaviour, so a
+/// card reading "Nobody is due" stays inert rather than offering a tap
+/// that goes nowhere.
+class _NextDue extends StatelessWidget {
+  const _NextDue({
+    required this.relationshipId,
+    required this.onOpen,
+    required this.child,
+  });
+
+  final String? relationshipId;
+  final void Function(String relationshipId)? onOpen;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final id = relationshipId;
+    final open = onOpen;
+    if (id == null || open == null) return child;
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(tokens.radii.m),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        key: const ValueKey('people-summary-next-due-open'),
+        onTap: () => open(id),
+        child: Padding(
+          padding: EdgeInsets.all(tokens.spacing.step2),
+          child: child,
+        ),
       ),
     );
   }

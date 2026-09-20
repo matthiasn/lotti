@@ -13,10 +13,20 @@ import 'package:material_ui/material_ui.dart';
 /// All formatters here are pure functions of a [DateTime] (and the clock),
 /// so they are unit-testable without a widget pump.
 
-/// The mono [TextStyle] for a relationship timestamp, derived from the
-/// design-system caption token with the Inconsolata override.
-TextStyle relationshipTimestampStyle(DsTokens tokens, {Color? color}) =>
-    monoMetaStyle(tokens, tokens.colors, color: color);
+/// The mono [TextStyle] for a relationship timestamp: the Inconsolata
+/// override on [base], or on the design-system caption token when the
+/// caller has no host line to match.
+///
+/// [base] matters wherever a date sits *inside* a line of prose. The style
+/// changes face, tracking and colour and nothing else, so a timestamp in a
+/// 16pt sentence stays 16pt — pinning it to the 12pt caption tier dropped
+/// the date a size mid-sentence, which is worse than the all-mono line the
+/// split replaced.
+TextStyle relationshipTimestampStyle(
+  DsTokens tokens, {
+  Color? color,
+  TextStyle? base,
+}) => monoMetaStyle(tokens, tokens.colors, base: base, color: color);
 
 /// `HH:mm` in 24h, mono — the time component shared by every relationship
 /// timestamp.
@@ -240,7 +250,13 @@ class RelationshipLineWithDate extends StatelessWidget {
           if (at > 0) TextSpan(text: text.substring(0, at)),
           TextSpan(
             text: match,
-            style: relationshipTimestampStyle(tokens, color: style.color),
+            // Same size and weight as the prose around it; only the face,
+            // the tracking and nothing else change.
+            style: relationshipTimestampStyle(
+              tokens,
+              base: style,
+              color: style.color,
+            ),
           ),
           if (at + match.length < text.length)
             TextSpan(text: text.substring(at + match.length)),

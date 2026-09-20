@@ -200,10 +200,11 @@ void main() {
 
       expect(find.byIcon(LottiIcons.mail), findsOneWidget);
       expect(find.byIcon(LottiIcons.call), findsNothing);
-      expect(
-        tester.widget<DsGlassRoundButton>(channelButton).semanticLabel,
-        'Email',
-      );
+      // The control says what it does. A bare glyph did not say whether it
+      // opened a mail client on the tap or asked first, which is what made
+      // it the one control a cautious reader would never press.
+      expect(tester.widget<DsGlassPill>(channelButton).label, 'Email');
+      expect(find.text('Email'), findsOneWidget);
     });
 
     testWidgets('a press launches the channel and remembers the interaction '

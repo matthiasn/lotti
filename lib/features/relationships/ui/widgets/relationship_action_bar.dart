@@ -103,7 +103,13 @@ class _RelationshipActionBarState extends ConsumerState<RelationshipActionBar> {
               column.right,
               spacing.step4 + safeBottomInset,
             ),
-            child: _controls(context, tokens, messages, reachable),
+            child: _controls(
+              context,
+              tokens,
+              messages,
+              reachable,
+              contentWidth: constraints.maxWidth - column.horizontal,
+            ),
           );
         },
       ),
@@ -114,9 +120,32 @@ class _RelationshipActionBarState extends ConsumerState<RelationshipActionBar> {
     BuildContext context,
     DsTokens tokens,
     AppLocalizations messages,
-    ReachableChannel? reachable,
-  ) {
+    ReachableChannel? reachable, {
+    required double contentWidth,
+  }) {
     final spacing = tokens.spacing;
+
+    // The channel control dials a person, or opens their mail client. A
+    // bare handset glyph does not say which, or that it happens on the
+    // tap rather than after a confirmation — so it wears its word whenever
+    // the row can afford one. `intrinsicWidth` is the design system's own
+    // budgeting helper (the navigation launcher uses it to decide whether
+    // two labelled chips fit), so the decision cannot drift from the
+    // padding and gap the pill actually lays out.
+    final channelLabel = reachable == null
+        ? null
+        : contactActionLabel(context, reachable.action);
+    final labelledChannel =
+        channelLabel != null &&
+        contentWidth -
+                DsGlassPill.intrinsicWidth(context, label: channelLabel) -
+                DsGlassRoundButton.defaultDiameter -
+                spacing.step4 * 2 >=
+            DsGlassPill.intrinsicWidth(
+              context,
+              label: messages.relationshipLogCheckIn,
+            );
+
     return Row(
       children: [
         Expanded(
@@ -139,20 +168,36 @@ class _RelationshipActionBarState extends ConsumerState<RelationshipActionBar> {
         ),
         if (reachable != null) ...[
           SizedBox(width: spacing.step4),
-          DsGlassRoundButton(
-            key: const ValueKey('person-action-channel'),
-            icon: contactActionIcon(reachable.action),
-            semanticLabel: contactActionLabel(context, reachable.action),
-            onPressed: () => unawaited(
-              launchContactAction(
-                context,
-                ref,
-                relationshipId: widget.relationship.id,
-                channel: reachable.channel,
-                action: reachable.action,
+          if (labelledChannel)
+            DsGlassPill(
+              key: const ValueKey('person-action-channel'),
+              label: channelLabel,
+              icon: contactActionIcon(reachable.action),
+              onTap: () => unawaited(
+                launchContactAction(
+                  context,
+                  ref,
+                  relationshipId: widget.relationship.id,
+                  channel: reachable.channel,
+                  action: reachable.action,
+                ),
+              ),
+            )
+          else
+            DsGlassRoundButton(
+              key: const ValueKey('person-action-channel'),
+              icon: contactActionIcon(reachable.action),
+              semanticLabel: channelLabel!,
+              onPressed: () => unawaited(
+                launchContactAction(
+                  context,
+                  ref,
+                  relationshipId: widget.relationship.id,
+                  channel: reachable.channel,
+                  action: reachable.action,
+                ),
               ),
             ),
-          ),
         ],
       ],
     );

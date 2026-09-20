@@ -44,7 +44,11 @@ class PersonCardHeader extends StatelessWidget {
       children: [
         Text(
           title,
-          style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+          // `subtitle1`, not `subtitle2`: at 14 these titles sat *under*
+          // the 16pt body they head, and under the Briefing card's own
+          // title, so the person page had two heading tiers and the
+          // quieter one led the louder content.
+          style: tokens.typography.styles.subtitle.subtitle1.copyWith(
             color: tokens.colors.text.highEmphasis,
           ),
         ),
@@ -139,8 +143,13 @@ class NextTimeCard extends StatelessWidget {
       width: double.infinity,
       padding: EdgeInsets.all(tokens.spacing.step4),
       decoration: BoxDecoration(
-        color: tokens.colors.background.level03,
+        // `level03` is the divider gray, not a surface: filling the tiles
+        // with it made the page's quietest content its brightest block —
+        // brighter than the Briefing card it sits under — and gave it the
+        // lift of something pressable, which it is not.
+        color: tokens.colors.background.level02,
         borderRadius: BorderRadius.circular(tokens.radii.m),
+        border: Border.all(color: tokens.colors.decorative.level01),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

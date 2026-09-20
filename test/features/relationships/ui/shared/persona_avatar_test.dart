@@ -54,20 +54,31 @@ void main() {
         final tokens = brightness == Brightness.dark
             ? dsTokensDark
             : dsTokensLight;
-        final tokenAccents = {
+        final tokenAccents = PersonaAccentHues.ramp(brightness).toSet();
+        // Identity is not status. The ramp must hold none of the semantic
+        // accents: a person wearing the overdue orange, or the teal that
+        // means "you can press this", says something about them that is
+        // not true.
+        for (final semantic in {
           tokens.colors.interactive.enabled,
-          GoalAccentHues.neon(brightness),
-          GoalAccentHues.aurora(brightness),
           tokens.colors.alert.warning.ink,
+          tokens.colors.alert.warning.defaultColor,
           tokens.colors.alert.info.ink,
           tokens.colors.alert.success.ink,
-        };
+          tokens.colors.alert.error.ink,
+        }) {
+          expect(
+            tokenAccents,
+            isNot(contains(semantic)),
+            reason: 'a persona accent must never be a semantic accent',
+          );
+        }
         for (var i = 0; i < 64; i++) {
           expect(
             tokenAccents,
             contains(personaAccentForId('rel-$i', brightness)),
             reason:
-                'persona accents must resolve to design-system tokens so '
+                'persona accents must come from the persona ramp so '
                 'palette changes propagate from the token export',
           );
         }

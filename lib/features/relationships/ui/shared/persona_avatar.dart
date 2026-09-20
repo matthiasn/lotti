@@ -4,17 +4,19 @@ import 'package:lotti/widgets/media/journal_image_resolver.dart';
 import 'package:lotti/widgets/media/thumb_hash_backed_image.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// One accent per person, stable per id (design plan §0.7). The palette is
-/// the same family the goal agents draw from: the design system's semantic
-/// accents plus the two hand-authored goal hues. Assignment is a
-/// deterministic hash of the id, so the same person lands on the same
-/// accent on every device and across reloads — the avatar does not
-/// reshuffle when the list reorders.
+/// One accent per person, stable per id (design plan §0.7). Assignment is a
+/// deterministic hash of the id, so the same person lands on the same accent
+/// on every device and across reloads — the avatar does not reshuffle when
+/// the list reorders.
 ///
-/// Every entry comes from the exported token sets — the brightness picks
-/// which set, nothing here holds a color literal of its own. The alert
-/// accents use the `ink` variant because the accent is rendered as text
-/// (the initial), and ink is the text-weight resolution of each hue.
+/// The ramp is [PersonaAccentHues], which exists for exactly this. It used
+/// to be the semantic accents — `alert.warning.ink`, `alert.info.ink`,
+/// `alert.success.ink` and `interactive.enabled` — and that made the colour
+/// lie: a person who was merely *not enrolled* could wear the same orange
+/// the overdue pill wears, and another could wear the teal that means "you
+/// can press this". A status colour spent on identity stops being a status
+/// colour. The persona ramp is deliberately quieter than the alert ramp so
+/// six of them in a column never read as six warnings.
 Color personaAccentForId(String id, Brightness brightness) {
   // A stable, well-mixed 32-bit hash of the id. String.hashCode is not
   // guaranteed stable across Dart versions, so fold the bytes by hand.
@@ -23,15 +25,7 @@ Color personaAccentForId(String id, Brightness brightness) {
     hash ^= byte;
     hash = (hash * 0x01000193) & 0xFFFFFFFF; // FNV-1a prime.
   }
-  final tokens = brightness == Brightness.dark ? dsTokensDark : dsTokensLight;
-  final palette = <Color>[
-    tokens.colors.interactive.enabled,
-    GoalAccentHues.neon(brightness),
-    GoalAccentHues.aurora(brightness),
-    tokens.colors.alert.warning.ink,
-    tokens.colors.alert.info.ink,
-    tokens.colors.alert.success.ink,
-  ];
+  final palette = PersonaAccentHues.ramp(brightness);
   return palette[hash % palette.length];
 }
 
