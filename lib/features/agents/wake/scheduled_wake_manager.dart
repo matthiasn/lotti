@@ -215,15 +215,16 @@ class ScheduledWakeManager with AgentErrorLogging {
       return;
     }
     if (generation != _generation) return;
-    DateTime? nearest;
-    for (final record in pending) {
-      final at = record.scheduledAt;
-      if (!at.isAfter(now)) continue;
-      if (at.difference(now) > checkInterval) continue;
-      if (nearest == null || at.isBefore(nearest)) nearest = at;
-    }
-    if (nearest == null) return;
-    _scheduleRecheck(nearest.difference(clock.now()), generation);
+    final upcoming =
+        pending
+            .map((record) => record.scheduledAt)
+            .where(
+              (at) => at.isAfter(now) && at.difference(now) <= checkInterval,
+            )
+            .toList()
+          ..sort();
+    if (upcoming.isEmpty) return;
+    _scheduleRecheck(upcoming.first.difference(clock.now()), generation);
   }
 
   /// Runs a due-record pass, coalescing any trigger that arrives during it.

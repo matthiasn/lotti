@@ -310,9 +310,9 @@ void main() {
   group('the next deadline gets a wake-up of its own', () {
     final now = DateTime(2026, 9, 20, 11, 30);
 
-    ScheduledWakeEntity pendingAt(DateTime at) =>
+    ScheduledWakeEntity pendingAt(DateTime at, {String id = 'refresh'}) =>
         AgentDomainEntity.scheduledWake(
-              id: 'scheduled_wake:rel:refresh',
+              id: 'scheduled_wake:rel:$id',
               agentId: 'relationship-agent',
               scheduledAt: at,
               status: ScheduledWakeStatus.pending,
@@ -331,7 +331,7 @@ void main() {
     ).captured.length;
 
     void withPending(
-      ScheduledWakeEntity record,
+      List<ScheduledWakeEntity> records,
       void Function(FakeAsync) body,
     ) {
       fakeAsync((async) {
@@ -343,7 +343,7 @@ void main() {
           ).thenAnswer((_) async => []);
           when(
             () => repository.getPendingScheduledWakeRecords(),
-          ).thenAnswer((_) async => [record]);
+          ).thenAnswer((_) async => records);
           final manager = createAndStart(
             checkInterval: const Duration(hours: 1),
           );
@@ -354,7 +354,7 @@ void main() {
     }
 
     test('a record due before the next tick is picked up at its deadline', () {
-      withPending(pendingAt(now.add(const Duration(minutes: 2))), (async) {
+      withPending([pendingAt(now.add(const Duration(minutes: 2)))], (async) {
         async
           ..flushMicrotasks()
           ..elapse(const Duration(minutes: 2, seconds: 1))
@@ -366,8 +366,29 @@ void main() {
       });
     });
 
+    // Every other test here arms from a single record, so the choice between
+    // candidates — the whole point of reading them all — went unexercised.
+    test('the nearest deadline wins, whatever order they arrive in', () {
+      withPending(
+        [
+          pendingAt(now.add(const Duration(minutes: 40)), id: 'later'),
+          pendingAt(now.add(const Duration(minutes: 2)), id: 'sooner'),
+          pendingAt(now.add(const Duration(minutes: 15)), id: 'middle'),
+        ],
+        (async) {
+          async
+            ..flushMicrotasks()
+            ..elapse(const Duration(minutes: 2, seconds: 1))
+            ..flushMicrotasks();
+
+          // The soonest of the three, not the first in the list.
+          expect(passes(), 2);
+        },
+      );
+    });
+
     test('a record beyond the interval is left to the periodic tick', () {
-      withPending(pendingAt(now.add(const Duration(hours: 2))), (async) {
+      withPending([pendingAt(now.add(const Duration(hours: 2)))], (async) {
         async
           ..flushMicrotasks()
           ..elapse(const Duration(minutes: 30))
@@ -380,7 +401,9 @@ void main() {
     });
 
     test('a record already due arms nothing — the pass just fired it', () {
-      withPending(pendingAt(now.subtract(const Duration(minutes: 5))), (async) {
+      withPending([pendingAt(now.subtract(const Duration(minutes: 5)))], (
+        async,
+      ) {
         async
           ..flushMicrotasks()
           ..elapse(const Duration(minutes: 30))
