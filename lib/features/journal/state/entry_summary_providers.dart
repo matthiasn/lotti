@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 
 /// The newest AI response of [type] linked to [entryId], or null.
@@ -57,3 +59,31 @@ String? audioSummaryOneLiner(WidgetRef ref, String entryId) =>
 /// the thumbnail alone when there is no text at all.
 String? imageAnalysisOneLiner(WidgetRef ref, String entryId) =>
     _oneLinerOfType(ref, entryId, AiResponseType.imageAnalysis);
+
+/// The route that wrote the newest image analysis for [entryId], as
+/// `model · via provider` — the same grammar the check-in composer uses for a
+/// dictated take and the briefing footer for a report.
+///
+/// Null while the configs are still loading, for a model whose config has
+/// since been deleted, and for an image nothing has analysed. The caller
+/// shows nothing rather than a half-resolved model id: `data.model` holds an
+/// id, which names no one.
+String? imageAnalysisRouteLabel(
+  WidgetRef ref,
+  String entryId, {
+  required String via,
+}) {
+  final response = _latestResponseOfType(
+    ref,
+    entryId,
+    AiResponseType.imageAnalysis,
+  );
+  if (response == null) return null;
+  final model = ref.watch(aiConfigByIdProvider(response.data.model)).value;
+  if (model is! AiConfigModel) return null;
+  final provider = ref
+      .watch(aiConfigByIdProvider(model.inferenceProviderId))
+      .value;
+  if (provider is! AiConfigInferenceProvider) return null;
+  return '${model.name} · $via ${provider.name}';
+}

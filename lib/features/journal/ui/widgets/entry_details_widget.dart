@@ -718,8 +718,19 @@ class _CollapsedImagePreview extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
-    final oneLiner =
-        imageAnalysisOneLiner(ref, image.meta.id) ?? _entryTextPreview(image);
+    // Which of the two wrote this line decides whether it is attributed: an
+    // analysis is a model's words about a picture of someone, and rendering
+    // it in the same ink as the user's own caption says nothing about where
+    // it came from.
+    final analysis = imageAnalysisOneLiner(ref, image.meta.id);
+    final oneLiner = analysis ?? _entryTextPreview(image);
+    final route = analysis == null
+        ? null
+        : imageAnalysisRouteLabel(
+            ref,
+            image.meta.id,
+            via: context.messages.taskAgentRouteVia,
+          );
 
     final row = Padding(
       padding: EdgeInsets.only(top: tokens.spacing.step2),
@@ -741,13 +752,28 @@ class _CollapsedImagePreview extends ConsumerWidget {
           Expanded(
             child: oneLiner == null
                 ? const SizedBox.shrink()
-                : Text(
-                    oneLiner,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        oneLiner,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: tokens.typography.styles.body.bodySmall.copyWith(
+                          color: tokens.colors.text.mediumEmphasis,
+                        ),
+                      ),
+                      // The glyph alone already separates a described photo
+                      // from a captioned one, so it shows even where the
+                      // route cannot be resolved — a deleted model config
+                      // must not turn a model's words back into the user's.
+                      if (analysis != null)
+                        _ImageAnalysisAttribution(
+                          key: const ValueKey('image-analysis-attribution'),
+                          route: route,
+                        ),
+                    ],
                   ),
           ),
         ],
@@ -771,6 +797,46 @@ class _CollapsedImagePreview extends ConsumerWidget {
     final text = image.entryText?.plainText.trim();
     if (text == null || text.isEmpty) return null;
     return text.replaceAll(RegExp(r'\s+'), ' ');
+  }
+}
+
+/// Says that a model wrote the line above, and which one.
+///
+/// The sparkle is the part that always shows: it is what distinguishes a
+/// description from the user's own caption. [route] — `model · via provider`
+/// — joins it whenever the model's config can still be resolved.
+class _ImageAnalysisAttribution extends StatelessWidget {
+  const _ImageAnalysisAttribution({this.route, super.key});
+
+  final String? route;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final route = this.route;
+    final color = tokens.colors.text.mediumEmphasis;
+    return Padding(
+      padding: EdgeInsets.only(top: tokens.spacing.step1),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(LottiIcons.aiSpark, size: IconSizes.xs, color: color),
+          if (route != null) ...[
+            SizedBox(width: tokens.spacing.step1),
+            Flexible(
+              child: Text(
+                route,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: color,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }
 

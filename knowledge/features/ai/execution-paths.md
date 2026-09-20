@@ -367,6 +367,18 @@ transcript is what the user wanted out of the way. The label prefers
 both where the legacy analysis path appends and where a user's caption lives.
 With neither, the thumbnail stands alone.
 
+Which of those two wrote the line decides whether it is **attributed**. A
+description is a model's words about a picture — often of a person the user
+knows — and rendering it in the same ink as their own caption said nothing
+about where it came from. When the line comes from an analysis, the row adds
+the AI glyph and, from `imageAnalysisRouteLabel`, `model · via provider` — the
+grammar the check-in composer uses for a dictated take and the briefing footer
+for a report. `AiResponseData.model` holds a model *id*, so the label resolves
+it through `aiConfigByIdProvider` to the model's own name and its serving
+provider; while those configs load, or once a model's config has been deleted,
+the glyph shows alone rather than a half-resolved id. A caption the user typed
+is never attributed to anyone.
+
 Images still default to **expanded**; only audio reads a null `collapsed` as
 collapsed. The row renders whenever a user collapses an image themselves.
 

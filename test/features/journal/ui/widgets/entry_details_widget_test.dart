@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
@@ -17,7 +18,9 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
@@ -3747,8 +3750,9 @@ void main() {
 
       Future<void> pumpCollapsedImage(
         WidgetTester tester,
-        List<AiResponseEntry> responses,
-      ) async {
+        List<AiResponseEntry> responses, {
+        List<Override> extraOverrides = const [],
+      }) async {
         final mockJournalRepository = MockJournalRepository();
         when(
           () => mockJournalRepository.getLinksFromId(testImageEntry.meta.id),
@@ -3772,6 +3776,7 @@ void main() {
                     responses,
                   ),
                 ),
+                ...extraOverrides,
               ],
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
@@ -3786,6 +3791,133 @@ void main() {
         await tester.pump();
         await tester.pump(AppTheme.chevronRotationDuration);
       }
+
+      // A description is a model's words about a picture of someone the
+      // user knows, and it used to render in the same ink as their own
+      // caption — nothing said a model had written it, or which one.
+      List<Override> resolvableRoute() => [
+        aiConfigByIdProvider('test-model').overrideWith(
+          (ref) async =>
+              AiConfig.model(
+                    id: 'test-model',
+                    name: 'Test Vision',
+                    providerModelId: 'test-vision',
+                    inferenceProviderId: 'provider-1',
+                    createdAt: DateTime(2024),
+                    inputModalities: const [Modality.image],
+                    outputModalities: const [Modality.text],
+                    isReasoningModel: false,
+                  )
+                  as AiConfigModel,
+        ),
+        aiConfigByIdProvider('provider-1').overrideWith(
+          (ref) async =>
+              AiConfig.inferenceProvider(
+                    id: 'provider-1',
+                    baseUrl: '',
+                    apiKey: '',
+                    name: 'Anthropic',
+                    inferenceProviderType: InferenceProviderType.anthropic,
+                    createdAt: DateTime(2024),
+                  )
+                  as AiConfigInferenceProvider,
+        ),
+      ];
+
+      testWidgets('names the model that described the photo', (tester) async {
+        await pumpCollapsedImage(
+          tester,
+          [
+            analysisEntry(
+              id: 'analysis-1',
+              dateFrom: DateTime(2024, 6),
+              oneLiner: 'Two penguins on the ice.',
+            ),
+          ],
+          extraOverrides: resolvableRoute(),
+        );
+        await tester.pump();
+
+        expect(find.text('Test Vision · via Anthropic'), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('image-analysis-attribution')),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('marks it as written by a model even where the model '
+          'config is gone', (tester) async {
+        await pumpCollapsedImage(tester, [
+          analysisEntry(
+            id: 'analysis-1',
+            dateFrom: DateTime(2024, 6),
+            oneLiner: 'Two penguins on the ice.',
+          ),
+        ]);
+        await tester.pump();
+
+        // A deleted model config must not turn a model's words back into
+        // the user's: the glyph stands on its own.
+        expect(
+          find.byKey(const ValueKey('image-analysis-attribution')),
+          findsOneWidget,
+        );
+        expect(find.textContaining('· via'), findsNothing);
+      });
+
+      testWidgets('a model id that resolves to something else names no one', (
+        tester,
+      ) async {
+        await pumpCollapsedImage(
+          tester,
+          [
+            analysisEntry(
+              id: 'analysis-1',
+              dateFrom: DateTime(2024, 6),
+              oneLiner: 'Two penguins on the ice.',
+            ),
+          ],
+          extraOverrides: [
+            // The id points at a provider row, not a model: nothing to
+            // name, and an id is not a name.
+            aiConfigByIdProvider('test-model').overrideWith(
+              (ref) async =>
+                  AiConfig.inferenceProvider(
+                        id: 'test-model',
+                        baseUrl: '',
+                        apiKey: '',
+                        name: 'Anthropic',
+                        inferenceProviderType: InferenceProviderType.anthropic,
+                        createdAt: DateTime(2024),
+                      )
+                      as AiConfigInferenceProvider,
+            ),
+          ],
+        );
+        await tester.pump();
+
+        expect(
+          find.byKey(const ValueKey('image-analysis-attribution')),
+          findsOneWidget,
+        );
+        expect(find.textContaining('Anthropic'), findsNothing);
+      });
+
+      testWidgets("the user's own caption is not attributed to anyone", (
+        tester,
+      ) async {
+        await pumpCollapsedImage(
+          tester,
+          const [],
+          extraOverrides: resolvableRoute(),
+        );
+        await tester.pump();
+
+        expect(
+          find.byKey(const ValueKey('image-analysis-attribution')),
+          findsNothing,
+        );
+      });
 
       testWidgets(
         'shows a thumbnail while collapsed — an image collapsed to text alone '
