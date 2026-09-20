@@ -135,12 +135,6 @@ String _titleCaseTokens(String raw) {
       .join(' ');
 }
 
-/// A full, locale-aware timestamp (date + time) for list cards, e.g.
-/// `Mar 15, 2024 10:30 AM`. Deterministic given a date and locale.
-String formatEntryTimestamp(DateTime date, {String? locale}) {
-  return DateFormat.yMMMd(locale).add_jm().format(date.toLocal());
-}
-
 /// A full, locale-aware timestamp for list cards, in the **device's** own
 /// conventions — `20.9.2026 19:08` on a German phone, whatever language the
 /// app is running in. See `device_datetime.dart` for why that is not the

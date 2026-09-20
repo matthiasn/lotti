@@ -10,6 +10,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/device_datetime.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// A saved, verified passage. Current source metadata controls access and
@@ -121,9 +122,9 @@ class QueryEvidenceCardState extends ConsumerState<QueryEvidenceCard> {
             ? DateTime.tryParse(evidence.textVersion.substring(separator + 1))
             : null);
     if (date != null) {
-      return DateFormat.yMMMd(
-        Localizations.localeOf(context).toString(),
-      ).add_Hms().format(date);
+      // Minute precision, like every other stamp: the seconds this used
+      // to carry were noise on an evidence row.
+      return deviceTimestampLabel(context, date);
     }
     return null;
   }

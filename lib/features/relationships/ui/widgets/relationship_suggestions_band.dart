@@ -22,6 +22,7 @@ import 'package:lotti/features/relationships/state/relationship_proposal_provide
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/device_datetime.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Evidence-backed proposals on the relationship card. Retains resolving rows
@@ -192,7 +193,7 @@ class _RelationshipSuggestionsBandState
         if (due != null)
           Text(
             context.messages.taskDueDateWithDate(
-              DateFormat.yMMMd(context.messages.localeName).format(due),
+              deviceDateLabel(context, due),
             ),
             style: tokens.typography.styles.others.caption.copyWith(
               color: tokens.colors.aiCard.metaText,
