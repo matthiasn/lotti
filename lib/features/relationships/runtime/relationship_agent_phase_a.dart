@@ -609,13 +609,18 @@ AgentDomainEntity relationshipEscalationWake(
 /// the current briefing was written (ADR 0059 Decision 2's "check-in saved
 /// since the last report" fact), due immediately.
 ///
-/// The deadline is the newest check-in's own instant: synced journal
-/// truth, so every device arming for the same evidence writes an
-/// identical, already-past deadline (the same resolver argument as the
-/// lapse episode's due-day deadline). The episode key is scoped to that
-/// check-in's UTC day, bounding the spend to one refresh per day of new
-/// evidence; a same-day follow-up check-in re-derives into the consumed
-/// episode and waits for the next day or the next lapse.
+/// The deadline is the newest evidence's own instant plus
+/// [relationshipEvidenceSettle]: synced journal truth, so every device
+/// arming for the same evidence writes an identical deadline (the same
+/// resolver argument as the lapse episode's due-day deadline).
+///
+/// The episode key is that instant, not its day: each change arms its own
+/// episode, and the settle window is what bounds the spend — evidence that
+/// lands inside it re-arms a later-settling episode and supersedes this one
+/// (see [relationshipRefreshSuperseded]), so a burst is briefed once. This
+/// block used to claim the key was scoped to the check-in's UTC day and
+/// bounded the spend to one refresh per day; it has not worked that way
+/// since the settle window replaced it.
 AgentDomainEntity relationshipReportRefreshEscalationWake(
   String agentId,
   RelationshipCadenceDerivation derivation, {
@@ -648,7 +653,19 @@ AgentDomainEntity relationshipReportRefreshEscalationWake(
 /// How long a refresh waits after the evidence last changed, so a burst —
 /// a dictation, then a photo, then a comment — is briefed once rather than
 /// three times.
-const relationshipEvidenceSettle = Duration(seconds: 30);
+///
+/// Two minutes, matching `WakeOrchestrator.throttleWindow`, which defers a
+/// subscription-triggered wake by exactly this much and for exactly this
+/// reason ("allowing bursty edits to coalesce"). A refresh is a *scheduled*
+/// wake and so bypasses that gate, which is why it needs its own — and why
+/// the two should agree rather than each pick a number. Thirty seconds was
+/// too short to be the thing it claims to be: opening the picker and
+/// choosing a photo outlasts it, so adding a photo to a check-in just
+/// written bought a second briefing.
+///
+/// The cost is that a briefing lands up to two minutes after the last thing
+/// the user logged, with the card reading *out of date* until it does.
+const relationshipEvidenceSettle = Duration(seconds: 120);
 
 /// Whether [derivation]'s evidence changed after [report] was written (or
 /// there is evidence and no report yet) — the "briefing is stale" fact both
