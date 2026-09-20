@@ -204,6 +204,66 @@ void main() {
       });
     });
 
+    testWidgets('a project scope cancels through the project service', (
+      tester,
+    ) async {
+      final taskAgentService = MockTaskAgentService();
+      final projectAgentService = MockProjectAgentService();
+      when(
+        () => projectAgentService.cancelScheduledWake(any()),
+      ).thenAnswer((_) async {});
+
+      await withClock(Clock.fixed(DateTime(2026, 5, 4, 12)), () async {
+        await tester.pumpWidget(
+          build(
+            kind: AgentMaintenanceKind.project,
+            automaticUpdates: true,
+            state: makeTestState(nextWakeAt: DateTime(2026, 5, 4, 12, 0, 30)),
+            taskAgentService: taskAgentService,
+            projectAgentService: projectAgentService,
+            report: makeTestReport(tldr: 'Tldr line.'),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.byKey(const ValueKey('taskAgentSkipScheduledUpdate')),
+        );
+        await tester.pumpAndSettle();
+
+        verify(
+          () => projectAgentService.cancelScheduledWake(agentId),
+        ).called(1);
+        verifyNever(() => taskAgentService.cancelScheduledWake(any()));
+      });
+    });
+
+    testWidgets('a failed cancellation says so instead of going quiet', (
+      tester,
+    ) async {
+      final taskAgentService = MockTaskAgentService();
+      when(
+        () => taskAgentService.cancelScheduledWake(any()),
+      ).thenThrow(StateError('cancel failed'));
+
+      await withClock(Clock.fixed(DateTime(2026, 5, 4, 12)), () async {
+        await tester.pumpWidget(
+          build(
+            automaticUpdates: true,
+            state: makeTestState(nextWakeAt: DateTime(2026, 5, 4, 12, 0, 30)),
+            taskAgentService: taskAgentService,
+            report: makeTestReport(tldr: 'Tldr line.'),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.byKey(const ValueKey('taskAgentSkipScheduledUpdate')),
+        );
+        await tester.pump();
+
+        expect(find.text('Error'), findsOneWidget);
+      });
+    });
+
     testWidgets(
       'a wake rescheduled after a skip brings its countdown back',
       (tester) async {

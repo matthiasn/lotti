@@ -98,12 +98,9 @@ class AgentAutomationRow extends StatefulWidget {
        showCountdown = false,
        nextWakeAt = null,
        showsIdleScheduleLabel = false,
-       onAutomaticUpdatesChanged = _ignoreBool,
-       onSkipScheduledUpdate = _ignore,
-       onCountdownExpired = _ignore;
-
-  static void _ignore() {}
-  static void _ignoreBool(bool _) {}
+       onAutomaticUpdatesChanged = null,
+       onSkipScheduledUpdate = null,
+       onCountdownExpired = null;
 
   /// Whether the row still renders while the report is current.
   ///
@@ -162,12 +159,19 @@ class AgentAutomationRow extends StatefulWidget {
   /// and [isRefreshingReport] — so a caller that passes `false` here while a
   /// wake is scheduled or running still gets an honest label.
   final bool isStale;
-  final ValueChanged<bool> onAutomaticUpdatesChanged;
+
+  /// Null only on [AgentAutomationRow.compact], which renders no switch: a
+  /// no-op stand-in would have been a line of code that can never run.
+  final ValueChanged<bool>? onAutomaticUpdatesChanged;
   final VoidCallback? onRunNow;
 
   /// Cancels the pending automatic update, leaving automatic updates on.
-  final VoidCallback onSkipScheduledUpdate;
-  final VoidCallback onCountdownExpired;
+  /// Null on the compact form, which shows no countdown to cancel.
+  final VoidCallback? onSkipScheduledUpdate;
+
+  /// Null on the compact form, whose deadline is never rendered and so never
+  /// expires.
+  final VoidCallback? onCountdownExpired;
 
   @override
   State<AgentAutomationRow> createState() => _AgentAutomationRowState();
@@ -211,7 +215,7 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
     if (_widthAnchorSeconds > 0 || _expiryReported) return;
     _expiryReported = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) widget.onCountdownExpired();
+      if (mounted) widget.onCountdownExpired?.call();
     });
   }
 
@@ -416,7 +420,7 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
                       : metrics.scheduleWidths[tier],
                   staticLabel: _countdownVisible ? null : anchorLabels[tier],
                   nextWakeAt: _countdownVisible ? widget.nextWakeAt : null,
-                  onExpired: widget.onCountdownExpired,
+                  onExpired: widget.onCountdownExpired ?? () {},
                 ),
                 skipLabel: metrics.skipLabel,
                 skipTooltip: messages.taskAgentCancelTimerTooltip,
@@ -425,7 +429,10 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
               );
 
         final setting = _AutomationSetting(
-          enabled: widget.inferenceAvailable && !widget.automationBusy,
+          enabled:
+              widget.inferenceAvailable &&
+              !widget.automationBusy &&
+              widget.onAutomaticUpdatesChanged != null,
           value: widget.automaticUpdatesEnabled,
           onChanged: widget.onAutomaticUpdatesChanged,
           needsSetupHint: widget.inferenceAvailable
@@ -824,7 +831,7 @@ class _AutomationSetting extends StatelessWidget {
 
   final bool enabled;
   final bool value;
-  final ValueChanged<bool> onChanged;
+  final ValueChanged<bool>? onChanged;
   final String? needsSetupHint;
 
   @override
@@ -864,7 +871,9 @@ class _AutomationSetting extends StatelessWidget {
           tooltipIcon: needsSetupHint == null ? null : LottiIcons.info,
           tooltipMessage: needsSetupHint,
           enabled: enabled,
-          onChanged: onChanged,
+          // Non-null wherever the switch renders: `enabled` is false without
+          // a handler, and a disabled `DesignSystemToggle` never calls it.
+          onChanged: onChanged ?? (_) {},
         ),
       ],
     );
@@ -889,7 +898,7 @@ class _AutomationSetting extends StatelessWidget {
         // button. The switch inside carries the visible state; the enlarged
         // row target stays purely a hit area.
         child: DsQuietInk(
-          onTap: enabled ? () => onChanged(!value) : null,
+          onTap: enabled && onChanged != null ? () => onChanged!(!value) : null,
           borderRadius: BorderRadius.circular(tokens.radii.s),
           // The enlarged target is for pointers and thumbs. The switch inside
           // already publishes the accessible control — button, toggled state and

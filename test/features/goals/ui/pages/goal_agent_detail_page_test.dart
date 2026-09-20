@@ -1377,9 +1377,11 @@ void main() {
       // Countdown expiry must re-read persisted state so the row can leave
       // its scheduled state once the wake runner clears nextWakeAt.
       final readsBeforeExpiry = stateReads;
+      // Non-null on the full band: only the compact strip, which renders no
+      // countdown, leaves the callback out.
       tester
           .widget<AgentAutomationRow>(find.byType(AgentAutomationRow))
-          .onCountdownExpired();
+          .onCountdownExpired!();
       await tester.pump();
       expect(stateReads, greaterThan(readsBeforeExpiry));
 
