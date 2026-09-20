@@ -521,13 +521,23 @@ void main() {
       },
     );
 
-    testWidgets('shows the photo date in the viewer overlay', (tester) async {
+    testWidgets('shows the photo date AND time in the viewer overlay', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        buildWrapper(date: DateTime(2026, 2, 3)),
+        buildWrapper(date: DateTime(2026, 2, 3, 19, 8)),
       );
       await tester.pump();
 
-      expect(find.text('Feb 3, 2026'), findsOneWidget);
+      // Matched in two parts: intl separates the clock from AM/PM with a
+      // narrow no-break space, so an exact literal misses for the wrong
+      // reason.
+      expect(find.textContaining('Feb 3, 2026'), findsOneWidget);
+      expect(
+        find.textContaining('7:08'),
+        findsOneWidget,
+        reason: 'a photo is often the only record of when something happened',
+      );
     });
 
     testWidgets('single taps hide and restore all viewer chrome', (
@@ -545,14 +555,14 @@ void main() {
       await tester.pump(const Duration(milliseconds: 600));
       expect(findMaterialTooltip('Download image'), findsNothing);
       expect(findMaterialTooltip('Close'), findsNothing);
-      expect(find.text('Feb 3, 2026'), findsNothing);
+      expect(find.textContaining('Feb 3, 2026'), findsNothing);
       expect(findMaterialTooltip('Zoom In'), findsNothing);
 
       await tester.tapAt(canvasPoint);
       await tester.pump(const Duration(milliseconds: 600));
       expect(findMaterialTooltip('Download image'), findsOneWidget);
       expect(findMaterialTooltip('Close'), findsOneWidget);
-      expect(find.text('Feb 3, 2026'), findsOneWidget);
+      expect(find.textContaining('Feb 3, 2026'), findsOneWidget);
       expect(findMaterialTooltip('Zoom In'), findsOneWidget);
     });
 
@@ -1115,10 +1125,10 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.text('Jan 1, 2026'), findsOneWidget);
+        expect(find.textContaining('Jan 1, 2026'), findsOneWidget);
         _pressIconButton(tester, LottiIcons.chevronRight);
         await tester.pump();
-        expect(find.text('Feb 1, 2026'), findsOneWidget);
+        expect(find.textContaining('Feb 1, 2026'), findsOneWidget);
       });
 
       testWidgets(
