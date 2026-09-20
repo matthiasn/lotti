@@ -201,11 +201,6 @@ PeopleStatusLine peopleStatusPartsOf(
   );
 }
 
-/// The row's status line as one plain string — what a screen reader and the
-/// tests read.
-String peopleStatusLineOf(BuildContext context, RelationshipListItem item) =>
-    peopleStatusPartsOf(context, item).text;
-
 /// The status line with the mono voice confined to the date.
 class _StatusLine extends StatelessWidget {
   const _StatusLine({required this.item});

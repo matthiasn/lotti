@@ -692,6 +692,34 @@ void main() {
     expect(find.text('2 people without reminders'), findsOneWidget);
   });
 
+  testWidgets('the summary card opens the person each half is about', (
+    tester,
+  ) async {
+    when(
+      () => mockRepository.getRelationshipsByRecency(),
+    ).thenAnswer((_) async => crew());
+    final beamedTo = <String>[];
+    beamToNamedOverride = beamedTo.add;
+    addTearDown(() => beamToNamedOverride = null);
+
+    await withClock(Clock.fixed(testDate), () async {
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+    });
+
+    // The count is about the longest lapse; the sentence is about the next
+    // one. The card used to name a person and then leave the reader to go
+    // and find them in the list below.
+    await tester.tap(find.byKey(const ValueKey('people-summary-due-open')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('people-summary-next-due-open')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(beamedTo, ['/people/rel-anna', '/people/rel-ben']);
+  });
+
   testWidgets('a person who is not important reads Not enrolled, with no '
       'cadence claim', (tester) async {
     when(() => mockRepository.getRelationshipsByRecency()).thenAnswer(

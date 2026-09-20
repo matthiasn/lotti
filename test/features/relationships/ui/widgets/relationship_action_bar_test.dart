@@ -116,7 +116,9 @@ void main() {
       ContactAction.email,
     },
     bool launchSucceeds = true,
+    Size? surface,
   }) async {
+    if (surface != null) setTestSurfaceSize(tester, surface);
     final launcher = _FakeContactLauncher(
       launchable: launchable,
       launchSucceeds: launchSucceeds,
@@ -207,6 +209,52 @@ void main() {
       // it the one control a cautious reader would never press.
       expect(tester.widget<DsGlassPill>(channelButton).label, 'Email');
       expect(find.text('Email'), findsOneWidget);
+    });
+
+    testWidgets('too narrow for the words, the controls fall back to glyphs '
+        'rather than squeezing the primary', (tester) async {
+      // The labels are budgeted against the row's real width with the
+      // design system's own `intrinsicWidth`, one control at a time. On a
+      // narrow phone the primary keeps its measure and the two trailing
+      // controls stay discs — still labelled for a screen reader, which is
+      // what `semanticLabel` is for.
+      await pump(
+        tester,
+        channels: const [mobile],
+        surface: const Size(320, 640),
+      );
+
+      expect(find.byType(DsGlassPill), findsOneWidget);
+      expect(
+        tester.widget<DsGlassPill>(find.byType(DsGlassPill)).label,
+        'Log check-in',
+      );
+      final channel = tester.widget<DsGlassRoundButton>(channelButton);
+      expect(channel.semanticLabel, 'Call');
+      expect(
+        tester
+            .widget<DsGlassRoundButton>(
+              find.byKey(const ValueKey('person-action-speak')),
+            )
+            .semanticLabel,
+        isNotNull,
+      );
+    });
+
+    testWidgets('the glyph fallback still launches the channel', (
+      tester,
+    ) async {
+      final launcher = await pump(
+        tester,
+        channels: const [mobile],
+        surface: const Size(320, 640),
+      );
+
+      await tester.tap(channelButton);
+      await tester.pumpAndSettle();
+
+      expect(launcher.launched, [(mobile, ContactAction.call)]);
+      expect(store.remembered?.relationshipId, person(const []).id);
     });
 
     testWidgets('a press launches the channel and remembers the interaction '

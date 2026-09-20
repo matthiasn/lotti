@@ -214,7 +214,13 @@ int Function(RelationshipListItem, RelationshipListItem) _orderWithin(
     PeopleListGroup.onTrack => (a, b) {
       final dueA = peopleDueDateOf(a, now: now);
       final dueB = peopleDueDateOf(b, now: now);
+      // Unreachable by construction: every member of this band is enrolled
+      // (`peopleListGroupOf`), and an enrolled person always has a due date
+      // (`effectiveCadenceDaysOf` substitutes the runtime default). Kept as
+      // a guard so a future banding change misorders rather than crashes.
+      // coverage:ignore-start
       if (dueA == null || dueB == null) return byRecency(a, b);
+      // coverage:ignore-end
       final due = dueA.compareTo(dueB);
       return due != 0 ? due : byRecency(a, b);
     },
