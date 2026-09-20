@@ -12,26 +12,29 @@ aktuella läget till en kort rapport och kan lyfta fram föreslagna ändringar a
 uppgiften eller checklistan som du kan bekräfta eller avvisa. För den systemomfattande
 vyn över alla aktiva agenter, se [Driv och övervaka agenter](../ai-and-automation/agents.mdx).
 
-Den tilldelade agenten visas under uppgiftens checklistor och länkade uppgifter. Det
-hopfällda kortet håller den senaste sammanfattningen, kontrollen för automatiska
-uppdateringar, åtgärden **Wake-agent** och den aktiva modellrutten synliga utan att
-uppgiftssidan känns som en AI-konsol.
+Den tilldelade agenten visas under uppgiftens checklistor och länkade uppgifter. Kortet
+håller den senaste sammanfattningen och eventuella föreslagna ändringar, och
+inget annat. Uppdateringskontrollerna och AI-uppsättningen ligger bakom **Öppna
+agent-interna funktioner**, så att uppgiftssidan läses som en uppgift och inte
+som en AI-konsol.
 
 <ManualScreenshot
   caseId="tasks/agent-card"
-  alt="Tilldelad uppgiftsagent Habitatbevakaren på uppgiften för det orbitala pingvinhabitatet, som visar aktuell sammanfattning, automatiska uppdateringar, åtgärden Wake-agent och modellrutten för Project Waddle"
-  caption="Habitatbevakaren är tilldelad den här uppgiften; tilldelning och automatiska uppdateringar är separata val."
+  alt="Tilldelad uppgiftsagent Habitatbevakaren på uppgiften för det orbitala pingvinhabitatet, som visar aktuell sammanfattning och kontrollen Läs mer"
+  caption="Habitatbevakaren är tilldelad den här uppgiften; tilldelning och automatiska uppdateringar är fortfarande separata val, och kontrollerna för båda finns i agentens interna funktioner."
 />
 
-På en telefon följer kortet en enda läsordning: identitet, uppdateringskontroller,
-AI-uppsättning, rapport och sedan föreslagna ändringar och historik. På skrivbordet
-utgör rapporten och förslagen läskolumnen, medan de kompakta kontrollerna finns kvar
-i närheten.
+Oavsett skärmstorlek följer kortet en enda läsordning: identitet, rapport och
+sedan föreslagna ändringar och historik. Har sammanfattningen hamnat efter
+uppgiften dyker meddelandet **Inaktuell** och åtgärden **Uppdatera nu** upp
+mellan de två; så länge sammanfattningen är aktuell säger kortet ingenting om
+sin färskhet.
 
 Välj **Läs mer** för att expandera hela rapporten på plats. Det expanderade kortet
 håller uppgiften synlig, lägger till rapportens underliggande bedömning och
 rekommenderade nästa steg, och erbjuder **Öppna agent-interna funktioner** när du
-behöver rapporter, konversationer, observationer eller detaljer om körningen.
+behöver agentens uppdateringskontroller och AI-uppsättning, eller dess
+rapporter, konversationer, observationer och detaljer om körningen.
 
 <ManualScreenshot
   caseId="tasks/agent-card-expanded"
@@ -41,8 +44,10 @@ behöver rapporter, konversationer, observationer eller detaljer om körningen.
 
 ## Välj agentens AI-uppsättning
 
-Kortets rad **Nuvarande upplägg** anger profilen, modellen och leverantören som
-används vid nästa vakning. Välj den för att välja en sparad inferensprofil,
+Öppna **Öppna agent-interna funktioner** — från agentens namn högst upp på
+kortet eller från länken under den expanderade rapporten: där anger raden
+**Nuvarande upplägg** profilen, modellen och leverantören som används vid nästa
+vakning. Välj den för att välja en sparad inferensprofil,
 åsidosätta enbart den tänkande modellen, återgå till profilens standardvärde,
 kopiera kategorins nuvarande upplägg, eller stänga av AI för just den här agenten.
 Ett val följer med agenten för framtida uppdateringar; att kopiera ett kategoriupplägg
@@ -85,15 +90,17 @@ som redan väntar på ditt beslut.
 ## Välj automatiska eller manuella uppdateringar
 
 Nya uppgiftsagenter börjar med **Automatiska uppdateringar avstängda**. Enbart
-tilldelning förbrukar inga tokens i bakgrunden. Medan uppdateringarna är avstängda
-fortsätter Lotti att uppmärksamma relevanta ändringar i uppgiften och dess länkade
-poster, markerar en äldre sammanfattning som föråldrad och väntar på att du väljer
-**Wake-agent**. En manuell vakning är fortfarande tillgänglig så länge agenten har
+tilldelning förbrukar inga tokens i bakgrunden. Reglaget, nedräkningen till
+nästa uppdatering och **Hoppa över en gång** ligger alla i **Öppna agent-interna
+funktioner**, bredvid agentens rapporthistorik och aktivitet. Medan
+uppdateringarna är avstängda fortsätter Lotti att uppmärksamma relevanta
+ändringar i uppgiften och dess länkade poster, markerar på själva kortet en
+äldre sammanfattning som föråldrad och väntar på att du väljer **Wake-agent**. En manuell vakning är fortfarande tillgänglig så länge agenten har
 ett fungerande AI-upplägg.
 
 <ManualScreenshot
   caseId="tasks/agent-card-manual"
-  alt="Uppgiftsagent-kort för Habitatbevakaren med automatiska uppdateringar avstängda, ett meddelande om att rapporten är föråldrad och en manuell Wake-agent-åtgärd"
+  alt="Uppgiftsagent-kort för Habitatbevakaren med ett meddelande om att rapporten är föråldrad och en manuell uppdateringsåtgärd"
   caption="Manuellt läge observerar ändringar och rapporterar inaktualitet utan att starta inferens."
 />
 

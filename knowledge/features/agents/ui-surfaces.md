@@ -20,6 +20,10 @@ sources:
     resource: ../../../lib/features/agents/ui/agent_automation_row.dart
     title: Shared agent report automation controls
     last_modified: 2026-09-14
+  - id: maintenance
+    resource: ../../../lib/features/agents/ui/agent_maintenance_section.dart
+    title: AgentMaintenanceSection
+    last_modified: 2026-09-20
   - id: motion
     resource: ../../../lib/features/design_system/theme/motion_tokens.dart
     title: Motion tokens
@@ -80,12 +84,13 @@ Contents:
   decisions still open and nothing else. A report with no *Read more* — no
   tldr/content split, so no expanded state to gate on — shows history
   unconditionally rather than stranding it behind a control that never renders.
-- **The controls footer** — a composition root over `AgentAutomationRow` and
-  `TaskAgentIdentityRegion`.
+- **The freshness strip** — `AgentAutomationRow.compact`, and only while there
+  is something to report. See *What the card says about freshness* below.
 
-`AgentAutomationRow` is also the goal detail report control. Task and goal
-agents therefore share the same freshness, manual update, countdown, Skip once,
-and automatic-update interaction rather than maintaining parallel responsive
+`AgentAutomationRow` is also the goal detail report control, and the body of
+the maintenance band in the internals panel. Task, project and goal agents
+therefore share the same freshness, manual update, countdown, Skip once, and
+automatic-update interaction rather than maintaining parallel responsive
 implementations. Each feature supplies its own scheduling service and state;
 the widget owns only the presentation and countdown expiry callback.
 
@@ -110,9 +115,34 @@ vertically centred, capped at the summary's reading measure. The per-row ✕
 (neutral wash) and ✓ (accent wash) are matched in weight and asymmetric in hue,
 each in a 40×40 hit zone with a `step2` dead band between them.
 
-## The controls band is the only surface
+## What the card says about freshness
 
-All secondary controls live in a quiet, flat footer pinned to the card bottom.
+**Nothing, while the summary is current.** The card is a reading surface, and a
+permanent *Up to date* line charged the reader a row to be told that nothing
+needed doing. `AgentAutomationRow.compact` with `showsFreshConfirmation: false`
+renders a zero-height box in that state — not a hidden one, so a current card is
+exactly as tall as the summary it shows.
+
+When the summary *is* behind — the caller's stale watermark, or a run rewriting
+the report — the strip appears under the prose, on the summary's own leading
+edge: the freshness glyph and word, and *Update now* beside them. State and its
+remedy stay adjacent; the one state worth a row is the one the reader may want
+to act on.
+
+Everything else that used to sit in a footer under the summary — the schedule,
+*Skip once*, the automatic-updates switch, the model identity and the setup
+chevron — is **agent plumbing**, and lives behind *Open agent internals*. That
+is six controls the primary reading surface no longer carries.
+
+## The maintenance band lives in the internals panel
+
+`AgentMaintenanceSection` is the band, and it is mounted above the panel's tabs
+by any host that governs its agent's report — the task summary card and the
+project summary card, each passing an `AgentMaintenanceScope` (a kind and the
+task or project id) when it pushes the route. A surface that only *reads* an
+agent — the relationship briefing, the goal page's activity link — passes none
+and gets the tabs alone.
+
 The band answers **two** questions and keeps each one in one place:
 
 | Question | Where |
@@ -126,16 +156,27 @@ The model identity sits below both.
 it is the switch's readout, and putting the trigger between the two halves made
 "Automatic updates" read as a caption for the button.
 
-Its `aiCard.footerWash` and top hairline **are** the container; nothing inside
+**The band derives its own state** from the agent providers keyed by `agentId`,
+and dispatches `triggerReanalysis` / `cancelScheduledWake` on the scope's kind
+(`TaskAgentService` or `ProjectAgentService`). It does not take callbacks from
+whoever opened it: it renders inside a pushed route, and the surface underneath
+is free to rebuild or go away. The automatic-updates switch is the exception
+that is *not* dispatched — it writes `AgentConfig`, the same record whoever owns
+the agent, and `TaskAgentService` is where that write lives.
+
+*Skip once* latches the **deadline** it was tapped against, not a boolean, so a
+wake rescheduled while the panel is open counts down again instead of staying
+hidden behind a cancellation of the run before it.
+
+Its `aiCard.footerWash` and hairline **are** the container; nothing inside
 draws a second fill, border or radius. An earlier revision boxed the automation
 controls in a nested card, costing a nesting level, two horizontal insets and a
 third leading edge — and in the light theme that inner fill *was* the band's own
 fill, so it was invisible anyway.
 
 The band pays `spacing.step4` horizontally and each row adds `spacing.step2`, so
-every glyph lands on `spacing.cardPadding`, sharing one leading edge with the
-summary prose and proposal rows, while interactive rows still get ink that
-breathes around their content.
+every glyph lands on `spacing.cardPadding`, while interactive rows still get ink
+that breathes around their content.
 
 **Vertically the band declares no gaps at all, and that is the contract.** Its
 *interactive* rows — the trigger, the switch row, the identity rows — are
@@ -145,8 +186,7 @@ reader sees. The schedule line is the exception and stays a bare text row
 (`_ScheduleLabel` reserves width, never height); it needs no target of its own,
 and the boxes above and below it space it. Declared gaps stack on top of all
 that and the band pays twice: `step5` between two stacked rows rendered as
-~34px of visible space, and the settings zone grew to a third of the card on a
-phone. Space the row boxes, not the text inside them.
+~34px of visible space. Space the row boxes, not the text inside them.
 
 The switch row earns its height rather than reserving it. An earlier revision
 wrapped the 40×24 switch in a `step9` box "for a full-size interaction target",
@@ -169,7 +209,8 @@ cancels — not a bare glyph beside the switch it does not control. It calls
 
 **Accent is spent on the trigger alone.** It sits at
 `DesignSystemButtonSize.dense` — the caption tier — so accent means "this starts
-work", and nothing in the settings band shares a type tier with `Confirm all`.
+work", and nothing in the maintenance band shares a type tier with
+`Confirm all`.
 
 `Skip once` is the trigger's opposite and is inked at `aiCard.bodyText`: the
 same register as the countdown it acts on. An action rendered *fainter* than the
@@ -178,8 +219,8 @@ hover fill is the affordance, and a decorated cancel out-decorated the value it
 cancels while giving the band a third dialect for "this is tappable".
 
 **The alert tint is spent on the freshness glyph alone.** The word stays
-`aiCard.bodyText` in both states. Tinting it too made the quiet settings band
-the loudest thing on the card — louder than `Confirm all`, the action that
+`aiCard.bodyText` in both states. Tinting it too made the quiet maintenance
+band the loudest thing on the card — louder than `Confirm all`, the action that
 actually changes the task — and in dark it read at *lower* contrast than the
 plain ink it replaced. The state is already said twice, in the glyph and in the
 word, so colour is not carrying it alone.
@@ -242,10 +283,12 @@ summary on screen is the one the run is replacing, and `reportFreshAt` is
 written only once the wake succeeds (see
 [task agents](task-agents.md#freshness-watermarks)), so the word flips to "Up
 to date" only after the run has ended, and a failed run leaves it reading
-whatever the watermark says. Both cards hide the countdown while a run is in
+whatever the watermark says. The band hides the countdown while a run is in
 flight, which is exactly when the caller's flag is most likely still `false`:
 without the running term, that frame read "Up to date" with the spinner beside
-it. Which runs count is the caller's to say: `isRunning` (agent-wide, and what
+it. The same flag is what decides whether the summary card's strip speaks at
+all, so a card that says nothing is a card whose summary is genuinely current
+— never one that has simply not caught up. Which runs count is the caller's to say: `isRunning` (agent-wide, and what
 keeps the trigger busy) is the default, right for task agents whose every
 completed wake advances the watermark; the goal page passes
 `goalReportWakeInFlightProvider` as `isRefreshingReport`, because a goal
@@ -253,7 +296,7 @@ agent's chat replies and Phase A subscription ticks hold the same lock without
 touching the read, and must not declare a fresh one out of date. With
 automation on and nothing pending
 the line reads "Updates on changes", so flipping the switch never leaves a
-hole that resizes the card. The whole switch row is the interaction target — tapping the label
+hole that resizes the panel. The whole switch row is the interaction target — tapping the label
 toggles the setting — on the band's shared `spacing.step8` minimum; the switch's
 own 40×24 track is too short in one dimension to be the target by itself. When
 setup is missing, the disabled toggle explains itself via an info tooltip and
@@ -482,8 +525,11 @@ two affordances inside the AI card: the agent name link in the header, and the
 from the shared `TldrHeader` / `TldrBody` pair, so every surface wearing the AI
 card — the task agent section, the goal agent's read, and the relationship
 briefing — reaches the panel the same two ways. It is a thin shell —
-header, close button, scrim — hosting `AgentInternalsBody` once
-`agentIdentityProvider` resolves. A `barrierDismissible: true` route plus an
+header, close button, scrim — hosting the host's optional
+`AgentMaintenanceSection` and then `AgentInternalsBody`, once
+`agentIdentityProvider` resolves. The band sits *above* the tabs because it is
+the one thing here the reader changes rather than reads, and because it belongs
+to the agent as a whole rather than to any one tab's log. A `barrierDismissible: true` route plus an
 explicit full-screen `GestureDetector` cover both pop paths. The panel's colored
 background and side border are painted by its own `Material`, so conversation
 and report expansion tiles paint their ink on that surface. An opaque decorated

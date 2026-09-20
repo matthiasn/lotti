@@ -14,27 +14,29 @@ che tu puoi confermare o rifiutare. Per la vista a livello di sistema su tutti
 gli agenti in esecuzione, vedi [Eseguire e monitorare gli agenti](../ai-and-automation/agents.mdx).
 
 L'agente assegnato appare sotto le liste di controllo dell'attività e le
-attività collegate. La sua scheda ridotta mantiene visibili l'ultimo
-riassunto, il controllo degli aggiornamenti automatici, l'azione **Sveglia
-l'agente** e il percorso del modello attivo, senza far sembrare la pagina
-dell'attività una console IA.
+attività collegate. La sua scheda mantiene l'ultimo riassunto e le
+eventuali modifiche proposte, e nient'altro. I suoi controlli di aggiornamento
+e la configurazione IA vivono dietro **Interni di agente aperto**, così la
+pagina dell'attività si legge come un'attività e non come una console IA.
 
 <ManualScreenshot
   caseId="tasks/agent-card"
-  alt="Agente di attività Habitat Watcher assegnato all'attività dell'habitat del pinguino orbitale, che mostra il riassunto attuale, gli aggiornamenti automatici, l'azione di sveglia e il percorso del modello di Project Waddle"
-  caption="Habitat Watcher è assegnato a questa attività; l'assegnazione e gli aggiornamenti automatici sono scelte separate."
+  alt="Agente di attività Habitat Watcher assegnato all'attività dell'habitat del pinguino orbitale, che mostra il riassunto attuale e il controllo Leggi tutto"
+  caption="Habitat Watcher è assegnato a questa attività; l'assegnazione e gli aggiornamenti automatici restano scelte separate, e i controlli di entrambi stanno negli interni dell'agente."
 />
 
-Su un telefono, la scheda segue un unico ordine di lettura: identità,
-controlli di aggiornamento, configurazione IA, rapporto, quindi modifiche
-proposte e storia. Sul desktop, il rapporto e le proposte formano la colonna
-di lettura mentre i controlli compatti rimangono nelle vicinanze.
+A ogni dimensione di schermo la scheda segue un unico ordine di lettura:
+identità, rapporto, quindi modifiche proposte e storia. Quando il riassunto è
+rimasto indietro rispetto all'attività, fra i due compaiono l'avviso **Non
+aggiornato** e l'azione **Aggiorna ora**; finché il riassunto è attuale, la
+scheda non dice nulla sulla propria freschezza.
 
 Scegli **Leggi tutto** per espandere il rapporto completo senza lasciare la
 pagina. La scheda ampliata mantiene l'attività visibile, aggiunge la
 valutazione di supporto del rapporto e il prossimo passo raccomandato, e
-offre **Interni di agente aperto** quando hai bisogno di rapporti,
-conversazioni, osservazioni o dettagli di runtime.
+offre **Interni di agente aperto** quando ti servono i controlli di
+aggiornamento e la configurazione IA dell'agente, oppure i suoi rapporti,
+conversazioni, osservazioni e dettagli di runtime.
 
 <ManualScreenshot
   caseId="tasks/agent-card-expanded"
@@ -44,8 +46,10 @@ conversazioni, osservazioni o dettagli di runtime.
 
 ## Scegli la configurazione IA dell'agente
 
-La riga **Configurazione attuale** identifica il profilo, il modello e il
-provider usati per la prossima sveglia. Selezionala per scegliere un
+Apri **Interni di agente aperto** — dal nome dell'agente in cima alla scheda
+o dal collegamento sotto il rapporto ampliato: lì la riga **Configurazione
+attuale** identifica il profilo, il modello e il provider usati per la
+prossima sveglia. Selezionala per scegliere un
 profilo di inferenza salvato, sostituire solo il modello di pensiero,
 tornare al profilo predefinito, copiare la configurazione attuale della
 categoria o disattivare l'IA per questo singolo agente. Una scelta resta
@@ -94,16 +98,19 @@ risolve le proposte già in attesa della tua decisione.
 ## Scegli aggiornamenti automatici o manuali
 
 I nuovi agenti di attività iniziano con **Aggiornamenti automatici
-disattivati**. La sola assegnazione non consuma token in background. Quando
-gli aggiornamenti sono disattivati, Lotti continua a notare le modifiche
-rilevanti all'attività e alle voci collegate, contrassegna un riassunto
-precedente come non aggiornato e attende che tu selezioni **Sveglia l'agente**.
+disattivati**. La sola assegnazione non consuma token in background.
+L'interruttore, il conto alla rovescia fino al prossimo aggiornamento e
+**Salta una volta** vivono tutti in **Interni di agente aperto**, accanto allo
+storico dei rapporti e all'attività dell'agente. Quando gli aggiornamenti sono
+disattivati, Lotti continua a notare le modifiche rilevanti all'attività e alle
+voci collegate, contrassegna sulla scheda stessa un riassunto precedente come
+non aggiornato e attende che tu selezioni **Sveglia l'agente**.
 Un risveglio manuale resta disponibile ogni volta che l'agente ha una
 configurazione IA funzionante.
 
 <ManualScreenshot
   caseId="tasks/agent-card-manual"
-  alt="Scheda dell'agente di attività Habitat Watcher con gli aggiornamenti automatici disattivati, un avviso di rapporto non aggiornato e un'azione manuale Sveglia l'agente"
+  alt="Scheda dell'agente di attività Habitat Watcher con un avviso di rapporto non aggiornato e un'azione di aggiornamento manuale"
   caption="La modalità manuale osserva i cambiamenti e segnala quando i dati non sono più aggiornati, senza avviare l'inferenza."
 />
 

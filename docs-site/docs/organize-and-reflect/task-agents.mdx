@@ -12,25 +12,27 @@ situation into a short report, and can surface proposed task or checklist
 changes for you to confirm or reject. For the system-wide view across every
 running agent, see [Run and monitor agents](../ai-and-automation/agents.mdx).
 
-The assigned agent appears below the task's checklists and linked tasks. Its
-collapsed card keeps the latest summary, automatic-update control, **Wake
-agent** action, and active model route visible without making the task page
-feel like an AI console.
+The assigned agent appears below the task's checklists and linked tasks. The
+card keeps the latest summary and any proposed changes, and nothing else. Its
+update controls and AI setup live behind **Open agent internals**, so the task
+page reads like a task rather than an AI console.
 
 <ManualScreenshot
   caseId="tasks/agent-card"
-  alt="Assigned Habitat Watcher task agent on the orbital penguin habitat task, showing its current summary, automatic updates, wake action, and Project Waddle model route"
-  caption="Habitat Watcher is assigned to this task; assignment and automatic updates are separate choices."
+  alt="Assigned Habitat Watcher task agent on the orbital penguin habitat task, showing its current summary and the Read more control"
+  caption="Habitat Watcher is assigned to this task; assignment and automatic updates remain separate choices, and the controls for both sit in agent internals."
 />
 
-On a phone, the card follows a single reading order: identity, update controls,
-AI setup, report, then proposed changes and history. On desktop, the report and
-proposals form the reading column while the compact controls remain nearby.
+At every screen size the card follows one reading order: identity, report, then
+proposed changes and history. When the summary has fallen behind the task, an
+**Out of date** notice and an **Update now** action appear between the two;
+while the summary is current, the card says nothing about freshness at all.
 
 Choose **Read more** to expand the complete report in place. The expanded card
 keeps the task visible, adds the report's supporting assessment and recommended
-next step, and offers **Open agent internals** when you need reports,
-conversations, observations, or runtime details.
+next step, and offers **Open agent internals** when you need the agent's update
+controls and AI setup, or its reports, conversations, observations, and runtime
+details.
 
 <ManualScreenshot
   caseId="tasks/agent-card-expanded"
@@ -40,10 +42,12 @@ conversations, observations, or runtime details.
 
 ## Choose the agent's AI setup
 
-The card's **Current setup** row identifies the profile, model, and provider
-used for its next wake. Select it to choose a saved inference profile, override
-only the thinking model, return to the profile default, copy the category's
-current setup, or turn off AI for this one agent. A choice stays with that
+Open **Open agent internals** — from the agent's name in the card header, or
+from the link under the expanded report — and its **Current setup** row
+identifies the profile, model, and provider used for the next wake. Select it
+to choose a saved inference profile, override only the thinking model, return
+to the profile default, copy the category's current setup, or turn off AI for
+this one agent. A choice stays with that
 agent for future updates; copying a category setup is a snapshot, not a link
 that silently changes later.
 
@@ -84,14 +88,16 @@ already waiting for your decision.
 ## Choose automatic or manual updates
 
 New task agents start with **Automatic updates off**. Assignment alone does not
-spend tokens in the background. While updates are off, Lotti continues to
-notice relevant changes to the task and its linked entries, marks an older
-summary as out of date, and waits for you to choose **Wake agent**. A manual
-wake remains available whenever the agent has a working AI setup.
+spend tokens in the background. The switch, the countdown to the next update
+and **Skip once** all live in **Open agent internals**, beside the agent's
+report history and activity. While updates are off, Lotti continues to notice
+relevant changes to the task and its linked entries, marks an older summary as
+out of date on the card itself, and waits for you to choose **Wake agent**. A
+manual wake remains available whenever the agent has a working AI setup.
 
 <ManualScreenshot
   caseId="tasks/agent-card-manual"
-  alt="Habitat Watcher task-agent card with automatic updates off, an out-of-date report notice, and a manual Wake agent action"
+  alt="Habitat Watcher task-agent card with an out-of-date report notice and a manual update action"
   caption="Manual mode observes changes and reports staleness without starting inference."
 />
 

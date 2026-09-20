@@ -1,10 +1,8 @@
 import 'dart:async';
 
-import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
-import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -14,10 +12,8 @@ import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
@@ -156,81 +152,6 @@ void main() {
         expect(find.text('Agent Alpha'), findsNothing);
       },
     );
-
-    testWidgets(
-      'a pending toggle for the old agent does not block the new agent',
-      (tester) async {
-        final first = makeTestIdentity(
-          id: 'agent-A',
-          agentId: 'agent-A',
-          displayName: 'Agent Alpha',
-          config: const AgentConfig(automaticUpdatesEnabled: false),
-        );
-        final second = makeTestIdentity(
-          id: 'agent-B',
-          agentId: 'agent-B',
-          displayName: 'Agent Beta',
-          config: const AgentConfig(automaticUpdatesEnabled: false),
-        );
-        final firstUpdate = Completer<void>();
-        final taskAgentService = MockTaskAgentService();
-        when(
-          () => taskAgentService.updateAutomaticUpdates(
-            agentId: 'agent-A',
-            enabled: true,
-          ),
-        ).thenAnswer((_) => firstUpdate.future);
-        when(
-          () => taskAgentService.updateAutomaticUpdates(
-            agentId: 'agent-B',
-            enabled: true,
-          ),
-        ).thenAnswer((_) async {});
-        var current = first;
-
-        await tester.pumpWidget(
-          _buildShell(
-            identity: (ref) => current,
-            taskAgentService: taskAgentService,
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        final toggle = find.byKey(
-          const Key('taskAgentAutomaticUpdatesCheckbox'),
-        );
-        await tester.tap(toggle);
-        await tester.pump();
-        verify(
-          () => taskAgentService.updateAutomaticUpdates(
-            agentId: 'agent-A',
-            enabled: true,
-          ),
-        ).called(1);
-
-        final element = tester.element(find.byType(AiSummaryCard));
-        final container = ProviderScope.containerOf(element);
-        current = second;
-        container.invalidate(taskAgentProvider(AgentTestBench.taskId));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Agent Beta'), findsOneWidget);
-        final secondToggle = find.byKey(
-          const Key('taskAgentAutomaticUpdatesCheckbox'),
-        );
-        await tester.tap(secondToggle);
-        await tester.pump();
-        verify(
-          () => taskAgentService.updateAutomaticUpdates(
-            agentId: 'agent-B',
-            enabled: true,
-          ),
-        ).called(1);
-
-        firstUpdate.complete();
-        await tester.pump();
-      },
-    );
   });
 
   group('AiSummaryCard – didUpdateWidget resets the history latch', () {
@@ -340,67 +261,6 @@ void main() {
     );
   });
 
-  group('AiSummaryCard – agentState re-emit clears manual cancel', () {
-    testWidgets(
-      'a rescheduled wake (new nextWakeAt) re-shows the countdown after the '
-      'user cancelled the previous one',
-      (tester) async {
-        await withClock(Clock.fixed(DateTime(2026, 5, 4, 12)), () async {
-          final initialWake = DateTime(2026, 5, 4, 12, 0, 30);
-          final rescheduledWake = DateTime(2026, 5, 4, 12, 1, 30);
-          AgentDomainEntity? currentState = makeTestState(
-            nextWakeAt: initialWake,
-          );
-          final taskAgentService = MockTaskAgentService();
-          when(
-            () => taskAgentService.cancelScheduledWake(any()),
-          ).thenAnswer((_) {});
-
-          await tester.pumpWidget(
-            _buildShell(
-              identity: (ref) => makeTestIdentity().copyWith(
-                config: const AgentConfig(automaticUpdatesEnabled: true),
-              ),
-              agentState: (ref) => currentState,
-              taskAgentService: taskAgentService,
-            ),
-          );
-          await tester.pumpAndSettle();
-
-          // The initial scheduled wake shows the countdown + Skip.
-          expect(find.text('Skip once'), findsOneWidget);
-          expect(find.textContaining('0:30'), findsOneWidget);
-
-          // Skip it → _cancelledManually = true → countdown hidden. The
-          // manual trigger was never gone, so it is still here.
-          await tester.tap(
-            find.byKey(const ValueKey('taskAgentSkipScheduledUpdate')),
-          );
-          await tester.pumpAndSettle();
-          expect(find.text('Skip once'), findsNothing);
-          expect(find.byIcon(LottiIcons.refresh), findsOneWidget);
-
-          // Reschedule: agentStateProvider re-emits a new nextWakeAt.
-          // ref.listen's callback runs with a non-null `prev` value,
-          // reading prev.nextWakeAt; the differing future timestamp
-          // clears _cancelledManually and the countdown returns.
-          final element = tester.element(find.byType(AiSummaryCard));
-          final container = ProviderScope.containerOf(element);
-          final agentId = makeTestIdentity().agentId;
-          currentState = makeTestState(nextWakeAt: rescheduledWake);
-          container.invalidate(agentStateProvider(agentId));
-          await tester.pumpAndSettle();
-
-          verify(
-            () => taskAgentService.cancelScheduledWake(any()),
-          ).called(1);
-          expect(find.text('Skip once'), findsOneWidget);
-          expect(find.textContaining('1:30'), findsOneWidget);
-        });
-      },
-    );
-  });
-
   group('AiSummaryCard – TLDR content fallback', () {
     testWidgets(
       'falls back to the report content when no explicit tldr is set, '
@@ -421,10 +281,11 @@ void main() {
         // The content surfaces directly as the TLDR line.
         expect(find.text('Bare content becomes the tldr.'), findsOneWidget);
 
-        // There is no extra body to reveal, so the disclosure control stays
-        // hidden rather than offering an empty interaction.
+        // There is no extra body to reveal, so the Read more control stays
+        // hidden rather than offering an empty interaction. The internals
+        // link is not about the report, and stays.
         expect(find.text('Read more'), findsNothing);
-        expect(find.text('Open agent internals'), findsNothing);
+        expect(find.text('Open agent internals'), findsOneWidget);
         // Still exactly one copy of the content — no duplicated report body.
         expect(find.text('Bare content becomes the tldr.'), findsOneWidget);
       },

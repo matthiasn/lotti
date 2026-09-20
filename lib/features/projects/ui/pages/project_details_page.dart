@@ -174,15 +174,6 @@ class ProjectDetailsPage extends ConsumerWidget {
                   : () => ref
                         .read(projectAgentServiceProvider)
                         .triggerReanalysis(identity.agentId),
-              onCancelScheduledReportWake: identity == null
-                  ? null
-                  : () async {
-                      await _cancelScheduledReportWake(
-                        context,
-                        ref,
-                        identity.agentId,
-                      );
-                    },
               onAssignAgent: canAssignProjectAgent
                   ? () => _assignProjectAgent(context, ref, record.project)
                   : null,
@@ -214,28 +205,6 @@ class ProjectDetailsPage extends ConsumerWidget {
         );
       },
     );
-  }
-
-  Future<void> _cancelScheduledReportWake(
-    BuildContext context,
-    WidgetRef ref,
-    String agentId,
-  ) async {
-    try {
-      await ref.read(projectAgentServiceProvider).cancelScheduledWake(agentId);
-    } catch (error, stackTrace) {
-      developer.log(
-        'Failed to cancel project agent scheduled wake',
-        name: 'ProjectDetailsPage',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      if (!context.mounted) return;
-      context.showToast(
-        tone: DesignSystemToastTone.error,
-        title: context.messages.commonError,
-      );
-    }
   }
 
   Future<void> _assignProjectAgent(

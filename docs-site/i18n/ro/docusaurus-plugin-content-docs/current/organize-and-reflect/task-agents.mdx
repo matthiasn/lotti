@@ -7,15 +7,15 @@ description: Oferiți sarcinii propriul asistent AI, cu raport, stare de activar
 
 O sarcină poate avea un singur agent. Atribuirea îi oferă un asistent AI persistent, cu propria configurare de inferență, raport, stare de activare și istoric al propunerilor. Agentul citește sarcina și contextul legat, distilează situația curentă într-un raport scurt și poate afișa modificări propuse ale sarcinii sau listei de verificare, pe care dvs. le confirmați sau le respingeți. Pentru vizualizarea la nivelul întregului sistem a tuturor agenților activi, consultați [Rulați și monitorizați agenți](../ai-and-automation/agents.mdx).
 
-Agentul atribuit apare sub listele de verificare și sarcinile legate. Cardul restrâns păstrează vizibile cel mai recent rezumat, controlul de actualizare automată, acțiunea **Activați agentul** și ruta modelului activ, fără să transforme pagina sarcinii într-o consolă AI.
+Agentul atribuit apare sub listele de verificare și sarcinile legate. Cardul păstrează cel mai recent rezumat și eventualele modificări propuse, și nimic altceva. Controalele de actualizare și configurarea AI se află în spatele opțiunii **Deschideți componentele interne ale agentului**, astfel încât pagina sarcinii se citește ca o sarcină, nu ca o consolă AI. Când rezumatul rămâne în urma sarcinii, între raport și propuneri apar avertismentul **Neactualizat** și acțiunea **Actualizați acum**; cât timp rezumatul este la zi, cardul nu spune nimic despre prospețimea lui.
 
 <ManualScreenshot
   caseId="tasks/agent-card"
-  alt="Agentul de sarcină Habitat Watcher atribuit sarcinii habitatului orbital al pinguinilor, cu rezumat curent, actualizări automate, acțiunea de activare și ruta modelului Project Waddle"
-  caption="Habitat Watcher este atribuit acestei sarcini; atribuirea și actualizările automate sunt alegeri separate."
+  alt="Agentul de sarcină Habitat Watcher atribuit sarcinii habitatului orbital al pinguinilor, cu rezumatul curent și comanda Citiți mai mult"
+  caption="Habitat Watcher este atribuit acestei sarcini; atribuirea și actualizările automate rămân alegeri separate, iar comenzile pentru amândouă se află în componentele interne ale agentului."
 />
 
-Alegeți **Citiți mai mult** pentru a extinde raportul complet în același loc. Cardul extins păstrează sarcina vizibilă, adaugă evaluarea de sprijin și următorul pas recomandat și oferă **Deschideți componentele interne ale agentului** pentru rapoarte, conversații, observații și detalii de execuție.
+Alegeți **Citiți mai mult** pentru a extinde raportul complet în același loc. Cardul extins păstrează sarcina vizibilă, adaugă evaluarea de sprijin și următorul pas recomandat și oferă **Deschideți componentele interne ale agentului** pentru controalele de actualizare și configurarea AI a agentului, precum și pentru rapoarte, conversații, observații și detalii de execuție.
 
 <ManualScreenshot
   caseId="tasks/agent-card-expanded"
@@ -25,7 +25,7 @@ Alegeți **Citiți mai mult** pentru a extinde raportul complet în același loc
 
 ## Alegeți configurarea AI a agentului
 
-Rândul **Configurarea curentă** al cardului identifică profilul, modelul și furnizorul folosite la următoarea activare. Selectați-l pentru a alege un profil de inferență salvat, a suprascrie numai modelul de raționament, a reveni la valoarea implicită a profilului, a copia configurarea curentă a categoriei sau a dezactiva AI pentru acest agent. O alegere rămâne asociată agentului pentru actualizările viitoare; copierea configurării unei categorii este un instantaneu, nu o legătură care se schimbă ulterior pe tăcute.
+Deschideți **Deschideți componentele interne ale agentului** — din numele agentului aflat în antetul cardului sau din legătura de sub raportul extins: acolo rândul **Configurarea curentă** identifică profilul, modelul și furnizorul folosite la următoarea activare. Selectați-l pentru a alege un profil de inferență salvat, a suprascrie numai modelul de raționament, a reveni la valoarea implicită a profilului, a copia configurarea curentă a categoriei sau a dezactiva AI pentru acest agent. O alegere rămâne asociată agentului pentru actualizările viitoare; copierea configurării unei categorii este un instantaneu, nu o legătură care se schimbă ulterior pe tăcute.
 
 Dacă un raport a fost produs printr-o rută diferită, Lotti păstrează o atribuire separată **Acest raport**, în loc să reeticheteze istoricul cu configurarea curentă. Dezactivarea AI lasă raportul existent lizibil, dar împiedică activările ulterioare până când selectați din nou o configurare funcțională. Actualizările automate nu pot fi activate cât timp agentul nu are o configurare AI funcțională.
 
@@ -47,11 +47,11 @@ O acțiune manuală **Activați agentul** poate produce același tip de raport �
 
 ## Alegeți actualizări automate sau manuale
 
-Agenții noi ai sarcinilor pornesc cu **Actualizări automate dezactivate**. Simplul fapt că ați atribuit agentul nu consumă tokenuri în fundal. Cât timp actualizările sunt oprite, Lotti observă schimbările relevante ale sarcinii și înregistrărilor legate, marchează un rezumat mai vechi ca depășit și așteaptă să alegeți **Activați agentul**. Activarea manuală rămâne disponibilă oricând agentul are o configurare AI funcțională.
+Agenții noi ai sarcinilor pornesc cu **Actualizări automate dezactivate**. Simplul fapt că ați atribuit agentul nu consumă tokenuri în fundal. Comutatorul, numărătoarea inversă până la următoarea actualizare și **Omiteți o dată** se află toate în **Deschideți componentele interne ale agentului**, lângă istoricul rapoartelor și activitatea agentului. Cât timp actualizările sunt oprite, Lotti observă schimbările relevante ale sarcinii și înregistrărilor legate, marchează chiar pe card un rezumat mai vechi ca depășit și așteaptă să alegeți **Activați agentul**. Activarea manuală rămâne disponibilă oricând agentul are o configurare AI funcțională.
 
 <ManualScreenshot
   caseId="tasks/agent-card-manual"
-  alt="Cardul agentului Habitat Watcher cu actualizările automate oprite, o notificare privind raportul depășit și acțiunea manuală Activați agentul"
+  alt="Cardul agentului Habitat Watcher cu o notificare privind raportul depășit și o acțiune manuală de actualizare"
   caption="Modul manual observă schimbările și semnalează raportul depășit fără a porni inferența."
 />
 

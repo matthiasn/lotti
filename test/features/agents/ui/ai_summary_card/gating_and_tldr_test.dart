@@ -167,6 +167,11 @@ void main() {
       await tester.pumpWidget(bench.build());
       await tester.pumpAndSettle();
 
+      // The internals link rides the same row in both states: it is the only
+      // door to the agent's schedule and AI setup, so collapsing the report
+      // must not take it away.
+      expect(find.text('Open agent internals'), findsOneWidget);
+
       await tester.tap(find.text('Read more'));
       await tester.pumpAndSettle();
       expect(find.text('Show less'), findsOneWidget);
@@ -175,7 +180,7 @@ void main() {
       await tester.tap(find.text('Show less'));
       await tester.pumpAndSettle();
       expect(find.text('Read more'), findsOneWidget);
-      expect(find.text('Open agent internals'), findsNothing);
+      expect(find.text('Open agent internals'), findsOneWidget);
     });
 
     testWidgets('Read more pill is hidden when there is no TLDR or report', (
@@ -206,10 +211,15 @@ void main() {
       // The subtitle falls through to the identity display name (no
       // template), which is what the header renders as the tappable name.
       await tester.tap(find.text(makeTestIdentity().displayName));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
 
       expect(find.text('Agent internals'), findsOneWidget);
+      // The panel is where the card's maintenance band went: the switch,
+      // the schedule and the model identity are all behind this tap.
+      expect(find.text('Automatic updates'), findsOneWidget);
+      // The tiered caption paints a measured candidate per width tier, so
+      // the route string legitimately matches more than one text node.
+      expect(find.text('test-model · via Test Provider'), findsWidgets);
     });
 
     testWidgets('Open agent internals pill (under expanded report) opens it', (
@@ -232,6 +242,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Agent internals'), findsOneWidget);
+      expect(find.text('Automatic updates'), findsOneWidget);
     });
   });
 }

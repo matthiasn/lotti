@@ -67,8 +67,9 @@ the `AiSummaryCard`, and finally the user's **own work** (`ChecklistsWidget`,
 
 The AI card renders **directly below the header** so a reader lands on "what
 is this task about and where does it stand" before scrolling into the work.
-The model attribution lives only inside the card's own footer — nothing
-renders a standalone attribution strip under the title.
+The model attribution lives only inside the agent internals panel — nothing
+renders a standalone attribution strip under the title, and the card itself
+carries no model, schedule or automation controls.
 
 Below the form, the dated log-entry history (linked entries plus reverse
 links) sits inside an **expanded-by-default** `TaskHistorySection`: the log is

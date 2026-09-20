@@ -7,17 +7,17 @@ description: Donne à une tâche son propre assistant IA, avec un rapport, un é
 
 Une tâche peut avoir un agent de tâche. Lui en affecter un donne à cette tâche un assistant IA persistant, avec sa propre configuration d’inférence, son rapport, son état de réveil et son historique de propositions. L’agent lit la tâche et son contexte lié, distille la situation actuelle dans un bref rapport et peut faire apparaître des modifications proposées de la tâche ou de sa liste de contrôle, que tu confirmes ou refuses. Pour une vue d’ensemble de tous les agents en cours d’exécution, consulte [Exécuter et surveiller les agents](../ai-and-automation/agents.mdx).
 
-L’agent affecté apparaît sous les listes de contrôle et les tâches liées. Sa carte repliée garde visible le dernier résumé, le contrôle des mises à jour automatiques, l’action **Réveiller l’agent** et la route de modèle active, sans transformer la page de tâche en console IA.
+L’agent affecté apparaît sous les listes de contrôle et les tâches liées. Sa carte garde le dernier résumé et les éventuelles modifications proposées, et rien d’autre. Ses contrôles de mise à jour et sa configuration IA vivent derrière **Ouvrir les détails internes de l’agent**, pour que la page de tâche se lise comme une tâche plutôt que comme une console IA.
 
 <ManualScreenshot
   caseId="tasks/agent-card"
-  alt="Agent de tâche Habitat Watcher affecté à la tâche d’habitat orbital des manchots, avec son résumé actuel, les mises à jour automatiques, l’action de réveil et la route de modèle Projet Waddle"
-  caption="Habitat Watcher est affecté à cette tâche ; l’affectation et les mises à jour automatiques sont deux choix distincts."
+  alt="Agent de tâche Habitat Watcher affecté à la tâche d’habitat orbital des manchots, avec son résumé actuel et le contrôle Lire la suite"
+  caption="Habitat Watcher est affecté à cette tâche ; l’affectation et les mises à jour automatiques restent deux choix distincts, et leurs contrôles se trouvent dans les détails internes de l’agent."
 />
 
-Sur téléphone, la carte suit un ordre de lecture unique : identité, contrôles de mise à jour, configuration IA, rapport, puis modifications proposées et historique. Sur ordinateur, le rapport et les propositions forment la colonne de lecture tandis que les contrôles compacts restent à proximité.
+À toutes les tailles d’écran, la carte suit un seul ordre de lecture : identité, rapport, puis modifications proposées et historique. Lorsque le résumé a pris du retard sur la tâche, la mention **Obsolète** et l’action **Mettre à jour** apparaissent entre les deux ; tant que le résumé est à jour, la carte ne dit rien de sa fraîcheur.
 
-Choisis **Lire la suite** pour développer le rapport complet sur place. La carte développée conserve la tâche visible, ajoute l’évaluation étayant le rapport et l’étape suivante recommandée, et propose **Ouvrir les détails internes de l’agent** lorsque tu as besoin des rapports, conversations, observations ou détails d’exécution.
+Choisis **Lire la suite** pour développer le rapport complet sur place. La carte développée conserve la tâche visible, ajoute l’évaluation étayant le rapport et l’étape suivante recommandée, et propose **Ouvrir les détails internes de l’agent** lorsque tu as besoin des contrôles de mise à jour et de la configuration IA de l’agent, ou de ses rapports, conversations, observations et détails d’exécution.
 
 <ManualScreenshot
   caseId="tasks/agent-card-expanded"
@@ -27,7 +27,7 @@ Choisis **Lire la suite** pour développer le rapport complet sur place. La cart
 
 ## Choisir la configuration IA de l’agent
 
-La ligne **Configuration actuelle** de la carte identifie le profil, le modèle et le fournisseur utilisés pour son prochain réveil. Sélectionne-la pour choisir un profil d’inférence enregistré, remplacer uniquement le modèle de réflexion, revenir au réglage par défaut du profil, copier la configuration actuelle de la catégorie ou désactiver l’IA pour ce seul agent. Un choix reste attaché à cet agent pour les mises à jour futures ; copier la configuration d’une catégorie est un instantané, pas un lien qui changerait silencieusement plus tard.
+Ouvre **Ouvrir les détails internes de l’agent** — depuis le nom de l’agent en tête de carte ou depuis le lien sous le rapport développé : sa ligne **Configuration actuelle** identifie le profil, le modèle et le fournisseur utilisés pour le prochain réveil. Sélectionne-la pour choisir un profil d’inférence enregistré, remplacer uniquement le modèle de réflexion, revenir au réglage par défaut du profil, copier la configuration actuelle de la catégorie ou désactiver l’IA pour ce seul agent. Un choix reste attaché à cet agent pour les mises à jour futures ; copier la configuration d’une catégorie est un instantané, pas un lien qui changerait silencieusement plus tard.
 
 Si un rapport a été produit par une autre route, Lotti conserve une attribution séparée **Ce rapport** au lieu de réétiqueter l’historique avec la configuration actuelle. Désactiver l’IA laisse le rapport existant lisible mais empêche tout nouveau réveil jusqu’à ce que tu sélectionnes de nouveau une configuration fonctionnelle. Les mises à jour automatiques ne peuvent pas être activées tant que l’agent n’a pas de configuration IA fonctionnelle.
 
@@ -49,11 +49,11 @@ Un **Réveiller l’agent** manuel peut produire les mêmes types de rapport et 
 
 ## Choisir les mises à jour automatiques ou manuelles
 
-Les nouveaux agents de tâche commencent avec les **mises à jour automatiques désactivées**. L’affectation seule ne consomme aucun jeton en arrière-plan. Lorsque les mises à jour sont désactivées, Lotti continue de repérer les changements pertinents de la tâche et de ses entrées liées, indique qu’un résumé plus ancien n’est plus à jour et attend que tu choisisses **Réveiller l’agent**. Un réveil manuel reste disponible dès que l’agent possède une configuration IA fonctionnelle.
+Les nouveaux agents de tâche commencent avec les **mises à jour automatiques désactivées**. L’affectation seule ne consomme aucun jeton en arrière-plan. L’interrupteur, le compte à rebours jusqu’à la prochaine mise à jour et **Ignorer une fois** vivent tous dans **Ouvrir les détails internes de l’agent**, à côté de l’historique des rapports et de l’activité de l’agent. Lorsque les mises à jour sont désactivées, Lotti continue de repérer les changements pertinents de la tâche et de ses entrées liées, indique sur la carte même qu’un résumé plus ancien n’est plus à jour et attend que tu choisisses **Réveiller l’agent**. Un réveil manuel reste disponible dès que l’agent possède une configuration IA fonctionnelle.
 
 <ManualScreenshot
   caseId="tasks/agent-card-manual"
-  alt="Carte de l’agent Habitat Watcher avec mises à jour automatiques désactivées, avertissement de rapport obsolète et action manuelle Réveiller l’agent"
+  alt="Carte de l’agent Habitat Watcher avec un avertissement de rapport obsolète et une action de mise à jour manuelle"
   caption="Le mode manuel observe les changements et signale l’obsolescence sans lancer d’inférence."
 />
 

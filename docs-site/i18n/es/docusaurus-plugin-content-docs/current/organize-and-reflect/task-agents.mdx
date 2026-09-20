@@ -7,17 +7,17 @@ description: Dale a una tarea su propio asistente de IA con un informe, un estad
 
 Una tarea puede tener un agente de tarea. Al asignarlo, esa tarea obtiene un asistente de IA persistente con su propia configuración de inferencia, informe, estado de activación e historial de propuestas. El agente lee la tarea y su contexto vinculado, sintetiza la situación actual en un informe breve y puede mostrar cambios propuestos para la tarea o la lista de verificación que puedes confirmar o rechazar. Para tener una vista de todo el sistema con todos los agentes en ejecución, consulta [Ejecuta y supervisa agentes](../ai-and-automation/agents.mdx).
 
-El agente asignado aparece debajo de las listas de verificación y las tareas vinculadas. Su tarjeta contraída mantiene visibles el último resumen, el control de actualizaciones automáticas, la acción **Ejecutar agente** y la ruta de modelo activa, sin convertir la página de tareas en una consola de IA.
+El agente asignado aparece debajo de las listas de verificación y las tareas vinculadas. Su tarjeta mantiene el último resumen y los cambios propuestos, y nada más. Sus controles de actualización y su configuración de IA viven detrás de **Abrir detalles internos del agente**, de modo que la página de tareas se lee como una tarea y no como una consola de IA.
 
 <ManualScreenshot
   caseId="tasks/agent-card"
-  alt="Agente de tarea Vigilante del hábitat asignado a la tarea del hábitat orbital de pingüinos, con su resumen actual, actualizaciones automáticas, acción para ejecutarlo y ruta de modelo de Project Waddle"
-  caption="Vigilante del hábitat está asignado a esta tarea; la asignación y las actualizaciones automáticas son decisiones independientes."
+  alt="Agente de tarea Vigilante del hábitat asignado a la tarea del hábitat orbital de pingüinos, con su resumen actual y el control Leer más"
+  caption="Vigilante del hábitat está asignado a esta tarea; la asignación y las actualizaciones automáticas siguen siendo decisiones independientes, y los controles de ambas están en los detalles internos del agente."
 />
 
-En el teléfono, la tarjeta sigue un único orden de lectura: identidad, controles de actualización, configuración de IA, informe y, después, cambios propuestos e historial. En el escritorio, el informe y las propuestas forman la columna de lectura mientras los controles compactos permanecen cerca.
+En cualquier tamaño de pantalla, la tarjeta sigue un único orden de lectura: identidad, informe y, después, cambios propuestos e historial. Cuando el resumen se ha quedado atrás respecto a la tarea, entre ambos aparecen el aviso **Desactualizado** y la acción **Actualizar ahora**; mientras el resumen está al día, la tarjeta no dice nada sobre su vigencia.
 
-Elige **Leer más** para desplegar el informe completo en el mismo lugar. La tarjeta ampliada mantiene la tarea a la vista, añade la evaluación que sustenta el informe y el siguiente paso recomendado, y ofrece **Abrir detalles internos del agente** cuando necesitas informes, conversaciones, observaciones o detalles de ejecución.
+Elige **Leer más** para desplegar el informe completo en el mismo lugar. La tarjeta ampliada mantiene la tarea a la vista, añade la evaluación que sustenta el informe y el siguiente paso recomendado, y ofrece **Abrir detalles internos del agente** cuando necesitas los controles de actualización y la configuración de IA del agente, o sus informes, conversaciones, observaciones y detalles de ejecución.
 
 <ManualScreenshot
   caseId="tasks/agent-card-expanded"
@@ -27,7 +27,7 @@ Elige **Leer más** para desplegar el informe completo en el mismo lugar. La tar
 
 ## Elige la configuración de IA del agente
 
-La fila **Configuración actual** de la tarjeta identifica el perfil, el modelo y el proveedor que se usarán en su próxima ejecución. Selecciónala para elegir un perfil de inferencia guardado, sobrescribir solo el modelo de razonamiento, volver al valor predeterminado del perfil, copiar la configuración actual de la categoría o desactivar la IA solo para este agente. La elección se queda con ese agente para futuras actualizaciones; copiar la configuración de una categoría es una instantánea, no un enlace que cambie en silencio más adelante.
+Abre **Abrir detalles internos del agente** — desde el nombre del agente en la cabecera de la tarjeta o desde el enlace bajo el informe ampliado: allí la fila **Configuración actual** identifica el perfil, el modelo y el proveedor que se usarán en la próxima ejecución. Selecciónala para elegir un perfil de inferencia guardado, sobrescribir solo el modelo de razonamiento, volver al valor predeterminado del perfil, copiar la configuración actual de la categoría o desactivar la IA solo para este agente. La elección se queda con ese agente para futuras actualizaciones; copiar la configuración de una categoría es una instantánea, no un enlace que cambie en silencio más adelante.
 
 Si un informe se produjo por otra ruta, Lotti conserva una atribución separada **Este informe** en lugar de reetiquetar el historial con la configuración actual. Desactivar la IA deja legible el informe existente, pero impide nuevas ejecuciones hasta que vuelvas a seleccionar una configuración funcional. Las actualizaciones automáticas no se pueden activar mientras el agente no tenga una configuración de IA funcional.
 
@@ -49,11 +49,11 @@ La acción manual **Ejecutar agente** puede generar los mismos tipos de informe 
 
 ## Elige actualizaciones automáticas o manuales
 
-Los nuevos agentes de tarea empiezan con **Actualizaciones automáticas desactivadas**. La asignación por sí sola no consume tokens en segundo plano. Mientras están desactivadas, Lotti sigue detectando cambios relevantes en la tarea y sus entradas vinculadas, marca un resumen anterior como desactualizado y espera a que elijas **Ejecutar agente**. La ejecución manual sigue disponible siempre que el agente tenga una configuración de IA funcional.
+Los nuevos agentes de tarea empiezan con **Actualizaciones automáticas desactivadas**. La asignación por sí sola no consume tokens en segundo plano. El interruptor, la cuenta atrás hasta la próxima actualización y **Omitir una vez** viven todos en **Abrir detalles internos del agente**, junto al historial de informes y la actividad del agente. Mientras están desactivadas, Lotti sigue detectando cambios relevantes en la tarea y sus entradas vinculadas, marca en la propia tarjeta un resumen anterior como desactualizado y espera a que elijas **Ejecutar agente**. La ejecución manual sigue disponible siempre que el agente tenga una configuración de IA funcional.
 
 <ManualScreenshot
   caseId="tasks/agent-card-manual"
-  alt="Tarjeta del agente Vigilante del hábitat con las actualizaciones automáticas desactivadas, un aviso de informe desactualizado y una acción manual Ejecutar agente"
+  alt="Tarjeta del agente Vigilante del hábitat con un aviso de informe desactualizado y una acción de actualización manual"
   caption="El modo manual observa los cambios e informa de que el resumen está desactualizado sin iniciar una inferencia."
 />
 

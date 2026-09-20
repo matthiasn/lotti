@@ -1,26 +1,19 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
-import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
-import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
-import 'package:lotti/features/agents/ui/agent_model_sheet.dart';
+import 'package:lotti/features/agents/ui/agent_maintenance_section.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
-import 'package:lotti/features/agents/ui/task_agent_controls_footer.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
-import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
-import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_tag_widgets.dart';
@@ -43,7 +36,6 @@ class ProjectAgentSummaryCard extends ConsumerStatefulWidget {
     this.onAssignAgent,
     this.onViewBlocker,
     this.onRefresh,
-    this.onCancelScheduledWake,
     this.actions,
     this.isRefreshing = false,
     super.key,
@@ -57,7 +49,6 @@ class ProjectAgentSummaryCard extends ConsumerStatefulWidget {
   final Future<void> Function()? onAssignAgent;
   final VoidCallback? onViewBlocker;
   final VoidCallback? onRefresh;
-  final VoidCallback? onCancelScheduledWake;
 
   /// The action bands under the report. Stays mounted while the host
   /// mutates — the host hands it a disabled build instead of dropping it, so
@@ -72,7 +63,6 @@ class ProjectAgentSummaryCard extends ConsumerStatefulWidget {
 
 class _ProjectAgentSummaryCardState
     extends ConsumerState<ProjectAgentSummaryCard> {
-  bool _automationBusy = false;
   bool _assigning = false;
 
   Future<void> _assignAgent() async {
@@ -83,39 +73,6 @@ class _ProjectAgentSummaryCardState
       await assign();
     } finally {
       if (mounted) setState(() => _assigning = false);
-    }
-  }
-
-  Future<void> _updateAutomaticUpdates({required bool enabled}) async {
-    final identity = widget.identity;
-    if (identity == null || _automationBusy || widget.isMutating) return;
-    setState(() => _automationBusy = true);
-    try {
-      await ref
-          .read(taskAgentServiceProvider)
-          .updateAutomaticUpdates(
-            agentId: identity.agentId,
-            enabled: enabled,
-          );
-      ref
-        ..invalidate(agentIdentityProvider(identity.agentId))
-        ..invalidate(agentStateProvider(identity.agentId))
-        ..invalidate(projectAgentProvider(widget.projectId));
-    } catch (error, stackTrace) {
-      developer.log(
-        'Failed to update project-agent automation',
-        name: 'ProjectAgentSummaryCard',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      if (mounted) {
-        context.showToast(
-          tone: DesignSystemToastTone.error,
-          title: context.messages.commonError,
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _automationBusy = false);
     }
   }
 
@@ -171,15 +128,6 @@ class _ProjectAgentSummaryCardState
     final hasReportContent =
         widget.record.aiSummary.trim().isNotEmpty ||
         widget.record.reportContent.trim().isNotEmpty;
-    final automaticUpdatesEnabled =
-        identity.config.automaticUpdatesEnabledEffective;
-    final nextWakeAt = state?.nextWakeAt ?? state?.scheduledWakeAt;
-    final remainingSeconds = nextWakeAt?.difference(clock.now()).inSeconds ?? 0;
-    final showCountdown =
-        inferenceAvailable &&
-        automaticUpdatesEnabled &&
-        !isRunning &&
-        remainingSeconds > 0;
 
     void openInternals() {
       Navigator.of(context).push(
@@ -187,34 +135,24 @@ class _ProjectAgentSummaryCardState
           context: context,
           agentId: agentId,
           agentName: agentName,
+          maintenance: AgentMaintenanceScope(
+            kind: AgentMaintenanceKind.project,
+            entityId: widget.projectId,
+          ),
         ),
       );
     }
 
-    final footer = TaskAgentControlsFooter(
-      automaticUpdatesEnabled: automaticUpdatesEnabled,
-      automationBusy: _automationBusy,
+    // The schedule, the automatic-updates switch and the model identity live
+    // in the internals panel; the card keeps only the state a reader of the
+    // report may want to act on, and the trigger that acts on it.
+    final freshnessStrip = AgentAutomationRow.compact(
       inferenceAvailable: inferenceAvailable && !widget.isMutating,
       isRunning: isRunning,
-      showCountdown: showCountdown,
-      nextWakeAt: nextWakeAt,
       hasReportContent: hasReportContent,
       isStale: state?.isReportStale ?? false,
-      onAutomaticUpdatesChanged: (enabled) =>
-          unawaited(_updateAutomaticUpdates(enabled: enabled)),
+      showsFreshConfirmation: false,
       onRunNow: widget.isMutating ? null : widget.onRefresh,
-      onSkipScheduledUpdate: () {
-        widget.onCancelScheduledWake?.call();
-      },
-      onCountdownExpired: () {
-        if (mounted) setState(() {});
-      },
-      identityData: identityData,
-      onSetupTap: () => AgentModelSheet.show(
-        context: context,
-        entityId: widget.projectId,
-        agentId: agentId,
-      ),
     );
 
     return _ProjectReportSummary(
@@ -223,7 +161,7 @@ class _ProjectAgentSummaryCardState
       onOpenInternals: openInternals,
       onViewBlocker: widget.isMutating ? null : widget.onViewBlocker,
       actions: widget.actions,
-      footer: footer,
+      freshness: freshnessStrip,
     );
   }
 }
@@ -235,7 +173,7 @@ class _ProjectReportSummary extends StatefulWidget {
     required this.onViewBlocker,
     this.agentName,
     this.onOpenInternals,
-    this.footer,
+    this.freshness,
   });
 
   final ProjectRecord record;
@@ -243,7 +181,10 @@ class _ProjectReportSummary extends StatefulWidget {
   final VoidCallback? onViewBlocker;
   final String? agentName;
   final VoidCallback? onOpenInternals;
-  final Widget? footer;
+
+  /// The freshness word and its manual trigger, shown only while the report
+  /// is behind. Null on the identity-less card, which has no agent to ask.
+  final Widget? freshness;
 
   @override
   State<_ProjectReportSummary> createState() => _ProjectReportSummaryState();
@@ -308,6 +249,15 @@ class _ProjectReportSummaryState extends State<_ProjectReportSummary> {
               onOpenInternals: widget.onOpenInternals,
             ),
           ),
+        // With the summary it describes, on the shared leading edge. It takes
+        // no height at all while the report is current.
+        if (widget.freshness != null)
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.cardPadding,
+            ),
+            child: widget.freshness,
+          ),
         Padding(
           padding: EdgeInsets.symmetric(
             horizontal: tokens.spacing.cardPadding,
@@ -325,7 +275,6 @@ class _ProjectReportSummaryState extends State<_ProjectReportSummary> {
           ),
         ),
         ?widget.actions,
-        ?widget.footer,
       ],
     );
   }

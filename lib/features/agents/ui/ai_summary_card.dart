@@ -1,12 +1,10 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
-import 'package:clock/clock.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
-import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
@@ -16,13 +14,13 @@ import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
+import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
-import 'package:lotti/features/agents/ui/agent_model_sheet.dart';
+import 'package:lotti/features/agents/ui/agent_maintenance_section.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
-import 'package:lotti/features/agents/ui/task_agent_controls_footer.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_collapse.dart';
@@ -45,15 +43,18 @@ export 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_pa
 ///
 /// Replaces the separate "AI Summary" + "Decision Activity" stack with
 /// a single deep-teal-tinted-navy surface. Reading order: identity
-/// header, the TLDR with an expandable inline report, a constant-height
-/// freshness strip with the manual wake CTA (while automatic updates
-/// are off — out-of-date warning or up-to-date confirmation, no layout
-/// jump between the two), the actionable proposals list (only while
-/// something is proposed), the resolved history (only while the report
-/// is expanded), and a quiet controls footer (wake / countdown /
-/// automatic-updates toggle / model identity). Uses the same data
-/// sources as the prior `AgentSuggestionsPanel` (proposal ledger, agent
-/// report, wake state).
+/// header, the TLDR with an expandable inline report, a freshness strip
+/// that appears only while the summary is behind (the out-of-date word
+/// and the manual wake CTA — nothing at all while it is current), the
+/// actionable proposals list (only while something is proposed), and
+/// the resolved history (only while the report is expanded). Uses the
+/// same data sources as the prior `AgentSuggestionsPanel` (proposal
+/// ledger, agent report, wake state).
+///
+/// The schedule, the automatic-updates switch and the model identity
+/// are not here: they are agent plumbing, and live in
+/// `AgentMaintenanceSection` inside the internals panel the header name
+/// and the *Open agent internals* link both open.
 ///
 /// The card is a library split across part files in the
 /// `ai_summary_card/` directory:
@@ -135,9 +136,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
   bool _expanded = false;
   bool _historyOpen = false;
   bool _confirmAllBusy = false;
-  final Set<String> _automaticUpdatesBusyAgentIds = {};
   int _confirmAllPulse = 0;
-  bool _cancelledManually = false;
   UnifiedSuggestionList? _lastVisibleSuggestions;
 
   /// Fingerprints already shown at least once. The first non-null suggestion
@@ -344,53 +343,18 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     _seenFingerprints.addAll(openFps);
   }
 
-  int _computeRemainingSeconds(DateTime? nextWakeAt) {
-    if (nextWakeAt == null) return 0;
-    final remaining = nextWakeAt.difference(clock.now()).inSeconds;
-    return remaining <= 0 ? 0 : remaining;
-  }
-
   void _openInternals({required String agentName}) {
     Navigator.of(context).push(
       AgentInternalsPanel.route(
         context: context,
         agentId: widget.identity.agentId,
         agentName: agentName,
+        maintenance: AgentMaintenanceScope(
+          kind: AgentMaintenanceKind.task,
+          entityId: widget.taskId,
+        ),
       ),
     );
-  }
-
-  Future<void> _updateAutomaticUpdates({required bool enabled}) async {
-    final agentId = widget.identity.agentId;
-    if (_automaticUpdatesBusyAgentIds.contains(agentId)) return;
-    setState(() => _automaticUpdatesBusyAgentIds.add(agentId));
-    try {
-      await ref
-          .read(taskAgentServiceProvider)
-          .updateAutomaticUpdates(
-            agentId: agentId,
-            enabled: enabled,
-          );
-      ref.invalidate(agentIdentityProvider(agentId));
-    } catch (error, stackTrace) {
-      developer.log(
-        'Task-agent automatic update failed',
-        name: 'AiSummaryCard',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      if (mounted && widget.identity.agentId == agentId) {
-        context.showToast(
-          tone: DesignSystemToastTone.error,
-          title: context.messages.commonError,
-          clearQueue: true,
-        );
-      }
-    } finally {
-      if (mounted && _automaticUpdatesBusyAgentIds.contains(agentId)) {
-        setState(() => _automaticUpdatesBusyAgentIds.remove(agentId));
-      }
-    }
   }
 
   /// Confirms every visible suggestion while retaining the whole batch until
@@ -512,11 +476,6 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
 
     final reportAsync = ref.watch(agentReportProvider(agentId));
     final report = reportAsync.value?.mapOrNull(agentReport: (r) => r);
-    final liveIdentity = ref
-        .watch(agentIdentityProvider(agentId))
-        .value
-        ?.mapOrNull(agent: (value) => value);
-    final effectiveIdentity = liveIdentity ?? widget.identity;
     final resolvedSetup = ref
         .watch(taskAgentResolvedSetupProvider(agentId))
         .value;
@@ -531,9 +490,6 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     final inferenceAvailable =
         identityData.presentation != TaskAgentIdentityPresentation.disabled &&
         identityData.presentation != TaskAgentIdentityPresentation.broken;
-    final automaticUpdatesEnabled =
-        effectiveIdentity.config.automaticUpdatesEnabledEffective;
-
     final tldr = resolveReportTldr(report);
     final additionalReport = resolveReportAdditional(report);
 
@@ -576,80 +532,31 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       }
     });
 
-    final agentStateAsync = ref.watch(agentStateProvider(agentId));
-    final agentState = agentStateAsync.value?.mapOrNull(
-      agentState: (state) => state,
-    );
-    final nextWakeAt = agentState?.nextWakeAt;
-    final reportIsStale = agentState?.isReportStale ?? false;
-    final remainingSeconds = _computeRemainingSeconds(nextWakeAt);
+    final agentState = ref
+        .watch(agentStateProvider(agentId))
+        .value
+        ?.mapOrNull(agentState: (state) => state);
 
-    ref.listen(agentStateProvider(agentId), (prev, next) {
-      final previousNextWake = prev?.value?.mapOrNull(
-        agentState: (s) => s.nextWakeAt,
-      );
-      final newNextWake = next.value?.mapOrNull(
-        agentState: (s) => s.nextWakeAt,
-      );
-      // Clear the manual-cancel flag in two situations: (a) the
-      // current wake has already expired, or (b) a fresh wake has
-      // been scheduled (different timestamp, still in the future).
-      // Without (b) a rescheduled wake would stay hidden after the
-      // user cancels the previous one.
-      final newRemaining = _computeRemainingSeconds(newNextWake);
-      final wakeRescheduled =
-          newNextWake != null &&
-          newNextWake != previousNextWake &&
-          newRemaining > 0;
-      if (newRemaining <= 0 || wakeRescheduled) {
-        _cancelledManually = false;
-      }
-    });
-
-    final showCountdown =
-        inferenceAvailable &&
-        automaticUpdatesEnabled &&
-        !isRunning &&
-        remainingSeconds > 0 &&
-        !_cancelledManually;
-
-    final runNow = inferenceAvailable
-        ? () => ref.read(taskAgentServiceProvider).triggerReanalysis(agentId)
-        : null;
-    void cancelTimer() {
-      ref.read(taskAgentServiceProvider).cancelScheduledWake(agentId);
-      setState(() => _cancelledManually = true);
-    }
-
-    // The freshness state (out of date / up to date) always rides along
-    // with the wake control and switch in the footer's automation cluster —
-    // it never moves to a separate row depending on automaticUpdatesEnabled.
     // Without any report content there is nothing to be "out of date", so
-    // the footer omits the glyph entirely rather than showing a default.
+    // the strip omits the word entirely rather than showing a default.
     final hasReportContent = tldr.isNotEmpty || additionalReport != null;
 
-    final controlsFooter = TaskAgentControlsFooter(
-      automaticUpdatesEnabled: automaticUpdatesEnabled,
-      automationBusy: _automaticUpdatesBusyAgentIds.contains(agentId),
+    // The card says nothing about freshness while the summary *is* fresh:
+    // the schedule, the automatic-updates switch and the model identity all
+    // live in the agent internals panel now, and a permanent "Up to date"
+    // line under the summary was the last of that plumbing still charging
+    // the reader a row for nothing. Out of date — or a run rewriting the
+    // summary — is worth a row, because it is the one state the reader may
+    // want to act on, and the trigger that acts on it stands beside it.
+    final freshnessStrip = AgentAutomationRow.compact(
       inferenceAvailable: inferenceAvailable,
       isRunning: isRunning,
-      showCountdown: showCountdown,
-      nextWakeAt: nextWakeAt,
       hasReportContent: hasReportContent,
-      isStale: reportIsStale,
-      onAutomaticUpdatesChanged: (enabled) =>
-          unawaited(_updateAutomaticUpdates(enabled: enabled)),
-      onRunNow: runNow,
-      onSkipScheduledUpdate: cancelTimer,
-      onCountdownExpired: () {
-        if (mounted) setState(() {});
-      },
-      identityData: identityData,
-      onSetupTap: () => AgentModelSheet.show(
-        context: context,
-        entityId: widget.taskId,
-        agentId: agentId,
-      ),
+      isStale: agentState?.isReportStale ?? false,
+      showsFreshConfirmation: false,
+      onRunNow: inferenceAvailable
+          ? () => ref.read(taskAgentServiceProvider).triggerReanalysis(agentId)
+          : null,
     );
     // *Chat* leads the header's trailing rail, a disc beside the read-aloud
     // disc. Null while query chat is off, so an invisible button never
@@ -796,10 +703,18 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
             ),
             child: reportBody,
           ),
+        // The freshness word sits with the summary it describes, on the same
+        // leading edge, and takes no height at all while there is nothing to
+        // say. Its own row box carries the air around it.
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.cardPadding,
+          ),
+          child: freshnessStrip,
+        ),
         // Both hidden until the first value to avoid flashing empty state.
         ?proposalsBand,
         ?historySection,
-        controlsFooter,
       ],
     );
   }

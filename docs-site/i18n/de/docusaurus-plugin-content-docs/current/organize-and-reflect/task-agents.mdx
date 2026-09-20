@@ -13,26 +13,29 @@ Checkliste vorschlagen, die du bestätigst oder ablehnst. Die systemweite
 Ansicht über alle laufenden Agenten findest du unter [Agenten ausführen und
 überwachen](../ai-and-automation/agents.mdx).
 
-Der Agent erscheint unter Checklisten und verknüpften Aufgaben. Die
-eingeklappte Karte zeigt letzte Zusammenfassung, den Schalter für automatische
-Aktualisierungen, **Agenten aufwecken** und aktive Modellroute, ohne die Seite
-zur KI-Konsole zu machen.
+Der Agent erscheint unter Checklisten und verknüpften Aufgaben. Die Karte zeigt
+die letzte Zusammenfassung und etwaige Änderungsvorschläge — und sonst nichts.
+Aktualisierungssteuerung und KI-Konfiguration liegen hinter **Agenten-Interna
+öffnen**, damit sich die Aufgabenseite wie eine Aufgabe liest und nicht wie
+eine KI-Konsole.
 
 <ManualScreenshot
   caseId="tasks/agent-card"
-  alt="Zugewiesener Aufgabenagent Habitatwächter mit aktueller Zusammenfassung, automatischen Aktualisierungen, Aufwachaktion und Project-Waddle-Modellroute"
-  caption="Habitatwächter ist zugewiesen; Zuweisung und automatische Aktualisierungen sind getrennte Entscheidungen."
+  alt="Zugewiesener Aufgabenagent Habitatwächter mit aktueller Zusammenfassung und der Aktion Mehr lesen"
+  caption="Habitatwächter ist zugewiesen; Zuweisung und automatische Aktualisierungen bleiben getrennte Entscheidungen, und die Schalter dafür liegen in den Agenten-Interna."
 />
 
-Auf dem Telefon folgt die Karte einer einzigen Lesereihenfolge: Identität,
-Aktualisierungssteuerung, KI-Einrichtung, Bericht, dann vorgeschlagene
-Änderungen und Verlauf. Auf dem Desktop bilden Bericht und Vorschläge die
-Lesespalte, während die kompakten Steuerungen in der Nähe bleiben.
+In jeder Bildschirmgröße folgt die Karte einer einzigen Lesereihenfolge:
+Identität, Bericht, dann vorgeschlagene Änderungen und Verlauf. Ist die
+Zusammenfassung hinter der Aufgabe zurückgeblieben, erscheinen dazwischen der
+Hinweis **Veraltet** und die Aktion **Jetzt aktualisieren**; solange sie aktuell
+ist, sagt die Karte über ihre Aktualität gar nichts.
 
 **Mehr lesen** klappt den vollständigen Bericht an Ort und Stelle auf. Die
 Aufgabe bleibt sichtbar, während Einschätzung, empfohlener nächster Schritt und
-bei Bedarf **Agenten-Interna öffnen** für Berichte, Gespräche, Beobachtungen
-oder Laufzeitdetails hinzukommen.
+bei Bedarf **Agenten-Interna öffnen** hinzukommen — für Aktualisierungssteuerung
+und KI-Konfiguration des Agenten ebenso wie für Berichte, Gespräche,
+Beobachtungen und Laufzeitdetails.
 
 <ManualScreenshot
   caseId="tasks/agent-card-expanded"
@@ -42,8 +45,10 @@ oder Laufzeitdetails hinzukommen.
 
 ## Die KI-Einrichtung des Agenten wählen
 
-Die Zeile **Aktuelle Einrichtung** der Karte benennt Profil, Modell und
-Anbieter für das nächste Aufwachen. Wähle sie aus, um ein gespeichertes
+Öffne **Agenten-Interna öffnen** — über den Agentennamen im Kartenkopf oder
+über den Link unter dem aufgeklappten Bericht: dort benennt die Zeile
+**Aktuelle Einrichtung** Profil, Modell und Anbieter für das nächste
+Aufwachen. Wähle sie aus, um ein gespeichertes
 Inferenzprofil zu wählen, nur das Denkmodell zu überschreiben, zum
 Profilstandard zurückzukehren, die aktuelle Einrichtung der Kategorie zu
 kopieren oder die KI für diesen einen Agenten abzuschalten. Eine Wahl bleibt
@@ -90,14 +95,17 @@ verwirft es sie.
 ## Automatische oder manuelle Aktualisierung wählen
 
 Neue Aufgabenagenten starten mit **Automatische Aktualisierungen aus**. Die
-Zuweisung allein verbraucht keine Hintergrund-Token. Lotti bemerkt weiterhin
-relevante Änderungen an Aufgabe und verknüpften Einträgen, markiert alte
-Zusammenfassungen als veraltet und wartet auf **Agenten aufwecken**. Ein
+Zuweisung allein verbraucht keine Hintergrund-Token. Der Schalter, der
+Countdown bis zur nächsten Aktualisierung und **Einmal überspringen** liegen
+alle in **Agenten-Interna öffnen**, neben Berichtsverlauf und Aktivität des
+Agenten. Lotti bemerkt weiterhin relevante Änderungen an Aufgabe und
+verknüpften Einträgen, markiert alte Zusammenfassungen auf der Karte selbst als
+veraltet und wartet auf **Agenten aufwecken**. Ein
 manueller Zyklus ist mit funktionierender KI-Konfiguration jederzeit möglich.
 
 <ManualScreenshot
   caseId="tasks/agent-card-manual"
-  alt="Habitatwächter-Karte mit ausgeschalteter Automatik, Hinweis auf veralteten Bericht und manueller Aufwachaktion"
+  alt="Habitatwächter-Karte mit Hinweis auf veralteten Bericht und manueller Aktualisierungsaktion"
   caption="Der manuelle Modus beobachtet Änderungen und meldet Veraltung, ohne Inferenz zu starten."
 />
 

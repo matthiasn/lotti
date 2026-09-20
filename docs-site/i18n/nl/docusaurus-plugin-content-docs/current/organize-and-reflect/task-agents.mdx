@@ -14,25 +14,28 @@ het systeembrede overzicht van alle actieve agenten, zie [Agenten uitvoeren en
 monitoren](../ai-and-automation/agents.mdx).
 
 De toegewezen agent wordt weergegeven onder de checklists en gekoppelde taken van
-de taak. De ingeklapte kaart houdt de laatste samenvatting, de
-automatische-updateknop, de **Nu bijwerken**-actie en de actieve modelroute
-zichtbaar, zonder dat de taakpagina aanvoelt als een AI-console.
+de taak. De kaart houdt de laatste samenvatting en eventuele
+voorgestelde wijzigingen, en verder niets. De updatecontroles en de
+AI-installatie zitten achter **Open agent internals**, zodat de taakpagina
+leest als een taak en niet als een AI-console.
 
 <ManualScreenshot
   caseId="tasks/agent-card"
-  alt="Toegewezen taakagent Habitat Watcher op de taak orbitale pinguïnhabitat, met de huidige samenvatting, automatische updates, de wek-actie en de Project Waddle-modelroute"
-  caption="Habitat Watcher is aan deze taak toegewezen; toewijzing en automatische updates zijn aparte keuzes."
+  alt="Toegewezen taakagent Habitat Watcher op de taak orbitale pinguïnhabitat, met de huidige samenvatting en de knop Lees meer"
+  caption="Habitat Watcher is aan deze taak toegewezen; toewijzing en automatische updates blijven aparte keuzes, en de bediening van allebei zit in agent internals."
 />
 
-Op een telefoon volgt de kaart één leesvolgorde: identiteit, updatecontroles,
-AI-installatie, rapport, en dan pas voorgestelde wijzigingen en geschiedenis. Op
-desktop vormen het rapport en de voorstellen de leeskolom, terwijl de compacte
-bedieningselementen dichtbij blijven.
+Op elk schermformaat volgt de kaart één leesvolgorde: identiteit, rapport, en
+dan pas voorgestelde wijzigingen en geschiedenis. Is de samenvatting achterop
+geraakt bij de taak, dan verschijnen daartussen de melding **Verouderd** en de
+actie **Nu bijwerken**; zolang de samenvatting bij is, zegt de kaart niets over
+haar actualiteit.
 
 Kies **Lees meer** om het volledige rapport uit te vouwen. De uitgebreide kaart
 houdt de taak zichtbaar, voegt de ondersteunende beoordeling en aanbevolen
-volgende stap van het rapport toe, en biedt **Open agent internals** wanneer je
-rapporten, gesprekken, observaties of runtimedetails nodig hebt.
+volgende stap van het rapport toe, en biedt **Open agent internals** wanneer je de
+updatecontroles en AI-installatie van de agent nodig hebt, of zijn rapporten,
+gesprekken, observaties en runtimedetails.
 
 <ManualScreenshot
   caseId="tasks/agent-card-expanded"
@@ -42,8 +45,9 @@ rapporten, gesprekken, observaties of runtimedetails nodig hebt.
 
 ## Kies de AI-instellingen van de agent
 
-De rij **Huidige setup** op de kaart toont het profiel, het model en de
-provider die voor de volgende wake worden gebruikt. Selecteer deze rij om een
+Open **Open agent internals** — via de naam van de agent in de kaartkop of via
+de link onder het uitgeklapte rapport: daar toont de rij **Huidige setup** het
+profiel, het model en de provider die voor de volgende wake worden gebruikt. Selecteer deze rij om een
 opgeslagen inferentieprofiel te kiezen, alleen het denkmodel te
 overschrijven, terug te keren naar de standaardinstelling van het profiel, de
 huidige configuratie van de categorie te kopiëren, of AI voor deze ene agent uit
@@ -92,15 +96,18 @@ anderszins op.
 ## Kies automatische of handmatige updates
 
 Nieuwe taakagenten beginnen met **Automatische updates** uitgeschakeld.
-Toewijzing alleen verbruikt geen tokens op de achtergrond. Terwijl automatische
-updates uit staan, blijft Lotti relevante wijzigingen in de taak en de daaraan
-gekoppelde items opmerken, markeert een oudere samenvatting als verouderd en
-wacht tot je **Nu bijwerken** kiest. Een handmatige wake blijft beschikbaar zodra
+Toewijzing alleen verbruikt geen tokens op de achtergrond. De schakelaar, het
+aftellen tot de volgende update en **Eén keer overslaan** zitten allemaal in
+**Open agent internals**, naast de rapportgeschiedenis en de activiteit van de
+agent. Terwijl automatische updates uit staan, blijft Lotti relevante
+wijzigingen in de taak en de daaraan gekoppelde items opmerken, markeert een
+oudere samenvatting op de kaart zelf als verouderd en wacht tot je **Nu
+bijwerken** kiest. Een handmatige wake blijft beschikbaar zodra
 de agent een werkende AI-installatie heeft.
 
 <ManualScreenshot
   caseId="tasks/agent-card-manual"
-  alt="Habitat Watcher-taakagentkaart met automatische updates uitgeschakeld, een melding dat het rapport verouderd is, en een handmatige Nu bijwerken-actie"
+  alt="Habitat Watcher-taakagentkaart met een melding dat het rapport verouderd is en een handmatige Nu bijwerken-actie"
   caption="Handmatige modus observeert wijzigingen en meldt veroudering zonder inferentie te starten."
 />
 

@@ -689,7 +689,7 @@ void main() {
       );
     });
 
-    testWidgets('expanded internals action invokes its callback', (
+    testWidgets('the internals action stands in both disclosure states', (
       tester,
     ) async {
       var internalsTaps = 0;
@@ -698,13 +698,17 @@ void main() {
           _DisclosureHarness(onOpenInternals: () => internalsTaps++),
         ),
       );
-      expect(find.text('Open agent internals'), findsNothing);
+
+      // Collapsed: the link is already there, beside Read more.
+      await tester.tap(find.text('Open agent internals'));
+      await tester.pump();
+      expect(internalsTaps, 1);
 
       await tester.tap(find.text('Read more'));
       await tester.pump();
       await tester.tap(find.text('Open agent internals'));
 
-      expect(internalsTaps, 1);
+      expect(internalsTaps, 2);
     });
   });
 
