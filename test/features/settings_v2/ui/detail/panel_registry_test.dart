@@ -38,6 +38,7 @@ import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_p
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/features/settings/ui/pages/recording_style_settings_page.dart';
+import 'package:lotti/features/settings/ui/pages/sections_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
 import 'package:lotti/features/settings_v2/ui/detail/panel_registry.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
@@ -209,6 +210,17 @@ void main() {
         expect(panelSpecFor('flags')!.scrollable, isFalse);
       },
     );
+
+    test(
+      'sections panel takes scrollable: true — SectionsBody is a plain '
+      'Column and owns no scroll view of its own',
+      () {
+        // The opposite classification to `flags`, for the opposite reason:
+        // a short fixed Column needs the host's scroll view or it overflows
+        // the detail pane, while wrapping FlagsBody would crash it.
+        expect(panelSpecFor('sections')!.scrollable, isTrue);
+      },
+    );
   });
 
   group('SettingsPanelSpec — builders', () {
@@ -251,6 +263,7 @@ void main() {
 
         // Step 7 — simple leaves.
         expect(build('flags'), isA<FlagsBody>());
+        expect(build('sections'), isA<SectionsBody>());
         expect(
           build('recording-style'),
           isA<RecordingStyleSettingsBody>(),
