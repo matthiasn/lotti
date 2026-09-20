@@ -250,6 +250,11 @@ void main() {
     when(
       () => repository.getDueScheduledWakeRecords(any()),
     ).thenAnswer((_) async => []);
+    // Default: nothing pending, so no pass arms a deadline re-check.
+    // The tests for that behaviour override it.
+    when(
+      () => repository.getPendingScheduledWakeRecords(),
+    ).thenAnswer((_) async => []);
     // Default: every due agent's identity is live, so the lifecycle guard lets
     // it through. Archived-agent tests override this.
     when(
@@ -296,6 +301,95 @@ void main() {
       domainLogger: domainLogger,
     )..start();
   }
+
+  // The periodic tick is hourly in production. Both due queries filter to
+  // records that are ALREADY due, so without a re-check of its own a record
+  // due two minutes from now waits up to an hour for one — which is what
+  // `_scheduleRecheck`'s own contract forbids: "every branch that returns
+  // 'not yet' owes the record a wake-up of its own".
+  group('the next deadline gets a wake-up of its own', () {
+    final now = DateTime(2026, 9, 20, 11, 30);
+
+    ScheduledWakeEntity pendingAt(DateTime at) =>
+        AgentDomainEntity.scheduledWake(
+              id: 'scheduled_wake:rel:refresh',
+              agentId: 'relationship-agent',
+              scheduledAt: at,
+              status: ScheduledWakeStatus.pending,
+              reason: 'scheduled',
+              updatedAt: now,
+              vectorClock: null,
+              triggerTokens: const ['relationship-escalation:refresh-1'],
+              workspaceKey: 'relationship-escalation:refresh-1',
+            )
+            as ScheduledWakeEntity;
+
+    /// Passes run since the manager started, counted by the query every one
+    /// of them makes.
+    int passes() => verify(
+      () => repository.getDueScheduledWakeRecords(captureAny()),
+    ).captured.length;
+
+    void withPending(
+      ScheduledWakeEntity record,
+      void Function(FakeAsync) body,
+    ) {
+      fakeAsync((async) {
+        withClock(Clock.fixed(now), () {
+          // Unstubbed, this returns null and the pass dies in its own catch
+          // before ever reaching the records query.
+          when(
+            () => repository.getDueScheduledAgentStates(any()),
+          ).thenAnswer((_) async => []);
+          when(
+            () => repository.getPendingScheduledWakeRecords(),
+          ).thenAnswer((_) async => [record]);
+          final manager = createAndStart(
+            checkInterval: const Duration(hours: 1),
+          );
+          addTearDown(manager.stop);
+          body(async);
+        });
+      });
+    }
+
+    test('a record due before the next tick is picked up at its deadline', () {
+      withPending(pendingAt(now.add(const Duration(minutes: 2))), (async) {
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(minutes: 2, seconds: 1))
+          ..flushMicrotasks();
+
+        // Two: the pass start() runs, and the one the deadline armed —
+        // fifty-eight minutes before the hourly tick would have.
+        expect(passes(), 2);
+      });
+    });
+
+    test('a record beyond the interval is left to the periodic tick', () {
+      withPending(pendingAt(now.add(const Duration(hours: 2))), (async) {
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(minutes: 30))
+          ..flushMicrotasks();
+
+        // No timer measured in hours: the tick is a fine enough net at that
+        // range, and it re-arms as the deadline comes closer.
+        expect(passes(), 1);
+      });
+    });
+
+    test('a record already due arms nothing — the pass just fired it', () {
+      withPending(pendingAt(now.subtract(const Duration(minutes: 5))), (async) {
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(minutes: 30))
+          ..flushMicrotasks();
+
+        expect(passes(), 1);
+      });
+    });
+  });
 
   group('ScheduledWakeManager', () {
     test('requestCheck runs a scan pass without start (the goal Phase A '
