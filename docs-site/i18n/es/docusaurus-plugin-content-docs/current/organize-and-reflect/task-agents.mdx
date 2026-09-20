@@ -7,7 +7,7 @@ description: Dale a una tarea su propio asistente de IA con un informe, un estad
 
 Una tarea puede tener un agente de tarea. Al asignarlo, esa tarea obtiene un asistente de IA persistente con su propia configuración de inferencia, informe, estado de activación e historial de propuestas. El agente lee la tarea y su contexto vinculado, sintetiza la situación actual en un informe breve y puede mostrar cambios propuestos para la tarea o la lista de verificación que puedes confirmar o rechazar. Para tener una vista de todo el sistema con todos los agentes en ejecución, consulta [Ejecuta y supervisa agentes](../ai-and-automation/agents.mdx).
 
-El agente asignado aparece debajo de las listas de verificación y las tareas vinculadas. Su tarjeta mantiene el último resumen y los cambios propuestos, y nada más. Sus controles de actualización y su configuración de IA viven detrás de **Abrir detalles internos del agente**, de modo que la página de tareas se lee como una tarea y no como una consola de IA.
+El agente asignado aparece debajo de las listas de verificación y las tareas vinculadas. Su tarjeta mantiene el último resumen y los cambios propuestos, y nada más. Sus controles de actualización y su configuración de IA viven detrás de **Abrir interior del agente**, de modo que la página de tareas se lee como una tarea y no como una consola de IA.
 
 <ManualScreenshot
   caseId="tasks/agent-card"
@@ -17,7 +17,7 @@ El agente asignado aparece debajo de las listas de verificación y las tareas vi
 
 En cualquier tamaño de pantalla, la tarjeta sigue un único orden de lectura: identidad, informe y, después, cambios propuestos e historial. Cuando el resumen se ha quedado atrás respecto a la tarea, entre ambos aparecen el aviso **Desactualizado** y la acción **Actualizar ahora**; mientras el resumen está al día, la tarjeta no dice nada sobre su vigencia.
 
-Elige **Leer más** para desplegar el informe completo en el mismo lugar. La tarjeta ampliada mantiene la tarea a la vista, añade la evaluación que sustenta el informe y el siguiente paso recomendado, y ofrece **Abrir detalles internos del agente** cuando necesitas los controles de actualización y la configuración de IA del agente, o sus informes, conversaciones, observaciones y detalles de ejecución.
+Elige **Leer más** para desplegar el informe completo en el mismo lugar. La tarjeta ampliada mantiene la tarea a la vista, añade la evaluación que sustenta el informe y el siguiente paso recomendado, y ofrece **Abrir interior del agente** cuando necesitas los controles de actualización y la configuración de IA del agente, o sus informes, conversaciones, observaciones y detalles de ejecución.
 
 <ManualScreenshot
   caseId="tasks/agent-card-expanded"
@@ -27,7 +27,7 @@ Elige **Leer más** para desplegar el informe completo en el mismo lugar. La tar
 
 ## Elige la configuración de IA del agente
 
-Abre **Abrir detalles internos del agente** — desde el nombre del agente en la cabecera de la tarjeta o desde el enlace bajo el informe ampliado: allí la fila **Configuración actual** identifica el perfil, el modelo y el proveedor que se usarán en la próxima ejecución. Selecciónala para elegir un perfil de inferencia guardado, sobrescribir solo el modelo de razonamiento, volver al valor predeterminado del perfil, copiar la configuración actual de la categoría o desactivar la IA solo para este agente. La elección se queda con ese agente para futuras actualizaciones; copiar la configuración de una categoría es una instantánea, no un enlace que cambie en silencio más adelante.
+Abre **Abrir interior del agente** — desde el nombre del agente en la cabecera de la tarjeta o desde el enlace bajo el informe ampliado: allí la fila **Configuración actual** identifica el perfil, el modelo y el proveedor que se usarán en la próxima ejecución. Selecciónala para elegir un perfil de inferencia guardado, sobrescribir solo el modelo de razonamiento, volver al valor predeterminado del perfil, copiar la configuración actual de la categoría o desactivar la IA solo para este agente. La elección se queda con ese agente para futuras actualizaciones; copiar la configuración de una categoría es una instantánea, no un enlace que cambie en silencio más adelante.
 
 Si un informe se produjo por otra ruta, Lotti conserva una atribución separada **Este informe** en lugar de reetiquetar el historial con la configuración actual. Desactivar la IA deja legible el informe existente, pero impide nuevas ejecuciones hasta que vuelvas a seleccionar una configuración funcional. Las actualizaciones automáticas no se pueden activar mientras el agente no tenga una configuración de IA funcional.
 
@@ -45,11 +45,11 @@ Usa la cruz para **Descartar** una propuesta o la marca de verificación para **
 
 Abre **Historial** para volver a consultar resultados recientes. Distingue los cambios confirmados de los descartados. Una entrada descartada puede representar tu decisión o una propuesta que el agente retiró porque un contexto más reciente de la tarea la dejó obsoleta.
 
-La acción manual **Ejecutar agente** puede generar los mismos tipos de informe y propuestas que una ejecución automática. Desactivar las actualizaciones automáticas detiene futuras ejecuciones en segundo plano; no aplica, descarta ni resuelve de ningún otro modo las propuestas que ya esperan tu decisión.
+La acción manual **Actualizar ahora** puede generar los mismos tipos de informe y propuestas que una ejecución automática. Desactivar las actualizaciones automáticas detiene futuras ejecuciones en segundo plano; no aplica, descarta ni resuelve de ningún otro modo las propuestas que ya esperan tu decisión.
 
 ## Elige actualizaciones automáticas o manuales
 
-Los nuevos agentes de tarea empiezan con **Actualizaciones automáticas desactivadas**. La asignación por sí sola no consume tokens en segundo plano. El interruptor, la cuenta atrás hasta la próxima actualización y **Omitir una vez** viven todos en **Abrir detalles internos del agente**, junto al historial de informes y la actividad del agente. Mientras están desactivadas, Lotti sigue detectando cambios relevantes en la tarea y sus entradas vinculadas, marca en la propia tarjeta un resumen anterior como desactualizado y espera a que elijas **Ejecutar agente**. La ejecución manual sigue disponible siempre que el agente tenga una configuración de IA funcional.
+Los nuevos agentes de tarea empiezan con **Actualizaciones automáticas desactivadas**. La asignación por sí sola no consume tokens en segundo plano. El interruptor, la cuenta atrás hasta la próxima actualización y **Omitir una vez** viven todos en **Abrir interior del agente**, junto al historial de informes y la actividad del agente. Mientras están desactivadas, Lotti sigue detectando cambios relevantes en la tarea y sus entradas vinculadas, marca en la propia tarjeta un resumen anterior como desactualizado y espera a que elijas **Actualizar ahora**. La ejecución manual sigue disponible siempre que el agente tenga una configuración de IA funcional.
 
 <ManualScreenshot
   caseId="tasks/agent-card-manual"
@@ -57,6 +57,6 @@ Los nuevos agentes de tarea empiezan con **Actualizaciones automáticas desactiv
   caption="El modo manual observa los cambios e informa de que el resumen está desactualizado sin iniciar una inferencia."
 />
 
-Cuando las **Actualizaciones automáticas** están activadas, Lotti agrupa los cambios coincidentes de la tarea durante unos dos minutos antes de programar una actualización. Esta agrupación evita ejecutar al agente por cada pequeña edición. **Ejecutar agente** sigue disponible para una actualización inmediata solicitada por ti.
+Cuando las **Actualizaciones automáticas** están activadas, Lotti agrupa los cambios coincidentes de la tarea durante unos dos minutos antes de programar una actualización. Esta agrupación evita ejecutar al agente por cada pequeña edición. **Actualizar ahora** sigue disponible para una actualización inmediata solicitada por ti.
 
 Desactivar las actualizaciones automáticas borra su cuenta atrás pendiente y las actualizaciones automáticas en cola, pero no cancela una ejecución que hayas solicitado explícitamente. Al volver a activarlas, se aplican a cambios futuros; no reproducen los cambios que llegaron mientras la automatización estaba desactivada.
