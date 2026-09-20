@@ -1,29 +1,23 @@
 import 'dart:async';
 
-import 'package:clock/clock.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
-import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/agents/ui/agent_maintenance_section.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
-import 'package:lotti/features/agents/ui/task_agent_controls_footer.dart';
+import 'package:lotti/features/agents/ui/task_agent_identity_region.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/ui/widgets/project_agent_summary_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:mocktail/mocktail.dart';
 
-import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../agents/test_utils.dart';
 import '../../test_utils.dart';
@@ -46,7 +40,8 @@ void main() {
           )
           as AgentIdentityEntity;
 
-  testWidgets('uses task-agent chrome, report body, and controls footer', (
+  testWidgets('uses task-agent chrome and report body, maintenance behind '
+      'the internals panel', (
     tester,
   ) async {
     final record = makeTestProjectRecord(
@@ -75,7 +70,10 @@ void main() {
           agentReportProvider.overrideWith(
             (ref, id) async => makeTestReport(agentId: id),
           ),
-          agentIdentityProvider.overrideWith((ref, id) async => null),
+          // The pushed internals panel resolves the agent through this
+          // provider; without it the panel renders its not-found message
+          // instead of the maintenance band.
+          agentIdentityProvider.overrideWith((ref, id) async => makeIdentity()),
           taskAgentSetupOptionsProvider.overrideWith(
             (ref) async => const TaskAgentSetupOptions(
               profiles: [],
@@ -107,17 +105,18 @@ void main() {
     expect(find.byType(AgentSummaryCardSurface), findsOneWidget);
     expect(find.byType(TldrHeader), findsOneWidget);
     expect(find.byType(TldrBody), findsOneWidget);
-    expect(find.byType(TaskAgentControlsFooter), findsOneWidget);
     expect(find.text('Project Planner'), findsOneWidget);
-    expect(
-      tester
-          .widget<TaskAgentControlsFooter>(find.byType(TaskAgentControlsFooter))
-          .identityData
-          .reportAttributionUnavailable,
-      isTrue,
-    );
     expect(find.text('At Risk'), findsOneWidget);
     expect(find.text('Project agent decisions'), findsOneWidget);
+    // The card itself carries no maintenance controls: no switch, no
+    // schedule, no model identity.
+    expect(find.byType(AgentMaintenanceSection), findsNothing);
+    final context = tester.element(find.byType(ProjectAgentSummaryCard));
+    expect(
+      find.text(context.messages.taskAgentAutomaticUpdatesLabel),
+      findsNothing,
+    );
+
     tester.widget<TldrHeader>(find.byType(TldrHeader)).onAgentTap!();
     await tester.pumpAndSettle();
     final panel = tester.widget<AgentInternalsPanel>(
@@ -125,16 +124,29 @@ void main() {
     );
     expect(panel.agentId, 'agent-1');
     expect(panel.agentName, 'Project Planner');
-    Navigator.of(tester.element(find.byType(AgentInternalsPanel))).pop();
+    // ...and the panel it opens is scoped to this project, so its Update now
+    // reaches the project agent service and its setup row edits this
+    // project's setup.
+    expect(panel.maintenance?.kind, AgentMaintenanceKind.project);
+    expect(panel.maintenance?.entityId, 'project-1');
+    expect(find.byType(AgentMaintenanceSection), findsOneWidget);
+    expect(
+      find.text(context.messages.taskAgentAutomaticUpdatesLabel),
+      findsOneWidget,
+    );
+
+    // No setup is resolved, so the band's identity row says so — and still
+    // opens the sheet that fixes it.
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byType(TaskAgentIdentityRegion),
+            matching: find.byType(InkWell),
+          )
+          .first,
+    );
     await tester.pumpAndSettle();
-    final context = tester.element(find.byType(ProjectAgentSummaryCard));
-    tester
-        .widget<TaskAgentControlsFooter>(
-          find.byType(TaskAgentControlsFooter),
-        )
-        .onSetupTap();
-    await tester.pumpAndSettle();
-    expect(find.text(context.messages.taskAgentSetupTitle), findsOneWidget);
+    expect(find.text(context.messages.taskAgentSetupTitle), findsWidgets);
     expect(
       find.text(context.messages.taskAgentSetupChoiceHelp),
       findsOneWidget,
@@ -194,9 +206,82 @@ void main() {
       );
       await tester.tap(blocker);
       expect(blockerOpens, 1);
-      expect(find.byType(TaskAgentControlsFooter), findsNothing);
     },
   );
+
+  for (final stale in [false, true]) {
+    testWidgets(
+      'the freshness strip speaks only while the report is behind '
+      '(stale: $stale)',
+      (tester) async {
+        var refreshes = 0;
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Scaffold(
+              body: ProjectAgentSummaryCard(
+                projectId: 'project-1',
+                record: makeTestProjectRecord(
+                  aiSummary: 'Launch is on track.',
+                ),
+                identity: makeIdentity(),
+                hasProjectAgent: true,
+                isMutating: false,
+                onRefresh: () => refreshes++,
+              ),
+            ),
+            overrides: [
+              agentReportProvider.overrideWith(
+                (ref, id) async => makeTestReport(agentId: id),
+              ),
+              agentIdentityProvider.overrideWith((ref, id) async => null),
+              agentStateProvider.overrideWith(
+                (ref, id) async => stale
+                    ? makeTestState(agentId: id).copyWith(
+                        reportStaleAt: DateTime(2026, 9, 4, 12),
+                        reportFreshAt: DateTime(2026, 9, 4, 11),
+                      )
+                    : makeTestState(agentId: id),
+              ),
+              agentIsRunningProvider.overrideWith(
+                (ref, id) => Stream.value(false),
+              ),
+              taskAgentResolvedSetupProvider.overrideWith(
+                (ref, id) async => ResolvedAgentSetup(
+                  status: AgentSetupResolutionStatus.resolved,
+                  profile: ResolvedProfile(
+                    thinkingModelId: testAiModel().providerModelId,
+                    thinkingProvider: testInferenceProvider(),
+                    thinkingModel: testAiModel(),
+                  ),
+                ),
+              ),
+              templateForAgentProvider.overrideWith((ref, id) async => null),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(ProjectAgentSummaryCard));
+        final trigger = find.byKey(const ValueKey('taskAgentWakeButton'));
+        // A current report is worth no row at all — not even a
+        // confirmation that nothing needs doing.
+        expect(
+          find.text(context.messages.taskAgentStatusUpToDate),
+          findsNothing,
+        );
+        expect(
+          find.text(context.messages.taskAgentStatusOutOfDate),
+          stale ? findsOneWidget : findsNothing,
+        );
+        expect(trigger, stale ? findsOneWidget : findsNothing);
+
+        if (stale) {
+          await tester.tap(trigger);
+          expect(refreshes, 1);
+        }
+      },
+    );
+  }
 
   testWidgets('keeps the task-style assignment row single-flight', (
     tester,
@@ -233,184 +318,4 @@ void main() {
     await tester.pump();
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
-
-  for (final fails in [false, true]) {
-    testWidgets('automation preference update (fails: $fails)', (
-      tester,
-    ) async {
-      var identity = makeIdentity().copyWith(
-        config: const AgentConfig(automaticUpdatesEnabled: true),
-      );
-      final taskService = MockTaskAgentService();
-      final projectService = MockProjectAgentService();
-      final model = testAiModel();
-      when(
-        () => projectService.getProjectAgentForProject('project-1'),
-      ).thenAnswer((_) async => identity);
-      when(
-        () => taskService.updateAutomaticUpdates(
-          agentId: 'agent-1',
-          enabled: false,
-        ),
-      ).thenAnswer((_) async {
-        if (fails) throw StateError('preference update rejected');
-        identity = identity.copyWith(
-          config: identity.config.copyWith(automaticUpdatesEnabled: false),
-        );
-      });
-
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          Scaffold(
-            body: Consumer(
-              builder: (context, ref, child) => ProjectAgentSummaryCard(
-                projectId: 'project-1',
-                record: makeTestProjectRecord(),
-                identity:
-                    ref.watch(projectAgentProvider('project-1')).value
-                        as AgentIdentityEntity?,
-                hasProjectAgent: true,
-                isMutating: false,
-              ),
-            ),
-          ),
-          overrides: [
-            taskAgentServiceProvider.overrideWithValue(taskService),
-            projectAgentServiceProvider.overrideWithValue(projectService),
-            agentUpdateStreamProvider.overrideWith(
-              (ref, id) => const Stream<Set<String>>.empty(),
-            ),
-            agentIdentityProvider.overrideWith((ref, id) async => identity),
-            agentReportProvider.overrideWith((ref, id) async => null),
-            agentStateProvider.overrideWith((ref, id) async => null),
-            agentIsRunningProvider.overrideWith(
-              (ref, id) => Stream.value(false),
-            ),
-            taskAgentResolvedSetupProvider.overrideWith(
-              (ref, id) async => ResolvedAgentSetup(
-                status: AgentSetupResolutionStatus.resolved,
-                profile: ResolvedProfile(
-                  thinkingModelId: model.providerModelId,
-                  thinkingProvider: testInferenceProvider(),
-                  thinkingModel: model,
-                ),
-              ),
-            ),
-            templateForAgentProvider.overrideWith((ref, id) async => null),
-          ],
-        ),
-      );
-      await tester.pump();
-      TaskAgentControlsFooter footer() => tester.widget(
-        find.byType(TaskAgentControlsFooter),
-      );
-      expect(footer().automaticUpdatesEnabled, isTrue);
-      footer().onAutomaticUpdatesChanged(false);
-      await tester.pump();
-      await tester.pump();
-      expect(identity.config.automaticUpdatesEnabled, fails);
-      expect(footer().automaticUpdatesEnabled, fails);
-      expect(footer().automationBusy, isFalse);
-      verify(
-        () => taskService.updateAutomaticUpdates(
-          agentId: 'agent-1',
-          enabled: false,
-        ),
-      ).called(1);
-      if (fails) {
-        final context = tester.element(find.byType(ProjectAgentSummaryCard));
-        expect(find.text(context.messages.commonError), findsOneWidget);
-      }
-    });
-  }
-
-  for (final cancellationSucceeds in [false, true]) {
-    testWidgets(
-      'countdown follows persisted state after cancellation '
-      '(succeeds: $cancellationSucceeds)',
-      (tester) async {
-        var currentTime = DateTime(2026, 9, 4, 12);
-        await withClock(Clock(() => currentTime), () async {
-          final firstWake = DateTime(2026, 9, 4, 12, 5);
-          final laterWake = DateTime(2026, 9, 4, 12, 10);
-          final wakeProvider = StateProvider<DateTime?>((ref) => firstWake);
-          final model = testAiModel();
-          var cancelRequests = 0;
-          late ProviderContainer container;
-
-          await tester.pumpWidget(
-            makeTestableWidgetNoScroll(
-              Scaffold(
-                body: ProjectAgentSummaryCard(
-                  projectId: 'project-1',
-                  record: makeTestProjectRecord(
-                    aiSummary: '',
-                    reportContent: 'Launch is on track.',
-                  ),
-                  identity: makeIdentity().copyWith(
-                    config: const AgentConfig(automaticUpdatesEnabled: true),
-                  ),
-                  hasProjectAgent: true,
-                  isMutating: false,
-                  onCancelScheduledWake: () {
-                    cancelRequests++;
-                    if (cancellationSucceeds) {
-                      container.read(wakeProvider.notifier).state = null;
-                    }
-                  },
-                ),
-              ),
-              overrides: [
-                agentReportProvider.overrideWith((ref, id) async => null),
-                agentStateProvider.overrideWith(
-                  (ref, id) async => makeTestState(
-                    agentId: id,
-                    nextWakeAt: ref.watch(wakeProvider),
-                  ),
-                ),
-                agentIsRunningProvider.overrideWith(
-                  (ref, id) => Stream.value(false),
-                ),
-                taskAgentResolvedSetupProvider.overrideWith(
-                  (ref, id) async => ResolvedAgentSetup(
-                    status: AgentSetupResolutionStatus.resolved,
-                    profile: ResolvedProfile(
-                      thinkingModelId: model.providerModelId,
-                      thinkingProvider: testInferenceProvider(),
-                      thinkingModel: model,
-                    ),
-                  ),
-                ),
-                templateForAgentProvider.overrideWith((ref, id) async => null),
-              ],
-            ),
-          );
-          await tester.pump();
-          container = ProviderScope.containerOf(
-            tester.element(find.byType(ProjectAgentSummaryCard)),
-          );
-          TaskAgentControlsFooter footer() => tester.widget(
-            find.byType(TaskAgentControlsFooter),
-          );
-          expect(footer().showCountdown, isTrue);
-          footer().onSkipScheduledUpdate();
-          await tester.pump();
-          await tester.pump();
-          expect(cancelRequests, 1);
-          expect(footer().showCountdown, !cancellationSucceeds);
-
-          container.read(wakeProvider.notifier).state = laterWake;
-          await tester.pump();
-          await tester.pump();
-          expect(footer().showCountdown, isTrue);
-          expect(footer().nextWakeAt, laterWake);
-          expect(footer().hasReportContent, isTrue);
-          currentTime = laterWake.add(const Duration(seconds: 1));
-          footer().onCountdownExpired();
-          await tester.pump();
-          expect(footer().showCountdown, isFalse);
-        });
-      },
-    );
-  }
 }

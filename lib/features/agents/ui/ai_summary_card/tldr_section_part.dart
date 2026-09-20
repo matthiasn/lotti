@@ -37,9 +37,9 @@ String? resolveReportAdditional(AgentReportEntity? report) {
 /// wear it, so the sparkle badge, the title tier and the tap-to-internals
 /// target are defined once.
 ///
-/// Report freshness and wake controls live in the stale strip and the card
-/// footer; the header keeps only the report identity and the optional chat
-/// and playback controls. The whole badge + title + agent-name block is one
+/// Report freshness lives in the strip under the summary, and the schedule,
+/// switch and model identity in the agent internals panel; the header keeps
+/// only the report identity and the optional chat and playback controls. The whole badge + title + agent-name block is one
 /// tap target that opens the agent internals, so the name no longer needs its
 /// own oversized touch area.
 class TldrHeader extends StatelessWidget {
@@ -329,9 +329,10 @@ class TldrBody extends StatelessWidget {
   /// full card width.
   ///
   /// Widened alongside kDetailContentMaxWidth (760 -> 960): at 720, the
-  /// footer's wake status/countdown chip and the "Automatische
+  /// maintenance band's wake status/countdown chip and the "Automatische
   /// Aktualisierungen" label + switch didn't have room to share one line in
-  /// German, wrapping into an unbalanced two-row layout.
+  /// German, wrapping into an unbalanced two-row layout. The band now lives
+  /// in the internals panel, which shares this measure.
   static const double maxReadingWidth = 900;
 
   @override

@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -14,6 +14,11 @@ import '../../../../mocks/mocks.dart';
 import '../../test_data/entity_factories.dart';
 import 'test_bench.dart';
 
+/// What the card still says about freshness now that the schedule, the
+/// automatic-updates switch and the model identity live in the agent
+/// internals panel: a word and a trigger, and only while the summary is
+/// behind. Everything the band used to carry is covered by
+/// `test/features/agents/ui/agent_maintenance_section_test.dart`.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -24,116 +29,116 @@ void main() {
     matching: find.text('Thinking…'),
   );
 
-  group('AiSummaryCard – Wake affordances', () {
-    testWidgets('shows the manual wake CTA when the agent is idle', (
+  /// A report that has been overtaken by a task change.
+  AgentStateEntity staleState() => makeTestState().copyWith(
+    reportStaleAt: DateTime(2026, 5, 4, 12),
+    reportFreshAt: DateTime(2026, 5, 4, 11),
+  );
+
+  group('AiSummaryCard – freshness strip', () {
+    testWidgets('a current summary says nothing about freshness at all', (
       tester,
     ) async {
       final bench = AgentTestBench(
         report: makeTestReport(tldr: 'Tldr line.'),
+        state: makeTestState(),
       );
 
       await tester.pumpWidget(bench.build());
       await tester.pumpAndSettle();
 
       expect(find.text('AI summary'), findsOneWidget);
-      expect(find.text('Update now'), findsOneWidget);
-      expect(find.byIcon(LottiIcons.refresh), findsOneWidget);
+      expect(find.text('Tldr line.'), findsOneWidget);
+      // Neither the confirmation nor the trigger: a reader of a current
+      // summary is offered no chrome for a state that needs no action.
+      expect(find.text('Up to date'), findsNothing);
+      expect(find.text('Update now'), findsNothing);
+      expect(find.byKey(const ValueKey('taskAgentWakeButton')), findsNothing);
+      // And none of the settings that moved to the internals panel.
+      expect(find.text('Automatic updates'), findsNothing);
+      expect(find.text('Updates on changes'), findsNothing);
+      expect(find.text('test-model · via Test Provider'), findsNothing);
     });
 
-    testWidgets('setup identity opens the persistent agent setup sheet', (
+    testWidgets('the strip takes no height while the summary is current', (
       tester,
     ) async {
+      // Not merely invisible: a zero-height row, so a current card is
+      // exactly as tall as the summary it shows.
       final bench = AgentTestBench(
-        provideAgentIdentity: true,
         report: makeTestReport(tldr: 'Tldr line.'),
+        state: makeTestState(),
       );
 
       await tester.pumpWidget(bench.build());
       await tester.pumpAndSettle();
-      await tester.tap(find.text('test-model · via Test Provider'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.text('Agent setup'), findsOneWidget);
+      final silent = find.byKey(const ValueKey('agentAutomationRowSilent'));
+      expect(silent, findsOneWidget);
+      expect(tester.getSize(silent).height, 0);
     });
 
-    testWidgets(
-      'tapping Update now triggers a re-analysis on the task agent service',
-      (tester) async {
-        final taskAgentService = MockTaskAgentService();
-        when(
-          () => taskAgentService.triggerReanalysis(any()),
-        ).thenAnswer((_) {});
+    testWidgets('a stale summary says so, with the trigger beside it', (
+      tester,
+    ) async {
+      final taskAgentService = MockTaskAgentService();
+      when(() => taskAgentService.triggerReanalysis(any())).thenAnswer((_) {});
+      final bench = AgentTestBench(
+        identity: makeTestIdentity().copyWith(
+          config: const AgentConfig(automaticUpdatesEnabled: false),
+        ),
+        state: staleState(),
+        taskAgentService: taskAgentService,
+        report: makeTestReport(tldr: 'Old summary.'),
+      );
 
-        final bench = AgentTestBench(
-          taskAgentService: taskAgentService,
-          report: makeTestReport(tldr: 'Tldr line.'),
-        );
+      await tester.pumpWidget(bench.build());
+      await tester.pumpAndSettle();
 
-        await tester.pumpWidget(bench.build());
-        await tester.pumpAndSettle();
+      expect(find.text('Out of date'), findsOneWidget);
+      // The glyph carries the full sentence in its tooltip; the word beside
+      // it stays quiet ink.
+      final tooltip = tester.widget<Tooltip>(
+        find.ancestor(
+          of: find.byKey(const ValueKey('taskAgentStaleGlyph')),
+          matching: find.byType(Tooltip),
+        ),
+      );
+      expect(tooltip.message, 'This summary is out of date');
 
-        await tester.tap(find.byKey(const ValueKey('taskAgentWakeButton')));
-        await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('taskAgentWakeButton')));
+      verify(() => taskAgentService.triggerReanalysis(any())).called(1);
+    });
 
-        verify(() => taskAgentService.triggerReanalysis(any())).called(1);
-      },
-    );
+    testWidgets('a stale card with no report at all shows nothing', (
+      tester,
+    ) async {
+      // Nothing on screen is out of date, so there is no state to report
+      // and no summary for the trigger to refresh in place.
+      final bench = AgentTestBench(
+        identity: makeTestIdentity().copyWith(
+          config: const AgentConfig(automaticUpdatesEnabled: false),
+        ),
+        state: makeTestState().copyWith(
+          reportStaleAt: DateTime(2026, 5, 4, 12),
+        ),
+      );
 
-    testWidgets(
-      'a scheduled countdown keeps the manual trigger live beside it',
-      (
-        tester,
-      ) async {
-        final taskAgentService = MockTaskAgentService();
-        when(
-          () => taskAgentService.triggerReanalysis(any()),
-        ).thenAnswer((_) {});
-        when(
-          () => taskAgentService.cancelScheduledWake(any()),
-        ).thenAnswer((_) {});
+      await tester.pumpWidget(bench.build());
+      await tester.pumpAndSettle();
 
-        await withClock(Clock.fixed(DateTime(2026, 5, 4, 12)), () async {
-          final state = makeTestState(
-            nextWakeAt: DateTime(2026, 5, 4, 12, 0, 30),
-          );
-          final identity = makeTestIdentity().copyWith(
-            config: const AgentConfig(automaticUpdatesEnabled: true),
-          );
-          final bench = AgentTestBench(
-            identity: identity,
-            state: state,
-            taskAgentService: taskAgentService,
-            report: makeTestReport(tldr: 'Tldr line.'),
-          );
-
-          await tester.pumpWidget(bench.build());
-          await tester.pumpAndSettle();
-
-          // The schedule is information, not a replacement for the action:
-          // running the agent by hand must never require cancelling it first.
-          expect(find.textContaining('0:30'), findsOneWidget);
-          expect(find.text('Update now'), findsOneWidget);
-
-          await tester.tap(find.byKey(const ValueKey('taskAgentWakeButton')));
-          await tester.pumpAndSettle();
-
-          verify(() => taskAgentService.triggerReanalysis(any())).called(1);
-          // ...and running it by hand does not silently drop the schedule.
-          verifyNever(() => taskAgentService.cancelScheduledWake(any()));
-        });
-      },
-    );
+      expect(find.byKey(const ValueKey('taskAgentStaleGlyph')), findsNothing);
+      expect(find.byKey(const ValueKey('taskAgentWakeButton')), findsNothing);
+    });
 
     testWidgets(
       'a running wake reads Out of date, whichever way it was started',
       (tester) async {
         // The summary on screen is the one the run is replacing, and the
         // fresh watermark is written only once the wake succeeds — so a
-        // state that is not (yet) stale must still not read "Up to date"
-        // beside "Thinking…". Both ways a run starts: the countdown firing,
-        // which the card hides while it runs, and Update now on a fresh
-        // report.
+        // state that is not (yet) stale must still not read as current
+        // beside "Thinking…". Both ways a run starts: a scheduled wake
+        // firing, and Update now on a report the card already had.
         for (final scheduled in [true, false]) {
           await withClock(Clock.fixed(DateTime(2026, 5, 4, 12)), () async {
             final bench = AgentTestBench(
@@ -154,10 +159,6 @@ void main() {
 
           final reason = 'scheduled=$scheduled';
           expect(thinkingTrigger(), findsOneWidget, reason: reason);
-          // Only the scheduled path has a countdown to withdraw.
-          if (scheduled) {
-            expect(find.textContaining('0:30'), findsNothing, reason: reason);
-          }
           expect(find.text('Out of date'), findsOneWidget, reason: reason);
           expect(find.text('Up to date'), findsNothing, reason: reason);
           expect(
@@ -165,243 +166,64 @@ void main() {
             findsOneWidget,
             reason: reason,
           );
+          // The countdown is the panel's business; the card never shows it.
+          expect(find.textContaining('0:30'), findsNothing, reason: reason);
         }
       },
     );
 
-    testWidgets('the word flips to Up to date only once the run has ended', (
+    testWidgets('the strip withdraws only once the run has ended', (
       tester,
     ) async {
       final runningController = StreamController<bool>.broadcast();
       addTearDown(runningController.close);
-      final wakeAt = DateTime(2026, 5, 4, 12, 0, 30);
-      var clockNow = DateTime(2026, 5, 4, 12);
 
-      await withClock(Clock(() => clockNow), () async {
-        final bench = AgentTestBench(
-          identity: makeTestIdentity().copyWith(
-            config: const AgentConfig(automaticUpdatesEnabled: true),
-          ),
-          state: makeTestState(
-            nextWakeAt: wakeAt,
-          ).copyWith(reportFreshAt: DateTime(2026, 5, 4, 11)),
-          report: makeTestReport(tldr: 'Old summary.'),
-          isRunningOverride: (ref, agentId) async* {
-            yield false;
-            yield* runningController.stream;
-          },
-        );
-
-        await tester.pumpWidget(bench.build());
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Scheduled: the countdown is the evidence, and the word agrees.
-        expect(find.textContaining('0:30'), findsOneWidget);
-        expect(find.text('Out of date'), findsOneWidget);
-
-        // The deadline passes and the wake fires: the card withdraws the
-        // countdown and the trigger spins. This is the frame that used to
-        // read "Up to date".
-        clockNow = wakeAt;
-        runningController.add(true);
-        await tester.pump();
-        await tester.pump();
-        expect(find.textContaining('0:30'), findsNothing);
-        expect(thinkingTrigger(), findsOneWidget);
-        expect(find.text('Out of date'), findsOneWidget);
-        expect(find.text('Up to date'), findsNothing);
-
-        // The run ends with a state that is not stale: only now may the
-        // word say so.
-        runningController.add(false);
-        await tester.pump();
-        await tester.pump();
-        expect(thinkingTrigger(), findsNothing);
-        expect(find.text('Up to date'), findsOneWidget);
-        expect(find.text('Out of date'), findsNothing);
-      });
-    });
-
-    testWidgets(
-      'automatic updates off stays prominent and keeps manual wake available',
-      (tester) async {
-        final taskAgentService = MockTaskAgentService();
-        when(
-          () => taskAgentService.triggerReanalysis(any()),
-        ).thenAnswer((_) {});
-        final identity = makeTestIdentity().copyWith(
-          config: const AgentConfig(automaticUpdatesEnabled: false),
-        );
-        final bench = AgentTestBench(
-          identity: identity,
-          taskAgentService: taskAgentService,
-          state: makeTestState(nextWakeAt: DateTime(2026, 5, 4, 12, 0, 30)),
-          report: makeTestReport(tldr: 'Tldr line.'),
-        );
-
-        await tester.pumpWidget(bench.build());
-        await tester.pumpAndSettle();
-
-        expect(find.text('Automatic updates'), findsOneWidget);
-        expect(
-          find.byKey(const Key('taskAgentAutomaticUpdatesCheckbox')),
-          findsOneWidget,
-        );
-        expect(find.text('Update now'), findsOneWidget);
-        expect(find.byIcon(LottiIcons.refresh), findsOneWidget);
-        expect(find.byIcon(LottiIcons.close), findsNothing);
-        expect(find.textContaining('0:30'), findsNothing);
-        await tester.tap(find.byKey(const ValueKey('taskAgentWakeButton')));
-        verify(() => taskAgentService.triggerReanalysis(any())).called(1);
-      },
-    );
-
-    testWidgets('stale report surfaces one clear manual wake CTA', (
-      tester,
-    ) async {
-      final taskAgentService = MockTaskAgentService();
-      when(
-        () => taskAgentService.triggerReanalysis(any()),
-      ).thenAnswer((_) {});
-      final identity = makeTestIdentity().copyWith(
-        config: const AgentConfig(automaticUpdatesEnabled: false),
-      );
-      final state = makeTestState().copyWith(
-        reportStaleAt: DateTime(2026, 5, 4, 12),
-        reportFreshAt: DateTime(2026, 5, 4, 11),
-      );
-      final bench = AgentTestBench(
-        identity: identity,
-        state: state,
-        taskAgentService: taskAgentService,
-        report: makeTestReport(tldr: 'Old summary.'),
-      );
-
-      await tester.pumpWidget(bench.build());
-      await tester.pumpAndSettle();
-
-      // The stale glyph rides in the same automation cluster as the wake
-      // button and switch, rather than a separate row — its tooltip
-      // carries the full message.
-      expect(
-        find.byKey(const ValueKey('taskAgentStaleGlyph')),
-        findsOneWidget,
-      );
-      final tooltip = tester.widget<Tooltip>(
-        find.ancestor(
-          of: find.byKey(const ValueKey('taskAgentStaleGlyph')),
-          matching: find.byType(Tooltip),
-        ),
-      );
-      expect(tooltip.message, 'This summary is out of date');
-      expect(
-        find.byKey(const ValueKey('taskAgentWakeButton')),
-        findsOneWidget,
-      );
-
-      await tester.tap(find.byKey(const ValueKey('taskAgentWakeButton')));
-
-      verify(() => taskAgentService.triggerReanalysis(any())).called(1);
-    });
-
-    testWidgets(
-      'stale without any report omits the glyph — nothing to describe — but '
-      'keeps the wake button',
-      (tester) async {
-        final identity = makeTestIdentity().copyWith(
-          config: const AgentConfig(automaticUpdatesEnabled: false),
-        );
-        final state = makeTestState().copyWith(
-          reportStaleAt: DateTime(2026, 5, 4, 12),
-        );
-        final bench = AgentTestBench(identity: identity, state: state);
-
-        await tester.pumpWidget(bench.build());
-        await tester.pumpAndSettle();
-
-        expect(
-          find.byKey(const ValueKey('taskAgentStaleGlyph')),
-          findsNothing,
-        );
-        expect(find.text('This summary is out of date'), findsNothing);
-        expect(
-          find.byKey(const ValueKey('taskAgentWakeButton')),
-          findsOneWidget,
-        );
-      },
-    );
-
-    testWidgets('auto-wake toggle persists the opt-in from the card', (
-      tester,
-    ) async {
-      final taskAgentService = MockTaskAgentService();
-      when(
-        () => taskAgentService.updateAutomaticUpdates(
-          agentId: any(named: 'agentId'),
-          enabled: any(named: 'enabled'),
-        ),
-      ).thenAnswer((_) async {});
-      final identity = makeTestIdentity().copyWith(
-        config: const AgentConfig(automaticUpdatesEnabled: false),
-      );
-      final bench = AgentTestBench(
-        identity: identity,
-        taskAgentService: taskAgentService,
-        report: makeTestReport(tldr: 'Summary.'),
-      );
-
-      await tester.pumpWidget(bench.build());
-      await tester.pumpAndSettle();
-      await tester.tap(
-        find.byKey(const Key('taskAgentAutomaticUpdatesCheckbox')),
-      );
-      await tester.pump();
-
-      verify(
-        () => taskAgentService.updateAutomaticUpdates(
-          agentId: any(named: 'agentId'),
-          enabled: true,
-        ),
-      ).called(1);
-    });
-
-    testWidgets('auto-wake failure shows an error and restores the toggle', (
-      tester,
-    ) async {
-      final taskAgentService = MockTaskAgentService();
-      when(
-        () => taskAgentService.updateAutomaticUpdates(
-          agentId: any(named: 'agentId'),
-          enabled: any(named: 'enabled'),
-        ),
-      ).thenThrow(StateError('write failed'));
       final bench = AgentTestBench(
         identity: makeTestIdentity().copyWith(
-          config: const AgentConfig(automaticUpdatesEnabled: false),
+          config: const AgentConfig(automaticUpdatesEnabled: true),
         ),
-        taskAgentService: taskAgentService,
-        report: makeTestReport(tldr: 'Summary.'),
+        state: makeTestState().copyWith(
+          reportFreshAt: DateTime(2026, 5, 4, 11),
+        ),
+        report: makeTestReport(tldr: 'Old summary.'),
+        isRunningOverride: (ref, agentId) async* {
+          yield false;
+          yield* runningController.stream;
+        },
       );
 
       await tester.pumpWidget(bench.build());
       await tester.pumpAndSettle();
-      final toggleFinder = find.byKey(
-        const Key('taskAgentAutomaticUpdatesCheckbox'),
-      );
-      await tester.tap(toggleFinder);
-      await tester.pump();
 
-      expect(find.text('Error'), findsOneWidget);
-      expect(tester.widget<DesignSystemToggle>(toggleFinder).enabled, isTrue);
+      // Not stale, not running: silent.
+      expect(find.text('Out of date'), findsNothing);
+      expect(thinkingTrigger(), findsNothing);
+
+      // A run starts: the card admits the summary on screen is being
+      // replaced. This is the frame that used to read "Up to date".
+      runningController.add(true);
+      await tester.pump();
+      await tester.pump();
+      expect(thinkingTrigger(), findsOneWidget);
+      expect(find.text('Out of date'), findsOneWidget);
+
+      // The run ends with a state that is not stale: the strip goes quiet
+      // again rather than switching to a confirmation.
+      runningController.add(false);
+      await tester.pump();
+      await tester.pump();
+      expect(thinkingTrigger(), findsNothing);
+      expect(find.text('Out of date'), findsNothing);
+      expect(find.text('Up to date'), findsNothing);
     });
 
-    testWidgets('no setup disables Run now and shows a visible error', (
+    testWidgets('without a setup the trigger is dead rather than absent', (
       tester,
     ) async {
       final taskAgentService = MockTaskAgentService();
       final bench = AgentTestBench(
         taskAgentService: taskAgentService,
+        state: staleState(),
         resolvedSetup: const ResolvedAgentSetup(
           status: AgentSetupResolutionStatus.disabled,
         ),
@@ -411,139 +233,14 @@ void main() {
       await tester.pumpWidget(bench.build());
       await tester.pumpAndSettle();
 
-      expect(
-        find.text(
-          'Choose a saved setup or thinking model before this agent can run.',
-        ),
-        findsOneWidget,
-      );
-      expect(find.bySemanticsLabel(RegExp('No AI setup')), findsOneWidget);
-      // The disabled toggle carries the needs-setup explanation as a tooltip
-      // instead of a permanent caption line.
-      expect(find.byIcon(LottiIcons.info), findsOneWidget);
+      expect(find.text('Out of date'), findsOneWidget);
       final wakeButton = tester.widget<DesignSystemButton>(
         find.byKey(const ValueKey('taskAgentWakeButton')),
       );
       expect(wakeButton.onPressed, isNull);
       verifyNever(() => taskAgentService.triggerReanalysis(any()));
-    });
-
-    testWidgets('long scheduled wake countdown uses h:mm:ss format', (
-      tester,
-    ) async {
-      final now = DateTime(2026, 5, 4, 23, 20, 46);
-      await withClock(Clock.fixed(now), () async {
-        final state = makeTestState(
-          nextWakeAt: now.add(
-            const Duration(hours: 5, minutes: 39, seconds: 14),
-          ),
-        );
-        final identity = makeTestIdentity().copyWith(
-          config: const AgentConfig(automaticUpdatesEnabled: true),
-        );
-        final bench = AgentTestBench(
-          identity: identity,
-          state: state,
-          report: makeTestReport(tldr: 'Tldr line.'),
-        );
-
-        await tester.pumpWidget(bench.build());
-        await tester.pumpAndSettle();
-
-        expect(find.text('Next update in 5:39:14'), findsOneWidget);
-        expect(find.textContaining('339:14'), findsNothing);
-        // The trigger is present in this state too.
-        expect(find.text('Update now'), findsOneWidget);
-      });
-    });
-
-    testWidgets('Skip cancels the scheduled wake but leaves automation on', (
-      tester,
-    ) async {
-      await withClock(Clock.fixed(DateTime(2026, 5, 4, 12)), () async {
-        final taskAgentService = MockTaskAgentService();
-        when(
-          () => taskAgentService.cancelScheduledWake(any()),
-        ).thenAnswer((_) {});
-        final state = makeTestState(
-          nextWakeAt: DateTime(2026, 5, 4, 12, 0, 30),
-        );
-        final identity = makeTestIdentity().copyWith(
-          config: const AgentConfig(automaticUpdatesEnabled: true),
-        );
-
-        final bench = AgentTestBench(
-          identity: identity,
-          state: state,
-          taskAgentService: taskAgentService,
-          report: makeTestReport(tldr: 'Tldr line.'),
-        );
-
-        await tester.pumpWidget(bench.build());
-        await tester.pumpAndSettle();
-
-        await tester.tap(
-          find.byKey(const ValueKey('taskAgentSkipScheduledUpdate')),
-        );
-        await tester.pumpAndSettle();
-
-        verify(() => taskAgentService.cancelScheduledWake(any())).called(1);
-
-        // The pending run is gone, but the switch stays on and the row keeps
-        // saying what happens next — skipping one update is not the same as
-        // turning automation off.
-        expect(find.textContaining('0:30'), findsNothing);
-        expect(find.text('Updates on changes'), findsOneWidget);
-        expect(
-          tester
-              .widget<DesignSystemToggle>(
-                find.byKey(const Key('taskAgentAutomaticUpdatesCheckbox')),
-              )
-              .value,
-          isTrue,
-        );
-        expect(find.text('Update now'), findsOneWidget);
-      });
-    });
-
-    testWidgets('an expired countdown gives way to the automation line', (
-      tester,
-    ) async {
-      final wakeAt = DateTime(2026, 5, 4, 12, 0, 2);
-      var clockNow = DateTime(2026, 5, 4, 12);
-      await withClock(Clock(() => clockNow), () async {
-        final bench = AgentTestBench(
-          identity: makeTestIdentity().copyWith(
-            config: const AgentConfig(automaticUpdatesEnabled: true),
-          ),
-          state: makeTestState(nextWakeAt: wakeAt),
-          report: makeTestReport(tldr: 'Tldr line.'),
-        );
-
-        await tester.pumpWidget(bench.build());
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-        expect(find.textContaining('0:02'), findsOneWidget);
-        expect(
-          find.byKey(const ValueKey('taskAgentSkipScheduledUpdate')),
-          findsOneWidget,
-        );
-
-        // The deadline passes without a run starting: the card re-derives
-        // the footer, which drops the countdown and its Skip action.
-        for (var second = 1; second <= 3; second++) {
-          clockNow = DateTime(2026, 5, 4, 12, 0, second);
-          await tester.pump(const Duration(seconds: 1));
-        }
-        await tester.pump();
-
-        expect(
-          find.byKey(const ValueKey('taskAgentSkipScheduledUpdate')),
-          findsNothing,
-        );
-        expect(find.text('Updates on changes'), findsOneWidget);
-        expect(find.text('Update now'), findsOneWidget);
-      });
+      // The explanation lives with the setup row, in the internals panel.
+      expect(find.byIcon(LottiIcons.info), findsNothing);
     });
   });
 }

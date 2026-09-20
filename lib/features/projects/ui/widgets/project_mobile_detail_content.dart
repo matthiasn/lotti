@@ -57,7 +57,6 @@ class ProjectMobileDetailContent extends StatefulWidget {
     this.onAddTask,
     this.onOpenPlaza,
     this.onRefreshReport,
-    this.onCancelScheduledReportWake,
     this.onAssignAgent,
     this.agentIdentity,
     this.agentActionsBuilder,
@@ -94,7 +93,6 @@ class ProjectMobileDetailContent extends StatefulWidget {
   final Future<void> Function()? onAddTask;
   final VoidCallback? onOpenPlaza;
   final VoidCallback? onRefreshReport;
-  final VoidCallback? onCancelScheduledReportWake;
   final Future<void> Function()? onAssignAgent;
   final AgentIdentityEntity? agentIdentity;
 
@@ -330,8 +328,6 @@ class _ProjectMobileDetailContentState
                                     ? null
                                     : _handleAssignAgent,
                                 onRefresh: widget.onRefreshReport,
-                                onCancelScheduledWake:
-                                    widget.onCancelScheduledReportWake,
                                 onViewBlocker:
                                     isMutating ||
                                         firstBlockedTask == null ||

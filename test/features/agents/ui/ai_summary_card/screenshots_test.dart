@@ -6,10 +6,9 @@
 /// content, viewport, and state every time.
 ///
 /// Beyond the core matrix it also renders the states that stress the card's
-/// bottom section: the narrowest supported phone, German at large text scale,
-/// a report written by a different route than the current setup (two identity
-/// lines), and the two hover states — driven with a real mouse pointer,
-/// because `tester.tap` never fires `InkWell.onHover`.
+/// lower half: the narrowest supported phone, German at large text scale, and
+/// the header hover — driven with a real mouse pointer, because `tester.tap`
+/// never fires `InkWell.onHover`.
 ///
 /// PNGs are written to `LOTTI_SCREENSHOT_DIR`. When only
 /// `LOTTI_CAPTURE_SCREENSHOTS=true` is set, they are written to
@@ -52,7 +51,7 @@ final _now = DateTime(2026, 7, 16, 21);
 const _desktopCardWidth = 730.0;
 
 /// The narrowest phone the card still has to work on. Below `mini` (375) this
-/// is where the footer's controls genuinely run out of room.
+/// is where the freshness word and its trigger genuinely run out of room.
 ///
 /// Width is the only layout-relevant dimension; the viewport is deliberately
 /// taller than any real 320px handset because a capture clipped mid-footer
@@ -100,22 +99,11 @@ final _resolvedSetup = ResolvedAgentSetup(
   source: AgentSetupResolutionSource.baseProfile,
 );
 
-/// The route that wrote an older report — deliberately different from
-/// [_resolvedSetup] so the identity region splits into two lines.
-const _priorRoute = InferenceRouteSnapshot(
-  providerModelId: 'glm-5.2',
-  modelName: 'GLM 5.2',
-  publisherName: 'Z.ai',
-  servingProviderType: InferenceProviderType.openRouter,
-  servingProviderName: 'OpenRouter',
-  runtimeSettings: {},
-);
-
 /// Which interaction state the capture renders.
 enum _Mode { manual, scheduled, running, proposals }
 
 /// Which element the mouse rests on, if any.
-enum _Hover { none, modelRow, header }
+enum _Hover { none, header }
 
 AgentTemplateEntity _template() =>
     AgentDomainEntity.agentTemplate(
@@ -131,7 +119,7 @@ AgentTemplateEntity _template() =>
         )
         as AgentTemplateEntity;
 
-AgentReportEntity _report({bool priorRoute = false}) => makeTestReport(
+AgentReportEntity _report() => makeTestReport(
   createdAt: _now.subtract(const Duration(minutes: 4)),
   tldr: _summary,
   content:
@@ -141,9 +129,9 @@ AgentReportEntity _report({bool priorRoute = false}) => makeTestReport(
   provenance: ReportInferenceProvenance(
     runKey: 'run-baseline',
     threadId: 'thread-baseline',
-    executor: priorRoute
-        ? _priorRoute
-        : InferenceRouteSnapshot.fromResolvedProfile(_resolvedSetup.profile!),
+    executor: InferenceRouteSnapshot.fromResolvedProfile(
+      _resolvedSetup.profile!,
+    ),
     finalContentAuthor: ReportContentAuthor.executor,
   ).toReportMap(),
 );
@@ -197,7 +185,6 @@ Future<void> _capture(
   required Brightness brightness,
   required _Mode mode,
   _Hover hover = _Hover.none,
-  bool priorReportRoute = false,
   Locale? locale,
   TextScaler textScaler = TextScaler.noScaling,
   String? nameSuffix,
@@ -238,7 +225,7 @@ Future<void> _capture(
       RepaintBoundary(
         key: screenshotBoundaryKey,
         child: AgentTestBench(
-          report: _report(priorRoute: priorReportRoute),
+          report: _report(),
           suggestions: _suggestions(withOpen: mode == _Mode.proposals),
           state: state,
           identity: identity,
@@ -265,8 +252,6 @@ Future<void> _capture(
     switch (hover) {
       case _Hover.none:
         break;
-      case _Hover.modelRow:
-        await _hoverOver(tester, find.byIcon(LottiIcons.reasoning));
       case _Hover.header:
         await _hoverOver(tester, find.byIcon(LottiIcons.aiSpark));
     }
@@ -321,14 +306,14 @@ void main() {
     }
   }
 
-  // The states that stress the card's bottom section specifically. Dark only
+  // The states that stress the card's lower half specifically. Dark only
   // (the theme axis is already covered above) except where contrast is part
   // of what is being judged.
-  group('footer stress states', () {
+  group('freshness strip stress states', () {
     for (final brightness in [Brightness.dark, Brightness.light]) {
       final theme = brightness == Brightness.dark ? 'dark' : 'light';
 
-      // 320px: the footer's controls have the least room here.
+      // 320px: the freshness word and its trigger have the least room here.
       for (final mode in [_Mode.manual, _Mode.scheduled]) {
         testWidgets('narrow ${mode.name} $theme', (tester) async {
           await _capture(
@@ -340,64 +325,36 @@ void main() {
         });
       }
 
-      // German at 1.3x: every footer label roughly doubles in length while
-      // the row height grows — the worst realistic single-line pressure.
-      testWidgets('pro scheduled german $theme', (tester) async {
-        await _capture(
-          tester,
-          device: proDevice,
-          brightness: brightness,
-          mode: _Mode.scheduled,
-          locale: const Locale('de'),
-          textScaler: const TextScaler.linear(1.3),
-          nameSuffix: 'german',
-        );
-      });
-
-      testWidgets('narrow scheduled german $theme', (tester) async {
-        await _capture(
-          tester,
-          device: _narrowDevice,
-          brightness: brightness,
-          mode: _Mode.scheduled,
-          locale: const Locale('de'),
-          textScaler: const TextScaler.linear(1.3),
-          nameSuffix: 'german',
-        );
-      });
-
-      // A report written by a route the agent no longer uses: the identity
-      // region splits into a second attribution line.
-      for (final device in [desktopDevice, _narrowDevice]) {
-        testWidgets('${device.name} manual split $theme', (tester) async {
+      // German at 1.3x, on the out-of-date state: both labels roughly double
+      // in length while the row height grows — the worst realistic pressure
+      // on the one row the card still carries.
+      for (final device in [proDevice, _narrowDevice]) {
+        testWidgets('${device.name} manual german $theme', (tester) async {
           await _capture(
             tester,
             device: device,
             brightness: brightness,
             mode: _Mode.manual,
-            priorReportRoute: true,
-            nameSuffix: 'split',
+            locale: const Locale('de'),
+            textScaler: const TextScaler.linear(1.3),
+            nameSuffix: 'german',
           );
         });
       }
     }
 
     // Hover: dark only — the state layer's extent, not its hue, is the
-    // subject.
-    for (final entry in {
-      'model': _Hover.modelRow,
-      'header': _Hover.header,
-    }.entries) {
-      testWidgets('desktop manual hover ${entry.key} dark', (tester) async {
-        await _capture(
-          tester,
-          device: desktopDevice,
-          brightness: Brightness.dark,
-          mode: _Mode.manual,
-          hover: entry.value,
-          nameSuffix: 'hover-${entry.key}',
-        );
-      });
-    }
+    // subject. The model identity it used to include moved to the agent
+    // internals panel with the rest of the maintenance band.
+    testWidgets('desktop manual hover header dark', (tester) async {
+      await _capture(
+        tester,
+        device: desktopDevice,
+        brightness: Brightness.dark,
+        mode: _Mode.manual,
+        hover: _Hover.header,
+        nameSuffix: 'hover-header',
+      );
+    });
   });
 }

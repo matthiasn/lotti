@@ -883,7 +883,6 @@ void main() {
             onTargetDateTap: () {},
             onStatusTap: () {},
             onRefreshReport: () {},
-            onCancelScheduledReportWake: () {},
           ),
           size: const Size(800, 1200),
         ),
@@ -1266,7 +1265,6 @@ void main() {
       tester,
     ) async {
       void refresh() {}
-      void cancel() {}
 
       await tester.pumpWidget(
         wrap(
@@ -1274,7 +1272,6 @@ void main() {
             record: makeTestProjectRecord(),
             currentTime: DateTime(2026, 3, 28, 1, 18),
             onRefreshReport: refresh,
-            onCancelScheduledReportWake: cancel,
             isRefreshingReport: true,
           ),
         ),
@@ -1285,7 +1282,6 @@ void main() {
         find.byType(ProjectAgentSummaryCard),
       );
       expect(card.onRefresh, same(refresh));
-      expect(card.onCancelScheduledWake, same(cancel));
       expect(card.isRefreshing, isTrue);
     });
 

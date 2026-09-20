@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_body.dart';
+import 'package:lotti/features/agents/ui/agent_maintenance_section.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
@@ -19,10 +20,18 @@ import 'package:material_ui/material_ui.dart';
 /// (Stats / Reports / Conversations / Observations / Activity); this
 /// is purely a re-housing of existing content, no functionality is
 /// reinvented here.
+///
+/// A host that governs its agent's report — the task and project summary
+/// cards — also passes a [maintenance] scope, which puts that agent's
+/// [AgentMaintenanceSection] above the tabs: how the report refreshes, and
+/// which AI writes it. It sits *above* the tabs because it is the one thing
+/// here the reader changes rather than reads, and because it belongs to the
+/// agent as a whole rather than to any one tab's log.
 class AgentInternalsPanel extends ConsumerWidget {
   const AgentInternalsPanel({
     required this.agentId,
     required this.agentName,
+    this.maintenance,
     super.key,
   });
 
@@ -41,6 +50,12 @@ class AgentInternalsPanel extends ConsumerWidget {
   final String agentId;
   final String? agentName;
 
+  /// The agent's maintenance band, when the host offers one. Null for a
+  /// surface that only reads the agent — the relationship briefing, the goal
+  /// page's activity link — which has no schedule or setup of its own to
+  /// govern from here.
+  final AgentMaintenanceScope? maintenance;
+
   /// Builds a [PageRoute] that fades the scrim in and slides the panel
   /// in from the right on wide screens, or up from the bottom on
   /// narrow screens. Use via `Navigator.of(context).push(...)`.
@@ -52,6 +67,7 @@ class AgentInternalsPanel extends ConsumerWidget {
     required BuildContext context,
     required String agentId,
     required String? agentName,
+    AgentMaintenanceScope? maintenance,
   }) {
     return PageRouteBuilder<void>(
       opaque: false,
@@ -61,7 +77,11 @@ class AgentInternalsPanel extends ConsumerWidget {
       transitionDuration: const Duration(milliseconds: 220),
       reverseTransitionDuration: const Duration(milliseconds: 180),
       pageBuilder: (context, animation, secondaryAnimation) {
-        return AgentInternalsPanel(agentId: agentId, agentName: agentName);
+        return AgentInternalsPanel(
+          agentId: agentId,
+          agentName: agentName,
+          maintenance: maintenance,
+        );
       },
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         final curved = CurvedAnimation(
@@ -158,10 +178,20 @@ class AgentInternalsPanel extends ConsumerWidget {
                       ),
                     )
                   : SingleChildScrollView(
-                      child: AgentInternalsBody(
-                        agentId: agentId,
-                        lifecycle: identity!.lifecycle,
-                        stateAsync: stateAsync,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (maintenance != null)
+                            AgentMaintenanceSection(
+                              agentId: agentId,
+                              scope: maintenance!,
+                            ),
+                          AgentInternalsBody(
+                            agentId: agentId,
+                            lifecycle: identity!.lifecycle,
+                            stateAsync: stateAsync,
+                          ),
+                        ],
                       ),
                     ),
             ),

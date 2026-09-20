@@ -72,7 +72,49 @@ class AgentAutomationRow extends StatefulWidget {
     this.showsIdleScheduleLabel = true,
     this.isRefreshingReport,
     super.key,
-  });
+  }) : showsFreshConfirmation = true;
+
+  /// The freshness word and the manual trigger alone, for a surface that
+  /// keeps no settings of its own — the task and project summary cards, whose
+  /// schedule, switch and model identity live in the agent internals panel.
+  ///
+  /// Everything the full band needs and this pair does not is fixed here
+  /// rather than left to each caller: a card that has no switch cannot
+  /// meaningfully answer "is the switch busy", and a countdown it does not
+  /// render has no deadline to latch. Passing twelve arguments to use four
+  /// was how the previous callers of `compact: true` read.
+  const AgentAutomationRow.compact({
+    required this.inferenceAvailable,
+    required this.isRunning,
+    required this.hasReportContent,
+    required this.isStale,
+    required this.onRunNow,
+    this.isRefreshingReport,
+    this.showsFreshConfirmation = true,
+    super.key,
+  }) : compact = true,
+       automaticUpdatesEnabled = false,
+       automationBusy = false,
+       showCountdown = false,
+       nextWakeAt = null,
+       showsIdleScheduleLabel = false,
+       onAutomaticUpdatesChanged = _ignoreBool,
+       onSkipScheduledUpdate = _ignore,
+       onCountdownExpired = _ignore;
+
+  static void _ignore() {}
+  static void _ignoreBool(bool _) {}
+
+  /// Whether the row still renders while the report is current.
+  ///
+  /// False on a primary reading surface: a permanent "Up to date" line is a
+  /// row of chrome that says nothing changed, and the reader is there for the
+  /// summary. The row then appears only when it has something to report — the
+  /// summary is behind, or a run is rewriting it — and takes no height at all
+  /// otherwise. Only [AgentAutomationRow.compact] honours it; the full band
+  /// is a settings surface, where a state that vanishes is worse than a state
+  /// that reads "Up to date".
+  final bool showsFreshConfirmation;
 
   /// Renders only the first question — the freshness word and the manual
   /// trigger on one line — for surfaces whose hero card cannot afford the
@@ -247,6 +289,12 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
               : messages.taskAgentReportUpToDate)
         : null;
     if (widget.compact) {
+      // Nothing to report and not asked to confirm it: take no height at all,
+      // rather than reserving a row for a word the reader did not come for.
+      if (!widget.showsFreshConfirmation &&
+          !(outdated && freshnessLabel != null)) {
+        return const SizedBox.shrink(key: ValueKey('agentAutomationRowSilent'));
+      }
       final freshness = _FreshnessCluster(
         label: freshnessLabel,
         tooltip: freshnessTooltip,

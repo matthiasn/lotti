@@ -37,7 +37,6 @@ import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content
 import 'package:lotti/features/projects/ui/widgets/project_recommendations_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
@@ -732,13 +731,6 @@ void main() {
             reason:
                 'onRefreshReport should be null when no agent identity exists',
           );
-          expect(
-            content.onCancelScheduledReportWake,
-            isNull,
-            reason:
-                'onCancelScheduledReportWake should be null when no agent '
-                'identity exists — there is nothing to cancel without an agent',
-          );
           expect(content.hasProjectAgent, isFalse);
           expect(content.isRefreshingReport, isFalse);
         },
@@ -1199,17 +1191,18 @@ void main() {
       );
 
       testWidgets(
-        'wires onRefreshReport to projectAgentService.triggerReanalysis and '
-        'handles cancelScheduledWake persistence failures when an agent '
-        'identity is present',
+        'wires onRefreshReport to projectAgentService.triggerReanalysis '
+        'when an agent identity is present',
         (tester) async {
           final agentService = MockProjectAgentService();
           when(
             () => agentService.triggerReanalysis(any()),
           ).thenReturn(null);
+          // Registered so the assertion below that nothing cancels a wake
+          // can fail loudly rather than on a missing stub.
           when(
             () => agentService.cancelScheduledWake(any()),
-          ).thenAnswer((_) => Future<void>.error(StateError('write failed')));
+          ).thenAnswer((_) async {});
 
           final identity = makeTestIdentity(agentId: 'agent-project-1');
 
@@ -1268,7 +1261,6 @@ void main() {
             find.byType(ProjectMobileDetailContent),
           );
           expect(content.onRefreshReport, isNotNull);
-          expect(content.onCancelScheduledReportWake, isNotNull);
           final focused = <String>[];
           void focusTask(String taskId, {bool scroll = true}) =>
               focused.add('$taskId scroll=$scroll');
@@ -1297,24 +1289,16 @@ void main() {
           expect(focused, ['task-42 scroll=true', 'task-7 scroll=false']);
           expect(opened, isEmpty);
 
-          // Invoking the wired callbacks must dispatch to the project
-          // agent service for the resolved agent ID, with the cancel path
-          // landing on cancelScheduledWake (not the manual reanalysis or
-          // any other lifecycle method).
+          // Invoking the wired callback must dispatch to the project agent
+          // service for the resolved agent ID, and to the manual reanalysis
+          // rather than any other lifecycle method. Cancelling a scheduled
+          // wake is no longer the page's to wire: it lives with the
+          // countdown, in the agent internals panel.
           content.onRefreshReport!();
           verify(
             () => agentService.triggerReanalysis('agent-project-1'),
           ).called(1);
           verifyNever(() => agentService.cancelScheduledWake(any()));
-
-          content.onCancelScheduledReportWake!();
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
-          verify(
-            () => agentService.cancelScheduledWake('agent-project-1'),
-          ).called(1);
-          final context = tester.element(find.byType(ProjectDetailsPage));
-          expect(find.text(context.messages.commonError), findsOneWidget);
         },
       );
 
