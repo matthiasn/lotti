@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
@@ -250,7 +252,7 @@ class _PeopleListScaffold extends ConsumerWidget {
                 // Worded like the task list's: the app adds entries, tasks,
                 // habits and people from the same glyph in the same corner.
                 label: context.messages.relationshipCreateTitle,
-                onPressed: () => showRelationshipCreateModal(context: context),
+                onPressed: () => unawaited(createPersonAndOpen(context)),
               ),
             )
           : null,
@@ -484,6 +486,20 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
+/// Opens the add-person sheet and lands on the person it created.
+///
+/// Creating a person used to drop the user back on the list to find the row
+/// they had just made — the task list has always opened the new task instead
+/// (`_defaultCreateTaskPressed`), and a person is no different: the page they
+/// arrive on is where the check-in they came to log is logged.
+///
+/// A dismissed sheet resolves to null and goes nowhere.
+Future<void> createPersonAndOpen(BuildContext context) async {
+  final created = await showRelationshipCreateModal(context: context);
+  if (created == null) return;
+  beamToNamed('/people/${created.id}');
+}
+
 /// The People list's create action as the mobile navigation launcher shows
 /// it.
 ///
@@ -494,5 +510,5 @@ MobileNavDockAction peopleTabDockAction(BuildContext context) =>
     MobileNavDockAction.worded(
       label: context.messages.relationshipCreateTitle,
       icon: LottiIcons.add,
-      onPressed: () => showRelationshipCreateModal(context: context),
+      onPressed: () => unawaited(createPersonAndOpen(context)),
     );

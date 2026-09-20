@@ -31,6 +31,7 @@ import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
@@ -111,6 +112,8 @@ void main() {
             data: CheckInData(relationshipId: id, interactionType: lastType),
           ),
   );
+
+  setUpAll(registerAllFallbackValues);
 
   setUp(() {
     mockRepository = MockRelationshipRepository();
@@ -274,6 +277,124 @@ void main() {
 
     expect(find.text('Name'), findsOneWidget);
     expect(find.text('Status'), findsNothing);
+  });
+
+  // Creating a person used to drop the user back on the list to find the row
+  // they had just made. The task list has always opened the new task.
+  group('creating a person opens that person', () {
+    RelationshipEntry created() => RelationshipEntry(
+      meta: Metadata(
+        id: 'rel-new',
+        createdAt: testDate,
+        updatedAt: testDate,
+        dateFrom: testDate,
+        dateTo: testDate,
+      ),
+      data: RelationshipData(
+        title: 'Pip Frostbeak',
+        status: RelationshipStatus.active(
+          id: 'status-new',
+          createdAt: testDate,
+          utcOffset: 0,
+        ),
+      ),
+    );
+
+    late List<String> beamedTo;
+
+    setUp(() {
+      when(
+        () => mockRepository.getRelationshipsByRecency(),
+      ).thenAnswer((_) async => []);
+      beamedTo = <String>[];
+      beamToNamedOverride = beamedTo.add;
+      addTearDown(() => beamToNamedOverride = null);
+    });
+
+    /// The docked action is the one add control a phone shows.
+    Future<void> openCreateSheet(WidgetTester tester) async {
+      MobileNavDockAction? action;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Consumer(
+            builder: (context, ref, _) {
+              action = peopleTabDockAction(context);
+              return const SizedBox.shrink();
+            },
+          ),
+          overrides: [
+            relationshipRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+        ),
+      );
+      await tester.pump();
+      action!.onPressed();
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('lands on the person the sheet created', (tester) async {
+      when(
+        () => mockRepository.createRelationship(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
+        ),
+      ).thenAnswer((_) async => created());
+
+      await openCreateSheet(tester);
+      await tester.enterText(find.byType(TextField).first, 'Pip Frostbeak');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
+
+      expect(
+        beamedTo,
+        ['/people/rel-new'],
+        reason:
+            'the page they arrive on is where the first check-in is '
+            'logged, so it is where creating should leave them',
+      );
+    });
+
+    testWidgets('goes nowhere when the sheet is dismissed', (tester) async {
+      await openCreateSheet(tester);
+      await tester.tap(find.byKey(const ValueKey('person-form-cancel')));
+      await tester.pumpAndSettle();
+
+      expect(beamedTo, isEmpty);
+      verifyNever(
+        () => mockRepository.createRelationship(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
+        ),
+      );
+    });
+
+    testWidgets('goes nowhere when the write fails', (tester) async {
+      when(
+        () => mockRepository.createRelationship(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      await openCreateSheet(tester);
+      await tester.enterText(find.byType(TextField).first, 'Pip Frostbeak');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
+
+      expect(
+        beamedTo,
+        isEmpty,
+        reason: 'a refused write leaves the sheet open with the toast',
+      );
+    });
   });
 
   testWidgets(
