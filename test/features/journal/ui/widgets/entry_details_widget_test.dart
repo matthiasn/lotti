@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
@@ -3747,8 +3748,9 @@ void main() {
 
       Future<void> pumpCollapsedImage(
         WidgetTester tester,
-        List<AiResponseEntry> responses,
-      ) async {
+        List<AiResponseEntry> responses, {
+        List<Override> extraOverrides = const [],
+      }) async {
         final mockJournalRepository = MockJournalRepository();
         when(
           () => mockJournalRepository.getLinksFromId(testImageEntry.meta.id),
@@ -3772,6 +3774,7 @@ void main() {
                     responses,
                   ),
                 ),
+                ...extraOverrides,
               ],
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
@@ -3786,6 +3789,83 @@ void main() {
         await tester.pump();
         await tester.pump(AppTheme.chevronRotationDuration);
       }
+
+      // A description is a model's words about a picture of someone the
+      // user knows, and it used to render in the same ink as their own
+      // caption — nothing said a model had written it, or which one.
+      // The expanded card has always carried AiAttributionSummary for a
+      // JournalImage; the collapsed row did not, so a model's description
+      // sat in exactly the ink the user's own caption uses. It is the same
+      // pill, not a second way of saying the same thing.
+      AiAttributionDetails describedByModel() {
+        final attribution = makeAiWorkAttribution();
+        return AiAttributionDetails(
+          attribution: attribution,
+          interactions: [
+            makeConsumptionEvent(
+              attributionId: attribution.id,
+              providerModelId: 'gpt-5',
+              credits: 0.25,
+              costCreditsDecimal: '0.25',
+            ),
+          ],
+        );
+      }
+
+      List<Override> attribution(AiAttributionDetails? details) => [
+        aiAttributionForArtifactProvider.overrideWith(
+          (ref, artifact) async => details,
+        ),
+        aiAttributionDetailsProvider.overrideWith(
+          (ref, id) async => details,
+        ),
+      ];
+
+      testWidgets('a photo the AI worked on carries the attribution pill', (
+        tester,
+      ) async {
+        await pumpCollapsedImage(
+          tester,
+          [
+            analysisEntry(
+              id: 'analysis-1',
+              dateFrom: DateTime(2024, 6),
+              oneLiner: 'Two penguins on the ice.',
+            ),
+          ],
+          extraOverrides: attribution(describedByModel()),
+        );
+        await tester.pump();
+
+        final pill = find.byKey(
+          const ValueKey('image-analysis-attribution'),
+        );
+        expect(pill, findsOneWidget);
+        // The model that wrote it, named from the consumption record rather
+        // than guessed from the response's wire id — and its cost, which no
+        // surface showed for an automatic description before.
+        expect(
+          find.descendant(of: pill, matching: find.textContaining('gpt-5')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: pill, matching: find.textContaining('€0.25')),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('a photo with no AI work behind it shows no pill', (
+        tester,
+      ) async {
+        await pumpCollapsedImage(
+          tester,
+          const [],
+          extraOverrides: attribution(null),
+        );
+        await tester.pump();
+
+        expect(find.byType(DsPill), findsNothing);
+      });
 
       testWidgets(
         'shows a thumbnail while collapsed — an image collapsed to text alone '

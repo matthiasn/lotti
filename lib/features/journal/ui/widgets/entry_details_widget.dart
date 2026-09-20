@@ -741,13 +741,37 @@ class _CollapsedImagePreview extends ConsumerWidget {
           Expanded(
             child: oneLiner == null
                 ? const SizedBox.shrink()
-                : Text(
-                    oneLiner,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        oneLiner,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: tokens.typography.styles.body.bodySmall.copyWith(
+                          color: tokens.colors.text.mediumEmphasis,
+                        ),
+                      ),
+                      // The same pill the expanded card carries, so a
+                      // collapsed photo says who wrote the line above it
+                      // rather than leaving a model's words in the ink of
+                      // the user's own caption. It hides itself when the
+                      // image carries no AI work at all.
+                      Padding(
+                        padding: EdgeInsets.only(top: tokens.spacing.step1),
+                        child: AiAttributionSummary(
+                          key: const ValueKey('image-analysis-attribution'),
+                          artifact: AiArtifactReference(
+                            type: AiArtifactType.journalImage,
+                            id: image.id,
+                          ),
+                          attribution: image.data.aiAttribution,
+                          asPill: true,
+                          includeTopSpacing: false,
+                        ),
+                      ),
+                    ],
                   ),
           ),
         ],
