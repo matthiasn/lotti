@@ -723,7 +723,7 @@ flowchart TD
   N -->|yes| ESC["arm relationship-escalation:&lt;dueDayKey&gt;<br/>lease-elected, idempotent per episode,<br/>baseline token = pre-transition status"]
   N -->|no| ST{"evidence changed after<br/>current briefing?"}
   ST -->|no| OK3[€0 no-write no-op]
-  ST -->|yes| REF["arm relationship-escalation:refresh-&lt;evidenceMs&gt;<br/>deadline = evidence + 30 s settle,<br/>or a pending transcript's timeout"]
+  ST -->|yes| REF["arm relationship-escalation:refresh-&lt;evidenceMs&gt;<br/>deadline = evidence + 2 min settle,<br/>or a pending transcript's timeout"]
 ```
 
 Four decisions keep multi-device runs convergent (ADR 0059 Decision 2):

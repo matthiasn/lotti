@@ -875,6 +875,91 @@ void main() {
     });
   });
 
+  // The window is the whole bound on refresh spend: a refresh is a
+  // *scheduled* wake, so it bypasses WakeOrchestrator.throttleWindow, the
+  // gate that coalesces bursty edits for every subscription-triggered wake.
+  // At thirty seconds it did not cover the burst it names — opening the
+  // picker and choosing a photo outlasts it — so adding a photo to a
+  // check-in just written bought a second briefing.
+  group('the settle window bounds what a burst costs', () {
+    RelationshipCadenceDerivation at(DateTime evidenceAt) => (
+      status: RelationshipCadenceStatus.ok,
+      previousStatus: null,
+      cadenceDays: 7,
+      referenceAt: DateTime.utc(2026, 8, 15),
+      lastCheckInAt: DateTime.utc(2026, 8, 15),
+      lastEvidenceAt: evidenceAt,
+      lastEvidenceKey: relationshipEvidenceKey(evidenceAt),
+      dueDayUtc: DateTime.utc(2026, 8, 22),
+      dueDayKey: '2026-08-22',
+    );
+
+    final written = DateTime.utc(2026, 8, 15, 9, 20);
+
+    test('it is long enough for a photo to be picked', () {
+      expect(
+        relationshipEvidenceSettle,
+        greaterThanOrEqualTo(const Duration(seconds: 90)),
+        reason:
+            'the burst it names — dictate, photograph, comment — takes '
+            'longer than the seconds a save does',
+      );
+    });
+
+    test('evidence inside the window supersedes the wake already armed', () {
+      final first = at(written);
+      final second = at(written.add(const Duration(seconds: 45)));
+
+      // The wake armed for the first change stands down once the second
+      // arrives, so the burst ends at one briefing rather than two.
+      expect(
+        relationshipRefreshSuperseded(
+          'refresh-${first.lastEvidenceKey}',
+          second,
+        ),
+        isTrue,
+      );
+      // And the second's own wake waits for the window to pass.
+      final wake =
+          relationshipReportRefreshEscalationWake(
+                'agent-1',
+                second,
+                updatedAt: written,
+              )
+              as ScheduledWakeEntity;
+      expect(
+        wake.scheduledAt,
+        second.lastEvidenceAt!.add(relationshipEvidenceSettle),
+      );
+    });
+
+    test('evidence past the window is its own episode, and pays again', () {
+      final first = at(written);
+      final later = at(
+        written.add(relationshipEvidenceSettle).add(const Duration(minutes: 5)),
+      );
+
+      expect(
+        relationshipRefreshSuperseded(
+          'refresh-${first.lastEvidenceKey}',
+          later,
+        ),
+        isTrue,
+        reason:
+            'the older wake still stands down — it is the deadline, not '
+            'the supersession, that separates the two briefings',
+      );
+      expect(
+        relationshipReportRefreshEscalationWake(
+          'agent-1',
+          later,
+          updatedAt: written,
+        ).mapOrNull(scheduledWake: (wake) => wake.scheduledAt),
+        later.lastEvidenceAt!.add(relationshipEvidenceSettle),
+      );
+    });
+  });
+
   group('relationshipRefreshSuperseded', () {
     final derivation = (
       status: RelationshipCadenceStatus.ok,
