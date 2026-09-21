@@ -3,6 +3,8 @@ import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -11,6 +13,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
+import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_ins_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/linked_tasks_card.dart';
@@ -173,6 +176,20 @@ class RelationshipDetailsPage extends ConsumerWidget {
     // ago"). An undated copy of the same word in the header said the fact
     // twice and said it less truthfully, so the page no longer watches the
     // report at all.
+    //
+    // Whether an agent *exists* is a different question from whether
+    // reminders are on, and the hero needs the first one. Unmarking a
+    // person, or making them dormant, stops the cadence but deliberately
+    // keeps the agent and its conversation (`RelationshipAgentService`),
+    // so gating the chat on enrolment would remove the only ordinary way
+    // back into a chat that still exists. An enrolled person counts even
+    // before their agent has named itself, which is the window in which
+    // the identity is still null.
+    final agentId = relationshipAgentIdFor(relationshipId);
+    final hasAgent =
+        isEnrolled(relationship) ||
+        ref.watch(agentIdentityProvider(agentId)).value != null ||
+        ref.watch(agentStateProvider(agentId)).value != null;
     final sections = <Widget>[
       PersonHeaderBlock(item: item, categoryName: categoryName),
       // Always present: an unenrolled person gets the card that explains
@@ -223,6 +240,7 @@ class RelationshipDetailsPage extends ConsumerWidget {
                 onTalkToAgent: () =>
                     beamToNamed('/people/$relationshipId/chat'),
                 onDelete: () => _handleDelete(context, ref, relationship),
+                hasAgent: hasAgent,
                 onAvatarTap: () => showPersonAvatarSheet(
                   context: context,
                   relationship: relationship,

@@ -169,6 +169,28 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('a dormant person keeps the important flag but loses the '
+      'marker — the runtime clears their reminders', (tester) async {
+    await pump(
+      tester,
+      item(
+        // ignore: avoid_redundant_argument_values
+        important: true,
+        status: RelationshipStatus.dormant(
+          id: 's',
+          createdAt: now,
+          utcOffset: 0,
+        ),
+      ),
+    );
+
+    // The sparkle is announced as "Reminders on"; a dormant person will
+    // not get any, so claiming it here would be false in the one place a
+    // screen reader hears it.
+    expect(find.byKey(const ValueKey('people-row-important')), findsNothing);
+    expect(find.text('Dormant'), findsOneWidget);
+  });
+
   group('the pill tells the truth about the cadence', () {
     testWidgets('lapsed: days over, warning-tinted — never "Due Sun"', (
       tester,

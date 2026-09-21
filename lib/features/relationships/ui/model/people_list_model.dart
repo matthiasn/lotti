@@ -45,7 +45,8 @@ typedef PeopleCadencePill = ({
   DateTime? dueAt,
 });
 
-/// One band of the list and the rows in it, most recent contact first.
+/// One band of the list and the rows in it, ordered by what that band is
+/// about (see [_orderWithin]) rather than by recency alone.
 typedef PeopleListSection = ({
   PeopleListGroup group,
   List<RelationshipListItem> items,
