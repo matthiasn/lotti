@@ -2990,7 +2990,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get categoryKnowledgeBriefSectionDescription =>
-      'O que todo prompt de IA para tarefas desta categoria deve saber: do que se trata, onde está o código, convenções, armadilhas. Entra palavra por palavra.';
+      'O que todo prompt de IA para tarefas desta categoria deve saber: do que se trata, onde está o código, convenções, armadilhas. É incluído exatamente como foi escrito.';
 
   @override
   String get categoryKnowledgeBriefSectionTitle => 'Conhecimento da categoria';

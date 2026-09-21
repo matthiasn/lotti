@@ -378,13 +378,25 @@ Use the task language and omit empty sections.
       expect(guidance, contains('outranks anything you would infer'));
       expect(guidance, contains('never restate it in the report'));
       expect(guidance, contains('never propose changes'));
-      // And it is spliced into the composed system prompt.
-      final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
+      // And it is spliced into the composed system prompt — by BOTH
+      // scaffolds: the compact one drops project/linked-task teaching, but
+      // the user message carries `## Category Knowledge` for every model.
+      final full = TaskAgentPromptBuilder.buildSystemPrompt(
         version: makeTestTemplateVersion(),
         soulVersion: null,
         modelId: 'models/gemini-flash',
       );
-      expect(prompt, contains(guidance));
+      final compact = TaskAgentPromptBuilder.buildSystemPrompt(
+        version: makeTestTemplateVersion(),
+        soulVersion: null,
+        modelId: 'qwen3.5-122b-a10b',
+      );
+      expect(full, contains(guidance));
+      expect(
+        compact,
+        contains(TaskAgentPromptBuilder.taskAgentCompactScaffold),
+      );
+      expect(compact, contains(guidance));
     });
 
     test('both scaffolds teach the typed-relationship tools', () {

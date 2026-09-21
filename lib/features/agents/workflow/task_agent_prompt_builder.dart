@@ -181,7 +181,12 @@ abstract final class TaskAgentPromptBuilder {
     required SoulDocumentVersionEntity? soulVersion,
     required String? modelId,
   }) {
-    final buf = StringBuffer()..write(taskAgentCompactScaffold);
+    // The compact scaffold drops the project/linked-task teaching, not the
+    // category brief: the user message carries `## Category Knowledge` for
+    // every model, so every model must be told how to weigh it.
+    final buf = StringBuffer()
+      ..write(taskAgentCompactScaffold)
+      ..write(taskAgentScaffoldCategoryKnowledge);
 
     if (soulVersion != null) {
       _appendSoulPersonality(buf, soulVersion);

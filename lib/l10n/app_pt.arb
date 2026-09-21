@@ -1480,7 +1480,7 @@
   "categoryIconPickerTitle": "Escolha o ícone",
   "categoryKnowledgeBriefHint": "App Flutter, repositório em github.com/…, testes com make test, …",
   "categoryKnowledgeBriefLabel": "Conhecimento da categoria",
-  "categoryKnowledgeBriefSectionDescription": "O que todo prompt de IA para tarefas desta categoria deve saber: do que se trata, onde está o código, convenções, armadilhas. Entra palavra por palavra.",
+  "categoryKnowledgeBriefSectionDescription": "O que todo prompt de IA para tarefas desta categoria deve saber: do que se trata, onde está o código, convenções, armadilhas. É incluído exatamente como foi escrito.",
   "categoryKnowledgeBriefSectionTitle": "Conhecimento da categoria",
   "categoryNameRequired": "O nome da categoria é obrigatório",
   "categoryNotFound": "Categoria não encontrada",
