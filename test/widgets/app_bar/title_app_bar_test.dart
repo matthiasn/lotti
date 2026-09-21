@@ -149,61 +149,67 @@ void main() {
 
     testWidgets('a disabled arrow ignores taps and says so', (tester) async {
       final semantics = tester.ensureSemantics();
-      var pressed = 0;
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          BackWidget(onPressed: () => pressed++, enabled: false),
-        ),
-      );
-      await tester.pump();
+      try {
+        var pressed = 0;
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            BackWidget(onPressed: () => pressed++, enabled: false),
+          ),
+        );
+        await tester.pump();
 
-      await tester.tap(find.byType(IconButton), warnIfMissed: false);
-      await tester.pump();
+        await tester.tap(find.byType(IconButton), warnIfMissed: false);
+        await tester.pump();
 
-      expect(pressed, 0);
-      final label = MaterialLocalizations.of(
-        tester.element(find.byType(IconButton)),
-      ).backButtonTooltip;
-      expect(
-        tester.getSemantics(find.bySemanticsLabel(label)),
-        matchesSemantics(
-          label: label,
-          isButton: true,
-          hasEnabledState: true,
-        ),
-      );
-      semantics.dispose();
+        expect(pressed, 0);
+        final label = MaterialLocalizations.of(
+          tester.element(find.byType(IconButton)),
+        ).backButtonTooltip;
+        expect(
+          tester.getSemantics(find.bySemanticsLabel(label)),
+          matchesSemantics(
+            label: label,
+            isButton: true,
+            hasEnabledState: true,
+          ),
+        );
+      } finally {
+        semantics.dispose();
+      }
     });
 
     testWidgets('exposes a localized back button to screen readers', (
       tester,
     ) async {
       final semantics = tester.ensureSemantics();
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(const BackWidget(onPressed: _noop)),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
+      try {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(const BackWidget(onPressed: _noop)),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
 
-      final button = find.byType(IconButton);
-      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.chevronLeft));
-      expect(icon.size, 30);
-      final expectedLabel = MaterialLocalizations.of(
-        tester.element(button),
-      ).backButtonTooltip;
-      final semanticBackButton = find.bySemanticsLabel(expectedLabel);
-      expect(semanticBackButton, findsOneWidget);
-      expect(
-        tester.getSemantics(semanticBackButton),
-        matchesSemantics(
-          label: expectedLabel,
-          isButton: true,
-          hasEnabledState: true,
-          isEnabled: true,
-          hasTapAction: true,
-        ),
-      );
-      semantics.dispose();
+        final button = find.byType(IconButton);
+        final icon = tester.widget<Icon>(find.byIcon(LottiIcons.chevronLeft));
+        expect(icon.size, 30);
+        final expectedLabel = MaterialLocalizations.of(
+          tester.element(button),
+        ).backButtonTooltip;
+        final semanticBackButton = find.bySemanticsLabel(expectedLabel);
+        expect(semanticBackButton, findsOneWidget);
+        expect(
+          tester.getSemantics(semanticBackButton),
+          matchesSemantics(
+            label: expectedLabel,
+            isButton: true,
+            hasEnabledState: true,
+            isEnabled: true,
+            hasTapAction: true,
+          ),
+        );
+      } finally {
+        semantics.dispose();
+      }
     });
   });
 }
