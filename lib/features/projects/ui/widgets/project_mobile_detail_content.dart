@@ -251,9 +251,12 @@ class _ProjectMobileDetailContentState
             if (splitController == null)
               Row(
                 children: [
+                  // Inert without a host callback: BackWidget would otherwise
+                  // fall back to global navigation, which a read-only host
+                  // such as the showcase must not trigger.
                   BackWidget(
                     onPressed: widget.onBack,
-                    enabled: !isMutating,
+                    enabled: widget.onBack != null && !isMutating,
                   ),
                   const Spacer(),
                   if (menuButton != null) ...[

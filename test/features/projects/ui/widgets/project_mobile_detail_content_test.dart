@@ -980,6 +980,12 @@ void main() {
       );
 
       expect(find.byType(BackWidget), findsOneWidget);
+      // No host callback: the arrow is inert rather than falling back to
+      // global navigation.
+      expect(
+        tester.widget<BackWidget>(find.byType(BackWidget)).enabled,
+        isFalse,
+      );
       expect(
         tester.getCenter(find.byType(BackWidget)).dx,
         lessThan(
