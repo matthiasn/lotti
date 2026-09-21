@@ -73,13 +73,13 @@ person, corrected in seconds, at no inference cost.
 flowchart LR
   Field["CategoryKnowledgeBrief<br/>(details page)"] -->|"as typed"| Ctl["CategoryDetailsController.updateKnowledgeBrief()"]
   Ctl -->|"blank → null"| Def["CategoryDefinition.knowledgeBrief"]
-  Def --> Cache["EntitiesCacheService.getCategoryById()"]
-  Cache --> Seam["AiInputRepository.buildCategoryKnowledge(taskId)"]
+  Def --> DB["JournalDb.getCategoryByIdForIntegrity()"]
+  DB --> Seam["AiInputRepository.buildCategoryKnowledge(taskId)"]
   Seam -->|"trimmed, or null"| Wake["Task-agent wake<br/>## Category Knowledge"]
   Seam -->|"trimmed, or null"| Coding["Coding prompt<br/>**Category Knowledge:**"]
 ```
 
-Three rules keep it honest:
+Four rules keep it honest:
 
 - **One seam, two injectors.** Both the task-agent wake
   (`TaskAgentContextBuilder.buildUserMessage`) and the coding prompt
@@ -94,6 +94,13 @@ Three rules keep it honest:
   the only limit is `categoryKnowledgeBriefMaxLength` (4000 characters),
   enforced by the field, because the brief is prefill on every wake and every
   coding prompt.
+- **Private is not hidden from the agent.** The seam reads the category with
+  `JournalDb.getCategoryByIdForIntegrity`, past the private-entries gate that
+  `getCategoryById` and the entities cache apply. The task itself reaches a
+  wake through the unfiltered `journalEntityById`, so a task in a private
+  category would otherwise lose its brief whenever private entries happened to
+  be hidden on screen — the toggle hides things from a screen, not from an
+  agent that already holds the task.
 
 The task-agent scaffold tells the agent the brief is the user's own words and
 outranks inference about the domain — see

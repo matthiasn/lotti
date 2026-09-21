@@ -324,16 +324,18 @@ class AiInputRepository {
   ///
   /// The one seam both injectors share — the task-agent wake and the coding
   /// prompt — so they can never disagree on what the brief says. The category
-  /// is read from [EntitiesCacheService], the synchronous lookup every other
-  /// prompt-assembly path uses. Never throws: a prompt without the brief is
-  /// still a usable prompt.
+  /// is read past the private-entries gate (`getCategoryByIdForIntegrity`):
+  /// the task itself arrives through the unfiltered `journalEntityById`, and a
+  /// wake for a task in a private category must not silently lose its brief
+  /// because private entries happen to be hidden on screen. Never throws: a
+  /// prompt without the brief is still a usable prompt.
   Future<String?> buildCategoryKnowledge(String taskId) async {
     try {
       final entity = await _db.journalEntityById(taskId);
       final categoryId = entity?.meta.categoryId;
       if (categoryId == null) return null;
       return categoryKnowledgeBriefOf(
-        getIt<EntitiesCacheService>().getCategoryById(categoryId),
+        await _db.getCategoryByIdForIntegrity(categoryId),
       );
     } catch (error, stackTrace) {
       _domainLogger?.error(

@@ -361,18 +361,17 @@ void main() {
     });
 
     group('buildCategoryKnowledge', () {
-      late MockEntitiesCacheService mockCache;
-
-      CategoryDefinition category(String? brief) => CategoryDefinition(
-        id: 'cat-123',
-        name: 'Lotti',
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024),
-        vectorClock: null,
-        private: false,
-        active: true,
-        knowledgeBrief: brief,
-      );
+      CategoryDefinition category(String? brief, {bool private = false}) =>
+          CategoryDefinition(
+            id: 'cat-123',
+            name: 'Lotti',
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            vectorClock: null,
+            private: private,
+            active: true,
+            knowledgeBrief: brief,
+          );
 
       Task taskIn(String? categoryId) => Task(
         meta: Metadata(
@@ -396,23 +395,39 @@ void main() {
         ),
       );
 
-      setUp(() {
-        mockCache = MockEntitiesCacheService();
-        getIt.registerSingleton<EntitiesCacheService>(mockCache);
-      });
-
       test("returns the trimmed brief of the task's category", () async {
         when(
           () => mockDb.journalEntityById(taskId),
         ).thenAnswer((_) async => taskIn('cat-123'));
         when(
-          () => mockCache.getCategoryById('cat-123'),
-        ).thenReturn(category('  Flutter app.\nRepo at github.com/x. \n'));
+          () => mockDb.getCategoryByIdForIntegrity('cat-123'),
+        ).thenAnswer(
+          (_) async => category('  Flutter app.\nRepo at github.com/x. \n'),
+        );
 
         expect(
           await repository.buildCategoryKnowledge(taskId),
           'Flutter app.\nRepo at github.com/x.',
         );
+      });
+
+      test('reads the category past the private-entries gate', () async {
+        // A task in a private category still reaches the wake through the
+        // unfiltered entity lookup; its brief must come along, whatever the
+        // on-screen privacy toggle says — so never the visibility-gated
+        // lookup.
+        when(
+          () => mockDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => taskIn('cat-123'));
+        when(
+          () => mockDb.getCategoryByIdForIntegrity('cat-123'),
+        ).thenAnswer((_) async => category('Private brief', private: true));
+
+        expect(
+          await repository.buildCategoryKnowledge(taskId),
+          'Private brief',
+        );
+        verifyNever(() => mockDb.getCategoryById(any()));
       });
 
       test(
@@ -422,22 +437,24 @@ void main() {
             () => mockDb.journalEntityById(taskId),
           ).thenAnswer((_) async => taskIn(null));
           expect(await repository.buildCategoryKnowledge(taskId), isNull);
-          verifyNever(() => mockCache.getCategoryById(any()));
+          verifyNever(() => mockDb.getCategoryByIdForIntegrity(any()));
 
           when(
             () => mockDb.journalEntityById(taskId),
           ).thenAnswer((_) async => taskIn('cat-123'));
-          when(() => mockCache.getCategoryById('cat-123')).thenReturn(null);
+          when(
+            () => mockDb.getCategoryByIdForIntegrity('cat-123'),
+          ).thenAnswer((_) async => null);
           expect(await repository.buildCategoryKnowledge(taskId), isNull);
 
           when(
-            () => mockCache.getCategoryById('cat-123'),
-          ).thenReturn(category(null));
+            () => mockDb.getCategoryByIdForIntegrity('cat-123'),
+          ).thenAnswer((_) async => category(null));
           expect(await repository.buildCategoryKnowledge(taskId), isNull);
 
           when(
-            () => mockCache.getCategoryById('cat-123'),
-          ).thenReturn(category('   '));
+            () => mockDb.getCategoryByIdForIntegrity('cat-123'),
+          ).thenAnswer((_) async => category('   '));
           expect(await repository.buildCategoryKnowledge(taskId), isNull);
         },
       );

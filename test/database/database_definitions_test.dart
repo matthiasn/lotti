@@ -573,6 +573,42 @@ void main() {
         final cat = await db!.getCategoryById('no-such-category');
         expect(cat, isNull);
       });
+
+      test(
+        'integrity lookup sees private categories but not deleted rows',
+        () async {
+          await db!.upsertConfigFlag(
+            const ConfigFlag(
+              name: privateFlag,
+              description: 'Show private entries?',
+              status: false,
+            ),
+          );
+          final privateCategory = categoryMindfulness.copyWith(
+            id: 'private-category',
+            private: true,
+            knowledgeBrief: 'Kept for the agent, hidden from the screen',
+          );
+          final deletedCategory = categoryMindfulness.copyWith(
+            id: 'deleted-category',
+            name: 'Deleted mindfulness',
+            deletedAt: DateTime(2026, 8, 11),
+          );
+          await db!.upsertCategoryDefinition(privateCategory);
+          await db!.upsertCategoryDefinition(deletedCategory);
+
+          // The visible-only lookup hides it; the integrity lookup does not.
+          expect(await db!.getCategoryById(privateCategory.id), isNull);
+          expect(
+            await db!.getCategoryByIdForIntegrity(privateCategory.id),
+            privateCategory,
+          );
+          expect(
+            await db!.getCategoryByIdForIntegrity(deletedCategory.id),
+            isNull,
+          );
+        },
+      );
     });
 
     group('getAllHabitDefinitions / getHabitById -', () {
