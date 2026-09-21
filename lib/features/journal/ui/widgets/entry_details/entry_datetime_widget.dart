@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_multipage_modal.dart';
 import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
+import 'package:lotti/utils/device_datetime.dart';
 import 'package:material_ui/material_ui.dart';
 
 class EntryDatetimeWidget extends ConsumerWidget {
@@ -79,9 +79,8 @@ class EntryDatetimeWidget extends ConsumerWidget {
     // app locale on a 24-hour device — including in the header that opens a
     // picker already showing 21:54. This is the same call the range summary in
     // entry_datetime_status_bar.dart makes.
-    final locale = Localizations.localeOf(context).toString();
     final date = entry.meta.dateFrom.toLocal();
-    final dateText = DateFormat.yMMMd(locale).format(date);
+    final dateText = deviceDateLabel(context, date);
     final timeText = TimeOfDay.fromDateTime(date).format(context);
 
     return GestureDetector(

@@ -186,6 +186,8 @@ String _periodLabel(BuildContext context, InsightsPeriodSelection selection) {
 
   switch (selection.unit) {
     case InsightsPeriodUnit.day:
+      // A period heading, not a timestamp: "June 5, 2026" reads better than
+      // "6/5/2026" beside the week and month spans around it.
       return label(DateFormat.yMMMMd(locale).format(start));
     case InsightsPeriodUnit.week:
       return label(_spanLabel(locale, start, lastDay));

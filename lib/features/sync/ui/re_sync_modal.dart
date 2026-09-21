@@ -19,6 +19,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
+import 'package:lotti/utils/device_datetime.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -579,7 +580,7 @@ class _ReSyncDateRow extends StatelessWidget {
     final locale = Localizations.localeOf(context).toLanguageTag();
     return DesignSystemListItem(
       title: label,
-      subtitle: DateFormat.yMMMd(locale).format(date),
+      subtitle: deviceDateLabel(context, date),
       trailing: Icon(
         LottiIcons.calendar,
         size: IconSizes.m,
@@ -587,6 +588,9 @@ class _ReSyncDateRow extends StatelessWidget {
       ),
       showDivider: showDivider,
       onTap: onTap,
+      // Spoken, so prose rather than the device's numeric form: a screen
+      // reader says "6/5/2026" as "six slash five slash …". The visible
+      // subtitle above is the stamp and is device-formatted.
       semanticsLabel: '$label, ${DateFormat.yMMMMd(locale).format(date)}',
     );
   }

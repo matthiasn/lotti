@@ -1,9 +1,9 @@
-import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/entry_field_diff.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/title_diff.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/device_datetime.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Renders an [EntryDiff] as a scannable field-by-field list — the core of the
@@ -296,8 +296,10 @@ String _displayValue(BuildContext context, EntryField field, String? raw) {
     case EntryField.dateTo:
       final parsed = DateTime.tryParse(raw);
       if (parsed == null) return raw;
-      final locale = Localizations.localeOf(context).toString();
-      return DateFormat.yMd(locale).add_jm().format(parsed);
+      // The device's date order and its own clock: a conflict over a
+      // timestamp is unreadable if the two sides are shown in a format the
+      // reader does not use.
+      return deviceTimestampLabel(context, parsed);
     case EntryField.title:
     case EntryField.body:
     case EntryField.category:

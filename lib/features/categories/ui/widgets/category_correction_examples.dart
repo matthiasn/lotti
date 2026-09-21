@@ -1,8 +1,8 @@
-import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/device_datetime.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Warning threshold for number of correction examples (token budget concern).
@@ -164,9 +164,8 @@ class _CorrectionExampleTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat.yMd().add_jm();
     final capturedAtText = example.capturedAt != null
-        ? dateFormat.format(example.capturedAt!)
+        ? deviceTimestampLabel(context, example.capturedAt!)
         : null;
 
     return Dismissible(

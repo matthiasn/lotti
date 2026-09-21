@@ -1,6 +1,5 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -25,6 +24,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/utils/device_datetime.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -147,9 +147,7 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
         ? null
         : DesktopTaskHeaderDueDate(
             label: context.messages.taskDueDateWithDate(
-              DateFormat.yMMMd(
-                Localizations.localeOf(context).toLanguageTag(),
-              ).format(due),
+              deviceDateLabel(context, due),
             ),
             urgency: _dueUrgency(task.data),
           );

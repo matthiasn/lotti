@@ -27,6 +27,7 @@ import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_day_marks.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/device_datetime.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_cell.dart';
@@ -1784,6 +1785,9 @@ class _ProgressDayCell extends StatelessWidget {
       );
     }
     final locale = Localizations.localeOf(context).toLanguageTag();
+    // Prose, not the device's numeric form: this line is spoken by a screen
+    // reader, where "8/10/2026" reads as "eight slash ten slash …" and the
+    // year is noise in a week view.
     final date = DateFormat.yMMMd(locale).format(day.day);
     final menuDate = DateFormat.MMMEd(locale).format(day.day);
     final measured = switch (completionType) {
@@ -2376,7 +2380,6 @@ class _MetricProgressSeries extends StatelessWidget {
     _BarChrome chrome,
   ) {
     final tokens = context.designTokens;
-    final locale = Localizations.localeOf(context).toString();
     final date = chrome.dateFormat.format(day.day);
     final number = chrome.number;
     // The shared per-day policy: a bar drawn against a per-day target rule
@@ -2486,7 +2489,8 @@ class _MetricProgressSeries extends StatelessWidget {
                         ? context.messages.goalDimensionRecordedByAgent
                         : context.messages.goalDimensionRecordedByAgentDetails(
                             provenance.agentName,
-                            DateFormat.MMMEd(locale).add_jm().format(
+                            deviceTimestampLabel(
+                              context,
                               provenance.recordedAt,
                             ),
                           ),

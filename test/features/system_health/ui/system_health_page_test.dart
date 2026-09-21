@@ -487,8 +487,10 @@ void main() {
     expect(
       tester.widget<DesignSystemListItem>(olderRow).subtitle,
       messages.systemHealthAnalyzedWindow(
-        'Sep 4, 2026 08:00',
-        'Sep 11, 2026 08:00',
+        // Device-formatted: a diagnostics stamp is compared against what
+        // the reader's OS logs say, so it follows the device.
+        '9/4/2026 08:00',
+        '9/11/2026 08:00',
       ),
     );
 
@@ -536,8 +538,9 @@ void main() {
     final row = tester.widget<DesignSystemListItem>(
       find.byKey(const Key('system_health_saved_0')),
     );
-    expect(row.title, '11. Sept. 2026 08:00');
-    expect(row.subtitle, contains('4. Sept. 2026 08:00'));
+    // German UI, US device: the words translate, the stamp does not.
+    expect(row.title, '9/11/2026 08:00');
+    expect(row.subtitle, contains('9/4/2026 08:00'));
   });
 
   testWidgets('a run that cannot start shows a failure toast', (tester) async {

@@ -336,7 +336,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(
-        find.text('Fällig: ${DateFormat.yMMMd('de').format(due)}'),
+        // German UI, US phone: the label is translated, the date order is
+        // the device's.
+        find.text('Fällig: ${DateFormat.yMd().format(due)}'),
         findsOneWidget,
       );
       expect(find.textContaining('Jul 17, 2026'), findsNothing);
@@ -488,7 +490,8 @@ void main() {
         // Due date chip renders with the default subdued styling, not the
         // overdue red. We assert the due label is present — the exact
         // styling is already covered by the header's own test.
-        expect(find.textContaining('Apr'), findsOneWidget);
+        // The device's numeric date, so the month is a digit.
+        expect(find.textContaining('/2026'), findsOneWidget);
       },
     );
   });
@@ -870,7 +873,8 @@ void main() {
         });
 
         // The due chip is present; overdue styling is exercised downstream.
-        expect(find.textContaining('Apr'), findsOneWidget);
+        // The device's numeric date, so the month is a digit.
+        expect(find.textContaining('/2026'), findsOneWidget);
       },
     );
 
@@ -904,7 +908,8 @@ void main() {
         });
 
         expect(find.byType(DesktopTaskHeader), findsOneWidget);
-        expect(find.textContaining('Jun'), findsOneWidget);
+        // Numeric and device-ordered now, so the month is a digit.
+        expect(find.textContaining('/2026'), findsOneWidget);
       },
     );
   });

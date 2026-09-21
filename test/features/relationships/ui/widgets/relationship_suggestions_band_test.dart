@@ -431,7 +431,7 @@ void main() {
         );
         await tester.tap(find.textContaining('History'));
         await tester.pumpAndSettle();
-        expect(find.text('Due: Sep 9, 2026'), findsOneWidget);
+        expect(find.text('Due: 9/9/2026'), findsOneWidget);
         await tester.tap(find.text('Undo'));
         await tester.pump();
         expect(

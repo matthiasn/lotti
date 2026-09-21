@@ -1,9 +1,9 @@
 import 'package:clock/clock.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/device_datetime.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Widget to display due date with color coding for overdue/today status.
@@ -34,9 +34,7 @@ class _DueDateTextState extends State<DueDateText> {
       return context.messages.taskDueToday;
     }
     return context.messages.taskDueDateWithDate(
-      DateFormat.yMMMd(
-        Localizations.localeOf(context).toLanguageTag(),
-      ).format(widget.dueDate),
+      deviceDateLabel(context, widget.dueDate),
     );
   }
 

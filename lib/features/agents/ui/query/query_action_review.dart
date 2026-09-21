@@ -13,6 +13,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/device_datetime.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// A chat-owned proposal stays inert until the user accepts the displayed set.
@@ -138,13 +139,13 @@ class _QueryActionReviewState extends ConsumerState<QueryActionReview> {
     final timeTarget = widget.access?.entries[args['entryId']];
     if (item.toolName == TaskAgentToolNames.updateTimeEntry &&
         timeTarget is JournalEntry) {
-      final format = DateFormat.yMMMd(messages.localeName).add_Hm();
+      String format(DateTime at) => deviceTimestampLabel(context, at);
       lines.insert(
         0,
         messages.queryActionsTarget(
           messages.agentSummaryTimeRangeBetween(
-            format.format(timeTarget.meta.dateFrom),
-            format.format(timeTarget.meta.dateTo),
+            format(timeTarget.meta.dateFrom),
+            format(timeTarget.meta.dateTo),
           ),
         ),
       );

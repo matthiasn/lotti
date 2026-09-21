@@ -39,6 +39,7 @@ import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
+import 'package:lotti/utils/device_datetime.dart';
 import 'package:lotti/utils/markdown_link_utils.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
@@ -902,7 +903,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                                             titleMaxLines: 2,
                                             subtitleMaxLines: null,
                                             title:
-                                                '${messages.queryRecordings} · ${DateFormat.yMMMd(Localizations.localeOf(context).toString()).add_Hm().format(audio.meta.dateFrom)}',
+                                                '${messages.queryRecordings} · ${deviceTimestampLabel(context, audio.meta.dateFrom)}',
                                             subtitle:
                                                 audio.meta.categoryId ==
                                                     reference.categoryId
@@ -1344,9 +1345,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                 children: [
                   Text(
                     context.messages.querySavedConclusion(
-                      DateFormat.yMMMd(
-                        Localizations.localeOf(context).toString(),
-                      ).add_Hm().format(event.createdAt),
+                      deviceTimestampLabel(context, event.createdAt),
                     ),
                     style:
                         context.designTokens.typography.styles.others.caption,

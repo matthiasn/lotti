@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
@@ -27,6 +26,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/device_datetime.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Adds images to a check-in: the platform's picker in production; a seam
@@ -646,11 +646,8 @@ class _NoteCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final locale = Localizations.localeOf(context).toString();
     final at = checkIn.meta.dateFrom.toLocal();
-    final stamp =
-        '${DateFormat.yMMMd(locale).format(at)} '
-        '${TimeOfDay.fromDateTime(at).format(context)}';
+    final stamp = deviceTimestampLabel(context, at);
     return DesignSystemSectionCard(
       key: const ValueKey('check-in-detail-note'),
       // The linked entry cards' own margin, so the note lines up with the

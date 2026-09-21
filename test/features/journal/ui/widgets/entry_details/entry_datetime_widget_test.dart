@@ -37,11 +37,12 @@ final _entry = JournalEntry(
 /// An id the database resolves to nothing, for the "entry not loaded yet" path.
 const _missingEntryId = 'datetime-widget-missing';
 
-/// The date half, formatted the way the widget formats it. Only the *time* half
-/// is under test for locale correctness, so deriving the date this way keeps
-/// the finders honest without weakening any assertion that matters.
-String _dateTextFor(String locale) =>
-    DateFormat.yMMMd(locale).format(_dateFrom);
+/// The date half, formatted the way the widget formats it: the DEVICE's
+/// numeric order, which is why the app locale passed in no longer reaches it.
+/// Only the *time* half is under test for locale correctness, so deriving the
+/// date this way keeps the finders honest without weakening any assertion
+/// that matters.
+String _dateTextFor(String locale) => DateFormat.yMd().format(_dateFrom);
 
 void main() {
   group('EntryDatetimeWidget', () {
@@ -215,13 +216,16 @@ void main() {
         },
       );
 
-      testWidgets('the date half stays locale-formatted', (tester) async {
+      testWidgets('the date half follows the device, not the language', (
+        tester,
+      ) async {
         await pumpWithLocale(tester, const Locale('de'), use24Hour: false);
 
-        // "13. Juli 2026" in German, not "Jul 13, 2026" — the date formatting
-        // must survive the change to how the time is formatted.
-        expect(find.textContaining('Juli'), findsOneWidget);
-        expect(find.textContaining('Jul 13, 2026'), findsNothing);
+        // A German UI on a US phone: the words are translated, the date
+        // order belongs to the device, and it is numeric so no English
+        // month name lands in German prose either.
+        expect(find.textContaining('7/13/2026'), findsOneWidget);
+        expect(find.textContaining('Juli'), findsNothing);
       });
     });
 

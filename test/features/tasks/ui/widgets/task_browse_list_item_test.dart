@@ -223,6 +223,8 @@ void main() {
       );
 
       // MaterialLocalizations.formatMediumDate(DateTime(2026, 4, 8)) → "Apr 8, 2026"
+      // Not one of the device-formatted labels: a section header is the
+      // framework's own medium date, and stays as it was.
       expect(find.textContaining('Apr'), findsAtLeastNWidgets(1));
     });
 

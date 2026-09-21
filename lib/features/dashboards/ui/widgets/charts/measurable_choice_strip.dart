@@ -1,11 +1,11 @@
 import 'dart:math' as math;
 
-import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/state/measurable_choice_series.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/device_datetime.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The colour of each choice of [dataType], keyed by choice id.
@@ -80,11 +80,10 @@ class _MeasurableChoiceStripState extends State<MeasurableChoiceStrip> {
     final hovered = index != null && index < days.length ? days[index] : null;
     final String? message;
     if (hovered?.choiceId case final choiceId?) {
-      final locale = Localizations.localeOf(context).toLanguageTag();
       final title =
           widget.dataType.choiceById(choiceId)?.title ??
           messages.measurableChoiceNotFound;
-      message = '${DateFormat.yMMMd(locale).format(hovered!.day)} · $title';
+      message = '${deviceDateLabel(context, hovered!.day)} · $title';
     } else {
       message = null;
     }

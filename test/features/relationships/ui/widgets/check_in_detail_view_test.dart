@@ -182,7 +182,9 @@ void main() {
             find.byKey(const ValueKey('check-in-detail-note-stamp')),
           )
           .data,
-      allOf(contains('Aug 14, 2026'), endsWith('Noted when it was logged')),
+      // The device's numeric date and its own clock: 8/14/2026 on a US
+      // phone, 14.8.2026 on a German one.
+      allOf(contains('8/14/2026'), endsWith('Noted when it was logged')),
     );
     expect(find.text('Called about the launch.'), findsOneWidget);
     expect(find.byKey(const ValueKey('check-in-detail-empty')), findsNothing);

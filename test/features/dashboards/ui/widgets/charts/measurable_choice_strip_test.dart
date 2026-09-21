@@ -144,7 +144,7 @@ void main() {
         expect(find.byKey(tooltipKey), findsNothing);
 
         final gesture = await hoverDay(tester, index: 0, n: days.length);
-        expect(findMaterialTooltip('Jul 5, 2022 · Clear'), findsOneWidget);
+        expect(findMaterialTooltip('7/5/2022 · Clear'), findsOneWidget);
 
         final box = tester.getRect(find.byKey(stripKey));
         await gesture.moveTo(
@@ -158,7 +158,7 @@ void main() {
         );
         await tester.pump();
         expect(
-          findMaterialTooltip('Jul 8, 2022 · Removed choice'),
+          findMaterialTooltip('7/8/2022 · Removed choice'),
           findsOneWidget,
         );
       },
@@ -187,7 +187,7 @@ void main() {
         Offset(box.left + box.width * 2.5 / days.length, box.center.dy),
       );
       await tester.pump();
-      expect(findMaterialTooltip('Jul 7, 2022 · Dark'), findsOneWidget);
+      expect(findMaterialTooltip('7/7/2022 · Dark'), findsOneWidget);
       await gesture.up();
     });
 

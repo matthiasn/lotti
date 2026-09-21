@@ -494,7 +494,9 @@ void main() {
     await tester.tap(find.text('Take my work with me…'));
     await tester.pumpAndSettle();
 
-    final expected = DateFormat.yMMMd('en').format(image.meta.dateFrom);
+    // The device's numeric order, not the app's language — the row label
+    // follows the phone like every other date.
+    final expected = DateFormat.yMd().format(image.meta.dateFrom);
     expect(
       find.text(expected),
       findsOneWidget,

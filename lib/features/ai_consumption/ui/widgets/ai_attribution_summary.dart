@@ -7,6 +7,7 @@ import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/device_datetime.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/modal/sized_wolt_side_sheet_type.dart';
@@ -727,9 +728,7 @@ String _formatDuration(Duration duration) => duration.inSeconds == 0
     : duration.toString().split('.').first;
 
 String _formatTimestamp(BuildContext context, DateTime timestamp) =>
-    DateFormat.yMMMd(
-      Localizations.localeOf(context).toString(),
-    ).add_jm().format(timestamp.toLocal());
+    deviceTimestampLabel(context, timestamp);
 
 String _actorDisplayName(BuildContext context, AiActorSnapshot actor) {
   final displayName = actor.displayName.trim();

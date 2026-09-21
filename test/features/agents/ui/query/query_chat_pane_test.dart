@@ -2314,7 +2314,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('The spare feeder is a suggestion.'), findsOneWidget);
-      expect(find.text('Conclusion saved Jul 17, 2026 10:00'), findsOneWidget);
+      expect(find.text('Conclusion saved 7/17/2026 10:00 AM'), findsOneWidget);
       await tester.tap(find.text('Roll call'));
       await tester.pump();
       expect(
@@ -2366,7 +2366,7 @@ void main() {
         find.text('The spare feeder remained a suggestion.'),
         findsOneWidget,
       );
-      expect(find.text('Conclusion saved Jul 17, 2026 10:00'), findsOneWidget);
+      expect(find.text('Conclusion saved 7/17/2026 10:00 AM'), findsOneWidget);
       expect(find.text('Roll call'), findsNothing);
       expect(find.textContaining('origin unavailable'), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
