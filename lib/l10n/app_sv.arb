@@ -5050,7 +5050,7 @@
   "@relationshipCadenceOnTrack": {
     "description": "Relationships redesign label."
   },
-  "relationshipCadencePromptLabel": "Påminn mig var",
+  "relationshipCadencePromptLabel": "Hur ofta?",
   "relationshipCadenceQuarterly": "Varje kvartal",
   "relationshipCadenceWeekly": "Varje vecka",
   "relationshipChatAgentName": "Briefingagent",

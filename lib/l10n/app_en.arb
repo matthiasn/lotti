@@ -6946,7 +6946,7 @@
   "@relationshipCadenceOnTrack": {
     "description": "Relationships redesign label."
   },
-  "relationshipCadencePromptLabel": "Remind me every",
+  "relationshipCadencePromptLabel": "How often?",
   "relationshipCadenceQuarterly": "Quarterly",
   "relationshipCadenceWeekly": "Weekly",
   "relationshipChatAgentName": "Briefing agent",

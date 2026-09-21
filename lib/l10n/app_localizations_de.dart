@@ -11947,7 +11947,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get relationshipCadenceOnTrack => 'im Rhythmus';
 
   @override
-  String get relationshipCadencePromptLabel => 'Erinnere mich alle';
+  String get relationshipCadencePromptLabel => 'Wie oft?';
 
   @override
   String get relationshipCadenceQuarterly => 'Vierteljährlich';

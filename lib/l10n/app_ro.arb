@@ -4554,7 +4554,7 @@
   "@relationshipCadenceOnTrack": {
     "description": "Relationships redesign label."
   },
-  "relationshipCadencePromptLabel": "Amintiți-mi la fiecare",
+  "relationshipCadencePromptLabel": "Cât de des?",
   "relationshipCadenceQuarterly": "Trimestrial",
   "relationshipCadenceWeekly": "Săptămânal",
   "relationshipChatAgentName": "Agent de briefing",

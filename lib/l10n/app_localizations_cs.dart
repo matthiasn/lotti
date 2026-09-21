@@ -12043,7 +12043,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipCadenceOnTrack => 'v rytmu';
 
   @override
-  String get relationshipCadencePromptLabel => 'Připomínej mi každý';
+  String get relationshipCadencePromptLabel => 'Jak často?';
 
   @override
   String get relationshipCadenceQuarterly => 'Každé čtvrtletí';

@@ -11982,7 +11982,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get relationshipCadenceOnTrack => 'em dia';
 
   @override
-  String get relationshipCadencePromptLabel => 'Lembra-me a cada';
+  String get relationshipCadencePromptLabel => 'Com que frequência?';
 
   @override
   String get relationshipCadenceQuarterly => 'Trimestral';

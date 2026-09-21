@@ -552,7 +552,7 @@ void main() {
         entry: relationship(important: false, cadenceDays: null),
       );
 
-      expect(find.text('Remind me every'), findsOneWidget);
+      expect(find.text('How often?'), findsOneWidget);
       expect(
         tester
             .widgetList<DsPill>(find.byType(DsPill))
@@ -698,7 +698,7 @@ void main() {
       expect(statusText(tester), 'Dormant');
       expect(find.text('Mark important'), findsNothing);
       // Nothing to turn on, so no interval to choose for it.
-      expect(find.text('Remind me every'), findsNothing);
+      expect(find.text('How often?'), findsNothing);
       expect(find.byType(DsPill), findsNothing);
     });
   });

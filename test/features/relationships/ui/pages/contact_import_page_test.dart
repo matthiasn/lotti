@@ -359,13 +359,13 @@ void main() {
         'cadence on an unimportant person is never evaluated', (tester) async {
       await advanceToReview(tester);
 
-      expect(find.text('Remind me every'), findsNothing);
+      expect(find.text('How often?'), findsNothing);
       expect(find.byType(DsPill), findsNothing);
 
       await tester.tap(find.byType(Switch));
       await tester.pumpAndSettle();
 
-      expect(find.text('Remind me every'), findsOneWidget);
+      expect(find.text('How often?'), findsOneWidget);
       // Reminders that are on run on an interval: the default is already
       // selected, and "none" is not on offer.
       final pills = tester.widgetList<DsPill>(find.byType(DsPill)).toList();

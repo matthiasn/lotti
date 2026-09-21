@@ -4554,7 +4554,7 @@
   "@relationshipCadenceOnTrack": {
     "description": "Relationships redesign label."
   },
-  "relationshipCadencePromptLabel": "Avísame cada",
+  "relationshipCadencePromptLabel": "¿Con qué frecuencia?",
   "relationshipCadenceQuarterly": "Trimestral",
   "relationshipCadenceWeekly": "Semanal",
   "relationshipChatAgentName": "Agente de resúmenes",

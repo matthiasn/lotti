@@ -12080,7 +12080,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get relationshipCadenceOnTrack => 'à jour';
 
   @override
-  String get relationshipCadencePromptLabel => 'Rappelle-moi tous les';
+  String get relationshipCadencePromptLabel => 'À quelle fréquence ?';
 
   @override
   String get relationshipCadenceQuarterly => 'Chaque trimestre';

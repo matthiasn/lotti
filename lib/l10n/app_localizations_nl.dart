@@ -11893,7 +11893,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipCadenceOnTrack => 'op schema';
 
   @override
-  String get relationshipCadencePromptLabel => 'Herinner me elke';
+  String get relationshipCadencePromptLabel => 'Hoe vaak?';
 
   @override
   String get relationshipCadenceQuarterly => 'Elk kwartaal';

@@ -5049,7 +5049,7 @@
   "@relationshipCadenceOnTrack": {
     "description": "Relationships redesign label."
   },
-  "relationshipCadencePromptLabel": "Herinner me elke",
+  "relationshipCadencePromptLabel": "Hoe vaak?",
   "relationshipCadenceQuarterly": "Elk kwartaal",
   "relationshipCadenceWeekly": "Wekelijks",
   "relationshipChatAgentName": "Briefingagent",

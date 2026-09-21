@@ -670,13 +670,13 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
-      expect(find.text('Remind me every'), findsNothing);
+      expect(find.text('How often?'), findsNothing);
       expect(find.text('Weekly'), findsNothing);
 
       await tester.tap(find.byType(Switch));
       await tester.pumpAndSettle();
 
-      expect(find.text('Remind me every'), findsOneWidget);
+      expect(find.text('How often?'), findsOneWidget);
       expect(find.widgetWithText(DsPill, 'Weekly'), findsOneWidget);
     });
 

@@ -11811,7 +11811,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipCadenceOnTrack => 'On track';
 
   @override
-  String get relationshipCadencePromptLabel => 'Remind me every';
+  String get relationshipCadencePromptLabel => 'How often?';
 
   @override
   String get relationshipCadenceQuarterly => 'Quarterly';

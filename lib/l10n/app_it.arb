@@ -5050,7 +5050,7 @@
   "@relationshipCadenceOnTrack": {
     "description": "Relationships redesign label."
   },
-  "relationshipCadencePromptLabel": "Ricordamelo ogni",
+  "relationshipCadencePromptLabel": "Ogni quanto?",
   "relationshipCadenceQuarterly": "Ogni trimestre",
   "relationshipCadenceWeekly": "Ogni settimana",
   "relationshipChatAgentName": "Agente di briefing",

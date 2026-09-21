@@ -12111,7 +12111,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipCadenceOnTrack => 'la zi';
 
   @override
-  String get relationshipCadencePromptLabel => 'Amintiți-mi la fiecare';
+  String get relationshipCadencePromptLabel => 'Cât de des?';
 
   @override
   String get relationshipCadenceQuarterly => 'Trimestrial';

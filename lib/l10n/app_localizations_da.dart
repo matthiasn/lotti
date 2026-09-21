@@ -11867,7 +11867,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipCadenceOnTrack => 'på sporet';
 
   @override
-  String get relationshipCadencePromptLabel => 'Mind mig om det hver';
+  String get relationshipCadencePromptLabel => 'Hvor ofte?';
 
   @override
   String get relationshipCadenceQuarterly => 'Hvert kvartal';

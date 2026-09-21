@@ -29,7 +29,7 @@
 - **One word for reminders, and one for dictation, across People.** The
   switch reads "Remind me to stay in touch" instead of "Reminders on" beside a
   switch that was off, the person page says "No reminders" like the list does
-  rather than "No agent for this person", "Nudge me every" is now "Remind me
-  every", and people without reminders no longer carry "No cadence" on their
+  rather than "No agent for this person", "Nudge me every" is now the plain
+  question "How often?", and people without reminders no longer carry "No cadence" on their
   row. The microphone in the person page's action bar says "Dictate", the same
   word the check-in composer uses.

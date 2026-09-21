@@ -19792,7 +19792,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipCadencePromptLabel.
   ///
   /// In en, this message translates to:
-  /// **'Remind me every'**
+  /// **'How often?'**
   String get relationshipCadencePromptLabel;
 
   /// No description provided for @relationshipCadenceQuarterly.

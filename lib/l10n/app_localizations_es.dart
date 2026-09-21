@@ -12036,7 +12036,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get relationshipCadenceOnTrack => 'al día';
 
   @override
-  String get relationshipCadencePromptLabel => 'Avísame cada';
+  String get relationshipCadencePromptLabel => '¿Con qué frecuencia?';
 
   @override
   String get relationshipCadenceQuarterly => 'Trimestral';

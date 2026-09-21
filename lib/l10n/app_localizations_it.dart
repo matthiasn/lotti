@@ -12017,7 +12017,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get relationshipCadenceOnTrack => 'in regola';
 
   @override
-  String get relationshipCadencePromptLabel => 'Ricordamelo ogni';
+  String get relationshipCadencePromptLabel => 'Ogni quanto?';
 
   @override
   String get relationshipCadenceQuarterly => 'Ogni trimestre';

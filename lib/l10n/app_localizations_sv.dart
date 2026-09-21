@@ -11876,7 +11876,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipCadenceOnTrack => 'i fas';
 
   @override
-  String get relationshipCadencePromptLabel => 'Påminn mig var';
+  String get relationshipCadencePromptLabel => 'Hur ofta?';
 
   @override
   String get relationshipCadenceQuarterly => 'Varje kvartal';

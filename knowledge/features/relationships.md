@@ -1178,7 +1178,7 @@ so the decision is a table rather than a widget tree:
 
 | Face | When | Status line · body · footer |
 |---|---|---|
-| Not enrolled | not `important`, or dormant/archived | plain section card, people glyph · `No reminders` — the band's and the pill's own words — (or the status word while paused) · what reminders turn on · the *Remind me every* interval pills (not while paused) · **Remind me about {name}** |
+| Not enrolled | not `important`, or dormant/archived | plain section card, people glyph · `No reminders` — the band's and the pill's own words — (or the status word while paused) · what reminders turn on · the *How often?* interval pills (not while paused) · **Remind me about {name}** |
 
 The not-enrolled card carries **no privacy caption**. It used to read
 `Only what you start yourself uses AI` in the footer's leading slot, beside

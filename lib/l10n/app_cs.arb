@@ -4561,7 +4561,7 @@
   "@relationshipCadenceOnTrack": {
     "description": "Relationships redesign label."
   },
-  "relationshipCadencePromptLabel": "Připomínej mi každý",
+  "relationshipCadencePromptLabel": "Jak často?",
   "relationshipCadenceQuarterly": "Každé čtvrtletí",
   "relationshipCadenceWeekly": "Každý týden",
   "relationshipChatAgentName": "Briefingový agent",
