@@ -43,7 +43,7 @@ libav plugin that provides the AAC decoder:
 - Fedora: `sudo dnf install gstreamer1-plugin-libav`
 - Arch: `sudo pacman -S gst-libav`
 
-The Flatpak 25.08 runtime already includes this decoder. A missing decoder does
+The Flatpak 26.08 runtime already includes this decoder. A missing decoder does
 not prevent compilation, but Voxtral transcription fails immediately with an
 installation hint instead of waiting for the request timeout.
 

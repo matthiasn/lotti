@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
+import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/agent_automation_row.dart';
@@ -87,9 +88,26 @@ class _ProjectAgentSummaryCardState
           onViewBlocker: widget.isMutating ? null : widget.onViewBlocker,
         );
       }
-      return _ProjectAssignAgentRow(
+      final assignRow = _ProjectAssignAgentRow(
         onTap: widget.onAssignAgent == null ? null : _assignAgent,
         isBusy: _assigning,
+      );
+      // Chat answers from the project's own data, so it stays reachable
+      // before an agent is assigned: the same disc the report card's header
+      // carries, beside the row rather than inside its tap target.
+      if (!ref.watch(queryChatEnabledProvider)) return assignRow;
+      return Row(
+        spacing: context.designTokens.spacing.step2,
+        children: [
+          Expanded(child: assignRow),
+          QueryAskButton(
+            scope: QueryScope(
+              kind: QueryScopeKind.project,
+              id: widget.record.project.meta.id,
+            ),
+            disc: true,
+          ),
+        ],
       );
     }
 
@@ -208,6 +226,14 @@ class _ProjectReportSummaryState extends State<_ProjectReportSummary> {
         TldrHeader(
           agentName: widget.agentName,
           onAgentTap: widget.onOpenInternals,
+          // Chat sits in the header's trailing rail, as on a task's card.
+          trailing: QueryAskButton(
+            scope: QueryScope(
+              kind: QueryScopeKind.project,
+              id: widget.record.project.meta.id,
+            ),
+            disc: true,
+          ),
         ),
         if (widget.record.healthMetrics != null)
           Padding(
@@ -258,22 +284,6 @@ class _ProjectReportSummaryState extends State<_ProjectReportSummary> {
             ),
             child: widget.freshness,
           ),
-        Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.cardPadding,
-            vertical: tokens.spacing.step2,
-          ),
-          child: Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: QueryAskButton(
-              scope: QueryScope(
-                kind: QueryScopeKind.project,
-                id: widget.record.project.meta.id,
-              ),
-              fullLabel: true,
-            ),
-          ),
-        ),
         ?widget.actions,
       ],
     );

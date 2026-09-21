@@ -22,6 +22,7 @@ import 'package:lotti/features/agents/ui/query/query_chat_pane.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/plaza/state/project_plaza_provider.dart';
@@ -303,7 +304,7 @@ void main() {
       ],
     );
     final detail = tester.element(find.byType(ProjectMobileDetailContent));
-    await tester.tap(find.text('Ask'));
+    await tester.tap(find.byType(DsAiDiscButton));
     await tester.pumpAndSettle();
     expect(
       tester.widget<QueryChatPane>(find.byType(QueryChatPane)).scope,

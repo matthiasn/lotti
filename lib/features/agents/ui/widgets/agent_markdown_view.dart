@@ -47,7 +47,6 @@ class AgentMarkdownView extends StatelessWidget {
     final legacyTheme = legacyMaterialTheme(theme);
     final markdownTheme = GptMarkdownThemeData(
       brightness: theme.brightness,
-      linkColor: theme.colorScheme.primary,
       h1: styles.heading.heading3.copyWith(color: textColor),
       h2: styles.subtitle.subtitle1.copyWith(color: textColor),
       h3: styles.subtitle.subtitle2.copyWith(color: textColor),
@@ -94,15 +93,8 @@ class AgentMarkdownView extends StatelessWidget {
             maxLines: maxLines,
             overflow: overflow,
             onLinkTap: onLinkTap ?? handleMarkdownLinkTap,
-            linkBuilder: (context, text, url, style) => buildMarkdownLink(
-              context,
-              text,
-              url,
-              style,
-              onTap: onLinkTap == null
-                  ? null
-                  : () => onLinkTap!(url, text.toPlainText()),
-            ),
+            styleSheet: markdownLinkStyleSheet(theme.colorScheme.primary),
+            inlineLinkBuilder: buildFocusableMarkdownLink,
           ),
         ),
       ),

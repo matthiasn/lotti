@@ -1,3 +1,4 @@
+import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
@@ -57,35 +58,37 @@ Future<void> handleMarkdownLinkTap(String url, String title) async {
   }
 }
 
-/// Builds a styled markdown link widget with underline and pointer cursor.
+/// Link styling for app markdown: [color] in the resting and hover states.
 ///
-/// [onTap] can route owner-local links without launching a URL.
-/// The [linkColor] defaults to the theme's primary color when not specified.
-Widget buildMarkdownLink(
-  BuildContext context,
-  InlineSpan text,
-  String url,
-  TextStyle style, {
-  Color? linkColor,
-  VoidCallback? onTap,
-}) {
-  final color = linkColor ?? Theme.of(context).colorScheme.primary;
-  return Semantics(
-    link: true,
-    child: InkWell(
-      onTap: onTap ?? () => handleMarkdownLinkTap(url, ''),
-      mouseCursor: SystemMouseCursors.click,
-      child: Text.rich(
-        // GptMarkdown embeds this in a WidgetSpan, which scales its child.
-        // Applying MediaQuery scaling here too enlarges inline citations twice.
-        textScaler: TextScaler.noScaling,
-        TextSpan(
-          children: [text],
-          style: style.copyWith(
-            color: color,
-            decoration: TextDecoration.underline,
-            decorationColor: color,
-          ),
+/// Pass it as `GptMarkdown.styleSheet`. The package renders each link as a
+/// span that wraps, stays selectable and calls `GptMarkdown.onLinkTap`, so
+/// only the colour needs setting here. The hover colour is pinned to [color]
+/// because the package falls back to red on hover.
+GptMarkdownStyleSheet markdownLinkStyleSheet(Color color) {
+  return GptMarkdownStyleSheet(
+    link: LinkStyle(color: color, hoverColor: color),
+  );
+}
+
+/// Builds a link for `GptMarkdown.inlineLinkBuilder` as a focusable widget.
+///
+/// A span link cannot take keyboard focus, so surfaces whose links must be
+/// reachable with Tab and Enter, such as answer citations, render them through
+/// an [InkWell] instead. Activation goes to `GptMarkdown.onLinkTap`, and the
+/// label keeps the colour set by [markdownLinkStyleSheet]. Without an
+/// `onLinkTap` the link is inert.
+InlineSpan buildFocusableMarkdownLink(LinkBuildDetails link) {
+  return link.asWidgetSpan(
+    Semantics(
+      link: true,
+      child: InkWell(
+        onTap: link.onTap,
+        mouseCursor: SystemMouseCursors.click,
+        child: Text.rich(
+          // The placeholder already scales its child with the surrounding
+          // text. Scaling here too would enlarge inline citations twice.
+          textScaler: TextScaler.noScaling,
+          TextSpan(style: link.style, children: link.labelSpans),
         ),
       ),
     ),

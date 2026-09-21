@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/query_chat_models.dart';
-import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
@@ -11,7 +9,6 @@ import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
-import 'package:lotti/features/design_system/components/navigation/design_system_showcase_mobile_detail_header.dart';
 import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
@@ -27,6 +24,7 @@ import 'package:lotti/features/tasks/ui/header/desktop_task_header_meta.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/device_datetime.dart';
+import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The scrollable body of the read-first project detail surface (used on
@@ -231,6 +229,14 @@ class _ProjectMobileDetailContentState
         ),
     ];
 
+    final menuButton = menuItems.isEmpty || isMutating
+        ? null
+        : DesignSystemContextMenuButton(
+            items: menuItems,
+            tooltip: MaterialLocalizations.of(context).showMenuTooltip,
+            iconColor: tokens.colors.text.mediumEmphasis,
+          );
+
     return PopScope(
       canPop: !isMutating,
       child: ColoredBox(
@@ -238,18 +244,26 @@ class _ProjectMobileDetailContentState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // The phone's top bar matches the task detail's: full width, the
+            // back arrow at the leading edge, the overflow menu at the
+            // trailing one, both on the bar's own insets rather than the
+            // content's.
             if (splitController == null)
-              DetailContentWidth(
-                child: Padding(
-                  padding: EdgeInsets.only(top: tokens.spacing.step3),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: DesignSystemBackControl(
-                      foregroundColor: ShowcasePalette.highText(context),
-                      onTap: isMutating ? null : widget.onBack,
-                    ),
+              Row(
+                children: [
+                  // Inert without a host callback: BackWidget would otherwise
+                  // fall back to global navigation, which a read-only host
+                  // such as the showcase must not trigger.
+                  BackWidget(
+                    onPressed: widget.onBack,
+                    enabled: widget.onBack != null && !isMutating,
                   ),
-                ),
+                  const Spacer(),
+                  if (menuButton != null) ...[
+                    menuButton,
+                    SizedBox(width: tokens.spacing.step2),
+                  ],
+                ],
               ),
             Expanded(
               child: DesignSystemScrollbar(
@@ -280,32 +294,13 @@ class _ProjectMobileDetailContentState
                                 onStatusTap: widget.onStatusTap,
                                 onOpenPlaza: widget.onOpenPlaza,
                                 isInteractive: !isMutating,
-                                trailing: menuItems.isEmpty || isMutating
+                                trailing: splitController == null
                                     ? null
-                                    : DesignSystemContextMenuButton(
-                                        items: menuItems,
-                                        tooltip: MaterialLocalizations.of(
-                                          context,
-                                        ).showMenuTooltip,
-                                        iconColor: ShowcasePalette.highText(
-                                          context,
-                                        ),
-                                      ),
+                                    : menuButton,
                               ),
                             ),
                             SliverToBoxAdapter(
                               child: SizedBox(height: tokens.spacing.step4),
-                            ),
-                            SliverToBoxAdapter(
-                              child: Align(
-                                alignment: AlignmentDirectional.centerStart,
-                                child: QueryAskButton(
-                                  scope: QueryScope(
-                                    kind: QueryScopeKind.project,
-                                    id: widget.record.project.meta.id,
-                                  ),
-                                ),
-                              ),
                             ),
                             if (description.isNotEmpty) ...[
                               SliverToBoxAdapter(

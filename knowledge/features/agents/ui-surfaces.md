@@ -38,8 +38,10 @@ None of these widgets owns business logic. They read from the providers in
 `state/agent_providers.dart` and dispatch through the same services.
 
 Agent markdown renders through `AgentMarkdownView`, which wires
-`handleMarkdownLinkTap` and `buildMarkdownLink` from `utils/markdown_link_utils`.
-That shared handler beams app-local routes such as `/tasks/<id>` or
+`handleMarkdownLinkTap`, `markdownLinkStyleSheet` and
+`buildFocusableMarkdownLink` from `utils/markdown_link_utils`. Links render as
+focusable widgets rather than text spans, so a citation can be reached with Tab
+and activated with Enter. The shared tap handler beams app-local routes such as `/tasks/<id>` or
 `lotti://tasks/<id>` through `NavService`; external URLs use the platform
 launcher.
 

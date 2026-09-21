@@ -240,15 +240,28 @@ void main() {
     );
 
     testWidgets(
-      'sets markdown link color from the theme primary color',
+      'renders links in the theme primary color, also on hover',
       (tester) async {
-        await _pumpView(tester, 'plain text');
+        await _pumpView(tester, 'See [task](/tasks/123).');
 
         final context = tester.element(find.byType(AgentMarkdownView));
         final primary = Theme.of(context).colorScheme.primary;
-        final markdownTheme = _resolvedMarkdownTheme(tester);
 
-        expect(markdownTheme.linkColor, primary);
+        final gptMarkdown = tester.widget<GptMarkdown>(
+          find.byType(GptMarkdown),
+        );
+        expect(gptMarkdown.styleSheet?.link?.hoverColor, primary);
+
+        final linkText = tester.widget<Text>(
+          find.descendant(
+            of: find.byType(InkWell),
+            matching: find.byType(Text),
+          ),
+        );
+        final linkSpan = linkText.textSpan! as TextSpan;
+        expect(linkSpan.style?.color, primary);
+        expect(linkSpan.style?.decoration, TextDecoration.underline);
+        expect(linkSpan.toPlainText(), 'task');
       },
     );
 
@@ -339,9 +352,7 @@ void main() {
     testWidgets(
       'wires GptMarkdown link callbacks to the shared markdown handlers',
       (tester) async {
-        // Register a recording NavService so the wired callbacks can be
-        // exercised behaviorally (identity comparison of function tear-offs is
-        // brittle across signature widening, so we invoke them instead).
+        // A recording NavService shows where a tapped internal link went.
         final navService = RecordingMockNavService();
         await tearDownTestGetIt();
         await setUpTestGetIt(
@@ -352,40 +363,22 @@ void main() {
 
         await _pumpView(tester, '[task](/tasks/123)');
 
-        final gptMarkdown = tester.widget<GptMarkdown>(
-          find.byType(GptMarkdown),
-        );
-        expect(gptMarkdown.onLinkTap, isNotNull);
-        expect(gptMarkdown.linkBuilder, isNotNull);
-
-        // onLinkTap is wired to handleMarkdownLinkTap: an internal route is
-        // forwarded to NavService.
-        gptMarkdown.onLinkTap!('/tasks/onTap', '');
+        // Without an owner handler, links fall back to handleMarkdownLinkTap,
+        // which forwards an internal route to NavService.
+        await tester.tap(find.text('task'));
         await tester.pump();
-        expect(navService.navigationHistory, ['/tasks/onTap']);
+        expect(navService.navigationHistory, ['/tasks/123']);
 
-        // linkBuilder is wired to buildMarkdownLink: it produces a tappable
-        // widget that routes internal links the same way.
-        final builderContext = tester.element(find.byType(GptMarkdown));
-        final built = gptMarkdown.linkBuilder!(
-          builderContext,
-          const TextSpan(text: 'built link'),
-          '/tasks/builder',
-          const TextStyle(),
-        );
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            Builder(builder: (_) => built),
+        // The link is announced to assistive technology as a link.
+        expect(
+          find.ancestor(
+            of: find.byType(InkWell),
+            matching: find.byWidgetPredicate(
+              (widget) => widget is Semantics && widget.properties.link == true,
+            ),
           ),
+          findsOneWidget,
         );
-        await tester.pump();
-        await tester.tap(find.text('built link'));
-        await tester.pump();
-        expect(navService.navigationHistory, [
-          '/tasks/onTap',
-          '/tasks/builder',
-        ]);
       },
     );
   });
