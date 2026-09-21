@@ -970,28 +970,45 @@ void main() {
     testWidgets('keeps Back on the standalone mobile detail route', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        wrap(
-          ProjectMobileDetailContent(
-            record: makeTestProjectRecord(),
-            currentTime: DateTime(2026, 3, 28, 1, 18),
+      final semantics = tester.ensureSemantics();
+      try {
+        await tester.pumpWidget(
+          wrap(
+            ProjectMobileDetailContent(
+              record: makeTestProjectRecord(),
+              currentTime: DateTime(2026, 3, 28, 1, 18),
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.byType(BackWidget), findsOneWidget);
-      // No host callback: the arrow is inert rather than falling back to
-      // global navigation.
-      expect(
-        tester.widget<BackWidget>(find.byType(BackWidget)).enabled,
-        isFalse,
-      );
-      expect(
-        tester.getCenter(find.byType(BackWidget)).dx,
-        lessThan(
-          tester.getCenter(find.byType(ProjectMobileDetailContent)).dx,
-        ),
-      );
+        expect(find.byType(BackWidget), findsOneWidget);
+        // No host callback: the arrow is inert rather than falling back to
+        // global navigation.
+        expect(
+          tester.widget<BackWidget>(find.byType(BackWidget)).enabled,
+          isFalse,
+        );
+        // ...and screen readers hear a disabled button with nothing to do.
+        final backLabel = MaterialLocalizations.of(
+          tester.element(find.byType(BackWidget)),
+        ).backButtonTooltip;
+        expect(
+          tester.getSemantics(find.bySemanticsLabel(backLabel)),
+          matchesSemantics(
+            label: backLabel,
+            isButton: true,
+            hasEnabledState: true,
+          ),
+        );
+        expect(
+          tester.getCenter(find.byType(BackWidget)).dx,
+          lessThan(
+            tester.getCenter(find.byType(ProjectMobileDetailContent)).dx,
+          ),
+        );
+      } finally {
+        semantics.dispose();
+      }
     });
 
     testWidgets('puts the overflow menu in the top bar, level with Back', (
