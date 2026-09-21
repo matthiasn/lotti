@@ -235,6 +235,12 @@ sealed class EntityDefinition with _$EntityDefinition {
     List<String>? speechDictionary,
     List<ChecklistCorrectionExample>? correctionExamples,
 
+    /// Free text the user writes about the category — what it is, where the
+    /// code lives, conventions, known pitfalls — carried verbatim into every
+    /// task-agent wake and coding prompt for a task in it. Null or blank
+    /// means the prompts carry nothing.
+    String? knowledgeBrief,
+
     /// Default inference profile ID for new tasks in this category.
     /// Enables speech-to-text and image analysis immediately on task creation.
     String? defaultProfileId,

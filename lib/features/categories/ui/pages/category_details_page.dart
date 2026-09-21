@@ -15,6 +15,7 @@ import 'package:lotti/features/categories/ui/widgets/category_color_picker.dart'
 import 'package:lotti/features/categories/ui/widgets/category_correction_examples.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_display.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_picker.dart';
+import 'package:lotti/features/categories/ui/widgets/category_knowledge_brief.dart';
 import 'package:lotti/features/categories/ui/widgets/category_language_dropdown.dart';
 import 'package:lotti/features/categories/ui/widgets/category_name_field.dart';
 import 'package:lotti/features/categories/ui/widgets/category_speech_dictionary.dart';
@@ -317,6 +318,14 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
               if (ref.watch(configFlagProvider(enableEventsFlag)).value ??
                   false)
                 _buildDefaultEventTemplatePicker(category),
+            ],
+          ),
+          SettingsFormSection(
+            title: context.messages.categoryKnowledgeBriefSectionTitle,
+            description:
+                context.messages.categoryKnowledgeBriefSectionDescription,
+            children: [
+              _buildKnowledgeBrief(category),
             ],
           ),
           SettingsFormSection(

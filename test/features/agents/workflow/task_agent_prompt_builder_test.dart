@@ -369,6 +369,24 @@ Use the task language and omit empty sections.
       expect(qwenPrompt, contains('Omit absent'));
     });
 
+    test('the scaffold teaches the category knowledge section', () {
+      const guidance =
+          TaskAgentPromptBuilder.taskAgentScaffoldCategoryKnowledge;
+      expect(guidance, contains('## Category Knowledge'));
+      // The user's brief outranks inference about the domain, is applied
+      // silently, and is never something the agent proposes to change.
+      expect(guidance, contains('outranks anything you would infer'));
+      expect(guidance, contains('never restate it in the report'));
+      expect(guidance, contains('never propose changes'));
+      // And it is spliced into the composed system prompt.
+      final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
+        version: makeTestTemplateVersion(),
+        soulVersion: null,
+        modelId: 'models/gemini-flash',
+      );
+      expect(prompt, contains(guidance));
+    });
+
     test('both scaffolds teach the typed-relationship tools', () {
       // The full scaffold: relation-aware Linked Tasks reading plus the
       // link_task / create_follow_up_task+relation guidance.

@@ -513,6 +513,7 @@ void main() {
       List<AttentionRequestEntity> attentionClaims = const [],
       Task? task,
       String? compactedTaskLog,
+      String? categoryKnowledge,
     }) {
       return withClock(Clock.fixed(clockNow), () {
         when(() => timeService.getCurrent()).thenReturn(null);
@@ -533,9 +534,51 @@ void main() {
           task: task ?? taskEntity(),
           timeService: timeService,
           compactedTaskLog: compactedTaskLog,
+          categoryKnowledge: categoryKnowledge,
         );
       });
     }
+
+    test('opens the stable prefix with the category knowledge brief', () async {
+      const log = 'event A\nevent B';
+      final result = await build(
+        compactedTaskLog: log,
+        categoryKnowledge: '  Flutter app.\nRepo at github.com/x.  ',
+      );
+
+      final heading = result.text.indexOf('## Category Knowledge');
+      expect(heading, isNot(-1));
+      // Trimmed, verbatim body under the heading.
+      expect(
+        result.text,
+        contains(
+          '## Category Knowledge\n\nFlutter app.\nRepo at github.com/x.\n',
+        ),
+      );
+      // Ahead of the log — it is user-typed and rarer to change than the
+      // append-only log, so it must not sit in the volatile tail.
+      expect(heading, lessThan(result.text.indexOf('## Task Log')));
+      expect(heading, lessThan(result.logStart!));
+    });
+
+    test('omits the category knowledge section when blank or absent', () async {
+      final absent = await build();
+      final blank = await build(categoryKnowledge: '  \n ');
+
+      expect(absent.text, isNot(contains('## Category Knowledge')));
+      expect(blank.text, isNot(contains('## Category Knowledge')));
+      // And a brief neither moves nor changes the log offsets.
+      const log = 'event A';
+      final without = await build(compactedTaskLog: log);
+      final withBrief = await build(
+        compactedTaskLog: log,
+        categoryKnowledge: 'Brief',
+      );
+      expect(
+        withBrief.text.substring(withBrief.logStart!, withBrief.logEnd),
+        without.text.substring(without.logStart!, without.logEnd),
+      );
+    });
 
     test(
       'uses inline task context and no log offsets without a compacted log',

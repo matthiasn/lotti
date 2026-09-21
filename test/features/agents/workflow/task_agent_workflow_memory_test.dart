@@ -1263,6 +1263,9 @@ void main() {
         // tldr and createdAt change, simulating out-of-band neighbor activity.
         var projectWake = 0;
         when(
+          () => mockAiInputRepository.buildCategoryKnowledge(taskId),
+        ).thenAnswer((_) async => null);
+        when(
           () => mockAiInputRepository.buildProjectContextJsonForTask(taskId),
         ).thenAnswer((_) async {
           projectWake++;

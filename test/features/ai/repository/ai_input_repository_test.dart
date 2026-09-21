@@ -360,6 +360,104 @@ void main() {
       }
     });
 
+    group('buildCategoryKnowledge', () {
+      late MockEntitiesCacheService mockCache;
+
+      CategoryDefinition category(String? brief) => CategoryDefinition(
+        id: 'cat-123',
+        name: 'Lotti',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: null,
+        private: false,
+        active: true,
+        knowledgeBrief: brief,
+      );
+
+      Task taskIn(String? categoryId) => Task(
+        meta: Metadata(
+          id: taskId,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024),
+          categoryId: categoryId,
+        ),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status',
+            createdAt: DateTime(2024),
+            utcOffset: 0,
+          ),
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024),
+          statusHistory: const [],
+          title: 'Task',
+        ),
+      );
+
+      setUp(() {
+        mockCache = MockEntitiesCacheService();
+        getIt.registerSingleton<EntitiesCacheService>(mockCache);
+      });
+
+      test("returns the trimmed brief of the task's category", () async {
+        when(
+          () => mockDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => taskIn('cat-123'));
+        when(
+          () => mockCache.getCategoryById('cat-123'),
+        ).thenReturn(category('  Flutter app.\nRepo at github.com/x. \n'));
+
+        expect(
+          await repository.buildCategoryKnowledge(taskId),
+          'Flutter app.\nRepo at github.com/x.',
+        );
+      });
+
+      test(
+        'is null without a category, a brief, or a non-blank brief',
+        () async {
+          when(
+            () => mockDb.journalEntityById(taskId),
+          ).thenAnswer((_) async => taskIn(null));
+          expect(await repository.buildCategoryKnowledge(taskId), isNull);
+          verifyNever(() => mockCache.getCategoryById(any()));
+
+          when(
+            () => mockDb.journalEntityById(taskId),
+          ).thenAnswer((_) async => taskIn('cat-123'));
+          when(() => mockCache.getCategoryById('cat-123')).thenReturn(null);
+          expect(await repository.buildCategoryKnowledge(taskId), isNull);
+
+          when(
+            () => mockCache.getCategoryById('cat-123'),
+          ).thenReturn(category(null));
+          expect(await repository.buildCategoryKnowledge(taskId), isNull);
+
+          when(
+            () => mockCache.getCategoryById('cat-123'),
+          ).thenReturn(category('   '));
+          expect(await repository.buildCategoryKnowledge(taskId), isNull);
+        },
+      );
+
+      test('is null for an unknown task', () async {
+        when(
+          () => mockDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => null);
+        expect(await repository.buildCategoryKnowledge(taskId), isNull);
+      });
+
+      test('swallows a lookup failure — a prompt without the brief still '
+          'runs', () async {
+        when(
+          () => mockDb.journalEntityById(taskId),
+        ).thenThrow(Exception('db down'));
+        expect(await repository.buildCategoryKnowledge(taskId), isNull);
+      });
+    });
+
     group('buildProjectContextJsonForTask', () {
       final projectDate = DateTime(2024, 3, 15, 10, 30);
       final project =

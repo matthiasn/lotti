@@ -377,6 +377,9 @@ class GeneratedEntityDefinition {
         speechDictionary: optionalsSlot.isEven
             ? null
             : ['word-$idSlot', 'word-${idSlot + 1}'],
+        knowledgeBrief: optionalsSlot % 3 == 0
+            ? null
+            : 'Brief $nameSlot\nline two',
       ),
     GeneratedEntityDefinitionKind.labelDefinition =>
       EntityDefinition.labelDefinition(

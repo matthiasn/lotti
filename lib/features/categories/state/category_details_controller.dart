@@ -133,6 +133,7 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
             _originalCategory!.defaultTemplateId ||
         _pendingCategory!.defaultEventTemplateId !=
             _originalCategory!.defaultEventTemplateId ||
+        _pendingCategory!.knowledgeBrief != _originalCategory!.knowledgeBrief ||
         _hasListChanges(
           _pendingCategory!.speechDictionary,
           _originalCategory!.speechDictionary,
@@ -324,6 +325,15 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
         errorMessage: 'Failed to update category. Please try again.',
       );
     }
+  }
+
+  /// Replaces the pending knowledge brief as typed (a blank brief is stored
+  /// as `null`, so clearing the field is the same as never having written
+  /// one). Not persisted until [saveChanges].
+  void updateKnowledgeBrief(String brief) {
+    _updatePendingCategory(
+      (c) => c.copyWith(knowledgeBrief: brief.trim().isEmpty ? null : brief),
+    );
   }
 
   /// Replaces the pending speech-dictionary terms (empty list stored as

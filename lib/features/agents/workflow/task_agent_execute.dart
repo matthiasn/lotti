@@ -220,6 +220,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       taskDetails,
       projectContextJson,
       linkedTasksJson,
+      categoryKnowledge,
     ) = await (
       // Compacted wakes get the task STATE as compact markdown (the log is
       // event material supplied separately); legacy wakes keep the full JSON
@@ -229,6 +230,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
           : this.aiInputRepository.buildTaskDetailsJson(id: taskId),
       this.aiInputRepository.buildProjectContextJsonForTask(taskId),
       _buildLinkedTasksContextJson(taskId),
+      this.aiInputRepository.buildCategoryKnowledge(taskId),
     ).wait;
 
     if (taskDetails == null) {
@@ -252,6 +254,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       taskDetails: taskDetails,
       projectContextJson: projectContextJson,
       linkedTasksJson: linkedTasksJson,
+      categoryKnowledge: categoryKnowledge,
       triggerTokens: triggerTokens,
       taskId: taskId,
       ledger: ledger,

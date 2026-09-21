@@ -23,6 +23,7 @@ class CategoryTestUtils {
     bool? automaticAgentWakesEnabled,
     List<String>? speechDictionary,
     List<ChecklistCorrectionExample>? correctionExamples,
+    String? knowledgeBrief,
     CategoryIcon? icon,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -49,6 +50,7 @@ class CategoryTestUtils {
       automaticAgentWakesEnabled: automaticAgentWakesEnabled,
       speechDictionary: speechDictionary,
       correctionExamples: correctionExamples,
+      knowledgeBrief: knowledgeBrief,
       icon: icon,
     );
   }

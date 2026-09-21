@@ -4998,6 +4998,30 @@ abstract class AppLocalizations {
   /// **'Choose icon'**
   String get categoryIconPickerTitle;
 
+  /// No description provided for @categoryKnowledgeBriefHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Flutter app, repository at github.com/…, run tests with make test, …'**
+  String get categoryKnowledgeBriefHint;
+
+  /// No description provided for @categoryKnowledgeBriefLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Category knowledge'**
+  String get categoryKnowledgeBriefLabel;
+
+  /// No description provided for @categoryKnowledgeBriefSectionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'What every AI prompt for tasks in this category should know: what it is, where the code lives, conventions, pitfalls. Goes in word for word.'**
+  String get categoryKnowledgeBriefSectionDescription;
+
+  /// No description provided for @categoryKnowledgeBriefSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Category knowledge'**
+  String get categoryKnowledgeBriefSectionTitle;
+
   /// No description provided for @categoryNameRequired.
   ///
   /// In en, this message translates to:

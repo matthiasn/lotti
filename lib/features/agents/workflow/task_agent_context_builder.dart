@@ -493,6 +493,10 @@ class TaskAgentContextBuilder {
   /// existence explicit and selects first-publication or material-change
   /// guidance; the prior report's prose is never injected.
   ///
+  /// [categoryKnowledge] is the user-written brief of the task's category
+  /// (see `AiInputRepository.buildCategoryKnowledge`); it opens the stable
+  /// prefix as a `## Category Knowledge` section and is omitted when blank.
+  ///
   /// Returns the full text plus the offsets of the embedded (derivable) log
   /// block, so the persisted prompt record can store only the non-derivable
   /// halves (ADR 0020 v2 prompt records).
@@ -510,13 +514,15 @@ class TaskAgentContextBuilder {
     Task? task,
     TimeService? timeService,
     String? compactedTaskLog,
+    String? categoryKnowledge,
   }) async {
     final buffer = StringBuffer();
 
     // Ordering is by volatility, least-volatile first, so provider prefix
     // caches survive consecutive wakes. The stable header is label / correction
-    // context (rare-change, user-gated) then the compacted task log
-    // (append-only between folds), which ends the prefix. Everything that
+    // context (rare-change, user-gated), the category knowledge brief (typed
+    // by the user, rarer still) and then the compacted task log (append-only
+    // between folds), which ends the prefix. Everything that
     // changes more often than the log lives in the volatile tail below:
     // the task-state JSON (ticking timeSpent), the parent-project and
     // linked-task summaries (which embed OTHER agents' reports and so change
@@ -554,6 +560,18 @@ class TaskAgentContextBuilder {
         stackTrace: s,
       );
       // Non-fatal: continue without context.
+    }
+
+    // The category brief is shared by every task in the category, so an edit
+    // voids each task's cached prefix once — the price of text a person
+    // changes by hand, and why it sits above the log rather than below it.
+    final trimmedKnowledge = categoryKnowledge?.trim();
+    if (trimmedKnowledge != null && trimmedKnowledge.isNotEmpty) {
+      buffer
+        ..writeln('## Category Knowledge')
+        ..writeln()
+        ..writeln(trimmedKnowledge)
+        ..writeln();
     }
 
     final useCompactedLog =

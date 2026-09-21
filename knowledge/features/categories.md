@@ -59,7 +59,45 @@ gestures and prompt assembly where an async round trip would be visible.
 - Stored defaults: `defaultLanguageCode`, `defaultProfileId`, `defaultTemplateId`,
   `defaultEventTemplateId`.
 - Category-scoped AI and speech context: `speechDictionary`,
-  `correctionExamples`.
+  `correctionExamples`, `knowledgeBrief`.
+
+# The knowledge brief
+
+`knowledgeBrief` is free text the user writes about the category — what it is,
+where the code lives, conventions, known pitfalls — and it reaches every AI
+prompt for a task in the category **verbatim**. It is the manual answer to
+"the agent keeps rediscovering the same domain facts": written once by a
+person, corrected in seconds, at no inference cost.
+
+```mermaid
+flowchart LR
+  Field["CategoryKnowledgeBrief<br/>(details page)"] -->|"as typed"| Ctl["CategoryDetailsController.updateKnowledgeBrief()"]
+  Ctl -->|"blank → null"| Def["CategoryDefinition.knowledgeBrief"]
+  Def --> Cache["EntitiesCacheService.getCategoryById()"]
+  Cache --> Seam["AiInputRepository.buildCategoryKnowledge(taskId)"]
+  Seam -->|"trimmed, or null"| Wake["Task-agent wake<br/>## Category Knowledge"]
+  Seam -->|"trimmed, or null"| Coding["Coding prompt<br/>**Category Knowledge:**"]
+```
+
+Three rules keep it honest:
+
+- **One seam, two injectors.** Both the task-agent wake
+  (`TaskAgentContextBuilder.buildUserMessage`) and the coding prompt
+  (`SkillInferenceRunner.runPromptGeneration` → `SkillPromptBuilder`) read the
+  brief through `AiInputRepository.buildCategoryKnowledge`, so they can never
+  disagree on what it says. The lookup itself is
+  `categoryKnowledgeBriefOf` in `domain/category_knowledge_brief.dart`.
+- **Blank is absent.** The controller stores whitespace-only as `null`, the seam
+  trims and returns `null` for an empty result, and both injectors omit the
+  section entirely — an emptied field never leaves an empty heading in a prompt.
+- **Verbatim, bounded.** The field reports text as typed and never reflows it;
+  the only limit is `categoryKnowledgeBriefMaxLength` (4000 characters),
+  enforced by the field, because the brief is prefill on every wake and every
+  coding prompt.
+
+The task-agent scaffold tells the agent the brief is the user's own words and
+outranks inference about the domain — see
+[task agents](agents/task-agents.md#prompt-composition).
 
 # The consent flag
 

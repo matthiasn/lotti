@@ -352,6 +352,11 @@ class _SkillInferenceTestSetup {
         promptBuilderHelper: mockPromptBuilderHelper,
         taskSummaryResolver: mockTaskSummaryResolver,
       );
+      // No category brief unless a case says otherwise: the coding-prompt
+      // path reads it beside the task context on every linked run.
+      when(
+        () => mockAiInputRepo.buildCategoryKnowledge(any()),
+      ).thenAnswer((_) async => null);
 
       // Create temp directory for file I/O tests.
       tempDir = await Directory.systemTemp.createTemp('skill_runner_test_');

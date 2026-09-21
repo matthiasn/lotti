@@ -421,6 +421,7 @@ class TaskAgentWorkflow with AgentErrorLogging {
     Task? task,
     TimeService? timeService,
     String? compactedTaskLog,
+    String? categoryKnowledge,
   }) => _contextBuilder.buildUserMessage(
     agentId: agentId,
     hasReport: hasReport,
@@ -435,6 +436,7 @@ class TaskAgentWorkflow with AgentErrorLogging {
     task: task,
     timeService: timeService,
     compactedTaskLog: compactedTaskLog,
+    categoryKnowledge: categoryKnowledge,
   );
 
   String? _extractFinalAssistantContent(ConversationManager? manager) =>

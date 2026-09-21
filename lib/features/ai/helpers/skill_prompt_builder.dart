@@ -36,6 +36,7 @@ class SkillPromptBuilder {
     String? languageCode,
     String? correctionExamples,
     bool requestTieredSummary = false,
+    String? categoryKnowledge,
   }) {
     final systemMessage = _buildSystemMessage(
       skill: skill,
@@ -53,6 +54,7 @@ class SkillPromptBuilder {
       languageCode: languageCode,
       correctionExamples: correctionExamples,
       requestTieredSummary: requestTieredSummary,
+      categoryKnowledge: categoryKnowledge,
     );
 
     return SkillPromptResult(
@@ -100,6 +102,7 @@ class SkillPromptBuilder {
     String? languageCode,
     String? correctionExamples,
     bool requestTieredSummary = false,
+    String? categoryKnowledge,
   }) {
     final buffer = StringBuffer();
     final compactCoverArtPrompt = _usesCompactCoverArtPrompt(skill);
@@ -154,6 +157,7 @@ class SkillPromptBuilder {
         taskContext: taskContext,
         linkedTasks: linkedTasks,
         currentTaskSummary: currentTaskSummary,
+        categoryKnowledge: categoryKnowledge,
       );
     }
 
@@ -282,6 +286,7 @@ class SkillPromptBuilder {
     String? taskContext,
     String? linkedTasks,
     String? currentTaskSummary,
+    String? categoryKnowledge,
   }) {
     // For transcription with task context, inject as terminology reference.
     if (skill.skillType == SkillType.transcription) {
@@ -309,6 +314,16 @@ class SkillPromptBuilder {
           ..writeln(currentTaskSummary);
       }
       return;
+    }
+
+    // The user's own brief about the task's category leads the task
+    // material: it frames how the JSON below should be read.
+    if (categoryKnowledge != null && categoryKnowledge.isNotEmpty) {
+      buffer
+        ..writeln()
+        ..writeln()
+        ..writeln('**Category Knowledge:**')
+        ..writeln(categoryKnowledge);
     }
 
     // For other skills, inject full task JSON + linked tasks.

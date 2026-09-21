@@ -1112,13 +1112,20 @@ class SkillInferenceRunner {
         // 2. Extract the entry content (transcript or typed text).
         final entryContent = _resolveEntryContent(entity);
 
-        // 3. Build task context (parallel for independent calls).
-        final (String? taskContext, String? linkedTasks) = linkedTaskId != null
+        // 3. Build task context (parallel for independent calls). The
+        // category brief rides along so the coding prompt is framed by the
+        // same knowledge a task-agent wake is.
+        final (
+          String? taskContext,
+          String? linkedTasks,
+          String? categoryKnowledge,
+        ) = linkedTaskId != null
             ? await (
                 _aiInputRepository.buildTaskDetailsJson(id: linkedTaskId),
                 _aiInputRepository.buildLinkedTasksJson(linkedTaskId),
+                _aiInputRepository.buildCategoryKnowledge(linkedTaskId),
               ).wait
-            : (null, null);
+            : (null, null, null);
 
         // 4. Build prompts via SkillPromptBuilder.
         const promptBuilder = SkillPromptBuilder();
@@ -1127,6 +1134,7 @@ class SkillInferenceRunner {
           entryContent: entryContent,
           taskContext: taskContext,
           linkedTasks: linkedTasks,
+          categoryKnowledge: categoryKnowledge,
         );
 
         // 5. Call inference, using the existing multimodal request path only

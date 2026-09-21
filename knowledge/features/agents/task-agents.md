@@ -286,7 +286,8 @@ wakes and a prompt prefix cache can restore it:
 
 ```mermaid
 flowchart LR
-  Task["Current task"] --> Wake["TaskAgentWorkflow wake"]
+  Brief["Category knowledge brief (user-written)"] --> Wake["TaskAgentWorkflow wake"]
+  Task["Current task"] --> Wake
   Project["Parent project (oneLiner + tldr)"] --> Wake
   Linked["Linked tasks (compact oneLiner/tldr)"] --> Wake
   Wake -.->|disabled today| Drill["get_related_task_details<br/>(enabled: false)"]
@@ -299,8 +300,20 @@ prior observations, linked-task context, pending change sets, active
 `getAttentionClaimsForTarget` so the prompt never scans the append-only source
 table), the active running timer, and editable historical time entries.
 
-Three context details are load-bearing:
+Four context details are load-bearing:
 
+- **The category knowledge brief opens the stable prefix.** When the task's
+  category carries a `knowledgeBrief`, the user message opens with a
+  `## Category Knowledge` section holding it verbatim, read through the one
+  seam every prompt injector shares (`AiInputRepository.buildCategoryKnowledge`).
+  It sits after the label/correction context and *ahead* of the task log: it is
+  typed by a person and changes rarer than the append-only log, so it belongs in
+  the cached header, at the price of voiding every task's prefix once per edit.
+  The scaffold (`taskAgentScaffoldCategoryKnowledge`) tells the agent the brief
+  is the user's own words, outranks inference about the domain, is applied
+  silently and is never something to restate or propose changes to. Blank or
+  absent means no section at all — see
+  [categories](../categories.md#the-knowledge-brief).
 - **Report existence is explicit on every wake.** A missing report requires an
   initial publication. With an existing report, the context asks for a new or
   corrected task fact before republishing: repeated status, different wording,

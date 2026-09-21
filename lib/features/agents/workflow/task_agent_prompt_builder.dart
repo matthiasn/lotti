@@ -62,6 +62,7 @@ abstract final class TaskAgentPromptBuilder {
     }
 
     buf
+      ..write(taskAgentScaffoldCategoryKnowledge)
       ..write(taskAgentScaffoldProjectContext)
       ..write(taskAgentScaffoldTrailing);
 
@@ -434,6 +435,21 @@ Your job each wake is to:
    tool failure — it is an observation, not report content. Skipping this
    tool means that context is lost forever on the next wake.
 4. FINAL STEP — ${TaskAgentReportPolicy.publicationRule}''';
+
+  /// Category knowledge guidance for task agents: the user's own brief about
+  /// the category outranks the agent's guesses about the domain.
+  static const taskAgentScaffoldCategoryKnowledge = '''
+
+
+## Category Knowledge
+
+When the task's category carries a knowledge brief, the wake payload opens
+with a `Category Knowledge` section: what the user wrote down about the
+category — what it is, where the code lives, conventions, known pitfalls.
+It is the user's own words and outranks anything you would infer about the
+domain; prefer direct evidence from THIS task only where the two conflict.
+Apply it silently: never restate it in the report and never propose changes
+to it.''';
 
   /// Parent-project and linked-task context guidance for task agents.
   static const taskAgentScaffoldProjectContext = '''

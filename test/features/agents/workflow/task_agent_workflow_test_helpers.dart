@@ -197,6 +197,9 @@ void stubPreExecuteDefaults({
   when(
     () => mockAiInputRepository.buildProjectContextJsonForTask(taskId),
   ).thenAnswer((_) async => '{}');
+  when(
+    () => mockAiInputRepository.buildCategoryKnowledge(taskId),
+  ).thenAnswer((_) async => null);
 }
 
 /// Extends [stubPreExecuteDefaults] with the model/provider stubs needed for
@@ -637,6 +640,9 @@ TaskAgentWorkflowTestBench createTaskAgentWorkflowTestBench({
   when(
     () => mockAiInputRepository.buildProjectContextJsonForTask(any()),
   ).thenAnswer((_) async => '{}');
+  when(
+    () => mockAiInputRepository.buildCategoryKnowledge(any()),
+  ).thenAnswer((_) async => null);
   when(
     () => mockJournalDb.getLinkedEntities(any()),
   ).thenAnswer((_) async => <JournalEntity>[]);

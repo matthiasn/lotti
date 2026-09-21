@@ -204,6 +204,17 @@ extension _CategoryDetailsFormSections on _CategoryDetailsPageState {
     );
   }
 
+  Widget _buildKnowledgeBrief(CategoryDefinition category) {
+    final controller = ref.read(
+      categoryDetailsControllerProvider(widget.categoryId!).notifier,
+    );
+
+    return CategoryKnowledgeBrief(
+      brief: category.knowledgeBrief,
+      onChanged: controller.updateKnowledgeBrief,
+    );
+  }
+
   Widget _buildSpeechDictionary(CategoryDefinition category) {
     final controller = ref.read(
       categoryDetailsControllerProvider(widget.categoryId!).notifier,
