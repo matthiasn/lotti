@@ -1,18 +1,23 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/query_chat_models.dart';
+import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/agent_maintenance_section.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
+import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
 import 'package:lotti/features/agents/ui/task_agent_identity_region.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/ui/widgets/project_agent_summary_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -341,6 +346,102 @@ void main() {
       );
     },
   );
+
+  testWidgets('offers chat as the header disc, as a task card does', (
+    tester,
+  ) async {
+    final record = makeTestProjectRecord(
+      aiSummary: 'Review the feeder task before launch.',
+    );
+    const scope = QueryScope(
+      kind: QueryScopeKind.project,
+      id: 'project-1',
+    );
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: ProjectAgentSummaryCard(
+            projectId: 'project-1',
+            record: record,
+            identity: null,
+            hasProjectAgent: true,
+            isMutating: false,
+          ),
+        ),
+        overrides: [queryChatEnabledProvider.overrideWithValue(true)],
+      ),
+    );
+    await tester.pump();
+
+    // One chat entry, and it is the header's trailing disc — not a labelled
+    // button under the summary.
+    expect(find.byType(QueryAskButton), findsOneWidget);
+    final header = tester.widget<TldrHeader>(find.byType(TldrHeader));
+    final ask = header.trailing! as QueryAskButton;
+    expect(ask.disc, isTrue);
+    expect(ask.scope, scope);
+    final context = tester.element(find.byType(ProjectAgentSummaryCard));
+    expect(find.text(context.messages.queryAskProject), findsNothing);
+
+    await tester.tap(find.byType(DsAiDiscButton));
+    await tester.pump();
+    expect(
+      ProviderScope.containerOf(context).read(queryPaneOpenProvider(scope)),
+      isTrue,
+    );
+  });
+
+  testWidgets('keeps chat beside the assignment row before an agent exists', (
+    tester,
+  ) async {
+    const scope = QueryScope(
+      kind: QueryScopeKind.project,
+      id: 'project-1',
+    );
+    Future<void> pumpCard({required bool chatEnabled}) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: ProjectAgentSummaryCard(
+              projectId: 'project-1',
+              record: makeTestProjectRecord(),
+              identity: null,
+              hasProjectAgent: false,
+              isMutating: false,
+              onAssignAgent: () async {},
+            ),
+          ),
+          overrides: [
+            queryChatEnabledProvider.overrideWithValue(chatEnabled),
+          ],
+        ),
+      );
+      await tester.pump();
+    }
+
+    await pumpCard(chatEnabled: false);
+    expect(find.byType(QueryAskButton), findsNothing);
+
+    await pumpCard(chatEnabled: true);
+    final context = tester.element(find.byType(ProjectAgentSummaryCard));
+    expect(
+      find.text(context.messages.taskFirstRunAssignAgent),
+      findsOneWidget,
+    );
+    final disc = tester.getRect(find.byType(DsAiDiscButton));
+    final assign = tester.getRect(
+      find.text(context.messages.taskFirstRunAssignAgent),
+    );
+    expect(disc.left, greaterThan(assign.right));
+
+    await tester.tap(find.byType(DsAiDiscButton));
+    await tester.pump();
+    expect(
+      ProviderScope.containerOf(context).read(queryPaneOpenProvider(scope)),
+      isTrue,
+    );
+  });
 
   testWidgets('keeps the task-style assignment row single-flight', (
     tester,

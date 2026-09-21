@@ -119,9 +119,12 @@ providers reject opening. Disabling it closes existing panes and cancels active
 query requests and dictation; persisted history is retained. Enabling it does
 not reopen a pane. Existing task-agent improvement chats are unaffected.
 
-The **Ask** action opens a discussion without running inference. Task headers
-and task/project summary cards expose the action; the task action bar remains
-reserved for time tracking and capture. Projects and saved categories use the same companion as tasks, preserving their
+The **Ask** action opens a discussion without running inference. Task and
+project summary cards carry it as the chat disc (`QueryAskButton(disc: true)`)
+in the card header's trailing rail; a project with no agent yet keeps the disc
+beside its assign-agent row, since project chat answers from the project's own
+data. Neither detail page has an Ask button of its own, and the task action bar
+remains reserved for time tracking and capture. Projects and saved categories use the same companion as tasks, preserving their
 detail content and pending form edits while chat is open.
 
 Task, project and saved-category pages use `QueryCompanion`, keeping the detail

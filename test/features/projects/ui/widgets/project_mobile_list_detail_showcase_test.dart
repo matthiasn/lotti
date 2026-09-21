@@ -7,6 +7,7 @@ import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content
 import 'package:lotti/features/projects/ui/widgets/project_mobile_list_detail_showcase.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/widgetbook/project_list_detail_mock_controller.dart';
+import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -135,7 +136,7 @@ void main() {
       await tester.tap(find.text('Weekly Meal Prep'));
       await tester.pump();
 
-      expect(find.text('Back'), findsOneWidget);
+      expect(find.byType(BackWidget), findsOneWidget);
       expect(
         container
             .read(projectListDetailShowcaseControllerProvider)
@@ -146,7 +147,7 @@ void main() {
         'Weekly Meal Prep',
       );
 
-      await tester.tap(find.text('Back'));
+      await tester.tap(find.byType(BackWidget));
       await tester.pump();
 
       expect(find.text('Projects'), findsAtLeastNWidgets(2));

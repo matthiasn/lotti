@@ -71,15 +71,22 @@ class BackWidget extends StatelessWidget {
   const BackWidget({
     super.key,
     this.onPressed,
+    this.enabled = true,
   });
 
   /// Optional override for the back action. Defaults to
   /// `NavService.beamBack()`.
   final VoidCallback? onPressed;
 
+  /// Whether the arrow responds. A page holds it off while a write it must
+  /// not abandon is in flight.
+  final bool enabled;
+
   @override
   Widget build(BuildContext context) {
-    final action = onPressed ?? () => getIt<NavService>().beamBack();
+    final action = enabled
+        ? onPressed ?? () => getIt<NavService>().beamBack()
+        : null;
     final tooltip = MaterialLocalizations.of(context).backButtonTooltip;
 
     return Row(
@@ -89,6 +96,7 @@ class BackWidget extends StatelessWidget {
         Semantics(
           label: tooltip,
           button: true,
+          enabled: enabled,
           excludeSemantics: true,
           onTap: action,
           child: IconButton(

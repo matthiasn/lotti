@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
@@ -1427,8 +1428,14 @@ void main() {
         );
         await tester.pump();
         await tester.pump();
-        final opener = Focus.of(tester.element(find.text('Ask')))
-          ..requestFocus();
+        final opener = Focus.of(
+          tester.element(
+            find.descendant(
+              of: find.byType(DsAiDiscButton),
+              matching: find.byType(Icon),
+            ),
+          ),
+        )..requestFocus();
         await tester.pump();
         await tester.sendKeyEvent(LogicalKeyboardKey.enter);
         await tester.pump();
