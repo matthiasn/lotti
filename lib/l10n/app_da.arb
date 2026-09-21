@@ -5241,7 +5241,7 @@
   "relationshipPhotoSaveFailed": "Kunne ikke gemme fotoet",
   "relationshipPhotoSheetTitle": "Foto af {name}",
   "relationshipPostCallConfirm": "Log tjek-ind",
-  "relationshipPostCallDismiss": "Ikke nu",
+  "relationshipPostCallDismiss": "Afvis",
   "relationshipPostCallMeta": "startede kl. {time} · {minutes, plural, =0{under et minut} =1{cirka 1 min} other{cirka {minutes} min}}",
   "@relationshipPostCallMeta": {
     "placeholders": {

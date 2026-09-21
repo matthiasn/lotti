@@ -5241,7 +5241,7 @@
   "relationshipPhotoSaveFailed": "Impossibile salvare la foto",
   "relationshipPhotoSheetTitle": "Foto di {name}",
   "relationshipPostCallConfirm": "Annota check-in",
-  "relationshipPostCallDismiss": "Non ora",
+  "relationshipPostCallDismiss": "Ignora",
   "relationshipPostCallMeta": "Inizio: {time} · {minutes, plural, =0{meno di un minuto} =1{circa 1 min} other{circa {minutes} min}}",
   "@relationshipPostCallMeta": {
     "placeholders": {

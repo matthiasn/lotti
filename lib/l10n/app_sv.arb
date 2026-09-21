@@ -5241,7 +5241,7 @@
   "relationshipPhotoSaveFailed": "Det gick inte att spara fotot",
   "relationshipPhotoSheetTitle": "Foto på {name}",
   "relationshipPostCallConfirm": "Logga avstämning",
-  "relationshipPostCallDismiss": "Inte nu",
+  "relationshipPostCallDismiss": "Avfärda",
   "relationshipPostCallMeta": "började kl. {time} · {minutes, plural, =0{under en minut} =1{cirka 1 min} other{cirka {minutes} min}}",
   "@relationshipPostCallMeta": {
     "placeholders": {

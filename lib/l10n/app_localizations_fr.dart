@@ -12534,7 +12534,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get relationshipPostCallConfirm => 'Noter un point';
 
   @override
-  String get relationshipPostCallDismiss => 'Pas maintenant';
+  String get relationshipPostCallDismiss => 'Ignorer';
 
   @override
   String relationshipPostCallMeta(String time, int minutes) {

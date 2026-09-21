@@ -7308,7 +7308,7 @@
   "@relationshipPostCallConfirm": {
     "description": "Button that opens a pre-filled check-in from the post-call prompt"
   },
-  "relationshipPostCallDismiss": "Not now",
+  "relationshipPostCallDismiss": "Dismiss",
   "@relationshipPostCallDismiss": {
     "description": "Button that dismisses the post-call prompt without a trace"
   },

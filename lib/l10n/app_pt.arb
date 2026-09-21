@@ -5240,7 +5240,7 @@
   "relationshipPhotoSaveFailed": "Não foi possível guardar a foto",
   "relationshipPhotoSheetTitle": "Foto de {name}",
   "relationshipPostCallConfirm": "Registar check-in",
-  "relationshipPostCallDismiss": "Agora não",
+  "relationshipPostCallDismiss": "Ignorar",
   "relationshipPostCallMeta": "começou às {time} · {minutes, plural, =0{menos de um minuto} =1{cerca de 1 min} other{cerca de {minutes} min}}",
   "@relationshipPostCallMeta": {
     "placeholders": {

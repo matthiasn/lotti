@@ -4752,7 +4752,7 @@
   "relationshipPhotoSaveFailed": "Fotku se nepodařilo uložit",
   "relationshipPhotoSheetTitle": "Fotka – {name}",
   "relationshipPostCallConfirm": "Zapsat check-in",
-  "relationshipPostCallDismiss": "Teď ne",
+  "relationshipPostCallDismiss": "Zavřít",
   "relationshipPostCallMeta": "začátek v {time} · {minutes, plural, =0{necelá minuta} =1{asi 1 min} other{asi {minutes} min}}",
   "@relationshipPostCallMeta": {
     "placeholders": {

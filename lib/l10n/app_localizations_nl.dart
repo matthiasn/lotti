@@ -12346,7 +12346,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipPostCallConfirm => 'Check-in vastleggen';
 
   @override
-  String get relationshipPostCallDismiss => 'Niet nu';
+  String get relationshipPostCallDismiss => 'Negeren';
 
   @override
   String relationshipPostCallMeta(String time, int minutes) {

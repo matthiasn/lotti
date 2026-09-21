@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/check_in_data.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
@@ -11,6 +12,38 @@ import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.d
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
+
+/// Opens the composer describing [pending] — the channel, when it started
+/// and the whole minutes since — or, with no marker, as an ordinary check-in
+/// that starts from [fallbackInteractionType]. The offer below and the
+/// person page's own *Log check-in* and *Dictate* all come through here, so
+/// a call that was just placed is logged as that call whichever door the
+/// user reaches for.
+///
+/// The elapsed time is read here, at the moment of opening: it is what the
+/// offer quoted, and the form must agree with it.
+Future<CheckInEntry?> showCheckInForInteraction({
+  required BuildContext context,
+  required String relationshipId,
+  PendingInteraction? pending,
+  CheckInInteractionType? fallbackInteractionType,
+  bool startSpeaking = false,
+}) {
+  final elapsed = pending == null
+      ? null
+      : clock.now().difference(pending.startedAt);
+  return showCheckInCaptureSheet(
+    context: context,
+    relationshipId: relationshipId,
+    prefilledInteractionType:
+        pending?.interactionType ?? fallbackInteractionType,
+    prefilledTime: pending?.startedAt,
+    prefilledDuration: elapsed == null
+        ? null
+        : Duration(minutes: elapsed.inMinutes),
+    startSpeaking: startSpeaking,
+  );
+}
 
 /// Offers to log a check-in after the user comes back from a call or message
 /// they started in Lotti (plan v2 phase 7 item 5, ADR 0041 D4) — the
@@ -29,8 +62,13 @@ import 'package:material_ui/material_ui.dart';
 /// person it names no longer resolves (deleted, or private while private
 /// entries are hidden) — a prompt about a person the user cannot see would
 /// leak the fact that they exist.
+///
+/// [bottomGap] follows the offer and is part of it, so a page can seat it
+/// between two sections without a gap appearing where there is no offer.
 class PostInteractionPrompt extends ConsumerStatefulWidget {
-  const PostInteractionPrompt({super.key});
+  const PostInteractionPrompt({this.bottomGap = 0, super.key});
+
+  final double bottomGap;
 
   /// The wash behind the offer: the interactive accent at the tint alpha
   /// over the card surface, the recipe every tone-tinted fill uses.
@@ -101,35 +139,34 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
   Future<void> _logCheckIn() async {
     final pending = _pending;
     if (pending == null) return;
-    // Read before the await below: the whole minutes the offer quoted are
-    // what the log must show, and clearing the marker can cross a minute
-    // boundary, which would hand the sheet a different reading.
-    final elapsed = clock.now().difference(pending.startedAt);
-
-    // Cleared before the sheet opens, not after it closes: the offer has been
-    // taken up either way, and a user who opens the form and then backs out
-    // should not be asked a second time.
-    await _dismiss();
-    if (!mounted) return;
-
-    await showCheckInCaptureSheet(
+    // Opened before the marker is cleared, not after: the whole minutes the
+    // offer quoted are what the log must show, and clearing can cross a
+    // minute boundary, which would hand the sheet a different reading. The
+    // clear still happens up front rather than when the sheet closes — the
+    // offer has been taken up either way, and a user who opens the form and
+    // then backs out should not be asked a second time.
+    final composer = showCheckInForInteraction(
       context: context,
       relationshipId: pending.relationshipId,
-      prefilledInteractionType: pending.interactionType,
-      prefilledTime: pending.startedAt,
-      prefilledDuration: Duration(minutes: elapsed.inMinutes),
+      pending: pending,
     );
+    await _dismiss();
+    await composer;
   }
 
   @override
   Widget build(BuildContext context) {
+    // The page's own Log check-in and Dictate take the marker up too; when
+    // they do, this offer has been answered and must stop asking.
+    ref.listen(
+      pendingInteractionClaimsProvider,
+      (_, _) => unawaited(_refresh()),
+    );
     final pending = _pending;
     final name = _personName;
     if (pending == null || name == null) return const SizedBox.shrink();
 
-    final tokens = context.designTokens;
     final messages = context.messages;
-    final accent = tokens.colors.interactive.enabled;
     // Whole minutes since the user left for the call: what the sheet will
     // prefill as the duration, so the offer and the form agree.
     final minutes = clock.now().difference(pending.startedAt).inMinutes;
@@ -141,6 +178,21 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
       _ => messages.relationshipPostCallOfferMessage(name, minutes),
     };
 
+    return Padding(
+      padding: EdgeInsets.only(bottom: widget.bottomGap),
+      child: _offer(context, pending: pending, title: title, minutes: minutes),
+    );
+  }
+
+  Widget _offer(
+    BuildContext context, {
+    required PendingInteraction pending,
+    required String title,
+    required int minutes,
+  }) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final accent = tokens.colors.interactive.enabled;
     return Container(
       key: const ValueKey('person-post-call-offer'),
       decoration: BoxDecoration(

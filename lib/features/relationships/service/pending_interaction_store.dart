@@ -117,3 +117,34 @@ final pendingInteractionStoreProvider = Provider<PendingInteractionStore>(
   (ref) => PendingInteractionStore(),
   name: 'pendingInteractionStoreProvider',
 );
+
+/// Claims the marker on behalf of a door other than the offer that shows
+/// it, and counts the claims. The store is plain settings with nothing to
+/// listen to, so the count is how the offer learns that the question it is
+/// asking has already been answered elsewhere.
+class PendingInteractionClaims extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  /// Takes the outstanding marker when it is about [relationshipId]: returns
+  /// it and clears it, so the caller can open the composer describing that
+  /// call and the offer stops asking. Null — and nothing cleared — when
+  /// there is no marker or it is about someone else: logging a check-in with
+  /// Bo must not swallow the call just placed to Anna.
+  Future<PendingInteraction?> claimFor(String relationshipId) async {
+    final store = ref.read(pendingInteractionStoreProvider);
+    final pending = await store.read();
+    if (pending == null || pending.relationshipId != relationshipId) {
+      return null;
+    }
+    await store.clear();
+    if (ref.mounted) state++;
+    return pending;
+  }
+}
+
+final pendingInteractionClaimsProvider =
+    NotifierProvider<PendingInteractionClaims, int>(
+      PendingInteractionClaims.new,
+      name: 'pendingInteractionClaimsProvider',
+    );

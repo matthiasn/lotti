@@ -12470,7 +12470,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get relationshipPostCallConfirm => 'Annota check-in';
 
   @override
-  String get relationshipPostCallDismiss => 'Non ora';
+  String get relationshipPostCallDismiss => 'Ignora';
 
   @override
   String relationshipPostCallMeta(String time, int minutes) {

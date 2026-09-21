@@ -12319,7 +12319,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipPostCallConfirm => 'Log tjek-ind';
 
   @override
-  String get relationshipPostCallDismiss => 'Ikke nu';
+  String get relationshipPostCallDismiss => 'Afvis';
 
   @override
   String relationshipPostCallMeta(String time, int minutes) {

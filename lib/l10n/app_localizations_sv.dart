@@ -12329,7 +12329,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipPostCallConfirm => 'Logga avstämning';
 
   @override
-  String get relationshipPostCallDismiss => 'Inte nu';
+  String get relationshipPostCallDismiss => 'Avfärda';
 
   @override
   String relationshipPostCallMeta(String time, int minutes) {

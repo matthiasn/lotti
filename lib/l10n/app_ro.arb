@@ -4745,7 +4745,7 @@
   "relationshipPhotoSaveFailed": "Fotografia nu a putut fi salvată",
   "relationshipPhotoSheetTitle": "Fotografie – {name}",
   "relationshipPostCallConfirm": "Notați check-in",
-  "relationshipPostCallDismiss": "Nu acum",
+  "relationshipPostCallDismiss": "Ignorați",
   "relationshipPostCallMeta": "început la {time} · {minutes, plural, =0{sub un minut} =1{circa 1 min} other{circa {minutes} min}}",
   "@relationshipPostCallMeta": {
     "placeholders": {

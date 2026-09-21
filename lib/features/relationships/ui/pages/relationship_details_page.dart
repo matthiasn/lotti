@@ -12,10 +12,10 @@ import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/model/relationship_agent_identity.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/service/pending_interaction_store.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
 import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
-import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_ins_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/linked_tasks_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/paused_reminder_callout.dart';
@@ -126,6 +126,32 @@ class RelationshipDetailsPage extends ConsumerWidget {
   /// Leaves the page. On a phone the page was pushed and pops; on the
   /// desktop split it is the detail pane, and leaving means clearing the
   /// selection so the list stands alone again.
+  /// The page's two ways into the composer. A call or message just placed
+  /// to this person is logged as that — channel, start and minutes — exactly
+  /// as the offer under the name would, because reaching for the big button
+  /// instead of the offer is the same intent. Otherwise the composer starts
+  /// from how the two of you last connected ([latest]) rather than always
+  /// from *In person*: for someone you phone every week, the chip is then
+  /// already right.
+  Future<void> _openComposer(
+    BuildContext context,
+    WidgetRef ref, {
+    required CheckInEntry? latest,
+    bool startSpeaking = false,
+  }) async {
+    final pending = await ref
+        .read(pendingInteractionClaimsProvider.notifier)
+        .claimFor(relationshipId);
+    if (!context.mounted) return;
+    await showCheckInForInteraction(
+      context: context,
+      relationshipId: relationshipId,
+      pending: pending,
+      fallbackInteractionType: latest?.data.interactionType,
+      startSpeaking: startSpeaking,
+    );
+  }
+
   void _back(BuildContext context) {
     if (isDesktopLayout(context)) {
       beamToNamed('/people');
@@ -212,14 +238,11 @@ class RelationshipDetailsPage extends ConsumerWidget {
       extendBody: true,
       bottomNavigationBar: RelationshipActionBar(
         relationship: relationship,
-        onLogCheckIn: () => showCheckInCaptureSheet(
-          context: context,
-          relationshipId: relationshipId,
+        onLogCheckIn: () => unawaited(
+          _openComposer(context, ref, latest: latest),
         ),
-        onSpeak: () => showCheckInCaptureSheet(
-          context: context,
-          relationshipId: relationshipId,
-          startSpeaking: true,
+        onSpeak: () => unawaited(
+          _openComposer(context, ref, latest: latest, startSpeaking: true),
         ),
       ),
       // A LayoutBuilder for two reasons: MediaQuery.paddingOf below it reads
@@ -261,17 +284,21 @@ class RelationshipDetailsPage extends ConsumerWidget {
                       gap,
                       // Under the person's name: the reminder the user just
                       // tapped says it is paused, and until when.
-                      if (index == 0)
+                      if (index == 0) ...[
                         PausedReminderCallout(
                           relationshipId: relationshipId,
                           bottomGap: tokens.spacing.sectionGap,
                         ),
+                        // Renders nothing until the user comes back from a
+                        // call placed on this page; then it is the most
+                        // time-sensitive thing here, so it sits where they
+                        // land — under the name, not below a briefing and a
+                        // screen of notes they would have to scroll past.
+                        PostInteractionPrompt(
+                          bottomGap: tokens.spacing.sectionGap,
+                        ),
+                      ],
                     ],
-                    // Renders nothing until the user comes back from a
-                    // call placed on this page; then it is the most
-                    // time-sensitive thing here, directly above the log
-                    // it offers to extend.
-                    const PostInteractionPrompt(),
                   ]),
                 ),
               ),

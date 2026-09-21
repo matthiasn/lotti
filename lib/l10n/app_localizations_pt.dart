@@ -12435,7 +12435,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get relationshipPostCallConfirm => 'Registar check-in';
 
   @override
-  String get relationshipPostCallDismiss => 'Agora não';
+  String get relationshipPostCallDismiss => 'Ignorar';
 
   @override
   String relationshipPostCallMeta(String time, int minutes) {

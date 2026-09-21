@@ -111,6 +111,7 @@ void main() {
     WidgetTester tester, {
     PendingInteraction? pending,
     RelationshipEntry? resolves,
+    double bottomGap = 0,
   }) async {
     final store = _FakePendingInteractionStore(pending);
     when(
@@ -120,7 +121,7 @@ void main() {
     await withClock(Clock.fixed(now), () async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const PostInteractionPrompt(),
+          PostInteractionPrompt(bottomGap: bottomGap),
           overrides: [
             pendingInteractionStoreProvider.overrideWithValue(store),
             relationshipRepositoryProvider.overrideWithValue(repository),
@@ -239,11 +240,27 @@ void main() {
       await pump(tester, pending: marker(), resolves: person());
 
       expect(find.text('Log check-in'), findsOneWidget);
-      expect(find.text('Not now'), findsOneWidget);
+      expect(find.text('Dismiss'), findsOneWidget);
     });
   });
 
   group('when the prompt stays silent', () {
+    testWidgets('its gap belongs to the offer: a page seating it between '
+        'two sections gets no hole where there is nothing to offer', (
+      tester,
+    ) async {
+      await pump(tester, bottomGap: 24);
+      expect(tester.getSize(find.byType(PostInteractionPrompt)), Size.zero);
+    });
+
+    testWidgets('with an offer, the gap follows it', (tester) async {
+      await pump(tester, pending: marker(), resolves: person(), bottomGap: 24);
+      expect(
+        tester.getSize(find.byType(PostInteractionPrompt)).height,
+        tester.getSize(offer).height + 24,
+      );
+    });
+
     testWidgets('renders nothing when no call was placed', (tester) async {
       await pump(tester, resolves: person());
 
@@ -276,7 +293,7 @@ void main() {
     testWidgets('drops the prompt', (tester) async {
       await pump(tester, pending: marker(), resolves: person());
 
-      await tester.tap(find.text('Not now'));
+      await tester.tap(find.text('Dismiss'));
       await tester.pumpAndSettle();
 
       expect(offer, findsNothing);
@@ -291,7 +308,7 @@ void main() {
         resolves: person(),
       );
 
-      await tester.tap(find.text('Not now'));
+      await tester.tap(find.text('Dismiss'));
       await tester.pumpAndSettle();
 
       expect(store.clearCount, 1);
@@ -301,7 +318,7 @@ void main() {
     testWidgets('does not reappear on the next resume', (tester) async {
       await pump(tester, pending: marker(), resolves: person());
 
-      await tester.tap(find.text('Not now'));
+      await tester.tap(find.text('Dismiss'));
       await tester.pumpAndSettle();
 
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);

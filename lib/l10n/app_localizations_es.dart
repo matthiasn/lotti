@@ -12489,7 +12489,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get relationshipPostCallConfirm => 'Anotar check-in';
 
   @override
-  String get relationshipPostCallDismiss => 'Ahora no';
+  String get relationshipPostCallDismiss => 'Descartar';
 
   @override
   String relationshipPostCallMeta(String time, int minutes) {

@@ -12504,7 +12504,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipPostCallConfirm => 'Zapsat check-in';
 
   @override
-  String get relationshipPostCallDismiss => 'Teď ne';
+  String get relationshipPostCallDismiss => 'Zavřít';
 
   @override
   String relationshipPostCallMeta(String time, int minutes) {

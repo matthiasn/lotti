@@ -20446,7 +20446,7 @@ abstract class AppLocalizations {
   /// Button that dismisses the post-call prompt without a trace
   ///
   /// In en, this message translates to:
-  /// **'Not now'**
+  /// **'Dismiss'**
   String get relationshipPostCallDismiss;
 
   /// No description provided for @relationshipPostCallMeta.

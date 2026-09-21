@@ -12401,7 +12401,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get relationshipPostCallConfirm => 'Check-in festhalten';
 
   @override
-  String get relationshipPostCallDismiss => 'Jetzt nicht';
+  String get relationshipPostCallDismiss => 'Verwerfen';
 
   @override
   String relationshipPostCallMeta(String time, int minutes) {

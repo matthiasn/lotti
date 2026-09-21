@@ -21,6 +21,7 @@ import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
+import 'package:lotti/features/relationships/service/pending_interaction_store.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
@@ -40,6 +41,7 @@ import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../categories/test_utils.dart';
+import '../../helpers/fake_pending_interaction_store.dart';
 
 /// Answers the speak flow's pre-flight probe with "no", so the mic test can
 /// prove the form opened in speaking mode without a recorder on screen.
@@ -718,6 +720,122 @@ void main() {
     );
     expect(form.startSpeaking, isTrue);
     expect(form.relationshipId, 'rel-1');
+  });
+
+  group('a call just placed from this page', () {
+    // Eleven minutes before `now`, the moment the user left for the dialer.
+    final leftAt = DateTime(2026, 8, 14, 10, 19);
+    final offer = find.byKey(const ValueKey('person-post-call-offer'));
+
+    Future<FakePendingInteractionStore> pumpWithMarker(
+      WidgetTester tester, {
+      String markerFor = 'rel-1',
+      List<CheckInEntry> checkIns = const [],
+    }) async {
+      when(() => mockRepository.getRelationshipById(any())).thenAnswer(
+        (_) async => relationship(),
+      );
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-1'),
+      ).thenAnswer((_) async => checkIns);
+      final store = FakePendingInteractionStore((
+        relationshipId: markerFor,
+        interactionType: CheckInInteractionType.message,
+        startedAt: leftAt,
+      ));
+      await pumpPage(
+        tester,
+        overrides: [pendingInteractionStoreProvider.overrideWithValue(store)],
+      );
+      return store;
+    }
+
+    testWidgets('is offered under the name, above the briefing — where the '
+        'user lands coming back, not a screen of notes further down', (
+      tester,
+    ) async {
+      await pumpWithMarker(tester);
+
+      expect(offer, findsOneWidget);
+      expect(
+        tester.getTopLeft(offer).dy,
+        lessThan(
+          tester
+              .getTopLeft(
+                find.byKey(const ValueKey('relationship-briefing-card')),
+              )
+              .dy,
+        ),
+      );
+    });
+
+    testWidgets('Log check-in logs that interaction — channel, start and '
+        'minutes — and the offer stops asking', (tester) async {
+      final store = await pumpWithMarker(tester);
+
+      await withClock(Clock.fixed(now), () async {
+        await tester.tap(
+          find.byKey(const ValueKey('person-action-log-check-in')),
+        );
+        await tester.pumpAndSettle();
+      });
+
+      final form = tester.widget<CheckInCaptureForm>(
+        find.byType(CheckInCaptureForm),
+      );
+      expect(form.prefilledInteractionType, CheckInInteractionType.message);
+      expect(form.prefilledTime, leftAt);
+      expect(form.prefilledDuration, const Duration(minutes: 11));
+      expect(store.pending, isNull, reason: 'the marker was taken up');
+      expect(offer, findsNothing);
+    });
+
+    testWidgets('a marker about someone else is neither used nor cleared', (
+      tester,
+    ) async {
+      final store = await pumpWithMarker(tester, markerFor: 'rel-other');
+
+      await tester.tap(
+        find.byKey(const ValueKey('person-action-log-check-in')),
+      );
+      await tester.pumpAndSettle();
+
+      final form = tester.widget<CheckInCaptureForm>(
+        find.byType(CheckInCaptureForm),
+      );
+      expect(form.prefilledTime, isNull);
+      expect(form.prefilledDuration, isNull);
+      expect(store.pending?.relationshipId, 'rel-other');
+      expect(store.clearCount, 0);
+    });
+  });
+
+  testWidgets('with no call pending, the composer starts from how the two '
+      'last connected rather than always from In person', (tester) async {
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+      (_) async => relationship(),
+    );
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer((_) async => [checkIn('check-1')]);
+
+    await pumpPage(
+      tester,
+      overrides: [
+        pendingInteractionStoreProvider.overrideWithValue(
+          FakePendingInteractionStore(),
+        ),
+      ],
+    );
+    await tester.tap(find.byKey(const ValueKey('person-action-log-check-in')));
+    await tester.pumpAndSettle();
+
+    final form = tester.widget<CheckInCaptureForm>(
+      find.byType(CheckInCaptureForm),
+    );
+    // The fixture's one check-in was a call.
+    expect(form.prefilledInteractionType, CheckInInteractionType.call);
+    expect(form.prefilledTime, isNull);
   });
 
   testWidgets("Talk to agent beams to the person's chat", (tester) async {
