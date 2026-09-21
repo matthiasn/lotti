@@ -823,8 +823,9 @@ void main() {
     DsPill pill(WidgetTester tester, String key) =>
         tester.widget<DsPill>(find.byKey(ValueKey(key)));
 
-    testWidgets('eyebrow joins category and Enrolled; the one-liner joins '
-        'the nickname and the last contact', (tester) async {
+    testWidgets('the eyebrow is the category alone — reminders are the '
+        'pill\'s to say; the one-liner joins the nickname and the last '
+        'contact', (tester) async {
       await pump(
         tester,
         relationship: person(important: true, nickname: 'Pip'),
@@ -834,7 +835,7 @@ void main() {
 
       expect(
         tester.widget<Text>(find.byKey(const ValueKey('person-eyebrow'))).data,
-        'Penguin Operations · Reminders on',
+        'Penguin Operations',
       );
       expect(find.text('Commander Pip Frostbeak'), findsOneWidget);
 
@@ -878,15 +879,16 @@ void main() {
       expect(line.date, isNull);
     });
 
-    testWidgets('on track: the cadence pill names the effective rhythm and '
-        'the next-due pill the day', (tester) async {
+    testWidgets('on track: the cadence pill says so, the reminders pill names '
+        'the rhythm, and the next-due pill the day', (tester) async {
       await pump(
         tester,
         relationship: person(important: true, cadenceDays: 7),
         lastCheckIn: checkIn(DateTime(2026, 8, 12, 19, 5)),
       );
 
-      expect(pill(tester, 'person-pill-cadence').label, 'On track · Weekly');
+      expect(pill(tester, 'person-pill-cadence').label, 'On track');
+      expect(pill(tester, 'person-pill-reminders').label, 'Weekly');
       expect(pill(tester, 'person-pill-next-due').label, 'Next due Wed 19 Aug');
       expect(find.byKey(const ValueKey('person-pill-due')), findsNothing);
       expect(find.byKey(const ValueKey('person-pill-status')), findsNothing);
@@ -900,7 +902,7 @@ void main() {
         lastCheckIn: checkIn(DateTime(2026, 8, 12)),
       );
 
-      expect(pill(tester, 'person-pill-cadence').label, 'On track · Monthly');
+      expect(pill(tester, 'person-pill-reminders').label, 'Monthly');
     });
 
     testWidgets('overdue: one warning-tinted pill saying since when and how '
@@ -920,6 +922,9 @@ void main() {
       expect(due.color, tokens.colors.alert.warning.defaultColor);
       expect(find.byKey(const ValueKey('person-pill-next-due')), findsNothing);
       expect(find.byKey(const ValueKey('person-pill-cadence')), findsNothing);
+      // The interval does not vanish the moment someone is due: that is
+      // exactly when the user may want to change it.
+      expect(pill(tester, 'person-pill-reminders').label, 'Weekly');
     });
 
     testWidgets('not enrolled, dormant and archived each get the status pill', (
@@ -927,6 +932,11 @@ void main() {
     ) async {
       await pump(tester, relationship: person(cadenceDays: 7));
       expect(pill(tester, 'person-pill-status').label, 'No reminders');
+      // Not enrolled: the briefing card offers reminders, asking how often.
+      expect(
+        find.byKey(const ValueKey('person-pill-reminders')),
+        findsNothing,
+      );
 
       await pump(
         tester,
@@ -998,14 +1008,18 @@ void main() {
       expect(find.byKey(const ValueKey('person-pill-health')), findsNothing);
       expect(find.text('Thriving'), findsNothing);
 
-      // What is left is the deterministic pair the runtime always knows:
-      // the cadence fact and the day it next comes due.
+      // What is left is what the runtime always knows: the cadence fact,
+      // the reminders interval and the day it next comes due.
       expect(find.byKey(const ValueKey('person-pill-cadence')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('person-pill-reminders')),
+        findsOneWidget,
+      );
       expect(
         find.byKey(const ValueKey('person-pill-next-due')),
         findsOneWidget,
       );
-      expect(find.byType(DsPill), findsNWidgets(2));
+      expect(find.byType(DsPill), findsNWidgets(3));
     });
   });
 }

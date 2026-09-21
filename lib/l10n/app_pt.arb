@@ -5217,14 +5217,6 @@
   "relationshipNoLinkedTasks": "Nenhuma tarefa vinculada ainda.",
   "relationshipNotEnrolled": "Sem lembretes",
   "relationshipNotFound": "Esta pessoa não está mais na sua lista.",
-  "relationshipOnTrackCadence": "Em dia · {cadence}",
-  "@relationshipOnTrackCadence": {
-    "placeholders": {
-      "cadence": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipPayAttentionTo": "Prestar atenção a",
   "relationshipPhotoAddBanner": "Adicionar banner",
   "relationshipPhotoAdjustCrop": "Ajustar o recorte",
@@ -5264,6 +5256,8 @@
   "relationshipReminderPausedBody": "Ele volta nesse horário, a menos que você registre um contato antes.",
   "relationshipReminderPausedTitle": "Lembrete pausado até {time}",
   "relationshipReminderSnoozeLonger": "Adiar mais",
+  "relationshipRemindersPillSemantics": "Lembretes: {cadence}. Toca para alterar.",
+  "relationshipRemindersSheetTitle": "Lembretes",
   "relationshipRemindersSwitchLabel": "Lembra-me de manter o contacto",
   "relationshipsEmptyHint": "Aponta uma linha depois de falarem. O Lotti mostra com quem não falas há algum tempo e, se quiseres, lembra-te.",
   "relationshipsEmptyState": "Adicione as pessoas de quem você quer ficar perto.",
@@ -5342,6 +5336,7 @@
   "relationshipTimestampToday": "Hoje",
   "relationshipTimestampYesterday": "Ontem",
   "relationshipTrackingSinceLabel": "Acompanhando desde {date}",
+  "relationshipTurnRemindersOff": "Desativar lembretes",
   "relationshipUpdateFromContact": "Atualizar a partir do contacto",
   "saveButton": "Salvar",
   "saveButtonLabel": "Salvar",

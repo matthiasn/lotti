@@ -12523,11 +12523,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipNotFound => 'Această persoană nu mai este urmărită.';
 
   @override
-  String relationshipOnTrackCadence(String cadence) {
-    return 'În ritm · $cadence';
-  }
-
-  @override
   String get relationshipPayAttentionTo => 'Fiți atent la';
 
   @override
@@ -12641,6 +12636,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipReminderSnoozeLonger => 'Amânați mai mult';
 
   @override
+  String relationshipRemindersPillSemantics(String cadence) {
+    return 'Memento-uri: $cadence. Atingeți pentru a schimba.';
+  }
+
+  @override
+  String get relationshipRemindersSheetTitle => 'Memento-uri';
+
+  @override
   String get relationshipRemindersSwitchLabel =>
       'Amintiți-mi să păstrez legătura';
 
@@ -12742,6 +12745,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String relationshipTrackingSinceLabel(String date) {
     return 'Urmărire din $date';
   }
+
+  @override
+  String get relationshipTurnRemindersOff => 'Dezactivați memento-urile';
 
   @override
   String get relationshipUpdateFromContact => 'Actualizați din contact';

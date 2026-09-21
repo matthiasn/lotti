@@ -4722,14 +4722,6 @@
   "relationshipNoLinkedTasks": "Nicio sarcină asociată încă.",
   "relationshipNotEnrolled": "Fără memento-uri",
   "relationshipNotFound": "Această persoană nu mai este urmărită.",
-  "relationshipOnTrackCadence": "În ritm · {cadence}",
-  "@relationshipOnTrackCadence": {
-    "placeholders": {
-      "cadence": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipPayAttentionTo": "Fiți atent la",
   "relationshipPhotoAddBanner": "Adăugați un banner",
   "relationshipPhotoAdjustCrop": "Ajustați decuparea",
@@ -4769,6 +4761,8 @@
   "relationshipReminderPausedBody": "Revine atunci, dacă nu înregistrați un contact înainte.",
   "relationshipReminderPausedTitle": "Memento întrerupt până la {time}",
   "relationshipReminderSnoozeLonger": "Amânați mai mult",
+  "relationshipRemindersPillSemantics": "Memento-uri: {cadence}. Atingeți pentru a schimba.",
+  "relationshipRemindersSheetTitle": "Memento-uri",
   "relationshipRemindersSwitchLabel": "Amintiți-mi să păstrez legătura",
   "relationshipsEmptyHint": "Notați un rând după ce ați vorbit. Lotti vă arată cu cine nu ați mai vorbit de ceva vreme și, dacă doriți, vă amintește.",
   "relationshipsEmptyState": "Adăugați persoanele de care doriți să rămâneți aproape.",
@@ -4847,6 +4841,7 @@
   "relationshipTimestampToday": "Azi",
   "relationshipTimestampYesterday": "Ieri",
   "relationshipTrackingSinceLabel": "Urmărire din {date}",
+  "relationshipTurnRemindersOff": "Dezactivați memento-urile",
   "relationshipUpdateFromContact": "Actualizați din contact",
   "saveButton": "Salvați",
   "saveButtonLabel": "Salvați",

@@ -12453,11 +12453,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipNotFound => 'Tahle osoba už není sledovaná.';
 
   @override
-  String relationshipOnTrackCadence(String cadence) {
-    return 'V rytmu · $cadence';
-  }
-
-  @override
   String get relationshipPayAttentionTo => 'Dávej pozor na';
 
   @override
@@ -12570,6 +12565,14 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipReminderSnoozeLonger => 'Odložit na déle';
 
   @override
+  String relationshipRemindersPillSemantics(String cadence) {
+    return 'Připomínky: $cadence. Klepnutím změníš.';
+  }
+
+  @override
+  String get relationshipRemindersSheetTitle => 'Připomínky';
+
+  @override
   String get relationshipRemindersSwitchLabel =>
       'Připomínej mi, ať zůstaneme v kontaktu';
 
@@ -12671,6 +12674,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String relationshipTrackingSinceLabel(String date) {
     return 'Sledováno od $date';
   }
+
+  @override
+  String get relationshipTurnRemindersOff => 'Vypnout připomínky';
 
   @override
   String get relationshipUpdateFromContact => 'Aktualizovat z kontaktu';

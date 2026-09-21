@@ -4729,14 +4729,6 @@
   "relationshipNoLinkedTasks": "Zatím žádné propojené úkoly.",
   "relationshipNotEnrolled": "Bez připomínek",
   "relationshipNotFound": "Tahle osoba už není sledovaná.",
-  "relationshipOnTrackCadence": "V rytmu · {cadence}",
-  "@relationshipOnTrackCadence": {
-    "placeholders": {
-      "cadence": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipPayAttentionTo": "Dávej pozor na",
   "relationshipPhotoAddBanner": "Přidat banner",
   "relationshipPhotoAdjustCrop": "Upravit ořez",
@@ -4776,6 +4768,8 @@
   "relationshipReminderPausedBody": "Pak se vrátí, pokud předtím nezaznamenáš kontakt.",
   "relationshipReminderPausedTitle": "Připomínka pozastavena do {time}",
   "relationshipReminderSnoozeLonger": "Odložit na déle",
+  "relationshipRemindersPillSemantics": "Připomínky: {cadence}. Klepnutím změníš.",
+  "relationshipRemindersSheetTitle": "Připomínky",
   "relationshipRemindersSwitchLabel": "Připomínej mi, ať zůstaneme v kontaktu",
   "relationshipsEmptyHint": "Po rozhovoru si zapiš pár slov. Lotti ti ukáže, s kým už dlouho nejsi v kontaktu, a když chceš, připomene ti to.",
   "relationshipsEmptyState": "Přidej lidi, se kterými chceš zůstat v kontaktu.",
@@ -4854,6 +4848,7 @@
   "relationshipTimestampToday": "Dnes",
   "relationshipTimestampYesterday": "Včera",
   "relationshipTrackingSinceLabel": "Sledováno od {date}",
+  "relationshipTurnRemindersOff": "Vypnout připomínky",
   "relationshipUpdateFromContact": "Aktualizovat z kontaktu",
   "saveButton": "Uložit",
   "saveButtonLabel": "Uložit",

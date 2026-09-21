@@ -5217,14 +5217,6 @@
   "relationshipNoLinkedTasks": "Nog geen gekoppelde taken.",
   "relationshipNotEnrolled": "Zonder herinneringen",
   "relationshipNotFound": "Deze persoon staat niet meer in je lijst.",
-  "relationshipOnTrackCadence": "Op schema · {cadence}",
-  "@relationshipOnTrackCadence": {
-    "placeholders": {
-      "cadence": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipPayAttentionTo": "Let op",
   "relationshipPhotoAddBanner": "Banner toevoegen",
   "relationshipPhotoAdjustCrop": "Uitsnede aanpassen",
@@ -5264,6 +5256,8 @@
   "relationshipReminderPausedBody": "Dan komt hij terug, tenzij je eerst een check-in vastlegt.",
   "relationshipReminderPausedTitle": "Herinnering gepauzeerd tot {time}",
   "relationshipReminderSnoozeLonger": "Langer snoozen",
+  "relationshipRemindersPillSemantics": "Herinneringen: {cadence}. Tik om te wijzigen.",
+  "relationshipRemindersSheetTitle": "Herinneringen",
   "relationshipRemindersSwitchLabel": "Herinner me eraan contact te houden",
   "relationshipsEmptyHint": "Noteer een regel nadat jullie gesproken hebben. Lotti laat zien wie je al een tijd niet hebt gesproken en herinnert je eraan als je dat wilt.",
   "relationshipsEmptyState": "Voeg de mensen toe met wie je dichtbij wilt blijven.",
@@ -5342,6 +5336,7 @@
   "relationshipTimestampToday": "Vandaag",
   "relationshipTimestampYesterday": "Gisteren",
   "relationshipTrackingSinceLabel": "Gevolgd sinds {date}",
+  "relationshipTurnRemindersOff": "Herinneringen uitzetten",
   "relationshipUpdateFromContact": "Bijwerken vanuit contact",
   "saveButton": "Opslaan",
   "saveButtonLabel": "Opslaan",

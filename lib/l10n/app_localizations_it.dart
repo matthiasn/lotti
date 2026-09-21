@@ -12419,11 +12419,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Questa persona non è più nella tua lista.';
 
   @override
-  String relationshipOnTrackCadence(String cadence) {
-    return 'In linea · $cadence';
-  }
-
-  @override
   String get relationshipPayAttentionTo => 'Fai attenzione a';
 
   @override
@@ -12536,6 +12531,14 @@ class AppLocalizationsIt extends AppLocalizations {
   String get relationshipReminderSnoozeLonger => 'Posticipa di più';
 
   @override
+  String relationshipRemindersPillSemantics(String cadence) {
+    return 'Promemoria: $cadence. Tocca per cambiare.';
+  }
+
+  @override
+  String get relationshipRemindersSheetTitle => 'Promemoria';
+
+  @override
   String get relationshipRemindersSwitchLabel =>
       'Ricordami di restare in contatto';
 
@@ -12636,6 +12639,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String relationshipTrackingSinceLabel(String date) {
     return 'Monitoraggio dal $date';
   }
+
+  @override
+  String get relationshipTurnRemindersOff => 'Disattiva promemoria';
 
   @override
   String get relationshipUpdateFromContact => 'Aggiorna dal contatto';

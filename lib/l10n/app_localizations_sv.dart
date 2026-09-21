@@ -12278,11 +12278,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipNotFound => 'Den här personen följs inte längre.';
 
   @override
-  String relationshipOnTrackCadence(String cadence) {
-    return 'I fas · $cadence';
-  }
-
-  @override
   String get relationshipPayAttentionTo => 'Var uppmärksam på';
 
   @override
@@ -12395,6 +12390,14 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipReminderSnoozeLonger => 'Snooza längre';
 
   @override
+  String relationshipRemindersPillSemantics(String cadence) {
+    return 'Påminnelser: $cadence. Tryck för att ändra.';
+  }
+
+  @override
+  String get relationshipRemindersSheetTitle => 'Påminnelser';
+
+  @override
   String get relationshipRemindersSwitchLabel =>
       'Påminn mig om att hålla kontakten';
 
@@ -12495,6 +12498,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String relationshipTrackingSinceLabel(String date) {
     return 'Följs sedan $date';
   }
+
+  @override
+  String get relationshipTurnRemindersOff => 'Stäng av påminnelser';
 
   @override
   String get relationshipUpdateFromContact => 'Uppdatera från kontakt';

@@ -7283,14 +7283,6 @@
   "relationshipNoLinkedTasks": "No tasks linked yet.",
   "relationshipNotEnrolled": "No reminders",
   "relationshipNotFound": "This person is no longer tracked.",
-  "relationshipOnTrackCadence": "On track · {cadence}",
-  "@relationshipOnTrackCadence": {
-    "placeholders": {
-      "cadence": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipPayAttentionTo": "Pay attention to",
   "relationshipPhotoAddBanner": "Add banner",
   "relationshipPhotoAdjustCrop": "Adjust crop",
@@ -7389,6 +7381,19 @@
   "relationshipReminderSnoozeLonger": "Snooze longer",
   "@relationshipReminderSnoozeLonger": {
     "description": "Button on the paused-reminder note that opens the snooze options."
+  },
+  "relationshipRemindersPillSemantics": "Reminders: {cadence}. Tap to change.",
+  "@relationshipRemindersPillSemantics": {
+    "description": "Screen-reader label of the tappable reminders pill in the person header; cadence is the interval, e.g. Weekly.",
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipRemindersSheetTitle": "Reminders",
+  "@relationshipRemindersSheetTitle": {
+    "description": "Title of the sheet opened from the reminders pill, where the interval is changed or reminders turned off."
   },
   "relationshipRemindersSwitchLabel": "Remind me to stay in touch",
   "@relationshipRemindersSwitchLabel": {
@@ -7500,6 +7505,10 @@
         "type": "String"
       }
     }
+  },
+  "relationshipTurnRemindersOff": "Turn reminders off",
+  "@relationshipTurnRemindersOff": {
+    "description": "Button in the reminders sheet that turns reminders off for this person."
   },
   "relationshipUpdateFromContact": "Update from contact",
   "@relationshipUpdateFromContact": {

@@ -4722,14 +4722,6 @@
   "relationshipNoLinkedTasks": "Aún no hay tareas vinculadas.",
   "relationshipNotEnrolled": "Sin recordatorios",
   "relationshipNotFound": "Esta persona ya no está en tu lista.",
-  "relationshipOnTrackCadence": "Al día · {cadence}",
-  "@relationshipOnTrackCadence": {
-    "placeholders": {
-      "cadence": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipPayAttentionTo": "Prestar atención a",
   "relationshipPhotoAddBanner": "Añadir banner",
   "relationshipPhotoAdjustCrop": "Ajustar el recorte",
@@ -4769,6 +4761,8 @@
   "relationshipReminderPausedBody": "Volverá entonces, salvo que registres un contacto antes.",
   "relationshipReminderPausedTitle": "Recordatorio en pausa hasta {time}",
   "relationshipReminderSnoozeLonger": "Posponer más",
+  "relationshipRemindersPillSemantics": "Recordatorios: {cadence}. Toca para cambiar.",
+  "relationshipRemindersSheetTitle": "Recordatorios",
   "relationshipRemindersSwitchLabel": "Recuérdame mantener el contacto",
   "relationshipsEmptyHint": "Apunta una línea después de hablar. Lotti te muestra con quién llevas tiempo sin hablar y, si quieres, te lo recuerda.",
   "relationshipsEmptyState": "Añade a las personas de las que quieres estar cerca.",
@@ -4847,6 +4841,7 @@
   "relationshipTimestampToday": "Hoy",
   "relationshipTimestampYesterday": "Ayer",
   "relationshipTrackingSinceLabel": "Seguimiento desde {date}",
+  "relationshipTurnRemindersOff": "Desactivar recordatorios",
   "relationshipUpdateFromContact": "Actualizar desde el contacto",
   "saveButton": "Guardar",
   "saveButtonLabel": "Guardar",

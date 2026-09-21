@@ -20347,12 +20347,6 @@ abstract class AppLocalizations {
   /// **'This person is no longer tracked.'**
   String get relationshipNotFound;
 
-  /// No description provided for @relationshipOnTrackCadence.
-  ///
-  /// In en, this message translates to:
-  /// **'On track · {cadence}'**
-  String relationshipOnTrackCadence(String cadence);
-
   /// No description provided for @relationshipPayAttentionTo.
   ///
   /// In en, this message translates to:
@@ -20527,6 +20521,18 @@ abstract class AppLocalizations {
   /// **'Snooze longer'**
   String get relationshipReminderSnoozeLonger;
 
+  /// Screen-reader label of the tappable reminders pill in the person header; cadence is the interval, e.g. Weekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders: {cadence}. Tap to change.'**
+  String relationshipRemindersPillSemantics(String cadence);
+
+  /// Title of the sheet opened from the reminders pill, where the interval is changed or reminders turned off.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders'**
+  String get relationshipRemindersSheetTitle;
+
   /// Label of the switch that turns reminders on for a person, in the person form and the contact-import review. Worded as the request it grants, so it reads correctly while the switch is off.
   ///
   /// In en, this message translates to:
@@ -20674,6 +20680,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tracking since {date}'**
   String relationshipTrackingSinceLabel(String date);
+
+  /// Button in the reminders sheet that turns reminders off for this person.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn reminders off'**
+  String get relationshipTurnRemindersOff;
 
   /// Menu action that re-reads the linked OS contact and copies anything new
   ///

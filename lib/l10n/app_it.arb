@@ -5218,14 +5218,6 @@
   "relationshipNoLinkedTasks": "Nessuna attività collegata.",
   "relationshipNotEnrolled": "Senza promemoria",
   "relationshipNotFound": "Questa persona non è più nella tua lista.",
-  "relationshipOnTrackCadence": "In linea · {cadence}",
-  "@relationshipOnTrackCadence": {
-    "placeholders": {
-      "cadence": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipPayAttentionTo": "Fai attenzione a",
   "relationshipPhotoAddBanner": "Aggiungi banner",
   "relationshipPhotoAdjustCrop": "Regola il ritaglio",
@@ -5265,6 +5257,8 @@
   "relationshipReminderPausedBody": "Tornerà allora, a meno che tu non registri prima un contatto.",
   "relationshipReminderPausedTitle": "Promemoria in pausa fino alle {time}",
   "relationshipReminderSnoozeLonger": "Posticipa di più",
+  "relationshipRemindersPillSemantics": "Promemoria: {cadence}. Tocca per cambiare.",
+  "relationshipRemindersSheetTitle": "Promemoria",
   "relationshipRemindersSwitchLabel": "Ricordami di restare in contatto",
   "relationshipsEmptyHint": "Scrivi una riga dopo aver parlato. Lotti ti mostra con chi non parli da un po’ e, se vuoi, te lo ricorda.",
   "relationshipsEmptyState": "Aggiungi le persone a cui vuoi restare vicino.",
@@ -5343,6 +5337,7 @@
   "relationshipTimestampToday": "Oggi",
   "relationshipTimestampYesterday": "Ieri",
   "relationshipTrackingSinceLabel": "Monitoraggio dal {date}",
+  "relationshipTurnRemindersOff": "Disattiva promemoria",
   "relationshipUpdateFromContact": "Aggiorna dal contatto",
   "saveButton": "Salva",
   "saveButtonLabel": "Salva",
