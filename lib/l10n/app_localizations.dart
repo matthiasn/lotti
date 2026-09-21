@@ -20443,11 +20443,17 @@ abstract class AppLocalizations {
   /// **'Photo of {name}'**
   String relationshipPhotoSheetTitle(String name);
 
-  /// Button that opens a pre-filled check-in from the post-call prompt
+  /// Question heading the offer to log a call placed from Lotti. Asked, not asserted: the app only knows the dialer was opened.
   ///
   /// In en, this message translates to:
-  /// **'Log check-in'**
-  String get relationshipPostCallConfirm;
+  /// **'Did you reach {name}?'**
+  String relationshipPostCallAskCall(String name);
+
+  /// Question heading the offer to log a message or email started from Lotti.
+  ///
+  /// In en, this message translates to:
+  /// **'Did you write to {name}?'**
+  String relationshipPostCallAskMessage(String name);
 
   /// Button that dismisses the post-call prompt without a trace
   ///
@@ -20461,17 +20467,11 @@ abstract class AppLocalizations {
   /// **'started {time} · {minutes, plural, =0{under a minute} =1{about 1 min} other{about {minutes} min}}'**
   String relationshipPostCallMeta(String time, int minutes);
 
-  /// No description provided for @relationshipPostCallOfferCall.
+  /// Answer to the post-call question that opens the check-in prefilled with the call.
   ///
   /// In en, this message translates to:
-  /// **'You called {name} {minutes, plural, =0{less than a minute} =1{1 minute} other{{minutes} minutes}} ago — log it while it is fresh?'**
-  String relationshipPostCallOfferCall(String name, int minutes);
-
-  /// No description provided for @relationshipPostCallOfferMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'You wrote to {name} {minutes, plural, =0{less than a minute} =1{1 minute} other{{minutes} minutes}} ago — log it while it is fresh?'**
-  String relationshipPostCallOfferMessage(String name, int minutes);
+  /// **'Yes, log it'**
+  String get relationshipPostCallYes;
 
   /// No description provided for @relationshipProposalAdded.
   ///

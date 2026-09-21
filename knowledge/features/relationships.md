@@ -2024,20 +2024,27 @@ wins) and it expires after `pendingInteractionTtl`, so a call from yesterday
 does not greet the user the next morning. `PostInteractionPrompt` re-resolves
 the person through the repository rather than trusting the marker: a person
 deleted, or hidden while private entries are off, produces no prompt, because
-naming them would leak that they exist. The offer names its evidence — the
-channel, how many minutes ago, when it started and about how long it has been
-(`You called Pip 11 minutes ago — log it while it is fresh?` · `started
-12:33 · about 11 min`) — so it reads as "log the call you just had". The
+naming them would leak that they exist. It only offers the marker of the
+person whose page it is on. The offer asks rather than asserts — the marker
+proves the dialer or the mail app opened, not that anyone answered — and names
+its evidence under the question (`Did you reach Pip?` · `started 12:33 · about
+11 min`). Its *Yes, log it* is a secondary button: the page's bar already
+carries the one filled *Log check-in*, which opens the same composer. The
 minutes it quotes travel into the capture sheet as `prefilledDuration` and
 are persisted as the check-in's end time (`dateTo − dateFrom`, no schema
 change), so the log's row shows the duration the offer promised; editing a
 check-in keeps its length when the start time moves.
 
-The offer is not the only door. The page's own *Log check-in* and *Dictate*
-go through `PendingInteractionClaims.claimFor`: when the marker is about the
-person on screen they take it — cleared, and a claim counted — and open the
-composer through the same `showCheckInForInteraction` the offer uses, so the
-call is logged as that call whichever control the user reaches for. The offer
+All three doors — the offer's answer and the page's own *Log check-in* and
+*Dictate* — go through `openCheckInForPerson`, which claims the marker with
+`PendingInteractionClaims.claimFor` (exclusive: two taps landing together get
+one marker between them) and opens the composer describing the call, so it is
+logged as that call whichever control the user reaches for. The elapsed
+minutes are read before the claim, so clearing the marker cannot move them off
+what the offer quoted. A composer closed without saving hands the claim back
+(`release`, which writes the marker as it was, original start included), so a
+stray swipe on a prefilled sheet does not lose the call; the offer returns
+until it is logged, dismissed or expired. The offer
 listens to the claim count and re-reads, which is how it stops asking (the
 store is plain settings, with nothing to listen to). A marker about someone
 else is neither used nor cleared. With no marker the composer starts from the
@@ -2052,9 +2059,9 @@ stateDiagram-v2
   Pending --> NoMarker: expired on read (TTL)
   Pending --> NoMarker: unreadable on read (cleared)
   Pending --> NoMarker: declined
-  Pending --> Capturing: accepted on the offer
-  Pending --> Capturing: claimed by Log check-in / Dictate (same person)
-  Capturing --> NoMarker: marker cleared as the sheet opens
+  Pending --> Capturing: claimed by the offer, Log check-in or Dictate (same person)
+  Capturing --> NoMarker: saved
+  Capturing --> Pending: closed without saving (released as it was)
 ```
 
 Two traps this code exists around, both found by test rather than review:

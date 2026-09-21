@@ -356,6 +356,34 @@ void main() {
         expect(container.read(pendingInteractionClaimsProvider), 1);
       });
 
+      test('a released claim comes back exactly as it was — its original '
+          'start kept, so it keeps its age and its expiry — and is counted, '
+          'so the offer reads it again', () async {
+        final (:container, :store) = build();
+        await withClock(Clock.fixed(DateTime(2026, 8, 17, 11, 30)), () async {
+          await store.remember(
+            relationshipId: 'anna',
+            interactionType: CheckInInteractionType.message,
+          );
+        });
+        final claims = container.read(
+          pendingInteractionClaimsProvider.notifier,
+        );
+
+        await withClock(Clock.fixed(DateTime(2026, 8, 17, 11, 45)), () async {
+          final claimed = await claims.claimFor('anna');
+          expect(await store.read(), isNull);
+          await claims.release(claimed!);
+
+          expect(await store.read(), (
+            relationshipId: 'anna',
+            interactionType: CheckInInteractionType.message,
+            startedAt: DateTime(2026, 8, 17, 11, 30),
+          ));
+        });
+        expect(container.read(pendingInteractionClaimsProvider), 2);
+      });
+
       test('claims nothing when there is no marker', () async {
         final (:container, store: _) = build();
 

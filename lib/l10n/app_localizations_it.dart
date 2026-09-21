@@ -12472,7 +12472,14 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get relationshipPostCallConfirm => 'Annota check-in';
+  String relationshipPostCallAskCall(String name) {
+    return 'Hai raggiunto $name?';
+  }
+
+  @override
+  String relationshipPostCallAskMessage(String name) {
+    return 'Hai scritto a $name?';
+  }
 
   @override
   String get relationshipPostCallDismiss => 'Ignora';
@@ -12490,28 +12497,7 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String relationshipPostCallOfferCall(String name, int minutes) {
-    String _temp0 = intl.Intl.pluralLogic(
-      minutes,
-      locale: localeName,
-      other: '$minutes minuti',
-      one: '1 minuto',
-      zero: 'meno di un minuto',
-    );
-    return 'Hai chiamato $name $_temp0 fa — lo annotiamo finché è fresco?';
-  }
-
-  @override
-  String relationshipPostCallOfferMessage(String name, int minutes) {
-    String _temp0 = intl.Intl.pluralLogic(
-      minutes,
-      locale: localeName,
-      other: '$minutes minuti',
-      one: '1 minuto',
-      zero: 'meno di un minuto',
-    );
-    return 'Hai scritto a $name $_temp0 fa — lo annotiamo finché è fresco?';
-  }
+  String get relationshipPostCallYes => 'Sì, annotalo';
 
   @override
   String relationshipProposalAdded(String title) {

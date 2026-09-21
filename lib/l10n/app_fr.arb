@@ -4745,7 +4745,8 @@
   "relationshipPhotoRemoveAction": "Supprimer",
   "relationshipPhotoSaveFailed": "Impossible d'enregistrer la photo",
   "relationshipPhotoSheetTitle": "Photo de {name}",
-  "relationshipPostCallConfirm": "Noter un point",
+  "relationshipPostCallAskCall": "As-tu pu joindre {name} ?",
+  "relationshipPostCallAskMessage": "As-tu écrit à {name} ?",
   "relationshipPostCallDismiss": "Ignorer",
   "relationshipPostCallMeta": "commencé à {time} · {minutes, plural, =0{moins d'une minute} =1{environ 1 min} other{environ {minutes} min}}",
   "@relationshipPostCallMeta": {
@@ -4758,28 +4759,7 @@
       }
     }
   },
-  "relationshipPostCallOfferCall": "Tu as appelé {name} il y a {minutes, plural, =0{moins d'une minute} =1{1 minute} other{{minutes} minutes}} — on note ça tant que c'est frais ?",
-  "@relationshipPostCallOfferCall": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "relationshipPostCallOfferMessage": "Tu as écrit à {name} il y a {minutes, plural, =0{moins d'une minute} =1{1 minute} other{{minutes} minutes}} — on note ça tant que c'est frais ?",
-  "@relationshipPostCallOfferMessage": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
+  "relationshipPostCallYes": "Oui, le noter",
   "relationshipProposalAdded": "Ajoutée → {title}",
   "relationshipProposalEvidence": "Depuis l’échange du {date}",
   "relationshipProposalUndoFailed": "Impossible d’annuler. La tâche a peut-être été modifiée.",

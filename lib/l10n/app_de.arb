@@ -4745,7 +4745,8 @@
   "relationshipPhotoRemoveAction": "Entfernen",
   "relationshipPhotoSaveFailed": "Foto konnte nicht gespeichert werden",
   "relationshipPhotoSheetTitle": "Foto von {name}",
-  "relationshipPostCallConfirm": "Check-in festhalten",
+  "relationshipPostCallAskCall": "Hast du {name} erreicht?",
+  "relationshipPostCallAskMessage": "Hast du {name} geschrieben?",
   "relationshipPostCallDismiss": "Verwerfen",
   "relationshipPostCallMeta": "begonnen um {time} · {minutes, plural, =0{unter einer Minute} =1{etwa 1 Min.} other{etwa {minutes} Min.}}",
   "@relationshipPostCallMeta": {
@@ -4758,28 +4759,7 @@
       }
     }
   },
-  "relationshipPostCallOfferCall": "Du hast {name} vor {minutes, plural, =0{weniger als einer Minute} =1{1 Minute} other{{minutes} Minuten}} angerufen — jetzt festhalten, solange es frisch ist?",
-  "@relationshipPostCallOfferCall": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "relationshipPostCallOfferMessage": "Du hast {name} vor {minutes, plural, =0{weniger als einer Minute} =1{1 Minute} other{{minutes} Minuten}} geschrieben — jetzt festhalten, solange es frisch ist?",
-  "@relationshipPostCallOfferMessage": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
+  "relationshipPostCallYes": "Ja, festhalten",
   "relationshipProposalAdded": "Hinzugefügt → {title}",
   "relationshipProposalEvidence": "Aus dem Check-in vom {date}",
   "relationshipProposalUndoFailed": "Rückgängig machen nicht möglich. Die Aufgabe wurde möglicherweise geändert.",

@@ -12,7 +12,6 @@ import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/model/relationship_agent_identity.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
-import 'package:lotti/features/relationships/service/pending_interaction_store.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
 import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
@@ -139,14 +138,10 @@ class RelationshipDetailsPage extends ConsumerWidget {
     required CheckInEntry? latest,
     bool startSpeaking = false,
   }) async {
-    final pending = await ref
-        .read(pendingInteractionClaimsProvider.notifier)
-        .claimFor(relationshipId);
-    if (!context.mounted) return;
-    await showCheckInForInteraction(
+    await openCheckInForPerson(
       context: context,
+      ref: ref,
       relationshipId: relationshipId,
-      pending: pending,
       fallbackInteractionType: latest?.data.interactionType,
       startSpeaking: startSpeaking,
     );

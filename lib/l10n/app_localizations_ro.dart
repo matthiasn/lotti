@@ -12577,7 +12577,14 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get relationshipPostCallConfirm => 'Notați check-in';
+  String relationshipPostCallAskCall(String name) {
+    return 'Ați reușit să vorbiți cu $name?';
+  }
+
+  @override
+  String relationshipPostCallAskMessage(String name) {
+    return 'I-ați scris lui $name?';
+  }
 
   @override
   String get relationshipPostCallDismiss => 'Ignorați';
@@ -12595,30 +12602,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String relationshipPostCallOfferCall(String name, int minutes) {
-    String _temp0 = intl.Intl.pluralLogic(
-      minutes,
-      locale: localeName,
-      other: '$minutes de minute',
-      few: '$minutes minute',
-      one: '1 minut',
-      zero: 'mai puțin de un minut',
-    );
-    return 'Ați sunat pe $name acum $_temp0 — notați cât este proaspăt?';
-  }
-
-  @override
-  String relationshipPostCallOfferMessage(String name, int minutes) {
-    String _temp0 = intl.Intl.pluralLogic(
-      minutes,
-      locale: localeName,
-      other: '$minutes de minute',
-      few: '$minutes minute',
-      one: '1 minut',
-      zero: 'mai puțin de un minut',
-    );
-    return 'I-ați scris lui $name acum $_temp0 — notați cât este proaspăt?';
-  }
+  String get relationshipPostCallYes => 'Da, notați';
 
   @override
   String relationshipProposalAdded(String title) {

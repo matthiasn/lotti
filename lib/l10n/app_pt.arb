@@ -5240,7 +5240,8 @@
   "relationshipPhotoRemoveAction": "Remover",
   "relationshipPhotoSaveFailed": "Não foi possível guardar a foto",
   "relationshipPhotoSheetTitle": "Foto de {name}",
-  "relationshipPostCallConfirm": "Registar check-in",
+  "relationshipPostCallAskCall": "Conseguiste falar com {name}?",
+  "relationshipPostCallAskMessage": "Escreveste a {name}?",
   "relationshipPostCallDismiss": "Ignorar",
   "relationshipPostCallMeta": "começou às {time} · {minutes, plural, =0{menos de um minuto} =1{cerca de 1 min} other{cerca de {minutes} min}}",
   "@relationshipPostCallMeta": {
@@ -5253,28 +5254,7 @@
       }
     }
   },
-  "relationshipPostCallOfferCall": "Ligaste a {name} há {minutes, plural, =0{menos de um minuto} =1{1 minuto} other{{minutes} minutos}} — registamos enquanto está fresco?",
-  "@relationshipPostCallOfferCall": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "relationshipPostCallOfferMessage": "Escreveste a {name} há {minutes, plural, =0{menos de um minuto} =1{1 minuto} other{{minutes} minutos}} — registamos enquanto está fresco?",
-  "@relationshipPostCallOfferMessage": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
+  "relationshipPostCallYes": "Sim, registar",
   "relationshipProposalAdded": "Adicionada → {title}",
   "relationshipProposalEvidence": "Do check-in de {date}",
   "relationshipProposalUndoFailed": "Não foi possível desfazer. A tarefa pode ter sido alterada.",

@@ -4745,7 +4745,8 @@
   "relationshipPhotoRemoveAction": "Eliminați",
   "relationshipPhotoSaveFailed": "Fotografia nu a putut fi salvată",
   "relationshipPhotoSheetTitle": "Fotografie – {name}",
-  "relationshipPostCallConfirm": "Notați check-in",
+  "relationshipPostCallAskCall": "Ați reușit să vorbiți cu {name}?",
+  "relationshipPostCallAskMessage": "I-ați scris lui {name}?",
   "relationshipPostCallDismiss": "Ignorați",
   "relationshipPostCallMeta": "început la {time} · {minutes, plural, =0{sub un minut} =1{circa 1 min} other{circa {minutes} min}}",
   "@relationshipPostCallMeta": {
@@ -4758,28 +4759,7 @@
       }
     }
   },
-  "relationshipPostCallOfferCall": "Ați sunat pe {name} acum {minutes, plural, =0{mai puțin de un minut} =1{1 minut} few{{minutes} minute} other{{minutes} de minute}} — notați cât este proaspăt?",
-  "@relationshipPostCallOfferCall": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "relationshipPostCallOfferMessage": "I-ați scris lui {name} acum {minutes, plural, =0{mai puțin de un minut} =1{1 minut} few{{minutes} minute} other{{minutes} de minute}} — notați cât este proaspăt?",
-  "@relationshipPostCallOfferMessage": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
+  "relationshipPostCallYes": "Da, notați",
   "relationshipProposalAdded": "Adăugată → {title}",
   "relationshipProposalEvidence": "Din interacțiunea din {date}",
   "relationshipProposalUndoFailed": "Anularea nu a reușit. Este posibil ca sarcina să fi fost modificată.",

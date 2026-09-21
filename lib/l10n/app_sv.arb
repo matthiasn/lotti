@@ -5241,7 +5241,8 @@
   "relationshipPhotoRemoveAction": "Ta bort",
   "relationshipPhotoSaveFailed": "Det gick inte att spara fotot",
   "relationshipPhotoSheetTitle": "Foto på {name}",
-  "relationshipPostCallConfirm": "Logga avstämning",
+  "relationshipPostCallAskCall": "Fick du tag på {name}?",
+  "relationshipPostCallAskMessage": "Skrev du till {name}?",
   "relationshipPostCallDismiss": "Avfärda",
   "relationshipPostCallMeta": "började kl. {time} · {minutes, plural, =0{under en minut} =1{cirka 1 min} other{cirka {minutes} min}}",
   "@relationshipPostCallMeta": {
@@ -5254,28 +5255,7 @@
       }
     }
   },
-  "relationshipPostCallOfferCall": "Du ringde {name} för {minutes, plural, =0{mindre än en minut} =1{1 minut} other{{minutes} minuter}} sedan — anteckna medan det är färskt?",
-  "@relationshipPostCallOfferCall": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "relationshipPostCallOfferMessage": "Du skrev till {name} för {minutes, plural, =0{mindre än en minut} =1{1 minut} other{{minutes} minuter}} sedan — anteckna medan det är färskt?",
-  "@relationshipPostCallOfferMessage": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
+  "relationshipPostCallYes": "Ja, logga det",
   "relationshipProposalAdded": "Tillagd → {title}",
   "relationshipProposalEvidence": "Från avstämningen den {date}",
   "relationshipProposalUndoFailed": "Kunde inte ångra. Uppgiften kan ha ändrats.",

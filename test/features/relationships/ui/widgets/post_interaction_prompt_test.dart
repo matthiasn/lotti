@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
@@ -45,6 +46,9 @@ class _FakePendingInteractionStore implements PendingInteractionStore {
 
   @override
   Future<PendingInteraction?> read() async => _pending;
+
+  @override
+  Future<void> put(PendingInteraction p) async => _pending = p;
 
   @override
   Future<void> clear() async {
@@ -141,17 +145,12 @@ void main() {
   final offer = find.byKey(const ValueKey('person-post-call-offer'));
 
   group('when the prompt appears', () {
-    testWidgets('names the person, the channel and how long ago', (
-      tester,
-    ) async {
+    testWidgets('asks rather than asserts: the marker proves the dialer '
+        'opened, not that anyone answered', (tester) async {
       await pump(tester, pending: marker(), resolves: person());
 
-      expect(
-        find.text(
-          'You called Anna Schmidt 11 minutes ago — log it while it is fresh?',
-        ),
-        findsOneWidget,
-      );
+      expect(find.text('Did you reach Anna Schmidt?'), findsOneWidget);
+      expect(find.textContaining('You called'), findsNothing);
       expect(find.byIcon(LottiIcons.call), findsOneWidget);
     });
 
@@ -166,21 +165,6 @@ void main() {
       expect(meta.style?.fontFamily, 'Inconsolata');
     });
 
-    testWidgets('a single minute reads in the singular', (tester) async {
-      await pump(
-        tester,
-        pending: marker(startedAt: DateTime(2026, 8, 17, 11, 40)),
-        resolves: person(),
-      );
-
-      expect(
-        find.text(
-          'You called Anna Schmidt 1 minute ago — log it while it is fresh?',
-        ),
-        findsOneWidget,
-      );
-    });
-
     testWidgets('under a minute reads as such, never as "0 minutes"', (
       tester,
     ) async {
@@ -190,13 +174,6 @@ void main() {
         resolves: person(),
       );
 
-      expect(
-        find.text(
-          'You called Anna Schmidt less than a minute ago — log it while it '
-          'is fresh?',
-        ),
-        findsOneWidget,
-      );
       expect(find.text('started 11:40 AM · under a minute'), findsOneWidget);
     });
 
@@ -219,13 +196,7 @@ void main() {
         resolves: person(),
       );
 
-      expect(
-        find.text(
-          'You wrote to Anna Schmidt 11 minutes ago — log it while it is '
-          'fresh?',
-        ),
-        findsOneWidget,
-      );
+      expect(find.text('Did you write to Anna Schmidt?'), findsOneWidget);
       expect(find.byIcon(LottiIcons.chat), findsOneWidget);
     });
 
@@ -241,10 +212,16 @@ void main() {
       expect(find.byType(Card), findsNothing);
     });
 
-    testWidgets('offers both logging and declining', (tester) async {
+    testWidgets('offers both logging and declining, logging as a secondary '
+        "button: the page's bar already carries the one filled Log "
+        'check-in', (tester) async {
       await pump(tester, pending: marker(), resolves: person());
 
-      expect(find.text('Log check-in'), findsOneWidget);
+      final yes = tester.widget<DesignSystemButton>(
+        find.byKey(const ValueKey('person-post-call-yes')),
+      );
+      expect(yes.label, 'Yes, log it');
+      expect(yes.variant, DesignSystemButtonVariant.secondary);
       expect(find.text('Dismiss'), findsOneWidget);
     });
   });
@@ -387,19 +364,39 @@ void main() {
   });
 
   group('accepting', () {
-    testWidgets('clears the marker before opening the form, so backing out '
-        'is not asked twice', (tester) async {
+    testWidgets('takes the marker while the form is open, so the offer does '
+        'not ask about a call already being logged', (tester) async {
       final store = await pump(
         tester,
         pending: marker(),
         resolves: person(),
       );
 
-      await tester.tap(find.text('Log check-in'));
+      await tester.tap(find.text('Yes, log it'));
       await tester.pumpAndSettle();
 
       expect(store.clearCount, 1);
       expect(await store.read(), isNull);
+    });
+
+    testWidgets('closing the form without saving hands the call back: the '
+        'offer returns with it, as it was, so a stray swipe loses nothing', (
+      tester,
+    ) async {
+      final store = await pump(tester, pending: marker(), resolves: person());
+
+      await tester.tap(find.text('Yes, log it'));
+      await tester.pumpAndSettle();
+      expect(find.byType(CheckInCaptureForm), findsOneWidget);
+      expect(offer, findsNothing);
+
+      // An untouched composer closes at once.
+      await tester.tap(find.byKey(const ValueKey('check-in-cancel')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CheckInCaptureForm), findsNothing);
+      expect(await store.read(), marker());
+      expect(offer, findsOneWidget);
     });
 
     testWidgets('opens the form already describing the call that happened', (
@@ -407,7 +404,7 @@ void main() {
     ) async {
       await pump(tester, pending: marker(), resolves: person());
 
-      await tester.tap(find.text('Log check-in'));
+      await tester.tap(find.text('Yes, log it'));
       await tester.pumpAndSettle();
 
       // The type chip reads the interaction; no chip is "selected" — that
@@ -429,7 +426,7 @@ void main() {
       await pump(tester, pending: marker(), resolves: person());
 
       await withClock(Clock.fixed(now), () async {
-        await tester.tap(find.text('Log check-in'));
+        await tester.tap(find.text('Yes, log it'));
         await tester.pumpAndSettle();
       });
 
@@ -460,12 +457,12 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        expect(find.textContaining('11 minutes ago'), findsOneWidget);
+        expect(find.textContaining('about 11 min'), findsOneWidget);
 
         // Accepting clears the marker first; the clock moves on while that
         // is in flight.
         final gate = store.clearGate = Completer<void>();
-        await tester.tap(find.text('Log check-in'));
+        await tester.tap(find.text('Yes, log it'));
         await tester.pump();
         current = now.add(const Duration(minutes: 5));
         gate.complete();
@@ -487,7 +484,7 @@ void main() {
         resolves: person(),
       );
 
-      await tester.tap(find.text('Log check-in'));
+      await tester.tap(find.text('Yes, log it'));
       await tester.pumpAndSettle();
 
       final typeChip = tester.widget<DesignSystemChip>(
@@ -501,7 +498,7 @@ void main() {
       setTestSurfaceSize(tester, const Size(1000, 1400));
       await pump(tester, pending: marker(), resolves: person());
 
-      await tester.tap(find.text('Log check-in'));
+      await tester.tap(find.text('Yes, log it'));
       await tester.pumpAndSettle();
 
       await tester.ensureVisible(find.byKey(const ValueKey('check-in-more')));
@@ -553,7 +550,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(offer, findsOneWidget);
-      expect(find.textContaining('You called Anna Schmidt'), findsOneWidget);
+      expect(find.text('Did you reach Anna Schmidt?'), findsOneWidget);
     });
 
     testWidgets('ignores lifecycle states other than resumed', (tester) async {

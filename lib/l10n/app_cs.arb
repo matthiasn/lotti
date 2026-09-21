@@ -4752,7 +4752,8 @@
   "relationshipPhotoRemoveAction": "Odebrat",
   "relationshipPhotoSaveFailed": "Fotku se nepodařilo uložit",
   "relationshipPhotoSheetTitle": "Fotka – {name}",
-  "relationshipPostCallConfirm": "Zapsat check-in",
+  "relationshipPostCallAskCall": "Podařilo se ti zastihnout {name}?",
+  "relationshipPostCallAskMessage": "Odešla tvoje zpráva pro {name}?",
   "relationshipPostCallDismiss": "Zavřít",
   "relationshipPostCallMeta": "začátek v {time} · {minutes, plural, =0{necelá minuta} =1{asi 1 min} other{asi {minutes} min}}",
   "@relationshipPostCallMeta": {
@@ -4765,28 +4766,7 @@
       }
     }
   },
-  "relationshipPostCallOfferCall": "Hovor s {name} před {minutes, plural, =0{necelou minutou} =1{1 minutou} other{{minutes} minutami}} — zapíšeme to, dokud je to čerstvé?",
-  "@relationshipPostCallOfferCall": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "relationshipPostCallOfferMessage": "Zpráva pro {name} před {minutes, plural, =0{necelou minutou} =1{1 minutou} other{{minutes} minutami}} — zapíšeme to, dokud je to čerstvé?",
-  "@relationshipPostCallOfferMessage": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
+  "relationshipPostCallYes": "Ano, zapsat",
   "relationshipProposalAdded": "Přidáno → {title}",
   "relationshipProposalEvidence": "Z kontaktu dne {date}",
   "relationshipProposalUndoFailed": "Akci se nepodařilo vrátit. Úkol se možná změnil.",

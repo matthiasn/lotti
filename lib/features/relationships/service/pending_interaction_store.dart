@@ -50,16 +50,22 @@ class PendingInteractionStore {
   Future<void> remember({
     required String relationshipId,
     required CheckInInteractionType interactionType,
-  }) async {
-    await _settingsDb.saveSettingsItem(
-      pendingInteractionKey,
-      jsonEncode({
-        'relationshipId': relationshipId,
-        'interactionType': interactionType.name,
-        'startedAt': clock.now().toIso8601String(),
-      }),
-    );
-  }
+  }) => put((
+    relationshipId: relationshipId,
+    interactionType: interactionType,
+    startedAt: clock.now(),
+  ));
+
+  /// Writes [pending] as the marker exactly as given — its original start
+  /// included, so a marker handed back keeps its age and its expiry.
+  Future<void> put(PendingInteraction pending) => _settingsDb.saveSettingsItem(
+    pendingInteractionKey,
+    jsonEncode({
+      'relationshipId': pending.relationshipId,
+      'interactionType': pending.interactionType.name,
+      'startedAt': pending.startedAt.toIso8601String(),
+    }),
+  );
 
   /// The outstanding marker, or null when there is none, when it has expired,
   /// or when the stored value cannot be read.
@@ -145,6 +151,16 @@ class PendingInteractionClaims extends Notifier<int> {
   }
 
   Future<void> _previous = Future<void>.value();
+
+  /// Hands back a claim that came to nothing — the composer it opened was
+  /// closed without saving. The marker returns as it was, and the count
+  /// moves so the offer reads it again: a stray swipe on a sheet prefilled
+  /// with a call must not lose the call. [PendingInteractionStore.read]
+  /// still drops it once it expires.
+  Future<void> release(PendingInteraction pending) async {
+    await ref.read(pendingInteractionStoreProvider).put(pending);
+    if (ref.mounted) state++;
+  }
 
   Future<PendingInteraction?> _claim(String relationshipId) async {
     final store = ref.read(pendingInteractionStoreProvider);

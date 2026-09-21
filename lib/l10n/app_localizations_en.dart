@@ -12261,7 +12261,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get relationshipPostCallConfirm => 'Log check-in';
+  String relationshipPostCallAskCall(String name) {
+    return 'Did you reach $name?';
+  }
+
+  @override
+  String relationshipPostCallAskMessage(String name) {
+    return 'Did you write to $name?';
+  }
 
   @override
   String get relationshipPostCallDismiss => 'Dismiss';
@@ -12279,28 +12286,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String relationshipPostCallOfferCall(String name, int minutes) {
-    String _temp0 = intl.Intl.pluralLogic(
-      minutes,
-      locale: localeName,
-      other: '$minutes minutes',
-      one: '1 minute',
-      zero: 'less than a minute',
-    );
-    return 'You called $name $_temp0 ago — log it while it is fresh?';
-  }
-
-  @override
-  String relationshipPostCallOfferMessage(String name, int minutes) {
-    String _temp0 = intl.Intl.pluralLogic(
-      minutes,
-      locale: localeName,
-      other: '$minutes minutes',
-      one: '1 minute',
-      zero: 'less than a minute',
-    );
-    return 'You wrote to $name $_temp0 ago — log it while it is fresh?';
-  }
+  String get relationshipPostCallYes => 'Yes, log it';
 
   @override
   String relationshipProposalAdded(String title) {

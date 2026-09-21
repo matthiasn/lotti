@@ -5240,7 +5240,8 @@
   "relationshipPhotoRemoveAction": "Verwijderen",
   "relationshipPhotoSaveFailed": "Kon de foto niet opslaan",
   "relationshipPhotoSheetTitle": "Foto van {name}",
-  "relationshipPostCallConfirm": "Check-in vastleggen",
+  "relationshipPostCallAskCall": "Heb je {name} bereikt?",
+  "relationshipPostCallAskMessage": "Heb je {name} geschreven?",
   "relationshipPostCallDismiss": "Negeren",
   "relationshipPostCallMeta": "begonnen om {time} · {minutes, plural, =0{minder dan een minuut} =1{ongeveer 1 min} other{ongeveer {minutes} min}}",
   "@relationshipPostCallMeta": {
@@ -5253,28 +5254,7 @@
       }
     }
   },
-  "relationshipPostCallOfferCall": "Je hebt {name} {minutes, plural, =0{minder dan een minuut} =1{1 minuut} other{{minutes} minuten}} geleden gebeld — nu vastleggen zolang het vers is?",
-  "@relationshipPostCallOfferCall": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "relationshipPostCallOfferMessage": "Je hebt {name} {minutes, plural, =0{minder dan een minuut} =1{1 minuut} other{{minutes} minuten}} geleden geschreven — nu vastleggen zolang het vers is?",
-  "@relationshipPostCallOfferMessage": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
+  "relationshipPostCallYes": "Ja, vastleggen",
   "relationshipProposalAdded": "Toegevoegd → {title}",
   "relationshipProposalEvidence": "Uit de check-in van {date}",
   "relationshipProposalUndoFailed": "Ongedaan maken is mislukt. De taak is mogelijk gewijzigd.",

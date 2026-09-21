@@ -20,18 +20,20 @@ import 'package:material_ui/material_ui.dart';
 /// a call that was just placed is logged as that call whichever door the
 /// user reaches for.
 ///
-/// The elapsed time is read here, at the moment of opening: it is what the
+/// The elapsed time is measured to [openedAt] — the moment the user asked
+/// for the composer, before any claim was cleared — because that is what the
 /// offer quoted, and the form must agree with it.
 Future<CheckInEntry?> showCheckInForInteraction({
   required BuildContext context,
   required String relationshipId,
+  required DateTime openedAt,
   PendingInteraction? pending,
   CheckInInteractionType? fallbackInteractionType,
   bool startSpeaking = false,
 }) {
   final elapsed = pending == null
       ? null
-      : clock.now().difference(pending.startedAt);
+      : openedAt.difference(pending.startedAt);
   return showCheckInCaptureSheet(
     context: context,
     relationshipId: relationshipId,
@@ -43,6 +45,43 @@ Future<CheckInEntry?> showCheckInForInteraction({
         : Duration(minutes: elapsed.inMinutes),
     startSpeaking: startSpeaking,
   );
+}
+
+/// The one way into the composer for a person: claims a call or message just
+/// placed to them ([PendingInteractionClaims.claimFor]) and opens the
+/// composer describing it — or, with none, starting from
+/// [fallbackInteractionType]. The offer's own answer and the page's *Log
+/// check-in* and *Dictate* all come through here.
+///
+/// A composer closed without saving hands the claim back, so the offer
+/// returns with the call it was about. The claims notifier is read before
+/// the first await: the page may be gone by the time the sheet closes.
+Future<CheckInEntry?> openCheckInForPerson({
+  required BuildContext context,
+  required WidgetRef ref,
+  required String relationshipId,
+  CheckInInteractionType? fallbackInteractionType,
+  bool startSpeaking = false,
+}) async {
+  // Read before the claim: clearing the marker can cross a minute boundary,
+  // and the minutes the offer quoted are the ones the form must show.
+  final openedAt = clock.now();
+  final claims = ref.read(pendingInteractionClaimsProvider.notifier);
+  final pending = await claims.claimFor(relationshipId);
+  if (!context.mounted) {
+    if (pending != null) await claims.release(pending);
+    return null;
+  }
+  final saved = await showCheckInForInteraction(
+    context: context,
+    relationshipId: relationshipId,
+    openedAt: openedAt,
+    pending: pending,
+    fallbackInteractionType: fallbackInteractionType,
+    startSpeaking: startSpeaking,
+  );
+  if (saved == null && pending != null) await claims.release(pending);
+  return saved;
 }
 
 /// Offers to log a check-in after the user comes back from a call or message
@@ -168,21 +207,12 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
   }
 
   Future<void> _logCheckIn() async {
-    final pending = _pending;
-    if (pending == null) return;
-    // Opened before the marker is cleared, not after: the whole minutes the
-    // offer quoted are what the log must show, and clearing can cross a
-    // minute boundary, which would hand the sheet a different reading. The
-    // clear still happens up front rather than when the sheet closes — the
-    // offer has been taken up either way, and a user who opens the form and
-    // then backs out should not be asked a second time.
-    final composer = showCheckInForInteraction(
+    if (_pending == null) return;
+    await openCheckInForPerson(
       context: context,
-      relationshipId: pending.relationshipId,
-      pending: pending,
+      ref: ref,
+      relationshipId: widget.relationshipId,
     );
-    await _dismiss();
-    await composer;
   }
 
   @override
@@ -201,12 +231,12 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
     // Whole minutes since the user left for the call: what the sheet will
     // prefill as the duration, so the offer and the form agree.
     final minutes = clock.now().difference(pending.startedAt).inMinutes;
+    // Asked, not asserted: the marker proves the dialer or the mail app was
+    // opened, not that anyone answered. The meta line under it carries when
+    // and how long.
     final title = switch (pending.interactionType) {
-      CheckInInteractionType.call => messages.relationshipPostCallOfferCall(
-        name,
-        minutes,
-      ),
-      _ => messages.relationshipPostCallOfferMessage(name, minutes),
+      CheckInInteractionType.call => messages.relationshipPostCallAskCall(name),
+      _ => messages.relationshipPostCallAskMessage(name),
     };
 
     return Padding(
@@ -291,8 +321,12 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
                 variant: DesignSystemButtonVariant.tertiary,
                 onPressed: () => unawaited(_dismiss()),
               ),
+              // Secondary: the page's bar already carries the one filled
+              // *Log check-in*, which opens this same prefilled composer.
               DesignSystemButton(
-                label: messages.relationshipPostCallConfirm,
+                key: const ValueKey('person-post-call-yes'),
+                label: messages.relationshipPostCallYes,
+                variant: DesignSystemButtonVariant.secondary,
                 onPressed: () => unawaited(_logCheckIn()),
               ),
             ],

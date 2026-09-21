@@ -5241,7 +5241,8 @@
   "relationshipPhotoRemoveAction": "Fjern",
   "relationshipPhotoSaveFailed": "Kunne ikke gemme fotoet",
   "relationshipPhotoSheetTitle": "Foto af {name}",
-  "relationshipPostCallConfirm": "Log tjek-ind",
+  "relationshipPostCallAskCall": "Fik du fat i {name}?",
+  "relationshipPostCallAskMessage": "Fik du skrevet til {name}?",
   "relationshipPostCallDismiss": "Afvis",
   "relationshipPostCallMeta": "startede kl. {time} · {minutes, plural, =0{under et minut} =1{cirka 1 min} other{cirka {minutes} min}}",
   "@relationshipPostCallMeta": {
@@ -5254,28 +5255,7 @@
       }
     }
   },
-  "relationshipPostCallOfferCall": "Du ringede til {name} for {minutes, plural, =0{under et minut} =1{1 minut} other{{minutes} minutter}} siden — skal vi notere det, mens det er frisk?",
-  "@relationshipPostCallOfferCall": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "relationshipPostCallOfferMessage": "Du skrev til {name} for {minutes, plural, =0{under et minut} =1{1 minut} other{{minutes} minutter}} siden — skal vi notere det, mens det er frisk?",
-  "@relationshipPostCallOfferMessage": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
+  "relationshipPostCallYes": "Ja, log det",
   "relationshipProposalAdded": "Tilføjet → {title}",
   "relationshipProposalEvidence": "Fra check-in den {date}",
   "relationshipProposalUndoFailed": "Kunne ikke fortryde. Opgaven kan være blevet ændret.",

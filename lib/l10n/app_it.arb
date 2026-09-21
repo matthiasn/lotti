@@ -5241,7 +5241,8 @@
   "relationshipPhotoRemoveAction": "Rimuovi",
   "relationshipPhotoSaveFailed": "Impossibile salvare la foto",
   "relationshipPhotoSheetTitle": "Foto di {name}",
-  "relationshipPostCallConfirm": "Annota check-in",
+  "relationshipPostCallAskCall": "Hai raggiunto {name}?",
+  "relationshipPostCallAskMessage": "Hai scritto a {name}?",
   "relationshipPostCallDismiss": "Ignora",
   "relationshipPostCallMeta": "Inizio: {time} · {minutes, plural, =0{meno di un minuto} =1{circa 1 min} other{circa {minutes} min}}",
   "@relationshipPostCallMeta": {
@@ -5254,28 +5255,7 @@
       }
     }
   },
-  "relationshipPostCallOfferCall": "Hai chiamato {name} {minutes, plural, =0{meno di un minuto} =1{1 minuto} other{{minutes} minuti}} fa — lo annotiamo finché è fresco?",
-  "@relationshipPostCallOfferCall": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "relationshipPostCallOfferMessage": "Hai scritto a {name} {minutes, plural, =0{meno di un minuto} =1{1 minuto} other{{minutes} minuti}} fa — lo annotiamo finché è fresco?",
-  "@relationshipPostCallOfferMessage": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
+  "relationshipPostCallYes": "Sì, annotalo",
   "relationshipProposalAdded": "Aggiunta → {title}",
   "relationshipProposalEvidence": "Dal contatto del {date}",
   "relationshipProposalUndoFailed": "Impossibile annullare. L’attività potrebbe essere stata modificata.",

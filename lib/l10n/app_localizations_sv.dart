@@ -12331,7 +12331,14 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get relationshipPostCallConfirm => 'Logga avstämning';
+  String relationshipPostCallAskCall(String name) {
+    return 'Fick du tag på $name?';
+  }
+
+  @override
+  String relationshipPostCallAskMessage(String name) {
+    return 'Skrev du till $name?';
+  }
 
   @override
   String get relationshipPostCallDismiss => 'Avfärda';
@@ -12349,28 +12356,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String relationshipPostCallOfferCall(String name, int minutes) {
-    String _temp0 = intl.Intl.pluralLogic(
-      minutes,
-      locale: localeName,
-      other: '$minutes minuter',
-      one: '1 minut',
-      zero: 'mindre än en minut',
-    );
-    return 'Du ringde $name för $_temp0 sedan — anteckna medan det är färskt?';
-  }
-
-  @override
-  String relationshipPostCallOfferMessage(String name, int minutes) {
-    String _temp0 = intl.Intl.pluralLogic(
-      minutes,
-      locale: localeName,
-      other: '$minutes minuter',
-      one: '1 minut',
-      zero: 'mindre än en minut',
-    );
-    return 'Du skrev till $name för $_temp0 sedan — anteckna medan det är färskt?';
-  }
+  String get relationshipPostCallYes => 'Ja, logga det';
 
   @override
   String relationshipProposalAdded(String title) {

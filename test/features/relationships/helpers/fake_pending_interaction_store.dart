@@ -27,6 +27,9 @@ class FakePendingInteractionStore implements PendingInteractionStore {
   Future<PendingInteraction?> read() async => pending;
 
   @override
+  Future<void> put(PendingInteraction p) async => pending = p;
+
+  @override
   Future<void> clear() async {
     clearCount++;
     pending = null;

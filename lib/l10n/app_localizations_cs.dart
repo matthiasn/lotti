@@ -12506,7 +12506,14 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get relationshipPostCallConfirm => 'Zapsat check-in';
+  String relationshipPostCallAskCall(String name) {
+    return 'Podařilo se ti zastihnout $name?';
+  }
+
+  @override
+  String relationshipPostCallAskMessage(String name) {
+    return 'Odešla tvoje zpráva pro $name?';
+  }
 
   @override
   String get relationshipPostCallDismiss => 'Zavřít';
@@ -12524,28 +12531,7 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String relationshipPostCallOfferCall(String name, int minutes) {
-    String _temp0 = intl.Intl.pluralLogic(
-      minutes,
-      locale: localeName,
-      other: '$minutes minutami',
-      one: '1 minutou',
-      zero: 'necelou minutou',
-    );
-    return 'Hovor s $name před $_temp0 — zapíšeme to, dokud je to čerstvé?';
-  }
-
-  @override
-  String relationshipPostCallOfferMessage(String name, int minutes) {
-    String _temp0 = intl.Intl.pluralLogic(
-      minutes,
-      locale: localeName,
-      other: '$minutes minutami',
-      one: '1 minutou',
-      zero: 'necelou minutou',
-    );
-    return 'Zpráva pro $name před $_temp0 — zapíšeme to, dokud je to čerstvé?';
-  }
+  String get relationshipPostCallYes => 'Ano, zapsat';
 
   @override
   String relationshipProposalAdded(String title) {

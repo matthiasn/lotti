@@ -276,6 +276,9 @@ class _StubPendingInteractionStore implements PendingInteractionStore {
   Future<PendingInteraction?> read() async => _pending;
 
   @override
+  Future<void> put(PendingInteraction p) async {}
+
+  @override
   Future<void> clear() async {}
 }
 
