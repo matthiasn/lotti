@@ -971,41 +971,44 @@ void main() {
       tester,
     ) async {
       final semantics = tester.ensureSemantics();
-      await tester.pumpWidget(
-        wrap(
-          ProjectMobileDetailContent(
-            record: makeTestProjectRecord(),
-            currentTime: DateTime(2026, 3, 28, 1, 18),
+      try {
+        await tester.pumpWidget(
+          wrap(
+            ProjectMobileDetailContent(
+              record: makeTestProjectRecord(),
+              currentTime: DateTime(2026, 3, 28, 1, 18),
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.byType(BackWidget), findsOneWidget);
-      // No host callback: the arrow is inert rather than falling back to
-      // global navigation.
-      expect(
-        tester.widget<BackWidget>(find.byType(BackWidget)).enabled,
-        isFalse,
-      );
-      // ...and screen readers hear a disabled button with nothing to do.
-      final backLabel = MaterialLocalizations.of(
-        tester.element(find.byType(BackWidget)),
-      ).backButtonTooltip;
-      expect(
-        tester.getSemantics(find.bySemanticsLabel(backLabel)),
-        matchesSemantics(
-          label: backLabel,
-          isButton: true,
-          hasEnabledState: true,
-        ),
-      );
-      expect(
-        tester.getCenter(find.byType(BackWidget)).dx,
-        lessThan(
-          tester.getCenter(find.byType(ProjectMobileDetailContent)).dx,
-        ),
-      );
-      semantics.dispose();
+        expect(find.byType(BackWidget), findsOneWidget);
+        // No host callback: the arrow is inert rather than falling back to
+        // global navigation.
+        expect(
+          tester.widget<BackWidget>(find.byType(BackWidget)).enabled,
+          isFalse,
+        );
+        // ...and screen readers hear a disabled button with nothing to do.
+        final backLabel = MaterialLocalizations.of(
+          tester.element(find.byType(BackWidget)),
+        ).backButtonTooltip;
+        expect(
+          tester.getSemantics(find.bySemanticsLabel(backLabel)),
+          matchesSemantics(
+            label: backLabel,
+            isButton: true,
+            hasEnabledState: true,
+          ),
+        );
+        expect(
+          tester.getCenter(find.byType(BackWidget)).dx,
+          lessThan(
+            tester.getCenter(find.byType(ProjectMobileDetailContent)).dx,
+          ),
+        );
+      } finally {
+        semantics.dispose();
+      }
     });
 
     testWidgets('puts the overflow menu in the top bar, level with Back', (
