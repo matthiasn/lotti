@@ -41,7 +41,8 @@ under the body. The model row carries the inference cost, and a current
 briefing names its sources once it is expanded. The model row names the
 model and provider before anything is sent, so *Brief now* and *Update now*
 start at once, with no confirmation; while a new briefing is written the
-previous one stays readable under the spinner. The agent keeps private notes
+previous one stays readable under the spinner, and after a failed run it
+stays readable under the failure, with its age. The agent keeps private notes
 between briefings — a corrected name, a complaint about its briefing, how
 things feel — shown under *Agent internals*, and reads them back the next
 time it writes. The chat talks to the briefing agent about the person, never

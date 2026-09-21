@@ -910,6 +910,57 @@ void main() {
       expect(find.text('Try again'), findsOneWidget);
     });
 
+    testWidgets('a failed refresh keeps the briefing it failed to replace, '
+        'dated, under the failure — an error is a reason to retry, not to '
+        'take the notes away', (tester) async {
+      await pump(
+        tester,
+        checkIns: onTrackCheckIns,
+        current: report(),
+        state: agentState(failures: 1, lastWakeAt: now),
+      );
+
+      expect(statusText(tester), startsWith('Last run failed'));
+      expect(
+        find.textContaining('The provider returned an error'),
+        findsOneWidget,
+      );
+      // The last good briefing is still readable…
+      expect(
+        find.byKey(const ValueKey('relationship-briefing-body')),
+        findsOneWidget,
+      );
+      // …and says how old it is, since the status line dates the failure.
+      expect(
+        tester
+            .widget<Text>(
+              find.byKey(const ValueKey('relationship-briefing-kept-age')),
+            )
+            .data,
+        startsWith('as of '),
+      );
+      expect(find.text('Try again'), findsOneWidget);
+    });
+
+    testWidgets('a first briefing that failed has nothing to keep', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        checkIns: onTrackCheckIns,
+        state: agentState(failures: 1, lastWakeAt: failedAt),
+      );
+
+      expect(
+        find.byKey(const ValueKey('relationship-briefing-body')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('relationship-briefing-kept-age')),
+        findsNothing,
+      );
+    });
+
     testWidgets('See activity opens the internals panel', (tester) async {
       await pump(
         tester,

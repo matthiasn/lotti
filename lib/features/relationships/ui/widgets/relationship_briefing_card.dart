@@ -801,14 +801,44 @@ class _AgentCard extends StatelessWidget {
           onToggle: onToggleExpanded,
         ),
       },
-      RelationshipAgentCardState.failed => Text(
-        modelMissing
-            ? messages.relationshipAgentFailedNoModel
-            : messages.relationshipAgentFailedBody,
-        key: const ValueKey('relationship-agent-body'),
-        style: tokens.typography.styles.body.bodyMedium.copyWith(
-          color: ai.bodyText,
-        ),
+      // A failed run says what went wrong — and, like an update in
+      // progress, keeps the briefing it failed to replace. The reader came
+      // for what to bring up with this person; a provider error is a reason
+      // to retry, not a reason to take that away. The kept briefing is
+      // dated, because the status line above now dates the failure instead.
+      RelationshipAgentCardState.failed => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            modelMissing
+                ? messages.relationshipAgentFailedNoModel
+                : messages.relationshipAgentFailedBody,
+            key: const ValueKey('relationship-agent-body'),
+            style: tokens.typography.styles.body.bodyMedium.copyWith(
+              color: ai.bodyText,
+            ),
+          ),
+          if (current != null) ...[
+            SizedBox(height: tokens.spacing.step4),
+            Text(
+              messages.goalDetailReadAsOf(_age(messages)),
+              key: const ValueKey('relationship-briefing-kept-age'),
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: ai.metaText,
+              ),
+            ),
+            SizedBox(height: tokens.spacing.step1),
+            TldrBody(
+              key: const ValueKey('relationship-briefing-body'),
+              disclosureKey: const ValueKey('relationship-briefing-expand'),
+              bodyStyle: tokens.typography.styles.body.bodyMedium,
+              tldr: resolveReportTldr(current),
+              expanded: expanded,
+              additionalReport: resolveReportAdditional(current),
+              onToggle: onToggleExpanded,
+            ),
+          ],
+        ],
       ),
       RelationshipAgentCardState.current ||
       RelationshipAgentCardState.outOfDate => TldrBody(
@@ -827,6 +857,12 @@ class _AgentCard extends StatelessWidget {
       RelationshipAgentCardState.notEnrolled => const SizedBox.shrink(),
       // coverage:ignore-end
     };
+
+    // Whether the body closes on the briefing, whose disclosure row brings
+    // its own trailing gap.
+    final endsInBriefing =
+        body is TldrBody ||
+        (state == RelationshipAgentCardState.failed && current != null);
 
     // The quiet text actions start the footer's row: their label sits on
     // the card's content column, not a button inset in from it.
@@ -954,7 +990,7 @@ class _AgentCard extends StatelessWidget {
               tokens.spacing.cardPadding,
               0,
               tokens.spacing.cardPadding,
-              body is TldrBody ? 0 : tokens.spacing.step4,
+              endsInBriefing ? 0 : tokens.spacing.step4,
             ),
             child: body,
           ),

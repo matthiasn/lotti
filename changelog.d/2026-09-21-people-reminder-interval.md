@@ -16,6 +16,16 @@
   the call you just made — how, when and for how long. With no call pending, a
   new check-in starts from how you last connected with that person.
 
+- **A quick check-in made your "Next time" notes disappear.** The card only
+  read the newest check-in, and its two fields sit under "More" — so logging
+  a conversation in ten seconds hid what you had written to bring up. The card
+  now keeps the newest notes there are and says which check-in they are from.
+- **A briefing that failed to refresh took the last good one with it.** The
+  card now shows what went wrong and keeps the previous briefing readable
+  underneath, with its age.
+- **"Create" on the add-person form answered an empty name with an error.**
+  It now waits for a name, and the Name field says so.
+
 ### Changed
 - **"Next time" comes before the briefing on a person's page.** Your own notes
   on what to bring up and what to avoid are now on the first screen of a
