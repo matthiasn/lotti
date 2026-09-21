@@ -4722,6 +4722,7 @@
       }
     }
   },
+  "relationshipNextTimeFromEarlier": "Z tvého check-inu {day}",
   "relationshipNextTimeTitle": "Příště",
   "relationshipNicknameLabel": "Přezdívka",
   "relationshipNoCheckIns": "Zatím žádné záznamy — přidej první po dalším rozhovoru.",

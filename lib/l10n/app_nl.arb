@@ -5210,6 +5210,7 @@
       }
     }
   },
+  "relationshipNextTimeFromEarlier": "Uit je check-in van {day}",
   "relationshipNextTimeTitle": "Volgende keer",
   "relationshipNicknameLabel": "Bijnaam",
   "relationshipNoCheckIns": "Nog geen check-ins — leg er een vast na jullie volgende gesprek.",

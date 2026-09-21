@@ -222,13 +222,18 @@ class RelationshipDetailsPage extends ConsumerWidget {
     final hasAgent = identity == null
         ? isEnrolled(relationship)
         : usableRelationshipAgent(identity) != null;
+    final nextTimeSource = NextTimeCard.sourceOf(checkIns);
     final sections = <Widget>[
       PersonHeaderBlock(item: item, categoryName: categoryName),
       // The user's own notes for next time come first: they are what this
       // page is opened for in the minute before a call, they are short, and
       // under the briefing — a card with a summary, a footer and a model row
       // — they sat below the first screen on a phone.
-      if (NextTimeCard.hasContent(latest)) NextTimeCard(latest: latest),
+      if (nextTimeSource != null)
+        NextTimeCard(
+          source: nextTimeSource,
+          fromEarlier: nextTimeSource.meta.id != latest?.meta.id,
+        ),
       // Always present: an unenrolled person gets the card that explains
       // what *important* turns on, with the switch as its action.
       RelationshipBriefingCard(relationship: relationship, checkIns: checkIns),

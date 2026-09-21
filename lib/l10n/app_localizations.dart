@@ -20305,6 +20305,12 @@ abstract class AppLocalizations {
   /// **'Next due {day}'**
   String relationshipNextDueOn(String day);
 
+  /// Caption under the Next time card title when the notes come from a check-in older than the newest one; day is a short date such as Sat 1 Aug.
+  ///
+  /// In en, this message translates to:
+  /// **'From your check-in on {day}'**
+  String relationshipNextTimeFromEarlier(String day);
+
   /// No description provided for @relationshipNextTimeTitle.
   ///
   /// In en, this message translates to:

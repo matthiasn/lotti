@@ -4715,6 +4715,7 @@
       }
     }
   },
+  "relationshipNextTimeFromEarlier": "Aus deinem Check-in vom {day}",
   "relationshipNextTimeTitle": "Nächstes Mal",
   "relationshipNicknameLabel": "Spitzname",
   "relationshipNoCheckIns": "Noch keine Check-ins — erfasse einen nach eurem nächsten Gespräch.",

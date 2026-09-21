@@ -12394,6 +12394,11 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String relationshipNextTimeFromEarlier(String day) {
+    return 'Dal tuo check-in di $day';
+  }
+
+  @override
   String get relationshipNextTimeTitle => 'La prossima volta';
 
   @override

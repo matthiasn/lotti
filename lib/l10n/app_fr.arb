@@ -4715,6 +4715,7 @@
       }
     }
   },
+  "relationshipNextTimeFromEarlier": "D'après ton point du {day}",
   "relationshipNextTimeTitle": "La prochaine fois",
   "relationshipNicknameLabel": "Surnom",
   "relationshipNoCheckIns": "Aucun échange noté — ajoute le premier après votre prochaine conversation.",

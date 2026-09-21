@@ -5211,6 +5211,7 @@
       }
     }
   },
+  "relationshipNextTimeFromEarlier": "Dal tuo check-in di {day}",
   "relationshipNextTimeTitle": "La prossima volta",
   "relationshipNicknameLabel": "Soprannome",
   "relationshipNoCheckIns": "Nessun contatto registrato — aggiungine uno dopo la prossima conversazione.",

@@ -5211,6 +5211,7 @@
       }
     }
   },
+  "relationshipNextTimeFromEarlier": "Från din avstämning {day}",
   "relationshipNextTimeTitle": "Nästa gång",
   "relationshipNicknameLabel": "Smeknamn",
   "relationshipNoCheckIns": "Inga avstämningar än — logga en efter ert nästa samtal.",

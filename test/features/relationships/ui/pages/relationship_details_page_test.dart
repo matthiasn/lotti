@@ -389,6 +389,8 @@ void main() {
     expect(find.byKey(const ValueKey('person-next-time-card')), findsOne);
     expect(find.text('Ask how the move went.'), findsOneWidget);
     expect(find.text('Older guidance.'), findsNothing);
+    // From the newest check-in, so it needs no "from" line.
+    expect(find.byKey(const ValueKey('person-next-time-from')), findsNothing);
     // The user's own notes lead the page: under the briefing they sat below
     // a phone's first screen, in the minute before a call.
     expect(
@@ -400,6 +402,31 @@ void main() {
             )
             .dy,
       ),
+    );
+  });
+
+  testWidgets('a quick check-in without notes does not erase Next time: the '
+      'card keeps the newest notes there are, and says where they are from', (
+    tester,
+  ) async {
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+      (_) async => relationship(),
+    );
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer(
+      (_) async => [
+        checkIn('check-2', narrative: 'Quick hello.'),
+        checkIn('check-1', attention: 'Ask how the move went.'),
+      ],
+    );
+
+    await pumpPage(tester);
+
+    expect(find.text('Ask how the move went.'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('person-next-time-from')),
+      findsOneWidget,
     );
   });
 

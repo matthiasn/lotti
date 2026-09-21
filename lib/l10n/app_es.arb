@@ -4715,6 +4715,7 @@
       }
     }
   },
+  "relationshipNextTimeFromEarlier": "De tu check-in del {day}",
   "relationshipNextTimeTitle": "La próxima vez",
   "relationshipNicknameLabel": "Apodo",
   "relationshipNoCheckIns": "Aún no hay registros: añade uno tras vuestra próxima conversación.",

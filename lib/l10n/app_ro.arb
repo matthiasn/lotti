@@ -4715,6 +4715,7 @@
       }
     }
   },
+  "relationshipNextTimeFromEarlier": "Din check-in-ul dvs. din {day}",
   "relationshipNextTimeTitle": "Data viitoare",
   "relationshipNicknameLabel": "Poreclă",
   "relationshipNoCheckIns": "Nicio înregistrare încă — adăugați una după următoarea conversație.",

@@ -12360,6 +12360,11 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String relationshipNextTimeFromEarlier(String day) {
+    return 'Do teu check-in de $day';
+  }
+
+  @override
   String get relationshipNextTimeTitle => 'Da próxima vez';
 
   @override

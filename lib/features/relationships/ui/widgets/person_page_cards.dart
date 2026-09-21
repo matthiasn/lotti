@@ -2,6 +2,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/contact_quick_actions.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -104,14 +105,38 @@ class PersonLeadingGlyph extends StatelessWidget {
   }
 }
 
-/// The "Next time" card (design 2026-09-06 Q9): what the latest check-in
-/// asked to bring up, and what to leave alone — the one thing worth reading
-/// before the next call, sourced from the user's own words, never from the
-/// agent. Renders nothing when the latest check-in carries neither.
+/// The "Next time" card (design 2026-09-06 Q9): what the user last asked
+/// themselves to bring up, and what to leave alone — the one thing worth
+/// reading before the next call, sourced from their own words, never from
+/// the agent. Renders nothing when [source] carries neither.
+///
+/// [source] is the newest check-in that *has* such notes ([sourceOf]), not
+/// simply the newest check-in. The two fields sit under the composer's
+/// *More*, so a ten-second check-in leaves them blank — and blank there
+/// means "I did not get to it", not "forget what I wrote last time". Reading
+/// only the newest check-in made the quickest way to log a conversation
+/// erase the notes this card exists to keep.
 class NextTimeCard extends StatelessWidget {
-  const NextTimeCard({required this.latest, super.key});
+  const NextTimeCard({
+    required this.source,
+    this.fromEarlier = false,
+    super.key,
+  });
 
-  final CheckInEntry? latest;
+  final CheckInEntry? source;
+
+  /// Whether [source] is older than the person's newest check-in. The card
+  /// then says which check-in the notes are from: undated, they would read
+  /// as written after a conversation they predate.
+  final bool fromEarlier;
+
+  /// The newest of [checkIns] (newest first) that carries next-time notes.
+  static CheckInEntry? sourceOf(List<CheckInEntry> checkIns) {
+    for (final checkIn in checkIns) {
+      if (hasContent(checkIn)) return checkIn;
+    }
+    return null;
+  }
 
   static String? _attentionOf(CheckInEntry? latest) =>
       _nonBlank(latest?.data.payAttentionTo);
@@ -133,9 +158,12 @@ class NextTimeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final attention = _attentionOf(latest);
-    final avoid = _avoidOf(latest);
-    if (attention == null && avoid == null) return const SizedBox.shrink();
+    final from = source;
+    final attention = _attentionOf(from);
+    final avoid = _avoidOf(from);
+    if (from == null || (attention == null && avoid == null)) {
+      return const SizedBox.shrink();
+    }
 
     Widget tile(String caption, String text, Key key) => Container(
       key: key,
@@ -178,9 +206,22 @@ class NextTimeCard extends StatelessWidget {
           // No date in this header. It used to carry the timestamp of the
           // *last* check-in, unlabelled, beside a title that reads as a
           // future intention — so the one date on the card named the
-          // opposite of what the card is about. The check-in it came from
-          // is the row directly below, with its own date on it.
+          // opposite of what the card is about. Notes from the newest
+          // check-in need none; older ones get the labelled line below.
           PersonCardHeader(title: messages.relationshipNextTimeTitle),
+          if (fromEarlier) ...[
+            SizedBox(height: tokens.spacing.step1),
+            RelationshipLineWithDate(
+              key: const ValueKey('person-next-time-from'),
+              text: messages.relationshipNextTimeFromEarlier(
+                relationshipDayLabelOf(context, from.meta.dateFrom),
+              ),
+              date: relationshipDayLabelOf(context, from.meta.dateFrom),
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ),
+          ],
           SizedBox(height: tokens.spacing.step4),
           if (attention != null)
             tile(

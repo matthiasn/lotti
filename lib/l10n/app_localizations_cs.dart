@@ -12429,6 +12429,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String relationshipNextTimeFromEarlier(String day) {
+    return 'Z tvého check-inu $day';
+  }
+
+  @override
   String get relationshipNextTimeTitle => 'Příště';
 
   @override

@@ -7268,6 +7268,15 @@
       }
     }
   },
+  "relationshipNextTimeFromEarlier": "From your check-in on {day}",
+  "@relationshipNextTimeFromEarlier": {
+    "description": "Caption under the Next time card title when the notes come from a check-in older than the newest one; day is a short date such as Sat 1 Aug.",
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipNextTimeTitle": "Next time",
   "relationshipNicknameLabel": "Nickname",
   "relationshipNoCheckIns": "No check-ins yet — log one after you next talk.",

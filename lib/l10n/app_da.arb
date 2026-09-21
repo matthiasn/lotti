@@ -5211,6 +5211,7 @@
       }
     }
   },
+  "relationshipNextTimeFromEarlier": "Fra dit tjek-ind {day}",
   "relationshipNextTimeTitle": "Næste gang",
   "relationshipNicknameLabel": "Kaldenavn",
   "relationshipNoCheckIns": "Ingen check-ins endnu — registrér et efter jeres næste snak.",

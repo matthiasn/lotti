@@ -5210,6 +5210,7 @@
       }
     }
   },
+  "relationshipNextTimeFromEarlier": "Do teu check-in de {day}",
   "relationshipNextTimeTitle": "Da próxima vez",
   "relationshipNicknameLabel": "Apelido",
   "relationshipNoCheckIns": "Nenhum registro ainda — adicione um após a próxima conversa.",
