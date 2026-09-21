@@ -91,10 +91,27 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   };
 
   /// Used when a caller supplied no effort for a model that demands one.
-  /// Matches [CloudInferenceRequestHelpers.resolveGeminiThinkingConfig], which
-  /// also treats `low` as the app-wide default thinking level.
+  ///
+  /// Deliberately below `low`, which
+  /// [CloudInferenceRequestHelpers.resolveGeminiThinkingConfig] treats as the
+  /// app-wide default thinking level. These two models are the only ones that
+  /// demand the field at all, and they spend the budget it implies: measured
+  /// on 2026-09-21 against a solvable scheduling prompt with enough output
+  /// headroom that no level stopped on `length`,
+  ///
+  /// | effort    | latency | output | reasoning   | answer     |
+  /// |-----------|---------|--------|-------------|------------|
+  /// | `minimal` | 33.6 s  | 3308   | 2835 (86%)  | 1272 chars |
+  /// | `low`     | 34.8 s  | 3438   | 2956 (86%)  | 1167 chars |
+  /// | `medium`  | 39.9 s  | 3937   | 3587 (91%)  | 800 chars  |
+  ///
+  /// More effort bought more thinking and a *shorter* answer, so matching the
+  /// Gemini level here was paying for reasoning that crowded out the reply.
+  /// The saving is small — 4% of reasoning tokens against `low` — and does not
+  /// rescue a deadline-bound route: `qwen3.8-27b` still needed 62 s mean on
+  /// the day-planning suite against a 30 s draft deadline.
   static const ReasoningEffort _defaultRequiredReasoningEffort =
-      ReasoningEffort.low;
+      ReasoningEffort.minimal;
 
   /// The strongest effort the models in [modelsRequiringReasoningEffort]
   /// accept; `high` is rejected as malformed.

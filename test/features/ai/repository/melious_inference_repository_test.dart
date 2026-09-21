@@ -3778,9 +3778,12 @@ void main() {
     const apiKey = 'sk-mel-test';
 
     test('supplies a default effort for a model that demands one', () {
+      // `minimal`, not the app-wide `low`: these models spend whatever
+      // budget the field implies, and measurement showed more effort buying
+      // more reasoning and a shorter answer.
       expect(
         MeliousInferenceRepository.resolveReasoningEffort(quirkedModel, null),
-        ReasoningEffort.low,
+        ReasoningEffort.minimal,
       );
     });
 
@@ -3885,7 +3888,7 @@ void main() {
           '  $quirkedModel  ',
           null,
         ),
-        ReasoningEffort.low,
+        ReasoningEffort.minimal,
       );
     });
 
@@ -3910,7 +3913,7 @@ void main() {
       final json = probe.requests.single.toJson();
       expect(
         json['reasoning_effort'],
-        'low',
+        'minimal',
         reason:
             'omitting this field is exactly what makes Melious answer '
             '400 "the request was rejected as malformed"',
@@ -3963,7 +3966,7 @@ void main() {
             )
             .toList();
 
-        expect(probe.requests.single.toJson()['reasoning_effort'], 'low');
+        expect(probe.requests.single.toJson()['reasoning_effort'], 'minimal');
       },
     );
 
