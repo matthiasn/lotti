@@ -58,15 +58,24 @@ Future<CheckInEntry?> showCheckInForInteraction({
 /// a card can simply be ignored. Declining leaves no trace — the marker is
 /// dropped and nothing is written anywhere.
 ///
-/// Renders nothing when there is no marker, when it has expired, or when the
-/// person it names no longer resolves (deleted, or private while private
-/// entries are hidden) — a prompt about a person the user cannot see would
-/// leak the fact that they exist.
+/// Renders nothing when there is no marker, when it is about someone other
+/// than [relationshipId] — a call to Anna is not something to log from Bo's
+/// page, and accepting it there would open Anna's composer — when it has
+/// expired, or when the person it names no longer resolves (deleted, or
+/// private while private entries are hidden): a prompt about a person the
+/// user cannot see would leak the fact that they exist.
 ///
 /// [bottomGap] follows the offer and is part of it, so a page can seat it
 /// between two sections without a gap appearing where there is no offer.
 class PostInteractionPrompt extends ConsumerStatefulWidget {
-  const PostInteractionPrompt({this.bottomGap = 0, super.key});
+  const PostInteractionPrompt({
+    required this.relationshipId,
+    this.bottomGap = 0,
+    super.key,
+  });
+
+  /// The person whose page this is: the only one whose call it offers.
+  final String relationshipId;
 
   final double bottomGap;
 
@@ -104,6 +113,16 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
   }
 
   @override
+  void didUpdateWidget(PostInteractionPrompt oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // The desktop split keeps this state when the selected person changes:
+    // the offer must be re-read for the person now on screen.
+    if (oldWidget.relationshipId != widget.relationshipId) {
+      unawaited(_refresh());
+    }
+  }
+
+  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -116,7 +135,10 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
 
   Future<void> _refresh() async {
     final generation = ++_refreshGeneration;
-    final pending = await ref.read(pendingInteractionStoreProvider).read();
+    final stored = await ref.read(pendingInteractionStoreProvider).read();
+    final pending = stored?.relationshipId == widget.relationshipId
+        ? stored
+        : null;
 
     // Resolve the person through the repository rather than trusting the
     // marker: it holds an id written before the user left, and the person may

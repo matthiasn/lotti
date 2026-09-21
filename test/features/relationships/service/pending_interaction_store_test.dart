@@ -336,6 +336,26 @@ void main() {
         expect(container.read(pendingInteractionClaimsProvider), 0);
       });
 
+      test('claims are exclusive: two landing together get one marker '
+          'between them, so one call opens one composer', () async {
+        final (:container, :store) = build();
+        await store.remember(
+          relationshipId: 'anna',
+          interactionType: CheckInInteractionType.call,
+        );
+        final claims = container.read(
+          pendingInteractionClaimsProvider.notifier,
+        );
+
+        final results = await Future.wait([
+          claims.claimFor('anna'),
+          claims.claimFor('anna'),
+        ]);
+
+        expect(results.nonNulls, hasLength(1));
+        expect(container.read(pendingInteractionClaimsProvider), 1);
+      });
+
       test('claims nothing when there is no marker', () async {
         final (:container, store: _) = build();
 

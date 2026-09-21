@@ -113,6 +113,7 @@ void main() {
     PendingInteraction? pending,
     RelationshipEntry? resolves,
     double bottomGap = 0,
+    String relationshipId = 'rel-1',
   }) async {
     final store = _FakePendingInteractionStore(pending);
     when(
@@ -122,7 +123,10 @@ void main() {
     await withClock(Clock.fixed(now), () async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          PostInteractionPrompt(bottomGap: bottomGap),
+          PostInteractionPrompt(
+            relationshipId: relationshipId,
+            bottomGap: bottomGap,
+          ),
           overrides: [
             pendingInteractionStoreProvider.overrideWithValue(store),
             relationshipRepositoryProvider.overrideWithValue(repository),
@@ -274,7 +278,7 @@ void main() {
       await withClock(Clock.fixed(now), () async {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
-            const PostInteractionPrompt(),
+            const PostInteractionPrompt(relationshipId: 'rel-1'),
             overrides: [
               pendingInteractionStoreProvider.overrideWithValue(store),
               relationshipRepositoryProvider.overrideWithValue(repository),
@@ -299,6 +303,20 @@ void main() {
       });
 
       expect(offer, findsNothing);
+    });
+
+    testWidgets("a call to someone else is not offered on this person's "
+        'page — accepting it would open their composer', (tester) async {
+      final store = await pump(
+        tester,
+        pending: marker(relationshipId: 'rel-anna'),
+        resolves: person(),
+        relationshipId: 'rel-bo',
+      );
+
+      expect(offer, findsNothing);
+      // Nor is it thrown away: it is still Anna's to log from her page.
+      expect(store.clearCount, 0);
     });
 
     testWidgets('renders nothing when no call was placed', (tester) async {
@@ -434,7 +452,7 @@ void main() {
       await withClock(Clock(() => current), () async {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
-            const PostInteractionPrompt(),
+            const PostInteractionPrompt(relationshipId: 'rel-1'),
             overrides: [
               pendingInteractionStoreProvider.overrideWithValue(store),
               relationshipRepositoryProvider.overrideWithValue(repository),

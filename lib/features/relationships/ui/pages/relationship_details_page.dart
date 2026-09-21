@@ -304,6 +304,7 @@ class RelationshipDetailsPage extends ConsumerWidget {
                         // land — under the name, not below a briefing and a
                         // screen of notes they would have to scroll past.
                         PostInteractionPrompt(
+                          relationshipId: relationshipId,
                           bottomGap: tokens.spacing.sectionGap,
                         ),
                       ],

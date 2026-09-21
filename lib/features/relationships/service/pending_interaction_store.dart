@@ -131,7 +131,22 @@ class PendingInteractionClaims extends Notifier<int> {
   /// call and the offer stops asking. Null — and nothing cleared — when
   /// there is no marker or it is about someone else: logging a check-in with
   /// Bo must not swallow the call just placed to Anna.
-  Future<PendingInteraction?> claimFor(String relationshipId) async {
+  ///
+  /// Claims are exclusive. Each one runs after the previous has cleared, so
+  /// two taps landing together — Log check-in and Dictate — cannot both read
+  /// the marker before either clears it and open two prefilled composers for
+  /// one call.
+  Future<PendingInteraction?> claimFor(String relationshipId) {
+    final claim = _previous.then((_) => _claim(relationshipId));
+    // The chain waits on completion, not success: a failed claim must not
+    // wedge every later one.
+    _previous = claim.then<void>((_) {}, onError: (Object _) {});
+    return claim;
+  }
+
+  Future<void> _previous = Future<void>.value();
+
+  Future<PendingInteraction?> _claim(String relationshipId) async {
     final store = ref.read(pendingInteractionStoreProvider);
     final pending = await store.read();
     if (pending == null || pending.relationshipId != relationshipId) {
