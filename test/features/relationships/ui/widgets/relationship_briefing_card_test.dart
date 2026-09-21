@@ -985,6 +985,10 @@ void main() {
       );
       expect(quiet.label, 'See activity');
       expect(quiet.variant, DesignSystemButtonVariant.tertiary);
+      // …and it is the card's one worded door to the agent's internals:
+      // "Open agent internals" beside Read more was a third way to the
+      // same place, collapsed or expanded.
+      expect(find.text('Open agent internals'), findsNothing);
       expect(
         find.byKey(const ValueKey('relationship-agent-log-check-in')),
         findsNothing,

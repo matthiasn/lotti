@@ -561,8 +561,12 @@ header control: on desktop the list pane floats a worded "Add person"
 docks the same action (`peopleTabDockAction`) beside Navigate — see
 [navigation](../architecture/navigation.md#the-launchers-row-and-the-page-action-docked-on-it).
 It is the one add control on every state of the list, the empty one
-included: the empty state is a message alone. The header keeps only the
-title, the count and, where an address book exists, the contact-import door.
+included: the empty state adds no second one. It does say what the tab is
+for in one sentence, and where an address book exists it offers contact import
+in words — the header's door is a glyph (`DesignSystemIconAction`, so it has a
+full touch target and a spoken label) whose only name is a tooltip a phone
+never shows. Both doors go through `_openContactImport`. The header keeps only
+the title, the count and that door.
 
 Both doors call `createPersonAndOpen`, which beams to `/people/<id>` with what
 the sheet resolved to, the way the task list opens the task it just created.
@@ -592,9 +596,9 @@ under it — the task page's shape, on purpose:
 |---|---|---|
 | Hero | [`PersonHeroAppBar`](../../lib/features/relationships/ui/widgets/person_header.dart) | A pinned `SliverPersistentHeader` of its own, not a `SliverAppBar`: the avatar hangs half its diameter below the header, and every layer of an app bar clips that overflow. Slivers paint back to front, so the earlier header paints its overhang over the block scrolling under it. The name appears in the bar only once the wash band has folded (`AnimatedSwitcher`, never an invisible duplicate). |
 | Header block | `PersonHeaderBlock` (same file) | Eyebrow · name · one-liner · pills. The pills come from the list model's rules, so the page and the list never disagree about *due*; the cadence pill names the interval the runtime applies (`relationshipShownCadenceDays`), i.e. the default when none is stored. The eyebrow takes `calmEyebrowStyle`, not the mono timestamp style — it is a label, not a clock reading. The one-liner is `text.mediumEmphasis` with the mono voice on its timestamp alone: nothing on it is tappable, and the interactive token on a whole non-interactive line promised a tap that never came while outranking the person's own name. The health band is **not** here — the briefing card owns it, because only the card can date it. |
+| Post-call offer | `PostInteractionPrompt` | Renders nothing until a marker exists (below). Directly under the header block, beside the paused-reminder callout: coming back from a call it is the most time-sensitive thing on the page, and below the briefing it was off a phone's first screen. Its `bottomGap` belongs to the offer, so no hole appears when there is none. |
+| Next time | `NextTimeCard` in [`person_page_cards.dart`](../../lib/features/relationships/ui/widgets/person_page_cards.dart) | From the latest check-in's *pay attention to* / *avoid*; `NextTimeCard.hasContent` is the one visibility rule, shared with the page. Above the briefing: the user's own notes are what the page is opened for in the minute before a call, and under a card with a summary, a footer and a model row they sat below the first screen on a phone. |
 | Briefing | `RelationshipBriefingCard` | Only when enrolled or a briefing exists; the page reads the report too, so the gap after the card is deterministic. |
-| Next time | `NextTimeCard` in [`person_page_cards.dart`](../../lib/features/relationships/ui/widgets/person_page_cards.dart) | From the latest check-in's *pay attention to* / *avoid*; `NextTimeCard.hasContent` is the one visibility rule, shared with the page. |
-| Post-call offer | `PostInteractionPrompt` | Renders nothing until a marker exists (below). |
 | Check-ins | [`CheckInsCardSliver`](../../lib/features/relationships/ui/widgets/check_ins_card.dart) | A `DecoratedSliver` wearing `DesignSystemSectionCard.decoration`, so the unbounded log stays lazy inside a card that matches the boxed ones. The rows are the Tasks and Projects lists' grouped rows (`GroupedCardRowSurface`): edge to edge under the header, the hover fill spanning the row, the last one rounded into the card, and the divider beside a hovered row giving way (`buildGroupedCardRowInteractions`). Each row carries a chevron, the sentiment in a fixed trailing slot, what the check-in holds on its meta line, and at most two lines of what was said. |
 | Reach · Tasks | `ReachCard`, [`LinkedTasksCard`](../../lib/features/relationships/ui/widgets/linked_tasks_card.dart) | Reach only with channels. |
 
@@ -2024,6 +2028,17 @@ are persisted as the check-in's end time (`dateTo − dateFrom`, no schema
 change), so the log's row shows the duration the offer promised; editing a
 check-in keeps its length when the start time moves.
 
+The offer is not the only door. The page's own *Log check-in* and *Dictate*
+go through `PendingInteractionClaims.claimFor`: when the marker is about the
+person on screen they take it — cleared, and a claim counted — and open the
+composer through the same `showCheckInForInteraction` the offer uses, so the
+call is logged as that call whichever control the user reaches for. The offer
+listens to the claim count and re-reads, which is how it stops asking (the
+store is plain settings, with nothing to listen to). A marker about someone
+else is neither used nor cleared. With no marker the composer starts from the
+latest check-in's interaction type rather than always *In person*. Declining
+is labelled *Dismiss*: it is permanent, which *Not now* did not say.
+
 ```mermaid
 stateDiagram-v2
   [*] --> NoMarker
@@ -2032,8 +2047,9 @@ stateDiagram-v2
   Pending --> NoMarker: expired on read (TTL)
   Pending --> NoMarker: unreadable on read (cleared)
   Pending --> NoMarker: declined
-  Pending --> Capturing: accepted
-  Capturing --> NoMarker: marker cleared before the sheet opens
+  Pending --> Capturing: accepted on the offer
+  Pending --> Capturing: claimed by Log check-in / Dictate (same person)
+  Capturing --> NoMarker: marker cleared as the sheet opens
 ```
 
 Two traps this code exists around, both found by test rather than review:

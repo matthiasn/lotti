@@ -15,7 +15,7 @@ how often, with monthly preselected, and stores what it shows.
 Desktop uses a list/detail split; phones open a dedicated person page.
 
 The person page holds a header with category, importance, name, nickname
-and recent contact, followed by the agent briefing, *Next time*, check-ins,
+and recent contact, followed by *Next time*, the agent briefing, check-ins,
 contact channels and linked tasks. The header opens the agent conversation
 and person editor, and tapping the avatar opens the person's photo: choose
 one from the library and pick which part of it is the face, adjust that
@@ -94,7 +94,10 @@ On Android and iOS, contact import lets the user select contacts and set
 importance and cadence before creating people. Linking or refreshing a
 contact preserves hand-edited channels and names. Available call, message
 and email actions use the device's capabilities; returning after a contact
-action can offer a prefilled check-in. Desktop retains manual channel entry.
+action offers a prefilled check-in under the person's name, and the page's
+own *Log check-in* and *Dictate* open prefilled the same way. Otherwise the
+composer starts from how the two of you last connected. Desktop retains manual
+channel entry.
 
 Tasks can be linked, unlinked, or created from the person's task picker.
 Deleting a person removes their check-ins and agent; it does not delete

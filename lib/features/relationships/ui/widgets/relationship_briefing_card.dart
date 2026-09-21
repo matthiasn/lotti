@@ -799,7 +799,6 @@ class _AgentCard extends StatelessWidget {
           expanded: expanded,
           additionalReport: resolveReportAdditional(report),
           onToggle: onToggleExpanded,
-          onOpenInternals: onOpenInternals,
         ),
       },
       RelationshipAgentCardState.failed => Text(
@@ -822,7 +821,6 @@ class _AgentCard extends StatelessWidget {
         expanded: expanded,
         additionalReport: resolveReportAdditional(current),
         onToggle: onToggleExpanded,
-        onOpenInternals: onOpenInternals,
       ),
       // Unreachable by construction, see _status.
       // coverage:ignore-start
@@ -832,6 +830,12 @@ class _AgentCard extends StatelessWidget {
 
     // The quiet text actions start the footer's row: their label sits on
     // the card's content column, not a button inset in from it.
+    //
+    // *See activity* is this card's one worded door to the agent's
+    // internals (the header opens them too). The shared disclosure row's
+    // "Open agent internals" is not passed to the reading faces above: on
+    // the task card it is the only such door, here it was a third one to the
+    // same place, in vocabulary ("internals") the reader has no use for.
     final seeActivity = DesignSystemButton(
       key: const ValueKey('relationship-agent-see-activity'),
       label: messages.relationshipAgentSeeActivity,

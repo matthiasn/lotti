@@ -389,6 +389,18 @@ void main() {
     expect(find.byKey(const ValueKey('person-next-time-card')), findsOne);
     expect(find.text('Ask how the move went.'), findsOneWidget);
     expect(find.text('Older guidance.'), findsNothing);
+    // The user's own notes lead the page: under the briefing they sat below
+    // a phone's first screen, in the minute before a call.
+    expect(
+      tester.getTopLeft(find.byKey(const ValueKey('person-next-time-card'))).dy,
+      lessThan(
+        tester
+            .getTopLeft(
+              find.byKey(const ValueKey('relationship-briefing-card')),
+            )
+            .dy,
+      ),
+    );
   });
 
   testWidgets(
