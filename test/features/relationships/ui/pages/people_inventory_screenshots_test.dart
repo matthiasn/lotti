@@ -1230,6 +1230,31 @@ void main() {
     );
   });
 
+  // The reminders pill's sheet: how often, and off — one tap each.
+  testWidgets('mobile reminders sheet — dark', (tester) async {
+    await pumpSurface(
+      tester,
+      home: const RelationshipDetailsPage(relationshipId: _pipId),
+      device: proDevice,
+      brightness: Brightness.dark,
+      overrides: personOverrides(),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('person-pill-reminders')));
+    await tester.pumpAndSettle();
+    expect(
+      _selectedPillLabels(tester),
+      ['Weekly'],
+      reason: "the sheet opens on Pip's own interval",
+    );
+    expect(find.text('Turn reminders off'), findsOneWidget);
+    await captureScreenshot(
+      tester,
+      'person_reminders_sheet_mobile_dark',
+      subdir: _subdir,
+    );
+  });
+
   testWidgets('mobile person page, not enrolled — dark', (tester) async {
     when(
       () => repository.getRelationshipById(_moId),
@@ -1485,9 +1510,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.textContaining('11 minutes ago'),
+      find.textContaining('about 11 min'),
       findsOneWidget,
       reason: 'the offer names the evidence it was built from',
+    );
+    expect(
+      find.textContaining('Did you reach'),
+      findsOneWidget,
+      reason: 'it asks about the call rather than asserting one happened',
     );
     await captureScreenshot(
       tester,
