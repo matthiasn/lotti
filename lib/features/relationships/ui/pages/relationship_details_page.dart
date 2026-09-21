@@ -10,6 +10,7 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/relationships/model/relationship_agent_identity.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
@@ -177,19 +178,24 @@ class RelationshipDetailsPage extends ConsumerWidget {
     // twice and said it less truthfully, so the page no longer watches the
     // report at all.
     //
-    // Whether an agent *exists* is a different question from whether
-    // reminders are on, and the hero needs the first one. Unmarking a
-    // person, or making them dormant, stops the cadence but deliberately
+    // Whether an agent *can be talked to* is a different question from
+    // whether reminders are on, and the hero needs the first one. Unmarking
+    // a person, or making them dormant, stops the cadence but deliberately
     // keeps the agent and its conversation (`RelationshipAgentService`),
     // so gating the chat on enrolment would remove the only ordinary way
-    // back into a chat that still exists. An enrolled person counts even
-    // before their agent has named itself, which is the window in which
-    // the identity is still null.
+    // back into a chat that still exists. Once an identity row exists it
+    // is the chat pane's own question — an ACTIVE relationship agent — and
+    // enrolment no longer counts: pausing or destroying keeps the row (for
+    // audit, and `ensureAgentForRelationship` preserves the lifecycle on
+    // re-enrolment), so an enrolled person with a destroyed agent is a
+    // persistent state, and a button there led to the pane's unavailable
+    // screen. Only while no row exists yet — an enrolled person whose agent
+    // has not named itself — does enrolment stand in for it.
     final agentId = relationshipAgentIdFor(relationshipId);
-    final hasAgent =
-        isEnrolled(relationship) ||
-        ref.watch(agentIdentityProvider(agentId)).value != null ||
-        ref.watch(agentStateProvider(agentId)).value != null;
+    final identity = ref.watch(agentIdentityProvider(agentId)).value;
+    final hasAgent = identity == null
+        ? isEnrolled(relationship)
+        : usableRelationshipAgent(identity) != null;
     final sections = <Widget>[
       PersonHeaderBlock(item: item, categoryName: categoryName),
       // Always present: an unenrolled person gets the card that explains

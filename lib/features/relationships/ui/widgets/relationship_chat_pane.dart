@@ -1,7 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
@@ -9,6 +7,7 @@ import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/relationships/model/relationship_agent_identity.dart';
 import 'package:lotti/features/relationships/state/relationship_chat_controller.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_suggestions_band.dart';
@@ -49,15 +48,10 @@ class RelationshipChatPane extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final agentId = relationshipAgentIdFor(relationshipId);
-    final identityAsync = ref.watch(agentIdentityProvider(agentId));
-    final identity = identityAsync.value;
-    final isActive =
-        identity is AgentIdentityEntity &&
-        identity.kind == AgentKinds.relationshipAgent &&
-        identity.lifecycle == AgentLifecycle.active;
-    final name = isActive
-        ? identity.displayName
-        : context.messages.relationshipChatTooltip;
+    final agent = usableRelationshipAgent(
+      ref.watch(agentIdentityProvider(agentId)).value,
+    );
+    final name = agent?.displayName ?? context.messages.relationshipChatTooltip;
 
     // The header renders in every state, because on the phone route it holds
     // the only way back — a chat whose agent is still resolving, or turns out
@@ -71,7 +65,7 @@ class RelationshipChatPane extends ConsumerWidget {
           agentName: name,
           onBack: onBack,
           onClose: onClose,
-          showInternalsAction: showInternalsAction && isActive,
+          showInternalsAction: showInternalsAction && agent != null,
         ),
         Expanded(
           child: _body(context, ref, agentId: agentId, name: name),
@@ -87,16 +81,12 @@ class RelationshipChatPane extends ConsumerWidget {
     required String name,
   }) {
     final identityAsync = ref.watch(agentIdentityProvider(agentId));
-    final identity = identityAsync.value;
-    final isActive =
-        identity is AgentIdentityEntity &&
-        identity.kind == AgentKinds.relationshipAgent &&
-        identity.lifecycle == AgentLifecycle.active;
+    final agent = usableRelationshipAgent(identityAsync.value);
 
     if (!identityAsync.hasValue && !identityAsync.hasError) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (!isActive) {
+    if (agent == null) {
       return Center(child: Text(context.messages.relationshipChatUnavailable));
     }
 

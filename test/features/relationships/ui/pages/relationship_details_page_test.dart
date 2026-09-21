@@ -9,6 +9,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -737,6 +738,106 @@ void main() {
 
     expect(beamedTo, ['/people/rel-1/chat']);
   });
+
+  AgentIdentityEntity relationshipAgentIdentity(AgentLifecycle lifecycle) =>
+      AgentDomainEntity.agent(
+            id: relationshipAgentIdFor('rel-1'),
+            agentId: relationshipAgentIdFor('rel-1'),
+            kind: AgentKinds.relationshipAgent,
+            displayName: 'Anna',
+            lifecycle: lifecycle,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: 'state',
+            config: const AgentConfig(),
+            createdAt: DateTime(2026),
+            updatedAt: DateTime(2026),
+            vectorClock: null,
+          )
+          as AgentIdentityEntity;
+
+  testWidgets(
+    'Talk to agent is hidden for a destroyed agent of an unenrolled person',
+    (tester) async {
+      // Destroy preserves the identity row for audit, and the chat pane
+      // refuses anything but an active agent — so a button here led to
+      // the "unavailable" screen (P2 on #4408).
+      when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+        // Unenrolled is the helper's default.
+        (_) async => relationship(),
+      );
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-1'),
+      ).thenAnswer((_) async => []);
+
+      await pumpPage(
+        tester,
+        overrides: [
+          agentIdentityProvider(relationshipAgentIdFor('rel-1')).overrideWith(
+            (ref) async => relationshipAgentIdentity(AgentLifecycle.destroyed),
+          ),
+        ],
+      );
+
+      expect(find.byKey(const ValueKey('person-talk-to-agent')), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Talk to agent is hidden for a destroyed agent even while enrolled',
+    (tester) async {
+      // Pausing or destroying through the agent controls keeps the person
+      // enrolled and the identity row present, and re-enrolment preserves
+      // the lifecycle — a persistent state in which enrolment must not
+      // stand in for a usable agent.
+      when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+        (_) async => relationship(important: true),
+      );
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-1'),
+      ).thenAnswer((_) async => []);
+
+      await pumpPage(
+        tester,
+        overrides: [
+          agentIdentityProvider(relationshipAgentIdFor('rel-1')).overrideWith(
+            (ref) async => relationshipAgentIdentity(AgentLifecycle.destroyed),
+          ),
+        ],
+      );
+
+      expect(find.byKey(const ValueKey('person-talk-to-agent')), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Talk to agent stays for an active agent after the person is unenrolled',
+    (tester) async {
+      // Unmarking stops the cadence but keeps the agent and its
+      // conversation, and the hero is the only ordinary way back in.
+      when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+        // Unenrolled is the helper's default.
+        (_) async => relationship(),
+      );
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-1'),
+      ).thenAnswer((_) async => []);
+
+      await pumpPage(
+        tester,
+        overrides: [
+          agentIdentityProvider(relationshipAgentIdFor('rel-1')).overrideWith(
+            (ref) async => relationshipAgentIdentity(AgentLifecycle.active),
+          ),
+        ],
+      );
+
+      expect(
+        find.byKey(const ValueKey('person-talk-to-agent')),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets('on a phone, back pops the page', (tester) async {
     when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
