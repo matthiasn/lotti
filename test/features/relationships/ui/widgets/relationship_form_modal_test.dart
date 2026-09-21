@@ -416,6 +416,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextField).first, 'Anna Example');
+      await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).at(1), 'Sis');
       await tester.ensureVisible(find.byType(Switch));
       await tester.tap(find.byType(Switch));
@@ -460,6 +461,7 @@ void main() {
     await tester.pumpWidget(buildForm());
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'Anna');
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Create'));
     await tester.tap(find.text('Create'));
     await tester.pumpAndSettle();
@@ -486,6 +488,7 @@ void main() {
     await tester.pumpWidget(buildForm());
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'Anna');
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Create'));
     await tester.tap(find.text('Create'));
     await tester.pumpAndSettle();
@@ -506,6 +509,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).first, 'Anna');
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Cancel'));
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
@@ -543,6 +547,7 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, 'Anna Example');
+      await tester.pumpAndSettle();
       await tester.ensureVisible(find.byType(Switch));
       await tester.tap(find.byType(Switch));
       await tester.pumpAndSettle();
@@ -579,6 +584,7 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, 'Anna Example');
+      await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Create'));
       await tester.tap(find.text('Create'));
       await tester.pumpAndSettle();
@@ -607,6 +613,7 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, 'Anna Example');
+      await tester.pumpAndSettle();
       await tester.ensureVisible(find.byType(Switch));
       await tester.tap(find.byType(Switch));
       await tester.pumpAndSettle();
@@ -783,6 +790,7 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, 'Ada');
+      await tester.pumpAndSettle();
       await tapVisible(
         tester,
         find.byKey(const ValueKey('person-form-add-channel')),
@@ -833,6 +841,7 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, 'Ada');
+      await tester.pumpAndSettle();
       await tapVisible(
         tester,
         find.byKey(const ValueKey('person-form-add-channel')),
@@ -1032,6 +1041,33 @@ void main() {
     });
   });
 
+  testWidgets('Create is held until there is a name, and the Name field says '
+      'why — no live button answering the first tap with an error', (
+    tester,
+  ) async {
+    await tester.pumpWidget(buildForm());
+    await tester.pumpAndSettle();
+
+    DesignSystemButton create() => tester.widget<DesignSystemButton>(
+      find.byKey(const ValueKey('person-form-save')),
+    );
+    final reason = find.byKey(const ValueKey('person-form-name-required'));
+
+    expect(create().onPressed, isNull);
+    expect(tester.widget<Text>(reason).data, 'A name is required');
+
+    await tester.enterText(find.byType(TextField).first, 'Ben');
+    await tester.pumpAndSettle();
+    expect(create().onPressed, isNotNull);
+    expect(reason, findsNothing);
+
+    // Spaces are not a name.
+    await tester.enterText(find.byType(TextField).first, '   ');
+    await tester.pumpAndSettle();
+    expect(create().onPressed, isNull);
+    expect(reason, findsOneWidget);
+  });
+
   testWidgets('cadence defaults to none when nothing is picked', (
     tester,
   ) async {
@@ -1051,6 +1087,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).first, 'Ben');
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Create'));
     await tester.tap(find.text('Create'));
     await tester.pumpAndSettle();
@@ -1087,6 +1124,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).first, 'Ben');
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.byType(Switch));
     await tester.tap(find.byType(Switch));
     await tester.pumpAndSettle();
@@ -1123,6 +1161,7 @@ void main() {
     await tester.pumpWidget(buildForm());
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'Frida Kjellsen');
+    await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('person-form-known-terms')),
       'Wanja;  Waddle One ; ',
@@ -1305,6 +1344,7 @@ void main() {
       expect(find.text('No cadence'), findsNothing);
 
       await tester.enterText(find.byType(TextField).first, 'Anna Example');
+      await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Save'));
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
@@ -1326,6 +1366,7 @@ void main() {
       expect(find.widgetWithText(TextField, 'Sis'), findsOneWidget);
 
       await tester.enterText(find.byType(TextField).first, 'Anna Example');
+      await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Monthly'));
       await tester.tap(find.text('Monthly'));
       await tester.pumpAndSettle();
@@ -1379,6 +1420,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextField).first, '   ');
+      await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Save'));
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
@@ -1464,6 +1506,7 @@ void main() {
       await tester.pumpWidget(buildForm(initial: existing()));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, 'Anna Example');
+      await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Save'));
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
@@ -1517,6 +1560,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextField).first, 'Anna');
+      await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Create'));
       await tester.tap(find.text('Create'));
       await tester.pumpAndSettle();
@@ -1541,6 +1585,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextField).first, 'Anna');
+      await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Create'));
       await tester.tap(find.text('Create'));
       await tester.pumpAndSettle();

@@ -297,6 +297,11 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
   late final TextEditingController _nicknameController;
   late final TextEditingController _knownTermsController;
   late bool _important;
+
+  /// Whether there is a name to save under. Save is held without one, and
+  /// the Name field says so — rather than a live button that answers the
+  /// first tap with an error toast.
+  late bool _hasName;
   late int? _cadenceDays;
   late _StatusKind _statusKind;
   String? _categoryId;
@@ -318,7 +323,9 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
   void initState() {
     super.initState();
     final data = widget.initial?.data;
-    _nameController = TextEditingController(text: data?.title ?? '');
+    _nameController = TextEditingController(text: data?.title ?? '')
+      ..addListener(_onNameChanged);
+    _hasName = _nameController.text.trim().isNotEmpty;
     _nicknameController = TextEditingController(text: data?.nickname ?? '');
     _knownTermsController = TextEditingController(
       text: formatSpeechTerms(data?.knownTerms),
@@ -407,17 +414,21 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     if (mounted && fresh != null) setState(() => _person = fresh);
   }
 
+  /// Rebuilds only when the name goes from empty to not, or back: that is
+  /// all the pinned bar needs, and the rest of the form has no reason to
+  /// rebuild on every keystroke.
+  void _onNameChanged() {
+    final hasName = _nameController.text.trim().isNotEmpty;
+    if (hasName != _hasName) setState(() => _hasName = hasName);
+  }
+
   Future<void> _handleSave() async {
     if (_isSaving) return;
 
+    // The pinned bar holds Save without a name; this guards the other ways
+    // in (a keyboard shortcut on the handle).
     final name = _nameController.text.trim();
-    if (name.isEmpty) {
-      context.showToast(
-        tone: DesignSystemToastTone.error,
-        title: context.messages.relationshipNameRequired,
-      );
-      return;
-    }
+    if (name.isEmpty) return;
 
     setState(() => _isSaving = true);
     // Every provider is read before the first `await`. Saving pops the sheet,
@@ -563,7 +574,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
       widget.handle.publish(
         save: _handleSave,
         dismiss: _dismiss,
-        canSave: !_isSaving,
+        canSave: !_isSaving && _hasName,
         isEditing: _isEditing,
       );
     });
@@ -720,6 +731,17 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
                 autofocus: !_isEditing,
                 textCapitalization: TextCapitalization.words,
               ),
+              // Why Save is held, beside the field that frees it.
+              if (!_hasName) ...[
+                gap(tokens.spacing.step2),
+                Text(
+                  messages.relationshipNameRequired,
+                  key: const ValueKey('person-form-name-required'),
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ),
+              ],
               gap(tokens.spacing.step4),
               LottiTextField(
                 controller: _nicknameController,
