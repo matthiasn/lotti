@@ -9,10 +9,10 @@ import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
-import 'package:lotti/features/design_system/components/navigation/design_system_showcase_mobile_detail_header.dart';
 import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -28,6 +28,7 @@ import 'package:lotti/features/projects/ui/widgets/project_task_list_options_she
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
+import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../test_utils/material_ui_finders.dart';
@@ -321,7 +322,9 @@ void main() {
         );
         await tester.pump();
 
-        final rail = tester.getRect(find.byType(DesignSystemContextMenuButton));
+        // On a phone the overflow menu lives in the top bar, so the title
+        // row's rail is the Explore project action alone.
+        final rail = tester.getRect(find.byType(DesignSystemIconAction));
         final header = tester.getRect(find.byType(ProjectHeaderTitleRow));
         expect(
           rail.bottom,
@@ -811,12 +814,8 @@ void main() {
       await tester.pump();
 
       expect(
-        tester
-            .widget<DesignSystemBackControl>(
-              find.byType(DesignSystemBackControl),
-            )
-            .onTap,
-        isNull,
+        tester.widget<BackWidget>(find.byType(BackWidget)).enabled,
+        isFalse,
       );
       expect(
         tester
@@ -830,10 +829,7 @@ void main() {
         tester.widget<PopScope>(find.byType(PopScope).last).canPop,
         isFalse,
       );
-      await tester.tap(
-        find.byType(DesignSystemBackControl),
-        warnIfMissed: false,
-      );
+      await tester.tap(find.byType(BackWidget), warnIfMissed: false);
       await tester.tap(
         find.text(record.highlightedTaskSummaries.single.task.data.title),
       );
@@ -844,12 +840,8 @@ void main() {
       await tester.pump();
 
       expect(
-        tester
-            .widget<DesignSystemBackControl>(
-              find.byType(DesignSystemBackControl),
-            )
-            .onTap,
-        isNotNull,
+        tester.widget<BackWidget>(find.byType(BackWidget)).enabled,
+        isTrue,
       );
       expect(
         tester
@@ -987,13 +979,43 @@ void main() {
         ),
       );
 
-      expect(find.byType(DesignSystemBackControl), findsOneWidget);
+      expect(find.byType(BackWidget), findsOneWidget);
       expect(
-        tester.getCenter(find.text('Back')).dx,
+        tester.getCenter(find.byType(BackWidget)).dx,
         lessThan(
           tester.getCenter(find.byType(ProjectMobileDetailContent)).dx,
         ),
       );
+    });
+
+    testWidgets('puts the overflow menu in the top bar, level with Back', (
+      tester,
+    ) async {
+      var backRequests = 0;
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: makeTestProjectRecord(),
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+            onBack: () => backRequests++,
+            onEdit: () {},
+          ),
+        ),
+      );
+
+      final back = tester.getCenter(find.byType(BackWidget));
+      final menu = tester.getCenter(find.byType(DesignSystemContextMenuButton));
+      final title = tester.getCenter(
+        find.text(makeTestProjectRecord().project.data.title),
+      );
+      // One bar: Back at the leading edge, the menu at the trailing one, both
+      // above the title rather than beside it.
+      expect(menu.dy, moreOrLessEquals(back.dy, epsilon: 1));
+      expect(menu.dx, greaterThan(title.dx));
+      expect(menu.dy, lessThan(title.dy));
+
+      await tester.tap(find.byType(BackWidget));
+      expect(backRequests, 1);
     });
 
     testWidgets('keeps a small mobile scrollbar outside the content gutter', (
@@ -1037,7 +1059,7 @@ void main() {
         ),
       );
 
-      expect(find.byType(DesignSystemBackControl), findsNothing);
+      expect(find.byType(BackWidget), findsNothing);
     });
 
     testWidgets('caps wide desktop detail content at the reading measure', (

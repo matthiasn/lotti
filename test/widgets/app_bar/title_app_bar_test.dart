@@ -147,6 +147,34 @@ void main() {
       verifyNever(mockNavService.beamBack);
     });
 
+    testWidgets('a disabled arrow ignores taps and says so', (tester) async {
+      final semantics = tester.ensureSemantics();
+      var pressed = 0;
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BackWidget(onPressed: () => pressed++, enabled: false),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byType(IconButton), warnIfMissed: false);
+      await tester.pump();
+
+      expect(pressed, 0);
+      final label = MaterialLocalizations.of(
+        tester.element(find.byType(IconButton)),
+      ).backButtonTooltip;
+      expect(
+        tester.getSemantics(find.bySemanticsLabel(label)),
+        matchesSemantics(
+          label: label,
+          isButton: true,
+          hasEnabledState: true,
+        ),
+      );
+      semantics.dispose();
+    });
+
     testWidgets('exposes a localized back button to screen readers', (
       tester,
     ) async {
@@ -170,6 +198,8 @@ void main() {
         matchesSemantics(
           label: expectedLabel,
           isButton: true,
+          hasEnabledState: true,
+          isEnabled: true,
           hasTapAction: true,
         ),
       );

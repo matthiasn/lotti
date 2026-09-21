@@ -230,7 +230,9 @@ the list and divider go offstage without being disposed, and Show list remains
 available over every detail state, including initial loading and errors. A
 desktop project detail never renders the mobile Back affordance because the
 split has no parent route to pop; Back remains on the standalone mobile detail
-route. The primary search command restores a hidden list before focusing its
+route. There it matches the task detail's top bar: the `BackWidget` chevron at
+the leading edge and the overflow menu at the trailing one, while the desktop
+split keeps the menu in the title row. The primary search command restores a hidden list before focusing its
 search field, so keyboard search never targets an offstage control. Toggling
 focus mode changes only the restore-button overlay; the detail subtree stays
 mounted under a stable parent. Tasks and Projects share the persisted collapse
