@@ -527,8 +527,13 @@ RelationshipAgentEvalFailureCategory classifyRelationshipAgentResult({
 
   // Tools outside expected ∪ tolerated. Reporting is always tolerated —
   // the policy regulates it by situation, and over-reporting is measured
-  // by the no-op scenario, not this allow-list. `reply_to_user` is
-  // tolerated exactly when a pending message exists (its own tool
+  // by the no-op scenario, not this allow-list. Recording observations is
+  // tolerated on the same grounds, and because step 5 of the production
+  // contract instructs every wake to call it: a model that obeys the
+  // prompt must not be scored as acting out of turn. Observations are
+  // private memory for later wakes, so an unnecessary one costs a row the
+  // user never sees, not an action taken on their behalf. `reply_to_user`
+  // is tolerated exactly when a pending message exists (its own tool
   // description scopes it to that case); an unsolicited reply on a
   // scheduled wake is chat the user never asked for. Banner actions are
   // never tolerated implicitly: an unexpected banner is spend and an
@@ -536,6 +541,7 @@ RelationshipAgentEvalFailureCategory classifyRelationshipAgentResult({
   final allowedNames = {
     for (final expected in scenario.expectedToolCalls) expected.name,
     RelationshipAgentToolNames.updateRelationshipReport,
+    RelationshipAgentToolNames.recordRelationshipObservations,
     if (scenario.hasPendingUserMessage) RelationshipAgentToolNames.replyToUser,
   }..removeAll(scenario.forbiddenToolNames);
   if (toolCalls.any((call) => !allowedNames.contains(call.name))) {
