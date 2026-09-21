@@ -19,6 +19,7 @@ library;
 import 'dart:convert';
 
 import 'package:lotti/classes/nudge_models.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -390,6 +391,15 @@ RelationshipAgentEvalFailureCategory classifyRelationshipAgentResult({
   for (final call in toolCalls) {
     final args = call.jsonObjectArguments!;
     switch (call.name) {
+      case RelationshipAgentToolNames.recordRelationshipObservations:
+        // Tolerating the call is not the same as accepting any payload.
+        // `RelationshipAgentStrategy._handleRecordObservations` rejects an
+        // absent, empty or blank-only list through this same parser, so a
+        // call the runtime would discard must not earn credit here just
+        // because its name is on the allow-list.
+        if (parseRecordObservations(args).error != null) {
+          return RelationshipAgentEvalFailureCategory.invalidToolArguments;
+        }
       case RelationshipAgentToolNames.createAndLinkTask:
         if (relationshipTaskProposalError(args) != null) {
           return RelationshipAgentEvalFailureCategory.invalidToolArguments;
@@ -527,8 +537,13 @@ RelationshipAgentEvalFailureCategory classifyRelationshipAgentResult({
 
   // Tools outside expected ∪ tolerated. Reporting is always tolerated —
   // the policy regulates it by situation, and over-reporting is measured
-  // by the no-op scenario, not this allow-list. `reply_to_user` is
-  // tolerated exactly when a pending message exists (its own tool
+  // by the no-op scenario, not this allow-list. Recording observations is
+  // tolerated on the same grounds, and because step 5 of the production
+  // contract instructs every wake to call it: a model that obeys the
+  // prompt must not be scored as acting out of turn. Observations are
+  // private memory for later wakes, so an unnecessary one costs a row the
+  // user never sees, not an action taken on their behalf. `reply_to_user`
+  // is tolerated exactly when a pending message exists (its own tool
   // description scopes it to that case); an unsolicited reply on a
   // scheduled wake is chat the user never asked for. Banner actions are
   // never tolerated implicitly: an unexpected banner is spend and an
@@ -536,6 +551,7 @@ RelationshipAgentEvalFailureCategory classifyRelationshipAgentResult({
   final allowedNames = {
     for (final expected in scenario.expectedToolCalls) expected.name,
     RelationshipAgentToolNames.updateRelationshipReport,
+    RelationshipAgentToolNames.recordRelationshipObservations,
     if (scenario.hasPendingUserMessage) RelationshipAgentToolNames.replyToUser,
   }..removeAll(scenario.forbiddenToolNames);
   if (toolCalls.any((call) => !allowedNames.contains(call.name))) {

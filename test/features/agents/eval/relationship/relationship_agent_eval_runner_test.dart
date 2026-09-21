@@ -318,6 +318,70 @@ void main() {
   });
 
   group('classifyRelationshipAgentResult — tool discipline', () {
+    RelationshipAgentEvalToolCall observations({
+      String text =
+          'Tove is waiting on the interview outcome (2026-08-07 call).',
+      int exchangeIndex = 0,
+    }) => call(
+      RelationshipAgentToolNames.recordRelationshipObservations,
+      jsonEncode({
+        'observations': [
+          {'text': text},
+        ],
+      }),
+      exchangeIndex: exchangeIndex,
+    );
+
+    // Step 5 of the production contract tells every wake to record
+    // observations, so obeying the prompt must not read as acting out of
+    // turn. Without this the allow-list failed every scenario that did not
+    // itself expect the call, which is all of them.
+    test(
+      'recording private observations beside expected work is tolerated',
+      () {
+        expect(
+          classify('br_stale_after_checkin', [briefing(), observations()]),
+          RelationshipAgentEvalFailureCategory.none,
+        );
+      },
+    );
+
+    // Tolerating observations must not weaken the restraint measurement:
+    // a wake that should do nothing does nothing, memory included.
+    test('a no-op wake that records an observation still violates', () {
+      expect(
+        classify('qt_noop', [observations()]),
+        RelationshipAgentEvalFailureCategory.noOpViolated,
+      );
+    });
+
+    // Tolerating the call is not accepting any payload. The strategy
+    // rejects these three through `parseRecordObservations`, so a call the
+    // runtime would discard cannot score as success here.
+    test('an observation payload the runtime discards is invalid', () {
+      for (final payload in [
+        jsonEncode({'observations': <Object?>[]}),
+        jsonEncode({
+          'observations': [
+            {'text': '   '},
+          ],
+        }),
+        jsonEncode(<String, Object?>{}),
+      ]) {
+        expect(
+          classify('br_stale_after_checkin', [
+            briefing(),
+            call(
+              RelationshipAgentToolNames.recordRelationshipObservations,
+              payload,
+            ),
+          ]),
+          RelationshipAgentEvalFailureCategory.invalidToolArguments,
+          reason: payload,
+        );
+      }
+    });
+
     test('a banner where one is forbidden is the forbidden-tool failure', () {
       expect(
         classify('nd_fresh_active', [briefing(), ad()]),

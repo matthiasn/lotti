@@ -387,6 +387,7 @@ void _stubWorkflow({
     () => mocks.agentRepository.getMessagesByKind(
       agentId,
       AgentMessageKind.observation,
+      limit: any<int>(named: 'limit'),
     ),
   ).thenAnswer((_) async => const <AgentMessageEntity>[]);
   when(
