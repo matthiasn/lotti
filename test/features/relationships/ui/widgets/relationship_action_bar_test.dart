@@ -156,7 +156,16 @@ void main() {
     expect(pill.label, 'Log check-in');
     expect(pill.fillColor, tokens.colors.interactive.enabled);
     expect(pill.expand, isTrue);
-    expect(find.byKey(const ValueKey('person-action-speak')), findsOneWidget);
+    // One verb for voice across the feature: the bar's mic wears the
+    // composer's own word rather than a second one ("Speak check-in").
+    expect(
+      tester
+          .widget<DsGlassPill>(
+            find.byKey(const ValueKey('person-action-speak')),
+          )
+          .label,
+      'Dictate',
+    );
   });
 
   testWidgets('the pill and the mic call back', (tester) async {
@@ -237,7 +246,7 @@ void main() {
               find.byKey(const ValueKey('person-action-speak')),
             )
             .semanticLabel,
-        isNotNull,
+        'Dictate',
       );
     });
 

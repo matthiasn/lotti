@@ -136,8 +136,9 @@ class _RelationshipActionBarState extends ConsumerState<RelationshipActionBar> {
         ? null
         : contactActionLabel(context, reachable.action);
     // The same budgeting for the mic: it records, which is not a thing a
-    // bare glyph announces either.
-    final micLabel = messages.checkInSpeakButton;
+    // bare glyph announces either. It wears the composer's own word —
+    // "Dictate" — so the feature has one verb for voice wherever it shows.
+    final micLabel = messages.checkInDictateButton;
     double pill(String label) =>
         DsGlassPill.intrinsicWidth(context, label: label);
     const round = DsGlassRoundButton.defaultDiameter;

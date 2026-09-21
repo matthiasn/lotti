@@ -98,7 +98,7 @@ bool isEnrolled(RelationshipEntry relationship) =>
 /// their reminders rather than scheduling any, so they have no due date.
 int? effectiveCadenceDaysOf(RelationshipEntry relationship) {
   if (!isEnrolled(relationship)) return null;
-  return relationship.data.checkInCadenceDays ?? relationshipDefaultCadenceDays;
+  return relationshipShownCadenceDays(relationship.data.checkInCadenceDays);
 }
 
 /// Whole days the cadence is over (positive), zero on the due day itself,

@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -192,9 +193,11 @@ class ContactImportController extends Notifier<ContactImportState> {
   bool isSelected(String contactId) => state.drafts.containsKey(contactId);
 
   /// Marks a selected contact important, which is what creates their agent
-  /// once they exist. Clearing it also clears the cadence, since a cadence
-  /// on an unimportant person is never evaluated and would only be
-  /// misleading if it reappeared later.
+  /// once they exist. Turning it on gives the draft the default interval
+  /// unless it already has one, so the review step shows — and the import
+  /// stores — the rhythm the reminders will actually run on. Clearing it
+  /// also clears the cadence, since a cadence on an unimportant person is
+  /// never evaluated and would only be misleading if it reappeared later.
   void setImportant({required String contactId, required bool important}) {
     final draft = state.drafts[contactId];
     if (draft == null) return;
@@ -204,14 +207,16 @@ class ContactImportController extends Notifier<ContactImportState> {
       contact: draft.contact,
       id: draft.id,
       important: important,
-      cadenceDays: important ? draft.cadenceDays : null,
+      cadenceDays: important
+          ? relationshipShownCadenceDays(draft.cadenceDays)
+          : null,
     );
     _withDrafts(drafts);
   }
 
   /// Sets the desired check-in interval for a selected contact. Ignored for
   /// a contact who is not marked important, for the same reason as above.
-  void setCadence({required String contactId, required int? cadenceDays}) {
+  void setCadence({required String contactId, required int cadenceDays}) {
     final draft = state.drafts[contactId];
     if (draft == null || !draft.important) return;
 

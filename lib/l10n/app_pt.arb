@@ -1634,7 +1634,6 @@
   "checkInSentimentStrained": "Tenso",
   "checkInSourceCall": "Da chamada que fizeste a partir desta página. Tudo é editável.",
   "checkInSourceMessage": "Da mensagem que enviaste a partir desta página. Tudo é editável.",
-  "checkInSpeakButton": "Ditar o contato",
   "checkInSpokenMinutes": "{count, plural, =1{1 minuto} other{{count} minutos}}",
   "@checkInSpokenMinutes": {
     "description": "Minutes of a recording length, read by assistive technology.",
@@ -5024,7 +5023,6 @@
   "relationshipAgentFailedNoModel": "Não há nenhum modelo configurado para briefings. Escolhe um em Definições de IA › Agentes. Os detalhes estão no separador Atividade.",
   "relationshipAgentFailedPlain": "Última execução falhou",
   "relationshipAgentLastRunFailed": "Última execução falhou · {time}",
-  "relationshipAgentNoAgent": "Sem agente para esta pessoa",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Ainda sem briefing. „Criar briefing agora“ escreve um assim que registares um check-in; nunca vê o telefone nem o e-mail.} =1{Ainda sem briefing. „Criar briefing agora“ escreve um a partir do teu check-in; nunca vê o telefone nem o e-mail.} other{Ainda sem briefing. „Criar briefing agora“ escreve um a partir dos teus {count} check-ins; nunca vê o telefone nem o e-mail.}}",
   "relationshipAgentNotEnrolledBody": "Ativa os lembretes de {name} para ter um chat, um aviso quando já passou algum tempo e um briefing.",
   "relationshipAgentOutOfDateNewCheckIn": "Desatualizado · novo check-in {day}",
@@ -5046,13 +5044,7 @@
   "relationshipBriefingTitle": "Briefing",
   "relationshipCadenceEveryNDays": "{days, plural, =1{Todos os dias} other{A cada {days} dias}}",
   "relationshipCadenceFortnightly": "A cada duas semanas",
-  "relationshipCadenceLabel": "Ritmo de contato",
   "relationshipCadenceMonthly": "Mensal",
-  "relationshipCadenceNone": "Sem ritmo",
-  "relationshipCadenceNudgeNote": "Escolher um ritmo ativa os lembretes de registro.",
-  "@relationshipCadenceNudgeNote": {
-    "description": "Relationships redesign label."
-  },
   "relationshipCadenceOnTrack": "em dia",
   "@relationshipCadenceOnTrack": {
     "description": "Relationships redesign label."
@@ -5066,7 +5058,7 @@
   "relationshipChatEmpty": "Comece uma conversa com o agente de resumos sobre {name}.",
   "relationshipChatPlaceholder": "Converse com o agente sobre {name}…",
   "relationshipChatTooltip": "Conversar sobre esta pessoa",
-  "relationshipChatUnavailable": "Ainda sem agente — marca primeiro esta pessoa como importante.",
+  "relationshipChatUnavailable": "Ainda sem agente — ativa primeiro os lembretes desta pessoa.",
   "relationshipCheckInAddComment": "Adicionar comentário",
   "relationshipCheckInAddPhoto": "Foto",
   "relationshipCheckInCommentCount": "{count, plural, =1{1 comentário} other{{count} comentários}}",
@@ -5170,7 +5162,6 @@
   "relationshipHealthThriving": "A florescer",
   "relationshipImportAction": "Importar dos contactos",
   "relationshipImportAdded": "{count, plural, =1{1 pessoa adicionada} other{{count} pessoas adicionadas}}",
-  "relationshipImportantDescription": "Me lembre de manter contato",
   "relationshipImportantLabel": "Com lembretes",
   "relationshipImportConfirmButton": "{count, plural, =1{Adicionar 1 pessoa} other{Adicionar {count} pessoas}}",
   "relationshipImportEmpty": "Sem contactos neste dispositivo",
@@ -5291,6 +5282,7 @@
   "relationshipReminderPausedBody": "Ele volta nesse horário, a menos que você registre um contato antes.",
   "relationshipReminderPausedTitle": "Lembrete pausado até {time}",
   "relationshipReminderSnoozeLonger": "Adiar mais",
+  "relationshipRemindersSwitchLabel": "Lembra-me de manter o contacto",
   "relationshipsEmptyState": "Adicione as pessoas de quem você quer ficar perto.",
   "relationshipsGroupDue": "Pendentes",
   "relationshipsPageTitle": "Pessoas",
@@ -5348,6 +5340,7 @@
       }
     }
   },
+  "relationshipStatusLineAddedNoCadence": "Adicionado agora",
   "relationshipStatusLineContacted": "{type} · {time} · {cadence}",
   "@relationshipStatusLineContacted": {
     "placeholders": {
@@ -5362,6 +5355,7 @@
       }
     }
   },
+  "relationshipStatusLineContactedNoCadence": "{type} · {time}",
   "relationshipTimestampToday": "Hoje",
   "relationshipTimestampYesterday": "Ontem",
   "relationshipTrackingSinceLabel": "Acompanhando desde {date}",

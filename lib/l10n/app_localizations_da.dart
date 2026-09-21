@@ -3308,9 +3308,6 @@ class AppLocalizationsDa extends AppLocalizations {
       'Fra den besked, du sendte fra denne side. Alt kan redigeres.';
 
   @override
-  String get checkInSpeakButton => 'Indtal check-in';
-
-  @override
   String checkInSpokenMinutes(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -11755,9 +11752,6 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String get relationshipAgentNoAgent => 'Ingen agent for denne person';
-
-  @override
   String relationshipAgentNoBriefingBody(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -11867,17 +11861,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipCadenceFortnightly => 'Hver anden uge';
 
   @override
-  String get relationshipCadenceLabel => 'Kontaktrytme';
-
-  @override
   String get relationshipCadenceMonthly => 'Månedligt';
-
-  @override
-  String get relationshipCadenceNone => 'Ingen rytme';
-
-  @override
-  String get relationshipCadenceNudgeNote =>
-      'At vælge et tempo slår check-in-påmindelser til.';
 
   @override
   String get relationshipCadenceOnTrack => 'på sporet';
@@ -11918,7 +11902,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get relationshipChatUnavailable =>
-      'Ingen agent endnu — markér først personen som vigtig.';
+      'Ingen agent endnu — slå først påmindelser til for personen.';
 
   @override
   String get relationshipCheckInAddComment => 'Tilføj kommentar';
@@ -12129,10 +12113,6 @@ class AppLocalizationsDa extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get relationshipImportantDescription =>
-      'Mind mig om at holde kontakten';
 
   @override
   String get relationshipImportantLabel => 'Med påmindelser';
@@ -12410,6 +12390,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipReminderSnoozeLonger => 'Udsæt længere';
 
   @override
+  String get relationshipRemindersSwitchLabel =>
+      'Mind mig om at holde kontakten';
+
+  @override
   String get relationshipsEmptyState =>
       'Tilføj de mennesker, du vil holde kontakten med.';
 
@@ -12476,12 +12460,20 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get relationshipStatusLineAddedNoCadence => 'Lige tilføjet';
+
+  @override
   String relationshipStatusLineContacted(
     String type,
     String time,
     String cadence,
   ) {
     return '$type · $time · $cadence';
+  }
+
+  @override
+  String relationshipStatusLineContactedNoCadence(String type, String time) {
+    return '$type · $time';
   }
 
   @override

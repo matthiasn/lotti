@@ -3351,9 +3351,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Ze zprávy, kterou jsi poslal/a z této stránky. Vše jde upravit.';
 
   @override
-  String get checkInSpeakButton => 'Namluvit kontakt';
-
-  @override
   String checkInSpokenMinutes(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -11925,9 +11922,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get relationshipAgentNoAgent => 'Pro tuto osobu není žádný agent';
-
-  @override
   String relationshipAgentNoBriefingBody(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -12043,17 +12037,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipCadenceFortnightly => 'Každé dva týdny';
 
   @override
-  String get relationshipCadenceLabel => 'Frekvence kontaktu';
-
-  @override
   String get relationshipCadenceMonthly => 'Každý měsíc';
-
-  @override
-  String get relationshipCadenceNone => 'Bez frekvence';
-
-  @override
-  String get relationshipCadenceNudgeNote =>
-      'Nastavení rytmu zapne připomínky záznamů.';
 
   @override
   String get relationshipCadenceOnTrack => 'v rytmu';
@@ -12094,7 +12078,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipChatUnavailable =>
-      'Zatím žádný agent — nejprve označ tuto osobu jako důležitou.';
+      'Zatím žádný agent — nejprve pro tuto osobu zapni připomínky.';
 
   @override
   String get relationshipCheckInAddComment => 'Přidat komentář';
@@ -12310,9 +12294,6 @@ class AppLocalizationsCs extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get relationshipImportantDescription => 'Připomínej mi, ať se ozvu';
 
   @override
   String get relationshipImportantLabel => 'S připomínkami';
@@ -12594,6 +12575,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipReminderSnoozeLonger => 'Odložit na déle';
 
   @override
+  String get relationshipRemindersSwitchLabel =>
+      'Připomínej mi, ať zůstaneme v kontaktu';
+
+  @override
   String get relationshipsEmptyState =>
       'Přidej lidi, se kterými chceš zůstat v kontaktu.';
 
@@ -12661,12 +12646,20 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get relationshipStatusLineAddedNoCadence => 'Právě přidáno';
+
+  @override
   String relationshipStatusLineContacted(
     String type,
     String time,
     String cadence,
   ) {
     return '$type · $time · $cadence';
+  }
+
+  @override
+  String relationshipStatusLineContactedNoCadence(String type, String time) {
+    return '$type · $time';
   }
 
   @override

@@ -3368,9 +3368,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Din mesajul pe care l-ați trimis de pe această pagină. Totul se poate edita.';
 
   @override
-  String get checkInSpeakButton => 'Dictați contactul';
-
-  @override
   String checkInSpokenMinutes(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -11993,9 +11990,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get relationshipAgentNoAgent => 'Niciun agent pentru această persoană';
-
-  @override
   String relationshipAgentNoBriefingBody(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -12111,17 +12105,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipCadenceFortnightly => 'La două săptămâni';
 
   @override
-  String get relationshipCadenceLabel => 'Ritmul contactului';
-
-  @override
   String get relationshipCadenceMonthly => 'Lunar';
-
-  @override
-  String get relationshipCadenceNone => 'Fără ritm';
-
-  @override
-  String get relationshipCadenceNudgeNote =>
-      'Alegerea unui ritm activează memento-urile de înregistrare.';
 
   @override
   String get relationshipCadenceOnTrack => 'la zi';
@@ -12162,7 +12146,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipChatUnavailable =>
-      'Niciun agent încă — marcați mai întâi această persoană ca importantă.';
+      'Niciun agent încă — activați mai întâi memento-urile pentru această persoană.';
 
   @override
   String get relationshipCheckInAddComment => 'Adăugați un comentariu';
@@ -12379,10 +12363,6 @@ class AppLocalizationsRo extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get relationshipImportantDescription =>
-      'Amintiți-mi să păstrez legătura';
 
   @override
   String get relationshipImportantLabel => 'Cu memento-uri';
@@ -12668,6 +12648,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipReminderSnoozeLonger => 'Amânați mai mult';
 
   @override
+  String get relationshipRemindersSwitchLabel =>
+      'Amintiți-mi să păstrez legătura';
+
+  @override
   String get relationshipsEmptyState =>
       'Adăugați persoanele de care doriți să rămâneți aproape.';
 
@@ -12735,12 +12719,20 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get relationshipStatusLineAddedNoCadence => 'Adăugat acum';
+
+  @override
   String relationshipStatusLineContacted(
     String type,
     String time,
     String cadence,
   ) {
     return '$type · $time · $cadence';
+  }
+
+  @override
+  String relationshipStatusLineContactedNoCadence(String type, String time) {
+    return '$type · $time';
   }
 
   @override

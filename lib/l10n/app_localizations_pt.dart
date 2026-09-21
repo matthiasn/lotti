@@ -3341,9 +3341,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Da mensagem que enviaste a partir desta página. Tudo é editável.';
 
   @override
-  String get checkInSpeakButton => 'Ditar o contato';
-
-  @override
   String checkInSpokenMinutes(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -11867,9 +11864,6 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get relationshipAgentNoAgent => 'Sem agente para esta pessoa';
-
-  @override
   String relationshipAgentNoBriefingBody(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -11982,17 +11976,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get relationshipCadenceFortnightly => 'A cada duas semanas';
 
   @override
-  String get relationshipCadenceLabel => 'Ritmo de contato';
-
-  @override
   String get relationshipCadenceMonthly => 'Mensal';
-
-  @override
-  String get relationshipCadenceNone => 'Sem ritmo';
-
-  @override
-  String get relationshipCadenceNudgeNote =>
-      'Escolher um ritmo ativa os lembretes de registro.';
 
   @override
   String get relationshipCadenceOnTrack => 'em dia';
@@ -12033,7 +12017,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get relationshipChatUnavailable =>
-      'Ainda sem agente — marca primeiro esta pessoa como importante.';
+      'Ainda sem agente — ativa primeiro os lembretes desta pessoa.';
 
   @override
   String get relationshipCheckInAddComment => 'Adicionar comentário';
@@ -12244,9 +12228,6 @@ class AppLocalizationsPt extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get relationshipImportantDescription => 'Me lembre de manter contato';
 
   @override
   String get relationshipImportantLabel => 'Com lembretes';
@@ -12525,6 +12506,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get relationshipReminderSnoozeLonger => 'Adiar mais';
 
   @override
+  String get relationshipRemindersSwitchLabel =>
+      'Lembra-me de manter o contacto';
+
+  @override
   String get relationshipsEmptyState =>
       'Adicione as pessoas de quem você quer ficar perto.';
 
@@ -12591,12 +12576,20 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get relationshipStatusLineAddedNoCadence => 'Adicionado agora';
+
+  @override
   String relationshipStatusLineContacted(
     String type,
     String time,
     String cadence,
   ) {
     return '$type · $time · $cadence';
+  }
+
+  @override
+  String relationshipStatusLineContactedNoCadence(String type, String time) {
+    return '$type · $time';
   }
 
   @override

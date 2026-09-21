@@ -11,6 +11,7 @@ import 'package:lotti/features/journal/repository/clipboard_images.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
@@ -626,9 +627,12 @@ void main() {
       // A screen reader reaching the control hears what it changes, and the
       // label toggles it.
       final semantics = tester.getSemantics(find.byType(Switch));
-      expect(semantics.label, contains('Reminders on'));
+      // Worded as the request it grants, so it reads true while off:
+      // "Reminders on" beside an off switch announced "on … off".
+      expect(semantics.label, contains('Remind me to stay in touch'));
+      expect(find.text('Reminders on'), findsNothing);
 
-      await tester.tap(find.text('Reminders on'));
+      await tester.tap(find.text('Remind me to stay in touch'));
       await tester.pumpAndSettle();
 
       expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
@@ -666,14 +670,32 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
-      expect(find.text('Nudge me every'), findsNothing);
+      expect(find.text('Remind me every'), findsNothing);
       expect(find.text('Weekly'), findsNothing);
 
       await tester.tap(find.byType(Switch));
       await tester.pumpAndSettle();
 
-      expect(find.text('Nudge me every'), findsOneWidget);
+      expect(find.text('Remind me every'), findsOneWidget);
       expect(find.widgetWithText(DsPill, 'Weekly'), findsOneWidget);
+    });
+
+    testWidgets('reminders that are on always show an interval: the default '
+        'is preselected and "none" is not on offer', (tester) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+
+      final pills = tester.widgetList<DsPill>(find.byType(DsPill)).toList();
+      expect(
+        pills.map((pill) => pill.label),
+        ['Weekly', 'Every two weeks', 'Monthly', 'Quarterly'],
+      );
+      expect(
+        pills.where((pill) => pill.selected).map((pill) => pill.label),
+        ['Monthly'],
+      );
     });
 
     testWidgets('the Important explainer names the person once they have a '
@@ -683,7 +705,7 @@ void main() {
 
       expect(
         find.text(
-          'Turns on a briefing, nudges and a chat. Check-in notes go to the '
+          'Turns on reminders, a briefing and a chat. Check-in notes go to the '
           'agent; contact channels never do.',
         ),
         findsOneWidget,
@@ -694,7 +716,7 @@ void main() {
 
       expect(
         find.text(
-          'Turns on a briefing, nudges and a chat for Ada. Check-in notes go '
+          'Turns on reminders, a briefing and a chat for Ada. Check-in notes go '
           'to the agent; contact channels never do.',
         ),
         findsOneWidget,
@@ -1047,6 +1069,45 @@ void main() {
     expect(data.nickname, isNull);
   });
 
+  testWidgets('turning reminders on stores the interval the pills showed, '
+      'even when none was tapped', (tester) async {
+    when(
+      () => mockRepository.createRelationship(
+        data: any(named: 'data'),
+        categoryId: any(named: 'categoryId'),
+        id: any(named: 'id'),
+      ),
+    ).thenAnswer(
+      (invocation) async => createdEntry(
+        invocation.namedArguments[#data] as RelationshipData,
+      ),
+    );
+
+    await tester.pumpWidget(buildForm());
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, 'Ben');
+    await tester.ensureVisible(find.byType(Switch));
+    await tester.tap(find.byType(Switch));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Create'));
+    await tester.tap(find.text('Create'));
+    await tester.pumpAndSettle();
+
+    final data =
+        verify(
+              () => mockRepository.createRelationship(
+                data: captureAny(named: 'data'),
+                categoryId: any(named: 'categoryId'),
+                id: any(named: 'id'),
+              ),
+            ).captured.single
+            as RelationshipData;
+    expect(data.important, isTrue);
+    // Not null with a runtime substitution behind it: what was on screen.
+    expect(data.checkInCadenceDays, relationshipDefaultCadenceDays);
+  });
+
   testWidgets('saves the names that come up as a list', (tester) async {
     when(
       () => mockRepository.createRelationship(
@@ -1225,6 +1286,35 @@ void main() {
               ).captured.single
               as RelationshipEntry;
       expect(updated.data.knownTerms, ['Wanja', 'Pingo Floe']);
+    });
+
+    testWidgets('someone enrolled without a stored interval opens on the '
+        'default the runtime applies, and a save stores it', (tester) async {
+      await tester.pumpWidget(buildForm(initial: existing(cadenceDays: null)));
+      await tester.pumpAndSettle();
+
+      // The list row already says "Monthly" for this person; the editor
+      // used to show "No cadence" selected beside it.
+      expect(
+        tester
+            .widgetList<DsPill>(find.byType(DsPill))
+            .where((pill) => pill.selected)
+            .map((pill) => pill.label),
+        contains('Monthly'),
+      );
+      expect(find.text('No cadence'), findsNothing);
+
+      await tester.enterText(find.byType(TextField).first, 'Anna Example');
+      await tester.ensureVisible(find.text('Save'));
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      final updated =
+          verify(
+                () => mockRepository.updateRelationship(captureAny()),
+              ).captured.single
+              as RelationshipEntry;
+      expect(updated.data.checkInCadenceDays, relationshipDefaultCadenceDays);
     });
 
     testWidgets('prefills the person and saves edited fields', (tester) async {

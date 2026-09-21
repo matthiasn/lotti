@@ -118,6 +118,40 @@ void main() {
     expect(line.style.fontFamily, isNot('Inconsolata'));
   });
 
+  group('without reminders or an interval, the line leaves the cadence out '
+      '— the band above already says "No reminders"', () {
+    testWidgets('never contacted: just "Just added"', (tester) async {
+      await pump(tester, item(important: false, cadenceDays: null));
+
+      final line = tester.widget<RelationshipLineWithDate>(
+        find.byKey(const ValueKey('people-row-status')),
+      );
+      expect(line.text, 'Just added');
+      expect(line.date, isNull);
+      expect(find.textContaining('No cadence'), findsNothing);
+    });
+
+    testWidgets('contacted: what and when, the date still in mono', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        item(
+          important: false,
+          cadenceDays: null,
+          lastCheckInAt: DateTime(2026, 8, 13, 9, 5),
+        ),
+      );
+
+      expect(
+        find.text('Call · Today 09:05', findRichText: true),
+        findsOneWidget,
+      );
+      expect(_spanFonts(tester)['Today 09:05'], 'Inconsolata');
+      expect(find.textContaining('No cadence'), findsNothing);
+    });
+  });
+
   testWidgets('a person never contacted reads Just added, the cadence, and '
       'when the first check-in falls due', (tester) async {
     await pump(tester, item(cadenceDays: 30));

@@ -4,6 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/state/contact_import_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -375,6 +376,41 @@ void main() {
       expect(
         container.read(contactImportControllerProvider).drafts['a']!.important,
         isTrue,
+      );
+    });
+
+    test('marking someone important gives their draft the default '
+        'interval, so the review shows — and the import carries over — the '
+        'rhythm their reminders will run on', () async {
+      final (:container, :controller) = build();
+      controller
+        ..toggleSelection(contact('a', 'Anna'))
+        ..setImportant(contactId: 'a', important: true);
+
+      expect(
+        container
+            .read(contactImportControllerProvider)
+            .drafts['a']!
+            .cadenceDays,
+        relationshipDefaultCadenceDays,
+      );
+    });
+
+    test('marking someone important again keeps the interval already '
+        'picked', () async {
+      final (:container, :controller) = build();
+      controller
+        ..toggleSelection(contact('a', 'Anna'))
+        ..setImportant(contactId: 'a', important: true)
+        ..setCadence(contactId: 'a', cadenceDays: 7)
+        ..setImportant(contactId: 'a', important: true);
+
+      expect(
+        container
+            .read(contactImportControllerProvider)
+            .drafts['a']!
+            .cadenceDays,
+        7,
       );
     });
 

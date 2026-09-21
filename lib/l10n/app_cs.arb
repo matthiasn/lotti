@@ -1464,7 +1464,6 @@
   "checkInSentimentStrained": "Napjaté",
   "checkInSourceCall": "Z hovoru, který jsi zahájil/a z této stránky. Vše jde upravit.",
   "checkInSourceMessage": "Ze zprávy, kterou jsi poslal/a z této stránky. Vše jde upravit.",
-  "checkInSpeakButton": "Namluvit kontakt",
   "checkInSpokenMinutes": "{count, plural, =1{1 minuta} few{{count} minuty} other{{count} minut}}",
   "@checkInSpokenMinutes": {
     "description": "Minutes of a recording length, read by assistive technology.",
@@ -4536,7 +4535,6 @@
   "relationshipAgentFailedNoModel": "Pro briefingy není nastaven žádný model. Vyber ho v Nastavení AI › Agenti. Podrobnosti najdeš na kartě Aktivita.",
   "relationshipAgentFailedPlain": "Poslední běh selhal",
   "relationshipAgentLastRunFailed": "Poslední běh selhal · {time}",
-  "relationshipAgentNoAgent": "Pro tuto osobu není žádný agent",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Zatím žádný briefing. „Vytvořit briefing teď“ ho napíše, jakmile zaznamenáš check-in; telefon ani e-mail nikdy nevidí.} =1{Zatím žádný briefing. „Vytvořit briefing teď“ ho napíše z tvého check-inu; telefon ani e-mail nikdy nevidí.} few{Zatím žádný briefing. „Vytvořit briefing teď“ ho napíše z tvých {count} check-inů; telefon ani e-mail nikdy nevidí.} other{Zatím žádný briefing. „Vytvořit briefing teď“ ho napíše z tvých {count} check-inů; telefon ani e-mail nikdy nevidí.}}",
   "relationshipAgentNotEnrolledBody": "Zapni připomínky pro {name} a získáš chat, pobídku po delší odmlce a briefing.",
   "relationshipAgentOutOfDateNewCheckIn": "Zastaralé · nový check-in {day}",
@@ -4558,13 +4556,7 @@
   "relationshipBriefingTitle": "Briefing",
   "relationshipCadenceEveryNDays": "{days, plural, =1{Každý den} few{Každé {days} dny} other{Každých {days} dní}}",
   "relationshipCadenceFortnightly": "Každé dva týdny",
-  "relationshipCadenceLabel": "Frekvence kontaktu",
   "relationshipCadenceMonthly": "Každý měsíc",
-  "relationshipCadenceNone": "Bez frekvence",
-  "relationshipCadenceNudgeNote": "Nastavení rytmu zapne připomínky záznamů.",
-  "@relationshipCadenceNudgeNote": {
-    "description": "Relationships redesign label."
-  },
   "relationshipCadenceOnTrack": "v rytmu",
   "@relationshipCadenceOnTrack": {
     "description": "Relationships redesign label."
@@ -4578,7 +4570,7 @@
   "relationshipChatEmpty": "Začni konverzaci s briefingovým agentem o osobě {name}.",
   "relationshipChatPlaceholder": "Mluv s agentem o osobě {name}…",
   "relationshipChatTooltip": "Chatovat o této osobě",
-  "relationshipChatUnavailable": "Zatím žádný agent — nejprve označ tuto osobu jako důležitou.",
+  "relationshipChatUnavailable": "Zatím žádný agent — nejprve pro tuto osobu zapni připomínky.",
   "relationshipCheckInAddComment": "Přidat komentář",
   "relationshipCheckInAddPhoto": "Fotka",
   "relationshipCheckInCommentCount": "{count, plural, =1{1 komentář} few{{count} komentáře} other{{count} komentářů}}",
@@ -4682,7 +4674,6 @@
   "relationshipHealthThriving": "Vzkvétá",
   "relationshipImportAction": "Importovat z kontaktů",
   "relationshipImportAdded": "{count, plural, =1{Přidána 1 osoba} few{Přidány {count} osoby} other{Přidáno {count} osob}}",
-  "relationshipImportantDescription": "Připomínej mi, ať se ozvu",
   "relationshipImportantLabel": "S připomínkami",
   "relationshipImportConfirmButton": "{count, plural, =1{Přidat 1 osobu} few{Přidat {count} osoby} other{Přidat {count} osob}}",
   "relationshipImportEmpty": "V tomto zařízení nejsou žádné kontakty",
@@ -4803,6 +4794,7 @@
   "relationshipReminderPausedBody": "Pak se vrátí, pokud předtím nezaznamenáš kontakt.",
   "relationshipReminderPausedTitle": "Připomínka pozastavena do {time}",
   "relationshipReminderSnoozeLonger": "Odložit na déle",
+  "relationshipRemindersSwitchLabel": "Připomínej mi, ať zůstaneme v kontaktu",
   "relationshipsEmptyState": "Přidej lidi, se kterými chceš zůstat v kontaktu.",
   "relationshipsGroupDue": "Na řadě",
   "relationshipsPageTitle": "Lidé",
@@ -4860,6 +4852,7 @@
       }
     }
   },
+  "relationshipStatusLineAddedNoCadence": "Právě přidáno",
   "relationshipStatusLineContacted": "{type} · {time} · {cadence}",
   "@relationshipStatusLineContacted": {
     "placeholders": {
@@ -4874,6 +4867,7 @@
       }
     }
   },
+  "relationshipStatusLineContactedNoCadence": "{type} · {time}",
   "relationshipTimestampToday": "Dnes",
   "relationshipTimestampYesterday": "Včera",
   "relationshipTrackingSinceLabel": "Sledováno od {date}",

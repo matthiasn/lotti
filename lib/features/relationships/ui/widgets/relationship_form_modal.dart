@@ -18,6 +18,7 @@ import 'package:lotti/features/journal/repository/clipboard_images.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/service/relationship_agent_service.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
@@ -35,17 +36,20 @@ import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Cadence presets offered in the form (plan v2 D1: presets over a free
-/// integer field). `null` means no cadence.
-const List<int?> relationshipCadencePresets = [null, 7, 14, 30, 90];
+/// How often a reminder can come, as offered wherever reminders are turned
+/// on (plan v2 D1: presets over a free integer field).
+///
+/// There is no "none": reminders that are on always run on an interval —
+/// the runtime substitutes [relationshipDefaultCadenceDays] for a missing
+/// one — so offering "No cadence" showed a choice the app then overrode.
+const List<int> relationshipCadencePresets = [7, 14, 30, 90];
 
 /// The localized label for a check-in cadence — shared by the form and the
 /// detail page. Values outside the presets (possible via sync, since the
 /// data model keeps a free integer) get an honest "every N days" label
 /// instead of being lumped into the nearest preset.
-String relationshipCadenceLabel(BuildContext context, int? days) =>
+String relationshipCadenceLabel(BuildContext context, int days) =>
     switch (days) {
-      null => context.messages.relationshipCadenceNone,
       7 => context.messages.relationshipCadenceWeekly,
       14 => context.messages.relationshipCadenceFortnightly,
       30 => context.messages.relationshipCadenceMonthly,
@@ -354,6 +358,15 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     super.dispose();
   }
 
+  /// The interval Save writes. With reminders on it is the one the pills
+  /// show as selected — so a person enrolled without touching the pills is
+  /// stored with the default they were shown, rather than with nothing and a
+  /// runtime substitution behind it. With reminders off the stored value is
+  /// left as it was: it is not evaluated, and clearing it would forget the
+  /// rhythm of someone whose reminders are switched back on later.
+  int? get _savedCadenceDays =>
+      _important ? relationshipShownCadenceDays(_cadenceDays) : _cadenceDays;
+
   /// Non-empty channel rows in their edited order (ADR 0041 §2: manual
   /// entry on every platform).
   List<ContactChannel> get _editedChannels =>
@@ -429,7 +442,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
           nickname: nickname.isEmpty ? null : nickname,
           knownTerms: knownTerms,
           important: _important,
-          checkInCadenceDays: _cadenceDays,
+          checkInCadenceDays: _savedCadenceDays,
           contactChannels: _editedChannels,
         );
         // Append the replaced status to history when the kind changed — the
@@ -475,7 +488,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
             nickname: nickname.isEmpty ? null : nickname,
             knownTerms: knownTerms,
             important: _important,
-            checkInCadenceDays: _cadenceDays,
+            checkInCadenceDays: _savedCadenceDays,
             contactChannels: _editedChannels,
             status: _mintStatus(_StatusKind.active),
           ),
@@ -772,7 +785,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
                     children: [
                       Expanded(
                         child: Text(
-                          messages.relationshipImportantLabel,
+                          messages.relationshipRemindersSwitchLabel,
                           style: tokens.typography.styles.subtitle.subtitle2
                               .copyWith(color: tokens.colors.text.highEmphasis),
                         ),
@@ -803,8 +816,8 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
                 gap(tokens.spacing.step4),
                 sectionLabel(messages.relationshipCadencePromptLabel),
                 gap(tokens.spacing.step3),
-                DsChoicePills<int?>(
-                  value: _cadenceDays,
+                DsChoicePills<int>(
+                  value: relationshipShownCadenceDays(_cadenceDays),
                   values: relationshipCadencePresets,
                   labelFor: (preset) => relationshipCadenceLabel(
                     context,

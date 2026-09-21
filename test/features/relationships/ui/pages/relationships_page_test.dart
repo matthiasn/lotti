@@ -437,12 +437,10 @@ void main() {
         find.text('Call · Yesterday 18:00 · Monthly', findRichText: true),
         findsOneWidget,
       );
-      // Ben has no check-in: "Just added", then the cadence.
-      final context = tester.element(find.byType(RelationshipsPage));
-      expect(
-        find.text('${context.messages.relationshipJustAdded} · No cadence'),
-        findsOneWidget,
-      );
+      // Ben has no check-in, no reminders and no interval: "Just added"
+      // and nothing more — his band already says "No reminders".
+      expect(find.text('Just added'), findsOneWidget);
+      expect(find.textContaining('No cadence'), findsNothing);
       expect(
         find.text('Add the people you want to stay close to.'),
         findsNothing,

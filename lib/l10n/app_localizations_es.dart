@@ -3351,9 +3351,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Del mensaje que enviaste desde esta página. Todo se puede editar.';
 
   @override
-  String get checkInSpeakButton => 'Dictar el contacto';
-
-  @override
   String checkInSpokenMinutes(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -11924,9 +11921,6 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get relationshipAgentNoAgent => 'Sin agente para esta persona';
-
-  @override
   String relationshipAgentNoBriefingBody(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -12036,17 +12030,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get relationshipCadenceFortnightly => 'Cada dos semanas';
 
   @override
-  String get relationshipCadenceLabel => 'Frecuencia de contacto';
-
-  @override
   String get relationshipCadenceMonthly => 'Mensual';
-
-  @override
-  String get relationshipCadenceNone => 'Sin frecuencia';
-
-  @override
-  String get relationshipCadenceNudgeNote =>
-      'Elegir un ritmo activa los avisos de registro.';
 
   @override
   String get relationshipCadenceOnTrack => 'al día';
@@ -12087,7 +12071,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get relationshipChatUnavailable =>
-      'Aún no hay agente: marca primero a esta persona como importante.';
+      'Aún no hay agente: activa primero los recordatorios de esta persona.';
 
   @override
   String get relationshipCheckInAddComment => 'Añadir comentario';
@@ -12298,10 +12282,6 @@ class AppLocalizationsEs extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get relationshipImportantDescription =>
-      'Recuérdame mantener el contacto';
 
   @override
   String get relationshipImportantLabel => 'Con recordatorios';
@@ -12580,6 +12560,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get relationshipReminderSnoozeLonger => 'Posponer más';
 
   @override
+  String get relationshipRemindersSwitchLabel =>
+      'Recuérdame mantener el contacto';
+
+  @override
   String get relationshipsEmptyState =>
       'Añade a las personas de las que quieres estar cerca.';
 
@@ -12646,12 +12630,20 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get relationshipStatusLineAddedNoCadence => 'Recién añadido';
+
+  @override
   String relationshipStatusLineContacted(
     String type,
     String time,
     String cadence,
   ) {
     return '$type · $time · $cadence';
+  }
+
+  @override
+  String relationshipStatusLineContactedNoCadence(String type, String time) {
+    return '$type · $time';
   }
 
   @override

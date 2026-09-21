@@ -305,7 +305,8 @@ void main() {
       // keeps the person away from AI entirely.
       expect(
         find.text(
-          'Briefings, nudges and a chat. Without it, nothing runs on its own.',
+          'Reminders, briefings and a chat. Without it, nothing runs on its '
+          'own.',
         ),
         findsOneWidget,
       );
@@ -335,7 +336,7 @@ void main() {
       );
 
       // The label toggles the switch it belongs to, not its neighbour.
-      await tester.tap(find.text('Reminders on').first);
+      await tester.tap(find.text('Remind me to stay in touch').first);
       await tester.pumpAndSettle();
       final switches = tester.widgetList<Switch>(find.byType(Switch)).toList();
       expect(switches.first.value, isTrue);
@@ -346,14 +347,24 @@ void main() {
         'cadence on an unimportant person is never evaluated', (tester) async {
       await advanceToReview(tester);
 
-      expect(find.text('Nudge me every'), findsNothing);
+      expect(find.text('Remind me every'), findsNothing);
       expect(find.byType(DsPill), findsNothing);
 
       await tester.tap(find.byType(Switch));
       await tester.pumpAndSettle();
 
-      expect(find.text('Nudge me every'), findsOneWidget);
-      expect(find.byType(DsPill), findsWidgets);
+      expect(find.text('Remind me every'), findsOneWidget);
+      // Reminders that are on run on an interval: the default is already
+      // selected, and "none" is not on offer.
+      final pills = tester.widgetList<DsPill>(find.byType(DsPill)).toList();
+      expect(
+        pills.map((pill) => pill.label),
+        ['Weekly', 'Every two weeks', 'Monthly', 'Quarterly'],
+      );
+      expect(
+        pills.where((pill) => pill.selected).map((pill) => pill.label),
+        ['Monthly'],
+      );
     });
 
     testWidgets('going back keeps the selection', (tester) async {

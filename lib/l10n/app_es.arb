@@ -1457,7 +1457,6 @@
   "checkInSentimentStrained": "Tenso",
   "checkInSourceCall": "De la llamada que hiciste desde esta página. Todo se puede editar.",
   "checkInSourceMessage": "Del mensaje que enviaste desde esta página. Todo se puede editar.",
-  "checkInSpeakButton": "Dictar el contacto",
   "checkInSpokenMinutes": "{count, plural, =1{1 minuto} other{{count} minutos}}",
   "@checkInSpokenMinutes": {
     "description": "Minutes of a recording length, read by assistive technology.",
@@ -4529,7 +4528,6 @@
   "relationshipAgentFailedNoModel": "No hay ningún modelo configurado para briefings. Elige uno en Ajustes de IA › Agentes. Los detalles están en la pestaña Actividad.",
   "relationshipAgentFailedPlain": "La última ejecución falló",
   "relationshipAgentLastRunFailed": "La última ejecución falló · {time}",
-  "relationshipAgentNoAgent": "Sin agente para esta persona",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Aún no hay briefing. „Crear briefing ahora“ escribe uno en cuanto registres un check-in; nunca ve el teléfono ni el correo.} =1{Aún no hay briefing. „Crear briefing ahora“ escribe uno a partir de tu check-in; nunca ve el teléfono ni el correo.} other{Aún no hay briefing. „Crear briefing ahora“ escribe uno a partir de tus {count} check-ins; nunca ve el teléfono ni el correo.}}",
   "relationshipAgentNotEnrolledBody": "Activa los recordatorios de {name} para tener un chat, un aviso cuando pase tiempo sin contacto y un briefing.",
   "relationshipAgentOutOfDateNewCheckIn": "Desactualizado · nuevo check-in {day}",
@@ -4551,13 +4549,7 @@
   "relationshipBriefingTitle": "Informe",
   "relationshipCadenceEveryNDays": "{days, plural, =1{Cada día} other{Cada {days} días}}",
   "relationshipCadenceFortnightly": "Cada dos semanas",
-  "relationshipCadenceLabel": "Frecuencia de contacto",
   "relationshipCadenceMonthly": "Mensual",
-  "relationshipCadenceNone": "Sin frecuencia",
-  "relationshipCadenceNudgeNote": "Elegir un ritmo activa los avisos de registro.",
-  "@relationshipCadenceNudgeNote": {
-    "description": "Relationships redesign label."
-  },
   "relationshipCadenceOnTrack": "al día",
   "@relationshipCadenceOnTrack": {
     "description": "Relationships redesign label."
@@ -4571,7 +4563,7 @@
   "relationshipChatEmpty": "Empieza una conversación con el agente de resúmenes sobre {name}.",
   "relationshipChatPlaceholder": "Habla con el agente sobre {name}…",
   "relationshipChatTooltip": "Chatear sobre esta persona",
-  "relationshipChatUnavailable": "Aún no hay agente: marca primero a esta persona como importante.",
+  "relationshipChatUnavailable": "Aún no hay agente: activa primero los recordatorios de esta persona.",
   "relationshipCheckInAddComment": "Añadir comentario",
   "relationshipCheckInAddPhoto": "Foto",
   "relationshipCheckInCommentCount": "{count, plural, =1{1 comentario} other{{count} comentarios}}",
@@ -4675,7 +4667,6 @@
   "relationshipHealthThriving": "Floreciente",
   "relationshipImportAction": "Importar desde contactos",
   "relationshipImportAdded": "{count, plural, =1{1 persona añadida} other{{count} personas añadidas}}",
-  "relationshipImportantDescription": "Recuérdame mantener el contacto",
   "relationshipImportantLabel": "Con recordatorios",
   "relationshipImportConfirmButton": "{count, plural, =1{Añadir 1 persona} other{Añadir {count} personas}}",
   "relationshipImportEmpty": "No hay contactos en este dispositivo",
@@ -4796,6 +4787,7 @@
   "relationshipReminderPausedBody": "Volverá entonces, salvo que registres un contacto antes.",
   "relationshipReminderPausedTitle": "Recordatorio en pausa hasta {time}",
   "relationshipReminderSnoozeLonger": "Posponer más",
+  "relationshipRemindersSwitchLabel": "Recuérdame mantener el contacto",
   "relationshipsEmptyState": "Añade a las personas de las que quieres estar cerca.",
   "relationshipsGroupDue": "Pendientes",
   "relationshipsPageTitle": "Personas",
@@ -4853,6 +4845,7 @@
       }
     }
   },
+  "relationshipStatusLineAddedNoCadence": "Recién añadido",
   "relationshipStatusLineContacted": "{type} · {time} · {cadence}",
   "@relationshipStatusLineContacted": {
     "placeholders": {
@@ -4867,6 +4860,7 @@
       }
     }
   },
+  "relationshipStatusLineContactedNoCadence": "{type} · {time}",
   "relationshipTimestampToday": "Hoy",
   "relationshipTimestampYesterday": "Ayer",
   "relationshipTrackingSinceLabel": "Seguimiento desde {date}",

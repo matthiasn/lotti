@@ -28,8 +28,10 @@ import 'package:lotti/features/design_system/components/toasts/toast_messenger.d
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
+import 'package:lotti/features/relationships/ui/shared/ds_choice_pills.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_suggestions_band.dart';
@@ -184,6 +186,18 @@ class _RelationshipBriefingCardState
   bool _requesting = false;
   bool _marking = false;
 
+  /// The interval picked on the not-enrolled face, null until a pill is
+  /// tapped — the face then shows the stored interval, or the default the
+  /// runtime would apply. Whatever it shows is what [_markImportant] saves,
+  /// so one tap on the button never schedules a rhythm nobody saw.
+  int? _enrolCadenceDays;
+
+  int get _shownEnrolCadenceDays =>
+      _enrolCadenceDays ??
+      relationshipShownCadenceDays(
+        widget.relationship.data.checkInCadenceDays,
+      );
+
   /// Re-renders the "as of" meta when its displayed bucket next changes:
   /// computed only at build, a briefing rendered "just now" would keep that
   /// label for hours. One wake per visible change, not a per-second tick.
@@ -283,7 +297,8 @@ class _RelationshipBriefingCardState
   }
 
   /// The consent switch, from the card: marking the person important is
-  /// what creates their agent (ADR 0059 Decision 2), so the save is followed
+  /// what creates their agent (ADR 0059 Decision 2), and the interval the
+  /// face shows as selected is stored with it. The save is followed
   /// by the same lazy-create call the edit form makes — fire-and-forget with
   /// contained failure, because agent wiring must never fail the save the
   /// user just watched succeed. Both services are read before the await:
@@ -297,7 +312,10 @@ class _RelationshipBriefingCardState
     try {
       final relationship = widget.relationship;
       final enrolled = relationship.copyWith(
-        data: relationship.data.copyWith(important: true),
+        data: relationship.data.copyWith(
+          important: true,
+          checkInCadenceDays: _shownEnrolCadenceDays,
+        ),
       );
       final saved = await repository.updateRelationship(enrolled);
       if (saved) {
@@ -376,6 +394,8 @@ class _RelationshipBriefingCardState
       return _NotEnrolledCard(
         item: item,
         marking: _marking,
+        cadenceDays: _shownEnrolCadenceDays,
+        onCadenceSelected: (days) => setState(() => _enrolCadenceDays = days),
         onMarkImportant: data.important ? null : _markImportant,
       );
     }
@@ -453,11 +473,17 @@ class _NotEnrolledCard extends StatelessWidget {
   const _NotEnrolledCard({
     required this.item,
     required this.marking,
+    required this.cadenceDays,
+    required this.onCadenceSelected,
     required this.onMarkImportant,
   });
 
   final RelationshipListItem item;
   final bool marking;
+
+  /// The interval the enrol button will store, shown as the selected pill.
+  final int cadenceDays;
+  final ValueChanged<int> onCadenceSelected;
 
   /// Null while the person is important but dormant or archived: the
   /// switch is already on, and the card says why nothing happens instead.
@@ -484,7 +510,9 @@ class _NotEnrolledCard extends StatelessWidget {
                 if (paused)
                   relationshipStatusLabel(context, data.status)
                 else
-                  messages.relationshipAgentNoAgent,
+                  // The band and the pill's own words for this state, so
+                  // one fact has one name on the list and on the page.
+                  messages.relationshipNotEnrolled,
               ],
               color: tokens.colors.text.lowEmphasis,
             ),
@@ -509,6 +537,38 @@ class _NotEnrolledCard extends StatelessWidget {
               ),
             ),
           ),
+          // How often, before the tap that turns it on: the button enrols in
+          // one tap, so the rhythm it applies has to be on screen already —
+          // and changeable — rather than a default discovered later.
+          if (!paused)
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                tokens.spacing.cardPadding,
+                0,
+                tokens.spacing.cardPadding,
+                tokens.spacing.step4,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    messages.relationshipCadencePromptLabel,
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
+                  ),
+                  SizedBox(height: tokens.spacing.step3),
+                  DsChoicePills<int>(
+                    key: const ValueKey('relationship-agent-enrol-cadence'),
+                    value: cadenceDays,
+                    values: relationshipCadencePresets,
+                    labelFor: (preset) =>
+                        relationshipCadenceLabel(context, preset),
+                    onSelected: marking ? (_) {} : onCadenceSelected,
+                  ),
+                ],
+              ),
+            ),
           // No privacy caption here. It read "Only what you start yourself
           // uses AI" and sat in the slot beside the control that starts an
           // agent which wakes on a cadence and writes briefings without

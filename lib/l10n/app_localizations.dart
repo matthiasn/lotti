@@ -5592,12 +5592,6 @@ abstract class AppLocalizations {
   /// **'From the message you sent from this page. Everything is editable.'**
   String get checkInSourceMessage;
 
-  /// Button on the check-in sheet that records a spoken check-in and prefills the narrative with its transcript.
-  ///
-  /// In en, this message translates to:
-  /// **'Speak check-in'**
-  String get checkInSpeakButton;
-
   /// Minutes of a recording length, read by assistive technology.
   ///
   /// In en, this message translates to:
@@ -19675,12 +19669,6 @@ abstract class AppLocalizations {
   /// **'Last run failed · {time}'**
   String relationshipAgentLastRunFailed(String time);
 
-  /// No description provided for @relationshipAgentNoAgent.
-  ///
-  /// In en, this message translates to:
-  /// **'No agent for this person'**
-  String get relationshipAgentNoAgent;
-
   /// No description provided for @relationshipAgentNoBriefingBody.
   ///
   /// In en, this message translates to:
@@ -19690,7 +19678,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipAgentNotEnrolledBody.
   ///
   /// In en, this message translates to:
-  /// **'Turn on reminders for {name} to get a chat, a nudge when it has been a while, and a briefing.'**
+  /// **'Turn on reminders for {name} to get a reminder when it has been a while, a briefing and a chat.'**
   String relationshipAgentNotEnrolledBody(String name);
 
   /// No description provided for @relationshipAgentOutOfDateNewCheckIn.
@@ -19789,29 +19777,11 @@ abstract class AppLocalizations {
   /// **'Every two weeks'**
   String get relationshipCadenceFortnightly;
 
-  /// No description provided for @relationshipCadenceLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Check-in cadence'**
-  String get relationshipCadenceLabel;
-
   /// No description provided for @relationshipCadenceMonthly.
   ///
   /// In en, this message translates to:
   /// **'Monthly'**
   String get relationshipCadenceMonthly;
-
-  /// No description provided for @relationshipCadenceNone.
-  ///
-  /// In en, this message translates to:
-  /// **'No cadence'**
-  String get relationshipCadenceNone;
-
-  /// Relationships redesign label.
-  ///
-  /// In en, this message translates to:
-  /// **'Choosing a cadence turns on check-in nudges.'**
-  String get relationshipCadenceNudgeNote;
 
   /// Relationships redesign label.
   ///
@@ -19822,7 +19792,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipCadencePromptLabel.
   ///
   /// In en, this message translates to:
-  /// **'Nudge me every'**
+  /// **'Remind me every'**
   String get relationshipCadencePromptLabel;
 
   /// No description provided for @relationshipCadenceQuarterly.
@@ -19876,7 +19846,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipChatUnavailable.
   ///
   /// In en, this message translates to:
-  /// **'No agent yet — mark this person as important first.'**
+  /// **'No agent yet — turn on reminders for this person first.'**
   String get relationshipChatUnavailable;
 
   /// No description provided for @relationshipCheckInAddComment.
@@ -20092,13 +20062,13 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipFormImportantBody.
   ///
   /// In en, this message translates to:
-  /// **'Turns on a briefing, nudges and a chat. Check-in notes go to the agent; contact channels never do.'**
+  /// **'Turns on reminders, a briefing and a chat. Check-in notes go to the agent; contact channels never do.'**
   String get relationshipFormImportantBody;
 
   /// Explains what marking a named person important turns on
   ///
   /// In en, this message translates to:
-  /// **'Turns on a briefing, nudges and a chat for {name}. Check-in notes go to the agent; contact channels never do.'**
+  /// **'Turns on reminders, a briefing and a chat for {name}. Check-in notes go to the agent; contact channels never do.'**
   String relationshipFormImportantBodyNamed(String name);
 
   /// No description provided for @relationshipFormReachTitle.
@@ -20149,12 +20119,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 person added} other{{count} people added}}'**
   String relationshipImportAdded(int count);
 
-  /// No description provided for @relationshipImportantDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Nudge me to stay in touch'**
-  String get relationshipImportantDescription;
-
   /// No description provided for @relationshipImportantLabel.
   ///
   /// In en, this message translates to:
@@ -20188,7 +20152,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipImportImportantBody.
   ///
   /// In en, this message translates to:
-  /// **'Briefings, nudges and a chat. Without it, nothing runs on its own.'**
+  /// **'Reminders, briefings and a chat. Without it, nothing runs on its own.'**
   String get relationshipImportImportantBody;
 
   /// Shown when the contact search matches nothing
@@ -20551,6 +20515,12 @@ abstract class AppLocalizations {
   /// **'Snooze longer'**
   String get relationshipReminderSnoozeLonger;
 
+  /// Label of the switch that turns reminders on for a person, in the person form and the contact-import review. Worded as the request it grants, so it reads correctly while the switch is off.
+  ///
+  /// In en, this message translates to:
+  /// **'Remind me to stay in touch'**
+  String get relationshipRemindersSwitchLabel;
+
   /// No description provided for @relationshipsEmptyState.
   ///
   /// In en, this message translates to:
@@ -20647,6 +20617,12 @@ abstract class AppLocalizations {
   /// **'Just added · {cadence} · first due {day}'**
   String relationshipStatusLineAddedFirstDue(String cadence, String day);
 
+  /// People row status line for a person with no check-in yet and no reminder interval.
+  ///
+  /// In en, this message translates to:
+  /// **'Just added'**
+  String get relationshipStatusLineAddedNoCadence;
+
   /// No description provided for @relationshipStatusLineContacted.
   ///
   /// In en, this message translates to:
@@ -20656,6 +20632,12 @@ abstract class AppLocalizations {
     String time,
     String cadence,
   );
+
+  /// People row status line for a person without a reminder interval: how and when they were last contacted.
+  ///
+  /// In en, this message translates to:
+  /// **'{type} · {time}'**
+  String relationshipStatusLineContactedNoCadence(String type, String time);
 
   /// The relative day word in a relationship timestamp, e.g. "Today 14:20".
   ///

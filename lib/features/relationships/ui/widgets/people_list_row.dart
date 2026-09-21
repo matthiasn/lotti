@@ -168,35 +168,44 @@ typedef PeopleStatusLine = ({String text, String? date});
 /// [PeopleStatusLine] for one row.
 ///
 /// The cadence named is the one the runtime applies: an enrolled person
-/// without a stored cadence reads as the production default, not as "no
-/// cadence"; a person who is not enrolled reads their stored setting and is
-/// never given a first-due day, because the runtime schedules none for them.
+/// without a stored cadence reads as the production default. A person who
+/// is not enrolled reads their stored setting — a dormant person's rhythm is
+/// still theirs — and is never given a first-due day, because the runtime
+/// schedules none for them. With no cadence at all the line simply leaves
+/// it out: the band the row sits in already says "No reminders", and "No
+/// cadence" under it was a second, stranger word for the same fact.
 PeopleStatusLine peopleStatusPartsOf(
   BuildContext context,
   RelationshipListItem item,
 ) {
   final messages = context.messages;
   final relationship = item.relationship;
-  final cadence = relationshipCadenceLabel(
-    context,
-    effectiveCadenceDaysOf(relationship) ??
-        relationship.data.checkInCadenceDays,
-  );
+  final cadenceDays =
+      effectiveCadenceDaysOf(relationship) ??
+      relationship.data.checkInCadenceDays;
+  final cadence = cadenceDays == null
+      ? null
+      : relationshipCadenceLabel(context, cadenceDays);
   final last = item.lastCheckIn;
   if (last != null) {
     final at = relationshipTimestampLabelOf(context, last.meta.dateFrom);
+    final type = checkInInteractionLabel(context, last.data.interactionType);
     return (
-      text: messages.relationshipStatusLineContacted(
-        checkInInteractionLabel(context, last.data.interactionType),
-        at,
-        cadence,
-      ),
+      text: cadence == null
+          ? messages.relationshipStatusLineContactedNoCadence(type, at)
+          : messages.relationshipStatusLineContacted(type, at, cadence),
       date: at,
     );
   }
   final firstDue = peopleDueDateOf(item);
-  if (firstDue == null) {
-    return (text: messages.relationshipStatusLineAdded(cadence), date: null);
+  // No first-due day means not enrolled, so there may be no cadence either.
+  if (firstDue == null || cadence == null) {
+    return (
+      text: cadence == null
+          ? messages.relationshipStatusLineAddedNoCadence
+          : messages.relationshipStatusLineAdded(cadence),
+      date: null,
+    );
   }
   final day = relationshipDayLabelOf(context, firstDue);
   return (
