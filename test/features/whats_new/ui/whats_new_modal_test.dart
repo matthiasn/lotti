@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/model/whats_new_release.dart';
@@ -617,15 +618,13 @@ void main() {
       expect(find.text('v0.9.980'), findsNothing);
     });
 
-    testWidgets('custom link builder renders a tappable in-app link that '
-        'routes through NavService', (tester) async {
+    testWidgets('renders blue in-app links that route through NavService', (
+      tester,
+    ) async {
       // Register a NavService so handleMarkdownLinkTap routes internally.
       final mockNavService = MockNavService();
       getIt.registerSingleton<NavService>(mockNavService);
 
-      // Markdown containing an internal route link exercises the custom
-      // _buildLink linkBuilder (lines 29, 36-50): InkWell + Text.rich whose
-      // onTap calls handleMarkdownLinkTap.
       final contentWithLink = WhatsNewContent(
         release: testRelease1,
         headerMarkdown:
@@ -645,28 +644,23 @@ void main() {
       await tester.tap(find.text('Show Modal'));
       await tester.pumpAndSettle();
 
-      // The custom _buildLink builder produces an InkWell using the click
-      // cursor. There should be exactly one such link in the rendered markdown.
-      final linkFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is InkWell &&
-            widget.mouseCursor == SystemMouseCursors.click &&
-            widget.child is Text,
-      );
-      expect(linkFinder, findsOneWidget);
-
-      // The rendered link span carries the blue underline styling from
-      // _buildLink.
-      final linkText = tester.widget<Text>(
-        find.descendant(of: linkFinder, matching: find.byType(Text)),
-      );
-      final linkSpanStyle = (linkText.textSpan! as TextSpan).style!;
-      expect(linkSpanStyle.color, Colors.blue);
-      expect(linkSpanStyle.decoration, TextDecoration.underline);
+      // The link is a span inside the paragraph, blue and underlined, and
+      // stays blue on hover.
+      final linkSpans = tester
+          .widgetList<RichText>(
+            find.textContaining('your tasks', findRichText: true),
+          )
+          .expand((paragraph) => _linkSpansIn(paragraph.text))
+          .toList();
+      expect(linkSpans, hasLength(1));
+      expect(linkSpans.single.toPlainText(), 'your tasks');
+      expect(linkSpans.single.style?.color, Colors.blue);
+      expect(linkSpans.single.style?.decoration, TextDecoration.underline);
+      expect(linkSpans.single.hoverStyle?.color, Colors.blue);
 
       // Tapping the link invokes handleMarkdownLinkTap which, for an internal
       // route, beams via NavService.
-      await tester.tap(linkFinder);
+      await tester.tapOnText(find.textRange.ofSubstring('your tasks'));
       await tester.pumpAndSettle();
 
       verify(() => mockNavService.beamToNamed('/tasks/abc')).called(1);
@@ -755,3 +749,10 @@ class _TrackingWhatsNewController extends WhatsNewController {
     onMarkAllSeen?.call('all');
   }
 }
+
+/// Every [LinkTextSpan] under [span]. A link span is a text-less container,
+/// which [InlineSpan.visitChildren] never hands to its visitor.
+List<LinkTextSpan> _linkSpansIn(InlineSpan span) => [
+  if (span is LinkTextSpan) span,
+  if (span is TextSpan) ...?span.children?.expand(_linkSpansIn),
+];
