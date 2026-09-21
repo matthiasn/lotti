@@ -183,19 +183,19 @@ class RelationshipDetailsPage extends ConsumerWidget {
     // a person, or making them dormant, stops the cadence but deliberately
     // keeps the agent and its conversation (`RelationshipAgentService`),
     // so gating the chat on enrolment would remove the only ordinary way
-    // back into a chat that still exists. An enrolled person counts even
-    // before their agent has named itself, which is the window in which
-    // the identity is still null. Otherwise it is the chat pane's own
-    // question — an ACTIVE relationship agent — because a destroyed one
-    // keeps its identity row for audit, and a button that led to the pane's
-    // unavailable screen promised a chat that does not exist.
+    // back into a chat that still exists. Once an identity row exists it
+    // is the chat pane's own question — an ACTIVE relationship agent — and
+    // enrolment no longer counts: pausing or destroying keeps the row (for
+    // audit, and `ensureAgentForRelationship` preserves the lifecycle on
+    // re-enrolment), so an enrolled person with a destroyed agent is a
+    // persistent state, and a button there led to the pane's unavailable
+    // screen. Only while no row exists yet — an enrolled person whose agent
+    // has not named itself — does enrolment stand in for it.
     final agentId = relationshipAgentIdFor(relationshipId);
-    final hasAgent =
-        isEnrolled(relationship) ||
-        usableRelationshipAgent(
-              ref.watch(agentIdentityProvider(agentId)).value,
-            ) !=
-            null;
+    final identity = ref.watch(agentIdentityProvider(agentId)).value;
+    final hasAgent = identity == null
+        ? isEnrolled(relationship)
+        : usableRelationshipAgent(identity) != null;
     final sections = <Widget>[
       PersonHeaderBlock(item: item, categoryName: categoryName),
       // Always present: an unenrolled person gets the card that explains

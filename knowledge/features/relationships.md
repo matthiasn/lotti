@@ -1634,11 +1634,13 @@ name}…* — replace the defaults that would address the agent's display name.
 **Only an active `relationship_agent` is a chat.**
 [`usableRelationshipAgent`](../../lib/features/relationships/model/relationship_agent_identity.dart)
 is the one predicate: the pane renders its *unavailable* state for anything
-else, and the person hero's *Talk to agent* is hidden unless the person is
-enrolled or that predicate holds. Destroying an agent preserves its identity
-row for audit, so "a row exists" is not "there is an agent to talk to" — the
-hero once treated any identity or state row as one and led straight to the
-unavailable screen.
+else, and the person hero's *Talk to agent* is hidden unless that predicate
+holds — enrolment stands in for it only while no identity row exists yet (the
+window before the agent has named itself). Destroying or pausing an agent
+preserves its identity row, and `ensureAgentForRelationship` keeps the
+lifecycle on re-enrolment, so "a row exists" is not "there is an agent to talk
+to" and neither is "the person is enrolled" — the hero once treated either as
+one and led straight to the unavailable screen.
 
 It has two hosts, and the layout decides which:
 

@@ -784,6 +784,33 @@ void main() {
   );
 
   testWidgets(
+    'Talk to agent is hidden for a destroyed agent even while enrolled',
+    (tester) async {
+      // Pausing or destroying through the agent controls keeps the person
+      // enrolled and the identity row present, and re-enrolment preserves
+      // the lifecycle — a persistent state in which enrolment must not
+      // stand in for a usable agent.
+      when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+        (_) async => relationship(important: true),
+      );
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-1'),
+      ).thenAnswer((_) async => []);
+
+      await pumpPage(
+        tester,
+        overrides: [
+          agentIdentityProvider(relationshipAgentIdFor('rel-1')).overrideWith(
+            (ref) async => relationshipAgentIdentity(AgentLifecycle.destroyed),
+          ),
+        ],
+      );
+
+      expect(find.byKey(const ValueKey('person-talk-to-agent')), findsNothing);
+    },
+  );
+
+  testWidgets(
     'Talk to agent stays for an active agent after the person is unenrolled',
     (tester) async {
       // Unmarking stops the cadence but keeps the agent and its
