@@ -1327,6 +1327,21 @@ void main() {
       expect(updated.data.knownTerms, ['Wanja', 'Pingo Floe']);
     });
 
+    testWidgets('a synced interval outside the presets is offered as it is '
+        'and shown selected, never "nothing selected" beside a save that '
+        'would store it', (tester) async {
+      await tester.pumpWidget(buildForm(initial: existing(cadenceDays: 45)));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widgetList<DsPill>(find.byType(DsPill))
+            .where((pill) => pill.selected)
+            .map((pill) => pill.label),
+        contains('Every 45 days'),
+      );
+    });
+
     testWidgets('someone enrolled without a stored interval opens on the '
         'default the runtime applies, and a save stores it', (tester) async {
       await tester.pumpWidget(buildForm(initial: existing(cadenceDays: null)));

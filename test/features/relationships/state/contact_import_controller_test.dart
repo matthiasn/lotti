@@ -7,6 +7,7 @@ import 'package:lotti/features/relationships/repository/relationship_repository.
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/state/contact_import_controller.dart';
+import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -78,9 +79,12 @@ void main() {
     ),
   );
 
+  late MockRelationshipAgentService agentService;
+
   setUp(() {
     service = _FakeContactsService();
     repository = MockRelationshipRepository();
+    agentService = MockRelationshipAgentService();
   });
 
   ({ProviderContainer container, ContactImportController controller}) build({
@@ -91,6 +95,7 @@ void main() {
       overrides: [
         contactsServiceProvider.overrideWithValue(service),
         relationshipRepositoryProvider.overrideWithValue(repository),
+        relationshipAgentServiceProvider.overrideWithValue(agentService),
         contactRefKeyProvider.overrideWith((ref) async => refKey),
         if (mintPersonId != null)
           contactImportControllerProvider.overrideWith(
@@ -527,6 +532,42 @@ void main() {
           id: any(named: 'id'),
         ),
       ).thenAnswer((_) async => created('new-id'));
+    });
+
+    test('a person imported with reminders on gets their agent — without it '
+        'nothing is subscribed to their cadence and no reminder ever comes; '
+        'one imported without reminders does not', () async {
+      when(
+        () => repository.createRelationship(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
+        ),
+      ).thenAnswer((invocation) async {
+        final data = invocation.namedArguments[#data] as RelationshipData;
+        final id = invocation.namedArguments[#id] as String;
+        return created(id).copyWith(data: data);
+      });
+      when(
+        () => agentService.ensureAgentForRelationship(any()),
+      ).thenAnswer((_) async => throw StateError('not under test'));
+
+      final controller =
+          build(mintPersonId: (contact) => 'person-${contact.id}').controller
+            ..toggleSelection(contact('a', 'Anna'))
+            ..toggleSelection(contact('b', 'Bo'))
+            ..setImportant(contactId: 'a', important: true);
+
+      final ids = await controller.importSelected();
+
+      // Both land, and a failing agent creation never fails the import.
+      expect(ids, ['person-a', 'person-b']);
+      final ensured = verify(
+        () => agentService.ensureAgentForRelationship(captureAny()),
+      ).captured.cast<RelationshipEntry>();
+      expect(ensured.map((person) => person.meta.id), ['person-a']);
+      expect(ensured.single.data.important, isTrue);
     });
 
     test('creates one person per selected contact', () async {

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -259,6 +260,45 @@ void main() {
         tester.getSize(find.byType(PostInteractionPrompt)).height,
         tester.getSize(offer).height + 24,
       );
+    });
+
+    testWidgets('an older refresh finishing late cannot bring back an offer '
+        'the page has since claimed', (tester) async {
+      final store = _FakePendingInteractionStore(marker());
+      // The mount's refresh reads the marker, then waits on the person.
+      final lookup = Completer<RelationshipEntry?>();
+      when(
+        () => repository.getRelationshipById(any()),
+      ).thenAnswer((_) => lookup.future);
+
+      await withClock(Clock.fixed(now), () async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const PostInteractionPrompt(),
+            overrides: [
+              pendingInteractionStoreProvider.overrideWithValue(store),
+              relationshipRepositoryProvider.overrideWithValue(repository),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        // Log check-in on the page claims the marker; the claim's own
+        // refresh reads an empty store and settles on no offer.
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(PostInteractionPrompt)),
+        );
+        await container
+            .read(pendingInteractionClaimsProvider.notifier)
+            .claimFor('rel-1');
+        await tester.pump();
+
+        // Now the first refresh's lookup lands.
+        lookup.complete(person());
+        await tester.pumpAndSettle();
+      });
+
+      expect(offer, findsNothing);
     });
 
     testWidgets('renders nothing when no call was placed', (tester) async {

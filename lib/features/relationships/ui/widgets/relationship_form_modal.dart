@@ -44,6 +44,19 @@ import 'package:material_ui/material_ui.dart';
 /// one — so offering "No cadence" showed a choice the app then overrode.
 const List<int> relationshipCadencePresets = [7, 14, 30, 90];
 
+/// The choices to offer when [shown] is the interval on screen: the
+/// presets, plus [shown] in its place when it is not one of them.
+///
+/// The data model keeps a free integer, and a synced person can carry, say,
+/// 45 days. Offering only the presets would show nothing selected while Save
+/// stored 45 — the mismatch between the screen and the schedule these
+/// controls exist to prevent — so the stored value is offered as it is,
+/// labelled "Every 45 days", until the user picks a preset instead.
+List<int> relationshipCadenceChoices(int shown) =>
+    relationshipCadencePresets.contains(shown)
+    ? relationshipCadencePresets
+    : ([...relationshipCadencePresets, shown]..sort());
+
 /// The localized label for a check-in cadence — shared by the form and the
 /// detail page. Values outside the presets (possible via sync, since the
 /// data model keeps a free integer) get an honest "every N days" label
@@ -538,31 +551,19 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     }
   }
 
-  /// The lazy-create trigger (ADR 0059 Decision 2): marking a person
-  /// important is what mints their agent; an existing agent makes this an
-  /// idempotent re-subscribe plus one €0 re-evaluation (so a cadence edit
-  /// takes effect immediately). Fire-and-forget with contained failure —
-  /// agent wiring must never fail the save the user just watched succeed.
-  /// Takes the service rather than reading it: this outlives the sheet by
-  /// design — the agent is created after the modal has popped — so it must
-  /// not touch `ref`.
+  /// The lazy-create trigger; see [ensureRelationshipAgentInBackground]. The
+  /// service is null when the form was saved with reminders off, since it
+  /// is only resolved when it will be used.
   void _ensureAgentIfImportant(
     RelationshipAgentService? agentService,
     RelationshipEntry relationship,
   ) {
-    if (!relationship.data.important || agentService == null) return;
-    unawaited(() async {
-      try {
-        await agentService.ensureAgentForRelationship(relationship);
-      } catch (e, s) {
-        developer.log(
-          'Failed to ensure relationship agent',
-          name: 'RelationshipForm',
-          error: e,
-          stackTrace: s,
-        );
-      }
-    }());
+    if (agentService == null) return;
+    ensureRelationshipAgentInBackground(
+      agentService,
+      relationship,
+      source: 'RelationshipForm',
+    );
   }
 
   /// Republishes the pinned bar's view of this form. Deferred to the end of
@@ -840,7 +841,9 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
                 gap(tokens.spacing.step3),
                 DsChoicePills<int>(
                   value: relationshipShownCadenceDays(_cadenceDays),
-                  values: relationshipCadencePresets,
+                  values: relationshipCadenceChoices(
+                    relationshipShownCadenceDays(_cadenceDays),
+                  ),
                   labelFor: (preset) => relationshipCadenceLabel(
                     context,
                     preset,

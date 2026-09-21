@@ -8,6 +8,8 @@ import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
+import 'package:lotti/features/relationships/service/relationship_agent_service.dart';
+import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -240,8 +242,18 @@ class ContactImportController extends Notifier<ContactImportState> {
   /// is rejected is skipped rather than aborting the batch: importing eight
   /// people and failing on the third must not leave the user wondering which
   /// five are missing, and the ones that did land are real.
+  ///
+  /// A person imported with reminders on gets their agent here, the way the
+  /// person editor and the person page's card mint it: without it nothing
+  /// is subscribed to their cadence, and the reminders chosen in the review
+  /// would never come until the person was re-saved through one of those.
   Future<List<String>> importSelected() async {
     final repository = ref.read(relationshipRepositoryProvider);
+    // Resolved before the first await and only when it will be used: the
+    // agents are created after this page may be gone.
+    final agentService = state.drafts.values.any((draft) => draft.important)
+        ? ref.read(relationshipAgentServiceProvider)
+        : null;
     final refKey = await ref.read(contactRefKeyProvider.future);
     final created = <String>[];
 
@@ -262,7 +274,15 @@ class ContactImportController extends Notifier<ContactImportState> {
         data: data,
         id: draft.id,
       );
-      if (relationship != null) created.add(relationship.id);
+      if (relationship == null) continue;
+      created.add(relationship.id);
+      if (agentService != null) {
+        ensureRelationshipAgentInBackground(
+          agentService,
+          relationship,
+          source: 'ContactImportController',
+        );
+      }
     }
 
     if (created.isNotEmpty) clearSelection();

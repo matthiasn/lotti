@@ -29,6 +29,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
+import 'package:lotti/features/relationships/service/relationship_agent_service.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
 import 'package:lotti/features/relationships/ui/shared/ds_choice_pills.dart';
@@ -319,18 +320,11 @@ class _RelationshipBriefingCardState
       );
       final saved = await repository.updateRelationship(enrolled);
       if (saved) {
-        unawaited(() async {
-          try {
-            await agentService.ensureAgentForRelationship(enrolled);
-          } catch (error, stackTrace) {
-            developer.log(
-              'Failed to ensure relationship agent',
-              name: 'RelationshipBriefingCard',
-              error: error,
-              stackTrace: stackTrace,
-            );
-          }
-        }());
+        ensureRelationshipAgentInBackground(
+          agentService,
+          enrolled,
+          source: 'RelationshipBriefingCard',
+        );
       } else if (mounted) {
         context.showToast(
           tone: DesignSystemToastTone.error,
@@ -561,7 +555,7 @@ class _NotEnrolledCard extends StatelessWidget {
                   DsChoicePills<int>(
                     key: const ValueKey('relationship-agent-enrol-cadence'),
                     value: cadenceDays,
-                    values: relationshipCadencePresets,
+                    values: relationshipCadenceChoices(cadenceDays),
                     labelFor: (preset) =>
                         relationshipCadenceLabel(context, preset),
                     onSelected: marking ? (_) {} : onCadenceSelected,

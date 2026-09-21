@@ -87,6 +87,12 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
   PendingInteraction? _pending;
   String? _personName;
 
+  /// Which [_refresh] is the latest. Refreshes overlap — mount, resume and
+  /// a claim through the page's own buttons can each start one while
+  /// another is still resolving the person — and an older one finishing
+  /// last would put back an offer the store no longer holds.
+  int _refreshGeneration = 0;
+
   @override
   void initState() {
     super.initState();
@@ -109,6 +115,7 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
   }
 
   Future<void> _refresh() async {
+    final generation = ++_refreshGeneration;
     final pending = await ref.read(pendingInteractionStoreProvider).read();
 
     // Resolve the person through the repository rather than trusting the
@@ -120,7 +127,7 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
               .read(relationshipRepositoryProvider)
               .getRelationshipById(pending.relationshipId);
 
-    if (!mounted) return;
+    if (!mounted || generation != _refreshGeneration) return;
     setState(() {
       _pending = relationship == null ? null : pending;
       _personName = relationship?.data.title;
@@ -128,6 +135,8 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
   }
 
   Future<void> _dismiss() async {
+    // A refresh still resolving must not bring back what is being dismissed.
+    _refreshGeneration++;
     await ref.read(pendingInteractionStoreProvider).clear();
     if (!mounted) return;
     setState(() {

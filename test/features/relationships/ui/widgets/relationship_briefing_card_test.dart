@@ -575,6 +575,40 @@ void main() {
       expect(saved.data.checkInCadenceDays, relationshipDefaultCadenceDays);
     });
 
+    testWidgets('a stored interval outside the presets is offered as it is '
+        'and shown selected — the enrol stores it, so the screen must say '
+        'so', (tester) async {
+      await pump(
+        tester,
+        entry: relationship(important: false, cadenceDays: 45),
+      );
+
+      final pills = tester.widgetList<DsPill>(find.byType(DsPill)).toList();
+      expect(pills.map((pill) => pill.label), [
+        'Weekly',
+        'Every two weeks',
+        'Monthly',
+        'Every 45 days',
+        'Quarterly',
+      ]);
+      expect(
+        pills.where((pill) => pill.selected).map((pill) => pill.label),
+        ['Every 45 days'],
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey('relationship-agent-mark-important')),
+      );
+      await tester.pumpAndSettle();
+
+      final saved =
+          verify(
+                () => repository.updateRelationship(captureAny()),
+              ).captured.single
+              as RelationshipEntry;
+      expect(saved.data.checkInCadenceDays, 45);
+    });
+
     testWidgets('an interval picked on the card is the one the enrol stores', (
       tester,
     ) async {

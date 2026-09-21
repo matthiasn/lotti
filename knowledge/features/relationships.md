@@ -754,7 +754,9 @@ notifications even for a no-op unlink.
 # The deterministic agent tier (plan v2 phase 4)
 
 Marking a person `important` is the consent switch AND the creation trigger:
-the form's save path lazily mints one durable `relationship_agent` per person
+every door that turns reminders on — the form's save path, the person page's
+card and contact import — goes through `ensureRelationshipAgentInBackground`,
+which lazily mints one durable `relationship_agent` per person
 with a **deterministic id** (`relationship_agent:<relationshipId>`), so two
 devices marking the same person converge on one agent instead of duplicates.
 Identity, `agentRelationship` link and the first cadence wake land in one
@@ -1225,9 +1227,12 @@ failed face could never appear and the internals' Stats tab never knew the
 last wake. And the card arms one timer at the next minute/hour/day boundary of the
 briefing's age (`untilNextAgeBucket`, shared with the goal page), so "as of
 just now" does not stay on screen for hours. *Remind me about {name}* on the plain
-card also mints the agent through `ensureAgentForRelationship`, the same
-lazy-create call the edit form makes — and stores the interval its pills show
-as selected, so the one tap never schedules a rhythm nobody saw.
+card also mints the agent through `ensureRelationshipAgentInBackground`, the
+same lazy-create call the edit form and contact import make — and stores the
+interval its pills show as selected, so the one tap never schedules a rhythm
+nobody saw. A stored interval outside the presets (a synced 45 days) is offered
+as its own pill by `relationshipCadenceChoices` rather than leaving nothing
+selected beside a save that would store it.
 
 **Reminders that are on always show, and store, an interval.**
 `relationshipShownCadenceDays` (beside `relationshipDefaultCadenceDays` in the
