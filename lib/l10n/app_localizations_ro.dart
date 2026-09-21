@@ -12578,7 +12578,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String relationshipPostCallAskMessage(String name) {
-    return 'I-ați scris lui $name?';
+    return 'Ați trimis un mesaj către $name?';
   }
 
   @override
