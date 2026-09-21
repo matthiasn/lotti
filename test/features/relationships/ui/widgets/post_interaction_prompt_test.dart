@@ -399,6 +399,40 @@ void main() {
       expect(offer, findsOneWidget);
     });
 
+    testWidgets('a second tap while the first is still claiming opens nothing '
+        'more, and Dismiss holds until it is done', (tester) async {
+      final store = await pump(tester, pending: marker(), resolves: person());
+      // The claim reads the marker, then waits on clearing it.
+      final gate = store.clearGate = Completer<void>();
+
+      await tester.tap(find.text('Yes, log it'));
+      await tester.pump();
+      await tester.tap(find.text('Yes, log it'), warnIfMissed: false);
+      await tester.pump();
+      expect(
+        tester
+            .widget<DesignSystemButton>(
+              find.byKey(const ValueKey('person-post-call-yes')),
+            )
+            .onPressed,
+        isNull,
+      );
+      expect(
+        tester
+            .widget<DesignSystemButton>(
+              find.widgetWithText(DesignSystemButton, 'Dismiss'),
+            )
+            .onPressed,
+        isNull,
+      );
+
+      gate.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CheckInCaptureForm), findsOneWidget);
+      expect(store.clearCount, 1);
+    });
+
     testWidgets('opens the form already describing the call that happened', (
       tester,
     ) async {

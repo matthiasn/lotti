@@ -56,6 +56,11 @@ Future<CheckInEntry?> showCheckInForInteraction({
 /// A composer closed without saving hands the claim back, so the offer
 /// returns with the call it was about. The claims notifier is read before
 /// the first await: the page may be gone by the time the sheet closes.
+///
+/// One opening per person at a time: a second tap on any of the doors while
+/// the first is still claiming — the claim waits on the settings database —
+/// would otherwise get no marker and stack a second, generic composer on the
+/// first. It resolves to null and opens nothing.
 Future<CheckInEntry?> openCheckInForPerson({
   required BuildContext context,
   required WidgetRef ref,
@@ -63,25 +68,31 @@ Future<CheckInEntry?> openCheckInForPerson({
   CheckInInteractionType? fallbackInteractionType,
   bool startSpeaking = false,
 }) async {
-  // Read before the claim: clearing the marker can cross a minute boundary,
-  // and the minutes the offer quoted are the ones the form must show.
-  final openedAt = clock.now();
   final claims = ref.read(pendingInteractionClaimsProvider.notifier);
-  final pending = await claims.claimFor(relationshipId);
-  if (!context.mounted) {
-    if (pending != null) await claims.release(pending);
-    return null;
+  if (!claims.beginOpening(relationshipId)) return null;
+  try {
+    // Read before the claim: clearing the marker can cross a minute
+    // boundary, and the minutes the offer quoted are the ones the form must
+    // show.
+    final openedAt = clock.now();
+    final pending = await claims.claimFor(relationshipId);
+    if (!context.mounted) {
+      if (pending != null) await claims.release(pending);
+      return null;
+    }
+    final saved = await showCheckInForInteraction(
+      context: context,
+      relationshipId: relationshipId,
+      openedAt: openedAt,
+      pending: pending,
+      fallbackInteractionType: fallbackInteractionType,
+      startSpeaking: startSpeaking,
+    );
+    if (saved == null && pending != null) await claims.release(pending);
+    return saved;
+  } finally {
+    claims.endOpening(relationshipId);
   }
-  final saved = await showCheckInForInteraction(
-    context: context,
-    relationshipId: relationshipId,
-    openedAt: openedAt,
-    pending: pending,
-    fallbackInteractionType: fallbackInteractionType,
-    startSpeaking: startSpeaking,
-  );
-  if (saved == null && pending != null) await claims.release(pending);
-  return saved;
 }
 
 /// Offers to log a check-in after the user comes back from a call or message
@@ -195,7 +206,13 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
     });
   }
 
+  /// Whether this offer's answer is being acted on. Both buttons hold while
+  /// it is: a Dismiss landing in the gap would clear a marker the claim
+  /// already holds, and a second Yes would open a second composer.
+  bool _busy = false;
+
   Future<void> _dismiss() async {
+    if (_busy) return;
     // A refresh still resolving must not bring back what is being dismissed.
     _refreshGeneration++;
     await ref.read(pendingInteractionStoreProvider).clear();
@@ -207,12 +224,17 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
   }
 
   Future<void> _logCheckIn() async {
-    if (_pending == null) return;
-    await openCheckInForPerson(
-      context: context,
-      ref: ref,
-      relationshipId: widget.relationshipId,
-    );
+    if (_pending == null || _busy) return;
+    setState(() => _busy = true);
+    try {
+      await openCheckInForPerson(
+        context: context,
+        ref: ref,
+        relationshipId: widget.relationshipId,
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   @override
@@ -319,7 +341,7 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
               DesignSystemButton(
                 label: messages.relationshipPostCallDismiss,
                 variant: DesignSystemButtonVariant.tertiary,
-                onPressed: () => unawaited(_dismiss()),
+                onPressed: _busy ? null : () => unawaited(_dismiss()),
               ),
               // Secondary: the page's bar already carries the one filled
               // *Log check-in*, which opens this same prefilled composer.
@@ -327,7 +349,7 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
                 key: const ValueKey('person-post-call-yes'),
                 label: messages.relationshipPostCallYes,
                 variant: DesignSystemButtonVariant.secondary,
-                onPressed: () => unawaited(_logCheckIn()),
+                onPressed: _busy ? null : () => unawaited(_logCheckIn()),
               ),
             ],
           ),

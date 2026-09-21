@@ -152,6 +152,17 @@ class PendingInteractionClaims extends Notifier<int> {
 
   Future<void> _previous = Future<void>.value();
 
+  final Set<String> _opening = {};
+
+  /// Marks a composer for [relationshipId] as opening. False when one
+  /// already is: a second tap while the first is still claiming would get no
+  /// marker and stack a generic composer on the first. Held here rather than
+  /// in a global so it lives exactly as long as the claims it guards.
+  bool beginOpening(String relationshipId) => _opening.add(relationshipId);
+
+  /// Ends what [beginOpening] started — once the composer has closed.
+  void endOpening(String relationshipId) => _opening.remove(relationshipId);
+
   /// Hands back a claim that came to nothing — the composer it opened was
   /// closed without saving. The marker returns as it was, and the count
   /// moves so the offer reads it again: a stray swipe on a sheet prefilled
