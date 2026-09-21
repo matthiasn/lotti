@@ -441,6 +441,15 @@ In practice it may also inject speech-dictionary terms, linked task JSON, the
 current task summary, audio transcript text, correction examples, and
 URL-formatting rules for image analysis.
 
+Under `fullTask`, the linked task's **category knowledge brief** leads the task
+material as a `**Category Knowledge:**` block ahead of `**Task Context:**`.
+`runPromptGeneration` reads it beside the task JSON through
+`AiInputRepository.buildCategoryKnowledge` — the same seam the task-agent wake
+uses, so a coding prompt and an agent wake are framed by identical knowledge —
+and passes it as `categoryKnowledge`. Transcription and `taskSummary`-policy
+prompts never carry it, and a blank brief adds nothing. See
+[categories](../categories.md#the-knowledge-brief).
+
 `TaskSummaryResolver` is the shared summary lookup. For single-task prompt
 building it checks the current agent report first, then falls back to legacy
 `AiResponseType.taskSummary` entries. Bulk linked-task builders call

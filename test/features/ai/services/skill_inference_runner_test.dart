@@ -94,6 +94,7 @@ void main() {
         ..registerPromptGenerationImages()
         ..registerPromptGenerationAttribution()
         ..registerPromptGenerationNoteInputs()
+        ..registerPromptGenerationCategoryKnowledge()
         ..registerPromptGenerationModelSelection()
         ..registerPromptGenerationPersistence()
         ..registerPromptGenerationTranscriptInputs()

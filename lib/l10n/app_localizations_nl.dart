@@ -2964,6 +2964,20 @@ class AppLocalizationsNl extends AppLocalizations {
   String get categoryIconPickerTitle => 'Pictogram kiezen';
 
   @override
+  String get categoryKnowledgeBriefHint =>
+      'Flutter-app, repository op github.com/…, tests draaien met make test, …';
+
+  @override
+  String get categoryKnowledgeBriefLabel => 'Kennis over de categorie';
+
+  @override
+  String get categoryKnowledgeBriefSectionDescription =>
+      'Wat elke AI-prompt voor taken in deze categorie moet weten: waar het om gaat, waar de code staat, conventies, valkuilen. Wordt woordelijk overgenomen.';
+
+  @override
+  String get categoryKnowledgeBriefSectionTitle => 'Kennis over de categorie';
+
+  @override
   String get categoryNameRequired => 'Categorienaam is vereist';
 
   @override

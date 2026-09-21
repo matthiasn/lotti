@@ -143,6 +143,25 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
     return categoryDefinitionsStreamMapper(rows).firstOrNull;
   }
 
+  /// Reads a non-deleted category definition without applying the
+  /// private-entry visibility gate.
+  ///
+  /// The categories counterpart of [getHabitByIdForIntegrity]: for a caller
+  /// that already holds a reference to the category — headless prompt
+  /// assembly reaches a task through the unfiltered `journalEntityById` and
+  /// must see that task's category the same way. The privacy toggle hides
+  /// things from a screen, not from an agent that already has the task.
+  /// Never a discovery surface.
+  Future<CategoryDefinition?> getCategoryByIdForIntegrity(String id) async {
+    final rows =
+        await (select(categoryDefinitions)..where(
+              (definition) =>
+                  definition.id.equals(id) & definition.deleted.equals(false),
+            ))
+            .get();
+    return categoryDefinitionsStreamMapper(rows).firstOrNull;
+  }
+
   Future<HabitDefinition?> getHabitById(String id) async {
     final rows = await habitById(id).get();
     return habitDefinitionsStreamMapper(rows).firstOrNull;

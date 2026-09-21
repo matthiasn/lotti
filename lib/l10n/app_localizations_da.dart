@@ -2953,6 +2953,20 @@ class AppLocalizationsDa extends AppLocalizations {
   String get categoryIconPickerTitle => 'Vælg ikon';
 
   @override
+  String get categoryKnowledgeBriefHint =>
+      'Flutter-app, repository på github.com/…, kør tests med make test, …';
+
+  @override
+  String get categoryKnowledgeBriefLabel => 'Viden om kategorien';
+
+  @override
+  String get categoryKnowledgeBriefSectionDescription =>
+      'Det, hver AI-prompt for opgaver i denne kategori bør vide: hvad det handler om, hvor koden ligger, konventioner, faldgruber. Tages med ord for ord.';
+
+  @override
+  String get categoryKnowledgeBriefSectionTitle => 'Viden om kategorien';
+
+  @override
   String get categoryNameRequired => 'Kategorinavn er påkrævet';
 
   @override

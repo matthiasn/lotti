@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/linked_task_context_builder.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai/util/image_ai_responses.dart';
+import 'package:lotti/features/categories/domain/category_knowledge_brief.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/labels/utils/assigned_labels_util.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -316,6 +317,36 @@ class AiInputRepository {
       labels: labels,
       suppressedLabelIds: suppressedLabelIds,
     );
+  }
+
+  /// The knowledge brief of [taskId]'s category, or null when the task has
+  /// no category or the category carries no brief.
+  ///
+  /// The one seam both injectors share — the task-agent wake and the coding
+  /// prompt — so they can never disagree on what the brief says. The category
+  /// is read past the private-entries gate (`getCategoryByIdForIntegrity`):
+  /// the task itself arrives through the unfiltered `journalEntityById`, and a
+  /// wake for a task in a private category must not silently lose its brief
+  /// because private entries happen to be hidden on screen. Never throws: a
+  /// prompt without the brief is still a usable prompt.
+  Future<String?> buildCategoryKnowledge(String taskId) async {
+    try {
+      final entity = await _db.journalEntityById(taskId);
+      final categoryId = entity?.meta.categoryId;
+      if (categoryId == null) return null;
+      return categoryKnowledgeBriefOf(
+        await _db.getCategoryByIdForIntegrity(categoryId),
+      );
+    } catch (error, stackTrace) {
+      _domainLogger?.error(
+        LogDomain.ai,
+        error,
+        message: 'buildCategoryKnowledge failed',
+        stackTrace: stackTrace,
+        subDomain: 'AiInputRepository',
+      );
+      return null;
+    }
   }
 
   /// Build parent project context for a task-agent wake.

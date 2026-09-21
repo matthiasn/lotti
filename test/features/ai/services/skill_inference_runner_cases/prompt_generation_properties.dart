@@ -74,6 +74,9 @@ extension _PromptGenerationPropertyCases on _SkillInferenceTestSetup {
             when(
               () => localAiInputRepo.buildLinkedTasksJson(linkedTaskId),
             ).thenAnswer((_) async => '{"linked": []}');
+            when(
+              () => localAiInputRepo.buildCategoryKnowledge(linkedTaskId),
+            ).thenAnswer((_) async => null);
           }
           when(
             () => localCloudRepo.generate(
@@ -235,6 +238,11 @@ extension _PromptGenerationPropertyCases on _SkillInferenceTestSetup {
                 linkedTaskId,
               ),
             ).thenAnswer((_) async => '{"linked": []}');
+            when(
+              () => bench.aiInputRepository.buildCategoryKnowledge(
+                linkedTaskId,
+              ),
+            ).thenAnswer((_) async => null);
           }
           if (scenario.hasTextBearingEntity) {
             when(

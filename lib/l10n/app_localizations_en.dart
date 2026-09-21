@@ -2940,6 +2940,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get categoryIconPickerTitle => 'Choose icon';
 
   @override
+  String get categoryKnowledgeBriefHint =>
+      'Flutter app, repository at github.com/…, run tests with make test, …';
+
+  @override
+  String get categoryKnowledgeBriefLabel => 'Category knowledge';
+
+  @override
+  String get categoryKnowledgeBriefSectionDescription =>
+      'What every AI prompt for tasks in this category should know: what it is, where the code lives, conventions, pitfalls. Goes in word for word.';
+
+  @override
+  String get categoryKnowledgeBriefSectionTitle => 'Category knowledge';
+
+  @override
   String get categoryNameRequired => 'Category name is required';
 
   @override

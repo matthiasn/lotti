@@ -3003,6 +3003,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String get categoryIconPickerTitle => 'Alegere pictogramă';
 
   @override
+  String get categoryKnowledgeBriefHint =>
+      'Aplicație Flutter, depozit la github.com/…, teste cu make test, …';
+
+  @override
+  String get categoryKnowledgeBriefLabel => 'Cunoștințe despre categorie';
+
+  @override
+  String get categoryKnowledgeBriefSectionDescription =>
+      'Ce ar trebui să știe fiecare prompt AI pentru sarcinile din această categorie: despre ce este vorba, unde se află codul, convenții, capcane. Este preluat cuvânt cu cuvânt.';
+
+  @override
+  String get categoryKnowledgeBriefSectionTitle =>
+      'Cunoștințe despre categorie';
+
+  @override
   String get categoryNameRequired => 'Numele categoriei este obligatoriu';
 
   @override

@@ -2982,6 +2982,20 @@ class AppLocalizationsPt extends AppLocalizations {
   String get categoryIconPickerTitle => 'Escolha o ícone';
 
   @override
+  String get categoryKnowledgeBriefHint =>
+      'App Flutter, repositório em github.com/…, testes com make test, …';
+
+  @override
+  String get categoryKnowledgeBriefLabel => 'Conhecimento da categoria';
+
+  @override
+  String get categoryKnowledgeBriefSectionDescription =>
+      'O que todo prompt de IA para tarefas desta categoria deve saber: do que se trata, onde está o código, convenções, armadilhas. É incluído exatamente como foi escrito.';
+
+  @override
+  String get categoryKnowledgeBriefSectionTitle => 'Conhecimento da categoria';
+
+  @override
   String get categoryNameRequired => 'O nome da categoria é obrigatório';
 
   @override

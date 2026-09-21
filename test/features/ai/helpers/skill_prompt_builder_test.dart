@@ -411,6 +411,76 @@ Cats in suits in a steampunk laboratory working at a whiteboard with brass machi
       });
     });
 
+    group('user message — category knowledge', () {
+      test(
+        'fullTask policy leads the task material with the category brief',
+        () {
+          final skill = makeSkill(
+            skillType: SkillType.promptGeneration,
+            contextPolicy: ContextPolicy.fullTask,
+          );
+          final result = builder.build(
+            skill: skill,
+            taskContext: '{"id": "task-1"}',
+            linkedTasks: '{"linked_from": []}',
+            entryContent: 'Fix the login flow',
+            categoryKnowledge: 'Flutter app.\nRepo at github.com/x.',
+          );
+
+          final message = result.userMessage;
+          expect(message, contains('**Category Knowledge:**'));
+          expect(message, contains('Flutter app.\nRepo at github.com/x.'));
+          // The brief frames the JSON that follows, so it comes first.
+          expect(
+            message.indexOf('**Category Knowledge:**'),
+            lessThan(message.indexOf('**Task Context:**')),
+          );
+          // Never in the system message: it is task material, not skill
+          // instruction.
+          expect(result.systemMessage, isNot(contains('Category Knowledge')));
+        },
+      );
+
+      test('is omitted when absent or empty', () {
+        final skill = makeSkill(
+          skillType: SkillType.promptGeneration,
+          contextPolicy: ContextPolicy.fullTask,
+        );
+        for (final brief in [null, '']) {
+          final result = builder.build(
+            skill: skill,
+            taskContext: '{"id": "task-1"}',
+            categoryKnowledge: brief,
+          );
+          expect(result.userMessage, isNot(contains('Category Knowledge')));
+        }
+      });
+
+      test('never reaches transcription or taskSummary-policy prompts', () {
+        final transcription = builder.build(
+          skill: makeSkill(contextPolicy: ContextPolicy.fullTask),
+          currentTaskSummary: 'summary',
+          categoryKnowledge: 'Flutter app.',
+        );
+        final summaryPolicy = builder.build(
+          skill: makeSkill(
+            skillType: SkillType.audioSummary,
+            contextPolicy: ContextPolicy.taskSummary,
+          ),
+          currentTaskSummary: 'summary',
+          categoryKnowledge: 'Flutter app.',
+        );
+        expect(
+          transcription.userMessage,
+          isNot(contains('Category Knowledge')),
+        );
+        expect(
+          summaryPolicy.userMessage,
+          isNot(contains('Category Knowledge')),
+        );
+      });
+    });
+
     group('user message — imagePromptGeneration', () {
       test(
         'fullTask policy injects full task JSON + linked tasks (the '

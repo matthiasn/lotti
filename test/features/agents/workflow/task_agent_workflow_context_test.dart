@@ -98,6 +98,7 @@ void main() {
         bool throwOnLinkedContextBuild = false,
         List<AttentionRequestEntity> attentionClaims = const [],
         bool throwOnAttentionLoad = false,
+        String? categoryKnowledge,
       }) async {
         List<AiLinkedTaskContext> parseLinkedTasks(dynamic rawRows) {
           if (rawRows is! List) return const <AiLinkedTaskContext>[];
@@ -151,6 +152,9 @@ void main() {
         when(
           () => mockAiInputRepository.buildProjectContextJsonForTask(taskId),
         ).thenAnswer((_) async => projectContextJson);
+        when(
+          () => mockAiInputRepository.buildCategoryKnowledge(taskId),
+        ).thenAnswer((_) async => categoryKnowledge);
         if (throwOnLinkedContextBuild) {
           when(
             () => mockAiInputRepository.buildLinkedFromContext(taskId),
@@ -306,6 +310,35 @@ void main() {
           );
         },
       );
+
+      test(
+        'opens the wake message with the category knowledge brief',
+        () async {
+          final message = await executeAndCaptureMessage(
+            categoryKnowledge: 'Flutter app.\nRepo at github.com/x.',
+          );
+
+          expect(message, isNotNull);
+          expect(message, contains('## Category Knowledge'));
+          expect(message, contains('Flutter app.\nRepo at github.com/x.'));
+          // Ahead of the task material it frames.
+          expect(
+            message!.indexOf('## Category Knowledge'),
+            lessThan(message.indexOf('## Current Task Context')),
+          );
+          // The brief is read through the one shared seam, per wake.
+          verify(
+            () => mockAiInputRepository.buildCategoryKnowledge(taskId),
+          ).called(1);
+        },
+      );
+
+      test('carries no category knowledge section without a brief', () async {
+        final message = await executeAndCaptureMessage();
+
+        expect(message, isNotNull);
+        expect(message, isNot(contains('## Category Knowledge')));
+      });
 
       test(
         'includes parent project context with project report tldr and full content',

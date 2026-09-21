@@ -2978,6 +2978,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get categoryIconPickerTitle => 'Symbol auswählen';
 
   @override
+  String get categoryKnowledgeBriefHint =>
+      'Flutter-App, Repository unter github.com/…, Tests laufen mit make test, …';
+
+  @override
+  String get categoryKnowledgeBriefLabel => 'Wissen zur Kategorie';
+
+  @override
+  String get categoryKnowledgeBriefSectionDescription =>
+      'Was jeder KI-Prompt für Aufgaben in dieser Kategorie wissen sollte: worum es geht, wo der Code liegt, Konventionen, Stolperfallen. Wird wörtlich übernommen.';
+
+  @override
+  String get categoryKnowledgeBriefSectionTitle => 'Wissen zur Kategorie';
+
+  @override
   String get categoryNameRequired => 'Kategoriename ist erforderlich';
 
   @override

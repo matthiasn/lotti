@@ -190,6 +190,9 @@ void main() {
             () => mockAiInputRepository.buildProjectContextJsonForTask(taskId),
           ).thenAnswer((_) async => '{}');
           when(
+            () => mockAiInputRepository.buildCategoryKnowledge(taskId),
+          ).thenAnswer((_) async => null);
+          when(
             () => mockAiInputRepository.buildLinkedFromContext(taskId),
           ).thenAnswer((_) async => <AiLinkedTaskContext>[]);
           when(

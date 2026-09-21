@@ -20,6 +20,9 @@ behaves inside it, including whether AI runs automatically.
   agreeing to spend tokens on every recording.
 - **Teaches the app its vocabulary.** A per-area speech dictionary and a set of
   correction examples improve how recordings and suggestions come out.
+- **Briefs the AI about the area.** A free-text *Category knowledge* field —
+  what the area is, where the code lives, conventions, pitfalls — goes word for
+  word into every task-agent wake and coding prompt for a task in it.
 - **Can be private or archived.** Private areas stay out of shared views; inactive
   ones stop appearing in pickers without deleting the history.
 
@@ -33,7 +36,7 @@ category-picking widgets other features embed.
 
 ```text
 lib/features/categories/
-├── repository/ · state/
+├── domain/ · repository/ · state/
 └── ui/{pages,widgets}
 ```
 

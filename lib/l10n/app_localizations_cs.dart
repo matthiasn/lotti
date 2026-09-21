@@ -2987,6 +2987,20 @@ class AppLocalizationsCs extends AppLocalizations {
   String get categoryIconPickerTitle => 'Vybrat ikonu';
 
   @override
+  String get categoryKnowledgeBriefHint =>
+      'Aplikace ve Flutteru, repozitář na github.com/…, testy přes make test, …';
+
+  @override
+  String get categoryKnowledgeBriefLabel => 'Znalosti o kategorii';
+
+  @override
+  String get categoryKnowledgeBriefSectionDescription =>
+      'Co by měl vědět každý AI prompt pro úkoly v této kategorii: o co jde, kde je kód, konvence, úskalí. Vkládá se doslova.';
+
+  @override
+  String get categoryKnowledgeBriefSectionTitle => 'Znalosti o kategorii';
+
+  @override
   String get categoryNameRequired => 'Název kategorie je povinný';
 
   @override

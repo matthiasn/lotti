@@ -422,6 +422,50 @@ void main() {
       );
     });
 
+    test(
+      'updates the knowledge brief as typed and clears a blank one',
+      () async {
+        final category = CategoryTestUtils.createTestCategory(
+          knowledgeBrief: 'Flutter app',
+        );
+
+        when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+          (_) => Stream.value(category),
+        );
+
+        final container = makeContainer();
+        final controller = await loadCategory(container);
+
+        controller.updateKnowledgeBrief('Flutter app\nrepo at github.com/x ');
+
+        var state = container.read(
+          categoryDetailsControllerProvider(testCategoryId),
+        );
+        expect(state.hasChanges, isTrue);
+        // Stored as typed — the prompt gets the user's words verbatim, so the
+        // controller must not trim or reflow mid-edit.
+        expect(
+          state.category?.knowledgeBrief,
+          'Flutter app\nrepo at github.com/x ',
+        );
+
+        // Restoring the original text is no change at all.
+        controller.updateKnowledgeBrief('Flutter app');
+        state = container.read(
+          categoryDetailsControllerProvider(testCategoryId),
+        );
+        expect(state.hasChanges, isFalse);
+
+        // Whitespace-only clears the brief rather than storing blank text.
+        controller.updateKnowledgeBrief('   \n ');
+        state = container.read(
+          categoryDetailsControllerProvider(testCategoryId),
+        );
+        expect(state.category?.knowledgeBrief, isNull);
+        expect(state.hasChanges, isTrue);
+      },
+    );
+
     test('no changes when setting same speech dictionary', () async {
       final category = CategoryTestUtils.createTestCategory(
         speechDictionary: ['term1', 'term2'],

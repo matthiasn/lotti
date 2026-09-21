@@ -15,6 +15,7 @@ import 'package:lotti/features/categories/repository/categories_repository.dart'
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_picker.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_picker.dart';
+import 'package:lotti/features/categories/ui/widgets/category_knowledge_brief.dart';
 import 'package:lotti/features/categories/ui/widgets/category_language_dropdown.dart';
 import 'package:lotti/features/categories/ui/widgets/category_name_field.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -318,10 +319,51 @@ void main() {
         // followed by the dedicated Options card for the switch tiles.
         expect(find.text('Basic settings'), findsOneWidget);
         expect(find.text('Options'), findsOneWidget);
-        expect(find.byType(SettingsFormSection), findsNWidgets(6));
+        expect(find.byType(SettingsFormSection), findsNWidgets(7));
+        // The knowledge brief has its own section between the AI defaults
+        // and the speech dictionary, and shows the stored text.
+        expect(find.text('Category knowledge'), findsOneWidget);
         // Correction examples live in a SettingsFormSection whose header
         // owns the title — the widget renders no duplicate of its own.
         expect(find.text('Checklist correction examples'), findsOneWidget);
+      });
+
+      testWidgets('shows the stored knowledge brief and edits it', (
+        tester,
+      ) async {
+        final category = CategoryTestUtils.createTestCategory(
+          knowledgeBrief: 'Flutter app, repo at github.com/x',
+        );
+
+        when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+          (_) => Stream.value(category),
+        );
+
+        await pumpCategoryDetailsPage(
+          tester,
+          settle: true,
+          viewportSize: const Size(1024, 3600),
+        );
+
+        final brief = find.byType(CategoryKnowledgeBrief);
+        expect(brief, findsOneWidget);
+        expect(
+          find.descendant(
+            of: brief,
+            matching: find.text('Flutter app, repo at github.com/x'),
+          ),
+          findsOneWidget,
+        );
+        expect(isPillEnabled(tester, 'Save'), isFalse);
+
+        await tester.enterText(
+          find.descendant(of: brief, matching: find.byType(TextField)),
+          'Flutter app, repo at github.com/x, tests via make test',
+        );
+        await tester.pump();
+
+        // Editing the brief is a change the save pill must reflect.
+        expect(isPillEnabled(tester, 'Save'), isTrue);
       });
 
       testWidgets('displays all basic form fields', (tester) async {

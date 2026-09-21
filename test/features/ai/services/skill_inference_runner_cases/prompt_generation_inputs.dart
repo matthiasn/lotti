@@ -171,6 +171,127 @@ extension _PromptGenerationInputCases on _SkillInferenceTestSetup {
     );
   }
 
+  void registerPromptGenerationCategoryKnowledge() {
+    test(
+      "frames the coding prompt with the linked task's category brief",
+      () async {
+        final textEntry = makeTextEntry(
+          id: 'text-brief',
+          markdown: 'Fix the login flow.',
+          plainText: 'Fix the login flow.',
+          categoryId: 'cat-brief',
+        );
+        when(
+          () => mockAiInputRepo.getEntity('text-brief'),
+        ).thenAnswer((_) async => textEntry);
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: 'task-brief'),
+        ).thenAnswer((_) async => '{"id":"task-brief"}');
+        when(
+          () => mockAiInputRepo.buildLinkedTasksJson('task-brief'),
+        ).thenAnswer((_) async => '{"linked": []}');
+        when(
+          () => mockAiInputRepo.buildCategoryKnowledge('task-brief'),
+        ).thenAnswer((_) async => 'Flutter app.\nRepo at github.com/x.');
+        when(
+          () => mockCloudRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
+          ),
+        ).thenAnswer(
+          (_) => Stream.fromIterable([
+            makeStreamChunk('## Summary\nLogin\n\n## Prompt\nDo the work'),
+          ]),
+        );
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
+        stubLoggingEvent();
+
+        await runner.runPromptGeneration(
+          entryId: 'text-brief',
+          automationResult: makePromptGenerationResult(),
+          linkedTaskId: 'task-brief',
+        );
+
+        final captured = verify(
+          () => mockCloudRepo.generate(
+            captureAny(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
+          ),
+        ).captured;
+        final userMessage = captured.first as String;
+        expect(userMessage, contains('**Category Knowledge:**'));
+        expect(userMessage, contains('Flutter app.\nRepo at github.com/x.'));
+        // The brief frames the task JSON, so it precedes it.
+        expect(
+          userMessage.indexOf('**Category Knowledge:**'),
+          lessThan(userMessage.indexOf('**Task Context:**')),
+        );
+      },
+    );
+
+    test('reads no category brief for an unlinked prompt', () async {
+      final textEntry = makeTextEntry(
+        id: 'text-unlinked',
+        markdown: 'Standalone note.',
+        plainText: 'Standalone note.',
+      );
+      when(
+        () => mockAiInputRepo.getEntity('text-unlinked'),
+      ).thenAnswer((_) async => textEntry);
+      when(
+        () => mockCloudRepo.generate(
+          any(),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          provider: any(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+          impactCollector: any(named: 'impactCollector'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          makeStreamChunk('## Summary\nX\n\n## Prompt\nDo the work'),
+        ]),
+      );
+      when(
+        () => mockAiInputRepo.createAiResponseEntry(
+          data: any(named: 'data'),
+          start: any(named: 'start'),
+          linkedId: any(named: 'linkedId'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => null);
+      stubLoggingEvent();
+
+      await runner.runPromptGeneration(
+        entryId: 'text-unlinked',
+        automationResult: makePromptGenerationResult(),
+      );
+
+      verifyNever(() => mockAiInputRepo.buildCategoryKnowledge(any()));
+    });
+  }
+
   void registerPromptGenerationNoteInputs() {
     test(
       'falls back to plainText when JournalEntry has no markdown',

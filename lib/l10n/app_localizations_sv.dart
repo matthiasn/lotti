@@ -2962,6 +2962,20 @@ class AppLocalizationsSv extends AppLocalizations {
   String get categoryIconPickerTitle => 'Välj ikon';
 
   @override
+  String get categoryKnowledgeBriefHint =>
+      'Flutter-app, repository på github.com/…, kör tester med make test, …';
+
+  @override
+  String get categoryKnowledgeBriefLabel => 'Kunskap om kategorin';
+
+  @override
+  String get categoryKnowledgeBriefSectionDescription =>
+      'Det varje AI-prompt för uppgifter i den här kategorin bör veta: vad det handlar om, var koden finns, konventioner, fallgropar. Tas med ord för ord.';
+
+  @override
+  String get categoryKnowledgeBriefSectionTitle => 'Kunskap om kategorin';
+
+  @override
   String get categoryNameRequired => 'Kategorinamn krävs';
 
   @override
