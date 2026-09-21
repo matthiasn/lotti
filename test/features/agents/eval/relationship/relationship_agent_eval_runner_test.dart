@@ -355,6 +355,33 @@ void main() {
       );
     });
 
+    // Tolerating the call is not accepting any payload. The strategy
+    // rejects these three through `parseRecordObservations`, so a call the
+    // runtime would discard cannot score as success here.
+    test('an observation payload the runtime discards is invalid', () {
+      for (final payload in [
+        jsonEncode({'observations': <Object?>[]}),
+        jsonEncode({
+          'observations': [
+            {'text': '   '},
+          ],
+        }),
+        jsonEncode(<String, Object?>{}),
+      ]) {
+        expect(
+          classify('br_stale_after_checkin', [
+            briefing(),
+            call(
+              RelationshipAgentToolNames.recordRelationshipObservations,
+              payload,
+            ),
+          ]),
+          RelationshipAgentEvalFailureCategory.invalidToolArguments,
+          reason: payload,
+        );
+      }
+    });
+
     test('a banner where one is forbidden is the forbidden-tool failure', () {
       expect(
         classify('nd_fresh_active', [briefing(), ad()]),

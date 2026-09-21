@@ -19,6 +19,7 @@ library;
 import 'dart:convert';
 
 import 'package:lotti/classes/nudge_models.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -390,6 +391,15 @@ RelationshipAgentEvalFailureCategory classifyRelationshipAgentResult({
   for (final call in toolCalls) {
     final args = call.jsonObjectArguments!;
     switch (call.name) {
+      case RelationshipAgentToolNames.recordRelationshipObservations:
+        // Tolerating the call is not the same as accepting any payload.
+        // `RelationshipAgentStrategy._handleRecordObservations` rejects an
+        // absent, empty or blank-only list through this same parser, so a
+        // call the runtime would discard must not earn credit here just
+        // because its name is on the allow-list.
+        if (parseRecordObservations(args).error != null) {
+          return RelationshipAgentEvalFailureCategory.invalidToolArguments;
+        }
       case RelationshipAgentToolNames.createAndLinkTask:
         if (relationshipTaskProposalError(args) != null) {
           return RelationshipAgentEvalFailureCategory.invalidToolArguments;
