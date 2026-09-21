@@ -824,7 +824,7 @@ void main() {
         tester.widget<DsPill>(find.byKey(ValueKey(key)));
 
     testWidgets('the eyebrow is the category alone — reminders are the '
-        'pill\'s to say; the one-liner joins the nickname and the last '
+        "pill's to say; the one-liner joins the nickname and the last "
         'contact', (tester) async {
       await pump(
         tester,
