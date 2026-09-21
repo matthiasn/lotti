@@ -7,8 +7,11 @@ opts them into a dedicated agent that tracks contact cadence and prepares
 briefings from captured check-ins.
 
 The feature is behind `enable_relationships`. The **People** tab (`/people`)
-groups people into *Due*, *On track* and *Not enrolled*, with a summary of
-who is due and who lapses next. Rows show the last contact and cadence.
+groups people into *Due*, *On track* and *No reminders*, with a summary of
+who is due and who lapses next. Rows show the last contact and, where there
+is one, how often a reminder comes. Turning reminders on — in the person
+editor, the contact-import review or the person page's card — always shows
+how often, with monthly preselected, and stores what it shows.
 Desktop uses a list/detail split; phones open a dedicated person page.
 
 The person page holds a header with category, importance, name, nickname

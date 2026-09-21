@@ -591,7 +591,7 @@ under it — the task page's shape, on purpose:
 | Sliver | Widget | Notes |
 |---|---|---|
 | Hero | [`PersonHeroAppBar`](../../lib/features/relationships/ui/widgets/person_header.dart) | A pinned `SliverPersistentHeader` of its own, not a `SliverAppBar`: the avatar hangs half its diameter below the header, and every layer of an app bar clips that overflow. Slivers paint back to front, so the earlier header paints its overhang over the block scrolling under it. The name appears in the bar only once the wash band has folded (`AnimatedSwitcher`, never an invisible duplicate). |
-| Header block | `PersonHeaderBlock` (same file) | Eyebrow · name · one-liner · pills. The pills come from the list model's rules, so the page and the list never disagree about *due*; the cadence pill names the **effective** cadence (`effectiveCadenceDaysOf`), i.e. the runtime default when none is set. The eyebrow takes `calmEyebrowStyle`, not the mono timestamp style — it is a label, not a clock reading. The one-liner is `text.mediumEmphasis` with the mono voice on its timestamp alone: nothing on it is tappable, and the interactive token on a whole non-interactive line promised a tap that never came while outranking the person's own name. The health band is **not** here — the briefing card owns it, because only the card can date it. |
+| Header block | `PersonHeaderBlock` (same file) | Eyebrow · name · one-liner · pills. The pills come from the list model's rules, so the page and the list never disagree about *due*; the cadence pill names the interval the runtime applies (`relationshipShownCadenceDays`), i.e. the default when none is stored. The eyebrow takes `calmEyebrowStyle`, not the mono timestamp style — it is a label, not a clock reading. The one-liner is `text.mediumEmphasis` with the mono voice on its timestamp alone: nothing on it is tappable, and the interactive token on a whole non-interactive line promised a tap that never came while outranking the person's own name. The health band is **not** here — the briefing card owns it, because only the card can date it. |
 | Briefing | `RelationshipBriefingCard` | Only when enrolled or a briefing exists; the page reads the report too, so the gap after the card is deterministic. |
 | Next time | `NextTimeCard` in [`person_page_cards.dart`](../../lib/features/relationships/ui/widgets/person_page_cards.dart) | From the latest check-in's *pay attention to* / *avoid*; `NextTimeCard.hasContent` is the one visibility rule, shared with the page. |
 | Post-call offer | `PostInteractionPrompt` | Renders nothing until a marker exists (below). |
@@ -1174,7 +1174,7 @@ so the decision is a table rather than a widget tree:
 
 | Face | When | Status line · body · footer |
 |---|---|---|
-| Not enrolled | not `important`, or dormant/archived | plain section card, people glyph · `No agent for this person` (or the status word while paused) · what reminders turn on · **Remind me about {name}** |
+| Not enrolled | not `important`, or dormant/archived | plain section card, people glyph · `No reminders` — the band's and the pill's own words — (or the status word while paused) · what reminders turn on · the *Remind me every* interval pills (not while paused) · **Remind me about {name}** |
 
 The not-enrolled card carries **no privacy caption**. It used to read
 `Only what you start yourself uses AI` in the footer's leading slot, beside
@@ -1222,7 +1222,22 @@ last wake. And the card arms one timer at the next minute/hour/day boundary of t
 briefing's age (`untilNextAgeBucket`, shared with the goal page), so "as of
 just now" does not stay on screen for hours. *Remind me about {name}* on the plain
 card also mints the agent through `ensureAgentForRelationship`, the same
-lazy-create call the edit form makes.
+lazy-create call the edit form makes — and stores the interval its pills show
+as selected, so the one tap never schedules a rhythm nobody saw.
+
+**Reminders that are on always show, and store, an interval.**
+`relationshipShownCadenceDays` (beside `relationshipDefaultCadenceDays` in the
+runtime) is the one place the "stored, else 30 days" substitution is written:
+the deterministic tier schedules from it and the list model reads it, and the
+three places reminders are turned on — the form, the import review and this
+card — show it as the selected pill and save it. `relationshipCadencePresets`
+has no "none": an enrolled person with a null cadence ran monthly anyway, so
+"No cadence" was a choice the app overrode, shown selected in the editor while
+the list row said *Monthly*. A null `checkInCadenceDays` still reads correctly
+— older and synced records have it — it is just no longer written for someone
+whose reminders are on. With reminders off the form leaves a stored interval
+untouched, and a row with neither reminders nor an interval leaves the cadence
+out of its status line: its band already says *No reminders*.
 
 The chat entry lives in the page's hero. There is no *Automatic updates*
 switch, because the relationship runtime never reads
@@ -1575,9 +1590,10 @@ phone number does not go.
 groups into three `DesignSystemSectionCard`s — **Who** (name, nickname, the
 names that come up with them — the category speech dictionary's semicolon
 format, parsed by the same `parseSpeechTerms` — the category, and while
-editing the status), **Important** (the consent switch,
+editing the status), **Important** (the consent switch — labelled as the
+request it grants, *Remind me to stay in touch*, so it reads true while off —
 one line saying what it enables, and the cadence presets *only* once it is
-on), **How to reach them** (the channel editor under the same privacy line
+on, the applied interval preselected), **How to reach them** (the channel editor under the same privacy line
 the page's Reach card carries). The category is a name beside a 10px colour
 dot rather than a second large avatar competing with the person's own;
 clearing it goes through the picker's own no-category row, so one component
@@ -1609,7 +1625,9 @@ its own Save button would lose the edits still in its fields.
 names the count and the boundary in its subtitle ("2 selected · numbers stay
 on this device"), gives each chosen contact a persona avatar, and reveals the
 cadence presets under a person only once they are marked important — a
-cadence on an unimportant person is never evaluated. Its switch copy says
+cadence on an unimportant person is never evaluated — with the default
+interval already on the draft (`setImportant` seeds it), so what is reviewed
+is what is imported. Its switch copy says
 what importance turns on, never that leaving it off keeps the person out of
 AI entirely: a chat, an explicit briefing and a dictated check-in all reach a
 model for anyone. Each avatar is coloured by the id the person will be
