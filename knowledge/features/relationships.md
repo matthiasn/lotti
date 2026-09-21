@@ -1630,6 +1630,16 @@ is never the one addressed: the pane passes `AgentChatView` the localized
 its own `emptyMessage` and `composerHint` — *Start a conversation with the
 briefing agent about {name}* and *Talk to the agent about {nickname or
 name}…* — replace the defaults that would address the agent's display name.
+
+**Only an active `relationship_agent` is a chat.**
+[`usableRelationshipAgent`](../../lib/features/relationships/model/relationship_agent_identity.dart)
+is the one predicate: the pane renders its *unavailable* state for anything
+else, and the person hero's *Talk to agent* is hidden unless the person is
+enrolled or that predicate holds. Destroying an agent preserves its identity
+row for audit, so "a row exists" is not "there is an agent to talk to" — the
+hero once treated any identity or state row as one and led straight to the
+unavailable screen.
+
 It has two hosts, and the layout decides which:
 
 ```mermaid
