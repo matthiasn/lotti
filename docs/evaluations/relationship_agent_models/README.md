@@ -2,6 +2,7 @@
 
 **Full-catalog results, 2026-09-16:** [LottiGym, every section run and optimised](../lotti-gym-2026-09-16.md).
 **Four models and what a run costs, 2026-09-17:** [LottiGym, four models](../lotti-gym-2026-09-17.md).
+**Qwen 3.8 27B rejected, 2026-09-21:** [LottiGym, Qwen 3.8 27B and two harness regressions](../lotti-gym-2026-09-21.md).
 
 Inference-level evals for the **relationship agent** (plan v2 phases 4–5,
 ADR 0059) — run **before** any model is trusted with a briefing, on the
