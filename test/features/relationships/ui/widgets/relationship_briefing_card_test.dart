@@ -27,6 +27,7 @@ import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/service/contact_launcher.dart';
 import 'package:lotti/features/relationships/service/pending_interaction_store.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
@@ -442,11 +443,14 @@ void main() {
       expect(find.byType(AgentSummaryCardSurface), findsNothing);
       expect(find.byType(DesignSystemSectionCard), findsOneWidget);
       expect(find.text('Briefing'), findsOneWidget);
-      expect(statusText(tester), 'No agent for this person');
+      // The band's and the pill's own words for this state, not a second
+      // name ("No agent for this person") for the same fact.
+      expect(statusText(tester), 'No reminders');
+      // The only pills are the interval choice: the status pills live in
+      // the header above the card.
       expect(
-        find.byType(DsPill),
-        findsNothing,
-        reason: 'the header above the card already carries the pills',
+        tester.widgetList<DsPill>(find.byType(DsPill)).map((p) => p.label),
+        ['Weekly', 'Every two weeks', 'Monthly', 'Quarterly'],
       );
       expect(
         find.textContaining('Turn on reminders for Pip'),
@@ -541,6 +545,100 @@ void main() {
       expect(saved.meta.id, relationshipId);
     });
 
+    testWidgets('the one-tap enrol stores the interval the card showed: the '
+        'default, preselected, when nothing was picked', (tester) async {
+      await pump(
+        tester,
+        entry: relationship(important: false, cadenceDays: null),
+      );
+
+      expect(find.text('How often?'), findsOneWidget);
+      expect(
+        tester
+            .widgetList<DsPill>(find.byType(DsPill))
+            .where((pill) => pill.selected)
+            .map((pill) => pill.label),
+        ['Monthly'],
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey('relationship-agent-mark-important')),
+      );
+      await tester.pumpAndSettle();
+
+      final saved =
+          verify(
+                () => repository.updateRelationship(captureAny()),
+              ).captured.single
+              as RelationshipEntry;
+      // Stored, not left null for the runtime to substitute unseen.
+      expect(saved.data.checkInCadenceDays, relationshipDefaultCadenceDays);
+    });
+
+    testWidgets('a stored interval outside the presets is offered as it is '
+        'and shown selected — the enrol stores it, so the screen must say '
+        'so', (tester) async {
+      await pump(
+        tester,
+        entry: relationship(important: false, cadenceDays: 45),
+      );
+
+      final pills = tester.widgetList<DsPill>(find.byType(DsPill)).toList();
+      expect(pills.map((pill) => pill.label), [
+        'Weekly',
+        'Every two weeks',
+        'Monthly',
+        'Every 45 days',
+        'Quarterly',
+      ]);
+      expect(
+        pills.where((pill) => pill.selected).map((pill) => pill.label),
+        ['Every 45 days'],
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey('relationship-agent-mark-important')),
+      );
+      await tester.pumpAndSettle();
+
+      final saved =
+          verify(
+                () => repository.updateRelationship(captureAny()),
+              ).captured.single
+              as RelationshipEntry;
+      expect(saved.data.checkInCadenceDays, 45);
+    });
+
+    testWidgets('an interval picked on the card is the one the enrol stores', (
+      tester,
+    ) async {
+      // Opens on the interval this person already had stored.
+      await pump(tester, entry: relationship(important: false));
+      List<String?> selected() => tester
+          .widgetList<DsPill>(find.byType(DsPill))
+          .where((pill) => pill.selected)
+          .map((pill) => pill.label)
+          .toList();
+      expect(selected(), ['Weekly']);
+
+      await tester.tap(find.widgetWithText(DsPill, 'Quarterly'));
+      await tester.pump();
+      expect(selected(), ['Quarterly']);
+
+      await tester.tap(
+        find.byKey(const ValueKey('relationship-agent-mark-important')),
+      );
+      await tester.pumpAndSettle();
+
+      final saved =
+          verify(
+                () => repository.updateRelationship(captureAny()),
+              ).captured.single
+              as RelationshipEntry;
+      expect(saved.data.important, isTrue);
+      expect(saved.data.checkInCadenceDays, 90);
+    });
+
     testWidgets('Mark important also mints the agent, the way the edit form '
         'does — otherwise nothing proactive ever starts', (tester) async {
       when(
@@ -633,6 +731,9 @@ void main() {
       );
       expect(statusText(tester), 'Dormant');
       expect(find.text('Mark important'), findsNothing);
+      // Nothing to turn on, so no interval to choose for it.
+      expect(find.text('How often?'), findsNothing);
+      expect(find.byType(DsPill), findsNothing);
     });
   });
 
@@ -843,6 +944,57 @@ void main() {
       expect(find.text('Try again'), findsOneWidget);
     });
 
+    testWidgets('a failed refresh keeps the briefing it failed to replace, '
+        'dated, under the failure — an error is a reason to retry, not to '
+        'take the notes away', (tester) async {
+      await pump(
+        tester,
+        checkIns: onTrackCheckIns,
+        current: report(),
+        state: agentState(failures: 1, lastWakeAt: now),
+      );
+
+      expect(statusText(tester), startsWith('Last run failed'));
+      expect(
+        find.textContaining('The provider returned an error'),
+        findsOneWidget,
+      );
+      // The last good briefing is still readable…
+      expect(
+        find.byKey(const ValueKey('relationship-briefing-body')),
+        findsOneWidget,
+      );
+      // …and says how old it is, since the status line dates the failure.
+      expect(
+        tester
+            .widget<Text>(
+              find.byKey(const ValueKey('relationship-briefing-kept-age')),
+            )
+            .data,
+        startsWith('as of '),
+      );
+      expect(find.text('Try again'), findsOneWidget);
+    });
+
+    testWidgets('a first briefing that failed has nothing to keep', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        checkIns: onTrackCheckIns,
+        state: agentState(failures: 1, lastWakeAt: failedAt),
+      );
+
+      expect(
+        find.byKey(const ValueKey('relationship-briefing-body')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('relationship-briefing-kept-age')),
+        findsNothing,
+      );
+    });
+
     testWidgets('See activity opens the internals panel', (tester) async {
       await pump(
         tester,
@@ -918,6 +1070,10 @@ void main() {
       );
       expect(quiet.label, 'See activity');
       expect(quiet.variant, DesignSystemButtonVariant.tertiary);
+      // …and it is the card's one worded door to the agent's internals:
+      // "Open agent internals" beside Read more was a third way to the
+      // same place, collapsed or expanded.
+      expect(find.text('Open agent internals'), findsNothing);
       expect(
         find.byKey(const ValueKey('relationship-agent-log-check-in')),
         findsNothing,

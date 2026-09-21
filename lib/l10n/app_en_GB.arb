@@ -144,10 +144,6 @@
   "outboxMonitorNoAttachment": "no attachment",
   "outboxMonitorRetries": "retries",
   "outboxMonitorRetry": "retry",
-  "relationshipCadenceNudgeNote": "Choosing a cadence turns on check-in nudges.",
-  "@relationshipCadenceNudgeNote": {
-    "description": "Relationships redesign label."
-  },
   "relationshipCadenceOnTrack": "On track",
   "@relationshipCadenceOnTrack": {
     "description": "Relationships redesign label."

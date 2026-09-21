@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -111,6 +112,8 @@ void main() {
     WidgetTester tester, {
     PendingInteraction? pending,
     RelationshipEntry? resolves,
+    double bottomGap = 0,
+    String relationshipId = 'rel-1',
   }) async {
     final store = _FakePendingInteractionStore(pending);
     when(
@@ -120,7 +123,10 @@ void main() {
     await withClock(Clock.fixed(now), () async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const PostInteractionPrompt(),
+          PostInteractionPrompt(
+            relationshipId: relationshipId,
+            bottomGap: bottomGap,
+          ),
           overrides: [
             pendingInteractionStoreProvider.overrideWithValue(store),
             relationshipRepositoryProvider.overrideWithValue(repository),
@@ -239,11 +245,80 @@ void main() {
       await pump(tester, pending: marker(), resolves: person());
 
       expect(find.text('Log check-in'), findsOneWidget);
-      expect(find.text('Not now'), findsOneWidget);
+      expect(find.text('Dismiss'), findsOneWidget);
     });
   });
 
   group('when the prompt stays silent', () {
+    testWidgets('its gap belongs to the offer: a page seating it between '
+        'two sections gets no hole where there is nothing to offer', (
+      tester,
+    ) async {
+      await pump(tester, bottomGap: 24);
+      expect(tester.getSize(find.byType(PostInteractionPrompt)), Size.zero);
+    });
+
+    testWidgets('with an offer, the gap follows it', (tester) async {
+      await pump(tester, pending: marker(), resolves: person(), bottomGap: 24);
+      expect(
+        tester.getSize(find.byType(PostInteractionPrompt)).height,
+        tester.getSize(offer).height + 24,
+      );
+    });
+
+    testWidgets('an older refresh finishing late cannot bring back an offer '
+        'the page has since claimed', (tester) async {
+      final store = _FakePendingInteractionStore(marker());
+      // The mount's refresh reads the marker, then waits on the person.
+      final lookup = Completer<RelationshipEntry?>();
+      when(
+        () => repository.getRelationshipById(any()),
+      ).thenAnswer((_) => lookup.future);
+
+      await withClock(Clock.fixed(now), () async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const PostInteractionPrompt(relationshipId: 'rel-1'),
+            overrides: [
+              pendingInteractionStoreProvider.overrideWithValue(store),
+              relationshipRepositoryProvider.overrideWithValue(repository),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        // Log check-in on the page claims the marker; the claim's own
+        // refresh reads an empty store and settles on no offer.
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(PostInteractionPrompt)),
+        );
+        await container
+            .read(pendingInteractionClaimsProvider.notifier)
+            .claimFor('rel-1');
+        await tester.pump();
+
+        // Now the first refresh's lookup lands.
+        lookup.complete(person());
+        await tester.pumpAndSettle();
+      });
+
+      expect(offer, findsNothing);
+    });
+
+    testWidgets("a call to someone else is not offered on this person's "
+        'page — accepting it would open their composer', (tester) async {
+      final store = await pump(
+        tester,
+        pending: marker(relationshipId: 'rel-anna'),
+        resolves: person(),
+        relationshipId: 'rel-bo',
+      );
+
+      expect(offer, findsNothing);
+      // Nor is it thrown away: it is still Anna's to log from her page.
+      expect(store.clearCount, 0);
+    });
+
     testWidgets('renders nothing when no call was placed', (tester) async {
       await pump(tester, resolves: person());
 
@@ -276,7 +351,7 @@ void main() {
     testWidgets('drops the prompt', (tester) async {
       await pump(tester, pending: marker(), resolves: person());
 
-      await tester.tap(find.text('Not now'));
+      await tester.tap(find.text('Dismiss'));
       await tester.pumpAndSettle();
 
       expect(offer, findsNothing);
@@ -291,7 +366,7 @@ void main() {
         resolves: person(),
       );
 
-      await tester.tap(find.text('Not now'));
+      await tester.tap(find.text('Dismiss'));
       await tester.pumpAndSettle();
 
       expect(store.clearCount, 1);
@@ -301,7 +376,7 @@ void main() {
     testWidgets('does not reappear on the next resume', (tester) async {
       await pump(tester, pending: marker(), resolves: person());
 
-      await tester.tap(find.text('Not now'));
+      await tester.tap(find.text('Dismiss'));
       await tester.pumpAndSettle();
 
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
@@ -377,7 +452,7 @@ void main() {
       await withClock(Clock(() => current), () async {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
-            const PostInteractionPrompt(),
+            const PostInteractionPrompt(relationshipId: 'rel-1'),
             overrides: [
               pendingInteractionStoreProvider.overrideWithValue(store),
               relationshipRepositoryProvider.overrideWithValue(repository),

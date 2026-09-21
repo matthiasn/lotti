@@ -2035,10 +2035,6 @@
   "checkInSentimentStrained": "Strained",
   "checkInSourceCall": "From the call you placed from this page. Everything is editable.",
   "checkInSourceMessage": "From the message you sent from this page. Everything is editable.",
-  "checkInSpeakButton": "Speak check-in",
-  "@checkInSpeakButton": {
-    "description": "Button on the check-in sheet that records a spoken check-in and prefills the narrative with its transcript."
-  },
   "checkInSpokenMinutes": "{count, plural, =1{1 minute} other{{count} minutes}}",
   "@checkInSpokenMinutes": {
     "description": "Minutes of a recording length, read by assistive technology.",
@@ -6860,7 +6856,6 @@
       }
     }
   },
-  "relationshipAgentNoAgent": "No agent for this person",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{No briefing yet. Brief now writes one once you have logged a check-in; it never sees the phone number or email.} =1{No briefing yet. Brief now writes one from your check-in; it never sees the phone number or email.} other{No briefing yet. Brief now writes one from your {count} check-ins; it never sees the phone number or email.}}",
   "@relationshipAgentNoBriefingBody": {
     "placeholders": {
@@ -6869,7 +6864,7 @@
       }
     }
   },
-  "relationshipAgentNotEnrolledBody": "Turn on reminders for {name} to get a chat, a nudge when it has been a while, and a briefing.",
+  "relationshipAgentNotEnrolledBody": "Turn on reminders for {name} to get a reminder when it has been a while, a briefing and a chat.",
   "@relationshipAgentNotEnrolledBody": {
     "placeholders": {
       "name": {
@@ -6946,18 +6941,12 @@
     }
   },
   "relationshipCadenceFortnightly": "Every two weeks",
-  "relationshipCadenceLabel": "Check-in cadence",
   "relationshipCadenceMonthly": "Monthly",
-  "relationshipCadenceNone": "No cadence",
-  "relationshipCadenceNudgeNote": "Choosing a cadence turns on check-in nudges.",
-  "@relationshipCadenceNudgeNote": {
-    "description": "Relationships redesign label."
-  },
   "relationshipCadenceOnTrack": "On track",
   "@relationshipCadenceOnTrack": {
     "description": "Relationships redesign label."
   },
-  "relationshipCadencePromptLabel": "Nudge me every",
+  "relationshipCadencePromptLabel": "How often?",
   "relationshipCadenceQuarterly": "Quarterly",
   "relationshipCadenceWeekly": "Weekly",
   "relationshipChatAgentName": "Briefing agent",
@@ -6988,7 +6977,7 @@
     }
   },
   "relationshipChatTooltip": "Chat about this person",
-  "relationshipChatUnavailable": "No agent yet — mark this person as important first.",
+  "relationshipChatUnavailable": "No agent yet — turn on reminders for this person first.",
   "relationshipCheckInAddComment": "Add comment",
   "relationshipCheckInAddPhoto": "Photo",
   "relationshipCheckInCommentCount": "{count, plural, =1{1 comment} other{{count} comments}}",
@@ -7133,8 +7122,8 @@
   "relationshipErrorDeleteFailed": "Could not delete this person. Please try again.",
   "relationshipErrorLinkTaskFailed": "Could not link the task. Please try again.",
   "relationshipErrorUpdateFailed": "Could not save the changes. Please try again.",
-  "relationshipFormImportantBody": "Turns on a briefing, nudges and a chat. Check-in notes go to the agent; contact channels never do.",
-  "relationshipFormImportantBodyNamed": "Turns on a briefing, nudges and a chat for {name}. Check-in notes go to the agent; contact channels never do.",
+  "relationshipFormImportantBody": "Turns on reminders, a briefing and a chat. Check-in notes go to the agent; contact channels never do.",
+  "relationshipFormImportantBodyNamed": "Turns on reminders, a briefing and a chat for {name}. Check-in notes go to the agent; contact channels never do.",
   "@relationshipFormImportantBodyNamed": {
     "description": "Explains what marking a named person important turns on",
     "placeholders": {
@@ -7162,7 +7151,6 @@
       }
     }
   },
-  "relationshipImportantDescription": "Nudge me to stay in touch",
   "relationshipImportantLabel": "Reminders on",
   "relationshipImportConfirmButton": "{count, plural, =1{Add 1 person} other{Add {count} people}}",
   "@relationshipImportConfirmButton": {
@@ -7185,7 +7173,7 @@
   "@relationshipImportGrantButton": {
     "description": "Requests contact permission from the import screen"
   },
-  "relationshipImportImportantBody": "Briefings, nudges and a chat. Without it, nothing runs on its own.",
+  "relationshipImportImportantBody": "Reminders, briefings and a chat. Without it, nothing runs on its own.",
   "relationshipImportNoMatches": "No contacts match your search",
   "@relationshipImportNoMatches": {
     "description": "Shown when the contact search matches nothing"
@@ -7227,6 +7215,10 @@
   "relationshipImportSearchHint": "Search contacts",
   "@relationshipImportSearchHint": {
     "description": "Placeholder in the contact import search field"
+  },
+  "relationshipImportSelectHint": "Tick the people you want to add. You choose who gets reminders in the next step.",
+  "@relationshipImportSelectHint": {
+    "description": "Instruction under the search field on the contact-import selection step: tick people, reminders are decided on the next step."
   },
   "relationshipImportSettingsBody": "Contact access is turned off. Turn it on in system settings to import people.",
   "@relationshipImportSettingsBody": {
@@ -7276,6 +7268,15 @@
       }
     }
   },
+  "relationshipNextTimeFromEarlier": "From your check-in on {day}",
+  "@relationshipNextTimeFromEarlier": {
+    "description": "Caption under the Next time card title when the notes come from a check-in older than the newest one; day is a short date such as Sat 1 Aug.",
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipNextTimeTitle": "Next time",
   "relationshipNicknameLabel": "Nickname",
   "relationshipNoCheckIns": "No check-ins yet — log one after you next talk.",
@@ -7316,7 +7317,7 @@
   "@relationshipPostCallConfirm": {
     "description": "Button that opens a pre-filled check-in from the post-call prompt"
   },
-  "relationshipPostCallDismiss": "Not now",
+  "relationshipPostCallDismiss": "Dismiss",
   "@relationshipPostCallDismiss": {
     "description": "Button that dismisses the post-call prompt without a trace"
   },
@@ -7393,6 +7394,14 @@
   "@relationshipReminderSnoozeLonger": {
     "description": "Button on the paused-reminder note that opens the snooze options."
   },
+  "relationshipRemindersSwitchLabel": "Remind me to stay in touch",
+  "@relationshipRemindersSwitchLabel": {
+    "description": "Label of the switch that turns reminders on for a person, in the person form and the contact-import review. Worded as the request it grants, so it reads correctly while the switch is off."
+  },
+  "relationshipsEmptyHint": "Jot a line after you talk. Lotti shows who you have not spoken to in a while and, if you like, reminds you.",
+  "@relationshipsEmptyHint": {
+    "description": "One sentence under the empty People tab title saying what the tab is for: logging a line after a conversation, seeing who is overdue, optional reminders."
+  },
   "relationshipsEmptyState": "Add the people you want to stay close to.",
   "relationshipsGroupDue": "Due",
   "relationshipsPageTitle": "People",
@@ -7450,6 +7459,10 @@
       }
     }
   },
+  "relationshipStatusLineAddedNoCadence": "Just added",
+  "@relationshipStatusLineAddedNoCadence": {
+    "description": "People row status line for a person with no check-in yet and no reminder interval."
+  },
   "relationshipStatusLineContacted": "{type} · {time} · {cadence}",
   "@relationshipStatusLineContacted": {
     "placeholders": {
@@ -7460,6 +7473,18 @@
         "type": "String"
       },
       "cadence": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineContactedNoCadence": "{type} · {time}",
+  "@relationshipStatusLineContactedNoCadence": {
+    "description": "People row status line for a person without a reminder interval: how and when they were last contacted.",
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "time": {
         "type": "String"
       }
     }

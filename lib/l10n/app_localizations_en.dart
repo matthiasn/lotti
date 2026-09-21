@@ -3294,9 +3294,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'From the message you sent from this page. Everything is editable.';
 
   @override
-  String get checkInSpeakButton => 'Speak check-in';
-
-  @override
   String checkInSpokenMinutes(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -11699,9 +11696,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get relationshipAgentNoAgent => 'No agent for this person';
-
-  @override
   String relationshipAgentNoBriefingBody(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -11718,7 +11712,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Turn on reminders for $name to get a chat, a nudge when it has been a while, and a briefing.';
+    return 'Turn on reminders for $name to get a reminder when it has been a while, a briefing and a chat.';
   }
 
   @override
@@ -11811,23 +11805,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipCadenceFortnightly => 'Every two weeks';
 
   @override
-  String get relationshipCadenceLabel => 'Check-in cadence';
-
-  @override
   String get relationshipCadenceMonthly => 'Monthly';
-
-  @override
-  String get relationshipCadenceNone => 'No cadence';
-
-  @override
-  String get relationshipCadenceNudgeNote =>
-      'Choosing a cadence turns on check-in nudges.';
 
   @override
   String get relationshipCadenceOnTrack => 'On track';
 
   @override
-  String get relationshipCadencePromptLabel => 'Nudge me every';
+  String get relationshipCadencePromptLabel => 'How often?';
 
   @override
   String get relationshipCadenceQuarterly => 'Quarterly';
@@ -11862,7 +11846,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get relationshipChatUnavailable =>
-      'No agent yet — mark this person as important first.';
+      'No agent yet — turn on reminders for this person first.';
 
   @override
   String get relationshipCheckInAddComment => 'Add comment';
@@ -12033,11 +12017,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get relationshipFormImportantBody =>
-      'Turns on a briefing, nudges and a chat. Check-in notes go to the agent; contact channels never do.';
+      'Turns on reminders, a briefing and a chat. Check-in notes go to the agent; contact channels never do.';
 
   @override
   String relationshipFormImportantBodyNamed(String name) {
-    return 'Turns on a briefing, nudges and a chat for $name. Check-in notes go to the agent; contact channels never do.';
+    return 'Turns on reminders, a briefing and a chat for $name. Check-in notes go to the agent; contact channels never do.';
   }
 
   @override
@@ -12073,9 +12057,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get relationshipImportantDescription => 'Nudge me to stay in touch';
-
-  @override
   String get relationshipImportantLabel => 'Reminders on';
 
   @override
@@ -12100,7 +12081,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get relationshipImportImportantBody =>
-      'Briefings, nudges and a chat. Without it, nothing runs on its own.';
+      'Reminders, briefings and a chat. Without it, nothing runs on its own.';
 
   @override
   String get relationshipImportNoMatches => 'No contacts match your search';
@@ -12142,6 +12123,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get relationshipImportSearchHint => 'Search contacts';
+
+  @override
+  String get relationshipImportSelectHint =>
+      'Tick the people you want to add. You choose who gets reminders in the next step.';
 
   @override
   String get relationshipImportSettingsBody =>
@@ -12196,6 +12181,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String relationshipNextDueOn(String day) {
     return 'Next due $day';
+  }
+
+  @override
+  String relationshipNextTimeFromEarlier(String day) {
+    return 'From your check-in on $day';
   }
 
   @override
@@ -12274,7 +12264,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipPostCallConfirm => 'Log check-in';
 
   @override
-  String get relationshipPostCallDismiss => 'Not now';
+  String get relationshipPostCallDismiss => 'Dismiss';
 
   @override
   String relationshipPostCallMeta(String time, int minutes) {
@@ -12349,6 +12339,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipReminderSnoozeLonger => 'Snooze longer';
 
   @override
+  String get relationshipRemindersSwitchLabel => 'Remind me to stay in touch';
+
+  @override
+  String get relationshipsEmptyHint =>
+      'Jot a line after you talk. Lotti shows who you have not spoken to in a while and, if you like, reminds you.';
+
+  @override
   String get relationshipsEmptyState =>
       'Add the people you want to stay close to.';
 
@@ -12415,12 +12412,20 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get relationshipStatusLineAddedNoCadence => 'Just added';
+
+  @override
   String relationshipStatusLineContacted(
     String type,
     String time,
     String cadence,
   ) {
     return '$type · $time · $cadence';
+  }
+
+  @override
+  String relationshipStatusLineContactedNoCadence(String type, String time) {
+    return '$type · $time';
   }
 
   @override
@@ -16283,10 +16288,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get outboxMonitorRetry => 'retry';
-
-  @override
-  String get relationshipCadenceNudgeNote =>
-      'Choosing a cadence turns on check-in nudges.';
 
   @override
   String get relationshipCadenceOnTrack => 'On track';

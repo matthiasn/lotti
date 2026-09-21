@@ -18,6 +18,7 @@ import 'package:lotti/features/journal/repository/clipboard_images.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/service/relationship_agent_service.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
@@ -35,17 +36,33 @@ import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Cadence presets offered in the form (plan v2 D1: presets over a free
-/// integer field). `null` means no cadence.
-const List<int?> relationshipCadencePresets = [null, 7, 14, 30, 90];
+/// How often a reminder can come, as offered wherever reminders are turned
+/// on (plan v2 D1: presets over a free integer field).
+///
+/// There is no "none": reminders that are on always run on an interval —
+/// the runtime substitutes [relationshipDefaultCadenceDays] for a missing
+/// one — so offering "No cadence" showed a choice the app then overrode.
+const List<int> relationshipCadencePresets = [7, 14, 30, 90];
+
+/// The choices to offer when [shown] is the interval on screen: the
+/// presets, plus [shown] in its place when it is not one of them.
+///
+/// The data model keeps a free integer, and a synced person can carry, say,
+/// 45 days. Offering only the presets would show nothing selected while Save
+/// stored 45 — the mismatch between the screen and the schedule these
+/// controls exist to prevent — so the stored value is offered as it is,
+/// labelled "Every 45 days", until the user picks a preset instead.
+List<int> relationshipCadenceChoices(int shown) =>
+    relationshipCadencePresets.contains(shown)
+    ? relationshipCadencePresets
+    : ([...relationshipCadencePresets, shown]..sort());
 
 /// The localized label for a check-in cadence — shared by the form and the
 /// detail page. Values outside the presets (possible via sync, since the
 /// data model keeps a free integer) get an honest "every N days" label
 /// instead of being lumped into the nearest preset.
-String relationshipCadenceLabel(BuildContext context, int? days) =>
+String relationshipCadenceLabel(BuildContext context, int days) =>
     switch (days) {
-      null => context.messages.relationshipCadenceNone,
       7 => context.messages.relationshipCadenceWeekly,
       14 => context.messages.relationshipCadenceFortnightly,
       30 => context.messages.relationshipCadenceMonthly,
@@ -293,6 +310,11 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
   late final TextEditingController _nicknameController;
   late final TextEditingController _knownTermsController;
   late bool _important;
+
+  /// Whether there is a name to save under. Save is held without one, and
+  /// the Name field says so — rather than a live button that answers the
+  /// first tap with an error toast.
+  late bool _hasName;
   late int? _cadenceDays;
   late _StatusKind _statusKind;
   String? _categoryId;
@@ -314,7 +336,9 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
   void initState() {
     super.initState();
     final data = widget.initial?.data;
-    _nameController = TextEditingController(text: data?.title ?? '');
+    _nameController = TextEditingController(text: data?.title ?? '')
+      ..addListener(_onNameChanged);
+    _hasName = _nameController.text.trim().isNotEmpty;
     _nicknameController = TextEditingController(text: data?.nickname ?? '');
     _knownTermsController = TextEditingController(
       text: formatSpeechTerms(data?.knownTerms),
@@ -353,6 +377,15 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     }
     super.dispose();
   }
+
+  /// The interval Save writes. With reminders on it is the one the pills
+  /// show as selected — so a person enrolled without touching the pills is
+  /// stored with the default they were shown, rather than with nothing and a
+  /// runtime substitution behind it. With reminders off the stored value is
+  /// left as it was: it is not evaluated, and clearing it would forget the
+  /// rhythm of someone whose reminders are switched back on later.
+  int? get _savedCadenceDays =>
+      _important ? relationshipShownCadenceDays(_cadenceDays) : _cadenceDays;
 
   /// Non-empty channel rows in their edited order (ADR 0041 §2: manual
   /// entry on every platform).
@@ -394,17 +427,21 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     if (mounted && fresh != null) setState(() => _person = fresh);
   }
 
+  /// Rebuilds only when the name goes from empty to not, or back: that is
+  /// all the pinned bar needs, and the rest of the form has no reason to
+  /// rebuild on every keystroke.
+  void _onNameChanged() {
+    final hasName = _nameController.text.trim().isNotEmpty;
+    if (hasName != _hasName) setState(() => _hasName = hasName);
+  }
+
   Future<void> _handleSave() async {
     if (_isSaving) return;
 
+    // The pinned bar holds Save without a name; this guards the other ways
+    // in (a keyboard shortcut on the handle).
     final name = _nameController.text.trim();
-    if (name.isEmpty) {
-      context.showToast(
-        tone: DesignSystemToastTone.error,
-        title: context.messages.relationshipNameRequired,
-      );
-      return;
-    }
+    if (name.isEmpty) return;
 
     setState(() => _isSaving = true);
     // Every provider is read before the first `await`. Saving pops the sheet,
@@ -429,7 +466,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
           nickname: nickname.isEmpty ? null : nickname,
           knownTerms: knownTerms,
           important: _important,
-          checkInCadenceDays: _cadenceDays,
+          checkInCadenceDays: _savedCadenceDays,
           contactChannels: _editedChannels,
         );
         // Append the replaced status to history when the kind changed — the
@@ -475,7 +512,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
             nickname: nickname.isEmpty ? null : nickname,
             knownTerms: knownTerms,
             important: _important,
-            checkInCadenceDays: _cadenceDays,
+            checkInCadenceDays: _savedCadenceDays,
             contactChannels: _editedChannels,
             status: _mintStatus(_StatusKind.active),
           ),
@@ -514,31 +551,19 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     }
   }
 
-  /// The lazy-create trigger (ADR 0059 Decision 2): marking a person
-  /// important is what mints their agent; an existing agent makes this an
-  /// idempotent re-subscribe plus one €0 re-evaluation (so a cadence edit
-  /// takes effect immediately). Fire-and-forget with contained failure —
-  /// agent wiring must never fail the save the user just watched succeed.
-  /// Takes the service rather than reading it: this outlives the sheet by
-  /// design — the agent is created after the modal has popped — so it must
-  /// not touch `ref`.
+  /// The lazy-create trigger; see [ensureRelationshipAgentInBackground]. The
+  /// service is null when the form was saved with reminders off, since it
+  /// is only resolved when it will be used.
   void _ensureAgentIfImportant(
     RelationshipAgentService? agentService,
     RelationshipEntry relationship,
   ) {
-    if (!relationship.data.important || agentService == null) return;
-    unawaited(() async {
-      try {
-        await agentService.ensureAgentForRelationship(relationship);
-      } catch (e, s) {
-        developer.log(
-          'Failed to ensure relationship agent',
-          name: 'RelationshipForm',
-          error: e,
-          stackTrace: s,
-        );
-      }
-    }());
+    if (agentService == null) return;
+    ensureRelationshipAgentInBackground(
+      agentService,
+      relationship,
+      source: 'RelationshipForm',
+    );
   }
 
   /// Republishes the pinned bar's view of this form. Deferred to the end of
@@ -550,7 +575,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
       widget.handle.publish(
         save: _handleSave,
         dismiss: _dismiss,
-        canSave: !_isSaving,
+        canSave: !_isSaving && _hasName,
         isEditing: _isEditing,
       );
     });
@@ -707,6 +732,17 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
                 autofocus: !_isEditing,
                 textCapitalization: TextCapitalization.words,
               ),
+              // Why Save is held, beside the field that frees it.
+              if (!_hasName) ...[
+                gap(tokens.spacing.step2),
+                Text(
+                  messages.relationshipNameRequired,
+                  key: const ValueKey('person-form-name-required'),
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ),
+              ],
               gap(tokens.spacing.step4),
               LottiTextField(
                 controller: _nicknameController,
@@ -772,7 +808,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
                     children: [
                       Expanded(
                         child: Text(
-                          messages.relationshipImportantLabel,
+                          messages.relationshipRemindersSwitchLabel,
                           style: tokens.typography.styles.subtitle.subtitle2
                               .copyWith(color: tokens.colors.text.highEmphasis),
                         ),
@@ -803,9 +839,11 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
                 gap(tokens.spacing.step4),
                 sectionLabel(messages.relationshipCadencePromptLabel),
                 gap(tokens.spacing.step3),
-                DsChoicePills<int?>(
-                  value: _cadenceDays,
-                  values: relationshipCadencePresets,
+                DsChoicePills<int>(
+                  value: relationshipShownCadenceDays(_cadenceDays),
+                  values: relationshipCadenceChoices(
+                    relationshipShownCadenceDays(_cadenceDays),
+                  ),
                   labelFor: (preset) => relationshipCadenceLabel(
                     context,
                     preset,

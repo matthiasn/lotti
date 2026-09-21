@@ -561,8 +561,12 @@ header control: on desktop the list pane floats a worded "Add person"
 docks the same action (`peopleTabDockAction`) beside Navigate — see
 [navigation](../architecture/navigation.md#the-launchers-row-and-the-page-action-docked-on-it).
 It is the one add control on every state of the list, the empty one
-included: the empty state is a message alone. The header keeps only the
-title, the count and, where an address book exists, the contact-import door.
+included: the empty state adds no second one. It does say what the tab is
+for in one sentence, and where an address book exists it offers contact import
+in words — the header's door is a glyph (`DesignSystemIconAction`, so it has a
+full touch target and a spoken label) whose only name is a tooltip a phone
+never shows. Both doors go through `_openContactImport`. The header keeps only
+the title, the count and that door.
 
 Both doors call `createPersonAndOpen`, which beams to `/people/<id>` with what
 the sheet resolved to, the way the task list opens the task it just created.
@@ -591,10 +595,10 @@ under it — the task page's shape, on purpose:
 | Sliver | Widget | Notes |
 |---|---|---|
 | Hero | [`PersonHeroAppBar`](../../lib/features/relationships/ui/widgets/person_header.dart) | A pinned `SliverPersistentHeader` of its own, not a `SliverAppBar`: the avatar hangs half its diameter below the header, and every layer of an app bar clips that overflow. Slivers paint back to front, so the earlier header paints its overhang over the block scrolling under it. The name appears in the bar only once the wash band has folded (`AnimatedSwitcher`, never an invisible duplicate). |
-| Header block | `PersonHeaderBlock` (same file) | Eyebrow · name · one-liner · pills. The pills come from the list model's rules, so the page and the list never disagree about *due*; the cadence pill names the **effective** cadence (`effectiveCadenceDaysOf`), i.e. the runtime default when none is set. The eyebrow takes `calmEyebrowStyle`, not the mono timestamp style — it is a label, not a clock reading. The one-liner is `text.mediumEmphasis` with the mono voice on its timestamp alone: nothing on it is tappable, and the interactive token on a whole non-interactive line promised a tap that never came while outranking the person's own name. The health band is **not** here — the briefing card owns it, because only the card can date it. |
+| Header block | `PersonHeaderBlock` (same file) | Eyebrow · name · one-liner · pills. The pills come from the list model's rules, so the page and the list never disagree about *due*; the cadence pill names the interval the runtime applies (`relationshipShownCadenceDays`), i.e. the default when none is stored. The eyebrow takes `calmEyebrowStyle`, not the mono timestamp style — it is a label, not a clock reading. The one-liner is `text.mediumEmphasis` with the mono voice on its timestamp alone: nothing on it is tappable, and the interactive token on a whole non-interactive line promised a tap that never came while outranking the person's own name. The health band is **not** here — the briefing card owns it, because only the card can date it. |
+| Post-call offer | `PostInteractionPrompt` | Renders nothing until a marker exists (below). Directly under the header block, beside the paused-reminder callout: coming back from a call it is the most time-sensitive thing on the page, and below the briefing it was off a phone's first screen. Its `bottomGap` belongs to the offer, so no hole appears when there is none. |
+| Next time | `NextTimeCard` in [`person_page_cards.dart`](../../lib/features/relationships/ui/widgets/person_page_cards.dart) | From the newest check-in that *has* *pay attention to* / *avoid* notes (`NextTimeCard.sourceOf`), not simply the newest: the fields sit under the composer's *More*, so a quick check-in leaves them blank, and blank means "did not get to it", not "forget the last ones". When the source is older than the newest check-in the card says which one (`fromEarlier`). Above the briefing: the user's own notes are what the page is opened for in the minute before a call, and under a card with a summary, a footer and a model row they sat below the first screen on a phone. |
 | Briefing | `RelationshipBriefingCard` | Only when enrolled or a briefing exists; the page reads the report too, so the gap after the card is deterministic. |
-| Next time | `NextTimeCard` in [`person_page_cards.dart`](../../lib/features/relationships/ui/widgets/person_page_cards.dart) | From the latest check-in's *pay attention to* / *avoid*; `NextTimeCard.hasContent` is the one visibility rule, shared with the page. |
-| Post-call offer | `PostInteractionPrompt` | Renders nothing until a marker exists (below). |
 | Check-ins | [`CheckInsCardSliver`](../../lib/features/relationships/ui/widgets/check_ins_card.dart) | A `DecoratedSliver` wearing `DesignSystemSectionCard.decoration`, so the unbounded log stays lazy inside a card that matches the boxed ones. The rows are the Tasks and Projects lists' grouped rows (`GroupedCardRowSurface`): edge to edge under the header, the hover fill spanning the row, the last one rounded into the card, and the divider beside a hovered row giving way (`buildGroupedCardRowInteractions`). Each row carries a chevron, the sentiment in a fixed trailing slot, what the check-in holds on its meta line, and at most two lines of what was said. |
 | Reach · Tasks | `ReachCard`, [`LinkedTasksCard`](../../lib/features/relationships/ui/widgets/linked_tasks_card.dart) | Reach only with channels. |
 
@@ -750,7 +754,9 @@ notifications even for a no-op unlink.
 # The deterministic agent tier (plan v2 phase 4)
 
 Marking a person `important` is the consent switch AND the creation trigger:
-the form's save path lazily mints one durable `relationship_agent` per person
+every door that turns reminders on — the form's save path, the person page's
+card and contact import — goes through `ensureRelationshipAgentInBackground`,
+which lazily mints one durable `relationship_agent` per person
 with a **deterministic id** (`relationship_agent:<relationshipId>`), so two
 devices marking the same person converge on one agent instead of duplicates.
 Identity, `agentRelationship` link and the first cadence wake land in one
@@ -1174,7 +1180,7 @@ so the decision is a table rather than a widget tree:
 
 | Face | When | Status line · body · footer |
 |---|---|---|
-| Not enrolled | not `important`, or dormant/archived | plain section card, people glyph · `No agent for this person` (or the status word while paused) · what reminders turn on · **Remind me about {name}** |
+| Not enrolled | not `important`, or dormant/archived | plain section card, people glyph · `No reminders` — the band's and the pill's own words — (or the status word while paused) · what reminders turn on · the *How often?* interval pills (not while paused) · **Remind me about {name}** |
 
 The not-enrolled card carries **no privacy caption**. It used to read
 `Only what you start yourself uses AI` in the footer's leading slot, beside
@@ -1185,7 +1191,7 @@ nothing about the one they were entering. What the agent sends belongs
 somewhere it can be explained, not in a caption that expires on tap.
 | No briefing | enrolled, no current report | `Agent watching · next look {day}` · how many check-ins *Brief now* would read, and that it never sees a channel · *Log check-in* · **Brief now** |
 | Running | `agentIsRunningProvider` | spinner · `Writing the briefing…` · the briefing being replaced, still readable (TL;DR + Read more), or no body before the first — never a duration estimate · *See activity* · no primary |
-| Failed | `consecutiveFailureCount > 0` and the last wake is newer than the report | `Last run failed · {ago}` in error ink · the provider returned an error, your check-ins are unchanged (or that no model is set up) · *See activity* · **Choose a model** when no route resolves, **Try again** otherwise |
+| Failed | `consecutiveFailureCount > 0` and the last wake is newer than the report | `Last run failed · {ago}` in error ink · the provider returned an error, your check-ins are unchanged (or that no model is set up) · the briefing it failed to replace, if there is one, kept readable under that with its age · *See activity* · **Choose a model** when no route resolves, **Try again** otherwise |
 | Current | report, not stale | `{band} · as of {ago}` · TL;DR + Read more · *Log check-in* · **Update now** (secondary) · sources line once *Read more* is open |
 | Out of date | `AgentStateEntity.isReportStale` | `Out of date · new check-in {day}` in warning ink, `{n} days old` pill once a day old · body · *Log check-in* · **Update now** (primary) — no sources line, since the count would include the check-in it missed |
 | Due | the current face while the cadence is lapsed | same status · body · *Log check-in* · **Call {name}** (the first channel the platform can open, resolved like the action bar's), or **Log check-in** as the primary without one |
@@ -1221,8 +1227,26 @@ failed face could never appear and the internals' Stats tab never knew the
 last wake. And the card arms one timer at the next minute/hour/day boundary of the
 briefing's age (`untilNextAgeBucket`, shared with the goal page), so "as of
 just now" does not stay on screen for hours. *Remind me about {name}* on the plain
-card also mints the agent through `ensureAgentForRelationship`, the same
-lazy-create call the edit form makes.
+card also mints the agent through `ensureRelationshipAgentInBackground`, the
+same lazy-create call the edit form and contact import make — and stores the
+interval its pills show as selected, so the one tap never schedules a rhythm
+nobody saw. A stored interval outside the presets (a synced 45 days) is offered
+as its own pill by `relationshipCadenceChoices` rather than leaving nothing
+selected beside a save that would store it.
+
+**Reminders that are on always show, and store, an interval.**
+`relationshipShownCadenceDays` (beside `relationshipDefaultCadenceDays` in the
+runtime) is the one place the "stored, else 30 days" substitution is written:
+the deterministic tier schedules from it and the list model reads it, and the
+three places reminders are turned on — the form, the import review and this
+card — show it as the selected pill and save it. `relationshipCadencePresets`
+has no "none": an enrolled person with a null cadence ran monthly anyway, so
+"No cadence" was a choice the app overrode, shown selected in the editor while
+the list row said *Monthly*. A null `checkInCadenceDays` still reads correctly
+— older and synced records have it — it is just no longer written for someone
+whose reminders are on. With reminders off the form leaves a stored interval
+untouched, and a row with neither reminders nor an interval leaves the cadence
+out of its status line: its band already says *No reminders*.
 
 The chat entry lives in the page's hero. There is no *Automatic updates*
 switch, because the relationship runtime never reads
@@ -1575,9 +1599,10 @@ phone number does not go.
 groups into three `DesignSystemSectionCard`s — **Who** (name, nickname, the
 names that come up with them — the category speech dictionary's semicolon
 format, parsed by the same `parseSpeechTerms` — the category, and while
-editing the status), **Important** (the consent switch,
+editing the status), **Important** (the consent switch — labelled as the
+request it grants, *Remind me to stay in touch*, so it reads true while off —
 one line saying what it enables, and the cadence presets *only* once it is
-on), **How to reach them** (the channel editor under the same privacy line
+on, the applied interval preselected), **How to reach them** (the channel editor under the same privacy line
 the page's Reach card carries). The category is a name beside a 10px colour
 dot rather than a second large avatar competing with the person's own;
 clearing it goes through the picker's own no-category row, so one component
@@ -1609,7 +1634,9 @@ its own Save button would lose the edits still in its fields.
 names the count and the boundary in its subtitle ("2 selected · numbers stay
 on this device"), gives each chosen contact a persona avatar, and reveals the
 cadence presets under a person only once they are marked important — a
-cadence on an unimportant person is never evaluated. Its switch copy says
+cadence on an unimportant person is never evaluated — with the default
+interval already on the draft (`setImportant` seeds it), so what is reviewed
+is what is imported. Its switch copy says
 what importance turns on, never that leaving it off keeps the person out of
 AI entirely: a chat, an explicit briefing and a dictated check-in all reach a
 model for anyone. Each avatar is coloured by the id the person will be
@@ -2006,6 +2033,17 @@ are persisted as the check-in's end time (`dateTo − dateFrom`, no schema
 change), so the log's row shows the duration the offer promised; editing a
 check-in keeps its length when the start time moves.
 
+The offer is not the only door. The page's own *Log check-in* and *Dictate*
+go through `PendingInteractionClaims.claimFor`: when the marker is about the
+person on screen they take it — cleared, and a claim counted — and open the
+composer through the same `showCheckInForInteraction` the offer uses, so the
+call is logged as that call whichever control the user reaches for. The offer
+listens to the claim count and re-reads, which is how it stops asking (the
+store is plain settings, with nothing to listen to). A marker about someone
+else is neither used nor cleared. With no marker the composer starts from the
+latest check-in's interaction type rather than always *In person*. Declining
+is labelled *Dismiss*: it is permanent, which *Not now* did not say.
+
 ```mermaid
 stateDiagram-v2
   [*] --> NoMarker
@@ -2014,8 +2052,9 @@ stateDiagram-v2
   Pending --> NoMarker: expired on read (TTL)
   Pending --> NoMarker: unreadable on read (cleared)
   Pending --> NoMarker: declined
-  Pending --> Capturing: accepted
-  Capturing --> NoMarker: marker cleared before the sheet opens
+  Pending --> Capturing: accepted on the offer
+  Pending --> Capturing: claimed by Log check-in / Dictate (same person)
+  Capturing --> NoMarker: marker cleared as the sheet opens
 ```
 
 Two traps this code exists around, both found by test rather than review:

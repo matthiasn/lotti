@@ -11,6 +11,7 @@ import 'package:lotti/features/design_system/theme/photo_chrome_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/state/contact_import_controller.dart';
 import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
@@ -778,9 +779,13 @@ Widget relationshipCadencePill(
       leading: Icon(LottiIcons.confirm, size: IconSizes.s, color: quiet),
       labelColor: quiet,
       label: messages.relationshipOnTrackCadence(
+        // Due-soon and on-track are enrolled states, so this is the
+        // interval the runtime applies — the stored one or the default.
         relationshipCadenceLabel(
           context,
-          effectiveCadenceDaysOf(item.relationship),
+          relationshipShownCadenceDays(
+            item.relationship.data.checkInCadenceDays,
+          ),
         ),
       ),
     ),

@@ -11,6 +11,7 @@ import 'package:lotti/features/journal/repository/clipboard_images.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
@@ -60,8 +61,14 @@ final Finder firstChannelField = find.byType(TextField).at(3);
 
 /// Taps [finder] once it is scrolled into view: everything below the Who
 /// card can sit past the bottom of the 800×600 test surface.
+/// Scrolls [finder] to the middle of the form, then taps it. Centred rather
+/// than merely visible: `ensureVisible` stops at the scroll view's edge, which
+/// is under the modal's pinned action bar, so a control scrolled there is
+/// visible but covered — and with the app's real, wider fonts that is where
+/// the reminder pills land.
 Future<void> tapVisible(WidgetTester tester, Finder finder) async {
-  await tester.ensureVisible(finder);
+  // A zero-duration jump: it completes within the pump below.
+  Scrollable.ensureVisible(tester.element(finder), alignment: 0.5);
   await tester.pumpAndSettle();
   await tester.tap(finder);
 }
@@ -415,6 +422,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextField).first, 'Anna Example');
+      await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).at(1), 'Sis');
       await tester.ensureVisible(find.byType(Switch));
       await tester.tap(find.byType(Switch));
@@ -459,6 +467,7 @@ void main() {
     await tester.pumpWidget(buildForm());
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'Anna');
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Create'));
     await tester.tap(find.text('Create'));
     await tester.pumpAndSettle();
@@ -485,6 +494,7 @@ void main() {
     await tester.pumpWidget(buildForm());
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'Anna');
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Create'));
     await tester.tap(find.text('Create'));
     await tester.pumpAndSettle();
@@ -505,6 +515,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).first, 'Anna');
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Cancel'));
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
@@ -542,6 +553,7 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, 'Anna Example');
+      await tester.pumpAndSettle();
       await tester.ensureVisible(find.byType(Switch));
       await tester.tap(find.byType(Switch));
       await tester.pumpAndSettle();
@@ -578,6 +590,7 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, 'Anna Example');
+      await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Create'));
       await tester.tap(find.text('Create'));
       await tester.pumpAndSettle();
@@ -606,6 +619,7 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, 'Anna Example');
+      await tester.pumpAndSettle();
       await tester.ensureVisible(find.byType(Switch));
       await tester.tap(find.byType(Switch));
       await tester.pumpAndSettle();
@@ -626,9 +640,12 @@ void main() {
       // A screen reader reaching the control hears what it changes, and the
       // label toggles it.
       final semantics = tester.getSemantics(find.byType(Switch));
-      expect(semantics.label, contains('Reminders on'));
+      // Worded as the request it grants, so it reads true while off:
+      // "Reminders on" beside an off switch announced "on … off".
+      expect(semantics.label, contains('Remind me to stay in touch'));
+      expect(find.text('Reminders on'), findsNothing);
 
-      await tester.tap(find.text('Reminders on'));
+      await tester.tap(find.text('Remind me to stay in touch'));
       await tester.pumpAndSettle();
 
       expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
@@ -666,14 +683,32 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
-      expect(find.text('Nudge me every'), findsNothing);
+      expect(find.text('How often?'), findsNothing);
       expect(find.text('Weekly'), findsNothing);
 
       await tester.tap(find.byType(Switch));
       await tester.pumpAndSettle();
 
-      expect(find.text('Nudge me every'), findsOneWidget);
+      expect(find.text('How often?'), findsOneWidget);
       expect(find.widgetWithText(DsPill, 'Weekly'), findsOneWidget);
+    });
+
+    testWidgets('reminders that are on always show an interval: the default '
+        'is preselected and "none" is not on offer', (tester) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+
+      final pills = tester.widgetList<DsPill>(find.byType(DsPill)).toList();
+      expect(
+        pills.map((pill) => pill.label),
+        ['Weekly', 'Every two weeks', 'Monthly', 'Quarterly'],
+      );
+      expect(
+        pills.where((pill) => pill.selected).map((pill) => pill.label),
+        ['Monthly'],
+      );
     });
 
     testWidgets('the Important explainer names the person once they have a '
@@ -683,7 +718,7 @@ void main() {
 
       expect(
         find.text(
-          'Turns on a briefing, nudges and a chat. Check-in notes go to the '
+          'Turns on reminders, a briefing and a chat. Check-in notes go to the '
           'agent; contact channels never do.',
         ),
         findsOneWidget,
@@ -694,7 +729,7 @@ void main() {
 
       expect(
         find.text(
-          'Turns on a briefing, nudges and a chat for Ada. Check-in notes go '
+          'Turns on reminders, a briefing and a chat for Ada. Check-in notes go '
           'to the agent; contact channels never do.',
         ),
         findsOneWidget,
@@ -761,6 +796,7 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, 'Ada');
+      await tester.pumpAndSettle();
       await tapVisible(
         tester,
         find.byKey(const ValueKey('person-form-add-channel')),
@@ -811,6 +847,7 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, 'Ada');
+      await tester.pumpAndSettle();
       await tapVisible(
         tester,
         find.byKey(const ValueKey('person-form-add-channel')),
@@ -1010,6 +1047,33 @@ void main() {
     });
   });
 
+  testWidgets('Create is held until there is a name, and the Name field says '
+      'why — no live button answering the first tap with an error', (
+    tester,
+  ) async {
+    await tester.pumpWidget(buildForm());
+    await tester.pumpAndSettle();
+
+    DesignSystemButton create() => tester.widget<DesignSystemButton>(
+      find.byKey(const ValueKey('person-form-save')),
+    );
+    final reason = find.byKey(const ValueKey('person-form-name-required'));
+
+    expect(create().onPressed, isNull);
+    expect(tester.widget<Text>(reason).data, 'A name is required');
+
+    await tester.enterText(find.byType(TextField).first, 'Ben');
+    await tester.pumpAndSettle();
+    expect(create().onPressed, isNotNull);
+    expect(reason, findsNothing);
+
+    // Spaces are not a name.
+    await tester.enterText(find.byType(TextField).first, '   ');
+    await tester.pumpAndSettle();
+    expect(create().onPressed, isNull);
+    expect(reason, findsOneWidget);
+  });
+
   testWidgets('cadence defaults to none when nothing is picked', (
     tester,
   ) async {
@@ -1029,6 +1093,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).first, 'Ben');
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Create'));
     await tester.tap(find.text('Create'));
     await tester.pumpAndSettle();
@@ -1047,6 +1112,46 @@ void main() {
     expect(data.nickname, isNull);
   });
 
+  testWidgets('turning reminders on stores the interval the pills showed, '
+      'even when none was tapped', (tester) async {
+    when(
+      () => mockRepository.createRelationship(
+        data: any(named: 'data'),
+        categoryId: any(named: 'categoryId'),
+        id: any(named: 'id'),
+      ),
+    ).thenAnswer(
+      (invocation) async => createdEntry(
+        invocation.namedArguments[#data] as RelationshipData,
+      ),
+    );
+
+    await tester.pumpWidget(buildForm());
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, 'Ben');
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byType(Switch));
+    await tester.tap(find.byType(Switch));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Create'));
+    await tester.tap(find.text('Create'));
+    await tester.pumpAndSettle();
+
+    final data =
+        verify(
+              () => mockRepository.createRelationship(
+                data: captureAny(named: 'data'),
+                categoryId: any(named: 'categoryId'),
+                id: any(named: 'id'),
+              ),
+            ).captured.single
+            as RelationshipData;
+    expect(data.important, isTrue);
+    // Not null with a runtime substitution behind it: what was on screen.
+    expect(data.checkInCadenceDays, relationshipDefaultCadenceDays);
+  });
+
   testWidgets('saves the names that come up as a list', (tester) async {
     when(
       () => mockRepository.createRelationship(
@@ -1062,6 +1167,7 @@ void main() {
     await tester.pumpWidget(buildForm());
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'Frida Kjellsen');
+    await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('person-form-known-terms')),
       'Wanja;  Waddle One ; ',
@@ -1227,6 +1333,51 @@ void main() {
       expect(updated.data.knownTerms, ['Wanja', 'Pingo Floe']);
     });
 
+    testWidgets('a synced interval outside the presets is offered as it is '
+        'and shown selected, never "nothing selected" beside a save that '
+        'would store it', (tester) async {
+      await tester.pumpWidget(buildForm(initial: existing(cadenceDays: 45)));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widgetList<DsPill>(find.byType(DsPill))
+            .where((pill) => pill.selected)
+            .map((pill) => pill.label),
+        contains('Every 45 days'),
+      );
+    });
+
+    testWidgets('someone enrolled without a stored interval opens on the '
+        'default the runtime applies, and a save stores it', (tester) async {
+      await tester.pumpWidget(buildForm(initial: existing(cadenceDays: null)));
+      await tester.pumpAndSettle();
+
+      // The list row already says "Monthly" for this person; the editor
+      // used to show "No cadence" selected beside it.
+      expect(
+        tester
+            .widgetList<DsPill>(find.byType(DsPill))
+            .where((pill) => pill.selected)
+            .map((pill) => pill.label),
+        contains('Monthly'),
+      );
+      expect(find.text('No cadence'), findsNothing);
+
+      await tester.enterText(find.byType(TextField).first, 'Anna Example');
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Save'));
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      final updated =
+          verify(
+                () => mockRepository.updateRelationship(captureAny()),
+              ).captured.single
+              as RelationshipEntry;
+      expect(updated.data.checkInCadenceDays, relationshipDefaultCadenceDays);
+    });
+
     testWidgets('prefills the person and saves edited fields', (tester) async {
       await tester.pumpWidget(buildForm(initial: existing()));
       await tester.pumpAndSettle();
@@ -1236,8 +1387,8 @@ void main() {
       expect(find.widgetWithText(TextField, 'Sis'), findsOneWidget);
 
       await tester.enterText(find.byType(TextField).first, 'Anna Example');
-      await tester.ensureVisible(find.text('Monthly'));
-      await tester.tap(find.text('Monthly'));
+      await tester.pumpAndSettle();
+      await tapVisible(tester, find.text('Monthly'));
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Save'));
       await tester.tap(find.text('Save'));
@@ -1289,6 +1440,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextField).first, '   ');
+      await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Save'));
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
@@ -1374,6 +1526,7 @@ void main() {
       await tester.pumpWidget(buildForm(initial: existing()));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, 'Anna Example');
+      await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Save'));
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
@@ -1427,6 +1580,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextField).first, 'Anna');
+      await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Create'));
       await tester.tap(find.text('Create'));
       await tester.pumpAndSettle();
@@ -1451,6 +1605,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextField).first, 'Anna');
+      await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Create'));
       await tester.tap(find.text('Create'));
       await tester.pumpAndSettle();

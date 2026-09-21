@@ -3351,9 +3351,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Ze zprávy, kterou jsi poslal/a z této stránky. Vše jde upravit.';
 
   @override
-  String get checkInSpeakButton => 'Namluvit kontakt';
-
-  @override
   String checkInSpokenMinutes(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -11925,9 +11922,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get relationshipAgentNoAgent => 'Pro tuto osobu není žádný agent';
-
-  @override
   String relationshipAgentNoBriefingBody(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -12043,23 +12037,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipCadenceFortnightly => 'Každé dva týdny';
 
   @override
-  String get relationshipCadenceLabel => 'Frekvence kontaktu';
-
-  @override
   String get relationshipCadenceMonthly => 'Každý měsíc';
-
-  @override
-  String get relationshipCadenceNone => 'Bez frekvence';
-
-  @override
-  String get relationshipCadenceNudgeNote =>
-      'Nastavení rytmu zapne připomínky záznamů.';
 
   @override
   String get relationshipCadenceOnTrack => 'v rytmu';
 
   @override
-  String get relationshipCadencePromptLabel => 'Připomínej mi každý';
+  String get relationshipCadencePromptLabel => 'Jak často?';
 
   @override
   String get relationshipCadenceQuarterly => 'Každé čtvrtletí';
@@ -12094,7 +12078,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipChatUnavailable =>
-      'Zatím žádný agent — nejprve označ tuto osobu jako důležitou.';
+      'Zatím žádný agent — nejprve pro tuto osobu zapni připomínky.';
 
   @override
   String get relationshipCheckInAddComment => 'Přidat komentář';
@@ -12312,9 +12296,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get relationshipImportantDescription => 'Připomínej mi, ať se ozvu';
-
-  @override
   String get relationshipImportantLabel => 'S připomínkami';
 
   @override
@@ -12389,6 +12370,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipImportSearchHint => 'Hledat kontakty';
 
   @override
+  String get relationshipImportSelectHint =>
+      'Zaškrtni lidi, které chceš přidat. V dalším kroku vybereš, u koho chceš připomínky.';
+
+  @override
   String get relationshipImportSettingsBody =>
       'Přístup ke kontaktům je vypnutý. Zapni ho v nastavení systému, abys mohl lidi importovat.';
 
@@ -12441,6 +12426,11 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String relationshipNextDueOn(String day) {
     return 'Příště $day';
+  }
+
+  @override
+  String relationshipNextTimeFromEarlier(String day) {
+    return 'Z tvého check-inu $day';
   }
 
   @override
@@ -12519,7 +12509,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipPostCallConfirm => 'Zapsat check-in';
 
   @override
-  String get relationshipPostCallDismiss => 'Teď ne';
+  String get relationshipPostCallDismiss => 'Zavřít';
 
   @override
   String relationshipPostCallMeta(String time, int minutes) {
@@ -12594,6 +12584,14 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipReminderSnoozeLonger => 'Odložit na déle';
 
   @override
+  String get relationshipRemindersSwitchLabel =>
+      'Připomínej mi, ať zůstaneme v kontaktu';
+
+  @override
+  String get relationshipsEmptyHint =>
+      'Po rozhovoru si zapiš pár slov. Lotti ti ukáže, s kým už dlouho nejsi v kontaktu, a když chceš, připomene ti to.';
+
+  @override
   String get relationshipsEmptyState =>
       'Přidej lidi, se kterými chceš zůstat v kontaktu.';
 
@@ -12661,12 +12659,20 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get relationshipStatusLineAddedNoCadence => 'Právě přidáno';
+
+  @override
   String relationshipStatusLineContacted(
     String type,
     String time,
     String cadence,
   ) {
     return '$type · $time · $cadence';
+  }
+
+  @override
+  String relationshipStatusLineContactedNoCadence(String type, String time) {
+    return '$type · $time';
   }
 
   @override

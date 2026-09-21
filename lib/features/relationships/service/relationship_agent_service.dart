@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:developer' as developer;
+
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_trigger_tokens.dart';
@@ -10,6 +13,37 @@ import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
+
+/// The lazy-create trigger every door that turns reminders on shares — the
+/// person editor, the person page's card and contact import (ADR 0059
+/// Decision 2): marking a person important is what mints their agent, and an
+/// existing agent makes this an idempotent re-subscribe plus one €0
+/// re-evaluation, so a cadence edit takes effect immediately.
+///
+/// Fire-and-forget with contained failure: agent wiring must never fail the
+/// save the user just watched succeed. Takes the [service] rather than a
+/// `ref`, because it outlives its caller by design — the agent is created
+/// after the sheet has popped or the import page has closed. A person who is
+/// not important is left alone. [source] names the caller in the log.
+void ensureRelationshipAgentInBackground(
+  RelationshipAgentService service,
+  RelationshipEntry relationship, {
+  required String source,
+}) {
+  if (!relationship.data.important) return;
+  unawaited(() async {
+    try {
+      await service.ensureAgentForRelationship(relationship);
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to ensure relationship agent',
+        name: source,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }());
+}
 
 /// Creates and wires relationship agents (ADR 0059 Decision 2: one durable
 /// identity per tracked person, created LAZILY on the first `important`

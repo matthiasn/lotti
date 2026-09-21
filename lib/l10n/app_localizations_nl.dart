@@ -3322,9 +3322,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Van het bericht dat je vanaf deze pagina stuurde. Alles is aan te passen.';
 
   @override
-  String get checkInSpeakButton => 'Check-in inspreken';
-
-  @override
   String checkInSpokenMinutes(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -11781,9 +11778,6 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get relationshipAgentNoAgent => 'Geen agent voor deze persoon';
-
-  @override
   String relationshipAgentNoBriefingBody(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -11893,23 +11887,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipCadenceFortnightly => 'Om de twee weken';
 
   @override
-  String get relationshipCadenceLabel => 'Contactritme';
-
-  @override
   String get relationshipCadenceMonthly => 'Maandelijks';
-
-  @override
-  String get relationshipCadenceNone => 'Geen ritme';
-
-  @override
-  String get relationshipCadenceNudgeNote =>
-      'Een cadans zet check-in-herinneringen aan.';
 
   @override
   String get relationshipCadenceOnTrack => 'op schema';
 
   @override
-  String get relationshipCadencePromptLabel => 'Herinner me elke';
+  String get relationshipCadencePromptLabel => 'Hoe vaak?';
 
   @override
   String get relationshipCadenceQuarterly => 'Elk kwartaal';
@@ -11944,7 +11928,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get relationshipChatUnavailable =>
-      'Nog geen agent — markeer deze persoon eerst als belangrijk.';
+      'Nog geen agent — zet eerst herinneringen aan voor deze persoon.';
 
   @override
   String get relationshipCheckInAddComment => 'Opmerking toevoegen';
@@ -12157,10 +12141,6 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get relationshipImportantDescription =>
-      'Herinner me eraan contact te houden';
-
-  @override
   String get relationshipImportantLabel => 'Met herinneringen';
 
   @override
@@ -12231,6 +12211,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipImportSearchHint => 'Contacten zoeken';
 
   @override
+  String get relationshipImportSelectHint =>
+      'Vink de mensen aan die je wilt toevoegen. In de volgende stap kies je voor wie je herinneringen wilt.';
+
+  @override
   String get relationshipImportSettingsBody =>
       'Toegang tot contacten staat uit. Zet het aan in de systeeminstellingen om personen te importeren.';
 
@@ -12283,6 +12267,11 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String relationshipNextDueOn(String day) {
     return 'Volgende keer $day';
+  }
+
+  @override
+  String relationshipNextTimeFromEarlier(String day) {
+    return 'Uit je check-in van $day';
   }
 
   @override
@@ -12362,7 +12351,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipPostCallConfirm => 'Check-in vastleggen';
 
   @override
-  String get relationshipPostCallDismiss => 'Niet nu';
+  String get relationshipPostCallDismiss => 'Negeren';
 
   @override
   String relationshipPostCallMeta(String time, int minutes) {
@@ -12437,6 +12426,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipReminderSnoozeLonger => 'Langer snoozen';
 
   @override
+  String get relationshipRemindersSwitchLabel =>
+      'Herinner me eraan contact te houden';
+
+  @override
+  String get relationshipsEmptyHint =>
+      'Noteer een regel nadat jullie gesproken hebben. Lotti laat zien wie je al een tijd niet hebt gesproken en herinnert je eraan als je dat wilt.';
+
+  @override
   String get relationshipsEmptyState =>
       'Voeg de mensen toe met wie je dichtbij wilt blijven.';
 
@@ -12503,12 +12500,20 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get relationshipStatusLineAddedNoCadence => 'Net toegevoegd';
+
+  @override
   String relationshipStatusLineContacted(
     String type,
     String time,
     String cadence,
   ) {
     return '$type · $time · $cadence';
+  }
+
+  @override
+  String relationshipStatusLineContactedNoCadence(String type, String time) {
+    return '$type · $time';
   }
 
   @override

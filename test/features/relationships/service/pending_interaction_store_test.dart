@@ -291,6 +291,84 @@ void main() {
       );
     });
 
+    group('claiming the marker through another door', () {
+      ({ProviderContainer container, PendingInteractionStore store}) build() {
+        final store = PendingInteractionStore(settingsDb: settingsDb);
+        final container = ProviderContainer(
+          overrides: [pendingInteractionStoreProvider.overrideWithValue(store)],
+        );
+        addTearDown(container.dispose);
+        return (container: container, store: store);
+      }
+
+      test('hands over the marker for the person asked about, clears it, '
+          'and counts the claim so the offer can stop asking', () async {
+        final (:container, :store) = build();
+        await store.remember(
+          relationshipId: 'anna',
+          interactionType: CheckInInteractionType.call,
+        );
+
+        final claimed = await container
+            .read(pendingInteractionClaimsProvider.notifier)
+            .claimFor('anna');
+
+        expect(claimed?.relationshipId, 'anna');
+        expect(claimed?.interactionType, CheckInInteractionType.call);
+        expect(await store.read(), isNull);
+        expect(container.read(pendingInteractionClaimsProvider), 1);
+      });
+
+      test('leaves a marker about someone else alone — a check-in with Bo '
+          'must not swallow the call just placed to Anna', () async {
+        final (:container, :store) = build();
+        await store.remember(
+          relationshipId: 'anna',
+          interactionType: CheckInInteractionType.call,
+        );
+
+        final claimed = await container
+            .read(pendingInteractionClaimsProvider.notifier)
+            .claimFor('bo');
+
+        expect(claimed, isNull);
+        expect((await store.read())?.relationshipId, 'anna');
+        expect(container.read(pendingInteractionClaimsProvider), 0);
+      });
+
+      test('claims are exclusive: two landing together get one marker '
+          'between them, so one call opens one composer', () async {
+        final (:container, :store) = build();
+        await store.remember(
+          relationshipId: 'anna',
+          interactionType: CheckInInteractionType.call,
+        );
+        final claims = container.read(
+          pendingInteractionClaimsProvider.notifier,
+        );
+
+        final results = await Future.wait([
+          claims.claimFor('anna'),
+          claims.claimFor('anna'),
+        ]);
+
+        expect(results.nonNulls, hasLength(1));
+        expect(container.read(pendingInteractionClaimsProvider), 1);
+      });
+
+      test('claims nothing when there is no marker', () async {
+        final (:container, store: _) = build();
+
+        expect(
+          await container
+              .read(pendingInteractionClaimsProvider.notifier)
+              .claimFor('anna'),
+          isNull,
+        );
+        expect(container.read(pendingInteractionClaimsProvider), 0);
+      });
+    });
+
     test('is provided ready to use', () async {
       final container = ProviderContainer();
       addTearDown(container.dispose);

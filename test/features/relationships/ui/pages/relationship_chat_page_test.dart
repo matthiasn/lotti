@@ -121,7 +121,7 @@ void main() {
 
     expect(find.byType(AgentChatView), findsNothing);
     expect(
-      find.text('No agent yet — mark this person as important first.'),
+      find.text('No agent yet — turn on reminders for this person first.'),
       findsOneWidget,
     );
   });
@@ -143,7 +143,7 @@ void main() {
 
     expect(find.byType(AgentChatView), findsNothing);
     expect(
-      find.text('No agent yet — mark this person as important first.'),
+      find.text('No agent yet — turn on reminders for this person first.'),
       findsOneWidget,
     );
   });

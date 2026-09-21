@@ -1457,7 +1457,6 @@
   "checkInSentimentStrained": "Tensionat",
   "checkInSourceCall": "Din apelul pe care l-ați făcut de pe această pagină. Totul se poate edita.",
   "checkInSourceMessage": "Din mesajul pe care l-ați trimis de pe această pagină. Totul se poate edita.",
-  "checkInSpeakButton": "Dictați contactul",
   "checkInSpokenMinutes": "{count, plural, =1{1 minut} few{{count} minute} other{{count} de minute}}",
   "@checkInSpokenMinutes": {
     "description": "Minutes of a recording length, read by assistive technology.",
@@ -4529,7 +4528,6 @@
   "relationshipAgentFailedNoModel": "Nu este configurat niciun model pentru briefinguri. Alegeți unul în Setări AI › Agenți. Detaliile sunt în fila Activitate.",
   "relationshipAgentFailedPlain": "Ultima rulare a eșuat",
   "relationshipAgentLastRunFailed": "Ultima rulare a eșuat · {time}",
-  "relationshipAgentNoAgent": "Niciun agent pentru această persoană",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Niciun briefing încă. „Creați briefingul acum“ scrie unul de îndată ce înregistrați un check-in; nu vede niciodată telefonul sau e-mailul.} =1{Niciun briefing încă. „Creați briefingul acum“ scrie unul din check-in-ul dumneavoastră; nu vede niciodată telefonul sau e-mailul.} few{Niciun briefing încă. „Creați briefingul acum“ scrie unul din cele {count} check-in-uri; nu vede niciodată telefonul sau e-mailul.} other{Niciun briefing încă. „Creați briefingul acum“ scrie unul din cele {count} de check-in-uri; nu vede niciodată telefonul sau e-mailul.}}",
   "relationshipAgentNotEnrolledBody": "Activați memento-urile pentru {name} pentru a primi un chat, un îndemn când a trecut ceva timp și un briefing.",
   "relationshipAgentOutOfDateNewCheckIn": "Depășit · check-in nou {day}",
@@ -4551,18 +4549,12 @@
   "relationshipBriefingTitle": "Rezumat",
   "relationshipCadenceEveryNDays": "{days, plural, =1{În fiecare zi} few{La fiecare {days} zile} other{La fiecare {days} de zile}}",
   "relationshipCadenceFortnightly": "La două săptămâni",
-  "relationshipCadenceLabel": "Ritmul contactului",
   "relationshipCadenceMonthly": "Lunar",
-  "relationshipCadenceNone": "Fără ritm",
-  "relationshipCadenceNudgeNote": "Alegerea unui ritm activează memento-urile de înregistrare.",
-  "@relationshipCadenceNudgeNote": {
-    "description": "Relationships redesign label."
-  },
   "relationshipCadenceOnTrack": "la zi",
   "@relationshipCadenceOnTrack": {
     "description": "Relationships redesign label."
   },
-  "relationshipCadencePromptLabel": "Amintiți-mi la fiecare",
+  "relationshipCadencePromptLabel": "Cât de des?",
   "relationshipCadenceQuarterly": "Trimestrial",
   "relationshipCadenceWeekly": "Săptămânal",
   "relationshipChatAgentName": "Agent de briefing",
@@ -4571,7 +4563,7 @@
   "relationshipChatEmpty": "Începeți o conversație cu agentul de briefing despre {name}.",
   "relationshipChatPlaceholder": "Vorbiți cu agentul despre {name}…",
   "relationshipChatTooltip": "Discutați despre această persoană",
-  "relationshipChatUnavailable": "Niciun agent încă — marcați mai întâi această persoană ca importantă.",
+  "relationshipChatUnavailable": "Niciun agent încă — activați mai întâi memento-urile pentru această persoană.",
   "relationshipCheckInAddComment": "Adăugați un comentariu",
   "relationshipCheckInAddPhoto": "Fotografie",
   "relationshipCheckInCommentCount": "{count, plural, =1{1 comentariu} few{{count} comentarii} other{{count} de comentarii}}",
@@ -4675,7 +4667,6 @@
   "relationshipHealthThriving": "Înfloritoare",
   "relationshipImportAction": "Importați din contacte",
   "relationshipImportAdded": "{count, plural, =1{1 persoană adăugată} few{{count} persoane adăugate} other{{count} de persoane adăugate}}",
-  "relationshipImportantDescription": "Amintiți-mi să păstrez legătura",
   "relationshipImportantLabel": "Cu memento-uri",
   "relationshipImportConfirmButton": "{count, plural, =1{Adăugați 1 persoană} few{Adăugați {count} persoane} other{Adăugați {count} de persoane}}",
   "relationshipImportEmpty": "Niciun contact pe acest dispozitiv",
@@ -4690,6 +4681,7 @@
   "relationshipImportReviewSubtitle": "{count, plural, =1{1 persoană selectată · datele de contact rămân pe acest dispozitiv} few{{count} persoane selectate · datele de contact rămân pe acest dispozitiv} other{{count} de persoane selectate · datele de contact rămân pe acest dispozitiv}}",
   "relationshipImportReviewTitle": "Înainte de a le adăuga",
   "relationshipImportSearchHint": "Căutați contacte",
+  "relationshipImportSelectHint": "Bifați persoanele pe care doriți să le adăugați. La pasul următor alegeți pentru cine doriți memento-uri.",
   "relationshipImportSettingsBody": "Accesul la contacte este dezactivat. Activați-l din setările sistemului pentru a importa persoane.",
   "relationshipImportTitle": "Adăugați persoane",
   "relationshipImportUnsupported": "Importul de contacte este disponibil pe telefoane și tablete. Adăugați aici datele de contact manual.",
@@ -4723,6 +4715,7 @@
       }
     }
   },
+  "relationshipNextTimeFromEarlier": "Din check-in-ul dvs. din {day}",
   "relationshipNextTimeTitle": "Data viitoare",
   "relationshipNicknameLabel": "Poreclă",
   "relationshipNoCheckIns": "Nicio înregistrare încă — adăugați una după următoarea conversație.",
@@ -4753,7 +4746,7 @@
   "relationshipPhotoSaveFailed": "Fotografia nu a putut fi salvată",
   "relationshipPhotoSheetTitle": "Fotografie – {name}",
   "relationshipPostCallConfirm": "Notați check-in",
-  "relationshipPostCallDismiss": "Nu acum",
+  "relationshipPostCallDismiss": "Ignorați",
   "relationshipPostCallMeta": "început la {time} · {minutes, plural, =0{sub un minut} =1{circa 1 min} other{circa {minutes} min}}",
   "@relationshipPostCallMeta": {
     "placeholders": {
@@ -4796,6 +4789,8 @@
   "relationshipReminderPausedBody": "Revine atunci, dacă nu înregistrați un contact înainte.",
   "relationshipReminderPausedTitle": "Memento întrerupt până la {time}",
   "relationshipReminderSnoozeLonger": "Amânați mai mult",
+  "relationshipRemindersSwitchLabel": "Amintiți-mi să păstrez legătura",
+  "relationshipsEmptyHint": "Notați un rând după ce ați vorbit. Lotti vă arată cu cine nu ați mai vorbit de ceva vreme și, dacă doriți, vă amintește.",
   "relationshipsEmptyState": "Adăugați persoanele de care doriți să rămâneți aproape.",
   "relationshipsGroupDue": "Scadente",
   "relationshipsPageTitle": "Persoane",
@@ -4853,6 +4848,7 @@
       }
     }
   },
+  "relationshipStatusLineAddedNoCadence": "Adăugat acum",
   "relationshipStatusLineContacted": "{type} · {time} · {cadence}",
   "@relationshipStatusLineContacted": {
     "placeholders": {
@@ -4867,6 +4863,7 @@
       }
     }
   },
+  "relationshipStatusLineContactedNoCadence": "{type} · {time}",
   "relationshipTimestampToday": "Azi",
   "relationshipTimestampYesterday": "Ieri",
   "relationshipTrackingSinceLabel": "Urmărire din {date}",

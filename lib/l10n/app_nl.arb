@@ -1634,7 +1634,6 @@
   "checkInSentimentStrained": "Gespannen",
   "checkInSourceCall": "Van het gesprek dat je vanaf deze pagina begon. Alles is aan te passen.",
   "checkInSourceMessage": "Van het bericht dat je vanaf deze pagina stuurde. Alles is aan te passen.",
-  "checkInSpeakButton": "Check-in inspreken",
   "checkInSpokenMinutes": "{count, plural, =1{1 minuut} other{{count} minuten}}",
   "@checkInSpokenMinutes": {
     "description": "Minutes of a recording length, read by assistive technology.",
@@ -5024,7 +5023,6 @@
   "relationshipAgentFailedNoModel": "Er is geen model ingesteld voor briefings. Kies er een onder AI-instellingen › Agents. Details staan op het tabblad Activiteit.",
   "relationshipAgentFailedPlain": "Laatste run mislukt",
   "relationshipAgentLastRunFailed": "Laatste run mislukt · {time}",
-  "relationshipAgentNoAgent": "Geen agent voor deze persoon",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Nog geen briefing. „Nu briefen“ schrijft er een zodra je een check-in hebt gelogd; het ziet nooit het telefoonnummer of het e-mailadres.} =1{Nog geen briefing. „Nu briefen“ schrijft er een op basis van je check-in; het ziet nooit het telefoonnummer of het e-mailadres.} other{Nog geen briefing. „Nu briefen“ schrijft er een op basis van je {count} check-ins; het ziet nooit het telefoonnummer of het e-mailadres.}}",
   "relationshipAgentNotEnrolledBody": "Zet herinneringen aan voor {name} voor een chat, een seintje als het even geleden is, en een briefing.",
   "relationshipAgentOutOfDateNewCheckIn": "Verouderd · nieuwe check-in {day}",
@@ -5046,18 +5044,12 @@
   "relationshipBriefingTitle": "Briefing",
   "relationshipCadenceEveryNDays": "{days, plural, =1{Elke dag} other{Elke {days} dagen}}",
   "relationshipCadenceFortnightly": "Om de twee weken",
-  "relationshipCadenceLabel": "Contactritme",
   "relationshipCadenceMonthly": "Maandelijks",
-  "relationshipCadenceNone": "Geen ritme",
-  "relationshipCadenceNudgeNote": "Een cadans zet check-in-herinneringen aan.",
-  "@relationshipCadenceNudgeNote": {
-    "description": "Relationships redesign label."
-  },
   "relationshipCadenceOnTrack": "op schema",
   "@relationshipCadenceOnTrack": {
     "description": "Relationships redesign label."
   },
-  "relationshipCadencePromptLabel": "Herinner me elke",
+  "relationshipCadencePromptLabel": "Hoe vaak?",
   "relationshipCadenceQuarterly": "Elk kwartaal",
   "relationshipCadenceWeekly": "Wekelijks",
   "relationshipChatAgentName": "Briefingagent",
@@ -5066,7 +5058,7 @@
   "relationshipChatEmpty": "Begin een gesprek met de briefingagent over {name}.",
   "relationshipChatPlaceholder": "Praat met de agent over {name}…",
   "relationshipChatTooltip": "Chat over deze persoon",
-  "relationshipChatUnavailable": "Nog geen agent — markeer deze persoon eerst als belangrijk.",
+  "relationshipChatUnavailable": "Nog geen agent — zet eerst herinneringen aan voor deze persoon.",
   "relationshipCheckInAddComment": "Opmerking toevoegen",
   "relationshipCheckInAddPhoto": "Foto",
   "relationshipCheckInCommentCount": "{count, plural, =1{1 opmerking} other{{count} opmerkingen}}",
@@ -5170,7 +5162,6 @@
   "relationshipHealthThriving": "Bloeiend",
   "relationshipImportAction": "Importeren uit contacten",
   "relationshipImportAdded": "{count, plural, =1{1 persoon toegevoegd} other{{count} personen toegevoegd}}",
-  "relationshipImportantDescription": "Herinner me eraan contact te houden",
   "relationshipImportantLabel": "Met herinneringen",
   "relationshipImportConfirmButton": "{count, plural, =1{1 persoon toevoegen} other{{count} personen toevoegen}}",
   "relationshipImportEmpty": "Geen contacten op dit apparaat",
@@ -5185,6 +5176,7 @@
   "relationshipImportReviewSubtitle": "{count, plural, =1{1 persoon geselecteerd · contactgegevens blijven op dit apparaat} other{{count} personen geselecteerd · contactgegevens blijven op dit apparaat}}",
   "relationshipImportReviewTitle": "Voordat je ze toevoegt",
   "relationshipImportSearchHint": "Contacten zoeken",
+  "relationshipImportSelectHint": "Vink de mensen aan die je wilt toevoegen. In de volgende stap kies je voor wie je herinneringen wilt.",
   "relationshipImportSettingsBody": "Toegang tot contacten staat uit. Zet het aan in de systeeminstellingen om personen te importeren.",
   "relationshipImportTitle": "Personen toevoegen",
   "relationshipImportUnsupported": "Contacten importeren kan op telefoons en tablets. Voer de contactgegevens hier met de hand in.",
@@ -5218,6 +5210,7 @@
       }
     }
   },
+  "relationshipNextTimeFromEarlier": "Uit je check-in van {day}",
   "relationshipNextTimeTitle": "Volgende keer",
   "relationshipNicknameLabel": "Bijnaam",
   "relationshipNoCheckIns": "Nog geen check-ins — leg er een vast na jullie volgende gesprek.",
@@ -5248,7 +5241,7 @@
   "relationshipPhotoSaveFailed": "Kon de foto niet opslaan",
   "relationshipPhotoSheetTitle": "Foto van {name}",
   "relationshipPostCallConfirm": "Check-in vastleggen",
-  "relationshipPostCallDismiss": "Niet nu",
+  "relationshipPostCallDismiss": "Negeren",
   "relationshipPostCallMeta": "begonnen om {time} · {minutes, plural, =0{minder dan een minuut} =1{ongeveer 1 min} other{ongeveer {minutes} min}}",
   "@relationshipPostCallMeta": {
     "placeholders": {
@@ -5291,6 +5284,8 @@
   "relationshipReminderPausedBody": "Dan komt hij terug, tenzij je eerst een check-in vastlegt.",
   "relationshipReminderPausedTitle": "Herinnering gepauzeerd tot {time}",
   "relationshipReminderSnoozeLonger": "Langer snoozen",
+  "relationshipRemindersSwitchLabel": "Herinner me eraan contact te houden",
+  "relationshipsEmptyHint": "Noteer een regel nadat jullie gesproken hebben. Lotti laat zien wie je al een tijd niet hebt gesproken en herinnert je eraan als je dat wilt.",
   "relationshipsEmptyState": "Voeg de mensen toe met wie je dichtbij wilt blijven.",
   "relationshipsGroupDue": "Aan de beurt",
   "relationshipsPageTitle": "Mensen",
@@ -5348,6 +5343,7 @@
       }
     }
   },
+  "relationshipStatusLineAddedNoCadence": "Net toegevoegd",
   "relationshipStatusLineContacted": "{type} · {time} · {cadence}",
   "@relationshipStatusLineContacted": {
     "placeholders": {
@@ -5362,6 +5358,7 @@
       }
     }
   },
+  "relationshipStatusLineContactedNoCadence": "{type} · {time}",
   "relationshipTimestampToday": "Vandaag",
   "relationshipTimestampYesterday": "Gisteren",
   "relationshipTrackingSinceLabel": "Gevolgd sinds {date}",

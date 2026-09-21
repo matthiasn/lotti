@@ -4,8 +4,10 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/state/contact_import_controller.dart';
+import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -77,9 +79,12 @@ void main() {
     ),
   );
 
+  late MockRelationshipAgentService agentService;
+
   setUp(() {
     service = _FakeContactsService();
     repository = MockRelationshipRepository();
+    agentService = MockRelationshipAgentService();
   });
 
   ({ProviderContainer container, ContactImportController controller}) build({
@@ -90,6 +95,7 @@ void main() {
       overrides: [
         contactsServiceProvider.overrideWithValue(service),
         relationshipRepositoryProvider.overrideWithValue(repository),
+        relationshipAgentServiceProvider.overrideWithValue(agentService),
         contactRefKeyProvider.overrideWith((ref) async => refKey),
         if (mintPersonId != null)
           contactImportControllerProvider.overrideWith(
@@ -378,6 +384,41 @@ void main() {
       );
     });
 
+    test('marking someone important gives their draft the default '
+        'interval, so the review shows — and the import carries over — the '
+        'rhythm their reminders will run on', () async {
+      final (:container, :controller) = build();
+      controller
+        ..toggleSelection(contact('a', 'Anna'))
+        ..setImportant(contactId: 'a', important: true);
+
+      expect(
+        container
+            .read(contactImportControllerProvider)
+            .drafts['a']!
+            .cadenceDays,
+        relationshipDefaultCadenceDays,
+      );
+    });
+
+    test('marking someone important again keeps the interval already '
+        'picked', () async {
+      final (:container, :controller) = build();
+      controller
+        ..toggleSelection(contact('a', 'Anna'))
+        ..setImportant(contactId: 'a', important: true)
+        ..setCadence(contactId: 'a', cadenceDays: 7)
+        ..setImportant(contactId: 'a', important: true);
+
+      expect(
+        container
+            .read(contactImportControllerProvider)
+            .drafts['a']!
+            .cadenceDays,
+        7,
+      );
+    });
+
     test('sets a cadence on an important contact', () async {
       final (:container, :controller) = build();
       controller
@@ -491,6 +532,42 @@ void main() {
           id: any(named: 'id'),
         ),
       ).thenAnswer((_) async => created('new-id'));
+    });
+
+    test('a person imported with reminders on gets their agent — without it '
+        'nothing is subscribed to their cadence and no reminder ever comes; '
+        'one imported without reminders does not', () async {
+      when(
+        () => repository.createRelationship(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
+        ),
+      ).thenAnswer((invocation) async {
+        final data = invocation.namedArguments[#data] as RelationshipData;
+        final id = invocation.namedArguments[#id] as String;
+        return created(id).copyWith(data: data);
+      });
+      when(
+        () => agentService.ensureAgentForRelationship(any()),
+      ).thenAnswer((_) async => throw StateError('not under test'));
+
+      final controller =
+          build(mintPersonId: (contact) => 'person-${contact.id}').controller
+            ..toggleSelection(contact('a', 'Anna'))
+            ..toggleSelection(contact('b', 'Bo'))
+            ..setImportant(contactId: 'a', important: true);
+
+      final ids = await controller.importSelected();
+
+      // Both land, and a failing agent creation never fails the import.
+      expect(ids, ['person-a', 'person-b']);
+      final ensured = verify(
+        () => agentService.ensureAgentForRelationship(captureAny()),
+      ).captured.cast<RelationshipEntry>();
+      expect(ensured.map((person) => person.meta.id), ['person-a']);
+      expect(ensured.single.data.important, isTrue);
     });
 
     test('creates one person per selected contact', () async {

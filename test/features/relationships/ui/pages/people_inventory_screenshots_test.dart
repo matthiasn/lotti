@@ -55,6 +55,7 @@ import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart'
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/clipboard_images.dart';
@@ -140,6 +141,13 @@ final List<double> _avatarSizes = [
   dsTokensDark.spacing.step9,
   dsTokensDark.spacing.step11,
 ];
+
+/// The labels of the choice pills currently drawn as selected.
+List<String?> _selectedPillLabels(WidgetTester tester) => tester
+    .widgetList<DsPill>(find.byType(DsPill))
+    .where((pill) => pill.selected)
+    .map((pill) => pill.label)
+    .toList();
 
 /// Every photograph on screen has painted: each `Image` over a `ResizeImage`
 /// — the file decode behind a face or a banner, never the ThumbHash stand-in
@@ -2055,6 +2063,22 @@ void main() {
         'person_form_add_${viewport}_dark',
         subdir: _subdir,
       );
+
+      // The same form with reminders switched on: the interval choice only
+      // exists in this state, so a capture with the switch off cannot show
+      // whether it is honest.
+      await tester.ensureVisible(find.byType(Switch));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+      expect(_selectedPillLabels(tester), ['Monthly']);
+      await tester.ensureVisible(find.text('Quarterly'));
+      await tester.pumpAndSettle();
+      await captureScreenshot(
+        tester,
+        'person_form_add_reminders_on_${viewport}_dark',
+        subdir: _subdir,
+      );
     });
 
     testWidgets('$viewport person form, edit — dark', (tester) async {
@@ -2443,6 +2467,17 @@ void main() {
     await captureScreenshot(
       tester,
       'contact_import_review_mobile_dark',
+      subdir: _subdir,
+    );
+
+    // …and with reminders switched on for the first of them, which is the
+    // only state the interval choice appears in.
+    await tester.tap(find.byType(Switch).first);
+    await tester.pumpAndSettle();
+    expect(_selectedPillLabels(tester), ['Monthly']);
+    await captureScreenshot(
+      tester,
+      'contact_import_review_reminders_on_mobile_dark',
       subdir: _subdir,
     );
   });

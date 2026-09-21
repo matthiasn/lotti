@@ -1635,7 +1635,6 @@
   "checkInSentimentStrained": "Anstrengt",
   "checkInSourceCall": "Fra det opkald, du startede fra denne side. Alt kan redigeres.",
   "checkInSourceMessage": "Fra den besked, du sendte fra denne side. Alt kan redigeres.",
-  "checkInSpeakButton": "Indtal check-in",
   "checkInSpokenMinutes": "{count, plural, =1{1 minut} other{{count} minutter}}",
   "@checkInSpokenMinutes": {
     "description": "Minutes of a recording length, read by assistive technology.",
@@ -5025,7 +5024,6 @@
   "relationshipAgentFailedNoModel": "Der er ikke sat en model op til briefinger. Vælg en under AI-indstillinger › Agenter. Detaljer findes under fanen Aktivitet.",
   "relationshipAgentFailedPlain": "Seneste kørsel mislykkedes",
   "relationshipAgentLastRunFailed": "Seneste kørsel mislykkedes · {time}",
-  "relationshipAgentNoAgent": "Ingen agent for denne person",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Ingen briefing endnu. „Brief nu“ skriver en, når du har logget et check-in; den ser aldrig telefonnummer eller e-mail.} =1{Ingen briefing endnu. „Brief nu“ skriver en ud fra dit check-in; den ser aldrig telefonnummer eller e-mail.} other{Ingen briefing endnu. „Brief nu“ skriver en ud fra dine {count} check-ins; den ser aldrig telefonnummer eller e-mail.}}",
   "relationshipAgentNotEnrolledBody": "Slå påmindelser til for {name} for at få en chat, et prik når der er gået et stykke tid, og en briefing.",
   "relationshipAgentOutOfDateNewCheckIn": "Forældet · nyt check-in {day}",
@@ -5047,18 +5045,12 @@
   "relationshipBriefingTitle": "Briefing",
   "relationshipCadenceEveryNDays": "{days, plural, =1{Hver dag} other{Hver {days}. dag}}",
   "relationshipCadenceFortnightly": "Hver anden uge",
-  "relationshipCadenceLabel": "Kontaktrytme",
   "relationshipCadenceMonthly": "Månedligt",
-  "relationshipCadenceNone": "Ingen rytme",
-  "relationshipCadenceNudgeNote": "At vælge et tempo slår check-in-påmindelser til.",
-  "@relationshipCadenceNudgeNote": {
-    "description": "Relationships redesign label."
-  },
   "relationshipCadenceOnTrack": "på sporet",
   "@relationshipCadenceOnTrack": {
     "description": "Relationships redesign label."
   },
-  "relationshipCadencePromptLabel": "Mind mig om det hver",
+  "relationshipCadencePromptLabel": "Hvor ofte?",
   "relationshipCadenceQuarterly": "Hvert kvartal",
   "relationshipCadenceWeekly": "Ugentligt",
   "relationshipChatAgentName": "Briefingagent",
@@ -5067,7 +5059,7 @@
   "relationshipChatEmpty": "Start en samtale med briefingagenten om {name}.",
   "relationshipChatPlaceholder": "Tal med agenten om {name}…",
   "relationshipChatTooltip": "Chat om denne person",
-  "relationshipChatUnavailable": "Ingen agent endnu — markér først personen som vigtig.",
+  "relationshipChatUnavailable": "Ingen agent endnu — slå først påmindelser til for personen.",
   "relationshipCheckInAddComment": "Tilføj kommentar",
   "relationshipCheckInAddPhoto": "Foto",
   "relationshipCheckInCommentCount": "{count, plural, =1{1 kommentar} other{{count} kommentarer}}",
@@ -5171,7 +5163,6 @@
   "relationshipHealthThriving": "Blomstrer",
   "relationshipImportAction": "Importer fra kontakter",
   "relationshipImportAdded": "{count, plural, =1{1 person tilføjet} other{{count} personer tilføjet}}",
-  "relationshipImportantDescription": "Mind mig om at holde kontakten",
   "relationshipImportantLabel": "Med påmindelser",
   "relationshipImportConfirmButton": "{count, plural, =1{Tilføj 1 person} other{Tilføj {count} personer}}",
   "relationshipImportEmpty": "Ingen kontakter på denne enhed",
@@ -5186,6 +5177,7 @@
   "relationshipImportReviewSubtitle": "{count, plural, =1{1 person valgt · kontaktoplysningerne bliver på denne enhed} other{{count} personer valgt · kontaktoplysningerne bliver på denne enhed}}",
   "relationshipImportReviewTitle": "Før du tilføjer dem",
   "relationshipImportSearchHint": "Søg i kontakter",
+  "relationshipImportSelectHint": "Sæt flueben ved dem, du vil tilføje. I næste trin vælger du, hvem du vil have påmindelser om.",
   "relationshipImportSettingsBody": "Adgang til kontakter er slået fra. Slå den til i systemindstillingerne for at importere personer.",
   "relationshipImportTitle": "Tilføj personer",
   "relationshipImportUnsupported": "Kontaktimport findes på telefoner og tablets. Tilføj kontaktoplysninger i hånden her.",
@@ -5219,6 +5211,7 @@
       }
     }
   },
+  "relationshipNextTimeFromEarlier": "Fra dit tjek-ind {day}",
   "relationshipNextTimeTitle": "Næste gang",
   "relationshipNicknameLabel": "Kaldenavn",
   "relationshipNoCheckIns": "Ingen check-ins endnu — registrér et efter jeres næste snak.",
@@ -5249,7 +5242,7 @@
   "relationshipPhotoSaveFailed": "Kunne ikke gemme fotoet",
   "relationshipPhotoSheetTitle": "Foto af {name}",
   "relationshipPostCallConfirm": "Log tjek-ind",
-  "relationshipPostCallDismiss": "Ikke nu",
+  "relationshipPostCallDismiss": "Afvis",
   "relationshipPostCallMeta": "startede kl. {time} · {minutes, plural, =0{under et minut} =1{cirka 1 min} other{cirka {minutes} min}}",
   "@relationshipPostCallMeta": {
     "placeholders": {
@@ -5292,6 +5285,8 @@
   "relationshipReminderPausedBody": "Den kommer igen til den tid, medmindre du registrerer et check-in forinden.",
   "relationshipReminderPausedTitle": "Påmindelsen er sat på pause til {time}",
   "relationshipReminderSnoozeLonger": "Udsæt længere",
+  "relationshipRemindersSwitchLabel": "Mind mig om at holde kontakten",
+  "relationshipsEmptyHint": "Skriv en linje, når I har talt sammen. Lotti viser, hvem du ikke har talt med i et stykke tid, og minder dig om det, hvis du vil.",
   "relationshipsEmptyState": "Tilføj de mennesker, du vil holde kontakten med.",
   "relationshipsGroupDue": "Skal kontaktes",
   "relationshipsPageTitle": "Personer",
@@ -5349,6 +5344,7 @@
       }
     }
   },
+  "relationshipStatusLineAddedNoCadence": "Lige tilføjet",
   "relationshipStatusLineContacted": "{type} · {time} · {cadence}",
   "@relationshipStatusLineContacted": {
     "placeholders": {
@@ -5363,6 +5359,7 @@
       }
     }
   },
+  "relationshipStatusLineContactedNoCadence": "{type} · {time}",
   "relationshipTimestampToday": "I dag",
   "relationshipTimestampYesterday": "I går",
   "relationshipTrackingSinceLabel": "Fulgt siden {date}",

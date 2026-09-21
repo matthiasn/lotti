@@ -8,6 +8,8 @@ import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -140,8 +142,8 @@ void main() {
         ],
       );
 
-  testWidgets('renders the empty state as a message alone — adding is the '
-      "page's bottom action, never a second button", (tester) async {
+  testWidgets('the empty state says what the tab is for, and adds no second '
+      "add button — adding is the page's bottom action", (tester) async {
     when(
       () => mockRepository.getRelationshipsByRecency(),
     ).thenAnswer((_) async => []);
@@ -151,6 +153,14 @@ void main() {
 
     expect(
       find.text('Add the people you want to stay close to.'),
+      findsOneWidget,
+    );
+    // A first-time reader otherwise meets a title and nothing else.
+    expect(
+      find.text(
+        'Jot a line after you talk. Lotti shows who you have not spoken to '
+        'in a while and, if you like, reminds you.',
+      ),
       findsOneWidget,
     );
     // On a phone the launcher docks the page's one add action; neither the
@@ -437,12 +447,10 @@ void main() {
         find.text('Call · Yesterday 18:00 · Monthly', findRichText: true),
         findsOneWidget,
       );
-      // Ben has no check-in: "Just added", then the cadence.
-      final context = tester.element(find.byType(RelationshipsPage));
-      expect(
-        find.text('${context.messages.relationshipJustAdded} · No cadence'),
-        findsOneWidget,
-      );
+      // Ben has no check-in, no reminders and no interval: "Just added"
+      // and nothing more — his band already says "No reminders".
+      expect(find.text('Just added'), findsOneWidget);
+      expect(find.textContaining('No cadence'), findsNothing);
       expect(
         find.text('Add the people you want to stay close to.'),
         findsNothing,
@@ -512,41 +520,51 @@ void main() {
   // the mobile shell paints the nav pill over each tab's page stack — so a
   // push onto the tab's own navigator leaves that action behind the pill.
   // `bottomNavSafeNavigatorOf` is what lifts it above the shell.
-  testWidgets('opens contact import above the shell, not inside the tab', (
-    tester,
-  ) async {
-    when(
-      () => mockRepository.getRelationshipsByRecency(),
-    ).thenAnswer((_) async => []);
+  // Two doors, one destination: the header's glyph — whose only name is a
+  // tooltip a phone never shows — and, on an empty tab, the same action in
+  // words.
+  for (final (door, finder) in [
+    ('the header glyph', find.byType(DesignSystemIconAction)),
+    (
+      "the empty state's worded button",
+      find.widgetWithText(DesignSystemButton, 'Import from contacts'),
+    ),
+  ]) {
+    testWidgets('$door opens contact import above the shell, not inside the '
+        'tab', (tester) async {
+      when(
+        () => mockRepository.getRelationshipsByRecency(),
+      ).thenAnswer((_) async => []);
 
-    final rootObserver = _RecordingNavigatorObserver();
-    final nestedObserver = _RecordingNavigatorObserver();
+      final rootObserver = _RecordingNavigatorObserver();
+      final nestedObserver = _RecordingNavigatorObserver();
 
-    await tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        Navigator(
-          observers: [nestedObserver],
-          onGenerateRoute: (_) => MaterialPageRoute<void>(
-            builder: (_) => const RelationshipsPage(),
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Navigator(
+            observers: [nestedObserver],
+            onGenerateRoute: (_) => MaterialPageRoute<void>(
+              builder: (_) => const RelationshipsPage(),
+            ),
           ),
+          overrides: [
+            relationshipRepositoryProvider.overrideWithValue(mockRepository),
+            contactsServiceProvider.overrideWithValue(
+              _SupportedContactsService(),
+            ),
+          ],
+          navigatorObservers: [rootObserver],
         ),
-        overrides: [
-          relationshipRepositoryProvider.overrideWithValue(mockRepository),
-          contactsServiceProvider.overrideWithValue(
-            _SupportedContactsService(),
-          ),
-        ],
-        navigatorObservers: [rootObserver],
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(LottiIcons.contactImport));
-    await tester.pump();
+      await tester.tap(finder);
+      await tester.pump();
 
-    expect(rootObserver.pushes, 1, reason: 'pushed above the shell');
-    expect(nestedObserver.pushes, 0, reason: 'never onto the tab navigator');
-  });
+      expect(rootObserver.pushes, 1, reason: 'pushed above the shell');
+      expect(nestedObserver.pushes, 0, reason: 'never onto the tab navigator');
+    });
+  }
 
   testWidgets('hides the import door on unsupported platforms (desktop)', (
     tester,
@@ -567,6 +585,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byIcon(LottiIcons.contactImport), findsNothing);
+    expect(find.text('Import from contacts'), findsNothing);
     expect(
       find.text('Add the people you want to stay close to.'),
       findsOneWidget,

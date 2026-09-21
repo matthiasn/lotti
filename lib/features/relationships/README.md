@@ -7,12 +7,15 @@ opts them into a dedicated agent that tracks contact cadence and prepares
 briefings from captured check-ins.
 
 The feature is behind `enable_relationships`. The **People** tab (`/people`)
-groups people into *Due*, *On track* and *Not enrolled*, with a summary of
-who is due and who lapses next. Rows show the last contact and cadence.
+groups people into *Due*, *On track* and *No reminders*, with a summary of
+who is due and who lapses next. Rows show the last contact and, where there
+is one, how often a reminder comes. Turning reminders on — in the person
+editor, the contact-import review or the person page's card — always shows
+how often, with monthly preselected, and stores what it shows.
 Desktop uses a list/detail split; phones open a dedicated person page.
 
 The person page holds a header with category, importance, name, nickname
-and recent contact, followed by the agent briefing, *Next time*, check-ins,
+and recent contact, followed by *Next time*, the agent briefing, check-ins,
 contact channels and linked tasks. The header opens the agent conversation
 and person editor, and tapping the avatar opens the person's photo: choose
 one from the library and pick which part of it is the face, adjust that
@@ -38,7 +41,8 @@ under the body. The model row carries the inference cost, and a current
 briefing names its sources once it is expanded. The model row names the
 model and provider before anything is sent, so *Brief now* and *Update now*
 start at once, with no confirmation; while a new briefing is written the
-previous one stays readable under the spinner. The agent keeps private notes
+previous one stays readable under the spinner, and after a failed run it
+stays readable under the failure, with its age. The agent keeps private notes
 between briefings — a corrected name, a complaint about its briefing, how
 things feel — shown under *Agent internals*, and reads them back the next
 time it writes. The chat talks to the briefing agent about the person, never
@@ -91,7 +95,10 @@ On Android and iOS, contact import lets the user select contacts and set
 importance and cadence before creating people. Linking or refreshing a
 contact preserves hand-edited channels and names. Available call, message
 and email actions use the device's capabilities; returning after a contact
-action can offer a prefilled check-in. Desktop retains manual channel entry.
+action offers a prefilled check-in under the person's name, and the page's
+own *Log check-in* and *Dictate* open prefilled the same way. Otherwise the
+composer starts from how the two of you last connected. Desktop retains manual
+channel entry.
 
 Tasks can be linked, unlinked, or created from the person's task picker.
 Deleting a person removes their check-ins and agent; it does not delete

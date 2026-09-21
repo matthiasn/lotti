@@ -6,7 +6,10 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
+import 'package:lotti/features/relationships/service/relationship_agent_service.dart';
+import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -192,9 +195,11 @@ class ContactImportController extends Notifier<ContactImportState> {
   bool isSelected(String contactId) => state.drafts.containsKey(contactId);
 
   /// Marks a selected contact important, which is what creates their agent
-  /// once they exist. Clearing it also clears the cadence, since a cadence
-  /// on an unimportant person is never evaluated and would only be
-  /// misleading if it reappeared later.
+  /// once they exist. Turning it on gives the draft the default interval
+  /// unless it already has one, so the review step shows — and the import
+  /// stores — the rhythm the reminders will actually run on. Clearing it
+  /// also clears the cadence, since a cadence on an unimportant person is
+  /// never evaluated and would only be misleading if it reappeared later.
   void setImportant({required String contactId, required bool important}) {
     final draft = state.drafts[contactId];
     if (draft == null) return;
@@ -204,14 +209,16 @@ class ContactImportController extends Notifier<ContactImportState> {
       contact: draft.contact,
       id: draft.id,
       important: important,
-      cadenceDays: important ? draft.cadenceDays : null,
+      cadenceDays: important
+          ? relationshipShownCadenceDays(draft.cadenceDays)
+          : null,
     );
     _withDrafts(drafts);
   }
 
   /// Sets the desired check-in interval for a selected contact. Ignored for
   /// a contact who is not marked important, for the same reason as above.
-  void setCadence({required String contactId, required int? cadenceDays}) {
+  void setCadence({required String contactId, required int cadenceDays}) {
     final draft = state.drafts[contactId];
     if (draft == null || !draft.important) return;
 
@@ -235,8 +242,18 @@ class ContactImportController extends Notifier<ContactImportState> {
   /// is rejected is skipped rather than aborting the batch: importing eight
   /// people and failing on the third must not leave the user wondering which
   /// five are missing, and the ones that did land are real.
+  ///
+  /// A person imported with reminders on gets their agent here, the way the
+  /// person editor and the person page's card mint it: without it nothing
+  /// is subscribed to their cadence, and the reminders chosen in the review
+  /// would never come until the person was re-saved through one of those.
   Future<List<String>> importSelected() async {
     final repository = ref.read(relationshipRepositoryProvider);
+    // Resolved before the first await and only when it will be used: the
+    // agents are created after this page may be gone.
+    final agentService = state.drafts.values.any((draft) => draft.important)
+        ? ref.read(relationshipAgentServiceProvider)
+        : null;
     final refKey = await ref.read(contactRefKeyProvider.future);
     final created = <String>[];
 
@@ -257,7 +274,15 @@ class ContactImportController extends Notifier<ContactImportState> {
         data: data,
         id: draft.id,
       );
-      if (relationship != null) created.add(relationship.id);
+      if (relationship == null) continue;
+      created.add(relationship.id);
+      if (agentService != null) {
+        ensureRelationshipAgentInBackground(
+          agentService,
+          relationship,
+          source: 'ContactImportController',
+        );
+      }
     }
 
     if (created.isNotEmpty) clearSelection();

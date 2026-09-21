@@ -6,6 +6,7 @@ import 'package:lotti/features/design_system/components/cards/design_system_sect
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/state/contact_import_controller.dart';
 import 'package:lotti/features/relationships/ui/shared/ds_choice_pills.dart';
@@ -187,7 +188,12 @@ class _SelectStep extends ConsumerWidget {
     return Column(
       children: [
         Padding(
-          padding: EdgeInsets.all(tokens.spacing.step5),
+          padding: EdgeInsets.fromLTRB(
+            tokens.spacing.step5,
+            tokens.spacing.step5,
+            tokens.spacing.step5,
+            tokens.spacing.step3,
+          ),
           child: TextField(
             controller: searchController,
             decoration: InputDecoration(
@@ -195,6 +201,28 @@ class _SelectStep extends ConsumerWidget {
               prefixIcon: const Icon(LottiIcons.search),
             ),
             onChanged: controller.setQuery,
+          ),
+        ),
+        // The way forward, in words. The Review bar only appears once
+        // someone is ticked (a disabled button would sit over a list still
+        // being scrolled), so until then nothing on screen said what to do
+        // here or that a next step exists.
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            tokens.spacing.step5,
+            0,
+            tokens.spacing.step5,
+            tokens.spacing.step3,
+          ),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              context.messages.relationshipImportSelectHint,
+              key: const ValueKey('contact-import-select-hint'),
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ),
           ),
         ),
         if (visible.isEmpty)
@@ -300,7 +328,7 @@ class _ReviewStep extends ConsumerWidget {
               // importance just changed.
               MergeSemantics(
                 child: Semantics(
-                  label: '${messages.relationshipImportantLabel} · $name',
+                  label: '${messages.relationshipRemindersSwitchLabel} · $name',
                   child: InkWell(
                     onTap: () => controller.setImportant(
                       contactId: draft.contact.id,
@@ -310,7 +338,7 @@ class _ReviewStep extends ConsumerWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            messages.relationshipImportantLabel,
+                            messages.relationshipRemindersSwitchLabel,
                             style: tokens.typography.styles.body.bodyMedium
                                 .copyWith(
                                   color: tokens.colors.text.highEmphasis,
@@ -347,8 +375,8 @@ class _ReviewStep extends ConsumerWidget {
                   ),
                 ),
                 SizedBox(height: tokens.spacing.step3),
-                DsChoicePills<int?>(
-                  value: draft.cadenceDays,
+                DsChoicePills<int>(
+                  value: relationshipShownCadenceDays(draft.cadenceDays),
                   values: relationshipCadencePresets,
                   labelFor: (preset) =>
                       relationshipCadenceLabel(context, preset),

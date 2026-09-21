@@ -7,6 +7,7 @@ import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/state/contact_import_controller.dart';
+import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/ui/pages/contact_import_page.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:material_ui/material_ui.dart';
@@ -50,6 +51,7 @@ void main() {
 
   late _FakeContactsService service;
   late MockRelationshipRepository repository;
+  late MockRelationshipAgentService agentService;
 
   setUpAll(registerAllFallbackValues);
 
@@ -62,6 +64,10 @@ void main() {
   setUp(() {
     service = _FakeContactsService();
     repository = MockRelationshipRepository();
+    agentService = MockRelationshipAgentService();
+    when(
+      () => agentService.ensureAgentForRelationship(any()),
+    ).thenAnswer((_) async => throw StateError('not under test'));
     when(
       () => repository.createRelationship(
         data: any(named: 'data'),
@@ -97,6 +103,8 @@ void main() {
         overrides: [
           contactsServiceProvider.overrideWithValue(service),
           relationshipRepositoryProvider.overrideWithValue(repository),
+          // A person imported with reminders on gets their agent.
+          relationshipAgentServiceProvider.overrideWithValue(agentService),
           // The import writes the OS id into this device's own ref slot, so
           // the key has to resolve without a live sync host id behind it.
           contactRefKeyProvider.overrideWith((ref) async => 'android:host-a'),
@@ -207,10 +215,22 @@ void main() {
       expect(find.text('Bo Larsen'), findsOneWidget);
     });
 
-    testWidgets('shows no action bar until somebody is chosen', (tester) async {
+    testWidgets('shows no action bar until somebody is chosen — and says in '
+        'words what to do, since nothing else on screen points forward', (
+      tester,
+    ) async {
       await pump(tester);
 
       expect(find.textContaining('Review'), findsNothing);
+      expect(
+        tester
+            .widget<Text>(
+              find.byKey(const ValueKey('contact-import-select-hint')),
+            )
+            .data,
+        'Tick the people you want to add. You choose who gets reminders in '
+        'the next step.',
+      );
     });
 
     testWidgets('counts the selection on the advance button', (tester) async {
@@ -305,7 +325,8 @@ void main() {
       // keeps the person away from AI entirely.
       expect(
         find.text(
-          'Briefings, nudges and a chat. Without it, nothing runs on its own.',
+          'Reminders, briefings and a chat. Without it, nothing runs on its '
+          'own.',
         ),
         findsOneWidget,
       );
@@ -335,7 +356,7 @@ void main() {
       );
 
       // The label toggles the switch it belongs to, not its neighbour.
-      await tester.tap(find.text('Reminders on').first);
+      await tester.tap(find.text('Remind me to stay in touch').first);
       await tester.pumpAndSettle();
       final switches = tester.widgetList<Switch>(find.byType(Switch)).toList();
       expect(switches.first.value, isTrue);
@@ -346,14 +367,24 @@ void main() {
         'cadence on an unimportant person is never evaluated', (tester) async {
       await advanceToReview(tester);
 
-      expect(find.text('Nudge me every'), findsNothing);
+      expect(find.text('How often?'), findsNothing);
       expect(find.byType(DsPill), findsNothing);
 
       await tester.tap(find.byType(Switch));
       await tester.pumpAndSettle();
 
-      expect(find.text('Nudge me every'), findsOneWidget);
-      expect(find.byType(DsPill), findsWidgets);
+      expect(find.text('How often?'), findsOneWidget);
+      // Reminders that are on run on an interval: the default is already
+      // selected, and "none" is not on offer.
+      final pills = tester.widgetList<DsPill>(find.byType(DsPill)).toList();
+      expect(
+        pills.map((pill) => pill.label),
+        ['Weekly', 'Every two weeks', 'Monthly', 'Quarterly'],
+      );
+      expect(
+        pills.where((pill) => pill.selected).map((pill) => pill.label),
+        ['Monthly'],
+      );
     });
 
     testWidgets('going back keeps the selection', (tester) async {
@@ -413,6 +444,7 @@ void main() {
           overrides: [
             contactsServiceProvider.overrideWithValue(service),
             relationshipRepositoryProvider.overrideWithValue(repository),
+            relationshipAgentServiceProvider.overrideWithValue(agentService),
             contactRefKeyProvider.overrideWith(
               (ref) async => 'android:host-a',
             ),

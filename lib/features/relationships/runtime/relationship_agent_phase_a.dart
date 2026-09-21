@@ -23,6 +23,14 @@ const relationshipCadenceHour = 7;
 /// (ADR 0039 Decision 2).
 const relationshipDefaultCadenceDays = 30;
 
+/// The interval an enrolled person's reminders run on: the stored one, or
+/// [relationshipDefaultCadenceDays] when none is stored. The one place that
+/// substitution is written down — the deterministic tier schedules from it,
+/// and every "how often" control shows and saves it, so the screen can
+/// never disagree with the schedule.
+int relationshipShownCadenceDays(int? stored) =>
+    stored ?? relationshipDefaultCadenceDays;
+
 /// One deterministic derivation of the cadence facts — shared by
 /// [RelationshipAgentPhaseA.execute] (which persists the register and arms
 /// the escalation from it) and, in Phase 5, by the LLM tier's facts
@@ -383,8 +391,9 @@ class RelationshipAgentPhaseA {
     // first reminder fires one cadence after marking, never suppressed
     // waiting for a first check-in).
     final referenceAt = lastCheckInAt ?? relationship.meta.dateFrom;
-    final cadenceDays =
-        relationship.data.checkInCadenceDays ?? relationshipDefaultCadenceDays;
+    final cadenceDays = relationshipShownCadenceDays(
+      relationship.data.checkInCadenceDays,
+    );
 
     // Calendar-component arithmetic in UTC — never Duration math (which
     // would drift the lapse day across a DST transition) and never the

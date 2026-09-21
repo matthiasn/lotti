@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
@@ -431,14 +433,13 @@ class _PeopleHeader extends ConsumerWidget {
           ],
           const Spacer(),
           if (ref.read(contactsServiceProvider).isSupported)
-            _IconButton(
+            // The design system's icon action: a full-size touch target
+            // and a spoken label around the glyph, which a bare padded
+            // InkWell gave neither of.
+            DesignSystemIconAction(
               icon: LottiIcons.contactImport,
               tooltip: messages.relationshipImportAction,
-              onTap: () => bottomNavSafeNavigatorOf(context).push(
-                MaterialPageRoute<int>(
-                  builder: (_) => const ContactImportPage(),
-                ),
-              ),
+              onPressed: () => _openContactImport(context),
             ),
         ],
       ),
@@ -446,36 +447,12 @@ class _PeopleHeader extends ConsumerWidget {
   }
 }
 
-class _IconButton extends StatelessWidget {
-  const _IconButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: Padding(
-          padding: EdgeInsets.all(tokens.spacing.step2),
-          child: Icon(
-            icon,
-            size: IconSizes.m,
-            color: tokens.colors.text.mediumEmphasis,
-          ),
-        ),
-      ),
-    );
-  }
+/// Opens contact import above the shell, so the tab's own navigator — and
+/// the bottom navigation with it — is not what the import page sits on.
+void _openContactImport(BuildContext context) {
+  bottomNavSafeNavigatorOf(context).push(
+    MaterialPageRoute<int>(builder: (_) => const ContactImportPage()),
+  );
 }
 
 /// The empty list's message, in the design system's one empty-state
@@ -483,17 +460,32 @@ class _IconButton extends StatelessWidget {
 /// so the two ways of showing nothing stop being two different designs.
 ///
 /// It carries no add button of its own: adding a person is the page's
-/// bottom action, which is already on screen. It fills the sliver's
+/// bottom action, which is already on screen. What it does carry is the one
+/// sentence that says what the tab is for — a first-time reader otherwise
+/// meets a title and nothing else — and, where the device has an address
+/// book, the import door in words: in the header it is a glyph whose only
+/// name is a tooltip, which a phone never shows. It fills the sliver's
 /// remaining extent so the message sits in the space it has rather than
 /// clinging to the top of a screen of void.
-class _EmptyState extends StatelessWidget {
+class _EmptyState extends ConsumerWidget {
   const _EmptyState();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final messages = context.messages;
     return DesignSystemEmptyState(
       icon: LottiIcons.people,
-      title: context.messages.relationshipsEmptyState,
+      title: messages.relationshipsEmptyState,
+      hint: messages.relationshipsEmptyHint,
+      action: ref.read(contactsServiceProvider).isSupported
+          ? DesignSystemButton(
+              key: const ValueKey('people-empty-import'),
+              label: messages.relationshipImportAction,
+              variant: DesignSystemButtonVariant.secondary,
+              leadingIcon: LottiIcons.contactImport,
+              onPressed: () => _openContactImport(context),
+            )
+          : null,
     );
   }
 }

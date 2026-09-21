@@ -4,6 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/service/contact_launcher.dart';
+import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/contact_quick_actions.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
 import 'package:lotti/features/relationships/util/contact_channel_uri.dart';
@@ -26,9 +27,13 @@ class _NoLauncher implements ContactLauncher {
 void main() {
   final at = DateTime(2026, 8, 13, 10, 30);
 
-  CheckInEntry checkIn({String? attention, String? avoid}) => CheckInEntry(
+  CheckInEntry checkIn({
+    String? attention,
+    String? avoid,
+    String id = 'check-1',
+  }) => CheckInEntry(
     meta: Metadata(
-      id: 'check-1',
+      id: id,
       createdAt: at,
       updatedAt: at,
       dateFrom: at,
@@ -74,10 +79,49 @@ void main() {
       expect(NextTimeCard.hasContent(checkIn(avoid: 'The coffee')), isTrue);
     });
 
+    test('sourceOf is the newest check-in that has notes — a quick check-in '
+        'with none must not erase the ones before it', () {
+      final quick = checkIn(id: 'newest');
+      final withNotes = checkIn(id: 'older', attention: 'The move');
+      final oldest = checkIn(id: 'oldest', avoid: 'Politics');
+
+      expect(NextTimeCard.sourceOf([quick, withNotes, oldest]), withNotes);
+      expect(NextTimeCard.sourceOf([quick]), isNull);
+      expect(NextTimeCard.sourceOf(const []), isNull);
+    });
+
+    testWidgets('notes from an earlier check-in say which one, the date in '
+        'mono; notes from the newest carry no date', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          NextTimeCard(
+            source: checkIn(attention: 'The move'),
+            fromEarlier: true,
+          ),
+        ),
+      );
+
+      final line = tester.widget<RelationshipLineWithDate>(
+        find.byKey(const ValueKey('person-next-time-from')),
+      );
+      expect(line.text, 'From your check-in on Thu 13 Aug');
+      expect(line.date, 'Thu 13 Aug');
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          NextTimeCard(source: checkIn(attention: 'The move')),
+        ),
+      );
+      expect(
+        find.byKey(const ValueKey('person-next-time-from')),
+        findsNothing,
+      );
+    });
+
     testWidgets('renders nothing when the latest check-in carries no '
         'guidance — the page skips the gap on the same rule', (tester) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(NextTimeCard(latest: checkIn())),
+        makeTestableWidgetWithScaffold(NextTimeCard(source: checkIn())),
       );
 
       expect(find.byKey(const ValueKey('person-next-time-card')), findsNothing);
@@ -91,7 +135,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             NextTimeCard(
-              latest: checkIn(
+              source: checkIn(
                 attention: 'Ask how the fitting went.',
                 avoid: 'The coffee incident.',
               ),
@@ -118,7 +162,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          NextTimeCard(latest: checkIn(avoid: '  Politics.  ')),
+          NextTimeCard(source: checkIn(avoid: '  Politics.  ')),
         ),
       );
 
