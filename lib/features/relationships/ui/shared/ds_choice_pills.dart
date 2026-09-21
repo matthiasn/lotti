@@ -9,6 +9,11 @@ import 'package:material_ui/material_ui.dart';
 /// The row never wraps into a ragged grid. When the chips would overflow
 /// the available width it scrolls horizontally instead, so the choices
 /// stay on one line and the selection affordance stays consistent.
+///
+/// Each choice is a full-height touch target around its 28px pill
+/// (`kMinInteractiveDimension`), and announces itself as one of a
+/// mutually exclusive group with its selected state — bold type and a teal
+/// border say "selected" to the eye and nothing to a screen reader.
 class DsChoicePills<T> extends StatelessWidget {
   const DsChoicePills({
     required this.value,
@@ -48,11 +53,32 @@ class DsChoicePills<T> extends StatelessWidget {
           if (leading != null) ...[leading!, SizedBox(width: gap)],
           for (var i = 0; i < values.length; i++) ...[
             if (i != 0) SizedBox(width: gap),
-            DsPill(
-              variant: DsPillVariant.filled,
-              label: labelFor(values[i]),
-              selected: values[i] == value,
-              onTap: () => onSelected(values[i]),
+            MergeSemantics(
+              child: Semantics(
+                button: true,
+                selected: values[i] == value,
+                inMutuallyExclusiveGroup: true,
+                // The pill's own ink covers its 28px; this catches the rest
+                // of the target above and below it.
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => onSelected(values[i]),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minHeight: kMinInteractiveDimension,
+                    ),
+                    child: Center(
+                      widthFactor: 1,
+                      child: DsPill(
+                        variant: DsPillVariant.filled,
+                        label: labelFor(values[i]),
+                        selected: values[i] == value,
+                        onTap: () => onSelected(values[i]),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ],
         ],

@@ -12211,6 +12211,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipImportSearchHint => 'Contacten zoeken';
 
   @override
+  String get relationshipImportSelectHint =>
+      'Vink de mensen aan die je wilt toevoegen. In de volgende stap kies je voor wie je herinneringen wilt.';
+
+  @override
   String get relationshipImportSettingsBody =>
       'Toegang tot contacten staat uit. Zet het aan in de systeeminstellingen om personen te importeren.';
 
@@ -12419,6 +12423,10 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get relationshipRemindersSwitchLabel =>
       'Herinner me eraan contact te houden';
+
+  @override
+  String get relationshipsEmptyHint =>
+      'Noteer een regel nadat jullie gesproken hebben. Lotti laat zien wie je al een tijd niet hebt gesproken en herinnert je eraan als je dat wilt.';
 
   @override
   String get relationshipsEmptyState =>

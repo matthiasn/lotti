@@ -12370,6 +12370,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipImportSearchHint => 'Hledat kontakty';
 
   @override
+  String get relationshipImportSelectHint =>
+      'Zaškrtni lidi, které chceš přidat. V dalším kroku vybereš, u koho chceš připomínky.';
+
+  @override
   String get relationshipImportSettingsBody =>
       'Přístup ke kontaktům je vypnutý. Zapni ho v nastavení systému, abys mohl lidi importovat.';
 
@@ -12577,6 +12581,10 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get relationshipRemindersSwitchLabel =>
       'Připomínej mi, ať zůstaneme v kontaktu';
+
+  @override
+  String get relationshipsEmptyHint =>
+      'Po rozhovoru si zapiš pár slov. Lotti ti ukáže, s kým už dlouho nejsi v kontaktu, a když chceš, připomene ti to.';
 
   @override
   String get relationshipsEmptyState =>

@@ -12195,6 +12195,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipImportSearchHint => 'Sök kontakter';
 
   @override
+  String get relationshipImportSelectHint =>
+      'Bocka för de personer du vill lägga till. I nästa steg väljer du vilka du vill ha påminnelser om.';
+
+  @override
   String get relationshipImportSettingsBody =>
       'Åtkomst till kontakter är avstängd. Slå på den i systeminställningarna för att importera personer.';
 
@@ -12402,6 +12406,10 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get relationshipRemindersSwitchLabel =>
       'Påminn mig om att hålla kontakten';
+
+  @override
+  String get relationshipsEmptyHint =>
+      'Skriv en rad när ni har pratat. Lotti visar vem du inte har pratat med på ett tag och påminner dig om du vill.';
 
   @override
   String get relationshipsEmptyState =>

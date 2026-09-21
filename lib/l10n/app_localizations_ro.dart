@@ -12440,6 +12440,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipImportSearchHint => 'Căutați contacte';
 
   @override
+  String get relationshipImportSelectHint =>
+      'Bifați persoanele pe care doriți să le adăugați. La pasul următor alegeți pentru cine doriți memento-uri.';
+
+  @override
   String get relationshipImportSettingsBody =>
       'Accesul la contacte este dezactivat. Activați-l din setările sistemului pentru a importa persoane.';
 
@@ -12650,6 +12654,10 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get relationshipRemindersSwitchLabel =>
       'Amintiți-mi să păstrez legătura';
+
+  @override
+  String get relationshipsEmptyHint =>
+      'Notați un rând după ce ați vorbit. Lotti vă arată cu cine nu ați mai vorbit de ceva vreme și, dacă doriți, vă amintește.';
 
   @override
   String get relationshipsEmptyState =>

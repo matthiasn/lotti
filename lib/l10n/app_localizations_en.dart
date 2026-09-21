@@ -12125,6 +12125,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipImportSearchHint => 'Search contacts';
 
   @override
+  String get relationshipImportSelectHint =>
+      'Tick the people you want to add. You choose who gets reminders in the next step.';
+
+  @override
   String get relationshipImportSettingsBody =>
       'Contact access is turned off. Turn it on in system settings to import people.';
 
@@ -12331,6 +12335,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get relationshipRemindersSwitchLabel => 'Remind me to stay in touch';
+
+  @override
+  String get relationshipsEmptyHint =>
+      'Jot a line after you talk. Lotti shows who you have not spoken to in a while and, if you like, reminds you.';
 
   @override
   String get relationshipsEmptyState =>

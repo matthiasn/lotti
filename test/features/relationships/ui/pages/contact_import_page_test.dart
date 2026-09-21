@@ -207,10 +207,22 @@ void main() {
       expect(find.text('Bo Larsen'), findsOneWidget);
     });
 
-    testWidgets('shows no action bar until somebody is chosen', (tester) async {
+    testWidgets('shows no action bar until somebody is chosen — and says in '
+        'words what to do, since nothing else on screen points forward', (
+      tester,
+    ) async {
       await pump(tester);
 
       expect(find.textContaining('Review'), findsNothing);
+      expect(
+        tester
+            .widget<Text>(
+              find.byKey(const ValueKey('contact-import-select-hint')),
+            )
+            .data,
+        'Tick the people you want to add. You choose who gets reminders in '
+        'the next step.',
+      );
     });
 
     testWidgets('counts the selection on the advance button', (tester) async {

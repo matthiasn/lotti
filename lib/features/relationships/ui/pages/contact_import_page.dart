@@ -188,7 +188,12 @@ class _SelectStep extends ConsumerWidget {
     return Column(
       children: [
         Padding(
-          padding: EdgeInsets.all(tokens.spacing.step5),
+          padding: EdgeInsets.fromLTRB(
+            tokens.spacing.step5,
+            tokens.spacing.step5,
+            tokens.spacing.step5,
+            tokens.spacing.step3,
+          ),
           child: TextField(
             controller: searchController,
             decoration: InputDecoration(
@@ -196,6 +201,28 @@ class _SelectStep extends ConsumerWidget {
               prefixIcon: const Icon(LottiIcons.search),
             ),
             onChanged: controller.setQuery,
+          ),
+        ),
+        // The way forward, in words. The Review bar only appears once
+        // someone is ticked (a disabled button would sit over a list still
+        // being scrolled), so until then nothing on screen said what to do
+        // here or that a next step exists.
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            tokens.spacing.step5,
+            0,
+            tokens.spacing.step5,
+            tokens.spacing.step3,
+          ),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              context.messages.relationshipImportSelectHint,
+              key: const ValueKey('contact-import-select-hint'),
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ),
           ),
         ),
         if (visible.isEmpty)

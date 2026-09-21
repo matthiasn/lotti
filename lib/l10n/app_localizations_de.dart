@@ -12265,6 +12265,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get relationshipImportSearchHint => 'Kontakte durchsuchen';
 
   @override
+  String get relationshipImportSelectHint =>
+      'Hake die Personen an, die du hinzufügen möchtest. Im nächsten Schritt wählst du, an wen du erinnert werden willst.';
+
+  @override
   String get relationshipImportSettingsBody =>
       'Der Kontaktzugriff ist deaktiviert. Aktiviere ihn in den Systemeinstellungen, um Personen zu importieren.';
 
@@ -12474,6 +12478,10 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get relationshipRemindersSwitchLabel =>
       'Erinnere mich daran, in Kontakt zu bleiben';
+
+  @override
+  String get relationshipsEmptyHint =>
+      'Notiere nach einem Gespräch eine Zeile. Lotti zeigt dir, mit wem du länger nicht gesprochen hast, und erinnert dich, wenn du möchtest.';
 
   @override
   String get relationshipsEmptyState =>

@@ -1,4 +1,8 @@
+import 'dart:ui' show Tristate;
+
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/relationships/ui/shared/ds_choice_pills.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
@@ -72,6 +76,56 @@ void main() {
 
       await tester.tap(find.text('cherry'));
       expect(picked, _Flavor.cherry);
+    });
+
+    testWidgets('each choice is a full-height target: a tap in the margin '
+        'above the 28px pill still selects it, once', (tester) async {
+      final picked = <_Flavor>[];
+      await tester.pumpWidget(
+        build<_Flavor>(
+          value: _Flavor.apple,
+          values: _Flavor.values,
+          labelFor: (_Flavor f) => f.name,
+          onSelected: picked.add,
+        ),
+      );
+
+      final pill = tester.getRect(find.widgetWithText(DsPill, 'cherry'));
+      final row = tester.getRect(find.byType(DsChoicePills<_Flavor>));
+      expect(row.height, greaterThanOrEqualTo(kMinInteractiveDimension));
+      // Above the pill's own ink, inside the row.
+      await tester.tapAt(Offset(pill.center.dx, row.top + 2));
+      expect(picked, [_Flavor.cherry]);
+
+      // On the pill itself: still exactly one selection per tap.
+      await tester.tap(find.text('banana'));
+      expect(picked, [_Flavor.cherry, _Flavor.banana]);
+    });
+
+    testWidgets('announces each choice as one of an exclusive group, with '
+        'its selected state', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        build<_Flavor>(
+          value: _Flavor.banana,
+          values: _Flavor.values,
+          labelFor: (_Flavor f) => f.name,
+          onSelected: (_) {},
+        ),
+      );
+
+      SemanticsData data(String label) =>
+          tester.getSemantics(find.text(label)).getSemanticsData();
+      for (final flavor in _Flavor.values) {
+        final semantics = data(flavor.name);
+        expect(semantics.flagsCollection.isButton, isTrue);
+        expect(semantics.flagsCollection.isInMutuallyExclusiveGroup, isTrue);
+        expect(
+          semantics.flagsCollection.isSelected,
+          flavor == _Flavor.banana ? Tristate.isTrue : Tristate.isFalse,
+        );
+      }
+      handle.dispose();
     });
 
     testWidgets('renders nothing when values is empty', (tester) async {

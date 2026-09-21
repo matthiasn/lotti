@@ -20203,6 +20203,12 @@ abstract class AppLocalizations {
   /// **'Search contacts'**
   String get relationshipImportSearchHint;
 
+  /// Instruction under the search field on the contact-import selection step: tick people, reminders are decided on the next step.
+  ///
+  /// In en, this message translates to:
+  /// **'Tick the people you want to add. You choose who gets reminders in the next step.'**
+  String get relationshipImportSelectHint;
+
   /// Shown when contact access was permanently refused
   ///
   /// In en, this message translates to:
@@ -20520,6 +20526,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remind me to stay in touch'**
   String get relationshipRemindersSwitchLabel;
+
+  /// One sentence under the empty People tab title saying what the tab is for: logging a line after a conversation, seeing who is overdue, optional reminders.
+  ///
+  /// In en, this message translates to:
+  /// **'Jot a line after you talk. Lotti shows who you have not spoken to in a while and, if you like, reminds you.'**
+  String get relationshipsEmptyHint;
 
   /// No description provided for @relationshipsEmptyState.
   ///
