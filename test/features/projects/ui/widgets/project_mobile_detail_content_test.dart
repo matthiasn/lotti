@@ -970,6 +970,7 @@ void main() {
     testWidgets('keeps Back on the standalone mobile detail route', (
       tester,
     ) async {
+      final semantics = tester.ensureSemantics();
       await tester.pumpWidget(
         wrap(
           ProjectMobileDetailContent(
@@ -986,12 +987,25 @@ void main() {
         tester.widget<BackWidget>(find.byType(BackWidget)).enabled,
         isFalse,
       );
+      // ...and screen readers hear a disabled button with nothing to do.
+      final backLabel = MaterialLocalizations.of(
+        tester.element(find.byType(BackWidget)),
+      ).backButtonTooltip;
+      expect(
+        tester.getSemantics(find.bySemanticsLabel(backLabel)),
+        matchesSemantics(
+          label: backLabel,
+          isButton: true,
+          hasEnabledState: true,
+        ),
+      );
       expect(
         tester.getCenter(find.byType(BackWidget)).dx,
         lessThan(
           tester.getCenter(find.byType(ProjectMobileDetailContent)).dx,
         ),
       );
+      semantics.dispose();
     });
 
     testWidgets('puts the overflow menu in the top bar, level with Back', (
