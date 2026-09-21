@@ -1,9 +1,9 @@
 app-id: com.matthiasn.lotti
 runtime: org.freedesktop.Platform
-runtime-version: '25.08'
+runtime-version: '26.08'
 sdk: org.freedesktop.Sdk
 sdk-extensions:
-  - org.freedesktop.Sdk.Extension.llvm20
+  - org.freedesktop.Sdk.Extension.llvm22
 command: lotti
 finish-args:
   - --share=network
@@ -116,8 +116,8 @@ modules:
   - name: lotti
     buildsystem: simple
     build-options:
-      append-path: /usr/lib/sdk/llvm20/bin:/var/lib/rustup/bin:/var/lib/flutter/bin
-      prepend-ld-library-path: /usr/lib/sdk/llvm20/lib
+      append-path: /usr/lib/sdk/llvm22/bin:/var/lib/rustup/bin:/var/lib/flutter/bin
+      prepend-ld-library-path: /usr/lib/sdk/llvm22/lib
       env:
         PUB_CACHE: /run/build/lotti/.pub-cache
         CARGO_HOME: /run/build/lotti/cargo

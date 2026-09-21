@@ -130,7 +130,12 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
       blendMode: BlendMode.dstIn,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxHeight: _fadeOutPreviewMaxHeight),
-        child: content,
+        // Lays the content out at its natural height and clips it, instead of
+        // squeezing a multi-block markdown column into the preview height.
+        child: SingleChildScrollView(
+          physics: const NeverScrollableScrollPhysics(),
+          child: content,
+        ),
       ),
     );
   }

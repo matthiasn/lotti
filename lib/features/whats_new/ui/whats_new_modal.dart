@@ -25,30 +25,6 @@ abstract final class WhatsNewModal {
   /// Pattern to extract image URLs from markdown: ![alt](url)
   static final _imageUrlPattern = RegExp(r'!\[[^\]]*\]\((https?://[^)]+)\)');
 
-  /// Builds a styled link with classic blue underline and pointer cursor.
-  static Widget _buildLink(
-    BuildContext context,
-    InlineSpan text,
-    String url,
-    TextStyle style,
-  ) {
-    const linkColor = Colors.blue;
-    return InkWell(
-      onTap: () => handleMarkdownLinkTap(url, ''),
-      mouseCursor: SystemMouseCursors.click,
-      child: Text.rich(
-        TextSpan(
-          children: [text],
-          style: style.copyWith(
-            color: linkColor,
-            decoration: TextDecoration.underline,
-            decorationColor: linkColor,
-          ),
-        ),
-      ),
-    );
-  }
-
   /// Custom modal type builder that allows taller dialogs (90% of screen).
   static WoltModalType _modalTypeBuilder(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -317,7 +293,7 @@ abstract final class WhatsNewModal {
             child: GptMarkdown(
               allContent,
               onLinkTap: handleMarkdownLinkTap,
-              linkBuilder: _buildLink,
+              styleSheet: markdownLinkStyleSheet(Colors.blue),
             ),
           ),
         ),

@@ -474,41 +474,13 @@ void main() {
       // Navigate to Response tab (it's the default)
       await tester.pumpAndSettle();
 
-      // Find GestureDetector widgets with onTap and manually call the callback
-      // to verify the URL launcher integration
-      var linkCallbackFound = false;
-      final gestureDetectors = tester.widgetList<GestureDetector>(
-        find.byType(GestureDetector),
-      );
-      for (final gd in gestureDetectors) {
-        if (gd.onTap != null) {
-          // Try to invoke the callback and check if it triggers URL launcher
-          gd.onTap!();
-          await tester.pumpAndSettle();
+      // The link is a span inside the paragraph; tapping it launches the URL.
+      await tester.tapOnText(find.textRange.ofSubstring('documentation'));
+      await tester.pumpAndSettle();
 
-          // Check if URL launcher was called with the expected URL
-          try {
-            verify(
-              () => mockUrlLauncher.launchUrl(
-                'https://docs.flutter.dev',
-                any(),
-              ),
-            ).called(1);
-            linkCallbackFound = true;
-            break;
-          } catch (_) {
-            // This callback didn't trigger the right URL, continue searching
-            reset(mockUrlLauncher);
-            when(
-              () => mockUrlLauncher.canLaunch(any()),
-            ).thenAnswer((_) async => true);
-            when(
-              () => mockUrlLauncher.launchUrl(any(), any()),
-            ).thenAnswer((_) async => true);
-          }
-        }
-      }
-      expect(linkCallbackFound, isTrue);
+      verify(
+        () => mockUrlLauncher.launchUrl('https://docs.flutter.dev', any()),
+      ).called(1);
     });
   });
 }

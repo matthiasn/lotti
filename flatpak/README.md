@@ -226,13 +226,14 @@ builder's plain `patch -p1` invocation applies them.
 
 Current version-specific native inputs and patches include:
 
-- `sqlite3 3.5.1`: preloads the hash-matched Linux library for each architecture
-  into the package hook's shared cache. This version validates and reuses an
-  existing matching library, so it needs no source patch.
+- `sqlite3 3.5.1`, `3.5.2` and `3.6.0`: preloads the hash-matched Linux
+  library for each architecture into the package hook's shared cache. These
+  versions validate and reuse an existing matching library, so they need no
+  source patch.
 - `objectbox_flutter_libs 5.3.1` and `5.3.2`: pins the per-architecture
   ObjectBox archive hashes for the same offline build flow.
 - `flutter_lame 1.0.3`: raises bundled LAME's CMake compatibility floor from
-  3.0 to 3.5. CMake 4.x in the Flathub 25.08 SDK no longer accepts compatibility
+  3.0 to 3.5. CMake 4.x in the Flathub 26.08 SDK no longer accepts compatibility
   levels below 3.5.
 
 ### com.matthiasn.lotti.flatpak-flutter.yml

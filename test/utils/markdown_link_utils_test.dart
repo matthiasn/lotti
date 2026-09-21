@@ -1,8 +1,9 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/markdown_link_utils.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -11,31 +12,23 @@ import 'package:url_launcher_platform_interface/url_launcher_platform_interface.
 import '../mocks/mocks.dart';
 import '../widget_test_utils.dart';
 
-Future<void> _pumpMarkdownLink(
-  WidgetTester tester, {
-  required String text,
-  required String url,
-  TextStyle style = const TextStyle(fontSize: 14),
-  Color? linkColor,
+/// Renders [markdown] the way owners with focusable links do.
+Future<void> _pumpFocusableLink(
+  WidgetTester tester,
+  String markdown, {
+  void Function(String url, String title)? onLinkTap,
 }) async {
   await tester.pumpWidget(
-    MaterialApp(
-      builder: LegacyMaterialBridge.builder,
-      home: Scaffold(
-        body: Builder(
-          builder: (context) {
-            return buildMarkdownLink(
-              context,
-              TextSpan(text: text),
-              url,
-              style,
-              linkColor: linkColor,
-            );
-          },
-        ),
+    makeTestableWidgetWithScaffold(
+      GptMarkdown(
+        markdown,
+        onLinkTap: onLinkTap,
+        styleSheet: markdownLinkStyleSheet(Colors.red),
+        inlineLinkBuilder: buildFocusableMarkdownLink,
       ),
     ),
   );
+  await tester.pump();
 }
 
 void main() {
@@ -188,135 +181,90 @@ void main() {
     );
   });
 
-  group('buildMarkdownLink', () {
-    testWidgets('owner routing overrides URL launching', (tester) async {
-      var activated = 0;
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(
-            builder: (context) => buildMarkdownLink(
-              context,
-              const TextSpan(text: 'Saved evidence'),
-              '#query-evidence-1',
-              DefaultTextStyle.of(context).style,
-              onTap: () => activated++,
-            ),
-          ),
-        ),
-      );
-      await tester.tap(find.text('Saved evidence'));
-      expect(activated, 1);
+  group('markdownLinkStyleSheet', () {
+    test('colours links the same at rest and on hover', () {
+      final link = markdownLinkStyleSheet(Colors.green).link!;
+
+      expect(link.color, Colors.green);
+      expect(link.hoverColor, Colors.green);
     });
-    testWidgets('renders link with correct styling', (tester) async {
-      await _pumpMarkdownLink(
+  });
+
+  group('buildFocusableMarkdownLink', () {
+    testWidgets('a tap activates onLinkTap once with url and label', (
+      tester,
+    ) async {
+      final visited = <(String, String)>[];
+      await _pumpFocusableLink(
         tester,
-        text: 'Click here',
-        url: 'https://example.com',
+        'See [Open task](/tasks/task-789) now.',
+        onLinkTap: (url, title) => visited.add((url, title)),
       );
 
-      expect(find.text('Click here'), findsOneWidget);
+      await tester.tap(find.text('Open task'));
+      await tester.pump();
+
+      expect(visited, [('/tasks/task-789', 'Open task')]);
+    });
+
+    testWidgets('Enter on the focused link activates it', (tester) async {
+      final visited = <String>[];
+      await _pumpFocusableLink(
+        tester,
+        '[Open task](/tasks/task-789)',
+        onLinkTap: (url, _) => visited.add(url),
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(visited, ['/tasks/task-789']);
+    });
+
+    testWidgets('renders the label underlined in the style-sheet colour', (
+      tester,
+    ) async {
+      await _pumpFocusableLink(
+        tester,
+        '[Red link](https://example.com)',
+        onLinkTap: (_, _) {},
+      );
 
       final inkWell = tester.widget<InkWell>(find.byType(InkWell));
       expect(inkWell.mouseCursor, SystemMouseCursors.click);
-    });
 
-    testWidgets('applies custom link color', (tester) async {
-      const customColor = Colors.red;
-
-      await _pumpMarkdownLink(
-        tester,
-        text: 'Red link',
-        url: 'https://example.com',
-        linkColor: customColor,
+      final text = tester.widget<Text>(
+        find.descendant(of: find.byType(InkWell), matching: find.byType(Text)),
       );
-
-      final textWidget = tester.widget<Text>(find.byType(Text));
-      final span = textWidget.textSpan! as TextSpan;
-      expect(span.style!.color, customColor);
-      expect(span.style!.decoration, TextDecoration.underline);
-      expect(span.style!.decorationColor, customColor);
-    });
-
-    testWidgets('uses theme primary color when no linkColor specified', (
-      tester,
-    ) async {
-      await _pumpMarkdownLink(
-        tester,
-        text: 'Default link',
-        url: 'https://example.com',
-      );
-
-      final textWidget = tester.widget<Text>(find.byType(Text));
-      final span = textWidget.textSpan! as TextSpan;
-      expect(span.style!.color, isNotNull);
+      final span = text.textSpan! as TextSpan;
+      expect(span.toPlainText(), 'Red link');
+      expect(span.style!.color, Colors.red);
       expect(span.style!.decoration, TextDecoration.underline);
     });
 
-    testWidgets('has Semantics with link: true', (tester) async {
-      await _pumpMarkdownLink(
+    testWidgets('is announced as a link', (tester) async {
+      await _pumpFocusableLink(
         tester,
-        text: 'Accessible link',
-        url: 'https://example.com',
+        '[Accessible link](https://example.com)',
+        onLinkTap: (_, _) {},
       );
 
-      final semanticsWidgets = tester.widgetList<Semantics>(
-        find.byType(Semantics),
+      expect(
+        find.ancestor(
+          of: find.byType(InkWell),
+          matching: find.byWidgetPredicate(
+            (widget) => widget is Semantics && widget.properties.link == true,
+          ),
+        ),
+        findsOneWidget,
       );
-      final linkSemantics = semanticsWidgets.where(
-        (s) => s.properties.link == true,
-      );
-      expect(linkSemantics, isNotEmpty);
     });
 
-    testWidgets('tapping InkWell triggers URL launch', (tester) async {
-      final mockUrlLauncher = MockUrlLauncher();
-      final originalInstance = UrlLauncherPlatform.instance;
-      UrlLauncherPlatform.instance = mockUrlLauncher;
-      registerFallbackValue(FakeLaunchOptions());
+    testWidgets('is inert without an onLinkTap handler', (tester) async {
+      await _pumpFocusableLink(tester, '[Inert](https://example.com)');
 
-      when(
-        () => mockUrlLauncher.launchUrl(any(), any()),
-      ).thenAnswer((_) async => true);
-
-      addTearDown(() {
-        UrlLauncherPlatform.instance = originalInstance;
-      });
-
-      await _pumpMarkdownLink(
-        tester,
-        text: 'Tap me',
-        url: 'https://example.com',
-      );
-
-      await tester.tap(find.byType(InkWell));
-      await tester.pump();
-
-      verify(
-        () => mockUrlLauncher.launchUrl('https://example.com', any()),
-      ).called(1);
-    });
-
-    testWidgets('tapping app-local task link routes inside the app', (
-      tester,
-    ) async {
-      getIt.pushNewScope();
-      final mockNavService = MockNavService();
-      getIt.registerSingleton<NavService>(mockNavService);
-      addTearDown(() async {
-        await getIt.resetScope();
-        await getIt.popScope();
-      });
-
-      await _pumpMarkdownLink(
-        tester,
-        text: 'Open task',
-        url: '/tasks/task-789',
-      );
-
-      await tester.tap(find.byType(InkWell));
-      await tester.pump();
-
-      verify(() => mockNavService.beamToNamed('/tasks/task-789')).called(1);
+      expect(tester.widget<InkWell>(find.byType(InkWell)).onTap, isNull);
     });
   });
 }
