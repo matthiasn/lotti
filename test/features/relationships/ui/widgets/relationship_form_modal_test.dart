@@ -61,8 +61,14 @@ final Finder firstChannelField = find.byType(TextField).at(3);
 
 /// Taps [finder] once it is scrolled into view: everything below the Who
 /// card can sit past the bottom of the 800×600 test surface.
+/// Scrolls [finder] to the middle of the form, then taps it. Centred rather
+/// than merely visible: `ensureVisible` stops at the scroll view's edge, which
+/// is under the modal's pinned action bar, so a control scrolled there is
+/// visible but covered — and with the app's real, wider fonts that is where
+/// the reminder pills land.
 Future<void> tapVisible(WidgetTester tester, Finder finder) async {
-  await tester.ensureVisible(finder);
+  // A zero-duration jump: it completes within the pump below.
+  Scrollable.ensureVisible(tester.element(finder), alignment: 0.5);
   await tester.pumpAndSettle();
   await tester.tap(finder);
 }
@@ -1382,8 +1388,7 @@ void main() {
 
       await tester.enterText(find.byType(TextField).first, 'Anna Example');
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Monthly'));
-      await tester.tap(find.text('Monthly'));
+      await tapVisible(tester, find.text('Monthly'));
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Save'));
       await tester.tap(find.text('Save'));

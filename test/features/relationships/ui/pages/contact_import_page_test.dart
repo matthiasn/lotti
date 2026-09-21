@@ -7,6 +7,7 @@ import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/state/contact_import_controller.dart';
+import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/ui/pages/contact_import_page.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:material_ui/material_ui.dart';
@@ -50,6 +51,7 @@ void main() {
 
   late _FakeContactsService service;
   late MockRelationshipRepository repository;
+  late MockRelationshipAgentService agentService;
 
   setUpAll(registerAllFallbackValues);
 
@@ -62,6 +64,10 @@ void main() {
   setUp(() {
     service = _FakeContactsService();
     repository = MockRelationshipRepository();
+    agentService = MockRelationshipAgentService();
+    when(
+      () => agentService.ensureAgentForRelationship(any()),
+    ).thenAnswer((_) async => throw StateError('not under test'));
     when(
       () => repository.createRelationship(
         data: any(named: 'data'),
@@ -97,6 +103,8 @@ void main() {
         overrides: [
           contactsServiceProvider.overrideWithValue(service),
           relationshipRepositoryProvider.overrideWithValue(repository),
+          // A person imported with reminders on gets their agent.
+          relationshipAgentServiceProvider.overrideWithValue(agentService),
           // The import writes the OS id into this device's own ref slot, so
           // the key has to resolve without a live sync host id behind it.
           contactRefKeyProvider.overrideWith((ref) async => 'android:host-a'),
@@ -436,6 +444,7 @@ void main() {
           overrides: [
             contactsServiceProvider.overrideWithValue(service),
             relationshipRepositoryProvider.overrideWithValue(repository),
+            relationshipAgentServiceProvider.overrideWithValue(agentService),
             contactRefKeyProvider.overrideWith(
               (ref) async => 'android:host-a',
             ),
