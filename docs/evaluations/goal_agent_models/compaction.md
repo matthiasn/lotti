@@ -2,6 +2,7 @@
 
 **Four-model catalog, 2026-09-17:** [LottiGym, four models](../lotti-gym-2026-09-17.md).
 **Judged run, 2026-09-16:** hierarchical passes the bar (96% recall, zero hallucinations, 15/15 same recommendation) — [full results](../lotti-gym-2026-09-16.md).
+**Qwen 3.8 27B rejected, 2026-09-21:** 27/30 status decisions — [full results](../lotti-gym-2026-09-21.md).
 
 Does the goal agent draw the same conclusions from a **compacted** check-in
 history as from the **full** one? A goal runs for years; three check-ins a

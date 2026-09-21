@@ -2,6 +2,7 @@
 
 **Full-catalog results, 2026-09-16:** [LottiGym, every section run and optimised](../lotti-gym-2026-09-16.md).
 **Four models and what a run costs, 2026-09-17:** [LottiGym, four models](../lotti-gym-2026-09-17.md).
+**Qwen 3.8 27B rejected, 2026-09-21:** [LottiGym, Qwen 3.8 27B and two harness regressions](../lotti-gym-2026-09-21.md).
 
 > **Graduated (2026-08-09, PR 3):** the system prompt and tool definitions
 > now live in `lib/features/goals/workflow/goal_agent_contract.dart` — the
