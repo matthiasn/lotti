@@ -813,6 +813,22 @@ void main() {
       });
     });
 
+    group('redactEndpoint', () {
+      const cases = {
+        'http://localhost:11434': 'http://localhost:11434',
+        'https://ollama.example.com': 'https://ollama.example.com',
+        'https://me:pw@proxy.example.com/v1/tok?key=abc#frag':
+            'https://proxy.example.com',
+        'not a url': '<unparsable Ollama URL>',
+        '/api/embed': '<unparsable Ollama URL>',
+      };
+      for (final MapEntry(key: input, value: expected) in cases.entries) {
+        test('reduces "$input" to "$expected"', () {
+          expect(redactEndpoint(input), expected);
+        });
+      }
+    });
+
     group('close', () {
       test('closes the underlying HTTP client', () {
         when(() => mockHttpClient.close()).thenReturn(null);
