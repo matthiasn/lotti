@@ -1406,4 +1406,13 @@ extension AgentStateReportFreshness on AgentStateEntity {
     final freshAt = reportFreshAt;
     return freshAt == null || !staleAt.isBefore(freshAt);
   }
+
+  /// Whether the latest report is behind the task as of [now]: either
+  /// [isReportStale], or a change is already queued behind a throttle
+  /// deadline ([nextWakeAt]) that has not yet fired.
+  ///
+  /// A queued change does not move [reportStaleAt] — the countdown is its
+  /// only trace — yet the report is just as out of date while it runs.
+  bool isReportBehindAt(DateTime now) =>
+      isReportStale || (nextWakeAt?.isAfter(now) ?? false);
 }

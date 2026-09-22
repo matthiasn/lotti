@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:clock/clock.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -552,7 +553,10 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       inferenceAvailable: inferenceAvailable,
       isRunning: isRunning,
       hasReportContent: hasReportContent,
-      isStale: agentState?.isReportStale ?? false,
+      // A change waiting out its throttle countdown already makes the
+      // summary out of date; the reader should not learn that only when the
+      // countdown fires.
+      isStale: agentState?.isReportBehindAt(clock.now()) ?? false,
       showsFreshConfirmation: false,
       onRunNow: inferenceAvailable
           ? () => ref.read(taskAgentServiceProvider).triggerReanalysis(agentId)

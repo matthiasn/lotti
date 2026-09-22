@@ -110,6 +110,70 @@ void main() {
       verify(() => taskAgentService.triggerReanalysis(any())).called(1);
     });
 
+    testWidgets(
+      'a change waiting out its countdown already reads Out of date',
+      (tester) async {
+        // A task change arms the throttle deadline without moving the stale
+        // watermark, so before the fix the card stayed silent — looking
+        // current — for the whole countdown. Once the deadline is behind
+        // `now` (fired or cleared), the countdown alone claims nothing.
+        final now = DateTime(2026, 5, 4, 12);
+        for (final (deadline, behind) in [
+          (now.add(const Duration(seconds: 90)), true),
+          (now.subtract(const Duration(seconds: 1)), false),
+        ]) {
+          final taskAgentService = MockTaskAgentService();
+          when(
+            () => taskAgentService.triggerReanalysis(any()),
+          ).thenAnswer((_) {});
+          // A fresh tree per case: re-pumping the same host would keep the
+          // row's State and its collapse animation from the previous case.
+          await tester.pumpWidget(const SizedBox.shrink());
+          await withClock(Clock.fixed(now), () async {
+            final bench = AgentTestBench(
+              identity: makeTestIdentity().copyWith(
+                config: const AgentConfig(automaticUpdatesEnabled: true),
+              ),
+              state: makeTestState(
+                nextWakeAt: deadline,
+              ).copyWith(reportFreshAt: DateTime(2026, 5, 4, 11)),
+              taskAgentService: taskAgentService,
+              report: makeTestReport(tldr: 'Old summary.'),
+            );
+
+            await tester.pumpWidget(bench.build());
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
+          });
+
+          final reason = 'behind=$behind';
+          expect(
+            find.text('Out of date'),
+            behind ? findsOneWidget : findsNothing,
+            reason: reason,
+          );
+          expect(
+            find.byKey(const ValueKey('taskAgentStaleGlyph')),
+            behind ? findsOneWidget : findsNothing,
+            reason: reason,
+          );
+          // Still no digits: the countdown itself stays in the panel.
+          expect(find.textContaining('1:30'), findsNothing, reason: reason);
+          if (behind) {
+            // The reader can act on it straight away instead of waiting.
+            await tester.tap(find.byKey(const ValueKey('taskAgentWakeButton')));
+            verify(() => taskAgentService.triggerReanalysis(any())).called(1);
+          } else {
+            expect(
+              find.byKey(const ValueKey('taskAgentWakeButton')),
+              findsNothing,
+              reason: reason,
+            );
+          }
+        }
+      },
+    );
+
     testWidgets('a stale card with no report at all shows nothing', (
       tester,
     ) async {
