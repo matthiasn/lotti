@@ -3,45 +3,66 @@ import 'dart:isolate';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show DeviceOrientation;
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:zxing2/qrcode.dart';
 
-/// Channel order used by a desktop camera's packed four-byte image plane.
-enum DesktopQrChannelOrder { rgba, bgra }
+/// Pixel layout of the camera plane a [QrFrame] was copied from.
+enum QrFramePixelFormat {
+  /// Four bytes per pixel, red first (Linux webcams).
+  rgba(4),
 
-/// A sendable, decoder-ready copy of one desktop camera frame.
+  /// Four bytes per pixel, blue first (iOS, macOS, most desktop webcams).
+  bgra(4),
+
+  /// One byte per pixel: the Y plane of a YUV frame (Android CameraX).
+  /// Luminance is all a QR decoder reads, so the chroma planes are never
+  /// copied.
+  luminance(1);
+
+  const QrFramePixelFormat(this.bytesPerPixel);
+
+  final int bytesPerPixel;
+}
+
+/// A sendable, decoder-ready copy of one camera frame.
 @immutable
-class DesktopQrFrame {
-  const DesktopQrFrame({
+class QrFrame {
+  const QrFrame({
     required this.bytes,
     required this.width,
     required this.height,
     required this.bytesPerRow,
-    required this.channelOrder,
+    required this.pixelFormat,
   });
 
   final Uint8List bytes;
   final int width;
   final int height;
   final int bytesPerRow;
-  final DesktopQrChannelOrder channelOrder;
+  final QrFramePixelFormat pixelFormat;
 }
 
-/// Decodes a QR payload from a packed RGBA/BGRA desktop camera frame.
+/// Decodes a QR payload from a packed camera frame.
 ///
 /// Camera rows may contain alignment padding, so pixels are walked using
-/// [DesktopQrFrame.bytesPerRow] rather than treating the plane as tightly
-/// packed. Malformed frames and frames without a QR code return null.
-String? decodeDesktopQrFrame(DesktopQrFrame frame) {
-  const bytesPerPixel = 4;
+/// [QrFrame.bytesPerRow] rather than treating the plane as tightly packed.
+/// A luminance plane goes through the same RGB source as grey pixels, which
+/// ZXing maps straight back to the original value. Malformed frames and
+/// frames without a QR code return null.
+String? decodeQrFrame(QrFrame frame) {
+  final bytesPerPixel = frame.pixelFormat.bytesPerPixel;
   if (frame.width <= 0 ||
       frame.height <= 0 ||
       frame.bytesPerRow < frame.width * bytesPerPixel) {
     return null;
   }
 
+  // The last row may stop at its final pixel rather than at a full stride;
+  // Android's Y plane is commonly delivered that way.
   final requiredBytes =
       (frame.height - 1) * frame.bytesPerRow + frame.width * bytesPerPixel;
   if (frame.bytes.length < requiredBytes) return null;
@@ -51,15 +72,20 @@ String? decodeDesktopQrFrame(DesktopQrFrame frame) {
     final rowStart = y * frame.bytesPerRow;
     for (var x = 0; x < frame.width; x++) {
       final offset = rowStart + x * bytesPerPixel;
-      final (red, green, blue) = switch (frame.channelOrder) {
-        DesktopQrChannelOrder.rgba => (
+      final (red, green, blue) = switch (frame.pixelFormat) {
+        QrFramePixelFormat.rgba => (
           frame.bytes[offset],
           frame.bytes[offset + 1],
           frame.bytes[offset + 2],
         ),
-        DesktopQrChannelOrder.bgra => (
+        QrFramePixelFormat.bgra => (
           frame.bytes[offset + 2],
           frame.bytes[offset + 1],
+          frame.bytes[offset],
+        ),
+        QrFramePixelFormat.luminance => (
+          frame.bytes[offset],
+          frame.bytes[offset],
           frame.bytes[offset],
         ),
       };
@@ -77,16 +103,17 @@ String? decodeDesktopQrFrame(DesktopQrFrame frame) {
   }
 }
 
-typedef DesktopQrUnavailableBuilder = Widget Function(BuildContext context);
-typedef DesktopQrDecoder = Future<String?> Function(DesktopQrFrame frame);
+typedef QrUnavailableBuilder = Widget Function(BuildContext context);
+typedef QrDecoder = Future<String?> Function(QrFrame frame);
 
-/// Linux webcam preview and QR decoder.
+/// Camera preview and QR decoder for every platform that scans.
 ///
-/// `mobile_scanner` covers Android, iOS, and macOS but has no Linux plugin.
-/// This widget uses the standard camera API, backed by `camera_desktop`, then
-/// decodes copied RGBA/BGRA frames off the UI isolate with ZXing.
-class DesktopQrScanner extends StatefulWidget {
-  const DesktopQrScanner({
+/// Built on the standard camera API — CameraX on Android, AVFoundation on
+/// iOS, `camera_desktop` on macOS and Linux — and decoded off the UI isolate
+/// with the pure-Dart ZXing port. No proprietary scanning SDK is involved,
+/// which keeps the Android build free of Google ML Kit.
+class QrScanner extends StatefulWidget {
+  const QrScanner({
     required this.onDetect,
     required this.unavailableBuilder,
     super.key,
@@ -94,46 +121,45 @@ class DesktopQrScanner extends StatefulWidget {
   });
 
   final ValueChanged<String> onDetect;
-  final DesktopQrUnavailableBuilder unavailableBuilder;
-  final DesktopQrDecoder decoder;
+  final QrUnavailableBuilder unavailableBuilder;
+  final QrDecoder decoder;
 
-  static Future<String?> _decodeOffUiIsolate(DesktopQrFrame frame) =>
-      Isolate.run(() => decodeDesktopQrFrame(frame));
+  static Future<String?> _decodeOffUiIsolate(QrFrame frame) =>
+      Isolate.run(() => decodeQrFrame(frame));
 
   @override
-  State<DesktopQrScanner> createState() => _DesktopQrScannerState();
+  State<QrScanner> createState() => _QrScannerState();
 }
 
 /// Narrow camera seam used by the widget tests; production uses
-/// [_CameraDesktopQrCamera].
+/// [_CameraQrCamera].
 @visibleForTesting
-abstract interface class DesktopQrCamera {
+abstract interface class QrCamera {
   Widget buildPreview();
 
   /// Starts the stream, consulting [shouldCaptureFrame] before copying a
-  /// native camera buffer into a Dart-owned [DesktopQrFrame].
+  /// native camera buffer into a Dart-owned [QrFrame].
   Future<void> start({
     required bool Function() shouldCaptureFrame,
-    required ValueChanged<DesktopQrFrame> onFrame,
+    required ValueChanged<QrFrame> onFrame,
     required ValueChanged<Object> onError,
   });
 
   Future<void> dispose();
 }
 
-typedef DesktopQrCameraFactory = Future<DesktopQrCamera> Function();
+typedef QrCameraFactory = Future<QrCamera> Function();
 
-/// Test-only factory override for a native Linux webcam.
+/// Test-only factory override for the native camera.
 @visibleForTesting
-DesktopQrCameraFactory? desktopQrCameraFactoryOverride;
+QrCameraFactory? qrCameraFactoryOverride;
 
-/// Creates the production Linux camera adapter through a testable seam.
+/// Creates the production camera adapter through a testable seam.
 @visibleForTesting
-Future<DesktopQrCamera> createDesktopQrCamera() =>
-    _CameraDesktopQrCamera.create();
+Future<QrCamera> createQrCamera() => _CameraQrCamera.create();
 
-class _DesktopQrScannerState extends State<DesktopQrScanner> {
-  DesktopQrCamera? _camera;
+class _QrScannerState extends State<QrScanner> {
+  QrCamera? _camera;
   bool _unavailable = false;
   bool _decoding = false;
   bool _handlingCameraFailure = false;
@@ -149,8 +175,7 @@ class _DesktopQrScannerState extends State<DesktopQrScanner> {
   Future<void> _initialize() async {
     try {
       final camera =
-          await (desktopQrCameraFactoryOverride?.call() ??
-              createDesktopQrCamera());
+          await (qrCameraFactoryOverride?.call() ?? createQrCamera());
       if (!mounted) {
         await camera.dispose();
         return;
@@ -179,8 +204,8 @@ class _DesktopQrScannerState extends State<DesktopQrScanner> {
       await _disposeCamera(failedCamera);
     }
     DevLogger.error(
-      name: 'DesktopQrScanner',
-      message: 'Desktop camera failed',
+      name: 'QrScanner',
+      message: 'Camera failed',
       error: error,
       stackTrace: stackTrace,
     );
@@ -188,13 +213,13 @@ class _DesktopQrScannerState extends State<DesktopQrScanner> {
     _handlingCameraFailure = false;
   }
 
-  Future<void> _disposeCamera(DesktopQrCamera camera) async {
+  Future<void> _disposeCamera(QrCamera camera) async {
     try {
       await camera.dispose();
     } on Exception catch (error, stackTrace) {
       DevLogger.error(
-        name: 'DesktopQrScanner',
-        message: 'Failed to dispose desktop camera',
+        name: 'QrScanner',
+        message: 'Failed to dispose camera',
         error: error,
         stackTrace: stackTrace,
       );
@@ -214,11 +239,11 @@ class _DesktopQrScannerState extends State<DesktopQrScanner> {
     return true;
   }
 
-  void _onFrame(DesktopQrFrame frame) {
+  void _onFrame(QrFrame frame) {
     unawaited(_decode(frame));
   }
 
-  Future<void> _decode(DesktopQrFrame frame) async {
+  Future<void> _decode(QrFrame frame) async {
     try {
       final payload = await widget.decoder(frame);
       if (!mounted ||
@@ -231,8 +256,8 @@ class _DesktopQrScannerState extends State<DesktopQrScanner> {
       widget.onDetect(payload);
     } on Exception catch (error, stackTrace) {
       DevLogger.error(
-        name: 'DesktopQrScanner',
-        message: 'Desktop QR decode failed',
+        name: 'QrScanner',
+        message: 'QR decode failed',
         error: error,
         stackTrace: stackTrace,
       );
@@ -260,22 +285,29 @@ class _DesktopQrScannerState extends State<DesktopQrScanner> {
   }
 }
 
-class _CameraDesktopQrCamera implements DesktopQrCamera {
-  _CameraDesktopQrCamera(this._controller);
+class _CameraQrCamera implements QrCamera {
+  _CameraQrCamera(this._controller);
 
   final CameraController _controller;
   VoidCallback? _cameraErrorListener;
 
-  static Future<_CameraDesktopQrCamera> create() async {
+  static Future<_CameraQrCamera> create() async {
     final cameras = await availableCameras();
     if (cameras.isEmpty) {
-      throw CameraException('no_camera', 'No webcam is available');
+      throw CameraException('no_camera', 'No camera is available');
     }
     final controller = CameraController(
-      cameras.first,
-      ResolutionPreset.medium,
+      _preferredCamera(cameras),
+      // A phone's medium preset is 480×360 on iOS, too coarse for a dense
+      // provisioning code held at arm's length; desktop webcams keep the
+      // cheaper preset they have always scanned with.
+      isMobile ? ResolutionPreset.high : ResolutionPreset.medium,
       enableAudio: false,
-      imageFormatGroup: ImageFormatGroup.bgra8888,
+      // Android's image stream offers YUV rather than BGRA; its Y plane is
+      // the luminance the decoder needs, without a colour conversion.
+      imageFormatGroup: isAndroid
+          ? ImageFormatGroup.yuv420
+          : ImageFormatGroup.bgra8888,
     );
     try {
       await controller.initialize();
@@ -283,16 +315,26 @@ class _CameraDesktopQrCamera implements DesktopQrCamera {
       await controller.dispose();
       rethrow;
     }
-    return _CameraDesktopQrCamera(controller);
+    return _CameraQrCamera(controller);
+  }
+
+  /// The code is on another device's screen, so a phone points its back
+  /// camera at it. Desktops report external or front webcams only, where the
+  /// first one listed is the one the system prefers.
+  static CameraDescription _preferredCamera(List<CameraDescription> cameras) {
+    for (final camera in cameras) {
+      if (camera.lensDirection == CameraLensDirection.back) return camera;
+    }
+    return cameras.first;
   }
 
   @override
-  Widget buildPreview() => CameraPreview(_controller);
+  Widget buildPreview() => _CoverCameraPreview(controller: _controller);
 
   @override
   Future<void> start({
     required bool Function() shouldCaptureFrame,
-    required ValueChanged<DesktopQrFrame> onFrame,
+    required ValueChanged<QrFrame> onFrame,
     required ValueChanged<Object> onError,
   }) async {
     void cameraErrorListener() {
@@ -309,15 +351,13 @@ class _CameraDesktopQrCamera implements DesktopQrCamera {
         if (image.planes.isEmpty || !shouldCaptureFrame()) return;
         final plane = image.planes.first;
         onFrame(
-          DesktopQrFrame(
+          QrFrame(
             // The native buffer is reused, so decoding must own a copy.
             bytes: Uint8List.fromList(plane.bytes),
             width: image.width,
             height: image.height,
             bytesPerRow: plane.bytesPerRow,
-            channelOrder: image.format.raw == 'RGBA'
-                ? DesktopQrChannelOrder.rgba
-                : DesktopQrChannelOrder.bgra,
+            pixelFormat: _pixelFormatOf(image.format),
           ),
         );
       });
@@ -327,6 +367,18 @@ class _CameraDesktopQrCamera implements DesktopQrCamera {
       rethrow;
     }
   }
+
+  /// YUV frames are decoded from their first plane, which is luminance;
+  /// four-byte frames name their channel order in the raw format.
+  static QrFramePixelFormat _pixelFormatOf(ImageFormat format) =>
+      switch (format.group) {
+        ImageFormatGroup.yuv420 ||
+        ImageFormatGroup.nv21 => QrFramePixelFormat.luminance,
+        _ =>
+          format.raw == 'RGBA'
+              ? QrFramePixelFormat.rgba
+              : QrFramePixelFormat.bgra,
+      };
 
   @override
   Future<void> dispose() async {
@@ -345,4 +397,53 @@ class _CameraDesktopQrCamera implements DesktopQrCamera {
     }
     await _controller.dispose();
   }
+}
+
+/// Fills the viewfinder square with the camera image, cropping rather than
+/// stretching it.
+///
+/// [CameraPreview] sizes itself with an [AspectRatio], which the square's
+/// tight constraints override, squashing the picture. Laying it out at its
+/// own ratio and scaling that to cover keeps the image undistorted.
+class _CoverCameraPreview extends StatelessWidget {
+  const _CoverCameraPreview({required this.controller});
+
+  final CameraController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<CameraValue>(
+      valueListenable: controller,
+      builder: (context, value, _) {
+        if (!value.isInitialized) return const SizedBox.shrink();
+        return ClipRect(
+          child: FittedBox(
+            fit: BoxFit.cover,
+            child: SizedBox(
+              width: previewAspectRatio(value),
+              height: 1,
+              child: CameraPreview(controller),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// The width-to-height ratio [CameraPreview] draws at for [value].
+///
+/// The sensor reports a landscape ratio; a phone held upright shows it
+/// rotated, so the ratio inverts. Mirrors `CameraPreview`'s own choice of
+/// orientation, which it does not expose.
+@visibleForTesting
+double previewAspectRatio(CameraValue value) {
+  final orientation =
+      value.previewPauseOrientation ??
+      value.lockedCaptureOrientation ??
+      value.deviceOrientation;
+  final landscape =
+      orientation == DeviceOrientation.landscapeLeft ||
+      orientation == DeviceOrientation.landscapeRight;
+  return landscape ? value.aspectRatio : 1 / value.aspectRatio;
 }

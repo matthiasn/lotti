@@ -1,11 +1,12 @@
 import 'dart:async';
 
-import 'package:camera/camera.dart' show CameraPreview;
+import 'package:camera/camera.dart' show CameraPreview, CameraValue, Optional;
 import 'package:camera_platform_interface/camera_platform_interface.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/sync/ui/provisioned/desktop_qr_scanner.dart';
+import 'package:lotti/features/sync/ui/provisioned/qr_scanner.dart';
 import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:zxing2/qrcode.dart';
 
@@ -18,36 +19,81 @@ void main() {
 
   setUp(() {
     originalCameraPlatform = CameraPlatform.instance;
+    final wasMobile = isMobile;
+    final wasAndroid = isAndroid;
+    isMobile = false;
+    isAndroid = false;
+    addTearDown(() {
+      isMobile = wasMobile;
+      isAndroid = wasAndroid;
+    });
     DevLogger.suppressOutput = true;
     DevLogger.clear();
   });
 
   tearDown(() {
     CameraPlatform.instance = originalCameraPlatform;
-    desktopQrCameraFactoryOverride = null;
+    qrCameraFactoryOverride = null;
     DevLogger.suppressOutput = false;
     DevLogger.clear();
   });
 
-  group('decodeDesktopQrFrame', () {
-    for (final order in DesktopQrChannelOrder.values) {
-      test('decodes ${order.name} data with padded rows', () {
+  group('decodeQrFrame', () {
+    for (final format in QrFramePixelFormat.values) {
+      test('decodes ${format.name} data with padded rows', () {
         const payload = 'lotti-sync-handover-v2';
-        final frame = _qrFrame(payload, order: order, rowPadding: 12);
+        final frame = _qrFrame(payload, format: format, rowPadding: 12);
 
-        expect(decodeDesktopQrFrame(frame), payload);
+        expect(decodeQrFrame(frame), payload);
       });
     }
 
+    test('decodes a luminance plane whose last row stops at its width', () {
+      // Android hands over a Y plane without the final row's stride padding;
+      // insisting on height × stride bytes would reject every such frame.
+      const payload = 'android-y-plane';
+      final padded = _qrFrame(
+        payload,
+        format: QrFramePixelFormat.luminance,
+        rowPadding: 16,
+      );
+      final trimmed = QrFrame(
+        bytes: Uint8List.sublistView(padded.bytes, 0, padded.bytes.length - 16),
+        width: padded.width,
+        height: padded.height,
+        bytesPerRow: padded.bytesPerRow,
+        pixelFormat: QrFramePixelFormat.luminance,
+      );
+
+      expect(decodeQrFrame(trimmed), payload);
+    });
+
+    test('rejects a luminance plane shorter than its last row', () {
+      final padded = _qrFrame(
+        'truncated',
+        format: QrFramePixelFormat.luminance,
+        rowPadding: 16,
+      );
+      final truncated = QrFrame(
+        bytes: Uint8List.sublistView(padded.bytes, 0, padded.bytes.length - 17),
+        width: padded.width,
+        height: padded.height,
+        bytesPerRow: padded.bytesPerRow,
+        pixelFormat: QrFramePixelFormat.luminance,
+      );
+
+      expect(decodeQrFrame(truncated), isNull);
+    });
+
     test('returns null for a malformed frame', () {
       expect(
-        decodeDesktopQrFrame(
-          DesktopQrFrame(
+        decodeQrFrame(
+          QrFrame(
             bytes: Uint8List(3),
             width: 20,
             height: 20,
             bytesPerRow: 80,
-            channelOrder: DesktopQrChannelOrder.rgba,
+            pixelFormat: QrFramePixelFormat.rgba,
           ),
         ),
         isNull,
@@ -56,13 +102,13 @@ void main() {
 
     test('returns null when the frame has no QR code', () {
       expect(
-        decodeDesktopQrFrame(
-          DesktopQrFrame(
+        decodeQrFrame(
+          QrFrame(
             bytes: Uint8List.fromList(List.filled(40 * 40 * 4, 0xFF)),
             width: 40,
             height: 40,
             bytesPerRow: 40 * 4,
-            channelOrder: DesktopQrChannelOrder.rgba,
+            pixelFormat: QrFramePixelFormat.rgba,
           ),
         ),
         isNull,
@@ -73,10 +119,10 @@ void main() {
       const payload = 'decoded-off-ui-isolate';
       final frame = _qrFrame(
         payload,
-        order: DesktopQrChannelOrder.rgba,
+        format: QrFramePixelFormat.rgba,
         rowPadding: 4,
       );
-      final scanner = DesktopQrScanner(
+      final scanner = QrScanner(
         onDetect: (_) {},
         unavailableBuilder: (_) => const SizedBox.shrink(),
       );
@@ -85,18 +131,18 @@ void main() {
     });
   });
 
-  group('DesktopQrScanner', () {
+  group('QrScanner', () {
     testWidgets(
       'copies one frame in five and continues after a different payload',
       (tester) async {
-        final camera = _FakeDesktopQrCamera();
-        desktopQrCameraFactoryOverride = () async => camera;
+        final camera = _FakeQrCamera();
+        qrCameraFactoryOverride = () async => camera;
         final detected = <String>[];
         var decodeCount = 0;
 
         await tester.pumpWidget(
           makeTestableWidget2(
-            DesktopQrScanner(
+            QrScanner(
               onDetect: detected.add,
               unavailableBuilder: (_) => const Text('Camera unavailable'),
               decoder: (_) async {
@@ -108,7 +154,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byKey(const Key('desktop_camera_preview')), findsOneWidget);
+        expect(find.byKey(const Key('camera_preview')), findsOneWidget);
         expect(camera.started, isTrue);
 
         camera.emit(_blankFrame());
@@ -134,12 +180,12 @@ void main() {
     testWidgets('shows the fallback when camera initialization fails', (
       tester,
     ) async {
-      desktopQrCameraFactoryOverride = () async =>
+      qrCameraFactoryOverride = () async =>
           throw const FormatException('no camera');
 
       await tester.pumpWidget(
         makeTestableWidget2(
-          DesktopQrScanner(
+          QrScanner(
             onDetect: (_) {},
             unavailableBuilder: (_) => const Text('Camera unavailable'),
           ),
@@ -153,14 +199,14 @@ void main() {
     testWidgets('disposes the camera before reporting stream start failure', (
       tester,
     ) async {
-      final camera = _FakeDesktopQrCamera(
+      final camera = _FakeQrCamera(
         startError: const FormatException('stream unavailable'),
       );
-      desktopQrCameraFactoryOverride = () async => camera;
+      qrCameraFactoryOverride = () async => camera;
 
       await tester.pumpWidget(
         makeTestableWidget2(
-          DesktopQrScanner(
+          QrScanner(
             onDetect: (_) {},
             unavailableBuilder: (_) => const Text('Camera unavailable'),
           ),
@@ -171,21 +217,21 @@ void main() {
       expect(camera.started, isTrue);
       expect(camera.disposed, isTrue);
       expect(find.text('Camera unavailable'), findsOneWidget);
-      expect(find.byKey(const Key('desktop_camera_preview')), findsNothing);
+      expect(find.byKey(const Key('camera_preview')), findsNothing);
     });
 
     testWidgets('keeps fallback usable when failed camera disposal throws', (
       tester,
     ) async {
-      final camera = _FakeDesktopQrCamera(
+      final camera = _FakeQrCamera(
         startError: const FormatException('stream unavailable'),
         disposeError: const FormatException('dispose failed'),
       );
-      desktopQrCameraFactoryOverride = () async => camera;
+      qrCameraFactoryOverride = () async => camera;
 
       await tester.pumpWidget(
         makeTestableWidget2(
-          DesktopQrScanner(
+          QrScanner(
             onDetect: (_) {},
             unavailableBuilder: (_) => const Text('Camera unavailable'),
           ),
@@ -201,13 +247,13 @@ void main() {
     testWidgets('disposes a camera created after the scanner is removed', (
       tester,
     ) async {
-      final cameraCompleter = Completer<DesktopQrCamera>();
-      final camera = _FakeDesktopQrCamera();
-      desktopQrCameraFactoryOverride = () => cameraCompleter.future;
+      final cameraCompleter = Completer<QrCamera>();
+      final camera = _FakeQrCamera();
+      qrCameraFactoryOverride = () => cameraCompleter.future;
 
       await tester.pumpWidget(
         makeTestableWidget2(
-          DesktopQrScanner(
+          QrScanner(
             onDetect: (_) {},
             unavailableBuilder: (_) => const Text('Camera unavailable'),
           ),
@@ -223,14 +269,14 @@ void main() {
     });
 
     testWidgets('recovers after the decoder throws', (tester) async {
-      final camera = _FakeDesktopQrCamera();
-      desktopQrCameraFactoryOverride = () async => camera;
+      final camera = _FakeQrCamera();
+      qrCameraFactoryOverride = () async => camera;
       final detected = <String>[];
       var decodeCount = 0;
 
       await tester.pumpWidget(
         makeTestableWidget2(
-          DesktopQrScanner(
+          QrScanner(
             onDetect: detected.add,
             unavailableBuilder: (_) => const Text('Camera unavailable'),
             decoder: (_) async {
@@ -257,12 +303,12 @@ void main() {
     });
 
     testWidgets('disposes the camera when removed', (tester) async {
-      final camera = _FakeDesktopQrCamera();
-      desktopQrCameraFactoryOverride = () async => camera;
+      final camera = _FakeQrCamera();
+      qrCameraFactoryOverride = () async => camera;
 
       await tester.pumpWidget(
         makeTestableWidget2(
-          DesktopQrScanner(
+          QrScanner(
             onDetect: (_) {},
             unavailableBuilder: (_) => const Text('Camera unavailable'),
           ),
@@ -278,14 +324,14 @@ void main() {
     testWidgets('contains camera disposal failures when removed', (
       tester,
     ) async {
-      final camera = _FakeDesktopQrCamera(
+      final camera = _FakeQrCamera(
         disposeError: const FormatException('release failed'),
       );
-      desktopQrCameraFactoryOverride = () async => camera;
+      qrCameraFactoryOverride = () async => camera;
 
       await tester.pumpWidget(
         makeTestableWidget2(
-          DesktopQrScanner(
+          QrScanner(
             onDetect: (_) {},
             unavailableBuilder: (_) => const Text('Camera unavailable'),
           ),
@@ -300,6 +346,70 @@ void main() {
     });
   });
 
+  group('previewAspectRatio', () {
+    const description = CameraDescription(
+      name: 'rear',
+      lensDirection: CameraLensDirection.back,
+      sensorOrientation: 90,
+    );
+    final landscapeSensor = const CameraValue.uninitialized(
+      description,
+    ).copyWith(isInitialized: true, previewSize: const Size(640, 480));
+
+    test('uses the sensor ratio in landscape', () {
+      expect(
+        previewAspectRatio(
+          landscapeSensor.copyWith(
+            deviceOrientation: DeviceOrientation.landscapeRight,
+          ),
+        ),
+        640 / 480,
+      );
+    });
+
+    test('inverts the ratio for an upright phone', () {
+      expect(
+        previewAspectRatio(
+          landscapeSensor.copyWith(
+            deviceOrientation: DeviceOrientation.portraitUp,
+          ),
+        ),
+        480 / 640,
+      );
+    });
+
+    test('a locked orientation wins over the device orientation', () {
+      expect(
+        previewAspectRatio(
+          landscapeSensor.copyWith(
+            deviceOrientation: DeviceOrientation.portraitUp,
+            lockedCaptureOrientation: const Optional.of(
+              DeviceOrientation.landscapeLeft,
+            ),
+          ),
+        ),
+        640 / 480,
+      );
+    });
+
+    test('a paused preview keeps the orientation it paused in', () {
+      expect(
+        previewAspectRatio(
+          landscapeSensor.copyWith(
+            deviceOrientation: DeviceOrientation.landscapeLeft,
+            lockedCaptureOrientation: const Optional.of(
+              DeviceOrientation.landscapeLeft,
+            ),
+            previewPauseOrientation: const Optional.of(
+              DeviceOrientation.portraitDown,
+            ),
+          ),
+        ),
+        480 / 640,
+      );
+    });
+  });
+
   group('production camera adapter', () {
     testWidgets('shows the fallback when no webcam exists', (tester) async {
       final platform = _FakeCameraPlatform(cameras: const []);
@@ -307,7 +417,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidget2(
-          DesktopQrScanner(
+          QrScanner(
             onDetect: (_) {},
             unavailableBuilder: (_) => const Text('No webcam'),
           ),
@@ -324,7 +434,7 @@ void main() {
       CameraPlatform.instance = platform;
 
       await expectLater(
-        createDesktopQrCamera(),
+        createQrCamera(),
         throwsA(
           isA<CameraException>().having(
             (error) => error.code,
@@ -341,11 +451,10 @@ void main() {
     test('copies admitted RGBA and BGRA frames before decoding', () async {
       final platform = _FakeCameraPlatform();
       CameraPlatform.instance = platform;
-      final decodedFrames = <DesktopQrFrame>[];
+      final decodedFrames = <QrFrame>[];
       var admitFrame = false;
 
-      final camera = await createDesktopQrCamera();
-      expect(camera.buildPreview(), isA<CameraPreview>());
+      final camera = await createQrCamera();
       await camera.start(
         shouldCaptureFrame: () => admitFrame,
         onFrame: decodedFrames.add,
@@ -370,10 +479,25 @@ void main() {
       bgraBytes[0] = 88;
 
       expect(decodedFrames, hasLength(2));
-      expect(decodedFrames.first.channelOrder, DesktopQrChannelOrder.rgba);
+      expect(decodedFrames.first.pixelFormat, QrFramePixelFormat.rgba);
       expect(decodedFrames.first.bytes, [1, 2, 3, 4]);
-      expect(decodedFrames.last.channelOrder, DesktopQrChannelOrder.bgra);
+      expect(decodedFrames.last.pixelFormat, QrFramePixelFormat.bgra);
       expect(decodedFrames.last.bytes, [5, 6, 7, 8]);
+
+      // Android's YUV stream is decoded from its first (Y) plane alone.
+      final yPlane = Uint8List.fromList([9, 10, 11, 12]);
+      platform.emit(
+        _cameraImage(
+          yPlane,
+          rawFormat: 35,
+          group: ImageFormatGroup.yuv420,
+        ),
+      );
+      yPlane[0] = 77;
+      expect(decodedFrames, hasLength(3));
+      expect(decodedFrames.last.pixelFormat, QrFramePixelFormat.luminance);
+      expect(decodedFrames.last.bytes, [9, 10, 11, 12]);
+      expect(decodedFrames.last.bytesPerRow, 4);
 
       await camera.dispose();
 
@@ -381,11 +505,125 @@ void main() {
       expect(platform.disposedCameraIds, [7]);
     });
 
+    test('Android streams YUV at the higher phone resolution', () async {
+      isMobile = true;
+      isAndroid = true;
+      final platform = _FakeCameraPlatform();
+      CameraPlatform.instance = platform;
+
+      final camera = await createQrCamera();
+
+      expect(platform.requestedImageFormat, ImageFormatGroup.yuv420);
+      expect(platform.requestedResolution, ResolutionPreset.high);
+      await camera.dispose();
+    });
+
+    test('iOS keeps BGRA frames at the higher phone resolution', () async {
+      isMobile = true;
+      final platform = _FakeCameraPlatform();
+      CameraPlatform.instance = platform;
+
+      final camera = await createQrCamera();
+
+      expect(platform.requestedImageFormat, ImageFormatGroup.bgra8888);
+      expect(platform.requestedResolution, ResolutionPreset.high);
+      await camera.dispose();
+    });
+
+    test('prefers the back camera over one listed before it', () async {
+      final platform = _FakeCameraPlatform(
+        cameras: const [
+          CameraDescription(
+            name: 'selfie',
+            lensDirection: CameraLensDirection.front,
+            sensorOrientation: 270,
+          ),
+          CameraDescription(
+            name: 'rear',
+            lensDirection: CameraLensDirection.back,
+            sensorOrientation: 90,
+          ),
+        ],
+      );
+      CameraPlatform.instance = platform;
+
+      final camera = await createQrCamera();
+
+      expect(platform.createdCameraNames, ['rear']);
+      await camera.dispose();
+    });
+
+    test('falls back to the first camera when none faces back', () async {
+      final platform = _FakeCameraPlatform(
+        cameras: const [
+          CameraDescription(
+            name: 'built-in',
+            lensDirection: CameraLensDirection.front,
+            sensorOrientation: 0,
+          ),
+          CameraDescription(
+            name: 'usb',
+            lensDirection: CameraLensDirection.external,
+            sensorOrientation: 0,
+          ),
+        ],
+      );
+      CameraPlatform.instance = platform;
+
+      final camera = await createQrCamera();
+
+      expect(platform.createdCameraNames, ['built-in']);
+      await camera.dispose();
+    });
+
+    for (final (orientation, expected) in const [
+      (DeviceOrientation.portraitUp, Size(200, 800 / 3)),
+      (DeviceOrientation.landscapeLeft, Size(800 / 3, 200)),
+    ]) {
+      testWidgets(
+        'a ${orientation.name} preview covers the square undistorted',
+        (tester) async {
+          final platform = _FakeCameraPlatform(orientation: orientation);
+          CameraPlatform.instance = platform;
+
+          final camera = await createQrCamera();
+          addTearDown(camera.dispose);
+          await tester.pumpWidget(
+            makeTestableWidget2(
+              Center(
+                child: SizedBox.square(
+                  key: const Key('viewfinder'),
+                  dimension: 200,
+                  child: camera.buildPreview(),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+
+          // The 640×480 picture keeps its own ratio and is scaled until the
+          // shorter side fills the square, rather than squashed into it.
+          final preview = tester.getRect(find.byType(CameraPreview));
+          expect(preview.width, closeTo(expected.width, 0.01));
+          expect(preview.height, closeTo(expected.height, 0.01));
+          final square = find.byKey(const Key('viewfinder'));
+          expect(preview.center, tester.getCenter(square));
+          // The overflow is clipped to the square.
+          expect(
+            tester.getSize(
+              find.descendant(of: square, matching: find.byType(ClipRect)),
+            ),
+            const Size.square(200),
+          );
+        },
+      );
+    }
+
     test('still disposes when the native stream already stopped', () async {
       final platform = _FakeCameraPlatform(throwOnStreamCancel: true);
       CameraPlatform.instance = platform;
 
-      final camera = await createDesktopQrCamera();
+      final camera = await createQrCamera();
       await camera.start(
         shouldCaptureFrame: () => false,
         onFrame: (_) {},
@@ -404,7 +642,7 @@ void main() {
       CameraPlatform.instance = platform;
       final errors = <Object>[];
 
-      final camera = await createDesktopQrCamera();
+      final camera = await createQrCamera();
       await expectLater(
         camera.start(
           shouldCaptureFrame: () => false,
@@ -436,7 +674,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidget2(
-          DesktopQrScanner(
+          QrScanner(
             onDetect: (_) {},
             unavailableBuilder: (_) => const Text('Camera disconnected'),
           ),
@@ -458,24 +696,25 @@ void main() {
   });
 }
 
-DesktopQrFrame _blankFrame() => DesktopQrFrame(
+QrFrame _blankFrame() => QrFrame(
   bytes: Uint8List.fromList(List.filled(4, 0xFF)),
   width: 1,
   height: 1,
   bytesPerRow: 4,
-  channelOrder: DesktopQrChannelOrder.rgba,
+  pixelFormat: QrFramePixelFormat.rgba,
 );
 
 CameraImageData _cameraImage(
   Uint8List bytes, {
   required Object rawFormat,
+  ImageFormatGroup group = ImageFormatGroup.bgra8888,
 }) => CameraImageData(
-  format: CameraImageFormat(ImageFormatGroup.bgra8888, raw: rawFormat),
+  format: CameraImageFormat(group, raw: rawFormat),
   planes: [
     CameraImagePlane(
       bytes: bytes,
-      bytesPerRow: 4,
-      bytesPerPixel: 4,
+      bytesPerRow: bytes.length,
+      bytesPerPixel: group == ImageFormatGroup.bgra8888 ? 4 : 1,
       height: 1,
       width: 1,
     ),
@@ -491,17 +730,18 @@ CameraImageData _cameraImageWithoutPlanes() => const CameraImageData(
   width: 1,
 );
 
-DesktopQrFrame _qrFrame(
+QrFrame _qrFrame(
   String payload, {
-  required DesktopQrChannelOrder order,
+  required QrFramePixelFormat format,
   required int rowPadding,
 }) {
   const quietZone = 4;
   const scale = 7;
+  final bytesPerPixel = format.bytesPerPixel;
   final matrix = Encoder.encode(payload, ErrorCorrectionLevel.h).matrix!;
   final width = (matrix.width + quietZone * 2) * scale;
   final height = (matrix.height + quietZone * 2) * scale;
-  final bytesPerRow = width * 4 + rowPadding;
+  final bytesPerRow = width * bytesPerPixel + rowPadding;
   final bytes = Uint8List(bytesPerRow * height)
     ..fillRange(0, bytesPerRow * height, 0xFF);
 
@@ -512,32 +752,31 @@ DesktopQrFrame _qrFrame(
       final startY = (moduleY + quietZone) * scale;
       for (var y = startY; y < startY + scale; y++) {
         for (var x = startX; x < startX + scale; x++) {
-          final offset = y * bytesPerRow + x * 4;
-          bytes[offset] = 0;
-          bytes[offset + 1] = 0;
-          bytes[offset + 2] = 0;
-          bytes[offset + 3] = 0xFF;
+          final offset = y * bytesPerRow + x * bytesPerPixel;
+          bytes.fillRange(offset, offset + bytesPerPixel, 0);
+          // Four-byte formats keep an opaque alpha channel.
+          if (bytesPerPixel == 4) bytes[offset + 3] = 0xFF;
         }
       }
     }
   }
 
-  return DesktopQrFrame(
+  return QrFrame(
     bytes: bytes,
     width: width,
     height: height,
     bytesPerRow: bytesPerRow,
-    channelOrder: order,
+    pixelFormat: format,
   );
 }
 
-class _FakeDesktopQrCamera implements DesktopQrCamera {
-  _FakeDesktopQrCamera({this.startError, this.disposeError});
+class _FakeQrCamera implements QrCamera {
+  _FakeQrCamera({this.startError, this.disposeError});
 
   final Exception? startError;
   final Exception? disposeError;
   bool Function()? _shouldCaptureFrame;
-  ValueChanged<DesktopQrFrame>? _onFrame;
+  ValueChanged<QrFrame>? _onFrame;
   bool started = false;
   bool disposed = false;
   int emittedFrames = 0;
@@ -545,11 +784,11 @@ class _FakeDesktopQrCamera implements DesktopQrCamera {
 
   @override
   Widget buildPreview() => const ColoredBox(
-    key: Key('desktop_camera_preview'),
+    key: Key('camera_preview'),
     color: Colors.green,
   );
 
-  void emit(DesktopQrFrame frame) {
+  void emit(QrFrame frame) {
     emittedFrames++;
     if (!(_shouldCaptureFrame?.call() ?? false)) return;
     capturedFrames++;
@@ -559,7 +798,7 @@ class _FakeDesktopQrCamera implements DesktopQrCamera {
   @override
   Future<void> start({
     required bool Function() shouldCaptureFrame,
-    required ValueChanged<DesktopQrFrame> onFrame,
+    required ValueChanged<QrFrame> onFrame,
     required ValueChanged<Object> onError,
   }) async {
     started = true;
@@ -591,6 +830,7 @@ class _FakeCameraPlatform extends CameraPlatform {
     this.throwOnInitialize = false,
     this.throwOnStreamListen = false,
     this.throwOnStreamCancel = false,
+    this.orientation,
   }) {
     _frames = StreamController<CameraImageData>(
       sync: true,
@@ -609,6 +849,10 @@ class _FakeCameraPlatform extends CameraPlatform {
   final bool throwOnInitialize;
   final bool throwOnStreamListen;
   final bool throwOnStreamCancel;
+
+  /// Reported through the orientation stream when set; the controller
+  /// otherwise keeps its portrait default.
+  final DeviceOrientation? orientation;
   final _initialized = StreamController<CameraInitializedEvent>.broadcast(
     sync: true,
   );
@@ -616,6 +860,7 @@ class _FakeCameraPlatform extends CameraPlatform {
   late final StreamController<CameraImageData> _frames;
 
   int createCalls = 0;
+  final createdCameraNames = <String>[];
   bool streaming = false;
   bool streamCancelled = false;
   bool? requestedAudio;
@@ -637,6 +882,7 @@ class _FakeCameraPlatform extends CameraPlatform {
     MediaSettings mediaSettings,
   ) async {
     createCalls++;
+    createdCameraNames.add(cameraDescription.name);
     requestedAudio = mediaSettings.enableAudio;
     requestedResolution = mediaSettings.resolutionPreset;
     return 7;
@@ -672,8 +918,12 @@ class _FakeCameraPlatform extends CameraPlatform {
   Stream<CameraErrorEvent> onCameraError(int cameraId) => _errors.stream;
 
   @override
-  Stream<DeviceOrientationChangedEvent> onDeviceOrientationChanged() =>
-      const Stream.empty();
+  Stream<DeviceOrientationChangedEvent> onDeviceOrientationChanged() {
+    final reported = orientation;
+    return reported == null
+        ? const Stream.empty()
+        : Stream.value(DeviceOrientationChangedEvent(reported));
+  }
 
   @override
   bool supportsImageStreaming() => true;
