@@ -1,7 +1,7 @@
 ---
 type: Architecture
 title: Device location
-description: How a new entry gets its geolocation — platform routing, the open-source native sources on each platform, permission, timeouts and the IP fallback.
+description: How a new entry gets its geolocation — platform routing, the native sources on each platform without Google Play Services, permission, timeouts and the IP fallback.
 resource: ../../lib/utils/location.dart
 tags: [location, geolocation, permissions, android, ios, macos, linux, fdroid, privacy]
 status: stable
@@ -77,16 +77,21 @@ flowchart TD
   logged under `LogDomain.location` / `native_location_fallback` before
   falling back.
 
-# No proprietary location code
+# No Google Play Services
 
-Every path here is open source: CoreLocation, the AOSP `LocationManager` with
-AndroidX, xdg-desktop-portal and GeoClue. **Nothing may link Google Play
-Services' fused location provider**, because the Android build has to run on
-de-Googled phones and be buildable for F-Droid. That rules out the `location`
-and `geolocator` packages as they ship: both pull in
-`play-services-location` on Android. iOS and macOS use `geolocator_apple`
-directly — the Apple implementation behind `geolocator`, without the
-front-end package that would drag its Android side in.
+**Nothing may link Google Play Services' fused location provider**, because the
+Android build has to run on de-Googled phones and be buildable for F-Droid.
+That rules out the `location` and `geolocator` packages as they ship: both
+pull in `play-services-location` on Android.
+
+- **Android** is open source end to end: the AOSP `LocationManager` with
+  AndroidX, through the app's own plugin.
+- **Linux** uses xdg-desktop-portal and GeoClue, also open source.
+- **iOS and macOS** get the location from CoreLocation, Apple's own
+  proprietary framework, through the open-source `geolocator_apple` plugin —
+  the Apple implementation behind `geolocator`, used without the front-end
+  package that would drag its Android side in. No third-party SDK sits in
+  between.
 
 One consequence is visible to users: **Lotti never asks to switch location
 services on.** Android's in-app prompt for that is a Play Services API, and
@@ -143,11 +148,13 @@ stateDiagram-v2
   the activity answers them null.
 - **Providers are raced, not ranked.** Eligible are Android's own fused
   provider (API 31+, part of AOSP), the network provider when enabled, and GPS
-  when enabled *and* precise permission was granted. All are asked at once
-  under one `CancellationSignal`; the first real fix wins and cancels the
-  rest. Committing to one provider is unsafe on de-Googled phones, whose
-  network provider can report itself enabled with nothing behind it.
-- **Timeout.** A main-thread timer cancels the signal. Then, or when every
+  when enabled *and* precise permission was granted. All are asked at once,
+  each with its own `CancellationSignal` (a signal holds one cancel listener,
+  so a shared one would stop only the last request); the first real fix wins
+  and cancels the rest. Committing to one provider is unsafe on de-Googled
+  phones, whose network provider can report itself enabled with nothing
+  behind it.
+- **Timeout.** A main-thread timer cancels every request. Then, or when every
   provider has come back empty, the freshest last-known fix from any enabled
   provider stands in if it is at most 15 minutes old.
 - `FOREGROUND_SERVICE_LOCATION` is removed from the merged manifest: location

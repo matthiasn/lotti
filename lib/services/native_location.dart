@@ -28,10 +28,10 @@ class NativeLocationFix {
 
 /// A platform's native location source.
 ///
-/// Only open-source code sits behind this: CoreLocation on Apple platforms and
-/// the AOSP `LocationManager` on Android. Google Play Services' fused location
-/// provider is deliberately absent, so builds for de-Googled devices and
-/// F-Droid carry no proprietary location code.
+/// Behind this is Apple's own CoreLocation on iOS and macOS and the
+/// open-source AOSP `LocationManager` on Android. Google Play Services' fused
+/// location provider is deliberately absent, so Android builds for de-Googled
+/// devices and F-Droid carry no proprietary location code.
 abstract interface class NativeLocationSource {
   /// Asks for permission if it has not been decided yet, then reads the
   /// current position.

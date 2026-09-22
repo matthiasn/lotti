@@ -158,9 +158,9 @@ class LottiLocationPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
      * a de-Googled phone can report its network provider as enabled while
      * nothing backs it, and without a network it never answers either way.
      * Racing them lets GPS produce the fix the network provider cannot, and
-     * one shared signal cancels the losers as soon as a winner arrives. Only
-     * when every provider comes back empty, or the timeout passes, does a
-     * recent last-known fix stand in.
+     * the losers are cancelled as soon as a winner arrives. Only when every
+     * provider comes back empty, or the timeout passes, does a recent
+     * last-known fix stand in.
      */
     @SuppressLint("MissingPermission") // Checked by withPermission.
     private fun currentLocation(timeoutMs: Long, result: Result) {
@@ -175,13 +175,17 @@ class LottiLocationPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
             return
         }
 
-        val signal = CancellationSignal()
+        // One signal per request: a CancellationSignal holds a single cancel
+        // listener, so a shared one would only ever stop the last request and
+        // leave the losing providers running until their own timeout.
+        val signals = providers.map { CancellationSignal() }
+        val timeoutToken = Any()
         var answered = false
         var outstanding = providers.size
         fun finish() {
             answered = true
-            signal.cancel()
-            mainHandler.removeCallbacksAndMessages(signal)
+            signals.forEach { it.cancel() }
+            mainHandler.removeCallbacksAndMessages(timeoutToken)
         }
         fun answer(location: Location?) {
             if (answered) return
@@ -192,16 +196,16 @@ class LottiLocationPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
         try {
             mainHandler.postAtTime(
                 { answer(null) },
-                signal,
+                timeoutToken,
                 SystemClock.uptimeMillis() + timeoutMs,
             )
             // Callbacks arrive on the main executor, so none can run before
             // every request below has been made.
-            for (provider in providers) {
+            providers.forEachIndexed { index, provider ->
                 LocationManagerCompat.getCurrentLocation(
                     manager,
                     provider,
-                    signal,
+                    signals[index],
                     ContextCompat.getMainExecutor(context),
                 ) { location ->
                     outstanding--
