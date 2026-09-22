@@ -103,6 +103,22 @@ void main() {
       expect(queries.length, greaterThan(1));
     });
 
+    testWidgets('the search glyph submits the typed query', (tester) async {
+      final queries = <String>[];
+      await pumpEventScreen(
+        tester,
+        EventsOverviewView(sections: _sections(), onQueryChanged: queries.add),
+        size: _desktop,
+      );
+      await tester.enterText(find.byType(TextField), 'gala');
+      queries.clear();
+
+      await tester.tap(find.byIcon(LottiIcons.search));
+      await tester.pump();
+
+      expect(queries, ['gala']);
+    });
+
     testWidgets('seeds the search field with the current query', (
       tester,
     ) async {

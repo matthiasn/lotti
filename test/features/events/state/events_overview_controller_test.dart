@@ -305,6 +305,182 @@ void main() {
     expect(state.events.map((e) => e.event.meta.id), ['gar']);
   });
 
+  group('overlapping filter changes', () {
+    /// Pages over [all] like [stubPaged], but holds every call for which
+    /// [hold] returns a future until that future completes.
+    void stubHeld(
+      List<JournalEvent> all, {
+      required Future<void>? Function(Invocation) hold,
+    }) {
+      when(
+        () => db.getJournalEntities(
+          types: any(named: 'types'),
+          ids: any(named: 'ids'),
+          starredStatuses: any(named: 'starredStatuses'),
+          privateStatuses: any(named: 'privateStatuses'),
+          flaggedStatuses: any(named: 'flaggedStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+        ),
+      ).thenAnswer((invocation) async {
+        final gate = hold(invocation);
+        if (gate != null) await gate;
+        final limit = invocation.namedArguments[#limit] as int;
+        final offset = invocation.namedArguments[#offset] as int;
+        final categoryIds =
+            invocation.namedArguments[#categoryIds] as Set<String>?;
+        final filtered = categoryIds == null
+            ? all
+            : all
+                  .where((e) => categoryIds.contains(e.meta.categoryId))
+                  .toList();
+        if (offset >= filtered.length) return <JournalEntity>[];
+        final end = (offset + limit).clamp(0, filtered.length);
+        return filtered.sublist(offset, end);
+      });
+    }
+
+    bool isSearch(Invocation invocation) =>
+        invocation.namedArguments[#limit] != eventsPageSize;
+
+    test('clearing before the typed query lands restores everything', () async {
+      final typed = Completer<void>();
+      var held = false;
+      stubHeld(
+        [
+          _event('gala', title: 'Gala'),
+          _event('summit', title: 'Summit'),
+        ],
+        hold: (invocation) {
+          if (!isSearch(invocation) || held) return null;
+          held = true;
+          return typed.future;
+        },
+      );
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await container.read(eventsOverviewControllerProvider.future);
+      final controller = container.read(
+        eventsOverviewControllerProvider.notifier,
+      );
+
+      final pending = controller.setQuery('g');
+      // The committed query is still '' here; the clear must not be
+      // mistaken for a no-op.
+      await controller.setQuery('');
+      typed.complete();
+      await pending;
+
+      final state = container.read(eventsOverviewControllerProvider).value!;
+      expect(state.query, isEmpty);
+      expect(state.events.map((e) => e.event.meta.id), ['gala', 'summit']);
+    });
+
+    test('a category picked while a query loads keeps the query', () async {
+      final typed = Completer<void>();
+      var held = false;
+      stubHeld(
+        [
+          _event('a-gala', categoryId: 'cat-a', title: 'Gala A'),
+          _event('b-gala', categoryId: 'cat-b', title: 'Gala B'),
+          _event('a-other', categoryId: 'cat-a', title: 'Other'),
+        ],
+        hold: (invocation) {
+          if (!isSearch(invocation) || held) return null;
+          held = true;
+          return typed.future;
+        },
+      );
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await container.read(eventsOverviewControllerProvider.future);
+      final controller = container.read(
+        eventsOverviewControllerProvider.notifier,
+      );
+
+      final pending = controller.setQuery('gala');
+      await controller.setCategoryIds({'cat-a'});
+      typed.complete();
+      await pending;
+
+      final state = container.read(eventsOverviewControllerProvider).value!;
+      expect(state.query, 'gala');
+      expect(state.categoryIds, {'cat-a'});
+      expect(state.events.map((e) => e.event.meta.id), ['a-gala']);
+    });
+
+    test('a page loaded during a filter change cannot revert it', () async {
+      final nextPage = Completer<void>();
+      final all = [
+        for (var i = 0; i < eventsPageSize + 5; i++)
+          _event('e$i', title: i == 0 ? 'Gala' : 'Event'),
+      ];
+      stubHeld(
+        all,
+        hold: (invocation) =>
+            invocation.namedArguments[#offset] != 0 ? nextPage.future : null,
+      );
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final first = await container.read(
+        eventsOverviewControllerProvider.future,
+      );
+      expect(first.hasMore, isTrue);
+      final controller = container.read(
+        eventsOverviewControllerProvider.notifier,
+      );
+
+      // The filter reload starts, the user scrolls, the filter lands, and
+      // only then does the unfiltered next page arrive.
+      final filtering = controller.setQuery('gala');
+      final paging = controller.loadMore();
+      await filtering;
+      nextPage.complete();
+      await paging;
+
+      final state = container.read(eventsOverviewControllerProvider).value!;
+      expect(state.query, 'gala');
+      expect(state.events.map((e) => e.event.meta.id), ['e0']);
+    });
+
+    test(
+      'a sync refresh during a filter change carries the new filter',
+      () async {
+        final typed = Completer<void>();
+        var held = false;
+        final master = [
+          _event('gala', title: 'Gala'),
+          _event('summit', title: 'Summit'),
+        ];
+        stubHeld(
+          master,
+          hold: (invocation) {
+            if (!isSearch(invocation) || held) return null;
+            held = true;
+            return typed.future;
+          },
+        );
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+        await container.read(eventsOverviewControllerProvider.future);
+        final controller = container.read(
+          eventsOverviewControllerProvider.notifier,
+        );
+
+        final pending = controller.setQuery('gala');
+        updates.add({eventNotification});
+        await pumpEventQueue();
+        typed.complete();
+        await pending;
+
+        final state = container.read(eventsOverviewControllerProvider).value!;
+        expect(state.query, 'gala');
+        expect(state.events.map((e) => e.event.meta.id), ['gala']);
+      },
+    );
+  });
+
   test('re-applying the current filter does not reload', () async {
     stubPaged([_event('e1')]);
     final container = ProviderContainer();

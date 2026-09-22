@@ -61,12 +61,24 @@ final eventsOverviewControllerProvider =
 
 class EventsOverviewController extends AsyncNotifier<EventsOverviewState> {
   /// Bumped whenever a reload supersedes in-flight work (a query or category
-  /// change, or a sync refresh), so a late page — from `loadMore` or from an
-  /// earlier keystroke — can't overwrite the newer state with a stale list.
+  /// change, or a sync refresh) and again when a reload commits, so a late
+  /// page — from `loadMore`, from an earlier keystroke, or from a refresh —
+  /// can't overwrite the newer state with a stale list.
   int _generation = 0;
+
+  /// The filter the user last asked for, which runs ahead of the committed
+  /// state while a reload is in flight. Filter changes merge and dedupe
+  /// against this, not against [state], so overlapping edits (typing, then
+  /// picking a category before the query's load lands) never drop one
+  /// dimension, and a clear typed before the load lands is never mistaken
+  /// for a no-op.
+  String _requestedQuery = '';
+  Set<String> _requestedCategoryIds = const {};
 
   @override
   Future<EventsOverviewState> build() async {
+    _requestedQuery = '';
+    _requestedCategoryIds = const {};
     final sub = getIt<UpdateNotifications>().updateStream.listen((affected) {
       final loadedEventIds = state.value?.events
           .map((resolved) => resolved.event.meta.id)
@@ -152,20 +164,23 @@ class EventsOverviewController extends AsyncNotifier<EventsOverviewState> {
   /// screen during the (fast, local) reload, so there is no full-screen
   /// spinner flash while typing.
   Future<void> _applyFilters({String? query, Set<String>? categoryIds}) async {
-    final current = state.value;
-    final nextQuery = query ?? current?.query ?? '';
-    final nextCategories = categoryIds ?? current?.categoryIds ?? const {};
-    if (current != null &&
-        current.query == nextQuery &&
-        setEquals(current.categoryIds, nextCategories)) {
+    final nextQuery = query ?? _requestedQuery;
+    final nextCategories = categoryIds ?? _requestedCategoryIds;
+    if (nextQuery == _requestedQuery &&
+        setEquals(nextCategories, _requestedCategoryIds)) {
       return;
     }
+    _requestedQuery = nextQuery;
+    _requestedCategoryIds = nextCategories;
     final generation = ++_generation;
     final next = await AsyncValue.guard(
       () => _loadFirstPage(categoryIds: nextCategories, query: nextQuery),
     );
     if (!ref.mounted || generation != _generation) return;
     state = next;
+    // A `loadMore` that started while this load was in flight read the old
+    // list and the old filter; its page must not land on the new one.
+    _generation++;
   }
 
   /// Re-fetches the currently-loaded window after a sync/db change, so new or
@@ -177,22 +192,27 @@ class EventsOverviewController extends AsyncNotifier<EventsOverviewState> {
     final count = current.events.length < eventsPageSize
         ? eventsPageSize
         : current.events.length;
+    // The requested filter, not the committed one: a refresh that lands while
+    // a filter change is in flight supersedes it, so it must carry it.
+    final query = _requestedQuery;
+    final categoryIds = _requestedCategoryIds;
     try {
       final reloaded = await loadResolvedEventsPage(
         limit: count,
         offset: 0,
-        categoryIds: current.categoryIds,
-        query: current.query,
+        categoryIds: categoryIds,
+        query: query,
       );
       if (!ref.mounted || generation != _generation) return;
       state = AsyncData(
         EventsOverviewState(
           events: reloaded,
           hasMore: reloaded.length == count,
-          categoryIds: current.categoryIds,
-          query: current.query,
+          categoryIds: categoryIds,
+          query: query,
         ),
       );
+      _generation++;
     } catch (_) {
       // A background refresh failure keeps the current list rather than
       // flashing an error over established content.

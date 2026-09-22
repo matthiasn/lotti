@@ -99,7 +99,13 @@ the database as before. Covers resolve only for the returned page either way.
 **Every keystroke reloads, and only the newest one lands.** Like the Tasks
 search there is no debounce; `_applyFilters` bumps the generation that already
 guards `loadMore` and sync refreshes, so a slow earlier keystroke cannot
-overwrite a later result. The previous list stays on screen while a reload
+overwrite a later result. Filter changes merge against the *requested* filter
+(`_requestedQuery`, `_requestedCategoryIds`), which runs ahead of the committed
+state while a load is in flight — otherwise a category picked before the query
+landed would drop the query, and a clear typed before it landed would look like
+a no-op. A sync refresh reloads that requested filter too, and every committed
+reload bumps the generation once more, so a `loadMore` page read under the old
+filter cannot land on the new list. The previous list stays on screen while a reload
 runs, and a filter that matches nothing shows an empty state that offers
 **Clear all** rather than a blank page.
 

@@ -321,6 +321,39 @@ void main() {
     },
   );
 
+  testWidgets('filtering to Unassigned shows an Unassigned chip', (
+    tester,
+  ) async {
+    stubPaged([
+      _event('loose', DateTime(2020, 3), title: 'Loose', categoryId: ''),
+      _event('work', DateTime(2020, 4), title: 'Filed', categoryId: 'work'),
+    ]);
+
+    await pumpPage(tester);
+    await tester.tap(find.byIcon(LottiIcons.filter));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    tester
+        .widget<DesignSystemSelectionRow>(
+          find.byKey(const ValueKey('design-system-filter-selection-option-')),
+        )
+        .onTap!();
+    await tester.pump();
+    tester
+        .widget<DesignSystemButton>(
+          find.byKey(const ValueKey('design-system-task-filter-apply')),
+        )
+        .onPressed!();
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.widget<ActiveFilterChip>(find.byType(ActiveFilterChip)).label,
+      'Unassigned',
+    );
+    expect(find.text('Loose'), findsOneWidget);
+    expect(find.text('Filed'), findsNothing);
+  });
+
   testWidgets('opening an event card beams to its detail route', (
     tester,
   ) async {
