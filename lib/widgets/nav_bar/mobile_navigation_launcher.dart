@@ -5,6 +5,7 @@ import 'package:lotti/features/design_system/components/glass_chip_surface.dart'
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Whether the mobile navigation launcher owns the bottom action row on the
@@ -17,12 +18,15 @@ import 'package:material_ui/material_ui.dart';
 /// the launcher (see [MobileNavigationLauncher.pageAction]) rather than
 /// floating it above the launcher, so the two land on one row.
 ///
-/// True on every compact window: the launcher is the mobile shell's only
-/// navigation. The desktop layout has no launcher at all — the sidebar
-/// replaces the bottom navigation there, and floating actions keep their
-/// corner — so this is the one place a page needs to ask.
+/// True on every compact window that floats the launcher. The desktop
+/// layout has none — the sidebar replaces the bottom navigation there — and
+/// neither does the experimental mobile sidebar navigation, which the shell
+/// reports through [DesignSystemBottomNavigationOverlayHeight]; on both,
+/// floating actions keep their corner. This is the one place a page needs
+/// to ask.
 bool mobileNavigationLauncherOwnsPageActions(BuildContext context) =>
-    !isDesktopLayout(context);
+    !isDesktopLayout(context) &&
+    DesignSystemBottomNavigationOverlayHeight.launcherPresentOf(context);
 
 /// A page-owned primary action docked beside the launcher's Navigate
 /// control while that page is the active tab.

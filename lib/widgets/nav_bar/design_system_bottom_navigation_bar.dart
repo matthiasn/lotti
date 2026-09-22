@@ -42,6 +42,7 @@ class DesignSystemBottomNavigationOverlayHeight extends InheritedWidget {
     required this.height,
     required super.child,
     this.barDocked = true,
+    this.launcherPresent = true,
     super.key,
   });
 
@@ -56,6 +57,16 @@ class DesignSystemBottomNavigationOverlayHeight extends InheritedWidget {
   /// not leave a launcher-sized gutter its own pinned surface then cannot
   /// fill.
   final bool barDocked;
+
+  /// Whether the shell floats the launcher on this window at all.
+  ///
+  /// False under the experimental mobile sidebar navigation, which opens
+  /// from a menu button in a top lane of its own and has no launcher row.
+  /// Distinct from [barDocked], which is about a launcher that exists but
+  /// has slid away: with no launcher there is no row for a page to hand its
+  /// create action to, so the page floats its own button again — see
+  /// `mobileNavigationLauncherOwnsPageActions`.
+  final bool launcherPresent;
 
   /// Overlay height published by the nearest enclosing scope, or 0 when
   /// none exists (previews and tests that render pages without the shell).
@@ -78,10 +89,23 @@ class DesignSystemBottomNavigationOverlayHeight extends InheritedWidget {
     return scope?.barDocked ?? true;
   }
 
+  /// Whether a launcher exists; true when no scope does, so pages rendered
+  /// outside the shell keep handing their action over as they always have.
+  static bool launcherPresentOf(BuildContext context) {
+    final scope = context
+        .dependOnInheritedWidgetOfExactType<
+          DesignSystemBottomNavigationOverlayHeight
+        >();
+    return scope?.launcherPresent ?? true;
+  }
+
   @override
   bool updateShouldNotify(
     DesignSystemBottomNavigationOverlayHeight oldWidget,
-  ) => height != oldWidget.height || barDocked != oldWidget.barDocked;
+  ) =>
+      height != oldWidget.height ||
+      barDocked != oldWidget.barDocked ||
+      launcherPresent != oldWidget.launcherPresent;
 }
 
 /// Lifts a screen-level floating action above the mobile bottom stack by

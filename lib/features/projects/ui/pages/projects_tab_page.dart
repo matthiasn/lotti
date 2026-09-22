@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -29,6 +31,8 @@ import 'package:lotti/features/projects/ui/widgets/project_status_attributes.dar
 import 'package:lotti/features/projects/ui/widgets/projects_filter_modal.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_content.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
+import 'package:lotti/features/recent_searches/domain/recent_search.dart';
+import 'package:lotti/features/recent_searches/state/recent_searches_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -371,6 +375,11 @@ class _ProjectsListScaffold extends ConsumerWidget {
                       ref
                           .read(projectsFilterControllerProvider.notifier)
                           .setTextQuery(value);
+                      // Feeds the mobile sidebar's Recents list; a cleared
+                      // field arrives here too, as a change to ''.
+                      ref
+                          .read(recentSearchesControllerProvider.notifier)
+                          .noteQuery(RecentSearchSurface.projects, value);
                     },
                     onSearchCleared: () {
                       ref
@@ -381,6 +390,11 @@ class _ProjectsListScaffold extends ConsumerWidget {
                       ref
                           .read(projectsFilterControllerProvider.notifier)
                           .setTextQuery(value);
+                      unawaited(
+                        ref
+                            .read(recentSearchesControllerProvider.notifier)
+                            .record(RecentSearchSurface.projects, value),
+                      );
                     },
                     onFilterPressed: () => showProjectsFilterModal(
                       context: context,

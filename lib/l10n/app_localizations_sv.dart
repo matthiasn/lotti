@@ -3617,6 +3617,14 @@ class AppLocalizationsSv extends AppLocalizations {
       'Aktivera Matrix-integrationen för att synkronisera dina poster mellan enheter och med andra Matrix-användare.';
 
   @override
+  String get configFlagEnableMobileSidebarNavigation =>
+      'Mobilnavigering i sidofält';
+
+  @override
+  String get configFlagEnableMobileSidebarNavigationDescription =>
+      'Ersätt knappen Navigera med en menyknapp högst upp som öppnar ett sidofält med alla avsnitt och dina senaste sökningar.';
+
+  @override
   String get configFlagEnableNotifications => 'Aktivera notiser?';
 
   @override
@@ -9695,10 +9703,30 @@ class AppLocalizationsSv extends AppLocalizations {
   String get multiSelectNoItemsFound => 'Inga föremål hittades';
 
   @override
+  String get navSidebarCloseLabel => 'Stäng navigeringen';
+
+  @override
   String get navSidebarManualBrowserHint => 'Öppnas i din webbläsare';
 
   @override
   String get navSidebarManualLabel => 'Manuell';
+
+  @override
+  String get navSidebarOpenLabel => 'Öppna navigeringen';
+
+  @override
+  String get navSidebarRecentsClear => 'Rensa';
+
+  @override
+  String get navSidebarRecentsClearSemantics => 'Rensa senaste sökningar';
+
+  @override
+  String navSidebarRecentSearchSemantics(String destination, String query) {
+    return 'Sök efter $query i $destination';
+  }
+
+  @override
+  String get navSidebarRecentsTitle => 'Senaste';
 
   @override
   String get navTabTitleCalendar => 'DailyOS';

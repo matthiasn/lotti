@@ -1,5 +1,11 @@
 # Knowledge Bundle Update Log
 
+## 2026-09-22
+* **Addition**: [Recent searches](features/recent_searches.md) — the
+  device-local list of searches from Tasks, the Logbook, Projects and Habits,
+  its flag gate and its settle-timer lifecycle, feeding the mobile sidebar
+  navigation's Recents section.
+
 ## 2026-09-11
 * **Addition**: [Scoped query conversations](features/agents/query-chat.md) —
   bounded retrieval, verified quotes, synced chats, shared conclusions and live

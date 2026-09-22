@@ -76,6 +76,7 @@ const Map<ConfigFlagGroup, List<String>> configFlagGroups = {
   ],
   ConfigFlagGroup.advanced: [
     enableQueryChatFlag,
+    enableMobileSidebarNavigationFlag,
     enableEmbeddingsFlag,
     enableVectorSearchFlag,
     dailyOsOnboardingEnabledFlag,

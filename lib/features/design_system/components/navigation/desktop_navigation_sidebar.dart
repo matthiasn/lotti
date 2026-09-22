@@ -69,6 +69,11 @@ const kCollapsedSidebarWidth = 72.0;
 /// Contains the brand logo, a collapse/expand toggle, navigation items, and
 /// a Settings entry pinned to the bottom.
 ///
+/// The same widget is the body of the mobile sidebar navigation, which hosts
+/// it in a slide-over panel: there it is never [collapsed], drops the toggle
+/// ([showToggle]) because the panel is dismissed rather than collapsed, and
+/// fills [belowDestinations] with the Recents section.
+///
 /// When [collapsed] is true the sidebar shrinks to [collapsedWidth] and
 /// renders icon-only tiles. Trailing widgets (e.g. count badges) are
 /// intentionally omitted in collapsed mode — the strip is too narrow to
@@ -89,13 +94,19 @@ class DesktopNavigationSidebar extends StatelessWidget {
     this.collapsed = false,
     this.collapsedWidth = kCollapsedSidebarWidth,
     this.onToggleCollapsed,
+    this.showToggle = true,
+    this.destinationGap,
+    this.belowDestinations,
     this.aboveSettings,
     this.footerBand,
     this.logoMenuItems,
     this.logoMenuHeader,
     this.logoMenuSemanticsLabel,
     super.key,
-  });
+  }) : assert(
+         showToggle || !collapsed,
+         'A collapsed sidebar needs its toggle: it is the only way back out.',
+       );
 
   /// The main navigation destinations (excluding Settings).
   final List<DesktopSidebarDestination> destinations;
@@ -137,6 +148,31 @@ class DesktopNavigationSidebar extends StatelessWidget {
   /// Called when the toggle icon next to the logo is tapped. When null, the
   /// toggle icon is rendered but not interactive.
   final VoidCallback? onToggleCollapsed;
+
+  /// Whether the collapse/expand toggle tile is rendered beside the logo.
+  ///
+  /// True for the persistent desktop rail. A host that dismisses the sidebar
+  /// as a whole — the mobile slide-over — passes false: a tile that collapses
+  /// the rail to icons has no meaning there, and rendering it disabled would
+  /// announce a control that can never be used.
+  final bool showToggle;
+
+  /// Vertical gap between destination rows; `spacing.step4` when null.
+  ///
+  /// The default is the desktop rail's rhythm, where the list has a whole
+  /// window's height to itself. A phone-height host passes a tighter gap so
+  /// the rows — already full touch targets on their own — leave room for
+  /// what follows them in [belowDestinations].
+  final double? destinationGap;
+
+  /// Optional section rendered beneath the destinations, inside the same
+  /// scroll view, in the expanded layout.
+  ///
+  /// Scrolls with the destinations rather than being pinned like
+  /// [aboveSettings], because its length is open-ended: the mobile sidebar
+  /// uses it for the Recents list, which must never squeeze the destinations
+  /// out of a short window. Suppressed in [collapsed] mode.
+  final Widget? belowDestinations;
 
   /// Optional widget rendered between the scrollable nav and the
   /// Settings row in the expanded layout. The Lotti app uses this slot
@@ -209,6 +245,7 @@ class DesktopNavigationSidebar extends StatelessWidget {
                 children: [
                   _SidebarLogoRow(
                     collapsed: collapsed,
+                    showToggle: showToggle,
                     onToggle: onToggleCollapsed,
                     menuItems: logoMenuItems,
                     menuHeader: logoMenuHeader,
@@ -218,7 +255,13 @@ class DesktopNavigationSidebar extends StatelessWidget {
 
                   // Navigation destinations (scrollable for short windows)
                   Expanded(
-                    child: SingleChildScrollView(
+                    child: _ScrollRegion(
+                      // An open-ended section below the destinations makes
+                      // scrolling the normal case rather than the short-
+                      // window exception, so the region says where it ends:
+                      // its last rows fade out instead of butting against
+                      // the pinned Settings row as if they were one list.
+                      fadesOut: !collapsed && belowDestinations != null,
                       child: Column(
                         crossAxisAlignment: collapsed
                             ? CrossAxisAlignment.center
@@ -243,7 +286,13 @@ class DesktopNavigationSidebar extends StatelessWidget {
                               destinations[i].expandedChildBuilder!(),
                             ],
                             if (i < destinations.length - 1)
-                              SizedBox(height: tokens.spacing.step4),
+                              SizedBox(
+                                height: destinationGap ?? tokens.spacing.step4,
+                              ),
+                          ],
+                          if (!collapsed && belowDestinations != null) ...[
+                            SizedBox(height: tokens.spacing.step6),
+                            belowDestinations!,
                           ],
                         ],
                       ),
@@ -269,7 +318,10 @@ class DesktopNavigationSidebar extends StatelessWidget {
                       SizedBox(height: tokens.spacing.step4),
                   ],
 
-                  // Settings at the bottom
+                  // Settings at the bottom — a step clear of a fading scroll
+                  // region, so the pinned row reads as apart from the list.
+                  if (!collapsed && belowDestinations != null)
+                    SizedBox(height: tokens.spacing.step3),
                   if (settingsDestination != null)
                     _DesktopSidebarNavItem(
                       destination: settingsDestination!,
@@ -296,10 +348,56 @@ class DesktopNavigationSidebar extends StatelessWidget {
   }
 }
 
+/// The sidebar's scrolling region: the destinations and whatever follows
+/// them.
+///
+/// With [fadesOut] the last `spacing.step7` of the viewport fades to nothing
+/// and the content gains the same extent of bottom padding, so the final row
+/// can always be scrolled clear of the fade rather than being stuck half
+/// dissolved at the end of the list.
+class _ScrollRegion extends StatelessWidget {
+  const _ScrollRegion({required this.fadesOut, required this.child});
+
+  final bool fadesOut;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!fadesOut) return SingleChildScrollView(child: child);
+
+    final fadeExtent = context.designTokens.spacing.step7;
+    return ShaderMask(
+      blendMode: BlendMode.dstIn,
+      // A mask's colours are coverage, not paint: opaque keeps the content,
+      // transparent drops it. A viewport shorter than the fade is all fade.
+      shaderCallback: (bounds) {
+        final solidUntil = bounds.height <= fadeExtent
+            ? 0.0
+            : (bounds.height - fadeExtent) / bounds.height;
+        return LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: const [
+            Color(0xFFFFFFFF),
+            Color(0xFFFFFFFF),
+            Color(0x00FFFFFF),
+          ],
+          stops: [0, solidUntil, 1],
+        ).createShader(bounds);
+      },
+      child: SingleChildScrollView(
+        padding: EdgeInsets.only(bottom: fadeExtent),
+        child: child,
+      ),
+    );
+  }
+}
+
 /// Logo row at the top of the sidebar.
 ///
-/// Always renders a tappable toggle tile. When expanded, the brand logo is
-/// rendered next to the toggle. While collapsed, the brand text is hidden
+/// Renders a tappable toggle tile unless the host opted out with
+/// `showToggle: false`. When expanded, the brand logo is rendered next to
+/// the toggle. While collapsed, the brand text is hidden
 /// — only the toggle tile remains. The tile itself is a 30×30 square with
 /// `background.level03` fill, 8 px rounded corners, and a sidebar-panel
 /// glyph (`LottiIcons.sidebar`) at 18 px drawn in
@@ -310,6 +408,7 @@ class DesktopNavigationSidebar extends StatelessWidget {
 class _SidebarLogoRow extends StatelessWidget {
   const _SidebarLogoRow({
     required this.collapsed,
+    required this.showToggle,
     this.onToggle,
     this.menuItems,
     this.menuHeader,
@@ -317,6 +416,7 @@ class _SidebarLogoRow extends StatelessWidget {
   });
 
   final bool collapsed;
+  final bool showToggle;
   final VoidCallback? onToggle;
   final List<DesignSystemContextMenuItem>? menuItems;
   final String? menuHeader;
@@ -356,8 +456,10 @@ class _SidebarLogoRow extends StatelessWidget {
                     semanticsLabel: menuSemanticsLabel,
                   ),
           ),
-          const Spacer(),
-          toggleIcon,
+          if (showToggle) ...[
+            const Spacer(),
+            toggleIcon,
+          ],
         ],
       ),
     );

@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
+import 'package:lotti/beamer/drawer_first_back_button_dispatcher.dart';
 import 'package:lotti/beamer/locations/goals_location.dart';
 import 'package:lotti/beamer/locations/habits_location.dart';
 import 'package:lotti/beamer/locations/journal_location.dart';
@@ -15,6 +16,7 @@ import 'package:lotti/beamer/locations/relationships_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -54,6 +56,9 @@ import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart'
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
 import 'package:lotti/features/profiles/service/profile_switch_chrome.dart';
 import 'package:lotti/features/projects/ui/pages/projects_tab_page.dart';
+import 'package:lotti/features/recent_searches/domain/recent_search.dart';
+import 'package:lotti/features/recent_searches/ui/recent_search_opener.dart';
+import 'package:lotti/features/recent_searches/ui/recent_searches_section.dart';
 import 'package:lotti/features/relationships/ui/pages/relationships_page.dart';
 import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
@@ -77,6 +82,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/uuid.dart';
 import 'package:lotti/widgets/misc/contact_support_row.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
@@ -85,7 +91,9 @@ import 'package:lotti/widgets/misc/zoom_wrapper.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/nav_bar/mobile_activity_island.dart';
 import 'package:lotti/widgets/nav_bar/mobile_nav_sheet.dart';
+import 'package:lotti/widgets/nav_bar/mobile_navigation_drawer.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
+import 'package:lotti/widgets/nav_bar/mobile_navigation_menu_lane.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:matrix/matrix.dart';
 
@@ -433,6 +441,43 @@ const Set<_AppNavigationDestinationKind> _lockdownVisibleKinds = {
   _AppNavigationDestinationKind.goals,
 };
 
+/// The enabled destinations as a sidebar lays them out: Settings pinned
+/// apart at the bottom, everything else in the scrolling list above it.
+///
+/// Shared by the desktop rail and the mobile drawer, which host the same
+/// sidebar and must agree on which row is active.
+class _SidebarDestinations {
+  _SidebarDestinations(List<_AppNavigationDestination> all, int activeIndex)
+    : main = [
+        for (final destination in all)
+          if (destination.kind != _AppNavigationDestinationKind.settings)
+            destination,
+      ],
+      settingsIndex = all.indexWhere(
+        (destination) =>
+            destination.kind == _AppNavigationDestinationKind.settings,
+      ) {
+    settings = settingsIndex >= 0 ? all[settingsIndex] : null;
+    isSettingsActive = activeIndex == settingsIndex;
+    mainActiveIndex = isSettingsActive
+        ? 0
+        : math.max(0, main.indexOf(all[activeIndex]));
+  }
+
+  /// Every destination except Settings, in navigation order.
+  final List<_AppNavigationDestination> main;
+
+  /// Index of Settings in the full destination list, or -1 without one.
+  final int settingsIndex;
+
+  late final _AppNavigationDestination? settings;
+  late final bool isSettingsActive;
+
+  /// Index into [main] of the active destination; 0 while Settings is
+  /// active, where the list highlights nothing (see [isSettingsActive]).
+  late final int mainActiveIndex;
+}
+
 class AppScreen extends ConsumerStatefulWidget {
   const AppScreen({super.key});
 
@@ -474,6 +519,14 @@ class _AppScreenState extends ConsumerState<AppScreen> {
   /// The form-factor change still has to reach the delegates, since the
   /// locations branch on it — `NavService.isDesktopMode`'s setter does that.
   final GlobalKey _contentStackKey = GlobalKey(debugLabel: 'app-content-stack');
+
+  /// Open state of the mobile sidebar navigation's drawer. Held outside the
+  /// drawer's host so the menu lane's button can open it and every choice
+  /// made inside it can close it, and app-wide rather than here because the
+  /// root back dispatcher in [MyBeamerApp] has to close it too.
+  late final MobileNavigationDrawerController _mobileDrawer = ref.read(
+    mobileNavigationDrawerControllerProvider,
+  );
 
   /// The one tab host, shared by both layouts. Only the active tab animates
   /// and can take focus or participate in Hero transitions; the rest stay
@@ -640,8 +693,9 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     // Reset toast guard on login, and listen for login-gate events from outbox.
     ref
       ..listen(lockdownControllerProvider, (prev, next) {
-        // Lockdown is a desktop feature: the mobile layout has no logo to
-        // exit through and shows every destination, so the navigation guard
+        // Lockdown is a desktop feature: the mobile layout has no logo menu
+        // to exit through — the experimental sidebar drawer shows the logo,
+        // but inert — and shows every destination, so the navigation guard
         // (and the tab reset) apply only while the desktop layout is up.
         // `_syncLockdownGuard` re-evaluates on every build, which is how a
         // breakpoint crossing mid-lockdown lifts or re-applies the guard.
@@ -875,38 +929,12 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     required List<_AppNavigationDestination> destinations,
     required List<Widget> beamerChildren,
   }) {
-    // Separate Settings from other destinations
-    final mainDestinations = <_AppNavigationDestination>[];
-    _AppNavigationDestination? settingsDestination;
-    var settingsIndex = -1;
-
-    for (var i = 0; i < destinations.length; i++) {
-      if (destinations[i].kind == _AppNavigationDestinationKind.settings) {
-        settingsDestination = destinations[i];
-        settingsIndex = i;
-      } else {
-        mainDestinations.add(destinations[i]);
-      }
-    }
-
-    // Compute the active index for the main destinations list
-    // (which excludes Settings)
-    final isSettingsActive = index == settingsIndex;
-    var mainActiveIndex = 0;
-    if (!isSettingsActive) {
-      // Find which main destination corresponds to the full index
-      var mainIdx = 0;
-      for (var i = 0; i < destinations.length; i++) {
-        if (destinations[i].kind == _AppNavigationDestinationKind.settings) {
-          continue;
-        }
-        if (i == index) {
-          mainActiveIndex = mainIdx;
-          break;
-        }
-        mainIdx++;
-      }
-    }
+    final sidebar = _SidebarDestinations(destinations, index);
+    final mainDestinations = sidebar.main;
+    final settingsDestination = sidebar.settings;
+    final settingsIndex = sidebar.settingsIndex;
+    final isSettingsActive = sidebar.isSettingsActive;
+    final mainActiveIndex = sidebar.mainActiveIndex;
 
     final paneWidths = ref.watch(paneWidthControllerProvider);
     // Scales the flat default proportionally on large windows so the
@@ -1161,6 +1189,17 @@ class _AppScreenState extends ConsumerState<AppScreen> {
 
     final launcherHeight = MobileNavigationLauncher.barHeight(context);
 
+    // The experimental sidebar navigation replaces the launcher outright: a
+    // menu button in a top lane of the shell's own slides a sidebar in from
+    // the side, and no Navigate chip is floated at all. Off — the default,
+    // and the answer while the flag is still loading — leaves the shell
+    // exactly as it was.
+    final sidebarNavigation =
+        ref
+            .watch(configFlagProvider(enableMobileSidebarNavigationFlag))
+            .value ??
+        false;
+
     // The launcher's row: the shell's Navigate chip and, on the list tabs
     // that hand one over, the active page's create action. Navigate opens
     // every enabled destination in a grid; taps route through the same
@@ -1193,26 +1232,33 @@ class _AppScreenState extends ConsumerState<AppScreen> {
 
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
-    return Scaffold(
-      extendBody: true,
-      body: Stack(
-        children: [
-          const IncomingVerificationWrapper(),
-          // The scope keeps `occupiedHeight` (and every page padding by it)
-          // in sync with the activity island floating above the bar, so the
-          // island never covers scroll content or floating actions.
-          _MobileNavOverlayHeightScope(
-            navBarVisible: showBottomNav,
-            // A slid-away bar reserves nothing: the goal agent pages, project
-            // details and settings details dock their own pinned surfaces at
-            // the bottom edge and must not pad around a bar that is gone.
-            barDocked: showBottomNav && !slideNavAway,
-            child: _buildContentStack(
-              index: index,
-              beamerChildren: beamerChildren,
-            ),
+    // Whether navigation shows on this route at all. The launcher and the
+    // sidebar navigation's menu lane answer to the same rule, so a route
+    // that hides one hides the other.
+    final navigationShown = showBottomNav && !slideNavAway;
+
+    final body = Stack(
+      children: [
+        const IncomingVerificationWrapper(),
+        // The scope keeps `occupiedHeight` (and every page padding by it)
+        // in sync with the activity island floating above the bar, so the
+        // island never covers scroll content or floating actions.
+        _MobileNavOverlayHeightScope(
+          navBarVisible: showBottomNav,
+          // A slid-away bar reserves nothing: the goal agent pages, project
+          // details and settings details dock their own pinned surfaces at
+          // the bottom edge and must not pad around a bar that is gone.
+          barDocked: navigationShown && !sidebarNavigation,
+          // With no launcher there is no row to dock a page action on, so
+          // the list pages float their own create button again.
+          launcherPresent: !sidebarNavigation,
+          child: _buildContentStack(
+            index: index,
+            beamerChildren: beamerChildren,
           ),
-          if (showBottomNav) ...[
+        ),
+        if (showBottomNav) ...[
+          if (!sidebarNavigation)
             Positioned(
               left: 0,
               right: 0,
@@ -1222,33 +1268,128 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                 child: buildLauncher(),
               ),
             ),
-            // The activity island (running timer / recording) floats above
-            // the bar but is deliberately not part of the slide-away
-            // subtree: a running timer or recording must stay visible inside
-            // settings definition surfaces. When the bar slides away the
-            // island animates down to the bottom safe-area edge in the same
-            // motion, keeping its gap above whichever edge it lands on.
-            AnimatedPositioned(
-              duration: reduceMotion
-                  ? Duration.zero
-                  : _SlideAwayBottomNav.slideDuration,
-              curve: _SlideAwayBottomNav.slideCurve,
-              left: 0,
-              right: 0,
-              bottom:
-                  (slideNavAway
-                      ? MediaQuery.paddingOf(context).bottom
-                      : launcherHeight) +
-                  MobileActivityIsland.gapAboveBar(context),
-              // The recording half is omitted on Flatpak builds (MediaKit
-              // compatibility issues).
-              child: MobileActivityIsland(omitAudio: _isRunningInFlatpak()),
-            ),
-          ],
+          // The activity island (running timer / recording) floats above
+          // the bar but is deliberately not part of the slide-away
+          // subtree: a running timer or recording must stay visible inside
+          // settings definition surfaces. When the bar slides away the
+          // island animates down to the bottom safe-area edge in the same
+          // motion, keeping its gap above whichever edge it lands on.
+          AnimatedPositioned(
+            duration: reduceMotion
+                ? Duration.zero
+                : _SlideAwayBottomNav.slideDuration,
+            curve: _SlideAwayBottomNav.slideCurve,
+            left: 0,
+            right: 0,
+            // With no launcher docked — slid away, or absent under the
+            // sidebar navigation — the island rests on the safe-area edge.
+            bottom:
+                (slideNavAway || sidebarNavigation
+                    ? MediaQuery.paddingOf(context).bottom
+                    : launcherHeight) +
+                MobileActivityIsland.gapAboveBar(context),
+            // The recording half is omitted on Flatpak builds (MediaKit
+            // compatibility issues).
+            child: MobileActivityIsland(omitAudio: _isRunningInFlatpak()),
+          ),
         ],
+      ],
+    );
+    if (!sidebarNavigation) return Scaffold(extendBody: true, body: body);
+
+    // The whole mobile shell — menu lane, page and activity island — is what
+    // the drawer pushes aside, so nothing of it floats over the panel.
+    // Flipping the flag re-parents the keyed content stack rather than
+    // rebuilding it, exactly as crossing the desktop breakpoint does.
+    return MobileNavigationDrawerHost(
+      controller: _mobileDrawer,
+      drawerBuilder: (context) => _buildMobileDrawer(
+        context,
+        index: index,
+        destinations: destinations,
+      ),
+      child: Scaffold(
+        extendBody: true,
+        body: MobileNavigationMenuLane(
+          visible: navigationShown,
+          onOpenMenu: _mobileDrawer.open,
+          child: body,
+        ),
       ),
     );
   }
+
+  /// The mobile sidebar navigation's panel: the desktop rail's own sidebar,
+  /// never collapsed and without its toggle, with the app-wide Recents list
+  /// beneath the destinations.
+  ///
+  /// The under-row subtrees the desktop rail shows (saved filters, the month
+  /// calendar, the impact entry) are left out: they are desktop widgets that
+  /// neither size for touch nor know to close a drawer, and the phone keeps
+  /// its own saved-filter rail on the Tasks page.
+  ///
+  /// Every choice closes the drawer first. Destination indices are resolved
+  /// at tap time, for the reason the Navigate grid resolves them then.
+  Widget _buildMobileDrawer(
+    BuildContext context, {
+    required int index,
+    required List<_AppNavigationDestination> destinations,
+  }) {
+    final sidebar = _SidebarDestinations(destinations, index);
+
+    void select(_AppNavigationDestinationKind kind) {
+      _mobileDrawer.close();
+      final tapIndex = _currentDestinationIndex(kind);
+      if (tapIndex != null) navService.tapIndex(tapIndex);
+    }
+
+    return DesktopNavigationSidebar(
+      destinations: [
+        for (final destination in sidebar.main)
+          destination.toDesktopSidebarDestination(includeExpandedChild: false),
+      ],
+      activeIndex: sidebar.mainActiveIndex,
+      onDestinationSelected: (i) => select(sidebar.main[i].kind),
+      settingsDestination: sidebar.settings?.toDesktopSidebarDestination(),
+      onSettingsSelected: () => select(_AppNavigationDestinationKind.settings),
+      isSettingsActive: sidebar.isSettingsActive,
+      width: MobileNavigationDrawerHost.drawerWidth(context),
+      showToggle: false,
+      // Tighter than the desktop rail: each row is a full touch target
+      // already, and the Recents list below wants to be seen without a
+      // scroll on a phone with every section switched on.
+      destinationGap: context.designTokens.spacing.step1,
+      belowDestinations: RecentSearchesSection(
+        surfaces: {
+          for (final destination in destinations)
+            ?_recentSearchSurfaceFor(
+              destination.kind,
+            ): RecentSearchSurfacePresentation(
+              label: destination.label,
+              icon: destination.iconBuilder(active: false),
+            ),
+        },
+        onSelected: (search) {
+          _mobileDrawer.close();
+          openRecentSearch(ref, search, navService: navService);
+        },
+      ),
+      footerBand: const ContactSupportRow(),
+    );
+  }
+
+  /// The search surface a destination owns, or null for one with no content
+  /// search. Only enabled destinations reach the Recents section through
+  /// this, which is what hides a search remembered on a switched-off section.
+  static RecentSearchSurface? _recentSearchSurfaceFor(
+    _AppNavigationDestinationKind kind,
+  ) => switch (kind) {
+    _AppNavigationDestinationKind.tasks => RecentSearchSurface.tasks,
+    _AppNavigationDestinationKind.journal => RecentSearchSurface.logbook,
+    _AppNavigationDestinationKind.projects => RecentSearchSurface.projects,
+    _AppNavigationDestinationKind.habits => RecentSearchSurface.habits,
+    _ => null,
+  };
 
   /// The active page's primary action, docked on the mobile navigation
   /// launcher's row instead of floating in the page's own corner.
@@ -1537,6 +1678,7 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
   const _MobileNavOverlayHeightScope({
     required this.navBarVisible,
     required this.barDocked,
+    required this.launcherPresent,
     required this.child,
   });
 
@@ -1545,6 +1687,10 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
   /// Whether the bar is docked at the bottom edge rather than slid away;
   /// see [DesignSystemBottomNavigationOverlayHeight.barDocked].
   final bool barDocked;
+
+  /// Whether the shell floats a launcher at all; see
+  /// [DesignSystemBottomNavigationOverlayHeight.launcherPresent].
+  final bool launcherPresent;
 
   final Widget child;
 
@@ -1583,6 +1729,7 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
         return DesignSystemBottomNavigationOverlayHeight(
           height: height,
           barDocked: barDocked,
+          launcherPresent: launcherPresent,
           child: child,
         );
       },
@@ -1787,8 +1934,9 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
             debugShowCheckedModeBanner: false,
             routerDelegate: routerDelegate,
             routeInformationParser: BeamerParser(),
-            backButtonDispatcher: BeamerBackButtonDispatcher(
+            backButtonDispatcher: DrawerFirstBackButtonDispatcher(
               delegate: routerDelegate,
+              drawer: ref.watch(mobileNavigationDrawerControllerProvider),
             ),
             builder: LegacyMaterialBridge.wrapBuilder((context, child) {
               // Publish the RESOLVED theme (light vs dark per themeMode and

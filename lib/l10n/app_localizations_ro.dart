@@ -3677,6 +3677,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Activați integrarea Matrix pentru a sincroniza intrările dvs. între dispozitive și cu alți utilizatori Matrix.';
 
   @override
+  String get configFlagEnableMobileSidebarNavigation =>
+      'Navigare mobilă cu bară laterală';
+
+  @override
+  String get configFlagEnableMobileSidebarNavigationDescription =>
+      'Înlocuiți butonul Navigare cu un buton de meniu în partea de sus, care deschide o bară laterală cu toate secțiunile și căutările dvs. recente.';
+
+  @override
   String get configFlagEnableNotifications =>
       'Activați notificările pe desktop?';
 
@@ -9884,10 +9892,30 @@ class AppLocalizationsRo extends AppLocalizations {
   String get multiSelectNoItemsFound => 'Nu s-au găsit elemente';
 
   @override
+  String get navSidebarCloseLabel => 'Închideți navigarea';
+
+  @override
   String get navSidebarManualBrowserHint => 'Se deschide în browserul dvs.';
 
   @override
   String get navSidebarManualLabel => 'Ghid';
+
+  @override
+  String get navSidebarOpenLabel => 'Deschideți navigarea';
+
+  @override
+  String get navSidebarRecentsClear => 'Ștergeți';
+
+  @override
+  String get navSidebarRecentsClearSemantics => 'Ștergeți căutările recente';
+
+  @override
+  String navSidebarRecentSearchSemantics(String destination, String query) {
+    return 'Căutați $query în $destination';
+  }
+
+  @override
+  String get navSidebarRecentsTitle => 'Recente';
 
   @override
   String get navTabTitleCalendar => 'DailyOS';

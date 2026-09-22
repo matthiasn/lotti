@@ -60,7 +60,8 @@ Border dsGlassChipBorder(DsTokens tokens) => Border.all(
 /// [dsGlassChipBorder]) is used so the silhouette and glyph stay visible
 /// regardless of what's behind the bar. Callers that pass a solid
 /// [backgroundColor] (e.g. an active/alert state) bring their own
-/// contrast, so no hairline outline is drawn in that case.
+/// contrast, so no hairline outline is drawn in that case — unless they ask
+/// for one with [outlineColor], as a quiet surface-toned button does.
 ///
 /// [outlineColor] replaces the hairline with a full-strength ring. It is how
 /// a round affordance reads as a **peer of the bar's primary pill** without
@@ -68,7 +69,7 @@ Border dsGlassChipBorder(DsTokens tokens) => Border.all(
 /// neighbours, but an accent edge and an accent glyph.
 class DsGlassRoundButton extends StatelessWidget {
   const DsGlassRoundButton({
-    required this.icon,
+    required IconData this.icon,
     required this.semanticLabel,
     required this.onPressed,
     this.backgroundColor,
@@ -77,7 +78,23 @@ class DsGlassRoundButton extends StatelessWidget {
     this.diameter = defaultDiameter,
     this.iconSize = defaultIconSize,
     super.key,
-  });
+  }) : glyph = null;
+
+  /// The same button around a [glyph] widget, for a mark no icon font
+  /// carries. The glyph is centred and receives the button's ink through an
+  /// [IconTheme] — [iconColor] and [iconSize] — so a custom-painted mark
+  /// tints and sizes exactly as an [Icon] in the default constructor would.
+  const DsGlassRoundButton.glyph({
+    required Widget this.glyph,
+    required this.semanticLabel,
+    required this.onPressed,
+    this.backgroundColor,
+    this.iconColor,
+    this.outlineColor,
+    this.diameter = defaultDiameter,
+    this.iconSize = defaultIconSize,
+    super.key,
+  }) : icon = null;
 
   /// Default round-button diameter. Matches `tokens.spacing.step9` (48),
   /// the standard hit-target; the design system has no dedicated
@@ -87,7 +104,12 @@ class DsGlassRoundButton extends StatelessWidget {
   /// Default icon glyph size inside the round button.
   static const double defaultIconSize = 20;
 
-  final IconData icon;
+  /// The icon-font glyph; null on a [DsGlassRoundButton.glyph] button.
+  final IconData? icon;
+
+  /// The widget drawn instead of [icon]; null on the default constructor.
+  final Widget? glyph;
+
   final String semanticLabel;
   final VoidCallback onPressed;
   final Color? backgroundColor;
@@ -137,7 +159,7 @@ class DsGlassRoundButton extends StatelessWidget {
                 height: diameter,
                 // foregroundDecoration so the hairline outline doesn't eat
                 // into the icon's content rect — keeps the glyph centred.
-                foregroundDecoration: isTranslucent
+                foregroundDecoration: isTranslucent || outlineColor != null
                     ? BoxDecoration(
                         shape: BoxShape.circle,
                         border: outlineColor == null
@@ -145,11 +167,21 @@ class DsGlassRoundButton extends StatelessWidget {
                             : Border.all(color: outlineColor!),
                       )
                     : null,
-                child: Icon(
-                  icon,
-                  size: iconSize,
-                  color: iconColor ?? tokens.colors.text.highEmphasis,
-                ),
+                child: glyph == null
+                    ? Icon(
+                        icon,
+                        size: iconSize,
+                        color: iconColor ?? tokens.colors.text.highEmphasis,
+                      )
+                    : Center(
+                        child: IconTheme(
+                          data: IconThemeData(
+                            size: iconSize,
+                            color: iconColor ?? tokens.colors.text.highEmphasis,
+                          ),
+                          child: glyph!,
+                        ),
+                      ),
               ),
             ),
           ),

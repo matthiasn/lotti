@@ -969,6 +969,237 @@ void main() {
       // carries.
       expect(find.byKey(bandKey), findsNothing);
     });
+
+    testWidgets(
+      'belowDestinations sits under the last destination and scrolls with '
+      'the list instead of being pinned',
+      (tester) async {
+        const sectionKey = Key('below-destinations');
+
+        await tester.pumpWidget(
+          wrap(
+            DesktopNavigationSidebar(
+              destinations: buildDestinations(),
+              activeIndex: 0,
+              onDestinationSelected: (_) {},
+              settingsDestination: buildSettingsDestination(),
+              // Taller than the rail, so the section can only be reached by
+              // scrolling — which a pinned slot could not do.
+              belowDestinations: const SizedBox(key: sectionKey, height: 1200),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final lastDestination = tester.getRect(find.text('Habits'));
+        final section = tester.getRect(find.byKey(sectionKey));
+        final tokens = tester
+            .element(find.byType(DesktopNavigationSidebar))
+            .designTokens;
+        expect(section.top, greaterThan(lastDestination.bottom));
+        expect(
+          section.top - lastDestination.bottom,
+          greaterThanOrEqualTo(tokens.spacing.step6),
+        );
+
+        final settingsBefore = tester.getRect(find.text('Settings'));
+        await tester.drag(find.text('Journal'), const Offset(0, -300));
+        await tester.pump();
+
+        // The destinations and the section moved together; Settings, pinned
+        // outside the scroll view, did not. Measured rather than assumed to
+        // be the drag distance: the gesture spends its touch slop first.
+        final scrolledBy =
+            section.top - tester.getRect(find.byKey(sectionKey)).top;
+        expect(scrolledBy, greaterThan(0));
+        expect(
+          lastDestination.top - tester.getRect(find.text('Habits')).top,
+          scrolledBy,
+        );
+        expect(tester.getRect(find.text('Settings')), settingsBefore);
+      },
+    );
+
+    testWidgets('belowDestinations is suppressed in collapsed mode', (
+      tester,
+    ) async {
+      const sectionKey = Key('below-destinations');
+
+      await tester.pumpWidget(
+        wrap(
+          DesktopNavigationSidebar(
+            destinations: buildDestinations(),
+            activeIndex: 0,
+            onDestinationSelected: (_) {},
+            belowDestinations: const SizedBox(key: sectionKey, height: 20),
+            collapsed: true,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byKey(sectionKey), findsNothing);
+    });
+
+    testWidgets('destinationGap replaces the default spacing between rows', (
+      tester,
+    ) async {
+      Future<double> pitch({double? gap}) async {
+        await tester.pumpWidget(
+          wrap(
+            DesktopNavigationSidebar(
+              destinations: buildDestinations(),
+              activeIndex: 0,
+              onDestinationSelected: (_) {},
+              destinationGap: gap,
+            ),
+          ),
+        );
+        await tester.pump();
+        return tester.getTopLeft(find.text('Tasks')).dy -
+            tester.getTopLeft(find.text('Journal')).dy;
+      }
+
+      const tokens = dsTokensDark;
+      final defaultPitch = await pitch();
+      final tightPitch = await pitch(gap: tokens.spacing.step1);
+
+      // Same rows, only the gap between them differs.
+      expect(
+        defaultPitch - tightPitch,
+        tokens.spacing.step4 - tokens.spacing.step1,
+      );
+    });
+
+    testWidgets('a section below the destinations fades the scroll region out '
+        'and sets Settings a step apart', (tester) async {
+      const sectionKey = Key('below-destinations');
+      await tester.pumpWidget(
+        wrap(
+          DesktopNavigationSidebar(
+            destinations: buildDestinations(),
+            activeIndex: 0,
+            onDestinationSelected: (_) {},
+            settingsDestination: buildSettingsDestination(),
+            belowDestinations: const SizedBox(key: sectionKey, height: 1200),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final tokens = tester
+          .element(find.byType(DesktopNavigationSidebar))
+          .designTokens;
+      final mask = tester.widget<ShaderMask>(find.byType(ShaderMask));
+      expect(mask.blendMode, BlendMode.dstIn);
+
+      final region = tester.getRect(find.byType(ShaderMask));
+      final settings = tester.getRect(find.text('Settings'));
+      // The pinned row stands clear of the fading list rather than butting
+      // against it as if it were the list's next row.
+      expect(
+        settings.top - region.bottom,
+        greaterThanOrEqualTo(tokens.spacing.step3),
+      );
+
+      // The content is padded by the fade's extent, so the last row can be
+      // scrolled clear of it instead of stopping half dissolved.
+      final scroll = tester.widget<SingleChildScrollView>(
+        find.byType(SingleChildScrollView),
+      );
+      expect(scroll.padding, EdgeInsets.only(bottom: tokens.spacing.step7));
+    });
+
+    testWidgets('without a section below the destinations the region is a '
+        'plain scroll view, as on the desktop rail', (tester) async {
+      await tester.pumpWidget(
+        wrap(
+          DesktopNavigationSidebar(
+            destinations: buildDestinations(),
+            activeIndex: 0,
+            onDestinationSelected: (_) {},
+            settingsDestination: buildSettingsDestination(),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(ShaderMask), findsNothing);
+      expect(
+        tester
+            .widget<SingleChildScrollView>(find.byType(SingleChildScrollView))
+            .padding,
+        isNull,
+      );
+    });
+
+    testWidgets('a scroll region shorter than its own fade still paints', (
+      tester,
+    ) async {
+      // A window so short that the region has less height than the fade:
+      // the gradient's stops must stay inside 0..1 or painting asserts.
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          Theme(
+            data: DesignSystemTheme.dark(),
+            child: Scaffold(
+              body: SizedBox(
+                width: 320,
+                height: 120,
+                child: DesktopNavigationSidebar(
+                  destinations: buildDestinations(),
+                  activeIndex: 0,
+                  onDestinationSelected: (_) {},
+                  belowDestinations: const SizedBox(height: 400),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final tokens = tester
+          .element(find.byType(DesktopNavigationSidebar))
+          .designTokens;
+      expect(
+        tester.getSize(find.byType(ShaderMask)).height,
+        lessThanOrEqualTo(tokens.spacing.step7),
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('showToggle: false drops the toggle tile and keeps the logo', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          DesktopNavigationSidebar(
+            destinations: buildDestinations(),
+            activeIndex: 0,
+            onDestinationSelected: (_) {},
+            showToggle: false,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byKey(desktopSidebarToggleKey), findsNothing);
+      expect(find.byType(DesignSystemBrandLogo), findsOneWidget);
+    });
+
+    test('a collapsed sidebar cannot also hide its toggle', () {
+      expect(
+        () => DesktopNavigationSidebar(
+          destinations: buildDestinations(),
+          activeIndex: 0,
+          onDestinationSelected: (_) {},
+          showToggle: false,
+          collapsed: true,
+        ),
+        throwsAssertionError,
+      );
+    });
   });
 
   group('DesktopNavigationSidebar collapsed', () {

@@ -40,6 +40,7 @@ import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
+import 'package:lotti/features/recent_searches/domain/recent_search.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
@@ -527,6 +528,7 @@ void registerAllFallbackValues() {
   registerFallbackValue(Float32List(0));
   registerFallbackValue(<int>[]);
   registerFallbackValue(<String>[]);
+  registerFallbackValue(<RecentSearch>[]);
 
   // AI response data fallback
   registerFallbackValue(

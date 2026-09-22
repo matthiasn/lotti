@@ -3,6 +3,7 @@
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
@@ -25,6 +26,7 @@ import 'package:lotti/features/journal/utils/entry_types.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
+import 'package:lotti/features/recent_searches/domain/recent_search.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -47,6 +49,7 @@ import '../../../../test_data/test_data.dart';
 import '../../../../test_utils/fake_journal_page_controller.dart';
 import '../../../../utils/utils.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../recent_searches/test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -558,6 +561,7 @@ void main() {
     Future<FakeJournalPageController> pumpPage(
       WidgetTester tester, {
       JournalPageState state = const JournalPageState(showTasks: false),
+      List<Override> extraOverrides = const [],
     }) async {
       final fakeController = FakeJournalPageController(state);
       await tester.pumpWidget(
@@ -568,6 +572,7 @@ void main() {
             journalPageControllerProvider(
               false,
             ).overrideWith(() => fakeController),
+            ...extraOverrides,
           ],
         ),
       );
@@ -725,6 +730,28 @@ void main() {
         '',
         '',
       ]);
+    });
+
+    testWidgets('feeds typed, submitted and cleared searches to Recents as '
+        'the Logbook surface', (tester) async {
+      final recents = FakeRecentSearchesController();
+      await pumpPage(tester, extraOverrides: [fakeRecentSearches(recents)]);
+
+      await tester.enterText(find.byType(TextField), 'ice pad');
+      await tester.pump();
+      expect(recents.noted, [(RecentSearchSurface.logbook, 'ice pad')]);
+      expect(recents.recorded, isEmpty);
+
+      // The search glyph is the explicit submit: recorded at once.
+      await tester.tap(find.byIcon(LottiIcons.search));
+      await tester.pump();
+      expect(recents.recorded, [(RecentSearchSurface.logbook, 'ice pad')]);
+
+      // Clearing reaches Recents as a change to '', which is what cancels
+      // a search still inside its settle window.
+      await tester.tap(find.byIcon(LottiIcons.closeCircled));
+      await tester.pump();
+      expect(recents.noted.last, (RecentSearchSurface.logbook, ''));
     });
 
     testWidgets('header filter icon opens the logbook filter modal', (

@@ -49,6 +49,7 @@ what it does for a user; these describe how it runs.
 * [Lockdown](lockdown.md) - the hidden logo menu that narrows the desktop app to one category for demos.
 * [Onboarding](onboarding.md) - the first-run path and its measurement substrate.
 * [Demo mode](demo.md) - the seeded penguin-logistics play world: manifest lifecycle, exit copy-over, the real-AI nudge.
+* [Recent searches](recent_searches.md) - the device-local list of searches from every section that the mobile sidebar navigation offers again.
 * [What's New](whats_new.md) - remote release notes with local gating.
 
 # Supporting

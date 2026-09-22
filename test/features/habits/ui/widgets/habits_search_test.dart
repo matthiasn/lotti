@@ -8,6 +8,7 @@ import 'package:lotti/features/design_system/components/search/design_system_sea
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_search.dart';
+import 'package:lotti/features/recent_searches/domain/recent_search.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -16,6 +17,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
+import '../../../recent_searches/test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -100,6 +102,29 @@ void main() {
       // Verify state was updated
       final state = capturedRef.read(habitsControllerProvider);
       expect(state.searchString, 'test query');
+    });
+
+    testWidgets('feeds typed and cleared searches to Recents as the Habits '
+        'surface', (tester) async {
+      final recents = FakeRecentSearchesController();
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [fakeRecentSearches(recents)],
+          child: const HabitsSearchWidget(),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await tester.enterText(find.byType(TextField), 'Morning run');
+      await tester.pump();
+      // As typed: lower-casing is the Habits filter's rule, not Recents'.
+      expect(recents.noted, [(RecentSearchSurface.habits, 'Morning run')]);
+
+      // Clearing reaches Recents as a change to '', which is what cancels
+      // a search still inside its settle window.
+      await tester.tap(find.byIcon(LottiIcons.closeCircled));
+      await tester.pump();
+      expect(recents.noted.last, (RecentSearchSurface.habits, ''));
     });
 
     testWidgets('shows clear button when search has text', (tester) async {

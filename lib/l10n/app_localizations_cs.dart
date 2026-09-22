@@ -3655,6 +3655,14 @@ class AppLocalizationsCs extends AppLocalizations {
       'Povolit integraci s Matrix pro synchronizaci vašich záznamů mezi zařízeními a s ostatními uživateli Matrix.';
 
   @override
+  String get configFlagEnableMobileSidebarNavigation =>
+      'Mobilní navigace v bočním panelu';
+
+  @override
+  String get configFlagEnableMobileSidebarNavigationDescription =>
+      'Nahraď tlačítko Navigovat tlačítkem nabídky nahoře, které otevře boční panel se všemi sekcemi a tvými nedávnými hledáními.';
+
+  @override
   String get configFlagEnableNotifications => 'Povolit oznámení?';
 
   @override
@@ -9812,10 +9820,30 @@ class AppLocalizationsCs extends AppLocalizations {
   String get multiSelectNoItemsFound => 'Žádné položky nenalezeny';
 
   @override
+  String get navSidebarCloseLabel => 'Zavřít navigaci';
+
+  @override
   String get navSidebarManualBrowserHint => 'Otevře se v prohlížeči';
 
   @override
   String get navSidebarManualLabel => 'Příručka';
+
+  @override
+  String get navSidebarOpenLabel => 'Otevřít navigaci';
+
+  @override
+  String get navSidebarRecentsClear => 'Vymazat';
+
+  @override
+  String get navSidebarRecentsClearSemantics => 'Vymazat nedávná hledání';
+
+  @override
+  String navSidebarRecentSearchSemantics(String destination, String query) {
+    return 'Hledat $query v sekci $destination';
+  }
+
+  @override
+  String get navSidebarRecentsTitle => 'Nedávné';
 
   @override
   String get navTabTitleCalendar => 'DailyOS';

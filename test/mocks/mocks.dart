@@ -145,6 +145,7 @@ import 'package:lotti/features/profiles/service/world_handle.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/service/project_lifecycle_service.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
+import 'package:lotti/features/recent_searches/state/recent_searches_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/service/relationship_agent_service.dart';
@@ -1205,6 +1206,9 @@ class MockAiConfigRepository extends Mock implements AiConfigRepository {
 
 class MockProviderPromptSetupService extends Mock
     implements ProviderPromptSetupService {}
+
+class MockRecentSearchesRepository extends Mock
+    implements RecentSearchesRepository {}
 
 class MockSavedTaskFiltersRepository extends Mock
     implements SavedTaskFiltersRepository {}

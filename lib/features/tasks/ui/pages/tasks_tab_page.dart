@@ -29,6 +29,8 @@ import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
+import 'package:lotti/features/recent_searches/domain/recent_search.dart';
+import 'package:lotti/features/recent_searches/state/recent_searches_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
@@ -440,6 +442,12 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
     // rebuilds every visible row.
     final compactList = ref.watch(taskListDensityControllerProvider);
 
+    // Feeds the mobile sidebar's Recents list. Read lazily: the controller
+    // is only created once a search is actually typed. A cleared field needs
+    // no hook of its own — the search field reports it as a change to ''.
+    RecentSearchesController recents() =>
+        ref.read(recentSearchesControllerProvider.notifier);
+
     final expandedHeader = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -452,12 +460,14 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
           filtersActive: filtersActive,
           onSearchChanged: (value) {
             unawaited(controller.setSearchString(value));
+            recents().noteQuery(RecentSearchSurface.tasks, value);
           },
           onSearchCleared: () {
             unawaited(controller.setSearchString(''));
           },
           onSearchPressed: (value) {
             unawaited(controller.setSearchString(value));
+            unawaited(recents().record(RecentSearchSurface.tasks, value));
           },
           onFilterPressed: () => showTaskFilterModal(context, showTasks: true),
         ),

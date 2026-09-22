@@ -2193,6 +2193,8 @@
   "configFlagEnableLoggingDescription": "Enable detailed logging for debugging purposes. This may impact performance.",
   "configFlagEnableMatrix": "Enable Matrix sync",
   "configFlagEnableMatrixDescription": "Enable the Matrix integration to sync your entries across devices and with other Matrix users.",
+  "configFlagEnableMobileSidebarNavigation": "Mobile sidebar navigation",
+  "configFlagEnableMobileSidebarNavigationDescription": "Replace the Navigate button with a menu button at the top that opens a sidebar with every section and your recent searches.",
   "configFlagEnableNotifications": "Enable notifications?",
   "configFlagEnableNotificationsDescription": "Receive notifications for reminders, updates, and important events.",
   "configFlagEnableProjects": "Enable Projects",
@@ -5666,8 +5668,24 @@
     }
   },
   "multiSelectNoItemsFound": "No items found",
+  "navSidebarCloseLabel": "Close navigation",
   "navSidebarManualBrowserHint": "Opens in your browser",
   "navSidebarManualLabel": "Manual",
+  "navSidebarOpenLabel": "Open navigation",
+  "navSidebarRecentsClear": "Clear",
+  "navSidebarRecentsClearSemantics": "Clear recent searches",
+  "navSidebarRecentSearchSemantics": "Search {destination} for {query}",
+  "@navSidebarRecentSearchSemantics": {
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      },
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "navSidebarRecentsTitle": "Recents",
   "navTabTitleCalendar": "DailyOS",
   "navTabTitleEvents": "Events",
   "navTabTitleGoals": "Goals",

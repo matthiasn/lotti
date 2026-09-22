@@ -17,7 +17,7 @@ lib/widgets/
 ├── selection/   # selection-modal primitives and the unified toggle family
 ├── settings/    # settings page grid and detail scaffold
 ├── picker/      # EntityPickerSheet, shared by categories, labels and task links
-├── nav_bar/     # mobile navigation launcher, its grid, the activity island and FAB clearance
+├── nav_bar/     # mobile navigation launcher, its grid, the experimental sidebar navigation (menu lane + drawer), the activity island and FAB clearance
 ├── media/       # full-screen image-viewer orientation lifecycle
 ├── timeline/    # the one vertical timeline rail, shared by events and goals
 ├── day_indicators/ # DayMark model, day cells, strip and track geometry shared by goals and habits

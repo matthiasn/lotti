@@ -6090,6 +6090,18 @@ abstract class AppLocalizations {
   /// **'Enable the Matrix integration to sync your entries across devices and with other Matrix users.'**
   String get configFlagEnableMatrixDescription;
 
+  /// No description provided for @configFlagEnableMobileSidebarNavigation.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile sidebar navigation'**
+  String get configFlagEnableMobileSidebarNavigation;
+
+  /// No description provided for @configFlagEnableMobileSidebarNavigationDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace the Navigate button with a menu button at the top that opens a sidebar with every section and your recent searches.'**
+  String get configFlagEnableMobileSidebarNavigationDescription;
+
   /// No description provided for @configFlagEnableNotifications.
   ///
   /// In en, this message translates to:
@@ -16405,6 +16417,12 @@ abstract class AppLocalizations {
   /// **'No items found'**
   String get multiSelectNoItemsFound;
 
+  /// No description provided for @navSidebarCloseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Close navigation'**
+  String get navSidebarCloseLabel;
+
   /// No description provided for @navSidebarManualBrowserHint.
   ///
   /// In en, this message translates to:
@@ -16416,6 +16434,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manual'**
   String get navSidebarManualLabel;
+
+  /// No description provided for @navSidebarOpenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Open navigation'**
+  String get navSidebarOpenLabel;
+
+  /// No description provided for @navSidebarRecentsClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get navSidebarRecentsClear;
+
+  /// No description provided for @navSidebarRecentsClearSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear recent searches'**
+  String get navSidebarRecentsClearSemantics;
+
+  /// No description provided for @navSidebarRecentSearchSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Search {destination} for {query}'**
+  String navSidebarRecentSearchSemantics(String destination, String query);
+
+  /// No description provided for @navSidebarRecentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recents'**
+  String get navSidebarRecentsTitle;
 
   /// No description provided for @navTabTitleCalendar.
   ///

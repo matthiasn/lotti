@@ -3623,6 +3623,14 @@ class AppLocalizationsNl extends AppLocalizations {
       'Schakel de integratie van Matrix in om uw items te synchroniseren tussen apparaten en met andere Matrix-gebruikers.';
 
   @override
+  String get configFlagEnableMobileSidebarNavigation =>
+      'Mobiele navigatie als zijbalk';
+
+  @override
+  String get configFlagEnableMobileSidebarNavigationDescription =>
+      'Vervang de knop Navigeren door een menuknop bovenaan die een zijbalk opent met alle onderdelen en je recente zoekopdrachten.';
+
+  @override
   String get configFlagEnableNotifications =>
       'Notificatieberichten inschakelen?';
 
@@ -9708,10 +9716,30 @@ class AppLocalizationsNl extends AppLocalizations {
   String get multiSelectNoItemsFound => 'Geen items gevonden';
 
   @override
+  String get navSidebarCloseLabel => 'Navigatie sluiten';
+
+  @override
   String get navSidebarManualBrowserHint => 'Opent in uw browser';
 
   @override
   String get navSidebarManualLabel => 'Handmatig';
+
+  @override
+  String get navSidebarOpenLabel => 'Navigatie openen';
+
+  @override
+  String get navSidebarRecentsClear => 'Wissen';
+
+  @override
+  String get navSidebarRecentsClearSemantics => 'Recente zoekopdrachten wissen';
+
+  @override
+  String navSidebarRecentSearchSemantics(String destination, String query) {
+    return 'Zoek naar $query in $destination';
+  }
+
+  @override
+  String get navSidebarRecentsTitle => 'Recent';
 
   @override
   String get navTabTitleCalendar => 'DailyOS';
