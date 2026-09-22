@@ -16,6 +16,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
+import 'package:lotti/features/tasks/ui/checklists/checklist_chat_approval_caption.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/ui/checklists/drag_utils.dart';
@@ -513,45 +514,63 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                             resetToInitialValue: true,
                             onCancel: () => setState(() => _isEditing = false),
                           )
-                        : GestureDetector(
-                            // Tapping the words opens the editor, the same as
-                            // the pencil. This does not collide with
-                            // check-off: that gesture belongs to the
-                            // checkbox's own 44x44 well above, so the title
-                            // was simply dead space — the pencil was the only
-                            // way in, and it is a 16pt target at the far end
-                            // of the row.
-                            //
-                            // Opaque so the whole title column responds,
-                            // including the gaps between wrapped lines, rather
-                            // than only the glyphs themselves.
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () => setState(() => _isEditing = true),
-                            child: StrikethroughWipe(
-                              done: isStrikethrough,
-                              // Off → the strike-through still shows, but
-                              // applies instantly with no left-to-right wipe.
-                              // Folds in the master switch.
-                              animate: ref
-                                  .watch(celebrationPreferencesProvider)
-                                  .animateChecklistItems,
-                              text: item.data.title,
-                              baseStyle: tokens.typography.styles.body.bodySmall
-                                  .copyWith(
-                                    color: tokens.colors.text.highEmphasis,
-                                  ),
-                              struckStyle: tokens
-                                  .typography
-                                  .styles
-                                  .body
-                                  .bodySmall
-                                  .copyWith(
-                                    color: tokens.colors.text.lowEmphasis,
-                                    decoration: TextDecoration.lineThrough,
-                                  ),
-                              maxLines: 4,
-                              overflow: TextOverflow.fade,
-                            ),
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              GestureDetector(
+                                // Tapping the words opens the editor, the
+                                // same as the pencil. This does not collide
+                                // with check-off: that gesture belongs to the
+                                // checkbox's own 44x44 well above, so the
+                                // title was simply dead space — the pencil
+                                // was the only way in, and it is a 16pt
+                                // target at the far end of the row.
+                                //
+                                // Opaque so the whole title column responds,
+                                // including the gaps between wrapped lines,
+                                // rather than only the glyphs themselves.
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () => setState(() => _isEditing = true),
+                                child: StrikethroughWipe(
+                                  done: isStrikethrough,
+                                  // Off → the strike-through still shows, but
+                                  // applies instantly with no left-to-right
+                                  // wipe. Folds in the master switch.
+                                  animate: ref
+                                      .watch(celebrationPreferencesProvider)
+                                      .animateChecklistItems,
+                                  text: item.data.title,
+                                  baseStyle: tokens
+                                      .typography
+                                      .styles
+                                      .body
+                                      .bodySmall
+                                      .copyWith(
+                                        color: tokens.colors.text.highEmphasis,
+                                      ),
+                                  struckStyle: tokens
+                                      .typography
+                                      .styles
+                                      .body
+                                      .bodySmall
+                                      .copyWith(
+                                        color: tokens.colors.text.lowEmphasis,
+                                        decoration: TextDecoration.lineThrough,
+                                      ),
+                                  maxLines: 4,
+                                  overflow: TextOverflow.fade,
+                                ),
+                              ),
+                              // Outside the title's tap-to-edit gesture, so
+                              // tapping it opens the chat instead.
+                              if (item.data.currentChatApproval
+                                  case final approval?)
+                                ChecklistChatApprovalCaption(
+                                  approval: approval,
+                                  taskId: widget.taskId,
+                                ),
+                            ],
                           ),
                   ),
                   // Edit affordance.

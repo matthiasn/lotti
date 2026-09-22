@@ -441,7 +441,15 @@ void main() {
             ).captured.single
             as ChecklistItemData;
     expect(source.isArchived, isTrue);
-    expect(source.approvalHistory.single, approval.copyWith(isChecked: null));
+    expect(
+      source.approvalHistory.single,
+      approval.copyWith(isChecked: null, isArchived: true),
+    );
+    // The approved archival is protected once the repository stamps it.
+    expect(
+      source.stampedAfter(item.data, DateTime.utc(2030)).archivedStateApproval,
+      isNotNull,
+    );
   });
 
   group('ChecklistMigrationHandler', () {

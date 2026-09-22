@@ -19,6 +19,11 @@ abstract class ChecklistItemData with _$ChecklistItemData {
     ChangeSource checkedBy,
     DateTime? checkedAt,
     @Default([]) List<ChecklistItemProvenance> approvalHistory,
+    // When the title and the archived state last changed — the counterparts
+    // of [checkedAt] that let a later edit supersede an approval even when
+    // it lands back on the approved value. Stamped by [stampedAfter].
+    DateTime? titleSetAt,
+    DateTime? archivedSetAt,
   }) = _ChecklistItemData;
 
   factory ChecklistItemData.fromJson(Map<String, dynamic> json) =>
@@ -29,12 +34,80 @@ abstract class ChecklistItemData with _$ChecklistItemData {
   /// Later title edits preserve it; a later direct toggle supersedes it.
   ChecklistItemProvenance? get checkedStateApproval {
     if (checkedBy != ChangeSource.user || checkedAt == null) return null;
+    final approval = _currentApproval((a) => a.isChecked, isChecked);
+    return approval?.approvedAt == checkedAt ? approval : null;
+  }
+
+  /// Approval backing the current title. Any later rename — direct or
+  /// agent-applied, even one back to the approved title — supersedes it.
+  ChecklistItemProvenance? get titleApproval {
+    final approval = _currentApproval((a) => a.title, title);
+    return approval?.approvedAt == titleSetAt ? approval : null;
+  }
+
+  /// Approval backing the current archived state. Any later archive or
+  /// restore supersedes it, even one back to the approved state.
+  ChecklistItemProvenance? get archivedStateApproval {
+    final approval = _currentApproval((a) => a.isArchived, isArchived);
+    return approval?.approvedAt == archivedSetAt ? approval : null;
+  }
+
+  /// This data as written over [previous] (null for a new item) at [now]:
+  /// a field set by a receipt added in this write takes its approval time,
+  /// and a field changed without one takes [now]. The one place title and
+  /// archival times are kept, so no writer can forget them.
+  ChecklistItemData stampedAfter(ChecklistItemData? previous, DateTime now) {
+    final added = approvalHistory.skip(previous?.approvalHistory.length ?? 0);
+    DateTime? stamp(
+      Object? Function(ChecklistItemProvenance approval) approvedValue, {
+      required bool changed,
+      required DateTime? current,
+    }) =>
+        added.where((a) => approvedValue(a) != null).lastOrNull?.approvedAt ??
+        (changed ? now : current);
+    return copyWith(
+      titleSetAt: stamp(
+        (a) => a.title,
+        changed: previous?.title != title,
+        current: titleSetAt,
+      ),
+      archivedSetAt: stamp(
+        (a) => a.isArchived,
+        changed: previous == null
+            ? isArchived
+            : previous.isArchived != isArchived,
+        current: archivedSetAt,
+      ),
+    );
+  }
+
+  /// The newest chat approval still backing any part of the current state —
+  /// what the checklist row credits to the user rather than the agent.
+  ChecklistItemProvenance? get currentChatApproval =>
+      [
+        checkedStateApproval,
+        titleApproval,
+        archivedStateApproval,
+      ].nonNulls.fold(
+        null,
+        (newest, approval) =>
+            newest == null || approval.approvedAt.isAfter(newest.approvedAt)
+            ? approval
+            : newest,
+      );
+
+  /// The newest receipt that approved a value for one field, provided it came
+  /// from a user-approved chat suggestion and still matches [current].
+  ChecklistItemProvenance? _currentApproval<T extends Object>(
+    T? Function(ChecklistItemProvenance approval) approvedValue,
+    T current,
+  ) {
     for (final approval in approvalHistory.reversed) {
-      if (approval.isChecked != null) {
+      final value = approvedValue(approval);
+      if (value != null) {
         return approval.source == 'chat_suggestion' &&
                 approval.approvedBy == 'user' &&
-                approval.isChecked == isChecked &&
-                approval.approvedAt == checkedAt
+                value == current
             ? approval
             : null;
       }
@@ -64,7 +137,10 @@ abstract class ChecklistItemProvenance with _$ChecklistItemProvenance {
     required String agentId,
     @Default('chat_suggestion') String source,
     @Default('task_agent') String appliedBy,
+    // The values this approval set; null for a field the change left alone.
     bool? isChecked,
+    String? title,
+    bool? isArchived,
   }) = _ChecklistItemProvenance;
 
   factory ChecklistItemProvenance.fromJson(Map<String, dynamic> json) =>

@@ -48,6 +48,25 @@ void main() {
       }
     }
 
+    test('title and archival approvals carry only time and gesture', () {
+      final approval = AiChecklistApproval(
+        approvedAt: DateTime.utc(2026, 9, 13, 8),
+        approvalMode: ChecklistApprovalMode.confirmAll,
+      );
+      final item = actionItem.copyWith(
+        titleApproval: approval,
+        archivedStateApproval: approval,
+      );
+      final json = _roundTrip(item);
+      const expected = {
+        'approvedAt': '2026-09-13T08:00:00.000Z',
+        'approvalMode': 'confirm_all',
+      };
+      expect(json['titleApproval'], expected);
+      expect(json['archivedStateApproval'], expected);
+      expect(AiActionItem.fromJson(json), item);
+    });
+
     test('AiInputLogEntryObject emits the prompt transport shape', () {
       final entry = AiInputLogEntryObject(
         creationTimestamp: DateTime(2024, 3, 15, 8, 30),

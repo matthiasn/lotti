@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_part.dart';
 import 'package:lotti/features/agents/ui/localized_change_summary.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -16,8 +17,10 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/device_datetime.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// A chat-owned proposal stays inert until the user accepts the displayed set.
-/// Completed items remain visible and are never repeated when retrying a set.
+/// A chat-owned proposal stays inert until the user decides. With more than
+/// one change, each row takes its own confirm/reject and the set-level
+/// buttons resolve whatever is still pending. Completed items remain visible
+/// and are never repeated when retrying a set.
 class QueryActionReview extends ConsumerStatefulWidget {
   const QueryActionReview({
     required this.chatKey,
@@ -45,26 +48,45 @@ class _QueryActionReviewState extends ConsumerState<QueryActionReview> {
   bool _failed = false;
   bool? _decision;
 
-  Future<void> _resolve(bool approved) async {
+  Future<void> _resolve(bool approved) => _run(() async {
+    final results = await ref
+        .read(queryChatActionServiceProvider)
+        .resolve(
+          agentId: widget.chatKey.agentId,
+          chatId: widget.chatId,
+          questionId: widget.answer.questionId,
+          approved: approved,
+        );
+    if (mounted) _decision = approved;
+    return results.any((r) => !r.success);
+  });
+
+  Future<void> _resolveItem(int index, {required bool approved}) =>
+      _run(() async {
+        final result = await ref
+            .read(queryChatActionServiceProvider)
+            .resolveItem(
+              agentId: widget.chatKey.agentId,
+              chatId: widget.chatId,
+              questionId: widget.answer.questionId,
+              itemIndex: index,
+              approved: approved,
+            );
+        return result != null && !result.success;
+      });
+
+  /// Runs one decision, reporting whether anything failed to apply, then
+  /// refreshes the persisted set.
+  Future<void> _run(Future<bool> Function() decide) async {
     if (_busy) return;
     setState(() {
       _busy = true;
       _failed = false;
     });
     try {
-      final results = await ref
-          .read(queryChatActionServiceProvider)
-          .resolve(
-            agentId: widget.chatKey.agentId,
-            chatId: widget.chatId,
-            questionId: widget.answer.questionId,
-            approved: approved,
-          );
+      final failed = await decide();
       if (!mounted) return;
-      setState(() {
-        _decision = approved;
-        _failed = results.any((r) => !r.success);
-      });
+      setState(() => _failed = failed);
       ref.invalidate(
         queryActionChangeSetProvider((
           agentId: widget.chatKey.agentId,
@@ -185,42 +207,53 @@ class _QueryActionReviewState extends ConsumerState<QueryActionReview> {
     final tokens = context.designTokens;
     final messages = context.messages;
     final decision = widget.approved ?? _decision;
-    final saved = decision == true
-        ? ref.watch(
-            queryActionChangeSetProvider((
-              agentId: widget.chatKey.agentId,
-              questionId: widget.answer.questionId,
-            )),
-          )
-        : null;
-    final items = saved?.value?.items ?? widget.answer.proposedActions;
+    // Watched before any verdict too: a per-item decision opens the set.
+    final saved = ref.watch(
+      queryActionChangeSetProvider((
+        agentId: widget.chatKey.agentId,
+        questionId: widget.answer.questionId,
+      )),
+    );
+    final items = saved.value?.items ?? widget.answer.proposedActions;
     final completed =
-        decision == true &&
-        saved?.value != null &&
+        saved.value != null &&
         items.every((item) => item.status != ChangeItemStatus.pending);
-    final loading =
-        decision == true && saved?.value == null && saved?.hasError != true;
+    final loading = decision == true && saved.value == null && !saved.hasError;
+    final perItem = items.length > 1 && decision != false && widget.canApply;
     return Padding(
       padding: EdgeInsets.only(top: tokens.spacing.step3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (final item in items)
+          for (final (index, item) in items.indexed)
             Padding(
               padding: EdgeInsets.only(top: tokens.spacing.step3),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  SelectableText(
-                    _descriptions(context, item).join('\n'),
-                    style: tokens.typography.styles.body.bodySmall,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SelectableText(
+                          _descriptions(context, item).join('\n'),
+                          style: tokens.typography.styles.body.bodySmall,
+                        ),
+                        if (!_busy && item.status != ChangeItemStatus.pending)
+                          Text(
+                            item.status == ChangeItemStatus.confirmed
+                                ? messages.changeSetItemConfirmed
+                                : messages.changeSetItemRejected,
+                            style: tokens.typography.styles.others.caption,
+                          ),
+                      ],
+                    ),
                   ),
-                  if (!_busy && item.status != ChangeItemStatus.pending)
-                    Text(
-                      item.status == ChangeItemStatus.confirmed
-                          ? messages.changeSetItemConfirmed
-                          : messages.changeSetItemRejected,
-                      style: tokens.typography.styles.others.caption,
+                  if (perItem && item.status == ChangeItemStatus.pending)
+                    RowActions(
+                      busy: false,
+                      enabled: !_busy,
+                      onReject: () => _resolveItem(index, approved: false),
+                      onConfirm: () => _resolveItem(index, approved: true),
                     ),
                 ],
               ),
@@ -232,7 +265,7 @@ class _QueryActionReviewState extends ConsumerState<QueryActionReview> {
               style: tokens.typography.styles.others.caption,
             )
           else if (!completed) ...[
-            if (_failed || saved?.hasError == true)
+            if (_failed || saved.hasError)
               Padding(
                 padding: EdgeInsets.only(bottom: tokens.spacing.step2),
                 child: Text(
@@ -247,13 +280,17 @@ class _QueryActionReviewState extends ConsumerState<QueryActionReview> {
                 DesignSystemButton(
                   label: decision == true
                       ? messages.projectNextStepRetry
+                      : items.length > 1
+                      ? messages.queryActionsAcceptAll
                       : messages.queryActionsAccept,
                   isLoading: _busy || loading,
                   onPressed: widget.canApply ? () => _resolve(true) : null,
                 ),
                 if (decision == null)
                   DesignSystemButton(
-                    label: messages.queryActionsDismiss,
+                    label: items.length > 1
+                        ? messages.queryActionsDismissAll
+                        : messages.queryActionsDismiss,
                     variant: DesignSystemButtonVariant.tertiary,
                     onPressed: _busy || !widget.canApply
                         ? null

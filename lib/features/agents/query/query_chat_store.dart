@@ -260,8 +260,10 @@ class QueryChatStore {
     );
   });
 
-  /// Records the explicit inline verdict. Only acceptance materializes an
-  /// executable change set; preview arguments otherwise stay inside the chat.
+  /// Records the explicit inline verdict on the whole set. Only acceptance
+  /// materializes an executable change set; preview arguments otherwise stay
+  /// inside the chat. A set already opened by a per-item decision is returned
+  /// on dismissal too, so what is still pending can be rejected with it.
   /// Stable IDs make retries reuse the same reviewed items and their statuses.
   Future<ChangeSetEntity?> decideActions(
     String agentId,
@@ -269,6 +271,45 @@ class QueryChatStore {
     String questionId, {
     required bool approved,
   }) => sync.runInTransaction(() async {
+    final (:chat, :answer) = await _reviewable(agentId, chatId, questionId);
+    final decision = _setDecision(chat, questionId);
+    if (decision != null) {
+      if (!decision.approved || !approved) return null;
+      return _existingActions(questionId);
+    }
+    await _append(
+      agentId,
+      chatId,
+      QueryChatActionDecision(
+        questionId: questionId,
+        approved: approved,
+      ),
+      id: '$questionId:action-decision',
+    );
+    final existing = await _existingActions(questionId);
+    if (!approved) return existing;
+    return existing ?? await _createActions(agentId, chat, answer);
+  });
+
+  /// Materializes the reviewed set for a decision on one of its items, leaving
+  /// the rest pending and recording no verdict on the set. Returns null once
+  /// the set has been dismissed.
+  Future<ChangeSetEntity?> openActions(
+    String agentId,
+    String chatId,
+    String questionId,
+  ) => sync.runInTransaction(() async {
+    final (:chat, :answer) = await _reviewable(agentId, chatId, questionId);
+    if (_setDecision(chat, questionId)?.approved == false) return null;
+    return await _existingActions(questionId) ??
+        await _createActions(agentId, chat, answer);
+  });
+
+  Future<({QueryChatHistory chat, QueryChatAnswer answer})> _reviewable(
+    String agentId,
+    String chatId,
+    String questionId,
+  ) async {
     final chat = await _chat(agentId, chatId);
     final answer = chat.answerFor(questionId)?.data;
     if (chat.archived ||
@@ -280,34 +321,36 @@ class QueryChatStore {
     await _checkHome(chat.scope);
     final current = await access.load(answer.dependencies.map((s) => s.id));
     if (!current.allowsEvent(answer)) throw const QueryScopeUnavailable();
-    final decision = chat.events
-        .map((event) => event.data)
-        .whereType<QueryChatActionDecision>()
-        .where((event) => event.questionId == questionId)
-        .firstOrNull;
-    if (decision != null) {
-      if (!decision.approved || !approved) return null;
-      final existing = await sync.repository.getEntity(
-        'query-chat:$questionId:actions',
-      );
-      return existing is ChangeSetEntity ? existing : null;
-    }
-    await _append(
-      agentId,
-      chatId,
-      QueryChatActionDecision(
-        questionId: questionId,
-        approved: approved,
-      ),
-      id: '$questionId:action-decision',
+    return (chat: chat, answer: answer);
+  }
+
+  QueryChatActionDecision? _setDecision(
+    QueryChatHistory chat,
+    String questionId,
+  ) => chat.events
+      .map((event) => event.data)
+      .whereType<QueryChatActionDecision>()
+      .where((event) => event.questionId == questionId)
+      .firstOrNull;
+
+  Future<ChangeSetEntity?> _existingActions(String questionId) async {
+    final existing = await sync.repository.getEntity(
+      'query-chat:$questionId:actions',
     );
-    if (!approved) return null;
+    return existing is ChangeSetEntity ? existing : null;
+  }
+
+  Future<ChangeSetEntity> _createActions(
+    String agentId,
+    QueryChatHistory chat,
+    QueryChatAnswer answer,
+  ) async {
     final changeSet = ChangeSetEntity(
-      id: 'query-chat:$questionId:actions',
+      id: 'query-chat:${answer.questionId}:actions',
       agentId: agentId,
       taskId: chat.scope.id,
-      threadId: chatId,
-      runKey: 'query-chat:$questionId',
+      threadId: chat.id,
+      runKey: 'query-chat:${answer.questionId}',
       status: ChangeSetStatus.pending,
       items: answer.proposedActions,
       createdAt: clock.now(),
@@ -315,7 +358,7 @@ class QueryChatStore {
     );
     await sync.upsertEntity(changeSet);
     return changeSet;
-  });
+  }
 
   Future<void> delete(String agentId, String chatId, {required bool forget}) =>
       sync.runInTransaction(() async {

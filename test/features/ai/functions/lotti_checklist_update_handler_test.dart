@@ -1187,6 +1187,121 @@ void main() {
         },
       );
 
+      group('chat-approved title and archival', () {
+        final receipt = makeTestChecklistApproval(isChecked: null);
+
+        ChecklistItem approvedItem() {
+          final original = ChecklistTestDataFactory.createChecklistItem(
+            id: 'item-1',
+            title: 'Inspect feeder',
+            checkedBy: ChangeSource.agent,
+          );
+          return original.copyWith(
+            data: original.data.copyWith(
+              isArchived: true,
+              approvalHistory: [
+                receipt.copyWith(title: 'Inspect feeder'),
+                receipt.copyWith(isArchived: true),
+              ],
+              titleSetAt: receipt.approvedAt,
+              archivedSetAt: receipt.approvedAt,
+            ),
+          );
+        }
+
+        ChecklistItemData written(String id) =>
+            verify(
+                  () => mockChecklistRepository.updateChecklistItem(
+                    checklistItemId: id,
+                    data: captureAny(named: 'data'),
+                    taskId: testTask.id,
+                  ),
+                ).captured.single
+                as ChecklistItemData;
+
+        test('agent cannot reverse them but its other changes apply', () async {
+          final item = approvedItem();
+          stubSingleItem(item);
+          final count = await handler.executeUpdates(
+            makeUpdateResult([
+              {
+                'id': item.id,
+                'title': 'Inspect the old feeder',
+                'isArchived': false,
+                'isChecked': true,
+              },
+            ]),
+          );
+          expect(count, 1);
+          expect(
+            handler.skippedItems.single.reason,
+            LottiChecklistUpdateHandler.userApprovedStateReason,
+          );
+          final data = written(item.id);
+          expect(data.title, 'Inspect feeder');
+          expect(data.isArchived, isTrue);
+          expect(data.isChecked, isTrue);
+          expect(data.checkedBy, ChangeSource.agent);
+          expect(data.titleApproval, isNotNull);
+          expect(data.archivedStateApproval, isNotNull);
+        });
+
+        test('nothing is written when every change is protected', () async {
+          final item = approvedItem();
+          stubSingleItem(item);
+          final count = await handler.executeUpdates(
+            makeUpdateResult([
+              {'id': item.id, 'title': 'Other', 'isArchived': false},
+            ]),
+          );
+          expect(count, 0);
+          expect(
+            handler.skippedItems.single.reason,
+            LottiChecklistUpdateHandler.userApprovedStateReason,
+          );
+          verifyNever(
+            () => mockChecklistRepository.updateChecklistItem(
+              checklistItemId: any(named: 'checklistItemId'),
+              data: any(named: 'data'),
+              taskId: any(named: 'taskId'),
+            ),
+          );
+        });
+
+        test('a fresh approval renames and restores, recording both', () async {
+          final item = approvedItem();
+          stubSingleItem(item);
+          final next = receipt.copyWith(decisionId: 'next');
+          handler = LottiChecklistUpdateHandler(
+            task: testTask,
+            checklistRepository: mockChecklistRepository,
+            approval: next,
+          );
+          final count = await handler.executeUpdates(
+            makeUpdateResult([
+              {'id': item.id, 'title': 'Inspect feeder B', 'isArchived': false},
+            ]),
+          );
+          expect(count, 1);
+          // The repository stamps field times on write.
+          final data = written(
+            item.id,
+          ).stampedAfter(item.data, DateTime.utc(2030));
+          expect(data.title, 'Inspect feeder B');
+          expect(data.isArchived, isFalse);
+          final stamped = next.copyWith(
+            title: 'Inspect feeder B',
+            isArchived: false,
+          );
+          expect(data.approvalHistory.last, stamped);
+          expect(data.titleApproval, stamped);
+          expect(data.archivedStateApproval, stamped);
+          // A receipt that did not touch the checked state leaves it alone.
+          expect(data.checkedStateApproval, isNull);
+          expect(data.checkedBy, ChangeSource.agent);
+        });
+      });
+
       test('blocks isChecked change on user-set item without reason', () async {
         final item = ChecklistTestDataFactory.createChecklistItem(
           id: 'item-1',

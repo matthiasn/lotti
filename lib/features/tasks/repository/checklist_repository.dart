@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
@@ -174,7 +175,7 @@ class ChecklistRepository {
           checkedBy: checkedBy ?? ChangeSource.user,
           checkedAt: checkedAt,
           approvalHistory: approvalHistory,
-        ),
+        ).stampedAfter(null, clock.now()),
       );
 
       await _persistenceLogic.createDbEntity(newChecklistItem);
@@ -253,7 +254,7 @@ class ChecklistRepository {
         checklistItem: (ChecklistItem checklistItem) async {
           final updatedChecklist = checklistItem.copyWith(
             meta: await _persistenceLogic.updateMetadata(journalEntity.meta),
-            data: data,
+            data: data.stampedAfter(checklistItem.data, clock.now()),
           );
 
           await _persistenceLogic.updateDbEntity(

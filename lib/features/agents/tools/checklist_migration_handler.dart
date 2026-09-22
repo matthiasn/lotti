@@ -180,7 +180,8 @@ class ChecklistMigrationHandler {
         isArchived: true,
         approvalHistory: [
           ...itemEntity.data.approvalHistory,
-          if (approval case final receipt?) receipt.copyWith(isChecked: null),
+          if (approval case final receipt?)
+            receipt.copyWith(isChecked: null, isArchived: true),
         ],
       ),
       taskId: sourceTaskId,

@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -15,6 +16,7 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/string_utils.dart' as string_utils;
 import 'package:uuid/uuid.dart';
 
 part 'change_set_batch_exploder.dart';
@@ -26,6 +28,15 @@ typedef ChecklistItemStateResolver =
     Future<({String? title, bool? isChecked, bool? isArchived})?> Function(
       String itemId,
     );
+
+/// The wake's [ChangeSetBuilder.approvedChecklistItemResolver]: the live
+/// checklist item in [journalDb], or null for a missing or other entity.
+Future<ChecklistItemData?> Function(String id) journalChecklistItemResolver(
+  JournalDb journalDb,
+) => (id) async {
+  final entity = await journalDb.journalEntityById(id);
+  return entity is ChecklistItem ? entity.data : null;
+};
 
 /// Resolves the set of existing checklist item titles for the target task.
 ///
@@ -91,7 +102,7 @@ class ChangeSetBuilder {
     required this.threadId,
     required this.runKey,
     this.checklistItemStateResolver,
-    this.userApprovedChecklistStateResolver,
+    this.approvedChecklistItemResolver,
     this.existingChecklistTitlesResolver,
     this.labelNameResolver,
     this.existingLabelIdsResolver,
@@ -116,25 +127,48 @@ class ChangeSetBuilder {
   /// Also used to detect and suppress redundant updates.
   final ChecklistItemStateResolver? checklistItemStateResolver;
 
-  /// Current checked state protected by a chat receipt; null means unprotected.
+  /// Live checklist item, read for the chat approvals that protect its current
+  /// checked state, title and archival; null means the item was not found.
   /// Only background builders wire this; chat proposals still require approval.
-  final Future<bool?> Function(String id)? userApprovedChecklistStateResolver;
+  final Future<ChecklistItemData?> Function(String id)?
+  approvedChecklistItemResolver;
 
   Future<String?> _chatApprovalReversal(
     String toolName,
     Map<String, dynamic> args,
   ) async {
-    if (toolName != TaskAgentToolNames.updateChecklistItem) return null;
+    final resolver = approvedChecklistItemResolver;
     final id = args['id'];
-    final requested = args['isChecked'];
-    if (id is! String || requested is! bool) return null;
+    if (toolName != TaskAgentToolNames.updateChecklistItem ||
+        resolver == null ||
+        id is! String) {
+      return null;
+    }
+    final checked = args['isChecked'];
+    final title = args['title'];
+    final archived = args['isArchived'];
+    if (checked is! bool && title is! String && archived is! bool) return null;
     try {
-      final protected = await userApprovedChecklistStateResolver?.call(
-        id.trim(),
-      );
-      return protected != null && protected != requested
-          ? 'User-approved chat state cannot be reversed. Do not retry this change.'
-          : null;
+      final item = await resolver(id.trim());
+      if (item == null) return null;
+      final reversed = [
+        if (checked is bool &&
+            item.checkedStateApproval != null &&
+            checked != item.isChecked)
+          'checked state',
+        if (title is String &&
+            item.titleApproval != null &&
+            string_utils.normalizeWhitespace(title) != item.title)
+          'title',
+        if (archived is bool &&
+            item.archivedStateApproval != null &&
+            archived != item.isArchived)
+          'archived state',
+      ];
+      return reversed.isEmpty
+          ? null
+          : 'User-approved chat ${reversed.join(' and ')} cannot be reversed. '
+                'Do not retry this change.';
     } catch (_) {
       // Do not turn a failed lookup into permission to reverse user intent.
       return 'Cannot verify checklist approval state. Do not retry this change.';

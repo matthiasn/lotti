@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
@@ -369,21 +370,25 @@ void main() {
       when(
         () => mockPersistenceLogic.createDbEntity(any()),
       ).thenAnswer((_) async => true);
+      final receipt = approval.copyWith(title: 'Inspect feeder');
       final item = await repository.createChecklistItem(
         checklistId: 'checklist',
         title: 'Inspect feeder',
         isChecked: true,
         categoryId: null,
         checkedAt: approval.approvedAt,
-        approvalHistory: [approval],
+        approvalHistory: [receipt],
       );
       final written =
           verify(
                 () => mockPersistenceLogic.createDbEntity(captureAny()),
               ).captured.single
               as ChecklistItem;
-      expect(written.data.approvalHistory.single, approval);
-      expect(written.data.checkedStateApproval, approval);
+      expect(written.data.approvalHistory.single, receipt);
+      expect(written.data.checkedStateApproval, receipt);
+      // The approved title is timed by its approval, so it is protected.
+      expect(written.data.titleSetAt, approval.approvedAt);
+      expect(written.data.titleApproval, receipt);
       expect(item, written);
     });
 
@@ -651,6 +656,65 @@ void main() {
   });
 
   group('updateChecklistItem', () {
+    test('a direct edit back to the approved title ends its approval', () {
+      final approval = makeTestChecklistApproval(
+        isChecked: null,
+        title: 'Inspect feeder',
+      );
+      final approved = ChecklistItemData(
+        title: 'Inspect feeder',
+        isChecked: false,
+        linkedChecklists: const ['checklist-id'],
+        approvalHistory: [approval],
+        titleSetAt: approval.approvedAt,
+      );
+      final edited = DateTime(2030, 1, 2, 9);
+      return withClock(Clock.fixed(edited), () async {
+        final stored = ChecklistItem(
+          meta: Metadata(
+            id: 'item',
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
+          ),
+          data: approved.copyWith(title: 'Inspect the feeder'),
+        );
+        when(
+          () => mockJournalDb.journalEntityById('item'),
+        ).thenAnswer((_) async => stored);
+        when(
+          () => mockPersistenceLogic.updateMetadata(any()),
+        ).thenAnswer((_) async => stored.meta);
+        when(
+          () => mockPersistenceLogic.updateDbEntity(
+            any(),
+            linkedId: any(named: 'linkedId'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        await repository.updateChecklistItem(
+          checklistItemId: 'item',
+          data: stored.data.copyWith(title: 'Inspect feeder'),
+          taskId: null,
+        );
+
+        final written =
+            verify(
+                  () => mockPersistenceLogic.updateDbEntity(
+                    captureAny(),
+                    linkedId: any(named: 'linkedId'),
+                  ),
+                ).captured.single
+                as ChecklistItem;
+        expect(written.data.title, 'Inspect feeder');
+        expect(written.data.titleSetAt, edited);
+        expect(written.data.titleApproval, isNull);
+        // Untouched fields keep their times.
+        expect(written.data.archivedSetAt, isNull);
+      });
+    });
+
     test('returns false when checklist item not found', () async {
       // Arrange
       const checklistItemId = 'non-existent-item-id';

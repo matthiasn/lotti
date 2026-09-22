@@ -43,6 +43,8 @@ abstract class AiActionItem with _$AiActionItem {
     String? checkedBy,
     DateTime? checkedAt,
     AiChecklistApproval? checkedStateApproval,
+    AiChecklistApproval? titleApproval,
+    AiChecklistApproval? archivedStateApproval,
   }) = _AiActionItem;
 
   factory AiActionItem.fromJson(Map<String, dynamic> json) =>
@@ -50,13 +52,15 @@ abstract class AiActionItem with _$AiActionItem {
 }
 
 /// Minimal human intent for prompts. Audit identifiers stay on the journal
-/// receipt and cannot be serialized through this model-facing type.
+/// receipt and cannot be serialized through this model-facing type. The
+/// approved value is the item's current one; [isChecked] is repeated only on
+/// the checked-state approval.
 @freezed
 abstract class AiChecklistApproval with _$AiChecklistApproval {
   const factory AiChecklistApproval({
-    required bool isChecked,
     required DateTime approvedAt,
     required ChecklistApprovalMode approvalMode,
+    @JsonKey(includeIfNull: false) bool? isChecked,
   }) = _AiChecklistApproval;
 
   factory AiChecklistApproval.fromJson(Map<String, dynamic> json) =>

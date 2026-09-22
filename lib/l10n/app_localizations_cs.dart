@@ -3489,6 +3489,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checklistExportFailed => 'Export selhal';
 
   @override
+  String checklistItemApprovedInChat(String date) {
+    return 'Schváleno tebou v chatu · $date';
+  }
+
+  @override
   String get checklistItemArchived => 'Položka archivována';
 
   @override
@@ -11308,7 +11313,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get queryActionsAccept => 'Přijmout';
 
   @override
+  String get queryActionsAcceptAll => 'Přijmout vše';
+
+  @override
   String get queryActionsDismiss => 'Zamítnout';
+
+  @override
+  String get queryActionsDismissAll => 'Zamítnout vše';
 
   @override
   String get queryActionsIncomplete =>

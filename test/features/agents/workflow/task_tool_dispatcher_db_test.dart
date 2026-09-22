@@ -8,7 +8,13 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/model/query_chat_models.dart';
+import 'package:lotti/features/agents/query/query_answer_builder.dart';
+import 'package:lotti/features/agents/query/query_chat_action_service.dart';
+import 'package:lotti/features/agents/query/query_task_action_planner.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
@@ -34,6 +40,7 @@ import '../../../helpers/path_provider.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
+import '../query/query_test_utils.dart';
 
 /// Dispatcher behaviour against real databases rather than mocks.
 ///
@@ -58,6 +65,7 @@ void main() {
   late TaskToolDispatcher dispatcher;
   late Task task;
   late String checklistItemId;
+  late String checklistId;
 
   setUpAll(registerAllFallbackValues);
 
@@ -144,6 +152,7 @@ void main() {
       reason: 'seed checklist must have a real item to toggle',
     );
     checklistItemId = created.createdItems.first.id;
+    checklistId = created.checklist!.meta.id;
 
     dispatcher = TaskToolDispatcher(
       journalDb: journalDb,
@@ -265,5 +274,188 @@ void main() {
       final stored = await journalDb.journalEntityById(checklistItemId);
       expect((stored! as ChecklistItem).data.isChecked, isFalse);
     });
+  });
+
+  group('chat approval end to end', () {
+    late QueryPersistenceBench bench;
+    late QueryChatActionService service;
+    late String chat;
+    late String question;
+    late String memoItemId;
+
+    Future<ChecklistItem> stored(String id) async =>
+        (await journalDb.journalEntityById(id))! as ChecklistItem;
+
+    /// The builder a task-agent wake creates, with the wake's own resolver.
+    ChangeSetBuilder wakeBuilder() => ChangeSetBuilder(
+      agentId: 'agent',
+      taskId: task.meta.id,
+      threadId: 'wake',
+      runKey: 'wake-run',
+      approvedChecklistItemResolver: journalChecklistItemResolver(journalDb),
+    );
+
+    setUp(() async {
+      memoItemId = (await ChecklistRepository().addItemToChecklist(
+        checklistId: checklistId,
+        title: 'Draft the launch memo',
+        isChecked: false,
+        categoryId: task.meta.categoryId,
+      ))!.id;
+
+      // The chat's own authorization reads the task through query access.
+      bench = QueryPersistenceBench();
+      bench.entries[task.meta.id] = task.copyWith(
+        meta: task.meta.copyWith(categoryId: null, private: false),
+      );
+      const scope = QueryScope(kind: QueryScopeKind.task, id: 'db-eval-task');
+      chat = await bench.store.create('agent', scope, 'Launch');
+      final asked = await bench.store.ask(
+        'agent',
+        chat,
+        'Interviews are done and the memo is really a send-out, update both.',
+      );
+      question = asked.id;
+      await bench.store.publish(
+        'agent',
+        chat,
+        QueryBuiltAnswer(
+          answer: QueryChatAnswer(
+            questionId: question,
+            text: 'Review these changes.',
+            coverage: const QueryCoverage(),
+            dependencies: (asked.data as QueryChatQuestion).dependencies,
+            proposedActions: [
+              ChangeItem(
+                toolName: TaskAgentToolNames.updateChecklistItem,
+                args: {'id': checklistItemId, 'isChecked': true},
+                humanSummary: 'Check interviews',
+              ),
+              ChangeItem(
+                toolName: TaskAgentToolNames.updateChecklistItem,
+                args: {'id': memoItemId, 'title': 'Send the launch memo'},
+                humanSummary: 'Rename memo',
+              ),
+            ],
+          ),
+        ),
+      );
+      service = QueryChatActionService(
+        store: bench.store,
+        enabled: () => true,
+        labels: MockLabelsRepository(),
+        readContext: (taskId, _) async => QueryTaskActionContext(
+          taskId: taskId,
+          input: const <String, dynamic>{},
+          dependencies: const <QuerySourceRef>[],
+          // Despite its name, the set of checklist item ids the chat may edit.
+          checklistIds: {checklistItemId, memoItemId},
+        ),
+        // Production wiring: the real dispatcher over the real journal.
+        dispatch: dispatcher.dispatchApproved,
+      );
+    });
+    tearDown(() => bench.close());
+
+    test(
+      'approved changes carry their provenance and bind the task agent',
+      () async {
+        // One change confirmed on its own row, the rest with Accept all.
+        final first = await service.resolveItem(
+          agentId: 'agent',
+          chatId: chat,
+          questionId: question,
+          itemIndex: 0,
+          approved: true,
+        );
+        expect(first?.success, isTrue, reason: first?.errorMessage);
+        final rest = await service.resolve(
+          agentId: 'agent',
+          chatId: chat,
+          questionId: question,
+          approved: true,
+        );
+        expect(rest.map((r) => r.success), [true]);
+
+        // 1. The journal holds the change and who authorised it.
+        final interviews = (await stored(checklistItemId)).data;
+        expect(interviews.isChecked, isTrue);
+        expect(interviews.checkedBy, ChangeSource.user);
+        final checkApproval = interviews.checkedStateApproval!;
+        expect(checkApproval.approvedBy, 'user');
+        expect(checkApproval.approvalMode, ChecklistApprovalMode.individual);
+        expect(checkApproval.originatingMessageId, question);
+        expect(checkApproval.conversationId, chat);
+        expect(checkApproval.changeSetId, 'query-chat:$question:actions');
+        final memo = (await stored(memoItemId)).data;
+        expect(memo.title, 'Send the launch memo');
+        expect(
+          memo.titleApproval?.approvalMode,
+          ChecklistApprovalMode.confirmAll,
+        );
+        expect(memo.currentChatApproval, isNotNull);
+
+        // 2. A later wake cannot propose reversing either change, however it
+        //    argues — and says why, so the model does not retry.
+        final wake = wakeBuilder();
+        final batch = await wake.addBatchItem(
+          toolName: TaskAgentToolNames.updateChecklistItems,
+          args: {
+            'items': [
+              {
+                'id': checklistItemId,
+                'isChecked': false,
+                'reason':
+                    'No evidence of completed interviews in the task log.',
+              },
+              {'id': memoItemId, 'title': 'Draft the launch memo'},
+            ],
+          },
+          summaryPrefix: 'Update',
+        );
+        expect(batch.added, 0);
+        expect(batch.rejected, 2);
+        expect(wake.items, isEmpty);
+
+        // 3. Even a reversal that reached execution is refused and retracted.
+        final stale = await dispatcher.dispatch(
+          TaskAgentToolNames.updateChecklistItems,
+          {
+            'items': [
+              {
+                'id': checklistItemId,
+                'isChecked': false,
+                'reason':
+                    'No evidence of completed interviews in the task log.',
+              },
+            ],
+          },
+          task.meta.id,
+        );
+        expect(stale.success, isFalse);
+        expect(stale.nonRetryable, isTrue);
+        expect((await stored(checklistItemId)).data.isChecked, isTrue);
+
+        // 4. The user's own later edit — even back to the approved title —
+        //    ends the approval, and the agent may propose again.
+        final repository = ChecklistRepository();
+        for (final title in ['Send the memo', 'Send the launch memo']) {
+          await repository.updateChecklistItem(
+            checklistItemId: memoItemId,
+            data: (await stored(memoItemId)).data.copyWith(title: title),
+            taskId: task.meta.id,
+          );
+        }
+        expect((await stored(memoItemId)).data.titleApproval, isNull);
+        expect(
+          await wakeBuilder().addItem(
+            toolName: TaskAgentToolNames.updateChecklistItem,
+            args: {'id': memoItemId, 'title': 'Draft the launch memo'},
+            humanSummary: 'Rename memo',
+          ),
+          isNull,
+        );
+      },
+    );
   });
 }

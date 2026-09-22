@@ -33,6 +33,12 @@ _ChecklistItemData _$ChecklistItemDataFromJson(Map<String, dynamic> json) =>
               )
               .toList() ??
           const [],
+      titleSetAt: json['titleSetAt'] == null
+          ? null
+          : DateTime.parse(json['titleSetAt'] as String),
+      archivedSetAt: json['archivedSetAt'] == null
+          ? null
+          : DateTime.parse(json['archivedSetAt'] as String),
     );
 
 Map<String, dynamic> _$ChecklistItemDataToJson(_ChecklistItemData instance) =>
@@ -45,6 +51,8 @@ Map<String, dynamic> _$ChecklistItemDataToJson(_ChecklistItemData instance) =>
       'checkedBy': _$ChangeSourceEnumMap[instance.checkedBy]!,
       'checkedAt': instance.checkedAt?.toIso8601String(),
       'approvalHistory': instance.approvalHistory,
+      'titleSetAt': instance.titleSetAt?.toIso8601String(),
+      'archivedSetAt': instance.archivedSetAt?.toIso8601String(),
     };
 
 const _$ChangeSourceEnumMap = {
@@ -70,6 +78,8 @@ _ChecklistItemProvenance _$ChecklistItemProvenanceFromJson(
   source: json['source'] as String? ?? 'chat_suggestion',
   appliedBy: json['appliedBy'] as String? ?? 'task_agent',
   isChecked: json['isChecked'] as bool?,
+  title: json['title'] as String?,
+  isArchived: json['isArchived'] as bool?,
 );
 
 Map<String, dynamic> _$ChecklistItemProvenanceToJson(
@@ -87,6 +97,8 @@ Map<String, dynamic> _$ChecklistItemProvenanceToJson(
   'source': instance.source,
   'appliedBy': instance.appliedBy,
   'isChecked': instance.isChecked,
+  'title': instance.title,
+  'isArchived': instance.isArchived,
 };
 
 const _$ChecklistApprovalModeEnumMap = {

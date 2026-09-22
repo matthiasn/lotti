@@ -20,6 +20,8 @@ export 'test_data/wake_factories.dart';
 ChecklistItemProvenance makeTestChecklistApproval({
   ChecklistApprovalMode mode = ChecklistApprovalMode.individual,
   bool? isChecked = true,
+  String? title,
+  bool? isArchived,
 }) => ChecklistItemProvenance(
   approvedBy: 'user',
   approvalHost: 'device',
@@ -31,4 +33,34 @@ ChecklistItemProvenance makeTestChecklistApproval({
   decisionId: 'decision',
   agentId: 'agent',
   isChecked: isChecked,
+  title: title,
+  isArchived: isArchived,
 );
+
+/// Checklist item whose current checked state, title and archival are each
+/// backed by [makeTestChecklistApproval] receipts when the flag is set.
+ChecklistItemData makeTestApprovedChecklistItem({
+  String title = 'Walk pressure seals A–F',
+  bool isChecked = true,
+  bool isArchived = false,
+  bool checkedViaChat = true,
+  bool titleViaChat = false,
+  bool archivedViaChat = false,
+}) {
+  final approval = makeTestChecklistApproval(isChecked: null);
+  return ChecklistItemData(
+    title: title,
+    isChecked: isChecked,
+    isArchived: isArchived,
+    linkedChecklists: const ['checklist'],
+    checkedBy: checkedViaChat ? ChangeSource.user : ChangeSource.agent,
+    checkedAt: checkedViaChat ? approval.approvedAt : null,
+    approvalHistory: [
+      if (checkedViaChat) approval.copyWith(isChecked: isChecked),
+      if (titleViaChat) approval.copyWith(title: title),
+      if (archivedViaChat) approval.copyWith(isArchived: isArchived),
+    ],
+    titleSetAt: titleViaChat ? approval.approvedAt : null,
+    archivedSetAt: archivedViaChat ? approval.approvedAt : null,
+  );
+}
