@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_answer_builder.dart';
@@ -27,6 +29,7 @@ void main() {
   late String chat;
   late String question;
   late List<String> calls;
+  late List<ChecklistApprovalMode?> modes;
   var enabled = true;
   var failTime = false;
   var hideAfterFirst = false;
@@ -59,6 +62,7 @@ void main() {
       ),
     );
     calls = [];
+    modes = [];
     enabled = true;
     failTime = false;
     hideAfterFirst = false;
@@ -99,7 +103,7 @@ void main() {
         expect(approval?.originatingMessageId, question);
         expect(approval?.conversationId, chat);
         expect(approval?.approvedBy, 'user');
-        expect(approval?.approvalMode, ChecklistApprovalMode.confirmAll);
+        modes.add(approval?.approvalMode);
         calls.add(name);
         if (hold != null) await hold!.future;
         if (deleteAfterFirst) {
@@ -142,10 +146,108 @@ void main() {
       final result = await resolve();
       expect(result.every((r) => r.success), isTrue);
       expect(calls, ['add_checklist_item', 'create_time_entry']);
+      expect(modes, everyElement(ChecklistApprovalMode.confirmAll));
       await resolve();
       expect(calls.length, 2);
     },
   );
+
+  group('per-item decisions', () {
+    Future<ToolExecutionResult?> resolveItem(
+      int index, {
+      bool approved = true,
+    }) => service.resolveItem(
+      agentId: 'agent',
+      chatId: chat,
+      questionId: question,
+      itemIndex: index,
+      approved: approved,
+    );
+
+    Future<List<ChangeItemStatus>> statuses() async {
+      final set = await bench.repository.getEntity(
+        'query-chat:$question:actions',
+      );
+      return (set! as ChangeSetEntity).items.map((i) => i.status).toList();
+    }
+
+    Future<Iterable<QueryChatActionDecision>> setDecisions() async =>
+        (await bench.store.load('agent')).chats.single.events
+            .map((e) => e.data)
+            .whereType<QueryChatActionDecision>();
+
+    test(
+      'one confirm applies only that change, as an individual approval',
+      () async {
+        final result = await resolveItem(1);
+        expect(result?.success, isTrue);
+        expect(calls, ['create_time_entry']);
+        expect(modes, [ChecklistApprovalMode.individual]);
+        expect(await statuses(), [
+          ChangeItemStatus.pending,
+          ChangeItemStatus.confirmed,
+        ]);
+        // No verdict on the set: the rest is still the user's to decide.
+        expect(await setDecisions(), isEmpty);
+      },
+    );
+
+    test(
+      'a rejected item never runs; Accept all then applies the rest',
+      () async {
+        expect(await resolveItem(0, approved: false), isNull);
+        expect(calls, isEmpty);
+        final results = await resolve();
+        expect(results.map((r) => r.success), [true]);
+        expect(calls, ['create_time_entry']);
+        expect(modes, [ChecklistApprovalMode.confirmAll]);
+        expect(await statuses(), [
+          ChangeItemStatus.rejected,
+          ChangeItemStatus.confirmed,
+        ]);
+      },
+    );
+
+    test(
+      'Dismiss all keeps an applied item and rejects what is pending',
+      () async {
+        await resolveItem(0);
+        expect(await resolve(approved: false), isEmpty);
+        expect(calls, ['add_checklist_item']);
+        expect(await statuses(), [
+          ChangeItemStatus.confirmed,
+          ChangeItemStatus.rejected,
+        ]);
+        expect((await setDecisions()).single.approved, isFalse);
+      },
+    );
+
+    test('no item can be decided once the set is dismissed', () async {
+      await resolve(approved: false);
+      await expectLater(
+        resolveItem(0),
+        throwsA(isA<QueryScopeUnavailable>()),
+      );
+      expect(calls, isEmpty);
+    });
+
+    test('a second decision while one applies is ignored', () async {
+      hold = Completer<void>();
+      final first = resolveItem(0);
+      expect(await resolveItem(1), isNull);
+      hold!.complete();
+      expect((await first)?.success, isTrue);
+      expect(calls, ['add_checklist_item']);
+    });
+
+    test('a failed item stays pending for a later retry', () async {
+      failTime = true;
+      expect((await resolveItem(1))?.success, isFalse);
+      failTime = false;
+      expect((await resolveItem(1))?.success, isTrue);
+      expect(calls, ['create_time_entry', 'create_time_entry']);
+    });
+  });
 
   test(
     'Dismiss never creates a change set and cannot later be accepted',

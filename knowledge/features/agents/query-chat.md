@@ -5,8 +5,8 @@ description: Task, project and category conversations with isolated source check
 resource: ../../../lib/features/agents/query
 tags: [agents, chat, retrieval, evidence, privacy, sync]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-09-16T00:00:00Z }
-stale_after: 2026-10-12
+generated: { by: claude-code/opus-5.5, at: 2026-09-22T18:00:00Z }
+stale_after: 2026-11-22
 sources:
   - id: controller
     resource: ../../../lib/features/agents/query/query_chat_controller.dart
@@ -47,7 +47,7 @@ sources:
   - id: store
     resource: ../../../lib/features/agents/query/query_chat_store.dart
     title: Synced history and atomic publication
-    last_modified: 2026-09-11
+    last_modified: 2026-09-22
   - id: action-planner
     resource: ../../../lib/features/agents/query/query_task_action_planner.dart
     title: Isolated task-tool proposal planning
@@ -59,11 +59,11 @@ sources:
   - id: action-service
     resource: ../../../lib/features/agents/query/query_chat_action_service.dart
     title: Human approval and guarded task dispatch
-    last_modified: 2026-09-13
+    last_modified: 2026-09-22
   - id: action-review
     resource: ../../../lib/features/agents/ui/query/query_action_review.dart
     title: Inline action review and retry
-    last_modified: 2026-09-13
+    last_modified: 2026-09-22
   - id: action-eval
     resource: ../../../test/features/ai/eval/query_actions_eval_live_test.dart
     title: Synthetic live action routing and review latency eval
@@ -417,7 +417,10 @@ flowchart LR
 ```
 
 `QueryActionReview` renders the actual structured changes inside the answer,
-including dates, time ranges and follow-up options, with Accept and Dismiss.
+including dates, time ranges and follow-up options. A single change gets Accept
+and Dismiss. With more than one, every pending row also gets its own confirm
+and reject (the proposal card's `RowActions`), and the set-level buttons read
+Accept all and Dismiss all and act only on what is still pending.
 Label assignments use the current privacy-filtered label name and localized
 copy; an unavailable name falls back to the label ID rather than stale text.
 There is no modal. The proposal's message heading is app-generated; a model's
@@ -425,13 +428,21 @@ premature execution claim cannot appear as a completed action. Prior proposals
 enter later model context as tool names and arguments with execution unknown,
 without saved human summaries (which may contain stale label names) or that
 model's announcement of success. `QueryChatStore.decideActions` records
-the verdict once.
-Dismissal never dispatches anything. Acceptance creates the stable
+the set-level verdict once; `openActions` materializes the set for a per-item
+decision without recording one. Both create the stable
 `query-chat:<questionId>:actions` set from the persisted proposal, not from
-arguments supplied by the UI. `QueryChatActionService` authorizes the chat and
-live targets before every dispatch through the shared task handlers and
-`ChangeSetConfirmationService`. Its in-flight guard prevents repeated local
-Accept taps; retries reuse item statuses and skip applied items. The existing
+arguments supplied by the UI, and reuse it once it exists. A dismissal before
+any per-item decision never creates it and never dispatches anything; a
+dismissal after one hands the opened set back so `QueryChatActionService`
+rejects its pending rest, and closes it to further per-item decisions.
+`QueryChatActionService.resolve` confirms every pending item through
+`confirmAll`; `resolveItem` confirms or rejects one through
+`confirmItem`/`rejectItem`, leaving the rest pending. Either way the service
+authorizes the chat and live targets before every dispatch through the shared
+task handlers and `ChangeSetConfirmationService`. One in-flight guard per
+answer covers both paths, so a second tap while one decision applies is
+ignored; retries reuse item statuses and skip applied items, and a failed
+per-item confirm stays pending. The existing
 confirmation service's persist-before-dispatch crash semantics still apply.
 Checklist mutations additionally persist their human approval receipt with the
 journal item. See [chat checklist approval provenance](task-agents.md#chat-checklist-approval-provenance)
@@ -451,10 +462,16 @@ stateDiagram-v2
     [*] --> Proposed: validated planner output saved in chat
     Proposed --> Dismissed: Dismiss
     Proposed --> Applying: Accept and live authorization
+    Proposed --> Reviewing: confirm or reject one change
+    Reviewing --> Reviewing: decide another change
+    Reviewing --> Applied: last pending change decided
+    Reviewing --> Applying: Accept all
+    Reviewing --> Dismissed: Dismiss all rejects the pending rest
     Applying --> Applied: all handlers succeed
     Applying --> Partial: a handler fails
     Partial --> Applying: Retry pending items
     Proposed --> Deleted: delete chat
+    Reviewing --> Deleted: delete chat
     Partial --> Deleted: delete chat
     Dismissed --> [*]
     Applied --> [*]

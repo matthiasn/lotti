@@ -10,8 +10,10 @@ import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_part.dart';
 import 'package:lotti/features/agents/ui/query/query_action_review.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -199,11 +201,11 @@ void main() {
     expect(find.textContaining('10:30'), findsOneWidget);
     expect(find.textContaining('Habitat maintenance'), findsOneWidget);
     expect(find.text('Wrong model description'), findsNothing);
-    await tester.tap(find.text('Accept'));
+    await tester.tap(find.text('Accept all'));
     await tester.pump();
     await tester.pump();
     expect(find.text('Change applied'), findsNWidgets(2));
-    expect(find.text('Accept'), findsNothing);
+    expect(find.text('Accept all'), findsNothing);
     expect(find.byType(AlertDialog), findsNothing);
     verify(
       () => service.resolve(
@@ -221,10 +223,10 @@ void main() {
       return [];
     });
     await pump(tester);
-    await tester.tap(find.text('Dismiss'));
+    await tester.tap(find.text('Dismiss all'));
     await tester.pump();
     expect(find.text('Dismissed'), findsOneWidget);
-    expect(find.text('Accept'), findsNothing);
+    expect(find.text('Accept all'), findsNothing);
     expect(find.textContaining('Inspect feeder'), findsOneWidget);
     verify(
       () => service.resolve(
@@ -255,12 +257,12 @@ void main() {
       ];
     });
     await pump(tester);
-    await tester.tap(find.text('Accept'));
+    await tester.tap(find.text('Accept all'));
     await tester.pump();
     await tester.pump();
     expect(find.text('Change applied'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
-    expect(find.text('Dismiss'), findsNothing);
+    expect(find.text('Dismiss all'), findsNothing);
     expect(find.textContaining('sensitive'), findsNothing);
     stub((approved) async {
       applied();
@@ -279,12 +281,12 @@ void main() {
     final gate = Completer<List<ToolExecutionResult>>();
     stub((_) => gate.future);
     await pump(tester);
-    await tester.tap(find.text('Accept'));
+    await tester.tap(find.text('Accept all'));
     await tester.pump();
     expect(
       tester
           .widget<DesignSystemButton>(
-            find.widgetWithText(DesignSystemButton, 'Accept'),
+            find.widgetWithText(DesignSystemButton, 'Accept all'),
           )
           .isLoading,
       isTrue,
@@ -292,12 +294,12 @@ void main() {
     expect(
       tester
           .widget<DesignSystemButton>(
-            find.widgetWithText(DesignSystemButton, 'Dismiss'),
+            find.widgetWithText(DesignSystemButton, 'Dismiss all'),
           )
           .onPressed,
       isNull,
     );
-    await tester.tap(find.text('Accept'));
+    await tester.tap(find.text('Accept all'));
     await tester.pump();
     applied();
     gate.complete([
@@ -513,14 +515,125 @@ void main() {
     (tester) async {
       stub((_) async => throw StateError('private title'));
       await pump(tester);
-      await tester.tap(find.text('Accept'));
+      await tester.tap(find.text('Accept all'));
       await tester.pump();
       expect(
         find.textContaining('Some changes could not be applied'),
         findsOneWidget,
       );
       expect(find.textContaining('private title'), findsNothing);
-      expect(find.text('Accept'), findsOneWidget);
+      expect(find.text('Accept all'), findsOneWidget);
     },
   );
+
+  group('per-item decisions', () {
+    void stubItem(
+      ToolExecutionResult? Function(int index, {required bool approved})
+      callback,
+    ) {
+      when(
+        () => service.resolveItem(
+          agentId: 'agent',
+          chatId: 'chat',
+          questionId: 'question',
+          itemIndex: any(named: 'itemIndex'),
+          approved: any(named: 'approved'),
+        ),
+      ).thenAnswer(
+        (invocation) async => callback(
+          invocation.namedArguments[#itemIndex] as int,
+          approved: invocation.namedArguments[#approved] as bool,
+        ),
+      );
+    }
+
+    Finder rowActions() => find.byType(RowActions);
+
+    testWidgets('each pending change takes its own confirm and reject', (
+      tester,
+    ) async {
+      final decided = <(int, bool)>[];
+      stubItem((index, {required approved}) {
+        decided.add((index, approved));
+        return approved
+            ? const ToolExecutionResult(success: true, output: 'Applied')
+            : null;
+      });
+      await pump(tester);
+      expect(rowActions(), findsNWidgets(2));
+      await tester.tap(find.byIcon(LottiIcons.confirm).last);
+      await tester.pump();
+      await tester.tap(find.byIcon(LottiIcons.close).first);
+      await tester.pump();
+      expect(decided, [(1, true), (0, false)]);
+      verifyNever(
+        () => service.resolve(
+          agentId: any(named: 'agentId'),
+          chatId: any(named: 'chatId'),
+          questionId: any(named: 'questionId'),
+          approved: any(named: 'approved'),
+        ),
+      );
+      expect(find.textContaining('Some changes could not'), findsNothing);
+    });
+
+    testWidgets('a decided change loses its controls; the rest keep theirs', (
+      tester,
+    ) async {
+      applied(partial: true);
+      await pump(tester);
+      expect(rowActions(), findsOneWidget);
+      expect(find.text('Change applied'), findsOneWidget);
+      // The set-level button now resolves only what is still pending.
+      expect(find.text('Accept all'), findsOneWidget);
+    });
+
+    testWidgets('a failed confirm keeps the change open and says so', (
+      tester,
+    ) async {
+      stubItem(
+        (_, {required approved}) => const ToolExecutionResult(
+          success: false,
+          output: 'Storage unavailable',
+        ),
+      );
+      await pump(tester);
+      await tester.tap(find.byIcon(LottiIcons.confirm).first);
+      await tester.pump();
+      expect(
+        find.textContaining('Some changes could not be applied'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Storage unavailable'), findsNothing);
+      expect(rowActions(), findsNWidgets(2));
+    });
+
+    testWidgets('a single change keeps one plain Accept and no row controls', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        response: QueryChatAnswer(
+          questionId: 'question',
+          text: 'Review this change.',
+          coverage: const QueryCoverage(),
+          proposedActions: [answer.proposedActions.first],
+        ),
+      );
+      expect(rowActions(), findsNothing);
+      expect(find.text('Accept'), findsOneWidget);
+      expect(find.text('Dismiss'), findsOneWidget);
+    });
+
+    for (final (label, approved, canApply) in [
+      ('dismissed', false, true),
+      ('archived', null, false),
+    ]) {
+      testWidgets('a $label proposal offers no row controls', (tester) async {
+        await pump(tester, approved: approved, canApply: canApply);
+        expect(rowActions(), findsNothing);
+        verifyZeroInteractions(service);
+      });
+    }
+  });
 }

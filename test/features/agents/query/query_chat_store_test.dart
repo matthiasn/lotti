@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_answer_builder.dart';
@@ -217,6 +218,75 @@ void main() {
       },
     );
   }
+
+  test(
+    'a per-item decision opens the set without deciding the rest',
+    () => withClock(Clock.fixed(now), () async {
+      final chat = await store.create('agent', scope, 'Feeder');
+      final question = await store.ask('agent', chat, 'Add feeder checks.');
+      await store.publish(
+        'agent',
+        chat,
+        QueryBuiltAnswer(
+          answer: QueryChatAnswer(
+            questionId: question.id,
+            text: 'Review.',
+            coverage: const QueryCoverage(),
+            dependencies: (question.data as QueryChatQuestion).dependencies,
+            proposedActions: const [
+              ChangeItem(
+                toolName: 'add_checklist_item',
+                args: {'title': 'Feeder'},
+                humanSummary: 'Feeder',
+              ),
+              ChangeItem(
+                toolName: 'add_checklist_item',
+                args: {'title': 'Seals'},
+                humanSummary: 'Seals',
+              ),
+            ],
+          ),
+        ),
+      );
+      final opened = await store.openActions('agent', chat, question.id);
+      expect(opened?.id, 'query-chat:${question.id}:actions');
+      expect(opened?.runKey, 'query-chat:${question.id}');
+      expect(opened?.threadId, chat);
+      expect(opened?.items.map((i) => i.args['title']), ['Feeder', 'Seals']);
+      // Reopening returns the persisted set, never a fresh snapshot.
+      final persisted = opened!.copyWith(
+        items: [
+          opened.items.first.copyWith(status: ChangeItemStatus.confirmed),
+          opened.items.last,
+        ],
+      );
+      await store.sync.upsertEntity(persisted);
+      expect(
+        (await store.openActions(
+          'agent',
+          chat,
+          question.id,
+        ))?.items.first.status,
+        ChangeItemStatus.confirmed,
+      );
+      expect(
+        (await store.load('agent')).chats.single.events
+            .map((e) => e.data)
+            .whereType<QueryChatActionDecision>(),
+        isEmpty,
+      );
+      // Dismissing the opened set hands it back so its pending rest can be
+      // rejected, and closes it to further per-item decisions.
+      final dismissed = await store.decideActions(
+        'agent',
+        chat,
+        question.id,
+        approved: false,
+      );
+      expect(dismissed?.items.first.status, ChangeItemStatus.confirmed);
+      expect(await store.openActions('agent', chat, question.id), isNull);
+    }),
+  );
 
   for (final forget in [false, true]) {
     test(

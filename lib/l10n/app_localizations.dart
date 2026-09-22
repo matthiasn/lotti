@@ -5790,6 +5790,12 @@ abstract class AppLocalizations {
   /// **'Export failed'**
   String get checklistExportFailed;
 
+  /// Caption under a checklist item whose current state the user approved from a task chat suggestion; date is when they approved it.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved by you in chat · {date}'**
+  String checklistItemApprovedInChat(String date);
+
   /// No description provided for @checklistItemArchived.
   ///
   /// In en, this message translates to:
@@ -18787,11 +18793,23 @@ abstract class AppLocalizations {
   /// **'Accept'**
   String get queryActionsAccept;
 
+  /// Confirms every change still pending in a chat proposal with more than one item.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept all'**
+  String get queryActionsAcceptAll;
+
   /// No description provided for @queryActionsDismiss.
   ///
   /// In en, this message translates to:
   /// **'Dismiss'**
   String get queryActionsDismiss;
+
+  /// Rejects every change still pending in a chat proposal with more than one item.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss all'**
+  String get queryActionsDismissAll;
 
   /// No description provided for @queryActionsIncomplete.
   ///

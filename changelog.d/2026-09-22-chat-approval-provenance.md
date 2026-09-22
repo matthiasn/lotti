@@ -1,3 +1,9 @@
+### Added
+- **Accept or reject the task chat's suggestions one at a time.** When the
+  chat proposes several changes, each one now has its own confirm and reject
+  buttons, and "Accept all" and "Dismiss all" act only on what you have not
+  decided yet.
+
 ### Fixed
 - **The task agent could suggest undoing a rename or archive you approved in
   chat.** Checking items off in chat was already protected, but a title change

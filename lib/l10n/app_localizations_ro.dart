@@ -3509,6 +3509,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checklistExportFailed => 'Exportul a eșuat';
 
   @override
+  String checklistItemApprovedInChat(String date) {
+    return 'Aprobat de dvs. în chat · $date';
+  }
+
+  @override
   String get checklistItemArchived => 'Element arhivat';
 
   @override
@@ -11376,7 +11381,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get queryActionsAccept => 'Acceptați';
 
   @override
+  String get queryActionsAcceptAll => 'Acceptați toate';
+
+  @override
   String get queryActionsDismiss => 'Respingeți';
+
+  @override
+  String get queryActionsDismissAll => 'Respingeți toate';
 
   @override
   String get queryActionsIncomplete =>

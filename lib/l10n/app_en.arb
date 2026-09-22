@@ -2135,6 +2135,15 @@
   "checklistExpandTooltip": "Expand",
   "checklistExportAsMarkdown": "Export checklist as Markdown",
   "checklistExportFailed": "Export failed",
+  "checklistItemApprovedInChat": "Approved by you in chat · {date}",
+  "@checklistItemApprovedInChat": {
+    "description": "Caption under a checklist item whose current state the user approved from a task chat suggestion; date is when they approved it.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "checklistItemArchived": "Item archived",
   "checklistItemArchiveUndo": "Undo",
   "checklistItemDeleteCancel": "Cancel",
@@ -6474,7 +6483,15 @@
   "provisionedSyncSummaryUser": "Sync account",
   "provisionedSyncTitle": "Devices",
   "queryActionsAccept": "Accept",
+  "queryActionsAcceptAll": "Accept all",
+  "@queryActionsAcceptAll": {
+    "description": "Confirms every change still pending in a chat proposal with more than one item."
+  },
   "queryActionsDismiss": "Dismiss",
+  "queryActionsDismissAll": "Dismiss all",
+  "@queryActionsDismissAll": {
+    "description": "Rejects every change still pending in a chat proposal with more than one item."
+  },
   "queryActionsIncomplete": "Some changes could not be applied. Applied changes will not be repeated when you retry.",
   "queryActionsReview": "Proposed changes",
   "queryActionsTarget": "For: {target}",

@@ -1,5 +1,6 @@
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_chat_store.dart';
@@ -69,59 +70,107 @@ class QueryChatActionService {
     return (answer: answer, taskId: chat.scope.id);
   }
 
+  /// Resolves every pending item of the reviewed set: acceptance confirms
+  /// them as one `confirmAll` gesture, dismissal rejects them. Items already
+  /// decided one by one keep their verdicts.
   Future<List<ToolExecutionResult>> resolve({
     required String agentId,
     required String chatId,
     required String questionId,
     required bool approved,
-  }) async {
-    final key = '$agentId:$chatId:$questionId';
-    if (!_running.add(key)) return const [];
-    try {
-      await _authorize(agentId, chatId, questionId);
-      final set = await store.decideActions(
-        agentId,
-        chatId,
-        questionId,
-        approved: approved,
-      );
-      if (set == null) {
-        if (approved) throw const QueryScopeUnavailable();
-        return const [];
+  }) => _exclusive(agentId, chatId, questionId, const [], () async {
+    await _authorize(agentId, chatId, questionId);
+    final set = await store.decideActions(
+      agentId,
+      chatId,
+      questionId,
+      approved: approved,
+    );
+    if (set == null) {
+      if (approved) throw const QueryScopeUnavailable();
+      return const <ToolExecutionResult>[];
+    }
+    final service = _confirmation(agentId, chatId, questionId);
+    if (approved) return service.confirmAll(set);
+    for (final (index, item) in set.items.indexed) {
+      if (item.status == ChangeItemStatus.pending) {
+        await service.rejectItem(set, index);
       }
-      // Both dispatch channels re-check access; the receipt remains separate
-      // from model arguments and is present only for a persisted chat approval.
-      Future<ToolExecutionResult> authorizedDispatch(
-        String name,
-        Map<String, dynamic> args,
-        String taskId, [
-        ChecklistItemProvenance? approval,
-      ]) async {
-        final current = await _authorize(agentId, chatId, questionId);
-        if (taskId != current.taskId) throw const QueryScopeUnavailable();
-        final context = await readContext(
-          taskId,
-          current.answer.dependencies.map((s) => s.id),
-        );
-        await QueryTaskActionPlanner.validateItem(
-          ChangeItem(toolName: name, args: args, humanSummary: ''),
-          context,
-        );
-        // Re-check after asynchronous context reads and immediately before
-        // the existing handler is allowed to mutate the task.
-        await _authorize(agentId, chatId, questionId);
-        return dispatch(name, args, taskId, approval);
-      }
+    }
+    return const <ToolExecutionResult>[];
+  });
 
-      final service = ChangeSetConfirmationService(
-        syncService: store.sync,
-        labelsRepository: labels,
-        toolDispatcher: authorizedDispatch,
-        approvedToolDispatcher: authorizedDispatch,
-      );
-      return await service.confirmAll(set);
+  /// Confirms or rejects the single item at [itemIndex] — the per-item
+  /// gesture, recorded as [ChecklistApprovalMode.individual]. The rest of the
+  /// set stays pending. Returns the dispatch result of a confirmation, or null
+  /// for a rejection or a decision already in flight.
+  Future<ToolExecutionResult?> resolveItem({
+    required String agentId,
+    required String chatId,
+    required String questionId,
+    required int itemIndex,
+    required bool approved,
+  }) => _exclusive(agentId, chatId, questionId, null, () async {
+    await _authorize(agentId, chatId, questionId);
+    final set = await store.openActions(agentId, chatId, questionId);
+    if (set == null) throw const QueryScopeUnavailable();
+    final service = _confirmation(agentId, chatId, questionId);
+    if (approved) return service.confirmItem(set, itemIndex);
+    await service.rejectItem(set, itemIndex);
+    return null;
+  });
+
+  /// One decision per answer at a time; a concurrent one returns [busy].
+  Future<T> _exclusive<T>(
+    String agentId,
+    String chatId,
+    String questionId,
+    T busy,
+    Future<T> Function() run,
+  ) async {
+    final key = '$agentId:$chatId:$questionId';
+    if (!_running.add(key)) return busy;
+    try {
+      return await run();
     } finally {
       _running.remove(key);
     }
+  }
+
+  /// Both dispatch channels re-check access; the receipt remains separate
+  /// from model arguments and is present only for a persisted chat approval.
+  ChangeSetConfirmationService _confirmation(
+    String agentId,
+    String chatId,
+    String questionId,
+  ) {
+    Future<ToolExecutionResult> authorizedDispatch(
+      String name,
+      Map<String, dynamic> args,
+      String taskId, [
+      ChecklistItemProvenance? approval,
+    ]) async {
+      final current = await _authorize(agentId, chatId, questionId);
+      if (taskId != current.taskId) throw const QueryScopeUnavailable();
+      final context = await readContext(
+        taskId,
+        current.answer.dependencies.map((s) => s.id),
+      );
+      await QueryTaskActionPlanner.validateItem(
+        ChangeItem(toolName: name, args: args, humanSummary: ''),
+        context,
+      );
+      // Re-check after asynchronous context reads and immediately before
+      // the existing handler is allowed to mutate the task.
+      await _authorize(agentId, chatId, questionId);
+      return dispatch(name, args, taskId, approval);
+    }
+
+    return ChangeSetConfirmationService(
+      syncService: store.sync,
+      labelsRepository: labels,
+      toolDispatcher: authorizedDispatch,
+      approvedToolDispatcher: authorizedDispatch,
+    );
   }
 }
