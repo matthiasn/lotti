@@ -442,7 +442,6 @@
   "agentSummaryUncheckItem": "Häkchen entfernen: „{title}“",
   "agentSummaryUpdateItem": "Ändern: „{title}“",
   "agentSummaryUpdateProjectStatus": "Projektstatus auf {status} setzen",
-  "agentSummaryUpdateRunningTimer": "Text der laufenden Zeitmessung ändern: „{summary}“",
   "agentSummaryUpdateTimeEntry": "Zeiteintrag aktualisieren",
   "agentSummaryUpdateTimeEntryRange": "Zeiteintrag {range} aktualisieren",
   "agentSummaryUpdateTimeEntryRangeText": "Zeiteintrag {range} aktualisieren: „{summary}“",

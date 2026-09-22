@@ -1046,11 +1046,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String agentSummaryUpdateRunningTimer(Object summary) {
-    return 'Text der laufenden Zeitmessung ändern: „$summary“';
-  }
-
-  @override
   String get agentSummaryUpdateTimeEntry => 'Zeiteintrag aktualisieren';
 
   @override

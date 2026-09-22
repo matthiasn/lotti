@@ -1046,11 +1046,6 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String agentSummaryUpdateRunningTimer(Object summary) {
-    return 'Cambiar el texto del temporizador en curso: «$summary»';
-  }
-
-  @override
   String get agentSummaryUpdateTimeEntry => 'Actualizar el registro de tiempo';
 
   @override

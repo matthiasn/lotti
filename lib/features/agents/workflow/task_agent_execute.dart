@@ -520,21 +520,21 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         },
         executeToolHandler: (toolName, args, manager) =>
             toolDispatcher.dispatch(toolName, args, taskId),
-        // The completed entries that `update_time_entry` may target — the same
-        // set rendered in the "Editable Time Entries" prompt section. A
-        // referenced entryId outside this set is a hallucinated id.
+        // The entries that `update_time_entry` may target — those rendered in
+        // the "Editable Time Entries" prompt section plus the running timer
+        // of the "Active Running Timer" one, which is linked from this task
+        // like any other. A referenced entryId outside this set is a
+        // hallucinated id.
         resolveEditableTimeEntryIds: () async {
-          final timeService = getIt<TimeService>();
-          final runningId = timeService.getCurrent()?.meta.id;
           final linked = await journalDb.getLinkedEntities(taskId);
           return linked
               .whereType<JournalEntry>()
-              .where((entry) => entry.meta.id != runningId)
               .map((entry) => entry.meta.id)
               .toSet();
         },
         // The id of the timer running for THIS task (mirrors the same-task
-        // branch of the "Active Running Timer" prompt section), or null.
+        // branch of the "Active Running Timer" prompt section), or null. Only
+        // its text may be proposed while it runs.
         resolveRunningTimerId: () async {
           final timeService = getIt<TimeService>();
           final current = timeService.getCurrent();
@@ -990,18 +990,10 @@ extension TaskAgentExecute on TaskAgentWorkflow {
     final entity = await journalDb.journalEntityById(taskId);
     final task = entity is Task ? entity : null;
 
-    final timeService = getIt<TimeService>();
-    final runningEntry = timeService.getCurrent();
-    final runningId = runningEntry?.meta.id;
-    // Scoped to THIS task: a timer belonging to another task reaches the prompt
-    // only as an opaque range, so there is no id for the agent to update.
-    final timerIsForThisTask =
-        runningEntry is JournalEntry && timeService.linkedFrom?.id == taskId;
-
+    // A timer running for this task is linked from it like any other entry,
+    // so its text is editable too; one belonging to another task is not.
     final linked = await journalDb.getLinkedEntities(taskId);
-    final hasEditableTimeEntries = linked.whereType<JournalEntry>().any(
-      (entry) => entry.meta.id != runningId,
-    );
+    final hasTimeRecords = linked.whereType<JournalEntry>().isNotEmpty;
 
     final labelDefinitions = await journalDb.getAllLabelDefinitions();
 
@@ -1012,8 +1004,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       // null to `true` would leave the gate dead for the common case.
       hasChecklistItems:
           task == null || (task.data.checklistIds?.isNotEmpty ?? false),
-      hasRunningTimerForTask: timerIsForThisTask,
-      hasTimeRecords: hasEditableTimeEntries,
+      hasTimeRecords: hasTimeRecords,
       hasLabelDefinitions: labelDefinitions.isNotEmpty,
       hasOpenProposals: ledger.open.isNotEmpty,
       hasActiveAttentionClaims: attentionClaims.isNotEmpty,

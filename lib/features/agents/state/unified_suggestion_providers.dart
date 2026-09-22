@@ -6,7 +6,7 @@ import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
-import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/change_item_dedup.dart';
 
 /// One pending proposal in the unified suggestion list.
 ///
@@ -109,7 +109,7 @@ Future<UnifiedSuggestionList> unifiedSuggestionList(
     }
   }
   open.sort((a, b) => b.changeSet.createdAt.compareTo(a.changeSet.createdAt));
-  final visibleOpen = keepLatestRunningTimerUpdate(open);
+  final visibleOpen = hideSupersededTimeEntryEdits(open);
 
   // Dedupe the activity strip by fingerprint — the repository ledger
   // deliberately emits one entry per decision event so the LLM prompt
@@ -131,43 +131,28 @@ Future<UnifiedSuggestionList> unifiedSuggestionList(
   );
 }
 
-List<PendingSuggestion> keepLatestRunningTimerUpdate(
-  List<PendingSuggestion> sortedOpen,
+/// Drops every time-entry edit that a newer open one supersedes (see
+/// [supersedesTimeEntryEdit]), keeping the order of what remains.
+///
+/// Persistence retracts a superseded edit at the end of the wake that
+/// replaced it; until then — and for edits from two concurrent wakes — this
+/// keeps the stale wording from standing beside its replacement. "Newer" is
+/// the later change set, or the later item within one set.
+List<PendingSuggestion> hideSupersededTimeEntryEdits(
+  List<PendingSuggestion> open,
 ) {
-  final latestByTimerId = <String?, PendingSuggestion>{};
-  for (final suggestion in sortedOpen) {
-    if (suggestion.item.toolName != TaskAgentToolNames.updateRunningTimer) {
-      continue;
-    }
-    final timerId = _runningTimerId(suggestion.item);
-    final current = latestByTimerId[timerId];
-    if (current == null ||
-        suggestion.changeSet.createdAt.isAfter(current.changeSet.createdAt) ||
-        (suggestion.changeSet.createdAt == current.changeSet.createdAt &&
-            suggestion.itemIndex > current.itemIndex)) {
-      latestByTimerId[timerId] = suggestion;
-    }
-  }
+  bool isNewer(PendingSuggestion a, PendingSuggestion b) =>
+      a.changeSet.createdAt.isAfter(b.changeSet.createdAt) ||
+      (a.changeSet.createdAt == b.changeSet.createdAt &&
+          a.itemIndex > b.itemIndex);
 
-  if (latestByTimerId.isEmpty) return sortedOpen;
-
-  final visible = <PendingSuggestion>[];
-  for (final suggestion in sortedOpen) {
-    if (suggestion.item.toolName == TaskAgentToolNames.updateRunningTimer &&
-        !identical(
-          suggestion,
-          latestByTimerId[_runningTimerId(suggestion.item)],
-        )) {
-      continue;
-    }
-    visible.add(suggestion);
-  }
-  return visible;
-}
-
-String? _runningTimerId(ChangeItem item) {
-  final timerId = item.args['timerId'];
-  if (timerId is! String) return null;
-  final trimmed = timerId.trim();
-  return trimmed.isEmpty ? null : trimmed;
+  return [
+    for (final suggestion in open)
+      if (!open.any(
+        (other) =>
+            isNewer(other, suggestion) &&
+            supersedesTimeEntryEdit(other.item, suggestion.item),
+      ))
+        suggestion,
+  ];
 }

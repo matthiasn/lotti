@@ -4,6 +4,7 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/retired_tool_calls.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
@@ -77,14 +78,20 @@ class TaskToolDispatcher {
       name: 'TaskToolDispatcher',
     );
 
-    final resolvedName = resolveTaskAgentToolAlias(toolName);
+    // A retired name is rewritten, not rejected: proposals persisted under it
+    // (or synced from an older build) must still apply once confirmed.
+    final call = upgradeRetiredTaskAgentToolCall(
+      resolveTaskAgentToolAlias(toolName),
+      decodeStringifiedJsonArguments(args),
+    );
+    final resolvedName = call.toolName;
+    final normalizedArgs = call.args;
     if (resolvedName != toolName) {
       developer.log(
         'Resolved tool alias $toolName -> $resolvedName',
         name: 'TaskToolDispatcher',
       );
     }
-    final normalizedArgs = decodeStringifiedJsonArguments(args);
 
     // Deliberately reload the task from the database on every tool call.
     // This guarantees each handler sees the committed state left by the
@@ -205,9 +212,6 @@ class TaskToolDispatcher {
 
       case TaskAgentToolNames.updateTimeEntry:
         return handleUpdateTimeEntry(normalizedArgs, taskId);
-
-      case TaskAgentToolNames.updateRunningTimer:
-        return handleUpdateRunningTimer(normalizedArgs, taskId);
 
       case TaskAgentToolNames.requestAttention:
         return handleRequestAttention(taskEntity, normalizedArgs);

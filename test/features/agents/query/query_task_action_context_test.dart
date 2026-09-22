@@ -52,9 +52,17 @@ void main() {
     },
   );
 
-  for (final privateList in [false, true]) {
+  // `running` is linked with no length yet. Timer here: it is the running
+  // timer. No timer here — confirmed on another device, or after a restart —
+  // it is still a target, just not one the model is shown.
+  for (final (privateList, timerHere) in [
+    (false, true),
+    (true, true),
+    (false, false),
+  ]) {
     test(
-      'loads owned checklist/time/label targets with private parent=$privateList',
+      'loads owned checklist/time/label targets with private '
+      'parent=$privateList, timer running here=$timerHere',
       () async {
         final task = bench.entries['task']! as Task;
         bench.entries['task'] = task.copyWith(
@@ -106,12 +114,20 @@ void main() {
         );
         final context = await QueryTaskActionContextLoader(
           access: bench.crawler.access,
-        ).load('task', runningTimerId: 'running');
+        ).load('task', runningTimerId: timerHere ? 'running' : null);
         expect(context.checklistIds, privateList ? isEmpty : {'item'});
-        expect(context.timeEntryIds, {'completed'});
-        expect(context.runningTimerId, 'running');
+        // The zero-length timer stays a target either way, so its text
+        // proposal is approvable wherever it is confirmed.
+        expect(context.timeEntryIds, {'completed', 'running'});
+        expect(context.runningTimerId, timerHere ? 'running' : isNull);
         expect(context.labelIds, {'visible'});
-        expect((context.input['timeEntries']! as List).length, 2);
+        expect(
+          [
+            for (final entry in context.input['timeEntries']! as List)
+              (entry as Map)['id'],
+          ],
+          unorderedEquals(['completed', if (timerHere) 'running']),
+        );
         expect(
           context.dependencies.map((s) => s.id),
           isNot(contains('unlinked')),

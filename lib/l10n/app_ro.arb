@@ -442,7 +442,6 @@
   "agentSummaryUncheckItem": "Debifați: „{title}”",
   "agentSummaryUpdateItem": "Modificați: „{title}”",
   "agentSummaryUpdateProjectStatus": "Setați starea proiectului la {status}",
-  "agentSummaryUpdateRunningTimer": "Modificați textul cronometrului în curs: „{summary}”",
   "agentSummaryUpdateTimeEntry": "Actualizați înregistrarea de timp",
   "agentSummaryUpdateTimeEntryRange": "Actualizați înregistrarea de timp {range}",
   "agentSummaryUpdateTimeEntryRangeText": "Actualizați înregistrarea de timp {range}: „{summary}”",

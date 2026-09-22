@@ -742,8 +742,8 @@ void main() {
       expect(result.text, contains('Block time'));
     });
 
-    test('renders the active running timer for the same task', () async {
-      final timerEntry = JournalEntry(
+    group('active running timer for the same task', () {
+      JournalEntry timerEntry({required String text}) => JournalEntry(
         meta: Metadata(
           id: 'timer-1',
           createdAt: clockNow.subtract(const Duration(minutes: 30)),
@@ -751,31 +751,89 @@ void main() {
           dateFrom: clockNow.subtract(const Duration(minutes: 30)),
           dateTo: clockNow.subtract(const Duration(minutes: 30)),
         ),
-        entryText: const EntryText(plainText: 'Working on it'),
+        entryText: EntryText(plainText: text),
       );
-      final result = await withClock(Clock.fixed(clockNow), () {
-        when(() => timeService.getCurrent()).thenReturn(timerEntry);
-        when(() => timeService.linkedFrom).thenReturn(taskEntity());
-        when(
-          () => journalDb.getLinkedEntities('task-001'),
-        ).thenAnswer((_) async => const []);
-        return builder.buildUserMessage(
-          agentId: 'agent-self',
-          hasReport: true,
-          journalObservations: const [],
-          taskDetails: '{"title":"My Task"}',
-          projectContextJson: '{}',
-          linkedTasksJson: '{}',
-          triggerTokens: const {},
-          taskId: 'task-001',
-          task: taskEntity(),
-          timeService: timeService,
-        );
+
+      // Other sections log their own unstubbed lookups; only the timer read
+      // is under test here.
+      Iterable<({String message, Object? error})> timerReadErrors() =>
+          loggedErrors.where(
+            (logged) => logged.message == 'failed to read the running timer',
+          );
+
+      /// Builds with [snapshot] running for this task and the database
+      /// answering [stored] for it.
+      Future<String> buildWithTimer(
+        JournalEntry snapshot, {
+        required Future<JournalEntity?> Function(Invocation) stored,
+      }) async {
+        final result = await withClock(Clock.fixed(clockNow), () {
+          when(() => timeService.getCurrent()).thenReturn(snapshot);
+          when(() => timeService.linkedFrom).thenReturn(taskEntity());
+          when(() => journalDb.journalEntityById('timer-1')).thenAnswer(stored);
+          when(
+            () => journalDb.getLinkedEntities('task-001'),
+          ).thenAnswer((_) async => const []);
+          return builder.buildUserMessage(
+            agentId: 'agent-self',
+            hasReport: true,
+            journalObservations: const [],
+            taskDetails: '{"title":"My Task"}',
+            projectContextJson: '{}',
+            linkedTasksJson: '{}',
+            triggerTokens: const {},
+            taskId: 'task-001',
+            task: taskEntity(),
+            timeService: timeService,
+          );
+        });
+        return result.text;
+      }
+
+      test('renders the timer with its stored text', () async {
+        final timer = timerEntry(text: 'Working on it');
+        final text = await buildWithTimer(timer, stored: (_) async => timer);
+
+        expect(text, contains('## Active Running Timer'));
+        expect(text, contains('entryId: timer-1'));
+        expect(text, contains('current text: "Working on it"'));
+        expect(timerReadErrors(), isEmpty);
       });
 
-      expect(result.text, contains('## Active Running Timer'));
-      expect(result.text, contains('timerId: timer-1'));
-      expect(result.text, contains('current text: "Working on it"'));
+      test('reads the timer from the database, not the snapshot', () async {
+        // A text confirmed on another device arrives by sync and never
+        // passes through this device's TimeService, whose snapshot keeps the
+        // text the timer started with — the next wake must not be steered
+        // back to it.
+        final text = await buildWithTimer(
+          timerEntry(text: 'Working on it'),
+          stored: (_) async => timerEntry(text: 'Drafted the plan [generated]'),
+        );
+
+        expect(text, contains('current text: "Drafted the plan [generated]"'));
+        expect(text, isNot(contains('Working on it')));
+        expect(timerReadErrors(), isEmpty);
+      });
+
+      test('falls back to the snapshot when the stored row is gone', () async {
+        final text = await buildWithTimer(
+          timerEntry(text: 'Working on it'),
+          stored: (_) async => null,
+        );
+
+        expect(text, contains('current text: "Working on it"'));
+        expect(timerReadErrors(), isEmpty);
+      });
+
+      test('falls back to the snapshot when the read fails, logging', () async {
+        final text = await buildWithTimer(
+          timerEntry(text: 'Working on it'),
+          stored: (_) async => throw StateError('database closed'),
+        );
+
+        expect(text, contains('current text: "Working on it"'));
+        expect(timerReadErrors().single.error, isA<StateError>());
+      });
     });
   });
 }

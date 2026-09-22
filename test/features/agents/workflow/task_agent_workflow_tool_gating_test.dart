@@ -137,7 +137,6 @@ void main() {
   /// the one name a test happens to care about.
   const gatedToolNames = <String>[
     TaskAgentToolNames.updateChecklistItems,
-    TaskAgentToolNames.updateRunningTimer,
     TaskAgentToolNames.updateTimeEntry,
     TaskAgentToolNames.assignTaskLabels,
     TaskAgentToolNames.retractSuggestions,
@@ -313,12 +312,12 @@ void main() {
     );
 
     test(
-      'withholds update_running_timer for a timer owned by another task',
+      "withholds update_time_entry when only another task's timer runs",
       () async {
         // A timer running on a different task reaches the prompt only as an
-        // opaque range, so there is no id for the agent to update — offering the
-        // tool would only invite it to invent one. The completed entry still
-        // earns `update_time_entry`, which is what separates the two gates.
+        // opaque range and is not linked from this task, so there is no id for
+        // the agent to update — offering the tool would only invite it to
+        // invent one.
         final bench = createTaskAgentWorkflowTestBench(narrowToolSurface: true);
 
         final running = makeLinkedTimeEntry(
@@ -327,12 +326,6 @@ void main() {
           dateTo: DateTime(2024, 6, 14, 10, 5),
           text: 'active elsewhere',
         );
-        final completed = makeLinkedTimeEntry(
-          id: 'completed-entry',
-          dateFrom: DateTime(2024, 6, 13, 10),
-          dateTo: DateTime(2024, 6, 13, 11),
-          text: 'past work',
-        );
 
         final timeService = getIt<TimeService>();
         await timeService.start(running, makeWorkflowTestTask('other-task'));
@@ -340,27 +333,23 @@ void main() {
 
         when(
           () => bench.mockJournalDb.getLinkedEntities(taskId),
-        ).thenAnswer((_) async => <JournalEntity>[completed]);
+        ).thenAnswer((_) async => <JournalEntity>[]);
 
         final perTurn = await exposedToolNamesPerTurn(bench);
 
         expect(
           perTurn.first.handedOver,
-          isNot(contains(TaskAgentToolNames.updateRunningTimer)),
-        );
-        expect(
-          perTurn.first.handedOver,
-          contains(TaskAgentToolNames.updateTimeEntry),
+          isNot(contains(TaskAgentToolNames.updateTimeEntry)),
         );
       },
     );
 
     test(
-      'withholds update_time_entry when the only linked entry is running',
+      'offers update_time_entry when the only linked entry is running',
       () async {
-        // The running entry is excluded from the editable set — it is
-        // `update_running_timer`'s target, not `update_time_entry`'s — so a task
-        // whose only time record is the live one has nothing to edit.
+        // The running timer's text is editable like any other entry's, so a
+        // task whose only time record is the live one still earns the tool —
+        // and the retired running-timer tool is never offered.
         final bench = createTaskAgentWorkflowTestBench(narrowToolSurface: true);
 
         final running = makeLinkedTimeEntry(
@@ -383,11 +372,11 @@ void main() {
 
         expect(
           perTurn.first.handedOver,
-          contains(TaskAgentToolNames.updateRunningTimer),
+          contains(TaskAgentToolNames.updateTimeEntry),
         );
         expect(
           perTurn.first.handedOver,
-          isNot(contains(TaskAgentToolNames.updateTimeEntry)),
+          isNot(contains(TaskAgentToolNames.updateRunningTimer)),
         );
       },
     );

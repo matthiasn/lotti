@@ -314,8 +314,8 @@ class SuggestionRetractionService {
   /// Skipping the retraction keeps the original open; the matching new proposal
   /// is then dropped by the builder's dedup against that still-open original.
   /// Stale retractions (not re-proposed) and supersedes (different fingerprint,
-  /// e.g. `update_running_timer`) carry a different fingerprint and are applied
-  /// normally.
+  /// e.g. a revised `update_time_entry` text) carry a different fingerprint
+  /// and are applied normally.
   Future<void> applyStaged(
     List<StagedRetraction> staged, {
     Set<String> skipFingerprints = const {},

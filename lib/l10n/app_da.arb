@@ -467,7 +467,6 @@
   "agentSummaryUncheckItem": "Fjern markering: \"{title}\"",
   "agentSummaryUpdateItem": "Ændr: \"{title}\"",
   "agentSummaryUpdateProjectStatus": "Sæt projektstatus til {status}",
-  "agentSummaryUpdateRunningTimer": "Ændr teksten på den kørende timer: \"{summary}\"",
   "agentSummaryUpdateTimeEntry": "Opdater tidsregistrering",
   "agentSummaryUpdateTimeEntryRange": "Opdater tidsregistrering {range}",
   "agentSummaryUpdateTimeEntryRangeText": "Opdater tidsregistrering {range}: \"{summary}\"",

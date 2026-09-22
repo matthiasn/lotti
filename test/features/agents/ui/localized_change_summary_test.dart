@@ -440,14 +440,24 @@ void main() {
       );
     });
 
-    test('the running timer names its new text', () {
-      expect(
-        summary(TaskAgentToolNames.updateRunningTimer, {
+    test(
+      'a retired running-timer proposal reads as the text revision it became',
+      () {
+        final legacy = summary(TaskAgentToolNames.updateRunningTimer, {
+          'timerId': 'timer-1',
           'summary': '  Drafting  ',
-        }),
-        'Update running timer text: "Drafting"',
-      );
-    });
+        });
+
+        expect(legacy, 'Revise time entry text: "Drafting"');
+        expect(
+          legacy,
+          summary(TaskAgentToolNames.updateTimeEntry, {
+            'entryId': 'timer-1',
+            'summary': 'Drafting',
+          }),
+        );
+      },
+    );
   });
 
   group('project and event agents', () {

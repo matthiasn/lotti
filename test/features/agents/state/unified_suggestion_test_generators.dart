@@ -334,35 +334,42 @@ class GeneratedUnifiedSuggestionScenario {
   }
 }
 
-/// Spec for one entry in the timer-dedup property input list
-/// (see `keepLatestRunningTimerUpdate`).
-class GeneratedTimerDedupSpec {
-  const GeneratedTimerDedupSpec({
-    required this.isTimerUpdate,
-    required this.timerSlot,
+/// What one generated open suggestion proposes, for the supersede-filter
+/// property (see `hideSupersededTimeEntryEdits`).
+enum GeneratedEditKind { otherTool, timeEntryEdit, legacyRunningTimer }
+
+/// Spec for one entry in the supersede-filter property input list.
+class GeneratedTimeEntryEditSpec {
+  const GeneratedTimeEntryEditSpec({
+    required this.kind,
+    required this.entrySlot,
+    required this.fieldMask,
     required this.createdAtMinutes,
     required this.itemIndex,
   });
 
-  final bool isTimerUpdate;
-  final int timerSlot;
+  final GeneratedEditKind kind;
+  final int entrySlot;
+
+  /// Bit 0 summary, bit 1 startTime, bit 2 endTime; a legacy running-timer
+  /// proposal always carries the summary alone.
+  final int fieldMask;
   final int createdAtMinutes;
   final int itemIndex;
 
-  /// Raw args value: null (absent), distinct ids, or whitespace-only
-  /// (which the implementation must treat as null).
-  String? get rawTimerId => switch (timerSlot % 5) {
+  /// Raw entry id: absent, one of two ids, or whitespace-only (which the
+  /// implementation must treat as absent).
+  String? get rawEntryId => switch (entrySlot % 4) {
     0 => null,
-    1 => 'timer-a',
-    2 => 'timer-b',
-    3 => 'timer-c',
+    1 => 'entry-a',
+    2 => 'entry-b',
     _ => '   ',
   };
 
   @override
   String toString() =>
-      'GeneratedTimerDedupSpec(isTimerUpdate: $isTimerUpdate, '
-      'rawTimerId: $rawTimerId, createdAtMinutes: $createdAtMinutes, '
+      'GeneratedTimeEntryEditSpec(kind: $kind, rawEntryId: $rawEntryId, '
+      'fieldMask: $fieldMask, createdAtMinutes: $createdAtMinutes, '
       'itemIndex: $itemIndex)';
 }
 
@@ -424,27 +431,30 @@ extension AnyGeneratedUnifiedSuggestionScenario on glados.Any {
     ),
   );
 
-  glados.Generator<GeneratedTimerDedupSpec> get timerDedupSpec =>
-      glados.CombinableAny(this).combine4(
-        glados.AnyUtils(this).choose(const [false, true]),
-        glados.IntAnys(this).intInRange(0, 5),
+  glados.Generator<GeneratedTimeEntryEditSpec> get timeEntryEditSpec =>
+      glados.CombinableAny(this).combine5(
+        glados.AnyUtils(this).choose(GeneratedEditKind.values),
+        glados.IntAnys(this).intInRange(0, 4),
+        glados.IntAnys(this).intInRange(1, 8),
         glados.IntAnys(this).intInRange(0, 240),
         glados.IntAnys(this).intInRange(0, 5),
         (
-          bool isTimerUpdate,
-          int timerSlot,
+          GeneratedEditKind kind,
+          int entrySlot,
+          int fieldMask,
           int createdAtMinutes,
           int itemIndex,
-        ) => GeneratedTimerDedupSpec(
-          isTimerUpdate: isTimerUpdate,
-          timerSlot: timerSlot,
+        ) => GeneratedTimeEntryEditSpec(
+          kind: kind,
+          entrySlot: entrySlot,
+          fieldMask: fieldMask,
           createdAtMinutes: createdAtMinutes,
           itemIndex: itemIndex,
         ),
       );
 
-  glados.Generator<List<GeneratedTimerDedupSpec>> get timerDedupSpecs =>
-      glados.ListAnys(this).listWithLengthInRange(0, 12, timerDedupSpec);
+  glados.Generator<List<GeneratedTimeEntryEditSpec>> get timeEntryEditSpecs =>
+      glados.ListAnys(this).listWithLengthInRange(0, 12, timeEntryEditSpec);
 
   glados.Generator<GeneratedUnifiedSuggestionScenario>
   get unifiedSuggestionScenario => glados.CombinableAny(this).combine2(

@@ -876,9 +876,17 @@ void main() {
         expect(message, isNotNull);
         expect(message, contains('## Active Running Timer'));
         expect(message, contains('running for THIS task'));
-        expect(message, contains('timerId: timer-entry-007'));
+        expect(message, contains('entryId: timer-entry-007'));
         expect(message, contains('current text: "wip notes"'));
-        expect(message, contains('update_running_timer'));
+        // Steered to the one text-update tool, text only.
+        expect(
+          message,
+          contains(
+            'propose `update_time_entry` with this entryId and only a richer '
+            '`summary`',
+          ),
+        );
+        expect(message, isNot(contains('update_running_timer')));
         // The end of the tracked range must be a live "now" timestamp, not
         // the stale `dateTo` carried on the in-memory entity (which
         // [TimeService] only updates on its broadcast stream, not on the
@@ -887,7 +895,7 @@ void main() {
         expect(message, isNot(contains('2024-06-14T10:05')));
       });
 
-      test('excludes the active timer from Editable Time Entries', () async {
+      test('lists the active timer only in its own section', () async {
         final timeService = getIt<TimeService>();
         final task = makeWorkflowTestTask(taskId);
         final running = makeLinkedTimeEntry(
@@ -914,6 +922,12 @@ void main() {
         expect(message, contains('## Editable Time Entries'));
         expect(message, contains('id: historical-entry'));
         expect('- id:'.allMatches(message!).length, 1);
+        // …while telling the agent that id is editable through the same tool.
+        expect(message, contains('- entryId: running-entry'));
+        expect(
+          message,
+          contains("or the running timer's from the Active Running Timer"),
+        );
       });
 
       test(
@@ -960,12 +974,11 @@ void main() {
           expect(message, contains('DIFFERENT task'));
           expect(message, contains('tracked elsewhere:'));
           // Detail leakage guards: no other-task identity, no timer id, no
-          // entry text, and update_running_timer is unavailable for this
-          // wake.
+          // entry text, and the timer cannot be updated from this wake.
           expect(message, isNot(contains('other-task-id')));
           expect(message, isNot(contains('other-timer-id')));
           expect(message, isNot(contains('secret notes')));
-          expect(message, contains('update_running_timer` is NOT available'));
+          expect(message, contains('cannot be updated from this wake'));
           // The cross-task overlap guard relies on a live tracked-end
           // timestamp; the stale fixture `dateTo` (09:30 on a 2024 date)
           // must not appear in the prompt or the agent could under-report
@@ -1298,12 +1311,12 @@ void main() {
               message,
               contains(
                 'Do not propose the same user-facing action again '
-                '(for `update_running_timer`, compare per `timerId`).',
+                '(for `update_time_entry`, compare per `entryId`).',
               ),
             );
             expect(
               message,
-              contains('for `update_running_timer`, compare per `timerId`'),
+              contains('for `update_time_entry`, compare per `entryId`'),
             );
             expect(
               message,

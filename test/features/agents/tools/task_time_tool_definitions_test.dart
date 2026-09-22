@@ -19,6 +19,14 @@ void main() {
         expect(tool.description, contains('running timer'));
       });
 
+      test('steers work on the active timer to update_time_entry', () {
+        expect(
+          tool.description,
+          contains('call update_time_entry with its entryId instead'),
+        );
+        expect(tool.description, isNot(contains('update_running_timer')));
+      });
+
       test('requires startTime and summary parameters', () {
         final required = tool.parameters['required'] as List;
         expect(required, containsAll(['startTime', 'summary']));
@@ -56,7 +64,15 @@ void main() {
       test('has correct name and description', () {
         expect(tool.name, equals(TaskAgentToolNames.updateTimeEntry));
         expect(tool.description, contains('Editable Time Entries'));
-        expect(tool.description, contains('update_running_timer'));
+      });
+
+      test('covers the running timer, text only', () {
+        expect(tool.description, contains('"Active Running Timer"'));
+        expect(tool.description, contains('pass ONLY entryId and summary'));
+        expect(tool.description, isNot(contains('update_running_timer')));
+        final entryId =
+            (tool.parameters['properties'] as Map)['entryId'] as Map;
+        expect(entryId['description'], contains('"Active Running Timer"'));
       });
 
       test('requires only entryId in the JSON schema', () {

@@ -112,7 +112,7 @@ extension _TaskAgentContextFormatters on TaskAgentContextBuilder {
       ..writeln(
         'Before proposing any change, compare it against these OPEN '
         'proposals. Do not propose the same user-facing action again '
-        '(for `update_running_timer`, compare per `timerId`). If an OPEN '
+        '(for `update_time_entry`, compare per `entryId`). If an OPEN '
         'proposal is stale, call `retract_suggestions` with its fingerprint; '
         'otherwise leave it open.',
       )

@@ -9,7 +9,6 @@ import 'package:lotti/features/agents/service/change_set_resolution_store.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
-import 'package:lotti/features/agents/tools/running_timer_update_handler.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
 
@@ -45,9 +44,8 @@ typedef ChangeSetResolvedCallback =
 ///
 /// Failed confirmations normally revert to [ChangeItemStatus.pending] so the
 /// user can retry. A dispatcher can mark a deterministic failure as
-/// [ToolExecutionResult.nonRetryable]; stale `update_running_timer`
-/// confirmations are also recognized here for backward compatibility. These
-/// failures are recorded as agent retractions and removed from the open list.
+/// [ToolExecutionResult.nonRetryable]; such failures are recorded as agent
+/// retractions and removed from the open list.
 ///
 /// For task-split workflows, manages cross-item ID resolution:
 /// when `create_follow_up_task` succeeds, the placeholder→actual mapping
@@ -183,7 +181,6 @@ class ChangeSetConfirmationService {
     //    back to pending so the user can retry, or retract non-retryable stale
     //    proposals that can never succeed with their immutable arguments.
     late final ToolExecutionResult result;
-    var dispatchThrew = false;
     try {
       final approval = approvalHost == null
           ? null
@@ -209,7 +206,6 @@ class ChangeSetConfirmationService {
               approval,
             );
     } catch (error, stackTrace) {
-      dispatchThrew = true;
       _domainLogger?.error(
         LogDomain.agentWorkflow,
         error,
@@ -220,16 +216,12 @@ class ChangeSetConfirmationService {
       result = ToolExecutionResult(
         success: false,
         output: 'Error: failed to apply ${item.toolName}',
-        errorMessage: _dispatchFailureMessage(item.toolName, error),
+        errorMessage: 'Tool dispatch failed (${error.runtimeType})',
       );
     }
 
     if (!result.success) {
-      final shouldAutoRetract = _shouldAutoRetractFailedConfirmation(
-        item,
-        result,
-        dispatchThrew: dispatchThrew,
-      );
+      final shouldAutoRetract = result.nonRetryable;
       _domainLogger?.error(
         LogDomain.agentWorkflow,
         'Tool dispatch failed for item $itemIndex (${item.toolName}): '
@@ -336,49 +328,6 @@ class ChangeSetConfirmationService {
     );
 
     return result;
-  }
-
-  static const Set<String> _autoRetractableRunningTimerFailures = {
-    RunningTimerUpdateFailure.invalidSummary,
-    RunningTimerUpdateFailure.invalidTimerId,
-    RunningTimerUpdateFailure.noActiveTimer,
-    RunningTimerUpdateFailure.sourceTaskMismatch,
-    RunningTimerUpdateFailure.timerIdMismatch,
-    RunningTimerUpdateFailure.unsupportedEntityType,
-  };
-
-  static String _dispatchFailureMessage(String toolName, Object error) {
-    if (toolName == TaskAgentToolNames.updateRunningTimer &&
-        _looksLikeNoActiveTimerError(error)) {
-      return RunningTimerUpdateFailure.noActiveTimer;
-    }
-    return 'Tool dispatch failed (${error.runtimeType})';
-  }
-
-  static bool _looksLikeNoActiveTimerError(Object error) {
-    final text = error.toString().toLowerCase();
-    return text.contains('no active timer') ||
-        text.contains('no timer is currently running');
-  }
-
-  /// Running-timer proposals are tied to a specific in-memory active timer.
-  /// Once that timer stops, switches task, or changes id, retrying the same
-  /// proposal cannot succeed. Retracting the item records that stale context
-  /// for the next wake and removes the dead action from the user's list.
-  static bool _shouldAutoRetractFailedConfirmation(
-    ChangeItem item,
-    ToolExecutionResult result, {
-    required bool dispatchThrew,
-  }) {
-    if (result.nonRetryable) return true;
-    if (item.toolName != TaskAgentToolNames.updateRunningTimer) {
-      return false;
-    }
-    if (dispatchThrew) return true;
-
-    final error = result.errorMessage;
-    return error != null &&
-        _autoRetractableRunningTimerFailures.contains(error);
   }
 
   static String _failedConfirmationRetractionReason(

@@ -12,7 +12,6 @@ class TaskAgentWakeFacts {
   /// that was not updated. A gate has to be asked for.
   const TaskAgentWakeFacts({
     this.hasChecklistItems = true,
-    this.hasRunningTimerForTask = true,
     this.hasTimeRecords = true,
     this.hasLabelDefinitions = true,
     this.hasOpenProposals = true,
@@ -29,14 +28,12 @@ class TaskAgentWakeFacts {
   /// The task has at least one checklist item to update.
   final bool hasChecklistItems;
 
-  /// A timer is running **and its source is this task**.
+  /// The task has time records — its running timer included — so an existing
+  /// entry could be edited.
   ///
-  /// Scoped deliberately. A timer belonging to another task is exposed to the
-  /// prompt only as an opaque tracked range, so there is no id for the agent to
-  /// update and offering the tool would invite it to invent one.
-  final bool hasRunningTimerForTask;
-
-  /// The task has time records, so an existing entry could be edited.
+  /// A timer belonging to another task does not count: it is exposed to the
+  /// prompt only as an opaque tracked range, so there is no id for the agent
+  /// to update and offering the tool would invite it to invent one.
   final bool hasTimeRecords;
 
   /// Label definitions exist that could be assigned.
@@ -67,8 +64,8 @@ class TaskAgentWakeFacts {
 ///   of relevance, and the lean-payload probe showed Qwen3.6 27B climbing from
 ///   10/14 to 13/14 purely as the prompt shrank.
 /// * **Hallucination surface.** A tool that cannot succeed is an invitation to
-///   invent its arguments. `update_running_timer` with no timer running has no
-///   real id to pass, and `resolve_attention_request` with no claim has no real
+///   invent its arguments. `update_time_entry` with no time entry has no real
+///   id to pass, and `resolve_attention_request` with no claim has no real
 ///   claim to resolve — so the model supplies one.
 ///
 /// Tools with no precondition — `set_task_title`, `update_task_estimate`,
@@ -81,7 +78,6 @@ class TaskAgentWakeFacts {
 Set<String> visibleTaskAgentToolNames(TaskAgentWakeFacts facts) {
   final hidden = <String>{
     if (!facts.hasChecklistItems) TaskAgentToolNames.updateChecklistItems,
-    if (!facts.hasRunningTimerForTask) TaskAgentToolNames.updateRunningTimer,
     if (!facts.hasTimeRecords) TaskAgentToolNames.updateTimeEntry,
     if (!facts.hasLabelDefinitions) TaskAgentToolNames.assignTaskLabels,
     if (!facts.hasOpenProposals) TaskAgentToolNames.retractSuggestions,

@@ -252,7 +252,8 @@ void main() {
         final service = container.read(queryChatActionServiceProvider);
         final context = await service.readContext('task', []);
         expect(context.runningTimerId, 'timer');
-        expect(context.timeEntryIds, isEmpty);
+        // The live timer is an editable entry like any other.
+        expect(context.timeEntryIds, {'timer'});
         expect(service.enabled(), isTrue);
         enabled = false;
         container.invalidate(queryChatEnabledProvider);

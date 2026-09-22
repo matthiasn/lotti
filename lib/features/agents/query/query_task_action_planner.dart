@@ -1,6 +1,7 @@
 import 'package:json_schema_builder/json_schema_builder.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
+import 'package:lotti/features/agents/model/retired_tool_calls.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
@@ -25,8 +26,17 @@ class QueryTaskActionContext {
   final List<QuerySourceRef> dependencies;
   final Set<String> checklistIds;
   final Set<String> labelIds;
+
+  /// Entries an `update_time_entry` may target: every journal entry linked
+  /// from the task, including a timer with no saved end yet — wider than the
+  /// `timeEntries` shown to the model, so a proposal made while a timer ran
+  /// still validates when it is approved on another device or after a
+  /// restart.
   final Set<String> timeEntryIds;
   final Set<String> taskIds;
+
+  /// The entry of the timer running for this task, whose range cannot change
+  /// while it runs: only its text may be proposed.
   final String? runningTimerId;
 }
 
@@ -109,9 +119,11 @@ class QueryTaskActionPlanner {
             'description': switch (tool.name) {
               TaskAgentToolNames.createTimeEntry =>
                 'Propose a completed work session or running timer requested '
-                    'in this chat. Use update_running_timer for the active session.',
+                    'in this chat. Use update_time_entry with runningTimerId to '
+                    'describe the active session.',
               TaskAgentToolNames.updateTimeEntry =>
-                'Propose the requested correction to a supplied completed time entry.',
+                'Propose the requested correction to a supplied time entry. '
+                    'For runningTimerId, propose only a new summary.',
               TaskAgentToolNames.setTaskTitle =>
                 'Propose the requested task title.',
               TaskAgentToolNames.migrateChecklistItems =>
@@ -221,10 +233,14 @@ class QueryTaskActionPlanner {
           (value['summary'] as String).trim().isEmpty) {
         throw const FormatException('Invalid task action');
       }
-      final name = resolveTaskAgentToolAlias(value['name'] as String);
-      final args = decodeStringifiedJsonArguments(
-        value['arguments'] as Map<String, dynamic>,
+      final call = upgradeRetiredTaskAgentToolCall(
+        resolveTaskAgentToolAlias(value['name'] as String),
+        decodeStringifiedJsonArguments(
+          value['arguments'] as Map<String, dynamic>,
+        ),
       );
+      final name = call.toolName;
+      final args = call.args;
       await validate(name, args, context, allowNewTask: newTaskId != null);
       final summary = name == TaskAgentToolNames.linkTask
           ? 'Link: this task ${DirectedRelation.fromWireName(args['relation'] as String)!.englishPhrase} '
@@ -279,6 +295,12 @@ class QueryTaskActionPlanner {
         throw const FormatException('Task language is already set');
       }
     }
+    if (name == TaskAgentToolNames.updateTimeEntry &&
+        context.runningTimerId != null &&
+        args['entryId'] == context.runningTimerId &&
+        (args.containsKey('startTime') || args.containsKey('endTime'))) {
+      throw const FormatException('A running timer only takes a new summary');
+    }
     if (name == TaskAgentToolNames.createTimeEntry ||
         name == TaskAgentToolNames.updateTimeEntry) {
       for (final key in ['startTime', 'endTime']) {
@@ -323,9 +345,6 @@ class QueryTaskActionPlanner {
       TaskAgentToolNames.updateTimeEntry => context.timeEntryIds.contains(
         args['entryId'],
       ),
-      TaskAgentToolNames.updateRunningTimer =>
-        context.runningTimerId != null &&
-            args['timerId'] == context.runningTimerId,
       TaskAgentToolNames.linkTask =>
         args['targetTaskId'] != context.taskId &&
             context.taskIds.contains(args['targetTaskId']),
@@ -340,12 +359,18 @@ class QueryTaskActionPlanner {
 
   /// Reconstructs the registry's batch schema for an exploded review item.
   /// Internal follow-up IDs are produced by ChangeSetBuilder, not by the LLM.
+  /// An item stored under a retired tool name validates as its successor,
+  /// which is also what the dispatcher will apply.
   static Future<void> validateItem(
     ChangeItem item,
     QueryTaskActionContext context,
   ) {
-    final args = {...item.args}..remove('_placeholderTaskId');
-    return switch (item.toolName) {
+    final call = upgradeRetiredTaskAgentToolCall(
+      item.toolName,
+      {...item.args}..remove('_placeholderTaskId'),
+    );
+    final args = call.args;
+    return switch (call.toolName) {
       TaskAgentToolNames.addChecklistItem => validate(
         TaskAgentToolNames.addMultipleChecklistItems,
         {
@@ -375,7 +400,7 @@ class QueryTaskActionPlanner {
         },
         context,
       ),
-      _ => validate(item.toolName, args, context),
+      _ => validate(call.toolName, args, context),
     };
   }
 }

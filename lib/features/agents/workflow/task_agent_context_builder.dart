@@ -314,9 +314,10 @@ class TaskAgentContextBuilder {
   /// Two shapes:
   ///
   /// - **Same task** — the timer belongs to the task being woken. The agent
-  ///   gets the timerId, started time, tracked range, elapsed minutes, and
-  ///   current entry text, and is told to propose `update_running_timer`
-  ///   instead of a parallel `create_time_entry` for that ongoing work.
+  ///   gets the entryId, started time, tracked range, elapsed minutes, and
+  ///   current entry text, and is told to propose `update_time_entry` with
+  ///   only a summary instead of a parallel `create_time_entry` for that
+  ///   ongoing work.
   /// - **Other task** — the timer belongs to a different task. The agent is
   ///   only told the tracked range (no id, no source task, no entry text)
   ///   so it can avoid proposing `create_time_entry` entries for this task
@@ -324,20 +325,31 @@ class TaskAgentContextBuilder {
   ///   intentionally withheld.
   ///
   /// Returns an empty string when no timer is active.
-  String _buildActiveTimerSection(TimeService? timeService, String taskId) {
+  ///
+  /// [TimeService] says which entry is running and for which task; the entry
+  /// itself is read from the database. A text confirmed on another device
+  /// arrives by sync and never passes through this device's service, whose
+  /// snapshot keeps the text the timer started with until it restarts — the
+  /// wake after that confirm must not show the agent the old text and invite
+  /// it to propose the new one again. The snapshot stands in when the read
+  /// fails.
+  Future<String> _buildActiveTimerSection(
+    TimeService? timeService,
+    String taskId,
+  ) async {
     if (timeService == null) return '';
-    final current = timeService.getCurrent();
-    if (current is! JournalEntry) return '';
+    final snapshot = timeService.getCurrent();
+    if (snapshot is! JournalEntry) return '';
+    final current = await _storedTimer(snapshot);
 
     final dateFrom = current.meta.dateFrom;
     final now = clock.now();
-    // [TimeService.start] only emits live `dateTo` updates on its broadcast
-    // stream; the in-memory `_current` entity returned by `getCurrent()`
-    // still carries the original `dateTo` recorded when the timer was
-    // started. Use `now` as the running endpoint so the prompt — and the
-    // overlap guard for the cross-task branch — reflects the actual
-    // tracked range. If `current.meta.dateTo` is somehow ahead of `now`
-    // (e.g. an injected fixture), respect it as a defensive upper bound.
+    // A running timer's stored `dateTo` is whatever was last persisted — its
+    // start, or the moment of its last save; [TimeService.start] emits the
+    // live end only on its broadcast stream. Use `now` as the running endpoint
+    // so the prompt — and the overlap guard for the cross-task branch —
+    // reflects the actual tracked range. If `dateTo` is somehow ahead of
+    // `now` (e.g. an injected fixture), respect it as a defensive upper bound.
     final dateTo = current.meta.dateTo.isAfter(now) ? current.meta.dateTo : now;
     final elapsedMinutes = dateTo.difference(dateFrom).inMinutes;
     final isSameTask = timeService.linkedFrom?.id == taskId;
@@ -350,11 +362,12 @@ class TaskAgentContextBuilder {
         ..writeln(
           'A timer is currently running for THIS task. Do NOT propose a '
           'new `create_time_entry` for the work covered by this timer — '
-          'propose `update_running_timer` instead with a richer description. '
+          'propose `update_time_entry` with this entryId and only a richer '
+          '`summary` instead; its start and end cannot change while it runs. '
           '`create_time_entry` is still appropriate for clearly distinct '
           'completed sessions that do not overlap this timer.',
         )
-        ..writeln('- timerId: ${current.meta.id}')
+        ..writeln('- entryId: ${current.meta.id}')
         ..writeln('- started: ${dateFrom.toIso8601String()}')
         ..writeln(
           '- tracked: ${dateFrom.toIso8601String()} → '
@@ -374,8 +387,8 @@ class TaskAgentContextBuilder {
           'endTime] interval overlaps the tracked range below — that '
           'time is already being recorded elsewhere. You may still '
           'propose entries for non-overlapping completed intervals. '
-          '`update_running_timer` is NOT available in '
-          'this wake because the timer is not for this task.',
+          'That timer is not part of this task, so it cannot be updated '
+          'from this wake.',
         )
         ..writeln(
           '- tracked elsewhere: ${dateFrom.toIso8601String()} → '
@@ -386,6 +399,22 @@ class TaskAgentContextBuilder {
 
     buffer.writeln();
     return buffer.toString();
+  }
+
+  /// The running timer as stored, or [snapshot] when it cannot be read or is
+  /// no longer a time entry.
+  Future<JournalEntry> _storedTimer(JournalEntry snapshot) async {
+    try {
+      final stored = await journalDb.journalEntityById(snapshot.meta.id);
+      if (stored is JournalEntry) return stored;
+    } catch (error, stackTrace) {
+      logError(
+        'failed to read the running timer',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+    return snapshot;
   }
 
   Future<String> _buildEditableTimeEntriesSection(
@@ -408,8 +437,8 @@ class TaskAgentContextBuilder {
         ..writeln('## Editable Time Entries')
         ..writeln(
           'These completed time-entry IDs are linked from THIS task. Only '
-          'pass an `entryId` listed here to `update_time_entry`. Do not use '
-          '`update_time_entry` for the currently running timer.',
+          "pass an `entryId` listed here — or the running timer's from the "
+          'Active Running Timer section — to `update_time_entry`.',
         );
 
       for (final entry in entries) {
@@ -637,7 +666,10 @@ class TaskAgentContextBuilder {
         ..writeln();
     }
 
-    final activeTimerSection = _buildActiveTimerSection(timeService, taskId);
+    final activeTimerSection = await _buildActiveTimerSection(
+      timeService,
+      taskId,
+    );
     if (activeTimerSection.isNotEmpty) {
       buffer.write(activeTimerSection);
     }

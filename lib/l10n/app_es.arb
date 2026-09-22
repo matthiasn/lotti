@@ -442,7 +442,6 @@
   "agentSummaryUncheckItem": "Desmarcar: «{title}»",
   "agentSummaryUpdateItem": "Modificar: «{title}»",
   "agentSummaryUpdateProjectStatus": "Poner el estado del proyecto en {status}",
-  "agentSummaryUpdateRunningTimer": "Cambiar el texto del temporizador en curso: «{summary}»",
   "agentSummaryUpdateTimeEntry": "Actualizar el registro de tiempo",
   "agentSummaryUpdateTimeEntryRange": "Actualizar el registro de tiempo {range}",
   "agentSummaryUpdateTimeEntryRangeText": "Actualizar el registro de tiempo {range}: «{summary}»",

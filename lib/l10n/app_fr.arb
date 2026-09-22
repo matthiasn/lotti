@@ -442,7 +442,6 @@
   "agentSummaryUncheckItem": "Décocher : « {title} »",
   "agentSummaryUpdateItem": "Modifier : « {title} »",
   "agentSummaryUpdateProjectStatus": "Définir le statut du projet sur {status}",
-  "agentSummaryUpdateRunningTimer": "Modifier le texte du minuteur en cours : « {summary} »",
   "agentSummaryUpdateTimeEntry": "Mettre à jour la saisie de temps",
   "agentSummaryUpdateTimeEntryRange": "Mettre à jour la saisie de temps {range}",
   "agentSummaryUpdateTimeEntryRangeText": "Mettre à jour la saisie de temps {range} : « {summary} »",

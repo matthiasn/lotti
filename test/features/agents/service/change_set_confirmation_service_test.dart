@@ -8,7 +8,6 @@ import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
-import 'package:lotti/features/agents/tools/running_timer_update_handler.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -551,8 +550,12 @@ void main() {
       );
 
       test(
-        'retracts failed running-timer update when the active timer stopped',
+        'keeps a legacy running-timer proposal pending when its failure is '
+        'retryable — a stopped timer no longer retracts it',
         () async {
+          // The text of an entry applies whether or not a timer runs on it,
+          // so "No active timer" is no longer a reason to retract. Only the
+          // dispatcher's own non-retryable verdict retracts.
           final changeSet = makeChangeSetWith(
             items: const [
               ChangeItem(
@@ -580,83 +583,9 @@ void main() {
             final result = await service.confirmItem(changeSet, 0);
 
             expect(result.success, isFalse);
-            expect(result.errorMessage, 'No active timer');
-
             final captured = verify(
               () => mockSyncService.upsertEntity(captureAny()),
             ).captured;
-
-            expect(captured, hasLength(4));
-
-            final confirmedDecision = captured[0] as ChangeDecisionEntity;
-            expect(
-              confirmedDecision.verdict,
-              ChangeDecisionVerdict.confirmed,
-            );
-
-            final confirmedSet = captured[1] as ChangeSetEntity;
-            expect(
-              confirmedSet.items.single.status,
-              ChangeItemStatus.confirmed,
-            );
-
-            final retractionDecision = captured[2] as ChangeDecisionEntity;
-            expect(
-              retractionDecision.verdict,
-              ChangeDecisionVerdict.retracted,
-            );
-            expect(retractionDecision.actor, DecisionActor.agent);
-            expect(
-              retractionDecision.retractionReason,
-              contains('No active timer'),
-            );
-
-            final retractedSet = captured[3] as ChangeSetEntity;
-            expect(
-              retractedSet.items.single.status,
-              ChangeItemStatus.retracted,
-            );
-            expect(retractedSet.status, ChangeSetStatus.resolved);
-          });
-        },
-      );
-
-      test(
-        'keeps running-timer update retryable for non-stale failures',
-        () async {
-          final changeSet = makeChangeSetWith(
-            items: const [
-              ChangeItem(
-                toolName: TaskAgentToolNames.updateRunningTimer,
-                args: {
-                  'timerId': 'timer-entry-001',
-                  'summary': 'Refined timer text',
-                },
-                humanSummary: 'Update running timer text',
-              ),
-            ],
-          );
-
-          when(
-            () => mockToolDispatcher.dispatch(any(), any(), any()),
-          ).thenAnswer(
-            (_) async => const ToolExecutionResult(
-              success: false,
-              output: 'Backend temporarily unavailable',
-              errorMessage: 'Backend temporarily unavailable',
-            ),
-          );
-
-          await withClock(testClock, () async {
-            final result = await service.confirmItem(changeSet, 0);
-
-            expect(result.success, isFalse);
-            expect(result.errorMessage, 'Backend temporarily unavailable');
-
-            final captured = verify(
-              () => mockSyncService.upsertEntity(captureAny()),
-            ).captured;
-
             expect(captured, hasLength(3));
             expect(
               (captured[2] as ChangeSetEntity).items.single.status,
@@ -670,78 +599,55 @@ void main() {
         },
       );
 
-      for (final failure in const [
-        RunningTimerUpdateFailure.invalidSummary,
-        RunningTimerUpdateFailure.invalidTimerId,
-        RunningTimerUpdateFailure.noActiveTimer,
-        RunningTimerUpdateFailure.sourceTaskMismatch,
-        RunningTimerUpdateFailure.timerIdMismatch,
-        RunningTimerUpdateFailure.unsupportedEntityType,
-      ]) {
-        test(
-          'auto-retracts running-timer update for stale failure: $failure',
-          () async {
-            final changeSet = makeChangeSetWith(
-              items: const [
-                ChangeItem(
-                  toolName: TaskAgentToolNames.updateRunningTimer,
-                  args: {
-                    'timerId': 'timer-entry-001',
-                    'summary': 'Refined timer text',
-                  },
-                  humanSummary: 'Update running timer text',
-                ),
-              ],
-            );
-
-            when(
-              () => mockToolDispatcher.dispatch(any(), any(), any()),
-            ).thenAnswer(
-              (_) async => ToolExecutionResult(
-                success: false,
-                output: 'Handler rejected stale running timer update',
-                errorMessage: failure,
+      test(
+        'retracts a time entry update the handler marks non-retryable',
+        () async {
+          final changeSet = makeChangeSetWith(
+            items: const [
+              ChangeItem(
+                toolName: TaskAgentToolNames.updateTimeEntry,
+                args: {'entryId': 'timer-entry-001', 'summary': ''},
+                humanSummary: 'Update time entry',
               ),
+            ],
+          );
+
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: false,
+              output: 'Error: "summary" must be a non-empty string',
+              errorMessage: 'Missing, empty, or too-long summary',
+              nonRetryable: true,
+            ),
+          );
+
+          await withClock(testClock, () async {
+            final result = await service.confirmItem(changeSet, 0);
+
+            expect(result.success, isFalse);
+            final captured = verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured;
+            expect(captured, hasLength(4));
+            final retraction = captured[2] as ChangeDecisionEntity;
+            expect(retraction.verdict, ChangeDecisionVerdict.retracted);
+            expect(retraction.actor, DecisionActor.agent);
+            expect(
+              retraction.retractionReason,
+              'Confirmed update_time_entry proposal failed while applying: '
+              'Missing, empty, or too-long summary',
             );
-
-            await withClock(testClock, () async {
-              final result = await service.confirmItem(changeSet, 0);
-
-              expect(result.success, isFalse);
-              expect(result.errorMessage, failure);
-
-              final captured = verify(
-                () => mockSyncService.upsertEntity(captureAny()),
-              ).captured;
-
-              expect(captured, hasLength(4));
-              expect(
-                (captured[0] as ChangeDecisionEntity).verdict,
-                ChangeDecisionVerdict.confirmed,
-              );
-              expect(
-                (captured[1] as ChangeSetEntity).items.single.status,
-                ChangeItemStatus.confirmed,
-              );
-
-              final retractionDecision = captured[2] as ChangeDecisionEntity;
-              expect(
-                retractionDecision.verdict,
-                ChangeDecisionVerdict.retracted,
-              );
-              expect(retractionDecision.actor, DecisionActor.agent);
-              expect(retractionDecision.retractionReason, contains(failure));
-
-              final retractedSet = captured[3] as ChangeSetEntity;
-              expect(
-                retractedSet.items.single.status,
-                ChangeItemStatus.retracted,
-              );
-              expect(retractedSet.status, ChangeSetStatus.resolved);
-            });
-          },
-        );
-      }
+            final retractedSet = captured[3] as ChangeSetEntity;
+            expect(
+              retractedSet.items.single.status,
+              ChangeItemStatus.retracted,
+            );
+            expect(retractedSet.status, ChangeSetStatus.resolved);
+          });
+        },
+      );
 
       test(
         'returns failure when auto-retract status update cannot be persisted',
@@ -749,12 +655,9 @@ void main() {
           final changeSet = makeChangeSetWith(
             items: const [
               ChangeItem(
-                toolName: TaskAgentToolNames.updateRunningTimer,
-                args: {
-                  'timerId': 'timer-1',
-                  'summary': 'Private timer summary',
-                },
-                humanSummary: 'Update running timer text',
+                toolName: TaskAgentToolNames.updateTimeEntry,
+                args: {'entryId': 'timer-1'},
+                humanSummary: 'Update time entry',
               ),
             ],
           );
@@ -774,8 +677,9 @@ void main() {
           ).thenAnswer(
             (_) async => const ToolExecutionResult(
               success: false,
-              output: 'Error: no timer is currently running',
-              errorMessage: 'No active timer',
+              output: 'Error: at least one of summary, startTime, endTime',
+              errorMessage: 'No changes specified',
+              nonRetryable: true,
             ),
           );
 
@@ -800,7 +704,7 @@ void main() {
       );
 
       test(
-        'retracts failed running-timer update when dispatch throws',
+        'reverts a throwing dispatch to pending with a runtimeType-only message',
         () async {
           final changeSet = makeChangeSetWith(
             items: const [
@@ -817,99 +721,27 @@ void main() {
 
           when(
             () => mockToolDispatcher.dispatch(any(), any(), any()),
-          ).thenThrow(StateError('No active timer'));
+          ).thenThrow(StateError('no timer is currently running right now'));
 
           await withClock(testClock, () async {
             final result = await service.confirmItem(changeSet, 0);
 
             expect(result.success, isFalse);
-            expect(result.errorMessage, 'No active timer');
-            expect(result.errorMessage, isNot(contains('StateError')));
+            expect(result.errorMessage, 'Tool dispatch failed (StateError)');
+            // The raw thrown text must never leak into the result message.
+            expect(result.errorMessage, isNot(contains('no timer')));
 
             final captured = verify(
               () => mockSyncService.upsertEntity(captureAny()),
             ).captured;
-
-            expect(captured, hasLength(4));
+            expect(captured, hasLength(3));
             expect(
-              (captured[2] as ChangeDecisionEntity).verdict,
-              ChangeDecisionVerdict.retracted,
-            );
-            expect(
-              (captured[3] as ChangeSetEntity).items.single.status,
-              ChangeItemStatus.retracted,
+              (captured[2] as ChangeSetEntity).items.single.status,
+              ChangeItemStatus.pending,
             );
           });
         },
       );
-
-      // Drives _dispatchFailureMessage / _looksLikeNoActiveTimerError via the
-      // dispatch-throws path for running-timer updates. dispatchThrew==true so
-      // the item is always auto-retracted, and the retraction reason embeds the
-      // sanitised error message produced by _dispatchFailureMessage. We assert
-      // on that observable retraction reason / result.errorMessage rather than
-      // re-implementing the mapping.
-      for (final scenario in const [
-        (
-          name: 'maps generic thrown error to a runtimeType-only message',
-          thrown: 'database connection lost',
-          expectedErrorMessage: 'Tool dispatch failed (StateError)',
-        ),
-        (
-          name: 'maps "no timer is currently running" wording to noActiveTimer',
-          thrown: 'no timer is currently running right now',
-          expectedErrorMessage: RunningTimerUpdateFailure.noActiveTimer,
-        ),
-      ]) {
-        test(
-          'dispatch-throws on running-timer update: ${scenario.name}',
-          () async {
-            final changeSet = makeChangeSetWith(
-              items: const [
-                ChangeItem(
-                  toolName: TaskAgentToolNames.updateRunningTimer,
-                  args: {
-                    'timerId': 'timer-entry-001',
-                    'summary': 'Refined timer text',
-                  },
-                  humanSummary: 'Update running timer text',
-                ),
-              ],
-            );
-
-            when(
-              () => mockToolDispatcher.dispatch(any(), any(), any()),
-            ).thenThrow(StateError(scenario.thrown));
-
-            await withClock(testClock, () async {
-              final result = await service.confirmItem(changeSet, 0);
-
-              expect(result.success, isFalse);
-              expect(result.errorMessage, scenario.expectedErrorMessage);
-              // The raw thrown text must never leak into the result message.
-              expect(result.errorMessage, isNot(contains(scenario.thrown)));
-
-              final captured = verify(
-                () => mockSyncService.upsertEntity(captureAny()),
-              ).captured;
-
-              expect(captured, hasLength(4));
-              final retraction = captured[2] as ChangeDecisionEntity;
-              expect(retraction.verdict, ChangeDecisionVerdict.retracted);
-              // _failedConfirmationRetractionReason takes the non-empty
-              // errorMessage branch and embeds it in the reason.
-              expect(
-                retraction.retractionReason,
-                contains(scenario.expectedErrorMessage),
-              );
-              expect(
-                (captured[3] as ChangeSetEntity).items.single.status,
-                ChangeItemStatus.retracted,
-              );
-            });
-          },
-        );
-      }
 
       test('invokes post-confirm callback after successful dispatch', () async {
         final changeSet = makeChangeSetWith(

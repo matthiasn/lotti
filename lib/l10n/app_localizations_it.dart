@@ -1047,11 +1047,6 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String agentSummaryUpdateRunningTimer(Object summary) {
-    return 'Modifica il testo del timer in corso: \"$summary\"';
-  }
-
-  @override
   String get agentSummaryUpdateTimeEntry => 'Aggiorna la voce di tempo';
 
   @override

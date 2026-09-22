@@ -71,13 +71,16 @@ class QueryTaskActionContextLoader {
         .whereType<ChecklistItem>()
         .where((entry) => liveItemIds.contains(entry.meta.id))
         .toList();
-    final times = visible
+    final linkedEntries = visible
         .whereType<JournalEntry>()
+        .where((entry) => linkedIds.contains(entry.meta.id))
+        .toList();
+    // Shown to the model: sessions with a length, plus the timer running here.
+    final times = linkedEntries
         .where(
           (entry) =>
-              linkedIds.contains(entry.meta.id) &&
-              (entry.meta.dateFrom != entry.meta.dateTo ||
-                  entry.meta.id == runningTimerId),
+              entry.meta.dateFrom != entry.meta.dateTo ||
+              entry.meta.id == runningTimerId,
         )
         .toList();
     final tasks = visible
@@ -103,10 +106,11 @@ class QueryTaskActionContextLoader {
       taskId: taskId,
       dependencies: visible.map(current.reference).toList(),
       checklistIds: checklists.map((e) => e.meta.id).toSet(),
-      timeEntryIds: times
-          .where((e) => e.meta.id != runningTimerId)
-          .map((e) => e.meta.id)
-          .toSet(),
+      // Wider than what the model is shown: a timer that has not saved an end
+      // yet — running on another device, or stopped before it did — is still
+      // zero-length, and a text proposal made while it ran must stay
+      // approvable wherever and whenever it is confirmed.
+      timeEntryIds: linkedEntries.map((e) => e.meta.id).toSet(),
       taskIds: tasks.map((t) => t.meta.id).toSet(),
       labelIds: labels.map((l) => l.id).toSet(),
       runningTimerId: timer?.meta.id,

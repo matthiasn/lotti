@@ -646,12 +646,6 @@
       "status": {}
     }
   },
-  "agentSummaryUpdateRunningTimer": "Update running timer text: \"{summary}\"",
-  "@agentSummaryUpdateRunningTimer": {
-    "placeholders": {
-      "summary": {}
-    }
-  },
   "agentSummaryUpdateTimeEntry": "Update time entry",
   "agentSummaryUpdateTimeEntryRange": "Update time entry {range}",
   "@agentSummaryUpdateTimeEntryRange": {

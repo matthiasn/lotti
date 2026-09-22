@@ -104,6 +104,31 @@ void main() {
       expect(ledger.rejectedFingerprints, {'fp-rejected'});
     });
 
+    test('a rejection under a retired tool name also blocks its successor', () {
+      // The wake proposes `update_time_entry {entryId}` today; the user turned
+      // this very text down while it was still `update_running_timer
+      // {timerId}`, and that must not come back once.
+      final ledger = ProposalLedger(
+        open: const [],
+        resolved: [
+          makeLedgerEntry(
+            toolName: 'update_running_timer',
+            args: const {'timerId': 'timer-1', 'summary': 'Focus block'},
+            fingerprint: 'fp-legacy',
+            verdict: ChangeDecisionVerdict.rejected,
+          ),
+        ],
+      );
+
+      expect(ledger.rejectedFingerprints, {
+        'fp-legacy',
+        ChangeItem.fingerprintFromParts('update_time_entry', const {
+          'entryId': 'timer-1',
+          'summary': 'Focus block',
+        }),
+      });
+    });
+
     test('keys rejected summaries so a reworded re-proposal still blocks', () {
       final ledger = ProposalLedger(
         open: const [],

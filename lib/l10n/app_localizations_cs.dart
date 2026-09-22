@@ -1040,11 +1040,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String agentSummaryUpdateRunningTimer(Object summary) {
-    return 'Změnit text běžícího časovače: „$summary“';
-  }
-
-  @override
   String get agentSummaryUpdateTimeEntry => 'Upravit časový záznam';
 
   @override

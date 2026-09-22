@@ -1044,11 +1044,6 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String agentSummaryUpdateRunningTimer(Object summary) {
-    return 'Alterar o texto do cronômetro em execução: \"$summary\"';
-  }
-
-  @override
   String get agentSummaryUpdateTimeEntry => 'Atualizar o registro de tempo';
 
   @override

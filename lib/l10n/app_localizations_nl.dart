@@ -1037,11 +1037,6 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String agentSummaryUpdateRunningTimer(Object summary) {
-    return 'Tekst van de lopende timer wijzigen: \"$summary\"';
-  }
-
-  @override
   String get agentSummaryUpdateTimeEntry => 'Tijdregistratie bijwerken';
 
   @override

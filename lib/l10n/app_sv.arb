@@ -467,7 +467,6 @@
   "agentSummaryUncheckItem": "Avmarkera: ”{title}”",
   "agentSummaryUpdateItem": "Ändra: ”{title}”",
   "agentSummaryUpdateProjectStatus": "Sätt projektstatus till {status}",
-  "agentSummaryUpdateRunningTimer": "Ändra texten på den pågående timern: ”{summary}”",
   "agentSummaryUpdateTimeEntry": "Uppdatera tidspost",
   "agentSummaryUpdateTimeEntryRange": "Uppdatera tidspost {range}",
   "agentSummaryUpdateTimeEntryRangeText": "Uppdatera tidspost {range}: ”{summary}”",

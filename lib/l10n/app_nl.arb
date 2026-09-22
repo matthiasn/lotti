@@ -466,7 +466,6 @@
   "agentSummaryUncheckItem": "Vinkje verwijderen: \"{title}\"",
   "agentSummaryUpdateItem": "Wijzigen: \"{title}\"",
   "agentSummaryUpdateProjectStatus": "Projectstatus instellen op {status}",
-  "agentSummaryUpdateRunningTimer": "Tekst van de lopende timer wijzigen: \"{summary}\"",
   "agentSummaryUpdateTimeEntry": "Tijdregistratie bijwerken",
   "agentSummaryUpdateTimeEntryRange": "Tijdregistratie {range} bijwerken",
   "agentSummaryUpdateTimeEntryRangeText": "Tijdregistratie {range} bijwerken: \"{summary}\"",

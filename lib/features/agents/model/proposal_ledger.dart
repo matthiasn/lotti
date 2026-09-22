@@ -1,6 +1,7 @@
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/model/retired_tool_calls.dart';
 
 /// A single row in the proposal ledger — one `ChangeItem` the agent has
 /// ever produced for a given task, annotated with its current lifecycle
@@ -111,9 +112,18 @@ class ProposalLedger {
   /// sticky after the change set that carried it was resolved. Derived here
   /// rather than at each call site because the wake reads it twice — once per
   /// incremental flush, once for the end-of-wake write.
+  ///
+  /// A rejection recorded under a retired tool name also carries the
+  /// fingerprint of the successor call, the form a wake proposes today, so
+  /// the text the user turned down before the merge stays turned down.
   Set<String> get rejectedFingerprints => {
     for (final entry in resolved)
-      if (entry.verdict == ChangeDecisionVerdict.rejected) entry.fingerprint,
+      if (entry.verdict == ChangeDecisionVerdict.rejected) ...[
+        entry.fingerprint,
+        if (upgradeRetiredTaskAgentToolCall(entry.toolName, entry.args)
+            case final call when call.toolName != entry.toolName)
+          ChangeItem.fingerprintFromParts(call.toolName, call.args),
+      ],
   };
 
   /// The same sticky rejection rule keyed on the user-facing summary, which
