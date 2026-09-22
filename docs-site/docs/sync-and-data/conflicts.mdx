@@ -34,18 +34,18 @@ The three resolution paths are:
 
 - **Use this device** keeps the complete local version.
 - **Use from sync** keeps the complete incoming version.
-- **Combine** lets you choose a starting side and then select the winner for
+- **Combine…** lets you choose a starting side and then select the winner for
   each independently mergeable field.
 
 Keeping one complete side is appropriate when the other is simply stale.
-**Combine** is the safer choice when separate fields contain valid work from
+**Combine…** is the safer choice when separate fields contain valid work from
 both devices; Lotti marks it as recommended when several mergeable fields
 differ.
 
 ## Combine fields without retyping
 
-Select **Combine**, choose the version to start from, then switch individual
-fields to the other side. Fields that cannot be merged independently follow
+Select **Combine…**, choose the version to start from under **Start from**,
+then switch individual fields to the other side. Fields that cannot be merged independently follow
 the selected starting version.
 
 <ManualScreenshot
@@ -63,7 +63,8 @@ immediately conflict again.
 Keeping a side or applying a combined version writes the winner locally and
 allows it to sync to the other devices. Read the complete diff before
 confirming. If one side deleted the entry while the other edited it, Lotti
-shows the safer delete-versus-edit choice instead of a normal field merge.
+shows **Deleted on one device** instead of a normal field merge: nothing is
+removed until you choose **Keep the edited version** or **Confirm deletion**.
 
 :::
 

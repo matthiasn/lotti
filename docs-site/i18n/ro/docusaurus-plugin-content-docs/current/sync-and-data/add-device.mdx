@@ -5,23 +5,24 @@ description: Asociați un dispozitiv nou contului dumneavoastră de sincronizare
 
 # Adăugați un dispozitiv
 
-Toate dispozitivele dumneavoastră folosesc un singur cont de sincronizare. A
-adăuga un dispozitiv înseamnă a-i încredința datele de acces ale acelui cont, așa
-că fluxul are două verificări: un **cod de control** scurt, pe care îl comparați
-înainte de conectare, și o **verificare prin emoji** după aceea.
+Toate dispozitivele dumneavoastră folosesc același cont de sincronizare. A adăuga
+un dispozitiv înseamnă a-i preda datele de autentificare ale acestui cont, așa că
+fluxul se sprijină pe două verificări: un **cod de control** scurt, pe care îl
+comparați înainte de conectare, și o **verificare prin emoji** după aceea.
 
-Ele fac lucruri diferite. Codul de control arată că ambele ecrane vorbesc despre
-același cont — prinde un cod venit din altă parte, adică eroarea care chiar se
-întâmplă. Este derivat doar din acei identificatori, nu din parolă — deci nu
-spune nimic despre cât de valabile mai sunt datele de acces din el și nimic
-despre cine se află la celălalt capăt. Verificarea prin
-emoji care urmează este pasul care autentifică dispozitivul, iar până se încheie
-noul dispozitiv nu poate citi nimic.
+Au roluri diferite. Codul de control vă spune că cele două ecrane se referă la
+același cont, aceeași cameră și același server — prinde un cod venit din altă
+parte, adică greșeala pe care oamenii o fac cu adevărat. Este derivat doar din
+acești identificatori, nu din parolă, deci nu spune nimic despre valabilitatea
+datelor de autentificare pe care le conține și nici despre cine se află la
+celălalt capăt. Verificarea prin emoji care urmează este pasul care
+autentifică dispozitivul, iar până la încheierea ei noul dispozitiv nu poate
+citi nimic.
 
-Aveți nevoie de ambele dispozitive în față. Începeți de pe unul deja conectat —
-oricare, telefon sau calculator. Nu există un dispozitiv „principal”. Dacă niciun dispozitiv nu este încă
-conectat, această pagină nu vă poate ajuta — primul dumneavoastră cod vine
-de pe partea de server: vedeți
+Aveți nevoie de ambele dispozitive în față. Începeți pe unul deja conectat —
+oricare, telefon sau desktop. Nu există un dispozitiv „principal”. Dacă încă nu
+este conectat niciun dispozitiv, această pagină nu vă poate ajuta — primul
+dumneavoastră cod provine de pe partea serverului: consultați
 [Primul dumneavoastră dispozitiv](./first-device.mdx).
 
 ## Afișați codul pe un dispozitiv pe care îl folosiți deja
@@ -31,90 +32,115 @@ dispozitiv**.
 
 <ManualScreenshot
   caseId="sync/add-device"
-  alt="Ecranul Adăugați dispozitiv din Lotti, cu cod QR, notă de securitate cu lacăt și codul de control 2BD-EF4"
-  caption="Codul este afișat doar cât timp acest ecran rămâne deschis. Observați codul de control de dedesubt — pe acela îl veți compara."
+  alt="Panoul Adăugați dispozitiv din Lotti, cu un cod QR, codul de control 2BD-EF4, o notă de securitate cu lacăt, cronologia sosirii și butoanele blocate Trimiteți setările și Trimiteți istoricul mesajelor"
+  caption="Codul este afișat doar cât timp acest panou este deschis. Rețineți codul de control de alături — îl veți compara imediat."
 />
 
-Tratați acest ecran așa cum v-ați trata parola, pentru că exact asta conține.
-Oricine scanează sau fotografiază codul QR se poate autentifica în contul
-dumneavoastră: nu vă poate decripta însemnările fără a fi și verificat prin
-emoji de pe unul dintre dispozitivele dumneavoastră, dar poate prelua contul —
-inclusiv schimbând parola și blocându-vă accesul. Arătați-l doar unui dispozitiv care
-vă aparține și nu îl trimiteți niciodată prin chat, captură de ecran sau ecran
-partajat.
+Tratați ce apare pe acest ecran ca pe parola dumneavoastră, pentru că exact asta
+conține. Oricine scanează sau fotografiază codul QR se poate autentifica în
+contul dumneavoastră de sincronizare: nu vă poate decripta înregistrările fără
+a fi verificat și prin emoji de pe unul dintre dispozitivele dumneavoastră, dar
+poate prelua contul — inclusiv schimbându-i parola și blocându-vă accesul.
+Arătați-l doar unui dispozitiv care vă aparține și nu-l trimiteți niciodată
+printr-un chat, o captură de ecran sau un ecran partajat.
 
-**Închiderea ecranului ascunde codul, dar nu îl revocă.** Codul conține parola
-actuală a contului dumneavoastră: o fotografie rămâne utilizabilă atât timp cât
-acea parolă este valabilă. Dacă bănuiți că cineva l-a capturat, tratați-l ca pe
-o parolă compromisă, nu ca pe ceva care între timp ar fi expirat.
+**Închiderea panoului ascunde codul; nu îl revocă.** Codul conține parola
+actuală a contului, așa că o fotografie a lui rămâne utilizabilă cât timp este
+valabilă acea parolă. Dacă bănuiți că cineva l-a capturat, tratați-l ca pe o
+parolă divulgată, nu ca pe ceva care între timp a expirat.
 
 **Copiați codul de asociere** există intenționat pentru cazul în care
-dispozitivul care se alătură nu are cameră — un calculator care se alătură unui
-calculator. Pune aceleași date în clipboard: lipiți-le direct în celălalt
-dispozitiv și nicăieri altundeva.
+dispozitivul care se alătură nu are cameră — un desktop care se alătură unui
+desktop. Pune aceleași date de autentificare în clipboard, așa că lipiți-le
+direct pe celălalt dispozitiv și nicăieri altundeva. **Afișați codul de
+asociere ca text** afișează același cod pentru a fi citit de pe ecran.
+
+Lăsați panoul deschis. Sub cod, o cronologie urmărește noul dispozitiv de la
+**Se așteaptă noul dispozitiv…** la **S-a conectat — confirmați emoji-urile pe
+ambele ecrane** și **Verificat — gata de predare**. Dacă panoul nu poate
+verifica dacă noul dispozitiv s-a alăturat, alegeți **Reîncercați**.
 
 ## Scanați-l pe dispozitivul nou
 
-Instalați Lotti pe dispozitivul nou, apoi deschideți acolo **Setări →
-Setări sincronizare → Dispozitive** și alegeți **Configurați sincronizarea**. Pe telefon camera se deschide imediat; îndreptați-o
-spre primul dispozitiv. Pe calculator, sau dacă nu există cameră, alegeți
-**Lipiți codul în schimb** pentru a folosi codul copiat.
+Instalați Lotti pe dispozitivul nou, deschideți acolo **Setări → Setări
+sincronizare → Dispozitive** și alegeți **Configurați sincronizarea**. Pe un
+telefon, camera se deschide imediat; îndreptați-o spre primul dispozitiv. Pe un
+desktop, sau dacă nu este disponibilă camera, alegeți **Lipiți codul în
+schimb** pentru a folosi codul copiat. O bară de pași în partea de sus —
+**Obțineți codul**, **Verificați**, **Conectați** — arată unde vă aflați.
+
+Dacă este primul dispozitiv din cont, nu există încă alt dispozitiv de scanat:
+**Configurați primul dispozitiv?** de pe același ecran duce la **Deschideți
+ghidul pentru primul dispozitiv**.
 
 ## Verificați că se potrivește codul înainte de conectare
 
-Decodificarea codului nu conectează nimic. Mai întâi apare un rezumat al lucrului
-la care urmează să vă alăturați, condus de codul de control.
+Decodarea codului nu conectează nimic. Mai întâi apare **Comparați înainte de a
+vă conecta**: un rezumat a ceea ce urmează să vă alăturați, în frunte cu codul
+de control. Ambele dispozitive calculează acest cod independent din cont, cameră
+și server. Nu îl schimbă niciodată între ele — tocmai de aceea merită comparat.
 
-<ManualScreenshot
-  caseId="sync/provisioned"
-  alt="Rezumatul asocierii din Lotti, cu codul de control, contul la care se alătură și serverul de sincronizare"
-  caption="Ambele dispozitive derivă acest cod independent, din cont, cameră și server. Nu îl schimbă niciodată între ele — de aceea compararea contează."
-/>
+Uitați-vă la codul de control de aici și la cel de pe primul dispozitiv.
+**Trebuie să fie identice.** Contul și serverul de sincronizare de sub cod sunt
+context, nu elemente de comparat — nu apar pe celălalt dispozitiv. Când totul
+coincide, alegeți **Codurile coincid — conectați**.
 
-Priviți codul de control de aici și pe cel de pe primul dispozitiv. **Trebuie să
-fie identice.** Dacă diferă, opriți-vă și renunțați la el: cele două ecrane nu descriu același cont, aceeași cameră și
-același server, iar redeschiderea ecranului nu schimbă acest lucru.
-
-Contul și serverul de sub cod sunt context, nu elemente de comparat — ele nu apar
-pe celălalt dispozitiv. Când totul se potrivește, alegeți **Codurile coincid —
-conectați**.
+Dacă diferă, alegeți **Nu coincid**. Lotti avertizează că acest cod nu provine
+de pe dispozitivul dumneavoastră și nu conectează nimic; obțineți un cod nou de
+pe propriul dispozitiv. Un cod pe care l-ați refuzat este recunoscut dacă îl
+scanați din nou.
 
 ## Încheiați cei doi pași care urmează
 
-Conectarea vă alătură contului. Încă nu permite dispozitivului nou să citească
-ceva.
+Conectarea alătură dispozitivul contului. Încă nu îi oferă posibilitatea de a
+citi ceva.
 
 <ManualScreenshot
   caseId="sync/paired"
-  alt="Configurarea sincronizării în Lotti: acest dispozitiv este conectat, verificarea prin emoji și Trimiteți setările sunt încă în așteptare"
-  caption="Conectat este jumătatea ușoară. Cardul numește ce lipsește și spune clar că, până la verificare, acest dispozitiv nu poate citi nimic."
+  alt="Configurarea sincronizării în Lotti arată că acest dispozitiv este conectat, cu pașii Confirmați emoji-urile și Primiți setările dumneavoastră încă de făcut"
+  caption="Conectarea este jumătatea ușoară. Cardul numește ce mai lipsește și spune clar că, până la potrivirea emoji-urilor, acest dispozitiv vede doar text criptat."
 />
 
-1. **Comparați emoji-urile.** Pe ambele dispozitive apare un rând de emoji.
-   Verificați că se potrivesc și confirmați pe fiecare. Până atunci, dispozitivul
-   nou primește doar text cifrat pe care nu îl poate citi — cheile merg exclusiv
-   către dispozitive verificate. Vedeți
-   [Sincronizarea dispozitivelor](./sync.mdx).
-2. **Trimiteți setările.** Pe primul dispozitiv, în ecranul Adăugați dispozitiv
-   încă deschis, alegeți **Trimiteți setările**, pentru ca listele de categorii,
-   obiceiuri, tablourile de bord și configurația AI să ajungă. Dacă l-ați închis,
-   redeschideți **Setări → Setări sincronizare → Dispozitive → Adăugați dispozitiv**.
+1. **Confirmați emoji-urile.** Ambele dispozitive afișează șapte emoji.
+   Verificați că se potrivesc și confirmați pe fiecare. Până atunci, noul
+   dispozitiv primește text criptat pe care nu îl poate citi — cheile sunt
+   partajate doar cu dispozitivele pe care le-ați verificat. Dacă nu apare niciun
+   emoji, alegeți **Verificați din nou** sau porniți verificarea din
+   **Dispozitive**. Consultați
+   [Verificați noul dispozitiv](./sync.mdx#verificați-noul-dispozitiv).
+2. **Primiți setările dumneavoastră.** Înapoi pe primul dispozitiv, panoul
+   Adăugați dispozitiv, încă deschis, deblochează două predări după potrivirea
+   emoji-urilor: **Trimiteți setările** livrează categoriile, obiceiurile,
+   tablourile de bord și configurația AI, iar **Trimiteți istoricul mesajelor**
+   livrează înregistrările scrise înainte ca acest dispozitiv să se alăture.
+   Trimiteți-le pe amândouă — istoricul este motivul pentru care un dispozitiv
+   nou nu mai pare gol.
 
-Lăsați ambele aplicații deschise până se termină prima sincronizare.
+Lăsați ambele aplicații deschise până la încheierea primei sincronizări. Dacă ați
+închis panoul, pagina **Dispozitive** de pe primul dispozitiv oferă aceleași
+două predări cât timp arată că noul dispozitiv tocmai s-a alăturat. Altfel,
+deschideți acolo **Setări → Setări sincronizare → Întreținere**, alegeți
+**Sincronizați măsurabilele, tablourile de bord, obiceiurile, categoriile și
+setările AI**, apoi **Istoricul mesajelor**.
 
 ## Dacă ceva nu merge
 
-- **Codurile de control diferă.** Nu conectați. Redeschiderea ecranului nu ajută: același cont produce de fiecare
-  dată același cod, deci o nepotrivire înseamnă că cele două ecrane nu descriu
-  aceeași asociere.
-- **Codul nu se decodifică.** Copiați-l din nou pe primul dispozitiv în loc să
-  corectați ce ați lipit; valoarea codificată nu este menită să fie ajustată
-  manual. Dacă aplicația semnalează versiuni diferite, dispozitivele rulează
-  compilări diferite și ambele au nevoie de actualizare.
-- **Dispozitivul nou s-a conectat, dar rămâne gol.** Este starea așteptată
-  înainte de verificare. Încheiați compararea emoji-urilor, apoi consultați
-  [Sincronizarea dispozitivelor](./sync.mdx) pentru coada de trimitere și
-  recuperare.
+- **Codurile de control diferă.** Nu vă conectați. Redeschiderea panoului nu
+  ajută de la sine: același cont, aceeași cameră și același server produc
+  întotdeauna același cod, deci o diferență înseamnă că cele două ecrane nu
+  descriu aceeași asociere.
+- **Codul nu se decodează.** Copiați-l din nou pe primul dispozitiv în loc să
+  editați ce ați lipit; valoarea codificată nu este făcută pentru a fi corectată
+  manual. Dacă aplicația raportează o nepotrivire de versiune, cele două
+  dispozitive rulează versiuni diferite de Lotti și trebuie actualizate amândouă.
+- **Codul nu mai funcționează.** Un cod nu mai permite autentificarea după ce
+  parola contului s-a schimbat. Alegeți **Reîncercați acest cod** dacă s-a
+  întrerupt conexiunea sau **Introduceți un cod nou** și obțineți unul nou de pe
+  celălalt dispozitiv.
+- **Noul dispozitiv s-a conectat, dar rămâne gol.** Aceasta este starea
+  așteptată înainte de verificare. Încheiați compararea emoji-urilor, trimiteți
+  setările și istoricul mesajelor, apoi verificați în
+  [Sincronizați dispozitive](./sync.mdx) starea cozii de ieșire și a completării.
 
-Continuați cu [Sincronizarea dispozitivelor](./sync.mdx) pentru starea zilnică,
+Continuați cu [Sincronizați dispozitive](./sync.mdx) pentru starea de zi cu zi,
 sănătatea livrării și instrumentele de recuperare.

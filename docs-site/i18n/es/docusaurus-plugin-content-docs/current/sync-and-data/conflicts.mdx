@@ -33,20 +33,20 @@ página no oculte cuánto de la entrada sigue coincidiendo.
 Las tres rutas de resolución son:
 
 - **Usar este dispositivo** conserva la versión local completa.
-- **Usar desde Sync** conserva la versión entrante completa.
-- **Combinar** te permite elegir un lado inicial y después seleccionar el
+- **Usar desde sincronización** conserva la versión entrante completa.
+- **Combinar…** te permite elegir un lado inicial y después seleccionar el
   ganador de cada campo que se pueda fusionar de forma independiente.
 
 Conservar un lado completo es apropiado cuando el otro simplemente está
-obsoleto. **Combinar** es la opción más segura cuando campos distintos contienen
+obsoleto. **Combinar…** es la opción más segura cuando campos distintos contienen
 trabajo válido de ambos dispositivos; Lotti la marca como recomendada cuando
 varios campos que se pueden fusionar difieren.
 
 ## Combina campos sin volver a escribir
 
-Selecciona **Combinar**, elige la versión de partida y, después, cambia campos
-individuales al otro lado. Los campos que no se pueden fusionar de forma
-independiente siguen la versión inicial elegida.
+Selecciona **Combinar…**, elige la versión de partida en **Partir de** y,
+después, cambia campos concretos al otro lado. Los campos que no se pueden
+fusionar de forma independiente siguen la versión de partida seleccionada.
 
 <ManualScreenshot
   caseId="sync/conflict-combine"
@@ -61,10 +61,11 @@ mismas dos ediciones no vuelvan a entrar en conflicto de inmediato.
 :::caution[Una resolución cambia el resultado compartido]
 
 Conservar un lado o aplicar una versión combinada escribe el ganador localmente
-y permite sincronizarlo con los demás dispositivos. Lee la diferencia completa
-antes de confirmar. Si un lado eliminó la entrada mientras el otro la editaba,
-Lotti presenta la elección más segura entre eliminar y editar, en vez de una
-fusión normal de campos.
+y permite que se sincronice con los demás dispositivos. Lee la diferencia
+completa antes de confirmar. Si un lado eliminó la entrada mientras el otro la
+editaba, Lotti muestra **Eliminado en un dispositivo** en lugar de una fusión de
+campos normal: no se quita nada hasta que eliges **Conservar la versión
+editada** o **Confirmar eliminación**.
 
 :::
 

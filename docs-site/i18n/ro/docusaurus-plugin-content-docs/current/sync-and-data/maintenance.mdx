@@ -5,18 +5,46 @@ description: Folosiți intenționat acțiunile Matrix de reparare și curățare
 
 # Întreținerea sincronizării
 
-Deschideți **Setări → Setări sincronizare → Întreținere** pentru reparare și curățare la nivelul bazei de date. Aceste acțiuni nu fac parte din asocierea obișnuită sau sincronizarea de zi cu zi. Înainte de a le folosi, lăsați scrierile active să se încheie și păstrați o copie de siguranță actuală a datelor pe care nu le puteți recrea.
+Deschideți **Setări → Setări sincronizare → Întreținere** pentru reparații și
+curățări la nivel de bază de date. Aceste acțiuni nu fac parte din asocierea
+obișnuită și nici din sincronizarea zilnică. Înainte de a le folosi, lăsați
+scrierile active să se încheie și păstrați o copie de rezervă recentă a datelor
+pe care nu le puteți recrea.
 
-<ManualScreenshot caseId="sync/maintenance" alt="Întreținerea Lotti Matrix Sync, cu ștergerea bazei de date de sincronizare, sincronizarea definițiilor, resincronizarea mesajelor, popularea jurnalului de secvențe și eliminarea elementelor trimise din cutia de ieșire" caption="Întreținerea grupează acțiuni distructive, de reluare și de curățare într-o singură pagină. Textul confirmării definește domeniul fiecărei operații." />
+<ManualScreenshot
+  caseId="sync/maintenance"
+  alt="Întreținerea sincronizării în Lotti cu Ștergeți baza de date de sincronizare, Sincronizați măsurabilele, tablourile de bord, obiceiurile, categoriile și setările AI, Istoricul mesajelor, Completați jurnalul de secvență de sincronizare și Eliminați elementele vechi trimise din coada de ieșire"
+  caption="Întreținerea grupează pe o singură pagină acțiuni distructive, de reluare și de curățare. Textul de confirmare definește domeniul fiecărei operațiuni."
+/>
 
 ## Alegeți cea mai îngustă reparație
 
-- **Ștergeți baza de date de sincronizare** elimină baza locală de sincronizare. Este recuperare locală distructivă, nu o cale obișnuită de deconectare a unui dispozitiv.
-- **Sincronizați definițiile** trimite din nou înregistrările de definiții curente, precum categorii și alte configurații partajate.
-- **Resincronizați mesajele** reia mesajele selectate când lipsește starea la distanță sau trebuie repetată o livrare anterioară.
-- **Populați jurnalul de secvențe** reconstruiește istoricul local de secvențe, folosit pentru detectarea lipsurilor și recuperare.
-- **Eliminați elementele vechi trimise din cutia de ieșire** șterge, după perioada de păstrare, istoricul deja trimis, păstrat în coadă pentru diagnostic. Nu elimină munca în așteptare sau eșuată.
+- **Ștergeți baza de date de sincronizare** elimină baza de date de sincronizare
+  locală. Este o recuperare locală distructivă, nu o modalitate obișnuită de a
+  deconecta un dispozitiv.
+- **Sincronizați măsurabilele, tablourile de bord, obiceiurile, categoriile și
+  setările AI** retrimite această configurație comună. Un dialog vă permite să
+  alegeți ce tipuri includeți — inclusiv etichetele și filtrele de sarcini
+  salvate — înainte de a alege **Începeți sincronizarea**.
+- **Istoricul mesajelor** repune în coadă înregistrări pentru celelalte
+  dispozitive. Alegeți un interval — **Totul**, **Ultimele 30 de zile** sau
+  **Personalizat**, cu un început și un sfârșit — și tipurile de entități de
+  inclus, apoi **Porniți**. Dacă unele înregistrări eșuează, **Reîncercați
+  elementele eșuate** le repetă doar pe acestea.
+- **Completați jurnalul de secvență de sincronizare** indexează înregistrările
+  existente, astfel încât completarea să poată răspunde și cererilor pentru
+  înregistrări create înainte de existența urmăririi secvențelor.
+- **Eliminați elementele vechi trimise din coada de ieșire** șterge rândurile
+  deja trimise din coada de ieșire mai vechi de 7 zile și eliberează spațiu pe
+  disc. Elementele în așteptare sau eșuate sunt păstrate.
 
-Începeți cu cea mai mică operație potrivită simptomului. Un atașament blocat aparține [Cutiei de ieșire](./sync.mdx#inspectați-cutia-de-ieșire); lipsurile persistente de secvență aparțin recuperării; două editări concurente valide aparțin [Conflictelor](./conflicts.mdx). Ștergerea bazei de date de sincronizare trebuie să fie o ultimă resetare locală, făcută cu un dispozitiv pereche despre care știți că funcționează și cu o copie de siguranță disponibilă.
+Începeți cu cea mai mică operațiune care se potrivește simptomului. Un atașament
+blocat ține de [cutia de ieșire](./sync.mdx#inspectați-cutia-de-ieșire),
+golurile persistente din secvență țin de Completare sincronizare, iar două
+editări concurente valide țin de [conflicte](./conflicts.mdx). Ștergerea bazei de
+date de sincronizare ar trebui să rămână o resetare locală de ultimă instanță,
+făcută cu un dispozitiv pereche de încredere și o copie de rezervă la îndemână.
 
-După reparație, reveniți la **Statistici de sincronizare**, confirmați că munca procesată avansează fără un număr de erori în creștere și verificați că numărul lipsă din Cutia de ieșire și Recuperare se stabilizează.
+După o reparație, reveniți la **Statistici Matrix**, verificați că munca aplicată
+avansează și coada se golește, apoi că coada de ieșire și numărul de elemente
+lipsă din completare se stabilizează.

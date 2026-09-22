@@ -5,35 +5,42 @@ description: Používej opravy a čištění Matrix Sync záměrně, od opětovn
 
 # Údržba synchronizace
 
-Databázové opravy a čištění najdeš v **Nastavení → Nastavení synchronizace → Údržba**. Tyto akce
-nepatří k běžnému párování ani každodenní synchronizaci. Před použitím nech
-dokončit aktivní zápisy a měj aktuální zálohu dat, která nelze znovu vytvořit.
+Otevři **Nastavení → Nastavení synchronizace → Údržba** pro opravy a čištění na
+úrovni databáze. Tyhle akce nepatří k běžnému párování ani ke každodenní
+synchronizaci. Než je použiješ, nech doběhnout probíhající zápisy a měj
+aktuální zálohu dat, která nedokážeš znovu vytvořit.
 
 <ManualScreenshot
   caseId="sync/maintenance"
-  alt="Údržba Matrix Sync v Lotti se smazáním synchronizační databáze, synchronizací definic, opětovnou synchronizací zpráv, naplněním protokolu posloupnosti a čištěním odeslané fronty"
-  caption="Údržba seskupuje destruktivní, opakovací a čisticí akce na jedné stránce. Potvrzovací text vymezuje rozsah každé operace."
+  alt="Údržba synchronizace v Lotti se Smazat synchronizační databázi, Synchronizovat měřitelné údaje, dashboardy, návyky, kategorie, AI nastavení, Historie zpráv, Naplnit protokol synchronizační sekvence a Vyčistit staré odeslané položky odchozí pošty"
+  caption="Údržba sdružuje na jedné stránce destruktivní, opakovací a úklidové akce. Text potvrzení vymezuje rozsah každé operace."
 />
 
 ## Vyber nejužší opravu
 
-- **Smazat synchronizační databázi** odstraní místní databázi Sync. Jde o
-  destruktivní místní obnovu, ne běžný způsob odpojení zařízení.
-- **Synchronizovat definice** znovu odešle aktuální definice, například
-  kategorie a další sdílené nastavení.
-- **Znovu synchronizovat zprávy** přehraje vybrané zprávy, když vzdálený stav
-  chybí nebo je potřeba zopakovat dřívější doručení.
-- **Naplnit protokol posloupnosti** obnoví místní historii používanou pro
-  hledání mezer a doplnění.
-- **Vyčistit staré odeslané položky fronty** smaže diagnostickou historii již
-  odeslaných položek po době uchování. Neodstraní čekající ani chybné položky.
+- **Smazat synchronizační databázi** odstraní místní synchronizační databázi.
+  Je to destruktivní místní obnova, ne běžný způsob, jak zařízení odpojit.
+- **Synchronizovat měřitelné údaje, dashboardy, návyky, kategorie, AI
+  nastavení** znovu odešle tuhle sdílenou konfiguraci. Dialog tě nechá vybrat,
+  které druhy zahrnout — i štítky a uložené filtry úkolů — než zvolíš **Spustit
+  synchronizaci**.
+- **Historie zpráv** znovu zařadí záznamy do fronty pro tvá ostatní zařízení.
+  Vyber rozsah — **Vše**, **Posledních 30 dní** nebo **Vlastní** se začátkem a
+  koncem — a typy entit, které zahrnout, a pak **Spustit**. Pokud některé
+  záznamy selžou, **Zkusit znovu neúspěšné položky** zopakuje jen je.
+- **Naplnit protokol synchronizační sekvence** zaindexuje existující záznamy,
+  aby doplňování dokázalo odpovídat i na žádosti o záznamy vytvořené dřív, než
+  existovalo sledování posloupnosti.
+- **Vyčistit staré odeslané položky odchozí pošty** smaže už odeslané řádky
+  odchozí fronty starší než 7 dní a uvolní místo na disku. Čekající a neúspěšné
+  položky zůstanou zachované.
 
-Začni nejmenší operací odpovídající příznaku. Zaseknutá příloha patří do
-[Odchozí fronty](./sync.mdx#kontroluj-odchozí-frontu), trvalé mezery do
-Doplnění a dvě platné souběžné úpravy do [Konfliktů](./conflicts.mdx). Smazání
-synchronizační databáze má být poslední místní reset se známým funkčním
-zařízením a dostupnou zálohou.
+Začni nejmenší operací, která odpovídá příznaku. Zaseknutá příloha patří do
+[odchozí fronty](./sync.mdx#kontroluj-odchozí-frontu), trvalé mezery v
+posloupnosti do Synchronizace doplnění a dvě platné souběžné úpravy do
+[konfliktů](./conflicts.mdx). Smazání synchronizační databáze by mělo být
+místním resetem až v krajním případě, s ověřeným protějškem a zálohou po ruce.
 
-Po opravě se vrať na **Statistiky synchronizace**, potvrď postup zpracování bez
-rostoucího počtu chyb a zkontroluj, že se Odchozí fronta a počet chybějících v
-Doplnění ustálí.
+Po opravě se vrať do **Statistiky Matrix**, ověř, že aplikovaná práce postupuje a
+fronta se vyprazdňuje, a že se odchozí fronta i počet chybějících záznamů
+v doplňování ustálí.

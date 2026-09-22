@@ -560,11 +560,11 @@
         "/settings/sync"
       ],
       "page": "sync-and-data/sync",
-      "status": "verified"
+      "status": "documented"
     },
     {
       "id": "settings-sync-provisioned",
-      "title": "Provisioned Sync",
+      "title": "Devices",
       "kind": "settings-page",
       "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
       "sourcePattern": "'sync/provisioned'",
@@ -573,11 +573,11 @@
         "/settings/sync/provisioned"
       ],
       "page": "sync-and-data/sync",
-      "status": "verified"
+      "status": "documented"
     },
     {
       "id": "settings-sync-node-profile",
-      "title": "Sync node profile",
+      "title": "This device",
       "kind": "settings-page",
       "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
       "sourcePattern": "'sync/node-profile'",
@@ -586,7 +586,7 @@
         "/settings/sync/node-profile"
       ],
       "page": "sync-and-data/sync",
-      "status": "verified"
+      "status": "documented"
     },
     {
       "id": "settings-sync-backfill",
@@ -599,11 +599,11 @@
         "/settings/sync/backfill"
       ],
       "page": "sync-and-data/sync",
-      "status": "verified"
+      "status": "documented"
     },
     {
       "id": "settings-sync-stats",
-      "title": "Sync statistics",
+      "title": "Matrix Stats",
       "kind": "settings-page",
       "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
       "sourcePattern": "'sync/stats'",
@@ -612,7 +612,7 @@
         "/settings/sync/stats"
       ],
       "page": "sync-and-data/sync",
-      "status": "verified"
+      "status": "documented"
     },
     {
       "id": "settings-sync-outbox",
@@ -625,7 +625,7 @@
         "/settings/sync/outbox"
       ],
       "page": "sync-and-data/sync",
-      "status": "verified"
+      "status": "documented"
     },
     {
       "id": "settings-sync-conflicts",
@@ -638,7 +638,7 @@
         "/settings/advanced/conflicts"
       ],
       "page": "sync-and-data/conflicts",
-      "status": "verified"
+      "status": "documented"
     },
     {
       "id": "settings-sync-conflict-detail",
@@ -651,7 +651,7 @@
         "/settings/advanced/conflicts/:conflictId"
       ],
       "page": "sync-and-data/conflicts",
-      "status": "verified"
+      "status": "documented"
     },
     {
       "id": "settings-sync-conflict-editor",
@@ -661,7 +661,7 @@
       "sourcePattern": "_buildCombining",
       "locator": "Conflict detail → Combine",
       "page": "sync-and-data/conflicts",
-      "status": "verified"
+      "status": "documented"
     },
     {
       "id": "settings-sync-matrix-maintenance",
@@ -674,7 +674,7 @@
         "/settings/sync/matrix/maintenance"
       ],
       "page": "sync-and-data/maintenance",
-      "status": "verified"
+      "status": "documented"
     },
     {
       "id": "settings-definitions-hub",
@@ -1211,7 +1211,7 @@
       "sourcePattern": "class SyncSetupEmptyState",
       "locator": "Sync Settings → Devices → Add device",
       "page": "sync-and-data/add-device",
-      "status": "verified"
+      "status": "documented"
     },
     {
       "id": "workflow-sync-verification",
@@ -1221,7 +1221,7 @@
       "sourcePattern": "class VerificationModal",
       "locator": "Sync verification request",
       "page": "sync-and-data/sync",
-      "status": "verified"
+      "status": "documented"
     },
     {
       "id": "workflow-ai-skills",

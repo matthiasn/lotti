@@ -12,38 +12,73 @@ nicht in eine Lotti-Cloud: Der eingerichtete Matrix-Dienst leitet
 Ende-zu-Ende-verschlüsselte Nutzdaten zwischen deinen Geräten weiter, während
 jedes Gerät seine eigene lokale Kopie behält.
 
-Öffne **Einstellungen → Synchronisierungseinstellungen** für Einrichtung, Gesundheit und
-Wiederherstellung. Die Zahl bei **Sync-Postausgang** zählt Änderungen, die den
-Sync-Dienst noch nicht erreicht haben.
-
-<ManualScreenshot
-  caseId="sync/hub"
-  alt="Lottis Sync-Einstellungen mit bereitgestellter Synchronisierung, Geräteidentität, Nachfüllung, Statistik, Postausgang, Konflikten und Wartung"
-  caption="Alltagsstatus steht neben Diagnose und Wiederherstellung. Project Waddle hat drei Elemente im Postausgang."
-/>
-
 ## Was synchronisiert wird und was bleibt
 
 | Synchronisiert zwischen deinen Geräten | Bleibt auf dem einen Gerät |
 | --- | --- |
 | Einträge und Aufgaben samt ihren Verknüpfungen · Kategorien, Labels, Gewohnheiten, Dashboards und Messgrößen · KI-Anbieter, -Modelle und -Profile (auch Löschungen) · gespeicherte Aufgabenfilter · Konfigurationsflags · helle/dunkle Themenwahl · Geräteprofile · dein Daily-OS-Name · Benachrichtigungen und ihr Lesestatus · Aufgabenagenten und ihre Verknüpfungen · KI-Nutzungsdaten (Tokens, Kosten, Energie) | Sprachausgabe-Stimme und -Tempo · Bereichsbreiten · KI-Parallelität · Agenten-Drosselzeiten · Ausschlüsse der Tagesplanung |
 
-Zwei Details lohnen sich. Nicht alles, was synchronisiert, ist Journaldatum: Geräteprofil und Daily-OS-Name reisen als Geräteeinstellungen und sind von der Lückenerkennung ausgenommen. Und abgeleitete Zahlen werden nie gesendet — ein gespeicherter Aufgabenfilter synchronisiert, die daraus berechneten Aufgabenzahlen werden auf jedem Gerät neu ermittelt.
+Zwei Details lohnen sich. Nicht alles, was synchronisiert, ist Journaldatum:
+Geräteprofil und Daily-OS-Name reisen als Geräteeinstellungen und sind von der
+Lückenerkennung ausgenommen. Und abgeleitete Zahlen werden nie gesendet — ein
+gespeicherter Aufgabenfilter synchronisiert, die daraus berechneten
+Aufgabenzahlen werden auf jedem Gerät neu ermittelt.
+
+Öffne **Einstellungen → Synchronisierungseinstellungen** für Einrichtung,
+Gesundheit und Wiederherstellung. Die Zahl bei **Sync-Postausgang** zählt
+Änderungen, die den Sync-Dienst noch nicht erreicht haben.
+
+<ManualScreenshot
+  caseId="sync/hub"
+  alt="Lottis Synchronisierungseinstellungen mit Geräte, Dieses Gerät, Sync-Nachfüllung, Matrix-Statistiken, Sync-Postausgang, Synchronisierungskonflikte und Wartung"
+  caption="Alltagsstatus steht neben Diagnose und Wiederherstellung. Project Waddle hat gerade drei Elemente im Postausgang."
+/>
 
 ## Deine Geräte sehen
 
-**Einstellungen → Synchronisierungseinstellungen → Geräte** listet jede Sitzung deines
-Sync-Kontos — nicht nur die unverifizierten.
+**Einstellungen → Synchronisierungseinstellungen → Geräte** listet jede Sitzung
+deines Sync-Kontos — nicht nur die unverifizierten. Die Kopfzeile zählt die
+Geräte auf deinem Sync-Server, und **Gerät hinzufügen** startet das
+[Koppeln eines weiteren Geräts](./add-device.mdx).
 
 <ManualScreenshot
   caseId="sync/status"
-  alt="Lottis Geräteseite mit den Sitzungen des Sync-Kontos, Verifizierungsstatus und letzter Sichtung"
-  caption="Jede Zeile zeigt, ob das Gerät verifiziert ist und wann der Server es zuletzt gesehen hat. Ein unverifiziertes Gerät kann neue Einträge nicht lesen, und die Liste sagt das."
+  alt="Lottis Geräteseite mit Karten für Mission Control Mac und Admiral Pebble's Phone, ihren Verifizierungs-Chips, dem letzten Kontakt und der Aktion Sync auf diesem Gerät beenden"
+  caption="Jede Karte zeigt, ob das Gerät verifiziert ist und wann der Server es zuletzt gesehen hat. Ein Gerät, das sich lange nicht gemeldet hat, gilt als wahrscheinlich nicht mehr in Gebrauch."
 />
 
-Mit diesem Konto angemeldete Sitzungen lassen sich entfernen — außer der, auf der
-du gerade bist. Auf die alte Art gekoppelte Geräte mit eigenem Konto lassen sich
+Jede Karte trägt den Chip **Dieses Gerät** für das Gerät in deiner Hand und
+**Verifiziert** oder **Nicht verifiziert** für die übrigen. Ein nicht
+verifiziertes Gerät kann neue Einträge nicht lesen: Ein Banner über der Liste
+nennt ihre Anzahl, und jedes bietet **Verifizieren** an. Hat sich ein Gerät
+länger nicht gemeldet, warnt die Verifizierung zuerst, dass es offline sein
+könnte — der Emoji-Abgleich klappt nur, solange dieses Gerät wach ist und Lotti
+zeigt. Wähle **Trotzdem bestätigen** nur, wenn du weißt, dass es so ist.
+
+Um ein Gerät auszumustern, wähle auf seiner Karte **Aus Sync entfernen**. Es
+wird abgemeldet und braucht einen neuen Kopplungscode, bevor es wieder
+synchronisieren kann. Akzeptiert der Sync-Server das auf diesem Gerät
+gespeicherte Passwort nicht mehr, fragt Lotti mit dem aktuellen Passwort des
+Sync-Kontos nach, ob du es bist, bevor irgendetwas entfernt wird. Ein Gerät,
+das die Kopplung nie abgeschlossen hat, lässt sich nur entfernen. Das Gerät,
+auf dem du gerade bist, kannst du auf diesem Weg nicht entfernen, und Geräte,
+die auf die alte Art gekoppelt wurden — jedes mit eigenem Konto —, lassen sich
 verifizieren, aber nicht entfernen.
+
+Schließt ein gerade hinzugefügtes Gerät die Verifizierung ab, meldet ein Banner
+den Beitritt und bietet **Einstellungen senden** und **Nachrichtenverlauf
+senden** direkt auf dieser Seite an, damit sich das neue Gerät ohne Umweg füllt.
+
+**Sync auf diesem Gerät beenden** unter der Liste meldet dieses Gerät vom
+Sync-Konto ab. Deine Einträge bleiben darauf, und deine anderen Geräte sind
+nicht betroffen; erneut synchronisieren braucht einen neuen Kopplungscode.
+**Technische Details** zeigt Diagnoseinformationen, die du in eine
+Support-Anfrage kopieren kannst.
+
+Bevor Sync eingerichtet ist, zeigt diese Seite stattdessen **Geräte
+synchronisieren** mit **Sync einrichten** — siehe
+[Gerät hinzufügen](./add-device.mdx) oder, wenn noch kein Gerät verbunden ist,
+[Dein erstes Gerät](./first-device.mdx).
 
 ## Ein weiteres Gerät koppeln
 
@@ -51,106 +86,134 @@ Das Koppeln ist ein eigener Ablauf, mit einem Code zum Vergleichen und zwei
 Schritten nach dem Verbinden. Es hat eine eigene Seite:
 [Gerät hinzufügen](./add-device.mdx).
 
-Kurz gefasst: Öffne auf einem bereits verbundenen Gerät **Einstellungen →
-Synchronisierungseinstellungen → Geräte → Gerät hinzufügen** und zeige den Code. Öffne auf dem
-neuen Gerät dieselbe Seite und scanne ihn. Vergleiche den Prüfcode auf beiden
-Bildschirmen, bevor du verbindest — der QR-Code enthält die Zugangsdaten deines
-Sync-Kontos und geht nur an dein eigenes Gerät.
+Kurz gesagt: Öffne auf einem bereits verbundenen Gerät **Einstellungen →
+Synchronisierungseinstellungen → Geräte → Gerät hinzufügen** und zeige den
+Code. Öffne auf dem neuen Gerät dieselbe Seite, wähle **Sync einrichten** und
+scanne ihn. Vergleiche vor dem Verbinden den Prüfcode auf beiden Bildschirmen —
+der QR-Code enthält die Zugangsdaten deines Sync-Kontos, er gehört also auf dein
+eigenes Gerät und nirgendwo sonst hin.
 
 ## Das neue Gerät verifizieren
 
-Kopplung verbindet; Verifizierung bestätigt, dass beide Geräte ohne unbekanntes
-Zwischengerät miteinander sprechen.
+Das Koppeln verbindet das Gerät; die Verifizierung bestätigt, dass beide Geräte
+miteinander sprechen, ohne dass ein unbekanntes Gerät dazwischensitzt.
 
 <ManualScreenshot
   caseId="sync/verification"
-  alt="Lottis Geräteverifizierung mit einer Folge aus Pinguin-, Fisch-, Raketen-, Eis-, Erde-, Mond- und Stern-Emoji"
-  caption="Vergleiche die vollständige Folge auf beiden Geräten und akzeptiere nur, wenn jedes Symbol und seine Reihenfolge exakt übereinstimmen."
+  alt="Lottis Geräteverifizierung mit einer Folge aus Pinguin, Fisch, Rakete, Eis, Erde, Mond und Stern"
+  caption="Vergleiche die gesamte Emoji-Folge auf beiden Geräten. Bestätige nur, wenn jedes Bild und seine Reihenfolge genau übereinstimmen."
 />
 
-Vergleiche persönlich oder über einen vertrauenswürdigen Anruf. Wähle auf
-beiden Geräten **Sie stimmen überein** nur bei vollständiger Übereinstimmung. Brich
-bei einer Abweichung ab und prüfe Konto sowie Gerätenamen.
+Beide Bildschirme zeigen sieben Emoji. Vergleiche sie persönlich oder über
+einen vertrauenswürdigen Anruf und wähle **Sie stimmen überein** auf beiden
+Geräten nur, wenn die ganze Folge in derselben Reihenfolge übereinstimmt.
+Weicht auch nur ein Emoji ab, wähle **Sie unterscheiden sich — abbrechen** und
+prüfe Konto- und Gerätenamen, bevor du es erneut versuchst.
 
 ## Geräte benennen und Fähigkeiten melden
 
-**Dieses Gerät** – „Gerätename und Fähigkeiten“ – identifiziert das aktuelle
-Gerät. Gib einen Namen wie
-„Missionskontroll-Mac“ statt „Desktop“.
+**Dieses Gerät** — „Gerätename und Fähigkeiten“ — stellt das aktuelle Gerät
+dem Rest der Sync-Gruppe vor. Gib ihm einen **Anzeigename des Geräts**, der das
+physische Gerät unterscheidet, etwa „Mission Control Mac“ statt „Desktop“, und
+wähle **Speichern**.
 
 <ManualScreenshot
   caseId="sync/node-profile"
-  alt="Lottis Sync-Knotenprofil für Missionskontroll-Mac mit lokalen Inferenzfähigkeiten und bekannten Project-Waddle-Geräten"
-  caption="Klare Namen vereinfachen Verifizierung, Diagnose und gerätegebundene lokale Inferenz."
+  alt="Lottis Seite Dieses Gerät für Mission Control Mac mit Anzeigenamen, erkannten KI-Fähigkeiten und bekannten Sync-Geräten"
+  caption="Klare Gerätenamen machen Verifizierung, Diagnose und gerätegebundene lokale Inferenz viel leichter nachvollziehbar."
 />
 
-Die Seite listet Fähigkeiten wie lokale Audiotranskription oder Sprachmodell-
-Inferenz. Bekannte Geräte zeigen die zuletzt von anderen Knoten gemeldeten
-Möglichkeiten. Das ist beschreibend; das passende KI-Profil muss sie weiterhin
-verwenden.
+**Erkannte KI-Fähigkeiten** listet, was dieses Gerät bereitstellen kann, etwa
+lokale Audiotranskription oder lokale Inferenz mit Sprachmodellen. **Bekannte
+Sync-Geräte** zeigt, was die anderen Geräte zuletzt veröffentlicht haben. Die
+aufgeführten Fähigkeiten beschreiben nur; das passende KI-Profil muss trotzdem
+so eingerichtet sein, dass es sie nutzt.
 
 ## Aufholen und Nachfüllung verstehen
 
-Normaler Sync verarbeitet eintreffende Änderungen. **Nachfüllung** erkennt
-Lücken in Sequenzen bekannter Geräte und fordert fehlende Datensätze erneut an.
+Normaler Sync verarbeitet Änderungen, sobald sie eintreffen.
+**Sync-Nachfüllung** erkennt Lücken in der Folge, die von bekannten Geräten
+empfangen wurde, und fordert fehlende Datensätze erneut an.
 
 <ManualScreenshot
   caseId="sync/backfill"
-  alt="Lottis Sync-Nachfüllungsseite mit eingehendem, fehlendem und übersprungenem Status, Sequenzstatistik und automatischer Nachfüllung"
-  caption="Project Waddle erhielt 2.868 Sequenzeinträge und kennt vier fehlende Einträge von zwei Geräten."
+  alt="Lottis Seite Sync-Nachfüllung mit Eingangswarteschlange, fehlenden und übersprungenen Zählern, Synchronisierungsstatistiken, automatischer Nachfüllung und erweiterter Wiederherstellung"
+  caption="Project Waddle hat 2.868 Sequenzeinträge empfangen und kennt derzeit vier fehlende Einträge über zwei Geräte-IDs."
 />
 
-- **Eingehend** wartet in der Empfangswarteschlange.
-- **Fehlend** zählt bekannte Sequenzlücken.
-- **Übersprungen** konnte nach normalen Versuchen nicht verarbeitet werden.
-- **Automatische Nachfüllung** fordert behebbare Lücken kontinuierlich an
-  und ist der richtige Standard.
-- **Erweiterte Wiederherstellung** enthält manuelle Untersuchungsaktionen. Nutze
-  sie erst, nachdem normaler Sync und automatische Nachfüllung Zeit hatten,
-  sich zu beruhigen.
+- **Eingangswarteschlange** ist Arbeit, die gerade darauf wartet, angewendet zu
+  werden.
+- **Fehlend** ist die Zahl der bekannten Lücken in der Folge.
+- **Übersprungen** ist Arbeit, die die Eingangswarteschlange aufgegeben hat,
+  weil sie nicht normal verarbeitet werden konnte.
+- **Automatische Nachfüllung** fordert fehlende Einträge der letzten 24 Stunden
+  an und ist die richtige Voreinstellung für den Alltag.
+- **Erweiterte Wiederherstellung** enthält manuelle Aktionen für eine
+  Untersuchung, etwa **Jetzt aufholen** und das Anfordern älterer fehlender
+  Einträge. Nutze sie erst, wenn normaler Sync und automatische Nachfüllung Zeit
+  hatten, sich zu setzen.
 
-Eine fehlende Zahl ist nicht automatisch Datenverlust: Ein Gerät kann offline
-oder die Anfrage unterwegs sein. Untersuche erst, wenn der Wert unverändert
-bleibt, obwohl alle erwarteten Geräte online sind.
+Ein fehlender Eintrag ist nicht automatisch Datenverlust: Ein anderes Gerät
+kann noch offline sein, oder die Anfrage ist schon unterwegs. Geh der Sache
+nach, wenn sich die Zahl nicht ändert, obwohl alle erwarteten Geräte online
+sind.
 
-## Synchronisierungsstatistik lesen
+## Matrix-Statistiken lesen
 
-**Synchronisierungsstatistik** trennt Nachrichtenmenge von
-Verarbeitungsgesundheit. Sie hilft besonders, wenn Daten veraltet wirken, das
-Konto aber weiterhin als verbunden angezeigt wird.
+**Matrix-Statistiken** trennt Nachrichtenmenge von Verarbeitungsgesundheit.
+Das hilft, wenn Daten veraltet wirken, das Konto aber weiter als verbunden gilt.
 
 <ManualScreenshot
   caseId="sync/stats"
-  alt="Lottis Matrix-Synchronisierungsstatistik mit gesendeten Nachrichten, KPIs, Nachrichtentypen, Fehlern, Wiederholungen und Elementsummen"
-  caption="Zahlen zeigen Bewegung; Fehler und geplante Wiederholungen zeigen, ob die Pipeline sauber läuft."
+  alt="Lottis Matrix-Statistiken mit gesendeten Nachrichten nach Ereignistyp, Aktionen unter Sync-Metriken, wichtigsten KPIs, Zählern der Datenbankanwendung und Signalen"
+  caption="Die gesendeten Zahlen zeigen, ob Nachrichten fließen; die Zähler der Datenbankanwendung zeigen, was eingehende Arbeit tatsächlich bewirkt hat."
 />
 
-Die Karte gesendeter Nachrichten gruppiert Matrix-Ereignistypen. Die
-**KPI-Übersicht** fasst verarbeitete Nachrichten, Fehler und geplante
-Wiederholungen zusammen; Elementsummen zeigen Lotti-Nutzlastfamilien. Steigende
-Verarbeitung bei stabilen Fehlern ist gesund. Bei wiederholten Fehlern oder
-nie endenden Wiederholungen schaust du in den Postausgang und prüfst die
-Verbindung der anderen Geräte.
+**Gesendete Nachrichten:** zählt, was dieses Gerät gesendet hat, gruppiert nach
+Matrix-Ereignistyp. Unter **Sync-Metriken** zeigt **Wichtigste KPIs** die in die
+Datenbank geschriebenen Zeilen, die entstandenen Konflikte und die eingehenden
+Ereignisse, die noch in der Warteschlange stehen. Die Gruppe
+**Datenbankanwendung** ergänzt, was als älterer Stand ignoriert, übersprungen,
+weil eine Basiszeile fehlte, oder nach Wiederholungen verworfen wurde.
+
+Ein wachsender Wert bei **Datenbank angewendet** und eine sich leerende
+Warteschlange sind gesund. Bleibt die Warteschlange hoch oder tauchen immer
+wieder verworfene Ereignisse auf, nutze **Jetzt wiederholen** oder **Erneut
+scannen erzwingen** und prüfe dann den Postausgang und die Verbindung des
+anderen Geräts. **Diagnosen kopieren** legt die Zahlen für eine Support-Anfrage
+in die Zwischenablage.
 
 ## Den Ausgang prüfen
 
-Der **Sync-Postausgang** ist die lokale Warteschlange zu sendender Änderungen.
-Filtere nach Zustand.
+Der **Sync-Postausgang** ist die lokale Warteschlange der Änderungen, die noch
+gesendet werden müssen. Die Zusammenfassung oben sagt, ob alles synchronisiert
+ist, wie viele Elemente warten oder gerade gesendet werden und wie viele nicht
+gesendet werden konnten.
 
 <ManualScreenshot
   caseId="sync/outbox"
-  alt="Lottis Sync-Postausgang gefiltert auf ein fehlgeschlagenes Project-Waddle-Foto einer Habitatdruckdichtung mit Wiederholen und Entfernen"
-  caption="Fehler bewahren Betreff, Nutzlast, Versuchshistorie und lokalen Anhangspfad für gezielte Wiederherstellung."
+  alt="Lottis Sync-Postausgang, gefiltert auf einen Journaleintrag, der nicht gesendet werden konnte, mit Anhangsdetails, Erneut versuchen, Entfernen und Alle erneut senden"
+  caption="Ein Element, das nicht gesendet werden konnte, behält seine Nutzdaten, die Zahl der Versuche und seinen lokalen Anhang, damit die Wiederherstellung gezielt statt blind ist."
 />
 
-- **Ausstehend** wartet, bis es an der Reihe ist.
-- **Wird gesendet** ist unterwegs.
-- **Fehlgeschlagen** hat Versuche erschöpft und bleibt prüfbar.
-- **Gesendet** wurde zugestellt und bleibt kurz für die Diagnose sichtbar.
+Filtere die Liste nach Zustand:
 
-Verwende **Alle erneut senden**, nachdem Verbindung oder Konto repariert
-sind. Entferne einen Fehler nur, wenn die Änderung bewusst nie andere Geräte
-erreichen soll. Das ersetzt keine Reparatur des lokalen Eintrags oder Anhangs.
+- **Wartet** zeigt Elemente, die auf ihren Einsatz warten, und solche, die
+  gerade gesendet werden.
+- **Fehlgeschlagen** zeigt Elemente, die nicht gesendet werden konnten. Sie
+  sind weiter auf diesem Gerät gespeichert und synchronisieren, sobald das
+  Problem behoben ist.
+- **Gesendet** zeigt zugestellte Elemente, die eine Weile für die Diagnose
+  aufbewahrt werden.
 
-Parallele Änderungen behandelt die Seite zu [Konflikten](./conflicts.mdx);
-Datenbankwerkzeuge findest du unter [Sync-Wartung](./maintenance.mdx).
+Nutze **Alle erneut senden**, nachdem das zugrunde liegende Verbindungs- oder
+Kontoproblem behoben ist, oder **Erneut versuchen** bei einem einzelnen
+Element. **Entfernen** nimmt ein Element aus der Warteschlange: Es bleibt auf
+diesem Gerät, erreicht deine anderen Geräte aber nie — entferne es also nur,
+wenn du genau das willst. Entfernen ersetzt nicht die Reparatur des
+zugehörigen lokalen Eintrags oder Anhangs.
+
+Weiter geht es mit [Synchronisierungskonflikte lösen](./conflicts.mdx), wenn
+zwei Geräte denselben Eintrag unabhängig bearbeitet haben, oder mit
+[Synchronisierung warten](./maintenance.mdx) für Wiederherstellungswerkzeuge
+auf Datenbankebene.

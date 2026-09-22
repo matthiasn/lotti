@@ -5,41 +5,46 @@ description: Use as ações de reparo e limpeza da sincronização Matrix delibe
 
 # Manutenção de sincronização
 
-Abra **Configurações → Configurações de sincronização → Manutenção** para reparo e limpeza no
-nível do banco de dados. Essas ações não fazem parte do emparelhamento de
-rotina nem da sincronização do dia a dia. Antes de usá-las, deixe as gravações
-ativas terminarem e mantenha um backup atualizado dos dados que você não
-consegue recriar.
+Abre **Configurações → Configurações de sincronização → Manutenção** para
+reparações e limpezas ao nível da base de dados. Estas ações não fazem parte do
+emparelhamento habitual nem da sincronização do dia a dia. Antes de as usares,
+deixa terminar as escritas em curso e mantém uma cópia de segurança recente dos
+dados que não consegues recriar.
 
 <ManualScreenshot
   caseId="sync/maintenance"
-  alt="Lotti Matrix Sync Maintenance com exclusão de banco de dados de sincronização, sincronização de definição, ressincronização de mensagens, preenchimento de log de sequência e limpeza de caixa de saída enviada"
-  caption="A manutenção agrupa ações destrutivas, de repetição e de limpeza em uma página. O texto de confirmação define o escopo de cada operação."
+  alt="Manutenção da sincronização do Lotti com Excluir banco de dados de sincronização, Sincronize mensuráveis, painéis, hábitos, categorias, configurações de IA, Histórico de mensagens, Preencher log de sequência de sincronização e Limpar itens antigos enviados da caixa de saída"
+  caption="A manutenção junta numa página ações destrutivas, de repetição e de limpeza. O texto de confirmação define o alcance de cada operação."
 />
 
 ## Escolha o reparo mais estreito
 
-- **Excluir banco de dados de sincronização** remove o banco de dados de
-  sincronização local. Isso é uma recuperação local destrutiva, não uma forma
-  normal de desconectar um dispositivo.
-- **Sincronizar definições** envia novamente os registros de definição atuais, como
-  categorias e outras configurações compartilhadas.
-- **Ressincronizar mensagens** reproduz mensagens selecionadas quando o estado remoto está ausente
-  ou uma entrega anterior precisa ser repetida.
-- **Popular log de sequência** reconstrói o histórico de sequência local usado
-  para detectar lacunas e acionar o preenchimento.
-- **Limpar itens antigos da caixa de saída enviados** exclui o histórico já
-  enviado da fila de diagnóstico após o período de retenção. Não remove
-  trabalhos pendentes nem com falha.
+- **Excluir banco de dados de sincronização** apaga a base de dados de
+  sincronização local. É uma recuperação local destrutiva, não uma forma normal
+  de desligar um dispositivo.
+- **Sincronize mensuráveis, painéis, hábitos, categorias, configurações de IA**
+  volta a enviar essa configuração partilhada. Uma caixa de diálogo deixa-te
+  escolher que tipos incluir — também etiquetas e filtros de tarefas guardados —
+  antes de escolheres **Iniciar sincronização**.
+- **Histórico de mensagens** volta a pôr entradas na fila para os teus outros
+  dispositivos. Escolhe um intervalo — **Tudo**, **Últimos 30 dias** ou
+  **Personalizado** com um início e um fim — e os tipos de entidade a incluir,
+  e depois **Começar**. Se algumas entradas falharem, **Tentar novamente os
+  itens com falha** repete só essas.
+- **Preencher log de sequência de sincronização** indexa as entradas existentes
+  para que o preenchimento consiga responder a pedidos de entradas criadas antes
+  de existir o acompanhamento de sequências.
+- **Limpar itens antigos enviados da caixa de saída** apaga as linhas já
+  enviadas da caixa de saída com mais de 7 dias e liberta espaço em disco. Os
+  itens à espera ou com falha são mantidos.
 
-Comece com a menor operação que corresponda ao sintoma. Um anexo preso
-pertence à [Caixa de saída](./sync.mdx#inspecione-a-caixa-de-saída); lacunas
-de sequência persistentes pertencem ao Backfill; duas edições simultâneas
-válidas pertencem a [Conflitos](./conflicts.mdx). A exclusão do banco de dados
-de sincronização deve ser uma redefinição local de último recurso, realizada
-com um par em bom estado e um backup disponível.
+Começa pela operação mais pequena que corresponda ao sintoma. Um anexo preso
+pertence à [caixa de saída](./sync.mdx#inspecione-a-caixa-de-saída); lacunas de
+sequência persistentes pertencem à Sincronização de preenchimento; e duas
+edições simultâneas válidas pertencem aos [conflitos](./conflicts.mdx). Excluir
+a base de dados de sincronização deve ser uma reposição local de último recurso,
+feita com um par de confiança e uma cópia de segurança à mão.
 
-Após um reparo, retorne a **Sincronizar estatísticas**, confirme que o
-trabalho processado está avançando sem uma contagem crescente de falhas e
-verifique se a Caixa de saída e a contagem de ausentes do Preenchimento se
-estabilizam.
+Depois de uma reparação, volta a **Estatísticas da Matriz**, confirma que o
+trabalho aplicado avança e a fila esvazia, e que a caixa de saída e o número de
+itens em falta do preenchimento estabilizam.

@@ -33,18 +33,18 @@ Tři cesty řešení jsou:
 
 - **Použít toto zařízení** zachová úplnou místní verzi.
 - **Použít ze synchronizace** zachová úplnou příchozí verzi.
-- **Spojit** umožní vybrat výchozí stranu a potom vítěze každého samostatně
+- **Sloučit…** umožní vybrat výchozí stranu a potom vítěze každého samostatně
   slučitelného pole.
 
 Zachování jedné úplné strany je vhodné, když je druhá jednoduše zastaralá.
-**Spojit** je bezpečnější, když samostatná pole obsahují platnou práci z obou
+**Sloučit…** je bezpečnější, když samostatná pole obsahují platnou práci z obou
 zařízení; Lotti ho označí jako doporučené, pokud se liší více slučitelných polí.
 
 ## Spoj pole bez přepisování
 
-Vyber **Spojit**, zvol výchozí verzi a potom přepínej jednotlivá pole na druhou
-stranu. Pole, která nelze slučovat samostatně, následují vybranou výchozí
-verzi.
+Zvol **Sloučit…**, v **Vyjít z** vyber výchozí verzi a pak jednotlivá pole
+přepni na druhou stranu. Pole, která nejde sloučit samostatně, se řídí
+vybranou výchozí verzí.
 
 <ManualScreenshot
   caseId="sync/conflict-combine"
@@ -52,16 +52,17 @@ verzi.
   caption="Začni jedním strukturálně úplným záznamem a potom převezmi lepší název a tělo z tohoto zařízení nebo synchronizace."
 />
 
-Před volbou **Použít spojené** zkontroluj každé uvedené pole. Vyřešený záznam
+Před volbou **Použít sloučené** zkontroluj každé uvedené pole. Vyřešený záznam
 získá sloučenou historii synchronizace, aby se stejné dvě úpravy okamžitě
 nestřetly znovu.
 
 :::caution[Řešení mění sdílený výsledek]
 
-Zachování strany nebo použití spojené verze zapíše vítěze místně a umožní mu
-synchronizovat se na ostatní zařízení. Před potvrzením přečti celý rozdíl. Pokud
-jedna strana záznam smazala a druhá upravila, Lotti zobrazí bezpečnější volbu
-smazání proti úpravě místo běžného slučování polí.
+Zachování jedné strany nebo použití sloučené verze zapíše vítěze místně a umožní
+mu synchronizovat se na ostatní zařízení. Před potvrzením si přečti celý rozdíl.
+Pokud jedna strana záznam smazala a druhá ho upravila, Lotti místo běžného
+slučování polí ukáže **Smazáno na jednom zařízení**: nic se neodstraní, dokud
+nezvolíš **Zachovat upravenou verzi** nebo **Potvrdit smazání**.
 
 :::
 

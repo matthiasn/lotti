@@ -5,40 +5,47 @@ description: Usa deliberadamente acciones de reparación y limpieza de la sincro
 
 # Mantenimiento de Sync
 
-Abre **Ajustes → Ajustes de sincronización → Mantenimiento** para la reparación y limpieza a nivel de
-base de datos. Estas acciones no forman parte del emparejamiento rutinario ni de
-la sincronización diaria. Antes de usarlas, deja que terminen las escrituras
-activas y conserva una copia de seguridad actual de los datos que no puedas
-recrear.
+Abre **Ajustes → Ajustes de sincronización → Mantenimiento** para reparaciones
+y limpiezas a nivel de base de datos. Estas acciones no forman parte del
+emparejamiento habitual ni de la sincronización diaria. Antes de usarlas, deja
+que terminen las escrituras en curso y guarda una copia de seguridad reciente de
+los datos que no puedas recrear.
 
 <ManualScreenshot
   caseId="sync/maintenance"
-  alt="Mantenimiento de Matrix Sync de Lotti con eliminación de base de datos de sincronización, sincronización de definiciones, resincronización de mensajes, relleno del registro de secuencias y purga de elementos enviados de la bandeja de salida"
-  caption="Mantenimiento agrupa acciones destructivas, de repetición y de limpieza en una página. El texto de confirmación define el alcance de cada operación."
+  alt="Mantenimiento de sincronización de Lotti con Eliminar la base de datos de sincronización, Sincronizar valores medibles, paneles, hábitos, categorías y ajustes de IA, Historial de mensajes, Llenar registro de secuencia de sincronización y Purgar elementos enviados antiguos de la bandeja de salida"
+  caption="Mantenimiento agrupa en una página acciones destructivas, de reenvío y de limpieza. El texto de confirmación define el alcance de cada operación."
 />
 
 ## Elige la reparación más limitada
 
-- **Eliminar base de datos de Sync** quita la base de datos de sincronización
-  local. Es una recuperación local destructiva, no una forma normal de
-  desconectar un dispositivo.
-- **Sincronizar definiciones** vuelve a enviar los registros de definiciones
-  actuales, como categorías y otra configuración compartida.
-- **Resincronizar mensajes** reproduce mensajes seleccionados cuando falta el
-  estado remoto o hay que repetir una entrega anterior.
-- **Rellenar registro de secuencias** reconstruye el historial de secuencias
-  local que se usa para detectar huecos y activar el relleno.
-- **Purgar elementos enviados antiguos de la bandeja de salida** elimina el
-  historial de cola de diagnóstico ya enviado después de su periodo de
-  retención. No elimina trabajo pendiente ni fallido.
+- **Eliminar la base de datos de sincronización** borra la base de datos de
+  sincronización local. Es una recuperación local destructiva, no una forma
+  normal de desconectar un dispositivo.
+- **Sincronizar valores medibles, paneles, hábitos, categorías y ajustes de IA**
+  vuelve a enviar esa configuración compartida. Un diálogo te deja elegir qué
+  tipos incluir —también etiquetas y filtros de tareas guardados— antes de
+  elegir **Iniciar sincronización**.
+- **Historial de mensajes** vuelve a poner entradas en cola para tus otros
+  dispositivos. Elige un intervalo —**Todo**, **Últimos 30 días** o
+  **Personalizado** con un inicio y un fin— y los tipos de entidad que incluir,
+  y después **Iniciar**. Si algunas entradas fallan, **Reintentar entradas
+  fallidas** repite solo esas.
+- **Llenar registro de secuencia de sincronización** indexa las entradas
+  existentes para que el relleno pueda responder a peticiones de entradas
+  creadas antes de que existiera el seguimiento de secuencias.
+- **Purgar elementos enviados antiguos de la bandeja de salida** borra las filas
+  ya enviadas de la bandeja de salida con más de 7 días y libera espacio en
+  disco. Los elementos en espera o fallidos se conservan.
 
-Empieza por la operación más pequeña que corresponda al síntoma. Un adjunto
-atascado pertenece a la [Bandeja de salida](./sync.mdx#inspecciona-la-bandeja-de-salida); los
-huecos de secuencia persistentes pertenecen a Relleno; dos ediciones simultáneas
-válidas pertenecen a [Conflictos](./conflicts.mdx). Eliminar la base de datos de
-Sync debería ser un restablecimiento local de último recurso, realizado con un
-dispositivo emparejado de confianza y una copia de seguridad disponible.
+Empieza por la operación más pequeña que encaje con el síntoma. Un adjunto
+atascado corresponde a la
+[bandeja de salida](./sync.mdx#inspecciona-la-bandeja-de-salida); los huecos de
+secuencia persistentes, al Relleno de sincronización; y dos ediciones
+simultáneas válidas, a los [conflictos](./conflicts.mdx). Eliminar la base de
+datos de sincronización debería ser un reinicio local de último recurso, hecho
+con un par fiable y una copia de seguridad a mano.
 
-Después de una reparación, vuelve a **Estadísticas de Sync**, confirma que el
-trabajo procesado avance sin que crezca el número de fallos y comprueba que se
-estabilicen la bandeja de salida y el recuento de ausentes de Relleno.
+Después de una reparación, vuelve a **Estadísticas de Matrix**, comprueba que el
+trabajo aplicado avanza y la cola se vacía, y que la bandeja de salida y el
+número de faltantes del relleno se estabilizan.

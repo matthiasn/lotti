@@ -5,40 +5,45 @@ description: Brug Matrix-synkroniseringens reparations- og oprydningshandlinger 
 
 # Synkroniseringsvedligeholdelse
 
-Åbn **Indstillinger → Synkroniseringsindstillinger → Vedligeholdelse** for reparation og
-oprydning på databaseniveau. Disse handlinger er ikke en del af rutinemæssig
-parring eller daglig synkronisering. Før du bruger dem, så lad aktive
-skrivninger blive færdige, og gem en aktuel backup af data, du ikke kan
-genskabe.
+Åbn **Indstillinger → Synkroniseringsindstillinger → Vedligeholdelse** for
+reparation og oprydning på databaseniveau. Disse handlinger hører ikke til den
+almindelige parring eller den daglige synkronisering. Før du bruger dem, så lad
+igangværende skrivninger blive færdige, og hav en aktuel sikkerhedskopi af data,
+du ikke kan genskabe.
 
 <ManualScreenshot
   caseId="sync/maintenance"
-  alt="Lottis Matrix-synkroniseringsvedligeholdelse med sletning af synkroniseringsdatabase, definitionssynkronisering, gen-synkronisering af beskeder, opbygning af sekvenslog og rensning af sendt udbakke"
-  caption="Vedligeholdelse samler destruktive handlinger, genafspilning og oprydning på én side. Bekræftelsesteksten definerer omfanget af hver operation."
+  alt="Lottis synkroniseringsvedligeholdelse med Slet synkroniseringsdatabase, Synkroniser målbare ting, dashboards, vaner, kategorier, AI-indstillinger, Beskedhistorik, Udfyld synkroniseringssekvenslogen og Rens gamle udsendte udbakke-varer"
+  caption="Vedligeholdelse samler destruktive, gentagende og oprydende handlinger på én side. Bekræftelsesteksten afgrænser hver handlings omfang."
 />
 
 ## Vælg den smalleste reparation
 
-- **Slet synkroniseringsdatabase** fjerner den lokale
-  synkroniseringsdatabase. Det er destruktiv lokal gendannelse, ikke en
-  normal måde at afkoble en enhed på.
-- **Synkronisér definitioner** sender de aktuelle definitionsposter igen,
-  såsom kategorier og anden delt konfiguration.
-- **Gen-synkronisér beskeder** genafspiller udvalgte beskeder, når
-  fjerntilstanden mangler, eller en tidligere levering skal gentages.
-- **Udfyld sekvenslog** rekonstruerer den lokale sekvenshistorik, der bruges
-  til at opdage huller og drive tilbagefyldning.
-- **Rens gamle udsendte udbakke-varer** sletter allerede sendt diagnostisk
-  køhistorik efter dens opbevaringsperiode. Den fjerner ikke afventende eller
-  mislykket arbejde.
+- **Slet synkroniseringsdatabase** fjerner den lokale synkroniseringsdatabase.
+  Det er destruktiv lokal genopretning, ikke en normal måde at frakoble en enhed
+  på.
+- **Synkroniser målbare ting, dashboards, vaner, kategorier, AI-indstillinger**
+  sender den delte konfiguration igen. En dialog lader dig vælge, hvilke typer
+  der skal med — også etiketter og gemte opgavefiltre — før du vælger **Start
+  synk**.
+- **Beskedhistorik** sætter poster i kø igen til dine andre enheder. Vælg et
+  tidsrum — **Alt**, **Seneste 30 dage** eller **Tilpasset** med en start og en
+  slutning — og de entitetstyper, der skal med, og derefter **Start**. Mislykkes
+  nogle poster, gentager **Prøv mislykkede poster igen** kun dem.
+- **Udfyld synkroniseringssekvenslogen** indekserer eksisterende poster, så
+  tilbagefyldningen også kan svare på anmodninger om poster, der blev oprettet,
+  før sekvenssporingen fandtes.
+- **Rens gamle udsendte udbakke-varer** sletter sendte rækker i udbakken, der er
+  ældre end 7 dage, og frigør diskplads. Elementer, der venter eller er
+  mislykkedes, bevares.
 
-Start med den mindste operation, der matcher symptomet. En fastlåst
-vedhæftning hører til i [udbakken](./sync.mdx#inspicer-outboxen);
-vedvarende sekvenshuller hører til i tilbagefyldning; to gyldige samtidige
-redigeringer hører til i [Konflikter](./conflicts.mdx). Sletning af
-synkroniseringsdatabasen bør være en sidste udvejs lokal nulstilling, udført
-med en kendt god peer og en backup ved hånden.
+Start med den mindste handling, der passer til symptomet. En vedhæftning, der
+sidder fast, hører til i [udbakken](./sync.mdx#inspicer-outboxen), vedvarende
+huller i sekvensen hører til Backfill-synkronisering, og to gyldige samtidige
+redigeringer hører til [konflikterne](./conflicts.mdx). At slette
+synkroniseringsdatabasen bør være en lokal nulstilling som sidste udvej, udført
+med en kendt pålidelig enhed og en sikkerhedskopi ved hånden.
 
-Efter en reparation: vend tilbage til **synkroniseringsstatistikken**,
-bekræft at det behandlede arbejde skrider frem uden stigende fejl, og tjek at
-udbakken og tilbagefyldningens mangler-tal falder.
+Gå efter en reparation tilbage til **Matrixstatistikker**, tjek at anvendt
+arbejde bevæger sig fremad og køen tømmes, og at udbakken og antallet af
+manglende poster i tilbagefyldningen falder til ro.

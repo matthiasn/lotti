@@ -5,42 +5,46 @@ description: Usa in modo deliberato le azioni Matrix di riparazione e pulizia de
 
 # Manutenzione della sincronizzazione
 
-Apri **Impostazioni → Impostazioni di sincronizzazione → Manutenzione** per le
-riparazioni e le pulizie a livello di database. Queste azioni non fanno parte
-dell'accoppiamento di routine né della sincronizzazione quotidiana. Prima di
-usarle, lascia terminare le scritture attive e tieni un backup aggiornato dei
+Apri **Impostazioni → Impostazioni di sincronizzazione → Manutenzione** per
+riparazioni e pulizie a livello di database. Queste azioni non fanno parte
+dell'associazione abituale né della sincronizzazione quotidiana. Prima di
+usarle, lascia terminare le scritture in corso e tieni un backup aggiornato dei
 dati che non puoi ricreare.
 
 <ManualScreenshot
   caseId="sync/maintenance"
-  alt="Manutenzione della sincronizzazione Matrix di Lotti con eliminazione del database di sincronizzazione, reinvio delle definizioni, ri-sincronizzazione dei messaggi, popolamento del registro delle sequenze e purga della posta in uscita inviata"
-  caption="Manutenzione raggruppa azioni distruttive, di replay e di pulizia in una pagina. Il testo di conferma definisce la portata di ogni operazione."
+  alt="Manutenzione della sincronizzazione di Lotti con Eliminare il database Sync, Sincronizzabili, cruscotti, abitudini, categorie, Impostazioni AI, Cronologia messaggi, Sequenza di sincronizzazione populare log e Purge vecchio inviato outbox articoli"
+  caption="La manutenzione raccoglie su una pagina azioni distruttive, di riproduzione e di pulizia. Il testo di conferma definisce la portata di ogni operazione."
 />
 
 ## Scegli la riparazione più circoscritta
 
 - **Eliminare il database Sync** rimuove il database di sincronizzazione
-  locale. È un recupero locale distruttivo, non un modo normale di scollegare
+  locale. È un recupero locale distruttivo, non un modo normale per scollegare
   un dispositivo.
-- **Sincronizzabili, cruscotti, abitudini, categorie, Impostazioni AI**
-  reinvia i record di definizione correnti, come le categorie e le altre
-  configurazioni condivise.
-- **Cronologia messaggi** rigioca i messaggi selezionati quando manca lo
-  stato remoto o una consegna precedente va ripetuta.
-- **Sequenza di sincronizzazione populare log** ricostruisce la cronologia
-  locale delle sequenze usata per rilevare le lacune e pilotare il backfill.
-- **Purge vecchio inviato outbox articoli** elimina la cronologia diagnostica
-  della coda già inviata, dopo il suo periodo di conservazione. Non rimuove
-  il lavoro in sospeso o fallito.
+- **Sincronizzabili, cruscotti, abitudini, categorie, Impostazioni AI** invia
+  di nuovo questa configurazione condivisa. Una finestra ti lascia scegliere
+  quali tipi includere — anche etichette e filtri delle attività salvati —
+  prima di scegliere **Avvia sincronizzazione**.
+- **Cronologia messaggi** rimette in coda le voci per gli altri tuoi
+  dispositivi. Scegli un intervallo — **Tutto**, **Ultimi 30 giorni** o
+  **Personalizzato** con un inizio e una fine — e i tipi di entità da includere,
+  poi **Iniziare**. Se alcune voci falliscono, **Riprova gli elementi non
+  riusciti** ripete solo quelle.
+- **Sequenza di sincronizzazione populare log** indicizza le voci esistenti in
+  modo che il recupero possa rispondere alle richieste di voci create prima che
+  esistesse il tracciamento delle sequenze.
+- **Purge vecchio inviato outbox articoli** elimina le righe già inviate della
+  posta in uscita più vecchie di 7 giorni e libera spazio su disco. Gli elementi
+  in attesa o non riusciti vengono conservati.
 
-Parti dall'operazione più piccola che corrisponde al sintomo. Un allegato
-bloccato si risolve nella
-[Posta in uscita](./sync.mdx#ispeziona-la-posta-in-uscita); le lacune di
-sequenza persistenti si risolvono in Backfill; due modifiche concorrenti
-valide si risolvono in [Conflitti](./conflicts.mdx). Eliminare il database di
-sincronizzazione dovrebbe restare un reset locale di ultima istanza, eseguito
-con un dispositivo compagno in buono stato e un backup a disposizione.
+Inizia dall'operazione più piccola che corrisponde al sintomo. Un allegato
+bloccato va nella [posta in uscita](./sync.mdx#ispeziona-la-posta-in-uscita);
+buchi di sequenza persistenti vanno nella Sincronizzazione di backup; due
+modifiche concorrenti valide vanno nei [conflitti](./conflicts.mdx). Eliminare
+il database di sincronizzazione dovrebbe restare un ripristino locale di ultima
+istanza, fatto con un peer affidabile e un backup a disposizione.
 
-Dopo una riparazione, torna a **Statistiche di Sync**, conferma che il lavoro
-elaborato avanza senza un numero crescente di fallimenti e controlla che la
-posta in uscita e il conteggio dei mancanti del backfill si assestino.
+Dopo una riparazione, torna a **Statistiche Matrix**, controlla che il lavoro
+applicato avanzi e che la coda si svuoti, e che la posta in uscita e il numero
+di mancanti del recupero si assestino.
