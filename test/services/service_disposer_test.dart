@@ -315,6 +315,63 @@ void main() {
       });
     });
 
+    test('returns every failure it logged, a timeout included', () {
+      fakeAsync((async) {
+        final backfill = MockBackfillRequestService();
+        when(backfill.dispose).thenThrow(StateError('backfill boom'));
+        final outbox = MockOutboxService();
+        when(outbox.dispose).thenAnswer((_) => Completer<void>().future);
+        final journalDb = MockJournalDb();
+        when(() => journalDb.customStatement(any())).thenAnswer((_) async {});
+        when(journalDb.close).thenAnswer((_) async {});
+        testGetIt
+          ..registerSingleton<BackfillRequestService>(backfill)
+          ..registerSingleton<OutboxService>(outbox)
+          ..registerSingleton<JournalDb>(journalDb);
+
+        List<ServiceDisposalFailure>? failures;
+        unawaited(disposer.disposeAll().then((value) => failures = value));
+        async
+          ..elapse(const Duration(seconds: 3, milliseconds: 1))
+          ..flushMicrotasks();
+
+        // A caller that must know the generation is closed sees exactly what
+        // the log saw, in order; the clean JournalDb close is not reported.
+        expect(failures!.map((f) => f.service), [
+          'BackfillRequestService',
+          'OutboxService',
+        ]);
+        expect(failures!.first.error, isStateError);
+        expect(failures!.last.error, isA<TimeoutException>());
+        expect(failures!.first.toString(), contains('backfill boom'));
+        expect(loggedErrors.map((e) => e.service), [
+          'BackfillRequestService',
+          'OutboxService',
+        ]);
+      });
+    });
+
+    test('a later disposeAll does not repeat earlier failures', () async {
+      final backfill = MockBackfillRequestService();
+      when(backfill.dispose).thenThrow(StateError('backfill boom'));
+      testGetIt.registerSingleton<BackfillRequestService>(backfill);
+
+      expect(await disposer.disposeAll(), hasLength(1));
+      testGetIt.unregister<BackfillRequestService>();
+
+      expect(await disposer.disposeAll(), isEmpty);
+    });
+
+    test('a clean disposal returns no failures', () async {
+      final journalDb = MockJournalDb();
+      when(() => journalDb.customStatement(any())).thenAnswer((_) async {});
+      when(journalDb.close).thenAnswer((_) async {});
+      testGetIt.registerSingleton<JournalDb>(journalDb);
+
+      expect(await disposer.disposeAll(), isEmpty);
+      verify(journalDb.close).called(1);
+    });
+
     test(
       'disposeAll on partial registrations only runs registered services',
       () async {

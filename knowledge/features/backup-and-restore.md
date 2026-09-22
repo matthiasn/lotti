@@ -1,11 +1,11 @@
 ---
 type: Feature Module
 title: Backup and restore
-description: The profile storage catalog, integrity manifest, and verified quiesced staging service that define a safe Lotti recovery artifact.
+description: The profile storage catalog, integrity manifest, verified quiesced staging, and the strict lifecycle coordinator that captures a running profile at rest.
 resource: ../../lib/features/backup_restore
 tags: [backup, restore, recovery, integrity, local-first]
 status: draft
-generated: { by: codex/gpt-5, at: 2026-08-05T22:23:21Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-22T20:00:00Z }
 stale_after: 2027-02-22
 sources:
   - id: catalog
@@ -20,6 +20,18 @@ sources:
     resource: ../../lib/features/backup_restore/service/quiesced_profile_snapshot_service.dart
     title: QuiescedProfileSnapshotService
     last_modified: 2026-08-06
+  - id: coordinator
+    resource: ../../lib/features/backup_restore/service/profile_backup_coordinator.dart
+    title: ProfileBackupCoordinator
+    last_modified: 2026-09-22
+  - id: profile-switcher
+    resource: ../../lib/features/profiles/service/profile_switcher.dart
+    title: ProfileSwitcher.runWithGenerationClosed
+    last_modified: 2026-09-22
+  - id: service-disposer
+    resource: ../../lib/services/service_disposer.dart
+    title: ServiceDisposer failure reporting
+    last_modified: 2026-09-22
   - id: legacy-day-processing-outbox
     resource: ../../lib/features/daily_os_next/services/day_processing_startup.dart
     title: Legacy Daily OS file outbox boundary
@@ -49,10 +61,12 @@ flow:
   file sizes, and SHA-256 digests.
 - `QuiescedProfileSnapshotService` stages, verifies, and atomically publishes a
   snapshot from a profile root whose writers have already been stopped.
+- `ProfileBackupCoordinator` closes the running profile strictly, stages it,
+  and starts it again (see [strict quiescence](#strict-quiescence-of-a-running-profile)).
 
-No runtime coordinator proves quiescence, encrypts, packages, or restores a
-bundle yet. A caller must not present the staged directory as a supported or
-portable backup until strict quiescence, authenticated encryption, restore
+Nothing encrypts, packages, or restores a bundle yet, and no user-facing
+action calls the coordinator. A caller must not present the staged directory
+as a supported or portable backup until authenticated encryption, restore
 rollback, and automated restore drills are all connected.
 
 # One profile, not one documents tree
@@ -189,6 +203,68 @@ The immutable open is safe here only because strict quiescence is a caller
 precondition and the catalog rejects transaction companions. It must not be
 reused as a shortcut for inspecting a live WAL database.
 
+# Strict quiescence of a running profile
+
+`ProfileBackupCoordinator.capture` is the only way to snapshot the profile the
+app is running. It borrows the profile switch's machinery through
+`ProfileSwitcher.runWithGenerationClosed`, with one difference that matters:
+**closing is strict.** A profile switch logs a service that fails to stop and
+boots the next world anyway; a backup refuses to copy anything.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Guarded
+  Guarded --> Busy: a backup or profile switch already running
+  Guarded --> Cancelled: cancelled before closing
+  Guarded --> Closing: splash up, one frame settled
+  Closing --> Restarting: a step threw or missed its deadline
+  Closing --> Stuck: service container could not be reset
+  Closing --> Closed: every service and database closed
+  Closed --> Restarting: cancelled before copying
+  Closed --> Staging
+  Staging --> Restarting: companion file, drift or invalid SQLite
+  Staging --> Published
+  Published --> Restarting: kept
+  Published --> Discarded: cancelled after publishing
+  Discarded --> Restarting
+  Restarting --> [*]: same profile, fresh generation
+  Restarting --> Stuck: bootstrap failed
+  Busy --> [*]
+  Cancelled --> [*]
+  Stuck --> [*]: app waits on splash, relaunch recovers
+```
+
+- **Closing** runs the switch's quiesce steps (`StartupTasks.settle`,
+  `TimeService.stop`, the audio player, the app-exit listener, the window
+  service) and then `ServiceDisposer.disposeAll`, which now *returns* every
+  service or database that threw or missed its 3-second deadline instead of
+  only logging it. Any entry means `ProfileQuiescenceException`, listing the
+  steps, and the snapshot never starts.
+- **Two independent proofs.** Beyond every close reporting success, SQLite
+  deletes a database's `-wal` and `-shm` only when its last connection
+  closes, Drift read pools included. The catalog refuses any companion file,
+  so a connection nobody knew about aborts staging before the first byte is
+  copied. A clean close also checkpoints the WAL, so commits made before the
+  backup started are in the database file the snapshot copies.
+- **The profile always comes back.** After success, after a close failure,
+  after a staging failure and after a cancellation, the same profile is
+  bootstrapped onto a fresh service generation. The active-world marker is
+  never touched. Only two cases leave the app on the splash, both reported as
+  `ProfileRestartException`: the service container could not be reset (booting
+  onto it would be unsafe), or the bootstrap itself failed. A relaunch boots
+  the same, unmodified profile.
+- **One lifecycle operation at a time.** Backups and profile switches share the
+  switcher's guard. A backup requested during a switch, or during another
+  backup, fails with `ProfileBackupBusyException` and touches nothing; a switch
+  requested during a backup is ignored, as a second switch always has been.
+- **Cancellation** is checked at phase boundaries only: before closing, after
+  closing but before copying, and after publishing, where the published
+  snapshot is deleted. Staging itself is not interrupted.
+
+The splash replaces the whole widget tree, so every Riverpod provider of the
+old generation is disposed, an active audio recording included. Offering the
+backup action only when nothing is being recorded is the caller's job.
+
 # Privacy and packaging boundary
 
 All included content is personal. `ai_config.sqlite` and the Matrix subtree have
@@ -219,12 +295,14 @@ but loses WAL commits, sibling stores, media, or credentials.
 # Next implementation seams
 
 The catalog, manifest, and staging service are intentionally free of
-service-locator and UI dependencies. The next layers attach in order:
+service-locator and UI dependencies, and the coordinator reaches the profile
+lifecycle only through a `ClosedGenerationRunner` function. The remaining
+layers attach in order:
 
-1. a strict lifecycle coordinator that fails closed if any writer cannot stop;
-2. authenticated encrypted packaging and retention;
-3. staged restore with compatibility checks, activation, and rollback;
-4. localized UI and end-to-end restore drills.
+1. authenticated encrypted packaging and retention;
+2. staged restore with compatibility checks, activation, and rollback;
+3. localized UI, including a recovery affordance on the splash for a failed
+   restart, and end-to-end restore drills.
 
 Related: [persistence](../architecture/persistence.md) for database connection
 and WAL behavior, [profiles and demo mode](../architecture/profiles-and-demo-mode.md)
