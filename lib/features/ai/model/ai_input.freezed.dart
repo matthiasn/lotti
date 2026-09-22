@@ -316,7 +316,7 @@ as String?,
 /// @nodoc
 mixin _$AiActionItem {
 
- String get title; bool get completed; bool get isArchived; String? get id; DateTime? get deadline; DateTime? get completionDate; String? get checkedBy; DateTime? get checkedAt; AiChecklistApproval? get checkedStateApproval;
+ String get title; bool get completed; bool get isArchived; String? get id; DateTime? get deadline; DateTime? get completionDate; String? get checkedBy; DateTime? get checkedAt; AiChecklistApproval? get checkedStateApproval; AiChecklistApproval? get titleApproval; AiChecklistApproval? get archivedStateApproval;
 /// Create a copy of AiActionItem
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -329,16 +329,16 @@ $AiActionItemCopyWith<AiActionItem> get copyWith => _$AiActionItemCopyWithImpl<A
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiActionItem&&(identical(other.title, title) || other.title == title)&&(identical(other.completed, completed) || other.completed == completed)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.id, id) || other.id == id)&&(identical(other.deadline, deadline) || other.deadline == deadline)&&(identical(other.completionDate, completionDate) || other.completionDate == completionDate)&&(identical(other.checkedBy, checkedBy) || other.checkedBy == checkedBy)&&(identical(other.checkedAt, checkedAt) || other.checkedAt == checkedAt)&&(identical(other.checkedStateApproval, checkedStateApproval) || other.checkedStateApproval == checkedStateApproval));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiActionItem&&(identical(other.title, title) || other.title == title)&&(identical(other.completed, completed) || other.completed == completed)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.id, id) || other.id == id)&&(identical(other.deadline, deadline) || other.deadline == deadline)&&(identical(other.completionDate, completionDate) || other.completionDate == completionDate)&&(identical(other.checkedBy, checkedBy) || other.checkedBy == checkedBy)&&(identical(other.checkedAt, checkedAt) || other.checkedAt == checkedAt)&&(identical(other.checkedStateApproval, checkedStateApproval) || other.checkedStateApproval == checkedStateApproval)&&(identical(other.titleApproval, titleApproval) || other.titleApproval == titleApproval)&&(identical(other.archivedStateApproval, archivedStateApproval) || other.archivedStateApproval == archivedStateApproval));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,title,completed,isArchived,id,deadline,completionDate,checkedBy,checkedAt,checkedStateApproval);
+int get hashCode => Object.hash(runtimeType,title,completed,isArchived,id,deadline,completionDate,checkedBy,checkedAt,checkedStateApproval,titleApproval,archivedStateApproval);
 
 @override
 String toString() {
-  return 'AiActionItem(title: $title, completed: $completed, isArchived: $isArchived, id: $id, deadline: $deadline, completionDate: $completionDate, checkedBy: $checkedBy, checkedAt: $checkedAt, checkedStateApproval: $checkedStateApproval)';
+  return 'AiActionItem(title: $title, completed: $completed, isArchived: $isArchived, id: $id, deadline: $deadline, completionDate: $completionDate, checkedBy: $checkedBy, checkedAt: $checkedAt, checkedStateApproval: $checkedStateApproval, titleApproval: $titleApproval, archivedStateApproval: $archivedStateApproval)';
 }
 
 
@@ -349,11 +349,11 @@ abstract mixin class $AiActionItemCopyWith<$Res>  {
   factory $AiActionItemCopyWith(AiActionItem value, $Res Function(AiActionItem) _then) = _$AiActionItemCopyWithImpl;
 @useResult
 $Res call({
- String title, bool completed, bool isArchived, String? id, DateTime? deadline, DateTime? completionDate, String? checkedBy, DateTime? checkedAt, AiChecklistApproval? checkedStateApproval
+ String title, bool completed, bool isArchived, String? id, DateTime? deadline, DateTime? completionDate, String? checkedBy, DateTime? checkedAt, AiChecklistApproval? checkedStateApproval, AiChecklistApproval? titleApproval, AiChecklistApproval? archivedStateApproval
 });
 
 
-$AiChecklistApprovalCopyWith<$Res>? get checkedStateApproval;
+$AiChecklistApprovalCopyWith<$Res>? get checkedStateApproval;$AiChecklistApprovalCopyWith<$Res>? get titleApproval;$AiChecklistApprovalCopyWith<$Res>? get archivedStateApproval;
 
 }
 /// @nodoc
@@ -366,7 +366,7 @@ class _$AiActionItemCopyWithImpl<$Res>
 
 /// Create a copy of AiActionItem
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? title = null,Object? completed = null,Object? isArchived = null,Object? id = freezed,Object? deadline = freezed,Object? completionDate = freezed,Object? checkedBy = freezed,Object? checkedAt = freezed,Object? checkedStateApproval = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? title = null,Object? completed = null,Object? isArchived = null,Object? id = freezed,Object? deadline = freezed,Object? completionDate = freezed,Object? checkedBy = freezed,Object? checkedAt = freezed,Object? checkedStateApproval = freezed,Object? titleApproval = freezed,Object? archivedStateApproval = freezed,}) {
   return _then(_self.copyWith(
 title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,completed: null == completed ? _self.completed : completed // ignore: cast_nullable_to_non_nullable
@@ -377,6 +377,8 @@ as DateTime?,completionDate: freezed == completionDate ? _self.completionDate : 
 as DateTime?,checkedBy: freezed == checkedBy ? _self.checkedBy : checkedBy // ignore: cast_nullable_to_non_nullable
 as String?,checkedAt: freezed == checkedAt ? _self.checkedAt : checkedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,checkedStateApproval: freezed == checkedStateApproval ? _self.checkedStateApproval : checkedStateApproval // ignore: cast_nullable_to_non_nullable
+as AiChecklistApproval?,titleApproval: freezed == titleApproval ? _self.titleApproval : titleApproval // ignore: cast_nullable_to_non_nullable
+as AiChecklistApproval?,archivedStateApproval: freezed == archivedStateApproval ? _self.archivedStateApproval : archivedStateApproval // ignore: cast_nullable_to_non_nullable
 as AiChecklistApproval?,
   ));
 }
@@ -391,6 +393,30 @@ $AiChecklistApprovalCopyWith<$Res>? get checkedStateApproval {
 
   return $AiChecklistApprovalCopyWith<$Res>(_self.checkedStateApproval!, (value) {
     return _then(_self.copyWith(checkedStateApproval: value));
+  });
+}/// Create a copy of AiActionItem
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AiChecklistApprovalCopyWith<$Res>? get titleApproval {
+    if (_self.titleApproval == null) {
+    return null;
+  }
+
+  return $AiChecklistApprovalCopyWith<$Res>(_self.titleApproval!, (value) {
+    return _then(_self.copyWith(titleApproval: value));
+  });
+}/// Create a copy of AiActionItem
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AiChecklistApprovalCopyWith<$Res>? get archivedStateApproval {
+    if (_self.archivedStateApproval == null) {
+    return null;
+  }
+
+  return $AiChecklistApprovalCopyWith<$Res>(_self.archivedStateApproval!, (value) {
+    return _then(_self.copyWith(archivedStateApproval: value));
   });
 }
 }
@@ -474,10 +500,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String title,  bool completed,  bool isArchived,  String? id,  DateTime? deadline,  DateTime? completionDate,  String? checkedBy,  DateTime? checkedAt,  AiChecklistApproval? checkedStateApproval)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String title,  bool completed,  bool isArchived,  String? id,  DateTime? deadline,  DateTime? completionDate,  String? checkedBy,  DateTime? checkedAt,  AiChecklistApproval? checkedStateApproval,  AiChecklistApproval? titleApproval,  AiChecklistApproval? archivedStateApproval)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AiActionItem() when $default != null:
-return $default(_that.title,_that.completed,_that.isArchived,_that.id,_that.deadline,_that.completionDate,_that.checkedBy,_that.checkedAt,_that.checkedStateApproval);case _:
+return $default(_that.title,_that.completed,_that.isArchived,_that.id,_that.deadline,_that.completionDate,_that.checkedBy,_that.checkedAt,_that.checkedStateApproval,_that.titleApproval,_that.archivedStateApproval);case _:
   return orElse();
 
 }
@@ -495,10 +521,10 @@ return $default(_that.title,_that.completed,_that.isArchived,_that.id,_that.dead
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String title,  bool completed,  bool isArchived,  String? id,  DateTime? deadline,  DateTime? completionDate,  String? checkedBy,  DateTime? checkedAt,  AiChecklistApproval? checkedStateApproval)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String title,  bool completed,  bool isArchived,  String? id,  DateTime? deadline,  DateTime? completionDate,  String? checkedBy,  DateTime? checkedAt,  AiChecklistApproval? checkedStateApproval,  AiChecklistApproval? titleApproval,  AiChecklistApproval? archivedStateApproval)  $default,) {final _that = this;
 switch (_that) {
 case _AiActionItem():
-return $default(_that.title,_that.completed,_that.isArchived,_that.id,_that.deadline,_that.completionDate,_that.checkedBy,_that.checkedAt,_that.checkedStateApproval);case _:
+return $default(_that.title,_that.completed,_that.isArchived,_that.id,_that.deadline,_that.completionDate,_that.checkedBy,_that.checkedAt,_that.checkedStateApproval,_that.titleApproval,_that.archivedStateApproval);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -515,10 +541,10 @@ return $default(_that.title,_that.completed,_that.isArchived,_that.id,_that.dead
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String title,  bool completed,  bool isArchived,  String? id,  DateTime? deadline,  DateTime? completionDate,  String? checkedBy,  DateTime? checkedAt,  AiChecklistApproval? checkedStateApproval)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String title,  bool completed,  bool isArchived,  String? id,  DateTime? deadline,  DateTime? completionDate,  String? checkedBy,  DateTime? checkedAt,  AiChecklistApproval? checkedStateApproval,  AiChecklistApproval? titleApproval,  AiChecklistApproval? archivedStateApproval)?  $default,) {final _that = this;
 switch (_that) {
 case _AiActionItem() when $default != null:
-return $default(_that.title,_that.completed,_that.isArchived,_that.id,_that.deadline,_that.completionDate,_that.checkedBy,_that.checkedAt,_that.checkedStateApproval);case _:
+return $default(_that.title,_that.completed,_that.isArchived,_that.id,_that.deadline,_that.completionDate,_that.checkedBy,_that.checkedAt,_that.checkedStateApproval,_that.titleApproval,_that.archivedStateApproval);case _:
   return null;
 
 }
@@ -530,7 +556,7 @@ return $default(_that.title,_that.completed,_that.isArchived,_that.id,_that.dead
 @JsonSerializable()
 
 class _AiActionItem implements AiActionItem {
-  const _AiActionItem({required this.title, required this.completed, this.isArchived = false, this.id, this.deadline, this.completionDate, this.checkedBy, this.checkedAt, this.checkedStateApproval});
+  const _AiActionItem({required this.title, required this.completed, this.isArchived = false, this.id, this.deadline, this.completionDate, this.checkedBy, this.checkedAt, this.checkedStateApproval, this.titleApproval, this.archivedStateApproval});
   factory _AiActionItem.fromJson(Map<String, dynamic> json) => _$AiActionItemFromJson(json);
 
 @override final  String title;
@@ -542,6 +568,8 @@ class _AiActionItem implements AiActionItem {
 @override final  String? checkedBy;
 @override final  DateTime? checkedAt;
 @override final  AiChecklistApproval? checkedStateApproval;
+@override final  AiChecklistApproval? titleApproval;
+@override final  AiChecklistApproval? archivedStateApproval;
 
 /// Create a copy of AiActionItem
 /// with the given fields replaced by the non-null parameter values.
@@ -556,16 +584,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AiActionItem&&(identical(other.title, title) || other.title == title)&&(identical(other.completed, completed) || other.completed == completed)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.id, id) || other.id == id)&&(identical(other.deadline, deadline) || other.deadline == deadline)&&(identical(other.completionDate, completionDate) || other.completionDate == completionDate)&&(identical(other.checkedBy, checkedBy) || other.checkedBy == checkedBy)&&(identical(other.checkedAt, checkedAt) || other.checkedAt == checkedAt)&&(identical(other.checkedStateApproval, checkedStateApproval) || other.checkedStateApproval == checkedStateApproval));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AiActionItem&&(identical(other.title, title) || other.title == title)&&(identical(other.completed, completed) || other.completed == completed)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.id, id) || other.id == id)&&(identical(other.deadline, deadline) || other.deadline == deadline)&&(identical(other.completionDate, completionDate) || other.completionDate == completionDate)&&(identical(other.checkedBy, checkedBy) || other.checkedBy == checkedBy)&&(identical(other.checkedAt, checkedAt) || other.checkedAt == checkedAt)&&(identical(other.checkedStateApproval, checkedStateApproval) || other.checkedStateApproval == checkedStateApproval)&&(identical(other.titleApproval, titleApproval) || other.titleApproval == titleApproval)&&(identical(other.archivedStateApproval, archivedStateApproval) || other.archivedStateApproval == archivedStateApproval));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,title,completed,isArchived,id,deadline,completionDate,checkedBy,checkedAt,checkedStateApproval);
+int get hashCode => Object.hash(runtimeType,title,completed,isArchived,id,deadline,completionDate,checkedBy,checkedAt,checkedStateApproval,titleApproval,archivedStateApproval);
 
 @override
 String toString() {
-  return 'AiActionItem(title: $title, completed: $completed, isArchived: $isArchived, id: $id, deadline: $deadline, completionDate: $completionDate, checkedBy: $checkedBy, checkedAt: $checkedAt, checkedStateApproval: $checkedStateApproval)';
+  return 'AiActionItem(title: $title, completed: $completed, isArchived: $isArchived, id: $id, deadline: $deadline, completionDate: $completionDate, checkedBy: $checkedBy, checkedAt: $checkedAt, checkedStateApproval: $checkedStateApproval, titleApproval: $titleApproval, archivedStateApproval: $archivedStateApproval)';
 }
 
 
@@ -576,11 +604,11 @@ abstract mixin class _$AiActionItemCopyWith<$Res> implements $AiActionItemCopyWi
   factory _$AiActionItemCopyWith(_AiActionItem value, $Res Function(_AiActionItem) _then) = __$AiActionItemCopyWithImpl;
 @override @useResult
 $Res call({
- String title, bool completed, bool isArchived, String? id, DateTime? deadline, DateTime? completionDate, String? checkedBy, DateTime? checkedAt, AiChecklistApproval? checkedStateApproval
+ String title, bool completed, bool isArchived, String? id, DateTime? deadline, DateTime? completionDate, String? checkedBy, DateTime? checkedAt, AiChecklistApproval? checkedStateApproval, AiChecklistApproval? titleApproval, AiChecklistApproval? archivedStateApproval
 });
 
 
-@override $AiChecklistApprovalCopyWith<$Res>? get checkedStateApproval;
+@override $AiChecklistApprovalCopyWith<$Res>? get checkedStateApproval;@override $AiChecklistApprovalCopyWith<$Res>? get titleApproval;@override $AiChecklistApprovalCopyWith<$Res>? get archivedStateApproval;
 
 }
 /// @nodoc
@@ -593,7 +621,7 @@ class __$AiActionItemCopyWithImpl<$Res>
 
 /// Create a copy of AiActionItem
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? title = null,Object? completed = null,Object? isArchived = null,Object? id = freezed,Object? deadline = freezed,Object? completionDate = freezed,Object? checkedBy = freezed,Object? checkedAt = freezed,Object? checkedStateApproval = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? title = null,Object? completed = null,Object? isArchived = null,Object? id = freezed,Object? deadline = freezed,Object? completionDate = freezed,Object? checkedBy = freezed,Object? checkedAt = freezed,Object? checkedStateApproval = freezed,Object? titleApproval = freezed,Object? archivedStateApproval = freezed,}) {
   return _then(_AiActionItem(
 title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,completed: null == completed ? _self.completed : completed // ignore: cast_nullable_to_non_nullable
@@ -604,6 +632,8 @@ as DateTime?,completionDate: freezed == completionDate ? _self.completionDate : 
 as DateTime?,checkedBy: freezed == checkedBy ? _self.checkedBy : checkedBy // ignore: cast_nullable_to_non_nullable
 as String?,checkedAt: freezed == checkedAt ? _self.checkedAt : checkedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,checkedStateApproval: freezed == checkedStateApproval ? _self.checkedStateApproval : checkedStateApproval // ignore: cast_nullable_to_non_nullable
+as AiChecklistApproval?,titleApproval: freezed == titleApproval ? _self.titleApproval : titleApproval // ignore: cast_nullable_to_non_nullable
+as AiChecklistApproval?,archivedStateApproval: freezed == archivedStateApproval ? _self.archivedStateApproval : archivedStateApproval // ignore: cast_nullable_to_non_nullable
 as AiChecklistApproval?,
   ));
 }
@@ -620,6 +650,30 @@ $AiChecklistApprovalCopyWith<$Res>? get checkedStateApproval {
   return $AiChecklistApprovalCopyWith<$Res>(_self.checkedStateApproval!, (value) {
     return _then(_self.copyWith(checkedStateApproval: value));
   });
+}/// Create a copy of AiActionItem
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AiChecklistApprovalCopyWith<$Res>? get titleApproval {
+    if (_self.titleApproval == null) {
+    return null;
+  }
+
+  return $AiChecklistApprovalCopyWith<$Res>(_self.titleApproval!, (value) {
+    return _then(_self.copyWith(titleApproval: value));
+  });
+}/// Create a copy of AiActionItem
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AiChecklistApprovalCopyWith<$Res>? get archivedStateApproval {
+    if (_self.archivedStateApproval == null) {
+    return null;
+  }
+
+  return $AiChecklistApprovalCopyWith<$Res>(_self.archivedStateApproval!, (value) {
+    return _then(_self.copyWith(archivedStateApproval: value));
+  });
 }
 }
 
@@ -627,7 +681,7 @@ $AiChecklistApprovalCopyWith<$Res>? get checkedStateApproval {
 /// @nodoc
 mixin _$AiChecklistApproval {
 
- bool get isChecked; DateTime get approvedAt; ChecklistApprovalMode get approvalMode;
+ DateTime get approvedAt; ChecklistApprovalMode get approvalMode;@JsonKey(includeIfNull: false) bool? get isChecked;
 /// Create a copy of AiChecklistApproval
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -640,16 +694,16 @@ $AiChecklistApprovalCopyWith<AiChecklistApproval> get copyWith => _$AiChecklistA
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiChecklistApproval&&(identical(other.isChecked, isChecked) || other.isChecked == isChecked)&&(identical(other.approvedAt, approvedAt) || other.approvedAt == approvedAt)&&(identical(other.approvalMode, approvalMode) || other.approvalMode == approvalMode));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiChecklistApproval&&(identical(other.approvedAt, approvedAt) || other.approvedAt == approvedAt)&&(identical(other.approvalMode, approvalMode) || other.approvalMode == approvalMode)&&(identical(other.isChecked, isChecked) || other.isChecked == isChecked));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,isChecked,approvedAt,approvalMode);
+int get hashCode => Object.hash(runtimeType,approvedAt,approvalMode,isChecked);
 
 @override
 String toString() {
-  return 'AiChecklistApproval(isChecked: $isChecked, approvedAt: $approvedAt, approvalMode: $approvalMode)';
+  return 'AiChecklistApproval(approvedAt: $approvedAt, approvalMode: $approvalMode, isChecked: $isChecked)';
 }
 
 
@@ -660,7 +714,7 @@ abstract mixin class $AiChecklistApprovalCopyWith<$Res>  {
   factory $AiChecklistApprovalCopyWith(AiChecklistApproval value, $Res Function(AiChecklistApproval) _then) = _$AiChecklistApprovalCopyWithImpl;
 @useResult
 $Res call({
- bool isChecked, DateTime approvedAt, ChecklistApprovalMode approvalMode
+ DateTime approvedAt, ChecklistApprovalMode approvalMode,@JsonKey(includeIfNull: false) bool? isChecked
 });
 
 
@@ -677,12 +731,12 @@ class _$AiChecklistApprovalCopyWithImpl<$Res>
 
 /// Create a copy of AiChecklistApproval
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? isChecked = null,Object? approvedAt = null,Object? approvalMode = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? approvedAt = null,Object? approvalMode = null,Object? isChecked = freezed,}) {
   return _then(_self.copyWith(
-isChecked: null == isChecked ? _self.isChecked : isChecked // ignore: cast_nullable_to_non_nullable
-as bool,approvedAt: null == approvedAt ? _self.approvedAt : approvedAt // ignore: cast_nullable_to_non_nullable
+approvedAt: null == approvedAt ? _self.approvedAt : approvedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,approvalMode: null == approvalMode ? _self.approvalMode : approvalMode // ignore: cast_nullable_to_non_nullable
-as ChecklistApprovalMode,
+as ChecklistApprovalMode,isChecked: freezed == isChecked ? _self.isChecked : isChecked // ignore: cast_nullable_to_non_nullable
+as bool?,
   ));
 }
 
@@ -767,10 +821,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool isChecked,  DateTime approvedAt,  ChecklistApprovalMode approvalMode)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime approvedAt,  ChecklistApprovalMode approvalMode, @JsonKey(includeIfNull: false)  bool? isChecked)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AiChecklistApproval() when $default != null:
-return $default(_that.isChecked,_that.approvedAt,_that.approvalMode);case _:
+return $default(_that.approvedAt,_that.approvalMode,_that.isChecked);case _:
   return orElse();
 
 }
@@ -788,10 +842,10 @@ return $default(_that.isChecked,_that.approvedAt,_that.approvalMode);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool isChecked,  DateTime approvedAt,  ChecklistApprovalMode approvalMode)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime approvedAt,  ChecklistApprovalMode approvalMode, @JsonKey(includeIfNull: false)  bool? isChecked)  $default,) {final _that = this;
 switch (_that) {
 case _AiChecklistApproval():
-return $default(_that.isChecked,_that.approvedAt,_that.approvalMode);case _:
+return $default(_that.approvedAt,_that.approvalMode,_that.isChecked);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -808,10 +862,10 @@ return $default(_that.isChecked,_that.approvedAt,_that.approvalMode);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool isChecked,  DateTime approvedAt,  ChecklistApprovalMode approvalMode)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime approvedAt,  ChecklistApprovalMode approvalMode, @JsonKey(includeIfNull: false)  bool? isChecked)?  $default,) {final _that = this;
 switch (_that) {
 case _AiChecklistApproval() when $default != null:
-return $default(_that.isChecked,_that.approvedAt,_that.approvalMode);case _:
+return $default(_that.approvedAt,_that.approvalMode,_that.isChecked);case _:
   return null;
 
 }
@@ -823,12 +877,12 @@ return $default(_that.isChecked,_that.approvedAt,_that.approvalMode);case _:
 @JsonSerializable()
 
 class _AiChecklistApproval implements AiChecklistApproval {
-  const _AiChecklistApproval({required this.isChecked, required this.approvedAt, required this.approvalMode});
+  const _AiChecklistApproval({required this.approvedAt, required this.approvalMode, @JsonKey(includeIfNull: false) this.isChecked});
   factory _AiChecklistApproval.fromJson(Map<String, dynamic> json) => _$AiChecklistApprovalFromJson(json);
 
-@override final  bool isChecked;
 @override final  DateTime approvedAt;
 @override final  ChecklistApprovalMode approvalMode;
+@override@JsonKey(includeIfNull: false) final  bool? isChecked;
 
 /// Create a copy of AiChecklistApproval
 /// with the given fields replaced by the non-null parameter values.
@@ -843,16 +897,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AiChecklistApproval&&(identical(other.isChecked, isChecked) || other.isChecked == isChecked)&&(identical(other.approvedAt, approvedAt) || other.approvedAt == approvedAt)&&(identical(other.approvalMode, approvalMode) || other.approvalMode == approvalMode));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AiChecklistApproval&&(identical(other.approvedAt, approvedAt) || other.approvedAt == approvedAt)&&(identical(other.approvalMode, approvalMode) || other.approvalMode == approvalMode)&&(identical(other.isChecked, isChecked) || other.isChecked == isChecked));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,isChecked,approvedAt,approvalMode);
+int get hashCode => Object.hash(runtimeType,approvedAt,approvalMode,isChecked);
 
 @override
 String toString() {
-  return 'AiChecklistApproval(isChecked: $isChecked, approvedAt: $approvedAt, approvalMode: $approvalMode)';
+  return 'AiChecklistApproval(approvedAt: $approvedAt, approvalMode: $approvalMode, isChecked: $isChecked)';
 }
 
 
@@ -863,7 +917,7 @@ abstract mixin class _$AiChecklistApprovalCopyWith<$Res> implements $AiChecklist
   factory _$AiChecklistApprovalCopyWith(_AiChecklistApproval value, $Res Function(_AiChecklistApproval) _then) = __$AiChecklistApprovalCopyWithImpl;
 @override @useResult
 $Res call({
- bool isChecked, DateTime approvedAt, ChecklistApprovalMode approvalMode
+ DateTime approvedAt, ChecklistApprovalMode approvalMode,@JsonKey(includeIfNull: false) bool? isChecked
 });
 
 
@@ -880,12 +934,12 @@ class __$AiChecklistApprovalCopyWithImpl<$Res>
 
 /// Create a copy of AiChecklistApproval
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? isChecked = null,Object? approvedAt = null,Object? approvalMode = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? approvedAt = null,Object? approvalMode = null,Object? isChecked = freezed,}) {
   return _then(_AiChecklistApproval(
-isChecked: null == isChecked ? _self.isChecked : isChecked // ignore: cast_nullable_to_non_nullable
-as bool,approvedAt: null == approvedAt ? _self.approvedAt : approvedAt // ignore: cast_nullable_to_non_nullable
+approvedAt: null == approvedAt ? _self.approvedAt : approvedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,approvalMode: null == approvalMode ? _self.approvalMode : approvalMode // ignore: cast_nullable_to_non_nullable
-as ChecklistApprovalMode,
+as ChecklistApprovalMode,isChecked: freezed == isChecked ? _self.isChecked : isChecked // ignore: cast_nullable_to_non_nullable
+as bool?,
   ));
 }
 

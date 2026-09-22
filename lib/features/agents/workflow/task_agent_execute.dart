@@ -393,12 +393,9 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         threadId: threadId,
         runKey: runKey,
         domainLogger: domainLogger,
-        userApprovedChecklistStateResolver: (itemId) async {
+        approvedChecklistItemResolver: (itemId) async {
           final entity = await journalDb.journalEntityById(itemId);
-          return entity is ChecklistItem &&
-                  entity.data.checkedStateApproval != null
-              ? entity.data.isChecked
-              : null;
+          return entity is ChecklistItem ? entity.data : null;
         },
         checklistItemStateResolver: (itemId) async {
           final entity = await journalDb.journalEntityById(itemId);

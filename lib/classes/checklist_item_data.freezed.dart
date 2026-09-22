@@ -311,7 +311,8 @@ as List<ChecklistItemProvenance>,
 /// @nodoc
 mixin _$ChecklistItemProvenance {
 
- String get approvedBy; String get approvalHost; DateTime get approvedAt; ChecklistApprovalMode get approvalMode; String get originatingMessageId; String get conversationId; String get changeSetId; String get decisionId; String get agentId; String get source; String get appliedBy; bool? get isChecked;
+ String get approvedBy; String get approvalHost; DateTime get approvedAt; ChecklistApprovalMode get approvalMode; String get originatingMessageId; String get conversationId; String get changeSetId; String get decisionId; String get agentId; String get source; String get appliedBy;// The values this approval set; null for a field the change left alone.
+ bool? get isChecked; String? get title; bool? get isArchived;
 /// Create a copy of ChecklistItemProvenance
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -324,16 +325,16 @@ $ChecklistItemProvenanceCopyWith<ChecklistItemProvenance> get copyWith => _$Chec
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ChecklistItemProvenance&&(identical(other.approvedBy, approvedBy) || other.approvedBy == approvedBy)&&(identical(other.approvalHost, approvalHost) || other.approvalHost == approvalHost)&&(identical(other.approvedAt, approvedAt) || other.approvedAt == approvedAt)&&(identical(other.approvalMode, approvalMode) || other.approvalMode == approvalMode)&&(identical(other.originatingMessageId, originatingMessageId) || other.originatingMessageId == originatingMessageId)&&(identical(other.conversationId, conversationId) || other.conversationId == conversationId)&&(identical(other.changeSetId, changeSetId) || other.changeSetId == changeSetId)&&(identical(other.decisionId, decisionId) || other.decisionId == decisionId)&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.source, source) || other.source == source)&&(identical(other.appliedBy, appliedBy) || other.appliedBy == appliedBy)&&(identical(other.isChecked, isChecked) || other.isChecked == isChecked));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ChecklistItemProvenance&&(identical(other.approvedBy, approvedBy) || other.approvedBy == approvedBy)&&(identical(other.approvalHost, approvalHost) || other.approvalHost == approvalHost)&&(identical(other.approvedAt, approvedAt) || other.approvedAt == approvedAt)&&(identical(other.approvalMode, approvalMode) || other.approvalMode == approvalMode)&&(identical(other.originatingMessageId, originatingMessageId) || other.originatingMessageId == originatingMessageId)&&(identical(other.conversationId, conversationId) || other.conversationId == conversationId)&&(identical(other.changeSetId, changeSetId) || other.changeSetId == changeSetId)&&(identical(other.decisionId, decisionId) || other.decisionId == decisionId)&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.source, source) || other.source == source)&&(identical(other.appliedBy, appliedBy) || other.appliedBy == appliedBy)&&(identical(other.isChecked, isChecked) || other.isChecked == isChecked)&&(identical(other.title, title) || other.title == title)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,approvedBy,approvalHost,approvedAt,approvalMode,originatingMessageId,conversationId,changeSetId,decisionId,agentId,source,appliedBy,isChecked);
+int get hashCode => Object.hash(runtimeType,approvedBy,approvalHost,approvedAt,approvalMode,originatingMessageId,conversationId,changeSetId,decisionId,agentId,source,appliedBy,isChecked,title,isArchived);
 
 @override
 String toString() {
-  return 'ChecklistItemProvenance(approvedBy: $approvedBy, approvalHost: $approvalHost, approvedAt: $approvedAt, approvalMode: $approvalMode, originatingMessageId: $originatingMessageId, conversationId: $conversationId, changeSetId: $changeSetId, decisionId: $decisionId, agentId: $agentId, source: $source, appliedBy: $appliedBy, isChecked: $isChecked)';
+  return 'ChecklistItemProvenance(approvedBy: $approvedBy, approvalHost: $approvalHost, approvedAt: $approvedAt, approvalMode: $approvalMode, originatingMessageId: $originatingMessageId, conversationId: $conversationId, changeSetId: $changeSetId, decisionId: $decisionId, agentId: $agentId, source: $source, appliedBy: $appliedBy, isChecked: $isChecked, title: $title, isArchived: $isArchived)';
 }
 
 
@@ -344,7 +345,7 @@ abstract mixin class $ChecklistItemProvenanceCopyWith<$Res>  {
   factory $ChecklistItemProvenanceCopyWith(ChecklistItemProvenance value, $Res Function(ChecklistItemProvenance) _then) = _$ChecklistItemProvenanceCopyWithImpl;
 @useResult
 $Res call({
- String approvedBy, String approvalHost, DateTime approvedAt, ChecklistApprovalMode approvalMode, String originatingMessageId, String conversationId, String changeSetId, String decisionId, String agentId, String source, String appliedBy, bool? isChecked
+ String approvedBy, String approvalHost, DateTime approvedAt, ChecklistApprovalMode approvalMode, String originatingMessageId, String conversationId, String changeSetId, String decisionId, String agentId, String source, String appliedBy, bool? isChecked, String? title, bool? isArchived
 });
 
 
@@ -361,7 +362,7 @@ class _$ChecklistItemProvenanceCopyWithImpl<$Res>
 
 /// Create a copy of ChecklistItemProvenance
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? approvedBy = null,Object? approvalHost = null,Object? approvedAt = null,Object? approvalMode = null,Object? originatingMessageId = null,Object? conversationId = null,Object? changeSetId = null,Object? decisionId = null,Object? agentId = null,Object? source = null,Object? appliedBy = null,Object? isChecked = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? approvedBy = null,Object? approvalHost = null,Object? approvedAt = null,Object? approvalMode = null,Object? originatingMessageId = null,Object? conversationId = null,Object? changeSetId = null,Object? decisionId = null,Object? agentId = null,Object? source = null,Object? appliedBy = null,Object? isChecked = freezed,Object? title = freezed,Object? isArchived = freezed,}) {
   return _then(_self.copyWith(
 approvedBy: null == approvedBy ? _self.approvedBy : approvedBy // ignore: cast_nullable_to_non_nullable
 as String,approvalHost: null == approvalHost ? _self.approvalHost : approvalHost // ignore: cast_nullable_to_non_nullable
@@ -375,6 +376,8 @@ as String,agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nul
 as String,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
 as String,appliedBy: null == appliedBy ? _self.appliedBy : appliedBy // ignore: cast_nullable_to_non_nullable
 as String,isChecked: freezed == isChecked ? _self.isChecked : isChecked // ignore: cast_nullable_to_non_nullable
+as bool?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String?,isArchived: freezed == isArchived ? _self.isArchived : isArchived // ignore: cast_nullable_to_non_nullable
 as bool?,
   ));
 }
@@ -460,10 +463,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String approvedBy,  String approvalHost,  DateTime approvedAt,  ChecklistApprovalMode approvalMode,  String originatingMessageId,  String conversationId,  String changeSetId,  String decisionId,  String agentId,  String source,  String appliedBy,  bool? isChecked)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String approvedBy,  String approvalHost,  DateTime approvedAt,  ChecklistApprovalMode approvalMode,  String originatingMessageId,  String conversationId,  String changeSetId,  String decisionId,  String agentId,  String source,  String appliedBy,  bool? isChecked,  String? title,  bool? isArchived)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ChecklistItemProvenance() when $default != null:
-return $default(_that.approvedBy,_that.approvalHost,_that.approvedAt,_that.approvalMode,_that.originatingMessageId,_that.conversationId,_that.changeSetId,_that.decisionId,_that.agentId,_that.source,_that.appliedBy,_that.isChecked);case _:
+return $default(_that.approvedBy,_that.approvalHost,_that.approvedAt,_that.approvalMode,_that.originatingMessageId,_that.conversationId,_that.changeSetId,_that.decisionId,_that.agentId,_that.source,_that.appliedBy,_that.isChecked,_that.title,_that.isArchived);case _:
   return orElse();
 
 }
@@ -481,10 +484,10 @@ return $default(_that.approvedBy,_that.approvalHost,_that.approvedAt,_that.appro
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String approvedBy,  String approvalHost,  DateTime approvedAt,  ChecklistApprovalMode approvalMode,  String originatingMessageId,  String conversationId,  String changeSetId,  String decisionId,  String agentId,  String source,  String appliedBy,  bool? isChecked)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String approvedBy,  String approvalHost,  DateTime approvedAt,  ChecklistApprovalMode approvalMode,  String originatingMessageId,  String conversationId,  String changeSetId,  String decisionId,  String agentId,  String source,  String appliedBy,  bool? isChecked,  String? title,  bool? isArchived)  $default,) {final _that = this;
 switch (_that) {
 case _ChecklistItemProvenance():
-return $default(_that.approvedBy,_that.approvalHost,_that.approvedAt,_that.approvalMode,_that.originatingMessageId,_that.conversationId,_that.changeSetId,_that.decisionId,_that.agentId,_that.source,_that.appliedBy,_that.isChecked);case _:
+return $default(_that.approvedBy,_that.approvalHost,_that.approvedAt,_that.approvalMode,_that.originatingMessageId,_that.conversationId,_that.changeSetId,_that.decisionId,_that.agentId,_that.source,_that.appliedBy,_that.isChecked,_that.title,_that.isArchived);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -501,10 +504,10 @@ return $default(_that.approvedBy,_that.approvalHost,_that.approvedAt,_that.appro
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String approvedBy,  String approvalHost,  DateTime approvedAt,  ChecklistApprovalMode approvalMode,  String originatingMessageId,  String conversationId,  String changeSetId,  String decisionId,  String agentId,  String source,  String appliedBy,  bool? isChecked)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String approvedBy,  String approvalHost,  DateTime approvedAt,  ChecklistApprovalMode approvalMode,  String originatingMessageId,  String conversationId,  String changeSetId,  String decisionId,  String agentId,  String source,  String appliedBy,  bool? isChecked,  String? title,  bool? isArchived)?  $default,) {final _that = this;
 switch (_that) {
 case _ChecklistItemProvenance() when $default != null:
-return $default(_that.approvedBy,_that.approvalHost,_that.approvedAt,_that.approvalMode,_that.originatingMessageId,_that.conversationId,_that.changeSetId,_that.decisionId,_that.agentId,_that.source,_that.appliedBy,_that.isChecked);case _:
+return $default(_that.approvedBy,_that.approvalHost,_that.approvedAt,_that.approvalMode,_that.originatingMessageId,_that.conversationId,_that.changeSetId,_that.decisionId,_that.agentId,_that.source,_that.appliedBy,_that.isChecked,_that.title,_that.isArchived);case _:
   return null;
 
 }
@@ -516,7 +519,7 @@ return $default(_that.approvedBy,_that.approvalHost,_that.approvedAt,_that.appro
 @JsonSerializable()
 
 class _ChecklistItemProvenance implements ChecklistItemProvenance {
-  const _ChecklistItemProvenance({required this.approvedBy, required this.approvalHost, required this.approvedAt, required this.approvalMode, required this.originatingMessageId, required this.conversationId, required this.changeSetId, required this.decisionId, required this.agentId, this.source = 'chat_suggestion', this.appliedBy = 'task_agent', this.isChecked});
+  const _ChecklistItemProvenance({required this.approvedBy, required this.approvalHost, required this.approvedAt, required this.approvalMode, required this.originatingMessageId, required this.conversationId, required this.changeSetId, required this.decisionId, required this.agentId, this.source = 'chat_suggestion', this.appliedBy = 'task_agent', this.isChecked, this.title, this.isArchived});
   factory _ChecklistItemProvenance.fromJson(Map<String, dynamic> json) => _$ChecklistItemProvenanceFromJson(json);
 
 @override final  String approvedBy;
@@ -530,7 +533,10 @@ class _ChecklistItemProvenance implements ChecklistItemProvenance {
 @override final  String agentId;
 @override@JsonKey() final  String source;
 @override@JsonKey() final  String appliedBy;
+// The values this approval set; null for a field the change left alone.
 @override final  bool? isChecked;
+@override final  String? title;
+@override final  bool? isArchived;
 
 /// Create a copy of ChecklistItemProvenance
 /// with the given fields replaced by the non-null parameter values.
@@ -545,16 +551,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ChecklistItemProvenance&&(identical(other.approvedBy, approvedBy) || other.approvedBy == approvedBy)&&(identical(other.approvalHost, approvalHost) || other.approvalHost == approvalHost)&&(identical(other.approvedAt, approvedAt) || other.approvedAt == approvedAt)&&(identical(other.approvalMode, approvalMode) || other.approvalMode == approvalMode)&&(identical(other.originatingMessageId, originatingMessageId) || other.originatingMessageId == originatingMessageId)&&(identical(other.conversationId, conversationId) || other.conversationId == conversationId)&&(identical(other.changeSetId, changeSetId) || other.changeSetId == changeSetId)&&(identical(other.decisionId, decisionId) || other.decisionId == decisionId)&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.source, source) || other.source == source)&&(identical(other.appliedBy, appliedBy) || other.appliedBy == appliedBy)&&(identical(other.isChecked, isChecked) || other.isChecked == isChecked));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ChecklistItemProvenance&&(identical(other.approvedBy, approvedBy) || other.approvedBy == approvedBy)&&(identical(other.approvalHost, approvalHost) || other.approvalHost == approvalHost)&&(identical(other.approvedAt, approvedAt) || other.approvedAt == approvedAt)&&(identical(other.approvalMode, approvalMode) || other.approvalMode == approvalMode)&&(identical(other.originatingMessageId, originatingMessageId) || other.originatingMessageId == originatingMessageId)&&(identical(other.conversationId, conversationId) || other.conversationId == conversationId)&&(identical(other.changeSetId, changeSetId) || other.changeSetId == changeSetId)&&(identical(other.decisionId, decisionId) || other.decisionId == decisionId)&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.source, source) || other.source == source)&&(identical(other.appliedBy, appliedBy) || other.appliedBy == appliedBy)&&(identical(other.isChecked, isChecked) || other.isChecked == isChecked)&&(identical(other.title, title) || other.title == title)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,approvedBy,approvalHost,approvedAt,approvalMode,originatingMessageId,conversationId,changeSetId,decisionId,agentId,source,appliedBy,isChecked);
+int get hashCode => Object.hash(runtimeType,approvedBy,approvalHost,approvedAt,approvalMode,originatingMessageId,conversationId,changeSetId,decisionId,agentId,source,appliedBy,isChecked,title,isArchived);
 
 @override
 String toString() {
-  return 'ChecklistItemProvenance(approvedBy: $approvedBy, approvalHost: $approvalHost, approvedAt: $approvedAt, approvalMode: $approvalMode, originatingMessageId: $originatingMessageId, conversationId: $conversationId, changeSetId: $changeSetId, decisionId: $decisionId, agentId: $agentId, source: $source, appliedBy: $appliedBy, isChecked: $isChecked)';
+  return 'ChecklistItemProvenance(approvedBy: $approvedBy, approvalHost: $approvalHost, approvedAt: $approvedAt, approvalMode: $approvalMode, originatingMessageId: $originatingMessageId, conversationId: $conversationId, changeSetId: $changeSetId, decisionId: $decisionId, agentId: $agentId, source: $source, appliedBy: $appliedBy, isChecked: $isChecked, title: $title, isArchived: $isArchived)';
 }
 
 
@@ -565,7 +571,7 @@ abstract mixin class _$ChecklistItemProvenanceCopyWith<$Res> implements $Checkli
   factory _$ChecklistItemProvenanceCopyWith(_ChecklistItemProvenance value, $Res Function(_ChecklistItemProvenance) _then) = __$ChecklistItemProvenanceCopyWithImpl;
 @override @useResult
 $Res call({
- String approvedBy, String approvalHost, DateTime approvedAt, ChecklistApprovalMode approvalMode, String originatingMessageId, String conversationId, String changeSetId, String decisionId, String agentId, String source, String appliedBy, bool? isChecked
+ String approvedBy, String approvalHost, DateTime approvedAt, ChecklistApprovalMode approvalMode, String originatingMessageId, String conversationId, String changeSetId, String decisionId, String agentId, String source, String appliedBy, bool? isChecked, String? title, bool? isArchived
 });
 
 
@@ -582,7 +588,7 @@ class __$ChecklistItemProvenanceCopyWithImpl<$Res>
 
 /// Create a copy of ChecklistItemProvenance
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? approvedBy = null,Object? approvalHost = null,Object? approvedAt = null,Object? approvalMode = null,Object? originatingMessageId = null,Object? conversationId = null,Object? changeSetId = null,Object? decisionId = null,Object? agentId = null,Object? source = null,Object? appliedBy = null,Object? isChecked = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? approvedBy = null,Object? approvalHost = null,Object? approvedAt = null,Object? approvalMode = null,Object? originatingMessageId = null,Object? conversationId = null,Object? changeSetId = null,Object? decisionId = null,Object? agentId = null,Object? source = null,Object? appliedBy = null,Object? isChecked = freezed,Object? title = freezed,Object? isArchived = freezed,}) {
   return _then(_ChecklistItemProvenance(
 approvedBy: null == approvedBy ? _self.approvedBy : approvedBy // ignore: cast_nullable_to_non_nullable
 as String,approvalHost: null == approvalHost ? _self.approvalHost : approvalHost // ignore: cast_nullable_to_non_nullable
@@ -596,6 +602,8 @@ as String,agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nul
 as String,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
 as String,appliedBy: null == appliedBy ? _self.appliedBy : appliedBy // ignore: cast_nullable_to_non_nullable
 as String,isChecked: freezed == isChecked ? _self.isChecked : isChecked // ignore: cast_nullable_to_non_nullable
+as bool?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String?,isArchived: freezed == isArchived ? _self.isArchived : isArchived // ignore: cast_nullable_to_non_nullable
 as bool?,
   ));
 }

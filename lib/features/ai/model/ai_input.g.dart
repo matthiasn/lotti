@@ -41,6 +41,16 @@ _AiActionItem _$AiActionItemFromJson(Map<String, dynamic> json) =>
           : AiChecklistApproval.fromJson(
               json['checkedStateApproval'] as Map<String, dynamic>,
             ),
+      titleApproval: json['titleApproval'] == null
+          ? null
+          : AiChecklistApproval.fromJson(
+              json['titleApproval'] as Map<String, dynamic>,
+            ),
+      archivedStateApproval: json['archivedStateApproval'] == null
+          ? null
+          : AiChecklistApproval.fromJson(
+              json['archivedStateApproval'] as Map<String, dynamic>,
+            ),
     );
 
 Map<String, dynamic> _$AiActionItemToJson(_AiActionItem instance) =>
@@ -54,24 +64,26 @@ Map<String, dynamic> _$AiActionItemToJson(_AiActionItem instance) =>
       'checkedBy': instance.checkedBy,
       'checkedAt': instance.checkedAt?.toIso8601String(),
       'checkedStateApproval': instance.checkedStateApproval,
+      'titleApproval': instance.titleApproval,
+      'archivedStateApproval': instance.archivedStateApproval,
     };
 
 _AiChecklistApproval _$AiChecklistApprovalFromJson(Map<String, dynamic> json) =>
     _AiChecklistApproval(
-      isChecked: json['isChecked'] as bool,
       approvedAt: DateTime.parse(json['approvedAt'] as String),
       approvalMode: $enumDecode(
         _$ChecklistApprovalModeEnumMap,
         json['approvalMode'],
       ),
+      isChecked: json['isChecked'] as bool?,
     );
 
 Map<String, dynamic> _$AiChecklistApprovalToJson(
   _AiChecklistApproval instance,
 ) => <String, dynamic>{
-  'isChecked': instance.isChecked,
   'approvedAt': instance.approvedAt.toIso8601String(),
   'approvalMode': _$ChecklistApprovalModeEnumMap[instance.approvalMode]!,
+  'isChecked': ?instance.isChecked,
 };
 
 const _$ChecklistApprovalModeEnumMap = {

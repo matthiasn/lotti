@@ -685,7 +685,14 @@ void main() {
             isChecked: true,
             linkedChecklists: [checklistId],
             checkedAt: makeTestChecklistApproval().approvedAt,
-            approvalHistory: [makeTestChecklistApproval()],
+            approvalHistory: [
+              makeTestChecklistApproval(),
+              makeTestChecklistApproval(
+                isChecked: null,
+                title: 'Test Checklist Item',
+                mode: ChecklistApprovalMode.confirmAll,
+              ),
+            ],
           ),
         );
 
@@ -753,6 +760,15 @@ void main() {
             approvalMode: ChecklistApprovalMode.individual,
           ),
         );
+
+        expect(
+          result.actionItems[0].titleApproval,
+          AiChecklistApproval(
+            approvedAt: makeTestChecklistApproval().approvedAt,
+            approvalMode: ChecklistApprovalMode.confirmAll,
+          ),
+        );
+        expect(result.actionItems[0].archivedStateApproval, isNull);
 
         // Generic task prompts must carry intent, never the audit identifiers.
         final prompt = jsonDecode(jsonEncode(result)) as Map<String, dynamic>;

@@ -70,6 +70,8 @@ _ChecklistItemProvenance _$ChecklistItemProvenanceFromJson(
   source: json['source'] as String? ?? 'chat_suggestion',
   appliedBy: json['appliedBy'] as String? ?? 'task_agent',
   isChecked: json['isChecked'] as bool?,
+  title: json['title'] as String?,
+  isArchived: json['isArchived'] as bool?,
 );
 
 Map<String, dynamic> _$ChecklistItemProvenanceToJson(
@@ -87,6 +89,8 @@ Map<String, dynamic> _$ChecklistItemProvenanceToJson(
   'source': instance.source,
   'appliedBy': instance.appliedBy,
   'isChecked': instance.isChecked,
+  'title': instance.title,
+  'isArchived': instance.isArchived,
 };
 
 const _$ChecklistApprovalModeEnumMap = {

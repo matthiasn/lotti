@@ -21,12 +21,12 @@ import 'package:openai_dart/openai_dart.dart';
 ///
 /// Enforces user sovereignty: when a checklist item was last toggled by the
 /// user, the agent must provide a `reason` citing post-dated evidence to
-/// change its checked state. Chat-approved state additionally requires a new
-/// trusted human approval; model-provided reasons cannot reverse it. Approval
-/// receipts are persisted with each update, including reaffirmed checked state.
-/// Title and archival updates are always allowed
-/// (agent-proposed archivals pass the ChangeSet human gate before reaching
-/// this handler).
+/// change its checked state. Chat-approved checked state, title and archival
+/// additionally require a new trusted human approval; model-provided reasons
+/// cannot reverse them. Approval receipts record every value they set and are
+/// persisted with each update, including reaffirmed state. Otherwise title and
+/// archival updates are always allowed (agent-proposed archivals pass the
+/// ChangeSet human gate before reaching this handler).
 class LottiChecklistUpdateHandler extends FunctionHandler {
   LottiChecklistUpdateHandler({
     required this.task,
@@ -365,10 +365,10 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
       final currentTitle = entity.data.title;
       final currentIsArchived = entity.data.isArchived;
 
-      final isCheckedChanged =
+      var isCheckedChanged =
           newIsChecked != null && newIsChecked != currentIsChecked;
-      final titleChanged = newTitle != null && newTitle != currentTitle;
-      final isArchivedChanged =
+      var titleChanged = newTitle != null && newTitle != currentTitle;
+      var isArchivedChanged =
           newIsArchived != null && newIsArchived != currentIsArchived;
 
       final approvedCheck = approval != null && newIsChecked != null;
@@ -380,23 +380,24 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
         continue;
       }
 
-      // A model-written reason cannot override a human-approved chat state.
-      if (isCheckedChanged &&
-          approval == null &&
-          entity.data.checkedStateApproval != null) {
-        _skip(id, userApprovedStateReason);
-        if (await _applyNonCheckedChanges(
-          id: id,
-          entity: entity,
-          newTitle: newTitle,
-          titleChanged: titleChanged,
-          newIsArchived: newIsArchived,
-          isArchivedChanged: isArchivedChanged,
-          currentIsChecked: currentIsChecked,
-        )) {
-          successCount++;
+      // A model-written reason cannot override human-approved chat state:
+      // drop each protected field and still apply the unprotected rest.
+      if (approval == null) {
+        final data = entity.data;
+        final protectedCheck =
+            isCheckedChanged && data.checkedStateApproval != null;
+        final protectedTitle = titleChanged && data.titleApproval != null;
+        final protectedArchive =
+            isArchivedChanged && data.archivedStateApproval != null;
+        if (protectedCheck || protectedTitle || protectedArchive) {
+          _skip(id, userApprovedStateReason);
+          isCheckedChanged &= !protectedCheck;
+          titleChanged &= !protectedTitle;
+          isArchivedChanged &= !protectedArchive;
+          if (!isCheckedChanged && !titleChanged && !isArchivedChanged) {
+            continue;
+          }
         }
-        continue;
       }
 
       // --- User sovereignty guard ---
@@ -447,15 +448,17 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
         );
       }
 
-      // Apply updates with provenance stamping
+      // Apply updates with provenance stamping. The change flags already
+      // exclude protected fields; an approved reaffirmation restamps checks.
+      final applyChecked = isCheckedChanged || approvedCheck;
       final updatedData = entity.data.copyWith(
-        isChecked: newIsChecked ?? currentIsChecked,
-        title: newTitle ?? currentTitle,
-        isArchived: newIsArchived ?? currentIsArchived,
-        checkedBy: (isCheckedChanged || approvedCheck)
+        isChecked: isCheckedChanged ? newIsChecked! : currentIsChecked,
+        title: titleChanged ? newTitle! : currentTitle,
+        isArchived: isArchivedChanged ? newIsArchived! : currentIsArchived,
+        checkedBy: applyChecked
             ? (approval == null ? ChangeSource.agent : ChangeSource.user)
             : entity.data.checkedBy,
-        checkedAt: (isCheckedChanged || approvedCheck)
+        checkedAt: applyChecked
             ? (approval?.approvedAt ?? _clock())
             : entity.data.checkedAt,
         approvalHistory: [
@@ -463,6 +466,8 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
           if (approval case final receipt?)
             receipt.copyWith(
               isChecked: newIsChecked,
+              title: newTitle,
+              isArchived: newIsArchived,
             ),
         ],
       );

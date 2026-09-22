@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
@@ -506,7 +507,7 @@ void main() {
         taskId: 'task',
         threadId: 'wake',
         runKey: 'run',
-        userApprovedChecklistStateResolver: (_) async =>
+        approvedChecklistItemResolver: (_) async =>
             throw StateError('unavailable'),
       );
       expect(
@@ -525,13 +526,16 @@ void main() {
     test(
       'background suppresses six chat-approved reversals: $checked',
       () async {
-        final protected = {for (var i = 0; i < 6; i++) 'item-$i': checked};
+        final protected = {
+          for (var i = 0; i < 6; i++)
+            'item-$i': makeTestApprovedChecklistItem(isChecked: checked),
+        };
         final builder = ChangeSetBuilder(
           agentId: 'agent',
           taskId: 'task',
           threadId: 'wake',
           runKey: 'run',
-          userApprovedChecklistStateResolver: (id) async => protected[id],
+          approvedChecklistItemResolver: (id) async => protected[id],
         );
         final result = await builder.addBatchItem(
           toolName: TaskAgentToolNames.updateChecklistItems,
@@ -556,7 +560,11 @@ void main() {
           args: {'id': 'item-0', 'isChecked': !checked},
           humanSummary: 'Reverse',
         );
-        expect(detail, contains('User-approved chat state'));
+        expect(
+          detail,
+          'User-approved chat checked state cannot be reversed. '
+          'Do not retry this change.',
+        );
         expect(builder.items.length, 1);
         // A later UI edit removes the active receipt; lookup must stay live.
         protected.remove('item-0');
@@ -572,6 +580,92 @@ void main() {
       },
     );
   }
+
+  group('chat-approved title and archival', () {
+    ChangeSetBuilder protecting(ChecklistItemData item) => ChangeSetBuilder(
+      agentId: 'agent',
+      taskId: 'task',
+      threadId: 'wake',
+      runKey: 'run',
+      approvedChecklistItemResolver: (id) async => id == 'item' ? item : null,
+    );
+
+    Future<String?> propose(
+      ChangeSetBuilder builder,
+      Map<String, dynamic> change,
+    ) => builder.addItem(
+      toolName: TaskAgentToolNames.updateChecklistItem,
+      args: {'id': 'item', ...change},
+      humanSummary: 'Update',
+    );
+
+    test('rejects renaming a chat-approved title', () async {
+      final builder = protecting(
+        makeTestApprovedChecklistItem(
+          checkedViaChat: false,
+          titleViaChat: true,
+        ),
+      );
+      expect(
+        await propose(builder, {'title': 'Walk the seals'}),
+        'User-approved chat title cannot be reversed. '
+        'Do not retry this change.',
+      );
+      expect(builder.items, isEmpty);
+    });
+
+    test('whitespace-only title differences are not a reversal', () async {
+      final builder = protecting(
+        makeTestApprovedChecklistItem(
+          checkedViaChat: false,
+          titleViaChat: true,
+        ),
+      );
+      expect(
+        await propose(builder, {'title': '  Walk pressure  seals A–F '}),
+        isNull,
+      );
+      expect(builder.items, hasLength(1));
+    });
+
+    for (final archived in [true, false]) {
+      test('rejects reversing a chat-approved archival: $archived', () async {
+        final builder = protecting(
+          makeTestApprovedChecklistItem(
+            checkedViaChat: false,
+            isArchived: archived,
+            archivedViaChat: true,
+          ),
+        );
+        expect(
+          await propose(builder, {'isArchived': !archived}),
+          'User-approved chat archived state cannot be reversed. '
+          'Do not retry this change.',
+        );
+        expect(builder.items, isEmpty);
+      });
+    }
+
+    test('names every reversed field in one rejection', () async {
+      final builder = protecting(
+        makeTestApprovedChecklistItem(titleViaChat: true),
+      );
+      expect(
+        await propose(builder, {'isChecked': false, 'title': 'Other'}),
+        'User-approved chat checked state and title cannot be reversed. '
+        'Do not retry this change.',
+      );
+    });
+
+    test('fields without a chat receipt stay open to proposals', () async {
+      final builder = protecting(makeTestApprovedChecklistItem());
+      expect(
+        await propose(builder, {'title': 'Walk the seals', 'isArchived': true}),
+        isNull,
+      );
+      expect(builder.items.single.args['title'], 'Walk the seals');
+    });
+  });
 
   late ChangeSetBuilder builder;
   late MockAgentSyncService mockSyncService;

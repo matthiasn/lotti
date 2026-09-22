@@ -83,9 +83,17 @@ String _renderActionItem(AiActionItem item) {
     if (item.completed && item.checkedBy != null)
       'checked by ${item.checkedBy}',
     if (item.checkedStateApproval case final approval?)
-      'user-approved chat state at ${approval.approvedAt.toIso8601String()} (approval: ${approval.approvalMode.name}; do not reverse)',
+      _approvalTag('state', approval),
+    if (item.titleApproval case final approval?)
+      _approvalTag('title', approval),
+    if (item.archivedStateApproval case final approval?)
+      _approvalTag(item.isArchived ? 'archival' : 'restore', approval),
     if (item.isArchived) 'archived',
   ];
   final suffix = tags.isEmpty ? '' : ' (${tags.join(', ')})';
   return '- $checkbox ${item.title}$suffix';
 }
+
+String _approvalTag(String what, AiChecklistApproval approval) =>
+    'user-approved chat $what at ${approval.approvedAt.toIso8601String()} '
+    '(approval: ${approval.approvalMode.name}; do not reverse)';

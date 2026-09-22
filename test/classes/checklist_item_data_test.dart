@@ -50,6 +50,104 @@ void main() {
     );
     expect(stored.copyWith(approvalHistory: []).checkedStateApproval, isNull);
   });
+  group('title and archival approvals', () {
+    final receipt = makeTestChecklistApproval(isChecked: null);
+    final data = ChecklistItemData(
+      title: 'Walk pressure seals A–F',
+      isChecked: false,
+      isArchived: true,
+      linkedChecklists: const ['checklist'],
+      approvalHistory: [
+        receipt.copyWith(title: 'Walk pressure seals A–F'),
+        receipt.copyWith(decisionId: 'archive', isArchived: true),
+      ],
+    );
+
+    test('survive JSON and back only the value they approved', () {
+      final stored = ChecklistItemData.fromJson(
+        jsonDecode(jsonEncode(data)) as Map<String, dynamic>,
+      );
+      expect(stored.titleApproval?.title, 'Walk pressure seals A–F');
+      expect(stored.archivedStateApproval?.decisionId, 'archive');
+      expect(stored.checkedStateApproval, isNull);
+    });
+
+    test('a later change of the value supersedes the approval', () {
+      expect(data.copyWith(title: 'Walk the seals').titleApproval, isNull);
+      expect(data.copyWith(isArchived: false).archivedStateApproval, isNull);
+      // Unrelated fields keep each other's protection.
+      expect(
+        data.copyWith(title: 'Walk the seals').archivedStateApproval,
+        isNotNull,
+      );
+    });
+
+    test('the newest receipt naming a field decides it', () {
+      final renamed = data.copyWith(
+        approvalHistory: [
+          ...data.approvalHistory,
+          receipt.copyWith(decisionId: 'rename', title: 'Walk the seals'),
+        ],
+      );
+      expect(renamed.titleApproval, isNull);
+      expect(
+        renamed.copyWith(title: 'Walk the seals').titleApproval?.decisionId,
+        'rename',
+      );
+    });
+
+    test('only user-approved chat suggestions count', () {
+      expect(
+        data
+            .copyWith(
+              approvalHistory: [
+                receipt.copyWith(title: data.title, source: 'imported'),
+              ],
+            )
+            .titleApproval,
+        isNull,
+      );
+      expect(
+        data
+            .copyWith(
+              approvalHistory: [
+                receipt.copyWith(isArchived: true, approvedBy: 'agent'),
+              ],
+            )
+            .archivedStateApproval,
+        isNull,
+      );
+    });
+
+    test('currentChatApproval is the newest one still standing', () {
+      final later = receipt.approvedAt.add(const Duration(hours: 1));
+      final checked = data.copyWith(
+        isChecked: true,
+        checkedAt: later,
+        approvalHistory: [
+          ...data.approvalHistory,
+          receipt.copyWith(
+            decisionId: 'check',
+            approvedAt: later,
+            isChecked: true,
+          ),
+        ],
+      );
+      expect(checked.currentChatApproval?.decisionId, 'check');
+      // Toggled by hand since: the older title approval still stands.
+      expect(
+        checked.copyWith(isChecked: false).currentChatApproval?.approvedAt,
+        receipt.approvedAt,
+      );
+      expect(
+        checked
+            .copyWith(isChecked: false, title: 'x', isArchived: false)
+            .currentChatApproval,
+        isNull,
+      );
+    });
+  });
+
   for (final mode in ChecklistApprovalMode.values) {
     test('approval JSON uses stable ${mode.name} wire mode', () {
       final receipt = makeTestChecklistApproval(mode: mode);

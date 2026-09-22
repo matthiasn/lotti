@@ -211,6 +211,8 @@ class AiInputRepository {
               ),
               null => null,
             },
+            titleApproval: _promptApproval(item.titleApproval),
+            archivedStateApproval: _promptApproval(item.archivedStateApproval),
           ),
         )
         .toList();
@@ -468,6 +470,16 @@ class AiInputRepository {
     return encoder.convert(data);
   }
 }
+
+/// Only the approval's time and gesture reach the prompt; the approved value
+/// is the item's current one, already on the action item.
+AiChecklistApproval? _promptApproval(ChecklistItemProvenance? approval) =>
+    approval == null
+    ? null
+    : AiChecklistApproval(
+        approvedAt: approval.approvedAt,
+        approvalMode: approval.approvalMode,
+      );
 
 final aiInputRepositoryProvider = Provider<AiInputRepository>(
   aiInputRepository,

@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/features/agents/workflow/task_state_markdown.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 
@@ -81,6 +82,46 @@ void main() {
       lines.singleWhere((l) => l.contains('Unexplained check')),
       isNot(contains('user-approved')),
     );
+  });
+
+  test('prompt marks approved chat titles, archivals and restores', () {
+    final approval = AiChecklistApproval(
+      approvedAt: makeTestChecklistApproval().approvedAt,
+      approvalMode: ChecklistApprovalMode.confirmAll,
+    );
+    final at = approval.approvedAt.toIso8601String();
+    final lines = renderTaskStateMarkdown(
+      _task(
+        actionItems: [
+          AiActionItem(
+            title: 'Renamed',
+            completed: false,
+            titleApproval: approval,
+          ),
+          AiActionItem(
+            title: 'Archived',
+            completed: false,
+            isArchived: true,
+            archivedStateApproval: approval,
+          ),
+          AiActionItem(
+            title: 'Restored',
+            completed: false,
+            archivedStateApproval: approval,
+          ),
+        ],
+      ),
+    ).split('\n');
+    String line(String title) => lines.singleWhere((l) => l.contains(title));
+    expect(
+      line('Renamed'),
+      contains(
+        'user-approved chat title at $at (approval: confirmAll; do not reverse)',
+      ),
+    );
+    expect(line('Archived'), contains('user-approved chat archival at $at'));
+    expect(line('Restored'), contains('user-approved chat restore at $at'));
+    expect(line('Renamed'), isNot(contains('chat state')));
   });
 
   group('renderTaskStateMarkdown', () {
