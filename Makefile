@@ -215,7 +215,9 @@ store_screenshots_ios:
 	FLUTTER="$(FLUTTER_CMD)" ./tool/store_screenshots/ios.sh
 
 # App Store App Preview — the listing's video — recorded on an iOS simulator
-# while integration_test/store_preview_test.dart walks the app by touch, then
+# while integration_test/store_preview_test.dart walks the app by touch,
+# narrated by the tutorial-video workbench's TTS (tools/tutorial_videos, needs
+# GEMINI_API_KEY in .env; LOTTI_PREVIEW_NARRATION=off for a silent cut), then
 # cut to the 15-30 s and 886x1920 H.264 App Store Connect takes; see
 # tool/store_screenshots/ios_preview.sh for the knobs and for why the footage
 # that ships comes from a phone. Output lands in

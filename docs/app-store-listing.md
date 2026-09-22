@@ -105,13 +105,20 @@ Order within a slot, as captured (`store_en_dark_01_tasks.png` …):
 ## App Preview
 
 Optional in App Store Connect, and the first thing a visitor sees when there
-is one: up to three videos per localisation, 15–30 seconds each.
+is one: up to three videos per device size and language, 15–30 seconds each —
+so the iPhone and iPad slots below are two separate sets, not one shared one.
 `make store_preview_ios` records the storyboard on a simulator
 — the task list, one task and a checklist item ticked, two habits completed,
-the logbook they land in — and writes
+the logbook they land in — narrates it in the voice of the manual's tutorial
+videos, and writes
 `build/store_preview/ios/iphone_17_pro_max/store_preview_en_dark.mp4` in the
 form the 6.9" slot takes (886 × 1920, H.264, 30 fps, stereo AAC); the recipe is
 in [knowledge/conventions/screenshots.md](../knowledge/conventions/screenshots.md#the-app-preview-is-the-same-world-walked-by-touch).
+The lines are in
+[`tools/tutorial_videos/config/scenarios/app_store_preview.yaml`](../tools/tutorial_videos/config/scenarios/app_store_preview.yaml),
+in English and German; narrating a listing in another language means adding
+its lines there. Speaking them needs `GEMINI_API_KEY` in `.env`, as the
+tutorial videos do; `LOTTI_PREVIEW_NARRATION=off` cuts a silent preview.
 
 | Slot in App Store Connect | Size | Status |
 |---------------------------|------|--------|
@@ -128,12 +135,15 @@ Before uploading one:
   capture it with QuickTime Player over USB (File › New Movie Recording, the
   phone as camera), and run the file through
   `tool/store_screenshots/app_preview.sh capture.mov preview.mp4 886x1920 <start> <length>`.
+  That cut is silent: the narration is laid by the timeline only a simulator
+  walk can hand over, so a phone capture has no beat times to place it by.
 - A preview "must show only content within the app itself" — no people
   interacting with a device, no fingers tapping the screen — and its
   transitions must not imply functionality the app lacks. The walk is
   unedited footage of the app, so it has no transitions to get wrong.
-- It autoplays **muted**, so nothing in it may depend on sound; the cut carries
-  a silent track. A visitor with autoplay off sees a poster frame instead, and
+- It autoplays **muted**, so nothing in it may depend on sound: every
+  narrated line restates what the footage already shows. A visitor with
+  autoplay off sees a poster frame instead, and
   changing the poster frame of an approved preview means submitting the
   preview again — the cut opens on the task list so an early frame serves.
 - Not confirmed against an actual upload yet: whether App Store Connect accepts

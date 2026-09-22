@@ -1,11 +1,16 @@
 """Scenario configuration: loading and validation.
 
 A scenario YAML (see ``config/scenarios/``) is the single source of truth for
-one tutorial video: ordered steps, per-locale narration, the dictation step's
+one narrated video: ordered steps, per-locale narration, the dictation step's
 user-voice text, and the speech-dictionary terms seeded into the app. This
 module loads a scenario and validates that a requested locale is fully
 buildable — missing text for a locale fails loudly here, before any API call
 or app launch.
+
+The dictionary is optional: the App Store preview (``app_store_preview``)
+walks the app without the tutorial harness and seeds nothing. A scenario
+that dictates, or that declares a dictionary at all, must carry one for every
+locale it is built in.
 """
 
 from __future__ import annotations
@@ -45,7 +50,8 @@ class Scenario:
         missing: list[str] = []
         if locale not in self.title:
             missing.append("title")
-        if not self.dictionary.get(locale):
+        needs_dictionary = bool(self.dictionary) or self.dictation_step is not None
+        if needs_dictionary and not self.dictionary.get(locale):
             missing.append("dictionary")
         for step in self.steps:
             if locale not in step.narration:

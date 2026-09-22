@@ -97,6 +97,27 @@ class TtsPrePassTest(unittest.TestCase):
         on_disk = json.loads((self.tmp / "manifest.json").read_text())
         self.assertEqual(on_disk, manifest)
 
+    def test_scenario_without_a_dictionary_renders_an_empty_one(self):
+        preview = load_scenario(
+            TOOL_ROOT / "config" / "scenarios" / "app_store_preview.yaml"
+        )
+        engine = FakeEngine()
+        manifest = render_scenario_clips(
+            preview,
+            "en",
+            engine,
+            STREAMS,
+            cache_dir=self.tmp / "cache",
+            manifest_path=self.tmp / "preview.json",
+        )
+        self.assertEqual(manifest["dictionary"], [])
+        self.assertEqual(
+            [s["id"] for s in manifest["steps"]], [s.id for s in preview.steps]
+        )
+        # Narrator only: nothing is dictated.
+        self.assertEqual(len(engine.calls), len(preview.steps))
+        self.assertFalse(any("dictation" in s for s in manifest["steps"]))
+
     def test_cache_prevents_resynthesis_and_distinguishes_inputs(self):
         engine = FakeEngine()
         self._render(engine)

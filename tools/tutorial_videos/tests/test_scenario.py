@@ -72,6 +72,28 @@ class ScenarioTest(unittest.TestCase):
         scenario = self._load(no_dictation)
         self.assertIsNone(scenario.dictation_step)
 
+    def test_dictionary_is_optional_without_a_dictation_step(self):
+        silent = """\
+scenario: sample
+title: {en: Title}
+steps:
+  - id: intro
+    min_duration: 3.0
+    narration: {en: Hello}
+"""
+        scenario = self._load(silent)
+        self.assertEqual(scenario.dictionary, {})
+        scenario.validate_locale("en")
+
+    def test_dictation_step_still_needs_a_dictionary(self):
+        undictionaried = VALID.replace(
+            "dictionary:\n  en: [Project Waddle]\n  de: [Projekt Waddle]\n", ""
+        )
+        scenario = self._load(undictionaried)
+        with self.assertRaises(ScenarioError) as ctx:
+            scenario.validate_locale("en")
+        self.assertIn("dictionary", str(ctx.exception))
+
     def test_multiple_dictation_steps_rejected(self):
         doubled = VALID.replace(
             """  - id: intro

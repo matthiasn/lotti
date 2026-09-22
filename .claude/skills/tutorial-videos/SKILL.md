@@ -140,6 +140,13 @@ not exact strings.
 
 ## Adapting / extending
 
+- **App Store preview**: `config/scenarios/app_store_preview.yaml` is the
+  narration of `make store_preview_ios`, not a tutorial — never
+  `make tutorial_video` it. Its step ids must stay the `_beatIds` of
+  `integration_test/store_preview_test.dart` (`tests/test_app_preview.py`
+  guards it), and all four lines together must leave the beats under 30 s
+  (`python3 -m tutorial_videos.app_preview pacing` fails first if not).
+  See the README's "The App Store preview reuses the narration".
 - **Compositor changes**: all OpenMontage API usage is isolated in
   `tutorial_videos/om_compose_driver.py`; bump the pin in
   `config/openmontage.pin` deliberately and re-verify determinism

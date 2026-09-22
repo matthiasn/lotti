@@ -142,7 +142,9 @@ def render_scenario_clips(
         "engine": engine.name,
         "model": engine.model,
         "title": scenario.title[locale],
-        "dictionary": scenario.dictionary[locale],
+        # Empty for a scenario without one (see scenario.py); the tutorial
+        # harness seeds whatever is here into the category.
+        "dictionary": scenario.dictionary.get(locale, []),
         "steps": steps,
     }
     manifest_path.parent.mkdir(parents=True, exist_ok=True)

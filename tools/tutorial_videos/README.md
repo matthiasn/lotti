@@ -266,6 +266,29 @@ from the fake-time policy, see `test/README.md`.
 - **OpenMontage output is stream-deterministic, not byte-identical** —
   compare decoded streams (`ffmpeg -f framemd5`), never file hashes.
 
+## The App Store preview reuses the narration
+
+`make store_preview_ios` narrates the App Store App Preview with this
+workbench: `config/scenarios/app_store_preview.yaml` is its script, and
+`tool/store_screenshots/ios_preview.sh` runs the same `tts` pre-pass, in the
+same narrator voice, on it. It is **not a tutorial scenario** — there is no
+`integration_test/tutorial/app_store_preview_tutorial_test.dart`, so
+`make tutorial_video` cannot build it. The walk is
+`integration_test/store_preview_test.dart` on an iOS simulator, in real time:
+no Xvfb, no virtual microphone, no time warp and no OpenMontage.
+`tutorial_videos/app_preview.py` takes the manifest from there — each beat's
+floor by `TutorialDriver.step`'s rule, handed to the walk as a dart-define;
+the cut and every line placed from the timeline the walk writes, in epoch
+milliseconds, since a simulator shares its host's clock; one narration track
+rendered in the standard library for `app_preview.sh` to cut with the
+picture. Its step ids are the walk's `_beatIds`, and
+`tests/test_app_preview.py` fails when the two drift apart.
+
+A scenario's `dictionary` is optional for this reason: required once a
+scenario dictates or declares one, absent from a script that seeds nothing.
+The recipe is in
+[knowledge/conventions/screenshots.md](../../knowledge/conventions/screenshots.md#the-app-preview-is-the-same-world-walked-by-touch).
+
 ## Adding a scenario or locale
 
 - **Locale**: add the locale's blocks to the scenario YAML (title, per-step
@@ -290,7 +313,8 @@ layer-based: the overlay becomes an additional alpha layer keyed to
 ## Tests
 
 `tests/` (stdlib `unittest`, no network): scenario validation, TTS caching,
-manifest shape, time-warp planning. Run from `tools/tutorial_videos`:
+manifest shape, time-warp planning, and the App Preview's pacing, cut and
+narration placement. Run from `tools/tutorial_videos`:
 
 ```sh
 python3 -m unittest discover -s tests
