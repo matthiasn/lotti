@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
+import 'package:lotti/features/categories/domain/category_knowledge_brief.dart';
 
 /// A published report authorized through its owning task or project.
 /// Summary text is kept distinct from original-entry evidence.
@@ -48,6 +49,8 @@ class QuerySummaryCatalog {
     required Iterable<QuerySummary> tasks,
     required this.incomplete,
     this.project,
+    this.categoryName,
+    this.knowledgeBrief,
   }) : tasks = List.unmodifiable(tasks);
 
   final QueryScope scope;
@@ -55,6 +58,15 @@ class QuerySummaryCatalog {
   final List<QuerySummary> tasks;
   final QuerySummary? project;
   final bool incomplete;
+
+  /// The live category's name, so a category question is not asked of a
+  /// bare identifier.
+  final String? categoryName;
+
+  /// The category's user-written knowledge brief, or null when blank. It is
+  /// the user's own framing, not a derived report, and is the only context a
+  /// category with few maintained reports has.
+  final String? knowledgeBrief;
 }
 
 /// Reads the existing maintained report layers without crawling task entries,
@@ -142,7 +154,11 @@ class QuerySummaryReader {
                 ? 1
                 : 2;
             final byScope = priority(a).compareTo(priority(b));
-            return byScope == 0 ? a.meta.id.compareTo(b.meta.id) : byScope;
+            if (byScope != 0) return byScope;
+            // Recent work first, so a budget-bounded orientation offers the
+            // tasks a question most likely means rather than a UUID slice.
+            final byRecency = b.meta.updatedAt.compareTo(a.meta.updatedAt);
+            return byRecency == 0 ? a.meta.id.compareTo(b.meta.id) : byRecency;
           });
     incomplete = incomplete || tasks.length > maxTasks;
     final boundedTasks = tasks.take(maxTasks).toList();
@@ -212,6 +228,8 @@ class QuerySummaryReader {
       tasks: summaries,
       project: parentSummary,
       incomplete: incomplete,
+      categoryName: live.categories[categoryId]?.name,
+      knowledgeBrief: categoryKnowledgeBriefOf(live.categories[categoryId]),
     );
   }
 

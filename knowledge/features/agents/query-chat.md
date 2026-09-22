@@ -31,11 +31,11 @@ sources:
   - id: summary-reader
     resource: ../../../lib/features/agents/query/query_summary_reader.dart
     title: Maintained task and project report layers
-    last_modified: 2026-09-12
+    last_modified: 2026-09-23
   - id: summary-answer
     resource: ../../../lib/features/agents/query/query_summary_answer_builder.dart
     title: TLDR selection and attributed summary answers
-    last_modified: 2026-09-13
+    last_modified: 2026-09-23
   - id: inference
     resource: ../../../lib/features/agents/query/query_text_inference.dart
     title: Profile routing, fresh device clock context and lenient JSON escapes
@@ -246,7 +246,10 @@ revision across its TL;DR and full-summary layers.
 
 The home-only chip disables wider task discovery. Hidden/deleted links grant no
 access. The reader batches report lookup, includes all task statuses and caps
-the task catalog at 200, prioritizing the home task and its neighbourhood.
+the task catalog at 200, prioritizing the home task and its neighbourhood,
+then the most recently updated tasks. Recency matters because the selection
+budget below admits only a prefix of the catalog: a busy category offers its
+latest work, not an arbitrary slice.
 Missing reports and bounds mark discovery incomplete. The selection request has
 its own complete-input UTF-8 byte bound (24,000 by default); omitted TL;DRs also
 mark incomplete coverage. These are byte bounds, not token estimates.
@@ -258,6 +261,16 @@ Oversized full reports fall back to their TL;DR with incomplete coverage. Reject
 summary text stays out of synthesis. The answer identifies its summary basis and
 attributes claims by owner title. Its structured owner IDs must match the
 supplied reports; numbered original-evidence citations are rejected.
+A category question also carries the category itself. `QuerySummaryCatalog`
+holds the live category's name and its knowledge brief (read through
+`categoryKnowledgeBriefOf`, so a blank brief is absent), and both calls receive
+them as `category` beside `homeScope`, with guidance that the scope is a
+category rather than a home task. The brief is the user's own description, not
+a derived report: the model may answer from it alone, and such an answer is
+resolved with no owner IDs — the one case where an unattributed answer passes
+validation. Without that context a category chat saw only a bare identifier and
+whatever TL;DRs happened to fit, and answered accordingly. Task and project
+scopes do not carry the category context.
 The selection guidance keeps ordinary factual questions on summaries even when
 details are missing. Only explicit home-task original inspection or verbatim
 requests ask for the evidence route, selecting the home owner alone. This is

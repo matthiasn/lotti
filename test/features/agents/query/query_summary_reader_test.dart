@@ -231,4 +231,48 @@ void main() {
       },
     );
   }
+
+  test(
+    'category discovery offers recent tasks first and carries the category',
+    () async {
+      // Orientation is budget-bounded, so whichever tasks come first are the
+      // ones the model can see. Recency, not UUID order, decides that.
+      for (final (id, updatedAt) in [
+        ('a-oldest', DateTime(2026)),
+        ('z-newest', DateTime(2026, 3)),
+        ('m-middle', DateTime(2026, 2)),
+      ]) {
+        task(id);
+        final entry = bench.entries[id]!;
+        bench.entries[id] = entry.copyWith(
+          meta: entry.meta.copyWith(updatedAt: updatedAt),
+        );
+      }
+      bench.entries.remove('home');
+      bench.categories[0] = categoryMindfulness.copyWith(
+        knowledgeBrief: '  Breathing drills for the penguin colony.  ',
+      );
+      final categoryScope = QueryScope(
+        kind: QueryScopeKind.category,
+        id: category,
+      );
+
+      final catalog = await reader.discover(categoryScope);
+
+      expect(catalog.tasks.map((s) => s.owner.id), [
+        'z-newest',
+        'm-middle',
+        'a-oldest',
+      ]);
+      expect(catalog.categoryName, 'Mindfulness');
+      expect(
+        catalog.knowledgeBrief,
+        'Breathing drills for the penguin colony.',
+      );
+
+      // A brief cleared to whitespace reads as absent, never as blank text.
+      bench.categories[0] = categoryMindfulness.copyWith(knowledgeBrief: ' ');
+      expect((await reader.discover(categoryScope)).knowledgeBrief, isNull);
+    },
+  );
 }
