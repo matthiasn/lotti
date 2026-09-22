@@ -76,13 +76,20 @@ final RegExp _openQuestionPattern = RegExp(
 /// commas — "weighing whether the talk should be scheduled for March,
 /// confirmed for June, or dropped" — and every item stays governed by the
 /// `whether`. What ends it is a second statement: ", and the March conference
-/// is confirmed", ", but it was confirmed". Requiring a fresh subject after
-/// the conjunction keeps the last item of a list ("…, and dropped") inside.
+/// is confirmed", ", but it was confirmed", ", and Ines confirmed the date".
+/// Requiring a fresh subject after the conjunction keeps the last item of a
+/// list ("…, and dropped") inside.
+///
+/// A named subject is only visible in the original casing, so this runs on
+/// the report as written: a capitalised word counts when a lowercase word —
+/// its predicate — follows it. That keeps a capitalised last list item
+/// ("March, June, and August.") inside the question, which matters because
+/// month names are exactly the claims these scenarios check.
 final RegExp _openQuestionBreakPattern = RegExp(
   '[:–—]|'
-  r',\s*(?:and|but|while|whereas|so|yet)\s+(?:the|a|an|this|that|these|those|'
-  'it|its|we|they|he|she|i|you|there|our|their|his|her)'
-  r'(?![\p{L}])',
+  r',\s*(?:and|but|while|whereas|so|yet)\s+(?:(?:the|a|an|this|that|these|'
+  'those|it|its|we|they|he|she|i|you|there|our|their|his|her)'
+  r'(?![\p{L}])|I(?![\p{L}])|\p{Lu}\p{Ll}+(?=\s+\p{Ll}))',
   unicode: true,
 );
 
@@ -201,6 +208,9 @@ bool containsAffirmativeReportClaim(
   bool clauseScoped = false,
 }) {
   final normalizedText = text.toLowerCase();
+  // Lowercasing can change a string's length (a dotted capital I, for one);
+  // only then do scope boundaries fall back to the lowercase text.
+  final sameShape = normalizedText.length == text.length;
   final needle = claim.toLowerCase();
   var index = normalizedText.indexOf(needle);
   while (index != -1) {
@@ -240,13 +250,23 @@ bool containsAffirmativeReportClaim(
       null => after,
     };
     final clause = '$clauseBefore $clauseAfter';
+    // Boundaries come from the report as written (see
+    // [_openQuestionBreakPattern]); the offsets carry over to the lowercase
+    // text because lowercasing kept every character in place.
+    final cased = sameShape ? text : normalizedText;
+    // Searched through the claim itself, because a named subject's predicate
+    // may be the claim ("…, and Ines confirmed"); only a break that ends
+    // before the claim counts.
     final questionBefore = switch (_openQuestionBreakPattern
-        .allMatches(before)
+        .allMatches(cased.substring(start, end))
+        .where((brk) => brk.end <= index - start)
         .lastOrNull) {
       final Match brk => before.substring(brk.end),
       null => before,
     };
-    final questionAfter = switch (_openQuestionBreakPattern.firstMatch(after)) {
+    final questionAfter = switch (_openQuestionBreakPattern.firstMatch(
+      cased.substring(end, stop),
+    )) {
       final Match brk => after.substring(0, brk.start),
       null => after,
     };

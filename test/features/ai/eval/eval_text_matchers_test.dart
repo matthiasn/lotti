@@ -459,6 +459,26 @@ void main() {
       );
     });
 
+    test('a named subject after the conjunction starts a new statement', () {
+      // From review of this change: a repeated name is a new subject too.
+      expect(
+        containsAffirmativeReportClaim(
+          'Ines is weighing whether to submit, and Ines confirmed the March '
+              'conference',
+          'confirmed',
+        ),
+        isTrue,
+      );
+      // A capitalised last alternative is still one of the options.
+      expect(
+        containsAffirmativeReportClaim(
+          'Ines is weighing whether to submit in June, July, and March.',
+          'march',
+        ),
+        isFalse,
+      );
+    });
+
     test('an open question governs every alternative it lists', () {
       // From review of this change: list commas must not end the question.
       const listedAlternatives =
