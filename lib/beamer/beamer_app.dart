@@ -8,6 +8,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/beamer/drawer_first_back_button_dispatcher.dart';
+import 'package:lotti/beamer/locations/events_location.dart';
 import 'package:lotti/beamer/locations/goals_location.dart';
 import 'package:lotti/beamer/locations/habits_location.dart';
 import 'package:lotti/beamer/locations/journal_location.dart';
@@ -35,6 +36,7 @@ import 'package:lotti/features/design_system/components/toasts/toast_messenger.d
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/events/ui/pages/events_overview_page.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/pages/unified_goals_page.dart';
 import 'package:lotti/features/habits/ui/habits_page.dart';
@@ -137,6 +139,17 @@ bool isTaskDetailRoute(BeamLocation<dynamic>? location, int activeTabIndex) {
 bool isLogbookEntryDetailRoute(BeamLocation<dynamic>? location) {
   if (location is! JournalLocation) return false;
   return isUuid(location.state.pathParameters['entryId']);
+}
+
+/// Whether the events tab is showing one event's page rather than the
+/// overview.
+///
+/// The overview's "new event" action docks on the mobile navigation
+/// launcher, which stays up on an event's page — where a plus would read as
+/// adding to *that* event, so the overview's action must leave the rail.
+bool isEventDetailRoute(BeamLocation<dynamic>? location) {
+  if (location is! EventsLocation) return false;
+  return location.state.pathParameters['eventId'] != null;
 }
 
 /// Layout allowance for the docked day-view column on the desktop shell:
@@ -1396,8 +1409,8 @@ class _AppScreenState extends ConsumerState<AppScreen> {
   ///
   /// Exactly the destinations whose list page floats a create button today:
   /// leaving it in the corner would stack two floating controls above the
-  /// centred launcher, neither of them looking placed. Daily OS, Dashboards,
-  /// Events and Settings float nothing, so they leave the launcher
+  /// centred launcher, neither of them looking placed. Daily OS, Dashboards
+  /// and Settings float nothing, so they leave the launcher
   /// centred alone — which is what makes a docked action read as belonging
   /// to the page rather than to the shell.
   ///
@@ -1407,7 +1420,8 @@ class _AppScreenState extends ConsumerState<AppScreen> {
   ///
   /// Route-sensitive only where a tab's detail page keeps the bar *and* owns
   /// a different action: an entry's own page creates a linked entry, so the
-  /// logbook's action leaves the rail there. The projects, goals, habits and
+  /// logbook's action leaves the rail there, and an event's page is not where
+  /// a new event is made. The projects, goals, habits and
   /// people tabs slide the whole launcher away on their detail routes, so their
   /// actions need no such check.
   MobileNavDockAction? _launcherDockAction(
@@ -1426,9 +1440,12 @@ class _AppScreenState extends ConsumerState<AppScreen> {
       ref,
     ),
     _AppNavigationDestinationKind.people => peopleTabDockAction(context),
+    _AppNavigationDestinationKind.events =>
+      isEventDetailRoute(navService.eventsDelegate.currentBeamLocation)
+          ? null
+          : eventsTabDockAction(context),
     _AppNavigationDestinationKind.dailyOs ||
     _AppNavigationDestinationKind.dashboards ||
-    _AppNavigationDestinationKind.events ||
     _AppNavigationDestinationKind.settings => null,
   };
 

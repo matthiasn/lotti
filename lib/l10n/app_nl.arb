@@ -2880,7 +2880,7 @@
   "eventsAddLabel": "Toevoegen",
   "eventsChangeCover": "Omslag wijzigen",
   "eventsDeleteEvent": "Gebeurtenis verwijderen",
-  "eventsFilterAll": "Alles",
+  "eventsFilterTooltip": "Gebeurtenissen filteren",
   "eventsMetricPhotos": "{count, plural, =1{1 foto} other{{count} foto's}}",
   "@eventsMetricPhotos": {
     "placeholders": {
@@ -2898,6 +2898,7 @@
     }
   },
   "eventsNewEvent": "Nieuwe gebeurtenis",
+  "eventsNoResults": "Geen overeenkomende gebeurtenissen",
   "eventsPageTitle": "Gebeurtenissen",
   "eventsPhotosSection": "Foto's",
   "eventsRecapAwaitingContent": "Voeg een foto of notitie toe en de samenvatting verschijnt hier.",

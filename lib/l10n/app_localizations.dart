@@ -10649,11 +10649,17 @@ abstract class AppLocalizations {
   /// **'Delete event'**
   String get eventsDeleteEvent;
 
-  /// No description provided for @eventsFilterAll.
+  /// No description provided for @eventsFilterTooltip.
   ///
   /// In en, this message translates to:
-  /// **'All'**
-  String get eventsFilterAll;
+  /// **'Filter events'**
+  String get eventsFilterTooltip;
+
+  /// No description provided for @eventsNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching events'**
+  String get eventsNoResults;
 
   /// No description provided for @eventsMetricPhotos.
   ///

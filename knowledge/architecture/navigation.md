@@ -5,7 +5,7 @@ description: Ten independent Beamer stacks behind one IndexedStack, how the acti
 resource: ../../lib/beamer
 tags: [architecture, navigation, beamer, routing, app-shell]
 status: stable
-generated: { by: claude-code/fable-5.1, at: 2026-09-22T09:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-23T12:00:00Z }
 stale_after: 2027-03-22
 sources:
   - id: route-mirror
@@ -811,7 +811,7 @@ leave visible.
 
 `MobileNavigationLauncher.pageAction` is the second slot. The **shell** decides
 who fills it, from the active destination alone
-(`_AppScreenState._launcherDockAction`) — exactly the six destinations whose
+(`_AppScreenState._launcherDockAction`) — exactly the seven destinations whose
 list page floats a create button:
 
 | Destination | Factory | Chip |
@@ -822,7 +822,8 @@ list page floats a create button:
 | Projects | `projectsTabDockAction` | glyph |
 | Goals | `unifiedGoalsDockAction` | glyph |
 | Habits | `habitsTabDockAction` | glyph |
-| Daily OS, Dashboards, Events, Settings | — | none |
+| Events | `eventsTabDockAction` | glyph — off on an event's page |
+| Daily OS, Dashboards, Settings | — | none |
 
 Nothing is registered from inside a page: the `IndexedStack` keeps every tab
 mounted, so a page-owned registry would keep its action docked on every other
@@ -841,7 +842,7 @@ changed since the last shell rebuild still applies.
 
 One predicate decides the handover:
 `mobileNavigationLauncherOwnsPageActions(context)` — a non-desktop window — is
-what each of the six pages reads to drop its own
+what each of the seven pages reads to drop its own
 `DesignSystemFloatingActionButton`, on exactly the windows where the shell
 floats the launcher and docks the action on it. One rule, one place; the action
 moves onto the row rather than being duplicated above it.

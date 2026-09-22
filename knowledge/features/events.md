@@ -5,13 +5,13 @@ description: A first-class destination for meaningful moments — its own entity
 resource: ../../lib/features/events
 tags: [events, memories, view-models, localization]
 status: stable
-generated: { by: codex/5, at: 2026-08-05T01:02:35+02:00 }
+generated: { by: claude-code/opus-5.5, at: 2026-09-23T12:00:00Z }
 stale_after: 2027-02-22
 sources:
   - id: src
     resource: ../../lib/features/events
     title: Events feature source
-    last_modified: 2026-08-05
+    last_modified: 2026-09-23
 ---
 
 Events are the meaningful moments — a birthday, a trip, a wedding, an upcoming
@@ -38,7 +38,7 @@ flowchart TD
     DB[(JournalDb + EntitiesCacheService)]
 
     subgraph Overview
-      ESP[eventsOverviewControllerProvider<br/>EVENT + LINK_CHANGED refresh<br/>loadResolvedEventsPage paged] -->|ResolvedEvent page| OP[EventsOverviewPage]
+      ESP[eventsOverviewControllerProvider<br/>query + categoryIds<br/>EVENT + LINK_CHANGED refresh<br/>loadResolvedEventsPage paged] -->|ResolvedEvent page| OP[EventsOverviewPage]
       OP -->|eventCardDataFromEvent<br/>+ groupEventsIntoSections| OV[EventsOverviewView]
       OV --> CARD[EventCard / EventFeatureCard]
     end
@@ -65,6 +65,56 @@ unit-tested in isolation.
 the active localizations and locale-aware formatter. Persistence stores only
 stable status enums and timestamps, **never rendered copy** — so changing the app
 language updates both surfaces immediately without migrating an event.
+
+# Finding an event
+
+The overview header is the shared `TabSectionHeader` the Tasks, Projects and
+Logbook tabs use — title and bell, then a real search field beside the filter
+funnel — and the page, header and card grid share one content column
+(`detailContentInsets`), so the title, the field and the first card start on
+the same edge. There is no events-only chip row: the category filter works the
+way the Tasks filter does.
+
+```mermaid
+flowchart LR
+    Field[Search field] -->|every edit| SQ[setQuery]
+    Funnel[Filter funnel] --> Modal[showEventsFilterModal<br/>shared filter modal,<br/>category page only]
+    Modal -->|Apply| SC[setCategoryIds]
+    Chip[ActiveFilterChip] -->|remove one| SC
+    ClearAll["Clear all"] --> CF[clearFilters]
+    SQ --> AF[_applyFilters<br/>generation++]
+    SC --> AF
+    CF --> AF
+    AF --> Load[loadResolvedEventsPage<br/>first page]
+    Load -->|generation still current| State[EventsOverviewState]
+```
+
+**Search is a substring match over the title and the note text, run in Dart.**
+The full-text index does not carry event titles (`Fts5Db.insertText` indexes a
+title only for tasks), so matching there would miss the one field a user
+searches by. With a query, `loadResolvedEventsPage` reads the whole category
+scope, keeps `eventMatchesQuery` hits and pages *those*; without one it pages in
+the database as before. Covers resolve only for the returned page either way.
+
+**Every keystroke reloads, and only the newest one lands.** Like the Tasks
+search there is no debounce; `_applyFilters` bumps the generation that already
+guards `loadMore` and sync refreshes, so a slow earlier keystroke cannot
+overwrite a later result. The previous list stays on screen while a reload
+runs, and a filter that matches nothing shows an empty state that offers
+**Clear all** rather than a blank page.
+
+**Categories are multi-select, behind the funnel.** `showEventsFilterModal` is
+the shared `showDesignSystemFilterModal` with only the category field — Unassigned
+(`''`) first, then each category with its icon and colour. With a single field
+the shared modal opens straight on that field's page (see
+[Tasks filtering](tasks/filtering.md#the-filter-modal)). Applied categories show
+as `ActiveFilterChip`s in their own colours, the funnel tints, and from two
+narrowings up — the query counts as one — a **Clear all** chip ends the session.
+
+**New event** is the page's `DesignSystemFloatingActionButton`, a bare glyph
+like Projects'. On phones the navigation launcher docks it instead
+(`eventsTabDockAction`), and takes it away on an event's own page
+(`isEventDetailRoute`), where a plus would read as adding to that event.
 
 # One way in
 

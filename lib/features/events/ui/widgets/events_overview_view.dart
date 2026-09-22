@@ -1,43 +1,72 @@
-import 'package:lotti/features/design_system/theme/breakpoints.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
+import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
+import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import 'package:lotti/features/events/ui/widgets/event_card.dart';
 import 'package:lotti/features/events/ui/widgets/event_feature_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
+import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The Events overview: a memory-forward, photo-led wall of event cards,
-/// grouped into time sections and filterable by category.
+/// grouped into time sections, searchable and filterable by category.
 ///
-/// Pure/presentational — it takes already-resolved [sections] and renders a
-/// responsive layout: featured sections become full-width hero cards, ordinary
-/// sections become a width-filling card grid (one column on phones, several on
-/// desktop). A provider supplies the data; this widget owns only layout.
+/// Pure/presentational — it takes already-resolved [sections] and renders the
+/// shared tab header (title, search field, filter funnel), the removable chips
+/// of the active category filter, and a responsive card layout: featured
+/// sections become full-width hero cards, ordinary sections become a
+/// width-filling card grid. Header and cards share one content column, so the
+/// title, the search field and the first card start on the same edge. A page
+/// supplies the data; this widget owns only layout.
 class EventsOverviewView extends StatelessWidget {
   const EventsOverviewView({
     required this.sections,
-    this.subtitle,
-    this.categories = const [],
-    this.selectedCategoryId,
-    this.onSelectCategory,
+    this.query = '',
+    this.activeCategories = const [],
+    this.onQueryChanged,
+    this.onFilterPressed,
+    this.onRemoveCategory,
+    this.onClearFilters,
     this.onOpenEvent,
     this.onCreate,
-    this.onSearch,
     this.onLoadMore,
     this.isLoadingMore = false,
     super.key,
   });
 
   final List<EventSection> sections;
-  final String? subtitle;
-  final List<EventCategoryFilter> categories;
-  final String? selectedCategoryId;
-  final ValueChanged<String?>? onSelectCategory;
+
+  /// The search text, seeded into the header's field.
+  final String query;
+
+  /// Categories currently narrowing the list, rendered as removable chips.
+  final List<EventCategoryFilter> activeCategories;
+
+  /// Called on every edit of the search field, and with `''` when cleared.
+  final ValueChanged<String>? onQueryChanged;
+
+  /// Opens the category filter. The funnel tints while [activeCategories]
+  /// is non-empty.
+  final VoidCallback? onFilterPressed;
+
+  /// Removes one category from the filter (the chip's id).
+  final ValueChanged<String>? onRemoveCategory;
+
+  /// Drops the query and every category at once.
+  final VoidCallback? onClearFilters;
+
   final ValueChanged<EventCardData>? onOpenEvent;
+
+  /// Creates an event. Floats as the page's action button, unless the mobile
+  /// navigation launcher docks it on its own row.
   final VoidCallback? onCreate;
-  final VoidCallback? onSearch;
 
   /// Called when the user scrolls near the bottom and more pages remain. Null
   /// when the full archive is loaded, which also hides the trailing spinner.
@@ -48,23 +77,44 @@ class EventsOverviewView extends StatelessWidget {
   final bool isLoadingMore;
 
   /// Target card width; column count is derived from the available width.
-  static const double _targetCardWidth = 340;
+  static const double _targetCardWidth = 280;
+
+  bool get _isFiltered =>
+      activeCategories.isNotEmpty || query.trim().isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final gap = tokens.spacing.step4;
-    final edge = tokens.spacing.step4;
+    final create = onCreate;
+    final showFab =
+        create != null && !mobileNavigationLauncherOwnsPageActions(context);
 
     return Scaffold(
       backgroundColor: dsPageSurface(context),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: showFab
+          ? DesignSystemBottomNavigationFabPadding(
+              // A bare glyph, like Projects: the page title already says
+              // what the plus makes (see [MobileNavDockAction]).
+              child: DesignSystemFloatingActionButton(
+                semanticLabel: context.messages.eventsNewEvent,
+                onPressed: create,
+              ),
+            )
+          : null,
       body: SafeArea(
-        // One LayoutBuilder at the top resolves the grid's column count from the
-        // viewport width, so the lazy slivers below can chunk events into rows
-        // without each re-measuring.
+        bottom: false,
+        // One LayoutBuilder at the top resolves the shared content column and
+        // the grid's column count, so the lazy slivers below can chunk events
+        // into rows without each re-measuring.
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final contentWidth = constraints.maxWidth - edge * 2;
+            final insets = detailContentInsets(
+              context,
+              availableWidth: constraints.maxWidth,
+            );
+            final contentWidth = constraints.maxWidth - insets.horizontal;
             final columns = (contentWidth / _targetCardWidth).floor().clamp(
               1,
               4,
@@ -75,8 +125,8 @@ class EventsOverviewView extends StatelessWidget {
               // is fully loaded, so firing on every scroll tick is safe.
               onNotification: (notification) {
                 final loadMore = onLoadMore;
-                // depth == 0 keeps nested scrollables (the horizontal category
-                // chip row) from triggering pagination.
+                // depth == 0 keeps nested scrollables (the search field's own
+                // horizontal text scroll) from triggering pagination.
                 if (loadMore != null &&
                     notification.depth == 0 &&
                     notification.metrics.axis == Axis.vertical &&
@@ -87,46 +137,67 @@ class EventsOverviewView extends StatelessWidget {
                 return false;
               },
               child: CustomScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
                 slivers: [
                   SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        edge,
-                        tokens.spacing.step4,
-                        edge,
-                        tokens.spacing.step2,
-                      ),
-                      child: _Header(
-                        subtitle: subtitle,
-                        categories: categories,
-                        selectedCategoryId: selectedCategoryId,
-                        onSelectCategory: onSelectCategory,
-                        onSearch: onSearch,
-                        onCreateInHeader: onCreate,
-                      ),
+                    child: TabSectionHeader(
+                      title: context.messages.eventsPageTitle,
+                      query: query,
+                      searchHint: context.messages.eventsSearchHint,
+                      filterTooltip: context.messages.eventsFilterTooltip,
+                      filtersActive: activeCategories.isNotEmpty,
+                      onSearchChanged: (value) => onQueryChanged?.call(value),
+                      onSearchCleared: () => onQueryChanged?.call(''),
+                      onSearchPressed: (value) => onQueryChanged?.call(value),
+                      onFilterPressed: () => onFilterPressed?.call(),
                     ),
                   ),
-                  for (final section in sections) ...[
+                  if (activeCategories.isNotEmpty)
+                    SliverToBoxAdapter(
+                      child: _ActiveFilters(
+                        categories: activeCategories,
+                        searchActive: query.trim().isNotEmpty,
+                        onRemoveCategory: onRemoveCategory,
+                        onClearFilters: onClearFilters,
+                      ),
+                    ),
+                  if (sections.isEmpty && _isFiltered)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: DesignSystemEmptyState(
+                        icon: LottiIcons.searchOff,
+                        title: context.messages.eventsNoResults,
+                        action: onClearFilters == null
+                            ? null
+                            : DesignSystemButton(
+                                label: context.messages.tasksFilterClearAll,
+                                variant: DesignSystemButtonVariant.secondary,
+                                onPressed: onClearFilters,
+                              ),
+                      ),
+                    ),
+                  for (final (index, section) in sections.indexed) ...[
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          edge,
-                          tokens.spacing.step7,
-                          edge,
-                          tokens.spacing.step2,
+                        // The first section sits one beat under the header so
+                        // it reads as the start of the content; later
+                        // sections keep the wider break between years.
+                        padding: insets.copyWith(
+                          top: index == 0
+                              ? tokens.spacing.step4
+                              : tokens.spacing.step7,
+                          bottom: tokens.spacing.step3,
                         ),
                         child: Text(
                           section.title,
                           style: tokens.typography.styles.subtitle.subtitle1
-                              .copyWith(
-                                color: context.colorScheme.onSurface,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              .copyWith(color: tokens.colors.text.highEmphasis),
                         ),
                       ),
                     ),
                     SliverPadding(
-                      padding: EdgeInsets.symmetric(horizontal: edge),
+                      padding: insets,
                       sliver: section.featured
                           ? _featuredSliver(section, gap)
                           : _gridSliver(
@@ -145,7 +216,9 @@ class EventsOverviewView extends StatelessWidget {
                       child: Center(
                         child: isLoadingMore
                             ? const CircularProgressIndicator()
-                            : SizedBox(height: tokens.spacing.step6),
+                            // Clears the floating action button, so the last
+                            // row of cards can scroll out from under it.
+                            : SizedBox(height: tokens.spacing.step10),
                       ),
                     ),
                   ),
@@ -231,218 +304,60 @@ class EventsOverviewView extends StatelessWidget {
   }
 }
 
-class _Header extends StatelessWidget {
-  const _Header({
-    required this.subtitle,
+/// The active category filter as removable chips — the same row the Tasks and
+/// Projects tabs render under their header. Each chip wears its category's
+/// own colour, so a category reads as one colour on the chip and on its cards.
+/// From two narrowings up (the search query counts as one), a "Clear all"
+/// chip ends the whole filter session in one tap.
+class _ActiveFilters extends StatelessWidget {
+  const _ActiveFilters({
     required this.categories,
-    required this.selectedCategoryId,
-    required this.onSelectCategory,
-    required this.onSearch,
-    required this.onCreateInHeader,
+    required this.searchActive,
+    required this.onRemoveCategory,
+    required this.onClearFilters,
   });
 
-  final String? subtitle;
   final List<EventCategoryFilter> categories;
-  final String? selectedCategoryId;
-  final ValueChanged<String?>? onSelectCategory;
-  final VoidCallback? onSearch;
-
-  /// When non-null, shows a responsive "New event" action in the header.
-  final VoidCallback? onCreateInHeader;
+  final bool searchActive;
+  final ValueChanged<String>? onRemoveCategory;
+  final VoidCallback? onClearFilters;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final cs = context.colorScheme;
-    final styles = tokens.typography.styles;
+    final clearAll = onClearFilters;
+    final showClearAll =
+        clearAll != null && categories.length + (searchActive ? 1 : 0) >= 2;
 
-    final title = Text(
-      context.messages.eventsPageTitle,
-      style: styles.heading.heading1.copyWith(color: cs.onSurface),
-    );
-    final subtitleText = subtitle == null
-        ? null
-        : Text(
-            subtitle!,
-            style: styles.body.bodyMedium.copyWith(
-              color: cs.onSurfaceVariant,
-            ),
-          );
-    final createButton = onCreateInHeader == null
-        ? null
-        : FilledButton.icon(
-            onPressed: onCreateInHeader,
-            icon: const Icon(LottiIcons.add),
-            label: Text(context.messages.eventsNewEvent),
-          );
-    final categoryChips = categories.isEmpty
-        ? null
-        : SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                for (final category in categories) ...[
-                  _FilterChip(
-                    filter: category,
-                    selected: category.id == selectedCategoryId,
-                    onTap: onSelectCategory == null
-                        ? null
-                        : () => onSelectCategory!(category.id),
-                  ),
-                  SizedBox(width: tokens.spacing.step2),
-                ],
-              ],
-            ),
-          );
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth < kDesktopBreakpoint) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              title,
-              if (subtitleText != null) ...[
-                SizedBox(height: tokens.spacing.step1),
-                subtitleText,
-              ],
-              if (createButton != null) ...[
-                SizedBox(height: tokens.spacing.step3),
-                SizedBox(width: double.infinity, child: createButton),
-              ],
-              SizedBox(height: tokens.spacing.step4),
-              _SearchField(onTap: onSearch),
-              if (categoryChips != null) ...[
-                SizedBox(height: tokens.spacing.step3),
-                categoryChips,
-              ],
-            ],
-          );
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                title,
-                if (subtitleText != null) ...[
-                  SizedBox(width: tokens.spacing.step3),
-                  Expanded(child: subtitleText),
-                ] else
-                  const Spacer(),
-                if (createButton case final FilledButton createButton)
-                  createButton,
-              ],
-            ),
-            SizedBox(height: tokens.spacing.step4),
-            _SearchField(onTap: onSearch),
-            if (categoryChips != null) ...[
-              SizedBox(height: tokens.spacing.step3),
-              categoryChips,
-            ],
-          ],
-        );
-      },
-    );
-  }
-}
-
-/// A prominent, tappable search affordance — far more discoverable than a bare
-/// icon for a surface that can hold dozens of events.
-class _SearchField extends StatelessWidget {
-  const _SearchField({this.onTap});
-
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final cs = context.colorScheme;
-    return Material(
-      color: dsCardSurface(context),
-      borderRadius: BorderRadius.circular(tokens.radii.m),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.step3,
-            vertical: tokens.spacing.step3,
-          ),
-          child: Row(
-            children: [
-              Icon(LottiIcons.search, size: 20, color: cs.onSurfaceVariant),
-              SizedBox(width: tokens.spacing.step2),
-              Text(
-                context.messages.eventsSearchHint,
-                style: tokens.typography.styles.body.bodyMedium.copyWith(
-                  color: cs.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
+    return DetailContentWidth(
+      child: Padding(
+        padding: EdgeInsets.only(
+          top: tokens.spacing.step2,
+          bottom: tokens.spacing.step3,
         ),
-      ),
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.filter,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final EventCategoryFilter filter;
-  final bool selected;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final cs = context.colorScheme;
-    final accent = filter.id == null ? cs.primary : filter.color;
-
-    return Material(
-      color: selected ? accent.withValues(alpha: 0.30) : Colors.transparent,
-      shape: StadiumBorder(
-        side: BorderSide(
-          color: selected ? accent : cs.outlineVariant,
-          width: selected ? 1.5 : 1,
-        ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.step3,
-            vertical: tokens.spacing.step2,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+        child: SizedBox(
+          width: double.infinity,
+          child: Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: tokens.spacing.step3,
+            runSpacing: tokens.spacing.step3,
             children: [
-              if (filter.id != null) ...[
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: filter.color,
-                    shape: BoxShape.circle,
-                  ),
+              for (final category in categories)
+                ActiveFilterChip(
+                  label: category.label,
+                  accentColor: category.color,
+                  onRemove: () => onRemoveCategory?.call(category.id),
                 ),
-                SizedBox(width: tokens.spacing.step2),
-              ],
-              Text(
-                filter.label,
-                style: tokens.typography.styles.body.bodyMedium.copyWith(
-                  color: selected ? cs.onSurface : cs.onSurfaceVariant,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+              // No extra leading pad (unlike the row's single-chip removals):
+              // when the action wraps, a pad would indent it off the column
+              // edge the chips above start on.
+              if (showClearAll)
+                DesignSystemChip(
+                  size: DesignSystemChipSize.compactPill,
+                  label: context.messages.tasksFilterClearAll,
+                  leadingIcon: LottiIcons.close,
+                  onPressed: clearAll,
                 ),
-              ),
             ],
           ),
         ),

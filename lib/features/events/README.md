@@ -14,6 +14,9 @@ Behind the **Enable Events** flag. With it off, events are hidden everywhere.
   swipeable full-screen gallery that follows phone rotation on iOS and Android.
 - **Turns into work when needed.** A task can be created from an event and stays
   linked to it.
+- **Finds a moment fast.** The overview's search field matches event titles and
+  notes as you type, and the filter narrows to one or more categories — the
+  same header, filter sheet and removable chips as the Tasks tab.
 - **Shows up on the day.** An event with a start and end sits on the Daily OS
   Day timeline at that time, beside recorded work, and opens from there. A
   cancelled, missed or postponed one stays off it.
@@ -29,7 +32,7 @@ Behind the **Enable Events** flag. With it off, events are hidden everywhere.
 
 ## What it owns
 
-The events overview and its grouping; the event detail page and its hero
+The events overview, its search and category filter, and its grouping; the event detail page and its hero
 interactions; the pure view models and mapping logic behind both; and the linked
 event card other surfaces render.
 

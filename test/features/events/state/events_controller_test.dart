@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -267,4 +268,103 @@ void main() {
       expect(captured, const [false]);
     },
   );
+
+  group('search', () {
+    ({int limit, int offset, Set<String>? categoryIds}) capturedQuery() {
+      final call = verify(
+        () => db.getJournalEntities(
+          types: any(named: 'types'),
+          ids: any(named: 'ids'),
+          starredStatuses: any(named: 'starredStatuses'),
+          privateStatuses: any(named: 'privateStatuses'),
+          flaggedStatuses: any(named: 'flaggedStatuses'),
+          categoryIds: captureAny(named: 'categoryIds'),
+          limit: captureAny(named: 'limit'),
+          offset: captureAny(named: 'offset'),
+        ),
+      ).captured;
+      // mocktail records captures in argument-name order, so pick by type:
+      // the one set is the category scope, the ints are limit then offset.
+      final ints = call.whereType<int>().toList();
+      return (
+        categoryIds: call.whereType<Set<String>>().firstOrNull,
+        limit: ints[0],
+        offset: ints[1],
+      );
+    }
+
+    test('without a query, pages in the database', () async {
+      stubEvents([_event(id: 'e1')]);
+
+      await loadResolvedEventsPage(limit: 60, offset: 120);
+
+      final query = capturedQuery();
+      expect(query.limit, 60);
+      expect(query.offset, 120);
+      // No selection means every category, not an empty IN list.
+      expect(query.categoryIds, isNull);
+    });
+
+    test(
+      'with a query, scans the whole category scope and pages the matches',
+      () async {
+        stubEvents([
+          _event(id: 'gala-1'),
+          _event(id: 'other'),
+          _event(id: 'gala-2'),
+          _event(id: 'gala-3'),
+        ]);
+
+        final resolved = await loadResolvedEventsPage(
+          limit: 1,
+          offset: 1,
+          categoryIds: {'cat-1', ''},
+          query: 'GALA',
+        );
+
+        // Titles are "Event <id>": three match, and the page after the first
+        // is the second match — paging applies to matches, not raw rows.
+        expect(resolved.map((r) => r.event.meta.id), ['gala-2']);
+        final query = capturedQuery();
+        expect(query.offset, 0);
+        expect(query.limit, greaterThan(1000));
+        expect(query.categoryIds, {'cat-1', ''});
+      },
+    );
+
+    test('a blank query does not switch to scanning', () async {
+      stubEvents([_event(id: 'e1')]);
+
+      await loadResolvedEventsPage(limit: 60, offset: 0, query: '   ');
+
+      expect(capturedQuery().limit, 60);
+    });
+  });
+
+  group('eventMatchesQuery', () {
+    final event = _event(id: 'launch').copyWith(
+      entryText: const EntryText(plainText: 'Ceremonial Sardines served'),
+    );
+
+    test('matches a title substring regardless of case', () {
+      expect(eventMatchesQuery(event, 'LAUN'), isTrue);
+    });
+
+    test('matches the note text', () {
+      expect(eventMatchesQuery(event, 'sardines'), isTrue);
+    });
+
+    test('ignores surrounding whitespace', () {
+      expect(eventMatchesQuery(event, '  launch '), isTrue);
+    });
+
+    test('a blank query matches everything', () {
+      expect(eventMatchesQuery(event, '  '), isTrue);
+    });
+
+    test('rejects text found in neither title nor note', () {
+      expect(eventMatchesQuery(event, 'wedding'), isFalse);
+      expect(eventMatchesQuery(_event(id: 'plain'), 'sardines'), isFalse);
+    });
+  });
 }

@@ -2881,7 +2881,7 @@
   "eventsAddLabel": "Tilføj",
   "eventsChangeCover": "Skift omslag",
   "eventsDeleteEvent": "Slet-begivenhed",
-  "eventsFilterAll": "Alle",
+  "eventsFilterTooltip": "Filtrer begivenheder",
   "eventsMetricPhotos": "{count, plural, =1{1 foto} other{{count} fotos}}",
   "@eventsMetricPhotos": {
     "placeholders": {
@@ -2899,12 +2899,13 @@
     }
   },
   "eventsNewEvent": "Ny begivenhed",
+  "eventsNoResults": "Ingen matchende begivenheder",
   "eventsPageTitle": "Begivenheder",
   "eventsPhotosSection": "Fotos",
   "eventsRecapAwaitingContent": "Tilføj et foto eller en note, og resuméet vil dukke op her.",
   "eventsRecapUnavailable": "Kunne ikke indlæse recapet.",
   "eventsRegenerateSummary": "Regenereringsresumé",
-  "eventsSearchHint": "Søgebegivenheder",
+  "eventsSearchHint": "Søg i begivenheder",
   "eventsSectionUpcoming": "Kommende",
   "eventsStatusCancelled": "Aflyst",
   "eventsStatusCompleted": "Færdiggjort",

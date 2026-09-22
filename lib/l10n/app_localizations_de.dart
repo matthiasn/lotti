@@ -6272,7 +6272,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get eventsDeleteEvent => 'Ereignis löschen';
 
   @override
-  String get eventsFilterAll => 'Alle';
+  String get eventsFilterTooltip => 'Ereignisse filtern';
+
+  @override
+  String get eventsNoResults => 'Keine passenden Ereignisse';
 
   @override
   String eventsMetricPhotos(int count) {
