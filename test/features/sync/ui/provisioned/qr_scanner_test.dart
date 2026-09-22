@@ -586,8 +586,10 @@ void main() {
           final platform = _FakeCameraPlatform(orientation: orientation);
           CameraPlatform.instance = platform;
 
-          final camera = await createQrCamera();
-          addTearDown(camera.dispose);
+          // Created outside the fake clock: the controller's initialisation
+          // waits on platform streams that a fake-async body never drains.
+          final camera = (await tester.runAsync(createQrCamera))!;
+          addTearDown(() => tester.runAsync(camera.dispose));
           await tester.pumpWidget(
             makeTestableWidget2(
               Center(
