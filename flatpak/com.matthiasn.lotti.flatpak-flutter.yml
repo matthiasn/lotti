@@ -66,12 +66,11 @@ modules:
       - -Ddebug=false
       - -Dbuild-date=false
       - -Dmanpage-build=disabled
-      - -Dsdl2=disabled
       - -Dvulkan=disabled
     sources:
       - type: archive
-        url: https://github.com/mpv-player/mpv/archive/v0.38.0.tar.gz
-        sha256: 86d9ef40b6058732f67b46d0bbda24a074fae860b3eaae05bab3145041303066
+        url: https://github.com/mpv-player/mpv/archive/v0.41.0.tar.gz
+        sha256: ee21092a5ee427353392360929dc64645c54479aefdb5babc5cfbb5fad626209
   - name: libsecret
     buildsystem: meson
     config-opts:
