@@ -1661,6 +1661,8 @@ class MockIoFile extends Mock implements io.File {}
 
 class MockIoDirectory extends Mock implements io.Directory {}
 
+class MockIoHttpClient extends Mock implements io.HttpClient {}
+
 class MockSherpaModelRepository extends Mock implements SherpaModelRepository {}
 
 class MockSherpaTranscriptionRepository extends Mock

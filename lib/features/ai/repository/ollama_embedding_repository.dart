@@ -30,8 +30,23 @@ class EmbeddingEndpointUnavailableException implements Exception {
 
   @override
   String toString() =>
-      'Ollama embeddings at $baseUrl are unavailable; '
+      'Ollama embeddings at ${redactEndpoint(baseUrl)} are unavailable; '
       'the next attempt is allowed at ${retryAt.toIso8601String()}';
+}
+
+/// [baseUrl] reduced to scheme, host and port, for logs and messages.
+///
+/// A configured base URL may carry credentials in its user info, or a token
+/// in its path or query behind a reverse proxy; none of that may reach a log
+/// file. An unparsable URL is not echoed at all.
+String redactEndpoint(String baseUrl) {
+  final uri = Uri.tryParse(baseUrl);
+  if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
+    return '<unparsable Ollama URL>';
+  }
+  return uri.hasPort
+      ? '${uri.scheme}://${uri.host}:${uri.port}'
+      : '${uri.scheme}://${uri.host}';
 }
 
 /// Repository for generating text embeddings via Ollama's `/api/embed` endpoint.
@@ -197,7 +212,8 @@ class OllamaEmbeddingRepository {
         circuit.suppressed++;
         if (_isPowerOfTwo(circuit.suppressed)) {
           _log(
-            'suppressed ${circuit.suppressed} embedding calls to $baseUrl '
+            'suppressed ${circuit.suppressed} embedding calls to '
+            '${redactEndpoint(baseUrl)} '
             'during outages; next attempt at ${retryAt.toIso8601String()}',
           );
         }
@@ -222,7 +238,9 @@ class OllamaEmbeddingRepository {
       ..retryAt = null
       ..generation += 1;
     if (recovered) {
-      _log('embedding endpoint $baseUrl is reachable again');
+      _log(
+        'embedding endpoint ${redactEndpoint(baseUrl)} is reachable again',
+      );
     }
   }
 
@@ -239,7 +257,8 @@ class OllamaEmbeddingRepository {
       ..retryAt = retryAt
       ..generation += 1;
     _log(
-      'embedding endpoint $baseUrl is unreachable; suppressing calls until '
+      'embedding endpoint ${redactEndpoint(baseUrl)} is unreachable; '
+      'suppressing calls until '
       '${retryAt.toIso8601String()}',
       level: InsightLevel.warn,
     );

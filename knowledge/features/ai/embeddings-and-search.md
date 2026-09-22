@@ -100,7 +100,13 @@ stateDiagram-v2
   ignored.
 - **Diagnostics stay logarithmic.** The outage and the recovery are each logged
   once under `LogDomain.ai` (`embedding_availability`); suppressed calls are
-  counted cumulatively per URL and reported only at powers of two.
+  counted cumulatively per URL and reported only at powers of two. Logs and
+  the exception text name only the URL's scheme, host and port
+  (`redactEndpoint`), never user info, path or query.
+- **Socket failures arrive wrapped.** The production `IOClient` rethrows a
+  `SocketException` as a `ClientException` subtype that still implements
+  `SocketException`, so a refused connection counts against the transport
+  budget; a test drives that real wrapping.
 
 What callers do with a suppressed call — keeping a real-time batch, stopping a
 manual backfill, deferring report embeddings — is theirs to decide and is not

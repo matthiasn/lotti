@@ -7,6 +7,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
@@ -747,6 +748,51 @@ void main() {
           expect(stillOut.single, isA<EmbeddingEndpointUnavailableException>());
         });
       });
+
+      test('logs and messages never carry credentials from the base URL', () {
+        fakeAsync((async) {
+          const secretUrl =
+              'http://user:hunter2@ollama.lan:11434/p/tok?key=abc';
+          openOutage(async, secretUrl);
+          final suppressed = start(secretUrl);
+          async.flushMicrotasks();
+
+          final text = [...logged, suppressed.single.toString()].join('\n');
+          expect(text, contains('http://ollama.lan:11434'));
+          for (final secret in ['user', 'hunter2', '/p/tok', 'key=abc']) {
+            expect(text, isNot(contains(secret)));
+          }
+        });
+      });
+
+      test(
+        "the production IOClient's refused connection opens the outage",
+        () async {
+          // IOClient wraps a dart:io SocketException in its own
+          // ClientException subtype; this drives that real wrapping rather
+          // than injecting a raw SocketException.
+          final io = MockIoHttpClient();
+          when(() => io.openUrl(any(), any())).thenAnswer(
+            (_) async => throw const SocketException('Connection refused'),
+          );
+          final production = OllamaEmbeddingRepository(
+            httpClient: IOClient(io),
+            domainLogger: logger,
+          );
+
+          await expectLater(
+            production.embed(input: 'text', baseUrl: baseUrl),
+            throwsA(
+              predicate<Object>((e) => '$e'.contains('after 3 attempts')),
+            ),
+          );
+          await expectLater(
+            production.embed(input: 'text', baseUrl: baseUrl),
+            throwsA(isA<EmbeddingEndpointUnavailableException>()),
+          );
+          verify(() => io.openUrl(any(), any())).called(3);
+        },
+      );
 
       test('suppressed calls are reported only at powers of two', () {
         fakeAsync((async) {
