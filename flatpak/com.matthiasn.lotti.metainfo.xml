@@ -40,6 +40,13 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.1.24" date="2026-09-22">
+      <description>
+        <p>Changed: Android reads entry locations without Google Play Services. Lotti now asks Android's own location service for the position of a new entry, so location recording also works on phones without Google's apps. Lotti no longer asks you to switch location services on when it starts: if they are off, a new entry falls back to an approximate location from your network, as it already did when permission was declined.</p>
+        <p>Changed: one kind of suggestion for time entry text. Suggestions to rewrite a running timer's text and to revise a finished time entry's text are now the same suggestion, shown as "Revise time entry text". A newer wording for the same entry replaces the older one instead of piling up next to it.</p>
+        <p>Fixed: accepting a suggested running-timer description no longer fails on another device. When the task agent suggested better text for a timer running on your desktop, confirming it on your phone - or on the same desktop after a restart, or once the timer had stopped - showed "Failed to apply change", because the suggestion only worked where the timer was still running. The text of a time entry now applies wherever you confirm it, whether its timer is running, stopped, or running on another device.</p>
+      </description>
+    </release>
     <release version="1.1.23" date="2026-09-22">
       <description>
         <p>Added: try a sidebar instead of the Navigate button on your phone. Switch on "Mobile sidebar navigation" under Settings → Advanced → Config Flags and the Navigate button makes way for a two-stroke menu button fixed at the top left of every screen that shows navigation. Tap it and a sidebar slides in from the side - the same list of sections the desktop app keeps on its left edge - pushing the page over as a rounded card rather than covering it. Tap the dimmed page, swipe the sidebar away or go back to close it. Each list keeps its own create button in the bottom corner, as on the desktop. It is an experiment, off by default: with the switch off nothing changes.</p>
