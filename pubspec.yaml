@@ -116,6 +116,7 @@ dependencies:
   # module; android/build.gradle pins 36 (targetSdk follows it).
   permission_handler: ^12.0.0+1
   photo_view: ^0.15.0
+  pointycastle: ^4.0.0
   qr_flutter: ^4.0.0
   quiver: ^3.2.1
   record: ^7.1.0

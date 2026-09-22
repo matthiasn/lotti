@@ -1,11 +1,11 @@
 ---
 type: Feature Module
 title: Backup and restore
-description: The profile storage catalog, integrity manifest, verified quiesced staging, and the strict lifecycle coordinator that captures a running profile at rest.
+description: The profile storage catalog, integrity manifest, verified quiesced staging, the strict lifecycle coordinator, and the passphrase-encrypted portable bundle format.
 resource: ../../lib/features/backup_restore
 tags: [backup, restore, recovery, integrity, local-first]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-09-22T20:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-22T23:00:00Z }
 stale_after: 2027-02-22
 sources:
   - id: catalog
@@ -31,6 +31,22 @@ sources:
   - id: service-disposer
     resource: ../../lib/services/service_disposer.dart
     title: ServiceDisposer failure reporting
+    last_modified: 2026-09-22
+  - id: bundle-header
+    resource: ../../lib/features/backup_restore/domain/profile_backup_bundle_header.dart
+    title: ProfileBackupBundleHeader and key slots
+    last_modified: 2026-09-22
+  - id: bundle-codec
+    resource: ../../lib/features/backup_restore/service/profile_backup_bundle_codec.dart
+    title: ProfileBackupBundleCodec
+    last_modified: 2026-09-22
+  - id: bundle-store
+    resource: ../../lib/features/backup_restore/service/profile_backup_bundle_store.dart
+    title: Bundle naming, retention and leftover cleanup
+    last_modified: 2026-09-22
+  - id: ai-key-storage
+    resource: ../../lib/features/ai/database/ai_config_db.dart
+    title: AI provider key references
     last_modified: 2026-09-22
   - id: legacy-day-processing-outbox
     resource: ../../lib/features/daily_os_next/services/day_processing_startup.dart
@@ -63,11 +79,15 @@ flow:
   snapshot from a profile root whose writers have already been stopped.
 - `ProfileBackupCoordinator` closes the running profile strictly, stages it,
   and starts it again (see [strict quiescence](#strict-quiescence-of-a-running-profile)).
+- `ProfileBackupBundleCodec` encrypts a staged snapshot into a portable
+  `.lottibackup` file under the user's passphrase, and decrypts and verifies
+  one back into a staged layout (see [the portable bundle](#the-portable-bundle)).
+- `ProfileBackupBundleStore` names bundles, applies retention and removes what
+  an interrupted backup leaves behind.
 
-Nothing encrypts, packages, or restores a bundle yet, and no user-facing
-action calls the coordinator. A caller must not present the staged directory
-as a supported or portable backup until authenticated encryption, restore
-rollback, and automated restore drills are all connected.
+Nothing restores a bundle into a running profile yet, and no user-facing
+action calls any of this. A bundle is not a supported backup until restore
+with rollback and automated restore drills are connected.
 
 # One profile, not one documents tree
 
@@ -96,7 +116,7 @@ rename is a compile-time change instead of documentation drift.
 | AI consumption | `ai_consumption.sqlite` | include when present | Local interaction and usage ledger |
 | Notifications | `notifications.sqlite` | include when present | Durable notification state |
 | Onboarding | `onboarding_metrics.sqlite` | include when present | Profile-local progress and measurements |
-| AI configuration | `ai_config.sqlite` | include, credential-sensitive | Providers and profiles; API keys currently live here |
+| AI configuration | `ai_config.sqlite` | include, credential-sensitive | Providers and profiles, holding only references to API keys kept in the OS keystore |
 | Daily OS | `day_processing.sqlite` | include when present | Durable day-processing outbox |
 | Legacy Daily OS outbox | `.day_processing_outbox/` | exclude | Mandatory startup migration imports every recoverable job into the SQLite outbox; retained files are a temporary rollback copy |
 | Matrix SDK | `matrix/lotti_sync.db` | include, credential-sensitive | Login session and encryption state; absent in guest worlds |
@@ -265,13 +285,84 @@ The splash replaces the whole widget tree, so every Riverpod provider of the
 old generation is disposed, an active audio recording included. Offering the
 backup action only when nothing is being recorded is the caller's job.
 
+# The portable bundle
+
+`ProfileBackupBundleCodec.package` turns a staged snapshot into one file,
+`lotti-backup-<UTC yyyyMMddTHHmmssZ>-<8 hex>.lottibackup`. Nothing in the name
+describes the profile.
+
+```text
+"LOTTIBAK" | version u8 | header length u32 BE | header JSON | sealed chunks…
+```
+
+- **Header** — the only readable part: container version, cipher, chunk size,
+  a random 16-byte bundle id, and the key slots. No profile name, type, app
+  version, file list or size. A tampered header cannot demand more than
+  1 GiB, 16 passes or 8 lanes of Argon2id before the passphrase is tried.
+- **Key flow** — a random 256-bit data key encrypts the payload. Each key slot
+  holds it wrapped with ChaCha20-Poly1305 under a key derived from the
+  passphrase with Argon2id (64 MiB, 3 passes, one lane by default; the
+  parameters travel in the slot). The wrap authenticates the header core and
+  the slot's own derivation parameters. **The passphrase is the recovery
+  path**: it is never stored, the backup opens on any device that knows it,
+  and a forgotten passphrase cannot be recovered. Slots are kept out of what
+  the payload authenticates, so a recovery-code slot can be added later
+  without re-encrypting. Packaging refuses a passphrase shorter than 12
+  characters.
+- **Payload** — one plaintext stream: `LOTTIARC`, version, the manifest as the
+  first record, every manifest file as a `payload/<path>` record in manifest
+  order, then an end record. It is sealed in 64 KiB ChaCha20-Poly1305 chunks.
+  Chunk *i* uses *i* as an 11-byte big-endian nonce plus a final-chunk flag,
+  and authenticates SHA-256 of the magic, version and header core. Only the
+  real last chunk carries the flag, so a dropped, appended, reordered or
+  foreign chunk fails authentication.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Checked: passphrase long enough
+  [*] --> StageRemoved: passphrase too short
+  Checked --> Written: sealed under a hidden .partial name, flushed
+  Written --> Verified: decrypted and checked end to end with the passphrase
+  Written --> PartialRemoved: staged file changed since staging
+  Verified --> Published: renamed to its final name
+  Verified --> PartialRemoved: damaged on disk
+  PartialRemoved --> StageRemoved
+  Published --> StageRemoved
+  StageRemoved --> [*]
+```
+
+The staged snapshot is plaintext, so it is deleted whatever the outcome. An
+existing bundle is never touched, because each run publishes under a new name.
+All of it runs in a background isolate with synchronous file I/O.
+
+`extract` is the reverse: it refuses an existing target directory, unwraps the
+data key, authenticates every chunk before its bytes are used, checks each
+file's size and SHA-256 against the manifest, keeps each path inside the
+target, and removes the target again on any failure. A wrong passphrase and a
+damaged key slot are deliberately indistinguishable. The result has the staged
+snapshot's layout, which restore will verify again before activating it.
+
+## Retention and leftovers
+
+`ProfileBackupBundleStore` only ever touches names Lotti itself creates:
+
+- `applyRetention(keep: n)` keeps the *n* newest bundles, ordered by the
+  timestamp and suffix in their names rather than file-system times, and never
+  keeps fewer than one;
+- `removeLeftovers` deletes partial bundles and staged or partially staged
+  snapshots — the plaintext an interrupted backup can leave — and must not run
+  while a backup is in progress.
+
 # Privacy and packaging boundary
 
 All included content is personal. `ai_config.sqlite` and the Matrix subtree have
-the stricter `credentials` classification because they currently contain API
-keys, access/session tokens, and encryption material. The manifest lives inside
-the protected payload; an implementation must not publish the staged directory
-or those fields as a plaintext portable backup.
+the stricter `credentials` classification: the Matrix database holds access and
+session tokens and encryption material, and it travels only inside the
+encrypted payload. AI provider API keys live in the OS keystore, which is not
+part of the profile root, so **a backup carries no API keys**; after a restore
+on another device the keys have to be entered again. The manifest lives inside
+the encrypted payload, and the staged directory must never be published as a
+plaintext backup.
 
 Rebuildable indexes are omitted both to reduce size and to avoid treating a
 derived projection as authority. Logs are excluded rather than merely marked
@@ -299,10 +390,10 @@ service-locator and UI dependencies, and the coordinator reaches the profile
 lifecycle only through a `ClosedGenerationRunner` function. The remaining
 layers attach in order:
 
-1. authenticated encrypted packaging and retention;
-2. staged restore with compatibility checks, activation, and rollback;
-3. localized UI, including a recovery affordance on the splash for a failed
-   restart, and end-to-end restore drills.
+1. staged restore with compatibility checks, activation, and rollback;
+2. localized UI — passphrase entry and confirmation, the managed backups
+   directory and its retention setting, and a recovery affordance on the
+   splash for a failed restart — and end-to-end restore drills.
 
 Related: [persistence](../architecture/persistence.md) for database connection
 and WAL behavior, [profiles and demo mode](../architecture/profiles-and-demo-mode.md)
