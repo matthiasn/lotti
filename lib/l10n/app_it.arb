@@ -5218,14 +5218,6 @@
   "relationshipNoLinkedTasks": "Nessuna attività collegata.",
   "relationshipNotEnrolled": "Senza promemoria",
   "relationshipNotFound": "Questa persona non è più nella tua lista.",
-  "relationshipOnTrackCadence": "In linea · {cadence}",
-  "@relationshipOnTrackCadence": {
-    "placeholders": {
-      "cadence": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipPayAttentionTo": "Fai attenzione a",
   "relationshipPhotoAddBanner": "Aggiungi banner",
   "relationshipPhotoAdjustCrop": "Regola il ritaglio",
@@ -5241,7 +5233,8 @@
   "relationshipPhotoRemoveAction": "Rimuovi",
   "relationshipPhotoSaveFailed": "Impossibile salvare la foto",
   "relationshipPhotoSheetTitle": "Foto di {name}",
-  "relationshipPostCallConfirm": "Annota check-in",
+  "relationshipPostCallAskCall": "Hai raggiunto {name}?",
+  "relationshipPostCallAskMessage": "Hai scritto a {name}?",
   "relationshipPostCallDismiss": "Ignora",
   "relationshipPostCallMeta": "Inizio: {time} · {minutes, plural, =0{meno di un minuto} =1{circa 1 min} other{circa {minutes} min}}",
   "@relationshipPostCallMeta": {
@@ -5254,28 +5247,7 @@
       }
     }
   },
-  "relationshipPostCallOfferCall": "Hai chiamato {name} {minutes, plural, =0{meno di un minuto} =1{1 minuto} other{{minutes} minuti}} fa — lo annotiamo finché è fresco?",
-  "@relationshipPostCallOfferCall": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "relationshipPostCallOfferMessage": "Hai scritto a {name} {minutes, plural, =0{meno di un minuto} =1{1 minuto} other{{minutes} minuti}} fa — lo annotiamo finché è fresco?",
-  "@relationshipPostCallOfferMessage": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
+  "relationshipPostCallYes": "Sì, annotalo",
   "relationshipProposalAdded": "Aggiunta → {title}",
   "relationshipProposalEvidence": "Dal contatto del {date}",
   "relationshipProposalUndoFailed": "Impossibile annullare. L’attività potrebbe essere stata modificata.",
@@ -5285,6 +5257,8 @@
   "relationshipReminderPausedBody": "Tornerà allora, a meno che tu non registri prima un contatto.",
   "relationshipReminderPausedTitle": "Promemoria in pausa fino alle {time}",
   "relationshipReminderSnoozeLonger": "Posticipa di più",
+  "relationshipRemindersPillSemantics": "Promemoria: {cadence}. Tocca per cambiare.",
+  "relationshipRemindersSheetTitle": "Promemoria",
   "relationshipRemindersSwitchLabel": "Ricordami di restare in contatto",
   "relationshipsEmptyHint": "Scrivi una riga dopo aver parlato. Lotti ti mostra con chi non parli da un po’ e, se vuoi, te lo ricorda.",
   "relationshipsEmptyState": "Aggiungi le persone a cui vuoi restare vicino.",
@@ -5363,6 +5337,7 @@
   "relationshipTimestampToday": "Oggi",
   "relationshipTimestampYesterday": "Ieri",
   "relationshipTrackingSinceLabel": "Monitoraggio dal {date}",
+  "relationshipTurnRemindersOff": "Disattiva promemoria",
   "relationshipUpdateFromContact": "Aggiorna dal contatto",
   "saveButton": "Salva",
   "saveButtonLabel": "Salva",

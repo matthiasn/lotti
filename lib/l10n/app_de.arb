@@ -4722,14 +4722,6 @@
   "relationshipNoLinkedTasks": "Noch keine Aufgaben verknüpft.",
   "relationshipNotEnrolled": "Ohne Erinnerungen",
   "relationshipNotFound": "Diese Person ist nicht mehr in deiner Liste.",
-  "relationshipOnTrackCadence": "Im Rhythmus · {cadence}",
-  "@relationshipOnTrackCadence": {
-    "placeholders": {
-      "cadence": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipPayAttentionTo": "Darauf achten",
   "relationshipPhotoAddBanner": "Banner hinzufügen",
   "relationshipPhotoAdjustCrop": "Ausschnitt anpassen",
@@ -4745,7 +4737,8 @@
   "relationshipPhotoRemoveAction": "Entfernen",
   "relationshipPhotoSaveFailed": "Foto konnte nicht gespeichert werden",
   "relationshipPhotoSheetTitle": "Foto von {name}",
-  "relationshipPostCallConfirm": "Check-in festhalten",
+  "relationshipPostCallAskCall": "Hast du {name} erreicht?",
+  "relationshipPostCallAskMessage": "Hast du {name} geschrieben?",
   "relationshipPostCallDismiss": "Verwerfen",
   "relationshipPostCallMeta": "begonnen um {time} · {minutes, plural, =0{unter einer Minute} =1{etwa 1 Min.} other{etwa {minutes} Min.}}",
   "@relationshipPostCallMeta": {
@@ -4758,28 +4751,7 @@
       }
     }
   },
-  "relationshipPostCallOfferCall": "Du hast {name} vor {minutes, plural, =0{weniger als einer Minute} =1{1 Minute} other{{minutes} Minuten}} angerufen — jetzt festhalten, solange es frisch ist?",
-  "@relationshipPostCallOfferCall": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "relationshipPostCallOfferMessage": "Du hast {name} vor {minutes, plural, =0{weniger als einer Minute} =1{1 Minute} other{{minutes} Minuten}} geschrieben — jetzt festhalten, solange es frisch ist?",
-  "@relationshipPostCallOfferMessage": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
+  "relationshipPostCallYes": "Ja, festhalten",
   "relationshipProposalAdded": "Hinzugefügt → {title}",
   "relationshipProposalEvidence": "Aus dem Check-in vom {date}",
   "relationshipProposalUndoFailed": "Rückgängig machen nicht möglich. Die Aufgabe wurde möglicherweise geändert.",
@@ -4789,6 +4761,8 @@
   "relationshipReminderPausedBody": "Sie kommt dann wieder, außer du trägst vorher einen Check-in ein.",
   "relationshipReminderPausedTitle": "Erinnerung pausiert bis {time}",
   "relationshipReminderSnoozeLonger": "Länger pausieren",
+  "relationshipRemindersPillSemantics": "Erinnerungen: {cadence}. Tippen zum Ändern.",
+  "relationshipRemindersSheetTitle": "Erinnerungen",
   "relationshipRemindersSwitchLabel": "Erinnere mich daran, in Kontakt zu bleiben",
   "relationshipsEmptyHint": "Notiere nach einem Gespräch eine Zeile. Lotti zeigt dir, mit wem du länger nicht gesprochen hast, und erinnert dich, wenn du möchtest.",
   "relationshipsEmptyState": "Füge die Menschen hinzu, denen du nah bleiben willst.",
@@ -4867,6 +4841,7 @@
   "relationshipTimestampToday": "Heute",
   "relationshipTimestampYesterday": "Gestern",
   "relationshipTrackingSinceLabel": "Erfasst seit {date}",
+  "relationshipTurnRemindersOff": "Erinnerungen ausschalten",
   "relationshipUpdateFromContact": "Aus Kontakt aktualisieren",
   "saveButton": "Speichern",
   "saveButtonLabel": "Speichern",

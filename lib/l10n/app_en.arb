@@ -7283,14 +7283,6 @@
   "relationshipNoLinkedTasks": "No tasks linked yet.",
   "relationshipNotEnrolled": "No reminders",
   "relationshipNotFound": "This person is no longer tracked.",
-  "relationshipOnTrackCadence": "On track · {cadence}",
-  "@relationshipOnTrackCadence": {
-    "placeholders": {
-      "cadence": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipPayAttentionTo": "Pay attention to",
   "relationshipPhotoAddBanner": "Add banner",
   "relationshipPhotoAdjustCrop": "Adjust crop",
@@ -7313,9 +7305,23 @@
       }
     }
   },
-  "relationshipPostCallConfirm": "Log check-in",
-  "@relationshipPostCallConfirm": {
-    "description": "Button that opens a pre-filled check-in from the post-call prompt"
+  "relationshipPostCallAskCall": "Did you reach {name}?",
+  "@relationshipPostCallAskCall": {
+    "description": "Question heading the offer to log a call placed from Lotti. Asked, not asserted: the app only knows the dialer was opened.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipPostCallAskMessage": "Did you write to {name}?",
+  "@relationshipPostCallAskMessage": {
+    "description": "Question heading the offer to log a message or email started from Lotti.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "relationshipPostCallDismiss": "Dismiss",
   "@relationshipPostCallDismiss": {
@@ -7332,27 +7338,9 @@
       }
     }
   },
-  "relationshipPostCallOfferCall": "You called {name} {minutes, plural, =0{less than a minute} =1{1 minute} other{{minutes} minutes}} ago — log it while it is fresh?",
-  "@relationshipPostCallOfferCall": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "relationshipPostCallOfferMessage": "You wrote to {name} {minutes, plural, =0{less than a minute} =1{1 minute} other{{minutes} minutes}} ago — log it while it is fresh?",
-  "@relationshipPostCallOfferMessage": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
+  "relationshipPostCallYes": "Yes, log it",
+  "@relationshipPostCallYes": {
+    "description": "Answer to the post-call question that opens the check-in prefilled with the call."
   },
   "relationshipProposalAdded": "Added → {title}",
   "@relationshipProposalAdded": {
@@ -7393,6 +7381,19 @@
   "relationshipReminderSnoozeLonger": "Snooze longer",
   "@relationshipReminderSnoozeLonger": {
     "description": "Button on the paused-reminder note that opens the snooze options."
+  },
+  "relationshipRemindersPillSemantics": "Reminders: {cadence}. Tap to change.",
+  "@relationshipRemindersPillSemantics": {
+    "description": "Screen-reader label of the tappable reminders pill in the person header; cadence is the interval, e.g. Weekly.",
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipRemindersSheetTitle": "Reminders",
+  "@relationshipRemindersSheetTitle": {
+    "description": "Title of the sheet opened from the reminders pill, where the interval is changed or reminders turned off."
   },
   "relationshipRemindersSwitchLabel": "Remind me to stay in touch",
   "@relationshipRemindersSwitchLabel": {
@@ -7504,6 +7505,10 @@
         "type": "String"
       }
     }
+  },
+  "relationshipTurnRemindersOff": "Turn reminders off",
+  "@relationshipTurnRemindersOff": {
+    "description": "Button in the reminders sheet that turns reminders off for this person."
   },
   "relationshipUpdateFromContact": "Update from contact",
   "@relationshipUpdateFromContact": {

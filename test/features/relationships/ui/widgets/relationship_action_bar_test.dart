@@ -64,6 +64,9 @@ class _FakePendingInteractionStore implements PendingInteractionStore {
   Future<PendingInteraction?> read() async => remembered;
 
   @override
+  Future<void> put(PendingInteraction p) async => remembered = p;
+
+  @override
   Future<void> clear() async => remembered = null;
 }
 

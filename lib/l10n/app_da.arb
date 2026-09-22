@@ -5218,14 +5218,6 @@
   "relationshipNoLinkedTasks": "Ingen opgaver linket endnu.",
   "relationshipNotEnrolled": "Uden påmindelser",
   "relationshipNotFound": "Denne person følges ikke længere.",
-  "relationshipOnTrackCadence": "På sporet · {cadence}",
-  "@relationshipOnTrackCadence": {
-    "placeholders": {
-      "cadence": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipPayAttentionTo": "Vær opmærksom på",
   "relationshipPhotoAddBanner": "Tilføj banner",
   "relationshipPhotoAdjustCrop": "Justér beskæring",
@@ -5241,7 +5233,8 @@
   "relationshipPhotoRemoveAction": "Fjern",
   "relationshipPhotoSaveFailed": "Kunne ikke gemme fotoet",
   "relationshipPhotoSheetTitle": "Foto af {name}",
-  "relationshipPostCallConfirm": "Log tjek-ind",
+  "relationshipPostCallAskCall": "Fik du fat i {name}?",
+  "relationshipPostCallAskMessage": "Fik du skrevet til {name}?",
   "relationshipPostCallDismiss": "Afvis",
   "relationshipPostCallMeta": "startede kl. {time} · {minutes, plural, =0{under et minut} =1{cirka 1 min} other{cirka {minutes} min}}",
   "@relationshipPostCallMeta": {
@@ -5254,28 +5247,7 @@
       }
     }
   },
-  "relationshipPostCallOfferCall": "Du ringede til {name} for {minutes, plural, =0{under et minut} =1{1 minut} other{{minutes} minutter}} siden — skal vi notere det, mens det er frisk?",
-  "@relationshipPostCallOfferCall": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "relationshipPostCallOfferMessage": "Du skrev til {name} for {minutes, plural, =0{under et minut} =1{1 minut} other{{minutes} minutter}} siden — skal vi notere det, mens det er frisk?",
-  "@relationshipPostCallOfferMessage": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
+  "relationshipPostCallYes": "Ja, log det",
   "relationshipProposalAdded": "Tilføjet → {title}",
   "relationshipProposalEvidence": "Fra check-in den {date}",
   "relationshipProposalUndoFailed": "Kunne ikke fortryde. Opgaven kan være blevet ændret.",
@@ -5285,6 +5257,8 @@
   "relationshipReminderPausedBody": "Den kommer igen til den tid, medmindre du registrerer et check-in forinden.",
   "relationshipReminderPausedTitle": "Påmindelsen er sat på pause til {time}",
   "relationshipReminderSnoozeLonger": "Udsæt længere",
+  "relationshipRemindersPillSemantics": "Påmindelser: {cadence}. Tryk for at ændre.",
+  "relationshipRemindersSheetTitle": "Påmindelser",
   "relationshipRemindersSwitchLabel": "Mind mig om at holde kontakten",
   "relationshipsEmptyHint": "Skriv en linje, når I har talt sammen. Lotti viser, hvem du ikke har talt med i et stykke tid, og minder dig om det, hvis du vil.",
   "relationshipsEmptyState": "Tilføj de mennesker, du vil holde kontakten med.",
@@ -5363,6 +5337,7 @@
   "relationshipTimestampToday": "I dag",
   "relationshipTimestampYesterday": "I går",
   "relationshipTrackingSinceLabel": "Fulgt siden {date}",
+  "relationshipTurnRemindersOff": "Slå påmindelser fra",
   "relationshipUpdateFromContact": "Opdater fra kontakt",
   "saveButton": "Gem",
   "saveButtonLabel": "Gem",

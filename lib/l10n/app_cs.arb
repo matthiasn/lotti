@@ -4729,14 +4729,6 @@
   "relationshipNoLinkedTasks": "Zatím žádné propojené úkoly.",
   "relationshipNotEnrolled": "Bez připomínek",
   "relationshipNotFound": "Tahle osoba už není sledovaná.",
-  "relationshipOnTrackCadence": "V rytmu · {cadence}",
-  "@relationshipOnTrackCadence": {
-    "placeholders": {
-      "cadence": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipPayAttentionTo": "Dávej pozor na",
   "relationshipPhotoAddBanner": "Přidat banner",
   "relationshipPhotoAdjustCrop": "Upravit ořez",
@@ -4752,7 +4744,8 @@
   "relationshipPhotoRemoveAction": "Odebrat",
   "relationshipPhotoSaveFailed": "Fotku se nepodařilo uložit",
   "relationshipPhotoSheetTitle": "Fotka – {name}",
-  "relationshipPostCallConfirm": "Zapsat check-in",
+  "relationshipPostCallAskCall": "Podařilo se ti zastihnout {name}?",
+  "relationshipPostCallAskMessage": "Odešla tvoje zpráva pro {name}?",
   "relationshipPostCallDismiss": "Zavřít",
   "relationshipPostCallMeta": "začátek v {time} · {minutes, plural, =0{necelá minuta} =1{asi 1 min} other{asi {minutes} min}}",
   "@relationshipPostCallMeta": {
@@ -4765,28 +4758,7 @@
       }
     }
   },
-  "relationshipPostCallOfferCall": "Hovor s {name} před {minutes, plural, =0{necelou minutou} =1{1 minutou} other{{minutes} minutami}} — zapíšeme to, dokud je to čerstvé?",
-  "@relationshipPostCallOfferCall": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "relationshipPostCallOfferMessage": "Zpráva pro {name} před {minutes, plural, =0{necelou minutou} =1{1 minutou} other{{minutes} minutami}} — zapíšeme to, dokud je to čerstvé?",
-  "@relationshipPostCallOfferMessage": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
+  "relationshipPostCallYes": "Ano, zapsat",
   "relationshipProposalAdded": "Přidáno → {title}",
   "relationshipProposalEvidence": "Z kontaktu dne {date}",
   "relationshipProposalUndoFailed": "Akci se nepodařilo vrátit. Úkol se možná změnil.",
@@ -4796,6 +4768,8 @@
   "relationshipReminderPausedBody": "Pak se vrátí, pokud předtím nezaznamenáš kontakt.",
   "relationshipReminderPausedTitle": "Připomínka pozastavena do {time}",
   "relationshipReminderSnoozeLonger": "Odložit na déle",
+  "relationshipRemindersPillSemantics": "Připomínky: {cadence}. Klepnutím změníš.",
+  "relationshipRemindersSheetTitle": "Připomínky",
   "relationshipRemindersSwitchLabel": "Připomínej mi, ať zůstaneme v kontaktu",
   "relationshipsEmptyHint": "Po rozhovoru si zapiš pár slov. Lotti ti ukáže, s kým už dlouho nejsi v kontaktu, a když chceš, připomene ti to.",
   "relationshipsEmptyState": "Přidej lidi, se kterými chceš zůstat v kontaktu.",
@@ -4874,6 +4848,7 @@
   "relationshipTimestampToday": "Dnes",
   "relationshipTimestampYesterday": "Včera",
   "relationshipTrackingSinceLabel": "Sledováno od {date}",
+  "relationshipTurnRemindersOff": "Vypnout připomínky",
   "relationshipUpdateFromContact": "Aktualizovat z kontaktu",
   "saveButton": "Uložit",
   "saveButtonLabel": "Uložit",

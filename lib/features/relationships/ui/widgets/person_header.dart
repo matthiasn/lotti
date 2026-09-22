@@ -11,7 +11,6 @@ import 'package:lotti/features/design_system/theme/photo_chrome_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
-import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/state/contact_import_controller.dart';
 import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
@@ -19,6 +18,7 @@ import 'package:lotti/features/relationships/ui/shared/cadence_pill.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/contact_link_action.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_reminders_pill.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
@@ -629,14 +629,9 @@ class PersonHeaderBlock extends StatelessWidget {
     final messages = context.messages;
     final data = item.relationship.data;
 
-    final eyebrow = [
-      ?categoryName,
-      // `isEnrolled`, not the raw flag: enrolment is *important and
-      // active*, so a dormant or archived person keeps `important` while
-      // the runtime clears their reminders. Reading the flag here printed
-      // "Reminders on" directly above a "Dormant" pill.
-      if (isEnrolled(item.relationship)) messages.relationshipImportantLabel,
-    ].join(' · ');
+    // The category alone: that reminders are on, and how often, is the
+    // reminders pill's to say — it says it in every state and can change it.
+    final eyebrow = categoryName ?? '';
     // The timestamp inside the one-liner, kept as its own substring so the
     // mono voice can be confined to it below — the same rule the list row
     // follows, so one point in time never renders in two typefaces on one
@@ -706,8 +701,9 @@ class PersonHeaderBlock extends StatelessWidget {
   }
 }
 
-/// The header pills, in order: the cadence fact (on track · cadence, or due
-/// since · days over) and the next due day.
+/// The header pills, in order: the cadence fact (on track, or due since ·
+/// days over), the reminders pill with the interval — for an enrolled person,
+/// in every state — and the next due day.
 ///
 /// One tinted chip at most, and it is the cadence: the health band lives on
 /// the briefing card, which dates it.
@@ -719,7 +715,13 @@ List<Widget> personHeaderPills(
   final messages = context.messages;
   final pill = peopleCadencePillOf(item);
   final quiet = tokens.colors.text.mediumEmphasis;
-  final pills = <Widget>[relationshipCadencePill(context, item)];
+  final pills = <Widget>[
+    relationshipCadencePill(context, item),
+    // `isEnrolled`, not the raw flag: a dormant or archived person keeps
+    // `important` while the runtime clears their reminders.
+    if (isEnrolled(item.relationship))
+      PersonRemindersPill(relationship: item.relationship),
+  ];
 
   final due = peopleDueDateOf(item);
   if (due != null &&
@@ -742,14 +744,13 @@ List<Widget> personHeaderPills(
 }
 
 /// The cadence fact as one pill, from the list model's own rules so the
-/// header, the agent card and the list never disagree about *due*: a
-/// warning-tinted `Due since {day} · {n} days over` when lapsed, `On track ·
-/// {cadence}` (the **effective** cadence, i.e. the runtime default when none
-/// is set) while enrolled, and the status word for everyone else.
+/// header and the list never disagree about *due*: a warning-tinted `Due
+/// since {day} · {n} days over` when lapsed, `On track` while enrolled — the
+/// interval itself is [PersonRemindersPill]'s — and the status word for
+/// everyone else.
 ///
 /// Keyed per kind (`<keyPrefix>-due` / `-cadence` / `-status`) so a test can
-/// say which fact it expects rather than which text; the header and the
-/// agent card show the same pill under different prefixes.
+/// say which fact it expects rather than which text.
 Widget relationshipCadencePill(
   BuildContext context,
   RelationshipListItem item, {
@@ -778,16 +779,9 @@ Widget relationshipCadencePill(
       shape: DsPillShape.tag,
       leading: Icon(LottiIcons.confirm, size: IconSizes.s, color: quiet),
       labelColor: quiet,
-      label: messages.relationshipOnTrackCadence(
-        // Due-soon and on-track are enrolled states, so this is the
-        // interval the runtime applies — the stored one or the default.
-        relationshipCadenceLabel(
-          context,
-          relationshipShownCadenceDays(
-            item.relationship.data.checkInCadenceDays,
-          ),
-        ),
-      ),
+      // The state alone: the interval rides the reminders pill beside it,
+      // which carries it in the overdue state too.
+      label: messages.relationshipCadenceOnTrack,
     ),
     PeopleCadencePillKind.notEnrolled ||
     PeopleCadencePillKind.dormant ||

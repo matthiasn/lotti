@@ -270,10 +270,8 @@ void main() {
       await pumpPage(tester);
 
       expect(find.text('Anna'), findsOneWidget);
-      expect(
-        tester.widget<Text>(find.byKey(const ValueKey('person-eyebrow'))).data,
-        'Reminders on',
-      );
+      // No category, and reminders are the pill's to say: no eyebrow.
+      expect(find.byKey(const ValueKey('person-eyebrow')), findsNothing);
       expect(
         tester
             .widget<RelationshipLineWithDate>(
@@ -282,12 +280,10 @@ void main() {
             .text,
         '"Sis" · last spoke Yesterday 10:30',
       );
-      expect(
-        pill(tester, 'person-pill-cadence').label,
-        'On track · Every two weeks',
-      );
+      expect(pill(tester, 'person-pill-cadence').label, 'On track');
+      expect(pill(tester, 'person-pill-reminders').label, 'Every two weeks');
       expect(pill(tester, 'person-pill-next-due').label, 'Next due Thu 27 Aug');
-      // The star is gone: importance lives in the eyebrow.
+      // The star is gone: reminders live in the reminders pill.
       expect(find.byIcon(LottiIcons.star), findsNothing);
 
       expect(
@@ -324,7 +320,7 @@ void main() {
 
     expect(
       tester.widget<Text>(find.byKey(const ValueKey('person-eyebrow'))).data,
-      'Penguin Operations · Reminders on',
+      'Penguin Operations',
     );
   });
 
@@ -443,10 +439,7 @@ void main() {
 
       await pumpPage(tester);
 
-      expect(
-        pill(tester, 'person-pill-cadence').label,
-        'On track · Every 3 days',
-      );
+      expect(pill(tester, 'person-pill-reminders').label, 'Every 3 days');
       expect(find.textContaining('Weekly'), findsNothing);
     },
   );
@@ -490,7 +483,8 @@ void main() {
 
     expect(find.byKey(const ValueKey('person-pill-status')), findsNothing);
     expect(find.text('Active'), findsNothing);
-    expect(pill(tester, 'person-pill-cadence').label, 'On track · Weekly');
+    expect(pill(tester, 'person-pill-cadence').label, 'On track');
+    expect(pill(tester, 'person-pill-reminders').label, 'Weekly');
   });
 
   testWidgets('renders the no-check-ins hint when the log is empty', (

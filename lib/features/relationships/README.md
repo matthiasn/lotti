@@ -14,8 +14,9 @@ editor, the contact-import review or the person page's card — always shows
 how often, with monthly preselected, and stores what it shows.
 Desktop uses a list/detail split; phones open a dedicated person page.
 
-The person page holds a header with category, importance, name, nickname
-and recent contact, followed by *Next time*, the agent briefing, check-ins,
+The person page holds a header with category, name, nickname and recent
+contact, and — for someone with reminders — how often they come, which one
+tap changes or turns off; it is followed by *Next time*, the agent briefing, check-ins,
 contact channels and linked tasks. The header opens the agent conversation
 and person editor, and tapping the avatar opens the person's photo: choose
 one from the library and pick which part of it is the face, adjust that

@@ -12384,11 +12384,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get relationshipNotFound => 'Esta pessoa não está mais na sua lista.';
 
   @override
-  String relationshipOnTrackCadence(String cadence) {
-    return 'Em dia · $cadence';
-  }
-
-  @override
   String get relationshipPayAttentionTo => 'Prestar atenção a';
 
   @override
@@ -12437,7 +12432,14 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get relationshipPostCallConfirm => 'Registar check-in';
+  String relationshipPostCallAskCall(String name) {
+    return 'Conseguiste falar com $name?';
+  }
+
+  @override
+  String relationshipPostCallAskMessage(String name) {
+    return 'Escreveste a $name?';
+  }
 
   @override
   String get relationshipPostCallDismiss => 'Ignorar';
@@ -12455,28 +12457,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String relationshipPostCallOfferCall(String name, int minutes) {
-    String _temp0 = intl.Intl.pluralLogic(
-      minutes,
-      locale: localeName,
-      other: '$minutes minutos',
-      one: '1 minuto',
-      zero: 'menos de um minuto',
-    );
-    return 'Ligaste a $name há $_temp0 — registamos enquanto está fresco?';
-  }
-
-  @override
-  String relationshipPostCallOfferMessage(String name, int minutes) {
-    String _temp0 = intl.Intl.pluralLogic(
-      minutes,
-      locale: localeName,
-      other: '$minutes minutos',
-      one: '1 minuto',
-      zero: 'menos de um minuto',
-    );
-    return 'Escreveste a $name há $_temp0 — registamos enquanto está fresco?';
-  }
+  String get relationshipPostCallYes => 'Sim, registar';
 
   @override
   String relationshipProposalAdded(String title) {
@@ -12513,6 +12494,14 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get relationshipReminderSnoozeLonger => 'Adiar mais';
+
+  @override
+  String relationshipRemindersPillSemantics(String cadence) {
+    return 'Lembretes: $cadence. Toca para alterar.';
+  }
+
+  @override
+  String get relationshipRemindersSheetTitle => 'Lembretes';
 
   @override
   String get relationshipRemindersSwitchLabel =>
@@ -12615,6 +12604,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String relationshipTrackingSinceLabel(String date) {
     return 'Acompanhando desde $date';
   }
+
+  @override
+  String get relationshipTurnRemindersOff => 'Desativar lembretes';
 
   @override
   String get relationshipUpdateFromContact => 'Atualizar a partir do contacto';

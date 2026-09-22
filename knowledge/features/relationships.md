@@ -595,7 +595,7 @@ under it — the task page's shape, on purpose:
 | Sliver | Widget | Notes |
 |---|---|---|
 | Hero | [`PersonHeroAppBar`](../../lib/features/relationships/ui/widgets/person_header.dart) | A pinned `SliverPersistentHeader` of its own, not a `SliverAppBar`: the avatar hangs half its diameter below the header, and every layer of an app bar clips that overflow. Slivers paint back to front, so the earlier header paints its overhang over the block scrolling under it. The name appears in the bar only once the wash band has folded (`AnimatedSwitcher`, never an invisible duplicate). |
-| Header block | `PersonHeaderBlock` (same file) | Eyebrow · name · one-liner · pills. The pills come from the list model's rules, so the page and the list never disagree about *due*; the cadence pill names the interval the runtime applies (`relationshipShownCadenceDays`), i.e. the default when none is stored. The eyebrow takes `calmEyebrowStyle`, not the mono timestamp style — it is a label, not a clock reading. The one-liner is `text.mediumEmphasis` with the mono voice on its timestamp alone: nothing on it is tappable, and the interactive token on a whole non-interactive line promised a tap that never came while outranking the person's own name. The health band is **not** here — the briefing card owns it, because only the card can date it. |
+| Header block | `PersonHeaderBlock` (same file) | Eyebrow · name · one-liner · pills. The pills come from the list model's rules, so the page and the list never disagree about *due*; the cadence pill says the state (*On track*, or *Due since … · n days over*), and for an enrolled person — in every state, overdue included — [`PersonRemindersPill`](../../lib/features/relationships/ui/widgets/person_reminders_pill.dart) names the interval the runtime applies (`relationshipShownCadenceDays`) and opens `PersonRemindersSheet`: *How often?* with the interval pills, where a pick saves at once and re-runs the evaluation through `ensureRelationshipAgentInBackground`, and *Turn reminders off*, which keeps the stored interval. The eyebrow is the category alone; reminders are the pill's to say. It takes `calmEyebrowStyle`, not the mono timestamp style — it is a label, not a clock reading. The one-liner is `text.mediumEmphasis` with the mono voice on its timestamp alone: nothing on it is tappable, and the interactive token on a whole non-interactive line promised a tap that never came while outranking the person's own name. The health band is **not** here — the briefing card owns it, because only the card can date it. |
 | Post-call offer | `PostInteractionPrompt` | Renders nothing until a marker exists (below). Directly under the header block, beside the paused-reminder callout: coming back from a call it is the most time-sensitive thing on the page, and below the briefing it was off a phone's first screen. Its `bottomGap` belongs to the offer, so no hole appears when there is none. |
 | Next time | `NextTimeCard` in [`person_page_cards.dart`](../../lib/features/relationships/ui/widgets/person_page_cards.dart) | From the newest check-in that *has* *pay attention to* / *avoid* notes (`NextTimeCard.sourceOf`), not simply the newest: the fields sit under the composer's *More*, so a quick check-in leaves them blank, and blank means "did not get to it", not "forget the last ones". When the source is older than the newest check-in the card says which one (`fromEarlier`). Above the briefing: the user's own notes are what the page is opened for in the minute before a call, and under a card with a summary, a footer and a model row they sat below the first screen on a phone. |
 | Briefing | `RelationshipBriefingCard` | Only when enrolled or a briefing exists; the page reads the report too, so the gap after the card is deterministic. |
@@ -2024,20 +2024,27 @@ wins) and it expires after `pendingInteractionTtl`, so a call from yesterday
 does not greet the user the next morning. `PostInteractionPrompt` re-resolves
 the person through the repository rather than trusting the marker: a person
 deleted, or hidden while private entries are off, produces no prompt, because
-naming them would leak that they exist. The offer names its evidence — the
-channel, how many minutes ago, when it started and about how long it has been
-(`You called Pip 11 minutes ago — log it while it is fresh?` · `started
-12:33 · about 11 min`) — so it reads as "log the call you just had". The
+naming them would leak that they exist. It only offers the marker of the
+person whose page it is on. The offer asks rather than asserts — the marker
+proves the dialer or the mail app opened, not that anyone answered — and names
+its evidence under the question (`Did you reach Pip?` · `started 12:33 · about
+11 min`). Its *Yes, log it* is a secondary button: the page's bar already
+carries the one filled *Log check-in*, which opens the same composer. The
 minutes it quotes travel into the capture sheet as `prefilledDuration` and
 are persisted as the check-in's end time (`dateTo − dateFrom`, no schema
 change), so the log's row shows the duration the offer promised; editing a
 check-in keeps its length when the start time moves.
 
-The offer is not the only door. The page's own *Log check-in* and *Dictate*
-go through `PendingInteractionClaims.claimFor`: when the marker is about the
-person on screen they take it — cleared, and a claim counted — and open the
-composer through the same `showCheckInForInteraction` the offer uses, so the
-call is logged as that call whichever control the user reaches for. The offer
+All three doors — the offer's answer and the page's own *Log check-in* and
+*Dictate* — go through `openCheckInForPerson`, which claims the marker with
+`PendingInteractionClaims.claimFor` (exclusive: two taps landing together get
+one marker between them) and opens the composer describing the call, so it is
+logged as that call whichever control the user reaches for. The elapsed
+minutes are read before the claim, so clearing the marker cannot move them off
+what the offer quoted. A composer closed without saving hands the claim back
+(`release`, which writes the marker as it was, original start included), so a
+stray swipe on a prefilled sheet does not lose the call; the offer returns
+until it is logged, dismissed or expired. The offer
 listens to the claim count and re-reads, which is how it stops asking (the
 store is plain settings, with nothing to listen to). A marker about someone
 else is neither used nor cleared. With no marker the composer starts from the
@@ -2052,9 +2059,9 @@ stateDiagram-v2
   Pending --> NoMarker: expired on read (TTL)
   Pending --> NoMarker: unreadable on read (cleared)
   Pending --> NoMarker: declined
-  Pending --> Capturing: accepted on the offer
-  Pending --> Capturing: claimed by Log check-in / Dictate (same person)
-  Capturing --> NoMarker: marker cleared as the sheet opens
+  Pending --> Capturing: claimed by the offer, Log check-in or Dictate (same person)
+  Capturing --> NoMarker: saved
+  Capturing --> Pending: closed without saving (released as it was)
 ```
 
 Two traps this code exists around, both found by test rather than review:

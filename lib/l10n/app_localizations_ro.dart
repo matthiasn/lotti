@@ -12523,11 +12523,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipNotFound => 'Această persoană nu mai este urmărită.';
 
   @override
-  String relationshipOnTrackCadence(String cadence) {
-    return 'În ritm · $cadence';
-  }
-
-  @override
   String get relationshipPayAttentionTo => 'Fiți atent la';
 
   @override
@@ -12577,7 +12572,14 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get relationshipPostCallConfirm => 'Notați check-in';
+  String relationshipPostCallAskCall(String name) {
+    return 'Ați reușit să vorbiți cu $name?';
+  }
+
+  @override
+  String relationshipPostCallAskMessage(String name) {
+    return 'Ați trimis un mesaj către $name?';
+  }
 
   @override
   String get relationshipPostCallDismiss => 'Ignorați';
@@ -12595,30 +12597,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String relationshipPostCallOfferCall(String name, int minutes) {
-    String _temp0 = intl.Intl.pluralLogic(
-      minutes,
-      locale: localeName,
-      other: '$minutes de minute',
-      few: '$minutes minute',
-      one: '1 minut',
-      zero: 'mai puțin de un minut',
-    );
-    return 'Ați sunat pe $name acum $_temp0 — notați cât este proaspăt?';
-  }
-
-  @override
-  String relationshipPostCallOfferMessage(String name, int minutes) {
-    String _temp0 = intl.Intl.pluralLogic(
-      minutes,
-      locale: localeName,
-      other: '$minutes de minute',
-      few: '$minutes minute',
-      one: '1 minut',
-      zero: 'mai puțin de un minut',
-    );
-    return 'I-ați scris lui $name acum $_temp0 — notați cât este proaspăt?';
-  }
+  String get relationshipPostCallYes => 'Da, notați';
 
   @override
   String relationshipProposalAdded(String title) {
@@ -12655,6 +12634,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipReminderSnoozeLonger => 'Amânați mai mult';
+
+  @override
+  String relationshipRemindersPillSemantics(String cadence) {
+    return 'Memento-uri: $cadence. Atingeți pentru a schimba.';
+  }
+
+  @override
+  String get relationshipRemindersSheetTitle => 'Memento-uri';
 
   @override
   String get relationshipRemindersSwitchLabel =>
@@ -12758,6 +12745,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String relationshipTrackingSinceLabel(String date) {
     return 'Urmărire din $date';
   }
+
+  @override
+  String get relationshipTurnRemindersOff => 'Dezactivați memento-urile';
 
   @override
   String get relationshipUpdateFromContact => 'Actualizați din contact';

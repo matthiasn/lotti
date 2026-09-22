@@ -20347,12 +20347,6 @@ abstract class AppLocalizations {
   /// **'This person is no longer tracked.'**
   String get relationshipNotFound;
 
-  /// No description provided for @relationshipOnTrackCadence.
-  ///
-  /// In en, this message translates to:
-  /// **'On track · {cadence}'**
-  String relationshipOnTrackCadence(String cadence);
-
   /// No description provided for @relationshipPayAttentionTo.
   ///
   /// In en, this message translates to:
@@ -20443,11 +20437,17 @@ abstract class AppLocalizations {
   /// **'Photo of {name}'**
   String relationshipPhotoSheetTitle(String name);
 
-  /// Button that opens a pre-filled check-in from the post-call prompt
+  /// Question heading the offer to log a call placed from Lotti. Asked, not asserted: the app only knows the dialer was opened.
   ///
   /// In en, this message translates to:
-  /// **'Log check-in'**
-  String get relationshipPostCallConfirm;
+  /// **'Did you reach {name}?'**
+  String relationshipPostCallAskCall(String name);
+
+  /// Question heading the offer to log a message or email started from Lotti.
+  ///
+  /// In en, this message translates to:
+  /// **'Did you write to {name}?'**
+  String relationshipPostCallAskMessage(String name);
 
   /// Button that dismisses the post-call prompt without a trace
   ///
@@ -20461,17 +20461,11 @@ abstract class AppLocalizations {
   /// **'started {time} · {minutes, plural, =0{under a minute} =1{about 1 min} other{about {minutes} min}}'**
   String relationshipPostCallMeta(String time, int minutes);
 
-  /// No description provided for @relationshipPostCallOfferCall.
+  /// Answer to the post-call question that opens the check-in prefilled with the call.
   ///
   /// In en, this message translates to:
-  /// **'You called {name} {minutes, plural, =0{less than a minute} =1{1 minute} other{{minutes} minutes}} ago — log it while it is fresh?'**
-  String relationshipPostCallOfferCall(String name, int minutes);
-
-  /// No description provided for @relationshipPostCallOfferMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'You wrote to {name} {minutes, plural, =0{less than a minute} =1{1 minute} other{{minutes} minutes}} ago — log it while it is fresh?'**
-  String relationshipPostCallOfferMessage(String name, int minutes);
+  /// **'Yes, log it'**
+  String get relationshipPostCallYes;
 
   /// No description provided for @relationshipProposalAdded.
   ///
@@ -20526,6 +20520,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Snooze longer'**
   String get relationshipReminderSnoozeLonger;
+
+  /// Screen-reader label of the tappable reminders pill in the person header; cadence is the interval, e.g. Weekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders: {cadence}. Tap to change.'**
+  String relationshipRemindersPillSemantics(String cadence);
+
+  /// Title of the sheet opened from the reminders pill, where the interval is changed or reminders turned off.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders'**
+  String get relationshipRemindersSheetTitle;
 
   /// Label of the switch that turns reminders on for a person, in the person form and the contact-import review. Worded as the request it grants, so it reads correctly while the switch is off.
   ///
@@ -20674,6 +20680,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tracking since {date}'**
   String relationshipTrackingSinceLabel(String date);
+
+  /// Button in the reminders sheet that turns reminders off for this person.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn reminders off'**
+  String get relationshipTurnRemindersOff;
 
   /// Menu action that re-reads the linked OS contact and copies anything new
   ///

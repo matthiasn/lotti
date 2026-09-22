@@ -4722,14 +4722,6 @@
   "relationshipNoLinkedTasks": "Nicio sarcină asociată încă.",
   "relationshipNotEnrolled": "Fără memento-uri",
   "relationshipNotFound": "Această persoană nu mai este urmărită.",
-  "relationshipOnTrackCadence": "În ritm · {cadence}",
-  "@relationshipOnTrackCadence": {
-    "placeholders": {
-      "cadence": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipPayAttentionTo": "Fiți atent la",
   "relationshipPhotoAddBanner": "Adăugați un banner",
   "relationshipPhotoAdjustCrop": "Ajustați decuparea",
@@ -4745,7 +4737,8 @@
   "relationshipPhotoRemoveAction": "Eliminați",
   "relationshipPhotoSaveFailed": "Fotografia nu a putut fi salvată",
   "relationshipPhotoSheetTitle": "Fotografie – {name}",
-  "relationshipPostCallConfirm": "Notați check-in",
+  "relationshipPostCallAskCall": "Ați reușit să vorbiți cu {name}?",
+  "relationshipPostCallAskMessage": "Ați trimis un mesaj către {name}?",
   "relationshipPostCallDismiss": "Ignorați",
   "relationshipPostCallMeta": "început la {time} · {minutes, plural, =0{sub un minut} =1{circa 1 min} other{circa {minutes} min}}",
   "@relationshipPostCallMeta": {
@@ -4758,28 +4751,7 @@
       }
     }
   },
-  "relationshipPostCallOfferCall": "Ați sunat pe {name} acum {minutes, plural, =0{mai puțin de un minut} =1{1 minut} few{{minutes} minute} other{{minutes} de minute}} — notați cât este proaspăt?",
-  "@relationshipPostCallOfferCall": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "relationshipPostCallOfferMessage": "I-ați scris lui {name} acum {minutes, plural, =0{mai puțin de un minut} =1{1 minut} few{{minutes} minute} other{{minutes} de minute}} — notați cât este proaspăt?",
-  "@relationshipPostCallOfferMessage": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
+  "relationshipPostCallYes": "Da, notați",
   "relationshipProposalAdded": "Adăugată → {title}",
   "relationshipProposalEvidence": "Din interacțiunea din {date}",
   "relationshipProposalUndoFailed": "Anularea nu a reușit. Este posibil ca sarcina să fi fost modificată.",
@@ -4789,6 +4761,8 @@
   "relationshipReminderPausedBody": "Revine atunci, dacă nu înregistrați un contact înainte.",
   "relationshipReminderPausedTitle": "Memento întrerupt până la {time}",
   "relationshipReminderSnoozeLonger": "Amânați mai mult",
+  "relationshipRemindersPillSemantics": "Memento-uri: {cadence}. Atingeți pentru a schimba.",
+  "relationshipRemindersSheetTitle": "Memento-uri",
   "relationshipRemindersSwitchLabel": "Amintiți-mi să păstrez legătura",
   "relationshipsEmptyHint": "Notați un rând după ce ați vorbit. Lotti vă arată cu cine nu ați mai vorbit de ceva vreme și, dacă doriți, vă amintește.",
   "relationshipsEmptyState": "Adăugați persoanele de care doriți să rămâneți aproape.",
@@ -4867,6 +4841,7 @@
   "relationshipTimestampToday": "Azi",
   "relationshipTimestampYesterday": "Ieri",
   "relationshipTrackingSinceLabel": "Urmărire din {date}",
+  "relationshipTurnRemindersOff": "Dezactivați memento-urile",
   "relationshipUpdateFromContact": "Actualizați din contact",
   "saveButton": "Salvați",
   "saveButtonLabel": "Salvați",
