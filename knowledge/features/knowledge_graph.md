@@ -67,6 +67,20 @@ aggregate, which the user can expand independently. The topology minimap uses
 the full precomputed provider layout, so global position is still available
 without sacrificing local legibility.
 
+A neighbour may be linked to the focus by several edges — two typed relations,
+or the reciprocal pair a synced link can produce — and `TaskGraphProvider`
+keeps them all, keyed by `from|to|kind`. The projection counts **nodes, not
+edges**: it applies the edge and node filters, then gives each direct neighbour
+one owner, its highest-priority eligible edge (`_compareNeighbors`). That edge
+alone decides the neighbour's relation/type group or its place in the media
+collection, so a neighbour is shown once or counted once in one aggregate, never
+both, and a filtered-out relation cannot hide a neighbour still reachable
+through another. A direct neighbour collapsed into an aggregate is also kept out
+of second-hop context. Every raw typed edge between two visible nodes is still
+drawn. Node size is a separate matter: `degreeMap` counts the incident edges
+of the displayed graph, so a neighbour linked twice still draws as a
+higher-degree node.
+
 # Rendering and interaction
 
 `knowledge_graph_painter.dart` paints nodes, typed edges, labels, focus trails,

@@ -81,6 +81,9 @@ class _Neighbor {
 
 /// Projects [raw] into a readable ego graph around [focusId].
 ///
+/// Every direct neighbour is displayed or counted once, however many edges
+/// link it to the focus: it belongs to the group of its highest-priority
+/// eligible edge. The raw typed edges between visible nodes are all kept.
 /// Direct photo nodes are represented by one media collection. Large direct
 /// relation/type groups keep a recent preview and collapse the exact remainder.
 /// Remaining capacity is filled with second-hop context, never exceeding
@@ -132,13 +135,26 @@ GraphProjection buildLocalGraphProjection({
     return byId[otherId];
   }
 
-  final direct = <_Neighbor>[];
+  // A neighbour can be linked by several typed edges (or reciprocal ones), so
+  // candidates are collected per eligible edge and then collapsed to one entry
+  // per node. Filtering comes first, so a filtered-out relationship never hides
+  // a neighbour that is still reachable through another. After the sort, the
+  // first entry for a node carries its highest-priority eligible edge, and that
+  // edge alone decides the node's group — it is shown or counted exactly once.
+  final candidates = <_Neighbor>[];
   for (final edge in incident[actualFocusId] ?? const <GraphEdge>[]) {
     if (!edgeMatches(edge)) continue;
     final node = otherEndpoint(edge, actualFocusId);
-    if (node != null && nodeMatches(node)) direct.add(_Neighbor(node, edge));
+    if (node != null && nodeMatches(node)) {
+      candidates.add(_Neighbor(node, edge));
+    }
   }
-  direct.sort(_compareNeighbors);
+  candidates.sort(_compareNeighbors);
+  final directIds = <String>{};
+  final direct = [
+    for (final neighbor in candidates)
+      if (directIds.add(neighbor.node.id)) neighbor,
+  ];
 
   final visibleNodes = <GraphNode>[focus];
   final visibleRawIds = <String>{actualFocusId};
@@ -271,6 +287,9 @@ GraphProjection buildLocalGraphProjection({
   }
 
   if (filters.maxHops >= 2 && remaining > 0) {
+    // A direct neighbour already counted in an aggregate stays there; letting
+    // it resurface as second-hop context would show it and count it hidden.
+    final aggregated = {for (final ids in aggregateMembers.values) ...ids};
     final secondHop = <_Neighbor>[];
     for (final parentId in visibleRawIds.where((id) => id != actualFocusId)) {
       for (final edge in incident[parentId] ?? const <GraphEdge>[]) {
@@ -278,6 +297,7 @@ GraphProjection buildLocalGraphProjection({
         final node = otherEndpoint(edge, parentId);
         if (node == null ||
             visibleRawIds.contains(node.id) ||
+            aggregated.contains(node.id) ||
             node.id == actualFocusId ||
             node.type == GraphNodeType.imageEntry ||
             !nodeMatches(node)) {
