@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:camera/camera.dart' show CameraException;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -11,12 +12,11 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
-import 'package:lotti/features/sync/ui/provisioned/desktop_qr_scanner.dart';
+import 'package:lotti/features/sync/ui/provisioned/qr_scanner.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -106,7 +106,7 @@ void main() {
   });
 
   tearDown(() async {
-    desktopQrCameraFactoryOverride = null;
+    qrCameraFactoryOverride = null;
     pageIndexNotifier.dispose();
     await tearDownTestGetIt();
   });
@@ -129,9 +129,9 @@ void main() {
     await tester.tap(inkTarget);
   }
 
-  group('mobile scanner', () {
+  group('scanner platforms', () {
     testWidgets('opens the camera immediately on mobile', (tester) async {
-      setUpMobileScanner();
+      final camera = setUpMobileScanner();
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -145,7 +145,8 @@ void main() {
 
       // Scanning is what a new phone is here for: no tap should be needed,
       // and the base64 field must not be the first thing on screen.
-      expect(find.byType(MobileScanner), findsOneWidget);
+      expect(find.byType(QrScanner), findsOneWidget);
+      expect(camera.started, isTrue);
       expect(find.byType(TextField), findsNothing);
 
       // The screen leads with its own imperative; the prerequisite about a
@@ -178,14 +179,14 @@ void main() {
       await tester.pump();
 
       expect(find.byIcon(LottiIcons.scanQr), findsNothing);
-      expect(find.byType(MobileScanner), findsNothing);
+      expect(find.byType(QrScanner), findsNothing);
       expect(find.byType(TextField), findsOneWidget);
     });
 
-    testWidgets('macOS opens the existing mobile scanner immediately', (
+    testWidgets('macOS opens the camera scanner immediately', (
       tester,
     ) async {
-      setUpMacOsScanner();
+      final camera = setUpMacOsScanner();
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -197,17 +198,18 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(MobileScanner), findsOneWidget);
+      expect(find.byType(QrScanner), findsOneWidget);
+      expect(camera.started, isTrue);
       expect(find.byType(TextField), findsNothing);
       final context = tester.element(find.byType(BundleImportWidget));
       expect(find.text(context.messages.syncPairScanTitle), findsOneWidget);
     });
 
-    testWidgets('Linux opens the desktop camera scanner immediately', (
+    testWidgets('Linux opens the camera scanner immediately', (
       tester,
     ) async {
-      final camera = _FakeDesktopCamera();
-      desktopQrCameraFactoryOverride = () async => camera;
+      final camera = FakeQrCamera();
+      qrCameraFactoryOverride = () async => camera;
       isWindows = false;
       isLinux = true;
 
@@ -221,8 +223,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(DesktopQrScanner), findsOneWidget);
-      expect(find.byType(MobileScanner), findsNothing);
+      expect(find.byType(QrScanner), findsOneWidget);
       expect(find.byType(TextField), findsNothing);
       expect(camera.started, isTrue);
     });
@@ -232,7 +233,7 @@ void main() {
       (
         tester,
       ) async {
-        desktopQrCameraFactoryOverride = () async =>
+        qrCameraFactoryOverride = () async =>
             throw const FormatException('no camera');
         isWindows = false;
         isLinux = true;
@@ -306,7 +307,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byType(MobileScanner), findsOneWidget);
+        expect(find.byType(QrScanner), findsOneWidget);
 
         final manualFinder = find.byKey(
           const Key('bundle_import_enter_manually'),
@@ -315,13 +316,13 @@ void main() {
         await tester.tap(manualFinder);
         await tester.pump();
 
-        expect(find.byType(MobileScanner), findsNothing);
+        expect(find.byType(QrScanner), findsNothing);
         expect(find.byType(TextField), findsOneWidget);
 
         await tapScanInstead(tester);
         await tester.pump();
 
-        expect(find.byType(MobileScanner), findsOneWidget);
+        expect(find.byType(QrScanner), findsOneWidget);
         expect(find.byType(TextField), findsNothing);
       },
     );
@@ -329,8 +330,8 @@ void main() {
     testWidgets(
       'a provisioning reset preserves manual mode on scanner platforms',
       (tester) async {
-        final camera = _FakeDesktopCamera();
-        desktopQrCameraFactoryOverride = () async => camera;
+        final camera = FakeQrCamera();
+        qrCameraFactoryOverride = () async => camera;
         isWindows = false;
         isLinux = true;
 
@@ -367,20 +368,13 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(TextField), findsOneWidget);
-        expect(find.byType(DesktopQrScanner), findsNothing);
+        expect(find.byType(QrScanner), findsNothing);
       },
     );
   });
 
-  group('mobile scanner barcode handling', () {
-    testWidgets('a denied camera explains itself and offers a way back', (
-      tester,
-    ) async {
-      // The copy names a remedy the user performs in system settings, so the
-      // flow has to offer a route back without closing the sheet — and the
-      // retry has to reach the live state, not a rebuilt one.
-      setUpMobileScanner();
-
+  group('scanned code handling', () {
+    Future<void> pumpImportPage(WidgetTester tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           SingleChildScrollView(
@@ -390,25 +384,19 @@ void main() {
         ),
       );
       await tester.pump();
+    }
 
-      final scannerBefore = find.byKey(const ValueKey('scanner_0'));
-      expect(scannerBefore, findsOneWidget);
-
-      // Drive the scanner's own error path rather than faking the widget, so
-      // the callback under test is the one production wires up.
-      final scanner = tester.widget<MobileScanner>(find.byType(MobileScanner));
-      final denied = scanner.errorBuilder!(
-        tester.element(find.byType(MobileScanner)),
-        const MobileScannerException(
-          errorCode: MobileScannerErrorCode.permissionDenied,
-        ),
+    testWidgets('a denied camera explains itself and offers a way back', (
+      tester,
+    ) async {
+      // The copy names a remedy the user performs in system settings, so the
+      // flow has to offer a route back without closing the sheet.
+      setUpMobileScanner();
+      installQrCameraFactory(
+        () async => throw CameraException('permission', 'denied'),
       );
 
-      // Same override count — Riverpod forbids changing it between pumps.
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(denied, overrides: defaultOverrides()),
-      );
-      await tester.pump();
+      await pumpImportPage(tester);
 
       final context = tester.element(
         find.byKey(const Key('bundle_import_camera_denied')),
@@ -424,57 +412,50 @@ void main() {
       expect(retry.onPressed, isNotNull);
     });
 
-    testWidgets('retrying the camera recreates the scanner subtree', (
+    testWidgets('retrying the camera mounts a fresh scanner that recovers', (
       tester,
     ) async {
       setUpMobileScanner();
+      var attempts = 0;
+      final camera = FakeQrCamera();
+      installQrCameraFactory(() async {
+        attempts++;
+        if (attempts == 1) throw CameraException('permission', 'denied');
+        return camera;
+      });
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          SingleChildScrollView(
-            child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-          ),
-          overrides: defaultOverrides(),
-        ),
-      );
-      await tester.pump();
+      await pumpImportPage(tester);
       expect(find.byKey(const ValueKey('scanner_0')), findsOneWidget);
-
-      // Invoke the retry the live scanner would hand to its error view. The
-      // widget stays mounted, so this runs against the real State.
-      final scanner = tester.widget<MobileScanner>(find.byType(MobileScanner));
-      final denied = scanner.errorBuilder!(
-        tester.element(find.byType(MobileScanner)),
-        const MobileScannerException(
-          errorCode: MobileScannerErrorCode.permissionDenied,
-        ),
+      expect(
+        find.byKey(const Key('bundle_import_camera_denied')),
+        findsOneWidget,
       );
-      ((denied as dynamic).onRetry as VoidCallback)();
+
+      // The user granted access in system settings and comes back.
+      final retry = find.byKey(const Key('bundle_import_camera_retry'));
+      await tester.ensureVisible(retry);
+      await tester.tap(retry);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
 
-      // A new generation key means the MobileScanner subtree is rebuilt from
-      // scratch, so it cannot cache the failed start.
+      // A new generation key mounts the scanner from scratch, so it asks for
+      // the camera again instead of staying on its failed fallback.
       expect(find.byKey(const ValueKey('scanner_0')), findsNothing);
       expect(find.byKey(const ValueKey('scanner_1')), findsOneWidget);
+      expect(attempts, 2);
+      expect(camera.started, isTrue);
+      expect(
+        find.byKey(const Key('bundle_import_camera_denied')),
+        findsNothing,
+      );
+      expect(find.byKey(const Key('fake_camera_preview')), findsOneWidget);
     });
 
     testWidgets('a declined *pasted* code is remembered too', (tester) async {
-      // Only _handleBarcode used to record the payload, so a code that
+      // Only the camera path used to record the payload, so a code that
       // arrived by clipboard or typing was never added to the rejected set —
       // switching to the camera with that QR still up reopened the very
       // confirmation the user had just declined.
-      //
-      // Mobile explicitly: this group inherits the host platform, and the
-      // camera fallback only exists there.
-      final wasDesktop = isDesktop;
-      final wasMobile = isMobile;
-      isDesktop = false;
-      isMobile = true;
-      addTearDown(() {
-        isDesktop = wasDesktop;
-        isMobile = wasMobile;
-      });
       setUpMobileScanner();
 
       // Taller surface: the manual-entry fallback sits below the viewfinder
@@ -485,15 +466,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          SingleChildScrollView(
-            child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-          ),
-          overrides: defaultOverrides(),
-        ),
-      );
-      await tester.pump();
+      await pumpImportPage(tester);
 
       await tester.tap(find.byKey(const Key('bundle_import_enter_manually')));
       await tester.pump();
@@ -515,9 +488,7 @@ void main() {
       await tapScanInstead(tester);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
-      tester.widget<MobileScanner>(find.byType(MobileScanner)).onDetect!(
-        BarcodeCapture(barcodes: [Barcode(rawValue: validBase64)]),
-      );
+      scanCode(tester, validBase64);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
 
@@ -531,65 +502,51 @@ void main() {
     testWidgets('leaving the scanner mid-initialisation reports no error', (
       tester,
     ) async {
-      // The camera is started from an async call. If the page goes away while
-      // that is in flight, the controller is disposed underneath it and the
-      // start rejects. Left to `MobileScanner`'s own un-awaited initializer
-      // that lands as an unhandled async error nothing can catch, which is
-      // what broke every mobile manual capture (lotti3-82s).
+      // The camera opens asynchronously. If the page goes away while that is
+      // in flight, the camera that finally arrives must be released rather
+      // than started against an unmounted scanner (lotti3-82s).
       setUpMobileScanner();
-      final gated = _GatedStartScanner();
-      MobileScannerPlatform.instance = gated;
-      addTearDown(gated.disposeControllers);
+      final camera = FakeQrCamera();
+      final gate = Completer<QrCamera>();
+      installQrCameraFactory(() => gate.future);
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          SingleChildScrollView(
-            child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-          ),
-          overrides: defaultOverrides(),
-        ),
-      );
-      await tester.pump();
-      expect(find.byType(MobileScanner), findsOneWidget);
-      // The camera really is mid-startup, so what follows is the race and not
-      // a page that never tried.
-      expect(gated.started, isTrue);
-      expect(gated.gate.isCompleted, isFalse);
+      await pumpImportPage(tester);
+      expect(find.byType(QrScanner), findsOneWidget);
 
       // The user moves on before the camera has finished coming up.
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
 
       // ...and only now does the camera answer.
-      gated.gate.complete();
+      gate.complete(camera);
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
+      expect(camera.disposed, isTrue);
+      expect(camera.started, isFalse);
     });
 
     testWidgets('a camera that refuses to start leaves the page usable', (
       tester,
     ) async {
-      // The start now happens in a future this page owns, so its failure has
-      // to be handled here rather than escaping as an unhandled async error.
       setUpMobileScanner();
-      final failing = _FailingStartScanner();
-      MobileScannerPlatform.instance = failing;
-      addTearDown(failing.disposeControllers);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          SingleChildScrollView(
-            child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-          ),
-          overrides: defaultOverrides(),
-        ),
+      final failing = FakeQrCamera(
+        startError: CameraException('start', 'camera refused'),
       );
+      installQrCameraFactory(() async => failing);
+
+      await pumpImportPage(tester);
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
-      // The way out of a dead camera stays on screen.
+      expect(failing.started, isTrue);
+      expect(failing.disposed, isTrue);
+      // The dead camera says so, and the way out stays on screen.
       final context = tester.element(find.byType(BundleImportWidget));
+      expect(
+        find.text(context.messages.syncPairCameraDenied),
+        findsOneWidget,
+      );
       expect(
         find.text(context.messages.syncPairEnterManually),
         findsOneWidget,
@@ -601,23 +558,17 @@ void main() {
     ) async {
       // The seam the manual captures rely on: a headless run has no camera
       // plugin, so the real scanner must not be mounted at all.
-      setUpMobileScanner();
+      final camera = setUpMobileScanner();
       scannerPreviewOverride = (context, side) =>
           const ColoredBox(key: Key('stand_in'), color: Color(0xFF00FF00));
       addTearDown(() => scannerPreviewOverride = null);
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          SingleChildScrollView(
-            child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-          ),
-          overrides: defaultOverrides(),
-        ),
-      );
+      await pumpImportPage(tester);
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('stand_in')), findsOneWidget);
-      expect(find.byType(MobileScanner), findsNothing);
+      expect(find.byType(QrScanner), findsNothing);
+      expect(camera.started, isFalse);
       expect(tester.takeException(), isNull);
     });
 
@@ -626,23 +577,9 @@ void main() {
     ) async {
       setUpMobileScanner();
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          SingleChildScrollView(
-            child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-          ),
-          overrides: defaultOverrides(),
-        ),
-      );
-      await tester.pump();
+      await pumpImportPage(tester);
 
-      void scan() {
-        tester.widget<MobileScanner>(find.byType(MobileScanner)).onDetect!(
-          BarcodeCapture(barcodes: [Barcode(rawValue: validBase64)]),
-        );
-      }
-
-      scan();
+      scanCode(tester, validBase64);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
       expect(find.byKey(const Key('bundle_import_discard')), findsOneWidget);
@@ -654,7 +591,7 @@ void main() {
       // "Enter a different pairing code" has to land on a field. It used to
       // return to the viewfinder, contradicting its own label.
       expect(find.byType(TextField), findsOneWidget);
-      expect(find.byType(MobileScanner), findsNothing);
+      expect(find.byType(QrScanner), findsNothing);
 
       // And the rejected code must not come back. The QR is still on the
       // other device's screen, so before this the very next frame re-decoded
@@ -663,13 +600,13 @@ void main() {
       await tapScanInstead(tester);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
-      scan();
+      scanCode(tester, validBase64);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
 
       final context = tester.element(find.byType(BundleImportWidget));
       expect(find.byKey(const Key('bundle_import_discard')), findsNothing);
-      expect(find.byType(MobileScanner), findsOneWidget);
+      expect(find.byType(QrScanner), findsOneWidget);
       expect(
         find.text(context.messages.syncPairScannerRejected),
         findsOneWidget,
@@ -677,118 +614,60 @@ void main() {
     });
 
     testWidgets(
-      'handles barcode detection: valid bundle shows summary and hides scanner',
-      (tester) async {
+      'a valid scanned bundle shows its summary and hides the camera',
+      (
+        tester,
+      ) async {
         setUpMobileScanner();
 
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            SingleChildScrollView(
-              child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-            ),
-            overrides: defaultOverrides(),
-          ),
-        );
-        await tester.pump();
+        await pumpImportPage(tester);
+        expect(find.byType(QrScanner), findsOneWidget);
 
-        expect(find.byType(MobileScanner), findsOneWidget);
-
-        // Simulate a barcode being scanned by calling onDetect directly
-        final scanner = tester.widget<MobileScanner>(
-          find.byType(MobileScanner),
-        );
-        scanner.onDetect!(
-          BarcodeCapture(
-            barcodes: [Barcode(rawValue: validBase64)],
-          ),
-        );
+        scanCode(tester, validBase64);
         // Process the setState rebuild, then advance past the 220 ms
         // AnimatedSwitcher transition so the old child is fully removed.
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 250));
 
-        // Scanner should be hidden and summary card should appear
-        expect(find.byType(MobileScanner), findsNothing);
+        expect(find.byType(QrScanner), findsNothing);
         expect(find.text('matrix.example.com'), findsOneWidget);
         expect(find.text('@alice:example.com'), findsOneWidget);
       },
     );
 
-    testWidgets(
-      'ignores duplicate barcode scan — second identical code does not re-decode',
-      (tester) async {
-        setUpMobileScanner();
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            SingleChildScrollView(
-              child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-            ),
-            overrides: defaultOverrides(),
-          ),
-        );
-        await tester.pump();
-
-        expect(find.byType(MobileScanner), findsOneWidget);
-
-        final scanner = tester.widget<MobileScanner>(
-          find.byType(MobileScanner),
-        );
-
-        // First scan — invalid bundle triggers error
-        const invalidCode = 'not-a-valid-bundle';
-        scanner.onDetect!(
-          const BarcodeCapture(barcodes: [Barcode(rawValue: invalidCode)]),
-        );
-        await tester.pump();
-
-        // Error is shown beside the viewfinder; the camera stays up because
-        // the bundle was invalid and the user should just scan again.
-        final errorFinder = find.byKey(const Key('bundle_import_scan_error'));
-        expect(errorFinder, findsOneWidget);
-        expect(find.byType(MobileScanner), findsOneWidget);
-        final errorBefore = tester.widget<Text>(errorFinder).data;
-
-        // Second scan with the same code — deduplication prevents re-decode.
-        scanner.onDetect!(
-          const BarcodeCapture(barcodes: [Barcode(rawValue: invalidCode)]),
-        );
-        await tester.pump();
-
-        expect(tester.widget<Text>(errorFinder).data, errorBefore);
-      },
-    );
-
-    testWidgets('ignores barcode capture with null or empty rawValue', (
+    testWidgets('an invalid scanned code explains itself beside the camera', (
       tester,
     ) async {
       setUpMobileScanner();
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          SingleChildScrollView(
-            child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-          ),
-          overrides: defaultOverrides(),
-        ),
+      await pumpImportPage(tester);
+
+      scanCode(tester, 'not-a-valid-bundle');
+      await tester.pump();
+
+      // The camera stays up: the code was unreadable, and the user should
+      // simply point it at the right one.
+      final context = tester.element(find.byType(BundleImportWidget));
+      final errorFinder = find.byKey(const Key('bundle_import_scan_error'));
+      expect(
+        tester.widget<Text>(errorFinder).data,
+        context.messages.syncPairErrorMalformed,
       );
+      expect(find.byType(QrScanner), findsOneWidget);
+      expect(find.byKey(const Key('bundle_import_discard')), findsNothing);
+    });
+
+    testWidgets('ignores an empty scan', (tester) async {
+      setUpMobileScanner();
+
+      await pumpImportPage(tester);
+
+      scanCode(tester, '');
       await tester.pump();
 
-      final scanner = tester.widget<MobileScanner>(find.byType(MobileScanner));
-
-      // Null rawValue — should be ignored
-      scanner.onDetect!(const BarcodeCapture(barcodes: [Barcode()]));
-      await tester.pump();
-
-      // Empty rawValue — should also be ignored
-      scanner.onDetect!(
-        const BarcodeCapture(barcodes: [Barcode(rawValue: '')]),
-      );
-      await tester.pump();
-
-      // Neither triggered a decode, so the camera is still up and no bundle
-      // summary appeared.
-      expect(find.byType(MobileScanner), findsOneWidget);
+      // Nothing was decoded, so the camera is still up and no bundle summary
+      // or error appeared.
+      expect(find.byType(QrScanner), findsOneWidget);
       expect(find.text('@alice:example.com'), findsNothing);
       expect(find.byKey(const Key('bundle_import_scan_error')), findsNothing);
     });
@@ -897,49 +776,4 @@ void main() {
       expect(find.text('@alice:example.com'), findsNothing);
     });
   });
-}
-
-/// A camera that refuses to start, standing in for a device where the platform
-/// rejects the request outright.
-class _FailingStartScanner extends FakeMethodChannelMobileScanner {
-  @override
-  Future<MobileScannerViewAttributes> start(StartOptions startOptions) async {
-    throw const FormatException('camera refused');
-  }
-}
-
-/// A camera whose start hangs until released, so a test can tear the page down
-/// while initialisation is still in flight.
-class _GatedStartScanner extends FakeMethodChannelMobileScanner {
-  final Completer<void> gate = Completer<void>();
-
-  /// Whether the page ever asked for the camera. Without this the test would
-  /// pass just as happily if startup never began at all.
-  bool started = false;
-
-  @override
-  Future<MobileScannerViewAttributes> start(StartOptions startOptions) async {
-    started = true;
-    await gate.future;
-    return super.start(startOptions);
-  }
-}
-
-class _FakeDesktopCamera implements DesktopQrCamera {
-  bool started = false;
-
-  @override
-  Widget buildPreview() => const ColoredBox(color: Colors.green);
-
-  @override
-  Future<void> dispose() async {}
-
-  @override
-  Future<void> start({
-    required bool Function() shouldCaptureFrame,
-    required ValueChanged<DesktopQrFrame> onFrame,
-    required ValueChanged<Object> onError,
-  }) async {
-    started = true;
-  }
 }

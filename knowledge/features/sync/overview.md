@@ -425,12 +425,19 @@ Five properties are deliberate:
   See the check-code bullet below for what that means for the threat model.
 - **Add device is not platform-gated.** Any paired device can present a code,
   so a surviving phone can onboard a replacement for a dead desktop.
-- **Camera scanning follows platform capability.** Android, iOS, and macOS use
-  `mobile_scanner`; Linux streams webcam frames through the standard camera API
-  backed by `camera_desktop` and decodes QR payloads in a worker isolate with
-  `zxing2`. Only one Linux frame is decoded at a time and intervening frames are
-  skipped to keep the UI responsive. Camera denial or absence leaves manual
-  entry available, and Windows stays manual-only until it gets a scanner.
+- **Camera scanning is one open-source path on every platform.** Android,
+  iOS, macOS, and Linux share `QrScanner` (`ui/provisioned/qr_scanner.dart`).
+  Frames come from the standard camera API (CameraX on Android, AVFoundation
+  on iOS, `camera_desktop` on macOS and Linux) and are decoded in a worker
+  isolate with the pure-Dart `zxing2`. No proprietary scanning SDK is linked,
+  so the Android build carries no Google ML Kit. Android streams YUV and only
+  its luminance plane is copied; the other platforms stream BGRA or RGBA.
+  Only one frame is decoded at a time and intervening frames are skipped to
+  keep the UI responsive. The camera is released while the app is in the
+  background (on desktop only when hidden, not on focus loss) and reopened on
+  resume, which also retries a camera the user has just allowed in system
+  settings. Camera denial or absence leaves manual entry available, and
+  Windows stays manual-only until its camera path is verified.
 - **Both devices warn, and the warning touches the credential.** The inviting
   side keeps a lock-badged `DesignSystemInlineCallout` (the design-system
   component the sync-local callout was promoted into) glued directly under
