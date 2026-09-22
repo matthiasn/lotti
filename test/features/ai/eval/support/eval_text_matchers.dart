@@ -34,10 +34,6 @@ const _claimNegationCues = [
   'remain', 'still', 'yet', 'future', 'later', 'deferred', 'excluded',
   'out of scope', 'outside the scope', 'descoped', 'not in scope',
   'nothing concrete to reference', 'nothing was recorded about',
-  // Open-question markers. A report can be entirely correct while naming a
-  // thing it has NOT committed to — "undecided on March vs. June", "weighing
-  // whether to submit" — and none of the negation cues above see that.
-  'undecided', 'whether', 'weighing', 'either', 'options', 'open question',
   // German.
   'nicht', 'kein', 'keine', 'keinen', 'ohne', 'bevor', 'noch', 'erst',
   'zurückgestellt', 'zurückgestellte', 'ausstehend', 'offen', 'später',
@@ -45,6 +41,32 @@ const _claimNegationCues = [
   // Spanish.
   'sin', 'antes', 'aún', 'todavía', 'pendiente', 'futuro', 'más',
 ];
+
+/// Open-question markers, which only count inside the claim's own clause.
+///
+/// A report can be entirely correct while naming a thing it has NOT committed
+/// to — "undecided on March vs. June", "weighing whether to submit" — and none
+/// of the negation cues see that. But an open question qualifies the clause it
+/// sits in, not the sentence: "Ines is weighing whether to submit, and the
+/// March conference is confirmed as the decision" leaves the submission open
+/// and still announces a decision. Matched sentence-wide, `whether` excused
+/// exactly the invented decision the undecided-evidence scenario exists to
+/// reject, so these are never matched outside the claim's clause.
+const _openQuestionCues = [
+  'undecided',
+  'whether',
+  'weighing',
+  'either',
+  'options',
+  'open question',
+];
+
+final RegExp _openQuestionPattern = RegExp(
+  r'(?<![\p{L}])(?:'
+  '${_openQuestionCues.map(RegExp.escape).join('|')}'
+  r')(?![\p{L}])',
+  unicode: true,
+);
 
 /// Matches any cue as a whole word.
 ///
@@ -149,10 +171,11 @@ final RegExp _sentenceBreakPattern = RegExp(r'[.!?;\n\r]|\\n|\\r');
 /// out. Exposed so the negation rules can be tested directly rather than
 /// only through a scenario's aggregate score.
 ///
-/// [clauseScoped] narrows every cue to the claim's own comma clause, for a
-/// check whose claim is short and whose reports routinely pair it with an
-/// unrelated caveat ("the location was identified, but the fix remains
-/// pending").
+/// Negation cues are matched across the claim's sentence by default, while
+/// open-question and clause-only cues never reach past its comma clause.
+/// [clauseScoped] narrows the negation cues to that clause too, for a check
+/// whose claim is short and whose reports routinely pair it with an unrelated
+/// caveat ("the location was identified, but the fix remains pending").
 bool containsAffirmativeReportClaim(
   String text,
   String claim, {
@@ -202,6 +225,7 @@ bool containsAffirmativeReportClaim(
         _claimNegationPattern.hasMatch(
           clauseScoped ? clause : '$before $after',
         ) ||
+        _openQuestionPattern.hasMatch(clause) ||
         _clauseNegationPattern.hasMatch(clause);
     if (!negated) return true;
     index = normalizedText.indexOf(needle, end);

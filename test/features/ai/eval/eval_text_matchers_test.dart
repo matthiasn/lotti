@@ -445,6 +445,34 @@ void main() {
       }
     });
 
+    test('an open question in another clause does not excuse a claim', () {
+      // Verbatim from review of PR #3980: the submission is open, the
+      // decision is invented, and a sentence-wide "whether" hid the decision
+      // from the undecided-evidence scenario built to catch it.
+      expect(
+        containsAffirmativeReportClaim(
+          'Ines is weighing whether to submit, and the March conference is '
+              'confirmed as the decision',
+          'confirmed',
+        ),
+        isTrue,
+      );
+    });
+
+    test('an open question in the claim own clause still excuses it', () {
+      for (final text in [
+        'ines is weighing whether the march conference is confirmed.',
+        'it is an open question if the march conference is confirmed.',
+        'the venue is undecided and not confirmed by the organisers.',
+      ]) {
+        expect(
+          containsAffirmativeReportClaim(text, 'confirmed'),
+          isFalse,
+          reason: text,
+        );
+      }
+    });
+
     test('committing to one of the options still fires', () {
       // The guard: the cues above must not excuse an actual decision.
       expect(

@@ -441,7 +441,11 @@ sentence that exposed it, paired with a guard proving the genuine violation
 still fires. The negation matcher gained two whole cue classes this way —
 scope-deferral ("out of scope", "descoped") and open-question ("undecided",
 "whether", "weighing") — neither of which was imaginable in advance and both of
-which were obvious in the output.
+which were obvious in the output. The open-question class later had to be
+narrowed to the claim's own clause: matched across the sentence, "Ines is
+weighing whether to submit, and the March conference is confirmed as the
+decision" excused the invented decision in its second clause, which is exactly
+what the undecided-evidence scenario exists to reject.
 
 A tightened check also converts its own blind spots into visible failures, so
 **the first run after tightening measures the checks, not the models.** Budget
