@@ -445,6 +445,71 @@ void main() {
       }
     });
 
+    test('an open question in another clause does not excuse a claim', () {
+      // Verbatim from review of PR #3980: the submission is open, the
+      // decision is invented, and a sentence-wide "whether" hid the decision
+      // from the undecided-evidence scenario built to catch it.
+      expect(
+        containsAffirmativeReportClaim(
+          'Ines is weighing whether to submit, and the March conference is '
+              'confirmed as the decision',
+          'confirmed',
+        ),
+        isTrue,
+      );
+    });
+
+    test('a named subject after the conjunction starts a new statement', () {
+      // From review of this change: a repeated name is a new subject too.
+      expect(
+        containsAffirmativeReportClaim(
+          'Ines is weighing whether to submit, and Ines confirmed the March '
+              'conference',
+          'confirmed',
+        ),
+        isTrue,
+      );
+      // A capitalised last alternative is still one of the options.
+      expect(
+        containsAffirmativeReportClaim(
+          'Ines is weighing whether to submit in June, July, and March.',
+          'march',
+        ),
+        isFalse,
+      );
+    });
+
+    test('an open question governs every alternative it lists', () {
+      // From review of this change: list commas must not end the question.
+      const listedAlternatives =
+          'Ines is weighing whether the talk should be scheduled for March, '
+          'confirmed for June, or dropped';
+      const oxfordAnd =
+          'weighing whether to move it to march, keep it in june, and have it '
+          'confirmed later';
+      for (final text in [listedAlternatives, oxfordAnd]) {
+        expect(
+          containsAffirmativeReportClaim(text, 'confirmed'),
+          isFalse,
+          reason: text,
+        );
+      }
+    });
+
+    test('an open question in the claim own clause still excuses it', () {
+      for (final text in [
+        'ines is weighing whether the march conference is confirmed.',
+        'it is an open question if the march conference is confirmed.',
+        'the venue is undecided and not confirmed by the organisers.',
+      ]) {
+        expect(
+          containsAffirmativeReportClaim(text, 'confirmed'),
+          isFalse,
+          reason: text,
+        );
+      }
+    });
+
     test('committing to one of the options still fires', () {
       // The guard: the cues above must not excuse an actual decision.
       expect(
