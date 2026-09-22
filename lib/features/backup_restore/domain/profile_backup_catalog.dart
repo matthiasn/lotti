@@ -248,7 +248,8 @@ abstract final class ProfileBackupCatalog {
       sensitivity: BackupSensitivity.credentials,
       required: false,
       rationale:
-          'Owns AI providers, models, prompts, profiles, and currently API keys.',
+          'Owns AI providers, models, prompts and profiles, plus references '
+          'to API keys that live in the OS keystore.',
     ),
     ProfileBackupStore(
       id: 'day-processing',

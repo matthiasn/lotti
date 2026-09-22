@@ -16,6 +16,7 @@ import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 
 import '../../../helpers/db_settle.dart';
+import '../../../helpers/package_info.dart';
 
 /// Stands in for [ProfileSwitcher.runWithGenerationClosed]: records the
 /// close/restart bracket and can fail the close or cancel while closed.
@@ -134,6 +135,28 @@ void main() {
         expect(stagedValue(snapshot, 'settings.sqlite'), 'setting row');
       },
     );
+
+    test('stamps the installed app version by default', () async {
+      mockPackageInfo(version: '1.1.24', buildNumber: '4410');
+      final runner = _FakeRunner(await closedProfile());
+
+      final snapshot = await ProfileBackupCoordinator(
+        runClosed: runner.run,
+      ).capture(stagingParent: stagingParent);
+
+      expect(snapshot.manifest.appVersion, '1.1.24+4410');
+    });
+
+    test('exceptions describe themselves', () {
+      expect(
+        const ProfileBackupBusyException().toString(),
+        contains('a backup or profile switch is running'),
+      );
+      expect(
+        const ProfileBackupCancelledException().toString(),
+        'ProfileBackupCancelledException',
+      );
+    });
 
     test('records a guest world as a guest backup', () async {
       final runner = _FakeRunner(await closedProfile(guest: true));

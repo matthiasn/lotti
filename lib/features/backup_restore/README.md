@@ -5,10 +5,10 @@ devices converged, but it can also propagate deletion or damaged state; it is
 therefore not a backup.
 
 The feature is being built in layers. The current module establishes the
-storage contract, can publish a verified snapshot from an already-quiesced
-profile, and can capture the running profile by closing it strictly and
-starting it again. Encryption, restore, and settings flows build on that
-boundary. It does not yet expose a user-facing backup action.
+storage contract, can capture the running profile by closing it strictly and
+starting it again, and can turn that capture into a passphrase-encrypted
+portable file and back. Restore and settings flows build on that boundary. It
+does not yet expose a user-facing backup action.
 
 ## What it will do for the user
 
@@ -29,12 +29,18 @@ boundary. It does not yet expose a user-facing backup action.
 lib/features/backup_restore/
 ├── domain/
 │   ├── profile_backup_catalog.dart   profile-root inventory and path policy
-│   └── profile_backup_manifest.dart  versioned stores, files, sizes, hashes
+│   ├── profile_backup_manifest.dart  versioned stores, files, sizes, hashes
+│   └── profile_backup_bundle_header.dart
+│                                       unencrypted header and key slots
 ├── service/
 │   ├── quiesced_profile_snapshot_service.dart
 │   │                                   verified staging and atomic publish
-│   └── profile_backup_coordinator.dart
-│                                       strict close, capture, restart
+│   ├── profile_backup_coordinator.dart
+│   │                                   strict close, capture, restart
+│   ├── profile_backup_bundle_codec.dart
+│   │                                   encrypt, verify, publish; decrypt
+│   └── profile_backup_bundle_store.dart
+│                                       naming, retention, leftover cleanup
 └── README.md
 ```
 
@@ -61,9 +67,12 @@ strict quiescence cannot be proven.
 
 The coordinator refuses to copy anything unless every service and database
 of the running profile closed cleanly, and then starts the same profile
-again; if even that fails, a relaunch boots the unchanged profile. Portable packaging, key handling, restore activation, retention,
-progress UI, and automated restore drills are follow-on layers built against
-the catalog, manifest, staging, and capture contract.
+again; if even that fails, a relaunch boots the unchanged profile. A bundle is encrypted under the user's passphrase, which is never stored:
+it opens on any device that knows it, and a forgotten passphrase cannot be
+recovered. API keys stay in the device keystore and are not part of a backup.
+Restore activation, progress UI, and automated restore drills are follow-on
+layers built against the catalog, manifest, staging, capture, and bundle
+contract.
 
 The store classifications, manifest invariants, privacy boundary, and planned
 capture lifecycle are documented in the knowledge bundle:
