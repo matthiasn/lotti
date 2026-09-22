@@ -5,13 +5,13 @@ description: The checklist subsystem, its celebration and collapse motion contra
 resource: ../../../lib/features/tasks/ui/checklists
 tags: [tasks, checklists, motion, accessibility]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-30T13:12:58Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-22T19:00:00Z }
 stale_after: 2027-01-25
 sources:
   - id: ui
     resource: ../../../lib/features/tasks/ui/checklists
     title: Checklist widgets
-    last_modified: 2026-08-30
+    last_modified: 2026-09-22
   - id: task-details
     resource: ../../../lib/features/tasks/ui/pages/task_details_page.dart
     title: Task details toast scope
@@ -128,6 +128,24 @@ and title. **The empty checkbox draws its outline at medium emphasis / 2 px**, n
 the faint low-emphasis 1.5 px it used to: an unchecked control must stay visible
 against the dark card for low-vision users. That is control legibility, not the
 metadata-chip emphasis tiering.
+
+# A chat approval is credited on the row
+
+When a task chat approval still backs any part of an item's current state —
+its check, title or archival — `ChecklistChatApprovalCaption` sits under the
+title: a chat glyph and "Approved by you in chat · <date>" in the low-emphasis
+caption style. It exists so a change the agent applied on the user's say-so no
+longer reads as the agent's own edit. The row reads
+`ChecklistItemData.currentChatApproval`, so a later direct edit of that field
+removes the caption on the next render; what counts as "still backs" is defined
+in [chat checklist approval provenance](../agents/task-agents.md#chat-checklist-approval-provenance).
+
+The caption sits outside the title's tap-to-edit gesture and gives way to the
+editor. The date wraps onto a second line on a narrow row, because the glyph is
+an inline `WidgetSpan`, instead of being truncated. While task chat is enabled,
+tapping the caption selects the approval's conversation in
+`queryChatControllerProvider` and opens the task's companion pane — the same
+switch the chat's Ask button flips.
 
 # Stale-while-revalidate rendering
 

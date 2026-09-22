@@ -3,6 +3,10 @@
   chat proposes several changes, each one now has its own confirm and reject
   buttons, and "Accept all" and "Dismiss all" act only on what you have not
   decided yet.
+- **Checklist items show when you approved them in chat.** An item the task
+  chat checked off, renamed or archived on your say-so now reads "Approved by
+  you in chat" with the date, instead of looking like the agent's own edit.
+  Tap it to open that chat.
 
 ### Fixed
 - **The task agent could suggest undoing a rename or archive you approved in

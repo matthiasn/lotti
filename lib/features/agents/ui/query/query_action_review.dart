@@ -229,7 +229,6 @@ class _QueryActionReviewState extends ConsumerState<QueryActionReview> {
             Padding(
               padding: EdgeInsets.only(top: tokens.spacing.step3),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: Column(

@@ -16,6 +16,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
+import 'package:lotti/features/tasks/ui/checklists/checklist_chat_approval_caption.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
@@ -23,6 +24,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 import '../../../../widget_test_utils.dart';
+import '../../../agents/test_utils.dart' show makeTestChecklistApproval;
 import 'drag_test_fakes.dart';
 
 // ---------------------------------------------------------------------------
@@ -303,6 +305,49 @@ void main() {
 
       expect(find.text('Buy milk'), findsOneWidget);
       expect(find.byType(Checkbox), findsOneWidget);
+    });
+
+    group('chat approval caption', () {
+      final approval = makeTestChecklistApproval();
+      final approved = _makeItem(isChecked: true).copyWith(
+        data: _makeItem(isChecked: true).data.copyWith(
+          checkedAt: approval.approvedAt,
+          approvalHistory: [approval],
+        ),
+      );
+
+      testWidgets('credits a chat-approved check to the user', (tester) async {
+        await _pump(tester, item: approved);
+        expect(find.byType(ChecklistChatApprovalCaption), findsOneWidget);
+        expect(
+          find.textContaining('Approved by you in chat', findRichText: true),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('is absent for a directly changed item', (tester) async {
+        await _pump(tester, item: _makeItem(isChecked: true));
+        expect(find.byType(ChecklistChatApprovalCaption), findsNothing);
+      });
+
+      testWidgets('a direct toggle since the approval removes it', (
+        tester,
+      ) async {
+        final controls = await _pumpWithControllers(tester, item: approved);
+        await tester.tap(find.byType(Checkbox));
+        await tester.pump();
+        expect(controls.itemController.checkedValue, isFalse);
+        expect(find.byType(ChecklistChatApprovalCaption), findsNothing);
+      });
+
+      testWidgets('gives way to the title editor', (tester) async {
+        await _pump(tester, item: approved);
+        // The strike-through draws the title twice; either copy opens it.
+        await tester.tap(find.text('Do the thing').first);
+        await tester.pump();
+        expect(find.byType(TitleTextField), findsOneWidget);
+        expect(find.byType(ChecklistChatApprovalCaption), findsNothing);
+      });
     });
 
     testWidgets('unchecked item shows unchecked Checkbox', (tester) async {
