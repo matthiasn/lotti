@@ -4,6 +4,64 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.23]
+
+### Added
+
+- **Try a sidebar instead of the Navigate button on your phone.** Switch on
+  *Mobile sidebar navigation* under Settings → Advanced → Config Flags and the
+  Navigate button makes way for a two-stroke menu button fixed at the top left
+  of every screen that shows navigation. Tap it and a sidebar slides in from
+  the side — the same list of sections the desktop app keeps on its left edge
+  — pushing the page over as a rounded card rather than covering it. Tap the
+  dimmed page, swipe the sidebar away or go back to close it. Each list keeps
+  its own create button in the bottom corner, as on the desktop. It is an
+  experiment, off by default: with the switch off nothing changes.
+- **Your recent searches, from every section, one tap away.** The sidebar
+  lists the last things you searched for in Tasks, the Logbook, Projects and
+  Habits, each marked with the section it belongs to. Tap one and the app
+  opens that section's list with the search already applied. A search is
+  remembered once you stop typing for a moment, so the list holds what you
+  looked for rather than every half-typed word, and *Clear* empties it. The
+  list is kept on the device only — it is never synced — and nothing is
+  remembered while the sidebar is switched off.
+
+### Changed
+
+- **After a call, the person page asks instead of assuming.** Coming back from
+  a call or message started in Lotti, the offer now reads "Did you reach Pip?"
+  rather than stating that you called — the app only knows the dialer opened.
+  Its "Yes, log it" no longer competes with the filled "Log check-in" below.
+- **A person's reminder interval is on their page, and one tap changes it.**
+  It used to show only while they were on track and disappeared once they
+  were due; changing it meant opening the editor and scrolling past the photo.
+  The header now shows it in every state, and tapping it asks how often — or
+  turns reminders off.
+
+### Fixed
+
+- **Closing a check-in prefilled with a call lost the call.** Backing out of
+  the sheet — even by accident — cleared what the app knew about the call.
+  The offer now comes back with it until you log it, dismiss it, or it expires.
+- **A goal you resumed stayed deaf to your progress until the app restarted.**
+  Resuming a paused goal agent marked it active but never restored what it
+  listens to, so logging a habit or a measurement did not update the goal
+  until the next launch. Resuming now reconnects the goal right away; the same
+  applies to relationship agents.
+- **The task graph showed some linked entries twice and overstated its "more
+  links" counts.** An entry linked to a task in more than one way — say, both
+  as a follow-up and as a blocker, or by a link recorded in each direction —
+  was placed in the graph once per link. It could appear twice, crowd other
+  entries out of the view, and be counted twice in a "more links · N" bubble.
+  Each linked entry now appears once, and the counts match what they hide.
+- **With local embeddings on and Ollama not running, Lotti kept retrying it.**
+  Every changed entry, backfill item, agent report and semantic search tried
+  to reach Ollama on its own, sat through the full set of retries, and wrote
+  another error to the log. Lotti now notices the outage once, stops trying for
+  five minutes, and then lets one shared check through before anything else
+  tries again. Semantic search fails right away in the meantime instead of
+  hanging, and a long outage adds only a few lines to the log.
+
 ## [1.1.22]
 
 ### Added
