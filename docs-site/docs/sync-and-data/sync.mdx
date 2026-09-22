@@ -181,8 +181,9 @@ waiting or sending, and how many couldn't send.
 Filter the list by state:
 
 - **Waiting** shows items waiting their turn and items currently sending.
-- **Failed** shows items that couldn't send. They are still saved on this
-  device and sync once the problem clears.
+- **Failed** shows items that couldn't send after their automatic retries.
+  They stay saved on this device but are not sent again on their own: once the
+  problem is fixed, choose **Retry** or **Retry all**.
 - **Sent** shows delivered items, kept for a while for diagnostics.
 
 Use **Retry all** after the underlying connection or account problem is fixed,

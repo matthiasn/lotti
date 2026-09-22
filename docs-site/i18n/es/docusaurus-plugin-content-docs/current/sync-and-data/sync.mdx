@@ -199,8 +199,10 @@ Filtra la lista por estado:
 
 - **En espera** muestra los elementos que esperan su turno y los que se están
   enviando.
-- **Fallido** muestra los elementos que no se pudieron enviar. Siguen guardados
-  en este dispositivo y se sincronizan en cuanto se resuelve el problema.
+- **Fallido** muestra los elementos que no se pudieron enviar ni tras los
+  reintentos automáticos. Siguen guardados en este dispositivo, pero no se
+  vuelven a enviar solos: cuando se resuelva el problema, elige **Reintentar**
+  o **Reintentar todo**.
 - **Enviado** muestra los elementos entregados, que se conservan un tiempo para
   el diagnóstico.
 
