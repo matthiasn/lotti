@@ -208,6 +208,7 @@ Do NOT recreate the items that were already successful.''';
                 if (approval case final receipt?)
                   receipt.copyWith(
                     isChecked: (item['isChecked'] as bool?) ?? false,
+                    title: item['title'] as String,
                   ),
               ],
             ),
@@ -270,7 +271,7 @@ Do NOT recreate the items that were already successful.''';
             checkedAt: approval?.approvedAt,
             approvalHistory: [
               if (approval case final receipt?)
-                receipt.copyWith(isChecked: isChecked),
+                receipt.copyWith(isChecked: isChecked, title: title),
             ],
           );
 

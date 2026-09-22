@@ -60,5 +60,7 @@ ChecklistItemData makeTestApprovedChecklistItem({
       if (titleViaChat) approval.copyWith(title: title),
       if (archivedViaChat) approval.copyWith(isArchived: isArchived),
     ],
+    titleSetAt: titleViaChat ? approval.approvedAt : null,
+    archivedSetAt: archivedViaChat ? approval.approvedAt : null,
   );
 }

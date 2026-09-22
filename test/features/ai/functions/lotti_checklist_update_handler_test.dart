@@ -1203,6 +1203,8 @@ void main() {
                 receipt.copyWith(title: 'Inspect feeder'),
                 receipt.copyWith(isArchived: true),
               ],
+              titleSetAt: receipt.approvedAt,
+              archivedSetAt: receipt.approvedAt,
             ),
           );
         }
@@ -1281,7 +1283,10 @@ void main() {
             ]),
           );
           expect(count, 1);
-          final data = written(item.id);
+          // The repository stamps field times on write.
+          final data = written(
+            item.id,
+          ).stampedAfter(item.data, DateTime.utc(2030));
           expect(data.title, 'Inspect feeder B');
           expect(data.isArchived, isFalse);
           final stamped = next.copyWith(

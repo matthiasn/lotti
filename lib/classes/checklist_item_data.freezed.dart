@@ -15,7 +15,10 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ChecklistItemData {
 
- String get title; bool get isChecked; List<String> get linkedChecklists; bool get isArchived; String? get id;@JsonKey(unknownEnumValue: ChangeSource.user) ChangeSource get checkedBy; DateTime? get checkedAt; List<ChecklistItemProvenance> get approvalHistory;
+ String get title; bool get isChecked; List<String> get linkedChecklists; bool get isArchived; String? get id;@JsonKey(unknownEnumValue: ChangeSource.user) ChangeSource get checkedBy; DateTime? get checkedAt; List<ChecklistItemProvenance> get approvalHistory;// When the title and the archived state last changed — the counterparts
+// of [checkedAt] that let a later edit supersede an approval even when
+// it lands back on the approved value. Stamped by [stampedAfter].
+ DateTime? get titleSetAt; DateTime? get archivedSetAt;
 /// Create a copy of ChecklistItemData
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +31,16 @@ $ChecklistItemDataCopyWith<ChecklistItemData> get copyWith => _$ChecklistItemDat
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ChecklistItemData&&(identical(other.title, title) || other.title == title)&&(identical(other.isChecked, isChecked) || other.isChecked == isChecked)&&const DeepCollectionEquality().equals(other.linkedChecklists, linkedChecklists)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.id, id) || other.id == id)&&(identical(other.checkedBy, checkedBy) || other.checkedBy == checkedBy)&&(identical(other.checkedAt, checkedAt) || other.checkedAt == checkedAt)&&const DeepCollectionEquality().equals(other.approvalHistory, approvalHistory));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ChecklistItemData&&(identical(other.title, title) || other.title == title)&&(identical(other.isChecked, isChecked) || other.isChecked == isChecked)&&const DeepCollectionEquality().equals(other.linkedChecklists, linkedChecklists)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.id, id) || other.id == id)&&(identical(other.checkedBy, checkedBy) || other.checkedBy == checkedBy)&&(identical(other.checkedAt, checkedAt) || other.checkedAt == checkedAt)&&const DeepCollectionEquality().equals(other.approvalHistory, approvalHistory)&&(identical(other.titleSetAt, titleSetAt) || other.titleSetAt == titleSetAt)&&(identical(other.archivedSetAt, archivedSetAt) || other.archivedSetAt == archivedSetAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,title,isChecked,const DeepCollectionEquality().hash(linkedChecklists),isArchived,id,checkedBy,checkedAt,const DeepCollectionEquality().hash(approvalHistory));
+int get hashCode => Object.hash(runtimeType,title,isChecked,const DeepCollectionEquality().hash(linkedChecklists),isArchived,id,checkedBy,checkedAt,const DeepCollectionEquality().hash(approvalHistory),titleSetAt,archivedSetAt);
 
 @override
 String toString() {
-  return 'ChecklistItemData(title: $title, isChecked: $isChecked, linkedChecklists: $linkedChecklists, isArchived: $isArchived, id: $id, checkedBy: $checkedBy, checkedAt: $checkedAt, approvalHistory: $approvalHistory)';
+  return 'ChecklistItemData(title: $title, isChecked: $isChecked, linkedChecklists: $linkedChecklists, isArchived: $isArchived, id: $id, checkedBy: $checkedBy, checkedAt: $checkedAt, approvalHistory: $approvalHistory, titleSetAt: $titleSetAt, archivedSetAt: $archivedSetAt)';
 }
 
 
@@ -48,7 +51,7 @@ abstract mixin class $ChecklistItemDataCopyWith<$Res>  {
   factory $ChecklistItemDataCopyWith(ChecklistItemData value, $Res Function(ChecklistItemData) _then) = _$ChecklistItemDataCopyWithImpl;
 @useResult
 $Res call({
- String title, bool isChecked, List<String> linkedChecklists, bool isArchived, String? id,@JsonKey(unknownEnumValue: ChangeSource.user) ChangeSource checkedBy, DateTime? checkedAt, List<ChecklistItemProvenance> approvalHistory
+ String title, bool isChecked, List<String> linkedChecklists, bool isArchived, String? id,@JsonKey(unknownEnumValue: ChangeSource.user) ChangeSource checkedBy, DateTime? checkedAt, List<ChecklistItemProvenance> approvalHistory, DateTime? titleSetAt, DateTime? archivedSetAt
 });
 
 
@@ -65,7 +68,7 @@ class _$ChecklistItemDataCopyWithImpl<$Res>
 
 /// Create a copy of ChecklistItemData
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? title = null,Object? isChecked = null,Object? linkedChecklists = null,Object? isArchived = null,Object? id = freezed,Object? checkedBy = null,Object? checkedAt = freezed,Object? approvalHistory = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? title = null,Object? isChecked = null,Object? linkedChecklists = null,Object? isArchived = null,Object? id = freezed,Object? checkedBy = null,Object? checkedAt = freezed,Object? approvalHistory = null,Object? titleSetAt = freezed,Object? archivedSetAt = freezed,}) {
   return _then(_self.copyWith(
 title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,isChecked: null == isChecked ? _self.isChecked : isChecked // ignore: cast_nullable_to_non_nullable
@@ -75,7 +78,9 @@ as bool,id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullab
 as String?,checkedBy: null == checkedBy ? _self.checkedBy : checkedBy // ignore: cast_nullable_to_non_nullable
 as ChangeSource,checkedAt: freezed == checkedAt ? _self.checkedAt : checkedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,approvalHistory: null == approvalHistory ? _self.approvalHistory : approvalHistory // ignore: cast_nullable_to_non_nullable
-as List<ChecklistItemProvenance>,
+as List<ChecklistItemProvenance>,titleSetAt: freezed == titleSetAt ? _self.titleSetAt : titleSetAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,archivedSetAt: freezed == archivedSetAt ? _self.archivedSetAt : archivedSetAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 
@@ -160,10 +165,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String title,  bool isChecked,  List<String> linkedChecklists,  bool isArchived,  String? id, @JsonKey(unknownEnumValue: ChangeSource.user)  ChangeSource checkedBy,  DateTime? checkedAt,  List<ChecklistItemProvenance> approvalHistory)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String title,  bool isChecked,  List<String> linkedChecklists,  bool isArchived,  String? id, @JsonKey(unknownEnumValue: ChangeSource.user)  ChangeSource checkedBy,  DateTime? checkedAt,  List<ChecklistItemProvenance> approvalHistory,  DateTime? titleSetAt,  DateTime? archivedSetAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ChecklistItemData() when $default != null:
-return $default(_that.title,_that.isChecked,_that.linkedChecklists,_that.isArchived,_that.id,_that.checkedBy,_that.checkedAt,_that.approvalHistory);case _:
+return $default(_that.title,_that.isChecked,_that.linkedChecklists,_that.isArchived,_that.id,_that.checkedBy,_that.checkedAt,_that.approvalHistory,_that.titleSetAt,_that.archivedSetAt);case _:
   return orElse();
 
 }
@@ -181,10 +186,10 @@ return $default(_that.title,_that.isChecked,_that.linkedChecklists,_that.isArchi
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String title,  bool isChecked,  List<String> linkedChecklists,  bool isArchived,  String? id, @JsonKey(unknownEnumValue: ChangeSource.user)  ChangeSource checkedBy,  DateTime? checkedAt,  List<ChecklistItemProvenance> approvalHistory)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String title,  bool isChecked,  List<String> linkedChecklists,  bool isArchived,  String? id, @JsonKey(unknownEnumValue: ChangeSource.user)  ChangeSource checkedBy,  DateTime? checkedAt,  List<ChecklistItemProvenance> approvalHistory,  DateTime? titleSetAt,  DateTime? archivedSetAt)  $default,) {final _that = this;
 switch (_that) {
 case _ChecklistItemData():
-return $default(_that.title,_that.isChecked,_that.linkedChecklists,_that.isArchived,_that.id,_that.checkedBy,_that.checkedAt,_that.approvalHistory);case _:
+return $default(_that.title,_that.isChecked,_that.linkedChecklists,_that.isArchived,_that.id,_that.checkedBy,_that.checkedAt,_that.approvalHistory,_that.titleSetAt,_that.archivedSetAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -201,10 +206,10 @@ return $default(_that.title,_that.isChecked,_that.linkedChecklists,_that.isArchi
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String title,  bool isChecked,  List<String> linkedChecklists,  bool isArchived,  String? id, @JsonKey(unknownEnumValue: ChangeSource.user)  ChangeSource checkedBy,  DateTime? checkedAt,  List<ChecklistItemProvenance> approvalHistory)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String title,  bool isChecked,  List<String> linkedChecklists,  bool isArchived,  String? id, @JsonKey(unknownEnumValue: ChangeSource.user)  ChangeSource checkedBy,  DateTime? checkedAt,  List<ChecklistItemProvenance> approvalHistory,  DateTime? titleSetAt,  DateTime? archivedSetAt)?  $default,) {final _that = this;
 switch (_that) {
 case _ChecklistItemData() when $default != null:
-return $default(_that.title,_that.isChecked,_that.linkedChecklists,_that.isArchived,_that.id,_that.checkedBy,_that.checkedAt,_that.approvalHistory);case _:
+return $default(_that.title,_that.isChecked,_that.linkedChecklists,_that.isArchived,_that.id,_that.checkedBy,_that.checkedAt,_that.approvalHistory,_that.titleSetAt,_that.archivedSetAt);case _:
   return null;
 
 }
@@ -216,7 +221,7 @@ return $default(_that.title,_that.isChecked,_that.linkedChecklists,_that.isArchi
 @JsonSerializable()
 
 class _ChecklistItemData extends ChecklistItemData {
-  const _ChecklistItemData({required this.title, required this.isChecked, required final  List<String> linkedChecklists, this.isArchived = false, this.id, @JsonKey(unknownEnumValue: ChangeSource.user) this.checkedBy = ChangeSource.user, this.checkedAt, final  List<ChecklistItemProvenance> approvalHistory = const []}): _linkedChecklists = linkedChecklists,_approvalHistory = approvalHistory,super._();
+  const _ChecklistItemData({required this.title, required this.isChecked, required final  List<String> linkedChecklists, this.isArchived = false, this.id, @JsonKey(unknownEnumValue: ChangeSource.user) this.checkedBy = ChangeSource.user, this.checkedAt, final  List<ChecklistItemProvenance> approvalHistory = const [], this.titleSetAt, this.archivedSetAt}): _linkedChecklists = linkedChecklists,_approvalHistory = approvalHistory,super._();
   factory _ChecklistItemData.fromJson(Map<String, dynamic> json) => _$ChecklistItemDataFromJson(json);
 
 @override final  String title;
@@ -239,6 +244,11 @@ class _ChecklistItemData extends ChecklistItemData {
   return EqualUnmodifiableListView(_approvalHistory);
 }
 
+// When the title and the archived state last changed — the counterparts
+// of [checkedAt] that let a later edit supersede an approval even when
+// it lands back on the approved value. Stamped by [stampedAfter].
+@override final  DateTime? titleSetAt;
+@override final  DateTime? archivedSetAt;
 
 /// Create a copy of ChecklistItemData
 /// with the given fields replaced by the non-null parameter values.
@@ -253,16 +263,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ChecklistItemData&&(identical(other.title, title) || other.title == title)&&(identical(other.isChecked, isChecked) || other.isChecked == isChecked)&&const DeepCollectionEquality().equals(other._linkedChecklists, _linkedChecklists)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.id, id) || other.id == id)&&(identical(other.checkedBy, checkedBy) || other.checkedBy == checkedBy)&&(identical(other.checkedAt, checkedAt) || other.checkedAt == checkedAt)&&const DeepCollectionEquality().equals(other._approvalHistory, _approvalHistory));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ChecklistItemData&&(identical(other.title, title) || other.title == title)&&(identical(other.isChecked, isChecked) || other.isChecked == isChecked)&&const DeepCollectionEquality().equals(other._linkedChecklists, _linkedChecklists)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.id, id) || other.id == id)&&(identical(other.checkedBy, checkedBy) || other.checkedBy == checkedBy)&&(identical(other.checkedAt, checkedAt) || other.checkedAt == checkedAt)&&const DeepCollectionEquality().equals(other._approvalHistory, _approvalHistory)&&(identical(other.titleSetAt, titleSetAt) || other.titleSetAt == titleSetAt)&&(identical(other.archivedSetAt, archivedSetAt) || other.archivedSetAt == archivedSetAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,title,isChecked,const DeepCollectionEquality().hash(_linkedChecklists),isArchived,id,checkedBy,checkedAt,const DeepCollectionEquality().hash(_approvalHistory));
+int get hashCode => Object.hash(runtimeType,title,isChecked,const DeepCollectionEquality().hash(_linkedChecklists),isArchived,id,checkedBy,checkedAt,const DeepCollectionEquality().hash(_approvalHistory),titleSetAt,archivedSetAt);
 
 @override
 String toString() {
-  return 'ChecklistItemData(title: $title, isChecked: $isChecked, linkedChecklists: $linkedChecklists, isArchived: $isArchived, id: $id, checkedBy: $checkedBy, checkedAt: $checkedAt, approvalHistory: $approvalHistory)';
+  return 'ChecklistItemData(title: $title, isChecked: $isChecked, linkedChecklists: $linkedChecklists, isArchived: $isArchived, id: $id, checkedBy: $checkedBy, checkedAt: $checkedAt, approvalHistory: $approvalHistory, titleSetAt: $titleSetAt, archivedSetAt: $archivedSetAt)';
 }
 
 
@@ -273,7 +283,7 @@ abstract mixin class _$ChecklistItemDataCopyWith<$Res> implements $ChecklistItem
   factory _$ChecklistItemDataCopyWith(_ChecklistItemData value, $Res Function(_ChecklistItemData) _then) = __$ChecklistItemDataCopyWithImpl;
 @override @useResult
 $Res call({
- String title, bool isChecked, List<String> linkedChecklists, bool isArchived, String? id,@JsonKey(unknownEnumValue: ChangeSource.user) ChangeSource checkedBy, DateTime? checkedAt, List<ChecklistItemProvenance> approvalHistory
+ String title, bool isChecked, List<String> linkedChecklists, bool isArchived, String? id,@JsonKey(unknownEnumValue: ChangeSource.user) ChangeSource checkedBy, DateTime? checkedAt, List<ChecklistItemProvenance> approvalHistory, DateTime? titleSetAt, DateTime? archivedSetAt
 });
 
 
@@ -290,7 +300,7 @@ class __$ChecklistItemDataCopyWithImpl<$Res>
 
 /// Create a copy of ChecklistItemData
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? title = null,Object? isChecked = null,Object? linkedChecklists = null,Object? isArchived = null,Object? id = freezed,Object? checkedBy = null,Object? checkedAt = freezed,Object? approvalHistory = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? title = null,Object? isChecked = null,Object? linkedChecklists = null,Object? isArchived = null,Object? id = freezed,Object? checkedBy = null,Object? checkedAt = freezed,Object? approvalHistory = null,Object? titleSetAt = freezed,Object? archivedSetAt = freezed,}) {
   return _then(_ChecklistItemData(
 title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,isChecked: null == isChecked ? _self.isChecked : isChecked // ignore: cast_nullable_to_non_nullable
@@ -300,7 +310,9 @@ as bool,id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullab
 as String?,checkedBy: null == checkedBy ? _self.checkedBy : checkedBy // ignore: cast_nullable_to_non_nullable
 as ChangeSource,checkedAt: freezed == checkedAt ? _self.checkedAt : checkedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,approvalHistory: null == approvalHistory ? _self._approvalHistory : approvalHistory // ignore: cast_nullable_to_non_nullable
-as List<ChecklistItemProvenance>,
+as List<ChecklistItemProvenance>,titleSetAt: freezed == titleSetAt ? _self.titleSetAt : titleSetAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,archivedSetAt: freezed == archivedSetAt ? _self.archivedSetAt : archivedSetAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 

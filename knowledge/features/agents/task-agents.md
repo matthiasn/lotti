@@ -44,6 +44,10 @@ sources:
     resource: ../../../lib/features/ai/functions/lotti_checklist_update_handler.dart
     title: Trusted approval stamping and execution guard
     last_modified: 2026-09-22
+  - id: checklist-repository
+    resource: ../../../lib/features/tasks/repository/checklist_repository.dart
+    title: Field-time stamping on every checklist item write
+    last_modified: 2026-09-22
   - id: proposal-builder
     resource: ../../../lib/features/agents/workflow/change_set_builder.dart
     title: Live background proposal protection
@@ -743,8 +747,10 @@ Creation, updates and migration append receipts to the checklist item's
 `approvalHistory` in the **same journal write as the change**, including sync
 serialization. Migration retains existing history on the copy and source.
 Each receipt records the values it set — `isChecked`, `title` and
-`isArchived` — and leaves the fields the change did not touch null. An
-explicit approval of an already-matching check still stamps human intent. Failed writes leave no new receipt on the item. Rejection creates
+`isArchived` — and leaves the fields the change did not touch null. A
+chat-approved creation records the title it created; an approved migration
+records the source's archival. An explicit approval of an already-matching
+value still stamps human intent. Failed writes leave no new receipt on the item. Rejection creates
 no checklist receipt. Chat deletion can remove the referenced chat event but
 neither removes the journal receipt nor requires retaining the user's words.
 Legacy and direct UI edits create no receipt; absent history decodes as empty.
@@ -757,8 +763,16 @@ still matches the item:
 | Getter | Also requires | Superseded by |
 |---|---|---|
 | `checkedStateApproval` | `checkedBy` is user and `checkedAt` equals `approvedAt` | any later toggle, direct or agent |
-| `titleApproval` | — | a later rename to a different title |
-| `archivedStateApproval` | — | a later archive or restore that changes the state |
+| `titleApproval` | `titleSetAt` equals `approvedAt` | any later rename, even back to the approved title |
+| `archivedStateApproval` | `archivedSetAt` equals `approvedAt` | any later archive or restore, even back to the approved state |
+
+`titleSetAt` and `archivedSetAt` are the counterparts of `checkedAt`: without
+them a value comparison alone would revive an approval after an edit away and
+back. `ChecklistItemData.stampedAfter` keeps them, and `ChecklistRepository`
+applies it on every create and update — the single path every checklist writer
+takes — so no handler or controller has to remember: a field set by a receipt
+added in that write takes its approval time, a field changed without one takes
+the write time.
 
 A later rename keeps the checked-state protection, and each field keeps its
 own; none of them erases the audit history. `currentChatApproval` is the newest

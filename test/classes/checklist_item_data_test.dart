@@ -61,6 +61,8 @@ void main() {
         receipt.copyWith(title: 'Walk pressure seals A–F'),
         receipt.copyWith(decisionId: 'archive', isArchived: true),
       ],
+      titleSetAt: receipt.approvedAt,
+      archivedSetAt: receipt.approvedAt,
     );
 
     test('survive JSON and back only the value they approved', () {
@@ -91,7 +93,11 @@ void main() {
       );
       expect(renamed.titleApproval, isNull);
       expect(
-        renamed.copyWith(title: 'Walk the seals').titleApproval?.decisionId,
+        renamed
+            .copyWith(title: 'Walk the seals')
+            .stampedAfter(data, DateTime.utc(2030))
+            .titleApproval
+            ?.decisionId,
         'rename',
       );
     });
@@ -117,6 +123,53 @@ void main() {
             .archivedStateApproval,
         isNull,
       );
+    });
+
+    test('an edit back to the approved value does not revive it', () {
+      final now = DateTime.utc(2030);
+      final away = data
+          .copyWith(title: 'Walk the seals', isArchived: false)
+          .stampedAfter(data, now);
+      final back = away
+          .copyWith(title: data.title, isArchived: true)
+          .stampedAfter(away, now.add(const Duration(minutes: 1)));
+      expect(back.title, data.title);
+      expect(back.isArchived, data.isArchived);
+      expect(back.titleApproval, isNull);
+      expect(back.archivedStateApproval, isNull);
+      expect(back.titleSetAt, now.add(const Duration(minutes: 1)));
+    });
+
+    test('stampedAfter times a field by the receipt that set it', () {
+      final now = DateTime.utc(2030);
+      const plain = ChecklistItemData(
+        title: 'Seals',
+        isChecked: false,
+        linkedChecklists: [],
+      );
+      // Creation: the title is new, the archived state is not.
+      final created = plain.stampedAfter(null, now);
+      expect(created.titleSetAt, now);
+      expect(created.archivedSetAt, isNull);
+      // An unchanged write keeps both times.
+      final later = now.add(const Duration(hours: 1));
+      expect(created.stampedAfter(created, later).titleSetAt, now);
+      // An approved rename takes the approval time, not the write time.
+      final approved = created
+          .copyWith(
+            title: 'Walk seals',
+            approvalHistory: [receipt.copyWith(title: 'Walk seals')],
+          )
+          .stampedAfter(created, later);
+      expect(approved.titleSetAt, receipt.approvedAt);
+      expect(approved.titleApproval, isNotNull);
+      expect(approved.archivedSetAt, isNull);
+      // An approved restore of an unarchived item still stamps intent.
+      final restored = created
+          .copyWith(approvalHistory: [receipt.copyWith(isArchived: false)])
+          .stampedAfter(created, later);
+      expect(restored.archivedSetAt, receipt.approvedAt);
+      expect(restored.archivedStateApproval, isNotNull);
     });
 
     test('currentChatApproval is the newest one still standing', () {

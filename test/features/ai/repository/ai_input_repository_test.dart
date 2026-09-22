@@ -693,6 +693,7 @@ void main() {
                 mode: ChecklistApprovalMode.confirmAll,
               ),
             ],
+            titleSetAt: makeTestChecklistApproval().approvedAt,
           ),
         );
 

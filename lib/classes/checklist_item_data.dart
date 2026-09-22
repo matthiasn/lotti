@@ -19,6 +19,11 @@ abstract class ChecklistItemData with _$ChecklistItemData {
     ChangeSource checkedBy,
     DateTime? checkedAt,
     @Default([]) List<ChecklistItemProvenance> approvalHistory,
+    // When the title and the archived state last changed — the counterparts
+    // of [checkedAt] that let a later edit supersede an approval even when
+    // it lands back on the approved value. Stamped by [stampedAfter].
+    DateTime? titleSetAt,
+    DateTime? archivedSetAt,
   }) = _ChecklistItemData;
 
   factory ChecklistItemData.fromJson(Map<String, dynamic> json) =>
@@ -33,15 +38,48 @@ abstract class ChecklistItemData with _$ChecklistItemData {
     return approval?.approvedAt == checkedAt ? approval : null;
   }
 
-  /// Approval backing the current title. Any later rename that lands on a
-  /// different title — direct or agent-applied — supersedes it.
-  ChecklistItemProvenance? get titleApproval =>
-      _currentApproval((a) => a.title, title);
+  /// Approval backing the current title. Any later rename — direct or
+  /// agent-applied, even one back to the approved title — supersedes it.
+  ChecklistItemProvenance? get titleApproval {
+    final approval = _currentApproval((a) => a.title, title);
+    return approval?.approvedAt == titleSetAt ? approval : null;
+  }
 
-  /// Approval backing the current archived state. A later direct archive or
-  /// restore that changes the state supersedes it.
-  ChecklistItemProvenance? get archivedStateApproval =>
-      _currentApproval((a) => a.isArchived, isArchived);
+  /// Approval backing the current archived state. Any later archive or
+  /// restore supersedes it, even one back to the approved state.
+  ChecklistItemProvenance? get archivedStateApproval {
+    final approval = _currentApproval((a) => a.isArchived, isArchived);
+    return approval?.approvedAt == archivedSetAt ? approval : null;
+  }
+
+  /// This data as written over [previous] (null for a new item) at [now]:
+  /// a field set by a receipt added in this write takes its approval time,
+  /// and a field changed without one takes [now]. The one place title and
+  /// archival times are kept, so no writer can forget them.
+  ChecklistItemData stampedAfter(ChecklistItemData? previous, DateTime now) {
+    final added = approvalHistory.skip(previous?.approvalHistory.length ?? 0);
+    DateTime? stamp(
+      Object? Function(ChecklistItemProvenance approval) approvedValue, {
+      required bool changed,
+      required DateTime? current,
+    }) =>
+        added.where((a) => approvedValue(a) != null).lastOrNull?.approvedAt ??
+        (changed ? now : current);
+    return copyWith(
+      titleSetAt: stamp(
+        (a) => a.title,
+        changed: previous?.title != title,
+        current: titleSetAt,
+      ),
+      archivedSetAt: stamp(
+        (a) => a.isArchived,
+        changed: previous == null
+            ? isArchived
+            : previous.isArchived != isArchived,
+        current: archivedSetAt,
+      ),
+    );
+  }
 
   /// The newest chat approval still backing any part of the current state —
   /// what the checklist row credits to the user rather than the agent.

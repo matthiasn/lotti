@@ -33,6 +33,12 @@ _ChecklistItemData _$ChecklistItemDataFromJson(Map<String, dynamic> json) =>
               )
               .toList() ??
           const [],
+      titleSetAt: json['titleSetAt'] == null
+          ? null
+          : DateTime.parse(json['titleSetAt'] as String),
+      archivedSetAt: json['archivedSetAt'] == null
+          ? null
+          : DateTime.parse(json['archivedSetAt'] as String),
     );
 
 Map<String, dynamic> _$ChecklistItemDataToJson(_ChecklistItemData instance) =>
@@ -45,6 +51,8 @@ Map<String, dynamic> _$ChecklistItemDataToJson(_ChecklistItemData instance) =>
       'checkedBy': _$ChangeSourceEnumMap[instance.checkedBy]!,
       'checkedAt': instance.checkedAt?.toIso8601String(),
       'approvalHistory': instance.approvalHistory,
+      'titleSetAt': instance.titleSetAt?.toIso8601String(),
+      'archivedSetAt': instance.archivedSetAt?.toIso8601String(),
     };
 
 const _$ChangeSourceEnumMap = {

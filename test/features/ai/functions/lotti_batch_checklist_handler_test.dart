@@ -153,7 +153,7 @@ void main() {
               categoryId: testTask.meta.categoryId,
               checkedBy: ChangeSource.user,
               checkedAt: approval.approvedAt,
-              approvalHistory: [approval],
+              approvalHistory: [approval.copyWith(title: 'Inspect feeder')],
             ),
           ).called(1);
         } else {
@@ -166,7 +166,14 @@ void main() {
                     ),
                   ).captured.single
                   as List<ChecklistItemData>;
-          expect(suggestions.single.checkedStateApproval, approval);
+          final created = suggestions.single.stampedAfter(
+            null,
+            DateTime.utc(2030),
+          );
+          final receipt = approval.copyWith(title: 'Inspect feeder');
+          expect(created.checkedStateApproval, receipt);
+          // The approved title is protected from the moment it is created.
+          expect(created.titleApproval, receipt);
         }
       },
     );
