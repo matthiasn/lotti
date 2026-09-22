@@ -124,10 +124,17 @@ project summary cards carry it as the chat disc (`QueryAskButton(disc: true)`)
 in the card header's trailing rail; a project with no agent yet keeps the disc
 beside its assign-agent row, since project chat answers from the project's own
 data. Neither detail page has an Ask button of its own, and the task action bar
-remains reserved for time tracking and capture. Projects and saved categories use the same companion as tasks, preserving their
-detail content and pending form edits while chat is open.
+remains reserved for time tracking and capture. Projects use the same companion
+as tasks, preserving their detail content while chat is open.
 
-Task, project and saved-category pages use `QueryCompanion`, keeping the detail
+**Category scope has no entry point.** The category page used to carry an *Ask
+about this category* button and companion; both are hidden. No category agent
+maintains a category report, so a category chat could answer only from its
+tasks' reports and saw no category-level context at all. The scope, the
+`category_agent` identity and category profile resolution below stay in place
+for a future category agent that would supply that report.
+
+Task and project pages use `QueryCompanion`, keeping the detail
 subtree mounted and usable.
 The companion wraps data-dependent loading/missing-task branches as well, so
 a sync deletion cannot remove the chat Close control or strand its open flag. With

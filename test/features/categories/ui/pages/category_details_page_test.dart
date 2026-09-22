@@ -5,11 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
-import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
-import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
-import 'package:lotti/features/agents/ui/query/query_chat_pane.dart';
+import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
+import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
@@ -38,7 +36,6 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
-import '../../../agents/ui/evolution/widgets/evolution_recorder_test_utils.dart';
 import '../../test_utils.dart';
 
 /// Finds the glass pill in the action bar by its (localized) label.
@@ -131,14 +128,11 @@ void main() {
     }
 
     testWidgets(
-      'Ask keeps the category form mounted with unsaved text and selection',
-      (
-        tester,
-      ) async {
-        final scope = QueryScope(
-          kind: QueryScopeKind.category,
-          id: testCategoryId,
-        );
+      'the category page offers no chat, even with query chat enabled',
+      (tester) async {
+        // There is no category agent maintaining a category report, so a
+        // category chat has nothing category-level to answer from. The page
+        // hides it until one exists; the query plumbing stays in place.
         final category = CategoryTestUtils.createTestCategory(
           id: testCategoryId,
           name: 'Penguin habitat',
@@ -149,50 +143,16 @@ void main() {
         await pumpCategoryDetailsPage(
           tester,
           settle: true,
-          extraOverrides: [
-            queryChatEnabledProvider.overrideWithValue(true),
-            queryChatTargetProvider(scope).overrideWith(
-              (ref) async => QueryChatTarget(
-                scope: scope,
-                label: category.name,
-                agent: null,
-              ),
-            ),
-            configFlagProvider(
-              'private',
-            ).overrideWith((ref) => Stream.value(false)),
-            chatRecorderControllerProvider.overrideWith(
-              TranscriptEmittingController.new,
-            ),
-          ],
+          extraOverrides: [queryChatEnabledProvider.overrideWithValue(true)],
         );
-        await tester.enterText(nameFieldFinder(), 'Unsaved habitat name');
-        final field = tester.element(nameFieldFinder());
-        final input = tester.widget<TextField>(nameFieldFinder()).controller!
-          ..selection = const TextSelection(baseOffset: 2, extentOffset: 7);
-        await tester.tap(find.text('Ask about this category'));
-        await tester.pumpAndSettle();
-        expect(
-          tester.widget<QueryChatPane>(find.byType(QueryChatPane)).scope,
-          scope,
-        );
-        expect(tester.element(nameFieldFinder()), same(field));
-        expect(
-          tester.widget<QueryChatPane>(find.byType(QueryChatPane)).companion,
-          isTrue,
-        );
-        expect(
-          input.selection,
-          const TextSelection(baseOffset: 2, extentOffset: 7),
-        );
-        await tester.tap(find.byIcon(LottiIcons.close).last);
-        await tester.pumpAndSettle();
-        expect(find.byType(QueryChatPane), findsNothing);
-        expect(tester.element(nameFieldFinder()), same(field));
+
         expect(
           tester.widget<TextField>(nameFieldFinder()).controller!.text,
-          'Unsaved habitat name',
+          'Penguin habitat',
         );
+        expect(find.text('Ask about this category'), findsNothing);
+        expect(find.byType(QueryAskButton), findsNothing);
+        expect(find.byType(QueryCompanion), findsNothing);
       },
     );
 
