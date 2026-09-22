@@ -1,7 +1,7 @@
 ---
 type: Convention
 title: Screenshots
-description: How generated screenshots leave this repository for R2, how the store listings are captured on a device, and why a UI pull request carries an immutable before/after pair rather than one picture of the new thing.
+description: How generated screenshots leave this repository for R2, how the store listings — their screenshots and the App Store's preview video — are captured on a device, and why a UI pull request carries an immutable before/after pair rather than one picture of the new thing.
 resource: ../../test/test_utils/screenshot_harness.dart
 tags: [convention, screenshots, review, pull-request, r2]
 status: stable
@@ -15,7 +15,7 @@ sources:
   - id: makefile
     resource: ../../Makefile
     title: manual_screenshots targets and their staging directories
-    last_modified: 2026-07-31
+    last_modified: 2026-09-19
   - id: gitignore
     resource: ../../.gitignore
     title: The `screenshots` ignore rule
@@ -31,11 +31,31 @@ sources:
   - id: store-capture-ios
     resource: ../../tool/store_screenshots/ios.sh
     title: App Store listing capture on iOS simulators
-    last_modified: 2026-08-28
+    last_modified: 2026-09-19
   - id: store-test
     resource: ../../integration_test/store_screenshots_test.dart
     title: The screens the store listing shows, driven on the device
-    last_modified: 2026-08-28
+    last_modified: 2026-09-19
+  - id: store-walk
+    resource: ../../integration_test/store_walk.dart
+    title: What the two store walks share — the demo-world boot, display-rate pumping and the host handshake
+    last_modified: 2026-09-19
+  - id: store-simulator-lib
+    resource: ../../tool/store_screenshots/ios_simulator_lib.sh
+    title: Finding, booting, dressing and releasing a simulator by UDID
+    last_modified: 2026-09-19
+  - id: store-preview-ios
+    resource: ../../tool/store_screenshots/ios_preview.sh
+    title: App Preview recording on an iOS simulator
+    last_modified: 2026-09-19
+  - id: store-preview-test
+    resource: ../../integration_test/store_preview_test.dart
+    title: The App Preview walk, driven by touch
+    last_modified: 2026-09-19
+  - id: app-preview-transcode
+    resource: ../../tool/store_screenshots/app_preview.sh
+    title: Recording to App Store App Preview transcode
+    last_modified: 2026-09-19
 ---
 
 # Images do not live in this repository
@@ -175,6 +195,81 @@ Device facts that shape the two scripts:
 
 The output is a listing asset, not review evidence: it is uploaded to the
 Play Console and App Store Connect by hand and does not go to R2.
+
+# The App Preview is the same world, walked by touch
+
+App Store Connect's listing also takes video: up to three **App Previews** per
+localisation, 15 to 30 seconds each. `integration_test/store_preview_test.dart`
+boots the same penguin world as the screenshot walk — both go through
+`bootStoreWorld` in `integration_test/store_walk.dart` — but where the
+screenshot walk jumps between routes and holds still, this one moves the way a
+person does, and **only through what a phone can reach by touch**: it scrolls the
+task list, opens a task onto its cover art, ticks a checklist item, goes back,
+completes two habits through the Navigate sheet, and ends in the logbook, where
+both completions have just landed — what you did is what it keeps.
+Time analysis, which the screenshots show, is absent on purpose — its only entry
+point is the desktop sidebar, so on a phone the screenshot walk reaches it by
+route, and a video of a screen nobody can tap their way to would misdescribe
+the app. Daily OS is absent too: in this world it opens on its set-up card.
+
+`tool/store_screenshots/ios_preview.sh` (`make store_preview_ios`) records the
+simulator around the walk and cuts the result:
+
+```mermaid
+sequenceDiagram
+    participant S as ios_preview.sh (host)
+    participant R as simctl recordVideo
+    participant W as store_preview_test (simulator)
+    S->>W: flutter drive (build, install, boot the demo world)
+    W-->>S: LOTTI_PREVIEW_MARK ready <ack-dir>
+    Note over W: holds still
+    S->>R: start
+    R-->>S: "Recording started" (first frame in)
+    S->>W: touch <ack-dir>/ready.done
+    W-->>S: LOTTI_PREVIEW_MARK start
+    Note over W: the walk, paced on the wall clock
+    W-->>S: LOTTI_PREVIEW_MARK end
+    W-->>S: drive exits
+    S->>R: SIGINT (finalize the file)
+    S->>S: app_preview.sh raw.mov preview.mp4 886x1920 <start> <length>
+```
+
+What shapes it:
+
+- **The camera starts on the walk's word, not the script's.** A cold build
+  holds the simulator on its home screen for minutes. The walk announces
+  `ready` once the app is up and waits for the script's acknowledgement — the
+  `holdForHost` handshake the screenshot walk uses for its PNGs — so the file
+  holds the walk and nothing before it.
+- **The cut is timed, not guessed.** The `start` and `end` lines are timed
+  against the recorder's first frame. A line takes a fraction of a second to
+  get from the device to the script, so the walk stands still for a second and
+  a half on either side of each mark, and the error lands in still frames.
+- **Every wait renders frames.** A recording takes real frames: the walk pumps
+  one every 16 ms while it holds, scrolls by animating the page's own scroll
+  position, and would otherwise record a page transition at a few frames per
+  second.
+- **A simulator is addressed by UDID, never as `booted`.** With two simulators
+  running `simctl` picks one, and the other may be somebody's debugging
+  session. `tool/store_screenshots/ios_simulator_lib.sh` resolves the name to a
+  UDID, shared with the screenshot script; it shuts down only what it booted.
+- **`app_preview.sh` writes what App Store Connect takes and refuses what it
+  would not.** 886×1920 for the 6.9" and 6.5" iPhone slots, H.264 High 4.0,
+  progressive, constant 30 fps — a simulator recording has a variable frame
+  rate, a frame per screen change — and a silent stereo AAC track, since
+  Apple's spec describes the audio format without saying whether a track is
+  required. The result is measured; one outside 15–30 seconds is removed and
+  fails the run.
+
+**What this produces is the rehearsal.** Apple wants a preview built from
+footage captured on a device, and nothing on the command line records a
+physical iPhone — `devicectl` can neither record nor screenshot. The simulator
+cut settles the storyboard and the pacing; the footage that ships is the same
+walk on a phone, captured with QuickTime Player over USB (File › New Movie
+Recording, the phone as camera), which goes through `app_preview.sh` unchanged.
+The walk drives the phone layout, so the 13" iPad slot (1200×1600) needs a walk
+of its own. Like the listing PNGs, previews land under `build/`, are uploaded by
+hand and are never committed.
 
 # A UI pull request shows before *and* after
 

@@ -20,6 +20,6 @@ tags:
   filmstrip:
     description: Deterministic filmstrip capture tests.
   store-screenshots:
-    description: Opt-in store listing screenshot drivers.
+    description: Opt-in store listing drivers — the screenshots and the App Preview walk.
   skip_very_good_optimization:
     description: Suite must execute in its own isolate.

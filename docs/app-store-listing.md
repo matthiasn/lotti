@@ -102,6 +102,44 @@ Order within a slot, as captured (`store_en_dark_01_tasks.png` …):
 4. Time analysis — where the tracked hours went
 5. Journal — notes, photos and time records in one stream
 
+## App Preview
+
+Optional in App Store Connect, and the first thing a visitor sees when there
+is one: up to three videos per localisation, 15–30 seconds each.
+`make store_preview_ios` records the storyboard on a simulator
+— the task list, one task and a checklist item ticked, two habits completed,
+the logbook they land in — and writes
+`build/store_preview/ios/iphone_17_pro_max/store_preview_en_dark.mp4` in the
+form the 6.9" slot takes (886 × 1920, H.264, 30 fps, stereo AAC); the recipe is
+in [knowledge/conventions/screenshots.md](../knowledge/conventions/screenshots.md#the-app-preview-is-the-same-world-walked-by-touch).
+
+| Slot in App Store Connect | Size | Status |
+|---------------------------|------|--------|
+| iPhone 6.9" Display (scaled down for every smaller iPhone) | 886 × 1920 | simulator rehearsal from `make store_preview_ios` |
+| iPad 13" Display | 1200 × 1600 | not recorded — the walk drives the phone layout |
+
+Before uploading one:
+
+- **Apple describes a preview as "footage captured on device"** and points at
+  QuickTime Player for it; its pages never mention a simulator, and no
+  command-line tool records a physical iPhone. The simulator cut is the
+  rehearsal. For the upload, walk
+  the same storyboard on a phone in demo mode ("Explore with sample data"),
+  capture it with QuickTime Player over USB (File › New Movie Recording, the
+  phone as camera), and run the file through
+  `tool/store_screenshots/app_preview.sh capture.mov preview.mp4 886x1920 <start> <length>`.
+- A preview "must show only content within the app itself" — no people
+  interacting with a device, no fingers tapping the screen — and its
+  transitions must not imply functionality the app lacks. The walk is
+  unedited footage of the app, so it has no transitions to get wrong.
+- It autoplays **muted**, so nothing in it may depend on sound; the cut carries
+  a silent track. A visitor with autoplay off sees a poster frame instead, and
+  changing the poster frame of an approved preview means submitting the
+  preview again — the cut opens on the task list so an early frame serves.
+- Not confirmed against an actual upload yet: whether App Store Connect accepts
+  this file as is. Its published spec gives 10–12 Mbps as a *target* bit rate,
+  and a screen recording of a mostly still UI encodes well below that.
+
 ## App Privacy questionnaire
 
 Two facts are not in question: the developer operates no server and ships no

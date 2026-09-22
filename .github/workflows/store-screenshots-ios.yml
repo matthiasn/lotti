@@ -21,6 +21,7 @@ on:
   pull_request:
     paths:
       - integration_test/store_screenshots_test.dart
+      - integration_test/store_walk.dart
       - integration_test/tutorial/tutorial_harness.dart
       - test_driver/manual_screenshots_driver.dart
       - tool/store_screenshots/**
