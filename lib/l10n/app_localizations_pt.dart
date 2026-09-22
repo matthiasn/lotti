@@ -3643,6 +3643,14 @@ class AppLocalizationsPt extends AppLocalizations {
       'Habilite a integração do Matrix para sincronizar suas entradas entre dispositivos e com outros usuários do Matrix.';
 
   @override
+  String get configFlagEnableMobileSidebarNavigation =>
+      'Navegação móvel com barra lateral';
+
+  @override
+  String get configFlagEnableMobileSidebarNavigationDescription =>
+      'Substitui o botão Navegar por um botão de menu no topo que abre uma barra lateral com todas as secções e as tuas pesquisas recentes.';
+
+  @override
   String get configFlagEnableNotifications => 'Ativar notificações?';
 
   @override
@@ -9781,10 +9789,30 @@ class AppLocalizationsPt extends AppLocalizations {
   String get multiSelectNoItemsFound => 'Nenhum item encontrado';
 
   @override
+  String get navSidebarCloseLabel => 'Fechar navegação';
+
+  @override
   String get navSidebarManualBrowserHint => 'Abre no seu navegador';
 
   @override
   String get navSidebarManualLabel => 'Manuais';
+
+  @override
+  String get navSidebarOpenLabel => 'Abrir navegação';
+
+  @override
+  String get navSidebarRecentsClear => 'Limpar';
+
+  @override
+  String get navSidebarRecentsClearSemantics => 'Limpar pesquisas recentes';
+
+  @override
+  String navSidebarRecentSearchSemantics(String destination, String query) {
+    return 'Pesquisar $query em $destination';
+  }
+
+  @override
+  String get navSidebarRecentsTitle => 'Recentes';
 
   @override
   String get navTabTitleCalendar => 'DailyOS';

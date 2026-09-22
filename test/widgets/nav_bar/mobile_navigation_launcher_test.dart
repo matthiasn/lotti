@@ -5,6 +5,7 @@ import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -126,16 +127,27 @@ void main() {
   );
 
   group('mobileNavigationLauncherOwnsPageActions', () {
-    Future<bool?> resolve(WidgetTester tester, {required Size size}) async {
+    Future<bool?> resolve(
+      WidgetTester tester, {
+      required Size size,
+      bool? launcherPresent,
+    }) async {
       bool? owns;
+      final probe = Builder(
+        builder: (context) {
+          owns = mobileNavigationLauncherOwnsPageActions(context);
+          return const SizedBox.shrink();
+        },
+      );
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          Builder(
-            builder: (context) {
-              owns = mobileNavigationLauncherOwnsPageActions(context);
-              return const SizedBox.shrink();
-            },
-          ),
+          launcherPresent == null
+              ? probe
+              : DesignSystemBottomNavigationOverlayHeight(
+                  height: 0,
+                  launcherPresent: launcherPresent,
+                  child: probe,
+                ),
           theme: DesignSystemTheme.light(),
           mediaQueryData: MediaQueryData(size: size),
         ),
@@ -147,6 +159,27 @@ void main() {
     testWidgets('is true on a compact window — the launcher is the mobile '
         'navigation, nothing opts into it', (tester) async {
       expect(await resolve(tester, size: const Size(390, 844)), isTrue);
+    });
+
+    testWidgets('is false on a compact window whose shell floats no '
+        'launcher — the sidebar navigation — so the page keeps its own '
+        'button', (tester) async {
+      expect(
+        await resolve(
+          tester,
+          size: const Size(390, 844),
+          launcherPresent: false,
+        ),
+        isFalse,
+      );
+      expect(
+        await resolve(
+          tester,
+          size: const Size(390, 844),
+          launcherPresent: true,
+        ),
+        isTrue,
+      );
     });
 
     testWidgets('is true right up to the desktop breakpoint', (tester) async {

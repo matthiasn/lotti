@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
+import 'package:lotti/features/recent_searches/domain/recent_search.dart';
+import 'package:lotti/features/recent_searches/state/recent_searches_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -69,7 +71,14 @@ class _HabitsSearchWidgetState extends ConsumerState<HabitsSearchWidget> {
         controller: _controller,
         focusNode: widget.focusNode,
         hintText: context.messages.searchHint,
-        onChanged: habitsController.setSearchString,
+        onChanged: (value) {
+          habitsController.setSearchString(value);
+          // Feeds the mobile sidebar's Recents list; a cleared field
+          // arrives here too, as a change to ''.
+          ref
+              .read(recentSearchesControllerProvider.notifier)
+              .noteQuery(RecentSearchSurface.habits, value);
+        },
         onClear: () {
           habitsController.setSearchString('');
           FocusScope.of(context).unfocus();

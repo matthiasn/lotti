@@ -177,6 +177,87 @@ void main() {
       },
     );
 
+    testWidgets(
+      'a solid fill still gets a ring when an outlineColor asks for one',
+      (tester) async {
+        const bg = Color(0xFF222222);
+        const ring = Color(0x1FFFFFFF);
+        await _pump(
+          tester,
+          DsGlassRoundButton(
+            icon: LottiIcons.bolt,
+            semanticLabel: 'Quiet',
+            backgroundColor: bg,
+            outlineColor: ring,
+            onPressed: () {},
+          ),
+        );
+
+        expect(_inkDecoration(tester, DsGlassRoundButton).color, bg);
+        final container = _decoratedContainer(tester, DsGlassRoundButton);
+        final foreground = container.foregroundDecoration! as BoxDecoration;
+        expect(foreground.shape, BoxShape.circle);
+        expect(foreground.border, Border.all(color: ring));
+      },
+    );
+
+    testWidgets(
+      'the glyph constructor centres a widget and inks it like an icon',
+      (tester) async {
+        const glyphKey = Key('glyph');
+        const ink = Color(0xFF00AA88);
+        var taps = 0;
+        await _pump(
+          tester,
+          DsGlassRoundButton.glyph(
+            glyph: const SizedBox.square(key: glyphKey, dimension: 10),
+            semanticLabel: 'Custom mark',
+            iconColor: ink,
+            iconSize: 24,
+            onPressed: () => taps++,
+          ),
+        );
+
+        // No font icon is drawn in place of the glyph.
+        expect(
+          find.descendant(
+            of: find.byType(DsGlassRoundButton),
+            matching: find.byType(Icon),
+          ),
+          findsNothing,
+        );
+        expect(
+          tester.getCenter(find.byKey(glyphKey)),
+          tester.getCenter(find.byType(DsGlassRoundButton)),
+        );
+        final theme = IconTheme.of(tester.element(find.byKey(glyphKey)));
+        expect(theme.color, ink);
+        expect(theme.size, 24);
+
+        await tester.tap(find.byType(DsGlassRoundButton));
+        expect(taps, 1);
+      },
+    );
+
+    testWidgets('a glyph with no iconColor takes text.highEmphasis', (
+      tester,
+    ) async {
+      const glyphKey = Key('glyph');
+      await _pump(
+        tester,
+        DsGlassRoundButton.glyph(
+          glyph: const SizedBox.square(key: glyphKey, dimension: 10),
+          semanticLabel: 'Custom mark',
+          onPressed: () {},
+        ),
+      );
+
+      expect(
+        IconTheme.of(tester.element(find.byKey(glyphKey))).color,
+        _tokens(tester, DsGlassRoundButton).colors.text.highEmphasis,
+      );
+    });
+
     testWidgets('exposes a button semantics node with its label', (
       tester,
     ) async {

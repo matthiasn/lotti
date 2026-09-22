@@ -26,6 +26,7 @@ import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
+import 'package:lotti/features/recent_searches/domain/recent_search.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
@@ -52,6 +53,7 @@ import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_utils/fake_journal_page_controller.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../recent_searches/test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -59,6 +61,7 @@ void main() {
   setUpAll(registerAllFallbackValues);
 
   late FakeJournalPageController fakeController;
+  late FakeRecentSearchesController fakeRecents;
   late TestGetItMocks getItMocks;
   late MockEntitiesCacheService mockEntitiesCacheService;
   late MockNavService mockNavService;
@@ -209,6 +212,7 @@ void main() {
   List<Override> pageOverrides() => [
     journalPageScopeProvider.overrideWithValue(true),
     journalPageControllerProvider(true).overrideWith(() => fakeController),
+    fakeRecentSearches(fakeRecents = FakeRecentSearchesController()),
     taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
   ];
 
@@ -438,6 +442,36 @@ void main() {
       expect(filterContext.labelIds, isEmpty);
       expect(filterContext.status, isNull);
     }
+  });
+
+  testWidgets('feeds typed, submitted and cleared searches to Recents as '
+      'the Tasks surface', (tester) async {
+    await tester.pumpWidget(buildSubject(state: state()));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    await tester.enterText(find.byType(TextField), 'fish feeder');
+    await tester.pump();
+    expect(fakeRecents.noted, [(RecentSearchSurface.tasks, 'fish feeder')]);
+    expect(fakeRecents.recorded, isEmpty);
+
+    // Scoped to the expanded header: the collapsed bar keeps an offstage
+    // search glyph of its own.
+    Finder inHeader(IconData icon) => find.descendant(
+      of: find.byType(TabSectionHeader),
+      matching: find.byIcon(icon),
+    );
+
+    // The search glyph is the explicit submit: recorded at once, not timed.
+    await tester.tap(inHeader(LottiIcons.search));
+    await tester.pump();
+    expect(fakeRecents.recorded, [(RecentSearchSurface.tasks, 'fish feeder')]);
+
+    // Clearing reaches Recents as a change to '', which is what cancels a
+    // search still inside its settle window.
+    await tester.tap(inHeader(LottiIcons.closeCircled));
+    await tester.pump();
+    expect(fakeRecents.noted.last, (RecentSearchSurface.tasks, ''));
   });
 
   testWidgets('search updates, filter modal opens, and row taps navigate', (

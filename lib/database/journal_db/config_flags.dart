@@ -43,6 +43,13 @@ Future<void> initConfigFlags(
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: enableMobileSidebarNavigationFlag,
+      description: 'Enable the experimental mobile sidebar navigation?',
+      status: false,
+    ),
+  );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: enableAiSummaryTtsFlag,
       description: 'Enable local AI summary playback?',
       status: false,

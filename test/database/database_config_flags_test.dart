@@ -46,6 +46,11 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
+    name: enableMobileSidebarNavigationFlag,
+    description: 'Enable the experimental mobile sidebar navigation?',
+    status: false,
+  ),
+  const ConfigFlag(
     name: enableAiSummaryTtsFlag,
     description: 'Enable local AI summary playback?',
     status: false,

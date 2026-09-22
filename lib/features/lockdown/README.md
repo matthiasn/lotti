@@ -21,8 +21,10 @@ one trigger.
   category and offers "Exit lockdown". Restarting the app also exits — the
   state is never persisted.
 
-Mobile has no logo and no lockdown; narrowing the desktop window below the
-desktop breakpoint shows the ordinary mobile navigation.
+Mobile has no lockdown; narrowing the desktop window below the desktop
+breakpoint shows the ordinary mobile navigation. The experimental mobile
+sidebar navigation does show the logo, but as an inert mark: it is given no
+menu.
 
 ## What it owns
 

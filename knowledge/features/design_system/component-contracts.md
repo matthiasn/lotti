@@ -5,8 +5,8 @@ description: The repeating patterns that are contract rather than coincidence �
 resource: ../../../lib/features/design_system/components
 tags: [design-system, components, accessibility, layout]
 status: stable
-generated: { by: claude-code/fable-5.1, at: 2026-09-15T19:10:00Z }
-stale_after: 2027-03-15
+generated: { by: claude-code/fable-5.1, at: 2026-09-22T09:00:00Z }
+stale_after: 2027-03-22
 sources:
   - id: components
     resource: ../../../lib/features/design_system/components
@@ -691,6 +691,19 @@ their integration with the app shell, docked and slid away. The contract:
   only for a `MobileNavDockAction.worded` action — the two constructors carry
   the page's own decision about wording, the same one its floating button
   made, and a `.glyph` action is a `DsGlassRoundButton` at every width.
+
+`DsGlassRoundButton` has two further rules a caller outside the launcher leans
+on. **`DsGlassRoundButton.glyph` takes a widget where the icon font has no
+matching mark** — the mobile sidebar navigation's two-stroke
+[`DsMenuGlyph`](../../../lib/features/design_system/components/navigation/ds_menu_glyph.dart)
+is the case — and inks it through an `IconTheme` carrying `iconColor` and
+`iconSize`, so a painted mark tints and sizes exactly as an `Icon` would and
+the button's chrome is never restated for the sake of one glyph. **A solid
+fill draws no hairline unless `outlineColor` asks for one.** A solid
+`backgroundColor` normally brings its own contrast (the recording mic's alert
+fill), so the glass hairline is dropped; a surface-toned button — the menu
+button's `background.level02` disc — is the case that needs an edge anyway,
+and says so with an explicit ring rather than by pretending to be translucent.
 
 # Accessibility is enforced at construction
 

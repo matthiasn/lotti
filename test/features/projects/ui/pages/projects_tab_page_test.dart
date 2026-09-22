@@ -35,6 +35,7 @@ import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
 import 'package:lotti/features/projects/ui/pages/projects_tab_page.dart';
 import 'package:lotti/features/projects/ui/widgets/project_create_modal.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_content.dart';
+import 'package:lotti/features/recent_searches/domain/recent_search.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -51,6 +52,7 @@ import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../agents/ui/evolution/widgets/evolution_recorder_test_utils.dart';
 import '../../../categories/test_utils.dart';
+import '../../../recent_searches/test_utils.dart';
 import '../../test_utils.dart';
 
 /// Loading-state detail controller stub for the split-view swap test.
@@ -916,6 +918,33 @@ void main() {
     expect(find.text('Work'), findsOneWidget);
     expect(find.text('Study'), findsNothing);
     expect(find.text('1 project'), findsOneWidget);
+  });
+
+  testWidgets('feeds typed, submitted and cleared searches to Recents as '
+      'the Projects surface', (tester) async {
+    final recents = FakeRecentSearchesController();
+    await pumpPage(
+      tester,
+      groups: [buildWorkGroup(), buildStudyGroup()],
+      overrideVisibleGroups: false,
+      extraOverrides: [fakeRecentSearches(recents)],
+    );
+
+    await tester.enterText(find.byType(TextField), 'sync');
+    await tester.pump();
+    expect(recents.noted, [(RecentSearchSurface.projects, 'sync')]);
+    expect(recents.recorded, isEmpty);
+
+    // The search glyph is the explicit submit: recorded at once.
+    await tester.tap(find.byIcon(LottiIcons.search));
+    await tester.pump();
+    expect(recents.recorded, [(RecentSearchSurface.projects, 'sync')]);
+
+    // Clearing reaches Recents as a change to '', which is what cancels a
+    // search still inside its settle window.
+    await tester.tap(find.byIcon(LottiIcons.closeCircled));
+    await tester.pump();
+    expect(recents.noted.last, (RecentSearchSurface.projects, ''));
   });
 
   testWidgets('shows loading indicator while data is loading', (

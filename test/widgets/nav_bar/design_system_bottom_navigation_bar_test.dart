@@ -234,6 +234,60 @@ void main() {
     });
   });
 
+  group('DesignSystemBottomNavigationOverlayHeight.launcherPresentOf', () {
+    Future<bool?> resolve(
+      WidgetTester tester, {
+      required Widget Function(Widget child) scope,
+    }) async {
+      bool? present;
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          scope(
+            Builder(
+              builder: (context) {
+                present =
+                    DesignSystemBottomNavigationOverlayHeight.launcherPresentOf(
+                      context,
+                    );
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ),
+      );
+      return present;
+    }
+
+    testWidgets('is true where no scope exists, so a page rendered outside '
+        'the shell behaves as it always has', (tester) async {
+      expect(await resolve(tester, scope: (child) => child), isTrue);
+    });
+
+    testWidgets('reports what the enclosing scope publishes', (tester) async {
+      expect(
+        await resolve(
+          tester,
+          scope: (child) => DesignSystemBottomNavigationOverlayHeight(
+            height: 0,
+            launcherPresent: false,
+            child: child,
+          ),
+        ),
+        isFalse,
+      );
+      expect(
+        await resolve(
+          tester,
+          scope: (child) => DesignSystemBottomNavigationOverlayHeight(
+            height: 0,
+            child: child,
+          ),
+        ),
+        isTrue,
+      );
+    });
+  });
+
   group('DesignSystemBottomNavigationOverlayHeight.updateShouldNotify', () {
     const child = SizedBox.shrink();
     const docked = DesignSystemBottomNavigationOverlayHeight(
@@ -249,6 +303,16 @@ void main() {
       );
       expect(slidAway.updateShouldNotify(docked), isTrue);
       expect(docked.updateShouldNotify(slidAway), isTrue);
+    });
+
+    test('fires when only the launcher comes or goes', () {
+      const noLauncher = DesignSystemBottomNavigationOverlayHeight(
+        height: 24,
+        launcherPresent: false,
+        child: child,
+      );
+      expect(noLauncher.updateShouldNotify(docked), isTrue);
+      expect(docked.updateShouldNotify(noLauncher), isTrue);
     });
 
     test('fires when only the height moves', () {
