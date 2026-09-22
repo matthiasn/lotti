@@ -17,18 +17,25 @@ void main() {
       );
     });
 
-    test('hides the running-timer tool when no timer runs for this task', () {
-      // The prompt exposes another task's timer only as an opaque range, so
-      // there is no id to update and offering the tool invites inventing one.
+    test('hides update_time_entry when the task has no time records', () {
+      // With no entry — running or completed — there is no id to update, and
+      // offering the tool invites inventing one.
       expect(
         visibleTaskAgentToolNames(
-          const TaskAgentWakeFacts(hasRunningTimerForTask: false),
+          const TaskAgentWakeFacts(hasTimeRecords: false),
         ),
-        isNot(contains(TaskAgentToolNames.updateRunningTimer)),
+        isNot(contains(TaskAgentToolNames.updateTimeEntry)),
       );
       expect(
         visibleTaskAgentToolNames(TaskAgentWakeFacts.permissive),
-        contains(TaskAgentToolNames.updateRunningTimer),
+        contains(TaskAgentToolNames.updateTimeEntry),
+      );
+    });
+
+    test('never offers the retired running-timer tool', () {
+      expect(
+        visibleTaskAgentToolNames(TaskAgentWakeFacts.permissive),
+        isNot(contains(TaskAgentToolNames.updateRunningTimer)),
       );
     });
 

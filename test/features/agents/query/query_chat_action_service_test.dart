@@ -347,6 +347,75 @@ void main() {
     );
   }
 
+  for (final item in const [
+    // Persisted before the merge, under the retired name.
+    ChangeItem(
+      toolName: 'update_running_timer',
+      args: {'timerId': 'timer', 'summary': 'Calibrating the feeder'},
+      humanSummary: 'Update running timer text',
+    ),
+    ChangeItem(
+      toolName: 'update_time_entry',
+      args: {'entryId': 'timer', 'summary': 'Calibrating the feeder'},
+      humanSummary: 'Revise time entry text',
+    ),
+  ]) {
+    test(
+      'a ${item.toolName} proposal made while its timer ran is approved with '
+      'no timer running here',
+      () async {
+        // After a restart, or on another device, the synced timer entry has
+        // no saved end yet and no timer runs here — it must still validate.
+        final home = bench.entries['task']! as Task;
+        bench.entries['timer'] = testTextEntry.copyWith(
+          meta: home.meta.copyWith(
+            id: 'timer',
+            dateFrom: DateTime(2026, 9, 13, 14, 10),
+            dateTo: DateTime(2026, 9, 13, 14, 10),
+          ),
+        );
+        bench.link('task', 'timer');
+        when(bench.db.getAllLabelDefinitions).thenAnswer((_) async => []);
+        final loader = QueryTaskActionContextLoader(access: bench.store.access);
+        final asked = await bench.store.ask(
+          'agent',
+          chat,
+          'Describe my running timer.',
+        );
+        question = asked.id;
+        await bench.store.publish(
+          'agent',
+          chat,
+          QueryBuiltAnswer(
+            answer: QueryChatAnswer(
+              questionId: question,
+              text: 'Review the new text.',
+              coverage: const QueryCoverage(),
+              proposedActions: [item],
+              dependencies: (asked.data as QueryChatQuestion).dependencies,
+            ),
+          ),
+        );
+        final dispatched = <String>[];
+        service = QueryChatActionService(
+          store: bench.store,
+          enabled: () => true,
+          labels: MockLabelsRepository(),
+          readContext: (taskId, ids) => loader.load(taskId, relatedIds: ids),
+          dispatch: (name, args, taskId, approval) async {
+            dispatched.add(name);
+            return const ToolExecutionResult(success: true, output: 'Applied');
+          },
+        );
+
+        final results = await resolve();
+
+        expect(results.map((r) => r.success), [true]);
+        expect(dispatched, [item.toolName]);
+      },
+    );
+  }
+
   test('repeated Accept while applying does not dispatch twice', () async {
     hold = Completer<void>();
     final first = resolve();

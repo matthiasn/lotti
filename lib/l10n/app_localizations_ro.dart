@@ -1050,11 +1050,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String agentSummaryUpdateRunningTimer(Object summary) {
-    return 'Modificați textul cronometrului în curs: „$summary”';
-  }
-
-  @override
   String get agentSummaryUpdateTimeEntry => 'Actualizați înregistrarea de timp';
 
   @override

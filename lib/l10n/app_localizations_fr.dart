@@ -1050,11 +1050,6 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String agentSummaryUpdateRunningTimer(Object summary) {
-    return 'Modifier le texte du minuteur en cours : « $summary »';
-  }
-
-  @override
   String get agentSummaryUpdateTimeEntry => 'Mettre à jour la saisie de temps';
 
   @override

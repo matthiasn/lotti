@@ -458,8 +458,8 @@ const queryActionEvalCases = <QueryActionEvalCase>[
     'running_timer',
     'Update the currently running timer description to "Calibrating the feeder pressure sensor." Do not create another time entry.',
     [
-      ExpectedQueryAction('update_running_timer', {
-        'timerId': ActionEvalIds.timer,
+      ExpectedQueryAction('update_time_entry', {
+        'entryId': ActionEvalIds.timer,
         'summary': 'Calibrating the feeder pressure sensor.',
       }),
     ],

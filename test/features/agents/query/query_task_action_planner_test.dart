@@ -32,7 +32,8 @@ void main() {
     checklistIds: {'feeder'},
     taskIds: {'supplies'},
     labelIds: {'ops'},
-    timeEntryIds: {'session'},
+    // The loader lists the running timer among the editable entries.
+    timeEntryIds: {'session', 'timer'},
     runningTimerId: 'timer',
   );
   Future<({String text, List<ChangeItem> items})> plan(
@@ -216,11 +217,16 @@ void main() {
           'summary': 'Corrected maintenance',
         },
       ]);
+      // A model echoing the retired timer tool gets the merged one.
       expect(result.items.map((i) => i.toolName), [
         'link_task',
-        'update_running_timer',
+        'update_time_entry',
         'update_time_entry',
       ]);
+      expect(result.items[1].args, {
+        'entryId': 'timer',
+        'summary': 'Current maintenance',
+      });
       expect(result.items.first.humanSummary, contains('Order supplies'));
       expect(
         result.items.first.humanSummary,
@@ -745,6 +751,68 @@ void main() {
       expect(result.items, isEmpty);
     },
   );
+
+  group('the running timer', () {
+    ChangeItem timerEdit(Map<String, dynamic> args) => ChangeItem(
+      toolName: 'update_time_entry',
+      args: {'entryId': 'timer', ...args},
+      humanSummary: 'Edit timer',
+    );
+
+    test('takes a new summary like any other entry', () async {
+      await QueryTaskActionPlanner.validateItem(
+        timerEdit({'summary': 'Current maintenance'}),
+        context,
+      );
+    });
+
+    for (final field in ['startTime', 'endTime']) {
+      test('refuses a $field edit while it runs', () async {
+        await expectLater(
+          QueryTaskActionPlanner.validateItem(
+            timerEdit({'summary': 'x', field: '2026-09-13T10:30:00'}),
+            context,
+          ),
+          throwsA(
+            isA<FormatException>().having(
+              (e) => e.message,
+              'message',
+              'A running timer only takes a new summary',
+            ),
+          ),
+        );
+      });
+    }
+
+    test('still lets a completed entry change its range', () async {
+      await QueryTaskActionPlanner.validateItem(
+        const ChangeItem(
+          toolName: 'update_time_entry',
+          args: {'entryId': 'session', 'startTime': '2026-09-13T10:30:00'},
+          humanSummary: 'Shift session',
+        ),
+        context,
+      );
+    });
+
+    test('validates a stored retired timer update as its successor', () async {
+      // A chat approval persisted before the merge must still be approvable.
+      await QueryTaskActionPlanner.validateItem(
+        const ChangeItem(
+          toolName: 'update_running_timer',
+          args: {'timerId': 'timer', 'summary': 'Current maintenance'},
+          humanSummary: 'Update running timer text',
+        ),
+        context,
+      );
+    });
+
+    test('offers only the merged tool, steering the timer to it', () {
+      final names = QueryTaskActionPlanner.tools.map((t) => t.name);
+      expect(names, contains('update_time_entry'));
+      expect(names, isNot(contains('update_running_timer')));
+    });
+  });
 }
 
 /// Actions whose failure above is an out-of-scope target rather than a

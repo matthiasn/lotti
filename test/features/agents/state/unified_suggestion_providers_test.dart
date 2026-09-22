@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/change_item_dedup.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -390,10 +391,10 @@ void main() {
     );
 
     test(
-      'keeps same-summary running timer suggestions for different timers',
+      'keeps same-text suggestions for different time entries',
       () async {
         final agent = makeTestIdentity();
-        const summary = 'Update running timer text: "Focus block"';
+        const summary = 'Revise time entry text: "Focus block"';
         final changeSet = makeTestChangeSet(
           id: 'cs-running-visible',
           agentId: agent.agentId,
@@ -401,19 +402,13 @@ void main() {
           createdAt: DateTime(2026, 4, 18, 10),
           items: const [
             ChangeItem(
-              toolName: TaskAgentToolNames.updateRunningTimer,
-              args: {
-                'timerId': 'timer-1',
-                'summary': 'Focus block',
-              },
+              toolName: TaskAgentToolNames.updateTimeEntry,
+              args: {'entryId': 'timer-1', 'summary': 'Focus block'},
               humanSummary: summary,
             ),
             ChangeItem(
-              toolName: TaskAgentToolNames.updateRunningTimer,
-              args: {
-                'timerId': 'timer-2',
-                'summary': 'Focus block',
-              },
+              toolName: TaskAgentToolNames.updateTimeEntry,
+              args: {'entryId': 'timer-2', 'summary': 'Focus block'},
               humanSummary: summary,
             ),
           ],
@@ -440,7 +435,7 @@ void main() {
         expect(result.open, hasLength(2));
         expect(
           result.open
-              .map((suggestion) => suggestion.item.args['timerId'])
+              .map((suggestion) => suggestion.item.args['entryId'])
               .toSet(),
           {'timer-1', 'timer-2'},
         );
@@ -448,7 +443,7 @@ void main() {
     );
 
     test(
-      'keeps only the latest pending running timer update visible',
+      'shows only the newest text update per entry, hiding a legacy one',
       () async {
         final agent = makeTestIdentity();
         final older = makeTestChangeSet(
@@ -457,21 +452,16 @@ void main() {
           taskId: 'task-abc',
           createdAt: DateTime(2026, 4, 18, 9),
           items: const [
+            // Persisted under the retired name before the merge.
             ChangeItem(
               toolName: TaskAgentToolNames.updateRunningTimer,
-              args: {
-                'timerId': 'timer-1',
-                'summary': 'Earlier timer text',
-              },
+              args: {'timerId': 'timer-1', 'summary': 'Earlier timer text'},
               humanSummary: 'Update running timer text: "Earlier timer text"',
             ),
             ChangeItem(
-              toolName: TaskAgentToolNames.updateRunningTimer,
-              args: {
-                'timerId': 'timer-2',
-                'summary': 'Other timer text',
-              },
-              humanSummary: 'Update running timer text: "Other timer text"',
+              toolName: TaskAgentToolNames.updateTimeEntry,
+              args: {'entryId': 'timer-2', 'summary': 'Other timer text'},
+              humanSummary: 'Revise time entry text: "Other timer text"',
             ),
           ],
         );
@@ -482,12 +472,9 @@ void main() {
           createdAt: DateTime(2026, 4, 18, 10),
           items: const [
             ChangeItem(
-              toolName: TaskAgentToolNames.updateRunningTimer,
-              args: {
-                'timerId': 'timer-1',
-                'summary': 'Latest timer text',
-              },
-              humanSummary: 'Update running timer text: "Latest timer text"',
+              toolName: TaskAgentToolNames.updateTimeEntry,
+              args: {'entryId': 'timer-1', 'summary': 'Latest timer text'},
+              humanSummary: 'Revise time entry text: "Latest timer text"',
             ),
             ChangeItem(
               toolName: 'update_task_priority',
@@ -515,24 +502,31 @@ void main() {
           unifiedSuggestionListProvider('task-abc').future,
         );
 
-        final runningTimerSuggestions = result.open
-            .where(
-              (suggestion) =>
-                  suggestion.item.toolName ==
-                  TaskAgentToolNames.updateRunningTimer,
-            )
-            .toList();
+        // The legacy timer-1 text is hidden behind its newer replacement.
         expect(
-          runningTimerSuggestions.map((suggestion) {
-            return (
-              suggestion.changeSet.id,
-              suggestion.item.args['timerId'],
-              suggestion.item.args['summary'],
-            );
-          }),
+          result.open
+              .where((s) => s.item.toolName != 'update_task_priority')
+              .map(
+                (s) => (
+                  s.changeSet.id,
+                  s.item.toolName,
+                  s.item.args['entryId'],
+                  s.item.args['summary'],
+                ),
+              ),
           [
-            ('cs-new-running', 'timer-1', 'Latest timer text'),
-            ('cs-old-running', 'timer-2', 'Other timer text'),
+            (
+              'cs-new-running',
+              TaskAgentToolNames.updateTimeEntry,
+              'timer-1',
+              'Latest timer text',
+            ),
+            (
+              'cs-old-running',
+              TaskAgentToolNames.updateTimeEntry,
+              'timer-2',
+              'Other timer text',
+            ),
           ],
         );
         expect(
@@ -742,130 +736,140 @@ void main() {
     );
   });
 
-  group('keepLatestRunningTimerUpdate (pure dedup property)', () {
-    String? timerIdOf(PendingSuggestion s) {
-      final raw = s.item.args['timerId'];
-      if (raw is! String) return null;
-      final trimmed = raw.trim();
-      return trimmed.isEmpty ? null : trimmed;
-    }
-
-    test(
-      'within one change set, keeps the later item for the same timer',
-      () {
-        final items = [
-          for (final note in ['first draft', 'second draft'])
-            ChangeItem(
-              toolName: TaskAgentToolNames.updateRunningTimer,
-              args: {'timerId': 'timer-dock', 'note': note},
-              humanSummary: note,
-            ),
-        ];
-        final changeSet = makeTestChangeSet(
-          id: 'cs-timer',
-          createdAt: DateTime(2026, 5, 24, 9),
-          items: items,
-        );
-        final input = [
-          for (final (index, item) in items.indexed)
-            PendingSuggestion(
-              changeSet: changeSet,
-              itemIndex: index,
-              item: item,
-              fingerprint: 'fp-$index',
-            ),
-        ];
-
-        final result = keepLatestRunningTimerUpdate(input);
-
-        expect(result, [input[1]]);
-      },
+  group('hideSupersededTimeEntryEdits', () {
+    PendingSuggestion suggest(
+      ChangeItem item, {
+      required ChangeSetEntity changeSet,
+      int itemIndex = 0,
+    }) => PendingSuggestion(
+      changeSet: changeSet,
+      itemIndex: itemIndex,
+      item: item,
+      fingerprint: ChangeItem.fingerprint(item),
     );
 
+    ChangeItem edit(Map<String, dynamic> args) => ChangeItem(
+      toolName: TaskAgentToolNames.updateTimeEntry,
+      args: args,
+      humanSummary: 'edit',
+    );
+
+    test('within one change set, keeps the later text for the same entry', () {
+      final items = [
+        edit(const {'entryId': 'timer-dock', 'summary': 'first draft'}),
+        edit(const {'entryId': 'timer-dock', 'summary': 'second draft'}),
+      ];
+      final changeSet = makeTestChangeSet(
+        id: 'cs-timer',
+        createdAt: DateTime(2026, 5, 24, 9),
+        items: items,
+      );
+      final input = [
+        for (final (index, item) in items.indexed)
+          suggest(item, changeSet: changeSet, itemIndex: index),
+      ];
+
+      expect(hideSupersededTimeEntryEdits(input), [input[1]]);
+    });
+
+    test('a newer text update keeps an older end-time correction visible', () {
+      final older = suggest(
+        edit(const {'entryId': 'e1', 'endTime': '2026-05-24T10:00:00'}),
+        changeSet: makeTestChangeSet(
+          id: 'cs-old',
+          createdAt: DateTime(2026, 5, 24, 9),
+        ),
+      );
+      final newer = suggest(
+        edit(const {'entryId': 'e1', 'summary': 'Workshop'}),
+        changeSet: makeTestChangeSet(
+          id: 'cs-new',
+          createdAt: DateTime(2026, 5, 24, 10),
+        ),
+      );
+
+      expect(hideSupersededTimeEntryEdits([newer, older]), [newer, older]);
+    });
+
     glados.Glados(
-      glados.any.timerDedupSpecs,
+      glados.any.timeEntryEditSpecs,
       glados.ExploreConfig(numRuns: 120),
-    ).test('keeps exactly the newest update per timer id and passes '
-        'non-timer items through unchanged', (specs) {
+    ).test('drops exactly the edits a newer suggestion supersedes, keeping '
+        'the order of the rest', (specs) {
       final base = DateTime(2026, 5, 24, 9);
       final input = <PendingSuggestion>[];
       for (final (i, spec) in specs.indexed) {
-        final item = ChangeItem(
-          toolName: spec.isTimerUpdate
-              ? TaskAgentToolNames.updateRunningTimer
-              : 'set_task_title',
-          args: {
-            if (spec.isTimerUpdate && spec.rawTimerId != null)
-              'timerId': spec.rawTimerId,
-            'note': 'n$i',
-          },
-          humanSummary: 'entry $i',
-        );
+        final entryId = spec.rawEntryId;
+        final item = switch (spec.kind) {
+          GeneratedEditKind.otherTool => ChangeItem(
+            toolName: 'set_task_title',
+            args: {'title': 'n$i', 'entryId': ?entryId},
+            humanSummary: 'entry $i',
+          ),
+          GeneratedEditKind.legacyRunningTimer => ChangeItem(
+            toolName: TaskAgentToolNames.updateRunningTimer,
+            args: {'timerId': ?entryId, 'summary': 'n$i'},
+            humanSummary: 'entry $i',
+          ),
+          GeneratedEditKind.timeEntryEdit => edit({
+            'entryId': ?entryId,
+            if (spec.fieldMask & 1 != 0) 'summary': 'n$i',
+            if (spec.fieldMask & 2 != 0) 'startTime': 's$i',
+            if (spec.fieldMask & 4 != 0) 'endTime': 'e$i',
+          }),
+        };
         input.add(
-          PendingSuggestion(
+          suggest(
+            item,
             changeSet: makeTestChangeSet(
               id: 'cs-$i',
               createdAt: base.add(Duration(minutes: spec.createdAtMinutes)),
               items: [item],
             ),
             itemIndex: spec.itemIndex,
-            item: item,
-            fingerprint: 'fp-$i',
           ),
         );
       }
 
-      final result = keepLatestRunningTimerUpdate(input);
+      final result = hideSupersededTimeEntryEdits(input);
 
-      // Oracle: newest createdAt per timer id, ties broken by the higher
-      // itemIndex, first-seen wins exact ties — mirroring the documented
-      // contract.
-      final winners = <String?, PendingSuggestion>{};
-      for (final s in input) {
-        if (s.item.toolName != TaskAgentToolNames.updateRunningTimer) {
-          continue;
-        }
-        final id = timerIdOf(s);
-        final current = winners[id];
-        if (current == null ||
-            s.changeSet.createdAt.isAfter(current.changeSet.createdAt) ||
-            (s.changeSet.createdAt == current.changeSet.createdAt &&
-                s.itemIndex > current.itemIndex)) {
-          winners[id] = s;
-        }
-      }
-      final expected = input
-          .where(
-            (s) =>
-                s.item.toolName != TaskAgentToolNames.updateRunningTimer ||
-                identical(s, winners[timerIdOf(s)]),
-          )
-          .toList();
+      bool isNewer(PendingSuggestion a, PendingSuggestion b) =>
+          a.changeSet.createdAt.isAfter(b.changeSet.createdAt) ||
+          (a.changeSet.createdAt == b.changeSet.createdAt &&
+              a.itemIndex > b.itemIndex);
+      bool supersededByNewer(PendingSuggestion s) => input.any(
+        (other) =>
+            isNewer(other, s) && supersedesTimeEntryEdit(other.item, s.item),
+      );
 
       // Same instances, same relative order (identity equality).
-      expect(result, expected, reason: '$specs');
-
-      // Explicit invariants on top of the oracle comparison:
-      expect(result.length, lessThanOrEqualTo(input.length));
-      final nonTimer = input
-          .where(
-            (s) => s.item.toolName != TaskAgentToolNames.updateRunningTimer,
-          )
-          .toList();
-      for (final s in nonTimer) {
-        expect(result, contains(s), reason: 'non-timer item must survive');
-      }
-      final survivingTimerIds = result
-          .where(
-            (s) => s.item.toolName == TaskAgentToolNames.updateRunningTimer,
-          )
-          .map(timerIdOf)
-          .toList();
       expect(
-        survivingTimerIds.toSet().length,
-        survivingTimerIds.length,
-        reason: 'at most one timer update per timer id',
+        result,
+        input.where((s) => !supersededByNewer(s)).toList(),
+        reason: '$specs',
       );
+      for (final s in input) {
+        if (timeEntryEdit(s.item) == null) {
+          expect(result, contains(s), reason: 'only time-entry edits drop');
+        }
+      }
+      // For text-only edits the filter is the old "latest per timer": no two
+      // survive for one entry unless neither is newer than the other.
+      final textOnly = result.where(
+        (s) =>
+            timeEntryEdit(s.item)?.fields.length == 1 &&
+            timeEntryEdit(s.item)!.fields.single == 'summary',
+      );
+      for (final a in textOnly) {
+        for (final b in textOnly) {
+          if (identical(a, b) ||
+              timeEntryEdit(a.item)!.entryId !=
+                  timeEntryEdit(b.item)!.entryId) {
+            continue;
+          }
+          expect(isNewer(a, b) || isNewer(b, a), isFalse, reason: '$specs');
+        }
+      }
     }, tags: 'glados');
   });
 }

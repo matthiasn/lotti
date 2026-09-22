@@ -685,68 +685,71 @@ void main() {
     });
 
     test(
-      'keeps only the latest running timer update per timer queued in a wake',
+      'a later text revision for an entry replaces the one queued earlier',
       () async {
         await builder.addItem(
-          toolName: TaskAgentToolNames.updateRunningTimer,
-          args: const {
-            'timerId': 'timer-1',
-            'summary': 'Earlier timer text',
-          },
-          humanSummary: 'Update running timer text: "Earlier timer text"',
+          toolName: TaskAgentToolNames.updateTimeEntry,
+          args: const {'entryId': 'timer-1', 'summary': 'Earlier timer text'},
+          humanSummary: 'Revise time entry text: "Earlier timer text"',
         );
         await builder.addItem(
-          toolName: TaskAgentToolNames.updateRunningTimer,
-          args: const {
-            'timerId': 'timer-1',
-            'summary': 'Latest timer text',
-          },
-          humanSummary: 'Update running timer text: "Latest timer text"',
+          toolName: TaskAgentToolNames.updateTimeEntry,
+          args: const {'entryId': 'timer-1', 'summary': 'Latest timer text'},
+          humanSummary: 'Revise time entry text: "Latest timer text"',
         );
         await builder.addItem(
-          toolName: TaskAgentToolNames.updateRunningTimer,
-          args: const {
-            'timerId': 'timer-2',
-            'summary': 'Other timer text',
-          },
-          humanSummary: 'Update running timer text: "Other timer text"',
+          toolName: TaskAgentToolNames.updateTimeEntry,
+          args: const {'entryId': 'timer-2', 'summary': 'Other timer text'},
+          humanSummary: 'Revise time entry text: "Other timer text"',
         );
 
-        expect(builder.items, hasLength(2));
         expect(
-          builder.items.map((item) => item.args['timerId']),
-          ['timer-1', 'timer-2'],
+          builder.items.map((item) => item.args['summary']),
+          ['Latest timer text', 'Other timer text'],
+          reason: 'the earlier text is gone; the other entry is untouched',
         );
-        expect(builder.items.first.args['summary'], 'Latest timer text');
-        expect(builder.items.last.args['summary'], 'Other timer text');
       },
     );
 
     test(
-      'keeps same-summary running timer updates for different timers',
+      'a text revision leaves a queued end-time correction of the entry alone',
+      () async {
+        await builder.addItem(
+          toolName: TaskAgentToolNames.updateTimeEntry,
+          args: const {
+            'entryId': 'entry-1',
+            'endTime': '2026-04-15T15:00:00',
+          },
+          humanSummary: 'Update time entry until 15:00',
+        );
+        await builder.addItem(
+          toolName: TaskAgentToolNames.updateTimeEntry,
+          args: const {'entryId': 'entry-1', 'summary': 'Workshop'},
+          humanSummary: 'Revise time entry text: "Workshop"',
+        );
+
+        expect(builder.items, hasLength(2));
+      },
+    );
+
+    test(
+      'keeps same-text updates for different entries',
       () async {
         final firstResult = await builder.addItem(
-          toolName: TaskAgentToolNames.updateRunningTimer,
-          args: const {
-            'timerId': 'timer-1',
-            'summary': 'Focus block',
-          },
-          humanSummary: 'Update running timer text: "Focus block"',
+          toolName: TaskAgentToolNames.updateTimeEntry,
+          args: const {'entryId': 'timer-1', 'summary': 'Focus block'},
+          humanSummary: 'Revise time entry text: "Focus block"',
         );
         final secondResult = await builder.addItem(
-          toolName: TaskAgentToolNames.updateRunningTimer,
-          args: const {
-            'timerId': 'timer-2',
-            'summary': 'Focus block',
-          },
-          humanSummary: 'Update running timer text: "Focus block"',
+          toolName: TaskAgentToolNames.updateTimeEntry,
+          args: const {'entryId': 'timer-2', 'summary': 'Focus block'},
+          humanSummary: 'Revise time entry text: "Focus block"',
         );
 
         expect(firstResult, isNull);
         expect(secondResult, isNull);
-        expect(builder.items, hasLength(2));
         expect(
-          builder.items.map((item) => item.args['timerId']),
+          builder.items.map((item) => item.args['entryId']),
           ['timer-1', 'timer-2'],
         );
       },
@@ -1517,22 +1520,22 @@ void main() {
     });
 
     test(
-      'a superseded running-timer item does not strand the flush watermark',
+      'a superseded time-entry edit does not strand the flush watermark',
       () async {
-        // `addItem` drops the earlier proposal for the same timer, so `_items`
+        // `addItem` drops the earlier proposal for the same entry, so `_items`
         // shrinks — a positional watermark would slide onto the wrong item and
         // silently swallow the replacement.
         await builder.addItem(
-          toolName: 'update_running_timer',
-          args: {'timerId': 'timer-1', 'action': 'stop'},
-          humanSummary: 'Stop the running timer',
+          toolName: TaskAgentToolNames.updateTimeEntry,
+          args: {'entryId': 'timer-1', 'summary': 'Stop'},
+          humanSummary: 'Revise time entry text: "Stop"',
         );
         await builder.build(mockSyncService);
 
         await builder.addItem(
-          toolName: 'update_running_timer',
-          args: {'timerId': 'timer-1', 'action': 'keep'},
-          humanSummary: 'Keep the running timer',
+          toolName: TaskAgentToolNames.updateTimeEntry,
+          args: {'entryId': 'timer-1', 'summary': 'Keep'},
+          humanSummary: 'Revise time entry text: "Keep"',
         );
         expect(
           builder.items,
@@ -1542,11 +1545,25 @@ void main() {
 
         final second = await builder.build(mockSyncService);
 
+        final bySummary = {
+          for (final item in second!.items) item.args['summary']: item.status,
+        };
         expect(
-          second!.items.map((i) => i.humanSummary),
-          contains('Keep the running timer'),
+          bySummary['Keep'],
+          ChangeItemStatus.pending,
           reason: 'the replacement must still be written',
         );
+        expect(
+          bySummary['Stop'],
+          ChangeItemStatus.retracted,
+          reason:
+              'a proposal an earlier turn flushed and a later turn replaced '
+              "is retracted even inside the wake's own set",
+        );
+        final decision = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured.whereType<ChangeDecisionEntity>().single;
+        expect(decision.args, {'entryId': 'timer-1', 'summary': 'Stop'});
       },
     );
 
@@ -1774,23 +1791,24 @@ void main() {
       'the final build retracts a pre-wake timer the flush superseded',
       () async {
         // The replacement was flushed, so `deduped` is empty by the time the
-        // consolidation-only pass runs and no timer id would otherwise reach
+        // consolidation-only pass runs and no entry would otherwise reach
         // the supersession search — leaving the obsolete pre-wake action
         // pending in the survivor.
         final preWake = makeTestChangeSet(
           id: 'cs-pre-wake',
           items: const [
+            // Persisted before the tool was retired: still superseded.
             ChangeItem(
               toolName: 'update_running_timer',
-              args: {'timerId': 'timer-1', 'action': 'stop'},
+              args: {'timerId': 'timer-1', 'summary': 'stop'},
               humanSummary: 'Stop the running timer',
             ),
           ],
         );
 
         await builder.addItem(
-          toolName: 'update_running_timer',
-          args: {'timerId': 'timer-1', 'action': 'keep'},
+          toolName: TaskAgentToolNames.updateTimeEntry,
+          args: {'entryId': 'timer-1', 'summary': 'keep'},
           humanSummary: 'Keep the running timer',
         );
         final flushed = await builder.build(
@@ -2005,26 +2023,20 @@ void main() {
     );
 
     test(
-      'does not dedupe same-summary running timer updates for different timers',
+      'does not dedupe same-text updates for different entries',
       () async {
         await builder.addItem(
-          toolName: TaskAgentToolNames.updateRunningTimer,
-          args: const {
-            'timerId': 'timer-2',
-            'summary': 'Focus block',
-          },
-          humanSummary: 'Update running timer text: "Focus block"',
+          toolName: TaskAgentToolNames.updateTimeEntry,
+          args: const {'entryId': 'timer-2', 'summary': 'Focus block'},
+          humanSummary: 'Revise time entry text: "Focus block"',
         );
 
         final existingSet = makeTestChangeSet(
           items: const [
             ChangeItem(
-              toolName: TaskAgentToolNames.updateRunningTimer,
-              args: {
-                'timerId': 'timer-1',
-                'summary': 'Focus block',
-              },
-              humanSummary: 'Update running timer text: "Focus block"',
+              toolName: TaskAgentToolNames.updateTimeEntry,
+              args: {'entryId': 'timer-1', 'summary': 'Focus block'},
+              humanSummary: 'Revise time entry text: "Focus block"',
             ),
           ],
         );
@@ -2034,15 +2046,8 @@ void main() {
           existingPendingSets: [existingSet],
         );
 
-        expect(result, isNotNull);
-        final timerItems = result!.items
-            .where(
-              (item) => item.toolName == TaskAgentToolNames.updateRunningTimer,
-            )
-            .toList();
-        expect(timerItems, hasLength(2));
         expect(
-          timerItems.map((item) => item.args['timerId']),
+          result!.items.map((item) => item.args['entryId']),
           ['timer-1', 'timer-2'],
         );
       },
@@ -2104,35 +2109,28 @@ void main() {
     });
 
     test(
-      'retracts existing running timer update when newer text is proposed',
+      'retracts a pending text update, legacy or not, when newer text is '
+      'proposed for the same entry',
       () async {
         await builder.addItem(
-          toolName: TaskAgentToolNames.updateRunningTimer,
-          args: const {
-            'timerId': 'timer-1',
-            'summary': 'Latest timer text',
-          },
-          humanSummary: 'Update running timer text: "Latest timer text"',
+          toolName: TaskAgentToolNames.updateTimeEntry,
+          args: const {'entryId': 'timer-1', 'summary': 'Latest timer text'},
+          humanSummary: 'Revise time entry text: "Latest timer text"',
         );
 
         final existingSet = makeTestChangeSet(
           id: 'cs-running',
           items: const [
+            // Persisted under the retired name before the merge.
             ChangeItem(
               toolName: TaskAgentToolNames.updateRunningTimer,
-              args: {
-                'timerId': 'timer-1',
-                'summary': 'Earlier timer text',
-              },
+              args: {'timerId': 'timer-1', 'summary': 'Earlier timer text'},
               humanSummary: 'Update running timer text: "Earlier timer text"',
             ),
             ChangeItem(
-              toolName: TaskAgentToolNames.updateRunningTimer,
-              args: {
-                'timerId': 'timer-2',
-                'summary': 'Other timer text',
-              },
-              humanSummary: 'Update running timer text: "Other timer text"',
+              toolName: TaskAgentToolNames.updateTimeEntry,
+              args: {'entryId': 'timer-2', 'summary': 'Other timer text'},
+              humanSummary: 'Revise time entry text: "Other timer text"',
             ),
           ],
         );
@@ -2142,19 +2140,15 @@ void main() {
           existingPendingSets: [existingSet],
         );
 
-        expect(result, isNotNull);
         expect(result!.id, 'cs-running');
-        final runningTimerItems = result.items
-            .where(
-              (item) => item.toolName == TaskAgentToolNames.updateRunningTimer,
-            )
-            .toList();
-        expect(runningTimerItems, hasLength(3));
-        expect(runningTimerItems[0].status, ChangeItemStatus.retracted);
-        expect(runningTimerItems[1].status, ChangeItemStatus.pending);
-        expect(runningTimerItems[1].args['summary'], 'Other timer text');
-        expect(runningTimerItems[2].status, ChangeItemStatus.pending);
-        expect(runningTimerItems[2].args['summary'], 'Latest timer text');
+        expect(
+          result.items.map((item) => (item.args['summary'], item.status)),
+          [
+            ('Earlier timer text', ChangeItemStatus.retracted),
+            ('Other timer text', ChangeItemStatus.pending),
+            ('Latest timer text', ChangeItemStatus.pending),
+          ],
+        );
 
         final captured = verify(
           () => mockSyncService.upsertEntity(captureAny()),
@@ -2167,30 +2161,57 @@ void main() {
         expect(decision.actor, DecisionActor.agent);
         expect(
           decision.retractionReason,
-          'Superseded by a newer running timer update proposal.',
+          'Superseded by a newer time entry update proposal.',
         );
 
         final updatedSet = captured.whereType<ChangeSetEntity>().single;
         expect(updatedSet.items.first.status, ChangeItemStatus.retracted);
-        expect(updatedSet.items[1].status, ChangeItemStatus.pending);
-        expect(updatedSet.items[1].args['summary'], 'Other timer text');
         expect(updatedSet.items.last.args['summary'], 'Latest timer text');
+      },
+    );
+
+    test(
+      'keeps a pending proposal identical to one re-proposed this wake',
+      () async {
+        // An identical re-proposal is a duplicate, not a replacement: the
+        // original stays open and the copy is deduped, rather than churning
+        // the suggestion out from under the user.
+        await builder.addItem(
+          toolName: TaskAgentToolNames.updateTimeEntry,
+          args: const {'entryId': 'timer-1', 'summary': 'Same text'},
+          humanSummary: 'Revise time entry text: "Same text"',
+        );
+
+        final existingSet = makeTestChangeSet(
+          items: const [
+            ChangeItem(
+              toolName: TaskAgentToolNames.updateTimeEntry,
+              args: {'entryId': 'timer-1', 'summary': 'Same text'},
+              humanSummary: 'Revise time entry text: "Same text"',
+            ),
+          ],
+        );
+
+        final result = await builder.build(
+          mockSyncService,
+          existingPendingSets: [existingSet],
+        );
+
+        expect(result, isNull);
+        verifyNever(() => mockSyncService.upsertEntity(any()));
       },
     );
 
     test(
       'leaves sets without superseded timer items untouched during merge',
       () async {
-        // A new running-timer update for timer-1 supersedes a pending one in
+        // A new text update for timer-1 supersedes a pending one in
         // the first existing set, while a second existing set carries only an
         // unrelated item and must pass through _markItemsRetracted unchanged.
         await builder.addItem(
-          toolName: TaskAgentToolNames.updateRunningTimer,
-          args: const {
-            'timerId': 'timer-1',
-            'summary': 'Newest timer text',
-          },
-          humanSummary: 'Update running timer text: "Newest timer text"',
+          toolName: TaskAgentToolNames.updateTimeEntry,
+          args: const {'entryId': 'timer-1', 'summary': 'Newest timer text'},
+          humanSummary: 'Revise time entry text: "Newest timer text"',
         );
 
         final timerSet = makeTestChangeSet(
@@ -2198,9 +2219,9 @@ void main() {
           createdAt: DateTime(2024, 3, 15, 10),
           items: const [
             ChangeItem(
-              toolName: TaskAgentToolNames.updateRunningTimer,
-              args: {'timerId': 'timer-1', 'summary': 'Stale timer text'},
-              humanSummary: 'Update running timer text: "Stale timer text"',
+              toolName: TaskAgentToolNames.updateTimeEntry,
+              args: {'entryId': 'timer-1', 'summary': 'Stale timer text'},
+              humanSummary: 'Revise time entry text: "Stale timer text"',
             ),
           ],
         );
@@ -2234,7 +2255,7 @@ void main() {
         // The stale timer item lands in the survivor as retracted, and the
         // new timer update is appended as pending.
         final timerItems = result.items
-            .where((i) => i.toolName == TaskAgentToolNames.updateRunningTimer)
+            .where((i) => i.toolName == TaskAgentToolNames.updateTimeEntry)
             .toList();
         expect(timerItems, hasLength(2));
         expect(

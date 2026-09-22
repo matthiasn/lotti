@@ -30,7 +30,8 @@ void main() {
       expect(context.taskIds, isNot(contains(ActionEvalIds.foreign)));
       expect(context.labelIds, contains(ActionEvalIds.label));
       expect(context.timeEntryIds, contains(ActionEvalIds.session));
-      expect(context.timeEntryIds, isNot(contains(ActionEvalIds.timer)));
+      // The running timer is editable too, through update_time_entry.
+      expect(context.timeEntryIds, contains(ActionEvalIds.timer));
       expect(context.runningTimerId, ActionEvalIds.timer);
       expect(
         context.input.toString(),

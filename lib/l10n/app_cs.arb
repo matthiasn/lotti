@@ -449,7 +449,6 @@
   "agentSummaryUncheckItem": "Zrušit odškrtnutí: „{title}“",
   "agentSummaryUpdateItem": "Změnit: „{title}“",
   "agentSummaryUpdateProjectStatus": "Nastavit stav projektu na {status}",
-  "agentSummaryUpdateRunningTimer": "Změnit text běžícího časovače: „{summary}“",
   "agentSummaryUpdateTimeEntry": "Upravit časový záznam",
   "agentSummaryUpdateTimeEntryRange": "Upravit časový záznam {range}",
   "agentSummaryUpdateTimeEntryRangeText": "Upravit časový záznam {range}: „{summary}“",

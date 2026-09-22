@@ -17,8 +17,8 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
     String toolName,
     Map<String, dynamic> rawArgs,
   ) async {
-    // Normalize incidental whitespace in the entity-reference id (entryId /
-    // timerId) so validation, the queued proposal, and apply all use the same
+    // Normalize incidental whitespace in the entity-reference id (entryId)
+    // so validation, the queued proposal, and apply all use the same
     // canonical value — a model that pads a copied id must not be falsely
     // rejected. (Label/checklist ids are normalized inside the exploder.)
     final args = _normalizeEntityReferenceArgs(toolName, rawArgs);
@@ -279,13 +279,15 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
     String toolName,
     Map<String, dynamic> args,
   ) async {
-    if (toolName == TaskAgentToolNames.updateTimeEntry) {
-      final resolver = resolveEditableTimeEntryIds;
-      if (resolver == null) return null;
-      final entryId = args['entryId'];
+    if (toolName != TaskAgentToolNames.updateTimeEntry) return null;
+
+    final entryId = args['entryId'];
+    final resolver = resolveEditableTimeEntryIds;
+    if (resolver != null) {
       if (entryId is! String || entryId.isEmpty) {
         return 'ERROR: update_time_entry requires a string "entryId" from the '
-            '"Editable Time Entries" section. No entry was queued.';
+            '"Editable Time Entries" or "Active Running Timer" section. No '
+            'entry was queued.';
       }
       final Set<String> editableIds;
       try {
@@ -297,37 +299,36 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
       if (!editableIds.contains(entryId)) {
         return 'ERROR: time entry "$entryId" is not an editable time entry for '
             'this task. Only use entryId values listed in the "Editable Time '
-            'Entries" section; do not invent ids. No entry was queued.';
+            'Entries" or "Active Running Timer" section; do not invent ids. '
+            'No entry was queued.';
       }
     }
 
-    if (toolName == TaskAgentToolNames.updateRunningTimer) {
-      final resolver = resolveRunningTimerId;
-      if (resolver == null) return null;
-      final timerId = args['timerId'];
-      if (timerId is! String || timerId.isEmpty) {
-        return 'ERROR: update_running_timer requires a string "timerId". '
-            'No proposal was queued.';
-      }
-      final String? runningTimerId;
-      try {
-        runningTimerId = await resolver();
-      } catch (_) {
-        // Transient lookup failure — keep conservatively.
-        return null;
-      }
-      if (runningTimerId == null) {
-        return 'ERROR: no timer is currently running for this task, so '
-            'update_running_timer cannot be used. No proposal was queued.';
-      }
-      if (timerId != runningTimerId) {
-        return 'ERROR: timer "$timerId" is not the timer running for this task. '
-            'Use the timerId from the "Active Running Timer" section; do not '
-            'invent ids. No proposal was queued.';
-      }
-    }
+    final editsRange =
+        args.containsKey('startTime') || args.containsKey('endTime');
+    return entryId is String && editsRange
+        ? _checkRunningTimerRangeEdit(entryId)
+        : null;
+  }
 
-    return null;
+  /// Rejects a range edit of the timer running for this task: it has no end
+  /// time yet and its start anchors the ticking duration, so the handler
+  /// refuses the edit until the timer stops. Catching it here gives the model
+  /// the chance to propose the text alone instead of queuing a dead proposal.
+  Future<String?> _checkRunningTimerRangeEdit(String entryId) async {
+    final resolver = resolveRunningTimerId;
+    if (resolver == null) return null;
+    final String? runningTimerId;
+    try {
+      runningTimerId = await resolver();
+    } catch (_) {
+      // Transient lookup failure — keep conservatively.
+      return null;
+    }
+    if (entryId != runningTimerId) return null;
+    return 'ERROR: time entry "$entryId" is the running timer. Its start and '
+        'end cannot change while it runs — propose only a new summary for it. '
+        'No entry was queued.';
   }
 
   /// Returns [args] with the entity-reference id for [toolName] trimmed of
@@ -341,7 +342,6 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
   ) {
     final key = switch (toolName) {
       TaskAgentToolNames.updateTimeEntry => 'entryId',
-      TaskAgentToolNames.updateRunningTimer => 'timerId',
       _ => null,
     };
     if (key == null) return args;
@@ -401,12 +401,6 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
         final endStr = end != null ? formatTimeEntryHhMm(end) : (endRaw ?? '?');
         final timeRange = hasEndTime ? '$startStr–$endStr' : 'from $startStr';
         return 'Time entry $timeRange: "$summary"';
-      }(),
-      TaskAgentToolNames.updateRunningTimer => () {
-        final summary = args['summary'] is String
-            ? (args['summary'] as String).trim()
-            : '';
-        return 'Update running timer text: "$summary"';
       }(),
       TaskAgentToolNames.updateTimeEntry => () {
         final startRaw = args['startTime'] is String

@@ -421,6 +421,19 @@ Use the task language and omit empty sections.
       expect(compact, contains('never invent ids'));
     });
 
+    test('keeps one open text proposal per time entry', () {
+      // The running timer's text is revised through update_time_entry like
+      // any other entry's; the retired timer tool is never named.
+      const trailing = TaskAgentPromptBuilder.taskAgentScaffoldTrailing;
+      expect(
+        trailing,
+        contains(
+          'Keep one open\n   `update_time_entry` text proposal per entry',
+        ),
+      );
+      expect(trailing, isNot(contains('update_running_timer')));
+    });
+
     test('compact scaffold preserves soul and custom directives', () {
       final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
         version: makeTestTemplateVersion(

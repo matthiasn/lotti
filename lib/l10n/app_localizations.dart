@@ -1801,12 +1801,6 @@ abstract class AppLocalizations {
   /// **'Update project status to {status}'**
   String agentSummaryUpdateProjectStatus(Object status);
 
-  /// No description provided for @agentSummaryUpdateRunningTimer.
-  ///
-  /// In en, this message translates to:
-  /// **'Update running timer text: \"{summary}\"'**
-  String agentSummaryUpdateRunningTimer(Object summary);
-
   /// No description provided for @agentSummaryUpdateTimeEntry.
   ///
   /// In en, this message translates to:

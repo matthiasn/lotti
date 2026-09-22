@@ -20,14 +20,33 @@ ChangeItem _item(
   status: status,
 );
 
-ChangeItem _runningTimer({
+ChangeItem _timeEntryEdit({
+  String? entryId,
+  String? summary,
+  String? startTime,
+  String? endTime,
+  ChangeItemStatus status = ChangeItemStatus.pending,
+}) => ChangeItem(
+  toolName: TaskAgentToolNames.updateTimeEntry,
+  args: {
+    'entryId': ?entryId,
+    'summary': ?summary,
+    'startTime': ?startTime,
+    'endTime': ?endTime,
+  },
+  humanSummary: 'Revise time entry text: "$summary"',
+  status: status,
+);
+
+/// A proposal persisted under the retired `update_running_timer` name.
+ChangeItem _legacyRunningTimer({
   String? timerId,
   String summary = 'Running timer text',
   ChangeItemStatus status = ChangeItemStatus.pending,
 }) => ChangeItem(
   toolName: TaskAgentToolNames.updateRunningTimer,
-  args: {'timerId': ?timerId},
-  humanSummary: summary,
+  args: {'timerId': ?timerId, 'summary': summary},
+  humanSummary: 'Update running timer text: "$summary"',
   status: status,
 );
 
@@ -175,111 +194,234 @@ void main() {
     });
   });
 
-  group('runningTimerIdFromArgs', () {
-    test('returns trimmed id for a valid string', () {
+  group('timeEntryEdit', () {
+    test('reads the trimmed entry and the fields an update sets', () {
+      final edit = timeEntryEdit(
+        _timeEntryEdit(entryId: '  e1 ', summary: 'x', endTime: '15:00'),
+      );
+
+      expect(edit?.entryId, 'e1');
+      expect(edit?.fields, {'summary', 'endTime'});
+    });
+
+    test('reads a retired running-timer proposal as a text edit', () {
+      final edit = timeEntryEdit(_legacyRunningTimer(timerId: 't1'));
+
+      expect(edit?.entryId, 't1');
+      expect(edit?.fields, {'summary'});
+    });
+
+    test('is null for any other tool, even one carrying an entryId', () {
       expect(
-        runningTimerIdFromArgs(const {'timerId': '  timer-1  '}),
-        'timer-1',
+        timeEntryEdit(_item('set_task_title', args: const {'entryId': 'e1'})),
+        isNull,
       );
     });
 
-    test('returns null when key is missing', () {
-      expect(runningTimerIdFromArgs(const {'summary': 'x'}), isNull);
-    });
-
-    test('returns null when value is not a string', () {
-      expect(runningTimerIdFromArgs(const {'timerId': 42}), isNull);
-    });
-
-    test('returns null for an empty or whitespace-only string', () {
-      expect(runningTimerIdFromArgs(const {'timerId': ''}), isNull);
-      expect(runningTimerIdFromArgs(const {'timerId': '   '}), isNull);
+    test('is null when the entry id is missing, blank or not a string', () {
+      expect(timeEntryEdit(_timeEntryEdit(summary: 'x')), isNull);
+      expect(
+        timeEntryEdit(_timeEntryEdit(entryId: '  ', summary: 'x')),
+        isNull,
+      );
+      expect(
+        timeEntryEdit(
+          _item(
+            TaskAgentToolNames.updateTimeEntry,
+            args: const {'entryId': 42, 'summary': 'x'},
+          ),
+        ),
+        isNull,
+      );
+      expect(timeEntryEdit(_legacyRunningTimer()), isNull);
     });
   });
 
-  group('runningTimerId / isRunningTimerUpdate', () {
-    test('isRunningTimerUpdate only matches the running-timer tool', () {
-      expect(isRunningTimerUpdate(_runningTimer(timerId: 't1')), isTrue);
-      expect(isRunningTimerUpdate(_item('set_task_title')), isFalse);
-    });
-
-    test('runningTimerId reads the trimmed timer id from item args', () {
-      expect(runningTimerId(_runningTimer(timerId: '  t1 ')), 't1');
-      expect(runningTimerId(_runningTimer()), isNull);
-    });
-
-    test('isRunningTimerUpdateForTimer matches tool and timer id', () {
-      final item = _runningTimer(timerId: 't1');
-      expect(isRunningTimerUpdateForTimer(item, 't1'), isTrue);
-      expect(isRunningTimerUpdateForTimer(item, 't2'), isFalse);
-      // Non running-timer items never match, even for the same id.
+  group('supersedesTimeEntryEdit', () {
+    test('a newer text for the same entry replaces the older text', () {
       expect(
-        isRunningTimerUpdateForTimer(
-          _item('set_task_title', args: const {'timerId': 't1'}),
-          't1',
+        supersedesTimeEntryEdit(
+          _timeEntryEdit(entryId: 'e1', summary: 'better'),
+          _timeEntryEdit(entryId: 'e1', summary: 'terse'),
+        ),
+        isTrue,
+      );
+    });
+
+    test('never crosses entries', () {
+      expect(
+        supersedesTimeEntryEdit(
+          _timeEntryEdit(entryId: 'e2', summary: 'better'),
+          _timeEntryEdit(entryId: 'e1', summary: 'terse'),
         ),
         isFalse,
       );
     });
-  });
 
-  group('runningTimerIds', () {
-    test('collects distinct timer ids, including a single null', () {
-      final items = [
-        _runningTimer(timerId: 't1'),
-        _runningTimer(timerId: 't1'),
-        _runningTimer(timerId: 't2'),
-        _runningTimer(),
-        _runningTimer(),
-        // Ignored: not a running-timer update.
-        _item('set_task_title', args: const {'timerId': 't3'}),
-      ];
-
-      expect(runningTimerIds(items), {'t1', 't2', null});
+    test('a text revision does not swallow a pending end-time correction', () {
+      expect(
+        supersedesTimeEntryEdit(
+          _timeEntryEdit(entryId: 'e1', summary: 'better'),
+          _timeEntryEdit(entryId: 'e1', summary: 'x', endTime: '15:00'),
+        ),
+        isFalse,
+      );
     });
 
-    test('is empty when no running-timer updates present', () {
-      expect(runningTimerIds([_item('set_task_title')]), isEmpty);
+    test('an edit covering every field of the older one replaces it', () {
+      expect(
+        supersedesTimeEntryEdit(
+          _timeEntryEdit(entryId: 'e1', summary: 'x', endTime: '16:00'),
+          _timeEntryEdit(entryId: 'e1', endTime: '15:00'),
+        ),
+        isTrue,
+      );
+    });
+
+    test('an identical re-proposal is a duplicate, not a replacement', () {
+      expect(
+        supersedesTimeEntryEdit(
+          _timeEntryEdit(entryId: 'e1', summary: 'same'),
+          _timeEntryEdit(entryId: 'e1', summary: 'same'),
+        ),
+        isFalse,
+      );
+    });
+
+    test('a text revision replaces a retired running-timer proposal', () {
+      expect(
+        supersedesTimeEntryEdit(
+          _timeEntryEdit(entryId: 't1', summary: 'better'),
+          _legacyRunningTimer(timerId: 't1'),
+        ),
+        isTrue,
+      );
+    });
+
+    test('non time-entry proposals never supersede or get superseded', () {
+      final title = _item('set_task_title', args: const {'title': 'A'});
+      final edit = _timeEntryEdit(entryId: 'e1', summary: 'x');
+
+      expect(supersedesTimeEntryEdit(title, edit), isFalse);
+      expect(supersedesTimeEntryEdit(edit, title), isFalse);
+    });
+
+    glados.Glados(
+      glados.any.timeEntryEditPair,
+      glados.ExploreConfig(numRuns: 200),
+    ).test(
+      'only relates distinct edits of one entry, and both ways only when '
+      'they set the same fields',
+      (pair) {
+        final (a, b) = pair;
+        expect(supersedesTimeEntryEdit(a, a), isFalse, reason: '$a');
+
+        final ab = supersedesTimeEntryEdit(a, b);
+        final ba = supersedesTimeEntryEdit(b, a);
+        if (ab || ba) {
+          expect(
+            timeEntryEdit(a)!.entryId,
+            timeEntryEdit(b)!.entryId,
+            reason: '$a / $b',
+          );
+        }
+        if (ab && ba) {
+          expect(
+            timeEntryEdit(a)!.fields,
+            timeEntryEdit(b)!.fields,
+            reason: '$a / $b',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+  });
+
+  group('isSupersededByProposals', () {
+    final newer = _timeEntryEdit(entryId: 'e1', summary: 'better');
+
+    test('matches a pending edit that a proposal replaces', () {
+      expect(
+        isSupersededByProposals(
+          _timeEntryEdit(entryId: 'e1', summary: 'terse'),
+          [newer],
+        ),
+        isTrue,
+      );
+    });
+
+    test('never matches a resolved edit', () {
+      for (final status in [
+        ChangeItemStatus.confirmed,
+        ChangeItemStatus.rejected,
+        ChangeItemStatus.retracted,
+      ]) {
+        expect(
+          isSupersededByProposals(
+            _timeEntryEdit(entryId: 'e1', summary: 'terse', status: status),
+            [newer],
+          ),
+          isFalse,
+          reason: '$status',
+        );
+      }
+    });
+
+    test('never matches one of the proposals themselves', () {
+      // Both set the same field, so each supersedes the other; neither may
+      // retract the other because the list carries no order.
+      final other = _timeEntryEdit(entryId: 'e1', summary: 'other');
+
+      expect(isSupersededByProposals(other, [newer, other]), isFalse);
+      expect(isSupersededByProposals(newer, [newer, other]), isFalse);
     });
   });
 
-  group('locatePendingRunningTimerUpdates', () {
-    test('finds only pending running-timer items for the given ids', () {
+  group('locateSupersededTimeEntryEdits', () {
+    test('finds every pending edit the proposals replace, across sets', () {
       final setA = makeTestChangeSet(
         id: 'set-a',
         items: [
-          _runningTimer(timerId: 't1'),
+          _legacyRunningTimer(timerId: 'e1'),
           _item('set_task_title', args: const {'title': 'X'}),
-          _runningTimer(timerId: 't2', status: ChangeItemStatus.confirmed),
+          _timeEntryEdit(
+            entryId: 'e2',
+            summary: 'done',
+            status: ChangeItemStatus.confirmed,
+          ),
         ],
       );
       final setB = makeTestChangeSet(
         id: 'set-b',
         items: [
-          _runningTimer(timerId: 't2'),
-          _runningTimer(timerId: 't3'),
+          _timeEntryEdit(entryId: 'e2', summary: 'terse'),
+          _timeEntryEdit(entryId: 'e3', summary: 'untouched'),
         ],
       );
 
-      final matches = locatePendingRunningTimerUpdates(
+      final matches = locateSupersededTimeEntryEdits(
         [setA, setB],
-        {'t1', 't2'},
+        [
+          _timeEntryEdit(entryId: 'e1', summary: 'better'),
+          _timeEntryEdit(entryId: 'e2', summary: 'better'),
+        ],
       );
 
-      // t1 in set-a (index 0), t2 in set-b (index 0). The confirmed t2 in
-      // set-a and the not-requested t3 in set-b are excluded.
-      expect(matches, hasLength(2));
-      expect(matches[0].changeSet.id, 'set-a');
-      expect(matches[0].itemIndex, 0);
-      expect(runningTimerId(matches[0].item), 't1');
-      expect(matches[1].changeSet.id, 'set-b');
-      expect(matches[1].itemIndex, 0);
-      expect(runningTimerId(matches[1].item), 't2');
+      // The legacy e1 proposal in set-a and the pending e2 one in set-b. The
+      // confirmed e2 edit and the e3 edit nothing replaced are left alone.
+      expect(
+        matches.map((m) => (m.changeSet.id, m.itemIndex)),
+        [('set-a', 0), ('set-b', 0)],
+      );
+      expect(matches.first.item, setA.items.first);
     });
 
-    test('returns empty when no timer ids requested', () {
-      final set = makeTestChangeSet(items: [_runningTimer(timerId: 't1')]);
-      expect(locatePendingRunningTimerUpdates([set], const {}), isEmpty);
+    test('finds nothing when nothing was proposed', () {
+      final set = makeTestChangeSet(
+        items: [_timeEntryEdit(entryId: 'e1', summary: 'x')],
+      );
+
+      expect(locateSupersededTimeEntryEdits([set], const []), isEmpty);
     });
   });
 
@@ -288,19 +430,19 @@ void main() {
       final target = makeTestChangeSet(
         id: 'target',
         items: [
-          _runningTimer(timerId: 't1'),
+          _timeEntryEdit(entryId: 't1', summary: 'old'),
           _item('set_task_title', args: const {'title': 'X'}),
-          _runningTimer(timerId: 't2'),
+          _timeEntryEdit(entryId: 't2', summary: 'old'),
         ],
       );
       final untouched = makeTestChangeSet(
         id: 'untouched',
-        items: [_runningTimer(timerId: 't9')],
+        items: [_timeEntryEdit(entryId: 't9', summary: 'old')],
       );
 
-      final matches = locatePendingRunningTimerUpdates(
+      final matches = locateSupersededTimeEntryEdits(
         [target, untouched],
-        {'t1'},
+        [_timeEntryEdit(entryId: 't1', summary: 'new')],
       );
       expect(matches, hasLength(1));
 
@@ -317,7 +459,9 @@ void main() {
     });
 
     test('returns sets unchanged when matches are empty', () {
-      final set = makeTestChangeSet(items: [_runningTimer(timerId: 't1')]);
+      final set = makeTestChangeSet(
+        items: [_timeEntryEdit(entryId: 't1', summary: 'x')],
+      );
       final result = markItemsRetracted([set], const []);
       expect(result.single, same(set));
     });
@@ -427,5 +571,33 @@ extension _AnyDedupScenario on glados.Any {
         glados.ListAnys(this).listWithLengthInRange(0, 6, dedupItem),
         (List<ChangeItem> existing, List<ChangeItem> proposed) =>
             _DedupScenario(existing: existing, proposed: proposed),
+      );
+}
+
+extension _AnyTimeEntryEditPair on glados.Any {
+  glados.Generator<ChangeItem> get timeEntryEditItem =>
+      glados.CombinableAny(this).combine3(
+        glados.IntAnys(this).intInRange(0, 2),
+        glados.IntAnys(this).intInRange(0, 8),
+        glados.IntAnys(this).intInRange(0, 3),
+        (int entrySeed, int fieldMask, int textSeed) => fieldMask == 0
+            // The retired shape: text only, the entry named as a timer.
+            ? _legacyRunningTimer(
+                timerId: 'e$entrySeed',
+                summary: 'T$textSeed',
+              )
+            : _timeEntryEdit(
+                entryId: 'e$entrySeed',
+                summary: fieldMask & 1 != 0 ? 'T$textSeed' : null,
+                startTime: fieldMask & 2 != 0 ? 'S$textSeed' : null,
+                endTime: fieldMask & 4 != 0 ? 'E$textSeed' : null,
+              ),
+      );
+
+  glados.Generator<(ChangeItem, ChangeItem)> get timeEntryEditPair =>
+      glados.CombinableAny(this).combine2(
+        timeEntryEditItem,
+        timeEntryEditItem,
+        (ChangeItem a, ChangeItem b) => (a, b),
       );
 }

@@ -34,8 +34,8 @@ void main() {
   });
 
   group('AgentToolRegistry.taskAgentTools', () {
-    test('contains exactly 21 tool definitions', () {
-      expect(AgentToolRegistry.taskAgentTools, hasLength(21));
+    test('contains exactly 20 tool definitions', () {
+      expect(AgentToolRegistry.taskAgentTools, hasLength(20));
     });
 
     test('all tools have non-empty name and description', () {
@@ -132,8 +132,8 @@ void main() {
   });
 
   group('AgentToolRegistry.deferredTools', () {
-    test('contains exactly 15 deferred tool names', () {
-      expect(AgentToolRegistry.deferredTools, hasLength(15));
+    test('contains exactly 14 deferred tool names', () {
+      expect(AgentToolRegistry.deferredTools, hasLength(14));
     });
 
     test('includes all expected deferred tool names', () {
@@ -154,8 +154,20 @@ void main() {
           TaskAgentToolNames.migrateChecklistItems,
           TaskAgentToolNames.createTimeEntry,
           TaskAgentToolNames.updateTimeEntry,
-          TaskAgentToolNames.updateRunningTimer,
         ]),
+      );
+    });
+
+    test('no longer lists the retired running-timer tool', () {
+      // A call under the retired name is upgraded to update_time_entry
+      // before this set is consulted, so it is still deferred.
+      expect(
+        AgentToolRegistry.deferredTools,
+        isNot(contains(TaskAgentToolNames.updateRunningTimer)),
+      );
+      expect(
+        AgentToolRegistry.taskAgentTools.map((t) => t.name),
+        isNot(contains(TaskAgentToolNames.updateRunningTimer)),
       );
     });
 

@@ -72,9 +72,11 @@ String? localizedChangeSummary(
   TaskAgentToolNames.createFollowUpTask => _followUp(messages, args),
   TaskAgentToolNames.linkTask => _link(messages, args),
   TaskAgentToolNames.createTimeEntry => _createTimeEntry(messages, args),
-  TaskAgentToolNames.updateRunningTimer =>
-    messages.agentSummaryUpdateRunningTimer(_trimmed(args['summary'])),
-  TaskAgentToolNames.updateTimeEntry => _updateTimeEntry(messages, args),
+  // The retired running-timer update carried only `summary` (plus a
+  // `timerId` this sentence never names), so a proposal persisted under it
+  // reads exactly like the text revision it became.
+  TaskAgentToolNames.updateTimeEntry ||
+  TaskAgentToolNames.updateRunningTimer => _updateTimeEntry(messages, args),
 
   // The literal spelling, not GoalAgentToolNames: `features/agents`
   // must not import goals (the plug-in direction the arch test pins).

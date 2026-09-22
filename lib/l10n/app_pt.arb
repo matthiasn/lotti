@@ -466,7 +466,6 @@
   "agentSummaryUncheckItem": "Desmarcar: \"{title}\"",
   "agentSummaryUpdateItem": "Alterar: \"{title}\"",
   "agentSummaryUpdateProjectStatus": "Definir o estado do projeto como {status}",
-  "agentSummaryUpdateRunningTimer": "Alterar o texto do cronômetro em execução: \"{summary}\"",
   "agentSummaryUpdateTimeEntry": "Atualizar o registro de tempo",
   "agentSummaryUpdateTimeEntryRange": "Atualizar o registro de tempo {range}",
   "agentSummaryUpdateTimeEntryRangeText": "Atualizar o registro de tempo {range}: \"{summary}\"",

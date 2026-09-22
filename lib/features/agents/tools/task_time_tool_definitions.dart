@@ -1,7 +1,7 @@
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 
-/// Tools that record and revise time tracking: creating time entries,
-/// updating a running timer, and editing existing time entries.
+/// Tools that record and revise time tracking: creating time entries and
+/// editing existing ones, a running timer's text included.
 const taskTimeTools = <AgentToolDefinition>[
   AgentToolDefinition(
     name: TaskAgentToolNames.createTimeEntry,
@@ -18,9 +18,9 @@ const taskTimeTools = <AgentToolDefinition>[
         'time only (omit endTime; today only, never the future). '
         'IMPORTANT: if the wake context contains an "Active Running Timer" '
         'section for this task, do NOT call this tool to describe the '
-        'work covered by that timer — call update_running_timer instead. '
-        'create_time_entry is for sessions that are clearly distinct from '
-        'the active timer.',
+        'work covered by that timer — call update_time_entry with its '
+        'entryId instead. create_time_entry is for sessions that are '
+        'clearly distinct from the active timer.',
     parameters: {
       'type': 'object',
       'properties': {
@@ -58,54 +58,20 @@ const taskTimeTools = <AgentToolDefinition>[
     },
   ),
   AgentToolDefinition(
-    name: TaskAgentToolNames.updateRunningTimer,
-    description:
-        'Propose a richer text description for the currently running '
-        'timer on this task. Call this INSTEAD of create_time_entry when '
-        'the wake context contains an "Active Running Timer" section: the '
-        'user already started a timer with an empty or terse description, '
-        'and the agent should update it with a distilled summary of what '
-        'has been worked on so far. The proposal is user-gated; the user '
-        'sees a diff between the current text and your proposed text '
-        'before accepting. Replaces the timer entry text outright (the '
-        'user can still edit before accepting).',
-    parameters: {
-      'type': 'object',
-      'properties': {
-        'timerId': {
-          'type': 'string',
-          'description':
-              'The ID of the running timer entry, taken verbatim from the '
-              '"Active Running Timer" section of the wake context. Must '
-              'match the currently running timer at execution time.',
-        },
-        'summary': {
-          'type': 'string',
-          'maxLength': 500,
-          'description':
-              'A distilled 1-2 sentence summary of what the user has '
-              'worked on during the running session so far. Extract the '
-              'essence from the dictation — do not copy verbatim. Write '
-              "in the task's content language.",
-        },
-      },
-      'required': ['timerId', 'summary'],
-      'additionalProperties': false,
-    },
-  ),
-  AgentToolDefinition(
     name: TaskAgentToolNames.updateTimeEntry,
     description:
-        'Revise an existing completed time entry on this task — text, '
-        'start time, end time, or any combination — when the user has JUST '
+        'Revise an existing time entry on this task — text, start time, '
+        'end time, or any combination. Two uses: (1) a completed entry '
+        'from the "Editable Time Entries" section, when the user has JUST '
         'NOW dictated a correction or addition based on the current '
-        "recording session. Use this when the wake context's "
-        '"Editable Time Entries" section contains the entry the user is '
-        'referring to. Do NOT use this for the currently running timer '
-        '(use update_running_timer instead). Do NOT use this for entries '
-        'on other tasks. Do NOT fabricate IDs — only reference IDs that '
-        'appear in the Editable Time Entries section. The proposal is '
-        'user-gated; the user reviews the diff before accepting.',
+        'recording session; (2) the timer in the "Active Running Timer" '
+        'section, to replace its empty or terse text with a distilled '
+        'summary of the work so far — pass ONLY entryId and summary, '
+        'since a running timer has no end time yet and its start time '
+        'cannot change while it runs. Do NOT use this for entries on '
+        'other tasks. Do NOT fabricate IDs — only reference IDs that '
+        'appear in those two sections. The proposal is user-gated; the '
+        'user reviews the diff before accepting.',
     parameters: {
       'type': 'object',
       'properties': {
@@ -113,7 +79,8 @@ const taskTimeTools = <AgentToolDefinition>[
           'type': 'string',
           'description':
               'The ID of the journal entry to update, taken verbatim from '
-              'the "Editable Time Entries" section of the wake context.',
+              'the "Editable Time Entries" or "Active Running Timer" '
+              'section of the wake context.',
         },
         'startTime': {
           'type': 'string',

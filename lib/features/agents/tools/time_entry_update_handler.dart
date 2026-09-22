@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -7,11 +8,29 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/time_service.dart';
 
-/// Updates an existing completed time-entry journal entry linked to a task.
+/// Updates an existing time-entry journal entry linked to a task: its text,
+/// its range, or both.
 ///
-/// This handler is intentionally separate from the running-timer update path:
-/// completed-entry edits do not synchronize [TimeService] state, and live timers
-/// must keep using the running-timer-specific path.
+/// Whether a timer is ticking on the entry never decides whether the edit
+/// applies. A proposal written while the timer ran on one device must still
+/// apply when it is confirmed on another, after the timer stopped, or after a
+/// restart — the text of an entry is the same edit in every one of those
+/// cases. A running timer only narrows which fields the edit may carry:
+///
+/// - **Running on this device** ([TimeService.getCurrent]): text only. Its end
+///   is live and its start anchors the ticking duration, so `startTime` and
+///   `endTime` are refused until it stops. The write stamps the end as now,
+///   as the entry editor does when it saves a running timer, and replaces the
+///   service's snapshot so the running indicator and the next wake read the
+///   new text without a reload.
+/// - **Otherwise** — completed, or running on another device: any
+///   combination.
+///
+/// A failure the arguments alone decide is [ToolExecutionResult.nonRetryable],
+/// so a confirmed proposal that can never apply is retracted instead of left
+/// behind as a dead retry. A failure that depends on state — an entry not
+/// synced to this device yet, a timer that will stop, a failed write — stays
+/// retryable.
 class TimeEntryUpdateHandler {
   TimeEntryUpdateHandler({
     required this._persistenceLogic,
@@ -28,9 +47,10 @@ class TimeEntryUpdateHandler {
   static const _sub = 'TimeEntryUpdateHandler';
 
   /// Applies the agent's edits (`summary`, `startTime`, `endTime`) to the
-  /// existing completed time entry identified by `entryId` in [args], scoped
-  /// to [sourceTaskId]. Returns a failed [ToolExecutionResult] when the entry
-  /// id is missing, the entry isn't found, or the new time range is invalid.
+  /// time entry identified by `entryId` in [args], scoped to [sourceTaskId].
+  /// Returns a failed [ToolExecutionResult] when the arguments are invalid,
+  /// the entry is not a time entry of this task, a timer running on this
+  /// device would have its range edited, or the new range is invalid.
   Future<ToolExecutionResult> handle(
     String sourceTaskId,
     Map<String, dynamic> args,
@@ -42,6 +62,7 @@ class TimeEntryUpdateHandler {
         success: false,
         output: 'Error: "entryId" must be a non-empty string',
         errorMessage: 'Missing or invalid entryId',
+        nonRetryable: true,
       );
     }
 
@@ -56,6 +77,7 @@ class TimeEntryUpdateHandler {
             'Error: at least one of summary, startTime, endTime must be '
             'provided',
         errorMessage: 'No changes specified',
+        nonRetryable: true,
       );
     }
 
@@ -70,6 +92,7 @@ class TimeEntryUpdateHandler {
               'Error: "summary" must be a non-empty string with at most '
               '500 characters',
           errorMessage: 'Missing, empty, or too-long summary',
+          nonRetryable: true,
         );
       }
     }
@@ -84,7 +107,9 @@ class TimeEntryUpdateHandler {
     if (entry == null) {
       return ToolExecutionResult(
         success: false,
-        output: 'Error: entry $entryId not found',
+        output:
+            'Error: entry $entryId not found (deleted, or not synced to this '
+            'device yet)',
         errorMessage: 'Entry not found',
       );
     }
@@ -94,6 +119,7 @@ class TimeEntryUpdateHandler {
         success: false,
         output: 'Error: entry $entryId is not a time-tracking journal entry',
         errorMessage: 'Unsupported entry type',
+        nonRetryable: true,
       );
     }
 
@@ -109,18 +135,28 @@ class TimeEntryUpdateHandler {
       );
     }
 
-    if (_timeService.getCurrent()?.meta.id == entryId) {
-      return const ToolExecutionResult(
+    final editsRange = hasStartTime || hasEndTime;
+    final isRunningHere = _timeService.getCurrent()?.meta.id == entryId;
+    if (isRunningHere && editsRange) {
+      return ToolExecutionResult(
         success: false,
-        output: 'Error: use update_running_timer to edit the active timer',
-        errorMessage: 'Entry is the active timer',
+        output:
+            'Error: entry $entryId is a running timer — its start and end '
+            'cannot change until the timer is stopped',
+        errorMessage: 'Running timer range is locked',
       );
     }
 
+    final now = clock.now();
     final resolvedDateFrom = startTime.value ?? entry.meta.dateFrom;
-    final resolvedDateTo = endTime.value ?? entry.meta.dateTo;
+    final resolvedDateTo = isRunningHere
+        ? now
+        : endTime.value ?? entry.meta.dateTo;
 
-    if (!resolvedDateTo.isAfter(resolvedDateFrom)) {
+    // Only a range edit is checked against the range. A text-only edit must
+    // apply whatever is stored — above all to a timer still ticking on
+    // another device, whose synced entry has not been given a length yet.
+    if (editsRange && !resolvedDateTo.isAfter(resolvedDateFrom)) {
       return const ToolExecutionResult(
         success: false,
         output: 'Error: endTime must be after startTime',
@@ -136,7 +172,7 @@ class TimeEntryUpdateHandler {
       journalEntityId: entryId,
       entryText: entryText,
       dateFrom: startTime.value,
-      dateTo: endTime.value,
+      dateTo: isRunningHere ? now : endTime.value,
     );
 
     if (!ok) {
@@ -147,9 +183,20 @@ class TimeEntryUpdateHandler {
       );
     }
 
+    if (isRunningHere) {
+      // Its range edits were refused above, so the summary is what changed.
+      _timeService.updateCurrent(
+        entry.copyWith(
+          entryText: entryText,
+          meta: entry.meta.copyWith(dateTo: now, updatedAt: now),
+        ),
+      );
+    }
+
     _domainLogger?.log(
       LogDomain.agentWorkflow,
-      'Updated time entry ${DomainLogger.sanitizeId(entryId)} linked to '
+      'Updated ${isRunningHere ? 'running timer' : 'time entry'} '
+      '${DomainLogger.sanitizeId(entryId)} linked to '
       '${DomainLogger.sanitizeId(sourceTaskId)}',
       subDomain: _sub,
     );
@@ -169,7 +216,7 @@ class TimeEntryUpdateHandler {
     if (!args.containsKey(key)) return (value: null, error: null);
 
     final raw = args[key];
-    if (raw is! String) {
+    if (raw is! String || raw.trim().isEmpty) {
       return (
         value: null,
         error: ToolExecutionResult(
@@ -178,25 +225,12 @@ class TimeEntryUpdateHandler {
               'Error: "$key" must be a valid ISO 8601 datetime '
               'with explicit local time',
           errorMessage: 'Missing or invalid $key',
+          nonRetryable: true,
         ),
       );
     }
 
-    final trimmed = raw.trim();
-    if (trimmed.isEmpty) {
-      return (
-        value: null,
-        error: ToolExecutionResult(
-          success: false,
-          output:
-              'Error: "$key" must be a valid ISO 8601 datetime '
-              'with explicit local time',
-          errorMessage: 'Missing or invalid $key',
-        ),
-      );
-    }
-
-    final parsed = parseTimeEntryLocalDateTime(trimmed);
+    final parsed = parseTimeEntryLocalDateTime(raw.trim());
     if (parsed == null) {
       return (
         value: null,
@@ -206,6 +240,7 @@ class TimeEntryUpdateHandler {
               'Error: "$key" must be a valid ISO 8601 datetime '
               'with explicit local time',
           errorMessage: 'Unparseable $key',
+          nonRetryable: true,
         ),
       );
     }

@@ -168,8 +168,9 @@ class ChangeSetBuilder {
   /// ends. Each flush must append only what it added.
   ///
   /// Keyed on fingerprint rather than a count because [_items] is not
-  /// append-only — a fresh `update_running_timer` proposal drops the earlier
-  /// one — so any positional watermark would slide onto the wrong items.
+  /// append-only — a fresh `update_time_entry` proposal drops an earlier one
+  /// it supersedes — so any positional watermark would slide onto the wrong
+  /// items.
   /// Every add path rejects a duplicate fingerprint, so the key is unique.
   final _flushedFingerprints = <String>{};
 
@@ -247,12 +248,12 @@ class ChangeSetBuilder {
           'analysis.';
     }
 
-    if (toolName == TaskAgentToolNames.updateRunningTimer) {
-      final timerId = runningTimerIdFromArgs(args);
-      _items.removeWhere(
-        (item) => isRunningTimerUpdateForTimer(item, timerId),
-      );
-    }
+    final proposal = ChangeItem(
+      toolName: toolName,
+      args: args,
+      humanSummary: humanSummary,
+    );
+    _items.removeWhere((item) => supersedesTimeEntryEdit(proposal, item));
 
     // Check for title-based redundancy on add_checklist_item.
     if (toolName == TaskAgentToolNames.addChecklistItem) {
@@ -274,13 +275,7 @@ class ChangeSetBuilder {
       }
     }
 
-    _items.add(
-      ChangeItem(
-        toolName: toolName,
-        args: args,
-        humanSummary: humanSummary,
-      ),
-    );
+    _items.add(proposal);
     return null;
   }
 
@@ -396,10 +391,6 @@ class ChangeSetBuilder {
       for (final cs in freshExistingSets)
         if (isPendingLike(cs.status) && (!incremental || cs.id == ownSetId)) cs,
     ];
-    // Spans every item proposed this wake, flushed or not: a running-timer
-    // update this wake already landed must not block its own successor.
-    final proposedRunningTimerIds = runningTimerIds(_items);
-
     // Extract items from existing change sets that should block a new
     // identical proposal. Confirmed items were applied; retracted items
     // are agent self-corrections that must not block re-proposal after
@@ -409,9 +400,9 @@ class ChangeSetBuilder {
         for (final item in cs.items)
           if (item.status != ChangeItemStatus.confirmed &&
               item.status != ChangeItemStatus.retracted &&
-              !(isRunningTimerUpdate(item) &&
-                  item.status == ChangeItemStatus.pending &&
-                  proposedRunningTimerIds.contains(runningTimerId(item))))
+              // Spans every item proposed this wake, flushed or not: an edit
+              // this wake already landed must not block its own successor.
+              !isSupersededByProposals(item, _items))
             item,
     ];
 
@@ -439,32 +430,24 @@ class ChangeSetBuilder {
     // Keyed on everything this wake proposed, not just what this pass is
     // writing: on a consolidation-only final build the replacement was
     // already flushed, so `deduped` is empty and a pre-wake proposal for the
-    // same timer would survive as pending — inflating the ledger and leaving
-    // an obsolete action the UI's latest-timer filter merely hides.
+    // same entry would survive as pending — inflating the ledger and leaving
+    // an obsolete action the UI's supersede filter merely hides.
     //
-    // Matches inside this builder's own set are excluded: those are the
-    // replacements being kept, and they must not retract themselves.
-    final supersededRunningTimerItems = proposedRunningTimerIds.isNotEmpty
-        ? locatePendingRunningTimerUpdates(
-                writableSets,
-                proposedRunningTimerIds,
-              )
-              .where((match) => match.changeSet.id != ownSetId)
-              .toList(growable: false)
-        : const <
-            ({ChangeSetEntity changeSet, int itemIndex, ChangeItem item})
-          >[];
-    final currentExistingSets = supersededRunningTimerItems.isEmpty
+    // This wake's own items never match — they are the replacements being
+    // kept — but one an earlier turn flushed and a later turn replaced does,
+    // even inside this builder's own set.
+    final supersededItems = locateSupersededTimeEntryEdits(
+      writableSets,
+      _items,
+    );
+    final currentExistingSets = supersededItems.isEmpty
         ? writableSets
-        : markItemsRetracted(writableSets, supersededRunningTimerItems);
+        : markItemsRetracted(writableSets, supersededItems);
     final currentExistingSetsById = {
       for (final cs in currentExistingSets) cs.id: cs,
     };
 
-    await _recordSupersededRunningTimerRetractions(
-      syncService,
-      supersededRunningTimerItems,
-    );
+    await _recordSupersededRetractions(syncService, supersededItems);
 
     if (writableSets.isNotEmpty) {
       // Consolidate: pick the newest set as the survivor, collect all
@@ -694,7 +677,7 @@ class ChangeSetBuilder {
     }
   }
 
-  Future<void> _recordSupersededRunningTimerRetractions(
+  Future<void> _recordSupersededRetractions(
     AgentSyncService syncService,
     List<({ChangeSetEntity changeSet, int itemIndex, ChangeItem item})> matches,
   ) async {
@@ -713,7 +696,7 @@ class ChangeSetBuilder {
                 actor: DecisionActor.agent,
                 taskId: taskId,
                 retractionReason:
-                    'Superseded by a newer running timer update proposal.',
+                    'Superseded by a newer time entry update proposal.',
                 humanSummary: match.item.humanSummary,
                 args: match.item.args,
                 createdAt: now,

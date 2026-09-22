@@ -5,8 +5,8 @@ description: The primary agent workflow — inference setup resolution, the auto
 resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
 tags: [agents, task-agent, tools, proposals, inference]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-09-18T13:00:00Z }
-stale_after: 2026-10-23
+generated: { by: claude-code/opus-5, at: 2026-09-22T15:00:00Z }
+stale_after: 2026-12-22
 sources:
   - id: report-policy
     resource: ../../../lib/features/agents/workflow/task_agent_report_policy.dart
@@ -19,7 +19,7 @@ sources:
   - id: prompt-builder
     resource: ../../../lib/features/agents/workflow/task_agent_prompt_builder.dart
     title: Stock and compact task-agent scaffolds
-    last_modified: 2026-09-14
+    last_modified: 2026-09-22
   - id: evidence-synthesis
     resource: ../../../lib/features/agents/workflow/task_agent_evidence_synthesis.dart
     title: Evidence-first task and report tool contracts
@@ -27,7 +27,15 @@ sources:
   - id: context-builder
     resource: ../../../lib/features/agents/workflow/task_agent_context_builder.dart
     title: Task wake context and report publication state
-    last_modified: 2026-09-14
+    last_modified: 2026-09-22
+  - id: time-entry-update
+    resource: ../../../lib/features/agents/tools/time_entry_update_handler.dart
+    title: TimeEntryUpdateHandler — one text/range edit for every time entry
+    last_modified: 2026-09-22
+  - id: retired-tools
+    resource: ../../../lib/features/agents/model/retired_tool_calls.dart
+    title: upgradeRetiredTaskAgentToolCall — the retired running-timer tool
+    last_modified: 2026-09-22
   - id: checklist-provenance
     resource: ../../../lib/classes/checklist_item_data.dart
     title: Durable checklist approval receipts
@@ -39,7 +47,7 @@ sources:
   - id: proposal-builder
     resource: ../../../lib/features/agents/workflow/change_set_builder.dart
     title: Live background proposal protection
-    last_modified: 2026-09-13
+    last_modified: 2026-09-22
   - id: workflow
     resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
     title: TaskAgentWorkflow
@@ -47,11 +55,11 @@ sources:
   - id: strategy
     resource: ../../../lib/features/agents/workflow/task_agent_strategy.dart
     title: TaskAgentStrategy
-    last_modified: 2026-07-26
+    last_modified: 2026-09-22
   - id: confirmation
     resource: ../../../lib/features/agents/service/change_set_confirmation_service.dart
     title: ChangeSetConfirmationService
-    last_modified: 2026-06-13
+    last_modified: 2026-09-22
   - id: resolution-store
     resource: ../../../lib/features/agents/service/change_set_resolution_store.dart
     title: Shared confirmation state and chat-deletion fence
@@ -79,7 +87,7 @@ sources:
   - id: tool-gate
     resource: ../../../lib/features/agents/tools/task_agent_tool_gate.dart
     title: TaskAgentWakeFacts / visibleTaskAgentToolNames — the per-wake tool gate
-    last_modified: 2026-08-08
+    last_modified: 2026-09-22
   - id: staged-exposure
     resource: ../../../lib/features/agents/tools/task_agent_staged_tool_exposure.dart
     title: TaskAgentStagedToolExposure — withhold update_report from turn one
@@ -333,12 +341,18 @@ Four context details are load-bearing:
   Linked-task context does the same via `agent_task` links and `agentReportHead`.
   `latestSummary` payloads are stripped before submission.
 - **The running timer is scoped.** If the timer's source task matches the wake's
-  task, the agent gets full details (id, started, tracked range, elapsed minutes,
-  entry text) and is steered toward `update_running_timer` instead of a parallel
-  `create_time_entry`. If the timer belongs to a *different* task, only the
-  tracked range is exposed — no id, no other-task identity, no entry text — so
-  the agent can avoid proposing overlapping intervals without learning about
-  another task.
+  task, the agent gets full details (entryId, started, tracked range, elapsed
+  minutes, entry text) and is steered toward `update_time_entry` with that
+  `entryId` and a `summary` alone, instead of a parallel `create_time_entry`. If
+  the timer belongs to a *different* task, only the tracked range is exposed —
+  no id, no other-task identity, no entry text — so the agent can avoid
+  proposing overlapping intervals without learning about another task. The
+  "Editable Time Entries" section lists the completed entries; the running
+  timer appears only in its own section, but its id is editable all the same.
+  `TimeService` only says which entry is running and for which task; the
+  entry's text and start are read from the database, so a text confirmed on
+  another device reaches the next wake (see
+  [the stored entry](#time-entry-text-proposals-follow-the-entry-not-the-timer)).
 
 Reports may include Markdown links to known task ids as `[Title](/tasks/<taskId>)`
 when the context exposed the id. The trailing Links block stays reserved for
@@ -566,8 +580,7 @@ of the payload.
 | Tool | Withheld when |
 |-----|---------------|
 | `update_checklist_items` | the task has no checklist items |
-| `update_running_timer` | no timer is running **for this task** (a timer on another task reaches the prompt only as an opaque range, so there is no id to update — offering the tool would invite a hallucinated one) |
-| `update_time_entry` | the task has no editable time records |
+| `update_time_entry` | the task has no time entry linked — its own running timer counts; a timer on another task does not (it reaches the prompt only as an opaque range, so there is no id to update — offering the tool would invite a hallucinated one) |
 | `assign_task_labels` | no label definitions exist for the category |
 | `retract_suggestions` | the proposal ledger holds no open proposals |
 | `resolve_attention_request` | this agent holds no active attention claim on the task |
@@ -630,7 +643,11 @@ Two run immediately but route through `AgentToolExecutor` → `TaskToolDispatche
 `set_task_status`, `set_task_language`, `add_multiple_checklist_items`,
 `update_checklist_items`, `assign_task_labels`, `create_follow_up_task`,
 `link_task`, `migrate_checklist_items`, `create_time_entry`,
-`update_time_entry`, `update_running_timer`.
+`update_time_entry`.
+
+`update_time_entry` is also exempt from the one-call-per-wake rule that stops a
+small model burning its turns on one tool: each call names one entry, so the
+running timer's text and a completed entry's correction are two calls.
 
 ## Typed-relationship tools (ADR 0042)
 
@@ -767,8 +784,9 @@ flowchart TD
 
 `ChangeSetBuilder` owns the deferred path. It explodes batch tools into
 individually reviewable items, deduplicates identical proposals within a wake,
-keeps only the newest `update_running_timer` proposal (retracting older pending
-ones), and suppresses proposals that would not change current state.
+lets a newer time-entry edit supersede an older pending one (retracting it — see
+[time-entry text proposals](#time-entry-text-proposals-follow-the-entry-not-the-timer)),
+and suppresses proposals that would not change current state.
 
 The builder **flushes at every turn boundary that queued a proposal**, not once
 at the end of the wake. A wake spends most of its wall clock on round trips the
@@ -813,8 +831,8 @@ Repeated flushes are safe by construction:
 
 - The builder tracks the **fingerprints** it has already written, and appends
   only what is new. Fingerprints rather than a positional watermark because
-  `_items` is not append-only — a fresh `update_running_timer` proposal drops
-  the earlier one.
+  `_items` is not append-only — a fresh `update_time_entry` proposal drops an
+  earlier one it supersedes.
 - An incremental flush **never writes to a pre-wake set**. Consolidating early
   would retire it, which marks its pending items retracted and copies them into
   the survivor as pending — and `applyStaged` then skips the original row it
@@ -835,7 +853,7 @@ Repeated flushes are safe by construction:
   once that proposal is retracted.
 - A failed flush advances nothing: the items stay staged and the end-of-wake
   build writes them. Each flush runs in its own transaction, so a failure part
-  way through cannot leave a superseded-timer `ChangeDecisionEntity` behind for
+  way through cannot leave a superseded-edit `ChangeDecisionEntity` behind for
   the retry to duplicate.
 - **The inbox alert fires once, from the final build only.** An incremental
   flush must not raise it: the count would come from its own set while
@@ -850,12 +868,13 @@ Repeated flushes are safe by construction:
   fresh active row for a card they already cleared. Alerting stays
   fire-and-forget — a failed re-read skips the alert rather than failing the
   wake.
-- **Superseded running timers are resolved by the final build.** The timer ids
-  come from everything the wake proposed, not just what the current pass is
-  writing: on a consolidation-only build the replacement was already flushed,
-  so keying on the new items alone would leave a pre-wake proposal for the same
-  timer pending. Matches inside the builder's own set are excluded so the
-  replacement cannot retract itself.
+- **Superseded time-entry edits are resolved by the final build.** The
+  replacements come from everything the wake proposed, not just what the
+  current pass is writing: on a consolidation-only build the replacement was
+  already flushed, so keying on the new items alone would leave a pre-wake
+  proposal for the same entry pending. The wake's own current items never
+  match, so a replacement cannot retract itself — but one an earlier turn
+  flushed and a later turn replaced does, even inside the builder's own set.
 - **A wake that dies after a flush still alerts.** `WakeOutputWriter` never
   runs, so the workflow's failure path calls `raiseInboxAlert` itself;
   otherwise committed, on-screen suggestions would never ring the bell.
@@ -917,9 +936,9 @@ sequenceDiagram
 change set (avoiding stale UI snapshots), **persist the decision first**, mark
 the item confirmed, dispatch, revert retryable failures to `pending`, and
 auto-retract deterministic failures the dispatcher marks non-retryable. This
-includes `update_running_timer` when the active timer changed before acceptance
-and version-fenced goal revisions whose base version is stale or whose legacy
-contract cannot be applied safely.
+includes an `update_time_entry` whose arguments alone can never apply and
+version-fenced goal revisions whose base version is stale or whose legacy
+contract cannot be applied safely. Nothing is special-cased by tool name.
 
 For [chat-owned approvals](query-chat.md#task-actions-and-inline-approval), a
 missing persisted set is terminal: the resolution store returns an empty
@@ -933,18 +952,70 @@ suggestion notification with the new count and retract older open rows for the
 task; none left → mark every open suggestion notification acted-on so it leaves
 the inbox and syncs that lifecycle to other devices.
 
-## Running-timer proposals are stricter
+## Time-entry text proposals follow the entry, not the timer
 
-`update_running_timer` names a specific live timer id. If the user stops that
-timer, starts another task's timer, or the snapshot otherwise changes before
-acceptance, retrying cannot succeed. The service therefore records a
-`ChangeDecisionEntity{verdict: retracted, actor: agent, retractionReason}` and
-moves the item to `retracted` rather than leaving a dead retry button. The next
-wake sees the reason in the ledger and can propose `update_time_entry` for the
-now-completed entry.
+There is one proposal for the text of a time entry, `update_time_entry`, and
+whether a timer is ticking on that entry does not decide whether it applies.
+The proposal is written on the device where the agent woke — often the desktop
+the timer runs on — and confirmed wherever the user reads it: a phone, the same
+desktop after a restart, or after the timer stopped. `TimeEntryUpdateHandler`
+therefore checks only what the arguments name (the entry exists, is a journal
+entry, is linked from the task) and what a running timer rules out:
 
-Only one running-timer update may be open per task; a later, better proposal
-supersedes older pending ones as agent retractions.
+```mermaid
+flowchart TD
+  Confirm[User confirms update_time_entry] --> Args{Arguments valid?}
+  Args -->|no| Dead[Fail, nonRetryable: retracted]
+  Args -->|yes| Entry{Entry here and linked?}
+  Entry -->|no: not synced yet| Retry[Fail, retryable: stays pending]
+  Entry -->|yes| Here{Timer running on THIS device?}
+  Here -->|yes, edits start or end| Locked[Fail, retryable: stop the timer first]
+  Here -->|yes, text only| Live[Write text, stamp end now, refresh TimeService snapshot]
+  Here -->|no| Range{Edits start or end?}
+  Range -->|yes| Check{End after start?}
+  Check -->|no| Retry
+  Check -->|yes| Write[Write the edit]
+  Range -->|no| Write
+```
+
+- **A text edit is never range-checked.** A timer ticking on another device
+  syncs here with its start as its end, so a range check on a text-only edit
+  refused exactly the case the tool exists for.
+- **A timer running on this device takes text only.** Its end is live and its
+  start anchors the ticking duration; the wake context tells the agent so, the
+  strategy rejects a range edit of the running timer before queuing it
+  (`resolveRunningTimerId`), and the handler refuses one that slips through.
+- **The wake reads the stored entry.** The "Active Running Timer" section
+  takes the timer's text and start from the database, not from the
+  `TimeService` snapshot: a text confirmed on another device arrives by sync
+  and never passes through this device's service, and a wake shown the old
+  text would propose the new one again — confirmed items deliberately do not
+  block a re-proposal. The snapshot stands in only when the read fails. The
+  handler still replaces the snapshot on the device it runs on, which is what
+  keeps the running indicator current there; the indicator on a device whose
+  timer was edited elsewhere keeps its old text until the timer restarts.
+
+A newer edit of the same entry **supersedes** an older pending one when it sets
+every field the older one would (`supersedesTimeEntryEdit`): a better wording
+replaces the earlier text, but a text revision never swallows a pending
+end-time correction, and an identical re-proposal is a duplicate rather than a
+replacement. The builder retracts superseded items with an agent
+`ChangeDecisionEntity`, and the suggestion list hides one a newer open
+suggestion supersedes until that retraction lands.
+
+The tool used to be two: `update_running_timer {timerId, summary}` beside
+`update_time_entry`. Proposals under the retired name still exist — persisted
+before the merge, or written by an older build on a synced device — so
+`upgradeRetiredTaskAgentToolCall` rewrites them to
+`update_time_entry {entryId, summary}` wherever a call is interpreted: the
+strategy (so an echoed old name is still deferred, never executed), the
+dispatcher and the chat validator (so a persisted one still applies), the
+supersede check, the change-set display key, and the proposal ledger's sticky
+rejections (so a text the user turned down under the old name is not proposed
+again under the new one). The function lives in the model layer, with the
+names spelled out, because the change-set model and the ledger key on it and
+neither depends on the tool registry; a registry test pins the successor to a
+live, deferred tool. They render as the same text revision.
 
 # The proposal ledger and agent-autonomous retraction
 

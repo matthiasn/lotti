@@ -4,6 +4,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
@@ -1686,25 +1687,56 @@ void main() {
       );
 
       test(
-        'update_running_timer delegates to RunningTimerUpdateHandler',
+        'a persisted update_running_timer proposal applies as a text update '
+        'even though no timer runs on the confirming device',
         () async {
-          // Dispatcher does a top-level task lookup before routing.
+          // The bug this pins: a suggestion written while the timer ran on
+          // one device failed with "No active timer" when confirmed on a
+          // device (or after a restart) where it was not running.
+          const timerId = 'timer-xyz';
+          // Synced from the device the timer runs on: started, and as far as
+          // this device knows, ended at the same moment.
+          final started = DateTime(2024, 3, 15, 14, 10);
+          final entry = _makeJournalEntry(timerId).copyWith(
+            meta: _makeJournalEntry(
+              timerId,
+            ).meta.copyWith(dateFrom: started, dateTo: started),
+          );
           when(
             () => mockJournalDb.journalEntityById(taskId),
           ).thenAnswer((_) async => _makeTestTask(taskId));
-          // No timer running — handler returns early with "No active timer",
-          // which proves the dispatch route reaches RunningTimerUpdateHandler
-          // (and that no other handler intercepted the call).
+          when(
+            () => mockJournalDb.journalEntityById(timerId),
+          ).thenAnswer((_) async => entry);
+          when(
+            () => mockJournalDb.getLinkedEntities(taskId),
+          ).thenAnswer((_) async => [entry]);
           when(() => mockTimeService.getCurrent()).thenReturn(null);
+          when(
+            () => mockPersistenceLogic.updateJournalEntry(
+              journalEntityId: any(named: 'journalEntityId'),
+              entryText: any(named: 'entryText'),
+              dateFrom: any(named: 'dateFrom'),
+              dateTo: any(named: 'dateTo'),
+            ),
+          ).thenAnswer((_) async => true);
 
           final result = await dispatcher.dispatch(
             'update_running_timer',
-            {'timerId': 'timer-xyz', 'summary': 'Refined description'},
+            {'timerId': timerId, 'summary': 'Refined description'},
             taskId,
           );
 
-          expect(result.success, isFalse);
-          expect(result.errorMessage, 'No active timer');
+          expect(result.success, isTrue);
+          expect(result.mutatedEntityId, timerId);
+          verify(
+            () => mockPersistenceLogic.updateJournalEntry(
+              journalEntityId: timerId,
+              entryText: const EntryText(
+                plainText: 'Refined description [generated]',
+              ),
+            ),
+          ).called(1);
         },
       );
 

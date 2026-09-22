@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/retired_tool_calls.dart';
 
 part 'change_set.freezed.dart';
 part 'change_set.g.dart';
@@ -37,7 +38,8 @@ abstract class ChangeItem with _$ChangeItem {
 
   static const _deepEquals = DeepCollectionEquality();
   static final RegExp _whitespaceRegExp = RegExp(r'\s+');
-  static const _updateRunningTimerToolName = 'update_running_timer';
+
+  static const _updateTimeEntryToolName = 'update_time_entry';
 
   /// Structural fingerprint from raw parts, without requiring a [ChangeItem].
   ///
@@ -71,6 +73,10 @@ abstract class ChangeItem with _$ChangeItem {
 
   /// User-visible duplicate key from raw parts, without requiring a
   /// [ChangeItem].
+  ///
+  /// A time-entry edit is keyed per target entry as well: two entries given
+  /// the same new text render the same line, yet are two different edits. A
+  /// proposal under a retired tool name is keyed as its successor.
   static String? displayDuplicateKeyFromParts(
     String toolName,
     String humanSummary, {
@@ -82,18 +88,18 @@ abstract class ChangeItem with _$ChangeItem {
         .toLowerCase();
     if (normalizedSummary.isEmpty) return null;
 
-    final buffer = StringBuffer('$toolName:$normalizedSummary');
-    if (toolName == _updateRunningTimerToolName) {
-      final timerId = _runningTimerIdFromArgs(args);
-      if (timerId != null) buffer.write('|timer:$timerId');
-    }
+    final call = upgradeRetiredTaskAgentToolCall(toolName, args ?? const {});
+    final buffer = StringBuffer('${call.toolName}:$normalizedSummary');
+    final entryId = call.toolName == _updateTimeEntryToolName
+        ? _trimmedId(call.args['entryId'])
+        : null;
+    if (entryId != null) buffer.write('|entry:$entryId');
     return buffer.toString();
   }
 
-  static String? _runningTimerIdFromArgs(Map<String, dynamic>? args) {
-    final timerId = args?['timerId'];
-    if (timerId is! String) return null;
-    final trimmed = timerId.trim();
+  static String? _trimmedId(Object? id) {
+    if (id is! String) return null;
+    final trimmed = id.trim();
     return trimmed.isEmpty ? null : trimmed;
   }
 

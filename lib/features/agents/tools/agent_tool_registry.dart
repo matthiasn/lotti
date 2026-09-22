@@ -124,6 +124,12 @@ abstract final class TaskAgentToolNames {
   // Time tracking tools.
   static const createTimeEntry = 'create_time_entry';
   static const updateTimeEntry = 'update_time_entry';
+
+  /// Retired: folded into [updateTimeEntry] and no longer offered to models.
+  /// Proposals under this name still exist — persisted before the merge, or
+  /// written by an older build on a synced device — and are rewritten by
+  /// `upgradeRetiredTaskAgentToolCall` (`model/retired_tool_calls.dart`)
+  /// wherever a tool call is interpreted.
   static const updateRunningTimer = 'update_running_timer';
 
   // Legacy single-item aliases (dispatched to batch handlers).
@@ -164,7 +170,6 @@ abstract final class AgentToolRegistry {
     TaskAgentToolNames.migrateChecklistItems,
     TaskAgentToolNames.createTimeEntry,
     TaskAgentToolNames.updateTimeEntry,
-    TaskAgentToolNames.updateRunningTimer,
   };
 
   /// Batch tools that should be exploded into individual change item entries.

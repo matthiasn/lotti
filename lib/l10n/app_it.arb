@@ -467,7 +467,6 @@
   "agentSummaryUncheckItem": "Deseleziona: \"{title}\"",
   "agentSummaryUpdateItem": "Modifica: \"{title}\"",
   "agentSummaryUpdateProjectStatus": "Imposta lo stato del progetto su {status}",
-  "agentSummaryUpdateRunningTimer": "Modifica il testo del timer in corso: \"{summary}\"",
   "agentSummaryUpdateTimeEntry": "Aggiorna la voce di tempo",
   "agentSummaryUpdateTimeEntryRange": "Aggiorna la voce di tempo {range}",
   "agentSummaryUpdateTimeEntryRangeText": "Aggiorna la voce di tempo {range}: \"{summary}\"",

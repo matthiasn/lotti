@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
+import 'package:lotti/features/agents/model/retired_tool_calls.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/time_entry_datetime.dart';
@@ -158,16 +159,18 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// Allowlist of sibling task IDs exposed in the current wake payload.
   final Set<String> allowedRelatedTaskIds;
 
-  /// Optional resolver for the set of completed time-entry ids linked to this
-  /// task — the only ids `update_time_entry` may target. When provided, an
-  /// `entryId` outside this set is rejected as a hallucinated id rather than
-  /// queued as a proposal that could not be applied. A transient resolver
-  /// failure keeps the proposal (we cannot prove the id is fake).
+  /// Optional resolver for the set of time-entry ids linked to this task,
+  /// the running timer's included — the only ids `update_time_entry` may
+  /// target. When provided, an `entryId` outside this set is rejected as a
+  /// hallucinated id rather than queued as a proposal that could not be
+  /// applied. A transient resolver failure keeps the proposal (we cannot prove
+  /// the id is fake).
   final Future<Set<String>> Function()? resolveEditableTimeEntryIds;
 
   /// Optional resolver for the id of the timer currently running for THIS
-  /// task, or null when no such timer is running. When provided,
-  /// `update_running_timer` is rejected unless its `timerId` matches.
+  /// task, or null when no such timer is running. When provided, an
+  /// `update_time_entry` that would move that timer's start or end is
+  /// rejected: only its text can change while it runs.
   final Future<String?> Function()? resolveRunningTimerId;
 
   /// Optional resolver mapping a task id to its title, or null when the id
@@ -248,11 +251,11 @@ class TaskAgentStrategy extends ConversationStrategy {
     // Persist the assistant message (the one that requested tool calls).
     await _recordAssistantMessage(toolCalls: toolCalls);
 
-    // Fingerprints, not a count: `addItem` drops the previous
-    // `update_running_timer` proposal for the same timer when a later turn
+    // Fingerprints, not a count: `addItem` drops an earlier
+    // `update_time_entry` proposal for the same entry when a later turn
     // revises it, so a turn that replaces one leaves the length unchanged. A
-    // count-based trigger would skip the flush and leave the stale timer
-    // action on screen — confirmable — for the rest of the wake.
+    // count-based trigger would skip the flush and leave the stale action on
+    // screen — confirmable — for the rest of the wake.
     final stagedBeforeTurn = changeSetBuilder?.proposedFingerprints ?? const {};
 
     for (final call in toolCalls) {
@@ -289,14 +292,22 @@ class TaskAgentStrategy extends ConversationStrategy {
       // applies a change the user never confirmed. Normalising once here is
       // what makes the alias a true synonym rather than a second, autonomous
       // spelling of a confirmable tool.
-      final toolName = resolveTaskAgentToolAlias(rawToolName);
+      //
+      // A retired tool name is rewritten here for the same reason: a model
+      // echoing `update_running_timer` from an old open proposal must still
+      // land in the change set, never in the executor.
+      final resolved = upgradeRetiredTaskAgentToolCall(
+        resolveTaskAgentToolAlias(rawToolName),
+        decodeStringifiedJsonArguments(parsedArgs),
+      );
+      final toolName = resolved.toolName;
+      final args = resolved.args;
       if (toolName != rawToolName) {
         developer.log(
           'Resolved tool alias $rawToolName -> $toolName',
           name: 'TaskAgentStrategy',
         );
       }
-      final args = decodeStringifiedJsonArguments(parsedArgs);
 
       final argsBytes = utf8.encode(jsonEncode(args)).length;
       developer.log(
@@ -399,12 +410,17 @@ class TaskAgentStrategy extends ConversationStrategy {
         // Reject repeat calls to the same single-use deferred tool name
         // (even with different args). Smaller models tend to burn all
         // turns on one tool (e.g. calling set_task_title 4 times).
-        // Batch tools, create_follow_up_task, and link_task are excluded —
-        // they may legitimately be called multiple times in one wake.
+        // Batch tools, create_follow_up_task, link_task, and
+        // update_time_entry are excluded — they may legitimately be called
+        // multiple times in one wake. update_time_entry targets one entry per
+        // call (the running timer's text and a completed entry's correction
+        // are two calls), and a repeat for the same entry replaces the
+        // earlier proposal in the builder rather than piling up.
         final isSingleUse =
             !AgentToolRegistry.explodedBatchTools.containsKey(toolName) &&
             toolName != TaskAgentToolNames.createFollowUpTask &&
-            toolName != TaskAgentToolNames.linkTask;
+            toolName != TaskAgentToolNames.linkTask &&
+            toolName != TaskAgentToolNames.updateTimeEntry;
         if (isSingleUse && _usedDeferredTools.contains(toolName)) {
           await _recordActionMessage(toolName: toolName, args: args);
           final errorResponse =

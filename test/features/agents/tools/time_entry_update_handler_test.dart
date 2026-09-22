@@ -1,8 +1,10 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/time_entry_update_handler.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -272,28 +274,6 @@ void main() {
         );
       });
 
-      test('returns failure when entry is the active timer', () async {
-        final entry = makeEntry();
-        stubEntry(entry);
-        when(() => mockTimeService.getCurrent()).thenReturn(entry);
-
-        final result = await handler.handle(sourceTaskId, {
-          'entryId': entryId,
-          'summary': 'Updated notes',
-        });
-
-        expect(result.success, isFalse);
-        expect(result.errorMessage, 'Entry is the active timer');
-        verifyNever(
-          () => mockPersistenceLogic.updateJournalEntry(
-            journalEntityId: any(named: 'journalEntityId'),
-            entryText: any(named: 'entryText'),
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
-          ),
-        );
-      });
-
       test(
         'returns failure when resolved endTime is not after startTime',
         () async {
@@ -328,7 +308,7 @@ void main() {
 
           final entry = makeEntry(
             dateFrom: GeneratedTimeEntryUpdateScenario.existingStart,
-            dateTo: GeneratedTimeEntryUpdateScenario.existingEnd,
+            dateTo: scenario.existingEnd,
           );
           final otherEntry = makeEntry(id: 'other-entry');
 
@@ -359,14 +339,20 @@ void main() {
             ),
           ).thenReturn(null);
 
-          final result = await localHandler.handle(
-            sourceTaskId,
-            scenario.args,
+          final result = await withClock(
+            Clock.fixed(GeneratedTimeEntryUpdateScenario.now),
+            () => localHandler.handle(sourceTaskId, scenario.args),
           );
 
           if (!scenario.shouldAttemptWrite) {
             expect(result.success, isFalse, reason: '$scenario');
             expect(result.errorMessage, isNotNull, reason: '$scenario');
+            expect(
+              result.nonRetryable,
+              scenario.failsOnArguments,
+              reason: '$scenario',
+            );
+            verifyNever(() => localTimeService.updateCurrent(any()));
             verifyNever(
               () => localPersistenceLogic.updateJournalEntry(
                 journalEntityId: any(named: 'journalEntityId'),
@@ -384,9 +370,32 @@ void main() {
               journalEntityId: entryId,
               entryText: scenario.expectedEntryText,
               dateFrom: scenario.parsedStart,
-              dateTo: scenario.parsedEnd,
+              dateTo: scenario.expectedDateTo,
             ),
           ).called(1);
+          expect(result.nonRetryable, isFalse, reason: '$scenario');
+
+          // Only a successful write to a timer running here refreshes the
+          // in-memory snapshot the running indicator reads.
+          if (scenario.shouldSucceed && scenario.isActiveTimer) {
+            final snapshot =
+                verify(
+                      () => localTimeService.updateCurrent(captureAny()),
+                    ).captured.single
+                    as JournalEntry;
+            expect(
+              snapshot.entryText,
+              scenario.expectedEntryText,
+              reason: '$scenario',
+            );
+            expect(
+              snapshot.meta.dateTo,
+              GeneratedTimeEntryUpdateScenario.now,
+              reason: '$scenario',
+            );
+          } else {
+            verifyNever(() => localTimeService.updateCurrent(any()));
+          }
 
           if (scenario.shouldSucceed) {
             expect(result.mutatedEntityId, entryId, reason: '$scenario');
@@ -405,6 +414,314 @@ void main() {
         },
         tags: 'glados',
       );
+    });
+
+    group('retry semantics', () {
+      // Each of these is decided by the arguments alone, so a confirmed
+      // proposal carrying them can never apply and is retracted.
+      final argumentFailures = <String, Map<String, dynamic>>{
+        'missing entryId': {'summary': 'x'},
+        'no changes': {'entryId': entryId},
+        'blank summary': {'entryId': entryId, 'summary': ' '},
+        'blank startTime': {'entryId': entryId, 'startTime': ' '},
+        'unparseable startTime': {'entryId': entryId, 'startTime': 'soon'},
+        'non-string endTime': {'entryId': entryId, 'endTime': 7},
+        'unparseable endTime': {'entryId': entryId, 'endTime': '14:00Z'},
+      };
+
+      for (final MapEntry(key: label, value: args)
+          in argumentFailures.entries) {
+        test('an invalid argument is not retryable: $label', () async {
+          final result = await handler.handle(sourceTaskId, args);
+
+          expect(result.success, isFalse);
+          expect(result.nonRetryable, isTrue);
+        });
+      }
+
+      test('an entry that is not a journal entry is not retryable', () async {
+        when(
+          () => mockJournalDb.journalEntityById(entryId),
+        ).thenAnswer((_) async => makeTask(id: entryId));
+
+        final result = await handler.handle(sourceTaskId, {
+          'entryId': entryId,
+          'summary': 'Updated notes',
+        });
+
+        expect(result.errorMessage, 'Unsupported entry type');
+        expect(result.nonRetryable, isTrue);
+      });
+
+      test('an entry not synced to this device yet stays retryable', () async {
+        when(
+          () => mockJournalDb.journalEntityById(entryId),
+        ).thenAnswer((_) async => null);
+
+        final result = await handler.handle(sourceTaskId, {
+          'entryId': entryId,
+          'summary': 'Updated notes',
+        });
+
+        expect(result.errorMessage, 'Entry not found');
+        expect(result.output, contains('not synced to this device yet'));
+        expect(result.nonRetryable, isFalse);
+      });
+
+      test('an entry whose link has not synced yet stays retryable', () async {
+        when(
+          () => mockJournalDb.journalEntityById(entryId),
+        ).thenAnswer((_) async => makeEntry());
+        when(
+          () => mockJournalDb.getLinkedEntities(sourceTaskId),
+        ).thenAnswer((_) async => []);
+
+        final result = await handler.handle(sourceTaskId, {
+          'entryId': entryId,
+          'summary': 'Updated notes',
+        });
+
+        expect(result.errorMessage, 'Entry is not linked from source task');
+        expect(result.nonRetryable, isFalse);
+      });
+
+      test(
+        'a range that depends on the stored entry stays retryable',
+        () async {
+          stubEntry(makeEntry());
+
+          final result = await handler.handle(sourceTaskId, {
+            'entryId': entryId,
+            'endTime': '2026-04-15T12:30:00',
+          });
+
+          expect(result.errorMessage, 'endTime is not after startTime');
+          expect(result.nonRetryable, isFalse);
+        },
+      );
+
+      test('a failed write stays retryable', () async {
+        stubEntry(makeEntry());
+        when(
+          () => mockPersistenceLogic.updateJournalEntry(
+            journalEntityId: any(named: 'journalEntityId'),
+            entryText: any(named: 'entryText'),
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+          ),
+        ).thenAnswer((_) async => false);
+
+        final result = await handler.handle(sourceTaskId, {
+          'entryId': entryId,
+          'summary': 'Updated notes',
+        });
+
+        expect(result.errorMessage, 'updateJournalEntry returned false');
+        expect(result.nonRetryable, isFalse);
+      });
+    });
+
+    group('running timer', () {
+      final now = DateTime(2026, 4, 15, 15, 42);
+
+      Future<ToolExecutionResult> handleAt(Map<String, dynamic> args) =>
+          withClock(
+            Clock.fixed(now),
+            () => handler.handle(sourceTaskId, args),
+          );
+
+      test(
+        'rewrites the text of a timer running on this device, stamping its '
+        'live end and refreshing the snapshot the indicator reads',
+        () async {
+          final running = makeEntry(
+            dateTo: DateTime(2026, 4, 15, 13),
+            text: '',
+          );
+          stubEntry(running);
+          when(() => mockTimeService.getCurrent()).thenReturn(running);
+
+          final result = await handleAt({
+            'entryId': entryId,
+            'summary': 'Drafted the rollback plan',
+          });
+
+          expect(result.success, isTrue);
+          expect(result.mutatedEntityId, entryId);
+          expect(result.output, 'Updated time entry (13:00–15:42)');
+          verify(
+            () => mockPersistenceLogic.updateJournalEntry(
+              journalEntityId: entryId,
+              entryText: const EntryText(
+                plainText: 'Drafted the rollback plan [generated]',
+              ),
+              dateTo: now,
+            ),
+          ).called(1);
+
+          final snapshot =
+              verify(
+                    () => mockTimeService.updateCurrent(captureAny()),
+                  ).captured.single
+                  as JournalEntry;
+          expect(
+            snapshot.entryText?.plainText,
+            'Drafted the rollback plan [generated]',
+          );
+          expect(snapshot.meta.id, entryId);
+          expect(snapshot.meta.dateFrom, running.meta.dateFrom);
+          expect(snapshot.meta.dateTo, now);
+          expect(snapshot.meta.updatedAt, now);
+        },
+      );
+
+      test(
+        'applies a text update just the same when the timer is not running '
+        'on this device — stopped, restarted, or ticking elsewhere',
+        () async {
+          stubEntry(makeEntry());
+
+          final result = await handleAt({
+            'entryId': entryId,
+            'summary': 'Drafted the rollback plan',
+          });
+
+          expect(result.success, isTrue);
+          // The stored end is left alone: this device does not own a live one.
+          verify(
+            () => mockPersistenceLogic.updateJournalEntry(
+              journalEntityId: entryId,
+              entryText: const EntryText(
+                plainText: 'Drafted the rollback plan [generated]',
+              ),
+            ),
+          ).called(1);
+          verifyNever(() => mockTimeService.updateCurrent(any()));
+        },
+      );
+
+      test(
+        'applies a text update to a timer ticking on another device, whose '
+        'synced entry has no length yet',
+        () async {
+          // The reported case: the suggestion was written on the desktop
+          // while its timer ran; the phone confirms it, holding only the
+          // synced entry — started at 14:10 and, as far as it knows, ended
+          // then too.
+          stubEntry(
+            makeEntry(
+              dateFrom: DateTime(2026, 4, 15, 14, 10),
+              dateTo: DateTime(2026, 4, 15, 14, 10),
+              text: '',
+            ),
+          );
+
+          final result = await handleAt({
+            'entryId': entryId,
+            'summary': 'Drafted the rollback plan',
+          });
+
+          expect(result.success, isTrue);
+          verify(
+            () => mockPersistenceLogic.updateJournalEntry(
+              journalEntityId: entryId,
+              entryText: const EntryText(
+                plainText: 'Drafted the rollback plan [generated]',
+              ),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'still checks a range edit against the entry it lands on',
+        () async {
+          stubEntry(
+            makeEntry(
+              dateFrom: DateTime(2026, 4, 15, 14, 10),
+              dateTo: DateTime(2026, 4, 15, 14, 10),
+            ),
+          );
+
+          final result = await handleAt({
+            'entryId': entryId,
+            'endTime': '2026-04-15T14:00:00',
+          });
+
+          expect(result.errorMessage, 'endTime is not after startTime');
+        },
+      );
+
+      test(
+        'leaves the snapshot alone when a different entry is running here',
+        () async {
+          stubEntry(makeEntry());
+          when(
+            () => mockTimeService.getCurrent(),
+          ).thenReturn(makeEntry(id: 'other-timer'));
+
+          final result = await handleAt({
+            'entryId': entryId,
+            'summary': 'Drafted the rollback plan',
+          });
+
+          expect(result.success, isTrue);
+          verifyNever(() => mockTimeService.updateCurrent(any()));
+        },
+      );
+
+      for (final field in ['startTime', 'endTime']) {
+        test(
+          'refuses a $field edit while the timer runs here, retryably',
+          () async {
+            final running = makeEntry();
+            stubEntry(running);
+            when(() => mockTimeService.getCurrent()).thenReturn(running);
+
+            final result = await handleAt({
+              'entryId': entryId,
+              'summary': 'Drafted the rollback plan',
+              field: '2026-04-15T12:30:00',
+            });
+
+            expect(result.success, isFalse);
+            expect(result.errorMessage, 'Running timer range is locked');
+            expect(result.output, contains('until the timer is stopped'));
+            // Stopping the timer makes the same proposal applicable.
+            expect(result.nonRetryable, isFalse);
+            verifyNever(
+              () => mockPersistenceLogic.updateJournalEntry(
+                journalEntityId: any(named: 'journalEntityId'),
+                entryText: any(named: 'entryText'),
+                dateFrom: any(named: 'dateFrom'),
+                dateTo: any(named: 'dateTo'),
+              ),
+            );
+          },
+        );
+      }
+
+      test('keeps the snapshot untouched when the write fails', () async {
+        final running = makeEntry();
+        stubEntry(running);
+        when(() => mockTimeService.getCurrent()).thenReturn(running);
+        when(
+          () => mockPersistenceLogic.updateJournalEntry(
+            journalEntityId: any(named: 'journalEntityId'),
+            entryText: any(named: 'entryText'),
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+          ),
+        ).thenAnswer((_) async => false);
+
+        final result = await handleAt({
+          'entryId': entryId,
+          'summary': 'Drafted the rollback plan',
+        });
+
+        expect(result.success, isFalse);
+        verifyNever(() => mockTimeService.updateCurrent(any()));
+      });
     });
 
     group('updates', () {

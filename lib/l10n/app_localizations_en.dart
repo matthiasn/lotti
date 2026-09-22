@@ -1029,11 +1029,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String agentSummaryUpdateRunningTimer(Object summary) {
-    return 'Update running timer text: \"$summary\"';
-  }
-
-  @override
   String get agentSummaryUpdateTimeEntry => 'Update time entry';
 
   @override

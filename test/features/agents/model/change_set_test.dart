@@ -95,31 +95,67 @@ extension _AnyChangeSetScenarios on glados.Any {
 
 void main() {
   group('ChangeItem', () {
-    test('displayDuplicateKey preserves running timer identity', () {
-      const firstTimer = ChangeItem(
-        toolName: 'update_running_timer',
-        args: {'timerId': 'timer-1'},
-        humanSummary: 'Update running timer text: "Focus block"',
-      );
-      const secondTimer = ChangeItem(
-        toolName: 'update_running_timer',
-        args: {'timerId': 'timer-2'},
-        humanSummary: '  Update   running timer text: "Focus block"  ',
-      );
-      const checklistItem = ChangeItem(
-        toolName: 'update_checklist_item',
-        args: {'id': 'checklist-1', 'isChecked': true},
-        humanSummary: '  Check off:   "Review comments"  ',
-      );
+    group('displayDuplicateKey', () {
+      test('keys two entries given the same text apart', () {
+        const first = ChangeItem(
+          toolName: 'update_time_entry',
+          args: {'entryId': 'entry-1', 'summary': 'Focus block'},
+          humanSummary: 'Revise time entry text: "Focus block"',
+        );
+        const second = ChangeItem(
+          toolName: 'update_time_entry',
+          args: {'entryId': ' entry-2 ', 'summary': 'Focus block'},
+          humanSummary: '  Revise   time entry text: "Focus block"  ',
+        );
 
-      expect(
-        ChangeItem.displayDuplicateKey(firstTimer),
-        isNot(ChangeItem.displayDuplicateKey(secondTimer)),
-      );
-      expect(
-        ChangeItem.displayDuplicateKey(checklistItem),
-        'update_checklist_item:check off: "review comments"',
-      );
+        const text = 'update_time_entry:revise time entry text: "focus block"';
+        expect(ChangeItem.displayDuplicateKey(first), '$text|entry:entry-1');
+        expect(ChangeItem.displayDuplicateKey(second), '$text|entry:entry-2');
+      });
+
+      test('keys a retired running-timer proposal as its successor', () {
+        const legacy = ChangeItem(
+          toolName: 'update_running_timer',
+          args: {'timerId': 'timer-1'},
+          humanSummary: 'Update running timer text: "Focus block"',
+        );
+
+        const text =
+            'update_time_entry:update running timer text: "focus block"';
+        expect(ChangeItem.displayDuplicateKey(legacy), '$text|entry:timer-1');
+      });
+
+      test('adds no entry when the target id is unusable', () {
+        for (final args in [
+          const <String, dynamic>{},
+          const {'entryId': '  '},
+          const {'entryId': 7},
+        ]) {
+          expect(
+            ChangeItem.displayDuplicateKeyFromParts(
+              'update_time_entry',
+              'Revise time entry text: "x"',
+              args: args,
+            ),
+            'update_time_entry:revise time entry text: "x"',
+            reason: '$args',
+          );
+        }
+      });
+
+      test('keys other tools by their normalized summary alone', () {
+        const checklistItem = ChangeItem(
+          toolName: 'update_checklist_item',
+          // An entryId on another tool names no time entry.
+          args: {'id': 'checklist-1', 'isChecked': true, 'entryId': 'e1'},
+          humanSummary: '  Check off:   "Review comments"  ',
+        );
+
+        expect(
+          ChangeItem.displayDuplicateKey(checklistItem),
+          'update_checklist_item:check off: "review comments"',
+        );
+      });
     });
 
     group('fingerprint', () {

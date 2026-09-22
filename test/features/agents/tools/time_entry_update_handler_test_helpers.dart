@@ -40,11 +40,22 @@ class GeneratedTimeEntryUpdateScenario {
   final int seed;
 
   static final existingStart = DateTime(2026, 4, 15, 13);
-  static final existingEnd = DateTime(2026, 4, 15, 14);
+  static final completedEnd = DateTime(2026, 4, 15, 14);
+
+  /// The frozen clock: the live end a timer running here is stamped with.
+  static final now = DateTime(2026, 4, 15, 15, 30);
 
   bool get isLinked => flags.isOdd;
+
+  /// The entry is the timer running on this device.
   bool get isActiveTimer => flags & 2 != 0;
   bool get persistenceSucceeds => flags & 4 != 0;
+
+  /// The stored entry has no length yet: a timer still ticking on another
+  /// device, synced with its start as its end.
+  bool get isZeroLengthStored => flags & 8 != 0;
+
+  DateTime get existingEnd => isZeroLengthStored ? existingStart : completedEnd;
 
   int get startOffsetMinutes => (startOffsetSeed % 361) - 180;
   int get endOffsetMinutes => (endOffsetSeed % 361) - 180;
@@ -53,7 +64,7 @@ class GeneratedTimeEntryUpdateScenario {
       existingStart.add(Duration(minutes: startOffsetMinutes));
 
   DateTime get generatedEnd =>
-      existingEnd.add(Duration(minutes: endOffsetMinutes));
+      completedEnd.add(Duration(minutes: endOffsetMinutes));
 
   Object? get rawSummary => switch (summaryShape) {
     GeneratedSummaryShape.absent => null,
@@ -123,14 +134,27 @@ class GeneratedTimeEntryUpdateScenario {
 
   bool get hasInvalidRange => !resolvedEnd.isAfter(resolvedStart);
 
+  bool get editsRange =>
+      startShape != GeneratedTimeArgShape.absent ||
+      endShape != GeneratedTimeArgShape.absent;
+
+  /// Refused by the arguments alone, so it can never apply on retry.
+  bool get failsOnArguments =>
+      hasNoChanges ||
+      hasInvalidSummary ||
+      hasInvalidTime(startShape) ||
+      hasInvalidTime(endShape);
+
+  /// A timer running here takes text only; only a range edit is checked
+  /// against the range, so a text-only edit applies whatever is stored.
   bool get shouldAttemptWrite =>
-      !hasNoChanges &&
-      !hasInvalidSummary &&
-      !hasInvalidTime(startShape) &&
-      !hasInvalidTime(endShape) &&
+      !failsOnArguments &&
       isLinked &&
-      !isActiveTimer &&
-      !hasInvalidRange;
+      (isActiveTimer ? !editsRange : !editsRange || !hasInvalidRange);
+
+  /// The end written: the live "now" for a timer running here, otherwise
+  /// only an explicit new end.
+  DateTime? get expectedDateTo => isActiveTimer ? now : parsedEnd;
 
   bool get shouldSucceed => shouldAttemptWrite && persistenceSucceeds;
 
@@ -149,6 +173,7 @@ class GeneratedTimeEntryUpdateScenario {
         'isLinked: $isLinked, '
         'isActiveTimer: $isActiveTimer, '
         'persistenceSucceeds: $persistenceSucceeds, '
+        'isZeroLengthStored: $isZeroLengthStored, '
         'resolvedStart: $resolvedStart, '
         'resolvedEnd: $resolvedEnd)';
   }
@@ -166,7 +191,10 @@ extension AnyTimeEntryUpdateScenario on glados.Any {
     generatedSummaryShape,
     generatedTimeArgShape,
     generatedTimeArgShape,
-    glados.IntAnys(this).intInRange(0, 7),
+    // Upper bound exclusive: 16 reaches every combination of the four flag
+    // bits, among them linked + running here + persisted (the running-timer
+    // text update) and a zero-length stored range.
+    glados.IntAnys(this).intInRange(0, 16),
     glados.IntAnys(this).intInRange(0, 10000),
     glados.IntAnys(this).intInRange(0, 10000),
     glados.IntAnys(this).intInRange(0, 10000),

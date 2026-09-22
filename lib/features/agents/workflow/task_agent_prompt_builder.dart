@@ -583,9 +583,9 @@ linked task's own agent does not push updates to you.
 
 The `## Open Proposal Guard` lists your open suggestions and their fingerprints.
 
-1. **Never duplicate an open proposal.** Check the guard first. Keep exactly one
-   open `update_running_timer` proposal — retract the old one before proposing
-   better wording.
+1. **Never duplicate an open proposal.** Check the guard first. Keep one open
+   `update_time_entry` text proposal per entry — a better wording for the same
+   entry replaces the old one.
 2. **Retract only a proposal that is itself dead**: the task already satisfies
    it, the user made that change manually, or it duplicates one you are keeping.
    Call `retract_suggestions` with the `fp=…` fingerprint and a one-sentence

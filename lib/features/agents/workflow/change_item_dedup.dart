@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/model/retired_tool_calls.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 
 /// Returns items from [proposed] that do not already exist in [existing],
@@ -44,57 +45,76 @@ List<ChangeItem> deduplicateItems(
   }).toList();
 }
 
-/// Whether [item] is an `update_running_timer` proposal.
-bool isRunningTimerUpdate(ChangeItem item) =>
-    item.toolName == TaskAgentToolNames.updateRunningTimer;
-
-/// Extracts the trimmed `timerId` from an [item]'s args, or `null` when the
-/// item carries no usable timer id.
-String? runningTimerId(ChangeItem item) => runningTimerIdFromArgs(item.args);
-
-/// Parses the `timerId` value out of a tool-call [args] map.
+/// The time entry a time-entry edit targets and the fields it sets, or `null`
+/// for any other proposal and for one naming no usable entry.
 ///
-/// Returns the trimmed id when it is a non-empty string, and `null` when the
-/// key is missing, not a string, or only whitespace.
-String? runningTimerIdFromArgs(Map<String, dynamic> args) {
-  final timerId = args['timerId'];
-  if (timerId is! String) return null;
-  final trimmed = timerId.trim();
-  return trimmed.isEmpty ? null : trimmed;
+/// Reads `update_time_entry` and — through [upgradeRetiredTaskAgentToolCall] —
+/// the retired `update_running_timer`, so a proposal persisted under the old
+/// name is superseded by, and supersedes, its successor like any other edit.
+({String entryId, Set<String> fields})? timeEntryEdit(ChangeItem item) {
+  final call = upgradeRetiredTaskAgentToolCall(item.toolName, item.args);
+  if (call.toolName != TaskAgentToolNames.updateTimeEntry) return null;
+  final entryId = call.args['entryId'];
+  if (entryId is! String || entryId.trim().isEmpty) return null;
+  return (
+    entryId: entryId.trim(),
+    fields: {
+      for (final field in _timeEntryEditFields)
+        if (call.args.containsKey(field)) field,
+    },
+  );
 }
 
-/// Whether [item] is an `update_running_timer` proposal targeting [timerId].
-bool isRunningTimerUpdateForTimer(
-  ChangeItem item,
-  String? timerId,
-) => isRunningTimerUpdate(item) && runningTimerId(item) == timerId;
+const _timeEntryEditFields = ['summary', 'startTime', 'endTime'];
 
-/// Collects the distinct running-timer ids referenced by the
-/// `update_running_timer` proposals in [items] (including a single `null`
-/// entry for any timer-less updates).
-Set<String?> runningTimerIds(Iterable<ChangeItem> items) => {
-  for (final item in items)
-    if (isRunningTimerUpdate(item)) runningTimerId(item),
-};
+/// Whether [newer] makes the older proposal [older] obsolete: both edit the
+/// same time entry, they differ, and [newer] sets every field [older] would.
+///
+/// Field coverage rather than "same entry" alone: a newer text revision
+/// replaces an older one, but must not swallow a pending correction of the
+/// entry's end time. An identical re-proposal supersedes nothing — it is a
+/// duplicate, and dedup keeps the original open instead of churning it.
+bool supersedesTimeEntryEdit(ChangeItem newer, ChangeItem older) {
+  final newerEdit = timeEntryEdit(newer);
+  final olderEdit = timeEntryEdit(older);
+  return newerEdit != null &&
+      olderEdit != null &&
+      newerEdit.entryId == olderEdit.entryId &&
+      newerEdit.fields.containsAll(olderEdit.fields) &&
+      ChangeItem.fingerprint(newer) != ChangeItem.fingerprint(older);
+}
 
-/// Locates every pending `update_running_timer` item across [sets] whose timer
-/// id is contained in [timerIds].
+/// Whether [item] is a pending proposal made obsolete by one of this wake's
+/// [proposed] items (see [supersedesTimeEntryEdit]).
+///
+/// An item that is itself among [proposed] never matches: it is a replacement
+/// being kept, and [proposed] carries no order to tell which of two of its own
+/// items came later.
+bool isSupersededByProposals(ChangeItem item, List<ChangeItem> proposed) {
+  if (item.status != ChangeItemStatus.pending) return false;
+  final fingerprint = ChangeItem.fingerprint(item);
+  if (proposed.any((p) => ChangeItem.fingerprint(p) == fingerprint)) {
+    return false;
+  }
+  return proposed.any((p) => supersedesTimeEntryEdit(p, item));
+}
+
+/// Locates every pending item across [sets] that one of this wake's
+/// [proposed] items supersedes (see [isSupersededByProposals]).
 ///
 /// Each match carries the owning change set, the item's index within that set,
 /// and the item itself so callers can mark the precise positions retracted.
 List<({ChangeSetEntity changeSet, int itemIndex, ChangeItem item})>
-locatePendingRunningTimerUpdates(
+locateSupersededTimeEntryEdits(
   List<ChangeSetEntity> sets,
-  Set<String?> timerIds,
+  List<ChangeItem> proposed,
 ) {
   final matches =
       <({ChangeSetEntity changeSet, int itemIndex, ChangeItem item})>[];
   for (final set in sets) {
     for (var i = 0; i < set.items.length; i++) {
       final item = set.items[i];
-      if (isRunningTimerUpdate(item) &&
-          item.status == ChangeItemStatus.pending &&
-          timerIds.contains(runningTimerId(item))) {
+      if (isSupersededByProposals(item, proposed)) {
         matches.add((changeSet: set, itemIndex: i, item: item));
       }
     }
