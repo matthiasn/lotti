@@ -4,6 +4,75 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.22]
+
+### Added
+
+- **Tell the AI what a category is about, once, in your own words.** Every
+  category now has a *Category knowledge* field in its settings — "this is a
+  Flutter app, the repository is at …, run the tests with `make test`, watch
+  out for …". Whatever you write there goes, word for word, in front of every
+  task-agent wake and every coding prompt for a task in that category, so the
+  agent starts from what you already know instead of guessing at it from the
+  task alone. Leave it empty and nothing changes.
+
+### Changed
+
+- **A project's page now has the same header as a task's.** On a phone, the
+  back arrow and the ⋯ menu share one bar at the top, as they do on a task.
+  Chat is the round chat button in the AI summary's header, where a task keeps
+  it, instead of a large *Ask* button under the title plus a second *Ask about
+  this project* button in the card. A project without an agent still offers
+  chat, beside *Assign agent*.
+- **"Next time" comes before the briefing on a person's page.** Your own notes
+  on what to bring up and what to avoid are now on the first screen of a
+  phone, where the briefing card used to push them below the fold. The
+  briefing card also lost its "Open agent internals" link, which went to the
+  same place as "See activity".
+- **An empty People tab says what it is for**, and offers "Import from
+  contacts" in words where your device has an address book. Choosing contacts
+  to import now says what to do and that reminders are decided on the next
+  step.
+- **One word for reminders, and one for dictation, across People.** The
+  switch reads "Remind me to stay in touch" instead of "Reminders on" beside a
+  switch that was off, the person page says "No reminders" like the list does
+  rather than "No agent for this person", "Nudge me every" is now the plain
+  question "How often?", and people without reminders no longer carry "No
+  cadence" on their row. The microphone in the person page's action bar says
+  "Dictate", the same word the check-in composer uses.
+
+### Fixed
+
+- **Turning on reminders for a person never said how often they would come.**
+  The person editor showed "No cadence" as the selected choice while the
+  People list said "Monthly" for the same person, because reminders quietly
+  ran every 30 days whenever no interval had been picked. Wherever you turn
+  reminders on — the person editor, the contact-import review and the person
+  page's card — "Monthly" is now already selected, you can change it before
+  or after, and what you see is what is saved. "No cadence" is gone as a
+  choice for reminders that are on, since it never meant that.
+- **A call placed from a person's page was logged as "In person" unless you
+  used the small offer further down.** Coming back from a call, the offer to
+  log it sat below the briefing and your notes, and the big "Log check-in" and
+  "Dictate" buttons ignored the call completely. The offer now sits right
+  under the person's name, and both buttons open the check-in already set to
+  the call you just made — how, when and for how long. With no call pending, a
+  new check-in starts from how you last connected with that person.
+- **A quick check-in made your "Next time" notes disappear.** The card only
+  read the newest check-in, and its two fields sit under "More" — so logging
+  a conversation in ten seconds hid what you had written to bring up. The card
+  now keeps the newest notes there are and says which check-in they are from.
+- **A briefing that failed to refresh took the last good one with it.** The
+  card now shows what went wrong and keeps the previous briefing readable
+  underneath, with its age.
+- **"Create" on the add-person form answered an empty name with an error.**
+  It now waits for a name, and the Name field says so.
+- **A person's page no longer offers a chat with an agent that is gone.**
+  After a person's reminders were switched off and their agent had been
+  paused or removed, the *Talk to agent* button stayed on the page and led to
+  a screen saying the chat was unavailable. The button now appears only when
+  there is an agent that can actually be talked to.
+
 ## [1.1.21]
 
 ### Changed
