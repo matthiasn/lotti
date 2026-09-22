@@ -49,6 +49,7 @@ import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/service/subject_agent_lookup.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
+import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
@@ -1181,6 +1182,9 @@ class MockSyncNodeProfileBroadcaster extends Mock
 class MockWakeOrchestrator extends Mock implements WakeOrchestrator {}
 
 class MockTaskAgentService extends Mock implements TaskAgentService {}
+
+class MockAgentRuntimeMaintenance extends Mock
+    implements AgentRuntimeMaintenance {}
 
 /// Stub for the kind-agnostic agent lookup. Stub the call itself:
 /// `when(() => mock('subject-id')).thenAnswer((_) async => identity)`.

@@ -1723,8 +1723,9 @@ Invariants worth not breaking:
   not turn that merge back into a replacement.
 - Subscriptions are in-memory: `GoalRuntimeMaintenance.restoreSubscriptions`
   rebuilds them at startup, and `onIdentityReceived` (the
-  `AgentRuntimeMaintenance` hook the sync processor offers every
-  contributor) mirrors a goal agent synced in mid-session.
+  `AgentRuntimeMaintenance` hook the sync processor and the shared agent
+  controls offer every contributor) mirrors a goal agent synced in or
+  resumed mid-session.
 - Imported workout rules currently produce metric leaves whose dataTypes
   only match `QuantitativeEntry` rows; workout-entry signals are a
   documented follow-up.

@@ -3,7 +3,9 @@ import 'dart:developer' as developer;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -189,11 +191,31 @@ class _AgentControlsState extends ConsumerState<AgentControls> {
   }
 
   Future<void> _resumeAgent() async {
-    await ref.read(agentServiceProvider).resumeAgent(widget.agentId);
-    await ref
-        .read(taskAgentServiceProvider)
-        .restoreSubscriptionsForAgent(widget.agentId);
+    final agentService = ref.read(agentServiceProvider);
+    if (await agentService.resumeAgent(widget.agentId)) {
+      await _restoreRuntime(agentService);
+    }
     ref.invalidate(agentIdentityProvider(widget.agentId));
+  }
+
+  /// Brings a resumed agent's runtime back without a restart.
+  ///
+  /// The lifecycle is re-read after the transition rather than assumed, so a
+  /// pause or destroy that lands in between is not restored as active. The
+  /// persisted identity is then offered to every runtime-maintenance
+  /// contributor: each owning feature (goals, for instance) guards its own
+  /// kind and restores the subscriptions this feature cannot know about.
+  Future<void> _restoreRuntime(AgentService agentService) async {
+    final identity = await agentService.getAgent(widget.agentId);
+    if (identity == null) return;
+    if (identity.lifecycle == AgentLifecycle.active) {
+      await ref
+          .read(taskAgentServiceProvider)
+          .restoreSubscriptionsForAgent(widget.agentId);
+    }
+    for (final maintenance in ref.read(agentRuntimeMaintenanceProvider)) {
+      await maintenance.onIdentityReceived(identity);
+    }
   }
 
   Future<void> _triggerReanalysis() => _runAction(() async {

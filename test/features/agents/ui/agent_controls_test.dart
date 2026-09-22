@@ -1,20 +1,31 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_controls.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../test_data/constants.dart';
+import '../test_data/entity_factories.dart';
 
 void main() {
-  const testAgentId = 'agent-001';
+  // The identity factories default to this id.
+  const testAgentId = kTestAgentId;
+
+  setUpAll(registerAllFallbackValues);
 
   late MockAgentService mockAgentService;
   late MockTaskAgentService mockTaskAgentService;
@@ -31,6 +42,7 @@ void main() {
     AgentService? agentService,
     TaskAgentService? taskAgentService,
     AgentRepository? agentRepository,
+    List<AgentRuntimeMaintenance> runtimeMaintenance = const [],
   }) {
     return makeTestableWidgetWithScaffold(
       AgentControls(
@@ -47,6 +59,7 @@ void main() {
         agentRepositoryProvider.overrideWithValue(
           agentRepository ?? mockAgentRepository,
         ),
+        agentRuntimeMaintenanceProvider.overrideWithValue(runtimeMaintenance),
         // Override identity provider to prevent real DB access on invalidation
         agentIdentityProvider.overrideWith((ref, agentId) async => null),
         taskAgentProvider.overrideWith((ref, taskId) async => null),
@@ -159,28 +172,208 @@ void main() {
       verify(() => mockAgentService.pauseAgent(testAgentId)).called(1);
     });
 
-    testWidgets('Resume button calls resumeAgent and restores subscriptions', (
-      tester,
-    ) async {
-      when(
-        () => mockAgentService.resumeAgent(testAgentId),
-      ).thenAnswer((_) async => true);
-      when(
-        () => mockTaskAgentService.restoreSubscriptionsForAgent(testAgentId),
-      ).thenAnswer((_) async {});
+    group('Resume', () {
+      late MockAgentRuntimeMaintenance maintenance;
 
-      await tester.pumpWidget(
-        buildSubject(lifecycle: AgentLifecycle.dormant),
+      setUp(() {
+        maintenance = MockAgentRuntimeMaintenance();
+        when(
+          () => maintenance.onIdentityReceived(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockTaskAgentService.restoreSubscriptionsForAgent(testAgentId),
+        ).thenAnswer((_) async {});
+      });
+
+      Future<void> pumpDormant(WidgetTester tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            lifecycle: AgentLifecycle.dormant,
+            runtimeMaintenance: [maintenance],
+          ),
+        );
+        await tester.pump();
+      }
+
+      void stubPersisted(AgentIdentityEntity? identity) {
+        when(
+          () => mockAgentService.getAgent(testAgentId),
+        ).thenAnswer((_) async => identity);
+      }
+
+      bool resumeEnabled(WidgetTester tester) => tester
+          .widget<ButtonStyleButton>(
+            find.ancestor(
+              of: find.text('Resume'),
+              matching: find.bySubtype<ButtonStyleButton>(),
+            ),
+          )
+          .enabled;
+
+      testWidgets(
+        'hands the persisted active goal identity to the runtime only after '
+        'the resume has completed, and stays busy until it is restored',
+        (tester) async {
+          final resumed = Completer<bool>();
+          final restored = Completer<void>();
+          final persisted = makeTestIdentity(
+            kind: AgentKinds.goalAgent,
+          );
+          when(
+            () => mockAgentService.resumeAgent(testAgentId),
+          ).thenAnswer((_) => resumed.future);
+          stubPersisted(persisted);
+          when(
+            () => maintenance.onIdentityReceived(any()),
+          ).thenAnswer((_) => restored.future);
+          await pumpDormant(tester);
+
+          await tester.tap(find.text('Resume'));
+          await tester.pump();
+
+          // The lifecycle write is still in flight: nothing may read the
+          // identity or restore a runtime from a pre-resume row yet.
+          verifyNever(() => mockAgentService.getAgent(any()));
+          verifyNever(() => maintenance.onIdentityReceived(any()));
+          expect(resumeEnabled(tester), isFalse);
+
+          resumed.complete(true);
+          await tester.pump();
+
+          final offered =
+              verify(
+                    () => maintenance.onIdentityReceived(captureAny()),
+                  ).captured.single
+                  as AgentIdentityEntity;
+          expect(offered, same(persisted));
+          expect(offered.lifecycle, AgentLifecycle.active);
+          // Still restoring: the control must not report itself idle before
+          // the goal is listening again.
+          expect(resumeEnabled(tester), isFalse);
+
+          restored.complete();
+          await tester.pump();
+          expect(resumeEnabled(tester), isTrue);
+        },
       );
-      await tester.pump();
 
-      await tester.tap(find.text('Resume'));
-      await tester.pump();
+      for (final kind in [AgentKinds.taskAgent, AgentKinds.projectAgent]) {
+        testWidgets(
+          'a resumed $kind still restores its task/project subscriptions '
+          'before the identity is offered',
+          (tester) async {
+            final persisted = makeTestIdentity(
+              kind: kind,
+            );
+            when(
+              () => mockAgentService.resumeAgent(testAgentId),
+            ).thenAnswer((_) async => true);
+            stubPersisted(persisted);
+            await pumpDormant(tester);
 
-      verify(() => mockAgentService.resumeAgent(testAgentId)).called(1);
-      verify(
-        () => mockTaskAgentService.restoreSubscriptionsForAgent(testAgentId),
-      ).called(1);
+            await tester.tap(find.text('Resume'));
+            await tester.pump();
+
+            verifyInOrder([
+              () => mockAgentService.resumeAgent(testAgentId),
+              () => mockTaskAgentService.restoreSubscriptionsForAgent(
+                testAgentId,
+              ),
+              () => maintenance.onIdentityReceived(persisted),
+            ]);
+          },
+        );
+      }
+
+      testWidgets(
+        'an identity paused again before reconciliation restores no '
+        'subscriptions and is offered as dormant, so no goal re-subscribes',
+        (tester) async {
+          final persisted = makeTestIdentity(
+            kind: AgentKinds.goalAgent,
+            lifecycle: AgentLifecycle.dormant,
+          );
+          when(
+            () => mockAgentService.resumeAgent(testAgentId),
+          ).thenAnswer((_) async => true);
+          stubPersisted(persisted);
+          await pumpDormant(tester);
+
+          await tester.tap(find.text('Resume'));
+          await tester.pump();
+
+          verifyNever(
+            () => mockTaskAgentService.restoreSubscriptionsForAgent(any()),
+          );
+          final offered =
+              verify(
+                    () => maintenance.onIdentityReceived(captureAny()),
+                  ).captured.single
+                  as AgentIdentityEntity;
+          expect(offered.lifecycle, AgentLifecycle.dormant);
+        },
+      );
+
+      testWidgets(
+        'a resume that finds no agent restores nothing',
+        (tester) async {
+          when(
+            () => mockAgentService.resumeAgent(testAgentId),
+          ).thenAnswer((_) async => false);
+          await pumpDormant(tester);
+
+          await tester.tap(find.text('Resume'));
+          await tester.pump();
+
+          verifyNever(() => mockAgentService.getAgent(any()));
+          verifyNever(
+            () => mockTaskAgentService.restoreSubscriptionsForAgent(any()),
+          );
+          verifyNever(() => maintenance.onIdentityReceived(any()));
+          expect(resumeEnabled(tester), isTrue);
+        },
+      );
+
+      testWidgets(
+        'an agent that vanishes after resuming restores nothing',
+        (tester) async {
+          when(
+            () => mockAgentService.resumeAgent(testAgentId),
+          ).thenAnswer((_) async => true);
+          stubPersisted(null);
+          await pumpDormant(tester);
+
+          await tester.tap(find.text('Resume'));
+          await tester.pump();
+
+          verify(() => mockAgentService.getAgent(testAgentId)).called(1);
+          verifyNever(
+            () => mockTaskAgentService.restoreSubscriptionsForAgent(any()),
+          );
+          verifyNever(() => maintenance.onIdentityReceived(any()));
+        },
+      );
+
+      testWidgets(
+        'a failed resume surfaces the error and restores nothing',
+        (tester) async {
+          when(
+            () => mockAgentService.resumeAgent(testAgentId),
+          ).thenAnswer((_) async => throw StateError('outbox down'));
+          await pumpDormant(tester);
+
+          await tester.tap(find.text('Resume'));
+          await tester.pump();
+
+          expect(find.textContaining('outbox down'), findsOneWidget);
+          verifyNever(() => mockAgentService.getAgent(any()));
+          verifyNever(
+            () => mockTaskAgentService.restoreSubscriptionsForAgent(any()),
+          );
+          verifyNever(() => maintenance.onIdentityReceived(any()));
+          expect(resumeEnabled(tester), isTrue);
+        },
+      );
     });
 
     testWidgets('Re-analyze button calls triggerReanalysis', (tester) async {
