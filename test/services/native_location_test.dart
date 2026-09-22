@@ -12,6 +12,7 @@ class _FakeLocationSettings extends Fake implements LocationSettings {}
 
 Position _position({
   double altitude = 408,
+  double altitudeAccuracy = 3,
   double accuracy = 8,
   double heading = 270,
   double speed = 3,
@@ -22,7 +23,7 @@ Position _position({
   timestamp: DateTime.utc(2026, 9, 22, 12),
   accuracy: accuracy,
   altitude: altitude,
-  altitudeAccuracy: 3,
+  altitudeAccuracy: altitudeAccuracy,
   heading: heading,
   headingAccuracy: 5,
   speed: speed,
@@ -145,7 +146,7 @@ void main() {
       },
     );
 
-    test("drops CoreLocation's negative 'unknown' readings", () async {
+    void stubPosition(Position position) {
       when(() => platform.checkPermission()).thenAnswer(
         (_) async => LocationPermission.whileInUse,
       );
@@ -153,25 +154,50 @@ void main() {
         () => platform.getCurrentPosition(
           locationSettings: any(named: 'locationSettings'),
         ),
-      ).thenAnswer(
-        (_) async => _position(
-          altitude: -28,
-          accuracy: -1,
-          heading: -1,
-          speed: -1,
-          speedAccuracy: -1,
-        ),
-      );
+      ).thenAnswer((_) async => position);
+    }
+
+    test("drops CoreLocation's negative 'unknown' motion readings", () async {
+      stubPosition(_position(heading: -1, speed: -1, speedAccuracy: -1));
 
       final fix = await source.currentLocation(timeout: timeout);
 
-      expect(fix!.accuracy, isNull);
+      expect(fix!.latitude, 47.3769);
+      expect(fix.accuracy, 8);
       expect(fix.heading, isNull);
       expect(fix.speed, isNull);
       expect(fix.speedAccuracy, isNull);
-      // Altitude below sea level (the Dead Sea shore, say) is a real reading,
-      // not a sentinel.
-      expect(fix.altitude, -28);
+    });
+
+    test('treats a negative horizontal accuracy as no fix at all', () async {
+      // CoreLocation's signal that the coordinates themselves are invalid;
+      // recording them would pin the entry to a meaningless place.
+      stubPosition(_position(accuracy: -1));
+
+      expect(await source.currentLocation(timeout: timeout), isNull);
+    });
+
+    for (final unmeasured in [0.0, -1.0]) {
+      test(
+        'drops an altitude whose vertical accuracy is $unmeasured',
+        () async {
+          stubPosition(_position(altitude: 0, altitudeAccuracy: unmeasured));
+
+          final fix = await source.currentLocation(timeout: timeout);
+
+          expect(fix!.latitude, 47.3769);
+          expect(fix.altitude, isNull);
+        },
+      );
+    }
+
+    test('keeps a measured altitude below sea level', () async {
+      // The Dead Sea shore: negative, but a real reading.
+      stubPosition(_position(altitude: -28));
+
+      final fix = await source.currentLocation(timeout: timeout);
+
+      expect(fix!.altitude, -28);
     });
 
     test('lets a timed-out read fail for the caller to fall back', () async {

@@ -84,7 +84,7 @@ README, this is the way in:
 | [`lib/widgets/day_indicators/`](../lib/widgets/day_indicators) | [Day indicators — shared day-mark model and cells](architecture/day-indicators.md) | `DayMark`/`DayMarkState`/`DayVerdict`, `DayMarkCell`, `DayMarkStrip`, `DayTrack` |
 | [`lib/logic/`](../lib/logic) | [Persistence layer](architecture/persistence.md) | **almost nothing** — `PersistenceLogic` appears only as a node in the write-path diagram. The import paths and the rest of the tree are undocumented; read the code |
 | [`lib/themes/`](../lib/themes) | [Tokens and theming](features/design_system/tokens-and-theming.md) | **`theme_overrides.dart` only**, as the token-injection seam |
-| [`lib/utils/`](../lib/utils) | — | nothing; small helpers, read the code |
+| [`lib/utils/`](../lib/utils) | [Device location](architecture/device-location.md) | **`location.dart` only**; the rest are small helpers, read the code |
 | [`test/`](../test) | [Testing conventions](conventions/testing.md) + [`test/README.md`](../test/README.md) | the whole tree |
 | [`tool/okf/`](../tool/okf) | [How this bundle is maintained](conventions/knowledge-bundle.md) | the whole tree |
 

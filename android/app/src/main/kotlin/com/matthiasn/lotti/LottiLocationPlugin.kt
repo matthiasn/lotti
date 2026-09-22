@@ -32,9 +32,10 @@ import io.flutter.plugin.common.PluginRegistry
  * builds for F-Droid without proprietary code.
  *
  * `getCurrentLocation` asks for permission when it has not been granted yet,
- * then answers with a map of the fix, or null when permission is refused,
- * location is switched off, or no fix arrives in time and no recent one is
- * known. The Dart side falls back to IP geolocation on null.
+ * then answers with a map of the first fix any usable provider produces, or
+ * null when permission is refused, location is switched off, or no fix
+ * arrives in time and no recent one is known. The Dart side falls back to IP
+ * geolocation on null.
  */
 class LottiLocationPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     PluginRegistry.RequestPermissionsResultListener {
@@ -150,6 +151,17 @@ class LottiLocationPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
         waiting.forEach { it(granted) }
     }
 
+    /**
+     * Asks every usable provider at once and answers with the first fix.
+     *
+     * Committing to one provider is not safe on the devices this exists for:
+     * a de-Googled phone can report its network provider as enabled while
+     * nothing backs it, and without a network it never answers either way.
+     * Racing them lets GPS produce the fix the network provider cannot, and
+     * one shared signal cancels the losers as soon as a winner arrives. Only
+     * when every provider comes back empty, or the timeout passes, does a
+     * recent last-known fix stand in.
+     */
     @SuppressLint("MissingPermission") // Checked by withPermission.
     private fun currentLocation(timeoutMs: Long, result: Result) {
         val manager = context.getSystemService(LocationManager::class.java)
@@ -157,69 +169,78 @@ class LottiLocationPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
             result.success(null)
             return
         }
-        val provider = preferredProvider(manager)
-        if (provider == null) {
+        val providers = eligibleProviders(manager)
+        if (providers.isEmpty()) {
             result.success(null)
             return
         }
 
         val signal = CancellationSignal()
         var answered = false
+        var outstanding = providers.size
+        fun finish() {
+            answered = true
+            signal.cancel()
+            mainHandler.removeCallbacksAndMessages(signal)
+        }
         fun answer(location: Location?) {
             if (answered) return
-            answered = true
-            mainHandler.removeCallbacksAndMessages(signal)
+            finish()
             result.success((location ?: recentLastKnown(manager))?.toMap())
         }
 
         try {
             mainHandler.postAtTime(
-                {
-                    signal.cancel()
-                    answer(null)
-                },
+                { answer(null) },
                 signal,
                 SystemClock.uptimeMillis() + timeoutMs,
             )
-            LocationManagerCompat.getCurrentLocation(
-                manager,
-                provider,
-                signal,
-                ContextCompat.getMainExecutor(context),
-            ) { location -> answer(location) }
+            // Callbacks arrive on the main executor, so none can run before
+            // every request below has been made.
+            for (provider in providers) {
+                LocationManagerCompat.getCurrentLocation(
+                    manager,
+                    provider,
+                    signal,
+                    ContextCompat.getMainExecutor(context),
+                ) { location ->
+                    outstanding--
+                    if (location != null || outstanding == 0) answer(location)
+                }
+            }
         } catch (e: SecurityException) {
             // Permission was revoked between the check and the request.
             if (!answered) {
-                answered = true
-                mainHandler.removeCallbacksAndMessages(signal)
+                finish()
                 result.error("location_permission", e.message, null)
             }
         }
     }
 
     /**
-     * Android's own fused provider (API 31+, part of AOSP rather than Play
-     * Services) blends GPS and network; before it, the network provider
-     * answers fastest and GPS is the last resort. GPS needs the precise
-     * permission, which the user may have declined in favour of approximate.
+     * The providers worth asking. Android's own fused provider (API 31+,
+     * part of AOSP rather than Play Services) blends GPS and network where it
+     * exists; network answers fastest where it is backed; GPS needs the
+     * precise permission, which the user may have declined in favour of
+     * approximate.
      */
-    private fun preferredProvider(manager: LocationManager): String? {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-            manager.hasProvider(LocationManager.FUSED_PROVIDER) &&
-            manager.isProviderEnabled(LocationManager.FUSED_PROVIDER)
-        ) {
-            return LocationManager.FUSED_PROVIDER
+    private fun eligibleProviders(manager: LocationManager): List<String> =
+        buildList {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                manager.hasProvider(LocationManager.FUSED_PROVIDER) &&
+                manager.isProviderEnabled(LocationManager.FUSED_PROVIDER)
+            ) {
+                add(LocationManager.FUSED_PROVIDER)
+            }
+            if (manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                add(LocationManager.NETWORK_PROVIDER)
+            }
+            if (isGranted(Manifest.permission.ACCESS_FINE_LOCATION) &&
+                manager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+            ) {
+                add(LocationManager.GPS_PROVIDER)
+            }
         }
-        if (manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-            return LocationManager.NETWORK_PROVIDER
-        }
-        if (isGranted(Manifest.permission.ACCESS_FINE_LOCATION) &&
-            manager.isProviderEnabled(LocationManager.GPS_PROVIDER)
-        ) {
-            return LocationManager.GPS_PROVIDER
-        }
-        return null
-    }
 
     /** The freshest fix any enabled provider remembers, if it is recent. */
     @SuppressLint("MissingPermission") // Checked by withPermission.

@@ -5,7 +5,7 @@ import 'package:geolocator_platform_interface/geolocator_platform_interface.dart
 ///
 /// Optional fields are null when the platform did not report a valid value,
 /// rather than carrying the platform's "invalid" sentinel (Apple reports an
-/// unknown course or speed as -1).
+/// unknown course or speed as -1, and an unmeasured altitude as 0).
 class NativeLocationFix {
   const NativeLocationFix({
     required this.latitude,
@@ -36,8 +36,9 @@ abstract interface class NativeLocationSource {
   /// Asks for permission if it has not been decided yet, then reads the
   /// current position.
   ///
-  /// Returns null when the user refuses permission or location services are
-  /// switched off — the caller falls back to IP geolocation. Throws when the
+  /// Returns null when the user refuses permission, location services are
+  /// switched off, or the platform has no valid fix — the caller falls back to
+  /// IP geolocation. Throws when the
   /// platform fails to produce a fix within [timeout].
   Future<NativeLocationFix?> currentLocation({required Duration timeout});
 }
@@ -67,18 +68,24 @@ class AppleLocationSource implements NativeLocationSource {
     final position = await _platform.getCurrentPosition(
       locationSettings: LocationSettings(timeLimit: timeout),
     );
+    // CoreLocation reports a negative horizontal accuracy when the
+    // coordinates themselves are invalid; there is no fix to record.
+    if (position.accuracy < 0) return null;
     return NativeLocationFix(
       latitude: position.latitude,
       longitude: position.longitude,
-      altitude: position.altitude,
-      accuracy: _validOrNull(position.accuracy),
+      // Altitude is only measured when its vertical accuracy is positive;
+      // otherwise CoreLocation leaves a 0 placeholder, which is not sea level.
+      altitude: position.altitudeAccuracy > 0 ? position.altitude : null,
+      accuracy: position.accuracy,
       heading: _validOrNull(position.heading),
       speed: _validOrNull(position.speed),
       speedAccuracy: _validOrNull(position.speedAccuracy),
     );
   }
 
-  /// CoreLocation marks an unknown measurement with a negative value.
+  /// CoreLocation marks an unknown course, speed or speed accuracy with a
+  /// negative value.
   static double? _validOrNull(double value) => value < 0 ? null : value;
 }
 
