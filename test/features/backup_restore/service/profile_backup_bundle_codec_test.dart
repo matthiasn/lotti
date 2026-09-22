@@ -524,6 +524,39 @@ void main() {
       );
     });
 
+    group('openNewFile', () {
+      test('creates missing folders and opens a new file for writing', () {
+        final path = p.join(testRoot.path, 'out', 'images', 'a.jpg');
+
+        openNewFile(path, entryName: 'images/a.jpg')
+          ..writeFromSync([1, 2, 3])
+          ..closeSync();
+
+        expect(File(path).readAsBytesSync(), [1, 2, 3]);
+      });
+
+      test('refuses a file that already exists instead of truncating it', () {
+        // What two manifest paths that are distinct but name the same file on
+        // this volume (A.jpg and a.jpg on a case-insensitive disk) amount to.
+        final path = p.join(testRoot.path, 'out', 'images', 'a.jpg');
+        openNewFile(path, entryName: 'images/a.jpg')
+          ..writeFromSync([1, 2, 3])
+          ..closeSync();
+
+        expect(
+          () => openNewFile(path, entryName: 'images/A.jpg'),
+          throwsA(
+            isA<ProfileBackupBundleCorruptException>().having(
+              (e) => e.message,
+              'message',
+              contains('images/A.jpg'),
+            ),
+          ),
+        );
+        expect(File(path).readAsBytesSync(), [1, 2, 3]);
+      });
+    });
+
     group('resolveInsideRoot', () {
       final root = p.join('restore', 'payload');
 

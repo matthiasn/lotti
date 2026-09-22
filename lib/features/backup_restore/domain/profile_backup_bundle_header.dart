@@ -47,12 +47,21 @@ class BackupKdfParameters {
   final int iterations;
   final int parallelism;
 
-  /// Upper bounds a bundle may demand. A tampered header must not be able to
+  /// Upper bounds one slot may demand. A tampered header must not be able to
   /// make restore allocate unbounded memory or spin for hours before the
   /// passphrase is even checked.
-  static const int maxMemoryKiB = 1024 * 1024;
+  static const int maxMemoryKiB = 256 * 1024;
   static const maxIterations = 16;
   static const maxParallelism = 8;
+
+  /// Upper bound on the Argon2id work of all slots together, in KiB × passes:
+  /// four derivations at the [recommended] cost. Restore tries the slots one
+  /// after another, so without it eight slots could each demand the per-slot
+  /// maximum.
+  static const int maxTotalWork = 4 * 64 * 1024 * 3;
+
+  /// This derivation's share of [maxTotalWork].
+  int get work => memoryKiB * iterations;
 
   void validate() {
     if (memoryKiB < 8 * parallelism || memoryKiB > maxMemoryKiB) {
@@ -192,9 +201,16 @@ class ProfileBackupBundleHeader {
         'The backup has no usable key slot.',
       );
     }
+    final keySlots = [for (final slot in slots) BackupKeySlot.fromJson(slot)];
+    final totalWork = keySlots.fold(0, (sum, slot) => sum + slot.kdf.work);
+    if (totalWork > BackupKdfParameters.maxTotalWork) {
+      throw const ProfileBackupBundleFormatException(
+        'The backup asks for more key-derivation work than Lotti allows.',
+      );
+    }
     return ProfileBackupBundleHeader(
       bundleId: _bytes(map, 'bundleId', bundleIdLength),
-      keySlots: [for (final slot in slots) BackupKeySlot.fromJson(slot)],
+      keySlots: keySlots,
     );
   }
 

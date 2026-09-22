@@ -297,8 +297,11 @@ describes the profile.
 
 - **Header** — the only readable part: container version, cipher, chunk size,
   a random 16-byte bundle id, and the key slots. No profile name, type, app
-  version, file list or size. A tampered header cannot demand more than
-  1 GiB, 16 passes or 8 lanes of Argon2id before the passphrase is tried.
+  version, file list or size. Restore tries the key slots one after
+  another before it knows whether the passphrase is right, so a tampered
+  header is bounded twice: no slot may ask for more than 256 MiB, 16 passes or
+  8 lanes of Argon2id, and all slots together no more than four derivations
+  at the default cost.
 - **Key flow** — a random 256-bit data key encrypts the payload. Each key slot
   holds it wrapped with ChaCha20-Poly1305 under a key derived from the
   passphrase with Argon2id (64 MiB, 3 passes, one lane by default; the
@@ -338,7 +341,10 @@ All of it runs in a background isolate with synchronous file I/O.
 `extract` is the reverse: it refuses an existing target directory, unwraps the
 data key, authenticates every chunk before its bytes are used, checks each
 file's size and SHA-256 against the manifest, keeps each path inside the
-target, and removes the target again on any failure. A wrong passphrase and a
+target, and removes the target again on any failure. Every output file is
+created exclusively: two manifest paths that name one file on the target
+volume (`A.jpg` and `a.jpg` on a case-insensitive disk) fail the extraction
+instead of one silently overwriting the other. A wrong passphrase and a
 damaged key slot are deliberately indistinguishable. The result has the staged
 snapshot's layout, which restore will verify again before activating it.
 
@@ -350,8 +356,8 @@ snapshot's layout, which restore will verify again before activating it.
   timestamp and suffix in their names rather than file-system times, and never
   keeps fewer than one;
 - `removeLeftovers` deletes partial bundles and staged or partially staged
-  snapshots — the plaintext an interrupted backup can leave — and must not run
-  while a backup is in progress.
+  snapshots — the plaintext an interrupted backup can leave — matching each
+  complete name, and must not run while a backup is in progress.
 
 # Privacy and packaging boundary
 

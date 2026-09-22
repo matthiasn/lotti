@@ -654,12 +654,10 @@ Map<String, Object?> _readBundle({
       }
       RandomAccessFile? output;
       if (payloadRoot != null) {
-        final destination = resolveInsideRoot(
-          payloadRoot.path,
-          entry.relativePath,
+        output = openNewFile(
+          resolveInsideRoot(payloadRoot.path, entry.relativePath),
+          entryName: entry.relativePath,
         );
-        File(destination).parent.createSync(recursive: true);
-        output = File(destination).openSync(mode: FileMode.writeOnly);
       }
       final digest = _DigestCollector();
       final hasher = hashing.sha256.startChunkedConversion(digest);
@@ -711,4 +709,25 @@ String resolveInsideRoot(String root, String relativePath) {
     );
   }
   return destination;
+}
+
+/// Creates [path] and opens it for writing, refusing a file that already
+/// exists.
+///
+/// Distinct manifest paths can still name one file on the target: `A.jpg`
+/// and `a.jpg` on a case-insensitive volume, or two Unicode spellings of the
+/// same name. Truncating the first would leave a restored payload that no
+/// longer matches its manifest while every per-file checksum passed, so the
+/// collision fails the extraction instead.
+@visibleForTesting
+RandomAccessFile openNewFile(String path, {required String entryName}) {
+  final file = File(path)..parent.createSync(recursive: true);
+  try {
+    file.createSync(exclusive: true);
+  } on FileSystemException {
+    throw ProfileBackupBundleCorruptException(
+      'Two backup entries map to the same file on this device: $entryName',
+    );
+  }
+  return file.openSync(mode: FileMode.writeOnly);
 }

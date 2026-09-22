@@ -200,6 +200,36 @@ void main() {
       ]);
     });
 
+    test('keeps a directory that only starts like a partial snapshot', () {
+      final nearMatch = Directory(
+        p.join(staging.path, '.profile-snapshot-1234.partial-XyZ9.user-data'),
+      )..createSync();
+
+      expect(
+        ProfileBackupBundleStore.removeLeftovers(
+          outputDirectory: backups,
+          stagingParent: staging,
+        ),
+        isEmpty,
+      );
+      expect(nearMatch.existsSync(), isTrue);
+    });
+
+    test('removes a partial snapshot named by the platform itself', () {
+      // The snapshot service names its partial directory with createTemp; the
+      // pattern has to match whatever suffix this platform generates.
+      final partial = staging.createTempSync('.profile-snapshot-1234.partial-');
+
+      expect(
+        ProfileBackupBundleStore.removeLeftovers(
+          outputDirectory: backups,
+          stagingParent: staging,
+        ),
+        [partial.path],
+      );
+      expect(partial.existsSync(), isFalse);
+    });
+
     test('tolerates directories that do not exist', () {
       expect(
         ProfileBackupBundleStore.removeLeftovers(

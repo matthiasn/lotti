@@ -222,6 +222,48 @@ void main() {
       );
     });
 
+    test('four recommended slots fit the total work budget', () {
+      final header = _header(slots: List.generate(4, (_) => _slot()));
+
+      expect(
+        ProfileBackupBundleHeader.fromBytes(header.toBytes()).keySlots,
+        hasLength(4),
+      );
+    });
+
+    test('a fifth recommended slot exceeds the total work budget', () {
+      // Each slot is individually valid: only the sum, tried one slot after
+      // another before any passphrase check, is refused.
+      final header = _header(slots: List.generate(5, (_) => _slot()));
+
+      expect(
+        () => ProfileBackupBundleHeader.fromBytes(header.toBytes()),
+        _formatError('more key-derivation work'),
+      );
+    });
+
+    test(
+      'one slot at every per-slot maximum exceeds the budget on its own',
+      () {
+        final header = _header(
+          slots: [
+            _slot(
+              kdf: const BackupKdfParameters(
+                memoryKiB: BackupKdfParameters.maxMemoryKiB,
+                iterations: BackupKdfParameters.maxIterations,
+                parallelism: 1,
+              ),
+            ),
+          ],
+        );
+
+        expect(
+          () => ProfileBackupBundleHeader.fromBytes(header.toBytes()),
+          _formatError('more key-derivation work'),
+        );
+      },
+    );
+
     test('the recommended cost is valid', () {
       expect(BackupKdfParameters.recommended.validate, returnsNormally);
     });

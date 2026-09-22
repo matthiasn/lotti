@@ -20,8 +20,12 @@ abstract final class ProfileBackupBundleStore {
   static final _stagedSnapshotName = RegExp(
     r'^profile-snapshot-[A-Za-z0-9_-]+$',
   );
+
+  /// `Directory.createTemp` appends a random alphanumeric suffix to the
+  /// snapshot service's prefix. The whole name is anchored, so a directory
+  /// that merely starts the same way is never deleted.
   static final _partialSnapshotName = RegExp(
-    r'^\.profile-snapshot-[A-Za-z0-9_-]+\.partial-',
+    r'^\.profile-snapshot-[A-Za-z0-9_-]+\.partial-[A-Za-z0-9]+$',
   );
 
   /// `lotti-backup-20260922T201500Z-a1b2c3d4.lottibackup`: sortable by time,
