@@ -1349,6 +1349,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.10.3"
+  geolocator_apple:
+    dependency: "direct main"
+    description:
+      name: geolocator_apple
+      sha256: "853803d6bb1713c094e935b4a5ae5f19c0308acf81da13fa9ff84fb4c70c0b73"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.3.14"
+  geolocator_platform_interface:
+    dependency: "direct main"
+    description:
+      name: geolocator_platform_interface
+      sha256: "94db8255dc183d268765df682580440617ca35877fc82cacb5420ad03b86198d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.3.0"
   get_it:
     dependency: "direct main"
     description:
@@ -1802,30 +1818,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.1"
-  location:
-    dependency: "direct main"
-    description:
-      name: location
-      sha256: "4cc204cc1ea237ac608d2d621ddeed40d7f62564693126420c5ebe6d1fa8c5ea"
-      url: "https://pub.dev"
-    source: hosted
-    version: "10.0.2"
-  location_platform_interface:
-    dependency: transitive
-    description:
-      name: location_platform_interface
-      sha256: "0b1aff439c77f1ec204c95ee84640f5eb8c5904cc11f0a613a6842ac1116272c"
-      url: "https://pub.dev"
-    source: hosted
-    version: "7.0.0"
-  location_web:
-    dependency: transitive
-    description:
-      name: location_web
-      sha256: "1a50fe9eb4d7d33c70d65a3f2c83acbba20c380be699bcb5357b6756ef195eba"
-      url: "https://pub.dev"
-    source: hosted
-    version: "7.0.0"
   logging:
     dependency: transitive
     description:

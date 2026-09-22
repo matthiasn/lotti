@@ -8,9 +8,9 @@ import 'package:file_selector_platform_interface/file_selector_platform_interfac
 import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:genui/genui.dart' as genui;
+import 'package:geolocator_platform_interface/geolocator_platform_interface.dart';
 import 'package:http/http.dart' as http;
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
-import 'package:location/location.dart' as location_pkg;
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -214,6 +214,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/health_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/native_location.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -1003,11 +1004,11 @@ class MockMatrixService extends Mock implements MatrixService {}
 
 class MockGeolocationService extends Mock implements GeolocationService {}
 
-/// Mock for the `location` plugin's device-location API.
-class MockLocation extends Mock implements location_pkg.Location {}
+/// Mock for a platform's native location source.
+class MockNativeLocationSource extends Mock implements NativeLocationSource {}
 
-/// Mock for a single `location` plugin reading.
-class MockLocationData extends Mock implements location_pkg.LocationData {}
+/// Mock for `geolocator_apple`'s platform API behind [AppleLocationSource].
+class MockGeolocatorPlatform extends Mock implements GeolocatorPlatform {}
 
 class MockMetadataService extends Mock implements MetadataService {}
 

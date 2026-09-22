@@ -10,7 +10,6 @@ list(APPEND FLUTTER_PLUGIN_LIST
   flutter_onnxruntime
   flutter_secure_storage_linux
   irondash_engine_context
-  location
   media_kit_libs_linux
   objectbox_flutter_libs
   record_linux

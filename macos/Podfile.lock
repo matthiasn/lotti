@@ -43,9 +43,6 @@ PODS:
   - just_waveform (0.0.1):
     - Flutter
     - FlutterMacOS
-  - location (8.0.1):
-    - Flutter
-    - FlutterMacOS
   - media_kit_libs_macos_audio (1.0.4):
     - FlutterMacOS
   - ObjectBox (5.3.0)
@@ -112,7 +109,6 @@ DEPENDENCIES:
   - irondash_engine_context (from `Flutter/ephemeral/.symlinks/plugins/irondash_engine_context/macos`)
   - just_audio (from `Flutter/ephemeral/.symlinks/plugins/just_audio/darwin`)
   - just_waveform (from `Flutter/ephemeral/.symlinks/plugins/just_waveform/darwin`)
-  - location (from `Flutter/ephemeral/.symlinks/plugins/location/darwin`)
   - media_kit_libs_macos_audio (from `Flutter/ephemeral/.symlinks/plugins/media_kit_libs_macos_audio/macos`)
   - objectbox_flutter_libs (from `Flutter/ephemeral/.symlinks/plugins/objectbox_flutter_libs/macos`)
   - OpenSSL-Universal
@@ -177,8 +173,6 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/just_audio/darwin
   just_waveform:
     :path: Flutter/ephemeral/.symlinks/plugins/just_waveform/darwin
-  location:
-    :path: Flutter/ephemeral/.symlinks/plugins/location/darwin
   media_kit_libs_macos_audio:
     :path: Flutter/ephemeral/.symlinks/plugins/media_kit_libs_macos_audio/macos
   objectbox_flutter_libs:
@@ -232,7 +226,6 @@ SPEC CHECKSUMS:
   irondash_engine_context: 893c7d96d20ce361d7e996f39d360c4c2f9869ba
   just_audio: 4e391f57b79cad2b0674030a00453ca5ce817eed
   just_waveform: be2cb6dec86096cb972bf8b73c893fe16bf1cff4
-  location: 8591ad4b623e72045097bbca04567b2213c2e293
   media_kit_libs_macos_audio: 06f3cf88d6d89c7c3c87eae57689d1c6adb335b2
   ObjectBox: 2aae8ad350012cb53c6e7848064307cf68617f73
   objectbox_flutter_libs: c6ec3df598aa194da1cdf929fc9640bbc8f58be1

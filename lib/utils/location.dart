@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
-import 'package:location/location.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -10,6 +9,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/ip_geolocation_service.dart';
 import 'package:lotti/services/linux_geoclue_client.dart';
 import 'package:lotti/services/linux_location_portal.dart';
+import 'package:lotti/services/native_location.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/geohash.dart';
 import 'package:lotti/utils/platform.dart';
@@ -72,74 +72,52 @@ class LocationConstants {
   static const String appDesktopId = 'com.matthiasn.lotti';
 }
 
+/// Picks the native source for the running platform: the app's own AOSP
+/// `LocationManager` channel on Android, CoreLocation on iOS and macOS, and
+/// none elsewhere (Linux has its own backends; Windows records no location).
+NativeLocationSource? defaultNativeLocationSource() {
+  if (isAndroid) return AndroidLocationSource();
+  if (isIOS || isMacOS) return AppleLocationSource();
+  return null;
+}
+
 class DeviceLocation {
   DeviceLocation({
-    Location? locationService,
+    NativeLocationSource? nativeLocationSource,
     IpGeolocationProvider? ipGeolocationProvider,
     LinuxLocationBackendFactory? linuxBackendFactory,
-  }) {
-    location = locationService ?? Location();
-    _ipGeolocationProvider =
-        ipGeolocationProvider ?? defaultIpGeolocationProvider;
-    _linuxBackendFactory = linuxBackendFactory ?? _defaultLinuxBackendFactory;
-    init();
-  }
+  }) : _nativeLocationSource =
+           nativeLocationSource ?? defaultNativeLocationSource(),
+       _ipGeolocationProvider =
+           ipGeolocationProvider ?? defaultIpGeolocationProvider,
+       _linuxBackendFactory =
+           linuxBackendFactory ?? _defaultLinuxBackendFactory;
 
-  late Location location;
-  late IpGeolocationProvider _ipGeolocationProvider;
-  late LinuxLocationBackendFactory _linuxBackendFactory;
+  final NativeLocationSource? _nativeLocationSource;
+  final IpGeolocationProvider _ipGeolocationProvider;
+  final LinuxLocationBackendFactory _linuxBackendFactory;
 
-  Future<void> init() async {
-    bool serviceEnabled;
-
-    // Linux uses the portal / GeoClue path (see getCurrentGeoLocationLinux);
-    // probing the location plugin here only generates failing-init noise in
-    // Flatpak where the plugin's underlying APIs are unreachable.
-    if (isWindows || isTestEnv || Platform.isLinux) {
-      return;
-    }
-
-    try {
-      serviceEnabled = await location.serviceEnabled();
-    } catch (e) {
-      // Location services not available (e.g., in flatpak environment)
-      // This is expected, we'll use IP-based fallback
-      getIt<DomainLogger>().error(
-        LogDomain.location,
-        e,
-        subDomain: 'initialization',
-      );
-      return;
-    }
-    if (!serviceEnabled) {
-      serviceEnabled = await location.requestService();
-      if (!serviceEnabled) {
-        return;
-      }
-    }
-  }
-
-  Future<PermissionStatus> _requestPermission() async {
-    var permissionStatus = await location.hasPermission();
-    if (permissionStatus == PermissionStatus.denied) {
-      permissionStatus = await location.requestPermission();
-    }
-    return permissionStatus;
-  }
-
+  /// Reads the device's position for a new entry, if location recording is
+  /// on.
+  ///
+  /// The native source asks for permission the first time; a refusal,
+  /// disabled location services or a failed fix all fall back to IP
+  /// geolocation. Nothing prompts the user to switch location services on:
+  /// Android's in-app prompt for that is part of Google Play Services, and
+  /// Apple platforms have no such API.
   Future<Geolocation?> getCurrentGeoLocation() async {
     final recordLocation = await getIt<JournalDb>().getConfigFlag(
       recordLocationFlag,
     );
 
-    if (!recordLocation || Platform.isWindows) {
+    if (!recordLocation || isWindows) {
       return null;
     }
 
     // Try native geolocation first
     Geolocation? nativeLocation;
 
-    if (Platform.isLinux) {
+    if (isLinux) {
       try {
         nativeLocation = await getCurrentGeoLocationLinux();
       } catch (e) {
@@ -150,32 +128,13 @@ class DeviceLocation {
         );
       }
     } else {
-      final permissionStatus = await _requestPermission();
-
-      if (permissionStatus != PermissionStatus.denied &&
-          permissionStatus != PermissionStatus.deniedForever) {
+      final source = _nativeLocationSource;
+      if (source != null) {
         try {
-          final now = DateTime.now();
-          final locationData = await location.getLocation();
-          final longitude = locationData.longitude;
-          final latitude = locationData.latitude;
-
-          nativeLocation = Geolocation(
-            createdAt: now,
-            timezone: now.timeZoneName,
-            utcOffset: now.timeZoneOffset.inMinutes,
-            latitude: latitude,
-            longitude: longitude,
-            altitude: locationData.altitude,
-            speed: locationData.speed,
-            accuracy: locationData.accuracy,
-            heading: locationData.heading,
-            speedAccuracy: locationData.speedAccuracy,
-            geohashString: getGeoHash(
-              latitude: latitude,
-              longitude: longitude,
-            ),
+          final fix = await source.currentLocation(
+            timeout: LocationConstants.locationTimeout,
           );
+          if (fix != null) nativeLocation = _geolocationFrom(fix);
         } catch (e) {
           getIt<DomainLogger>().error(
             LogDomain.location,
@@ -190,8 +149,28 @@ class DeviceLocation {
     return nativeLocation ?? await _ipGeolocationProvider();
   }
 
+  Geolocation _geolocationFrom(NativeLocationFix fix) {
+    final now = DateTime.now();
+    return Geolocation(
+      createdAt: now,
+      timezone: now.timeZoneName,
+      utcOffset: now.timeZoneOffset.inMinutes,
+      latitude: fix.latitude,
+      longitude: fix.longitude,
+      altitude: fix.altitude,
+      speed: fix.speed,
+      accuracy: fix.accuracy,
+      heading: fix.heading,
+      speedAccuracy: fix.speedAccuracy,
+      geohashString: getGeoHash(
+        latitude: fix.latitude,
+        longitude: fix.longitude,
+      ),
+    );
+  }
+
   Future<Geolocation?> getCurrentGeoLocationLinux() async {
-    if (!Platform.isLinux) return null;
+    if (!isLinux) return null;
 
     final now = DateTime.now();
     final backend = _linuxBackendFactory();

@@ -14,5 +14,6 @@ class MainActivity: FlutterFragmentActivity() {
         super.configureFlutterEngine(flutterEngine)
         flutterEngine.plugins.add(FlutterHealthFitPlugin())
         flutterEngine.plugins.add(FlutterNativeTimezonePlugin())
+        flutterEngine.plugins.add(LottiLocationPlugin())
     }
 } 
