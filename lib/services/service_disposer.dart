@@ -25,10 +25,31 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 /// shutdown sequence.
 const _perOperationTimeout = Duration(seconds: 3);
 
+/// One service or database that did not dispose cleanly: it threw, or it did
+/// not finish within its deadline (a [TimeoutException]).
+class ServiceDisposalFailure {
+  const ServiceDisposalFailure({
+    required this.service,
+    required this.error,
+    required this.stackTrace,
+  });
+
+  /// The registration that failed, e.g. `JournalDb`.
+  final String service;
+  final Object error;
+  final StackTrace stackTrace;
+
+  @override
+  String toString() => '$service: $error';
+}
+
 /// Disposes long-running services and databases in dependency-safe order.
 ///
 /// Each disposal is guarded independently so a failure or timeout in one does
-/// not prevent the next service from being torn down.
+/// not prevent the next service from being torn down. Every failure is
+/// logged and also returned, so a caller that must know the generation
+/// really closed (a backup) can refuse to proceed, while shutdown and profile
+/// switches simply carry on.
 ///
 /// Order matters:
 /// 1. Stop periodic timers (BackfillRequestService, EmbeddingService)
@@ -44,10 +65,16 @@ class ServiceDisposer {
   final void Function(dynamic error, StackTrace stackTrace, String service)
   _logError;
 
-  /// Disposes all services and databases during application shutdown.
-  Future<void> disposeAll() async {
+  final List<ServiceDisposalFailure> _failures = [];
+
+  /// Disposes all services and databases, returning every one that did not
+  /// dispose cleanly. An empty list means each registered service and
+  /// database was closed within its deadline.
+  Future<List<ServiceDisposalFailure>> disposeAll() async {
+    _failures.clear();
     await _disposeServices();
     await _disposeDatabases();
+    return List.unmodifiable(_failures);
   }
 
   Future<void> _disposeServices() async {
@@ -152,7 +179,7 @@ class ServiceDisposer {
     try {
       action(_getIt<T>());
     } catch (e, s) {
-      _logError(e, s, name);
+      _recordFailure(e, s, name);
     }
   }
 
@@ -164,7 +191,18 @@ class ServiceDisposer {
     try {
       await action(_getIt<T>()).timeout(_perOperationTimeout);
     } catch (e, s) {
-      _logError(e, s, name);
+      _recordFailure(e, s, name);
     }
+  }
+
+  void _recordFailure(Object error, StackTrace stackTrace, String service) {
+    _failures.add(
+      ServiceDisposalFailure(
+        service: service,
+        error: error,
+        stackTrace: stackTrace,
+      ),
+    );
+    _logError(error, stackTrace, service);
   }
 }

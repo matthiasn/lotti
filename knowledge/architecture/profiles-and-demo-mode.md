@@ -125,6 +125,14 @@ stateDiagram-v2
 A teardown/bootstrap failure leaves the app on the splash; recovery is an
 app restart, which boots the marked world from a clean process.
 
+The same machinery also closes and restarts the *current* profile without
+switching: `runWithGenerationClosed` runs steps 2–5 around a piece of work that
+needs the profile's files at rest, a backup. There the close is strict — every
+quiesce step and `ServiceDisposer` failure is collected, and any failure skips
+the work — while a switch stays best effort. Both share one guard, so a backup
+and a switch can never interleave. See
+[backup and restore](../features/backup-and-restore.md#strict-quiescence-of-a-running-profile).
+
 # Populate first, then migrate
 
 Demo creation deliberately populates the world **before** the live app is

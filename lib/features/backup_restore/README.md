@@ -5,9 +5,10 @@ devices converged, but it can also propagate deletion or damaged state; it is
 therefore not a backup.
 
 The feature is being built in layers. The current module establishes the
-storage contract and can publish a verified snapshot from an already-quiesced
-profile. Encryption, restore, and settings flows build on that boundary. It
-does not yet expose a user-facing backup action.
+storage contract, can publish a verified snapshot from an already-quiesced
+profile, and can capture the running profile by closing it strictly and
+starting it again. Encryption, restore, and settings flows build on that
+boundary. It does not yet expose a user-facing backup action.
 
 ## What it will do for the user
 
@@ -30,8 +31,10 @@ lib/features/backup_restore/
 │   ├── profile_backup_catalog.dart   profile-root inventory and path policy
 │   └── profile_backup_manifest.dart  versioned stores, files, sizes, hashes
 ├── service/
-│   └── quiesced_profile_snapshot_service.dart
-│                                       verified staging and atomic publish
+│   ├── quiesced_profile_snapshot_service.dart
+│   │                                   verified staging and atomic publish
+│   └── profile_backup_coordinator.dart
+│                                       strict close, capture, restart
 └── README.md
 ```
 
@@ -56,9 +59,11 @@ migrations. The Matrix SDK and ObjectBox remain responsible for closing their
 stores. This feature coordinates those owners and refuses to snapshot when
 strict quiescence cannot be proven.
 
-Lifecycle quiescence, portable packaging, key handling, restore activation,
-retention, progress UI, and automated restore drills are follow-on layers built
-against the catalog, manifest, and staging contract.
+The coordinator refuses to copy anything unless every service and database
+of the running profile closed cleanly, and then starts the same profile
+again; if even that fails, a relaunch boots the unchanged profile. Portable packaging, key handling, restore activation, retention,
+progress UI, and automated restore drills are follow-on layers built against
+the catalog, manifest, staging, and capture contract.
 
 The store classifications, manifest invariants, privacy boundary, and planned
 capture lifecycle are documented in the knowledge bundle:

@@ -10,6 +10,7 @@ import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
 import 'package:lotti/features/profiles/service/profile_switcher.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
+import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/service_disposer.dart';
@@ -329,6 +330,246 @@ void main() {
       await expectLater(switcher.switchTo(guest.id), completes);
       expect(attempts, 1);
       expect(switcher.isSwitching, isFalse);
+    });
+  });
+
+  group('ProfileSwitcher.runWithGenerationClosed', () {
+    late Profile activeProfile;
+
+    /// Registers the running generation's context, which the switcher reads
+    /// before closing it.
+    Future<void> registerActiveContext() async {
+      await getIt.reset();
+      addTearDown(getIt.reset);
+      final state = await registry.load();
+      activeProfile = state.profileById(state.activeProfileId)!;
+      getIt.registerSingleton<ProfileContext>(
+        ProfileContext.forProfile(
+          profile: activeProfile,
+          root: registry.rootFor(activeProfile),
+        ),
+      );
+    }
+
+    /// Default teardown (strict close of whatever is registered) with a
+    /// recorded bootstrap.
+    ProfileSwitcher strictSwitcher({Future<void> Function()? bootstrap}) =>
+        ProfileSwitcher(
+          registry: registry,
+          lifecycleHolder: AppLifecycleHolder(),
+          onSwitchStarted: () async => calls.add('splash'),
+          onSwitchCompleted: () => calls.add('completed'),
+          settleFrame: () async => calls.add('settle'),
+          bootstrapOverride: bootstrap ?? () async => calls.add('bootstrap'),
+        );
+
+    test('closes, runs the work against the closed root, and restarts the '
+        'same profile', () async {
+      await registerActiveContext();
+      final markerBefore = (await registry.load()).activeProfileId;
+      ClosedProfileGeneration? seen;
+      final switcher = buildSwitcher();
+
+      final result = await switcher.runWithGenerationClosed((closed) async {
+        calls.add('work');
+        seen = closed;
+        return 42;
+      });
+
+      expect(result, 42);
+      expect(calls, [
+        'splash',
+        'settle',
+        'teardown',
+        'work',
+        'bootstrap',
+        'completed',
+      ]);
+      expect(seen!.profile.id, activeProfile.id);
+      expect(seen!.root.path, registry.rootFor(activeProfile).path);
+      // Closing for work is not a switch: the marker never moves.
+      expect((await registry.load()).activeProfileId, markerBefore);
+      expect(switcher.isSwitching, isFalse);
+    });
+
+    test('a step that fails to stop skips the work, restarts the profile, and '
+        'names the step', () async {
+      await registerActiveContext();
+      final timeService = MockTimeService();
+      when(timeService.stop).thenThrow(StateError('timer still running'));
+      getIt.registerSingleton<TimeService>(timeService);
+      var workRan = false;
+
+      await expectLater(
+        strictSwitcher().runWithGenerationClosed((_) async => workRan = true),
+        throwsA(
+          isA<ProfileQuiescenceException>().having(
+            (e) => e.failures.map((f) => f.service),
+            'failed steps',
+            ['TimeService.stop'],
+          ),
+        ),
+      );
+
+      expect(workRan, isFalse);
+      // The profile is usable again even though the close was not clean.
+      expect(calls, ['splash', 'settle', 'bootstrap', 'completed']);
+    });
+
+    test('a service that fails to dispose also blocks the work', () async {
+      await registerActiveContext();
+      final outbox = MockOutboxService();
+      when(outbox.dispose).thenAnswer(
+        (_) async => throw StateError('outbox still sending'),
+      );
+      getIt.registerSingleton<OutboxService>(outbox);
+      var workRan = false;
+
+      await expectLater(
+        strictSwitcher().runWithGenerationClosed((_) async => workRan = true),
+        throwsA(
+          isA<ProfileQuiescenceException>()
+              .having(
+                (e) => e.failures.single.service,
+                'failed service',
+                'OutboxService',
+              )
+              .having(
+                (e) => e.toString(),
+                'description',
+                contains('outbox still sending'),
+              ),
+        ),
+      );
+
+      expect(workRan, isFalse);
+      expect(calls, ['splash', 'settle', 'bootstrap', 'completed']);
+    });
+
+    test('a clean strict close runs the work', () async {
+      await registerActiveContext();
+      final timeService = MockTimeService();
+      when(timeService.stop).thenAnswer((_) async {});
+      getIt.registerSingleton<TimeService>(timeService);
+
+      final result = await strictSwitcher().runWithGenerationClosed(
+        (_) async => 'captured',
+      );
+
+      expect(result, 'captured');
+      verify(timeService.stop).called(1);
+      // getIt was reset by the close, so nothing of the old generation is
+      // left registered for the work to write through.
+      expect(getIt.isRegistered<TimeService>(), isFalse);
+    });
+
+    test(
+      'work that throws still restarts the profile, then rethrows',
+      () async {
+        await registerActiveContext();
+        final switcher = buildSwitcher();
+
+        await expectLater(
+          switcher.runWithGenerationClosed<void>(
+            (_) async => throw const FileSystemException('disk full'),
+          ),
+          throwsA(isA<FileSystemException>()),
+        );
+
+        expect(calls, [
+          'splash',
+          'settle',
+          'teardown',
+          'bootstrap',
+          'completed',
+        ]);
+        expect(switcher.isSwitching, isFalse);
+      },
+    );
+
+    test('a failed restart leaves the splash up and reports it', () async {
+      await registerActiveContext();
+      final switcher = ProfileSwitcher(
+        registry: registry,
+        lifecycleHolder: AppLifecycleHolder(),
+        onSwitchStarted: () async => calls.add('splash'),
+        onSwitchCompleted: () => calls.add('completed'),
+        settleFrame: () async {},
+        teardownOverride: () async => calls.add('teardown'),
+        bootstrapOverride: () async => throw StateError('boot failed'),
+      );
+
+      await expectLater(
+        switcher.runWithGenerationClosed((_) async => calls.add('work')),
+        throwsA(
+          isA<ProfileRestartException>().having(
+            (e) => e.cause,
+            'cause',
+            isStateError,
+          ),
+        ),
+      );
+
+      // Never rebuilt: the app stays on the splash until relaunched.
+      expect(calls, ['splash', 'teardown', 'work']);
+      expect(switcher.isSwitching, isFalse);
+    });
+
+    test('a teardown that throws neither runs the work nor bootstraps onto '
+        'the half-reset container', () async {
+      await registerActiveContext();
+      final switcher = ProfileSwitcher(
+        registry: registry,
+        lifecycleHolder: AppLifecycleHolder(),
+        onSwitchStarted: () async => calls.add('splash'),
+        onSwitchCompleted: () => calls.add('completed'),
+        settleFrame: () async {},
+        teardownOverride: () async => throw StateError('reset failed'),
+        bootstrapOverride: () async => calls.add('bootstrap'),
+      );
+
+      await expectLater(
+        switcher.runWithGenerationClosed((_) async => calls.add('work')),
+        throwsA(isA<ProfileRestartException>()),
+      );
+
+      expect(calls, ['splash']);
+      expect(switcher.isSwitching, isFalse);
+    });
+
+    test('refuses to start while a switch is running, and a switch requested '
+        'while closed is ignored', () async {
+      await registerActiveContext();
+      final guest = await registry.createGuestProfile(name: 'Demo');
+      Object? closedDuringSwitch;
+      late ProfileSwitcher switcher;
+      switcher = ProfileSwitcher(
+        registry: registry,
+        lifecycleHolder: AppLifecycleHolder(),
+        onSwitchStarted: () async {},
+        onSwitchCompleted: () {},
+        settleFrame: () async {},
+        teardownOverride: () async {
+          if (!switcher.isSwitching) return;
+          try {
+            await switcher.runWithGenerationClosed((_) async {});
+          } catch (e) {
+            closedDuringSwitch = e;
+          }
+        },
+        bootstrapOverride: () async {},
+      );
+
+      await switcher.switchTo(guest.id);
+      expect(closedDuringSwitch, isA<ProfileLifecycleBusyException>());
+
+      // And the other way round: a switch fired mid-backup is dropped by the
+      // shared guard, so the marker stays on the profile being captured.
+      await registerActiveContext();
+      await switcher.runWithGenerationClosed(
+        (_) => switcher.switchTo(Profile.realProfileId),
+      );
+      expect((await registry.load()).activeProfileId, guest.id);
     });
   });
 }

@@ -1,7 +1,11 @@
 import 'dart:async';
 
+import 'dart:io';
+
 import 'package:flutter/widgets.dart';
 import 'package:lotti/app_bootstrap.dart';
+import 'package:lotti/features/profiles/model/profile.dart';
+import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -13,9 +17,63 @@ import 'package:lotti/services/startup_tasks.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/window_service.dart';
 
+/// The profile a closed generation belonged to, handed to the work that runs
+/// while it is closed.
+@immutable
+class ClosedProfileGeneration {
+  const ClosedProfileGeneration({required this.profile, required this.root});
+
+  final Profile profile;
+
+  /// The profile's root directory. Nothing in the process holds a file in it
+  /// open while the generation is closed.
+  final Directory root;
+}
+
+/// Another switch or closed-generation operation is already running.
+class ProfileLifecycleBusyException implements Exception {
+  const ProfileLifecycleBusyException();
+
+  @override
+  String toString() =>
+      'ProfileLifecycleBusyException: a profile switch or backup is running';
+}
+
+/// The running generation could not be proven closed, so the work that
+/// needed it closed never ran. The same profile was restarted.
+class ProfileQuiescenceException implements Exception {
+  ProfileQuiescenceException(List<ServiceDisposalFailure> failures)
+    : failures = List.unmodifiable(failures);
+
+  /// Every step that threw or missed its deadline while closing.
+  final List<ServiceDisposalFailure> failures;
+
+  @override
+  String toString() =>
+      'ProfileQuiescenceException: could not close ${failures.join('; ')}';
+}
+
+/// The profile could not be torn down cleanly enough to start again, or
+/// failed to start again after being closed.
+///
+/// The app is left on the switch splash. The profile's data is untouched and
+/// the active-world marker was never changed, so relaunching the app boots
+/// the same profile from a clean process.
+class ProfileRestartException implements Exception {
+  const ProfileRestartException(this.cause, this.causeStackTrace);
+
+  final Object cause;
+  final StackTrace causeStackTrace;
+
+  @override
+  String toString() => 'ProfileRestartException: $cause';
+}
+
 /// Orchestrates in-app profile switches: persist the active-world marker,
 /// quiesce the running generation, tear it down, and bootstrap the next one
-/// against the new root.
+/// against the new root. It also closes and restarts the running profile for
+/// work that needs its files at rest, such as a backup
+/// ([runWithGenerationClosed]).
 ///
 /// Lives OUTSIDE getIt — it must survive `getIt.reset()`. Owned by the app
 /// root widget, which supplies the UI hooks: [onSwitchStarted] swaps the
@@ -34,7 +92,12 @@ class ProfileSwitcher {
     Future<void> Function()? teardownOverride,
     Future<void> Function()? bootstrapOverride,
   }) : _settleFrame = settleFrame ?? _endOfFrame {
-    _teardown = teardownOverride ?? _defaultTeardown;
+    _teardown = teardownOverride == null
+        ? _defaultTeardown
+        : () async {
+            await teardownOverride();
+            return const <ServiceDisposalFailure>[];
+          };
     _bootstrap = bootstrapOverride ?? _bootstrapGeneration;
   }
 
@@ -48,7 +111,9 @@ class ProfileSwitcher {
   final void Function() onSwitchCompleted;
 
   final Future<void> Function() _settleFrame;
-  late final Future<void> Function() _teardown;
+
+  /// Closes the running generation and returns every step that failed.
+  late final Future<List<ServiceDisposalFailure>> Function() _teardown;
   late final Future<void> Function() _bootstrap;
 
   bool _switching = false;
@@ -79,6 +144,8 @@ class ProfileSwitcher {
       await onSwitchStarted();
       await _settleFrame();
 
+      // A switch is best effort: whatever failed to close is logged, and the
+      // next world boots regardless.
       await _teardown();
       await _bootstrap();
 
@@ -88,48 +155,140 @@ class ProfileSwitcher {
     }
   }
 
+  /// Closes the running generation, runs [whileClosed] against the profile's
+  /// root while nothing holds a file in it open, then starts the same profile
+  /// again.
+  ///
+  /// Unlike [switchTo], closing is strict. If any step throws or misses its
+  /// deadline, [whileClosed] is skipped and a [ProfileQuiescenceException]
+  /// names the steps — work that relies on the files being at rest must never
+  /// run against a generation that might still be writing. The profile is
+  /// restarted in every case: after success, after a close failure, and after
+  /// [whileClosed] throws, whose error is rethrown once the profile is back.
+  ///
+  /// Throws [ProfileLifecycleBusyException] without touching anything while a
+  /// switch or another closed-generation operation is running, and
+  /// [ProfileRestartException] when the service container cannot be reset or
+  /// the restart itself fails; [whileClosed] does not run in the first case.
+  Future<T> runWithGenerationClosed<T>(
+    Future<T> Function(ClosedProfileGeneration closed) whileClosed,
+  ) async {
+    if (_switching) throw const ProfileLifecycleBusyException();
+    _switching = true;
+    try {
+      final context = getIt<ProfileContext>();
+      final closed = ClosedProfileGeneration(
+        profile: context.profile,
+        root: context.root,
+      );
+
+      await onSwitchStarted();
+      await _settleFrame();
+
+      final List<ServiceDisposalFailure> failures;
+      try {
+        failures = await _teardown();
+      } catch (e, st) {
+        // The container could not be reset, so bootstrapping onto it is not
+        // safe either. Stay on the splash, as a failed switch does.
+        throw ProfileRestartException(e, st);
+      }
+
+      late T result;
+      Object? workError;
+      StackTrace? workStackTrace;
+      if (failures.isEmpty) {
+        try {
+          result = await whileClosed(closed);
+        } catch (e, st) {
+          workError = e;
+          workStackTrace = st;
+        }
+      }
+
+      try {
+        await _bootstrap();
+      } catch (e, st) {
+        // Left on the splash: the marker still names this profile, so a
+        // relaunch boots it from a clean process.
+        throw ProfileRestartException(e, st);
+      }
+      onSwitchCompleted();
+
+      if (failures.isNotEmpty) throw ProfileQuiescenceException(failures);
+      if (workError != null) {
+        Error.throwWithStackTrace(workError, workStackTrace!);
+      }
+      return result;
+    } finally {
+      _switching = false;
+    }
+  }
+
   /// Default teardown: quiesce, dispose the service generation, reset getIt.
-  Future<void> _defaultTeardown() async {
-    await _quiesce();
-    await _teardownGeneration();
+  /// Returns every step that failed; each has also been logged.
+  Future<List<ServiceDisposalFailure>> _defaultTeardown() async {
+    final failures = <ServiceDisposalFailure>[];
+    await _quiesce(failures);
+    await _teardownGeneration(failures);
+    return failures;
+  }
+
+  /// Runs one teardown step, logging and recording a failure instead of
+  /// letting it stop the rest of the teardown.
+  Future<void> _step(
+    List<ServiceDisposalFailure> failures,
+    String name,
+    Future<void> Function() step,
+  ) async {
+    try {
+      await step();
+    } catch (e, st) {
+      _logError(e, st, name);
+      failures.add(
+        ServiceDisposalFailure(service: name, error: e, stackTrace: st),
+      );
+    }
   }
 
   /// Stops runtime activity that persists state, while the old generation's
   /// services are still alive to receive the writes.
-  Future<void> _quiesce() async {
+  Future<void> _quiesce(List<ServiceDisposalFailure> failures) async {
     // Fire-and-forget startup work (MatrixService.init, sequence-log
     // migration) must not still be running when its services are disposed.
     if (getIt.isRegistered<StartupTasks>()) {
-      try {
-        await getIt<StartupTasks>().settle();
-      } catch (e, st) {
-        _logError(e, st, 'StartupTasks.settle');
-      }
+      await _step(
+        failures,
+        'StartupTasks.settle',
+        () => getIt<StartupTasks>().settle(),
+      );
     }
     if (getIt.isRegistered<TimeService>()) {
-      try {
-        await getIt<TimeService>().stop();
-      } catch (e, st) {
-        _logError(e, st, 'TimeService.stop');
-      }
+      await _step(
+        failures,
+        'TimeService.stop',
+        () => getIt<TimeService>().stop(),
+      );
     }
-    try {
-      await AudioPlayerController.disposeActivePlayer();
-    } catch (e, st) {
-      _logError(e, st, 'AudioPlayerController.disposeActivePlayer');
-    }
+    await _step(
+      failures,
+      'AudioPlayerController.disposeActivePlayer',
+      AudioPlayerController.disposeActivePlayer,
+    );
     lifecycleHolder.dispose();
     if (getIt.isRegistered<WindowService>()) {
-      try {
-        await getIt<WindowService>().detachForRestart();
-      } catch (e, st) {
-        _logError(e, st, 'WindowService.detachForRestart');
-      }
+      await _step(
+        failures,
+        'WindowService.detachForRestart',
+        () => getIt<WindowService>().detachForRestart(),
+      );
     }
   }
 
-  Future<void> _teardownGeneration() async {
-    await ServiceDisposer(getIt, _logError).disposeAll();
+  Future<void> _teardownGeneration(
+    List<ServiceDisposalFailure> failures,
+  ) async {
+    failures.addAll(await ServiceDisposer(getIt, _logError).disposeAll());
 
     // Best-effort final flush of the outgoing generation's log sink before
     // getIt.reset() disposes the LoggingService.
@@ -146,7 +305,8 @@ class ProfileSwitcher {
     // Fires the remaining registered dispose callbacks (UpdateNotifications,
     // EntitiesCacheService, NavService, EmbeddingStore, ...). Databases were
     // already closed above; they are registered without dispose callbacks,
-    // so there is no double-close.
+    // so there is no double-close. A failure here propagates rather than
+    // being recorded: bootstrapping onto a half-reset container is never safe.
     await getIt.reset();
   }
 
