@@ -29,6 +29,15 @@ typedef ChecklistItemStateResolver =
       String itemId,
     );
 
+/// The wake's [ChangeSetBuilder.approvedChecklistItemResolver]: the live
+/// checklist item in [journalDb], or null for a missing or other entity.
+Future<ChecklistItemData?> Function(String id) journalChecklistItemResolver(
+  JournalDb journalDb,
+) => (id) async {
+  final entity = await journalDb.journalEntityById(id);
+  return entity is ChecklistItem ? entity.data : null;
+};
+
 /// Resolves the set of existing checklist item titles for the target task.
 ///
 /// Returns normalized (lowercased, trimmed) titles so that title-based

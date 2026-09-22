@@ -13,13 +13,13 @@ import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_part.dart';
 import 'package:lotti/features/agents/ui/query/query_action_review.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
@@ -561,9 +561,9 @@ void main() {
       });
       await pump(tester);
       expect(rowActions(), findsNWidgets(2));
-      await tester.tap(find.byIcon(LottiIcons.confirm).last);
+      await tester.tap(findMaterialTooltip('Confirm').last);
       await tester.pump();
-      await tester.tap(find.byIcon(LottiIcons.close).first);
+      await tester.tap(findMaterialTooltip('Reject').first);
       await tester.pump();
       expect(decided, [(1, true), (0, false)]);
       verifyNever(
@@ -598,7 +598,7 @@ void main() {
         ),
       );
       await pump(tester);
-      await tester.tap(find.byIcon(LottiIcons.confirm).first);
+      await tester.tap(findMaterialTooltip('Confirm').first);
       await tester.pump();
       expect(
         find.textContaining('Some changes could not be applied'),

@@ -795,7 +795,12 @@ handler-level check also blocks stale background proposals at execution, even
 if their `reason` sounds persuasive: it drops each protected field, still
 applies the unprotected rest, and the dispatcher reports a non-retryable
 failure so the confirmation service retracts the proposal. A fresh
-human-approved chat instruction can change that state. Unprotected legacy/agent edits remain eligible for
+human-approved chat instruction can change that state. The "chat approval end to end" scenario in
+[`task_tool_dispatcher_db_test.dart`](../../../test/features/agents/workflow/task_tool_dispatcher_db_test.dart)
+runs the whole chain against a real journal: a per-item confirm and an Accept
+all through `QueryChatActionService`, the receipts read back, a wake builder
+wired with `journalChecklistItemResolver` rejecting both reversals, a stale
+reversal refused at execution, and a direct edit ending the approval. Unprotected legacy/agent edits remain eligible for
 proposals and retain the existing user-sovereignty reason checks at execution.
 
 ```mermaid
