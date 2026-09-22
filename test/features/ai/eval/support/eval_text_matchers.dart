@@ -51,7 +51,8 @@ const _claimNegationCues = [
 /// March conference is confirmed as the decision" leaves the submission open
 /// and still announces a decision. Matched sentence-wide, `whether` excused
 /// exactly the invented decision the undecided-evidence scenario exists to
-/// reject, so these are never matched outside the claim's clause.
+/// reject, so these are only matched inside [_openQuestionBreakPattern]'s
+/// scope.
 const _openQuestionCues = [
   'undecided',
   'whether',
@@ -65,6 +66,23 @@ final RegExp _openQuestionPattern = RegExp(
   r'(?<![\p{L}])(?:'
   '${_openQuestionCues.map(RegExp.escape).join('|')}'
   r')(?![\p{L}])',
+  unicode: true,
+);
+
+/// Where an open question's scope ends: a colon or dash, or a comma followed
+/// by a conjunction that starts a new statement with its own subject.
+///
+/// Not every comma. An open question routinely lists its alternatives with
+/// commas — "weighing whether the talk should be scheduled for March,
+/// confirmed for June, or dropped" — and every item stays governed by the
+/// `whether`. What ends it is a second statement: ", and the March conference
+/// is confirmed", ", but it was confirmed". Requiring a fresh subject after
+/// the conjunction keeps the last item of a list ("…, and dropped") inside.
+final RegExp _openQuestionBreakPattern = RegExp(
+  '[:–—]|'
+  r',\s*(?:and|but|while|whereas|so|yet)\s+(?:the|a|an|this|that|these|those|'
+  'it|its|we|they|he|she|i|you|there|our|their|his|her)'
+  r'(?![\p{L}])',
   unicode: true,
 );
 
@@ -171,8 +189,9 @@ final RegExp _sentenceBreakPattern = RegExp(r'[.!?;\n\r]|\\n|\\r');
 /// out. Exposed so the negation rules can be tested directly rather than
 /// only through a scenario's aggregate score.
 ///
-/// Negation cues are matched across the claim's sentence by default, while
-/// open-question and clause-only cues never reach past its comma clause.
+/// Negation cues are matched across the claim's sentence by default,
+/// open-question cues across the statement they open (list commas included),
+/// and clause-only cues never past the claim's comma clause.
 /// [clauseScoped] narrows the negation cues to that clause too, for a check
 /// whose claim is short and whose reports routinely pair it with an unrelated
 /// caveat ("the location was identified, but the fix remains pending").
@@ -221,11 +240,21 @@ bool containsAffirmativeReportClaim(
       null => after,
     };
     final clause = '$clauseBefore $clauseAfter';
+    final questionBefore = switch (_openQuestionBreakPattern
+        .allMatches(before)
+        .lastOrNull) {
+      final Match brk => before.substring(brk.end),
+      null => before,
+    };
+    final questionAfter = switch (_openQuestionBreakPattern.firstMatch(after)) {
+      final Match brk => after.substring(0, brk.start),
+      null => after,
+    };
     final negated =
         _claimNegationPattern.hasMatch(
           clauseScoped ? clause : '$before $after',
         ) ||
-        _openQuestionPattern.hasMatch(clause) ||
+        _openQuestionPattern.hasMatch('$questionBefore $questionAfter') ||
         _clauseNegationPattern.hasMatch(clause);
     if (!negated) return true;
     index = normalizedText.indexOf(needle, end);

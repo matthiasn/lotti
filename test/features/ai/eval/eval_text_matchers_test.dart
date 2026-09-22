@@ -459,6 +459,23 @@ void main() {
       );
     });
 
+    test('an open question governs every alternative it lists', () {
+      // From review of this change: list commas must not end the question.
+      const listedAlternatives =
+          'Ines is weighing whether the talk should be scheduled for March, '
+          'confirmed for June, or dropped';
+      const oxfordAnd =
+          'weighing whether to move it to march, keep it in june, and have it '
+          'confirmed later';
+      for (final text in [listedAlternatives, oxfordAnd]) {
+        expect(
+          containsAffirmativeReportClaim(text, 'confirmed'),
+          isFalse,
+          reason: text,
+        );
+      }
+    });
+
     test('an open question in the claim own clause still excuses it', () {
       for (final text in [
         'ines is weighing whether the march conference is confirmed.',
