@@ -6,12 +6,17 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
+    <!-- One-shot location for new entries, read by LottiLocationPlugin over
+         the platform LocationManager, in the foreground only. Both are
+         declared so Android 12+ can offer approximate location instead. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <!-- The location plugin declares this for a background-tracking mode Lotti
-         never enables: location is read once, in the foreground, when an entry
-         is saved. Play requires a declared use for the permission, and there is
-         none, so it is removed from the merged manifest. -->
+    <!-- Location is read once, in the foreground, when an entry is saved, so
+         Lotti never runs a location foreground service. Play requires a
+         declared use for this permission, and there is none: it stays removed
+         from the merged manifest in case a library ever declares it again. -->
     <uses-permission
         android:name="android.permission.FOREGROUND_SERVICE_LOCATION"
         tools:node="remove" />

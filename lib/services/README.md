@@ -14,5 +14,8 @@ be scoped to a widget tree.
 - **The logging stack**: domains, the domain-aware entry point, and the buffered
   file sink —
   [knowledge/architecture/logging-and-diagnostics.md](../../knowledge/architecture/logging-and-diagnostics.md)
+- **Device location**: platform routing, the native sources on each platform,
+  permission and the IP fallback —
+  [knowledge/architecture/device-location.md](../../knowledge/architecture/device-location.md)
 - **Change notification** and the three update streams —
   [knowledge/architecture/persistence.md](../../knowledge/architecture/persistence.md)

@@ -1,6 +1,10 @@
 # Knowledge Bundle Update Log
 
 ## 2026-09-22
+* **Addition**: [Device location](architecture/device-location.md) — how a new
+  entry gets its geolocation without Google Play Services: CoreLocation via
+  `geolocator_apple`, the in-app AOSP `LottiLocationPlugin` on Android, the
+  Linux portal and GeoClue backends, and the IP fallback.
 * **Addition**: [Recent searches](features/recent_searches.md) — the
   device-local list of searches from Tasks, the Logbook, Projects and Habits,
   its flag gate and its settle-timer lifecycle, feeding the mobile sidebar

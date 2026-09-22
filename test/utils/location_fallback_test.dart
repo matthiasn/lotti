@@ -1,17 +1,18 @@
 import 'dart:async';
-import 'dart:io';
 
-import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart'
+    hide isLinux, isMacOS, isWindows;
 import 'package:http/http.dart' as http;
-import 'package:location/location.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/ip_geolocation_service.dart';
 import 'package:lotti/services/linux_location_portal.dart';
+import 'package:lotti/services/native_location.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/location.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../helpers/fallbacks.dart';
@@ -63,13 +64,38 @@ Future<Geolocation?> fakeIpGeolocationProvider({
 
 class FakeException extends Fake implements Exception {}
 
+/// The platforms [DeviceLocation] distinguishes, pinned so every branch runs
+/// on whatever host executes the suite.
+enum _Host { android, iOS, macOS, linux, windows, other }
+
+void _pinHost(_Host host) {
+  final (wasAndroid, wasIOS, wasMacOS, wasLinux, wasWindows) = (
+    isAndroid,
+    isIOS,
+    isMacOS,
+    isLinux,
+    isWindows,
+  );
+  isAndroid = host == _Host.android;
+  isIOS = host == _Host.iOS;
+  isMacOS = host == _Host.macOS;
+  isLinux = host == _Host.linux;
+  isWindows = host == _Host.windows;
+  addTearDown(() {
+    isAndroid = wasAndroid;
+    isIOS = wasIOS;
+    isMacOS = wasMacOS;
+    isLinux = wasLinux;
+    isWindows = wasWindows;
+  });
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late MockLocation mockLocation;
+  late MockNativeLocationSource nativeSource;
   late MockJournalDb mockJournalDb;
   late MockDomainLogger mockLoggingService;
-  late DeviceLocation deviceLocation;
 
   setUpAll(() {
     registerAllFallbackValues();
@@ -77,7 +103,7 @@ void main() {
   });
 
   setUp(() async {
-    mockLocation = MockLocation();
+    nativeSource = MockNativeLocationSource();
     mockJournalDb = MockJournalDb();
     mockLoggingService = MockDomainLogger();
 
@@ -91,7 +117,6 @@ void main() {
       },
     );
 
-    // Stub captureException to prevent errors in tests
     when(
       () => mockLoggingService.error(
         any<LogDomain>(),
@@ -103,491 +128,305 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
-  /// Builds the unit under test with the standard mock wiring; pass
+  /// Builds the unit under test with the standard fake wiring; pass
   /// [ipProvider] to swap in a failing/null IP geolocation provider.
   DeviceLocation buildDeviceLocation({
     IpGeolocationProvider? ipProvider,
     LinuxLocationBackendFactory? linuxBackendFactory,
   }) => DeviceLocation(
-    locationService: mockLocation,
+    nativeLocationSource: nativeSource,
     ipGeolocationProvider: ipProvider ?? fakeIpGeolocationProvider,
     linuxBackendFactory: linuxBackendFactory,
   );
 
-  /// Stubs the record-location config flag.
   void stubRecordLocationFlag({required bool enabled}) {
     when(
       () => mockJournalDb.getConfigFlag(recordLocationFlag),
     ).thenAnswer((_) async => enabled);
   }
 
-  group('DeviceLocation', () {
-    group('getCurrentGeoLocation', () {
-      test('returns null when location recording is disabled', () async {
-        stubRecordLocationFlag(enabled: false);
+  void stubNativeFix(Future<NativeLocationFix?> Function() answer) {
+    when(
+      () => nativeSource.currentLocation(timeout: any(named: 'timeout')),
+    ).thenAnswer((_) => answer());
+  }
 
-        deviceLocation = buildDeviceLocation();
-        final result = await deviceLocation.getCurrentGeoLocation();
+  void expectIpFallback(Geolocation? result) {
+    expect(result, isNotNull);
+    expect(result!.latitude, 40.7128);
+    expect(result.longitude, -74.0060);
+    expect(result.timezone, 'America/New_York');
+    expect(result.utcOffset, -300);
+    expect(result.accuracy, 50000);
+  }
 
-        expect(result, isNull);
-        verifyNever(() => mockLocation.serviceEnabled());
-        verifyNever(() => mockLocation.getLocation());
-      });
-
-      test('returns native location when permission is granted', () async {
-        // Skip on Linux: that platform uses the xdg-desktop-portal path, not the
-        // location package mocked here.
-        if (Platform.isLinux) {
-          return;
-        }
-
-        stubRecordLocationFlag(enabled: true);
-
-        when(() => mockLocation.serviceEnabled()).thenAnswer((_) async => true);
-
-        when(
-          () => mockLocation.hasPermission(),
-        ).thenAnswer((_) async => PermissionStatus.granted);
-
-        final mockLocationData = MockLocationData();
-        when(() => mockLocationData.latitude).thenReturn(37.7749);
-        when(() => mockLocationData.longitude).thenReturn(-122.4194);
-        when(() => mockLocationData.altitude).thenReturn(10);
-        when(() => mockLocationData.speed).thenReturn(5);
-        when(() => mockLocationData.accuracy).thenReturn(10);
-        when(() => mockLocationData.heading).thenReturn(180);
-        when(() => mockLocationData.speedAccuracy).thenReturn(1);
-
-        when(
-          () => mockLocation.getLocation(),
-        ).thenAnswer((_) async => mockLocationData);
-
-        deviceLocation = buildDeviceLocation();
-        final result = await deviceLocation.getCurrentGeoLocation();
-
-        expect(result, isNotNull);
-        expect(result!.latitude, 37.7749);
-        expect(result.longitude, -122.4194);
-        expect(result.altitude, 10.0);
-        expect(result.speed, 5.0);
-        expect(result.accuracy, 10.0);
-        expect(result.heading, 180.0);
-        expect(result.geohashString, isNotEmpty);
-        expect(result.timezone, isNotNull);
-        expect(result.utcOffset, isNotNull);
-      });
-
-      test('falls back to IP geolocation when permission is denied', () async {
-        // Skip on Linux: that platform uses the xdg-desktop-portal path, not the
-        // location package mocked here.
-        if (Platform.isLinux) {
-          return;
-        }
-        stubRecordLocationFlag(enabled: true);
-
-        when(() => mockLocation.serviceEnabled()).thenAnswer((_) async => true);
-
-        when(
-          () => mockLocation.hasPermission(),
-        ).thenAnswer((_) async => PermissionStatus.denied);
-
-        when(
-          () => mockLocation.requestPermission(),
-        ).thenAnswer((_) async => PermissionStatus.denied);
-
-        deviceLocation = buildDeviceLocation();
-        final result = await deviceLocation.getCurrentGeoLocation();
-
-        expect(result, isNotNull);
-        expect(result!.latitude, 40.7128);
-        expect(result.longitude, -74.0060);
-        expect(result.timezone, 'America/New_York');
-        expect(result.utcOffset, -300);
-        expect(result.accuracy, 50000);
-
-        verifyNever(() => mockLocation.getLocation());
-      });
-
-      test('falls back to IP geolocation when native location fails', () async {
-        // Skip on Linux: that platform uses the xdg-desktop-portal path, not the
-        // location package mocked here.
-        if (Platform.isLinux) {
-          return;
-        }
-
-        stubRecordLocationFlag(enabled: true);
-
-        when(() => mockLocation.serviceEnabled()).thenAnswer((_) async => true);
-
-        when(
-          () => mockLocation.hasPermission(),
-        ).thenAnswer((_) async => PermissionStatus.granted);
-
-        when(
-          () => mockLocation.getLocation(),
-        ).thenThrow(Exception('Location service failed'));
-
-        // The result should fall back to IP geolocation
-        deviceLocation = buildDeviceLocation();
-        final result = await deviceLocation.getCurrentGeoLocation();
-
-        // Verify that the exception was logged
-        verify(
-          () => mockLoggingService.error(
-            LogDomain.location,
-            any<Object>(),
-            subDomain: 'native_location_fallback',
-          ),
-        ).called(1);
-
-        expect(result, isNotNull);
-        expect(result!.latitude, 40.7128);
-        expect(result.longitude, -74.0060);
-        expect(result.timezone, 'America/New_York');
-        expect(result.utcOffset, -300);
-        expect(result.accuracy, 50000);
-      });
-
-      test('handles service not enabled by falling back to IP', () async {
-        // Skip on Linux: that platform uses the xdg-desktop-portal path, not the
-        // location package mocked here.
-        if (Platform.isLinux) {
-          return;
-        }
-        stubRecordLocationFlag(enabled: true);
-
-        when(
-          () => mockLocation.serviceEnabled(),
-        ).thenAnswer((_) async => false);
-
-        when(
-          () => mockLocation.requestService(),
-        ).thenAnswer((_) async => false);
-
-        when(
-          () => mockLocation.hasPermission(),
-        ).thenAnswer((_) async => PermissionStatus.denied);
-
-        when(
-          () => mockLocation.requestPermission(),
-        ).thenAnswer((_) async => PermissionStatus.denied);
-
-        // Should fall back to IP geolocation
-        deviceLocation = buildDeviceLocation();
-        final result = await deviceLocation.getCurrentGeoLocation();
-
-        expect(result, isNotNull);
-        expect(result!.latitude, 40.7128);
-        expect(result.longitude, -74.0060);
-        expect(result.timezone, 'America/New_York');
-        expect(result.utcOffset, -300);
-        expect(result.accuracy, 50000);
-
-        verifyNever(() => mockLocation.getLocation());
-      });
-
-      test(
-        'handles permission permanently denied by falling back to IP',
-        () async {
-          // Skip on Linux: that platform uses the xdg-desktop-portal path, not
-          // the location package mocked here.
-          if (Platform.isLinux) {
-            return;
-          }
-          stubRecordLocationFlag(enabled: true);
-
-          when(
-            () => mockLocation.serviceEnabled(),
-          ).thenAnswer((_) async => true);
-
-          when(
-            () => mockLocation.hasPermission(),
-          ).thenAnswer((_) async => PermissionStatus.deniedForever);
-
-          // Should fall back to IP geolocation
-          deviceLocation = buildDeviceLocation();
-          final result = await deviceLocation.getCurrentGeoLocation();
-
-          expect(result, isNotNull);
-          expect(result!.latitude, 40.7128);
-          expect(result.longitude, -74.0060);
-          expect(result.timezone, 'America/New_York');
-          expect(result.utcOffset, -300);
-          expect(result.accuracy, 50000);
-
-          verifyNever(() => mockLocation.getLocation());
-        },
-      );
-
-      test(
-        'gets native location when permission initially denied then granted',
-        () async {
-          if (Platform.isLinux || Platform.isWindows) return;
-
-          stubRecordLocationFlag(enabled: true);
-
-          when(
-            () => mockLocation.serviceEnabled(),
-          ).thenAnswer((_) async => true);
-
-          when(
-            () => mockLocation.hasPermission(),
-          ).thenAnswer((_) async => PermissionStatus.denied);
-
-          when(
-            () => mockLocation.requestPermission(),
-          ).thenAnswer((_) async => PermissionStatus.granted);
-
-          final mockLocationData = MockLocationData();
-          when(() => mockLocationData.latitude).thenReturn(48.8566);
-          when(() => mockLocationData.longitude).thenReturn(2.3522);
-          when(() => mockLocationData.altitude).thenReturn(35);
-          when(() => mockLocationData.speed).thenReturn(null);
-          when(() => mockLocationData.accuracy).thenReturn(20);
-          when(() => mockLocationData.heading).thenReturn(null);
-          when(() => mockLocationData.speedAccuracy).thenReturn(null);
-
-          when(
-            () => mockLocation.getLocation(),
-          ).thenAnswer((_) async => mockLocationData);
-
-          deviceLocation = buildDeviceLocation();
-          final result = await deviceLocation.getCurrentGeoLocation();
-
-          expect(result, isNotNull);
-          expect(result!.latitude, 48.8566);
-          expect(result.longitude, 2.3522);
-          verify(() => mockLocation.requestPermission()).called(1);
-          verify(() => mockLocation.getLocation()).called(1);
-        },
-      );
-
-      test('returns null when both native and IP geolocation fail', () async {
-        if (Platform.isLinux || Platform.isWindows) return;
-
-        stubRecordLocationFlag(enabled: true);
-
-        when(() => mockLocation.serviceEnabled()).thenAnswer((_) async => true);
-
-        when(
-          () => mockLocation.hasPermission(),
-        ).thenAnswer((_) async => PermissionStatus.denied);
-
-        when(
-          () => mockLocation.requestPermission(),
-        ).thenAnswer((_) async => PermissionStatus.denied);
-
-        deviceLocation = buildDeviceLocation(
-          ipProvider: nullIpGeolocationProvider,
-        );
-        final result = await deviceLocation.getCurrentGeoLocation();
-
-        expect(result, isNull);
-      });
-
-      test(
-        'returns null when native throws and IP provider returns null',
-        () async {
-          if (Platform.isLinux || Platform.isWindows) return;
-
-          stubRecordLocationFlag(enabled: true);
-
-          when(
-            () => mockLocation.serviceEnabled(),
-          ).thenAnswer((_) async => true);
-
-          when(
-            () => mockLocation.hasPermission(),
-          ).thenAnswer((_) async => PermissionStatus.granted);
-
-          when(
-            () => mockLocation.getLocation(),
-          ).thenThrow(Exception('Native failed'));
-
-          deviceLocation = buildDeviceLocation(
-            ipProvider: nullIpGeolocationProvider,
-          );
-          final result = await deviceLocation.getCurrentGeoLocation();
-
-          expect(result, isNull);
-        },
-      );
+  group('defaultNativeLocationSource', () {
+    test('uses the app channel on Android', () {
+      _pinHost(_Host.android);
+      expect(defaultNativeLocationSource(), isA<AndroidLocationSource>());
     });
 
-    group('Linux-specific location handling', () {
+    for (final host in [_Host.iOS, _Host.macOS]) {
+      test('uses CoreLocation on ${host.name}', () {
+        _pinHost(host);
+        expect(defaultNativeLocationSource(), isA<AppleLocationSource>());
+      });
+    }
+
+    for (final host in [_Host.linux, _Host.windows, _Host.other]) {
+      test('has none on ${host.name}', () {
+        _pinHost(host);
+        expect(defaultNativeLocationSource(), isNull);
+      });
+    }
+  });
+
+  group('DeviceLocation.getCurrentGeoLocation', () {
+    test('returns null and reads nothing when recording is off', () async {
+      _pinHost(_Host.android);
+      stubRecordLocationFlag(enabled: false);
+
+      final result = await buildDeviceLocation().getCurrentGeoLocation();
+
+      expect(result, isNull);
+      verifyZeroInteractions(nativeSource);
+    });
+
+    test('returns null on Windows, which records no location', () async {
+      _pinHost(_Host.windows);
+      stubRecordLocationFlag(enabled: true);
+
+      final result = await buildDeviceLocation().getCurrentGeoLocation();
+
+      expect(result, isNull);
+      verifyZeroInteractions(nativeSource);
+    });
+
+    for (final host in [_Host.android, _Host.iOS, _Host.macOS]) {
       test(
-        'uses xdg-desktop-portal location on Linux when available',
+        'maps a native fix into the entry geolocation on ${host.name}',
         () async {
-          if (!Platform.isLinux) return;
-
+          _pinHost(host);
           stubRecordLocationFlag(enabled: true);
-
-          final backend = _FakeLinuxBackend(
-            result: PortalLocation(
-              latitude: 52.52,
-              longitude: 13.405,
-              altitude: 34,
+          stubNativeFix(
+            () async => const NativeLocationFix(
+              latitude: 52.205,
+              longitude: 0.119,
+              altitude: 10,
               accuracy: 12,
-              speed: 1.5,
-              heading: 90,
+              heading: 180,
+              speed: 5,
+              speedAccuracy: 1,
             ),
           );
 
-          deviceLocation = buildDeviceLocation(
-            linuxBackendFactory: () => backend,
-          );
-          final result = await deviceLocation.getCurrentGeoLocation();
+          final result = await buildDeviceLocation().getCurrentGeoLocation();
 
           expect(result, isNotNull);
-          expect(result!.latitude, 52.52);
-          expect(result.longitude, 13.405);
-          expect(result.altitude, 34);
+          expect(result!.latitude, 52.205);
+          expect(result.longitude, 0.119);
+          expect(result.altitude, 10);
           expect(result.accuracy, 12);
-          expect(result.speed, 1.5);
-          expect(result.heading, 90);
-          expect(result.geohashString, isNotEmpty);
-          expect(backend.closeCount, 1);
+          expect(result.heading, 180);
+          expect(result.speed, 5);
+          expect(result.speedAccuracy, 1);
+          // Cambridge, UK: the geohash is derived from the fix itself.
+          expect(result.geohashString.substring(0, 4), 'u120');
+          final now = DateTime.now();
+          expect(result.timezone, now.timeZoneName);
+          expect(result.utcOffset, now.timeZoneOffset.inMinutes);
+          verify(
+            () => nativeSource.currentLocation(
+              timeout: LocationConstants.locationTimeout,
+            ),
+          ).called(1);
         },
       );
+    }
 
-      test('falls back to IP when the portal denies or times out', () async {
-        if (!Platform.isLinux) return;
+    test('keeps missing optional readings missing', () async {
+      _pinHost(_Host.android);
+      stubRecordLocationFlag(enabled: true);
+      stubNativeFix(
+        () async =>
+            const NativeLocationFix(latitude: 48.8566, longitude: 2.3522),
+      );
 
+      final result = await buildDeviceLocation().getCurrentGeoLocation();
+
+      expect(result!.latitude, 48.8566);
+      expect(result.altitude, isNull);
+      expect(result.accuracy, isNull);
+      expect(result.heading, isNull);
+      expect(result.speed, isNull);
+      expect(result.speedAccuracy, isNull);
+    });
+
+    test(
+      'falls back to IP without logging when there is no fix to take',
+      () async {
+        // Refused permission and switched-off location both answer null: an
+        // expected outcome, not an error worth a log line.
+        _pinHost(_Host.android);
+        stubRecordLocationFlag(enabled: true);
+        stubNativeFix(() async => null);
+
+        final result = await buildDeviceLocation().getCurrentGeoLocation();
+
+        expectIpFallback(result);
+        verifyNever(
+          () => mockLoggingService.error(
+            any<LogDomain>(),
+            any<Object>(),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        );
+      },
+    );
+
+    test('falls back to IP and logs when the native read fails', () async {
+      _pinHost(_Host.iOS);
+      stubRecordLocationFlag(enabled: true);
+      stubNativeFix(
+        () async =>
+            throw TimeoutException('no fix', const Duration(seconds: 10)),
+      );
+
+      final result = await buildDeviceLocation().getCurrentGeoLocation();
+
+      expectIpFallback(result);
+      verify(
+        () => mockLoggingService.error(
+          LogDomain.location,
+          any<Object>(),
+          subDomain: 'native_location_fallback',
+        ),
+      ).called(1);
+    });
+
+    test('returns null when the native read and IP both fail', () async {
+      _pinHost(_Host.android);
+      stubRecordLocationFlag(enabled: true);
+      stubNativeFix(() async => throw Exception('Native failed'));
+
+      final result = await buildDeviceLocation(
+        ipProvider: nullIpGeolocationProvider,
+      ).getCurrentGeoLocation();
+
+      expect(result, isNull);
+    });
+
+    test('uses IP alone on a platform without a native source', () async {
+      _pinHost(_Host.other);
+      stubRecordLocationFlag(enabled: true);
+
+      final result = await DeviceLocation(
+        ipGeolocationProvider: fakeIpGeolocationProvider,
+      ).getCurrentGeoLocation();
+
+      expectIpFallback(result);
+    });
+  });
+
+  group('Linux location handling', () {
+    test('uses the portal or GeoClue backend, not the native source', () async {
+      _pinHost(_Host.linux);
+      stubRecordLocationFlag(enabled: true);
+
+      final backend = _FakeLinuxBackend(
+        result: PortalLocation(
+          latitude: 52.52,
+          longitude: 13.405,
+          altitude: 34,
+          accuracy: 12,
+          speed: 1.5,
+          heading: 90,
+        ),
+      );
+
+      final result = await buildDeviceLocation(
+        linuxBackendFactory: () => backend,
+      ).getCurrentGeoLocation();
+
+      expect(result, isNotNull);
+      expect(result!.latitude, 52.52);
+      expect(result.longitude, 13.405);
+      expect(result.altitude, 34);
+      expect(result.accuracy, 12);
+      expect(result.speed, 1.5);
+      expect(result.heading, 90);
+      expect(result.geohashString, isNotEmpty);
+      expect(backend.closeCount, 1);
+      verifyZeroInteractions(nativeSource);
+    });
+
+    test('falls back to IP when the portal denies or times out', () async {
+      _pinHost(_Host.linux);
+      stubRecordLocationFlag(enabled: true);
+
+      final backend = _FakeLinuxBackend(
+        error: TimeoutException('no signal', const Duration(seconds: 1)),
+      );
+
+      final result = await buildDeviceLocation(
+        linuxBackendFactory: () => backend,
+      ).getCurrentGeoLocation();
+
+      expectIpFallback(result);
+      verify(
+        () => mockLoggingService.error(
+          LogDomain.location,
+          any<Object>(),
+          subDomain: 'linux_native_fallback',
+        ),
+      ).called(1);
+      expect(backend.closeCount, 1);
+    });
+
+    test(
+      'returns the native location even when backend.close() throws',
+      () async {
+        _pinHost(_Host.linux);
         stubRecordLocationFlag(enabled: true);
 
         final backend = _FakeLinuxBackend(
-          error: TimeoutException(
-            'no signal',
-            const Duration(seconds: 1),
-          ),
+          result: PortalLocation(latitude: 1, longitude: 2),
+          closeError: Exception('cleanup boom'),
         );
 
-        deviceLocation = buildDeviceLocation(
+        final result = await buildDeviceLocation(
           linuxBackendFactory: () => backend,
-        );
-        final result = await deviceLocation.getCurrentGeoLocation();
+        ).getCurrentGeoLocation();
 
-        expect(result, isNotNull);
-        expect(result!.latitude, 40.7128);
-        expect(result.longitude, -74.0060);
+        // Native location is preserved (not replaced by IP fallback) and the
+        // close failure is logged instead of being rethrown out of the finally
+        // block.
+        expect(result!.latitude, 1);
+        expect(result.longitude, 2);
         verify(
           () => mockLoggingService.error(
             LogDomain.location,
             any<Object>(),
-            subDomain: 'linux_native_fallback',
+            subDomain: 'linux_backend_close',
           ),
         ).called(1);
         expect(backend.closeCount, 1);
-      });
+      },
+    );
 
-      test(
-        'returns the native location even when backend.close() throws',
-        () async {
-          if (!Platform.isLinux) return;
+    test('getCurrentGeoLocationLinux is inert off Linux', () async {
+      _pinHost(_Host.macOS);
+      var backendRequested = false;
 
-          stubRecordLocationFlag(enabled: true);
-
-          final backend = _FakeLinuxBackend(
-            result: PortalLocation(latitude: 1, longitude: 2),
-            closeError: Exception('cleanup boom'),
-          );
-
-          deviceLocation = buildDeviceLocation(
-            linuxBackendFactory: () => backend,
-          );
-          final result = await deviceLocation.getCurrentGeoLocation();
-
-          // Native location is preserved (not replaced by IP fallback) and the
-          // close failure is logged through LoggingService instead of being
-          // rethrown out of the finally block.
-          expect(result, isNotNull);
-          expect(result!.latitude, 1);
-          expect(result.longitude, 2);
-          verify(
-            () => mockLoggingService.error(
-              LogDomain.location,
-              any<Object>(),
-              subDomain: 'linux_backend_close',
-            ),
-          ).called(1);
-          expect(backend.closeCount, 1);
+      final result = await buildDeviceLocation(
+        linuxBackendFactory: () {
+          backendRequested = true;
+          return _FakeLinuxBackend();
         },
-      );
-    });
+      ).getCurrentGeoLocationLinux();
 
-    group('Geolocation data validation', () {
-      test('includes geohash for all successful locations', () async {
-        // Skip on Linux: that platform uses the xdg-desktop-portal path, not the
-        // location package mocked here.
-        if (Platform.isLinux) {
-          return;
-        }
-
-        stubRecordLocationFlag(enabled: true);
-
-        when(() => mockLocation.serviceEnabled()).thenAnswer((_) async => true);
-
-        when(
-          () => mockLocation.hasPermission(),
-        ).thenAnswer((_) async => PermissionStatus.granted);
-
-        final mockLocationData = MockLocationData();
-        when(() => mockLocationData.latitude).thenReturn(52.205);
-        when(() => mockLocationData.longitude).thenReturn(0.119);
-        when(() => mockLocationData.altitude).thenReturn(null);
-        when(() => mockLocationData.speed).thenReturn(null);
-        when(() => mockLocationData.accuracy).thenReturn(15);
-        when(() => mockLocationData.heading).thenReturn(null);
-        when(() => mockLocationData.speedAccuracy).thenReturn(null);
-
-        when(
-          () => mockLocation.getLocation(),
-        ).thenAnswer((_) async => mockLocationData);
-
-        deviceLocation = buildDeviceLocation();
-        final result = await deviceLocation.getCurrentGeoLocation();
-
-        expect(result, isNotNull);
-        expect(result!.geohashString, isNotEmpty);
-        // The geohash for coordinates (52.205, 0.119) should start with 'u120'
-        expect(result.geohashString.substring(0, 4), 'u120');
-      });
-
-      test('includes timezone and UTC offset for all locations', () async {
-        // Skip on Linux: that platform uses the xdg-desktop-portal path, not the
-        // location package mocked here.
-        if (Platform.isLinux) {
-          return;
-        }
-
-        stubRecordLocationFlag(enabled: true);
-
-        when(() => mockLocation.serviceEnabled()).thenAnswer((_) async => true);
-
-        when(
-          () => mockLocation.hasPermission(),
-        ).thenAnswer((_) async => PermissionStatus.granted);
-
-        final mockLocationData = MockLocationData();
-        when(() => mockLocationData.latitude).thenReturn(0);
-        when(() => mockLocationData.longitude).thenReturn(0);
-        when(() => mockLocationData.altitude).thenReturn(null);
-        when(() => mockLocationData.speed).thenReturn(null);
-        when(() => mockLocationData.accuracy).thenReturn(100);
-        when(() => mockLocationData.heading).thenReturn(null);
-        when(() => mockLocationData.speedAccuracy).thenReturn(null);
-
-        when(
-          () => mockLocation.getLocation(),
-        ).thenAnswer((_) async => mockLocationData);
-
-        deviceLocation = buildDeviceLocation();
-        final result = await deviceLocation.getCurrentGeoLocation();
-
-        expect(result, isNotNull);
-        expect(result!.timezone, isNotNull);
-        expect(result.utcOffset, isNotNull);
-      });
+      expect(result, isNull);
+      expect(backendRequested, isFalse);
     });
   });
 }

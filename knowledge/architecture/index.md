@@ -8,6 +8,7 @@ Cross-cutting runtime structure — the parts no single feature owns.
 * [Persistence layer](persistence.md) - the Drift/SQLite databases, how connections are opened and migrated, and how writes reach the UI.
 * [Navigation and app shell](navigation.md) - independent Beamer stacks behind one IndexedStack, and the rules that decide which chrome each route gets.
 * [Security and privacy posture](security-and-privacy.md) - what is encrypted, what is not, where secrets live, and what leaves the device.
+* [Device location](device-location.md) - how a new entry gets its geolocation: platform routing, the native sources without Google Play Services, permission, timeouts and the IP fallback.
 * [Logging and diagnostics](logging-and-diagnostics.md) - the opt-in logging domains, where their lines land, and why errors bypass the gate.
 * [Signals](signals.md) - the journal series goals and habits both evaluate, bucketed by calendar day, and the habit rule evaluator.
 * [Day indicators](day-indicators.md) - the shared day-mark model and the cells, strip, track geometry and legend goals and habits draw their per-day squares with.

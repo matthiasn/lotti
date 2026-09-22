@@ -67,9 +67,6 @@ PODS:
   - libwebp/sharpyuv (1.5.0)
   - libwebp/webp (1.5.0):
     - libwebp/sharpyuv
-  - location (8.0.1):
-    - Flutter
-    - FlutterMacOS
   - media_kit_libs_ios_audio (1.0.4):
     - Flutter
   - ObjectBox (5.3.0)
@@ -144,7 +141,6 @@ DEPENDENCIES:
   - is_ios_simulator (from `.symlinks/plugins/is_ios_simulator/ios`)
   - just_audio (from `.symlinks/plugins/just_audio/darwin`)
   - just_waveform (from `.symlinks/plugins/just_waveform/darwin`)
-  - location (from `.symlinks/plugins/location/darwin`)
   - media_kit_libs_ios_audio (from `.symlinks/plugins/media_kit_libs_ios_audio/ios`)
   - objectbox_flutter_libs (from `.symlinks/plugins/objectbox_flutter_libs/ios`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
@@ -219,8 +215,6 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/just_audio/darwin"
   just_waveform:
     :path: ".symlinks/plugins/just_waveform/darwin"
-  location:
-    :path: ".symlinks/plugins/location/darwin"
   media_kit_libs_ios_audio:
     :path: ".symlinks/plugins/media_kit_libs_ios_audio/ios"
   objectbox_flutter_libs:
@@ -278,7 +272,6 @@ SPEC CHECKSUMS:
   just_audio: 4e391f57b79cad2b0674030a00453ca5ce817eed
   just_waveform: be2cb6dec86096cb972bf8b73c893fe16bf1cff4
   libwebp: 02b23773aedb6ff1fd38cec7a77b81414c6842a8
-  location: 8591ad4b623e72045097bbca04567b2213c2e293
   media_kit_libs_ios_audio: 905e6323b72e65c63ab9262b2e473f52c024a3a8
   ObjectBox: 2aae8ad350012cb53c6e7848064307cf68617f73
   objectbox_flutter_libs: 42b57158b8c4869b731487f220e07d6edc6616e0

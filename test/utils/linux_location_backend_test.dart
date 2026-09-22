@@ -119,27 +119,4 @@ void main() {
       expect(backend, isA<GeoClueBackend>());
     });
   });
-
-  group('DeviceLocation construction defaults', () {
-    test(
-      'falls back to defaultIpGeolocationProvider when none is injected',
-      () {
-        // Just verifying construction with no ipGeolocationProvider exercises
-        // the `?? defaultIpGeolocationProvider` branch. Constructor calls
-        // init(), which on Linux/test bails immediately.
-        final dl = DeviceLocation(
-          linuxBackendFactory: _StubBackend.new,
-        );
-        expect(dl.location, isNotNull);
-      },
-    );
-  });
-}
-
-class _StubBackend implements LinuxLocationBackend {
-  @override
-  Future<PortalLocation> getLocation({required Duration timeout}) =>
-      throw UnimplementedError();
-  @override
-  Future<void> close() async {}
 }
