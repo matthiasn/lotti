@@ -391,8 +391,16 @@
       "status": "verified",
       "screenshotCases": [
         "sync/add-device",
-        "sync/provisioned",
         "sync/paired"
+      ]
+    },
+    {
+      "id": "first-device",
+      "title": "Your first device",
+      "page": "sync-and-data/first-device",
+      "status": "draft",
+      "screenshotCases": [
+        "sync/provisioned"
       ]
     },
     {

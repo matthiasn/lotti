@@ -44,9 +44,9 @@ flera sammanslagbara fält skiljer sig.
 
 ## Kombinera fält utan att skriva om
 
-Välj **Kombinera...**, välj vilken version du vill utgå från, och växla sedan
-enskilda fält till den andra sidan. Fält som inte kan slås ihop oberoende
-följer den valda startversionen.
+Välj **Kombinera...**, välj under **Börja från** vilken version du vill utgå
+från och växla sedan enskilda fält till den andra sidan. Fält som inte kan slås
+ihop var för sig följer den valda startversionen.
 
 <ManualScreenshot
   caseId="sync/conflict-combine"
@@ -60,11 +60,12 @@ omedelbart hamnar i konflikt igen.
 
 :::caution[En lösning ändrar det delade resultatet]
 
-Att behålla en sida eller tillämpa en kombinerad version skriver vinnaren
-lokalt och låter den synkas till de andra enheterna. Läs hela diffen innan du
-bekräftar. Om ena sidan tog bort posten medan den andra redigerade den visar
-Lotti det säkrare valet mellan borttagning och redigering i stället för en
-vanlig fältsammanslagning.
+Att behålla en sida eller tillämpa en kombinerad version skriver vinnaren lokalt
+och låter den synka till de andra enheterna. Läs hela skillnaden innan du
+bekräftar. Om den ena sidan raderade posten medan den andra redigerade den visar
+Lotti **Raderad på en enhet** i stället för en vanlig fältsammanslagning:
+ingenting tas bort förrän du väljer **Behåll den redigerade versionen** eller
+**Bekräfta borttagning**.
 
 :::
 

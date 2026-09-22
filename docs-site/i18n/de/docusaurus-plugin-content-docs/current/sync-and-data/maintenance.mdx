@@ -5,40 +5,46 @@ description: Setze Matrix-Reparatur- und Bereinigungsaktionen bewusst ein – vo
 
 # Synchronisierung warten
 
-Öffne **Einstellungen → Synchronisierungseinstellungen → Wartung** für Reparaturen und
-Bereinigungen auf Datenbankebene. Diese Aktionen gehören weder zum normalen
-Koppeln noch zur täglichen Synchronisierung. Lass vorher aktive Schreibvorgänge
-abschließen und halte eine aktuelle Sicherung unersetzlicher Daten bereit.
+Öffne **Einstellungen → Synchronisierungseinstellungen → Wartung** für
+Reparaturen und Bereinigungen auf Datenbankebene. Diese Aktionen gehören weder
+zum normalen Koppeln noch zur täglichen Synchronisierung. Lass vorher aktive
+Schreibvorgänge abschließen und halte eine aktuelle Sicherung unersetzlicher
+Daten bereit.
 
 <ManualScreenshot
   caseId="sync/maintenance"
-  alt="Lottis Matrix-Synchronisierungswartung mit Löschen der Sync-Datenbank, Definitionsabgleich, erneutem Nachrichtenabgleich, Aufbau des Sequenzprotokolls und Bereinigung gesendeter Postausgangseinträge"
+  alt="Lottis Sync-Wartung mit Synchronisierungsdatenbank löschen, Messgrößen, Dashboards, Gewohnheiten, Kategorien, AI-Einstellungen synchronisieren, Nachrichtenverlauf, Sync-Sequenzprotokoll befüllen und Alte gesendete Outbox-Einträge löschen"
   caption="Wartung bündelt destruktive, wiederholende und bereinigende Aktionen. Der Bestätigungstext beschreibt jeweils ihren Umfang."
 />
 
 ## Die kleinste passende Reparatur wählen
 
-- **Sync-Datenbank löschen** entfernt die lokale Synchronisierungsdatenbank.
-  Das ist eine destruktive lokale Wiederherstellung und kein normaler Weg, ein
-  Gerät zu trennen.
-- **Definitionen synchronisieren** sendet aktuelle Definitionen wie Kategorien
-  und andere gemeinsam verwendete Konfiguration erneut.
-- **Nachrichten erneut synchronisieren** spielt ausgewählte Nachrichten noch
-  einmal ab, wenn Remote-Zustand fehlt oder eine frühere Zustellung wiederholt
-  werden muss.
-- **Sequenzprotokoll füllen** rekonstruiert den lokalen Sequenzverlauf, mit dem
-  Lücken erkannt und Nachfüllungen gesteuert werden.
-- **Alte gesendete Postausgangseinträge bereinigen** löscht bereits gesendeten
-  Diagnoseverlauf nach Ablauf der Aufbewahrungszeit. Ausstehende oder
-  fehlgeschlagene Arbeit bleibt erhalten.
+- **Synchronisierungsdatenbank löschen** entfernt die lokale
+  Synchronisierungsdatenbank. Das ist eine destruktive lokale Wiederherstellung
+  und kein normaler Weg, ein Gerät zu trennen.
+- **Messgrößen, Dashboards, Gewohnheiten, Kategorien, AI-Einstellungen
+  synchronisieren** sendet diese gemeinsame Konfiguration erneut. Ein Dialog
+  lässt dich wählen, welche Arten dabei sind — auch Labels und gespeicherte
+  Aufgabenfilter —, bevor du **Sync starten** wählst.
+- **Nachrichtenverlauf** stellt Einträge erneut für deine anderen Geräte in die
+  Warteschlange. Wähle einen Zeitraum — **Alles**, **Letzte 30 Tage** oder
+  **Benutzerdefiniert** mit Start und Ende — und die Entitätstypen, dann
+  **Starten**. Schlagen einzelne Einträge fehl, wiederholt **Fehlgeschlagene
+  Einträge erneut versuchen** nur diese.
+- **Sync-Sequenzprotokoll befüllen** indiziert vorhandene Einträge, damit die
+  Nachfüllung auch Anfragen nach Einträgen beantworten kann, die entstanden
+  sind, bevor es die Sequenzverfolgung gab.
+- **Alte gesendete Outbox-Einträge löschen** entfernt gesendete Einträge im
+  Postausgang, die älter als 7 Tage sind, und gibt Speicherplatz frei.
+  Wartende oder fehlgeschlagene Einträge bleiben erhalten.
 
 Beginne mit der kleinsten Aktion, die zum Symptom passt. Ein festhängender
 Anhang gehört in den [Postausgang](./sync.mdx#den-ausgang-prüfen), dauerhafte
-Sequenzlücken zur Nachfüllung und zwei gültige gleichzeitige Änderungen in
+Sequenzlücken zur Sync-Nachfüllung und zwei gültige gleichzeitige Änderungen in
 die [Konflikte](./conflicts.mdx). Das Löschen der Sync-Datenbank ist der letzte
 Ausweg und sollte nur mit einem bekannten, vollständigen Peer und einer
 Sicherung erfolgen.
 
-Kehre danach zu **Synchronisierungsstatistik** zurück. Prüfe, ob die Anzahl
-verarbeiteter Elemente weiterläuft, ohne dass die Fehlerzahl anwächst, und ob
-sich Postausgang sowie Anzahl fehlender Nachfüllungen beruhigen.
+Kehre danach zu **Matrix-Statistiken** zurück. Prüfe, ob angewendete Arbeit
+weiterläuft und die Warteschlange sich leert, und ob sich Sync-Postausgang und
+die Zahl fehlender Einträge in der Nachfüllung beruhigen.

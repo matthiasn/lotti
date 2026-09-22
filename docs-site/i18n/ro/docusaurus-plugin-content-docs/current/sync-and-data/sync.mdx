@@ -7,10 +7,6 @@ description: Asociați dispozitive, verificați-le identitatea, monitorizați li
 
 Lotti Sync menține datele acceptate aliniate între dispozitivele dvs. Fiecare dispozitiv are propria bază de date locală; Sync mută modificările prin contul de sincronizare configurat și recuperează un dispozitiv după ce a fost offline. Sincronizarea nu mută sistemul de evidență într-un cloud Lotti: serviciul Matrix configurat retransmite încărcături criptate end-to-end între dispozitivele dvs., iar fiecare dispozitiv își păstrează copia locală.
 
-Deschideți **Setări → Setări sincronizare** pentru a vedea paginile disponibile de configurare, stare și recuperare. Numărul de lângă **Cutia de ieșire** reprezintă munca ce nu a ajuns încă la serviciul de sincronizare.
-
-<ManualScreenshot caseId="sync/hub" alt="Setările Lotti Sync, cu Sincronizare aprovizionată, identitatea dispozitivului, recuperare, statistici, cutie de ieșire, conflicte și întreținere" caption="Centrul de sincronizare păstrează starea de zi cu zi aproape de instrumentele de diagnostic și recuperare. Project Waddle are în prezent trei elemente de inspectat în cutia de ieșire." />
-
 ## Ce se sincronizează și ce rămâne
 
 | Se sincronizează între dispozitivele dvs. | Rămâne pe dispozitiv |
@@ -19,81 +15,192 @@ Deschideți **Setări → Setări sincronizare** pentru a vedea paginile disponi
 
 Două detalii utile. Nu tot ce se sincronizează este dată de jurnal: profilul dispozitivului și numele Daily OS călătoresc ca preferințe ale dispozitivului și sunt exceptate de la detectarea lacunelor. Iar numerele derivate nu sunt trimise niciodată — un filtru de sarcini salvat se sincronizează, dar numărătorile rezultate sunt recalculate pe fiecare dispozitiv.
 
+Deschideți **Setări → Setări sincronizare** pentru paginile de configurare,
+stare și recuperare. Numărul de lângă **Coadă de ieșire pentru sincronizare**
+reprezintă munca ce nu a ajuns încă la serviciul de sincronizare.
+
+<ManualScreenshot
+  caseId="sync/hub"
+  alt="Setările de sincronizare Lotti cu Dispozitive, Acest dispozitiv, Completare sincronizare, Statistici Matrix, Coadă de ieșire pentru sincronizare, Sync cu conflicte și Întreținere"
+  caption="Setările de sincronizare păstrează starea de zi cu zi aproape de instrumentele de diagnostic și recuperare. Project Waddle are în prezent trei elemente de inspectat în coada de ieșire."
+/>
+
 ## Vedeți dispozitivele dumneavoastră
 
-**Setări → Setări sincronizare → Dispozitive** enumeră fiecare sesiune a contului
-dumneavoastră de sincronizare, nu doar pe cele neverificate.
+**Setări → Setări sincronizare → Dispozitive** listează fiecare sesiune a
+contului dumneavoastră de sincronizare — nu doar pe cele neverificate. Antetul
+numără dispozitivele de pe serverul de sincronizare, iar **Adăugați dispozitiv**
+pornește [asocierea unui alt dispozitiv](./add-device.mdx).
 
 <ManualScreenshot
   caseId="sync/status"
-  alt="Pagina Dispozitive din Lotti, cu sesiunile contului de sincronizare, starea verificării și ultima activitate"
-  caption="Fiecare rând arată dacă dispozitivul este verificat și când l-a văzut ultima dată serverul. Un dispozitiv neverificat nu poate citi însemnările noi, iar lista spune asta."
+  alt="Pagina Dispozitive din Lotti cu carduri pentru Mission Control Mac și Admiral Pebble's Phone, etichetele lor de verificare, ultima prezență și acțiunea Opriți sincronizarea pe acest dispozitiv"
+  caption="Fiecare card arată dacă dispozitivul este verificat și când l-a văzut serverul ultima dată. Un dispozitiv care nu a mai dat semne de mult timp este marcat ca probabil nu mai este folosit."
 />
 
-Sesiunile autentificate cu acest cont pot fi eliminate — cu excepția celei pe
-care vă aflați. Dispozitivele asociate în modul vechi, fiecare cu propriul cont,
-pot fi verificate, dar nu eliminate.
+Fiecare card poartă eticheta **Acest dispozitiv** pentru cel pe care îl țineți
+în mână și **Verificat** sau **Neverificat** pentru celelalte. Un dispozitiv
+neverificat nu poate citi înregistrările noi: un banner deasupra listei spune
+câte sunt, iar fiecare oferă **Verificați**. Dacă un dispozitiv nu a mai dat
+semne de o vreme, verificarea vă avertizează mai întâi că ar putea fi offline —
+compararea emoji-urilor funcționează doar cât timp acel dispozitiv este pornit
+și afișează Lotti. Alegeți **Verificați oricum** numai dacă știți că este așa.
+
+Pentru a retrage un dispozitiv, alegeți **Eliminați din sincronizare** pe cardul
+său. Este deconectat și are nevoie de un cod de asociere nou înainte de a se
+putea sincroniza din nou. Dacă serverul de sincronizare nu mai acceptă parola
+salvată pe acest dispozitiv, Lotti vă cere să vă confirmați identitatea cu parola
+actuală a contului de sincronizare înainte de a elimina ceva. Un dispozitiv care
+nu și-a încheiat niciodată asocierea poate fi doar eliminat. Nu puteți elimina
+astfel dispozitivul pe care vă aflați, iar dispozitivele asociate după metoda
+veche — fiecare cu propriul cont — pot fi verificate, dar nu eliminate.
+
+Când un dispozitiv pe care tocmai l-ați adăugat își încheie verificarea, un
+banner anunță sosirea lui și oferă **Trimiteți setările** și **Trimiteți
+istoricul mesajelor** direct pe această pagină, astfel încât noul dispozitiv se
+umple fără ocolișuri.
+
+**Opriți sincronizarea pe acest dispozitiv**, sub listă, deconectează acest
+dispozitiv de la contul de sincronizare. Înregistrările dumneavoastră rămân pe
+el, iar celelalte dispozitive nu sunt afectate; pentru a sincroniza din nou este
+nevoie de un cod de asociere nou. **Detalii tehnice** afișează informații de
+diagnosticare pe care le puteți copia într-o cerere de asistență.
+
+Înainte ca sincronizarea să fie configurată, această pagină afișează în schimb
+**Sincronizați-vă dispozitivele** cu **Configurați sincronizarea** — consultați
+[Adăugați un dispozitiv](./add-device.mdx) sau
+[Primul dumneavoastră dispozitiv](./first-device.mdx), dacă încă nu este
+conectat niciun dispozitiv.
 
 ## Asociați alt dispozitiv
 
 Asocierea este un flux separat, cu un cod de comparat și doi pași după
-conectare. Are o pagină proprie: [Adăugați un dispozitiv](./add-device.mdx).
+conectare. Are propria pagină: [Adăugați un dispozitiv](./add-device.mdx).
 
-Pe scurt: pe un dispozitiv deja conectat deschideți **Setări → Setări sincronizare →
-Dispozitive → Adăugați dispozitiv** și afișați codul. Pe noul dispozitiv
-deschideți aceeași pagină și scanați-l. Comparați codul de verificare pe ambele
-ecrane înainte de a conecta — codul QR conține datele de acces ale contului
-dumneavoastră de sincronizare și merge doar către propriul dispozitiv.
+Pe scurt: pe un dispozitiv deja conectat, deschideți **Setări → Setări
+sincronizare → Dispozitive → Adăugați dispozitiv** și afișați codul. Pe
+dispozitivul nou, deschideți aceeași pagină, alegeți **Configurați
+sincronizarea** și scanați-l. Comparați codul de control pe ambele ecrane
+înainte de conectare — codul QR conține datele de autentificare ale contului de
+sincronizare, deci ajunge doar pe propriul dumneavoastră dispozitiv.
 
 ## Verificați noul dispozitiv
 
-Asocierea conectează dispozitivul; verificarea confirmă că cele două dispozitive comunică fără ca un dispozitiv necunoscut să se interpună.
+Asocierea conectează dispozitivul; verificarea confirmă că ambele dispozitive
+comunică fără un dispozitiv necunoscut la mijloc.
 
-<ManualScreenshot caseId="sync/verification" alt="Verificarea dispozitivelor Lotti, care compară o secvență de emoji cu pinguin, pește, rachetă, gheață, Pământ, Lună și stea" caption="Comparați întreaga secvență de emoji pe ambele dispozitive. Acceptați numai când fiecare imagine și ordinea ei corespund exact." />
+<ManualScreenshot
+  caseId="sync/verification"
+  alt="Verificarea dispozitivului în Lotti, care compară o secvență de emoji: pinguin, pește, rachetă, gheață, Pământ, lună și stea"
+  caption="Comparați întreaga secvență de emoji pe ambele dispozitive. Acceptați doar când fiecare imagine și ordinea lor coincid exact."
+/>
 
-Comparați emoji-urile în persoană sau printr-un apel de încredere. Selectați **Coincid** pe ambele dispozitive numai când întreaga secvență corespunde. Dacă diferă chiar și un singur emoji, anulați verificarea și investigați contul și numele dispozitivelor înainte de a încerca din nou.
+Ambele ecrane afișează șapte emoji. Comparați-le în persoană sau printr-un apel
+de încredere și alegeți **Coincid** pe ambele dispozitive numai dacă întreaga
+secvență coincide în aceeași ordine. Dacă diferă chiar și un singur emoji,
+alegeți **Diferă — anulați** și verificați numele contului și ale
+dispozitivelor înainte de a încerca din nou.
 
 ## Denumiți dispozitivele și anunțați capabilități
 
-**Acest dispozitiv** („Numele și capacitățile dispozitivului”) identifică dispozitivul curent pentru restul grupului de sincronizare. Dați-i un nume care distinge mașina fizică, de exemplu „Mission Control Mac”, nu „Desktop”.
+**Acest dispozitiv** — „Numele și capacitățile dispozitivului” — prezintă
+dispozitivul curent restului grupului de sincronizare. Dați-i un **Numele afișat
+al dispozitivului** care deosebește aparatul fizic, de exemplu „Mission Control
+Mac” în loc de „Desktop”, și alegeți **Salvați**.
 
-<ManualScreenshot caseId="sync/node-profile" alt="Profilul nodului Lotti Sync pentru Mission Control Mac, cu capabilități locale de inferență și dispozitive Project Waddle cunoscute" caption="Numele clare de dispozitive fac verificarea, diagnosticul și inferența locală fixată pe dispozitiv mult mai ușor de auditat." />
+<ManualScreenshot
+  caseId="sync/node-profile"
+  alt="Pagina Acest dispozitiv din Lotti pentru Mission Control Mac, cu numele afișat, capabilitățile AI detectate și dispozitivele de sincronizare cunoscute"
+  caption="Numele clare ale dispozitivelor fac mult mai ușor de urmărit verificarea, diagnosticarea și inferența locală legată de un dispozitiv."
+/>
 
-Pagina enumeră și capabilitățile pe care dispozitivul le poate oferi, precum transcriere audio locală sau inferență locală cu modele de limbaj. Dispozitivele cunoscute arată ce au anunțat ultima dată celelalte noduri. Disponibilitatea capabilităților este descriptivă; profilul AI relevant trebuie totuși configurat pentru a le folosi.
+**Capabilități AI detectate** listează ce poate oferi acest dispozitiv, de
+exemplu transcrierea audio locală sau inferența locală cu un model de limbaj.
+**Dispozitive de sincronizare cunoscute** arată ce au publicat cel mai recent
+celelalte dispozitive. Capabilitățile listate sunt descriptive; profilul AI
+corespunzător trebuie totuși configurat să le folosească.
 
 ## Înțelegeți recuperarea și completarea lipsurilor
 
-Sincronizarea obișnuită procesează modificările pe măsură ce sosesc. **Recuperarea** detectează goluri în secvența primită de la dispozitive cunoscute și solicită din nou înregistrările lipsă.
+Sincronizarea obișnuită procesează modificările pe măsură ce sosesc.
+**Completare sincronizare** detectează golurile din secvența primită de la
+dispozitivele cunoscute și solicită din nou înregistrările lipsă.
 
-<ManualScreenshot caseId="sync/backfill" alt="Pagina Lotti Sync Recuperare, cu stările de intrare, lipsă și omis, statistici de secvență și recuperare automată" caption="Project Waddle a primit 2.868 de înregistrări de secvență și cunoaște în prezent patru înregistrări lipsă pe două ID-uri de dispozitiv." />
+<ManualScreenshot
+  caseId="sync/backfill"
+  alt="Pagina Completare sincronizare din Lotti cu contoarele cozii de intrare, ale elementelor lipsă și omise, statisticile de sincronizare, completarea automată și recuperarea avansată"
+  caption="Project Waddle a primit 2.868 de înregistrări de secvență și cunoaște în prezent patru înregistrări lipsă de pe două ID-uri de dispozitiv."
+/>
 
-- **Intrare** este munca ce așteaptă acum în coada de intrare.
-- **Lipsă** este numărul golurilor de secvență cunoscute.
-- **Omisă** este munca abandonată de coada de intrare după ce nu a putut fi procesată normal.
-- **Recuperarea automată** solicită continuu golurile recuperabile și este valoarea implicită potrivită pentru utilizarea obișnuită.
-- **Recuperare avansată** conține controale manuale pentru investigație. Folosiți-le numai după ce sincronizarea obișnuită și recuperarea automată au avut timp să se stabilizeze.
+- **Coadă de intrare** este munca ce așteaptă să fie aplicată.
+- **Lipsă** este numărul golurilor cunoscute din secvență.
+- **Omis** este munca pe care coada de intrare a abandonat-o pentru că nu a
+  putut fi procesată normal.
+- **Completare automată** solicită înregistrările lipsă din ultimele 24 de ore
+  și este setarea implicită potrivită pentru utilizarea obișnuită.
+- **Recuperare avansată** conține acțiuni manuale pentru o investigație, cum ar
+  fi **Recuperați acum** și solicitarea înregistrărilor lipsă mai vechi.
+  Folosiți-o doar după ce sincronizarea obișnuită și completarea automată au
+  avut timp să se stabilizeze.
 
-Un număr lipsă diferit de zero nu înseamnă automat pierdere de date: alt dispozitiv poate fi încă offline sau solicitarea poate fi deja pe drum. Investigați când numărul rămâne neschimbat, iar toate dispozitivele așteptate sunt online.
+Un număr de elemente lipsă diferit de zero nu înseamnă automat pierdere de date:
+alt dispozitiv poate fi încă offline sau cererea este deja în curs. Investigați
+când numărul nu se schimbă, deși toate dispozitivele așteptate sunt online.
 
-## Citiți statisticile de sincronizare
+## Citiți statisticile Matrix
 
-**Statistici de sincronizare** separă volumul mesajelor de sănătatea procesării. Este utilă când datele par vechi, dar contul raportează în continuare că este conectat.
+**Statistici Matrix** separă volumul mesajelor de sănătatea procesării. Este
+util când datele par vechi, dar contul apare în continuare ca fiind conectat.
 
-<ManualScreenshot caseId="sync/stats" alt="Statisticile Lotti Matrix Sync, cu număr de mesaje trimise, indicatori principali de procesare, tipuri de mesaje, erori, reîncercări și totaluri de entități" caption="Numerele stabilesc dacă mesajele circulă; erorile și reîncercările programate arată dacă fluxul avansează fără probleme." />
+<ManualScreenshot
+  caseId="sync/stats"
+  alt="Statistici Matrix în Lotti cu mesajele trimise pe tip de eveniment, acțiunile din metricile de sincronizare, indicatorii principali, contoarele de aplicare în baza de date și semnalele"
+  caption="Contoarele de trimitere arată dacă mesajele circulă; contoarele de aplicare în baza de date arată ce a produs de fapt munca primită."
+/>
 
-Cardul mesajelor trimise grupează tipurile de evenimente Matrix. **Indicatorii principali** rezumă mesajele procesate, erorile și reîncercările programate, iar totalurile entităților arată ce familii de date Lotti au contribuit la muncă. Un număr în creștere de mesaje procesate, cu erori stabile, este sănătos. Erorile repetate sau reîncercările care nu dispar cer verificarea cutiei de ieșire și a conectivității celuilalt dispozitiv.
+**Mesaje trimise:** numără ce a trimis acest dispozitiv, grupat pe tipuri de
+evenimente Matrix. Sub **Metrici sincronizare**, **Indicatori principali** arată
+rândurile scrise în baza de date, conflictele create și evenimentele primite care
+încă așteaptă în coadă. Grupul **Aplicare în baza de date** adaugă ce a fost
+ignorat ca date mai vechi, omis în lipsa unui rând de bază sau abandonat după
+reîncercări.
+
+Un contor **Aplicat în baza de date** care crește și o coadă care se golește sunt
+semne bune. Dacă coada rămâne mare sau apar mereu elemente abandonate, folosiți
+**Reîncercați acum** sau **Forțați rescanarea**, apoi verificați coada de ieșire
+și conexiunea celuilalt dispozitiv. **Copiați diagnosticarea** pune cifrele în
+clipboard pentru o cerere de asistență.
 
 ## Inspectați cutia de ieșire
 
-**Cutia de ieșire** este coada locală de modificări care așteaptă să fie trimise. Filtrați-o după stare pentru a separa munca activă de erori.
+**Coadă de ieșire pentru sincronizare** este coada locală a modificărilor care
+așteaptă să fie trimise. Rezumatul de sus spune dacă totul este sincronizat,
+câte elemente așteaptă sau se trimit și câte nu au putut fi trimise.
 
-<ManualScreenshot caseId="sync/outbox" alt="Cutia de ieșire Lotti Sync filtrată la o fotografie eșuată a etanșării de presiune a habitatului Project Waddle, cu acțiuni de reîncercare și eliminare" caption="Elementele eșuate își păstrează subiectul, detaliile încărcăturii, istoricul reîncercărilor și calea atașamentului local, astfel încât recuperarea să fie specifică, nu oarbă." />
+<ManualScreenshot
+  caseId="sync/outbox"
+  alt="Coada de ieșire pentru sincronizare din Lotti, filtrată pe o înregistrare de jurnal care nu a putut fi trimisă, cu detaliile atașamentului, Reîncercați, Eliminați și Reîncercați tot"
+  caption="Un element care nu a putut fi trimis își păstrează detaliile conținutului, numărul de încercări și atașamentul local, astfel încât recuperarea să fie precisă, nu pe ghicite."
+/>
 
-- Elementele **În așteptare** își așteaptă rândul.
-- Elementele **Se trimit** sunt în curs de livrare.
-- Elementele **Eșuate** au epuizat încercarea curentă și rămân disponibile pentru inspecție.
-- Elementele **Trimise** au fost livrate și sunt păstrate temporar pentru diagnostic.
+Filtrați lista după stare:
 
-Folosiți **Reîncercați toate** după repararea problemei de conexiune sau cont. Eliminați un element eșuat numai când nu doriți intenționat ca modificarea să ajungă la celelalte dispozitive. Eliminarea lui din cutia de ieșire nu înlocuiește repararea intrării sau atașamentului local corespunzător.
+- **În așteptare** arată elementele care își așteaptă rândul și pe cele care se
+  trimit chiar acum.
+- **Eșuat** arată elementele care nu au putut fi trimise nici după
+  reîncercările automate. Rămân salvate pe acest dispozitiv, dar nu se retrimit
+  de la sine: după rezolvarea problemei, alegeți **Reîncercați** sau
+  **Reîncercați tot**.
+- **Trimis** arată elementele livrate, păstrate o vreme pentru diagnosticare.
 
-Continuați cu [Rezolvați conflicte de sincronizare](./conflicts.mdx) când două dispozitive au editat independent aceeași înregistrare sau cu [Întreținerea sincronizării](./maintenance.mdx) pentru instrumente de recuperare la nivel de bază de date.
+Folosiți **Reîncercați tot** după ce problema de conexiune sau de cont a fost
+rezolvată, ori **Reîncercați** pentru un singur element. **Eliminați** scoate un
+element din coadă: rămâne pe acest dispozitiv, dar nu va ajunge niciodată pe
+celelalte dispozitive ale dumneavoastră, așa că eliminați-l doar dacă exact asta
+doriți. Eliminarea nu înlocuiește repararea înregistrării sau a atașamentului
+local corespunzător.
+
+Continuați cu [Rezolvați conflicte de sincronizare](./conflicts.mdx) când două
+dispozitive au editat independent aceeași înregistrare, sau cu
+[Întreținerea sincronizării](./maintenance.mdx) pentru instrumentele de
+recuperare la nivel de bază de date.

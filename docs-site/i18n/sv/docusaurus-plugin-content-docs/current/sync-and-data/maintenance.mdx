@@ -5,39 +5,45 @@ description: Använd Matrix-synkroniseringsreparation och rensningsåtgärder me
 
 # Synkroniseringsunderhåll
 
-Öppna **Inställningar → Synkroniseringsinställningar → Underhåll** för reparation och rensning på
-databasnivå. Dessa åtgärder ingår inte i rutinmässig ihopparning eller daglig
-synkronisering. Innan du använder dem, låt aktiva skrivningar bli klara och
-behåll en aktuell säkerhetskopia av data du inte kan återskapa.
+Öppna **Inställningar → Synkroniseringsinställningar → Underhåll** för
+reparation och rensning på databasnivå. De här åtgärderna hör inte till den
+vanliga parkopplingen eller den dagliga synkroniseringen. Innan du använder dem,
+låt pågående skrivningar bli klara och ha en aktuell säkerhetskopia av data som
+du inte kan återskapa.
 
 <ManualScreenshot
   caseId="sync/maintenance"
-  alt="Lottis Matrix-synkunderhåll med radering av synkdatabasen, definitionssynk, omsynk av meddelanden, ifyllnad av sekvensloggen och rensning av skickade utboxobjekt"
-  caption="Underhållet samlar destruktiva åtgärder, återuppspelning och rensning på en sida. Bekräftelsetexten definierar varje operations omfång."
+  alt="Lottis synkroniseringsunderhåll med Ta bort synkdatabasen, Synkronisera mätbara saker, instrumentpaneler, vanor, kategorier, AI-inställningar, Meddelandehistorik, Fyll i synksekvenslogg och Rensa gamla ut-ut-varor"
+  caption="Underhåll samlar destruktiva, upprepande och rensande åtgärder på en sida. Bekräftelsetexten avgränsar varje åtgärds omfattning."
 />
 
 ## Välj den smalaste reparationen
 
-- **Ta bort synkdatabasen** raderar den lokala synkdatabasen. Det är en
-  destruktiv lokal återställning, inte ett vanligt sätt att koppla från en
+- **Ta bort synkdatabasen** tar bort den lokala synkroniseringsdatabasen. Det är
+  destruktiv lokal återställning, inte ett normalt sätt att koppla från en
   enhet.
-- **Synka definitioner** skickar de aktuella definitionsposterna igen, som
-  kategorier och annan delad konfiguration.
-- **Meddelandehistorik** spelar upp utvalda meddelanden igen när
-  fjärrtillstånd saknas eller en tidigare leverans måste upprepas.
-- **Fyll i synksekvenslogg** rekonstruerar den lokala sekvenshistorik som
-  används för att upptäcka luckor och driva återfyllning.
-- **Rensa gamla ut-ut-varor** raderar redan skickad diagnostisk köhistorik
-  efter dess bevarandetid. Den tar inte bort väntande eller misslyckat
-  arbete.
+- **Synkronisera mätbara saker, instrumentpaneler, vanor, kategorier,
+  AI-inställningar** skickar den delade konfigurationen igen. En dialog låter
+  dig välja vilka typer som ska med — även etiketter och sparade uppgiftsfilter —
+  innan du väljer **Starta synkronisering**.
+- **Meddelandehistorik** köar poster igen för dina andra enheter. Välj ett
+  intervall — **Allt**, **Senaste 30 dagarna** eller **Anpassat** med en start
+  och ett slut — och de entitetstyper som ska med, och sedan **Start**. Om några
+  poster misslyckas upprepar **Försök igen med misslyckade poster** bara dem.
+- **Fyll i synksekvenslogg** indexerar befintliga poster så att återfyllningen
+  också kan svara på begäranden om poster som skapades innan
+  sekvensspårningen fanns.
+- **Rensa gamla ut-ut-varor** tar bort skickade rader i utboxen som är äldre än
+  7 dagar och frigör diskutrymme. Poster som väntar eller har misslyckats
+  behålls.
 
-Börja med den minsta operationen som matchar symptomet. En fastnad bilaga hör
-hemma i [utboxen](./sync.mdx#inspektera-utboxen); ihållande sekvensluckor hör
-hemma i återfyllningen; två giltiga samtidiga redigeringar hör hemma i
-[Konflikter](./conflicts.mdx). Att radera synkdatabasen bör vara en sista
-utvägs lokal återställning, utförd med en känd kompatibel motpart och en
+Börja med den minsta åtgärd som passar symptomet. En bilaga som fastnat hör
+hemma i [utboxen](./sync.mdx#inspektera-utboxen), bestående luckor i sekvensen
+hör till Backfill-synkronisering, och två giltiga samtidiga redigeringar hör
+till [konflikterna](./conflicts.mdx). Att ta bort synkroniseringsdatabasen bör
+vara en lokal återställning i sista hand, gjord med en känd pålitlig enhet och en
 säkerhetskopia till hands.
 
-Efter en reparation, gå tillbaka till **Synkstatistik**, bekräfta att det
-bearbetade arbetet går framåt utan att antalet misslyckanden ökar, och
-kontrollera att utboxen och återfyllningsantalen lägger sig.
+Gå efter en reparation tillbaka till **Matrisstatistik**, kontrollera att
+tillämpat arbete går framåt och kön töms, och att utboxen och antalet saknade
+poster i återfyllningen lugnar sig.

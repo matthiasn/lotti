@@ -13,16 +13,6 @@ Lotti: il servizio Matrix configurato inoltra payload crittografati end-to-end
 tra i tuoi dispositivi, mentre ogni dispositivo conserva la propria copia
 locale.
 
-Apri **Impostazioni → Impostazioni di sincronizzazione** per vedere le pagine disponibili di
-configurazione, salute e recupero. Il numero accanto a **Posta in uscita** è
-lavoro che non ha ancora raggiunto il servizio di sincronizzazione.
-
-<ManualScreenshot
-  caseId="sync/hub"
-  alt="Impostazioni Sync di Lotti con dispositivi, identità del dispositivo, backfill, statistiche, posta in uscita, conflitti e manutenzione"
-  caption="L'hub di Sync tiene lo stato quotidiano vicino agli strumenti di diagnostica e recupero. Project Waddle ha al momento tre elementi in uscita da ispezionare."
-/>
-
 ## Cosa si sincronizza e cosa resta
 
 | Si sincronizza tra i tuoi dispositivi | Resta sul singolo dispositivo |
@@ -31,141 +21,197 @@ lavoro che non ha ancora raggiunto il servizio di sincronizzazione.
 
 Due dettagli utili. Non tutto ciò che si sincronizza è un dato del diario: il profilo del dispositivo e il nome Daily OS viaggiano come preferenze del dispositivo e non rientrano nel rilevamento delle lacune. E i numeri derivati non vengono mai inviati: un filtro attività salvato si sincronizza, ma i conteggi che ne derivano vengono ricalcolati su ogni dispositivo.
 
+Apri **Impostazioni → Impostazioni di sincronizzazione** per le pagine di
+configurazione, stato e recupero. Il numero accanto a **Posta in uscita** è il
+lavoro che non ha ancora raggiunto il servizio di sincronizzazione.
+
+<ManualScreenshot
+  caseId="sync/hub"
+  alt="Impostazioni di sincronizzazione di Lotti con Dispositivi, Questo dispositivo, Sincronizzazione di backup, Statistiche Matrix, Posta in uscita, Conflitti di sincronizzazione e Manutenzione"
+  caption="Le impostazioni di sincronizzazione tengono lo stato quotidiano accanto agli strumenti di diagnosi e recupero. Project Waddle ha al momento tre elementi in uscita da controllare."
+/>
+
 ## Vedi i tuoi dispositivi
 
 **Impostazioni → Impostazioni di sincronizzazione → Dispositivi** elenca ogni
 sessione del tuo account di sincronizzazione — non solo quelle non verificate.
+L'intestazione conta i dispositivi sul tuo server di sincronizzazione, e
+**Aggiungi dispositivo** avvia l'[associazione di un altro dispositivo](./add-device.mdx).
 
 <ManualScreenshot
   caseId="sync/status"
-  alt="Pagina Dispositivi di Lotti con le sessioni dell'account di sincronizzazione, lo stato di verifica e l'ultimo accesso"
-  caption="Ogni riga mostra se il dispositivo è verificato e quando il server lo ha visto l'ultima volta. Un dispositivo non verificato non può leggere le nuove voci, e l'elenco lo dice."
+  alt="Pagina Dispositivi di Lotti con le schede di Mission Control Mac e Admiral Pebble's Phone, i loro chip di verifica, l'ultimo accesso e l'azione Interrompi la sincronizzazione su questo dispositivo"
+  caption="Ogni scheda mostra se il dispositivo è verificato e quando il server l'ha visto l'ultima volta. Un dispositivo che non si fa vivo da molto viene segnato come probabilmente non più in uso."
 />
 
-Le sessioni collegate con questo account si possono rimuovere — tranne quella
-su cui ti trovi. I dispositivi accoppiati alla vecchia maniera, ognuno con un
-account proprio, si possono verificare ma non rimuovere.
+Ogni scheda porta il chip **Questo dispositivo** per quello che hai in mano, e
+**Verificato** o **Non verificato** per gli altri. Un dispositivo non verificato
+non può leggere le nuove voci: un banner sopra l'elenco dice quanti sono, e
+ciascuno offre **Verifica**. Se un dispositivo non si fa vivo da un po', la
+verifica avvisa prima che potrebbe essere offline — il confronto delle emoji
+funziona solo mentre quel dispositivo è acceso e mostra Lotti. Scegli
+**Verifica comunque** solo se sai che è così.
+
+Per ritirare un dispositivo, scegli **Rimuovi dalla sincronizzazione** sulla sua
+scheda. Viene disconnesso e gli serve un nuovo codice di associazione prima di
+poter sincronizzare di nuovo. Se il server di sincronizzazione non accetta più
+la password salvata su questo dispositivo, Lotti ti chiede di confermare che sei
+tu con la password attuale dell'account di sincronizzazione prima di rimuovere
+qualsiasi cosa. Un dispositivo che non ha mai completato l'associazione può solo
+essere rimosso. Non puoi rimuovere in questo modo il dispositivo su cui ti
+trovi, e i dispositivi associati alla vecchia maniera — ognuno con il proprio
+account — si possono verificare ma non rimuovere.
+
+Quando un dispositivo appena aggiunto completa la verifica, un banner ne
+annuncia l'arrivo e offre **Invia impostazioni** e **Invia cronologia
+messaggi** direttamente su questa pagina, così il nuovo dispositivo si riempie
+senza deviazioni.
+
+**Interrompi la sincronizzazione su questo dispositivo**, sotto l'elenco,
+disconnette questo dispositivo dall'account di sincronizzazione. Le tue voci
+restano qui e gli altri dispositivi non ne risentono; per sincronizzare di nuovo
+serve un nuovo codice di associazione. **Dettagli tecnici** mostra informazioni
+di diagnostica che puoi copiare in una richiesta di assistenza.
+
+Prima che la sincronizzazione sia configurata, questa pagina mostra invece
+**Sincronizza i tuoi dispositivi** con **Configura la sincronizzazione** —
+vedi [Aggiungi un dispositivo](./add-device.mdx), oppure
+[Il tuo primo dispositivo](./first-device.mdx) se nessun dispositivo è ancora
+connesso.
 
 ## Accoppia un altro dispositivo
 
-L'accoppiamento è un percorso a sé, con un codice da confrontare e due passaggi
-dopo la connessione. Ha una pagina dedicata:
+L'associazione è un percorso a sé, con un codice da confrontare e due passaggi
+dopo la connessione. Ha una pagina tutta sua:
 [Aggiungi un dispositivo](./add-device.mdx).
 
-In breve: su un dispositivo già connesso apri **Impostazioni → Impostazioni di
+In breve: su un dispositivo già connesso, apri **Impostazioni → Impostazioni di
 sincronizzazione → Dispositivi → Aggiungi dispositivo** e mostra il codice. Sul
-nuovo dispositivo apri la stessa pagina e scansionalo. Confronta il codice di
-controllo su entrambi gli schermi prima di connettere — il codice QR contiene
-le credenziali del tuo account di sincronizzazione, quindi va solo a un tuo
-dispositivo e a nessun altro.
+nuovo dispositivo, apri la stessa pagina, scegli **Configura la
+sincronizzazione** e scansionalo. Confronta il codice di controllo su entrambi
+gli schermi prima di collegarti — il codice QR contiene le credenziali del tuo
+account di sincronizzazione, quindi va sul tuo dispositivo e da nessun'altra
+parte.
 
 ## Verifica il nuovo dispositivo
 
-L'accoppiamento collega il dispositivo; la verifica conferma che i due
-dispositivi si stanno parlando senza un dispositivo sconosciuto in mezzo.
+L'associazione collega il dispositivo; la verifica conferma che i due
+dispositivi parlano tra loro senza un dispositivo sconosciuto nel mezzo.
 
 <ManualScreenshot
   caseId="sync/verification"
-  alt="Verifica del dispositivo di Lotti che confronta una sequenza di emoji con pinguino, pesce, razzo, ghiaccio, Terra, luna e stella"
-  caption="Confronta l'intera sequenza di emoji su entrambi i dispositivi. Accetta solo quando ogni immagine e il suo ordine corrispondono esattamente."
+  alt="Verifica del dispositivo di Lotti che confronta una sequenza di emoji pinguino, pesce, razzo, ghiaccio, Terra, luna e stella"
+  caption="Confronta l'intera sequenza di emoji su entrambi i dispositivi. Accetta solo se ogni immagine e il suo ordine coincidono esattamente."
 />
 
-Confronta le emoji di persona o in una chiamata di cui ti fidi. Seleziona
-**Coincidono** su entrambi i dispositivi solo quando la sequenza completa
-corrisponde. Se anche una sola emoji è diversa, annulla la verifica e indaga su
-account e nomi dei dispositivi prima di riprovare.
+Entrambi gli schermi mostrano sette emoji. Confrontale di persona o in una
+chiamata di fiducia, e scegli **Coincidono** su entrambi i dispositivi solo se
+l'intera sequenza coincide nello stesso ordine. Se anche una sola emoji è
+diversa, scegli **Sono diverse — annulla** e controlla i nomi dell'account e dei
+dispositivi prima di riprovare.
 
 ## Dai un nome ai dispositivi e pubblica le capacità
 
-**Questo dispositivo** (“Nome e capacità del dispositivo”) identifica il
-dispositivo corrente al resto del gruppo di sincronizzazione. Dagli un nome che distingue la macchina fisica, come
-“Controllo missione Mac” piuttosto che “Desktop”.
+**Questo dispositivo** — «Nome e capacità del dispositivo» — presenta il
+dispositivo attuale al resto del gruppo di sincronizzazione. Dagli un **Nome del
+display del dispositivo** che distingua la macchina fisica, come «Mission
+Control Mac» invece di «Desktop», e scegli **Salva**.
 
 <ManualScreenshot
   caseId="sync/node-profile"
-  alt="Profilo del nodo di sincronizzazione di Lotti per Controllo missione Mac con le capacità di inferenza locale e i dispositivi noti di Project Waddle"
-  caption="Nomi di dispositivo chiari rendono molto più semplici la verifica, la diagnostica e l'inferenza locale agganciata al dispositivo."
+  alt="Pagina Questo dispositivo di Lotti per Mission Control Mac con il nome visualizzato, le capacità AI rilevate e i dispositivi di sincronizzazione noti"
+  caption="Nomi chiari dei dispositivi rendono molto più facili da verificare la verifica, la diagnosi e l'inferenza locale legata a un dispositivo."
 />
 
-La pagina elenca anche le capacità che il dispositivo può fornire, come la
-trascrizione audio locale o l'inferenza locale di modelli linguistici. I
-dispositivi noti mostrano cosa hanno pubblicato più di recente gli altri nodi.
-Le capacità elencate sono descrittive; il relativo profilo AI va comunque
-configurato per usarle.
+**Capacità AI rilevate** elenca cosa questo dispositivo può fornire, come la
+trascrizione audio locale o l'inferenza locale con un modello linguistico.
+**Dispositivi di sincronizzazione noti** mostra cosa hanno pubblicato di recente
+gli altri dispositivi. Le capacità elencate sono descrittive; il profilo AI
+pertinente deve comunque essere configurato per usarle.
 
 ## Capisci il recupero e il backfill
 
-La sincronizzazione normale elabora le modifiche man mano che arrivano. Il
-**Backfill** rileva le lacune nella sequenza ricevuta dai dispositivi noti e
-richiede di nuovo i record mancanti.
+La sincronizzazione normale elabora le modifiche man mano che arrivano.
+**Sincronizzazione di backup** individua i buchi nella sequenza ricevuta dai
+dispositivi noti e richiede di nuovo i record mancanti.
 
 <ManualScreenshot
   caseId="sync/backfill"
-  alt="Pagina Backfill di Lotti Sync con gli stati in entrata, mancante e saltato, più le statistiche di sequenza e il backfill automatico"
-  caption="Project Waddle ha ricevuto 2.868 record di sequenza e al momento conosce quattro record mancanti su due ID di dispositivo."
+  alt="Pagina Sincronizzazione di backup di Lotti con i contatori della coda in entrata, dei mancanti e dei saltati, le statistiche di sincronizzazione, il recupero automatico e il recupero avanzato"
+  caption="Project Waddle ha ricevuto 2.868 record di sequenza e al momento conosce quattro record mancanti su due ID dispositivo."
 />
 
-- **La coda in entrata** è il lavoro attualmente in attesa nella coda in
-  arrivo.
-- **Mancato** è il numero di lacune di sequenza note.
-- **Abilitato** è il lavoro che la coda in entrata ha abbandonato dopo che non
-  è stato possibile elaborarlo normalmente.
-- **Ricarica automatica** richiede continuamente le lacune recuperabili ed è il
-  predefinito giusto per l'uso normale.
-- **Recupero avanzato** contiene controlli manuali per un'indagine. Usalo solo
-  dopo che la sincronizzazione ordinaria e il backfill automatico hanno avuto
-  il tempo di assestarsi.
+- **La coda in entrata** è il lavoro in attesa di essere applicato.
+- **Mancato** è il numero di buchi noti nella sequenza.
+- **Abilitato** è il lavoro che la coda in entrata ha abbandonato perché non
+  poteva elaborarlo normalmente.
+- **Ricarica automatica** richiede le voci mancanti delle ultime 24 ore ed è
+  l'impostazione giusta per l'uso quotidiano.
+- **Recupero avanzato** contiene azioni manuali per un'indagine, come
+  **Prenditi ora** e la richiesta di voci mancanti più vecchie. Usalo solo dopo
+  che la sincronizzazione ordinaria e il recupero automatico hanno avuto il tempo
+  di assestarsi.
 
-Un conteggio di mancanti diverso da zero non è automaticamente perdita di dati:
-un altro dispositivo può essere ancora offline, o la richiesta può essere già
-in volo. Indaga quando il conteggio resta invariato mentre tutti i dispositivi
-attesi sono online.
+Un numero di mancanti diverso da zero non significa per forza perdita di dati:
+un altro dispositivo può essere ancora offline, o la richiesta è già in corso.
+Indaga quando il numero resta fermo mentre tutti i dispositivi previsti sono
+online.
 
-## Leggi le statistiche di sincronizzazione
+## Leggi le statistiche Matrix
 
-Le statistiche di sincronizzazione separano il volume dei messaggi dalla salute
-dell'elaborazione. Sono utili quando i dati sembrano fermi ma l'account risulta
+**Statistiche Matrix** separa il volume dei messaggi dalla salute
+dell'elaborazione. È utile quando i dati sembrano vecchi ma l'account risulta
 ancora connesso.
 
 <ManualScreenshot
   caseId="sync/stats"
-  alt="Statistiche di sincronizzazione Matrix di Lotti con i conteggi dei messaggi inviati, i principali KPI di elaborazione, i tipi di messaggi, i fallimenti, i nuovi tentativi e i totali per entità"
-  caption="I conteggi stabiliscono se i messaggi si muovono; fallimenti e nuovi tentativi pianificati mostrano se la pipeline procede in modo pulito."
+  alt="Statistiche Matrix di Lotti con i messaggi inviati per tipo di evento, le azioni delle metriche di sincronizzazione, i KPI principali, i contatori di applicazione al database e i segnali"
+  caption="I conteggi degli invii mostrano se i messaggi si muovono; i contatori di applicazione al database mostrano cosa ha prodotto davvero il lavoro in entrata."
 />
 
-La scheda dei messaggi inviati raggruppa i tipi di eventi Matrix. **I migliori
-KPI** riassume messaggi elaborati, fallimenti e nuovi tentativi pianificati,
-mentre i totali per entità mostrano quali famiglie di payload di Lotti hanno
-contribuito a quel lavoro. Un conteggio di elaborati in crescita con fallimenti
-stabili è sano. Se i fallimenti si ripetono o i nuovi tentativi non si
-azzerano mai, controlla la posta in uscita e la connettività dell'altro
-dispositivo.
+**Messaggi inviati:** conta ciò che questo dispositivo ha inviato, raggruppato
+per tipo di evento Matrix. Sotto **Sincronizzazioni**, **I migliori KPI** mostra
+le righe scritte nel database, i conflitti creati e gli eventi in entrata
+ancora in coda. Il gruppo **DB Applicare** aggiunge ciò che è stato ignorato
+come dato più vecchio, saltato in attesa di una riga di base mancante o scartato
+dopo i tentativi.
+
+Un contatore **DB applicata** che cresce e una coda che si svuota sono segni di
+salute. Se la coda resta alta o gli scarti continuano a comparire, usa
+**Recuperare ora** o **Forza Rescan**, poi controlla la posta in uscita e la
+connessione dell'altro dispositivo. **Diagnostica di copia** mette i numeri
+negli appunti per una richiesta di assistenza.
 
 ## Ispeziona la posta in uscita
 
-La **Posta in uscita** è la coda locale delle modifiche in attesa di essere
-inviate. Filtrala per stato per separare il lavoro attivo dai fallimenti.
+La **Posta in uscita** è la coda locale delle modifiche in attesa di invio. Il
+riepilogo in alto dice se è tutto sincronizzato, quanti elementi sono in attesa
+o in invio e quanti non è stato possibile inviare.
 
 <ManualScreenshot
   caseId="sync/outbox"
-  alt="Posta in uscita di Lotti Sync filtrata su una foto fallita della guarnizione di pressione dell'habitat di Project Waddle, con azioni di nuovo tentativo e rimozione"
-  caption="Gli elementi falliti conservano oggetto, dettagli del payload, cronologia dei tentativi e percorso dell'allegato locale, così il recupero è mirato invece che cieco."
+  alt="Posta in uscita di Lotti filtrata su una voce del diario che non è stato possibile inviare, con i dettagli dell'allegato, Recuperare, Rimuovi e Recuperare tutti"
+  caption="Un elemento che non è stato possibile inviare conserva i dettagli del contenuto, quante volte è stato tentato e il suo allegato locale, così il recupero è mirato e non alla cieca."
 />
 
-- Gli elementi **Aspettare** sono in attesa del proprio turno.
-- Gli elementi **Inviare** sono attualmente in volo.
-- Gli elementi **Fatta.** hanno esaurito il tentativo corrente e restano
-  disponibili per l'ispezione.
-- Gli elementi **Inviato** sono stati consegnati e vengono conservati
-  temporaneamente per la diagnostica.
+Filtra l'elenco per stato:
 
-Usa **Recuperare tutti** dopo che il problema di connessione o account
-sottostante è stato risolto. Rimuovi un elemento fallito solo quando è tua
-intenzione che quella modifica non raggiunga gli altri dispositivi. Rimuoverlo
-dalla posta in uscita non sostituisce la riparazione della voce o dell'allegato
-locale corrispondente.
+- **Aspettare** mostra gli elementi in attesa del loro turno e quelli in invio.
+- **Fatta.** mostra gli elementi che non è stato possibile inviare nemmeno
+  dopo i tentativi automatici. Restano salvati su questo dispositivo ma non
+  vengono reinviati da soli: una volta risolto il problema, scegli
+  **Recuperare** o **Recuperare tutti**.
+- **Inviato** mostra gli elementi consegnati, conservati per un po' per la
+  diagnosi.
+
+Usa **Recuperare tutti** dopo aver risolto il problema di connessione o
+dell'account, oppure **Recuperare** su un singolo elemento. **Rimuovi** toglie
+un elemento dalla coda: resta su questo dispositivo ma non raggiungerà mai gli
+altri tuoi dispositivi, quindi rimuovilo solo se è proprio questo che vuoi.
+Rimuoverlo non sostituisce la riparazione della voce o dell'allegato locale
+corrispondente.
 
 Continua con [Risolvi i conflitti di sincronizzazione](./conflicts.mdx) quando
-due dispositivi hanno modificato la stessa voce in modo indipendente, oppure
-con la [Manutenzione della sincronizzazione](./maintenance.mdx) per gli
-strumenti di recupero a livello di database.
+due dispositivi hanno modificato la stessa voce in modo indipendente, oppure con
+[Manutenzione della sincronizzazione](./maintenance.mdx) per gli strumenti di
+recupero a livello di database.

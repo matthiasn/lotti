@@ -23,30 +23,56 @@ device profile and Daily OS name travel as device preferences and are exempt
 from gap detection. And derived numbers are never sent — a saved task filter
 syncs, but the task counts computed from it are recalculated on each device.
 
-Open **Settings → Sync Settings** to see the available setup, health, and recovery
-pages. The number beside **Outbox** is work that has not reached the sync
+Open **Settings → Sync Settings** to see the setup, health, and recovery
+pages. The number beside **Sync Outbox** is work that has not reached the sync
 service yet.
 
 <ManualScreenshot
   caseId="sync/hub"
-  alt="Lotti Sync settings with Provisioned Sync, device identity, backfill, statistics, outbox, conflicts, and maintenance"
-  caption="The Sync hub keeps everyday status near diagnostics and recovery tools. Project Waddle currently has three outbox items to inspect."
+  alt="Lotti Sync Settings listing Devices, This device, Backfill sync, Matrix Stats, Sync Outbox, Sync Conflicts, and Maintenance"
+  caption="Sync Settings keeps everyday status next to diagnostics and recovery tools. Project Waddle currently has three outbox items to inspect."
 />
 
 ## See your devices
 
 **Settings → Sync Settings → Devices** lists every session on your sync
-account — not only the unverified ones.
+account — not only the unverified ones. The header counts the devices on your
+sync server, and **Add device** starts [pairing another one](./add-device.mdx).
 
 <ManualScreenshot
   caseId="sync/status"
-  alt="Lotti Devices page listing the sessions on the sync account with verification state and when each was last seen"
-  caption="Each row shows whether the device is verified and when the server last saw it. An unverified device cannot read new entries, and the list says so."
+  alt="Lotti Devices page with cards for Mission Control Mac and Admiral Pebble's Phone, their verification chips, last-seen dates, and the Stop syncing this device action"
+  caption="Each card shows whether the device is verified and when the server last saw it. A device that has not checked in for a long time is marked as probably no longer in use."
 />
 
-Sessions signed in with this account can be removed — except the one you are
-on. Devices paired the old way, each with its own account, can be verified but
-not removed.
+Each card carries a **This device** chip for the one you are holding, and
+**Verified** or **Unverified** for the rest. An unverified device cannot read
+new entries: a banner above the list says how many there are, and each one
+offers **Verify**. If a device has not checked in for a while, verifying it
+first warns that it may be offline — the emoji check only works while that
+device is awake and showing Lotti. Choose **Verify anyway** only when you know
+it is.
+
+To retire a device, choose **Remove from sync** on its card. It is signed out
+and needs a new pairing code before it can sync again. If the sync server no
+longer accepts the password this device has saved, Lotti asks you to confirm
+it's you with the current sync account password before it removes anything. A
+device that never finished pairing can only be removed. You cannot remove the
+device you are on this way, and devices paired the old way — each with its own
+account — can be verified but not removed.
+
+When a device you just added finishes verification, a banner says it joined
+and offers **Send settings** and **Send message history** right on this page,
+so the new device fills up without a detour.
+
+**Stop syncing this device**, below the list, signs this device out of the
+sync account. Your entries stay on it, and your other devices are not
+affected; syncing again needs a new pairing code. **Technical details** shows
+diagnostic information you can copy into a support request.
+
+Before sync is set up, this page shows **Sync your devices** instead, with
+**Set up sync** — see [Add a device](./add-device.mdx), or
+[Your first device](./first-device.mdx) if no device is connected yet.
 
 ## Pair another device
 
@@ -55,9 +81,9 @@ connecting. It has a page of its own: [Add a device](./add-device.mdx).
 
 In short: on a device that is already connected, open **Settings → Sync
 Settings → Devices → Add device** and show the code. On the new device, open
-the same page and scan it. Compare the pairing check code on both screens
-before connecting — the QR code carries your sync account credentials, so it
-goes to your own device and nowhere else.
+the same page, choose **Set up sync** and scan it. Compare the check code on
+both screens before connecting — the QR code carries your sync account
+credentials, so it goes to your own device and nowhere else.
 
 ## Verify the new device
 
@@ -70,91 +96,101 @@ talking to each other without an unknown device in the middle.
   caption="Compare the entire emoji sequence on both devices. Accept only when every image and its order match exactly."
 />
 
-Compare the emoji in person or over a trusted call. Select **They match** on both
-devices only when the complete sequence matches. If even one emoji differs,
-cancel verification and investigate the account and device names before
-trying again.
+Both screens show seven emoji. Compare them in person or over a trusted call,
+and choose **They match** on both devices only when the complete sequence
+matches in the same order. If even one emoji differs, choose **They differ —
+cancel** and check the account and device names before trying again.
 
 ## Name devices and advertise capabilities
 
 **This device** — “Device name and capabilities” — identifies the current
-device to the rest of the sync group. Give it a name that distinguishes the physical machine, such as
-“Mission Control Mac” rather than “Desktop.”
+device to the rest of the sync group. Give it a **Device display name** that
+distinguishes the physical machine, such as “Mission Control Mac” rather than
+“Desktop,” and choose **Save**.
 
 <ManualScreenshot
   caseId="sync/node-profile"
-  alt="Lotti Sync node profile for Mission Control Mac with local inference capabilities and known Project Waddle devices"
+  alt="Lotti This device page for Mission Control Mac with its display name, detected AI capabilities, and known sync devices"
   caption="Clear device names make verification, diagnostics, and device-pinned local inference much easier to audit."
 />
 
-The page also lists capabilities the device can provide, such as local audio
-transcription or local language-model inference. Known devices show what the
-other nodes most recently advertised. The listed capabilities are descriptive;
-the relevant AI profile must still be configured to use them.
+**Detected AI capabilities** lists what this device can provide, such as local
+audio transcription or local language-model inference. **Known sync devices**
+shows what the other devices most recently published. The listed capabilities
+are descriptive; the relevant AI profile must still be configured to use them.
 
 ## Understand catch-up and backfill
 
-Normal sync processes changes as they arrive. **Backfill** detects gaps in the
-sequence received from known devices and requests missing records again.
+Normal sync processes changes as they arrive. **Backfill sync** detects gaps in
+the sequence received from known devices and requests missing records again.
 
 <ManualScreenshot
   caseId="sync/backfill"
-  alt="Lotti Sync Backfill page showing inbound, missing, and skipped status plus sequence statistics and automatic backfill"
+  alt="Lotti Backfill sync page showing inbound queue, missing, and skipped counts, sync statistics, automatic backfill, and advanced recovery"
   caption="Project Waddle has received 2,868 sequence records and currently knows about four missing records across two device IDs."
 />
 
-- **Inbound** is work currently waiting in the incoming queue.
+- **Inbound queue** is work currently waiting to be applied.
 - **Missing** is the number of known sequence gaps.
-- **Skipped** is work the inbound queue abandoned after it could not be
+- **Skipped** is work the inbound queue gave up on after it could not be
   processed normally.
-- **Automatic backfill** continuously requests recoverable gaps and is the
-  right default for normal use.
-- **Advanced recovery** contains manual controls for an investigation. Use it
-  only after ordinary sync and automatic backfill have had time to settle.
+- **Automatic backfill** requests missing entries from the last 24 hours and
+  is the right default for normal use.
+- **Advanced recovery** contains manual actions for an investigation, such as
+  **Catch up now** and requesting older missing entries. Use it only after
+  ordinary sync and automatic backfill have had time to settle.
 
 A non-zero missing count is not automatically data loss: another device may
 still be offline, or the request may already be in flight. Investigate when the
 count remains unchanged while all expected devices are online.
 
-## Read Sync Statistics
+## Read Matrix Stats
 
-**Sync Statistics** separates message volume from processing health. It is
-useful when data looks stale but the account still reports as connected.
+**Matrix Stats** separates message volume from processing health. It is useful
+when data looks stale but the account still reports as connected.
 
 <ManualScreenshot
   caseId="sync/stats"
-  alt="Lotti Matrix Sync Statistics with sent message counts, top processing KPIs, message types, failures, retries, and entity totals"
-  caption="Counts establish whether messages are moving; failures and scheduled retries show whether the pipeline is moving cleanly."
+  alt="Lotti Matrix Stats with sent message counts by event type, Sync Metrics actions, Top KPIs, database apply counts, and signals"
+  caption="Sent counts establish whether messages are moving; the database apply counts show what incoming work actually did."
 />
 
-The sent-message card groups Matrix event types. **Top KPIs** summarizes
-processed messages, failures, and scheduled retries, while the entity totals
-show which Lotti payload families contributed to that work. A rising processed
-count with stable failures is healthy. If failures repeat or retries never
-clear, check the outbox and the other device's connectivity.
+**Sent messages** counts what this device sent, grouped by Matrix event type.
+Under **Sync Metrics**, **Top KPIs** shows the rows applied to the database,
+the conflicts created, and the inbound events still waiting in the queue. The
+**DB Apply** group adds what was ignored as older data, skipped while a base
+row was missing, or dropped after retries.
+
+A growing **DB Applied** count with a queue that drains is healthy. If the
+queue stays high or drops keep appearing, use **Retry Now** or **Force
+Rescan**, then check the outbox and the other device's connectivity. **Copy
+Diagnostics** puts the numbers on the clipboard for a support request.
 
 ## Inspect the Outbox
 
-The **Outbox** is the local queue of changes waiting to be sent. Filter it by
-state to separate active work from failures.
+The **Sync Outbox** is the local queue of changes waiting to be sent. The
+summary at the top says whether everything is synced, how many items are
+waiting or sending, and how many couldn't send.
 
 <ManualScreenshot
   caseId="sync/outbox"
-  alt="Lotti Sync Outbox filtered to a failed Project Waddle habitat pressure-seal photo with retry and removal actions"
-  caption="Failed items keep their subject, payload details, retry history, and local attachment path so recovery is specific rather than blind."
+  alt="Lotti Sync Outbox filtered to one journal entry that couldn't send, with its attachment details, Retry, Remove, and Retry all"
+  caption="An item that couldn't send keeps its payload details, how often it was tried, and its local attachment, so recovery is specific rather than blind."
 />
 
-- **Pending** items are waiting for their turn.
-- **Sending** items are currently in flight.
-- **Failed** items exhausted their current attempt and remain available for
-  inspection.
-- **Sent** items have been delivered and are retained temporarily for
-  diagnostics.
+Filter the list by state:
 
-Use **Retry all** after the underlying connection or account problem is fixed.
-Remove a failed item only when you intentionally do not want that change to
-reach other devices. Removing it from the outbox is not a substitute for
-repairing the corresponding local entry or attachment.
+- **Waiting** shows items waiting their turn and items currently sending.
+- **Failed** shows items that couldn't send after their automatic retries.
+  They stay saved on this device but are not sent again on their own: once the
+  problem is fixed, choose **Retry** or **Retry all**.
+- **Sent** shows delivered items, kept for a while for diagnostics.
+
+Use **Retry all** after the underlying connection or account problem is fixed,
+or **Retry** on a single item. **Remove** takes an item out of the queue: it
+stays on this device but will never reach your other devices, so remove it
+only when that is what you want. Removing it is not a substitute for repairing
+the corresponding local entry or attachment.
 
 Continue with [Resolve sync conflicts](./conflicts.mdx) when two devices edited
 the same entry independently, or [Sync maintenance](./maintenance.mdx) for

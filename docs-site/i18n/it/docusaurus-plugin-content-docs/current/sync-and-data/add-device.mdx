@@ -6,114 +6,145 @@ description: Accoppia un nuovo dispositivo al tuo account di sincronizzazione co
 # Aggiungi un dispositivo
 
 Tutti i tuoi dispositivi condividono un unico account di sincronizzazione.
-Aggiungere un dispositivo significa consegnargli le credenziali di quell'account,
-perciò il percorso prevede due controlli: un breve **codice di controllo** da
-confrontare prima di connettere e una **verifica con emoji** subito dopo.
+Aggiungere un dispositivo significa consegnargli le credenziali di
+quell'account, quindi il percorso è costruito attorno a due controlli: un breve
+**codice di controllo** da confrontare prima di collegarti, e una **verifica con
+le emoji** subito dopo.
 
-Fanno cose diverse. Il codice di controllo dice che i due schermi parlano dello
-stesso account — intercetta un codice che viene da altrove, cioè l'errore che si
-commette davvero. Deriva solo da quegli identificatori, non dalla password:
-non dice nulla su quanto siano ancora valide le credenziali che contiene, né su
-chi sta dall'altra parte. La verifica con emoji
-che segue è il passaggio che autentica il dispositivo, e finché non è completata
-il nuovo dispositivo non può leggere nulla.
+Hanno compiti diversi. Il codice di controllo ti dice che i due schermi parlano
+dello stesso account, della stessa stanza e dello stesso server — intercetta un
+codice arrivato da altrove, che è l'errore che si commette davvero. Deriva solo
+da questi identificatori, non dalla password, quindi non dice nulla sul fatto
+che le credenziali contenute siano ancora valide, né su chi c'è dall'altra
+parte. La verifica con le emoji che segue è il passaggio che autentica il
+dispositivo, e finché non è completata il nuovo dispositivo non può leggere
+nulla.
 
-Ti servono entrambi i dispositivi davanti. Parti da uno già connesso — uno
-qualsiasi, telefono o computer. Non esiste un dispositivo «principale». Se nessun dispositivo è ancora
-connesso, questa pagina non può aiutarti — il tuo primissimo codice arriva
-dal lato server: vedi [Il tuo primo dispositivo](./first-device.mdx).
+Ti servono entrambi i dispositivi davanti. Inizia su uno già connesso —
+qualsiasi, telefono o desktop. Non esiste un dispositivo «principale». Se nessun
+dispositivo è ancora connesso, questa pagina non può aiutarti — il tuo
+primissimo codice arriva dal lato server: vedi
+[Il tuo primo dispositivo](./first-device.mdx).
 
 ## Mostra il codice su un dispositivo che già usi
 
-Apri **Impostazioni → Impostazioni di sincronizzazione → Dispositivi** e scegli **Aggiungi
-dispositivo**.
+Apri **Impostazioni → Impostazioni di sincronizzazione → Dispositivi** e scegli
+**Aggiungi dispositivo**.
 
 <ManualScreenshot
   caseId="sync/add-device"
-  alt="Schermata Aggiungi dispositivo di Lotti con codice QR, avviso di sicurezza con lucchetto e codice di controllo 2BD-EF4"
-  caption="Il codice è mostrato solo finché questa schermata resta aperta. Nota il codice di controllo sotto: lo confronterai tra poco."
+  alt="Pannello Aggiungi dispositivo di Lotti con un codice QR, il codice di controllo 2BD-EF4, una nota di sicurezza con lucchetto, la cronologia dell'ingresso e i pulsanti bloccati Invia impostazioni e Invia cronologia messaggi"
+  caption="Il codice è visibile solo finché questo pannello resta aperto. Annota il codice di controllo accanto — lo confronterai tra un attimo."
 />
 
-Tratta questa schermata come tratteresti la tua password, perché è ciò che
-contiene. Chi scansiona o fotografa il codice QR può accedere al tuo
-account: non può decifrare le tue voci senza essere anche verificato con le
-emoji da un tuo dispositivo, ma può impadronirsi dell'account — password
-compresa, escludendoti. Mostralo solo a un dispositivo tuo e non inviarlo mai via
-chat, screenshot o schermo condiviso.
+Tratta ciò che compare su questo schermo come la tua password, perché è proprio
+ciò che contiene. Chiunque scansioni o fotografi il codice QR può accedere al
+tuo account di sincronizzazione: non può decifrare le tue voci senza essere
+anche verificato con le emoji da uno dei tuoi dispositivi, ma può impadronirsi
+dell'account — cambiandone anche la password e chiudendoti fuori. Mostralo solo
+a un dispositivo che ti appartiene, e non inviarlo mai tramite una chat, uno
+screenshot o uno schermo condiviso.
 
-**Chiudere la schermata nasconde il codice, non lo revoca.** Il codice
-contiene la password attuale del tuo account: una foto resta utilizzabile
-finché quella password è valida. Se sospetti che qualcuno l'abbia catturata,
-trattala come una password trapelata, non come qualcosa di scaduto.
+**Chiudere il pannello nasconde il codice; non lo revoca.** Il codice contiene
+la password attuale dell'account, quindi una foto resta utilizzabile finché
+resta valida quella password. Se pensi che qualcuno l'abbia catturato,
+trattalo come una password trapelata e non come qualcosa che nel frattempo è
+scaduto.
 
-**Copia codice di abbinamento** esiste di proposito per quando il dispositivo
-che si unisce non ha fotocamera — un computer che si unisce a un computer. Mette
-le stesse credenziali negli appunti: incollale direttamente nell'altro
-dispositivo e da nessuna altra parte.
+**Copia codice di abbinamento** esiste apposta per il caso in cui il dispositivo
+che si unisce non ha una fotocamera — un desktop che si unisce a un desktop.
+Mette le stesse credenziali negli appunti, quindi incollale direttamente
+sull'altro dispositivo e da nessun'altra parte. **Mostra il codice di
+abbinamento come testo** mostra lo stesso codice da leggere sullo schermo.
+
+Tieni aperto il pannello. Sotto il codice, una cronologia segue il nuovo
+dispositivo da **In attesa del nuovo dispositivo…** a **Collegato — conferma le
+emoji su entrambi gli schermi** e **Verificato — pronto per il passaggio di
+consegne**. Se il pannello non riesce a controllare se il nuovo dispositivo si è
+unito, scegli **Recuperare**.
 
 ## Scansionalo sul nuovo dispositivo
 
-Installa Lotti sul nuovo dispositivo, poi apri lì **Impostazioni →
-Impostazioni di sincronizzazione → Dispositivi** e scegli **Configura la sincronizzazione**. Sul
-telefono la fotocamera si apre subito:
-inquadra il primo dispositivo. Su computer, o se la fotocamera non è
-disponibile, scegli **Incolla invece il codice** per usare il codice copiato.
+Installa Lotti sul nuovo dispositivo, poi apri lì **Impostazioni → Impostazioni
+di sincronizzazione → Dispositivi** e scegli **Configura la sincronizzazione**.
+Su un telefono la fotocamera si apre subito; puntala sul primo dispositivo. Su
+un desktop, o se la fotocamera non è disponibile, scegli **Incolla invece il
+codice** per usare il codice copiato. Una barra dei passaggi in alto —
+**Ottieni codice**, **Verifica**, **Collega** — mostra a che punto sei.
+
+Se è il primo dispositivo del tuo account, non c'è ancora un altro dispositivo
+da scansionare: **Stai configurando il tuo primo dispositivo?** sulla stessa
+schermata porta ad **Apri la guida per il primo dispositivo**.
 
 ## Controlla che il codice corrisponda prima di connettere
 
-Decodificare il codice non connette nulla. Compare prima un riepilogo di ciò a
-cui stai per unirti, guidato dal codice di controllo.
+Decodificare il codice non collega nulla. Per prima cosa compare **Confronta
+prima di collegarti**: un riepilogo di ciò a cui stai per unirti, aperto dal
+codice di controllo. Entrambi i dispositivi ricavano questo codice in modo
+indipendente da account, stanza e server. Non se lo scambiano mai — ed è questo
+che rende utile confrontarlo.
 
-<ManualScreenshot
-  caseId="sync/provisioned"
-  alt="Riepilogo di accoppiamento di Lotti con codice di controllo, account da unire e server di sincronizzazione"
-  caption="Entrambi i dispositivi ricavano questo codice in modo indipendente da account, stanza e server. Non se lo scambiano mai: per questo confrontarlo ha senso."
-/>
+Guarda il codice di controllo qui e quello sul primo dispositivo. **Devono essere
+identici.** L'account e il server di sincronizzazione sotto il codice sono
+contesto, non cose da confrontare — non compaiono sull'altro dispositivo. Quando
+tutto coincide, scegli **I codici coincidono — collega**.
 
-Guarda il codice di controllo qui e quello sul primo dispositivo. **Devono
-essere identici.** Se differiscono, fermati e scartalo: i due schermi non descrivono lo stesso account, la stessa stanza e lo
-stesso server, e riaprire la schermata non cambia nulla.
-
-Account e server sotto il codice sono contesto, non elementi da confrontare: non
-compaiono sull'altro dispositivo. Quando tutto corrisponde, scegli **I codici coincidono —
-collega**.
+Se sono diversi, scegli **Non coincidono**. Lotti avvisa che il codice non viene
+dal tuo dispositivo e non collega nulla; prendi un codice nuovo dal tuo
+dispositivo. Un codice che hai rifiutato viene riconosciuto se lo scansioni di
+nuovo.
 
 ## Completa i due passaggi successivi
 
-Connettere unisce all'account. Non consente ancora al nuovo dispositivo di
-leggere alcunché.
+Collegarsi fa entrare nell'account. Non dà ancora al nuovo dispositivo la
+possibilità di leggere nulla.
 
 <ManualScreenshot
   caseId="sync/paired"
-  alt="Configurazione sync di Lotti: questo dispositivo è connesso, verifica con emoji e Invia impostazioni ancora in sospeso"
-  caption="Connesso è la metà facile. La scheda indica cosa manca e dice chiaramente che senza verifica il dispositivo non può leggere nulla."
+  alt="Configurazione della sincronizzazione di Lotti che mostra questo dispositivo collegato, con i passaggi Conferma le emoji e Ricevi le tue impostazioni ancora da fare"
+  caption="Collegato è la metà facile. La scheda indica cosa manca ancora e dice chiaramente che, finché le emoji non coincidono, questo dispositivo vede solo testo cifrato."
 />
 
-1. **Confronta le emoji.** Su entrambi i dispositivi compare una fila di emoji.
+1. **Conferma le emoji.** Entrambi i dispositivi mostrano sette emoji.
    Controlla che coincidano e conferma su ciascuno. Fino ad allora il nuovo
-   dispositivo riceve solo cifrato illeggibile: le chiavi vanno solo ai
-   dispositivi verificati. Vedi
+   dispositivo riceve testo cifrato che non può leggere — le chiavi vengono
+   condivise solo con i dispositivi che hai verificato. Se non compare nessuna
+   emoji, scegli **Controlla di nuovo**, oppure avvia la verifica da
+   **Dispositivi**. Vedi
    [Verifica il nuovo dispositivo](./sync.mdx#verifica-il-nuovo-dispositivo).
-2. **Invia le impostazioni.** Sul primo dispositivo, nella schermata Aggiungi
-   dispositivo ancora aperta, scegli **Invia impostazioni** perché categorie,
-   abitudini, dashboard e configurazione IA arrivino. Se l'hai già chiusa,
-   riapri **Impostazioni → Impostazioni di sincronizzazione → Dispositivi → Aggiungi
-   dispositivo**.
+2. **Ricevi le tue impostazioni.** Tornato sul primo dispositivo, il pannello
+   Aggiungi dispositivo ancora aperto sblocca due passaggi di consegne una volta
+   confermate le emoji: **Invia impostazioni** consegna categorie, abitudini,
+   dashboard e configurazione AI, e **Invia cronologia messaggi** consegna le
+   voci scritte prima dell'arrivo di questo dispositivo. Invia entrambi — è la
+   cronologia che fa sì che un nuovo dispositivo non sembri più vuoto.
 
-Lascia aperte entrambe le app finché la prima sincronizzazione non è finita.
+Lascia aperte entrambe le app finché la prima sincronizzazione non è finita. Se
+hai chiuso il pannello, la pagina **Dispositivi** sul primo dispositivo offre
+gli stessi due passaggi finché mostra che il nuovo dispositivo si è appena
+unito. Altrimenti apri lì **Impostazioni → Impostazioni di sincronizzazione →
+Manutenzione**, scegli **Sincronizzabili, cruscotti, abitudini, categorie,
+Impostazioni AI**, poi **Cronologia messaggi**.
 
 ## Se qualcosa va storto
 
-- **I codici di controllo differiscono.** Non connettere. Riaprire la schermata non serve: lo stesso account
-  produce sempre lo stesso codice, quindi una differenza significa che i due schermi non
-  descrivono lo stesso abbinamento.
-- **Il codice non si decodifica.** Copialo di nuovo sul primo dispositivo invece
-  di correggere ciò che hai incollato; il valore codificato non è pensato per
-  essere sistemato a mano. Se l'app segnala versioni diverse, i due dispositivi
-  hanno build differenti e vanno entrambi aggiornati.
-- **Il nuovo dispositivo è connesso ma resta vuoto.** È lo stato previsto prima
-  della verifica. Completa il confronto delle emoji, poi controlla
-  [Sincronizza i dispositivi](./sync.mdx) per posta in uscita e recupero.
+- **I codici di controllo sono diversi.** Non collegarti. Riaprire il pannello
+  da solo non aiuta: lo stesso account, la stessa stanza e lo stesso server
+  producono sempre lo stesso codice, quindi una differenza significa che i due
+  schermi non descrivono la stessa associazione.
+- **Il codice non si decodifica.** Copialo di nuovo sul primo dispositivo
+  invece di modificare ciò che hai incollato; il valore codificato non è fatto
+  per essere corretto a mano. Se l'app segnala una differenza di versione, i
+  due dispositivi usano versioni diverse di Lotti e vanno aggiornati entrambi.
+- **Il codice non funziona più.** Un codice non accede più quando la password
+  dell'account è cambiata. Scegli **Riprova questo codice** se la connessione è
+  caduta, oppure **Inserisci un codice nuovo** e prendine uno nuovo dall'altro
+  dispositivo.
+- **Il nuovo dispositivo è collegato ma resta vuoto.** È lo stato previsto
+  prima della verifica. Completa il confronto delle emoji, invia impostazioni e
+  cronologia messaggi, poi controlla in
+  [Sincronizza i dispositivi](./sync.mdx) lo stato della posta in uscita e del
+  recupero.
 
-Prosegui con [Sincronizza i dispositivi](./sync.mdx) per stato quotidiano,
-qualità della consegna e strumenti di recupero.
+Continua con [Sincronizza i dispositivi](./sync.mdx) per lo stato quotidiano,
+la salute della consegna e gli strumenti di recupero.

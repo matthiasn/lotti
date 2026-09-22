@@ -29,8 +29,8 @@ Open **Settings → Sync Settings → Devices** and choose **Add device**.
 
 <ManualScreenshot
   caseId="sync/add-device"
-  alt="Lotti Add device sheet showing a QR code, a lock-badged security note, and the pairing check code 2BD-EF4"
-  caption="The code is shown only while this sheet is open. Note the check code underneath it — you will compare that in a moment."
+  alt="Lotti Add device sheet with a QR code, the check code 2BD-EF4, a lock-badged security note, the join timeline, and locked Send settings and Send message history buttons"
+  caption="The code is shown only while this sheet is open. Note the check code beside it — you will compare that in a moment."
 />
 
 Treat what is on this screen the way you would treat your password, because
@@ -48,34 +48,41 @@ password rather than as something that has since expired.
 **Copy pairing code** is offered deliberately, for the case where the joining
 device has no camera — a desktop joining a desktop. It puts the same
 credentials on your clipboard, so paste them straight into the other device and
-nowhere else.
+nowhere else. **Show pairing code as text** displays the same code for reading
+off the screen instead.
+
+Keep the sheet open. Below the code, a timeline follows the new device from
+**Waiting for the new device…** to **Joined — confirm the emoji on both
+screens** and **Verified — ready to hand things off**. If the sheet cannot
+check whether the new device has joined, choose **Retry**.
 
 ## Scan it on the new device
 
 Install Lotti on the new device, then open **Settings → Sync Settings →
 Devices** there and choose **Set up sync**. On a phone the camera opens
 straight away; point it at the first device. On a desktop, or if the camera is
-unavailable, choose **Paste the code instead** to use the copied code.
+unavailable, choose **Paste the code instead** to use the copied code. A step
+track at the top — **Get code**, **Check**, **Connect** — shows where you are.
+
+If this is the first device on your account, there is no other device to scan
+yet: **Setting up your first device?** on the same screen leads to
+**Open the first-device guide**.
 
 ## Check the code matches before connecting
 
-Decoding the code does not connect anything. What appears first is a review of
-what you are about to join, led by the pairing check code.
-
-<ManualScreenshot
-  caseId="sync/provisioned"
-  alt="Lotti pairing review showing the check code, the account that will be joined, and the sync server host"
-  caption="Both devices derive this code independently from the account, room and server. They never exchange it — which is what makes comparing it worth doing."
-/>
+Decoding the code does not connect anything. What appears first is **Compare
+before you connect**: a review of what you are about to join, led by the check
+code. Both devices derive this code independently from the account, room and
+server. They never exchange it — which is what makes comparing it worth doing.
 
 Look at the check code here and the one on the first device. **They must be
-identical.** If they differ, stop and discard the code — the two screens do not
-describe the same account, room and server, and reopening the sheet will not
-change that.
+identical.** The sync account and sync server below the code are context
+rather than things to compare — they do not appear on the other device. When
+everything matches, choose **The codes match — connect**.
 
-The account and server below the code are context rather than things to
-compare — they do not appear on the other device. When everything matches,
-choose **The codes match — connect**.
+If they differ, choose **They don't match**. Lotti warns that the code isn't
+from your device and does not connect; get a fresh code from your own device.
+A code you declined is recognized if you scan it again.
 
 ## Finish the two steps that follow
 
@@ -84,20 +91,26 @@ to read anything.
 
 <ManualScreenshot
   caseId="sync/paired"
-  alt="Lotti sync setup showing this device is connected, with emoji verification and Send settings still outstanding"
-  caption="Connected is the easy half. The card names what is still missing, and says plainly that until verification finishes this device cannot read your entries."
+  alt="Lotti sync setup showing this device is connected, with the steps Confirm the emoji and Receive your settings still outstanding"
+  caption="Connected is the easy half. The card names what is still missing, and says plainly that until the emoji match this device sees only ciphertext."
 />
 
-1. **Compare the emoji.** A row of emoji appears on both devices. Check they
-   match and confirm on each. Until you do, the new device receives ciphertext
-   it cannot read — encryption keys are only shared with devices you have
-   verified. See [Verify the new device](./sync.mdx#verify-the-new-device).
-2. **Send settings.** Back on the first device, in the Add device sheet you
-   still have open, choose **Send settings** so your categories, habits,
-   dashboards and AI configuration arrive on the new device. If you already
-   closed the sheet, reopen **Settings → Sync Settings → Devices → Add device**.
+1. **Confirm the emoji.** Both devices show seven emoji. Check they match and
+   confirm on each. Until you do, the new device receives ciphertext it cannot
+   read — encryption keys are only shared with devices you have verified. If
+   no emoji appear, choose **Check again**, or start verification from
+   **Devices**. See [Verify the new device](./sync.mdx#verify-the-new-device).
+2. **Receive your settings.** Back on the first device, the Add device sheet
+   you still have open unlocks two hand-offs once the emoji match: **Send
+   settings** delivers your categories, habits, dashboards and AI setup, and
+   **Send message history** delivers the entries written before this device
+   joined. Send both — the history is why a new device stops looking empty.
 
-Leave both apps open until the first synchronization finishes.
+Leave both apps open until the first synchronization finishes. If you closed
+the sheet, the **Devices** page on the first device offers the same two
+hand-offs while it shows that the new device just joined. Otherwise, open
+**Settings → Sync Settings → Maintenance** there, choose **Sync measurables,
+dashboards, habits, categories, AI settings**, then **Message history**.
 
 ## If something goes wrong
 
@@ -108,9 +121,12 @@ Leave both apps open until the first synchronization finishes.
   editing what you pasted; the encoded value is not meant to be hand-corrected.
   If the app reports a version mismatch, the two devices are on different Lotti
   builds and both need updating.
+- **The code stopped working.** A code no longer signs in once the account
+  password changes. Choose **Retry this code** if the connection dropped, or
+  **Enter a new code** and get a fresh one from your other device.
 - **The new device connected but stays empty.** That is the expected state
-  before verification. Finish the emoji comparison, then check
-  [Sync devices](./sync.mdx) for outbox and backfill status.
+  before verification. Finish the emoji comparison, send settings and message
+  history, then check [Sync devices](./sync.mdx) for outbox and backfill status.
 
 Continue with [Sync devices](./sync.mdx) for everyday status, delivery health
 and recovery tools.

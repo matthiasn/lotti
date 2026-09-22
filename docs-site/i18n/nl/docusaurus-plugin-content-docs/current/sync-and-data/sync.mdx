@@ -12,16 +12,6 @@ verplaatst de brongegevens niet naar een Lotti-cloud: de geconfigureerde
 Matrix-service geeft end-to-end versleutelde payloads tussen je apparaten door,
 terwijl elk apparaat zijn eigen lokale kopie behoudt.
 
-Open **Instellingen → Instellingen synchroniseren** om de beschikbare setup-, status-
-en herstelpagina's te bekijken. Het getal naast **Postvak UIT** is werk dat de
-synchronisatiedienst nog niet heeft bereikt.
-
-<ManualScreenshot
-  caseId="sync/hub"
-  alt="Lotti-synchronisatie-instellingen met Apparaten, apparaatidentiteit, backfill, statistieken, outbox, conflicten en onderhoud"
-  caption="De Sync-hub houdt de dagelijkse status dicht bij diagnoses en hersteltools. Project Waddle heeft momenteel drie outbox-items om te inspecteren."
-/>
-
 ## Wat synchroniseert en wat blijft
 
 | Synchroniseert tussen je apparaten | Blijft op dat ene apparaat |
@@ -30,20 +20,62 @@ synchronisatiedienst nog niet heeft bereikt.
 
 Twee details om te weten. Niet alles wat synchroniseert is logboekdata: je apparaatprofiel en Daily OS-naam reizen als apparaatvoorkeuren en vallen buiten gatdetectie. En afgeleide getallen worden nooit verzonden — een opgeslagen taakfilter synchroniseert, maar de tellingen die eruit volgen worden op elk apparaat opnieuw berekend.
 
+Open **Instellingen → Instellingen synchroniseren** voor de pagina's voor
+instellen, status en herstel. Het getal naast **Synchronisatie-uitbox** is werk
+dat de synchronisatiedienst nog niet heeft bereikt.
+
+<ManualScreenshot
+  caseId="sync/hub"
+  alt="Lotti-synchronisatie-instellingen met Apparaten, Dit apparaat, Synchronisatie van backfill, Matrix Stats, Synchronisatie-uitbox, Conflicten synchroniseren en Onderhoud"
+  caption="De synchronisatie-instellingen houden de dagelijkse status naast de diagnose- en hersteltools. Project Waddle heeft nu drie items in de uitbox om te bekijken."
+/>
+
 ## Bekijk je apparaten
 
-**Instellingen → Instellingen synchroniseren → Apparaten** toont elke sessie op je
-synchronisatieaccount — niet alleen de niet-geverifieerde.
+**Instellingen → Instellingen synchroniseren → Apparaten** toont elke sessie op
+je synchronisatieaccount — niet alleen de niet-geverifieerde. De kop telt de
+apparaten op je synchronisatieserver, en **Apparaat toevoegen** start het
+[koppelen van een ander apparaat](./add-device.mdx).
 
 <ManualScreenshot
   caseId="sync/status"
-  alt="Lotti's pagina Apparaten met de sessies op het synchronisatieaccount, verificatiestatus en laatst gezien"
-  caption="Elke rij laat zien of het apparaat geverifieerd is en wanneer de server het voor het laatst zag. Een niet-geverifieerd apparaat kan nieuwe notities niet lezen, en de lijst zegt dat."
+  alt="Lotti-pagina Apparaten met kaarten voor Mission Control Mac en Admiral Pebble's Phone, hun verificatielabels, laatst gezien en de actie Synchroniseren op dit apparaat stoppen"
+  caption="Elke kaart laat zien of het apparaat geverifieerd is en wanneer de server het voor het laatst zag. Een apparaat dat lang niets van zich liet horen, staat gemarkeerd als waarschijnlijk niet meer in gebruik."
 />
 
-Sessies die met dit account zijn aangemeld kun je verwijderen — behalve die
-waarop je zit. Apparaten die op de oude manier zijn gekoppeld, elk met een eigen
-account, kun je wel verifiëren maar niet verwijderen.
+Elke kaart draagt het label **Dit apparaat** voor het apparaat dat je vasthoudt,
+en **Geverifieerd** of **Niet geverifieerd** voor de rest. Een niet-geverifieerd
+apparaat kan nieuwe items niet lezen: een banner boven de lijst zegt hoeveel het
+er zijn, en elk biedt **Verifiëren** aan. Heeft een apparaat een tijd niets van
+zich laten horen, dan waarschuwt de verificatie eerst dat het misschien offline
+is — de emoji-vergelijking werkt alleen zolang dat apparaat wakker is en Lotti
+toont. Kies **Toch verifiëren** alleen als je weet dat dat zo is.
+
+Om een apparaat af te voeren, kies je **Uit synchronisatie verwijderen** op zijn
+kaart. Het wordt afgemeld en heeft een nieuwe koppelcode nodig voordat het weer
+kan synchroniseren. Accepteert de synchronisatieserver het op dit apparaat
+opgeslagen wachtwoord niet meer, dan vraagt Lotti je met het huidige wachtwoord
+van het synchronisatieaccount te bevestigen dat jij het bent voordat er iets
+wordt verwijderd. Een apparaat dat het koppelen nooit heeft afgerond, kan alleen
+worden verwijderd. Het apparaat waarop je nu werkt kun je zo niet verwijderen,
+en apparaten die op de oude manier zijn gekoppeld — elk met een eigen account —
+kun je verifiëren, maar niet verwijderen.
+
+Rondt een apparaat dat je net hebt toegevoegd de verificatie af, dan meldt een
+banner dat het erbij is en biedt **Instellingen versturen** en
+**Berichtgeschiedenis verzenden** direct op deze pagina aan, zodat het nieuwe
+apparaat zonder omweg vol raakt.
+
+**Synchroniseren op dit apparaat stoppen**, onder de lijst, meldt dit apparaat
+af bij het synchronisatieaccount. Je items blijven erop staan en je andere
+apparaten merken er niets van; opnieuw synchroniseren vraagt een nieuwe
+koppelcode. **Technische details** toont diagnostische informatie die je in
+een supportverzoek kunt kopiëren.
+
+Voordat synchronisatie is ingesteld, toont deze pagina in plaats daarvan
+**Synchroniseer je apparaten** met **Synchronisatie instellen** — zie
+[Een apparaat toevoegen](./add-device.mdx), of
+[Je eerste apparaat](./first-device.mdx) als er nog geen apparaat verbonden is.
 
 ## Koppel een ander apparaat
 
@@ -51,11 +83,12 @@ Koppelen is een eigen stroom, met een code om te vergelijken en twee stappen na
 het verbinden. Het heeft een eigen pagina:
 [Een apparaat toevoegen](./add-device.mdx).
 
-Kort: open op een al verbonden apparaat **Instellingen → Instellingen synchroniseren →
-Apparaten → Apparaat toevoegen** en toon de code. Open op het nieuwe apparaat
-dezelfde pagina en scan hem. Vergelijk de controlecode op beide schermen voordat
-je verbindt — de QR-code bevat de inloggegevens van je synchronisatieaccount en
-gaat alleen naar je eigen apparaat.
+Kort gezegd: open op een apparaat dat al verbonden is **Instellingen →
+Instellingen synchroniseren → Apparaten → Apparaat toevoegen** en toon de code.
+Open op het nieuwe apparaat dezelfde pagina, kies **Synchronisatie instellen**
+en scan hem. Vergelijk de controlecode op beide schermen voordat je verbindt —
+de QR-code bevat de inloggegevens van je synchronisatieaccount, dus hij hoort op
+je eigen apparaat en nergens anders.
 
 ## Controleer het nieuwe apparaat
 
@@ -64,103 +97,119 @@ elkaar praten zonder een onbekend apparaat ertussen.
 
 <ManualScreenshot
   caseId="sync/verification"
-  alt="Lotti-apparaatverificatie vergelijkt een reeks van pinguïn-, vis-, raket-, ijs-, aarde-, maan- en steremoji"
-  caption="Vergelijk de gehele emoji-reeks op beide apparaten. Accepteer alleen wanneer elke afbeelding en de volgorde precies overeenkomen."
+  alt="Lotti-apparaatverificatie die een reeks emoji vergelijkt: pinguïn, vis, raket, ijs, aarde, maan en ster"
+  caption="Vergelijk de hele emojireeks op beide apparaten. Accepteer alleen als elke afbeelding en de volgorde precies overeenkomen."
 />
 
-Vergelijk de emoji persoonlijk of via een vertrouwd gesprek. Selecteer **Ze komen
-overeen** op beide apparaten alleen als de volledige reeks overeenkomt. Als zelfs
-maar één emoji verschilt, annuleer dan de verificatie en onderzoek de account- en
-apparaatnamen voordat je het opnieuw probeert.
+Beide schermen tonen zeven emoji. Vergelijk ze in persoon of via een
+vertrouwd gesprek, en kies **Ze komen overeen** op beide apparaten alleen als de
+hele reeks in dezelfde volgorde overeenkomt. Wijkt zelfs één emoji af, kies dan
+**Ze verschillen — annuleren** en controleer de account- en apparaatnamen
+voordat je het opnieuw probeert.
 
 ## Geef apparaten een naam en adverteer mogelijkheden
 
-**Dit apparaat** (‘Apparaatnaam en mogelijkheden’) identificeert het huidige
-apparaat voor de rest van de synchronisatiegroep. Geef het een naam die de fysieke
-machine onderscheidt, zoals 'Mission Control Mac' in plaats van 'Desktop'.
+**Dit apparaat** — „Apparaatnaam en mogelijkheden” — stelt het huidige apparaat
+voor aan de rest van de synchronisatiegroep. Geef het een **Naam van
+apparaatweergave** die de fysieke machine onderscheidt, zoals „Mission Control
+Mac” in plaats van „Desktop”, en kies **Opslaan**.
 
 <ManualScreenshot
   caseId="sync/node-profile"
-  alt="Lotti-synchronisatieknooppuntprofiel voor Mission Control Mac met lokale inferentiemogelijkheden en bekende Project Waddle-apparaten"
-  caption="Duidelijke apparaatnamen maken verificatie, diagnoses en apparaat-vastgezette lokale inferentie veel gemakkelijker te controleren."
+  alt="Lotti-pagina Dit apparaat voor Mission Control Mac met de weergavenaam, gedetecteerde AI-mogelijkheden en bekende synchronisatieapparaten"
+  caption="Duidelijke apparaatnamen maken verificatie, diagnose en apparaatgebonden lokale inferentie veel makkelijker te controleren."
 />
 
-De pagina vermeldt ook de mogelijkheden die het apparaat kan bieden, zoals lokale
-audiotranscriptie of inferentie met een lokaal taalmodel. Bekende apparaten tonen
-wat de andere knooppunten het laatst hebben geadverteerd. De genoemde mogelijkheden
-zijn beschrijvend; het relevante AI-profiel moet nog steeds worden geconfigureerd om
-ze te gebruiken.
+**Gedetecteerde AI-mogelijkheden** somt op wat dit apparaat kan leveren, zoals
+lokale audiotranscriptie of lokale inferentie met een taalmodel. **Bekende
+synchronisatieapparaten** toont wat de andere apparaten het laatst hebben
+gepubliceerd. De vermelde mogelijkheden zijn beschrijvend; het betreffende
+AI-profiel moet nog steeds zo zijn ingesteld dat het ze gebruikt.
 
 ## Begrijp inhalen en backfill
 
-Normale synchronisatie verwerkt wijzigingen zodra ze binnenkomen. **Synchronisatie
-van backfill** detecteert gaten in de reeks die van bekende apparaten is ontvangen
-en vraagt ontbrekende records opnieuw op.
+Gewone synchronisatie verwerkt wijzigingen zodra ze binnenkomen.
+**Synchronisatie van backfill** spoort gaten op in de reeks die van bekende
+apparaten is ontvangen en vraagt ontbrekende records opnieuw op.
 
 <ManualScreenshot
   caseId="sync/backfill"
-  alt="Lotti-synchronisatie-backfillpagina met inkomende, ontbrekende en overgeslagen status plus reeksstatistieken en automatische backfill"
-  caption="Project Waddle heeft 2.868 reeksrecords ontvangen en weet momenteel van vier ontbrekende records over twee apparaat-ID's."
+  alt="Lotti-pagina Synchronisatie van backfill met de tellers voor inkomende wachtrij, ontbrekend en overgeslagen, synchronisatiestatistieken, automatische backfill en geavanceerd herstel"
+  caption="Project Waddle heeft 2.868 sequentierecords ontvangen en kent nu vier ontbrekende records verdeeld over twee apparaat-ID's."
 />
 
-- **Inkomend** is werk dat momenteel in de wachtrij voor binnenkomend verkeer staat.
+- **Inkomende wachtrij** is werk dat wacht om te worden toegepast.
 - **Ontbrekend** is het aantal bekende gaten in de reeks.
-- **Overgeslagen** is werk dat de inkomende wachtrij heeft opgegeven nadat het niet
-  normaal verwerkt kon worden.
-- **Automatische backfill** vraagt voortdurend herstelbare gaten op en is de
-  juiste standaard voor normaal gebruik.
-- **Geavanceerd herstel** bevat handmatige besturing voor een onderzoek. Gebruik het
-  pas nadat gewone synchronisatie en automatische backfill de tijd hebben gehad om
-  tot rust te komen.
+- **Overgeslagen** is werk dat de inkomende wachtrij heeft opgegeven omdat het
+  niet normaal verwerkt kon worden.
+- **Automatische backfill** vraagt ontbrekende items van de afgelopen 24 uur op
+  en is de juiste standaard voor dagelijks gebruik.
+- **Geavanceerd herstel** bevat handmatige acties voor een onderzoek, zoals
+  **Inhalen nu** en het opvragen van oudere ontbrekende items. Gebruik het pas
+  als gewone synchronisatie en automatische backfill tijd hebben gehad om tot
+  rust te komen.
 
-Een ontbrekende telling die niet nul is, betekent niet automatisch gegevensverlies:
-een ander apparaat kan nog offline zijn, of het verzoek kan al onderweg zijn.
-Onderzoek pas wanneer het aantal ongewijzigd blijft terwijl alle verwachte apparaten
-online zijn.
+Een aantal ontbrekende items boven nul is niet automatisch gegevensverlies: een
+ander apparaat kan nog offline zijn, of het verzoek is al onderweg. Zoek het uit
+als het aantal niet verandert terwijl alle verwachte apparaten online zijn.
 
-## Synchronisatiestatistieken lezen
+## Lees de Matrix Stats
 
-**Matrix Stats** scheidt het berichtvolume van de verwerkingsstatus. Het is handig
-wanneer de gegevens er verouderd uitzien, maar het account nog steeds als verbonden
-rapporteert.
+**Matrix Stats** scheidt het berichtvolume van de gezondheid van de
+verwerking. Dat helpt als gegevens verouderd lijken terwijl het account nog als
+verbonden wordt gemeld.
 
 <ManualScreenshot
   caseId="sync/stats"
-  alt="Lotti Matrix-synchronisatiestatistieken met aantallen verzonden berichten, top-verwerkings-KPI's, berichttypen, fouten, herhalingen en entiteitstotalen"
-  caption="Tellingen stellen vast of berichten bewegen; fouten en geplande herhalingen tonen of de pijplijn schoon doorloopt."
+  alt="Lotti Matrix Stats met verzonden berichten per gebeurtenistype, acties onder de synchronisatiemetrics, top-KPI's, tellers voor DB toepassen en signalen"
+  caption="De verzendtellers laten zien of berichten bewegen; de tellers voor DB toepassen laten zien wat inkomend werk werkelijk heeft gedaan."
 />
 
-De kaart met verzonden berichten groepeert Matrix-gebeurtenistypen. **Top KPI's** vat
-verwerkte berichten, fouten en geplande nieuwe pogingen samen, terwijl de
-entiteitstotalen laten zien welke Lotti-payloadfamilies aan dat werk hebben
-bijgedragen. Een stijgend verwerkt aantal met stabiele fouten is gezond. Als fouten
-zich herhalen of herhalingen nooit verdwijnen, controleer dan het Postvak UIT en de
-connectiviteit van het andere apparaat.
+**Verzonden berichten:** telt wat dit apparaat heeft verzonden, gegroepeerd per
+Matrix-gebeurtenistype. Onder **Synchroniseren metrics** toont **Top KPI's** de
+rijen die naar de database zijn geschreven, de ontstane conflicten en de
+inkomende gebeurtenissen die nog in de wachtrij staan. De groep **DB toepassen**
+voegt toe wat als oudere gegevens is genegeerd, overgeslagen omdat een basisrij
+ontbrak, of na herhaalde pogingen is laten vallen.
+
+Een groeiende teller **DB Toegepast** en een wachtrij die leegloopt zijn gezond.
+Blijft de wachtrij hoog of blijven er items wegvallen, gebruik dan **Nu opnieuw
+proberen** of **Herscanen forceren** en controleer daarna de uitbox en de
+verbinding van het andere apparaat. **Diagnostiek kopiëren** zet de cijfers op
+het klembord voor een supportverzoek.
 
 ## Inspecteer de Outbox
 
-Het **Postvak UIT** is de lokale wachtrij met wijzigingen die wachten om te worden
-verzonden. Filter op status om actief werk van fouten te scheiden.
+De **Synchronisatie-uitbox** is de lokale wachtrij met wijzigingen die nog
+verzonden moeten worden. De samenvatting bovenaan zegt of alles gesynchroniseerd
+is, hoeveel items wachten of worden verzonden en hoeveel niet verzonden konden
+worden.
 
 <ManualScreenshot
   caseId="sync/outbox"
-  alt="Lotti-sync-outbox gefilterd op een mislukte Project Waddle-drukafdichtingsfoto met acties voor opnieuw proberen en verwijderen"
-  caption="Mislukte items behouden hun onderwerp, payloaddetails, herhaalgeschiedenis en lokale bijlagepad, zodat herstel gericht is in plaats van blind."
+  alt="Lotti Synchronisatie-uitbox gefilterd op één dagboekitem dat niet verzonden kon worden, met de details van de bijlage, Opnieuw proberen, Verwijderen en Alles opnieuw proberen"
+  caption="Een item dat niet verzonden kon worden, bewaart de details van de inhoud, hoe vaak het is geprobeerd en zijn lokale bijlage, zodat herstel gericht is in plaats van blind."
 />
 
-- **Wachten om te verzenden**-items wachten op hun beurt.
-- **Verzenden**-items zijn momenteel onderweg.
-- **Kon niet verzenden**-items hebben hun huidige poging opgebruikt en blijven
-  beschikbaar voor inspectie.
-- **Verzonden**-items zijn afgeleverd en worden tijdelijk bewaard voor
-  diagnostiek.
+Filter de lijst op status:
+
+- **Wachten** toont items die op hun beurt wachten en items die nu worden
+  verzonden.
+- **Fout** toont items die ook na de automatische nieuwe pogingen niet
+  verzonden konden worden. Ze blijven op dit apparaat opgeslagen, maar worden
+  niet vanzelf opnieuw verzonden: kies na het oplossen van het probleem
+  **Opnieuw proberen** of **Alles opnieuw proberen**.
+- **Verzonden** toont afgeleverde items, die een tijdje worden bewaard voor
+  diagnose.
 
 Gebruik **Alles opnieuw proberen** nadat het onderliggende verbindings- of
-accountprobleem is opgelost. Verwijder een mislukt item alleen wanneer je bewust
-niet wilt dat die wijziging andere apparaten bereikt. Het verwijderen uit het
-Postvak UIT is geen vervanging voor het repareren van de bijbehorende lokale invoer
-of bijlage.
+accountprobleem is opgelost, of **Opnieuw proberen** voor één item.
+**Verwijderen** haalt een item uit de wachtrij: het blijft op dit apparaat maar
+bereikt je andere apparaten nooit, dus verwijder het alleen als je precies dat
+wilt. Verwijderen is geen vervanging voor het repareren van het bijbehorende
+lokale item of de bijlage.
 
-Ga verder met [Synchronisatieconflicten oplossen](./conflicts.mdx) wanneer twee
-apparaten dezelfde invoer onafhankelijk hebben bewerkt, of
-[Synchronisatieonderhoud](./maintenance.mdx) voor hersteltools op databaseniveau.
+Ga verder met [Synchronisatieconflicten oplossen](./conflicts.mdx) als twee
+apparaten hetzelfde item los van elkaar hebben bewerkt, of met
+[Synchronisatieonderhoud](./maintenance.mdx) voor hersteltools op
+databaseniveau.

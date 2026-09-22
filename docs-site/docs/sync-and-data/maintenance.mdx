@@ -12,7 +12,7 @@ you cannot recreate.
 
 <ManualScreenshot
   caseId="sync/maintenance"
-  alt="Lotti Matrix Sync Maintenance with sync database deletion, definition sync, message re-sync, sequence-log population, and sent-outbox purge"
+  alt="Lotti sync Maintenance with Delete Sync Database, Sync measurables, dashboards, habits, categories, AI settings, Message history, Populate sync sequence log, and Purge old sent outbox items"
   caption="Maintenance groups destructive, replay, and cleanup actions on one page. The confirmation text defines the scope of each operation."
 />
 
@@ -20,21 +20,25 @@ you cannot recreate.
 
 - **Delete Sync Database** removes the local sync database. This is destructive
   local recovery, not a normal way to disconnect a device.
-- **Sync definitions** sends the current definition records again, such as
-  categories and other shared configuration.
-- **Re-sync messages** replays selected messages when remote state is missing
-  or an earlier delivery needs to be repeated.
-- **Populate sequence log** reconstructs the local sequence history used to
-  detect gaps and drive backfill.
-- **Purge old sent outbox items** deletes already-sent diagnostic queue history
-  after its retention period. It does not remove pending or failed work.
+- **Sync measurables, dashboards, habits, categories, AI settings** sends that
+  shared configuration again. A dialog lets you choose which kinds to include —
+  labels and saved task filters are offered too — before you choose **Start
+  sync**.
+- **Message history** queues entries again for your other devices. Choose a
+  range — **All**, **Last 30 days**, or **Custom** with a start and end — and
+  the entity types to include, then **Start**. If some entries fail, **Retry
+  failed entries** repeats just those.
+- **Populate sync sequence log** indexes existing entries so that backfill can
+  answer requests for entries created before sequence tracking existed.
+- **Purge old sent outbox items** deletes sent outbox rows older than 7 days
+  and reclaims disk space. Items that are still waiting or failed are kept.
 
 Start with the smallest operation that matches the symptom. A stuck attachment
 belongs in the [Outbox](./sync.mdx#inspect-the-outbox); persistent sequence gaps
-belong in Backfill; two valid concurrent edits belong in
+belong in Backfill sync; two valid concurrent edits belong in
 [Conflicts](./conflicts.mdx). Deleting the sync database should be a last-resort
 local reset performed with a known-good peer and backup available.
 
-After a repair, return to **Sync Statistics**, confirm that processed work is
-advancing without a growing failure count, and check that the Outbox and the
-Backfill missing count settle.
+After a repair, return to **Matrix Stats**, confirm that applied work is
+advancing and the queue drains, and check that the Sync Outbox and the Backfill
+missing count settle.
