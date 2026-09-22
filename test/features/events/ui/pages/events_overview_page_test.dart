@@ -264,6 +264,11 @@ void main() {
 
     expect(find.text('Launch gala'), findsOneWidget);
     expect(find.text('No matching events'), findsNothing);
+    // The field follows the cleared query rather than keeping stale text.
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller?.text,
+      isEmpty,
+    );
   });
 
   testWidgets(
