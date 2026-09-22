@@ -433,8 +433,11 @@ Five properties are deliberate:
   so the Android build carries no Google ML Kit. Android streams YUV and only
   its luminance plane is copied; the other platforms stream BGRA or RGBA.
   Only one frame is decoded at a time and intervening frames are skipped to
-  keep the UI responsive. Camera denial or absence leaves manual entry
-  available, and Windows stays manual-only until its camera path is verified.
+  keep the UI responsive. The camera is released while the app is in the
+  background (on desktop only when hidden, not on focus loss) and reopened on
+  resume, which also retries a camera the user has just allowed in system
+  settings. Camera denial or absence leaves manual entry available, and
+  Windows stays manual-only until its camera path is verified.
 - **Both devices warn, and the warning touches the credential.** The inviting
   side keeps a lock-badged `DesignSystemInlineCallout` (the design-system
   component the sync-local callout was promoted into) glued directly under
