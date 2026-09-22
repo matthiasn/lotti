@@ -1,0 +1,46 @@
+# App Store App Preview narration — NOT a tutorial scenario.
+#
+# Narrates the walk in integration_test/store_preview_test.dart, which
+# `make store_preview_ios` (tool/store_screenshots/ios_preview.sh) records on
+# an iOS simulator. It reuses this workbench's TTS pre-pass and narrator
+# voice, but never goes through `make tutorial_video`: there is no
+# tutorial test, no time warp and no OpenMontage — the preview is real time.
+# tutorial_videos/app_preview.py lays the clips over the recording.
+#
+# Step ids are the walk's beats (`_beatIds` in store_preview_test.dart) and
+# must stay in step with them. Each beat lasts
+# max(min_duration, narration + 0.6 s), the tutorial driver's rule;
+# min_duration is roughly what the beat's taps and scrolls take on their own,
+# so a line that fits costs no time. App Store Connect caps a preview at
+# 30 seconds, and a locale whose beats need more fails before the build.
+#
+# Previews autoplay muted: every line restates what the footage already
+# shows, so nothing depends on hearing it.
+
+scenario: app_store_preview
+
+title:
+  en: Lotti in thirty seconds
+  de: Lotti in dreißig Sekunden
+
+steps:
+  - id: tasks
+    min_duration: 4.5
+    narration:
+      en: Lotti keeps everything you mean to do in one calm list.
+      de: Lotti hält alles, was du vorhast, in einer ruhigen Liste.
+  - id: task
+    min_duration: 6.1
+    narration:
+      en: Open a task, see its checklist, and tick off what's done.
+      de: Öffne eine Aufgabe, sieh ihre Checkliste und hak ab, was erledigt ist.
+  - id: habits
+    min_duration: 5.3
+    narration:
+      en: Habits sit right alongside. One tap, and today is done.
+      de: Gewohnheiten stehen gleich daneben. Ein Tipp, und heute ist geschafft.
+  - id: logbook
+    min_duration: 4.1
+    narration:
+      en: The logbook keeps what you did — on your own devices.
+      de: Das Logbuch bewahrt, was du getan hast — auf deinen eigenen Geräten.

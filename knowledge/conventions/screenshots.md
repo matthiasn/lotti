@@ -15,7 +15,7 @@ sources:
   - id: makefile
     resource: ../../Makefile
     title: manual_screenshots targets and their staging directories
-    last_modified: 2026-09-19
+    last_modified: 2026-09-22
   - id: gitignore
     resource: ../../.gitignore
     title: The `screenshots` ignore rule
@@ -38,24 +38,32 @@ sources:
     last_modified: 2026-09-19
   - id: store-walk
     resource: ../../integration_test/store_walk.dart
-    title: What the two store walks share — the demo-world boot, display-rate pumping and the host handshake
-    last_modified: 2026-09-19
+    title: What the two store walks share — the demo-world boot, display-rate pumping, the host handshake and its handoff directory
+    last_modified: 2026-09-22
   - id: store-simulator-lib
     resource: ../../tool/store_screenshots/ios_simulator_lib.sh
     title: Finding, booting, dressing and releasing a simulator by UDID
     last_modified: 2026-09-19
   - id: store-preview-ios
     resource: ../../tool/store_screenshots/ios_preview.sh
-    title: App Preview recording on an iOS simulator
-    last_modified: 2026-09-19
+    title: App Preview narration, recording and cut on an iOS simulator
+    last_modified: 2026-09-22
   - id: store-preview-test
     resource: ../../integration_test/store_preview_test.dart
-    title: The App Preview walk, driven by touch
-    last_modified: 2026-09-19
+    title: The App Preview walk, driven by touch in narrated beats
+    last_modified: 2026-09-22
   - id: app-preview-transcode
     resource: ../../tool/store_screenshots/app_preview.sh
-    title: Recording to App Store App Preview transcode
-    last_modified: 2026-09-19
+    title: Recording to App Store App Preview transcode, with the narration track
+    last_modified: 2026-09-22
+  - id: app-preview-narration
+    resource: ../../tools/tutorial_videos/tutorial_videos/app_preview.py
+    title: Beat pacing, cut and narration placement for the App Preview
+    last_modified: 2026-09-22
+  - id: app-preview-script
+    resource: ../../tools/tutorial_videos/config/scenarios/app_store_preview.yaml
+    title: The App Preview's narration, one step per beat
+    last_modified: 2026-09-22
 ---
 
 # Images do not live in this repository
@@ -199,39 +207,60 @@ Play Console and App Store Connect by hand and does not go to R2.
 # The App Preview is the same world, walked by touch
 
 App Store Connect's listing also takes video: up to three **App Previews** per
-localisation, 15 to 30 seconds each. `integration_test/store_preview_test.dart`
-boots the same penguin world as the screenshot walk — both go through
-`bootStoreWorld` in `integration_test/store_walk.dart` — but where the
-screenshot walk jumps between routes and holds still, this one moves the way a
-person does, and **only through what a phone can reach by touch**: it scrolls the
-task list, opens a task onto its cover art, ticks a checklist item, goes back,
-completes two habits through the Navigate sheet, and ends in the logbook, where
-both completions have just landed — what you did is what it keeps.
+device size and language, 15 to 30 seconds each.
+`integration_test/store_preview_test.dart` boots the same penguin world as the
+screenshot walk — both go through `bootStoreWorld` in
+`integration_test/store_walk.dart` — but where the screenshot walk jumps
+between routes and holds still, this one moves the way a person does, and
+**only through what a phone can reach by touch**: it scrolls the task list,
+opens a task onto its cover art, ticks a checklist item, goes back, completes
+two habits through the Navigate sheet, and ends in the logbook, where both
+completions have just landed — what you did is what it keeps.
 Time analysis, which the screenshots show, is absent on purpose — its only entry
 point is the desktop sidebar, so on a phone the screenshot walk reaches it by
 route, and a video of a screen nobody can tap their way to would misdescribe
 the app. Daily OS is absent too: in this world it opens on its set-up card.
 
-`tool/store_screenshots/ios_preview.sh` (`make store_preview_ios`) records the
-simulator around the walk and cuts the result:
+The walk plays that storyboard as four **beats** — `tasks`, `task`, `habits`,
+`logbook` — and each one is narrated. The narration is the tutorial videos'
+own machinery, reused rather than rebuilt: the lines live in
+`tools/tutorial_videos/config/scenarios/app_store_preview.yaml`, one step per
+beat, and the workbench's TTS pre-pass speaks them in the narrator's voice the
+manual's videos use (Gemini TTS, cached by content). What the preview does not
+take from the tutorials is everything a real-time video has no use for: no
+time warp, no OpenMontage, no on-screen cursor — Apple wants no fingers on
+the screen, and a drawn pointer is one.
+
+`tool/store_screenshots/ios_preview.sh` (`make store_preview_ios`) narrates,
+records and cuts:
 
 ```mermaid
 sequenceDiagram
     participant S as ios_preview.sh (host)
+    participant T as tutorial_videos (host)
     participant R as simctl recordVideo
     participant W as store_preview_test (simulator)
-    S->>W: flutter drive (build, install, boot the demo world)
-    W-->>S: LOTTI_PREVIEW_MARK ready <ack-dir>
+    S->>T: tts app_store_preview
+    T-->>S: manifest (clips + durations)
+    S->>T: app_preview pacing
+    T-->>S: LOTTI_PREVIEW_BEATS (each beat's floor)
+    S->>W: flutter drive --dart-define=LOTTI_PREVIEW_BEATS=…
+    W-->>S: LOTTI_PREVIEW_MARK ready <handoff-dir>
     Note over W: holds still
     S->>R: start
     R-->>S: "Recording started" (first frame in)
-    S->>W: touch <ack-dir>/ready.done
-    W-->>S: LOTTI_PREVIEW_MARK start
-    Note over W: the walk, paced on the wall clock
-    W-->>S: LOTTI_PREVIEW_MARK end
+    Note over S: recorder start, epoch ms
+    S->>W: touch <handoff-dir>/ready.done
+    Note over W: the beats, each held to its floor
+    W->>W: timeline.json into <handoff-dir>
+    W-->>S: LOTTI_PREVIEW_MARK end <handoff-dir>
+    S->>S: copy the timeline
+    S->>W: touch <handoff-dir>/end.done
     W-->>S: drive exits
     S->>R: SIGINT (finalize the file)
-    S->>S: app_preview.sh raw.mov preview.mp4 886x1920 <start> <length>
+    S->>T: app_preview narrate (timeline, recorder start)
+    T-->>S: narration.wav on the recording's clock, cut start + length
+    S->>S: app_preview.sh raw.mov preview.mp4 886x1920 start length
 ```
 
 What shapes it:
@@ -241,10 +270,23 @@ What shapes it:
   `ready` once the app is up and waits for the script's acknowledgement — the
   `holdForHost` handshake the screenshot walk uses for its PNGs — so the file
   holds the walk and nothing before it.
-- **The cut is timed, not guessed.** The `start` and `end` lines are timed
-  against the recorder's first frame. A line takes a fraction of a second to
-  get from the device to the script, so the walk stands still for a second and
-  a half on either side of each mark, and the error lands in still frames.
+- **Every beat lasts as long as its line needs.** The tutorial driver's rule,
+  `max(min_duration, narration + 0.6 s)`, computed on the host
+  (`tutorial_videos/app_preview.py`) and handed to the walk as
+  `LOTTI_PREVIEW_BEATS`; a beat whose moves finish early holds its last frame.
+  `min_duration` is roughly what the moves take on their own, so a line that
+  fits costs no time. A locale whose floors alone overrun 30 seconds fails
+  before the build, and a beat the walk does not have fails before recording.
+- **The cut and the narration are timed by a timeline, not by log lines.** The
+  walk records when the cut and every beat began, in epoch milliseconds, and
+  leaves `timeline.json` in the handoff directory — the app's sandbox, a
+  plain host directory on a simulator — before a closing `end` handshake that
+  lets the script copy it while the app is still up. A simulator runs on its
+  host's clock, so those times set against the recorder's start place the cut
+  and each line exactly; a line printed to the drive output would reach the
+  script late by however long the log transport took. Each line starts where
+  its beat began, and a line that would run into the next beat or past the
+  cut fails the run instead of talking over itself.
 - **Every wait renders frames.** A recording takes real frames: the walk pumps
   one every 16 ms while it holds, scrolls by animating the page's own scroll
   position, and would otherwise record a page transition at a few frames per
@@ -256,20 +298,25 @@ What shapes it:
 - **`app_preview.sh` writes what App Store Connect takes and refuses what it
   would not.** 886×1920 for the 6.9" and 6.5" iPhone slots, H.264 High 4.0,
   progressive, constant 30 fps — a simulator recording has a variable frame
-  rate, a frame per screen change — and a silent stereo AAC track, since
-  Apple's spec describes the audio format without saying whether a track is
-  required. The result is measured; one outside 15–30 seconds is removed and
-  fails the run.
+  rate, a frame per screen change — and a stereo AAC track: the narration,
+  normalized to the tutorials' -16 LUFS and cut by the same output-side seek
+  as the picture, or silence with `LOTTI_PREVIEW_NARRATION=off`. The result is
+  measured; one outside 15–30 seconds is removed and fails the run.
+- **It has to work muted.** A preview autoplays without sound, so every line
+  restates what the footage already shows; nothing depends on hearing it.
 
 **What this produces is the rehearsal.** Apple wants a preview built from
 footage captured on a device, and nothing on the command line records a
 physical iPhone — `devicectl` can neither record nor screenshot. The simulator
-cut settles the storyboard and the pacing; the footage that ships is the same
-walk on a phone, captured with QuickTime Player over USB (File › New Movie
-Recording, the phone as camera), which goes through `app_preview.sh` unchanged.
-The walk drives the phone layout, so the 13" iPad slot (1200×1600) needs a walk
-of its own. Like the listing PNGs, previews land under `build/`, are uploaded by
-hand and are never committed.
+cut settles the storyboard, the pacing and the narration; the footage that
+ships is the same walk on a phone, captured with QuickTime Player over USB
+(File › New Movie Recording, the phone as camera), which goes through
+`app_preview.sh` unchanged. A phone's sandbox is not a host directory, so the
+timeline handoff — and with it the narration, which is laid by that
+timeline — is the simulator's alone for now: a phone capture has no beat
+times to place the lines by. The walk drives the phone layout, so the 13" iPad
+slot (1200×1600) needs a walk of its own. Like the listing PNGs, previews land
+under `build/`, are uploaded by hand and are never committed.
 
 # A UI pull request shows before *and* after
 

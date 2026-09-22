@@ -15,9 +15,16 @@
 # refuse must not be left looking like a deliverable.
 #
 # Apple's spec describes the audio track (stereo, 256 kbps AAC, 44.1 or 48
-# kHz) without saying whether one is required, so a silent one is written —
-# it conforms either way. LOTTI_PREVIEW_AUDIO=keep carries the input's own
-# track over instead, for a narrated capture.
+# kHz) without saying whether one is required. LOTTI_PREVIEW_AUDIO picks it:
+#
+#   (unset or empty)  a silent track — it conforms either way
+#   keep              the input's own track, for a capture narrated live
+#   <file>            an audio file on the INPUT's clock (0 = the recording's
+#                     first frame), cut with the same START and DURATION as
+#                     the picture — the narration ios_preview.sh lays down.
+#                     It is normalized to -16 LUFS, the tutorial videos'
+#                     loudness, and padded with silence so it never ends
+#                     before the picture does.
 #
 # The recipe does not care where the recording came from: it applies to a
 # QuickTime capture of an iPhone exactly as to ios_preview.sh's simulator
@@ -30,21 +37,41 @@ SIZE=${3:-886x1920}
 START=${4:-0}
 DURATION=${5:-}
 
+AUDIO=${LOTTI_PREVIEW_AUDIO:-}
+
 W=${SIZE%x*}
 H=${SIZE#*x}
 mkdir -p "$(dirname "$OUT")"
 
 args=(-v error -y -i "$IN")
-if [ "${LOTTI_PREVIEW_AUDIO:-}" = "keep" ]; then
-  audio_map=(-map 0:v:0 -map 0:a:0)
-else
-  args+=(-f lavfi -i anullsrc=channel_layout=stereo:sample_rate=48000)
-  audio_map=(-map 0:v:0 -map 1:a:0 -shortest)
-fi
+audio_filter=()
+case "$AUDIO" in
+  "")
+    args+=(-f lavfi -i anullsrc=channel_layout=stereo:sample_rate=48000)
+    audio_map=(-map 0:v:0 -map 1:a:0 -shortest)
+    ;;
+  keep)
+    audio_map=(-map 0:v:0 -map 0:a:0)
+    ;;
+  *)
+    if [ ! -f "$AUDIO" ]; then
+      echo "LOTTI_PREVIEW_AUDIO names no file: $AUDIO" >&2
+      exit 1
+    fi
+    # -ss below is an output option, so it cuts this track exactly as it
+    # cuts the picture: both are on the recording's clock.
+    args+=(-i "$AUDIO")
+    audio_map=(-map 0:v:0 -map 1:a:0 -shortest)
+    audio_filter=(-af "loudnorm=I=-16:TP=-1.5:LRA=11,apad")
+    ;;
+esac
 args+=(-ss "$START")
 [ -n "$DURATION" ] && args+=(-t "$DURATION")
 args+=(
   "${audio_map[@]}"
+  # Expanded this way because bash 3.2, macOS's own, calls an empty array
+  # unbound under `set -u`.
+  ${audio_filter[@]+"${audio_filter[@]}"}
   -vf "scale=${W}:${H}:flags=lanczos"
   -fps_mode cfr -r 30
   -c:v libx264 -profile:v high -level 4.0

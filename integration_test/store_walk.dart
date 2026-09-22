@@ -77,6 +77,14 @@ Future<void> settle(WidgetTester tester) async {
 /// Generous: a cold CI runner can take well over ten seconds per frame.
 const _hostAckTimeout = Duration(minutes: 2);
 
+/// Where the walk and the host script hand files to each other: a directory
+/// in the app's sandbox, which on a simulator is a plain directory on the
+/// host. [holdForHost] names it on every line it prints, so the script needs
+/// no other way of finding it.
+Directory hostHandoffDirectory() => Directory(
+  p.join(Directory.systemTemp.path, 'lotti-store-capture'),
+)..createSync(recursive: true);
+
 /// Hands the screen to the host script and waits until it hands it back.
 ///
 /// On an iOS simulator the host owns the camera. A device-side screenshot is
@@ -85,19 +93,17 @@ const _hostAckTimeout = Duration(minutes: 2);
 /// on the host and nowhere else. So the walk announces the moment on stdout —
 /// `[marker] [name] <ack-dir>`, which the scripts in `tool/store_screenshots/`
 /// watch the drive output for — and then **waits for the host's
-/// acknowledgement** before moving on: a `[name].done` file in the directory
-/// the line names. A simulator's app sandbox is a directory on the host, so
-/// the script can write there directly, and the handshake is a real signal
-/// rather than a timing bet — a runner that takes ten seconds to screenshot
-/// and flatten a frame, or to start its recorder, simply holds the screen for
-/// ten seconds. Bounded by [_hostAckTimeout] so a script that never answers
-/// fails the run instead of hanging it. A no-op on Android, where the
-/// device-side bytes are the deliverable.
+/// acknowledgement** before moving on: a `[name].done` file in
+/// [hostHandoffDirectory], the directory the line names. The script can
+/// write there directly, and the handshake is a real signal rather than a
+/// timing bet — a runner that takes ten seconds to screenshot and flatten a
+/// frame, or to start its recorder, simply holds the screen for ten seconds.
+/// Bounded by [_hostAckTimeout] so a script that never answers fails the run
+/// instead of hanging it. A no-op on Android, where the device-side bytes
+/// are the deliverable.
 Future<void> holdForHost(String marker, String name) async {
   if (!Platform.isIOS) return;
-  final ackDir = Directory(
-    p.join(Directory.systemTemp.path, 'lotti-store-capture'),
-  )..createSync(recursive: true);
+  final ackDir = hostHandoffDirectory();
   final ack = File(p.join(ackDir.path, '$name.done'));
   if (ack.existsSync()) ack.deleteSync();
   debugPrint('$marker $name ${ackDir.path}');

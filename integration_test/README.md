@@ -107,17 +107,21 @@ The App Store listing's video comes from the same world: both walks boot it
 through `bootStoreWorld` in `store_walk.dart`, and this one carries the same
 `store-screenshots` tag. Instead of jumping between routes it moves by touch —
 scrolls the task list, opens a task, ticks a checklist item, completes two
-habits, ends in the logbook — while the script records the simulator and cuts
-the footage between the marks the walk prints:
+habits, ends in the logbook — in four beats, each held until its narration
+fits. The script speaks the lines with the tutorial-video workbench's TTS
+(`tools/tutorial_videos`, `GEMINI_API_KEY` in `.env`), records the simulator,
+and cuts and narrates the footage by the timeline the walk hands over:
 
 ```bash
 make store_preview_ios                         # iPhone 17 Pro Max, dark, en
 make store_preview_ios LOTTI_STORE_THEME=light LOTTI_MANUAL_LOCALE=de
+make store_preview_ios LOTTI_PREVIEW_NARRATION=off   # silent, no TTS needed
 ```
 
-Output lands in `build/store_preview/ios/<device>/` — the raw recording and the
-886×1920 H.264 cut App Store Connect takes. How the camera is started, how the
-cut is timed, and why the footage that ships comes from a phone are in
+Output lands in `build/store_preview/ios/<device>/` — the raw recording, the
+walk's timeline, the narration track and the 886×1920 H.264 cut App Store
+Connect takes. How the camera is started, how the beats are paced and the cut
+is timed, and why the footage that ships comes from a phone are in
 [knowledge/conventions/screenshots.md](../knowledge/conventions/screenshots.md#the-app-preview-is-the-same-world-walked-by-touch).
 
 ### 5. Manual Screenshots (`manual_screenshots_test.dart`)
