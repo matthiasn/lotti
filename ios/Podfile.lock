@@ -39,6 +39,9 @@ PODS:
   - gal (1.0.0):
     - Flutter
     - FlutterMacOS
+  - geolocator_apple (1.2.0):
+    - Flutter
+    - FlutterMacOS
   - health (13.3.1):
     - Flutter
   - image_picker_ios (0.0.1):
@@ -134,6 +137,7 @@ DEPENDENCIES:
   - flutter_secure_storage_darwin (from `.symlinks/plugins/flutter_secure_storage_darwin/darwin`)
   - flutter_vodozemac (from `.symlinks/plugins/flutter_vodozemac/ios`)
   - gal (from `.symlinks/plugins/gal/darwin`)
+  - geolocator_apple (from `.symlinks/plugins/geolocator_apple/darwin`)
   - health (from `.symlinks/plugins/health/ios`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - integration_test (from `.symlinks/plugins/integration_test/ios`)
@@ -201,6 +205,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_vodozemac/ios"
   gal:
     :path: ".symlinks/plugins/gal/darwin"
+  geolocator_apple:
+    :path: ".symlinks/plugins/geolocator_apple/darwin"
   health:
     :path: ".symlinks/plugins/health/ios"
   image_picker_ios:
@@ -264,6 +270,7 @@ SPEC CHECKSUMS:
   flutter_secure_storage_darwin: acdb3f316ed05a3e68f856e0353b133eec373a23
   flutter_vodozemac: 46015daf07988356d46784d05ab0c7afca00ff36
   gal: baecd024ebfd13c441269ca7404792a7152fde89
+  geolocator_apple: ab36aa0e8b7d7a2d7639b3b4e48308394e8cef5e
   health: 4decf5d74e8f54c58a8c07a385fc72f629a831d9
   image_picker_ios: e0ece4aa2a75771a7de3fa735d26d90817041326
   integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
