@@ -525,10 +525,68 @@ void main() {
     });
 
     group('openNewFile', () {
+      late String out;
+
+      setUp(() => out = p.join(testRoot.path, 'out'));
+
+      test('refuses a folder that is a symlink leading outside the target', () {
+        final outside = Directory(p.join(testRoot.path, 'elsewhere'))
+          ..createSync();
+        Directory(out).createSync();
+        Link(p.join(out, 'images')).createSync(outside.path);
+
+        expect(
+          () => openNewFile(
+            p.join(out, 'images', 'a.jpg'),
+            root: out,
+            entryName: 'images/a.jpg',
+          ),
+          throwsA(
+            isA<ProfileBackupBundleCorruptException>().having(
+              (e) => e.message,
+              'message',
+              contains('leads outside'),
+            ),
+          ),
+        );
+        expect(outside.listSync(), isEmpty);
+      });
+
+      test('allows a symlinked folder that stays inside the target', () {
+        final inside = Directory(p.join(out, 'real'))
+          ..createSync(recursive: true);
+        Link(p.join(out, 'images')).createSync(inside.path);
+
+        openNewFile(
+          p.join(out, 'images', 'a.jpg'),
+          root: out,
+          entryName: 'images/a.jpg',
+        ).closeSync();
+
+        expect(File(p.join(inside.path, 'a.jpg')).existsSync(), isTrue);
+      });
+
+      test('refuses a symlink where the file itself goes', () {
+        final outside = File(p.join(testRoot.path, 'victim.txt'))
+          ..writeAsStringSync('keep me');
+        Directory(out).createSync();
+        Link(p.join(out, 'a.jpg')).createSync(outside.path);
+
+        expect(
+          () => openNewFile(
+            p.join(out, 'a.jpg'),
+            root: out,
+            entryName: 'a.jpg',
+          ),
+          throwsA(isA<ProfileBackupBundleCorruptException>()),
+        );
+        expect(outside.readAsStringSync(), 'keep me');
+      });
+
       test('creates missing folders and opens a new file for writing', () {
         final path = p.join(testRoot.path, 'out', 'images', 'a.jpg');
 
-        openNewFile(path, entryName: 'images/a.jpg')
+        openNewFile(path, root: out, entryName: 'images/a.jpg')
           ..writeFromSync([1, 2, 3])
           ..closeSync();
 
@@ -539,12 +597,12 @@ void main() {
         // What two manifest paths that are distinct but name the same file on
         // this volume (A.jpg and a.jpg on a case-insensitive disk) amount to.
         final path = p.join(testRoot.path, 'out', 'images', 'a.jpg');
-        openNewFile(path, entryName: 'images/a.jpg')
+        openNewFile(path, root: out, entryName: 'images/a.jpg')
           ..writeFromSync([1, 2, 3])
           ..closeSync();
 
         expect(
-          () => openNewFile(path, entryName: 'images/A.jpg'),
+          () => openNewFile(path, root: out, entryName: 'images/A.jpg'),
           throwsA(
             isA<ProfileBackupBundleCorruptException>().having(
               (e) => e.message,

@@ -656,6 +656,7 @@ Map<String, Object?> _readBundle({
       if (payloadRoot != null) {
         output = openNewFile(
           resolveInsideRoot(payloadRoot.path, entry.relativePath),
+          root: payloadRoot.path,
           entryName: entry.relativePath,
         );
       }
@@ -711,17 +712,36 @@ String resolveInsideRoot(String root, String relativePath) {
   return destination;
 }
 
-/// Creates [path] and opens it for writing, refusing a file that already
-/// exists.
+/// Creates [path] below [root] and opens it for writing, refusing a file
+/// that already exists or a folder that leads outside [root].
 ///
 /// Distinct manifest paths can still name one file on the target: `A.jpg`
 /// and `a.jpg` on a case-insensitive volume, or two Unicode spellings of the
 /// same name. Truncating the first would leave a restored payload that no
 /// longer matches its manifest while every per-file checksum passed, so the
 /// collision fails the extraction instead.
+///
+/// The path was checked lexically, but a folder along it may be a symlink.
+/// The created parent is resolved and must still lie inside [root]; the
+/// exclusive create then refuses a symlink in the file's own place. Dart has
+/// no descriptor-relative, no-follow create, so a process that can write into
+/// the freshly created restore folder could still race the check. That
+/// process already runs as the user, and restore verifies the extracted
+/// payload again before activating it.
 @visibleForTesting
-RandomAccessFile openNewFile(String path, {required String entryName}) {
+RandomAccessFile openNewFile(
+  String path, {
+  required String root,
+  required String entryName,
+}) {
   final file = File(path)..parent.createSync(recursive: true);
+  final realRoot = Directory(root).resolveSymbolicLinksSync();
+  final realParent = file.parent.resolveSymbolicLinksSync();
+  if (realParent != realRoot && !p.isWithin(realRoot, realParent)) {
+    throw ProfileBackupBundleCorruptException(
+      'A folder in the restore target leads outside it: $entryName',
+    );
+  }
   try {
     file.createSync(exclusive: true);
   } on FileSystemException {

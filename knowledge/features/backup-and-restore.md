@@ -344,7 +344,13 @@ file's size and SHA-256 against the manifest, keeps each path inside the
 target, and removes the target again on any failure. Every output file is
 created exclusively: two manifest paths that name one file on the target
 volume (`A.jpg` and `a.jpg` on a case-insensitive disk) fail the extraction
-instead of one silently overwriting the other. A wrong passphrase and a
+instead of one silently overwriting the other. Each file's parent folder is
+resolved and must still lie inside the target, and the exclusive create
+refuses a symlink in the file's own place. Dart offers no descriptor-relative,
+no-follow create, so a process that can write into the new restore folder
+while extraction runs could still race these checks; such a process already
+runs as the user, and restore verifies the payload again before activating
+it. A wrong passphrase and a
 damaged key slot are deliberately indistinguishable. The result has the staged
 snapshot's layout, which restore will verify again before activating it.
 
