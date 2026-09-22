@@ -475,6 +475,82 @@ void main() {
       },
     );
 
+    test('never replaces a bundle that already has the chosen name', () async {
+      final taken =
+          File(
+              p.join(
+                outputDirectory.path,
+                'lotti-backup-20260922T201500Z-0000abcd.lottibackup',
+              ),
+            )
+            ..parent.createSync(recursive: true)
+            ..writeAsStringSync('an earlier backup');
+      final snapshot = await stage();
+
+      await expectLater(
+        ProfileBackupBundleCodec(
+          kdf: _testKdf,
+          now: () => DateTime.utc(2026, 9, 22, 20, 15),
+          nameSuffix: () => '0000abcd',
+        ).package(
+          snapshot: snapshot,
+          outputDirectory: outputDirectory,
+          passphrase: _passphrase,
+        ),
+        throwsA(isA<FileSystemException>()),
+      );
+
+      expect(taken.readAsStringSync(), 'an earlier backup');
+      expect(outputDirectory.listSync().map((e) => e.path), [taken.path]);
+      expect(snapshot.directory.existsSync(), isFalse);
+    });
+
+    test('exceptions describe themselves', () {
+      expect(
+        const ProfileBackupWrongPassphraseException().toString(),
+        contains('wrong passphrase'),
+      );
+      expect(
+        const ProfileBackupWeakPassphraseException().toString(),
+        contains('at least 12 characters'),
+      );
+      expect(
+        const ProfileBackupBundleCorruptException('truncated').toString(),
+        'ProfileBackupBundleCorruptException: truncated',
+      );
+      expect(
+        const ProfileBackupBundleFormatException('not a backup').toString(),
+        'ProfileBackupBundleFormatException: not a backup',
+      );
+    });
+
+    group('resolveInsideRoot', () {
+      final root = p.join('restore', 'payload');
+
+      test('joins a canonical relative path', () {
+        expect(
+          resolveInsideRoot(root, 'images/2026/photo.jpg'),
+          p.join(root, 'images', '2026', 'photo.jpg'),
+        );
+      });
+
+      for (final escape in ['../outside.txt', 'images/../../outside.txt']) {
+        test('refuses $escape', () {
+          expect(
+            () => resolveInsideRoot(root, escape),
+            throwsA(isA<ProfileBackupBundleCorruptException>()),
+          );
+        });
+      }
+
+      test('refuses an absolute path', () {
+        expect(
+          () => resolveInsideRoot(root, p.join(p.separator, 'etc', 'passwd')),
+          throwsA(isA<ProfileBackupBundleCorruptException>()),
+        );
+      });
+    });
+
     test('extraction never writes into an existing directory', () async {
       final bundle = await packageFresh();
       final occupied = target()..createSync();
@@ -678,6 +754,15 @@ void main() {
         ),
       );
       expect(target().existsSync(), isFalse);
+    });
+
+    test('a file name that is not UTF-8', () async {
+      final archive = BytesBuilder()
+        ..add([...utf8.encode('LOTTIARC'), 1, 1])
+        ..add((ByteData(2)..setUint16(0, 2)).buffer.asUint8List())
+        ..add([0xff, 0xfe])
+        ..add(Uint8List(8));
+      await expectCorrupt(archive.takeBytes(), 'Unreadable file name');
     });
 
     test('an unknown record kind', () async {

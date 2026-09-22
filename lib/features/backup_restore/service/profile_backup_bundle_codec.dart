@@ -78,13 +78,16 @@ class ProfileBackupBundleCodec {
     this._kdf = BackupKdfParameters.recommended,
     DateTime Function()? now,
     @visibleForTesting this.afterWrite,
-  }) : _now = now ?? DateTime.now;
+    @visibleForTesting String Function()? nameSuffix,
+  }) : _now = now ?? DateTime.now,
+       _nameSuffix = nameSuffix ?? (() => _randomHex(4));
 
   /// Shortest passphrase [package] accepts, in Unicode code points.
   static const minimumPassphraseLength = 12;
 
   final BackupKdfParameters _kdf;
   final DateTime Function() _now;
+  final String Function() _nameSuffix;
 
   /// Runs on the written partial bundle before it is verified, so tests can
   /// damage it the way a failing disk would.
@@ -111,7 +114,7 @@ class ProfileBackupBundleCodec {
       outputDirectory.createSync(recursive: true);
       final name = ProfileBackupBundleStore.bundleFileName(
         createdAt: _now(),
-        suffix: _randomHex(4),
+        suffix: _nameSuffix(),
       );
       final destination = p.join(outputDirectory.path, name);
       final partial = p.join(
@@ -651,14 +654,10 @@ Map<String, Object?> _readBundle({
       }
       RandomAccessFile? output;
       if (payloadRoot != null) {
-        final destination = p.normalize(
-          p.join(payloadRoot.path, entry.relativePath),
+        final destination = resolveInsideRoot(
+          payloadRoot.path,
+          entry.relativePath,
         );
-        if (!p.isWithin(payloadRoot.path, destination)) {
-          throw ProfileBackupBundleCorruptException(
-            'Unsafe path in backup: ${entry.relativePath}',
-          );
-        }
         File(destination).parent.createSync(recursive: true);
         output = File(destination).openSync(mode: FileMode.writeOnly);
       }
@@ -695,4 +694,21 @@ Map<String, Object?> _readBundle({
   } finally {
     file.closeSync();
   }
+}
+
+/// Joins [relativePath] onto [root], refusing any path that would land
+/// outside it.
+///
+/// Manifest validation already rejects absolute paths and `..` segments, so
+/// this is a second line of defence: a restore must never write outside its
+/// target, whatever a future manifest version allows.
+@visibleForTesting
+String resolveInsideRoot(String root, String relativePath) {
+  final destination = p.normalize(p.join(root, relativePath));
+  if (!p.isWithin(root, destination)) {
+    throw ProfileBackupBundleCorruptException(
+      'Unsafe path in backup: $relativePath',
+    );
+  }
+  return destination;
 }
