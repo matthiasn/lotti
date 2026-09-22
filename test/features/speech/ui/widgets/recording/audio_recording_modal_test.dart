@@ -1284,6 +1284,60 @@ void main() {
         },
       );
 
+      testWidgets(
+        'a reported start failure is shown, blocks overlapping taps while '
+        'pending, and stays retryable',
+        (tester) async {
+          var attempts = 0;
+          final firstStart = Completer<AudioRecordingFailure?>();
+          await pumpModalContent(
+            tester,
+            extraOverrides: [
+              audioRecorderControllerProvider.overrideWith(
+                () => _CallbackTrackingController(
+                  fixedState: AudioRecorderState(
+                    status: AudioRecorderStatus.stopped,
+                    progress: Duration.zero,
+                    vu: -20,
+                    dBFS: -160,
+                    showIndicator: false,
+                    modalVisible: true,
+                  ),
+                  onRecord: () {
+                    attempts++;
+                    return attempts == 1
+                        ? firstStart.future
+                        : Future<AudioRecordingFailure?>.value();
+                  },
+                ),
+              ),
+            ],
+          );
+          final messages = AppLocalizations.of(
+            tester.element(find.byType(AudioRecordingModalContent)),
+          )!;
+
+          await tester.tap(find.byKey(const ValueKey('record')));
+          await tester.pump();
+          // A second tap while the native start is pending launches nothing.
+          await tester.tap(
+            find.byKey(const ValueKey('record')),
+            warnIfMissed: false,
+          );
+          await tester.pump();
+          expect(attempts, 1);
+
+          firstStart.complete(AudioRecordingFailure.startFailed);
+          await tester.pump();
+          expect(find.text(messages.chatInputRecordingFailed), findsOneWidget);
+
+          await tester.tap(find.byKey(const ValueKey('record')));
+          await tester.pump();
+          expect(attempts, 2);
+          expect(find.text(messages.chatInputRecordingFailed), findsNothing);
+        },
+      );
+
       testWidgets('localizes the record action', (tester) async {
         stubCategory();
 

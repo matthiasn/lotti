@@ -1004,9 +1004,12 @@ void main() {
         );
 
         // Act
-        await controller.record();
+        final failure = await controller.record();
 
         // Assert
+        // The repository reports a failed native start as null; the caller
+        // must receive it as an explicit failure it can show, not silence.
+        expect(failure, AudioRecordingFailure.startFailed);
         verify(() => mockAudioRecorderRepository.startRecording()).called(1);
         // State should remain stopped if audioNote is null
         expect(
