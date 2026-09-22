@@ -158,7 +158,7 @@ QrCameraFactory? qrCameraFactoryOverride;
 @visibleForTesting
 Future<QrCamera> createQrCamera() => _CameraQrCamera.create();
 
-class _QrScannerState extends State<QrScanner> {
+class _QrScannerState extends State<QrScanner> with WidgetsBindingObserver {
   QrCamera? _camera;
   bool _unavailable = false;
   bool _decoding = false;
@@ -166,17 +166,31 @@ class _QrScannerState extends State<QrScanner> {
   String? _lastDetectedPayload;
   int _framesToSkip = 0;
 
+  /// Identifies the current camera session. Releasing the camera or leaving
+  /// the tree bumps it, so an initialisation still in flight from an earlier
+  /// session knows to discard what it opened.
+  int _session = 0;
+
+  /// Whether the camera was released for the app going to the background and
+  /// must be reopened on resume.
+  bool _suspended = false;
+
   @override
   void initState() {
     super.initState();
-    unawaited(_initialize());
+    WidgetsBinding.instance.addObserver(this);
+    _openCamera();
   }
 
-  Future<void> _initialize() async {
+  void _openCamera() {
+    unawaited(_initialize(++_session));
+  }
+
+  Future<void> _initialize(int session) async {
     try {
       final camera =
           await (qrCameraFactoryOverride?.call() ?? createQrCamera());
-      if (!mounted) {
+      if (!mounted || session != _session) {
         await camera.dispose();
         return;
       }
@@ -187,8 +201,41 @@ class _QrScannerState extends State<QrScanner> {
         onError: _onCameraError,
       );
     } on Exception catch (error, stackTrace) {
+      // A superseded session already released its camera; its failure (a
+      // permission prompt answered while backgrounded, say) is not this
+      // session's to report.
+      if (session != _session) return;
       await _handleCameraFailure(error, stackTrace);
     }
+  }
+
+  /// Releases the camera while the app is away and reopens it on return.
+  ///
+  /// The camera plugin does not survive backgrounding on phones: the native
+  /// session is stopped underneath a live controller, and a preview kept
+  /// across it comes back frozen. Reopening on resume also retries a camera
+  /// that had failed, which is how granting access in system settings takes
+  /// effect without the user finding the retry button.
+  ///
+  /// Desktop windows go `inactive` whenever they lose focus, so only a hidden
+  /// or paused desktop app releases its webcam.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      if (!_suspended) return;
+      _suspended = false;
+      setState(() => _unavailable = false);
+      _openCamera();
+      return;
+    }
+    if (state == AppLifecycleState.inactive && !isMobile) return;
+    if (_suspended) return;
+    _suspended = true;
+    _session++;
+    final camera = _camera;
+    _camera = null;
+    if (camera != null) unawaited(_disposeCamera(camera));
+    setState(() {});
   }
 
   void _onCameraError(Object error) {
@@ -268,6 +315,8 @@ class _QrScannerState extends State<QrScanner> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _session++;
     final camera = _camera;
     _camera = null;
     if (camera != null) unawaited(_disposeCamera(camera));

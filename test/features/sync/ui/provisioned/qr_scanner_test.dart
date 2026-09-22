@@ -244,6 +244,195 @@ void main() {
       expect(find.text('Camera unavailable'), findsOneWidget);
     });
 
+    group('app lifecycle', () {
+      /// Hands out a fresh fake camera per request, recording each one.
+      List<_FakeQrCamera> installCameraQueue() {
+        final cameras = <_FakeQrCamera>[];
+        qrCameraFactoryOverride = () async {
+          final camera = _FakeQrCamera();
+          cameras.add(camera);
+          return camera;
+        };
+        return cameras;
+      }
+
+      Future<void> pumpScanner(WidgetTester tester) async {
+        addTearDown(
+          () => tester.binding.handleAppLifecycleStateChanged(
+            AppLifecycleState.resumed,
+          ),
+        );
+        await tester.pumpWidget(
+          makeTestableWidget2(
+            QrScanner(
+              onDetect: (_) {},
+              unavailableBuilder: (_) => const Text('Camera unavailable'),
+            ),
+          ),
+        );
+        await tester.pump();
+      }
+
+      Future<void> moveTo(WidgetTester tester, AppLifecycleState state) async {
+        tester.binding.handleAppLifecycleStateChanged(state);
+        await tester.pump();
+      }
+
+      testWidgets('a backgrounded phone releases the camera and reopens it', (
+        tester,
+      ) async {
+        isMobile = true;
+        final cameras = installCameraQueue();
+        await pumpScanner(tester);
+        expect(cameras.single.started, isTrue);
+
+        // Switching away (the app goes inactive, then hidden and paused)
+        // releases the native session exactly once.
+        await moveTo(tester, AppLifecycleState.inactive);
+        await moveTo(tester, AppLifecycleState.hidden);
+        await moveTo(tester, AppLifecycleState.paused);
+        expect(cameras.single.disposed, isTrue);
+        expect(find.byKey(const Key('camera_preview')), findsNothing);
+
+        // Coming back opens a new camera instead of the stopped one.
+        await moveTo(tester, AppLifecycleState.hidden);
+        await moveTo(tester, AppLifecycleState.inactive);
+        await moveTo(tester, AppLifecycleState.resumed);
+        expect(cameras, hasLength(2));
+        expect(cameras.last.started, isTrue);
+        expect(cameras.last.disposed, isFalse);
+        expect(find.byKey(const Key('camera_preview')), findsOneWidget);
+      });
+
+      testWidgets('a desktop window losing focus keeps its webcam', (
+        tester,
+      ) async {
+        final cameras = installCameraQueue();
+        await pumpScanner(tester);
+
+        await moveTo(tester, AppLifecycleState.inactive);
+        await moveTo(tester, AppLifecycleState.resumed);
+
+        expect(cameras, hasLength(1));
+        expect(cameras.single.disposed, isFalse);
+        expect(find.byKey(const Key('camera_preview')), findsOneWidget);
+      });
+
+      testWidgets('a hidden desktop app releases its webcam until shown', (
+        tester,
+      ) async {
+        final cameras = installCameraQueue();
+        await pumpScanner(tester);
+
+        await moveTo(tester, AppLifecycleState.inactive);
+        await moveTo(tester, AppLifecycleState.hidden);
+        expect(cameras.single.disposed, isTrue);
+
+        await moveTo(tester, AppLifecycleState.inactive);
+        await moveTo(tester, AppLifecycleState.resumed);
+        expect(cameras, hasLength(2));
+        expect(cameras.last.started, isTrue);
+      });
+
+      testWidgets('returning from settings retries a camera that had failed', (
+        tester,
+      ) async {
+        // The denied-camera copy sends the user to system settings. Coming
+        // back must pick up the new permission without another tap.
+        isMobile = true;
+        var attempts = 0;
+        final granted = _FakeQrCamera();
+        qrCameraFactoryOverride = () async {
+          attempts++;
+          if (attempts == 1) {
+            throw CameraException('CameraAccessDenied', 'denied');
+          }
+          return granted;
+        };
+        await pumpScanner(tester);
+        expect(find.text('Camera unavailable'), findsOneWidget);
+
+        await moveTo(tester, AppLifecycleState.inactive);
+        await moveTo(tester, AppLifecycleState.hidden);
+        await moveTo(tester, AppLifecycleState.inactive);
+        await moveTo(tester, AppLifecycleState.resumed);
+
+        expect(attempts, 2);
+        expect(granted.started, isTrue);
+        expect(find.text('Camera unavailable'), findsNothing);
+        expect(find.byKey(const Key('camera_preview')), findsOneWidget);
+      });
+
+      testWidgets('a camera that opens after backgrounding is discarded', (
+        tester,
+      ) async {
+        // iOS's permission prompt makes the app inactive while the camera is
+        // still being opened; what that request yields belongs to a session
+        // that no longer exists.
+        isMobile = true;
+        final pending = Completer<QrCamera>();
+        final lateCamera = _FakeQrCamera();
+        final fresh = _FakeQrCamera();
+        var requests = 0;
+        qrCameraFactoryOverride = () {
+          requests++;
+          return requests == 1 ? pending.future : Future.value(fresh);
+        };
+        await pumpScanner(tester);
+
+        await moveTo(tester, AppLifecycleState.inactive);
+        pending.complete(lateCamera);
+        await tester.pump();
+        expect(lateCamera.disposed, isTrue);
+        expect(lateCamera.started, isFalse);
+
+        await moveTo(tester, AppLifecycleState.resumed);
+        expect(fresh.started, isTrue);
+        expect(find.byKey(const Key('camera_preview')), findsOneWidget);
+      });
+
+      testWidgets('a failure from a superseded session is not reported', (
+        tester,
+      ) async {
+        isMobile = true;
+        final pending = Completer<QrCamera>();
+        final fresh = _FakeQrCamera();
+        var requests = 0;
+        qrCameraFactoryOverride = () {
+          requests++;
+          return requests == 1 ? pending.future : Future.value(fresh);
+        };
+        await pumpScanner(tester);
+
+        await moveTo(tester, AppLifecycleState.inactive);
+        await moveTo(tester, AppLifecycleState.resumed);
+        expect(fresh.started, isTrue);
+
+        // The first request only now fails. The live session is healthy, so
+        // the fallback must not replace its preview.
+        pending.completeError(CameraException('CameraAccessDenied', 'denied'));
+        await tester.pump();
+
+        expect(find.text('Camera unavailable'), findsNothing);
+        expect(find.byKey(const Key('camera_preview')), findsOneWidget);
+        expect(fresh.disposed, isFalse);
+      });
+
+      testWidgets('stops observing the lifecycle once removed', (tester) async {
+        isMobile = true;
+        final cameras = installCameraQueue();
+        await pumpScanner(tester);
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+
+        await moveTo(tester, AppLifecycleState.inactive);
+        await moveTo(tester, AppLifecycleState.resumed);
+
+        expect(cameras, hasLength(1));
+        expect(tester.takeException(), isNull);
+      });
+    });
+
     testWidgets('disposes a camera created after the scanner is removed', (
       tester,
     ) async {
