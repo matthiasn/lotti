@@ -127,8 +127,14 @@ Future<void> _registerLateAndOptionalServices({
         embeddingStore,
         dispose: (store) => store.close(),
       )
+      // One instance for every caller, so its per-endpoint availability
+      // circuit is shared application-wide.
       ..registerSingleton<OllamaEmbeddingRepository>(
-        OllamaEmbeddingRepository(),
+        OllamaEmbeddingRepository(
+          domainLogger: getIt.isRegistered<DomainLogger>()
+              ? getIt<DomainLogger>()
+              : null,
+        ),
         dispose: (repo) => repo.close(),
       )
       ..registerSingleton<EmbeddingService>(
