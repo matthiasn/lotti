@@ -245,7 +245,8 @@ class AgentService {
   /// Transition agent to [AgentLifecycle.active].
   ///
   /// The caller is responsible for re-registering subscriptions after this
-  /// call (subscription details are agent-kind-specific).
+  /// call (subscription details are agent-kind-specific); the agent controls
+  /// do so through the task service and the runtime-maintenance contributors.
   ///
   /// Returns `true` if the agent was found and resumed, `false` if the agent
   /// does not exist.

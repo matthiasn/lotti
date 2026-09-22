@@ -160,11 +160,11 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
         .toList(growable: false);
   }
 
-  /// Mirrors a synced-in goal identity into the runtime mid-session: an
-  /// active goal subscribes to its signals immediately (previously it was
-  /// deaf until restart — the documented PR 2 limitation), a paused or
-  /// archived one is unsubscribed. Failures are contained: the sync apply
-  /// loop must never stall on one goal's bad spec.
+  /// Mirrors a goal identity into the runtime mid-session — one synced in
+  /// from another device, or one the user resumed locally: an active goal
+  /// subscribes to its signals immediately (previously it was deaf until
+  /// restart), a paused or archived one is unsubscribed. Failures are
+  /// contained: the sync apply loop must never stall on one goal's bad spec.
   @override
   Future<void> onIdentityReceived(AgentIdentityEntity identity) async {
     if (identity.kind != AgentKinds.goalAgent) return;

@@ -66,14 +66,18 @@ abstract class AgentRuntimeMaintenance {
   /// restoration pass, which Riverpod can then retry as a provider failure.
   Future<void> restoreSubscriptions();
 
-  /// Reacts to an agent identity applied FROM SYNC mid-session, so an
-  /// agent created on another device is live here without a restart —
-  /// the runtime-plug-in generalization of the hard-coded task/project
-  /// branches in the sync processor. Default: nothing to mirror.
+  /// Reacts to an agent identity whose lifecycle changed mid-session, so the
+  /// runtime follows it without a restart. Default: nothing to mirror.
   ///
-  /// Called after the identity row is persisted; implementations must
-  /// contain their own failures (a bad identity from one feature must not
-  /// stop the sync apply loop).
+  /// Two callers offer every identity to every contributor, which guards its
+  /// own kind: the sync processor, for an identity applied from another
+  /// device (the plug-in generalization of its hard-coded task/project
+  /// branches), and the shared agent controls, for an agent the user resumed
+  /// locally.
+  ///
+  /// Called after the identity row is persisted, with that persisted row;
+  /// implementations must contain their own failures (a bad identity from
+  /// one feature must not stop the sync apply loop).
   Future<void> onIdentityReceived(AgentIdentityEntity identity) async {}
 }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
@@ -9,6 +11,8 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/agents/wake/wake_queue.dart';
+import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/goals/runtime/goal_runtime_maintenance.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -17,6 +21,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_data/entity_factories.dart';
+import '../../agents/wake/wake_orchestrator_test_helpers.dart';
 
 void main() {
   setUpAll(() {
@@ -389,6 +394,58 @@ void main() {
       goalIdentity('task-1', kind: AgentKinds.taskAgent),
     );
     verifyNever(() => orchestrator.removeSubscriptions(any()));
+  });
+
+  test('a goal identity offered mid-session is woken by its next signal '
+      'through the real orchestrator, and was deaf before it', () async {
+    restubWakeRunMethods(repository);
+    stubSpec('goal-a');
+    // The drain re-reads the identity for its policy gate.
+    when(
+      () => repository.getEntity('goal-a'),
+    ).thenAnswer((_) async => goalIdentity('goal-a'));
+    final dispatched = <(String, Set<String>)>[];
+    final liveOrchestrator = WakeOrchestrator(
+      repository: repository,
+      queue: WakeQueue(),
+      runner: WakeRunner(),
+      wakeExecutor: (agentId, runKey, triggers, threadId) async {
+        dispatched.add((agentId, triggers));
+        return null;
+      },
+    );
+    final live = GoalRuntimeMaintenance(
+      agentService: agentService,
+      repository: repository,
+      syncService: syncService,
+      goalAgentService: GoalAgentService(
+        agentService: agentService,
+        repository: repository,
+        syncService: syncService,
+        orchestrator: liveOrchestrator,
+      ),
+      goalChatService: chatService,
+      checkInNotifier: notifier,
+    );
+    final signals = StreamController<Set<String>>.broadcast();
+
+    await withClock(fixedClock, () async {
+      await liveOrchestrator.start(signals.stream);
+
+      signals.add({'gym-habit'});
+      await pumpEventQueue();
+      expect(dispatched, isEmpty);
+
+      await live.onIdentityReceived(goalIdentity('goal-a'));
+      signals.add({'gym-habit'});
+      await pumpEventQueue();
+    });
+
+    expect(dispatched, hasLength(1));
+    expect(dispatched.single.$1, 'goal-a');
+    expect(dispatched.single.$2, contains('gym-habit'));
+    await liveOrchestrator.stop();
+    await signals.close();
   });
 
   test('a synced-in dormant goal identity is unsubscribed, and a failing '

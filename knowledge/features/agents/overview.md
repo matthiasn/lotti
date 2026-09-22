@@ -132,11 +132,20 @@ for agents created before the re-home.
 stateDiagram-v2
   [*] --> Active: AgentService.createAgent()
   Active --> Dormant: pauseAgent()
-  Dormant --> Active: resumeAgent() + restoreSubscriptions()
+  Dormant --> Active: resumeAgent() + runtime restore
   Active --> Destroyed: destroyAgent()
   Dormant --> Destroyed: destroyAgent()
   Destroyed --> [*]: optional local-only deleteAgent()
 ```
+
+Resuming from `AgentControls` re-reads the persisted identity after
+`resumeAgent()` and restores only what that row says: an agent that is still
+`active` gets its task/project subscriptions back through
+`TaskAgentService.restoreSubscriptionsForAgent`, and the identity is then
+offered to every `AgentRuntimeMaintenance.onIdentityReceived` contributor, the
+same hook the sync processor uses. That is how a goal or relationship agent —
+kinds this feature does not import — listens to its signals again without a
+restart. A resume that finds no agent restores nothing.
 
 The enum also carries `created`, but current creation services instantiate
 agents directly in `active`, so that value exists in the model without a normal
