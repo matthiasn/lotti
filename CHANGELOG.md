@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.24]
+
+### Changed
+
+- **Android reads entry locations without Google Play Services.** Lotti now
+  asks Android's own location service for the position of a new entry, so
+  location recording also works on phones without Google's apps. Lotti no
+  longer asks you to switch location services on when it starts: if they are
+  off, a new entry falls back to an approximate location from your network,
+  as it already did when permission was declined.
+- **One kind of suggestion for time entry text.** Suggestions to rewrite a
+  running timer's text and to revise a finished time entry's text are now the
+  same suggestion, shown as "Revise time entry text". A newer wording for the
+  same entry replaces the older one instead of piling up next to it.
+
+### Fixed
+
+- **Accepting a suggested running-timer description no longer fails on another
+  device.** When the task agent suggested better text for a timer running on
+  your desktop, confirming it on your phone — or on the same desktop after a
+  restart, or once the timer had stopped — showed "Failed to apply change",
+  because the suggestion only worked where the timer was still running. The
+  text of a time entry now applies wherever you confirm it, whether its timer
+  is running, stopped, or running on another device.
+
 ## [1.1.23]
 
 ### Added
