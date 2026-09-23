@@ -83,6 +83,10 @@ class WakeIntentStore {
   final SettingsDb _settingsDb;
   final DomainLogger? _domainLogger;
   final _intents = <String, WakeIntent>{};
+
+  /// Run keys loaded at startup and not yet restored. Only these are owed
+  /// by a previous process; what this one recorded since is its own work.
+  final _loaded = <String>{};
   Future<void>? _writing;
   var _dirty = false;
 
@@ -90,12 +94,14 @@ class WakeIntentStore {
   Future<void> load() async {
     final raw = await _settingsDb.itemByKey(settingsKey);
     _intents.clear();
+    _loaded.clear();
     if (raw == null || raw.isEmpty) return;
     try {
       for (final item in jsonDecode(raw) as List<dynamic>) {
         try {
           final intent = WakeIntent.fromJson(item as Map<String, dynamic>);
           _intents[intent.runKey] = intent;
+          _loaded.add(intent.runKey);
         } catch (error, stackTrace) {
           _logError('unreadable wake intent skipped', error, stackTrace);
         }
@@ -138,14 +144,19 @@ class WakeIntentStore {
     if (_intents.remove(runKey) != null) _persistSoon();
   }
 
-  /// Startup: the intents to restore, each counted as one more restore.
-  /// Intents restored [maxRestores] times without settling are dropped.
+  /// Startup: the intents a previous process left unsettled, each counted as
+  /// one more restore — once per [load]. Intents this process recorded are
+  /// not among them: their jobs are queued or running here already. Intents
+  /// restored [maxRestores] times without settling are dropped.
   List<WakeIntent> takeRestorable() {
     final restorable = <WakeIntent>[];
-    for (final entry in _intents.entries.toList()) {
-      final intent = entry.value;
+    final loaded = _loaded.toList();
+    _loaded.clear();
+    for (final runKey in loaded) {
+      final intent = _intents[runKey];
+      if (intent == null) continue; // settled since startup
       if (intent.restores >= maxRestores) {
-        _intents.remove(entry.key);
+        _intents.remove(runKey);
         _logError(
           'wake intent dropped after ${intent.restores} restores without a '
           'settled run (agent ${DomainLogger.sanitizeId(intent.agentId)})',

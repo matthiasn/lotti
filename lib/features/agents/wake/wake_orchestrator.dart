@@ -412,9 +412,18 @@ class WakeOrchestrator with AgentErrorLogging {
     for (final MapEntry(key: (agentId, workspaceKey), value: group)
         in groups.entries) {
       final tokens = {for (final intent in group) ...intent.tokens};
+      // A user's wake must not become automation that disabling automatic
+      // updates would drop — neither as a new job nor by merging into a
+      // queued automation job, such as one restorePendingWake rebuilt.
+      final initiator =
+          group.any((intent) => intent.initiator == WakeInitiator.user)
+          ? WakeInitiator.user
+          : WakeInitiator.automation;
       final queued = queue.queuedJobFor(agentId, workspaceKey: workspaceKey);
       final String runKey;
-      if (queued != null) {
+      if (queued != null &&
+          (initiator == WakeInitiator.automation ||
+              queued.initiator == WakeInitiator.user)) {
         queue.mergeTokens(agentId, tokens, workspaceKey: workspaceKey);
         runKey = queued.runKey;
       } else {
@@ -424,12 +433,7 @@ class WakeOrchestrator with AgentErrorLogging {
           triggerTokens: tokens,
           workspaceKey: workspaceKey,
           supersede: false,
-          // A user's wake must not become automation that disabling
-          // automatic updates would drop.
-          initiator:
-              group.any((intent) => intent.initiator == WakeInitiator.user)
-              ? WakeInitiator.user
-              : WakeInitiator.automation,
+          initiator: initiator,
         );
       }
       for (final intent in group) {

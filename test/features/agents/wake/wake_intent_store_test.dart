@@ -119,6 +119,24 @@ void main() {
     verifyNever(() => mockDb.removeSettingsItem(any()));
   });
 
+  test('only what a previous process left is restorable, once', () async {
+    // Regression: intents this process had recorded since startup — jobs
+    // the subscription passes had just queued — were restored as well, and
+    // their tokens folded into a duplicate manual wake.
+    final store = newStore();
+    await store.load();
+    record(store, tokens: {'owed'});
+    await store.flush();
+
+    final next = newStore();
+    await next.load();
+    record(next, runKey: 'run-here', tokens: {'queued-here'});
+    final restored = next.takeRestorable();
+
+    expect(restored.map((i) => i.runKey), ['run-1']);
+    expect(next.takeRestorable(), isEmpty, reason: 'once per startup');
+  });
+
   test('an adopted intent hands its restore count to its new job', () async {
     final store = newStore();
     await store.load();

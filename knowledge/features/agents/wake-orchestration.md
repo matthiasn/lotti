@@ -361,10 +361,13 @@ its run key.
   or a superseding manual wake removes it. A job the drain hands back to the
   queue after a superseded generation stays owed.
 - At startup, after the subscription passes, `restoreWakeIntents` re-queues
-  every unsettled intent. Intents of one agent and workspace become one job —
-  two manual wakes enqueued in the same tick would share a run key, and the
-  queue would drop the second — which merges into a job already queued there
-  if there is one, and is user-initiated if any of its intents was.
+  every intent the previous process left unsettled — only those loaded from
+  disk, once, never the jobs this process has queued since. Intents of one
+  agent and workspace become one job — two manual wakes enqueued in the same
+  tick would share a run key, and the queue would drop the second — which is
+  user-initiated if any of its intents was. It merges into a job already
+  queued there, unless that would put a user's wake on an automation job that
+  disabling automatic updates drops; then it is queued on its own.
 - An intent restored twice without a run of it settling is dropped with an
   error log: a wake that kills the process every time must not crash every
   future launch.

@@ -216,6 +216,45 @@ void main() {
     });
   });
 
+  test('a restored user wake does not merge into queued automation', () {
+    // Merging would leave the user's tokens on an automation job, which
+    // disabling automatic updates drops.
+    fakeAsync((async) {
+      final first = boot(async, noOpExecutor);
+      unawaited(runner.tryAcquire('agent-1'));
+      async.flushMicrotasks();
+      first.enqueueManualWake(
+        agentId: 'agent-1',
+        reason: 'creation',
+        triggerTokens: {'user-asked'},
+        initiator: WakeInitiator.user,
+      );
+      async.flushMicrotasks();
+
+      final second = boot(async, noOpExecutor);
+      unawaited(runner.tryAcquire('agent-1'));
+      async.flushMicrotasks();
+      second.enqueueManualWake(
+        agentId: 'agent-1',
+        reason: 'scheduled',
+        triggerTokens: {'automatic'},
+        initiator: WakeInitiator.automation,
+      );
+      async.flushMicrotasks();
+      unawaited(second.restoreWakeIntents());
+      async.flushMicrotasks();
+
+      second.cancelPendingAutomaticWakes('agent-1');
+      async.flushMicrotasks();
+
+      final survivor = queue.dequeue()!;
+      expect(queue.length, 0);
+      expect(survivor.initiator, WakeInitiator.user);
+      expect(survivor.triggerTokens, {'user-asked'});
+      expect(owedTokens(), {'user-asked'});
+    });
+  });
+
   for (final (label, cancel) in <(String, void Function(WakeOrchestrator))>[
     ('cancelled', (o) => o.cancelPendingWakes('agent-1')),
     ('automation-cancelled', (o) => o.cancelPendingAutomaticWakes('agent-1')),
