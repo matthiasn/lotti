@@ -5,13 +5,17 @@ description: Causal accounting over (hostId, counter) pairs, bounded initial-onb
 resource: ../../../lib/features/sync/sequence
 tags: [sync, sequence-log, backfill, gap-detection]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-23T22:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-23T23:27:22Z }
 stale_after: 2027-01-20
 sources:
   - id: tla-spec
     resource: ../../../specs/tla/SyncSequence.tla
     title: TLA+ model of the sequence log and backfill protocol
     last_modified: 2026-09-23
+  - id: settlement-spec
+    resource: ../../../specs/tla/OwnCounterSettlement.tla
+    title: TLA+ model of settlement reads and durable resends
+    last_modified: 2026-09-24
   - id: vc-service
     resource: ../../../lib/services/vector_clock_service.dart
     title: VectorClockService reservations, intent and pending map
@@ -43,7 +47,7 @@ sources:
   - id: backfill-response
     resource: ../../../lib/features/sync/backfill/backfill_response_handler.dart
     title: Backfill payload proof, response handling and own-counter settlement
-    last_modified: 2026-09-23
+    last_modified: 2026-09-24
   - id: status
     resource: ../../../lib/database/sync_sequence_status.dart
     title: SyncSequenceStatus
@@ -101,9 +105,10 @@ to prove later whether the write landed, from the payload's own vector clock.
 
 If the sequence-log insert fails, the reservation — intent included — is
 recorded in the settings database instead, next to the watermark, and startup
-moves it into the log (`migrateUnrecordedReservations`) before settling
-anything. Settlement treats such a record as a `reserved` row. Only when both
-stores refuse does reserving throw, and then no write uses the counter.
+moves it into the log (`migrateUnrecordedReservations`) before its own
+settlement pass. Incoming backfill requests can race that migration. Settlement
+treats a settings record as a `reserved` row. Only when both stores refuse does
+reserving throw, and then no write uses the counter.
 
 `VectorClockService` also keeps the reservations this process has neither
 bound nor released in a process-local **pending** map. Only a pending counter
@@ -154,7 +159,10 @@ it:
    throws — and only then is the counter bound (never over a `received` or
    `burned` row). A failed or interrupted resend therefore leaves the row
    unsettled for the next request or startup; binding first would hide it
-   behind `received` with nothing sent.
+   behind `received` with nothing sent. Each settlement queues the current
+   payload independently of batch deduplication: an earlier best-effort attempt
+   may have failed silently, and even an earlier successful resend may contain
+   an older version of the same payload.
 2. Otherwise, if the counter is pending, or the payload's store is not wired
    yet (the agent repository arrives after sync starts), it is deferred.
    Wiring the store settles the orphans that waited for it.
@@ -162,6 +170,12 @@ it:
    either way and it is deferred until the requester gives up.
 4. Otherwise no payload carries the counter, and it is burned
    authoritatively.
+
+If both the sequence-row lookup and the settings fallback lookup miss,
+settlement re-reads the sequence log before deciding. Migration inserts that
+row before removing the fallback, so it can move the intent between the first
+two reads. The re-read recovers the moved intent, including unnamed reservations
+and already-settled rows. A read failure propagates and leaves recovery retryable.
 
 Pending is read before the payload clock: a counter that is not pending can
 never become pending again, so its payload cannot land between the two reads
@@ -189,14 +203,20 @@ writes and redundant attempts without logging every binding.
 
 [`specs/tla/SyncSequence.tla`](../../../specs/tla/SyncSequence.tla)
 model-checks this lifecycle with TLC for one originator and its peers, under
-bounded crashes and injected faults. Its four configurations prove that no
-committed payload is ever burned, that a received row is backed by the data,
-and that `burned` is terminal; and, with one crash at any point, that every
-committed write eventually reaches every peer and no backfill request stays
-open forever; and that neither two faults, nor a crash together with a
-fault, can burn a committed payload.
-[`specs/tla/README.md`](../../../specs/tla/README.md) lists what each
-configuration covers and what it deliberately leaves out.
+bounded crashes and injected faults. Within its configured bounds, it checks
+that committed payloads are never burned, received rows are backed by data,
+and `burned` is terminal. Its liveness configurations additionally check that
+committed writes reach every peer and requests eventually settle, under the
+model's fairness and fault assumptions.
+
+[`specs/tla/OwnCounterSettlement.tla`](../../../specs/tla/OwnCounterSettlement.tla)
+expands the abstract settlement into separate intent reads, migration writes,
+outbox enqueue and binding. It checks migration races and earlier batch answers
+that silently fail or contain an older payload version. These bounded models
+check the design, not all executions of the Dart implementation; deterministic
+handler regressions exercise those same interleavings in the code.
+[`specs/tla/README.md`](../../../specs/tla/README.md) lists each configuration's
+scope, assumptions and mutation checks.
 
 # `burned` versus `unresolvable`
 
@@ -444,7 +464,7 @@ redundant 250-counter requests on a slow onboarding device.
 
 A request for one of the responder's own counters that nothing has bound yet
 is answered through [settling](#settling-an-own-counter): a covered intent is
-bound and resent, a pending or unnamed reservation is left unanswered without
+durably resent and then bound, a pending or unnamed reservation is left unanswered without
 starting the cooldown, and anything else is burned.
 
 Responses are rate-limited and cooled down per `(hostId, counter)` — 5-minute
