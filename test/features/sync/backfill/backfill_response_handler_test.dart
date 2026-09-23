@@ -4620,8 +4620,7 @@ void main() {
     );
 
     test(
-      'a request for a counter bound concurrently is answered from the row '
-      'as it now stands',
+      'a durable resend that binds the counter is not enqueued again',
       () async {
         ownRow = _createLogItem(
           aliceHostId,
@@ -4631,7 +4630,12 @@ void main() {
         );
         stubPending(pending: false);
         stubJournalPayload(3);
-        // The outbox bound the counter between our read and our bind.
+        // Production's durable enqueue records the sent entry before returning.
+        when(
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
+        ).thenAnswer((_) async {
+          ownRow = _createLogItem(aliceHostId, 3, entryId: 'entry-3');
+        });
         when(
           () => mockSequenceService.bindOwnCounter(
             hostId: any(named: 'hostId'),
@@ -4639,16 +4643,21 @@ void main() {
             entryId: any(named: 'entryId'),
             payloadType: any(named: 'payloadType'),
           ),
-        ).thenAnswer((_) async {
-          ownRow = _createLogItem(aliceHostId, 3, entryId: 'entry-3');
-          return false;
-        });
+        ).thenAnswer(
+          (_) async => ownRow!.status != SyncSequenceStatus.received.index,
+        );
 
         await handler.handleBackfillRequest(request);
 
         verify(
           () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 3),
         ).called(2);
+        verifyPayloadResent();
+        verifyNever(
+          () => mockOutboxService.enqueueMessage(
+            any(that: isA<SyncJournalEntity>()),
+          ),
+        );
         verifyNothingBurned();
         expect(handler.recentlyResponded, contains('$aliceHostId:3'));
       },

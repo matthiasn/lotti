@@ -5,7 +5,7 @@ description: Causal accounting over (hostId, counter) pairs, bounded initial-onb
 resource: ../../../lib/features/sync/sequence
 tags: [sync, sequence-log, backfill, gap-detection]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-23T23:27:22Z }
+generated: { by: codex/gpt-6, at: 2026-09-23T23:37:12Z }
 stale_after: 2027-01-20
 sources:
   - id: tla-spec
@@ -162,7 +162,11 @@ it:
    behind `received` with nothing sent. Each settlement queues the current
    payload independently of batch deduplication: an earlier best-effort attempt
    may have failed silently, and even an earlier successful resend may contain
-   an older version of the same payload.
+   an older version of the same payload. After a successful durable resend,
+   its key is added to the batch set for ordinary responses. The outbox writer
+   may have bound the row itself, in which case the guarded settlement bind
+   loses and the ordinary response path re-reads the row without duplicating
+   that resend.
 2. Otherwise, if the counter is pending, or the payload's store is not wired
    yet (the agent repository arrives after sync starts), it is deferred.
    Wiring the store settles the orphans that waited for it.

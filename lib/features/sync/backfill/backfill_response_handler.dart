@@ -36,7 +36,7 @@ enum OwnCounterSettlement {
   /// not name the payload, or the payload's store is not wired yet.
   deferred,
 
-  /// Something else already bound or burned it; nothing was done.
+  /// Already bound or burned, possibly by the resend's outbox writer.
   alreadySettled,
 }
 
@@ -151,11 +151,13 @@ class BackfillResponseHandler {
   );
 
   /// [settleOwnCounter] for a caller that has already read the counter's
-  /// sequence [row].
+  /// sequence [row]. Successful resends extend [sentPayloads] for ordinary
+  /// batch responses; existing keys never suppress a settlement enqueue.
   Future<OwnCounterSettlement> _settleOwnCounter({
     required String hostId,
     required int counter,
     required SyncSequenceLogItem? row,
+    Set<String>? sentPayloads,
   }) async {
     final status = row == null ? null : SyncSequenceStatus.values[row.status];
     if (status != null &&
@@ -190,6 +192,7 @@ class BackfillResponseHandler {
           hostId: hostId,
           counter: counter,
           row: migratedRow,
+          sentPayloads: sentPayloads,
         );
       }
     }
@@ -227,6 +230,7 @@ class BackfillResponseHandler {
         // the next request or startup instead of hiding behind `received`.
         // A crash in between at worst sends the payload twice.
         final now = clock.now();
+        final durablePayloads = <String>{};
         await _answerFromEntry(
           hostId: hostId,
           counter: counter,
@@ -243,9 +247,12 @@ class BackfillResponseHandler {
           ),
           // Batch deduplication is only evidence of an attempted resend. Even
           // an earlier durable resend may predate the payload version we bind.
-          sentPayloads: <String>{},
+          sentPayloads: durablePayloads,
           durable: true,
         );
+        // The outbox can bind the row itself. If our guarded bind then loses,
+        // the ordinary response path must not enqueue this payload again.
+        sentPayloads?.addAll(durablePayloads);
         final bound = await _sequenceLogService.bindOwnCounter(
           hostId: hostId,
           counter: counter,
@@ -663,6 +670,7 @@ class BackfillResponseHandler {
           hostId: hostId,
           counter: counter,
           row: logEntry,
+          sentPayloads: sentPayloads,
         );
       } catch (error, stackTrace) {
         // The row stays unsettled; the requester asks again.
