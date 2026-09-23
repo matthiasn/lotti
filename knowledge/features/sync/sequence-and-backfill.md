@@ -321,7 +321,6 @@ and a disposed sheet cannot later enqueue End.
 
 ```mermaid
 stateDiagram-v2
-  note right of AwaitingAcceptance: Sender-side lifecycle
   [*] --> AwaitingAcceptance: sender persists begin
   AwaitingAcceptance --> Active: target persists lease and accepts
   AwaitingAcceptance --> Ending: acceptance times out, abort queued
@@ -332,11 +331,11 @@ stateDiagram-v2
   Ending --> [*]: lease timestamp expires
   Completed --> [*]
   Aborted --> [*]: original lease expires
+  note right of AwaitingAcceptance: Sender-side lifecycle
 ```
 
 ```mermaid
 stateDiagram-v2
-  note right of AwaitingBegin: Receiver-side preflight lifecycle
   [*] --> AwaitingBegin: handover persists gate before login
   AwaitingBegin --> Adopted: targeted Begin atomically installs range lease
   AwaitingBegin --> Adopted: empty Begin releases declined or partial transfer
@@ -344,6 +343,7 @@ stateDiagram-v2
   AwaitingBegin --> [*]: fixed one-hour expiry
   Adopted --> [*]
   Cancelled --> [*]
+  note right of AwaitingBegin: Receiver-side preflight lifecycle
 ```
 
 The persisted state strings also include receiver preflight states

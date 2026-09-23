@@ -156,6 +156,23 @@ test('a semicolon that splits a statement fails even though it parses', () => {
   assert.match(r.output, /renders phantom node/);
 });
 
+test('a note before its state is declared fails even though it parses', () => {
+  // GitHub showed "No such shape: undefined" for two sync-handover diagrams
+  // that parsed clean here: the note created the state, without a shape.
+  const r = run(
+    '```mermaid\nstateDiagram-v2\n  note right of A: hi\n  [*] --> A\n  A --> [*]\n```\n',
+  );
+  assert.ok(!r.ok, r.output);
+  assert.match(r.output, /`A` have no shape/);
+});
+
+test('the same note after its state is declared passes', () => {
+  const r = run(
+    '```mermaid\nstateDiagram-v2\n  [*] --> A\n  A --> [*]\n  note right of A: hi\n```\n',
+  );
+  assert.ok(r.ok, r.output);
+});
+
 test('the same label with commas passes', () => {
   const r = run('```mermaid\nstateDiagram-v2\n  A --> A: dedupe, append link, retract\n```\n');
   assert.ok(r.ok, r.output);
