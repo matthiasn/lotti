@@ -43,9 +43,10 @@ holes came back as concrete traces:
    settled run.
 3. **A confirm claims the item before it dispatches.**
    `ChangeSetResolutionStore.claimChangeSetItem` moves the item from `pending`
-   to `confirmed` in one transaction and returns nothing when it is no longer
-   pending; the loser of a race stops without dispatching, and without
-   recording a decision.
+   to `confirmed` and returns nothing when it is no longer pending; the
+   decision is written in the same transaction, so a failed decision write
+   rolls the claim back. The loser of a race stops without dispatching, and
+   without recording a decision.
 4. **A successful dispatch is final.** When the post-confirm hook throws after
    the change landed, the failure is logged and the item stays `confirmed`.
 5. **The models gate the code**, as in ADR 0065: the specs live in

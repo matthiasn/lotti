@@ -51,12 +51,10 @@ class _ConfirmBench {
       final entity = invocation.positionalArguments.first;
       if (entity is ChangeSetEntity) stored = entity;
     });
-    var tail = Future<void>.value();
-    syncService.transactionDelegate = <T>(action) {
-      final run = tail.then((_) => action());
-      tail = run.then<void>((_) {}, onError: (_) {});
-      return run;
-    };
+    syncService.transactionDelegate = driftLikeTransactions(
+      save: () => stored,
+      restore: (snapshot) => stored = snapshot,
+    );
     when(
       () => logger.log(any(), any(), subDomain: any(named: 'subDomain')),
     ).thenReturn(null);

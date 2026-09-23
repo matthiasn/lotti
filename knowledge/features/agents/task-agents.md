@@ -952,11 +952,10 @@ sequenceDiagram
   User->>Card: confirm, reject, or Confirm all
   Card->>Confirm: confirm or reject pending item(s)
   Confirm->>Store: reload persisted change set
-  Confirm->>Store: claim item, pending to confirmed, in one transaction
+  Confirm->>Store: claim item, pending to confirmed, and persist ChangeDecisionEntity, in one transaction
   alt item no longer pending
-    Store-->>Confirm: claim lost, nothing dispatched
+    Store-->>Confirm: claim lost, nothing written or dispatched
   end
-  Confirm->>Store: persist ChangeDecisionEntity
   Confirm->>Dispatch: dispatch confirmed tool
   Dispatch->>Journal: apply mutation
   Journal-->>Confirm: ToolExecutionResult
@@ -974,8 +973,9 @@ sequenceDiagram
 `ChangeSetConfirmationService` applies one item at a time: re-read the persisted
 change set (avoiding stale UI snapshots), **claim the item** —
 `ChangeSetResolutionStore.claimChangeSetItem` moves it from `pending` to
-`confirmed` in one transaction, and a caller that finds it no longer pending
-stops without dispatching — then persist the decision, dispatch, revert
+`confirmed`, and the decision is persisted in the same transaction, so a
+failed decision write rolls the claim back; a caller that finds the item no
+longer pending stops without dispatching — then dispatch, revert
 retryable failures to `pending`, and auto-retract deterministic failures the
 dispatcher marks non-retryable. This includes an `update_time_entry` whose
 arguments alone can never apply and version-fenced goal revisions whose base

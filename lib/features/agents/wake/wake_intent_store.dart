@@ -87,28 +87,55 @@ class WakeIntentStore {
   /// Run keys loaded at startup and not yet restored. Only these are owed
   /// by a previous process; what this one recorded since is its own work.
   final _loaded = <String>{};
+
+  /// The one read of the persisted intents; every write waits for it, so a
+  /// write can never replace what is on disk with a partial snapshot.
+  Future<void>? _loading;
+
+  /// Run keys settled before [_loading] completed, which the disk copy must
+  /// not bring back.
+  final _settledBeforeLoad = <String>{};
+  var _isLoaded = false;
   Future<void>? _writing;
   var _dirty = false;
 
-  /// Loads the persisted intents, replacing whatever this store held.
-  Future<void> load() async {
-    final raw = await _settingsDb.itemByKey(settingsKey);
-    _intents.clear();
-    _loaded.clear();
-    if (raw == null || raw.isEmpty) return;
+  /// Loads the persisted intents, once: a second call — a restarted
+  /// orchestrator, a re-run initialization — waits for the same read and
+  /// changes nothing. They are merged into what this store already holds, so
+  /// a job recorded while the read ran is kept; a job this process holds is
+  /// live here, and is not restorable.
+  Future<void> load() => _loading ??= _load();
+
+  Future<void> _load() async {
     try {
+      final raw = await _settingsDb.itemByKey(settingsKey);
+      if (raw == null || raw.isEmpty) return;
       for (final item in jsonDecode(raw) as List<dynamic>) {
         try {
-          final intent = WakeIntent.fromJson(item as Map<String, dynamic>);
-          _intents[intent.runKey] = intent;
-          _loaded.add(intent.runKey);
+          _merge(WakeIntent.fromJson(item as Map<String, dynamic>));
         } catch (error, stackTrace) {
           _logError('unreadable wake intent skipped', error, stackTrace);
         }
       }
     } catch (error, stackTrace) {
       _logError('unreadable wake intents skipped', error, stackTrace);
+    } finally {
+      _isLoaded = true;
+      _settledBeforeLoad.clear();
     }
+  }
+
+  void _merge(WakeIntent persisted) {
+    final runKey = persisted.runKey;
+    if (_settledBeforeLoad.contains(runKey)) return;
+    final live = _intents[runKey];
+    if (live == null) {
+      _intents[runKey] = persisted;
+      _loaded.add(runKey);
+      return;
+    }
+    live.tokens.addAll(persisted.tokens);
+    if (live.restores < persisted.restores) live.restores = persisted.restores;
   }
 
   /// Records that the job [runKey] for [agentId] carries [tokens]: a job the
@@ -141,6 +168,7 @@ class WakeIntentStore {
   /// Forgets the intent of job [runKey]: its run settled, or the job was
   /// dropped for good.
   void settle(String runKey) {
+    if (!_isLoaded) _settledBeforeLoad.add(runKey);
     if (_intents.remove(runKey) != null) _persistSoon();
   }
 
@@ -201,6 +229,7 @@ class WakeIntentStore {
   }
 
   Future<void> _writeLoop() async {
+    await load();
     while (_dirty) {
       _dirty = false;
       final snapshot = [

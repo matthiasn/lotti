@@ -14,4 +14,6 @@
   a second time. It now stays confirmed.
 - **An agent could run twice at the same time after a cancelled or timed-out
   update.** The cancelled run kept working in the background while the next
-  one started. The next update for that agent now waits for it to finish.
+  one started. The next update for that agent now waits for it to finish —
+  for up to 30 minutes, after which a run that is still going is treated as
+  stuck and no longer holds the agent back.

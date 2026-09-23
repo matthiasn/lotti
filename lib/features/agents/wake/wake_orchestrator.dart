@@ -402,6 +402,7 @@ class WakeOrchestrator with AgentErrorLogging {
   Future<int> restoreWakeIntents() async {
     final store = intentStore;
     if (store == null) return 0;
+    await store.load();
     final intents = store.takeRestorable();
     // One job per agent and workspace: two manual wakes enqueued in the same
     // tick would share a run key, and the queue would drop the second.

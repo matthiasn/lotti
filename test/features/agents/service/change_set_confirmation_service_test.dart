@@ -186,6 +186,32 @@ extension _AnyGeneratedCascadeScenario on glados.Any {
       );
 }
 
+const _inTransaction = #driftLikeTransaction;
+
+/// Transactions as Drift runs them: one at a time, a nested call joining the
+/// enclosing one, and a throw rolling the store back to what [save] captured
+/// when the transaction began.
+Future<T> Function<T>(Future<T> Function() action) driftLikeTransactions<S>({
+  required S Function() save,
+  required void Function(S snapshot) restore,
+}) {
+  var tail = Future<void>.value();
+  return <T>(action) {
+    if (Zone.current[_inTransaction] == true) return action();
+    final run = tail.then((_) async {
+      final before = save();
+      try {
+        return await runZoned(action, zoneValues: {_inTransaction: true});
+      } catch (_) {
+        restore(before);
+        rethrow;
+      }
+    });
+    tail = run.then<void>((_) {}, onError: (_) {});
+    return run;
+  };
+}
+
 void main() {
   setUpAll(registerAllFallbackValues);
 
@@ -270,7 +296,10 @@ void main() {
   /// Makes the repository behave like storage for [initial]: reads return
   /// the last upserted version of the set, so a test does not depend on how
   /// many times the service re-reads it.
-  void persistUpsertedChangeSets(ChangeSetEntity initial) {
+  ChangeSetEntity Function() persistUpsertedChangeSets(
+    ChangeSetEntity initial, {
+    Error? decisionWriteError,
+  }) {
     var stored = initial;
     when(
       () => mockRepository.getEntity(initial.id),
@@ -279,10 +308,18 @@ void main() {
       invocation,
     ) async {
       final entity = invocation.positionalArguments.first;
+      if (entity is ChangeDecisionEntity && decisionWriteError != null) {
+        throw decisionWriteError;
+      }
       if (entity is ChangeSetEntity && entity.id == initial.id) {
         stored = entity;
       }
     });
+    mockSyncService.transactionDelegate = driftLikeTransactions(
+      save: () => stored,
+      restore: (snapshot) => stored = snapshot,
+    );
+    return () => stored;
   }
 
   group('ChangeSetConfirmationService', () {
@@ -1119,17 +1156,32 @@ void main() {
         },
       );
 
+      test('a failed decision write rolls the claim back', () async {
+        // Regression: the claim committed on its own, so a decision write
+        // that threw left the item confirmed, never applied, and refused
+        // on retry because it was no longer pending.
+        final changeSet = makeChangeSetWith();
+        final current = persistUpsertedChangeSets(
+          changeSet,
+          decisionWriteError: StateError('disk full'),
+        );
+
+        await withClock(testClock, () async {
+          await expectLater(
+            service.confirmItem(changeSet, 0),
+            throwsA(isA<StateError>()),
+          );
+        });
+
+        expect(current().items[0].status, ChangeItemStatus.pending);
+        verifyNever(() => mockToolDispatcher.dispatch(any(), any(), any()));
+      });
+
       test('two concurrent confirms of one item apply it once', () async {
         // Regression for ChangeSetConfirm.tla AtMostOnceApply: both confirms
         // saw the item pending, and both dispatched the tool.
         final changeSet = makeChangeSetWith();
         persistUpsertedChangeSets(changeSet);
-        var tail = Future<void>.value();
-        mockSyncService.transactionDelegate = <T>(action) {
-          final run = tail.then((_) => action());
-          tail = run.then<void>((_) {}, onError: (_) {});
-          return run;
-        };
         when(
           () => mockToolDispatcher.dispatch(any(), any(), any()),
         ).thenAnswer(

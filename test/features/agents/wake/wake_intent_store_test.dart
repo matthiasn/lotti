@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -135,6 +136,90 @@ void main() {
 
     expect(restored.map((i) => i.runKey), ['run-1']);
     expect(next.takeRestorable(), isEmpty, reason: 'once per startup');
+  });
+
+  test('a second load neither drops live intents nor restores again', () async {
+    // A re-run initialization calls load and restore again on the same
+    // store: that must not re-queue what is already queued.
+    final store = newStore();
+    await store.load();
+    record(store, tokens: {'owed'});
+    await store.flush();
+
+    final next = newStore();
+    await next.load();
+    expect(next.takeRestorable(), hasLength(1));
+    record(next, runKey: 'run-here', tokens: {'queued-here'});
+
+    await next.load();
+    expect(next.takeRestorable(), isEmpty);
+    await next.flush();
+    expect(
+      (await persisted()).map((i) => i['runKey']),
+      unorderedEquals(['run-1', 'run-here']),
+    );
+  });
+
+  group('while the startup read is pending', () {
+    late MockSettingsDb mockDb;
+    late Completer<String?> read;
+    late List<String> written;
+
+    setUp(() {
+      mockDb = MockSettingsDb();
+      read = Completer<String?>();
+      written = [];
+      when(() => mockDb.itemByKey(any())).thenAnswer((_) => read.future);
+      when(() => mockDb.saveSettingsItem(any(), any())).thenAnswer((
+        call,
+      ) async {
+        written.add(call.positionalArguments[1] as String);
+        return 1;
+      });
+    });
+
+    String persistedIntent(String runKey) => jsonEncode([
+      {
+        'runKey': runKey,
+        'agentId': 'agent-1',
+        'workspaceKey': null,
+        'reason': 'creation',
+        'initiator': 'user',
+        'tokens': ['from-disk'],
+      },
+    ]);
+
+    test('a write waits and keeps what is on disk', () async {
+      // Regression: a snapshot taken before the read finished replaced the
+      // persisted intents with this process's alone.
+      final store = newStore(mockDb);
+      record(store, runKey: 'run-new', tokens: {'new'});
+      final flushed = store.flush();
+      await pumpEventQueue();
+      expect(written, isEmpty, reason: 'no write before the read');
+
+      read.complete(persistedIntent('run-old'));
+      await flushed;
+
+      final saved = (jsonDecode(written.last) as List<dynamic>)
+          .cast<Map<String, dynamic>>();
+      expect(
+        saved.map((i) => i['runKey']),
+        unorderedEquals(['run-old', 'run-new']),
+      );
+      expect(store.takeRestorable().map((i) => i.runKey), ['run-old']);
+    });
+
+    test('a job settled meanwhile is not brought back from disk', () async {
+      final store = newStore(mockDb);
+      final loading = store.load();
+      store.settle('run-old');
+
+      read.complete(persistedIntent('run-old'));
+      await loading;
+
+      expect(store.takeRestorable(), isEmpty);
+    });
   });
 
   test('an adopted intent hands its restore count to its new job', () async {

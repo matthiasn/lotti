@@ -388,7 +388,10 @@ stateDiagram-v2
   settled --> [*]
 ```
 
-Writes are coalesced: a burst of triggers costs one or two settings writes. A
+The store reads the settings database once — a re-run initialization reuses
+that read — and every write waits for it, so an early write never replaces the
+persisted intents with a partial snapshot. Writes are coalesced: a burst of
+triggers costs one or two settings writes. A
 Glados trace in `wake_orchestrator_intents_test.dart` drives the real
 orchestrator and store through generated triggers, run completions and a
 crash, and checks `NoLostWake` after a final restart; it is what showed that
