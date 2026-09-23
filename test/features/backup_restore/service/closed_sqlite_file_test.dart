@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'dart:io';
+
+import 'package:fake_async/fake_async.dart';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/backup_restore/service/closed_sqlite_file.dart';
@@ -93,6 +96,45 @@ void main() {
       expect(
         check.select('SELECT value FROM probe').single['value'],
         'committed',
+      );
+    });
+
+    test('waits between attempts by default', () {
+      fakeAsync((async) {
+        final straggler = leaveStraggler('db.sqlite');
+        var settled = false;
+        unawaited(settleProfileDatabases(root).then((_) => settled = true));
+        async.flushMicrotasks();
+        expect(settled, isFalse);
+
+        straggler.close();
+        async
+          ..elapse(const Duration(milliseconds: 50))
+          ..flushMicrotasks();
+
+        expect(settled, isTrue);
+        expect(sqliteCompanions(database('db.sqlite')), isEmpty);
+      });
+    });
+
+    test('reports a database it cannot even checkpoint', () async {
+      // Not a database at all, with a companion beside it: every checkpoint
+      // attempt fails, and the file is named rather than trusted.
+      final garbage = database('db.sqlite')
+        ..writeAsStringSync(
+          'this is not a database file at all, not even close',
+        );
+      File('${garbage.path}-wal').writeAsStringSync('x');
+
+      await expectLater(
+        settleProfileDatabases(root, attempts: 2, pause: () async {}),
+        throwsA(
+          isA<ProfileQuiescenceException>().having(
+            (e) => e.failures.single.service,
+            'database',
+            'db.sqlite',
+          ),
+        ),
       );
     });
 

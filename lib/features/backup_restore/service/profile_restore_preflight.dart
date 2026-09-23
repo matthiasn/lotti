@@ -152,19 +152,45 @@ class ProfileRestorePreflight {
       }
     }
 
-    for (final store in manifest.stores) {
-      final supported = restorableSchemaVersions[store.id];
-      if (supported != null && store.schemaVersion == null) {
+    // Anchored on the catalog, not the manifest: every database this build
+    // knows is checked against this build's limit wherever the manifest
+    // files it, so no store id or path in the manifest can route it around
+    // the check.
+    final declaredById = {for (final store in manifest.stores) store.id: store};
+    for (final MapEntry(key: storeId, value: supported)
+        in restorableSchemaVersions.entries) {
+      final catalogPath = ProfileBackupCatalog.stores
+          .firstWhere((store) => store.id == storeId)
+          .relativePath;
+      if (!files.contains(catalogPath)) continue;
+      final declared = declaredById[storeId];
+      if (declared == null || declared.relativePath != catalogPath) {
         throw ProfileRestoreIncompatibleException(
-          'The backup declares no schema for ${store.relativePath}.',
+          "The backup does not declare $catalogPath as this build's "
+          '$storeId database.',
         );
       }
+      if (declared.schemaVersion == null) {
+        throw ProfileRestoreIncompatibleException(
+          'The backup declares no schema for $catalogPath.',
+        );
+      }
+      _checkDatabase(
+        File(p.join(payload.path, catalogPath)),
+        declaredVersion: declared.schemaVersion,
+        supportedVersion: supported,
+      );
+    }
+    // Other SQLite stores (the Matrix SDK's) are not this build's to
+    // migrate, but they must still be intact.
+    for (final store in manifest.stores) {
       if (store.kind == BackupStoreKind.sqliteDatabase &&
+          !restorableSchemaVersions.containsKey(store.id) &&
           files.contains(store.relativePath)) {
         _checkDatabase(
           File(p.join(payload.path, store.relativePath)),
           declaredVersion: store.schemaVersion,
-          supportedVersion: supported,
+          supportedVersion: null,
         );
       }
     }

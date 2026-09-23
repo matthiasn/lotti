@@ -79,6 +79,7 @@ void main() {
   Future<File> craftedBundle({
     required Map<String, List<int>> files,
     Map<String, int?> schemaVersions = const {},
+    Set<String> filedAsOpaque = const {},
     String profileType = 'real',
   }) async {
     final directory = Directory(p.join(staging.path, 'crafted'))..createSync();
@@ -89,9 +90,13 @@ void main() {
       File(p.join(payload.path, path))
         ..parent.createSync(recursive: true)
         ..writeAsBytesSync(bytes);
-      final decision = ProfileBackupCatalog.classify(path);
+      final decision = filedAsOpaque.contains(path)
+          ? ProfileBackupCatalog.classify('unclassified-content')
+          : ProfileBackupCatalog.classify(path);
       final isDatabase = decision.kind == BackupStoreKind.sqliteDatabase;
-      final storePath = isDatabase || decision.kind == BackupStoreKind.file
+      final storePath = decision.kind == BackupStoreKind.opaqueProfileContent
+          ? ''
+          : isDatabase || decision.kind == BackupStoreKind.file
           ? path
           : path.split('/').first;
       if (!stores.any((store) => store.id == decision.storeId)) {
@@ -342,6 +347,60 @@ void main() {
         schemaVersions: {'journal': null},
       ),
       incompatible('declares no schema for db.sqlite'),
+    );
+  });
+
+  test('checks a known database even when the manifest files it as opaque '
+      'content', () async {
+    // Filed under the catch-all store, a newer journal would otherwise never
+    // meet this build's schema limit.
+    await expectRejected(
+      craftedBundle(
+        files: {
+          'db.sqlite': databaseBytes(userVersion: 999),
+          'settings.sqlite': databaseBytes(),
+        },
+        filedAsOpaque: {'db.sqlite'},
+      ),
+      incompatible("does not declare db.sqlite as this build's journal"),
+    );
+  });
+
+  test(
+    'checks the Matrix database for integrity, without a schema limit',
+    () async {
+      final prepared = await preflight().prepare(
+        bundle: await craftedBundle(
+          files: {
+            'db.sqlite': databaseBytes(),
+            'settings.sqlite': databaseBytes(),
+            'matrix/lotti_sync.db': databaseBytes(userVersion: 999),
+          },
+          schemaVersions: {'matrix-sdk': 999},
+        ),
+        passphrase: _passphrase,
+        profileRoot: profileRoot,
+        profileType: ProfileType.real,
+      );
+      expect(
+        prepared.manifest.stores
+            .firstWhere((store) => store.id == 'matrix-sdk')
+            .schemaVersion,
+        999,
+      );
+    },
+  );
+
+  test('refuses a damaged Matrix database', () async {
+    await expectRejected(
+      craftedBundle(
+        files: {
+          'db.sqlite': databaseBytes(),
+          'settings.sqlite': databaseBytes(),
+          'matrix/lotti_sync.db': orphanedPagesDatabaseBytes(),
+        },
+      ),
+      incompatible('lotti_sync.db failed its integrity check'),
     );
   });
 
