@@ -88,9 +88,10 @@ class ProfileRestorePreflight {
   /// - authenticity and every file against the manifest (the codec);
   /// - that the backup was taken from the same kind of profile;
   /// - that every store the catalog requires is present;
-  /// - that no database schema is newer than this build can open;
-  /// - that every database passes SQLite's `integrity_check` and has the
-  ///   schema version the manifest declares;
+  /// - that every database this build knows declares its schema, and that
+  ///   the file's own schema matches the declaration and is no newer than
+  ///   this build can open;
+  /// - that every database passes SQLite's `integrity_check`;
   /// - that nothing in it would land on a device-owned entry of the root.
   ///
   /// Refuses to start while an earlier restore is pending. Any failure
@@ -153,19 +154,17 @@ class ProfileRestorePreflight {
 
     for (final store in manifest.stores) {
       final supported = restorableSchemaVersions[store.id];
-      final version = store.schemaVersion;
-      if (supported != null && version != null && version > supported) {
+      if (supported != null && store.schemaVersion == null) {
         throw ProfileRestoreIncompatibleException(
-          'The backup was made by a newer version of Lotti '
-          '(${store.relativePath} schema $version, this version reads up to '
-          '$supported).',
+          'The backup declares no schema for ${store.relativePath}.',
         );
       }
       if (store.kind == BackupStoreKind.sqliteDatabase &&
           files.contains(store.relativePath)) {
         _checkDatabase(
           File(p.join(payload.path, store.relativePath)),
-          declaredVersion: version,
+          declaredVersion: store.schemaVersion,
+          supportedVersion: supported,
         );
       }
     }
@@ -180,7 +179,11 @@ class ProfileRestorePreflight {
     }
   }
 
-  static void _checkDatabase(File database, {required int? declaredVersion}) {
+  static void _checkDatabase(
+    File database, {
+    required int? declaredVersion,
+    required int? supportedVersion,
+  }) {
     final name = p.basename(database.path);
     final ClosedSqliteReport report;
     try {
@@ -195,12 +198,18 @@ class ProfileRestorePreflight {
         '$name failed its integrity check: ${report.problems.first}',
       );
     }
-    // The manifest's schema is what the compatibility check above trusted;
-    // the file itself has to agree.
+    // The file is the authority: it has to agree with the manifest, and it
+    // is what gets opened, so its own schema is what must not be too new.
     if (declaredVersion != null && report.userVersion != declaredVersion) {
       throw ProfileRestoreIncompatibleException(
         '$name has schema ${report.userVersion}, but the backup declares '
         '$declaredVersion.',
+      );
+    }
+    if (supportedVersion != null && report.userVersion > supportedVersion) {
+      throw ProfileRestoreIncompatibleException(
+        'The backup was made by a newer version of Lotti ($name schema '
+        '${report.userVersion}, this version reads up to $supportedVersion).',
       );
     }
   }

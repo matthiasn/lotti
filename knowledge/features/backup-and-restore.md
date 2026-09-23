@@ -20,6 +20,10 @@ sources:
     resource: ../../lib/features/backup_restore/service/quiesced_profile_snapshot_service.dart
     title: QuiescedProfileSnapshotService
     last_modified: 2026-08-06
+  - id: settle-databases
+    resource: ../../lib/features/backup_restore/service/closed_sqlite_file.dart
+    title: settleProfileDatabases and closed-file inspection
+    last_modified: 2026-09-23
   - id: coordinator
     resource: ../../lib/features/backup_restore/service/profile_backup_coordinator.dart
     title: ProfileBackupCoordinator
@@ -274,12 +278,18 @@ stateDiagram-v2
   service or database that threw or missed its 3-second deadline instead of
   only logging it. Any entry means `ProfileQuiescenceException`, listing the
   steps, and the snapshot never starts.
-- **Two independent proofs.** Beyond every close reporting success, SQLite
-  deletes a database's `-wal` and `-shm` only when its last connection
-  closes, Drift read pools included. The catalog refuses any companion file,
-  so a connection nobody knew about aborts staging before the first byte is
-  copied. A clean close also checkpoints the WAL, so commits made before the
-  backup started are in the database file the snapshot copies.
+- **Two independent proofs.** Beyond every close reporting success, the
+  database files themselves must be at rest. `settleProfileDatabases` runs
+  next: closing a Drift database does not wait for its read-pool isolates,
+  and a read-only connection that closes last cannot remove the WAL, so
+  `-wal`/`-shm` can outlive every connection. For each profile database that
+  still has companions it opens a connection of its own, checkpoints the WAL
+  into the database file (`wal_checkpoint(TRUNCATE)`) and closes — as the last
+  connection, that removes them — retrying while stragglers finish closing.
+  A database that never settles is a `ProfileQuiescenceException` naming it.
+  Staging then refuses any companion that is still there. Either way, commits
+  made before the backup started are in the database file the snapshot
+  copies.
 - **The profile always comes back.** After success, after a close failure,
   after a staging failure and after a cancellation, the same profile is
   bootstrapped onto a fresh service generation. The active-world marker is
@@ -430,7 +440,9 @@ overwritten. Top-level entries that belong to the device (the registry, guest
 worlds, logs and `.restore/` itself) are never moved.
 
 The swap runs inside `ProfileSwitcher.runWithGenerationClosed`, strictly
-closed exactly as a backup is. Its `verifyRestarted` step is
+closed exactly as a backup is, and settles the databases before any file
+moves — before the swap and again before a rollback, which also requires the
+rejected generation's teardown to be clean. Its `verifyRestarted` step is
 `verifyProfileDatabasesOpen`, which queries every registered database: Drift
 opens a database and runs its migrations on the first query, so a bootstrap
 that returned proves nothing yet. If the restart or that check fails, the

@@ -12,11 +12,13 @@ import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
 import 'package:lotti/features/backup_restore/domain/profile_backup_manifest.dart';
+import 'package:lotti/features/backup_restore/service/closed_sqlite_file.dart';
 import 'package:lotti/features/backup_restore/service/profile_restore_preflight.dart';
 import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/service/profile_switcher.dart';
 import 'package:lotti/get_it.dart';
+import 'package:meta/meta.dart';
 
 /// Closes the running profile, runs the work, and restarts it — with a
 /// health check and a rollback when the work replaced the profile's files.
@@ -88,14 +90,17 @@ class ProfileRestoreCoordinator {
     ProfileContext Function()? currentProfile,
     ProfileRestorePreflight? preflight,
     Future<void> Function()? verifyRestarted,
+    @visibleForTesting Future<void> Function(Directory root)? settleDatabases,
   }) : _currentProfile = currentProfile ?? getIt.get<ProfileContext>,
        _preflight = preflight ?? ProfileRestorePreflight(),
-       _verifyRestarted = verifyRestarted ?? verifyProfileDatabasesOpen;
+       _verifyRestarted = verifyRestarted ?? verifyProfileDatabasesOpen,
+       _settleDatabases = settleDatabases ?? settleProfileDatabases;
 
   final RestoringGenerationRunner _runClosed;
   final ProfileContext Function() _currentProfile;
   final ProfileRestorePreflight _preflight;
   final Future<void> Function() _verifyRestarted;
+  final Future<void> Function(Directory root) _settleDatabases;
 
   bool _running = false;
 
@@ -137,6 +142,8 @@ class ProfileRestoreCoordinator {
                 'The active profile changed while the backup was checked.',
               );
             }
+            // Nothing may still hold a database open when files move.
+            await _settleDatabases(closed.root);
             try {
               swap.swapIn();
               swapped = true;
@@ -153,7 +160,13 @@ class ProfileRestoreCoordinator {
             }
           },
           verifyRestarted: _verifyRestarted,
-          rollBack: () async => swap.rollBack(),
+          rollBack: () async {
+            // The rejected generation's databases must be fully closed before
+            // its files move out; if they are not, the rollback fails and the
+            // next launch finishes it.
+            await _settleDatabases(swap.root);
+            swap.rollBack();
+          },
         );
       } on ProfileLifecycleBusyException {
         prepared.discard();

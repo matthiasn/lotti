@@ -222,6 +222,21 @@ void main() {
       expect(contents(root, includeWork: true), {...original, ...device});
     });
 
+    test('a rollback interrupted while parking the restored entries resumes '
+        'where it stopped', () {
+      swap.swapIn();
+      // One restored entry already parked, the journal still at restored:
+      // exactly where a crash inside the parking step leaves it.
+      final failed = work('failed-r1')..createSync(recursive: true);
+      File(
+        p.join(root.path, 'db.sqlite'),
+      ).renameSync(p.join(failed.path, 'db.sqlite'));
+
+      swap.rollBack();
+
+      expect(contents(root, includeWork: true), {...original, ...device});
+    });
+
     test('never undoes a committed restore', () {
       swap.swapIn();
       writeJournal('committed');

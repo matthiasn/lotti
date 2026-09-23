@@ -264,13 +264,16 @@ class ProfileSwitcher {
 
   /// Tears down a generation that failed to start or verify, undoes the
   /// work with [rollBack], and boots the profile again. Any failure along the
-  /// way leaves the app on the splash; what [rollBack] could not finish is
-  /// finished at the next launch.
+  /// way — including a service of the rejected generation that would not
+  /// close — leaves the app on the splash, without running [rollBack] on
+  /// files something might still be writing; the next launch finishes it.
   Future<void> _restartRolledBack(Future<void> Function() rollBack) async {
     try {
-      // Best effort, like a switch: the rejected generation is going away
-      // whatever it reports. Only a container that cannot be reset stops us.
-      await _teardown();
+      // The rollback moves the rejected generation's files, so that
+      // generation has to be closed as strictly as the one before the work:
+      // anything still running could keep writing to files being moved.
+      final failures = await _teardown();
+      if (failures.isNotEmpty) throw ProfileQuiescenceException(failures);
       await rollBack();
       await _bootstrap();
     } catch (e, st) {

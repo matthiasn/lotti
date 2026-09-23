@@ -1,7 +1,9 @@
 import 'dart:io';
 
+import 'package:lotti/features/backup_restore/service/closed_sqlite_file.dart';
 import 'package:lotti/features/backup_restore/service/quiesced_profile_snapshot_service.dart';
 import 'package:lotti/features/profiles/service/profile_switcher.dart';
+import 'package:meta/meta.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 /// Closes the running profile, runs the work, and starts the profile again —
@@ -69,11 +71,14 @@ class ProfileBackupCoordinator {
     required this._runClosed,
     QuiescedProfileSnapshotService? snapshots,
     Future<String> Function()? appVersion,
+    @visibleForTesting Future<void> Function(Directory root)? settleDatabases,
   }) : _snapshots = snapshots ?? QuiescedProfileSnapshotService(),
-       _appVersion = appVersion ?? _installedAppVersion;
+       _appVersion = appVersion ?? _installedAppVersion,
+       _settleDatabases = settleDatabases ?? settleProfileDatabases;
 
   final ClosedGenerationRunner _runClosed;
   final QuiescedProfileSnapshotService _snapshots;
+  final Future<void> Function(Directory root) _settleDatabases;
   final Future<String> Function() _appVersion;
 
   bool _running = false;
@@ -106,6 +111,9 @@ class ProfileBackupCoordinator {
       try {
         return await _runClosed<StagedProfileSnapshot>((closed) async {
           _throwIfCancelled(cancellation);
+          // Read-pool connections can outlive their database's close; wait
+          // them out, or fail the close, before anything is copied.
+          await _settleDatabases(closed.root);
           final snapshot = await _snapshots.stage(
             sourceRoot: closed.root,
             stagingParent: stagingParent,

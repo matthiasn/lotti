@@ -78,7 +78,7 @@ void main() {
   /// capture cannot produce.
   Future<File> craftedBundle({
     required Map<String, List<int>> files,
-    Map<String, int> schemaVersions = const {},
+    Map<String, int?> schemaVersions = const {},
     String profileType = 'real',
   }) async {
     final directory = Directory(p.join(staging.path, 'crafted'))..createSync();
@@ -102,9 +102,11 @@ void main() {
             kind: decision.kind,
             sensitivity: decision.sensitivity,
             required: decision.required,
-            schemaVersion: isDatabase
-                ? schemaVersions[decision.storeId] ?? 1
-                : null,
+            schemaVersion: !isDatabase
+                ? null
+                : schemaVersions.containsKey(decision.storeId)
+                ? schemaVersions[decision.storeId]
+                : 1,
           ),
         );
       }
@@ -325,6 +327,21 @@ void main() {
         schemaVersions: {'journal': newer},
       ),
       incompatible('newer version of Lotti (db.sqlite schema $newer'),
+    );
+  });
+
+  test('refuses a known database that declares no schema', () async {
+    // Nothing would then hold the file to this build's limit, so a newer
+    // database could reach the swap.
+    await expectRejected(
+      craftedBundle(
+        files: {
+          'db.sqlite': databaseBytes(userVersion: 999),
+          'settings.sqlite': databaseBytes(),
+        },
+        schemaVersions: {'journal': null},
+      ),
+      incompatible('declares no schema for db.sqlite'),
     );
   });
 

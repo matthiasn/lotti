@@ -682,6 +682,46 @@ void main() {
         expect(calls, isNot(contains('completed')));
       });
 
+      test('a rejected generation that will not close is never rolled back '
+          'under it', () async {
+        await registerActiveContext();
+        final timeService = MockTimeService();
+        when(timeService.stop).thenThrow(StateError('timer still writing'));
+        var boots = 0;
+        var rolledBack = false;
+        final switcher = ProfileSwitcher(
+          registry: registry,
+          lifecycleHolder: AppLifecycleHolder(),
+          onSwitchStarted: () async {},
+          onSwitchCompleted: () {},
+          settleFrame: () async {},
+          // Default (strict) teardown. The restarted generation registers a
+          // service that refuses to stop.
+          bootstrapOverride: () async {
+            boots++;
+            getIt.registerSingleton<TimeService>(timeService);
+          },
+        );
+
+        await expectLater(
+          switcher.runWithGenerationClosed(
+            (_) async {},
+            verifyRestarted: () async => throw StateError('check failed'),
+            rollBack: () async => rolledBack = true,
+          ),
+          throwsA(
+            isA<ProfileRestartException>().having(
+              (e) => e.cause,
+              'cause',
+              isA<ProfileQuiescenceException>(),
+            ),
+          ),
+        );
+
+        expect(rolledBack, isFalse);
+        expect(boots, 1);
+      });
+
       test('work that failed on its own changed nothing: no check, no '
           'rollback', () async {
         await registerActiveContext();

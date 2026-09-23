@@ -144,6 +144,7 @@ void main() {
     _FakeRunner runner,
     ProfileContext profile, {
     Future<void> Function()? verify,
+    Future<void> Function(Directory root)? settle,
   }) => ProfileRestoreCoordinator(
     runClosed: runner.run,
     currentProfile: () => profile,
@@ -152,6 +153,7 @@ void main() {
       restoreIdGenerator: () => 'r1',
     ),
     verifyRestarted: verify ?? () async {},
+    settleDatabases: settle,
   );
 
   Directory work() =>
@@ -370,6 +372,53 @@ void main() {
       // Never restarted onto the half-swapped folder, and the journal is
       // still there for the next launch to finish the job.
       expect(runner.calls, ['close', 'stuck']);
+      expect(ProfileRootSwap.hasPendingRestore(profileRoot), isTrue);
+    });
+
+    test('a database still open before the swap moves nothing', () async {
+      final bundle = await backupSaying('restored');
+
+      await expectLater(
+        coordinator(
+          runner,
+          profile,
+          settle: (_) async => throw ProfileQuiescenceException([
+            ServiceDisposalFailure(
+              service: 'db.sqlite',
+              error: StateError('still open'),
+              stackTrace: StackTrace.empty,
+            ),
+          ]),
+        ).restore(bundle: bundle, passphrase: _passphrase),
+        throwsA(isA<ProfileQuiescenceException>()),
+      );
+
+      expect(runner.calls, ['close', 'restart']);
+      expect(probe(profileRoot, 'db.sqlite'), 'current');
+      expect(work().existsSync(), isFalse);
+    });
+
+    test('a rejected profile whose databases stay open is not rolled back '
+        'under them', () async {
+      final bundle = await backupSaying('restored');
+      var settles = 0;
+
+      await expectLater(
+        coordinator(
+          runner,
+          profile,
+          verify: () async => throw StateError('migration failed'),
+          settle: (_) async {
+            // The first settle is before the swap; the second before the
+            // rollback, where the rejected generation still holds a file.
+            if (++settles == 2) throw StateError('still open');
+          },
+        ).restore(bundle: bundle, passphrase: _passphrase),
+        throwsA(isA<StateError>()),
+      );
+
+      // Left for the next launch: the restored files stay, journal intact.
+      expect(probe(profileRoot, 'db.sqlite'), 'restored');
       expect(ProfileRootSwap.hasPendingRestore(profileRoot), isTrue);
     });
 
