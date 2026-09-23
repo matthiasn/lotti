@@ -15,7 +15,7 @@ sources:
   - id: card
     resource: ../../../lib/features/agents/ui/ai_summary_card.dart
     title: AiSummaryCard
-    last_modified: 2026-08-28
+    last_modified: 2026-09-23
   - id: automation-row
     resource: ../../../lib/features/agents/ui/agent_automation_row.dart
     title: Shared agent report automation controls
@@ -125,11 +125,19 @@ needed doing. `AgentAutomationRow.compact` with `showsFreshConfirmation: false`
 renders a zero-height box in that state — not a hidden one, so a current card is
 exactly as tall as the summary it shows.
 
-When the summary *is* behind — the caller's stale watermark, or a run rewriting
-the report — the strip appears under the prose, on the summary's own leading
-edge: the freshness glyph and word, and *Update now* beside them. State and its
+When the summary *is* behind — the caller's stale watermark, a change queued
+behind the throttle countdown, or a run rewriting the report — the strip appears
+under the prose, on the summary's own leading edge: the freshness glyph and word, and *Update now* beside them. State and its
 remedy stay adjacent; the one state worth a row is the one the reader may want
 to act on.
+
+The compact row never receives the countdown, so the task card folds it into
+`isStale` itself: it passes `AgentStateEntity.isReportBehindAt(now)`, which is
+the stale watermark OR a `nextWakeAt` still ahead of `now`. A task change arms
+that deadline without touching `reportStaleAt`, so reading the watermark alone
+left the card silent — looking current — for the whole countdown. The digits
+stay in the internals panel; the card only says *Out of date*. The project
+card still reads the watermark alone.
 
 Everything else that used to sit in a footer under the summary — the schedule,
 *Skip once*, the automatic-updates switch, the model identity and the setup

@@ -260,6 +260,43 @@ void main() {
         },
       );
 
+      test(
+        'a report is behind while a change waits out its throttle deadline',
+        () {
+          final base =
+              AgentDomainEntity.agentState(
+                    id: 'state-behind',
+                    agentId: 'agent-001',
+                    slots: const AgentSlots(),
+                    updatedAt: updatedAt,
+                    vectorClock: null,
+                  )
+                  as AgentStateEntity;
+          final now = DateTime(2026, 2, 20, 9);
+          final deadline = now.add(const Duration(seconds: 90));
+
+          // Nothing queued, nothing stale: current.
+          expect(base.isReportBehindAt(now), isFalse);
+          // A queued change never touched the stale watermark, yet the
+          // report is behind from the moment the countdown is armed.
+          final pending = base.copyWith(nextWakeAt: deadline);
+          expect(pending.isReportStale, isFalse);
+          expect(pending.isReportBehindAt(now), isTrue);
+          // Once the deadline has passed the wake has fired (or been
+          // cleared); the countdown alone no longer claims staleness.
+          expect(pending.isReportBehindAt(deadline), isFalse);
+          expect(
+            pending.isReportBehindAt(deadline.add(const Duration(seconds: 1))),
+            isFalse,
+          );
+          // A stale watermark is behind regardless of any countdown.
+          expect(
+            base.copyWith(reportStaleAt: now).isReportBehindAt(now),
+            isTrue,
+          );
+        },
+      );
+
       test('runtimeType discriminator key is "agentState"', () {
         final entity = AgentDomainEntity.agentState(
           id: 'state-003',
