@@ -66,6 +66,23 @@ ciphertext, not forever, and nothing depends on it keeping anything — a new
 device catches up because your other devices re-send history, not because a
 server archived it. No telemetry, and nothing uploaded to Lotti.
 
+**The sync protocol is formally verified.** Keeping several devices consistent
+without a server in charge is a distributed-systems problem, and it is treated
+as one. The protocol that proves no change was lost between devices — which
+counters exist, which carry data, how a device recovers from a crash in the
+middle of a save — is written down as a
+[TLA+ model](specs/tla/SyncSequence.tla) and model-checked with TLC on every
+change to it: about 12 million reachable states per run, under crashes and
+injected failures, against the properties that matter: no saved change is
+ever declared lost, and even with a crash at any point, every saved change
+still reaches every device. That is a
+statement about the design, not a proof that every line of code matches it;
+[the specs](specs/tla/README.md) say exactly what is covered. The code is held
+to it the ordinary way, too: over 35,000 tests at 99.9% line coverage,
+including more than 900 property-based tests that generate about 130,000 inputs
+and run over half a million assertions on every CI run. More models are coming,
+starting with the agent runtime.
+
 **You choose the brain, and you can see what it cost.** Route each category of
 your life to the compute you are willing to stand behind: a local model for the
 private things, a frontier model for work, or the European option Lotti
@@ -458,7 +475,7 @@ the build it documents.
 **Stack**: Flutter and Dart across five platforms, local SQLite via Drift with
 ObjectBox for embeddings, Whisper and Voxtral for on-device speech recognition,
 Matrix and Vodozemac for the encrypted sync transport, Glados for property-based
-tests.
+tests, TLA+ and TLC for the formally verified sync protocol.
 
 ---
 

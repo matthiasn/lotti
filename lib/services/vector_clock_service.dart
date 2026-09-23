@@ -634,10 +634,39 @@ class VectorClockService {
       unrecordedReservationsKey,
     );
     if (raw == null || raw.isEmpty) return const [];
-    return [
-      for (final item in jsonDecode(raw) as List<dynamic>)
-        _UnrecordedReservationJson.fromJson(item as Map<String, dynamic>),
-    ];
+    // One unreadable record — corrupt JSON, or a payload type from a newer
+    // build after a downgrade — must not block every settlement and every
+    // new fallback. It is skipped and logged; its counter then falls back to
+    // being burned when a peer asks for it.
+    final List<dynamic> items;
+    try {
+      items = jsonDecode(raw) as List<dynamic>;
+    } catch (error, stackTrace) {
+      _logUnreadableFallback(error, stackTrace);
+      return const [];
+    }
+    final records = <_UnrecordedReservation>[];
+    for (final item in items) {
+      try {
+        records.add(
+          _UnrecordedReservationJson.fromJson(item as Map<String, dynamic>),
+        );
+      } catch (error, stackTrace) {
+        _logUnreadableFallback(error, stackTrace);
+      }
+    }
+    return records;
+  }
+
+  void _logUnreadableFallback(Object error, StackTrace stackTrace) {
+    if (!getIt.isRegistered<DomainLogger>()) return;
+    getIt<DomainLogger>().error(
+      LogDomain.sync,
+      error,
+      message: 'unreadable unrecorded-reservation record skipped',
+      stackTrace: stackTrace,
+      subDomain: 'vc.reserve.fallback',
+    );
   }
 
   Future<void> _saveUnrecordedReservations(

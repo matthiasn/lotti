@@ -265,7 +265,24 @@ Future<String? Function()> _registerMatrixSyncStack({
         // Reservations whose sequence-log insert failed were recorded in the
         // settings database; move them into the log first so settlement
         // finds them.
-        await vectorClockService.migrateUnrecordedReservations();
+        // A failed migration must not skip settling everything else.
+        try {
+          await vectorClockService.migrateUnrecordedReservations();
+        } catch (error, stackTrace) {
+          // defensive: only reachable when the settings database itself
+          // cannot be read or written during boot.
+          // coverage:ignore-start
+          domainLogger.error(
+            LogDomain.sync,
+            error,
+            message:
+                'unrecorded reservation migration failed; retried on the next '
+                'startup',
+            stackTrace: stackTrace,
+            subDomain: 'vc.reserve.migrate',
+          );
+          // coverage:ignore-end
+        }
         await backfillResponseHandler.settleOrphanedOwnCounters();
         // Diagnostic only (see `reservedCountersForHost`): reservations that
         // do not name their payload cannot be settled, so the same counters

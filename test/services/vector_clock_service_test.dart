@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
@@ -796,6 +797,57 @@ void main() {
         expect(await settingsDb.itemByKey(unrecordedReservationsKey), isNull);
         // Nothing left to move.
         expect(await service.migrateUnrecordedReservations(), 0);
+      },
+    );
+
+    test(
+      'an unreadable record is skipped and logged instead of blocking the '
+      'readable ones',
+      () async {
+        await settingsDb.saveSettingsItem(
+          unrecordedReservationsKey,
+          jsonEncode([
+            {
+              'hostId': host,
+              'counter': 60,
+              'payloadId': 'entry-0',
+              'payloadType': 'fromTheFuture',
+            },
+            {'hostId': host, 'counter': 'not a number'},
+            {
+              'hostId': host,
+              'counter': 61,
+              'payloadId': 'entry-1',
+              'payloadType': 'entryLink',
+            },
+          ]),
+        );
+
+        expect(
+          await service.unrecordedReservation(hostId: host, counter: 61),
+          (payload: payload),
+        );
+        expect(
+          await service.unrecordedReservation(hostId: host, counter: 60),
+          isNull,
+        );
+        // Two lookups, each skipping the same two unreadable records.
+        verify(
+          () => (getIt<DomainLogger>() as MockDomainLogger).error(
+            LogDomain.sync,
+            any<Object>(),
+            message: 'unreadable unrecorded-reservation record skipped',
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'vc.reserve.fallback',
+          ),
+        ).called(4);
+
+        // Corrupt JSON as a whole reads as no records rather than throwing.
+        await settingsDb.saveSettingsItem(unrecordedReservationsKey, '{oops');
+        expect(
+          await service.unrecordedReservation(hostId: host, counter: 61),
+          isNull,
+        );
       },
     );
 
