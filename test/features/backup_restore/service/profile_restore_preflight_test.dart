@@ -391,6 +391,38 @@ void main() {
     },
   );
 
+  test(
+    'checks the Matrix database even when filed as opaque content',
+    () async {
+      await expectRejected(
+        craftedBundle(
+          files: {
+            'db.sqlite': databaseBytes(),
+            'settings.sqlite': databaseBytes(),
+            'matrix/lotti_sync.db': orphanedPagesDatabaseBytes(),
+          },
+          filedAsOpaque: {'matrix/lotti_sync.db'},
+        ),
+        incompatible(
+          "does not declare matrix/lotti_sync.db as this build's matrix-sdk",
+        ),
+      );
+    },
+  );
+
+  test('refuses a rebuildable index a backup never contains', () async {
+    await expectRejected(
+      craftedBundle(
+        files: {
+          'db.sqlite': databaseBytes(),
+          'settings.sqlite': databaseBytes(),
+          'fts5_db.sqlite': databaseBytes(),
+        },
+      ),
+      incompatible('fts5_db.sqlite, which is never part of a backup'),
+    );
+  });
+
   test('refuses a damaged Matrix database', () async {
     await expectRejected(
       craftedBundle(

@@ -9,6 +9,17 @@ import 'package:lotti/features/profiles/service/profile_switcher.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 
+/// Closes [connection] once; later calls are no-ops.
+void closeQuietly(Database connection) {
+  try {
+    connection.close();
+    // Closing twice is a StateError in package:sqlite3.
+    // ignore: avoid_catching_errors
+  } on StateError {
+    // Already closed.
+  }
+}
+
 void main() {
   late Directory root;
 
@@ -28,6 +39,9 @@ void main() {
       ..execute("INSERT INTO probe VALUES ('committed')");
     final straggler = sqlite3.open(database(name).path)
       ..select('SELECT count(*) FROM probe');
+    // Closed by the test when it wants, and always at the end, so a failing
+    // assertion never leaves it holding the file.
+    addTearDown(() => closeQuietly(straggler));
     writer.close();
     expect(sqliteCompanions(database(name)), isNotEmpty);
     return straggler;
@@ -43,7 +57,7 @@ void main() {
         root,
         pause: () async {
           pauses++;
-          straggler.close();
+          closeQuietly(straggler);
         },
       );
 
@@ -107,7 +121,7 @@ void main() {
         async.flushMicrotasks();
         expect(settled, isFalse);
 
-        straggler.close();
+        closeQuietly(straggler);
         async
           ..elapse(const Duration(milliseconds: 50))
           ..flushMicrotasks();
@@ -120,10 +134,10 @@ void main() {
     test('reports a database it cannot even checkpoint', () async {
       // Not a database at all, with a companion beside it: every checkpoint
       // attempt fails, and the file is named rather than trusted.
+      // Several pages of text: long enough that SQLite reads a header and
+      // rejects it, where a file shorter than one could pass as empty.
       final garbage = database('db.sqlite')
-        ..writeAsStringSync(
-          'this is not a database file at all, not even close',
-        );
+        ..writeAsStringSync('not a database ' * 600);
       File('${garbage.path}-wal').writeAsStringSync('x');
 
       await expectLater(
@@ -139,10 +153,8 @@ void main() {
     });
 
     test('names every database that never settles', () async {
-      final journal = leaveStraggler('db.sqlite');
-      final settings = leaveStraggler('settings.sqlite');
-      addTearDown(journal.close);
-      addTearDown(settings.close);
+      leaveStraggler('db.sqlite');
+      leaveStraggler('settings.sqlite');
       var pauses = 0;
 
       await expectLater(

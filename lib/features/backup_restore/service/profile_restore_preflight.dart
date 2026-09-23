@@ -92,7 +92,8 @@ class ProfileRestorePreflight {
   ///   the file's own schema matches the declaration and is no newer than
   ///   this build can open;
   /// - that every database passes SQLite's `integrity_check`;
-  /// - that nothing in it would land on a device-owned entry of the root.
+  /// - that it holds nothing a backup never contains: device-owned entries,
+  ///   rebuildable indexes or excluded leftovers.
   ///
   /// Refuses to start while an earlier restore is pending. Any failure
   /// removes the extracted copy again.
@@ -152,54 +153,52 @@ class ProfileRestorePreflight {
       }
     }
 
-    // Anchored on the catalog, not the manifest: every database this build
-    // knows is checked against this build's limit wherever the manifest
-    // files it, so no store id or path in the manifest can route it around
-    // the check.
+    // Anchored on the catalog, not the manifest: every database a backup
+    // may carry is checked wherever the manifest files it, so no store id or
+    // path in the manifest can route it around a check. The databases this
+    // build migrates are also held to its schema limit; the Matrix SDK's is
+    // not this build's to migrate, but must be intact all the same.
     final declaredById = {for (final store in manifest.stores) store.id: store};
-    for (final MapEntry(key: storeId, value: supported)
-        in restorableSchemaVersions.entries) {
-      final catalogPath = ProfileBackupCatalog.stores
-          .firstWhere((store) => store.id == storeId)
-          .relativePath;
-      if (!files.contains(catalogPath)) continue;
-      final declared = declaredById[storeId];
-      if (declared == null || declared.relativePath != catalogPath) {
+    for (final store in ProfileBackupCatalog.stores) {
+      if (store.kind != BackupStoreKind.sqliteDatabase ||
+          store.treatment != BackupPathTreatment.include ||
+          !files.contains(store.relativePath)) {
+        continue;
+      }
+      final declared = declaredById[store.id];
+      if (declared == null || declared.relativePath != store.relativePath) {
         throw ProfileRestoreIncompatibleException(
-          "The backup does not declare $catalogPath as this build's "
-          '$storeId database.',
+          "The backup does not declare ${store.relativePath} as this build's "
+          '${store.id} database.',
         );
       }
-      if (declared.schemaVersion == null) {
+      final supported = restorableSchemaVersions[store.id];
+      if (supported != null && declared.schemaVersion == null) {
         throw ProfileRestoreIncompatibleException(
-          'The backup declares no schema for $catalogPath.',
+          'The backup declares no schema for ${store.relativePath}.',
         );
       }
       _checkDatabase(
-        File(p.join(payload.path, catalogPath)),
+        File(p.join(payload.path, store.relativePath)),
         declaredVersion: declared.schemaVersion,
         supportedVersion: supported,
       );
     }
-    // Other SQLite stores (the Matrix SDK's) are not this build's to
-    // migrate, but they must still be intact.
-    for (final store in manifest.stores) {
-      if (store.kind == BackupStoreKind.sqliteDatabase &&
-          !restorableSchemaVersions.containsKey(store.id) &&
-          files.contains(store.relativePath)) {
-        _checkDatabase(
-          File(p.join(payload.path, store.relativePath)),
-          declaredVersion: store.schemaVersion,
-          supportedVersion: null,
-        );
-      }
-    }
 
     for (final entity in payload.listSync(followLinks: false)) {
-      if (ProfileRootSwap.isDeviceEntry(p.basename(entity.path))) {
+      final name = p.basename(entity.path);
+      if (ProfileRootSwap.isDeviceEntry(name)) {
         throw ProfileRestoreIncompatibleException(
-          'The backup contains ${p.basename(entity.path)}, which belongs to '
-          'the device and is never restored.',
+          'The backup contains $name, which belongs to the device and is '
+          'never restored.',
+        );
+      }
+      // Rebuildable indexes and excluded leftovers are never backed up; one
+      // in a backup would be moved into the profile and trusted.
+      if (ProfileBackupCatalog.classify(name).treatment !=
+          BackupPathTreatment.include) {
+        throw ProfileRestoreIncompatibleException(
+          'The backup contains $name, which is never part of a backup.',
         );
       }
     }
