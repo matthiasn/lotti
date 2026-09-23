@@ -117,6 +117,10 @@ void main() {
         'logs/general-2026-08-06.log',
         'logs/general.log.tmp.123.456.media',
         '$legacyDayProcessingOutboxDirectory/job.json.tmp.1737000000000000.4242.media',
+        // A restore in progress, including the databases it is moving.
+        '$profileRestoreWorkDirectoryName/incoming-1/payload/db.sqlite',
+        '$profileRestoreWorkDirectoryName/previous-1/db.sqlite-wal',
+        '$profileRestoreWorkDirectoryName/restore-journal.json',
       ]) {
         expect(
           ProfileBackupCatalog.classify(path).treatment,

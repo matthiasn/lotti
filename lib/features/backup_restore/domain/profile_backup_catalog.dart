@@ -18,6 +18,11 @@ import 'package:lotti/features/profiles/profile_paths.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
 import 'package:path/path.dart' as p;
 
+/// Hidden folder inside a profile root where a restore stages the incoming
+/// profile and parks the one it replaces. It sits in the root so every move
+/// is a same-filesystem rename, and it is never part of a backup.
+const String profileRestoreWorkDirectoryName = '.restore';
+
 /// The physical shape of one cataloged profile store.
 enum BackupStoreKind {
   /// A SQLite database copied only after every connection is closed.
@@ -139,7 +144,7 @@ class BackupPathDecision {
 /// Versioned source-of-truth for the active profile backup boundary.
 abstract final class ProfileBackupCatalog {
   /// Increment when path classification or store identity changes.
-  static const int version = 1;
+  static const int version = 2;
 
   static const String _audioWaveformDirectory = 'audio_waveforms';
   static const String _legacyBackupDirectory = 'backup';
@@ -404,6 +409,17 @@ abstract final class ProfileBackupCatalog {
       required: false,
       rationale:
           'Excluding nested backups prevents recursion and stale restores.',
+    ),
+    ProfileBackupStore(
+      id: 'restore-work',
+      relativePath: profileRestoreWorkDirectoryName,
+      kind: BackupStoreKind.directory,
+      treatment: BackupPathTreatment.exclude,
+      sensitivity: BackupSensitivity.none,
+      required: false,
+      rationale:
+          'An incoming restore and the profile it replaces, both transient; '
+          'backing them up would nest one profile inside another.',
     ),
     ProfileBackupStore(
       id: 'guest-profile-container',

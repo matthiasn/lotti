@@ -4,9 +4,9 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:lotti/features/backup_restore/domain/profile_backup_catalog.dart';
 import 'package:lotti/features/backup_restore/domain/profile_backup_manifest.dart';
+import 'package:lotti/features/backup_restore/service/closed_sqlite_file.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
-import 'package:sqlite3/sqlite3.dart';
 import 'package:uuid/uuid.dart';
 
 /// File name of the manifest beside a staged snapshot payload.
@@ -561,32 +561,22 @@ class QuiescedProfileSnapshotService {
   }
 
   static int _validateSqlite(File databaseFile) {
-    Database? database;
+    final ClosedSqliteReport report;
     try {
-      database = sqlite3.open(
-        Uri.file(
-          databaseFile.path,
-        ).replace(queryParameters: const {'immutable': '1'}).toString(),
-        mode: OpenMode.readOnly,
-        uri: true,
-      );
-      final check = database.select('PRAGMA integrity_check');
-      if (check.length != 1 || check.single.values.single != 'ok') {
-        throw ProfileSnapshotValidationException(
-          'SQLite integrity_check failed for ${databaseFile.path}: $check',
-        );
-      }
-      return database.userVersion;
-    } on ProfileSnapshotValidationException {
-      rethrow;
+      report = inspectClosedSqliteFile(databaseFile);
     } catch (error) {
       throw ProfileSnapshotValidationException(
         'Unable to validate SQLite database: ${databaseFile.path}',
         cause: error,
       );
-    } finally {
-      database?.close();
     }
+    if (report.problems.isNotEmpty) {
+      throw ProfileSnapshotValidationException(
+        'SQLite integrity_check failed for ${databaseFile.path}: '
+        '${report.problems}',
+      );
+    }
+    return report.userVersion;
   }
 
   static void _addManifestStore(

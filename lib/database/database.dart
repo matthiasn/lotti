@@ -164,8 +164,12 @@ class JournalDb extends _$JournalDb
   final DomainLogger? _loggingService;
   final Directory? _documentsDirectory;
 
+  /// The schema this build writes. A restored backup may carry an
+  /// older schema, which Drift migrates, but never a newer one.
+  static const int currentSchemaVersion = 48;
+
   @override
-  int get schemaVersion => 48;
+  int get schemaVersion => currentSchemaVersion;
 
   /// Whether [table] has a column named [column]. Used where a step is
   /// conditional on an install's history: the v20 `category_id` column, and

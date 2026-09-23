@@ -130,7 +130,10 @@ switching: `runWithGenerationClosed` runs steps 2–5 around a piece of work tha
 needs the profile's files at rest, a backup. There the close is strict — every
 quiesce step and `ServiceDisposer` failure is collected, and any failure skips
 the work — while a switch stays best effort. Both share one guard, so a backup
-and a switch can never interleave. See
+and a switch can never interleave. Work that replaces the profile's files (a
+restore) also passes a health check and a rollback: if the restarted profile
+fails either, it is torn down, the files are put back and the original boots
+again. See
 [backup and restore](../features/backup-and-restore.md#strict-quiescence-of-a-running-profile).
 
 # Populate first, then migrate

@@ -69,6 +69,20 @@ class ProfileRestartException implements Exception {
   String toString() => 'ProfileRestartException: $cause';
 }
 
+/// The work changed the profile, but the changed profile failed to start
+/// or to prove itself healthy, so the change was rolled back and the
+/// profile restarted as it was.
+class ProfileRolledBackException implements Exception {
+  const ProfileRolledBackException(this.cause, this.causeStackTrace);
+
+  /// Why the changed profile was rejected.
+  final Object cause;
+  final StackTrace causeStackTrace;
+
+  @override
+  String toString() => 'ProfileRolledBackException: $cause';
+}
+
 /// Orchestrates in-app profile switches: persist the active-world marker,
 /// quiesce the running generation, tear it down, and bootstrap the next one
 /// against the new root. It also closes and restarts the running profile for
@@ -166,13 +180,24 @@ class ProfileSwitcher {
   /// restarted in every case: after success, after a close failure, and after
   /// [whileClosed] throws, whose error is rethrown once the profile is back.
   ///
+  /// Work that changes the profile's files (a restore) passes [rollBack]:
+  /// when [whileClosed] succeeded but the restarted profile then fails to
+  /// bootstrap or [verifyRestarted] throws, that generation is torn down,
+  /// [rollBack] undoes the change, the profile boots again as it was, and
+  /// [ProfileRolledBackException] reports the cause.
+  ///
   /// Throws [ProfileLifecycleBusyException] without touching anything while a
   /// switch or another closed-generation operation is running, and
-  /// [ProfileRestartException] when the service container cannot be reset or
-  /// the restart itself fails; [whileClosed] does not run in the first case.
+  /// [ProfileRestartException] when the service container cannot be reset,
+  /// the restart fails, or a rollback cannot complete; [whileClosed] does not
+  /// run in the first case. Work that itself throws [ProfileRestartException]
+  /// leaves the profile closed rather than starting files it could not put
+  /// back in order.
   Future<T> runWithGenerationClosed<T>(
-    Future<T> Function(ClosedProfileGeneration closed) whileClosed,
-  ) async {
+    Future<T> Function(ClosedProfileGeneration closed) whileClosed, {
+    Future<void> Function()? verifyRestarted,
+    Future<void> Function()? rollBack,
+  }) async {
     if (_switching) throw const ProfileLifecycleBusyException();
     _switching = true;
     try {
@@ -206,12 +231,24 @@ class ProfileSwitcher {
         }
       }
 
+      if (workError is ProfileRestartException) {
+        // The work could not leave the files in a startable state. Starting
+        // them anyway could make things worse; the next launch recovers.
+        Error.throwWithStackTrace(workError, workStackTrace!);
+      }
+      final workChangedProfile = failures.isEmpty && workError == null;
       try {
         await _bootstrap();
+        if (workChangedProfile) await verifyRestarted?.call();
       } catch (e, st) {
-        // Left on the splash: the marker still names this profile, so a
-        // relaunch boots it from a clean process.
-        throw ProfileRestartException(e, st);
+        if (!workChangedProfile || rollBack == null) {
+          // Left on the splash: the marker still names this profile, so a
+          // relaunch boots it from a clean process.
+          throw ProfileRestartException(e, st);
+        }
+        await _restartRolledBack(rollBack);
+        onSwitchCompleted();
+        throw ProfileRolledBackException(e, st);
       }
       onSwitchCompleted();
 
@@ -222,6 +259,22 @@ class ProfileSwitcher {
       return result;
     } finally {
       _switching = false;
+    }
+  }
+
+  /// Tears down a generation that failed to start or verify, undoes the
+  /// work with [rollBack], and boots the profile again. Any failure along the
+  /// way leaves the app on the splash; what [rollBack] could not finish is
+  /// finished at the next launch.
+  Future<void> _restartRolledBack(Future<void> Function() rollBack) async {
+    try {
+      // Best effort, like a switch: the rejected generation is going away
+      // whatever it reports. Only a container that cannot be reset stops us.
+      await _teardown();
+      await rollBack();
+      await _bootstrap();
+    } catch (e, st) {
+      throw ProfileRestartException(e, st);
     }
   }
 
