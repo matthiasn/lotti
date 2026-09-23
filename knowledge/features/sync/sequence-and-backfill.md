@@ -99,6 +99,12 @@ type — whenever it knows it, and every write path in the app does. The
 `reserved` row records that name as an **intent**: not a binding, but enough
 to prove later whether the write landed, from the payload's own vector clock.
 
+If the sequence-log insert fails, the reservation — intent included — is
+recorded in the settings database instead, next to the watermark, and startup
+moves it into the log (`migrateUnrecordedReservations`) before settling
+anything. Settlement treats such a record as a `reserved` row. Only when both
+stores refuse does reserving throw, and then no write uses the counter.
+
 `VectorClockService` also keeps the reservations this process has neither
 bound nor released in a process-local **pending** map. Only a pending counter
 can still land, and a crash forgets the map, so "not pending" means no live
@@ -141,11 +147,14 @@ counter nothing has bound yet — no row, `reserved`, or `burnPending`. The
 backfill responder, the VC release handler and startup reconciliation all use
 it:
 
-1. If the reservation names its payload — on the row, or in the pending map
-   when the reserved-row insert failed — and that payload's own-host clock
+1. If the reservation names its payload — on the row, in its settings
+   fallback record, or in the pending map — and that payload's own-host clock
    covers the counter, the write landed or a later write of the same payload
-   superseded it. The counter is bound (never over a `received` or `burned`
-   row) and the payload is resent.
+   superseded it. The payload is resent first — durably, a failed enqueue
+   throws — and only then is the counter bound (never over a `received` or
+   `burned` row). A failed or interrupted resend therefore leaves the row
+   unsettled for the next request or startup; binding first would hide it
+   behind `received` with nothing sent.
 2. Otherwise, if the counter is pending, or the payload's store is not wired
    yet (the agent repository arrives after sync starts), it is deferred.
    Wiring the store settles the orphans that waited for it.
@@ -184,8 +193,10 @@ bounded crashes and injected faults. Its four configurations prove that no
 committed payload is ever burned, that a received row is backed by the data,
 and that `burned` is terminal; and, with one crash at any point, that every
 committed write eventually reaches every peer and no backfill request stays
-open forever. [`specs/tla/README.md`](../../../specs/tla/README.md) lists what
-each configuration covers and the one residual it does not.
+open forever; and that neither two faults, nor a crash together with a
+fault, can burn a committed payload.
+[`specs/tla/README.md`](../../../specs/tla/README.md) lists what each
+configuration covers and what it deliberately leaves out.
 
 # `burned` versus `unresolvable`
 

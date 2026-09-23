@@ -40,20 +40,17 @@ and the decision in [ADR 0065](../../docs/adr/0065-model-checked-sync-sequence-r
 | `SyncSequence` | 0 | none | allowed | all |
 | `SyncSequenceCrash` | 1, anywhere | none | no | all |
 | `SyncSequenceCrashUnnamed` | 1, anywhere | none | allowed | safety |
-| `SyncSequenceFaults` | 0 | any two of: reserved-row insert, bind, post-commit throw, enqueue, burn broadcast, event loss | no | safety |
+| `SyncSequenceCrashFault` | 1, anywhere | any one of the faults below | no | safety |
+| `SyncSequenceFaults` | 0 | any two of: reserved-row insert (settings fallback taken), reserved-row insert and fallback both, bind, post-commit throw, enqueue, burn broadcast, event loss | no | safety |
 
-All four pass with two entities, three counters and one peer — between 0.8 and
-5.1 million distinct states each, a few minutes in total.
+All five pass with two entities, three counters and one peer — between 0.8 and
+4.4 million distinct states each, a few minutes in total.
 
 What the configurations deliberately leave out:
 
 - **Delivery under faults.** A swallowed enqueue failure or an event a peer
   abandons for good is not retried, so `EventuallyDelivered` is only claimed
   without faults.
-- **A failed reserved-row insert followed by a crash in the same write.** No
-  row and no memory then name the payload, and a later request is answered as
-  a burn. TLC finds this with one crash plus the `rowWrite` fault; ADR 0065
-  explains why it is accepted rather than closed.
 - **Unnamed reservations after a crash.** They cannot be settled, so a request
   for one stays open until the requester gives up — which is why
   `SyncSequenceCrashUnnamed` checks safety only.

@@ -24,6 +24,12 @@ if [[ ! -f "$jar" ]]; then
   mkdir -p "$tools_dir"
   curl -fsSL -o "$jar.part" \
     "https://github.com/tlaplus/tlaplus/releases/download/v$TLA_VERSION/tla2tools.jar"
+  # Verify before caching: a bad download must not poison later runs.
+  if ! echo "$TLA_SHA256  $jar.part" | sha256sum --check --quiet; then
+    rm -f "$jar.part"
+    echo "tla2tools.jar checksum mismatch" >&2
+    exit 1
+  fi
   mv "$jar.part" "$jar"
 fi
 echo "$TLA_SHA256  $jar" | sha256sum --check --quiet

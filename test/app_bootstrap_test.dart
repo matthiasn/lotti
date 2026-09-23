@@ -493,6 +493,88 @@ void main() {
         expect(markers, [8]);
       },
     );
+
+    test(
+      'regression: a reservation the sequence log refused, recorded only in '
+      'settings, is migrated and settled at boot instead of burned',
+      () async {
+        // The previous process could not insert counter 7's reserved row,
+        // recorded it in settings, committed entry-7 and died before the
+        // outbox bound it.
+        const crashHost = 'crash-host-3';
+        Future<Directory> provider() async => osRoot;
+        final priorSettings = SettingsDb(documentsDirectoryProvider: provider);
+        await priorSettings.saveSettingsItem(hostKey, crashHost);
+        await priorSettings.saveSettingsItem(nextAvailableCounterKey, '8');
+        await priorSettings.saveSettingsItem(
+          unrecordedReservationsKey,
+          jsonEncode([
+            {
+              'hostId': crashHost,
+              'counter': 7,
+              'payloadId': 'entry-7',
+              'payloadType': SyncSequencePayloadType.journalEntity.name,
+            },
+          ]),
+        );
+        await priorSettings.close();
+        final priorJournal = JournalDb(
+          documentsDirectoryProvider: provider,
+          documentsDirectory: osRoot,
+        );
+        final at = DateTime(2026, 9, 23, 12);
+        await priorJournal.updateJournalEntity(
+          JournalEntity.journalEntry(
+            meta: Metadata(
+              id: 'entry-7',
+              createdAt: at,
+              updatedAt: at,
+              dateFrom: at,
+              dateTo: at,
+              vectorClock: const VectorClock({crashHost: 7}),
+            ),
+            entryText: const EntryText(plainText: 'written before the crash'),
+          ),
+        );
+        await priorJournal.close();
+
+        registerProcessLogging();
+        final lifecycleHolder = AppLifecycleHolder();
+        addTearDown(lifecycleHolder.dispose);
+        await bootstrapProfileServices(
+          await resolveActiveProfile(),
+          lifecycleHolder: lifecycleHolder,
+          restoreWindow: false,
+        );
+        await getIt<StartupTasks>().settle();
+        await settlePendingDbWork();
+
+        final syncDb = getIt<SyncDatabase>();
+        final row = await syncDb.getEntryByHostAndCounter(crashHost, 7);
+        expect(row!.status, SyncSequenceStatus.received.index);
+        expect(row.entryId, 'entry-7');
+        expect(
+          await getIt<SettingsDb>().itemByKey(unrecordedReservationsKey),
+          isNull,
+        );
+        final queued = [
+          for (final item in await syncDb.oldestOutboxItems(50))
+            SyncMessage.fromJson(
+              jsonDecode(item.message) as Map<String, dynamic>,
+            ),
+        ];
+        expect(
+          queued.whereType<SyncJournalEntity>().map((m) => m.id),
+          contains('entry-7'),
+        );
+        expect(
+          queued.whereType<SyncBackfillResponse>().where(
+            (m) => m.hostId == crashHost && m.unresolvable == true,
+          ),
+          isEmpty,
+        );
+      },
+    );
   });
 
   /// The agent-runtime half of [buildProviderOverrides].

@@ -124,7 +124,8 @@ class BackfillResponseHandler {
   /// release handler and startup reconciliation — and it is what
   /// `specs/tla/SyncSequence.tla` model-checks as `Settle` and `Respond`:
   ///
-  /// 1. If the reservation names its payload (on the row, or in the live
+  /// 1. If the reservation names its payload (on the row, in the settings
+  ///    database record kept when the row insert failed, or in the live
   ///    process's pending map) and that payload's own-host clock covers the
   ///    counter, the write landed — or a later write of the same payload
   ///    superseded it. Bind the counter and resend the payload.
@@ -169,13 +170,26 @@ class BackfillResponseHandler {
       hostId: hostId,
       counter: counter,
     );
+    // A reservation whose sequence-log insert failed lives in the settings
+    // database until startup migrates it; it counts as a `reserved` row.
+    final fallback = row == null
+        ? await _vectorClockService.unrecordedReservation(
+            hostId: hostId,
+            counter: counter,
+          )
+        : null;
+    final reserved = status == SyncSequenceStatus.reserved || fallback != null;
     final rowEntryId = row?.entryId;
     final payload = rowEntryId != null
         ? (
             id: rowEntryId,
             type: SyncSequencePayloadType.values[row!.payloadType],
           )
-        : _vectorClockService.pendingPayload(hostId: hostId, counter: counter);
+        : fallback?.payload ??
+              _vectorClockService.pendingPayload(
+                hostId: hostId,
+                counter: counter,
+              );
 
     if (payload != null) {
       if (!_payloadStoreWired(payload.type)) {
@@ -193,25 +207,43 @@ class BackfillResponseHandler {
       );
       final ownCounter = state.vectorClock?.vclock[hostId];
       if (state.exists && ownCounter != null && ownCounter >= counter) {
+        // Resend first, bind after: the row stays unsettled until the payload
+        // is durably queued, so a failed or interrupted resend is retried by
+        // the next request or startup instead of hiding behind `received`.
+        // A crash in between at worst sends the payload twice.
+        final now = clock.now();
+        await _answerFromEntry(
+          hostId: hostId,
+          counter: counter,
+          entry: SyncSequenceLogItem(
+            hostId: hostId,
+            counter: counter,
+            entryId: payload.id,
+            payloadType: payload.type.index,
+            originatingHostId: hostId,
+            status: SyncSequenceStatus.received.index,
+            createdAt: now,
+            updatedAt: now,
+            requestCount: 0,
+          ),
+          sentPayloads: sentPayloads ?? <String>{},
+          durable: true,
+        );
         final bound = await _sequenceLogService.bindOwnCounter(
           hostId: hostId,
           counter: counter,
           entryId: payload.id,
           payloadType: payload.type,
         );
-        if (!bound) return OwnCounterSettlement.alreadySettled;
         _trace(
-          'settleOwnCounter bound hostId=$hostId counter=$counter '
+          'settleOwnCounter resent hostId=$hostId counter=$counter '
           'payloadId=${payload.id} type=${payload.type.name} '
-          'payloadCounter=$ownCounter',
+          'payloadCounter=$ownCounter bound=$bound',
           subDomain: 'backfill.settle',
         );
-        await _processBackfillEntry(
-          hostId: hostId,
-          counter: counter,
-          sentPayloads: sentPayloads ?? <String>{},
-        );
-        return OwnCounterSettlement.bound;
+        return bound
+            ? OwnCounterSettlement.bound
+            : OwnCounterSettlement.alreadySettled;
       }
     }
 
@@ -223,7 +255,7 @@ class BackfillResponseHandler {
       );
       return OwnCounterSettlement.deferred;
     }
-    if (status == SyncSequenceStatus.reserved && payload == null) {
+    if (reserved && payload == null) {
       _trace(
         'settleOwnCounter deferred: reservation names no payload '
         'hostId=$hostId counter=$counter',
@@ -610,12 +642,27 @@ class BackfillResponseHandler {
         logEntry.status == SyncSequenceStatus.reserved.index ||
         logEntry.status == SyncSequenceStatus.burnPending.index;
     if (isOwnHost && ownRowUnsettled) {
-      final outcome = await _settleOwnCounter(
-        hostId: hostId,
-        counter: counter,
-        row: logEntry,
-        sentPayloads: sentPayloads,
-      );
+      final OwnCounterSettlement outcome;
+      try {
+        outcome = await _settleOwnCounter(
+          hostId: hostId,
+          counter: counter,
+          row: logEntry,
+          sentPayloads: sentPayloads,
+        );
+      } catch (error, stackTrace) {
+        // The row stays unsettled; the requester asks again.
+        _loggingService.error(
+          LogDomain.sync,
+          error,
+          message:
+              'own counter settlement failed hostId=$hostId '
+              'counter=$counter; left unsettled for a later request',
+          stackTrace: stackTrace,
+          subDomain: 'backfill.settle',
+        );
+        return false;
+      }
       if (outcome != OwnCounterSettlement.alreadySettled) {
         return outcome != OwnCounterSettlement.deferred;
       }
@@ -722,7 +769,30 @@ class BackfillResponseHandler {
       }
     }
 
-    final resolvedLogEntry = logEntry;
+    return _answerFromEntry(
+      hostId: hostId,
+      counter: counter,
+      entry: logEntry,
+      sentPayloads: sentPayloads,
+    );
+  }
+
+  /// Answer a request for `(hostId, counter)` from the payload [entry] names:
+  /// resend the payload (once per batch, tracked in [sentPayloads]) plus a
+  /// mapping hint when the payload's clock does not carry the exact counter,
+  /// or a `deleted` response when the payload is gone.
+  ///
+  /// With [durable], a failure to enqueue the payload propagates instead of
+  /// being logged and swallowed, so settlement can bind the counter only once
+  /// the resend is durably queued.
+  Future<bool> _answerFromEntry({
+    required String hostId,
+    required int counter,
+    required SyncSequenceLogItem entry,
+    required Set<String> sentPayloads,
+    bool durable = false,
+  }) async {
+    final resolvedLogEntry = entry;
     final payloadId = resolvedLogEntry.entryId!;
     final payloadType = SyncSequencePayloadType.values.elementAt(
       resolvedLogEntry.payloadType,
@@ -762,10 +832,10 @@ class BackfillResponseHandler {
         // This avoids sending the same entry multiple times when multiple
         // requested counters map to the same payload.
         if (!sentPayloads.contains(payloadId)) {
-          sentPayloads.add(payloadId);
           final jsonPath = relativeEntityPath(journalEntry);
 
-          await _outboxService.enqueueMessage(
+          await _enqueuePayload(
+            durable: durable,
             SyncMessage.journalEntity(
               id: journalEntry.meta.id,
               jsonPath: jsonPath,
@@ -778,6 +848,7 @@ class BackfillResponseHandler {
               includeAttachments: true,
             ),
           );
+          sentPayloads.add(payloadId);
         }
 
         // Check if the entry's current VC contains the exact requested counter.
@@ -815,15 +886,15 @@ class BackfillResponseHandler {
 
         // Only send the link if not already sent in this batch.
         if (!sentPayloads.contains(payloadId)) {
-          sentPayloads.add(payloadId);
-
-          await _outboxService.enqueueMessage(
+          await _enqueuePayload(
+            durable: durable,
             SyncMessage.entryLink(
               entryLink: link,
               status: SyncEntryStatus.update,
               originatingHostId: originatingHostId,
             ),
           );
+          sentPayloads.add(payloadId);
         }
 
         // Check if the link's current VC contains the exact requested counter.
@@ -857,6 +928,7 @@ class BackfillResponseHandler {
           payloadType: payloadType,
           originatingHostId: originatingHostId,
           sentPayloads: sentPayloads,
+          durable: durable,
           loadPayload: () => agentRepository!.getEntity(payloadId),
           getVectorClock: (entity) => entity.vectorClock,
           buildSyncMessage: (entity) => SyncMessage.agentEntity(
@@ -881,6 +953,7 @@ class BackfillResponseHandler {
           payloadType: payloadType,
           originatingHostId: originatingHostId,
           sentPayloads: sentPayloads,
+          durable: durable,
           loadPayload: () => agentRepository!.getLinkById(payloadId),
           getVectorClock: (link) => link.vectorClock,
           buildSyncMessage: (link) => SyncMessage.agentLink(
@@ -910,11 +983,12 @@ class BackfillResponseHandler {
         }
 
         if (!sentPayloads.contains(payloadId)) {
-          sentPayloads.add(payloadId);
           await _outboxService.enqueueNotification(
             notification,
             originatingHostId: originatingHostId,
+            rethrowFailure: durable,
           );
+          sentPayloads.add(payloadId);
         }
 
         final vcCounter = notification.meta.vectorClock.vclock[hostId];
@@ -951,7 +1025,6 @@ class BackfillResponseHandler {
         }
 
         if (!sentPayloads.contains('state:$payloadId')) {
-          sentPayloads.add('state:$payloadId');
           await _outboxService.enqueueNotificationStateUpdate(
             id: notification.meta.id,
             seenAt: notification.meta.seenAt,
@@ -959,7 +1032,9 @@ class BackfillResponseHandler {
             deletedAt: notification.meta.deletedAt,
             vectorClock: notification.meta.vectorClock,
             originatingHostId: originatingHostId,
+            rethrowFailure: durable,
           );
+          sentPayloads.add('state:$payloadId');
         }
 
         final vcCounter = notification.meta.vectorClock.vclock[hostId];
@@ -994,6 +1069,7 @@ class BackfillResponseHandler {
           payloadType: payloadType,
           originatingHostId: originatingHostId,
           sentPayloads: sentPayloads,
+          durable: durable,
           loadPayload: () => consumptionRepository!.getEvent(payloadId),
           getVectorClock: (event) => event.vectorClock,
           buildSyncMessage: (event) => SyncMessage.consumptionEvent(
@@ -1005,6 +1081,14 @@ class BackfillResponseHandler {
         );
     }
   }
+
+  /// Enqueue a payload resend; see [_answerFromEntry] for [durable].
+  Future<void> _enqueuePayload(
+    SyncMessage message, {
+    required bool durable,
+  }) => durable
+      ? _outboxService.enqueueMessageOrThrow(message)
+      : _outboxService.enqueueMessage(message);
 
   /// Shared helper for processing agent entity/link backfill entries.
   /// Follows the same pattern as journalEntity/entryLink cases.
@@ -1019,6 +1103,7 @@ class BackfillResponseHandler {
     required VectorClock? Function(T) getVectorClock,
     required SyncMessage Function(T) buildSyncMessage,
     required String typeName,
+    bool durable = false,
   }) async {
     final payload = await loadPayload();
 
@@ -1032,8 +1117,8 @@ class BackfillResponseHandler {
     }
 
     if (!sentPayloads.contains(payloadId)) {
+      await _enqueuePayload(durable: durable, buildSyncMessage(payload));
       sentPayloads.add(payloadId);
-      await _outboxService.enqueueMessage(buildSyncMessage(payload));
     }
 
     final vc = getVectorClock(payload);

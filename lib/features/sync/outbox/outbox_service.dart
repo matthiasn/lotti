@@ -63,9 +63,13 @@ abstract class _OutboxServiceBase {
 abstract class OutboxService {
   /// Persists [entity]'s JSON payload under the documents directory and
   /// enqueues a `SyncMessage.notification` referencing it.
+  ///
+  /// With [rethrowFailure], preparation or persistence failures propagate
+  /// after logging instead of being swallowed.
   Future<void> enqueueNotification(
     NotificationEntity entity, {
     String? originatingHostId,
+    bool rethrowFailure = false,
   });
 
   /// Enqueues a `SyncMessage.notificationStateUpdate` carrying the changed
@@ -77,6 +81,7 @@ abstract class OutboxService {
     DateTime? seenAt,
     DateTime? actedOnAt,
     DateTime? deletedAt,
+    bool rethrowFailure = false,
   });
 
   /// Enqueues [syncMessage], logging and swallowing routine preparation or
@@ -319,6 +324,7 @@ class MatrixOutboxService extends _OutboxServiceBase
   Future<void> enqueueNotification(
     NotificationEntity entity, {
     String? originatingHostId,
+    bool rethrowFailure = false,
   }) async {
     final relativePath = relativeNotificationPath(entity.id);
     // relativeNotificationPath percent-encodes the id into one `<id>.json`
@@ -328,13 +334,14 @@ class MatrixOutboxService extends _OutboxServiceBase
     final fullPath = _safePayloadFullPath(relativePath)!;
 
     await _saveJson(fullPath, jsonEncode(entity.toJson()));
-    await enqueueMessage(
+    await _enqueueMessage(
       SyncMessage.notification(
         id: entity.id,
         jsonPath: relativePath,
         vectorClock: entity.meta.vectorClock,
         originatingHostId: originatingHostId ?? entity.meta.originatingHostId,
       ),
+      rethrowFailure: rethrowFailure,
     );
   }
 
@@ -349,8 +356,9 @@ class MatrixOutboxService extends _OutboxServiceBase
     DateTime? seenAt,
     DateTime? actedOnAt,
     DateTime? deletedAt,
+    bool rethrowFailure = false,
   }) {
-    return enqueueMessage(
+    return _enqueueMessage(
       SyncMessage.notificationStateUpdate(
         id: id,
         seenAt: seenAt,
@@ -359,6 +367,7 @@ class MatrixOutboxService extends _OutboxServiceBase
         vectorClock: vectorClock,
         originatingHostId: originatingHostId,
       ),
+      rethrowFailure: rethrowFailure,
     );
   }
 

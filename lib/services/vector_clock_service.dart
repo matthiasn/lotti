@@ -32,8 +32,11 @@ import 'package:meta/meta.dart';
 /// Recovery of burnt counters:
 /// - reservation writes an own-host `reserved` sequence row before returning
 ///   the counter, recording the payload it is for when the caller names it
-///   ([VcPayloadRef]). The outbox binds the row to `received` once the
-///   payload is durably enqueued.
+///   ([VcPayloadRef]). If that insert fails the reservation is recorded in
+///   [SettingsDb] instead, and startup moves it into the sequence log
+///   ([VectorClockService.migrateUnrecordedReservations]); if both fail,
+///   reserving throws and no write uses the counter. The outbox binds the
+///   row to `received` once the payload is durably enqueued.
 /// - A reservation the process has neither bound nor released is *pending*
 ///   ([VectorClockService.isPending]); only a pending counter may still land,
 ///   so only pending counters are deferred when a peer asks for them.
@@ -103,6 +106,35 @@ class VcReservation {
 typedef VcPayloadRef = ({String id, SyncSequencePayloadType type});
 
 typedef _OwnCounter = ({String hostId, int counter});
+
+/// A reservation recorded in the settings database because the sequence-log
+/// insert failed.
+typedef _UnrecordedReservation = ({
+  String hostId,
+  int counter,
+  VcPayloadRef? payload,
+});
+
+extension _UnrecordedReservationJson on _UnrecordedReservation {
+  static _UnrecordedReservation fromJson(Map<String, dynamic> json) {
+    final id = json['payloadId'] as String?;
+    final type = json['payloadType'] as String?;
+    return (
+      hostId: json['hostId'] as String,
+      counter: json['counter'] as int,
+      payload: id == null || type == null
+          ? null
+          : (id: id, type: SyncSequencePayloadType.values.byName(type)),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'hostId': hostId,
+    'counter': counter,
+    if (payload != null) 'payloadId': payload!.id,
+    if (payload != null) 'payloadType': payload!.type.name,
+  };
+}
 
 class _VcScope {
   final List<VcReservation> reservations = [];
@@ -252,12 +284,7 @@ class VectorClockService {
     // flush. Dart's single-threaded execution guards synchronous code, but
     // [_persistCounter] awaits a Drift write, and without this lock another
     // reserver could overtake us between the await points.
-    while (_reserveLock != null) {
-      await _reserveLock;
-    }
-    final completer = Completer<void>();
-    _reserveLock = completer.future;
-    try {
+    return _underReserveLock(() async {
       final previousHostCounter = previous?.vclock[_host];
       final int effectiveCounter;
       if (previousHostCounter != null &&
@@ -281,8 +308,17 @@ class VectorClockService {
         payload,
         this,
       );
-      _pending[(hostId: _host, counter: effectiveCounter)] = payload;
-      await _recordReservedCounter(_host, effectiveCounter, payload);
+      final key = (hostId: _host, counter: effectiveCounter);
+      _pending[key] = payload;
+      try {
+        await _recordReservedCounter(_host, effectiveCounter, payload);
+      } catch (_) {
+        // Neither store took the reservation, so no write may use the
+        // counter: it stays persisted with no row, which truthfully says no
+        // payload carries it.
+        _pending.remove(key);
+        rethrow;
+      }
 
       final scope = Zone.current[_zoneKey] as _VcScope?;
       if (scope != null) {
@@ -290,6 +326,18 @@ class VectorClockService {
       }
 
       return reservation;
+    });
+  }
+
+  /// Runs [action] holding the reservation lock.
+  Future<T> _underReserveLock<T>(Future<T> Function() action) async {
+    while (_reserveLock != null) {
+      await _reserveLock;
+    }
+    final completer = Completer<void>();
+    _reserveLock = completer.future;
+    try {
+      return await action();
     } finally {
       _reserveLock = null;
       completer.complete();
@@ -482,6 +530,13 @@ class VectorClockService {
     );
   }
 
+  /// Records the reservation durably before its counter is handed out: in
+  /// the sequence log, or — when that write fails — in [SettingsDb], the
+  /// store that already holds the watermark. Without either record a crash
+  /// before the outbox binds the counter would leave nothing naming its
+  /// payload, and a later backfill request would be answered as a burn even
+  /// if the write landed. Throws only when both stores refuse the write; the
+  /// watermark write has then usually failed as well.
   Future<void> _recordReservedCounter(
     String hostId,
     int counter,
@@ -503,12 +558,100 @@ class VectorClockService {
           error,
           message:
               'VC reservation ledger write failed host=$hostId counter=$counter; '
-              'counter already persisted and will fall back to reactive backfill',
+              'recording it in the settings database until startup migrates it',
           stackTrace: stackTrace,
           subDomain: 'vc.reserve.ledger',
         );
       }
+      final records = await _unrecordedReservations();
+      await _saveUnrecordedReservations([
+        ...records.where(
+          (record) => record.hostId != hostId || record.counter != counter,
+        ),
+        (hostId: hostId, counter: counter, payload: payload),
+      ]);
     }
+  }
+
+  /// The reservation of `(hostId, counter)` that could only be recorded in
+  /// the settings database, if any. Its payload is null for a reservation
+  /// that did not name one.
+  Future<({VcPayloadRef? payload})?> unrecordedReservation({
+    required String hostId,
+    required int counter,
+  }) async {
+    for (final record in await _unrecordedReservations()) {
+      if (record.hostId == hostId && record.counter == counter) {
+        return (payload: record.payload);
+      }
+    }
+    return null;
+  }
+
+  /// Startup: move reservations that could only be recorded in the settings
+  /// database into the sequence log, where settlement finds them. Records the
+  /// sequence log still refuses are kept for the next attempt. Returns how
+  /// many moved.
+  Future<int> migrateUnrecordedReservations() async {
+    await _initialized;
+    if (!getIt.isRegistered<SyncDatabase>()) return 0;
+    return _underReserveLock(() async {
+      final records = await _unrecordedReservations();
+      if (records.isEmpty) return 0;
+      final kept = <_UnrecordedReservation>[];
+      for (final record in records) {
+        try {
+          // INSERT OR IGNORE: a row written since — a binding, a release —
+          // already knows more than the fallback record.
+          await getIt<SyncDatabase>().recordReservedSequenceCounter(
+            hostId: record.hostId,
+            counter: record.counter,
+            entryId: record.payload?.id,
+            payloadType: record.payload?.type,
+          );
+        } catch (error, stackTrace) {
+          kept.add(record);
+          if (getIt.isRegistered<DomainLogger>()) {
+            getIt<DomainLogger>().error(
+              LogDomain.sync,
+              error,
+              message:
+                  'VC reservation migration failed host=${record.hostId} '
+                  'counter=${record.counter}; retried on the next startup',
+              stackTrace: stackTrace,
+              subDomain: 'vc.reserve.migrate',
+            );
+          }
+        }
+      }
+      await _saveUnrecordedReservations(kept);
+      return records.length - kept.length;
+    });
+  }
+
+  Future<List<_UnrecordedReservation>> _unrecordedReservations() async {
+    final raw = await getIt<SettingsDb>().itemByKey(
+      unrecordedReservationsKey,
+    );
+    if (raw == null || raw.isEmpty) return const [];
+    return [
+      for (final item in jsonDecode(raw) as List<dynamic>)
+        _UnrecordedReservationJson.fromJson(item as Map<String, dynamic>),
+    ];
+  }
+
+  Future<void> _saveUnrecordedReservations(
+    List<_UnrecordedReservation> records,
+  ) async {
+    final settings = getIt<SettingsDb>();
+    if (records.isEmpty) {
+      await settings.removeSettingsItem(unrecordedReservationsKey);
+      return;
+    }
+    await settings.saveSettingsItem(
+      unrecordedReservationsKey,
+      jsonEncode([for (final record in records) record.toJson()]),
+    );
   }
 
   Future<void> _markBurnPending(

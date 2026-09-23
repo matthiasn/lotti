@@ -690,6 +690,149 @@ void main() {
     );
   });
 
+  group('VectorClockService settings-database fallback', () {
+    const payload = (id: 'entry-1', type: SyncSequencePayloadType.entryLink);
+    late MockSyncDatabase failingSyncDb;
+    late String host;
+
+    setUp(() async {
+      failingSyncDb = MockSyncDatabase();
+      getIt
+        ..registerSingleton<SyncDatabase>(failingSyncDb)
+        ..registerSingleton<DomainLogger>(MockDomainLogger());
+      _stubDomainLoggerError(getIt<DomainLogger>() as MockDomainLogger);
+      when(
+        () => failingSyncDb.recordReservedSequenceCounter(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          entryId: any(named: 'entryId'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      ).thenThrow(StateError('sync database locked'));
+      await service.setNextAvailableCounter(70);
+      host = (await service.getHost())!;
+    });
+
+    Future<void> swapInSyncDb(SyncDatabase db) async {
+      await getIt.unregister<SyncDatabase>();
+      getIt.registerSingleton<SyncDatabase>(db);
+    }
+
+    test(
+      'a reservation the sequence log refuses is recorded, with its payload, '
+      'in the settings database and still handed out',
+      () async {
+        final vc = await service.getNextVectorClock(payload: payload);
+
+        expect(vc.vclock[host], 70);
+        expect(service.isPending(hostId: host, counter: 70), isTrue);
+        expect(
+          await service.unrecordedReservation(hostId: host, counter: 70),
+          (payload: payload),
+        );
+        // It survives a restart: a fresh service reads the same record.
+        final restarted = VectorClockService();
+        await restarted.initialized;
+        expect(
+          await restarted.unrecordedReservation(hostId: host, counter: 70),
+          (payload: payload),
+        );
+        expect(
+          await service.unrecordedReservation(hostId: host, counter: 71),
+          isNull,
+        );
+      },
+    );
+
+    test(
+      'when the settings database refuses the fallback too, reserving throws '
+      'and leaves nothing pending — no write may use the counter',
+      () async {
+        final settings = MockSettingsDb();
+        await getIt.unregister<SettingsDb>();
+        getIt.registerSingleton<SettingsDb>(settings);
+        when(() => settings.itemByKey(any())).thenAnswer((_) async => null);
+        when(
+          () => settings.saveSettingsItem(nextAvailableCounterKey, any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => settings.saveSettingsItem(unrecordedReservationsKey, any()),
+        ).thenThrow(StateError('settings database locked'));
+
+        await expectLater(
+          service.getNextVectorClock(payload: payload),
+          throwsStateError,
+        );
+
+        expect(service.isPending(hostId: host, counter: 70), isFalse);
+        // The counter itself stays burnt: it is never handed out again.
+        expect(await service.getNextAvailableCounter(), 71);
+      },
+    );
+
+    test(
+      'startup moves settings-database reservations into the sequence log '
+      'and forgets them',
+      () async {
+        await service.getNextVectorClock(payload: payload);
+        await service.getNextVectorClock();
+        final syncDb = SyncDatabase(inMemoryDatabase: true);
+        addTearDown(syncDb.close);
+        await swapInSyncDb(syncDb);
+
+        expect(await service.migrateUnrecordedReservations(), 2);
+
+        final named = await syncDb.getEntryByHostAndCounter(host, 70);
+        expect(named!.status, SyncSequenceStatus.reserved.index);
+        expect(named.entryId, 'entry-1');
+        expect(named.payloadType, SyncSequencePayloadType.entryLink.index);
+        final unnamed = await syncDb.getEntryByHostAndCounter(host, 71);
+        expect(unnamed!.status, SyncSequenceStatus.reserved.index);
+        expect(unnamed.entryId, isNull);
+        expect(
+          await service.unrecordedReservation(hostId: host, counter: 70),
+          isNull,
+        );
+        expect(await settingsDb.itemByKey(unrecordedReservationsKey), isNull);
+        // Nothing left to move.
+        expect(await service.migrateUnrecordedReservations(), 0);
+      },
+    );
+
+    test(
+      'a row written since the fallback wins over it, and records the '
+      'sequence log still refuses are kept for the next startup',
+      () async {
+        await service.getNextVectorClock(payload: payload);
+
+        // Still locked at startup: the record is kept.
+        expect(await service.migrateUnrecordedReservations(), 0);
+        expect(
+          await service.unrecordedReservation(hostId: host, counter: 70),
+          (payload: payload),
+        );
+
+        final syncDb = SyncDatabase(inMemoryDatabase: true);
+        addTearDown(syncDb.close);
+        await syncDb.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: Value(host),
+            counter: const Value(70),
+            entryId: const Value('entry-1'),
+            status: Value(SyncSequenceStatus.received.index),
+            createdAt: Value(DateTime(2026, 9, 23)),
+            updatedAt: Value(DateTime(2026, 9, 23)),
+          ),
+        );
+        await swapInSyncDb(syncDb);
+
+        expect(await service.migrateUnrecordedReservations(), 1);
+        final row = await syncDb.getEntryByHostAndCounter(host, 70);
+        expect(row!.status, SyncSequenceStatus.received.index);
+      },
+    );
+  });
+
   group('VectorClockService withVcScope', () {
     test('commits every nested reservation on success', () async {
       await service.setNextAvailableCounter(100);

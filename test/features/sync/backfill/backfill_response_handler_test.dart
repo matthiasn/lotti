@@ -617,6 +617,12 @@ class _GeneratedBackfillResponseBench {
         counter: any(named: 'counter'),
       ),
     ).thenReturn(null);
+    when(
+      () => vcService.unrecordedReservation(
+        hostId: any(named: 'hostId'),
+        counter: any(named: 'counter'),
+      ),
+    ).thenAnswer((_) async => null);
 
     final bench = _GeneratedBackfillResponseBench._(
       journalDb: journalDb,
@@ -1010,6 +1016,12 @@ void main() {
         counter: any(named: 'counter'),
       ),
     ).thenReturn(null);
+    when(
+      () => mockVcService.unrecordedReservation(
+        hostId: any(named: 'hostId'),
+        counter: any(named: 'counter'),
+      ),
+    ).thenAnswer((_) async => null);
 
     mockAgentRepository = MockAgentRepository();
 
@@ -4124,6 +4136,9 @@ void main() {
       when(
         () => mockOutboxService.enqueueMessage(any()),
       ).thenAnswer((_) async {});
+      when(
+        () => mockOutboxService.enqueueMessageOrThrow(any()),
+      ).thenAnswer((_) async {});
     });
 
     void stubPending({required bool pending, VcPayloadRef? payload}) {
@@ -4146,8 +4161,9 @@ void main() {
       );
     }
 
+    // Settlement resends durably: a swallowed failure would let it bind.
     void verifyPayloadResent() => verify(
-      () => mockOutboxService.enqueueMessage(
+      () => mockOutboxService.enqueueMessageOrThrow(
         any(
           that: isA<SyncJournalEntity>().having((m) => m.id, 'id', 'entry-3'),
         ),
@@ -4249,6 +4265,187 @@ void main() {
         expect(outcome, OwnCounterSettlement.bound);
         verifyPayloadResent();
         verifyNothingBurned();
+      },
+    );
+
+    test(
+      'regression: a resend that cannot be queued leaves the counter '
+      'unsettled — it is bound only after the payload is durably enqueued',
+      () async {
+        ownRow = _createLogItem(
+          aliceHostId,
+          3,
+          entryId: 'entry-3',
+          status: SyncSequenceStatus.reserved,
+        );
+        stubPending(pending: false);
+        stubJournalPayload(3);
+        when(
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
+        ).thenAnswer((_) async => throw StateError('outbox locked'));
+
+        // Startup: the failure is contained per counter …
+        when(
+          () => mockSequenceService.settleableOwnCountersForHost(
+            hostId: aliceHostId,
+          ),
+        ).thenAnswer((_) async => [3]);
+        await handler.settleOrphanedOwnCounters();
+        // … and a peer's request neither binds nor burns it either.
+        await handler.handleBackfillRequest(request);
+
+        verifyNever(
+          () => mockSequenceService.bindOwnCounter(
+            hostId: any(named: 'hostId'),
+            counter: any(named: 'counter'),
+            entryId: any(named: 'entryId'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        );
+        verifyNothingBurned();
+        expect(ownRow!.status, SyncSequenceStatus.reserved.index);
+        expect(handler.recentlyResponded, isEmpty);
+        verify(
+          () => mockLogging.error(
+            LogDomain.sync,
+            any<Object>(that: isA<StateError>()),
+            message: any(named: 'message'),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'backfill.settle',
+          ),
+        ).called(2);
+
+        // Once the outbox takes it, the next pass resends and then binds.
+        when(
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
+        ).thenAnswer((_) async {});
+        await handler.settleOrphanedOwnCounters();
+
+        verifyInOrder([
+          () => mockOutboxService.enqueueMessageOrThrow(
+            any(that: isA<SyncJournalEntity>()),
+          ),
+          () => mockSequenceService.bindOwnCounter(
+            hostId: aliceHostId,
+            counter: 3,
+            entryId: 'entry-3',
+            payloadType: SyncSequencePayloadType.journalEntity,
+          ),
+        ]);
+      },
+    );
+
+    for (final (type, name) in [
+      (SyncSequencePayloadType.notification, 'notification'),
+      (SyncSequencePayloadType.notificationStateUpdate, 'notification state'),
+      (SyncSequencePayloadType.consumptionEvent, 'consumption'),
+    ]) {
+      test(
+        'a $name payload is deferred while its store is not wired',
+        () async {
+          final unwired = BackfillResponseHandler(
+            journalDb: mockJournalDb,
+            sequenceLogService: mockSequenceService,
+            outboxService: mockOutboxService,
+            loggingService: mockLogging,
+            vectorClockService: mockVcService,
+          );
+          ownRow = _createLogItem(
+            aliceHostId,
+            3,
+            entryId: 'payload-3',
+            status: SyncSequenceStatus.reserved,
+            payloadType: type,
+          );
+          stubPending(pending: false);
+
+          final outcome = await unwired.settleOwnCounter(
+            hostId: aliceHostId,
+            counter: 3,
+          );
+
+          expect(outcome, OwnCounterSettlement.deferred);
+          verifyNothingBurned();
+        },
+      );
+    }
+
+    test(
+      'a failed settlement retry after wiring a store is logged, not thrown',
+      () async {
+        final unwired = BackfillResponseHandler(
+          journalDb: mockJournalDb,
+          sequenceLogService: mockSequenceService,
+          outboxService: mockOutboxService,
+          loggingService: mockLogging,
+          vectorClockService: mockVcService,
+        );
+        ownRow = _createLogItem(
+          aliceHostId,
+          3,
+          entryId: 'agent-3',
+          status: SyncSequenceStatus.reserved,
+          payloadType: SyncSequencePayloadType.agentEntity,
+        );
+        stubPending(pending: false);
+        var calls = 0;
+        when(
+          () => mockSequenceService.settleableOwnCountersForHost(
+            hostId: aliceHostId,
+          ),
+        ).thenAnswer((_) async {
+          if (calls++ == 0) return [3];
+          throw StateError('sequence log unreadable');
+        });
+        await unwired.settleOrphanedOwnCounters();
+
+        unwired.agentRepository = mockAgentRepository;
+        await pumpEventQueue();
+
+        verify(
+          () => mockLogging.error(
+            LogDomain.sync,
+            any<Object>(that: isA<StateError>()),
+            message: 'own counter settlement retry failed',
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'backfill.settle',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'a request for a counter bound concurrently is answered from the row '
+      'as it now stands',
+      () async {
+        ownRow = _createLogItem(
+          aliceHostId,
+          3,
+          entryId: 'entry-3',
+          status: SyncSequenceStatus.reserved,
+        );
+        stubPending(pending: false);
+        stubJournalPayload(3);
+        // The outbox bound the counter between our read and our bind.
+        when(
+          () => mockSequenceService.bindOwnCounter(
+            hostId: any(named: 'hostId'),
+            counter: any(named: 'counter'),
+            entryId: any(named: 'entryId'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        ).thenAnswer((_) async {
+          ownRow = _createLogItem(aliceHostId, 3, entryId: 'entry-3');
+          return false;
+        });
+
+        await handler.handleBackfillRequest(request);
+
+        verify(
+          () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 3),
+        ).called(2);
+        verifyNothingBurned();
+        expect(handler.recentlyResponded, contains('$aliceHostId:3'));
       },
     );
 
@@ -4443,12 +4640,78 @@ void main() {
           ),
         ).called(1);
         verify(
-          () => mockOutboxService.enqueueMessage(
+          () => mockOutboxService.enqueueMessageOrThrow(
             any(that: isA<SyncAgentEntity>()),
           ),
         ).called(1);
       },
     );
+
+    group('a reservation recorded only in the settings database', () {
+      void stubFallback(VcPayloadRef? payload) => when(
+        () => mockVcService.unrecordedReservation(
+          hostId: aliceHostId,
+          counter: 3,
+        ),
+      ).thenAnswer((_) async => (payload: payload));
+
+      test(
+        'regression: a request for it is answered with its landed payload '
+        'instead of burned, although the sequence log has no row',
+        () async {
+          // The reserved-row insert failed, the write landed, the process
+          // died: no row, nothing pending — only the settings record.
+          stubPending(pending: false);
+          stubFallback((
+            id: 'entry-3',
+            type: SyncSequencePayloadType.journalEntity,
+          ));
+          stubJournalPayload(3);
+
+          await handler.handleBackfillRequest(request);
+
+          verify(
+            () => mockSequenceService.bindOwnCounter(
+              hostId: aliceHostId,
+              counter: 3,
+              entryId: 'entry-3',
+              payloadType: SyncSequencePayloadType.journalEntity,
+            ),
+          ).called(1);
+          verifyPayloadResent();
+          verifyNothingBurned();
+        },
+      );
+
+      test('is burned when its payload never landed', () async {
+        stubPending(pending: false);
+        stubFallback((
+          id: 'entry-3',
+          type: SyncSequencePayloadType.journalEntity,
+        ));
+        stubJournalPayload(null);
+
+        final outcome = await handler.settleOwnCounter(
+          hostId: aliceHostId,
+          counter: 3,
+        );
+
+        expect(outcome, OwnCounterSettlement.burned);
+      });
+
+      test('is deferred when it names no payload', () async {
+        stubPending(pending: false);
+        stubFallback(null);
+
+        final outcome = await handler.settleOwnCounter(
+          hostId: aliceHostId,
+          counter: 3,
+        );
+
+        expect(outcome, OwnCounterSettlement.deferred);
+        verifyNothingBurned();
+      });
+    });
 
     test(
       'startup settlement keeps going past a counter that fails and logs it',

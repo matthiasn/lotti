@@ -12,7 +12,11 @@
 (* What is modelled, and where it lives in the Dart code:                  *)
 (*                                                                         *)
 (*   Reserve, WriteReservedRow  VectorClockService.reserveNextVectorClock  *)
-(*                              and recordReservedSequenceCounter          *)
+(*                              and recordReservedSequenceCounter; a       *)
+(*                              failed insert falls back to SettingsDb     *)
+(*                              (`fallback` rows), and ReservationFails    *)
+(*                              is both stores refusing                    *)
+(*   MigrateFallback            migrateUnrecordedReservations at startup   *)
 (*   Commit, Abort              the payload database write                 *)
 (*   Enqueue                    OutboxService.enqueueMessage; the enqueue  *)
 (*                              writer binds the row after its insert      *)
@@ -56,7 +60,10 @@ CONSTANTS
     IntentChoices   \* {TRUE}, or {TRUE, FALSE} when a caller may omit it
 
 FaultKinds == {
-    "rowWrite",         \* the reserved-row insert throws; it is swallowed
+    "rowWrite",         \* the reserved-row insert throws; the reservation
+                        \* is recorded in the settings database instead
+    "fallbackWrite",    \* the reserved-row insert and its settings fallback
+                        \* both throw, so the reservation itself throws
     "bind",             \* the outbox's recordSentEntry throws after the
                         \* outbox insert; it is swallowed
     "throwAfterCommit", \* a post-commit step throws before the enqueue and
@@ -73,8 +80,14 @@ ASSUME MaxCounter \in Nat /\ MaxCrashes \in Nat /\ FaultBudget \in Nat
 Counters == 1..MaxCounter
 NoEntity == "noEntity"
 
-\* Own-host rows on the originator.
-OwnStatus == {"none", "reserved", "burnPending", "received", "burned"}
+\* Own-host rows on the originator. `fallback` is a reservation whose
+\* sequence-log insert failed and which lives in the settings database
+\* (VectorClockService.unrecordedReservation) until startup migrates it.
+OwnStatus == {"none", "fallback", "reserved", "burnPending", "received",
+              "burned"}
+
+\* Reserved, in either store.
+ReservedRow == {"fallback", "reserved"}
 
 \* Rows on a peer. `deleted` is left out: this model never purges payloads.
 PeerStatus == {"none", "missing", "requested", "received", "backfilled",
@@ -139,7 +152,7 @@ Covered(c) == store[ent[c]] >= c
 KnownIntent(c) == oIntent[c] \/ (c \in pending /\ intent[c])
 
 \* Rows nothing has settled yet. `received` and `burned` are final.
-Unsettled == {"none", "reserved", "burnPending"}
+Unsettled == {"none", "fallback", "reserved", "burnPending"}
 
 \* An unsettled counter whose intended payload is provably on disk.
 Bindable(c) == oLog[c] \in Unsettled /\ KnownIntent(c) /\ Covered(c)
@@ -210,7 +223,13 @@ Init ==
 (* Settling an own counter: BackfillResponseHandler.settleOwnCounter. Every *)
 (* path that settles one without a live write goes through `Settle`.       *)
 
-\* Bind the counter and send its payload again.
+\* Send the payload again and bind the counter. One step here; in the code
+\* the resend is durably enqueued first and the bind follows, and that order
+\* is what makes the single step sound: the only other interleaving is a
+\* crash between the two, which leaves the row unsettled — the state before
+\* settlement plus a duplicate payload in the outbox — so it is settled again.
+\* Binding first would instead let a crash hide the counter behind `received`
+\* with nothing sent.
 BindAndResend(c) ==
     /\ oLog' = [oLog EXCEPT ![c] = "received"]
     /\ outbox' = [outbox EXCEPT ![ent[c]] = @ \cup {c}]
@@ -258,13 +277,30 @@ WriteReservedRow(c) ==
     /\ UNCHANGED <<wm, ent, intent, pending, store, committed, outbox, net,
                    reqs, pLog, pVer, faults, crashes>>
 
+\* The sequence-log insert fails; the reservation, with its intent, is
+\* recorded in the settings database instead.
 WriteReservedRowFails(c) ==
     /\ CanFault("rowWrite")
     /\ pc[c] = "reserving"
     /\ pc' = [pc EXCEPT ![c] = "reserved"]
+    /\ IF oLog[c] = "none"
+       THEN /\ oLog' = [oLog EXCEPT ![c] = "fallback"]
+            /\ oIntent' = [oIntent EXCEPT ![c] = intent[c]]
+       ELSE UNCHANGED <<oLog, oIntent>>
     /\ faults' = faults + 1
-    /\ UNCHANGED <<wm, ent, intent, pending, oLog, oIntent, store, committed,
-                   outbox, net, reqs, pLog, pVer, crashes>>
+    /\ UNCHANGED <<wm, ent, intent, pending, store, committed, outbox, net,
+                   reqs, pLog, pVer, crashes>>
+
+\* Neither store takes the reservation: reserving throws, no write follows,
+\* and the counter is left with no row at all — truthfully, no payload.
+ReservationFails(c) ==
+    /\ CanFault("fallbackWrite")
+    /\ pc[c] = "reserving"
+    /\ pc' = [pc EXCEPT ![c] = "finished"]
+    /\ pending' = pending \ {c}
+    /\ faults' = faults + 1
+    /\ UNCHANGED <<wm, ent, intent, oLog, oIntent, store, committed, outbox,
+                   net, reqs, pLog, pVer, crashes>>
 
 \* The payload write lands only if its clock dominates the stored one.
 Commit(c) ==
@@ -360,9 +396,16 @@ ReconcileBurn(c) ==
     /\ UNCHANGED <<wm, pc, ent, intent, pending, oIntent, store, committed,
                    reqs, pLog, pVer, faults, crashes>>
 
+\* Startup: a settings-database reservation moves into the sequence log.
+MigrateFallback(c) ==
+    /\ oLog[c] = "fallback"
+    /\ oLog' = [oLog EXCEPT ![c] = "reserved"]
+    /\ UNCHANGED <<wm, pc, ent, intent, pending, oIntent, store, committed,
+                   outbox, net, reqs, pLog, pVer, faults, crashes>>
+
 \* Startup: a named reservation an earlier process left behind.
 ResolveOrphan(c) ==
-    /\ oLog[c] = "reserved"
+    /\ oLog[c] \in ReservedRow
     /\ oIntent[c]
     /\ c \notin pending
     /\ Settle(c)
@@ -394,7 +437,7 @@ Deferred(c) ==
     /\ oLog[c] \in Unsettled
     /\ ~Bindable(c)
     /\ \/ c \in pending
-       \/ oLog[c] = "reserved" /\ ~oIntent[c]
+       \/ oLog[c] \in ReservedRow /\ ~oIntent[c]
 
 \* BackfillResponseHandler for an own-host counter.
 Respond(p, c) ==
@@ -417,6 +460,7 @@ OriginatorStep ==
     \/ \E e \in Entities : OutboxSend(e)
     \/ \E c \in Counters :
           \/ WriteReservedRow(c) \/ WriteReservedRowFails(c)
+          \/ ReservationFails(c) \/ MigrateFallback(c)
           \/ Commit(c) \/ Abort(c) \/ ThrowAfterCommit(c)
           \/ Enqueue(c) \/ EnqueueBindFails(c) \/ EnqueueFails(c)
           \/ Release(c) \/ Broadcast(c) \/ BroadcastFails(c)
@@ -490,6 +534,7 @@ Fairness ==
           /\ WF_vars(Broadcast(c))
           /\ WF_vars(ReconcileBurn(c))
           /\ WF_vars(ResolveOrphan(c))
+          /\ WF_vars(MigrateFallback(c))
     /\ \A e \in Entities : WF_vars(OutboxSend(e))
     /\ \A p \in Peers :
           /\ WF_vars(\E m \in net[p] : Deliver(p, m))

@@ -46,10 +46,18 @@ never landed" apart.
    store is not wired yet; and burns everything else. The responder, the VC
    release handler and startup reconciliation all use it, so a release can no
    longer burn a payload that landed.
-4. **`received` means durably in the outbox.** The write paths no longer bind
+4. **A reservation is recorded before its counter is handed out.** When the
+   sequence-log insert fails, the reservation is recorded in the settings
+   database — the store that already holds the watermark — and startup moves
+   it into the log. Only when both stores refuse does reserving throw, so no
+   write can use the counter. A save therefore fails only when the settings
+   database refuses a write — the database whose failure already fails the
+   save through the watermark — never merely because the sync database is
+   locked.
+5. **`received` means durably in the outbox.** The write paths no longer bind
    before enqueueing; the enqueue writer binds after its insert. A crash in
    between leaves a `reserved` row that startup settles and resends.
-5. **The model gates the code.** `specs/tla/` holds the spec, its TLC
+6. **The model gates the code.** `specs/tla/` holds the spec, its TLC
    configurations and a pinned, checksum-verified tool runner. CI model-checks
    it whenever the spec or the code it describes changes, and a change to the
    protocol updates the spec in the same pull request.
@@ -57,15 +65,10 @@ never landed" apart.
 ## Consequences
 
 - With every reservation named, one crash at any point loses no committed
-  write and strands no backfill request; any two injected faults cannot make
-  the originator burn a payload that exists. TLC checks both, and three
-  deliberate mutations of the fix are each caught.
-- One residual remains and is documented rather than closed: the reserved-row
-  insert failing *and* the process crashing inside the same write leaves no
-  row and no memory of the payload, and a later request is answered as a burn.
-  Closing it would mean failing the user's save whenever the sync database
-  cannot take a write — the worse trade given the history of sync-database
-  lock contention.
+  write and strands no backfill request; neither any two injected faults, nor
+  one crash together with any one fault, can make the originator burn a
+  payload that exists. TLC checks all of these, and four deliberate mutations
+  of the fix — including dropping the settings fallback — are each caught.
 - Delivery is still not claimed under swallowed enqueue failures or abandoned
   inbound events; the model says so explicitly instead of implying it.
 - An unnamed reservation behaves as before. New write paths must name their

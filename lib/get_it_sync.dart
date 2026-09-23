@@ -262,6 +262,10 @@ Future<String? Function()> _registerMatrixSyncStack({
   getIt<StartupTasks>().track(
     Future<void>(() async {
       try {
+        // Reservations whose sequence-log insert failed were recorded in the
+        // settings database; move them into the log first so settlement
+        // finds them.
+        await vectorClockService.migrateUnrecordedReservations();
         await backfillResponseHandler.settleOrphanedOwnCounters();
         // Diagnostic only (see `reservedCountersForHost`): reservations that
         // do not name their payload cannot be settled, so the same counters
