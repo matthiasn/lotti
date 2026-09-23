@@ -42,8 +42,12 @@ class SettingsDb extends _$SettingsDb {
   final Map<String, int> _cacheGenerations = <String, int>{};
   bool _isPendingReadFlushScheduled = false;
 
+  /// The schema this build writes. A restored backup may carry an
+  /// older schema, which Drift migrates, but never a newer one.
+  static const int currentSchemaVersion = 1;
+
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => currentSchemaVersion;
 
   int _bumpGeneration(String configKey) => _cacheGenerations.update(
     configKey,

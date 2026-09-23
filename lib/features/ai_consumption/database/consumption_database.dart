@@ -37,8 +37,12 @@ class ConsumptionDatabase extends _$ConsumptionDatabase {
 
   final bool inMemoryDatabase;
 
+  /// The schema this build writes. A restored backup may carry an
+  /// older schema, which Drift migrates, but never a newer one.
+  static const int currentSchemaVersion = 4;
+
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => currentSchemaVersion;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

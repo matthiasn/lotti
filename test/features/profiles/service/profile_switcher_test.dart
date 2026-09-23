@@ -537,6 +537,248 @@ void main() {
       expect(switcher.isSwitching, isFalse);
     });
 
+    group('with a rollback', () {
+      /// Records the whole bracket, with a bootstrap that fails [bootFailures]
+      /// times before it succeeds.
+      ProfileSwitcher rollbackSwitcher({int bootFailures = 0}) {
+        var failuresLeft = bootFailures;
+        return ProfileSwitcher(
+          registry: registry,
+          lifecycleHolder: AppLifecycleHolder(),
+          onSwitchStarted: () async => calls.add('splash'),
+          onSwitchCompleted: () => calls.add('completed'),
+          settleFrame: () async {},
+          teardownOverride: () async => calls.add('teardown'),
+          bootstrapOverride: () async {
+            calls.add('bootstrap');
+            if (failuresLeft-- > 0) throw StateError('boot failed');
+          },
+        );
+      }
+
+      test('a restarted profile that fails its check is rolled back and '
+          'started again', () async {
+        await registerActiveContext();
+
+        await expectLater(
+          rollbackSwitcher().runWithGenerationClosed(
+            (_) async => calls.add('change'),
+            verifyRestarted: () async {
+              calls.add('verify');
+              if (calls.where((c) => c == 'verify').length == 1) {
+                throw StateError('database would not open');
+              }
+            },
+            rollBack: () async => calls.add('rollBack'),
+          ),
+          throwsA(
+            isA<ProfileRolledBackException>().having(
+              (e) => e.cause,
+              'cause',
+              isStateError,
+            ),
+          ),
+        );
+
+        // The original is not verified again: it is what was running before.
+        expect(calls, [
+          'splash',
+          'teardown',
+          'change',
+          'bootstrap',
+          'verify',
+          'teardown',
+          'rollBack',
+          'bootstrap',
+          'completed',
+        ]);
+      });
+
+      test('a changed profile that fails to boot is rolled back too', () async {
+        await registerActiveContext();
+
+        await expectLater(
+          rollbackSwitcher(bootFailures: 1).runWithGenerationClosed(
+            (_) async => calls.add('change'),
+            verifyRestarted: () async => calls.add('verify'),
+            rollBack: () async => calls.add('rollBack'),
+          ),
+          throwsA(isA<ProfileRolledBackException>()),
+        );
+
+        expect(calls, [
+          'splash',
+          'teardown',
+          'change',
+          'bootstrap',
+          'teardown',
+          'rollBack',
+          'bootstrap',
+          'completed',
+        ]);
+      });
+
+      test('a healthy change is kept', () async {
+        await registerActiveContext();
+
+        await rollbackSwitcher().runWithGenerationClosed(
+          (_) async => calls.add('change'),
+          verifyRestarted: () async => calls.add('verify'),
+          rollBack: () async => calls.add('rollBack'),
+        );
+
+        expect(calls, [
+          'splash',
+          'teardown',
+          'change',
+          'bootstrap',
+          'verify',
+          'completed',
+        ]);
+      });
+
+      test(
+        'a rollback that fails leaves the splash up for a relaunch',
+        () async {
+          await registerActiveContext();
+
+          await expectLater(
+            rollbackSwitcher(bootFailures: 1).runWithGenerationClosed(
+              (_) async => calls.add('change'),
+              rollBack: () async => throw const FileSystemException('busy'),
+            ),
+            throwsA(
+              isA<ProfileRestartException>().having(
+                (e) => e.cause,
+                'cause',
+                isA<FileSystemException>(),
+              ),
+            ),
+          );
+
+          // Never booted onto files the rollback could not put back.
+          expect(calls, [
+            'splash',
+            'teardown',
+            'change',
+            'bootstrap',
+            'teardown',
+          ]);
+        },
+      );
+
+      test('the original failing to boot after the rollback is a restart '
+          'failure', () async {
+        await registerActiveContext();
+
+        await expectLater(
+          rollbackSwitcher(bootFailures: 2).runWithGenerationClosed(
+            (_) async => calls.add('change'),
+            rollBack: () async => calls.add('rollBack'),
+          ),
+          throwsA(isA<ProfileRestartException>()),
+        );
+        expect(calls.last, 'bootstrap');
+        expect(calls, isNot(contains('completed')));
+      });
+
+      test('a rejected generation that will not close is never rolled back '
+          'under it', () async {
+        await registerActiveContext();
+        final timeService = MockTimeService();
+        when(timeService.stop).thenThrow(StateError('timer still writing'));
+        var boots = 0;
+        var rolledBack = false;
+        final switcher = ProfileSwitcher(
+          registry: registry,
+          lifecycleHolder: AppLifecycleHolder(),
+          onSwitchStarted: () async {},
+          onSwitchCompleted: () {},
+          settleFrame: () async {},
+          // Default (strict) teardown. The restarted generation registers a
+          // service that refuses to stop.
+          bootstrapOverride: () async {
+            boots++;
+            getIt.registerSingleton<TimeService>(timeService);
+          },
+        );
+
+        await expectLater(
+          switcher.runWithGenerationClosed(
+            (_) async {},
+            verifyRestarted: () async => throw StateError('check failed'),
+            rollBack: () async => rolledBack = true,
+          ),
+          throwsA(
+            isA<ProfileRestartException>().having(
+              (e) => e.cause,
+              'cause',
+              isA<ProfileQuiescenceException>(),
+            ),
+          ),
+        );
+
+        expect(rolledBack, isFalse);
+        expect(boots, 1);
+      });
+
+      test('work that failed on its own changed nothing: no check, no '
+          'rollback', () async {
+        await registerActiveContext();
+
+        await expectLater(
+          rollbackSwitcher().runWithGenerationClosed<void>(
+            (_) async => throw const FileSystemException('disk full'),
+            verifyRestarted: () async => calls.add('verify'),
+            rollBack: () async => calls.add('rollBack'),
+          ),
+          throwsA(isA<FileSystemException>()),
+        );
+
+        expect(calls, ['splash', 'teardown', 'bootstrap', 'completed']);
+      });
+
+      test('work that reports its files unstartable is never booted', () async {
+        await registerActiveContext();
+        final switcher = rollbackSwitcher();
+
+        await expectLater(
+          switcher.runWithGenerationClosed<void>(
+            (_) async => throw const ProfileRestartException(
+              FileSystemException('half moved'),
+              StackTrace.empty,
+            ),
+            rollBack: () async => calls.add('rollBack'),
+          ),
+          throwsA(isA<ProfileRestartException>()),
+        );
+
+        expect(calls, ['splash', 'teardown']);
+        expect(switcher.isSwitching, isFalse);
+      });
+    });
+
+    test('describes a busy lifecycle and a failed restart', () {
+      expect(
+        const ProfileLifecycleBusyException().toString(),
+        contains('a profile switch or backup is running'),
+      );
+      expect(
+        const ProfileRestartException(
+          'boot failed',
+          StackTrace.empty,
+        ).toString(),
+        'ProfileRestartException: boot failed',
+      );
+    });
+
+    test('describes a rollback', () {
+      expect(
+        const ProfileRolledBackException('no', StackTrace.empty).toString(),
+        contains('ProfileRolledBackException'),
+      );
+    });
+
     test('refuses to start while a switch is running, and a switch requested '
         'while closed is ignored', () async {
       await registerActiveContext();

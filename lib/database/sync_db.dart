@@ -98,8 +98,12 @@ class SyncDatabase extends _$SyncDatabase
   final String fileName;
   final Future<Directory> Function()? _documentsDirectoryProvider;
 
+  /// The schema this build writes. A restored backup may carry an
+  /// older schema, which Drift migrates, but never a newer one.
+  static const int currentSchemaVersion = 29;
+
   @override
-  int get schemaVersion => 29;
+  int get schemaVersion => currentSchemaVersion;
 
   @override
   MigrationStrategy get migration {

@@ -1,11 +1,11 @@
 ---
 type: Feature Module
 title: Backup and restore
-description: The profile storage catalog, integrity manifest, verified quiesced staging, the strict lifecycle coordinator, and the passphrase-encrypted portable bundle format.
+description: The profile storage catalog, integrity manifest, verified quiesced staging, strict capture, the passphrase-encrypted portable bundle, and restore with journaled rollback.
 resource: ../../lib/features/backup_restore
 tags: [backup, restore, recovery, integrity, local-first]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-09-22T23:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-23T12:00:00Z }
 stale_after: 2027-02-22
 sources:
   - id: catalog
@@ -20,6 +20,10 @@ sources:
     resource: ../../lib/features/backup_restore/service/quiesced_profile_snapshot_service.dart
     title: QuiescedProfileSnapshotService
     last_modified: 2026-08-06
+  - id: settle-databases
+    resource: ../../lib/features/backup_restore/service/closed_sqlite_file.dart
+    title: settleProfileDatabases and closed-file inspection
+    last_modified: 2026-09-23
   - id: coordinator
     resource: ../../lib/features/backup_restore/service/profile_backup_coordinator.dart
     title: ProfileBackupCoordinator
@@ -44,6 +48,18 @@ sources:
     resource: ../../lib/features/backup_restore/service/profile_backup_bundle_store.dart
     title: Bundle naming, retention and leftover cleanup
     last_modified: 2026-09-22
+  - id: restore-preflight
+    resource: ../../lib/features/backup_restore/service/profile_restore_preflight.dart
+    title: ProfileRestorePreflight
+    last_modified: 2026-09-23
+  - id: root-swap
+    resource: ../../lib/features/backup_restore/service/profile_root_swap.dart
+    title: ProfileRootSwap journal and recovery
+    last_modified: 2026-09-23
+  - id: restore-coordinator
+    resource: ../../lib/features/backup_restore/service/profile_restore_coordinator.dart
+    title: ProfileRestoreCoordinator
+    last_modified: 2026-09-23
   - id: ai-key-storage
     resource: ../../lib/features/ai/database/ai_config_db.dart
     title: AI provider key references
@@ -84,10 +100,12 @@ flow:
   one back into a staged layout (see [the portable bundle](#the-portable-bundle)).
 - `ProfileBackupBundleStore` names bundles, applies retention and removes what
   an interrupted backup leaves behind.
+- `ProfileRestoreCoordinator` replaces the running profile with a bundle's
+  contents, keeping the original until the restored one has started (see
+  [restore](#restore)).
 
-Nothing restores a bundle into a running profile yet, and no user-facing
-action calls any of this. A bundle is not a supported backup until restore
-with rollback and automated restore drills are connected.
+No user-facing action calls any of this yet, and automated end-to-end restore
+drills are still to come.
 
 # One profile, not one documents tree
 
@@ -260,12 +278,18 @@ stateDiagram-v2
   service or database that threw or missed its 3-second deadline instead of
   only logging it. Any entry means `ProfileQuiescenceException`, listing the
   steps, and the snapshot never starts.
-- **Two independent proofs.** Beyond every close reporting success, SQLite
-  deletes a database's `-wal` and `-shm` only when its last connection
-  closes, Drift read pools included. The catalog refuses any companion file,
-  so a connection nobody knew about aborts staging before the first byte is
-  copied. A clean close also checkpoints the WAL, so commits made before the
-  backup started are in the database file the snapshot copies.
+- **Two independent proofs.** Beyond every close reporting success, the
+  database files themselves must be at rest. `settleProfileDatabases` runs
+  next: closing a Drift database does not wait for its read-pool isolates,
+  and a read-only connection that closes last cannot remove the WAL, so
+  `-wal`/`-shm` can outlive every connection. For each profile database that
+  still has companions it opens a connection of its own, checkpoints the WAL
+  into the database file (`wal_checkpoint(TRUNCATE)`) and closes — as the last
+  connection, that removes them — retrying while stragglers finish closing.
+  A database that never settles is a `ProfileQuiescenceException` naming it.
+  Staging then refuses any companion that is still there. Either way, commits
+  made before the backup started are in the database file the snapshot
+  copies.
 - **The profile always comes back.** After success, after a close failure,
   after a staging failure and after a cancellation, the same profile is
   bootstrapped onto a fresh service generation. The active-world marker is
@@ -365,6 +389,90 @@ snapshot's layout, which restore will verify again before activating it.
   snapshots — the plaintext an interrupted backup can leave — matching each
   complete name, and must not run while a backup is in progress.
 
+# Restore
+
+A restore replaces the files of the **running** profile. It never changes
+which profile is active, never touches the device registry, guest worlds or
+diagnostic logs, and keeps the original until the restored profile has
+started and opened every database.
+
+## Preflight, with the profile still running
+
+`ProfileRestorePreflight` decrypts the bundle into
+`<root>/.restore/incoming-<id>/` — inside the root, so the later moves are
+same-filesystem renames — and checks it without touching the live files:
+
+- the codec's authentication and per-file checks;
+- the backup is of the same kind of profile (`real` or `guest`);
+- every store the catalog marks required is present;
+- no database schema is newer than this build's
+  (`restorableSchemaVersions`, built from each database's
+  `currentSchemaVersion`); an older one is fine, Drift migrates it on first
+  open;
+- every database passes `integrity_check`, opened `immutable=1` so no
+  companion file is created, and its real `user_version` matches the manifest;
+- nothing would land on a device-owned entry.
+
+It also refuses to start while another restore is pending. Any failure deletes
+the staged copy; the live profile was never involved. The catalog excludes
+`.restore/`, so a restore in progress is never itself backed up.
+
+## Swap, start, verify, commit
+
+```mermaid
+stateDiagram-v2
+  [*] --> movingOut: profile closed strictly
+  movingOut --> movingIn: profile entries moved to previous-id
+  movingIn --> restored: backup entries moved into the root
+  restored --> committed: restarted profile opened every database
+  committed --> [*]: previous-id deleted
+  movingOut --> rollingBack: a move failed, or crash
+  movingIn --> rollingBack: a move failed, restart or check failed, or crash
+  restored --> rollingBack: restart or check failed, or crash
+  rollingBack --> [*]: backup entries parked in failed-id, originals moved back
+```
+
+`ProfileRootSwap` records the phase in `.restore/restore-journal.json` —
+written to a temporary file and renamed — **before** each step. Every move is
+one rename of a whole top-level entry, and a batch of moves checks every
+destination before moving anything, so nothing is ever half-copied or
+overwritten. Top-level entries that belong to the device (the registry, guest
+worlds, logs and `.restore/` itself) are never moved.
+
+The swap runs inside `ProfileSwitcher.runWithGenerationClosed`, strictly
+closed exactly as a backup is, and settles the databases before any file
+moves — before the swap and again before a rollback, which also requires the
+rejected generation's teardown to be clean. Its `verifyRestarted` step is
+`verifyProfileDatabasesOpen`, which queries every registered database: Drift
+opens a database and runs its migrations on the first query, so a bootstrap
+that returned proves nothing yet. If the restart or that check fails, the
+switcher tears the rejected generation down, `rollBack` puts the original
+entries back, the original boots again, and the caller gets
+`ProfileRolledBackException`. A swap that fails partway undoes itself before
+anything starts; if even that undo fails, the profile is left closed
+(`ProfileRestartException`) rather than started on a half-swapped folder where
+Drift would create empty databases in place of missing ones.
+
+## Recovery at launch
+
+`main` calls `ProfileRootSwap.recover` on the active root after resolving the
+active profile and before bootstrapping it. A pending restore is rolled back,
+unless it reached `committed`, which is finished instead; a staged copy
+without a journal is deleted. `rollBack` resumes from whatever phase was
+recorded, including a rollback that was itself interrupted, and always acts on
+the restore the journal names. Because a restore never changes the active
+profile, the profile a crash interrupted is always the one the next launch
+boots — and recovers — first.
+
+## Open questions
+
+- **Sync after a restore.** The restored `matrix/` database carries the
+  session of the device that made the backup, while this device's keystore
+  keeps its own sync credentials. What sync should do after a restore from
+  another device is not designed yet.
+- **Disk space.** A restore holds about one extra copy of the profile while it
+  runs, and nothing checks for the space up front.
+
 # Privacy and packaging boundary
 
 All included content is personal. `ai_config.sqlite` and the Matrix subtree have
@@ -372,7 +480,9 @@ the stricter `credentials` classification: the Matrix database holds access and
 session tokens and encryption material, and it travels only inside the
 encrypted payload. AI provider API keys live in the OS keystore, which is not
 part of the profile root, so **a backup carries no API keys**; after a restore
-on another device the keys have to be entered again. The manifest lives inside
+on another device the keys have to be entered again. The same holds for
+anything else device-global: sync provisioning credentials in the keystore are
+neither backed up nor replaced by a restore. The manifest lives inside
 the encrypted payload, and the staged directory must never be published as a
 plaintext backup.
 
@@ -400,12 +510,10 @@ but loses WAL commits, sibling stores, media, or credentials.
 The catalog, manifest, and staging service are intentionally free of
 service-locator and UI dependencies, and the coordinator reaches the profile
 lifecycle only through a `ClosedGenerationRunner` function. The remaining
-layers attach in order:
-
-1. staged restore with compatibility checks, activation, and rollback;
-2. localized UI — passphrase entry and confirmation, the managed backups
-   directory and its retention setting, and a recovery affordance on the
-   splash for a failed restart — and end-to-end restore drills.
+layers are localized UI — passphrase entry and confirmation, the managed
+backups directory and its retention setting, restore preflight and
+destructive confirmation, and a recovery affordance on the splash for a failed
+restart — and automated end-to-end restore drills.
 
 Related: [persistence](../architecture/persistence.md) for database connection
 and WAL behavior, [profiles and demo mode](../architecture/profiles-and-demo-mode.md)

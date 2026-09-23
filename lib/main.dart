@@ -7,6 +7,7 @@ import 'package:clock/clock.dart';
 import 'package:crypto/crypto.dart';
 import 'package:lotti/app_bootstrap.dart';
 import 'package:lotti/app_root.dart';
+import 'package:lotti/features/backup_restore/service/profile_root_swap.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/window_service.dart';
@@ -69,6 +70,9 @@ Future<void> main() async {
       await initPlatformOnce();
 
       final bootInfo = await resolveActiveProfile();
+      // A restore interrupted by a crash is finished or undone before
+      // anything opens the profile's files.
+      ProfileRootSwap.recover(bootInfo.activeRoot);
       final lifecycleHolder = AppLifecycleHolder();
       await bootstrapProfileServices(
         bootInfo,

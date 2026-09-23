@@ -80,7 +80,10 @@ void main() {
       );
       expect(roundTripped.files.first.hashCode, manifest.files.first.hashCode);
       expect(manifest.toJson()['formatVersion'], 1);
-      expect(manifest.toJson()['catalogVersion'], 1);
+      expect(
+        manifest.toJson()['catalogVersion'],
+        ProfileBackupCatalog.version,
+      );
     });
 
     test('rejects files that do not resolve to a declared store', () {
@@ -208,7 +211,10 @@ void main() {
         throwsUnsupportedError,
       );
       expect(
-        () => ProfileBackupManifest.fromJson({...json, 'catalogVersion': 2}),
+        () => ProfileBackupManifest.fromJson({
+          ...json,
+          'catalogVersion': ProfileBackupCatalog.version + 1,
+        }),
         throwsUnsupportedError,
       );
       expect(

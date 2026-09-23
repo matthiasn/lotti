@@ -6,9 +6,9 @@ therefore not a backup.
 
 The feature is being built in layers. The current module establishes the
 storage contract, can capture the running profile by closing it strictly and
-starting it again, and can turn that capture into a passphrase-encrypted
-portable file and back. Restore and settings flows build on that boundary. It
-does not yet expose a user-facing backup action.
+starting it again, can turn that capture into a passphrase-encrypted portable
+file, and can restore such a file over the running profile with a journaled
+rollback. It does not yet expose a user-facing backup or restore action.
 
 ## What it will do for the user
 
@@ -39,8 +39,13 @@ lib/features/backup_restore/
 │   │                                   strict close, capture, restart
 │   ├── profile_backup_bundle_codec.dart
 │   │                                   encrypt, verify, publish; decrypt
-│   └── profile_backup_bundle_store.dart
-│                                       naming, retention, leftover cleanup
+│   ├── profile_backup_bundle_store.dart
+│   │                                   naming, retention, leftover cleanup
+│   ├── closed_sqlite_file.dart         integrity check of a closed database
+│   ├── profile_restore_preflight.dart  decrypt beside the profile and check
+│   ├── profile_root_swap.dart          journaled swap, rollback, recovery
+│   └── profile_restore_coordinator.dart
+│                                       preflight, swap, verify, commit
 └── README.md
 ```
 
@@ -70,9 +75,11 @@ of the running profile closed cleanly, and then starts the same profile
 again; if even that fails, a relaunch boots the unchanged profile. A bundle is encrypted under the user's passphrase, which is never stored:
 it opens on any device that knows it, and a forgotten passphrase cannot be
 recovered. API keys stay in the device keystore and are not part of a backup.
-Restore activation, progress UI, and automated restore drills are follow-on
-layers built against the catalog, manifest, staging, capture, and bundle
-contract.
+A restore replaces the running profile only after the backup has been
+decrypted and checked beside it, and keeps the original until the restored
+profile has started and opened its databases; a failure, or a crash at any
+point, puts the original back. Progress UI and automated restore drills are
+follow-on layers.
 
 The store classifications, manifest invariants, privacy boundary, and planned
 capture lifecycle are documented in the knowledge bundle:

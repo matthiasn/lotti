@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/app_bootstrap.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/backup_restore/service/closed_sqlite_file.dart';
 import 'package:lotti/features/backup_restore/service/profile_backup_coordinator.dart';
 import 'package:lotti/features/backup_restore/service/quiesced_profile_snapshot_service.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
@@ -109,6 +110,9 @@ void main() {
     Future<String> Function()? appVersion,
   }) => ProfileBackupCoordinator(
     runClosed: runner.run,
+    // The real settle step, without real pauses between its attempts.
+    settleDatabases: (root) =>
+        settleProfileDatabases(root, attempts: 3, pause: () async {}),
     snapshots: QuiescedProfileSnapshotService(
       snapshotIdGenerator: () => 'snapshot-1',
       now: () => DateTime.utc(2026, 9, 22, 12),
@@ -323,9 +327,11 @@ void main() {
       expect(runner.calls, ['close', 'restart']);
     });
 
-    test('a database still open underneath aborts before publishing', () async {
+    test('a database still open underneath aborts before copying', () async {
       // The second proof: even if every close reported success, a live
-      // connection leaves its -wal behind, and staging must refuse it.
+      // connection keeps its -wal, and the capture refuses to go on.
+      // (Staging refuses companions on its own too; the snapshot service's
+      // tests cover that.)
       final closed = await closedProfile();
       final stillOpen = sqlite3.open(p.join(closed.root.path, 'db.sqlite'))
         ..execute('INSERT INTO probe VALUES (?)', ['uncheckpointed']);
@@ -338,7 +344,13 @@ void main() {
 
       await expectLater(
         coordinator(runner).capture(stagingParent: stagingParent),
-        throwsA(isA<ProfileSnapshotException>()),
+        throwsA(
+          isA<ProfileQuiescenceException>().having(
+            (e) => e.failures.single.service,
+            'database',
+            'db.sqlite',
+          ),
+        ),
       );
 
       expect(stagingParent.listSync(), isEmpty);

@@ -42,8 +42,12 @@ class AiConfigDb extends _$AiConfigDb {
   final AiApiKeyStorage _apiKeyStorage;
   final String storageNamespace;
 
+  /// The schema this build writes. A restored backup may carry an
+  /// older schema, which Drift migrates, but never a newer one.
+  static const int currentSchemaVersion = 1;
+
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => currentSchemaVersion;
 
   /// Saves a config while keeping provider credentials in platform storage.
   ///

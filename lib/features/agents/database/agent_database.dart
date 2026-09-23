@@ -35,8 +35,12 @@ class AgentDatabase extends _$AgentDatabase {
   final bool inMemoryDatabase;
   final Future<Directory> Function()? _documentsDirectoryProvider;
 
+  /// The schema this build writes. A restored backup may carry an
+  /// older schema, which Drift migrates, but never a newer one.
+  static const int currentSchemaVersion = 19;
+
   @override
-  int get schemaVersion => 19;
+  int get schemaVersion => currentSchemaVersion;
 
   /// Re-derives `subtype` for the entity types that became day-scoped.
   ///
