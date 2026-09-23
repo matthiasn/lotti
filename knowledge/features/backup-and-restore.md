@@ -452,6 +452,15 @@ the restore the journal names. Because a restore never changes the active
 profile, the profile a crash interrupted is always the one the next launch
 boots — and recovers — first.
 
+## Open questions
+
+- **Sync after a restore.** The restored `matrix/` database carries the
+  session of the device that made the backup, while this device's keystore
+  keeps its own sync credentials. What sync should do after a restore from
+  another device is not designed yet.
+- **Disk space.** A restore holds about one extra copy of the profile while it
+  runs, and nothing checks for the space up front.
+
 # Privacy and packaging boundary
 
 All included content is personal. `ai_config.sqlite` and the Matrix subtree have
