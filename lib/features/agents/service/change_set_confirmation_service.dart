@@ -509,24 +509,35 @@ class ChangeSetConfirmationService {
       subDomain: _sub,
     );
 
-    // 1. Persist the decision (no tool dispatch for rejections).
-    await _resolution.persistDecision(
-      changeSet: current,
-      itemIndex: itemIndex,
-      toolName: item.toolName,
-      verdict: ChangeDecisionVerdict.rejected,
-      rejectionReason: reason,
-      humanSummary: item.humanSummary,
-      args: item.args,
-    );
-
-    // 2. Update the change set item status and overall status.
-    final rejectedSet = await _resolution.updateChangeSetItemStatus(
-      current,
-      itemIndex,
-      ChangeItemStatus.rejected,
-    );
+    // 1. Claim the item — pending -> rejected — and persist the decision in
+    //    one transaction (no tool dispatch for rejections). A confirm that
+    //    claimed the item after this method read it wins: the rejection
+    //    must not overwrite a change that was applied.
+    final rejectedSet = await _syncService.runInTransaction(() async {
+      final claimed = await _resolution.claimChangeSetItem(
+        current,
+        itemIndex,
+        decided: ChangeItemStatus.rejected,
+      );
+      if (claimed == null) return null;
+      await _resolution.persistDecision(
+        changeSet: current,
+        itemIndex: itemIndex,
+        toolName: item.toolName,
+        verdict: ChangeDecisionVerdict.rejected,
+        rejectionReason: reason,
+        humanSummary: item.humanSummary,
+        args: item.args,
+      );
+      return claimed;
+    });
     if (rejectedSet == null) {
+      _domainLogger?.log(
+        LogDomain.agentWorkflow,
+        'Skipping reject for item $itemIndex (${item.toolName}) — no longer '
+        'pending',
+        subDomain: _sub,
+      );
       return false;
     }
 

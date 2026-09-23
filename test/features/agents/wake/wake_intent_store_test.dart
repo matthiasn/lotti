@@ -210,6 +210,40 @@ void main() {
       expect(store.takeRestorable().map((i) => i.runKey), ['run-old']);
     });
 
+    test(
+      'a job recorded meanwhile under a persisted run key merges with it',
+      () async {
+        // Deterministic run keys (restorePendingWake) can recur across
+        // processes: the job is live here, so its intent is not restorable,
+        // but it keeps the persisted tokens and restore count.
+        final store = newStore(mockDb);
+        record(store, runKey: 'run-old', tokens: {'new'});
+        final flushed = store.flush();
+
+        read.complete(
+          jsonEncode([
+            {
+              'runKey': 'run-old',
+              'agentId': 'agent-1',
+              'workspaceKey': null,
+              'reason': 'creation',
+              'initiator': 'user',
+              'tokens': ['from-disk'],
+              'restores': 1,
+            },
+          ]),
+        );
+        await flushed;
+
+        final saved =
+            (jsonDecode(written.last) as List<dynamic>).single
+                as Map<String, dynamic>;
+        expect(saved['tokens'], ['from-disk', 'new']);
+        expect(saved['restores'], 1);
+        expect(store.takeRestorable(), isEmpty);
+      },
+    );
+
     test('a job settled meanwhile is not brought back from disk', () async {
       final store = newStore(mockDb);
       final loading = store.load();

@@ -986,8 +986,12 @@ The claim is what makes a double tap, or a "Confirm all" racing a single
 confirm, apply a change once: before it, both callers could read `pending` and
 both dispatch. Once a dispatch has succeeded the item stays `confirmed` even if
 the post-confirm hook throws — reverting it would invite a retry that applies
-the change a second time. `specs/tla/ChangeSetConfirm.tla` model-checks both
-rules (`AtMostOnceApply`, `ConfirmedMeansApplied`), and a Glados trace in the
+the change a second time. A reject claims the item the same way, `pending` to
+`rejected` together with its decision, so a reject that read the item before
+a confirm applied it cannot overwrite the applied change, and label
+suppression and the migration cascade run only for a rejection that happened.
+`specs/tla/ChangeSetConfirm.tla` model-checks these rules (`AtMostOnceApply`,
+`RejectedMeansNotApplied`, `ConfirmedMeansApplied`), and a Glados trace in the
 service's suite drives the real service through generated interleavings of
 the same shape. Two cases remain open by design, and the spec's README names
 them: a tool that throws *after* its effect landed is reverted to `pending` and

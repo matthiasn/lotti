@@ -7,7 +7,9 @@
 - **Confirming a suggestion twice could apply it twice.** A quick double tap,
   or "Confirm all" racing a single confirm, could apply the same change twice —
   two time entries, two checklist items. Only the first confirmation now
-  applies the change; the second one does nothing.
+  applies the change; the second one does nothing. Likewise, rejecting a
+  suggestion at the moment it was being confirmed could show an applied
+  change as rejected; whichever comes first now wins.
 - **A suggestion could be applied again after it had already taken effect.**
   When a follow-up step failed after a confirmed change had been applied, the
   suggestion went back to pending, and confirming it again applied the change

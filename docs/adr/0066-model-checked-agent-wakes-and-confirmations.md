@@ -46,7 +46,8 @@ holes came back as concrete traces:
    to `confirmed` and returns nothing when it is no longer pending; the
    decision is written in the same transaction, so a failed decision write
    rolls the claim back. The loser of a race stops without dispatching, and
-   without recording a decision.
+   without recording a decision. A reject claims `pending` to `rejected` the
+   same way, so it can never overwrite a change a confirm applied.
 4. **A successful dispatch is final.** When the post-confirm hook throws after
    the change landed, the failure is logged and the item stays `confirmed`.
 5. **The models gate the code**, as in ADR 0065: the specs live in
@@ -57,9 +58,10 @@ holes came back as concrete traces:
 ## Consequences
 
 - `SingleFlight`, `HungOnlyWhenDetached` and `NoLostWake` hold with two
-  agents, up to two aborts, and one crash at any point; `AtMostOnceApply` and
-  `ConfirmedMeansApplied` hold for two concurrent confirmers with dispatch
-  failures and throwing hooks, and `AtMostOnceApply` also across a crash.
+  agents, up to two aborts, and one crash at any point; `AtMostOnceApply`,
+  `RejectedMeansNotApplied` and `ConfirmedMeansApplied` hold for two
+  concurrent callers that confirm or reject, with dispatch failures and
+  throwing hooks, and the first two also across a crash.
 - The wake-intent trace earned its place before the change merged: settling
   intents per agent with a sequence cutoff — the first implementation — lost a
   trigger queued in a second job of the same agent. The model, which settles

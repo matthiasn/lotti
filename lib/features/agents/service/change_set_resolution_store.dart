@@ -194,16 +194,19 @@ class ChangeSetResolutionStore {
     return decision;
   }
 
-  /// Claims the item at [itemIndex] for confirmation: moves it from
-  /// `pending` to `confirmed` in one transaction, or returns `null` when it
-  /// is no longer pending — another confirm, a rejection or a retraction got
-  /// there first. Drift serializes transactions, so of two concurrent
-  /// claimants exactly one wins; the loser must not dispatch
-  /// (`specs/tla/ChangeSetConfirm.tla`, `AtMostOnceApply`).
+  /// Claims the item at [itemIndex] for a decision: moves it from `pending`
+  /// to [decided] — `confirmed` or `rejected` — in one transaction, or
+  /// returns `null` when it is no longer pending: another confirm, a
+  /// rejection or a retraction got there first. Drift serializes
+  /// transactions, so of two concurrent claimants exactly one wins; a losing
+  /// confirm must not dispatch, and a losing reject must not overwrite a
+  /// change that was applied (`specs/tla/ChangeSetConfirm.tla`,
+  /// `AtMostOnceApply`, `RejectedMeansNotApplied`).
   Future<ChangeSetEntity?> claimChangeSetItem(
     ChangeSetEntity changeSet,
-    int itemIndex,
-  ) => _syncService.runInTransaction(() async {
+    int itemIndex, {
+    ChangeItemStatus decided = ChangeItemStatus.confirmed,
+  }) => _syncService.runInTransaction(() async {
     // Same fallback as [updateChangeSetItemStatus]: an unpersisted set is
     // judged by the caller's snapshot, a deleted chat set is gone.
     final latest = await _syncService.repository.getEntity(changeSet.id);
@@ -216,11 +219,7 @@ class ChangeSetResolutionStore {
         current.items[itemIndex].status != ChangeItemStatus.pending) {
       return null;
     }
-    final updated = _withItemStatus(
-      current,
-      itemIndex,
-      ChangeItemStatus.confirmed,
-    );
+    final updated = _withItemStatus(current, itemIndex, decided);
     await _syncService.upsertEntity(updated);
     return updated;
   });

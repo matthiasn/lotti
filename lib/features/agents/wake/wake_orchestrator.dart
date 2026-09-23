@@ -1038,10 +1038,6 @@ class WakeOrchestrator with AgentErrorLogging {
       _notificationSub = null;
       await oldSub.cancel();
     }
-    // Load before listening, so no trigger is recorded into a store that is
-    // then replaced. Without a store, subscribe synchronously as before.
-    final store = intentStore;
-    if (store != null) await store.load();
     _notificationSub = notificationStream.listen(_onBatch);
     _startSafetyNet();
   }

@@ -15,6 +15,8 @@
 (*                 retracts                                                *)
 (*   Hook*         _onConfirmedDecision; a throw is logged, the item stays *)
 (*                 confirmed                                               *)
+(*   Reject        rejectItem: claimChangeSetItem to `rejected`, with the  *)
+(*                 decision in the same transaction                        *)
 (*   Crash         process death between any two steps                    *)
 (*                                                                         *)
 (* `applied` is a ghost: how many times the change actually took effect.   *)
@@ -35,7 +37,7 @@ FaultKinds == {
 
 ASSUME Faults \subseteq FaultKinds
 
-Status == {"pending", "confirmed", "retracted"}
+Status == {"pending", "confirmed", "rejected", "retracted"}
 Pc == {"idle", "checked", "marked", "dispatched", "done"}
 
 VARIABLES
@@ -110,6 +112,17 @@ HookThrows(c) ==
     /\ pc' = [pc EXCEPT ![c] = "done"]
     /\ UNCHANGED <<status, applied, attempts, crashes>>
 
+\* A reject is a compare-and-swap from pending too, so it can neither
+\* overwrite a confirm that claimed the item nor be overwritten by one.
+Reject(c) ==
+    /\ pc[c] \in {"idle", "done"}
+    /\ attempts[c] < MaxAttempts
+    /\ status = "pending"
+    /\ status' = "rejected"
+    /\ attempts' = [attempts EXCEPT ![c] = @ + 1]
+    /\ pc' = [pc EXCEPT ![c] = "done"]
+    /\ UNCHANGED <<applied, crashes>>
+
 \* Every in-flight confirm dies; persisted status and effects survive.
 Crash ==
     /\ crashes < MaxCrashes
@@ -122,7 +135,7 @@ Next ==
     \/ \E c \in Callers :
           \/ Read(c) \/ MarkConfirmed(c)
           \/ DispatchOk(c) \/ DispatchFails(c) \/ FailsAfterEffect(c)
-          \/ HookOk(c) \/ HookThrows(c)
+          \/ HookOk(c) \/ HookThrows(c) \/ Reject(c)
     \/ Crash
 
 \* A started confirm runs to its end; nobody is forced to (re)try.
@@ -141,6 +154,9 @@ TypeOK ==
 
 \* A confirmed change takes effect at most once.
 AtMostOnceApply == applied <= 1
+
+\* An item shown as rejected never took effect.
+RejectedMeansNotApplied == status = "rejected" => applied = 0
 
 \* An item shown as confirmed has taken effect, once nothing is in flight.
 ConfirmedMeansApplied ==

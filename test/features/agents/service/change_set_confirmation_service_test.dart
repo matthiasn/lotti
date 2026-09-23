@@ -1524,13 +1524,15 @@ void main() {
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured;
 
+          // The claim (pending -> rejected), then the decision, in one
+          // transaction.
           expect(captured, hasLength(2));
 
-          final decision = captured[0] as ChangeDecisionEntity;
+          final decision = captured[1] as ChangeDecisionEntity;
           expect(decision.verdict, ChangeDecisionVerdict.rejected);
           expect(decision.rejectionReason, 'Not needed');
 
-          final updatedChangeSet = captured[1] as ChangeSetEntity;
+          final updatedChangeSet = captured[0] as ChangeSetEntity;
           expect(
             updatedChangeSet.items[0].status,
             ChangeItemStatus.rejected,
@@ -1637,13 +1639,47 @@ void main() {
               final applied = await service.rejectItem(changeSet, 1);
 
               expect(applied, isFalse);
-              final captured = verify(
-                () => mockSyncService.upsertEntity(captureAny()),
-              ).captured;
-              expect(captured.single, isA<ChangeDecisionEntity>());
+              // The claim fails before anything is written: no decision is
+              // recorded for a rejection that never happened.
+              verifyNever(() => mockSyncService.upsertEntity(any()));
             });
           },
         );
+
+        test('a reject racing a confirm does not overwrite the applied '
+            'change', () async {
+          // Regression: rejectItem checked `pending` on its own read and then
+          // wrote `rejected` unconditionally, so a confirm that claimed and
+          // applied the item in between ended up shown as rejected
+          // (ChangeSetConfirm.tla, RejectedMeansNotApplied).
+          final changeSet = makeChangeSetWith();
+          final current = persistUpsertedChangeSets(changeSet);
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(success: true, output: 'Ok'),
+          );
+
+          await withClock(testClock, () async {
+            // Both read the item as pending before either writes.
+            final results = await Future.wait([
+              service.confirmItem(changeSet, 0).then((r) => r.success),
+              service.rejectItem(changeSet, 0),
+            ]);
+
+            final applied = results[0];
+            final rejected = results[1];
+            expect(applied != rejected, isTrue, reason: 'exactly one wins');
+            expect(
+              current().items[0].status,
+              applied ? ChangeItemStatus.confirmed : ChangeItemStatus.rejected,
+            );
+            final decisions = verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured.whereType<ChangeDecisionEntity>();
+            expect(decisions, hasLength(1));
+          });
+        });
       });
 
       group('label suppression', () {

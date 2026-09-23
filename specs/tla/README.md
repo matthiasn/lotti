@@ -81,20 +81,22 @@ the runtime is described in
 
 ## `ChangeSetConfirm` — confirming a proposed change
 
-One change-set item, confirmed by concurrent callers — a double tap, a
-"Confirm all" racing a single confirm, a retry — through the claim, the tool
-dispatch and the post-confirm hook. The ghost `applied` counts how often the
-change actually took effect.
+One change-set item, confirmed or rejected by concurrent callers — a double
+tap, a "Confirm all" racing a single confirm, a swipe-reject racing either, a
+retry — through the claim, the tool dispatch and the post-confirm hook. A
+reject claims the item the same way a confirm does. The ghost `applied` counts
+how often the change actually took effect.
 
 | Property | Kind | Says |
 |----------|------|------|
 | `AtMostOnceApply` | invariant | a confirmed change takes effect at most once |
+| `RejectedMeansNotApplied` | invariant | an item shown rejected never took effect |
 | `ConfirmedMeansApplied` | invariant | an item shown confirmed, with no confirm in flight, took effect |
 
 | Configuration | Callers | Faults | Crashes | Checks | Distinct states |
 |---------------|---------|--------|---------|--------|-----------------|
-| `ChangeSetConfirm` | 2 | dispatch fails, hook throws | 0 | both | 81 |
-| `ChangeSetConfirmFaults` | 2 | dispatch fails, hook throws | 1 | `AtMostOnceApply` | 156 |
+| `ChangeSetConfirm` | 2 | dispatch fails, hook throws | 0 | all three | 97 |
+| `ChangeSetConfirmFaults` | 2 | dispatch fails, hook throws | 1 | all but `ConfirmedMeansApplied` | 184 |
 
 Two cases are known residuals rather than checked properties. Adding
 `"failsAfterEffect"` to `Faults` — a tool that throws after its effect landed,
@@ -126,10 +128,12 @@ by a run that completed (`NoLostWake`). It found that the first
 implementation, which settled an agent's intents up to a sequence cutoff, lost
 a trigger queued in a second job of the same agent. In
 `test/features/agents/service/change_set_confirmation_service_model_conformance.dart`,
-generated interleavings of confirms, dispatch outcomes, throwing hooks and
-crashes drive the real confirmation service, which must keep `AtMostOnceApply`
-and `ConfirmedMeansApplied`. Removing the claim's `pending` check, or
-reverting a confirmed item when the hook throws, fails it within three steps.
+generated interleavings of confirms, rejects, dispatch outcomes, throwing
+hooks and crashes drive the real confirmation service, which must keep
+`AtMostOnceApply`, `RejectedMeansNotApplied` and `ConfirmedMeansApplied`.
+Removing the claim's `pending` check, reverting a confirmed item when the hook
+throws, or letting a reject write its status unconditionally fails it within
+three steps.
 
 ## Changing a spec
 

@@ -9,6 +9,7 @@ part of 'change_set_confirmation_service_test.dart';
 
 enum _ConfirmOp {
   start,
+  reject,
   dispatchOk,
   dispatchOkHookThrows,
   dispatchFails,
@@ -130,6 +131,17 @@ class _ConfirmBench {
       );
       return;
     }
+    if (step.op == _ConfirmOp.reject) {
+      // A swipe-reject racing the confirms, unpumped like them.
+      final process = service;
+      running++;
+      unawaited(
+        process.rejectItem(stored, 0).whenComplete(() {
+          if (identical(process, service)) running--;
+        }),
+      );
+      return;
+    }
     // Let every confirm started so far reach its dispatch, or give up.
     await pumpEventQueue();
     switch (step.op) {
@@ -153,6 +165,7 @@ class _ConfirmBench {
         crashed = true;
         boot();
       case _ConfirmOp.start:
+      case _ConfirmOp.reject:
         break;
     }
     await pumpEventQueue();
@@ -166,6 +179,9 @@ class _ConfirmBench {
     // dispatch that had none.
     if (status == ChangeItemStatus.pending) {
       expect(applied, 0, reason: 'pending but applied: $trace');
+    }
+    if (status == ChangeItemStatus.rejected) {
+      expect(applied, 0, reason: 'RejectedMeansNotApplied: $trace');
     }
     // ConfirmedMeansApplied, once no confirm is mid-way. A crash between the
     // claim and the dispatch is the documented residual.
@@ -181,8 +197,8 @@ void _registerModelConformance() {
       glados.any.confirmTrace,
       glados.ExploreConfig(numRuns: 150),
     ).test(
-      'generated interleavings keep AtMostOnceApply and '
-      'ConfirmedMeansApplied',
+      'generated interleavings keep AtMostOnceApply, RejectedMeansNotApplied '
+      'and ConfirmedMeansApplied',
       (trace) async {
         final bench = _ConfirmBench();
         await withClock(Clock.fixed(DateTime(2024, 6, 15, 12)), () async {
