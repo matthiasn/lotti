@@ -39,7 +39,10 @@ void main() {
     final vc = MockVectorClockService();
     var counter = 0;
     when(
-      () => vc.getNextVectorClock(previous: any(named: 'previous')),
+      () => vc.getNextVectorClock(
+        previous: any(named: 'previous'),
+        payload: any(named: 'payload'),
+      ),
     ).thenAnswer((_) async => VectorClock({'h1': ++counter}));
     final outbox = MockOutboxService();
     when(() => outbox.enqueueMessage(any())).thenAnswer((_) async {});

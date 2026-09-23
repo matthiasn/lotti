@@ -27,7 +27,10 @@ void main() {
     final vc = MockVectorClockService();
     var counter = 0;
     when(
-      () => vc.getNextVectorClock(previous: any(named: 'previous')),
+      () => vc.getNextVectorClock(
+        previous: any(named: 'previous'),
+        payload: any(named: 'payload'),
+      ),
     ).thenAnswer((_) async => VectorClock({'h1': ++counter}));
     final outbox = MockOutboxService();
     when(() => outbox.enqueueMessage(any())).thenAnswer((_) async {});
@@ -92,7 +95,10 @@ void main() {
     final vc = MockVectorClockService();
     var counter = 0;
     when(
-      () => vc.getNextVectorClock(previous: any(named: 'previous')),
+      () => vc.getNextVectorClock(
+        previous: any(named: 'previous'),
+        payload: any(named: 'payload'),
+      ),
     ).thenAnswer((_) async => VectorClock({'h1': ++counter}));
     final outbox = MockOutboxService();
     when(() => outbox.enqueueMessage(any())).thenAnswer((_) async {});
@@ -219,7 +225,10 @@ void main() {
         ..seed([makeTestState(agentId: _agentId)]);
       final vc = MockVectorClockService();
       when(
-        () => vc.getNextVectorClock(previous: any(named: 'previous')),
+        () => vc.getNextVectorClock(
+          previous: any(named: 'previous'),
+          payload: any(named: 'payload'),
+        ),
       ).thenAnswer((_) async => const VectorClock({'h1': 1}));
       final outbox = MockOutboxService();
       when(() => outbox.enqueueMessage(any())).thenAnswer((_) async {});
@@ -259,7 +268,10 @@ void main() {
       final vc = MockVectorClockService();
       var counter = 0;
       when(
-        () => vc.getNextVectorClock(previous: any(named: 'previous')),
+        () => vc.getNextVectorClock(
+          previous: any(named: 'previous'),
+          payload: any(named: 'payload'),
+        ),
       ).thenAnswer((_) async => VectorClock({'h1': ++counter}));
       final outbox = MockOutboxService();
       when(() => outbox.enqueueMessage(any())).thenAnswer((_) async {});

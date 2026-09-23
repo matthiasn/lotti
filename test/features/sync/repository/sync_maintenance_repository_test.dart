@@ -946,6 +946,7 @@ void main() {
       when(
         () => mockVectorClockService.getNextVectorClock(
           previous: any(named: 'previous'),
+          payload: any(named: 'payload'),
         ),
       ).thenAnswer(
         (_) async => VectorClock({'host-1': counter}),
@@ -1062,6 +1063,7 @@ void main() {
       when(
         () => mockVectorClockService.getNextVectorClock(
           previous: any(named: 'previous'),
+          payload: any(named: 'payload'),
         ),
       ).thenAnswer((_) async => VectorClock({'host-1': counter++}));
       when(
@@ -1092,6 +1094,7 @@ void main() {
       when(
         () => mockVectorClockService.getNextVectorClock(
           previous: any(named: 'previous'),
+          payload: any(named: 'payload'),
         ),
       ).thenAnswer(
         (_) async => VectorClock({'host-1': counter}),

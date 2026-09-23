@@ -12,6 +12,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart'
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -207,6 +208,10 @@ class SyncMaintenanceRepository {
             final stamped = entity.copyWith(
               vectorClock: await _vectorClockService.getNextVectorClock(
                 previous: entity.vectorClock,
+                payload: (
+                  id: entity.id,
+                  type: SyncSequencePayloadType.agentEntity,
+                ),
               ),
             );
             // Enqueue before persisting so the entity still has a null
@@ -257,6 +262,7 @@ class SyncMaintenanceRepository {
             final stamped = link.copyWith(
               vectorClock: await _vectorClockService.getNextVectorClock(
                 previous: link.vectorClock,
+                payload: (id: link.id, type: SyncSequencePayloadType.agentLink),
               ),
             );
             // Enqueue before persisting — see backfillAgentEntityClocks.

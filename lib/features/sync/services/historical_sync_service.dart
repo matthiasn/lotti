@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart'
     show agentRepositoryProvider;
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart'
     show journalDbProvider, outboxServiceProvider;
@@ -563,6 +564,10 @@ class HistoricalSyncService {
                     final stamped = e.copyWith(
                       vectorClock: await _vectorClockService.getNextVectorClock(
                         previous: e.vectorClock,
+                        payload: (
+                          id: e.id,
+                          type: SyncSequencePayloadType.agentEntity,
+                        ),
                       ),
                     );
                     await _agentRepository.upsertEntity(stamped);
@@ -634,6 +639,10 @@ class HistoricalSyncService {
                   final stamped = l.copyWith(
                     vectorClock: await _vectorClockService.getNextVectorClock(
                       previous: l.vectorClock,
+                      payload: (
+                        id: l.id,
+                        type: SyncSequencePayloadType.agentLink,
+                      ),
                     ),
                   );
                   await _agentRepository.upsertLink(stamped);

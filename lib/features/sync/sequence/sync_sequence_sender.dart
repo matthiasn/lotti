@@ -28,6 +28,9 @@ class SyncSequenceSender {
 
   /// Record an entry being sent by this device.
   /// This allows us to respond to backfill requests from other devices.
+  ///
+  /// Binding an own-host counter also ends its pending reservation: from here
+  /// on the row, not the live write, answers for the counter.
   Future<void> recordSentEntry({
     required String entryId,
     required VectorClock vectorClock,
@@ -54,6 +57,7 @@ class SyncSequenceSender {
           sampleKey: 'sequence.recordSent.duplicate.${payloadType.name}',
           subDomain: 'sequence.recordSent.duplicate',
         );
+        _vectorClockService.settle(hostId: hostId, counter: counter);
         continue;
       }
 
@@ -76,6 +80,7 @@ class SyncSequenceSender {
         entryId: entryId,
         payloadType: payloadType.index,
       );
+      _vectorClockService.settle(hostId: hostId, counter: counter);
 
       // Keep the cache consistent with the write we just issued so a
       // subsequent `getLastSentVectorClockForEntry` does not race back to
@@ -92,6 +97,30 @@ class SyncSequenceSender {
         subDomain: 'sequence.recordSent',
       );
     }
+  }
+
+  /// Bind the own-host counter `(hostId, counter)` to [entryId] after
+  /// settlement proved the payload covers it. Unlike [recordSentEntry] it
+  /// never overwrites a bound or burned row. Returns whether it bound.
+  Future<bool> bindOwnCounter({
+    required String hostId,
+    required int counter,
+    required String entryId,
+    required SyncSequencePayloadType payloadType,
+  }) async {
+    final bound = await _syncDatabase.bindUnsettledOwnSequenceCounter(
+      hostId: hostId,
+      counter: counter,
+      entryId: entryId,
+      payloadType: payloadType,
+    );
+    _vectorClockService.settle(hostId: hostId, counter: counter);
+    _tracer.trace(
+      'bindOwnCounter hostId=$hostId counter=$counter entryId=$entryId '
+      'type=$payloadType bound=$bound',
+      subDomain: 'sequence.bindOwnCounter',
+    );
+    return bound;
   }
 
   /// Records a sent entry link in the sequence log (as

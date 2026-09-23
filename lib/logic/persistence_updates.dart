@@ -169,11 +169,6 @@ class PersistenceUpdates extends PersistenceCollaboratorBase {
             return false;
           }
 
-          await recordJournalSequence(
-            journalEntity,
-            subDomain: 'updateDbEntity.recordSent',
-          );
-
           if (beforeNotify != null) {
             try {
               await beforeNotify();

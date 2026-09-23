@@ -132,3 +132,4 @@ Each ADR should contain:
 - [`0062-check-ins-hold-entries.md`](./0062-check-ins-hold-entries.md)
 - [`0063-tapped-relationship-reminder-pauses-itself.md`](./0063-tapped-relationship-reminder-pauses-itself.md)
 - [`0064-check-ins-appear-in-the-logbook.md`](./0064-check-ins-appear-in-the-logbook.md)
+- [`0065-model-checked-sync-sequence-reservations.md`](./0065-model-checked-sync-sequence-reservations.md)

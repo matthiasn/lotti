@@ -11,6 +11,7 @@ import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -148,7 +149,8 @@ void main() {
         ),
       ).thenAnswer((_) async => true);
       when(
-        () => mockVectorClock.getNextVectorClock(),
+        () =>
+            mockVectorClock.getNextVectorClock(payload: any(named: 'payload')),
       ).thenAnswer((_) async => testVectorClock);
       when(() => mockNotifications.notify(any())).thenReturn(null);
       when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
@@ -544,83 +546,33 @@ void main() {
       });
     });
 
-    group('sequence-log integration', () {
-      late MockSyncSequenceLogService mockSequenceLog;
-      late MockDomainLogger mockDomainLogger;
-
-      setUp(() {
-        mockSequenceLog = MockSyncSequenceLogService();
-        mockDomainLogger = MockDomainLogger();
-        when(
-          () => mockSequenceLog.recordSentEntryLink(
-            linkId: any(named: 'linkId'),
-            vectorClock: any(named: 'vectorClock'),
-          ),
-        ).thenAnswer((_) async {});
-        when(
-          () => mockDomainLogger.error(
-            any<LogDomain>(),
-            any<Object>(),
-            message: any<String>(named: 'message'),
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
-            subDomain: any<String>(named: 'subDomain'),
-          ),
-        ).thenReturn(null);
-        if (getIt.isRegistered<DomainLogger>()) {
-          getIt.unregister<DomainLogger>();
-        }
-        getIt
-          ..registerSingleton<SyncSequenceLogService>(mockSequenceLog)
-          ..registerSingleton<DomainLogger>(mockDomainLogger);
-      });
-
-      test('records the new rating link sequence on create', () async {
-        stubCreateFlow();
-
-        await repository.createOrUpdateRating(
-          targetId: testTimeEntryId,
-          dimensions: testDimensions,
-        );
-
-        verify(
-          () => mockSequenceLog.recordSentEntryLink(
-            linkId: any(named: 'linkId'),
-            vectorClock: testVectorClock,
-          ),
-        ).called(1);
-      });
-
+    group('reservation intent', () {
       test(
-        'sequence-record failure is swallowed and routed through DomainLogger',
+        'names the new rating link as the reservation payload and leaves '
+        'binding the sequence log to the outbox',
         () async {
+          final sequenceLog = MockSyncSequenceLogService();
+          getIt.registerSingleton<SyncSequenceLogService>(sequenceLog);
+          addTearDown(getIt.unregister<SyncSequenceLogService>);
           stubCreateFlow();
-          when(
-            () => mockSequenceLog.recordSentEntryLink(
-              linkId: any(named: 'linkId'),
-              vectorClock: any(named: 'vectorClock'),
-            ),
-          ).thenThrow(StateError('sequence ledger boom'));
 
-          final result = await repository.createOrUpdateRating(
+          await repository.createOrUpdateRating(
             targetId: testTimeEntryId,
             dimensions: testDimensions,
           );
 
-          expect(result, isA<RatingEntry>());
+          final link =
+              verify(
+                    () => mockDb.upsertEntryLink(captureAny()),
+                  ).captured.single
+                  as EntryLink;
           verify(
-            () => mockDomainLogger.error(
-              LogDomain.sync,
-              any<Object>(),
-              message: any<String>(
-                named: 'message',
-                that: contains('sequence record failed after rating link'),
-              ),
-              stackTrace: any<StackTrace>(named: 'stackTrace'),
-              subDomain: '_createRatingLink.recordSent',
+            () => mockVectorClock.getNextVectorClock(
+              payload: (id: link.id, type: SyncSequencePayloadType.entryLink),
             ),
           ).called(1);
-          // Outbox sync still enqueued — sequence failure must not block it.
           verify(() => mockOutbox.enqueueMessage(any())).called(1);
+          verifyZeroInteractions(sequenceLog);
         },
       );
     });

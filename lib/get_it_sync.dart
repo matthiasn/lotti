@@ -220,141 +220,57 @@ Future<String? Function()> _registerMatrixSyncStack({
     }
   }());
 
-  Future<void> enqueueOwnUnresolvableMarker({
-    required String hostId,
-    required int counter,
-  }) async {
-    final existing = await syncSequenceLogService.getEntryByHostAndCounter(
-      hostId,
-      counter,
-    );
-    final existingStatus = existing?.status;
-    if (existingStatus == SyncSequenceStatus.received.index ||
-        existingStatus == SyncSequenceStatus.backfilled.index ||
-        existingStatus == SyncSequenceStatus.deleted.index) {
-      // guards a live-sync race: a peer's response
-      // about this very counter landing between reserve and release. The
-      // receive path ignores own-host entries, so the state cannot be
-      // constructed in-process.
-      // coverage:ignore-start
-      domainLogger.log(
-        LogDomain.sync,
-        'vc.burn.broadcast.skipBound host=$hostId counter=$counter '
-        'status=$existingStatus',
-        subDomain: 'vc.burn.broadcast',
-      );
-      return;
-      // coverage:ignore-end
-    }
+  final backfillResponseHandler = BackfillResponseHandler(
+    journalDb: journalDb,
+    sequenceLogService: syncSequenceLogService,
+    outboxService: outboxService,
+    loggingService: domainLogger,
+    vectorClockService: vectorClockService,
+    domainLogger: domainLogger,
+    notificationsDb: notificationsDb,
+    onboardingSyncService: onboardingSyncService,
+  )..consumptionRepository = consumptionRepository;
 
-    await outboxService.enqueueMessage(
-      SyncMessage.backfillResponse(
-        hostId: hostId,
-        counter: counter,
-        deleted: false,
-        unresolvable: true,
-      ),
-    );
-    await syncSequenceLogService.markOwnCounterUnresolvable(
+  // Released VC reservations: when a write is rejected, its scope throws, or
+  // commitWhen is false, the row is already `burnPending` and names its
+  // payload. Settle it now: a payload that landed anyway is bound and resent,
+  // anything else is broadcast as unresolvable=true so peers close the gap on
+  // arrival instead of issuing a backfill request first. Registered here
+  // because settlement fires into OutboxService, which is only now available.
+  // VectorClockService awaits the handler and swallows its failures: the row
+  // stays `burnPending` and the next startup settles it.
+  //
+  // [hostId] is the host captured at reservation time, not whatever
+  // [VectorClockService.getHost] returns now, so a burn is never attributed
+  // to a host that did not reserve the counter.
+  vectorClockService.setBurnHandler((hostId, counter) async {
+    final outcome = await backfillResponseHandler.settleOwnCounter(
       hostId: hostId,
       counter: counter,
     );
-  }
-
-  // Proactive VC burn broadcast: when a reservation releases (write rejected,
-  // scope threw, commitWhen=false), enqueue a SyncBackfillResponse with
-  // unresolvable=true so peers close the gap on arrival instead of having to
-  // issue a backfill request first. Registered here because the handler has
-  // to fire into OutboxService, which is only now available. The handler is
-  // awaited by VectorClockService so the durable enqueue attempt finishes
-  // before `release()` returns; failures are still swallowed here because the
-  // VC counter is already persisted and cannot be rewound.
-  vectorClockService.setBurnHandler((hostId, counter) async {
-    // [hostId] is the host captured at reservation time, not whatever
-    // [VectorClockService.getHost] returns now — if setNewHost ran between
-    // reserve and release the broadcast would otherwise be attributed to
-    // the new host, producing a phantom unresolvable on the new host's
-    // counter space and leaving the actual burnt counter on the old host
-    // unannounced.
-    try {
-      // Enqueue first. If the outbox write fails, the row remains
-      // `burnPending` and startup/backfill can retry; terminalizing first
-      // would make a transient outbox failure silently drop the proactive
-      // repair signal.
-      await enqueueOwnUnresolvableMarker(
-        hostId: hostId,
-        counter: counter,
-      );
-      domainLogger.log(
-        LogDomain.sync,
-        'vc.burn.broadcast host=$hostId counter=$counter',
-        subDomain: 'vc.burn.broadcast',
-      );
-    } catch (error, stackTrace) {
-      domainLogger.error(
-        LogDomain.sync,
-        error,
-        message:
-            'vc burn broadcast failed; counter $counter will fall back to '
-            'reactive backfill resolution',
-        stackTrace: stackTrace,
-        subDomain: 'vc.burn.broadcast',
-      );
-    }
+    domainLogger.log(
+      LogDomain.sync,
+      'vc.release.settled host=$hostId counter=$counter '
+      'outcome=${outcome.name}',
+      subDomain: 'vc.burn.broadcast',
+    );
   });
 
-  // Crash recovery for counters explicitly released in a previous process but
-  // not yet broadcast as unresolvable. Plain `reserved` rows are not retried
-  // here: a crash after the payload DB write but before outbox/sequence
-  // logging can leave a real payload behind, so only `burnPending` rows are
-  // authoritative burns.
+  // Crash recovery for own counters an earlier process left unsettled:
+  // releases whose settlement did not finish, and reservations that name
+  // their payload. Settlement checks each payload before burning anything.
   getIt<StartupTasks>().track(
     Future<void>(() async {
       try {
+        await backfillResponseHandler.settleOrphanedOwnCounters();
+        // Diagnostic only (see `reservedCountersForHost`): reservations that
+        // do not name their payload cannot be settled, so the same counters
+        // surface on every launch. Logged at info, not error — as an error
+        // this one line was the most frequent "failure" in the system health
+        // report on a phone that starts the process many times a day,
+        // burying real ones.
         final hostId = await vectorClockService.getHost();
         if (hostId == null) return;
-        final counters = await syncSequenceLogService
-            .burnPendingCountersForHost(
-              hostId: hostId,
-            );
-        var reconciled = 0;
-        for (final counter in counters) {
-          try {
-            await enqueueOwnUnresolvableMarker(
-              hostId: hostId,
-              counter: counter,
-            );
-            reconciled++;
-          } catch (error, stackTrace) {
-            // defensive per-counter containment for
-            // infrastructure write failures.
-            // coverage:ignore-start
-            domainLogger.error(
-              LogDomain.sync,
-              error,
-              message:
-                  'vc burn reconciliation failed for host=$hostId '
-                  'counter=$counter; continuing',
-              stackTrace: stackTrace,
-              subDomain: 'vc.burn.reconcile',
-            );
-            // coverage:ignore-end
-          }
-        }
-        if (counters.isNotEmpty) {
-          domainLogger.log(
-            LogDomain.sync,
-            'vc.burn.reconcile host=$hostId count=$reconciled '
-            'attempted=${counters.length} '
-            'counters=$counters',
-            subDomain: 'vc.burn.reconcile',
-          );
-        }
-        // Diagnostic only (see `reservedCountersForHost`): plain reservations
-        // are never reconciled here, so the same counters surface on every
-        // launch. Logged at info, not error — as an error this one line was
-        // the most frequent "failure" in the system health report on a phone
-        // that starts the process many times a day, burying real ones.
         final reservedCounters = await syncSequenceLogService
             .reservedCountersForHost(hostId: hostId);
         if (reservedCounters.isNotEmpty) {
@@ -374,7 +290,7 @@ Future<String? Function()> _registerMatrixSyncStack({
           LogDomain.sync,
           error,
           message:
-              'vc burn reconciliation failed; burn-pending counters will retry '
+              'own counter settlement failed; unsettled counters will retry '
               'on the next startup or reactive backfill',
           stackTrace: stackTrace,
           subDomain: 'vc.burn.reconcile',
@@ -383,16 +299,6 @@ Future<String? Function()> _registerMatrixSyncStack({
       }
     }),
   );
-  final backfillResponseHandler = BackfillResponseHandler(
-    journalDb: journalDb,
-    sequenceLogService: syncSequenceLogService,
-    outboxService: outboxService,
-    loggingService: domainLogger,
-    vectorClockService: vectorClockService,
-    domainLogger: domainLogger,
-    notificationsDb: notificationsDb,
-    onboardingSyncService: onboardingSyncService,
-  )..consumptionRepository = consumptionRepository;
   final backfillRequestService = BackfillRequestService(
     sequenceLogService: syncSequenceLogService,
     syncDatabase: syncDatabase,

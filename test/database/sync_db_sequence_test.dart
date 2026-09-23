@@ -1670,6 +1670,199 @@ void main() {
     );
   });
 
+  group('own-counter settlement support -', () {
+    const hostId = 'settle-host';
+    final at = DateTime(2026, 9, 23, 12);
+    late SyncDatabase database;
+
+    setUp(() => database = SyncDatabase(inMemoryDatabase: true));
+    tearDown(() => database.close());
+
+    Future<SyncSequenceLogItem> row(int counter) async =>
+        (await database.getEntryByHostAndCounter(hostId, counter))!;
+
+    Future<void> seed(int counter, SyncSequenceStatus status, {String? id}) =>
+        database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value(hostId),
+            counter: Value(counter),
+            entryId: Value(id),
+            status: Value(status.index),
+            createdAt: Value(at),
+            updatedAt: Value(at),
+          ),
+        );
+
+    test('a named reservation records its payload as the intent', () async {
+      await database.recordReservedSequenceCounter(
+        hostId: hostId,
+        counter: 1,
+        entryId: 'link-1',
+        payloadType: SyncSequencePayloadType.entryLink,
+        now: at,
+      );
+
+      final reserved = await row(1);
+      expect(reserved.status, SyncSequenceStatus.reserved.index);
+      expect(reserved.entryId, 'link-1');
+      expect(reserved.payloadType, SyncSequencePayloadType.entryLink.index);
+    });
+
+    test('burnPending records the intent when the row names none, and '
+        'keeps an intent the row already names', () async {
+      // No row at all: the reserved-row insert failed.
+      await database.markReservedSequenceCounterBurnPending(
+        hostId: hostId,
+        counter: 1,
+        entryId: 'from-memory',
+        payloadType: SyncSequencePayloadType.agentLink,
+        now: at,
+      );
+      // An unnamed reservation.
+      await database.recordReservedSequenceCounter(
+        hostId: hostId,
+        counter: 2,
+        now: at,
+      );
+      await database.markReservedSequenceCounterBurnPending(
+        hostId: hostId,
+        counter: 2,
+        entryId: 'named-late',
+        payloadType: SyncSequencePayloadType.agentEntity,
+        now: at,
+      );
+      // A named reservation keeps its own intent.
+      await database.recordReservedSequenceCounter(
+        hostId: hostId,
+        counter: 3,
+        entryId: 'named-early',
+        now: at,
+      );
+      await database.markReservedSequenceCounterBurnPending(
+        hostId: hostId,
+        counter: 3,
+        entryId: 'other',
+        now: at,
+      );
+
+      expect((await row(1)).entryId, 'from-memory');
+      expect(
+        (await row(1)).payloadType,
+        SyncSequencePayloadType.agentLink.index,
+      );
+      expect((await row(2)).entryId, 'named-late');
+      expect(
+        (await row(2)).payloadType,
+        SyncSequencePayloadType.agentEntity.index,
+      );
+      expect((await row(3)).entryId, 'named-early');
+      for (final counter in [1, 2, 3]) {
+        expect(
+          (await row(counter)).status,
+          SyncSequenceStatus.burnPending.index,
+        );
+      }
+    });
+
+    for (final initial in <SyncSequenceStatus?>[
+      null,
+      SyncSequenceStatus.reserved,
+      SyncSequenceStatus.burnPending,
+    ]) {
+      test('binding settles a ${initial?.name ?? 'missing'} row to received '
+          'and advances the watermark', () async {
+        if (initial != null) await seed(1, initial);
+
+        final bound = await database.bindUnsettledOwnSequenceCounter(
+          hostId: hostId,
+          counter: 1,
+          entryId: 'entry-1',
+          payloadType: SyncSequencePayloadType.journalEntity,
+          now: at,
+        );
+
+        expect(bound, isTrue);
+        final settled = await row(1);
+        expect(settled.status, SyncSequenceStatus.received.index);
+        expect(settled.entryId, 'entry-1');
+        expect(settled.originatingHostId, hostId);
+        expect(await database.getLastCounterForHost(hostId), 1);
+      });
+    }
+
+    for (final settledStatus in [
+      SyncSequenceStatus.received,
+      SyncSequenceStatus.burned,
+    ]) {
+      test('binding never reopens a ${settledStatus.name} row', () async {
+        await seed(1, settledStatus, id: 'original');
+
+        final bound = await database.bindUnsettledOwnSequenceCounter(
+          hostId: hostId,
+          counter: 1,
+          entryId: 'intruder',
+          payloadType: SyncSequencePayloadType.journalEntity,
+          now: at,
+        );
+
+        expect(bound, isFalse);
+        expect((await row(1)).status, settledStatus.index);
+        expect((await row(1)).entryId, 'original');
+      });
+    }
+
+    test('settleable counters are burnPending rows and named reservations, '
+        'in counter order', () async {
+      await seed(5, SyncSequenceStatus.burnPending);
+      await database.recordReservedSequenceCounter(
+        hostId: hostId,
+        counter: 2,
+        entryId: 'named',
+        now: at,
+      );
+      await database.recordReservedSequenceCounter(
+        hostId: hostId,
+        counter: 3,
+        now: at,
+      );
+      await seed(4, SyncSequenceStatus.received, id: 'bound');
+      await database.recordReservedSequenceCounter(
+        hostId: 'other-host',
+        counter: 1,
+        entryId: 'elsewhere',
+        now: at,
+      );
+
+      expect(
+        await database.settleableOwnSequenceCountersForHost(hostId: hostId),
+        [2, 5],
+      );
+    });
+
+    test('payload-mapping repair leaves unsettled own intents alone', () async {
+      await database.recordReservedSequenceCounter(
+        hostId: hostId,
+        counter: 9,
+        entryId: 'entry-1',
+        now: at,
+      );
+      await seed(8, SyncSequenceStatus.burnPending, id: 'entry-1');
+
+      // The payload's clock is behind both counters: its write has not landed
+      // yet. The intents must survive so the counters can still be settled.
+      final repaired = await database.retireInvalidPayloadMappings(
+        payloadType: SyncSequencePayloadType.journalEntity,
+        payloadId: 'entry-1',
+        payloadCounters: {hostId: 7},
+        now: at,
+      );
+
+      expect(repaired, 0);
+      expect((await row(9)).entryId, 'entry-1');
+      expect((await row(8)).entryId, 'entry-1');
+    });
+  });
+
   group('recordOwnUnresolvableSequenceCounter - default now -', () {
     // Exercises the `now ?? DateTime.now()` branch at line 1096.
     test('records burned row when called without explicit now', () async {

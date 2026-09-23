@@ -722,12 +722,12 @@ void main() {
       ).called(1);
     });
 
-    test('returns and logs non-empty burn-pending counters', () async {
+    test('returns and logs non-empty settleable own counters', () async {
       when(
-        () => mockDb.burnPendingSequenceCountersForHost(hostId: aliceHostId),
+        () => mockDb.settleableOwnSequenceCountersForHost(hostId: aliceHostId),
       ).thenAnswer((_) async => [7, 12]);
 
-      final counters = await service.burnPendingCountersForHost(
+      final counters = await service.settleableOwnCountersForHost(
         hostId: aliceHostId,
       );
 
@@ -737,12 +737,12 @@ void main() {
           LogDomain.sync,
           any<String>(
             that: allOf(
-              contains('burnPendingCountersForHost hostId=$aliceHostId'),
+              contains('settleableOwnCountersForHost hostId=$aliceHostId'),
               contains('count=2'),
               contains('counters=[7, 12]'),
             ),
           ),
-          subDomain: 'sequence.burnPendingCounters',
+          subDomain: 'sequence.settleableCounters',
         ),
       ).called(1);
     });

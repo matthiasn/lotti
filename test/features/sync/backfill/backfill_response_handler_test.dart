@@ -16,6 +16,7 @@ import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -602,6 +603,20 @@ class _GeneratedBackfillResponseBench {
     when(
       () => consumptionRepository.getEvent(any()),
     ).thenAnswer((_) async => null);
+    // No reservation is live unless a test says so: own counters without a
+    // bound row are then settled from the sequence log alone.
+    when(
+      () => vcService.isPending(
+        hostId: any(named: 'hostId'),
+        counter: any(named: 'counter'),
+      ),
+    ).thenReturn(false);
+    when(
+      () => vcService.pendingPayload(
+        hostId: any(named: 'hostId'),
+        counter: any(named: 'counter'),
+      ),
+    ).thenReturn(null);
 
     final bench = _GeneratedBackfillResponseBench._(
       journalDb: journalDb,
@@ -981,6 +996,20 @@ void main() {
     ).thenAnswer((_) async {});
     when(() => mockVcService.initialized).thenAnswer((_) async {});
     when(() => mockVcService.getHost()).thenAnswer((_) async => aliceHostId);
+    // No reservation is live unless a test says so: own counters without a
+    // bound row are then settled from the sequence log alone.
+    when(
+      () => mockVcService.isPending(
+        hostId: any(named: 'hostId'),
+        counter: any(named: 'counter'),
+      ),
+    ).thenReturn(false);
+    when(
+      () => mockVcService.pendingPayload(
+        hostId: any(named: 'hostId'),
+        counter: any(named: 'counter'),
+      ),
+    ).thenReturn(null);
 
     mockAgentRepository = MockAgentRepository();
 
@@ -4058,6 +4087,412 @@ void main() {
         tags: 'glados',
       );
     });
+  });
+
+  group('settleOwnCounter', () {
+    // The own row as the sequence log currently holds it. Binding moves it to
+    // `received`, as the real guarded write does.
+    SyncSequenceLogItem? ownRow;
+    const request = SyncBackfillRequest(
+      entries: [BackfillRequestEntry(hostId: aliceHostId, counter: 3)],
+      requesterId: requesterId,
+    );
+
+    setUp(() {
+      ownRow = null;
+      when(
+        () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 3),
+      ).thenAnswer((_) async => ownRow);
+      when(
+        () => mockSequenceService.bindOwnCounter(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          entryId: any(named: 'entryId'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      ).thenAnswer((invocation) async {
+        ownRow = _createLogItem(
+          aliceHostId,
+          3,
+          entryId: invocation.namedArguments[#entryId] as String,
+          payloadType:
+              invocation.namedArguments[#payloadType]
+                  as SyncSequencePayloadType,
+        );
+        return true;
+      });
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
+    });
+
+    void stubPending({required bool pending, VcPayloadRef? payload}) {
+      when(
+        () => mockVcService.isPending(hostId: aliceHostId, counter: 3),
+      ).thenReturn(pending);
+      when(
+        () => mockVcService.pendingPayload(hostId: aliceHostId, counter: 3),
+      ).thenReturn(payload);
+    }
+
+    void stubJournalPayload(int? ownCounter) {
+      when(() => mockJournalDb.journalEntityById('entry-3')).thenAnswer(
+        (_) async => ownCounter == null
+            ? null
+            : _createJournalEntry(
+                'entry-3',
+                vectorClock: VectorClock({aliceHostId: ownCounter}),
+              ),
+      );
+    }
+
+    void verifyPayloadResent() => verify(
+      () => mockOutboxService.enqueueMessage(
+        any(
+          that: isA<SyncJournalEntity>().having((m) => m.id, 'id', 'entry-3'),
+        ),
+      ),
+    ).called(1);
+
+    void verifyNothingBurned() {
+      verifyNever(
+        () => mockOutboxService.enqueueMessage(
+          any(
+            that: isA<SyncBackfillResponse>().having(
+              (m) => m.unresolvable,
+              'unresolvable',
+              isTrue,
+            ),
+          ),
+        ),
+      );
+      verifyNever(
+        () => mockSequenceService.markOwnCounterUnresolvable(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      );
+    }
+
+    test(
+      'regression: a request for a named reservation a crashed process left '
+      'behind is answered with its landed payload instead of deferred forever',
+      () async {
+        ownRow = _createLogItem(
+          aliceHostId,
+          3,
+          entryId: 'entry-3',
+          status: SyncSequenceStatus.reserved,
+        );
+        stubPending(pending: false);
+        stubJournalPayload(3);
+
+        await handler.handleBackfillRequest(request);
+
+        verify(
+          () => mockSequenceService.bindOwnCounter(
+            hostId: aliceHostId,
+            counter: 3,
+            entryId: 'entry-3',
+            payloadType: SyncSequencePayloadType.journalEntity,
+          ),
+        ).called(1);
+        verifyPayloadResent();
+        verifyNothingBurned();
+      },
+    );
+
+    test(
+      'regression: a request arriving while the write is in flight and its '
+      'reserved-row insert failed is deferred, not burned',
+      () async {
+        // No row at all; the live reservation names its payload in memory,
+        // and the payload has not landed yet.
+        stubPending(
+          pending: true,
+          payload: (
+            id: 'entry-3',
+            type: SyncSequencePayloadType.journalEntity,
+          ),
+        );
+        stubJournalPayload(null);
+
+        await handler.handleBackfillRequest(request);
+
+        verifyNever(() => mockOutboxService.enqueueMessage(any()));
+        verifyNothingBurned();
+        expect(handler.recentlyResponded, isEmpty);
+      },
+    );
+
+    test(
+      'regression: a release after the payload landed binds and resends the '
+      'counter instead of burning it',
+      () async {
+        // A post-commit step threw, the outer scope released the counter:
+        // the row is burnPending but names a payload that covers it.
+        ownRow = _createLogItem(
+          aliceHostId,
+          3,
+          entryId: 'entry-3',
+          status: SyncSequenceStatus.burnPending,
+        );
+        stubPending(pending: false);
+        stubJournalPayload(3);
+
+        final outcome = await handler.settleOwnCounter(
+          hostId: aliceHostId,
+          counter: 3,
+        );
+
+        expect(outcome, OwnCounterSettlement.bound);
+        verifyPayloadResent();
+        verifyNothingBurned();
+      },
+    );
+
+    test(
+      'a live reservation whose payload has already landed is answered '
+      'right away from the in-memory intent',
+      () async {
+        stubPending(
+          pending: true,
+          payload: (
+            id: 'entry-3',
+            type: SyncSequencePayloadType.journalEntity,
+          ),
+        );
+        stubJournalPayload(5);
+
+        final outcome = await handler.settleOwnCounter(
+          hostId: aliceHostId,
+          counter: 3,
+        );
+
+        expect(outcome, OwnCounterSettlement.bound);
+        verifyPayloadResent();
+      },
+    );
+
+    test('a named orphan whose payload never landed is burned', () async {
+      ownRow = _createLogItem(
+        aliceHostId,
+        3,
+        entryId: 'entry-3',
+        status: SyncSequenceStatus.reserved,
+      );
+      stubPending(pending: false);
+      stubJournalPayload(2);
+
+      final outcome = await handler.settleOwnCounter(
+        hostId: aliceHostId,
+        counter: 3,
+      );
+
+      expect(outcome, OwnCounterSettlement.burned);
+      verify(
+        () => mockOutboxService.enqueueMessage(
+          const SyncMessage.backfillResponse(
+            hostId: aliceHostId,
+            counter: 3,
+            deleted: false,
+            unresolvable: true,
+            payloadType: SyncSequencePayloadType.journalEntity,
+          ),
+        ),
+      ).called(1);
+      verify(
+        () => mockSequenceService.markOwnCounterUnresolvable(
+          hostId: aliceHostId,
+          counter: 3,
+          payloadType: SyncSequencePayloadType.journalEntity,
+        ),
+      ).called(1);
+      verifyNever(
+        () => mockSequenceService.bindOwnCounter(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          entryId: any(named: 'entryId'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      );
+    });
+
+    test(
+      'a live reservation whose payload has not landed is deferred',
+      () async {
+        ownRow = _createLogItem(
+          aliceHostId,
+          3,
+          entryId: 'entry-3',
+          status: SyncSequenceStatus.reserved,
+        );
+        stubPending(pending: true);
+        stubJournalPayload(2);
+
+        final outcome = await handler.settleOwnCounter(
+          hostId: aliceHostId,
+          counter: 3,
+        );
+
+        expect(outcome, OwnCounterSettlement.deferred);
+        verifyNothingBurned();
+      },
+    );
+
+    test(
+      'an unnamed orphaned reservation cannot be proven either way and is '
+      'deferred',
+      () async {
+        ownRow = _createLogItem(
+          aliceHostId,
+          3,
+          status: SyncSequenceStatus.reserved,
+        );
+        stubPending(pending: false);
+
+        final outcome = await handler.settleOwnCounter(
+          hostId: aliceHostId,
+          counter: 3,
+        );
+
+        expect(outcome, OwnCounterSettlement.deferred);
+        verifyNever(() => mockOutboxService.enqueueMessage(any()));
+      },
+    );
+
+    for (final settled in [
+      SyncSequenceStatus.received,
+      SyncSequenceStatus.burned,
+    ]) {
+      test('a ${settled.name} row is left alone', () async {
+        ownRow = _createLogItem(
+          aliceHostId,
+          3,
+          entryId: 'entry-3',
+          status: settled,
+        );
+        stubPending(pending: false);
+
+        final outcome = await handler.settleOwnCounter(
+          hostId: aliceHostId,
+          counter: 3,
+        );
+
+        expect(outcome, OwnCounterSettlement.alreadySettled);
+        verifyNever(() => mockOutboxService.enqueueMessage(any()));
+      });
+    }
+
+    test(
+      'an agent payload is deferred until the agent store is wired, and '
+      'wiring it settles the orphans that waited for it',
+      () async {
+        final unwired = BackfillResponseHandler(
+          journalDb: mockJournalDb,
+          sequenceLogService: mockSequenceService,
+          outboxService: mockOutboxService,
+          loggingService: mockLogging,
+          vectorClockService: mockVcService,
+        );
+        ownRow = _createLogItem(
+          aliceHostId,
+          3,
+          entryId: 'agent-3',
+          status: SyncSequenceStatus.reserved,
+          payloadType: SyncSequencePayloadType.agentEntity,
+        );
+        stubPending(pending: false);
+        when(
+          () => mockSequenceService.settleableOwnCountersForHost(
+            hostId: aliceHostId,
+          ),
+        ).thenAnswer((_) async => [3]);
+
+        await unwired.settleOrphanedOwnCounters();
+
+        // Absent store is not absent payload: nothing burned.
+        verifyNothingBurned();
+        verifyNever(
+          () => mockSequenceService.bindOwnCounter(
+            hostId: any(named: 'hostId'),
+            counter: any(named: 'counter'),
+            entryId: any(named: 'entryId'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        );
+
+        final agent = makeTestIdentity(
+          id: 'agent-3',
+          vectorClock: const VectorClock({aliceHostId: 3}),
+        );
+        when(
+          () => mockAgentRepository.getEntity('agent-3'),
+        ).thenAnswer((_) async => agent);
+
+        unwired.agentRepository = mockAgentRepository;
+        await pumpEventQueue();
+
+        verify(
+          () => mockSequenceService.bindOwnCounter(
+            hostId: aliceHostId,
+            counter: 3,
+            entryId: 'agent-3',
+            payloadType: SyncSequencePayloadType.agentEntity,
+          ),
+        ).called(1);
+        verify(
+          () => mockOutboxService.enqueueMessage(
+            any(that: isA<SyncAgentEntity>()),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'startup settlement keeps going past a counter that fails and logs it',
+      () async {
+        when(
+          () => mockSequenceService.settleableOwnCountersForHost(
+            hostId: aliceHostId,
+          ),
+        ).thenAnswer((_) async => [2, 3]);
+        when(
+          () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 2),
+        ).thenAnswer((_) async => throw StateError('row unreadable'));
+        ownRow = _createLogItem(
+          aliceHostId,
+          3,
+          entryId: 'entry-3',
+          status: SyncSequenceStatus.reserved,
+        );
+        stubPending(pending: false);
+        stubJournalPayload(3);
+
+        await handler.settleOrphanedOwnCounters();
+
+        verify(
+          () => mockLogging.error(
+            LogDomain.sync,
+            any<Object>(that: isA<StateError>()),
+            message: any(named: 'message', that: contains('counter=2')),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'backfill.settle',
+          ),
+        ).called(1);
+        verifyPayloadResent();
+        verify(
+          () => mockLogging.log(
+            LogDomain.sync,
+            any<String>(
+              that: allOf(contains('attempted=2'), contains('bound=1')),
+            ),
+            subDomain: 'backfill.settle',
+          ),
+        ).called(1);
+      },
+    );
   });
 }
 

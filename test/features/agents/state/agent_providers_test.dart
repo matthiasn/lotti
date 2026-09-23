@@ -401,6 +401,7 @@ void main() {
       when(
         () => mockVectorClockService.getNextVectorClock(
           previous: any(named: 'previous'),
+          payload: any(named: 'payload'),
         ),
       ).thenAnswer((_) async => stampedClock);
 

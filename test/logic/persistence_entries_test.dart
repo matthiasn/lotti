@@ -154,7 +154,9 @@ void main() {
     'createLink burns nothing and returns false when the upsert is a no-op',
     () async {
       when(
-        () => vectorClockService.getNextVectorClock(),
+        () => vectorClockService.getNextVectorClock(
+          payload: any(named: 'payload'),
+        ),
       ).thenAnswer((_) async => const VectorClock({'host': 1}));
       when(
         () => mocks.journalDb.upsertEntryLink(any()),
@@ -170,7 +172,9 @@ void main() {
   group('createLink linkType -', () {
     setUp(() {
       when(
-        () => vectorClockService.getNextVectorClock(),
+        () => vectorClockService.getNextVectorClock(
+          payload: any(named: 'payload'),
+        ),
       ).thenAnswer((_) async => const VectorClock({'host': 1}));
       when(
         () => mocks.journalDb.upsertEntryLink(any()),

@@ -24,6 +24,22 @@ import 'package:meta/meta.dart';
 
 part 'backfill_response_builders.dart';
 
+/// How [BackfillResponseHandler.settleOwnCounter] left an own-host counter.
+enum OwnCounterSettlement {
+  /// Its named payload covers it: bound to that payload and resent.
+  bound,
+
+  /// No payload carries it: burned, and the room was told so.
+  burned,
+
+  /// Not decidable yet: a live write may still land it, its reservation does
+  /// not name the payload, or the payload's store is not wired yet.
+  deferred,
+
+  /// Something else already bound or burned it; nothing was done.
+  alreadySettled,
+}
+
 /// Handler for incoming backfill requests and responses.
 /// Responds to backfill requests from other devices by looking up entries
 /// in the sequence log and sending them (or a "deleted" response if purged).
@@ -57,11 +73,30 @@ class BackfillResponseHandler {
 
   /// Agent repository, injected after construction to avoid circular
   /// dependency. When set, backfill can look up agent entities and links.
-  AgentRepository? agentRepository;
+  ///
+  /// Own counters whose settlement waited for this store are settled again
+  /// once it is wired.
+  AgentRepository? get agentRepository => _agentRepository;
+  set agentRepository(AgentRepository? repository) {
+    _agentRepository = repository;
+    _retrySettlementAwaitingStore();
+  }
+
+  AgentRepository? _agentRepository;
 
   /// Consumption repository, injected after construction (same rationale as
   /// [agentRepository]). When set, backfill can look up consumption events.
-  ConsumptionRepository? consumptionRepository;
+  ConsumptionRepository? get consumptionRepository => _consumptionRepository;
+  set consumptionRepository(ConsumptionRepository? repository) {
+    _consumptionRepository = repository;
+    _retrySettlementAwaitingStore();
+  }
+
+  ConsumptionRepository? _consumptionRepository;
+
+  /// Set when an orphaned own counter could not be settled because its
+  /// payload store was not wired yet.
+  bool _settlementAwaitsStore = false;
 
   /// Tracks recently-responded (hostId, counter) pairs with their timestamp
   /// to prevent duplicate responses across request cycles.
@@ -80,6 +115,200 @@ class BackfillResponseHandler {
       LogDomain.sync,
       message,
       subDomain: subDomain ?? 'backfill',
+    );
+  }
+
+  /// Settle an own-host counter that nothing has bound yet: no row, a
+  /// `reserved` row, or a released (`burnPending`) one. This is the single
+  /// decision every own-counter path uses — the backfill responder, the VC
+  /// release handler and startup reconciliation — and it is what
+  /// `specs/tla/SyncSequence.tla` model-checks as `Settle` and `Respond`:
+  ///
+  /// 1. If the reservation names its payload (on the row, or in the live
+  ///    process's pending map) and that payload's own-host clock covers the
+  ///    counter, the write landed — or a later write of the same payload
+  ///    superseded it. Bind the counter and resend the payload.
+  /// 2. Otherwise, if this process may still land the counter, or the
+  ///    payload's store is not wired yet, defer.
+  /// 3. Otherwise, if a `reserved` row does not name its payload, nothing can
+  ///    prove it either way: defer.
+  /// 4. Otherwise no payload carries the counter: burn it authoritatively.
+  ///
+  /// Whether the counter is pending is read before the payload clock. A
+  /// counter that is not pending cannot become pending again, so its payload
+  /// cannot land between the two reads and turn a burn into a false one.
+  ///
+  /// [sentPayloads] deduplicates resends within one request batch.
+  Future<OwnCounterSettlement> settleOwnCounter({
+    required String hostId,
+    required int counter,
+    Set<String>? sentPayloads,
+  }) async => _settleOwnCounter(
+    hostId: hostId,
+    counter: counter,
+    row: await _sequenceLogService.getEntryByHostAndCounter(hostId, counter),
+    sentPayloads: sentPayloads,
+  );
+
+  /// [settleOwnCounter] for a caller that has already read the counter's
+  /// sequence [row].
+  Future<OwnCounterSettlement> _settleOwnCounter({
+    required String hostId,
+    required int counter,
+    required SyncSequenceLogItem? row,
+    Set<String>? sentPayloads,
+  }) async {
+    final status = row == null ? null : SyncSequenceStatus.values[row.status];
+    if (status != null &&
+        status != SyncSequenceStatus.reserved &&
+        status != SyncSequenceStatus.burnPending) {
+      return OwnCounterSettlement.alreadySettled;
+    }
+
+    final pending = _vectorClockService.isPending(
+      hostId: hostId,
+      counter: counter,
+    );
+    final rowEntryId = row?.entryId;
+    final payload = rowEntryId != null
+        ? (
+            id: rowEntryId,
+            type: SyncSequencePayloadType.values[row!.payloadType],
+          )
+        : _vectorClockService.pendingPayload(hostId: hostId, counter: counter);
+
+    if (payload != null) {
+      if (!_payloadStoreWired(payload.type)) {
+        _settlementAwaitsStore = true;
+        _trace(
+          'settleOwnCounter deferred: ${payload.type.name} store not wired '
+          'hostId=$hostId counter=$counter',
+          subDomain: 'backfill.settle',
+        );
+        return OwnCounterSettlement.deferred;
+      }
+      final state = await _loadPayloadClockState(
+        payloadId: payload.id,
+        payloadType: payload.type,
+      );
+      final ownCounter = state.vectorClock?.vclock[hostId];
+      if (state.exists && ownCounter != null && ownCounter >= counter) {
+        final bound = await _sequenceLogService.bindOwnCounter(
+          hostId: hostId,
+          counter: counter,
+          entryId: payload.id,
+          payloadType: payload.type,
+        );
+        if (!bound) return OwnCounterSettlement.alreadySettled;
+        _trace(
+          'settleOwnCounter bound hostId=$hostId counter=$counter '
+          'payloadId=${payload.id} type=${payload.type.name} '
+          'payloadCounter=$ownCounter',
+          subDomain: 'backfill.settle',
+        );
+        await _processBackfillEntry(
+          hostId: hostId,
+          counter: counter,
+          sentPayloads: sentPayloads ?? <String>{},
+        );
+        return OwnCounterSettlement.bound;
+      }
+    }
+
+    if (pending) {
+      _trace(
+        'settleOwnCounter deferred: reservation still live '
+        'hostId=$hostId counter=$counter',
+        subDomain: 'backfill.settle',
+      );
+      return OwnCounterSettlement.deferred;
+    }
+    if (status == SyncSequenceStatus.reserved && payload == null) {
+      _trace(
+        'settleOwnCounter deferred: reservation names no payload '
+        'hostId=$hostId counter=$counter',
+        subDomain: 'backfill.settle',
+      );
+      return OwnCounterSettlement.deferred;
+    }
+
+    await _sendUnresolvableResponse(
+      hostId: hostId,
+      counter: counter,
+      payloadType: payload?.type,
+    );
+    return OwnCounterSettlement.burned;
+  }
+
+  /// Startup reconciliation: settle every own counter an earlier process left
+  /// unsettled — released reservations still `burnPending`, and `reserved`
+  /// rows that name their payload. Reservations this process has made since
+  /// it started are pending and stay deferred.
+  Future<void> settleOrphanedOwnCounters() async {
+    await _vectorClockService.initialized;
+    final hostId = await _vectorClockService.getHost();
+    if (hostId == null) return;
+    _settlementAwaitsStore = false;
+    final counters = await _sequenceLogService.settleableOwnCountersForHost(
+      hostId: hostId,
+    );
+    if (counters.isEmpty) return;
+
+    final outcomes = <OwnCounterSettlement, int>{};
+    final sentPayloads = <String>{};
+    for (final counter in counters) {
+      try {
+        final outcome = await settleOwnCounter(
+          hostId: hostId,
+          counter: counter,
+          sentPayloads: sentPayloads,
+        );
+        outcomes[outcome] = (outcomes[outcome] ?? 0) + 1;
+      } catch (error, stackTrace) {
+        _loggingService.error(
+          LogDomain.sync,
+          error,
+          message:
+              'own counter settlement failed host=$hostId counter=$counter; '
+              'it is retried on the next startup',
+          stackTrace: stackTrace,
+          subDomain: 'backfill.settle',
+        );
+      }
+    }
+    _loggingService.log(
+      LogDomain.sync,
+      'settleOrphanedOwnCounters host=$hostId attempted=${counters.length} '
+      '${[for (final e in outcomes.entries) '${e.key.name}=${e.value}'].join(' ')}',
+      subDomain: 'backfill.settle',
+    );
+  }
+
+  bool _payloadStoreWired(SyncSequencePayloadType type) => switch (type) {
+    SyncSequencePayloadType.journalEntity ||
+    SyncSequencePayloadType.entryLink => true,
+    SyncSequencePayloadType.agentEntity ||
+    SyncSequencePayloadType.agentLink => _agentRepository != null,
+    SyncSequencePayloadType.notification ||
+    SyncSequencePayloadType.notificationStateUpdate => _notificationsDb != null,
+    SyncSequencePayloadType.consumptionEvent => _consumptionRepository != null,
+  };
+
+  void _retrySettlementAwaitingStore() {
+    if (!_settlementAwaitsStore) return;
+    unawaited(
+      settleOrphanedOwnCounters().catchError((
+        Object error,
+        StackTrace stackTrace,
+      ) {
+        _loggingService.error(
+          LogDomain.sync,
+          error,
+          message: 'own counter settlement retry failed',
+          stackTrace: stackTrace,
+          subDomain: 'backfill.settle',
+        );
+      }),
     );
   }
 
@@ -369,20 +598,32 @@ class BackfillResponseHandler {
     // recorded entity, so any "covering" candidate is necessarily a
     // DIFFERENT entity and its payload does not carry whatever the burnt
     // write would have mutated. Attributing that payload to the burnt
-    // counter silently mis-maps state on the requester's side. For own-host
-    // misses outside an outstanding reservation, retain the legacy
-    // unresolvable response. A reserved row is not proof of a burn: the local
-    // write may still be in flight, or have committed before a crash prevented
-    // its sequence binding. Startup recovery preserves these rows too.
+    // counter silently mis-maps state on the requester's side. An own counter
+    // nothing has bound yet — no row, a reservation, or a released
+    // reservation — is settled from its own named payload instead; see
+    // [settleOwnCounter].
     final myHost = await _vectorClockService.getHost();
     final isOwnHost = myHost != null && hostId == myHost;
 
-    if (isOwnHost && logEntry?.status == SyncSequenceStatus.reserved.index) {
-      _trace(
-        'deferring own-host reservation until payload binding or release',
-        subDomain: 'backfill.reserved',
+    final ownRowUnsettled =
+        logEntry == null ||
+        logEntry.status == SyncSequenceStatus.reserved.index ||
+        logEntry.status == SyncSequenceStatus.burnPending.index;
+    if (isOwnHost && ownRowUnsettled) {
+      final outcome = await _settleOwnCounter(
+        hostId: hostId,
+        counter: counter,
+        row: logEntry,
+        sentPayloads: sentPayloads,
       );
-      return false;
+      if (outcome != OwnCounterSettlement.alreadySettled) {
+        return outcome != OwnCounterSettlement.deferred;
+      }
+      // Settled concurrently: answer from the row as it now stands.
+      logEntry = await _sequenceLogService.getEntryByHostAndCounter(
+        hostId,
+        counter,
+      );
     }
 
     if (logEntry != null && logEntry.entryId != null) {
@@ -442,12 +683,11 @@ class BackfillResponseHandler {
       );
 
       if (isOwnHost) {
-        // Burn: our sequence log has no entry for this own-host counter,
-        // so no write ever carried it. Covering by a later (necessarily
-        // different) entity would misattribute unrelated state to this
-        // counter on the requester's side — always wrong for own-host
-        // burns. The reserved case was deferred above. Send the authoritative
-        // unresolvable marker so peers mark it burned, without covering.
+        // An own counter whose row carries no payload, and which settlement
+        // above left alone: it is already burned. Covering by a later
+        // (necessarily different) entity would misattribute unrelated state
+        // to this counter on the requester's side — always wrong for
+        // own-host burns. Repeat the authoritative unresolvable marker.
         _trace(
           'own-host miss → unresolvable (no covering attempted) '
           'hostId=$hostId counter=$counter payloadType=$payloadType',

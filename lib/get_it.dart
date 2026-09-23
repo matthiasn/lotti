@@ -59,7 +59,6 @@ import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/media/media_repair_service.dart';
 import 'package:lotti/features/sync/media/media_request_handler.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/outbox/inert_outbox_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -347,7 +346,6 @@ Future<void> registerSingletons({
     repository: consumptionRepository,
     outboxService: outboxService,
     vectorClockService: vectorClockService,
-    sequenceLogService: syncSequenceLogService,
   );
   getIt
     ..registerSingleton<ConsumptionRepository>(consumptionRepository)

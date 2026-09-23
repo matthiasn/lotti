@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/utils.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
@@ -30,30 +31,43 @@ import 'package:meta/meta.dart';
 ///
 /// Recovery of burnt counters:
 /// - reservation writes an own-host `reserved` sequence row before returning
-///   the counter. If the process crashes before the write path binds the row
-///   through `recordSentEntry`, the marker remains available for diagnostics
-///   and reactive backfill.
-/// - release upgrades that reservation to `burnPending` before broadcasting
-///   so startup can safely retry only counters known to have no payload.
-/// - [release] logs the burn and emits a proactive `unresolvable` broadcast
-///   (when a handler is registered — see
-///   [VectorClockService.setBurnHandler]) so receivers mark the counter as
-///   `unresolvable` on arrival instead of waiting for a backfill round-trip.
-/// - If the broadcast is missed (offline, crash before enqueue), the
-///   fallback is the existing backfill path: the originator answers
-///   `unresolvable` when a peer eventually requests the missing counter via
-///   `backfill_response_handler.dart`'s "own counter not found" branch.
+///   the counter, recording the payload it is for when the caller names it
+///   ([VcPayloadRef]). The outbox binds the row to `received` once the
+///   payload is durably enqueued.
+/// - A reservation the process has neither bound nor released is *pending*
+///   ([VectorClockService.isPending]); only a pending counter may still land,
+///   so only pending counters are deferred when a peer asks for them.
+/// - A row still `reserved` after its process died is settled by
+///   `BackfillResponseHandler.settleOwnCounter`: if the named payload's clock
+///   covers the counter the write landed and the counter is bound and
+///   resent, otherwise it is burned. An unnamed reservation cannot be proven
+///   either way and stays deferred.
+/// - [VcReservation.release] upgrades the reservation to `burnPending`,
+///   recording its payload, and hands the counter to the burn handler (see
+///   [VectorClockService.setBurnHandler]), which settles it the same way: a
+///   release never burns a counter whose payload is on disk.
+///
+/// The protocol is model-checked in `specs/tla/SyncSequence.tla`.
 ///
 /// A reservation must be finalized exactly once. [VectorClockService.withVcScope]
 /// handles this for nested callers automatically; direct callers of
 /// [VectorClockService.reserveNextVectorClock] outside a scope must finalize
 /// the returned reservation themselves.
 class VcReservation {
-  VcReservation._(this.vc, this._counter, this._hostId, this._service);
+  VcReservation._(
+    this.vc,
+    this._counter,
+    this._hostId,
+    this._payload,
+    this._service,
+  );
 
   /// The reserved vector clock.
   final VectorClock vc;
   final int _counter;
+
+  /// The payload this counter is for, when the caller named it.
+  final VcPayloadRef? _payload;
 
   /// The host ID at the time of reservation. Captured so that a later burn
   /// broadcast attributes the counter to the correct host even if
@@ -72,28 +86,34 @@ class VcReservation {
     _finalized = true;
   }
 
-  /// Acknowledge that the reservation will not carry an entity/Matrix event.
-  /// The counter is already persisted on disk; this call logs the burn and
-  /// asks the registered burn handler (if any) to broadcast an
-  /// `unresolvable` hint to peers so they can resolve the gap immediately
-  /// instead of waiting for the next backfill round-trip. Idempotent.
+  /// Acknowledge that the write this reservation was for has ended without
+  /// the caller binding it. The counter is already persisted on disk; the
+  /// row becomes `burnPending` and the registered burn handler (if any)
+  /// settles it — burning it only if its payload never landed. Idempotent.
   Future<void> release() async {
     if (_finalized) return;
     _finalized = true;
-    await _service._markBurnPending(_hostId, _counter);
-    await _service._onReleaseBurn(_hostId, _counter);
+    await _service._release(_hostId, _counter, _payload);
   }
 }
+
+/// The payload a vector-clock reservation is for: its id and the sequence-log
+/// type it is recorded under. Naming it lets the originator later prove
+/// whether the reserved counter's write landed, from the payload's own clock.
+typedef VcPayloadRef = ({String id, SyncSequencePayloadType type});
+
+typedef _OwnCounter = ({String hostId, int counter});
 
 class _VcScope {
   final List<VcReservation> reservations = [];
 }
 
-/// Async handler invoked when a reserved counter is released without a matching
-/// write (a "burn"). Implementations typically enqueue a proactive
-/// `SyncBackfillResponse(unresolvable=true)` for the given `(hostId, counter)`
-/// so peers close the gap without waiting for the reactive backfill-request
-/// path.
+/// Async handler invoked when a reserved counter is released without the
+/// caller binding it. By then the row is `burnPending` and records the
+/// reservation's payload, if named. The implementation settles the counter:
+/// it binds and resends a counter whose payload landed anyway, and otherwise
+/// enqueues a proactive `SyncBackfillResponse(unresolvable=true)` so peers
+/// close the gap without waiting for the reactive backfill-request path.
 ///
 /// [hostId] is the host captured at reservation time, NOT the service's
 /// current host at broadcast time. These can differ if
@@ -142,6 +162,11 @@ class VectorClockService {
   /// absent, burns still log and the backfill responder's reactive path
   /// covers the gap on peer request.
   VcBurnHandler? _burnHandler;
+
+  /// Reservations this process has neither bound nor released, with the
+  /// payload each is for. Process-local on purpose: only a live process can
+  /// still land one of these counters, so a crash must forget them.
+  final Map<_OwnCounter, VcPayloadRef?> _pending = {};
 
   /// Future that completes when initialization is done.
   /// Await this before using the service to ensure it's ready.
@@ -212,7 +237,14 @@ class VectorClockService {
   /// [VcReservation.release] on failure (commit is a no-op; release logs +
   /// broadcasts the burn). When called inside [withVcScope] the finalization
   /// is automatic.
-  Future<VcReservation> reserveNextVectorClock({VectorClock? previous}) async {
+  ///
+  /// Pass [payload] whenever the caller knows which payload the counter is
+  /// for. It is recorded on the reserved row, which is what lets a later
+  /// process settle the counter if this one dies before the outbox binds it.
+  Future<VcReservation> reserveNextVectorClock({
+    VectorClock? previous,
+    VcPayloadRef? payload,
+  }) async {
     await _initialized;
 
     // Serialize so concurrent reservers never observe the same
@@ -246,9 +278,11 @@ class VectorClockService {
         VectorClock({...?previous?.vclock, _host: effectiveCounter}),
         effectiveCounter,
         _host,
+        payload,
         this,
       );
-      await _recordReservedCounter(_host, effectiveCounter);
+      _pending[(hostId: _host, counter: effectiveCounter)] = payload;
+      await _recordReservedCounter(_host, effectiveCounter, payload);
 
       final scope = Zone.current[_zoneKey] as _VcScope?;
       if (scope != null) {
@@ -267,8 +301,17 @@ class VectorClockService {
   /// otherwise committing immediately (counter already persisted on reserve,
   /// so a non-scoped caller that never runs a matching write will burn a
   /// counter — prefer [withVcScope] for failable writes).
-  Future<VectorClock> getNextVectorClock({VectorClock? previous}) async {
-    final reservation = await reserveNextVectorClock(previous: previous);
+  ///
+  /// Pass [payload] whenever the caller knows it; see
+  /// [reserveNextVectorClock].
+  Future<VectorClock> getNextVectorClock({
+    VectorClock? previous,
+    VcPayloadRef? payload,
+  }) async {
+    final reservation = await reserveNextVectorClock(
+      previous: previous,
+      payload: payload,
+    );
     final scope = Zone.current[_zoneKey] as _VcScope?;
     if (scope == null) {
       await reservation.commit();
@@ -326,24 +369,54 @@ class VectorClockService {
     }
   }
 
-  /// Called by [VcReservation.release]. Logs the burn and invokes the
-  /// registered broadcast handler (if any). Swallows handler exceptions —
-  /// the counter is already on disk, so a throw here would be destructive
-  /// for no benefit.
+  /// Whether this process reserved `(hostId, counter)` and has neither bound
+  /// nor released it — the only counters whose write may still land.
+  bool isPending({required String hostId, required int counter}) =>
+      _pending.containsKey((hostId: hostId, counter: counter));
+
+  /// The payload a pending reservation was made for, if the caller named it.
+  VcPayloadRef? pendingPayload({
+    required String hostId,
+    required int counter,
+  }) => _pending[(hostId: hostId, counter: counter)];
+
+  /// Forget a pending reservation once its counter is bound to a payload.
+  /// Called by the sequence log when it binds an own-host counter.
+  void settle({required String hostId, required int counter}) {
+    _pending.remove((hostId: hostId, counter: counter));
+  }
+
+  /// Ends a reservation whose write will not bind it. The row becomes
+  /// `burnPending` and records [payload] *before* the reservation stops being
+  /// pending, so that a backfill request answered in between still knows which
+  /// payload to look for. The burn handler then settles the counter.
+  Future<void> _release(
+    String hostId,
+    int counter,
+    VcPayloadRef? payload,
+  ) async {
+    await _markBurnPending(hostId, counter, payload);
+    settle(hostId: hostId, counter: counter);
+    await _onRelease(hostId, counter);
+  }
+
+  /// Logs the release and invokes the registered burn handler (if any).
+  /// Swallows handler exceptions — the counter is already on disk and the row
+  /// is `burnPending`, which startup reconciliation retries.
   ///
   /// [hostId] is the host captured at reservation time; may differ from the
   /// service's current [_host] if [setNewHost] ran between reserve and
   /// release. The broadcast must attribute the burnt counter to the host
   /// that actually reserved it.
-  Future<void> _onReleaseBurn(String hostId, int counter) async {
+  Future<void> _onRelease(String hostId, int counter) async {
     // DomainLogger may not be registered in some test harnesses / bootstrap
     // paths; use the `isRegistered` guard so a release on a minimally-wired
     // service (e.g. unit test seeding the SettingsDb counter) does not crash.
     if (getIt.isRegistered<DomainLogger>()) {
       getIt<DomainLogger>().error(
         LogDomain.sync,
-        'VC counter burnt host=$hostId counter=$counter '
-        '(reservation released; counter already persisted)',
+        'VC reservation released host=$hostId counter=$counter '
+        '(counter already persisted; settling)',
         subDomain: 'vc.burn',
       );
     }
@@ -402,17 +475,26 @@ class VectorClockService {
         subDomain: 'vc.burn.unbound',
       );
     }
-    await _markBurnPending(hostId, counter);
-    await _onReleaseBurn(hostId, counter);
+    await _release(
+      hostId,
+      counter,
+      pendingPayload(hostId: hostId, counter: counter),
+    );
   }
 
-  Future<void> _recordReservedCounter(String hostId, int counter) async {
+  Future<void> _recordReservedCounter(
+    String hostId,
+    int counter,
+    VcPayloadRef? payload,
+  ) async {
     if (!getIt.isRegistered<SyncDatabase>()) return;
 
     try {
       await getIt<SyncDatabase>().recordReservedSequenceCounter(
         hostId: hostId,
         counter: counter,
+        entryId: payload?.id,
+        payloadType: payload?.type,
       );
     } catch (error, stackTrace) {
       if (getIt.isRegistered<DomainLogger>()) {
@@ -429,13 +511,19 @@ class VectorClockService {
     }
   }
 
-  Future<void> _markBurnPending(String hostId, int counter) async {
+  Future<void> _markBurnPending(
+    String hostId,
+    int counter,
+    VcPayloadRef? payload,
+  ) async {
     if (!getIt.isRegistered<SyncDatabase>()) return;
 
     try {
       await getIt<SyncDatabase>().markReservedSequenceCounterBurnPending(
         hostId: hostId,
         counter: counter,
+        entryId: payload?.id,
+        payloadType: payload?.type,
       );
     } catch (error, stackTrace) {
       if (getIt.isRegistered<DomainLogger>()) {

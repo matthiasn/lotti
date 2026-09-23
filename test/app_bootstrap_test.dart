@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/app_bootstrap.dart';
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -32,7 +34,9 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/inert_outbox_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/utils.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/service_disposer.dart';
 import 'package:lotti/services/startup_tasks.dart';
@@ -405,6 +409,88 @@ void main() {
         expect(markers.single.unresolvable, isTrue);
         // The reconciled world kept the crashed process's host identity.
         expect(await getIt<VectorClockService>().getHost(), crashHost);
+      },
+    );
+
+    test(
+      'regression: named reservations a crashed process left behind are '
+      'settled at boot — a landed write is bound and resent, a lost one '
+      'is burned',
+      () async {
+        // The previous process committed entry-7 at counter 7 and died before
+        // the outbox bound it. Counter 8 was reserved for entry-8, whose write
+        // never landed.
+        const crashHost = 'crash-host-2';
+        Future<Directory> provider() async => osRoot;
+        final priorSettings = SettingsDb(documentsDirectoryProvider: provider);
+        await priorSettings.saveSettingsItem(hostKey, crashHost);
+        await priorSettings.saveSettingsItem(nextAvailableCounterKey, '9');
+        await priorSettings.close();
+        final priorJournal = JournalDb(
+          documentsDirectoryProvider: provider,
+          documentsDirectory: osRoot,
+        );
+        final at = DateTime(2026, 9, 23, 12);
+        await priorJournal.updateJournalEntity(
+          JournalEntity.journalEntry(
+            meta: Metadata(
+              id: 'entry-7',
+              createdAt: at,
+              updatedAt: at,
+              dateFrom: at,
+              dateTo: at,
+              vectorClock: const VectorClock({crashHost: 7}),
+            ),
+            entryText: const EntryText(plainText: 'written before the crash'),
+          ),
+        );
+        await priorJournal.close();
+        final priorSync = SyncDatabase(documentsDirectoryProvider: provider);
+        for (final (counter, id) in [(7, 'entry-7'), (8, 'entry-8')]) {
+          await priorSync.recordReservedSequenceCounter(
+            hostId: crashHost,
+            counter: counter,
+            entryId: id,
+            payloadType: SyncSequencePayloadType.journalEntity,
+          );
+        }
+        await priorSync.close();
+
+        registerProcessLogging();
+        final lifecycleHolder = AppLifecycleHolder();
+        addTearDown(lifecycleHolder.dispose);
+        await bootstrapProfileServices(
+          await resolveActiveProfile(),
+          lifecycleHolder: lifecycleHolder,
+          restoreWindow: false,
+        );
+        await getIt<StartupTasks>().settle();
+        await settlePendingDbWork();
+
+        final syncDb = getIt<SyncDatabase>();
+        final landed = await syncDb.getEntryByHostAndCounter(crashHost, 7);
+        expect(landed!.status, SyncSequenceStatus.received.index);
+        expect(landed.entryId, 'entry-7');
+        final lost = await syncDb.getEntryByHostAndCounter(crashHost, 8);
+        expect(lost!.status, SyncSequenceStatus.burned.index);
+
+        final queued = [
+          for (final item in await syncDb.oldestOutboxItems(50))
+            SyncMessage.fromJson(
+              jsonDecode(item.message) as Map<String, dynamic>,
+            ),
+        ];
+        // The landed write finally reaches peers …
+        expect(
+          queued.whereType<SyncJournalEntity>().map((m) => m.id),
+          contains('entry-7'),
+        );
+        // … and peers are told the lost counter carries nothing.
+        final markers = queued
+            .whereType<SyncBackfillResponse>()
+            .where((m) => m.hostId == crashHost && m.unresolvable == true)
+            .map((m) => m.counter);
+        expect(markers, [8]);
       },
     );
   });

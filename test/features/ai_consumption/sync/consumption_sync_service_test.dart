@@ -3,7 +3,6 @@ import 'package:lotti/features/ai_consumption/database/consumption_database.dart
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 import 'package:lotti/features/ai_consumption/sync/consumption_sync_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
@@ -21,7 +20,6 @@ void main() {
   late ConsumptionRepository repo;
   late MockOutboxService outbox;
   late MockVectorClockService vcService;
-  late MockSyncSequenceLogService sequenceLog;
   late MockUpdateNotifications updateNotifications;
   late ConsumptionSyncService service;
 
@@ -45,27 +43,21 @@ void main() {
     repo = ConsumptionRepository(db);
     outbox = MockOutboxService();
     vcService = MockVectorClockService();
-    sequenceLog = MockSyncSequenceLogService();
     updateNotifications = MockUpdateNotifications();
     service = ConsumptionSyncService(
       repository: repo,
       outboxService: outbox,
       vectorClockService: vcService,
-      sequenceLogService: sequenceLog,
       updateNotifications: updateNotifications,
     );
 
     when(() => outbox.enqueueMessage(any())).thenAnswer((_) async {});
     when(
-      () => vcService.getNextVectorClock(previous: any(named: 'previous')),
-    ).thenAnswer((_) async => stamped);
-    when(
-      () => sequenceLog.recordSentEntry(
-        entryId: any(named: 'entryId'),
-        vectorClock: any(named: 'vectorClock'),
-        payloadType: any(named: 'payloadType'),
+      () => vcService.getNextVectorClock(
+        previous: any(named: 'previous'),
+        payload: any(named: 'payload'),
       ),
-    ).thenAnswer((_) async => []);
+    ).thenAnswer((_) async => stamped);
   });
 
   tearDown(() async {
@@ -95,12 +87,15 @@ void main() {
       expect(typed.event.vectorClock, stamped);
       expect(typed.status, SyncEntryStatus.update);
 
-      // Recorded in the sequence log for gap detection/backfill.
+      // The reservation names its payload, so a crash before the outbox binds
+      // the counter can still be settled from the event's own clock.
       verify(
-        () => sequenceLog.recordSentEntry(
-          entryId: 'e1',
-          vectorClock: stamped,
-          payloadType: SyncSequencePayloadType.consumptionEvent,
+        () => vcService.getNextVectorClock(
+          previous: any(named: 'previous'),
+          payload: (
+            id: 'e1',
+            type: SyncSequencePayloadType.consumptionEvent,
+          ),
         ),
       ).called(1);
     },
@@ -119,88 +114,14 @@ void main() {
     expect(stored!.vectorClock, const VectorClock({'host-b': 3}));
     verifyNever(() => outbox.enqueueMessage(any()));
     verifyNever(
-      () => vcService.getNextVectorClock(previous: any(named: 'previous')),
+      () => vcService.getNextVectorClock(
+        previous: any(named: 'previous'),
+        payload: any(named: 'payload'),
+      ),
     );
   });
 
-  group('getIt fallbacks and post-write failure logging', () {
-    /// Service with no injected sequence log — exercises the getIt fallback.
-    ConsumptionSyncService serviceWithoutSequenceLog() =>
-        ConsumptionSyncService(
-          repository: repo,
-          outboxService: outbox,
-          vectorClockService: vcService,
-        );
-
-    test(
-      'falls back to the getIt sequence log when none is injected',
-      () async {
-        getIt.registerSingleton<SyncSequenceLogService>(sequenceLog);
-        addTearDown(() => getIt.unregister<SyncSequenceLogService>());
-
-        await serviceWithoutSequenceLog().recordEvent(
-          makeConsumptionEvent(id: 'e-getit'),
-        );
-
-        verify(
-          () => sequenceLog.recordSentEntry(
-            entryId: 'e-getit',
-            vectorClock: stamped,
-            payloadType: SyncSequencePayloadType.consumptionEvent,
-          ),
-        ).called(1);
-      },
-    );
-
-    test(
-      'skips the sequence log when neither injected nor registered — the '
-      'write and enqueue still land',
-      () async {
-        await serviceWithoutSequenceLog().recordEvent(
-          makeConsumptionEvent(id: 'e-nolog'),
-        );
-
-        expect((await repo.getEvent('e-nolog'))!.vectorClock, stamped);
-        verify(() => outbox.enqueueMessage(any())).called(1);
-        verifyNever(
-          () => sequenceLog.recordSentEntry(
-            entryId: any(named: 'entryId'),
-            vectorClock: any(named: 'vectorClock'),
-            payloadType: any(named: 'payloadType'),
-          ),
-        );
-      },
-    );
-
-    test(
-      'a sequence-log failure is logged and swallowed — the stamped write '
-      'commits and the message is still enqueued',
-      () async {
-        final logger = getIt<DomainLogger>() as MockDomainLogger;
-        when(
-          () => sequenceLog.recordSentEntry(
-            entryId: any(named: 'entryId'),
-            vectorClock: any(named: 'vectorClock'),
-            payloadType: any(named: 'payloadType'),
-          ),
-        ).thenThrow(Exception('sequence log down'));
-
-        await service.recordEvent(makeConsumptionEvent(id: 'e-seqfail'));
-
-        expect((await repo.getEvent('e-seqfail'))!.vectorClock, stamped);
-        verify(() => outbox.enqueueMessage(any())).called(1);
-        verify(
-          () => logger.error(
-            LogDomain.sync,
-            any<Object>(),
-            message: any(named: 'message'),
-            stackTrace: any(named: 'stackTrace'),
-            subDomain: 'consumptionSync.record',
-          ),
-        ).called(1);
-      },
-    );
-
+  group('post-write failure logging', () {
     test(
       'an outbox-enqueue failure is logged and swallowed — the stamped '
       'write stays committed',
@@ -286,9 +207,8 @@ void main() {
 
   group('get_it fallbacks', () {
     test(
-      'resolves sequence log + notifications from get_it when not injected',
+      'resolves notifications from get_it when not injected',
       () async {
-        getIt.registerSingleton<SyncSequenceLogService>(sequenceLog);
         final bare = ConsumptionSyncService(
           repository: repo,
           outboxService: outbox,
@@ -297,13 +217,6 @@ void main() {
 
         await bare.recordEvent(makeConsumptionEvent(id: 'e6'));
 
-        verify(
-          () => sequenceLog.recordSentEntry(
-            entryId: 'e6',
-            vectorClock: stamped,
-            payloadType: SyncSequencePayloadType.consumptionEvent,
-          ),
-        ).called(1);
         // The get_it-registered UpdateNotifications received the UI-only ping.
         final getItNotifications =
             getIt<UpdateNotifications>() as MockUpdateNotifications;
@@ -319,33 +232,6 @@ void main() {
   });
 
   group('post-write failure handling', () {
-    test('sequence-log failure is swallowed and logged; the message is '
-        'still enqueued', () async {
-      when(
-        () => sequenceLog.recordSentEntry(
-          entryId: any(named: 'entryId'),
-          vectorClock: any(named: 'vectorClock'),
-          payloadType: any(named: 'payloadType'),
-        ),
-      ).thenThrow(StateError('sequence ledger boom'));
-
-      await service.recordEvent(makeConsumptionEvent(id: 'e7'));
-
-      // The DB write committed and the outbox enqueue still happened.
-      expect(await repo.getEvent('e7'), isNotNull);
-      verify(() => outbox.enqueueMessage(any())).called(1);
-      final logger = getIt<DomainLogger>() as MockDomainLogger;
-      verify(
-        () => logger.error(
-          LogDomain.sync,
-          any(),
-          message: any(named: 'message'),
-          stackTrace: any(named: 'stackTrace'),
-          subDomain: 'consumptionSync.record',
-        ),
-      ).called(1);
-    });
-
     test('outbox enqueue failure is swallowed and logged; the write still '
         'commits', () async {
       when(

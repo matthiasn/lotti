@@ -94,14 +94,80 @@ mixin _SyncDbSequenceLog on _$SyncDatabase, _SyncDbSequenceWatermarks {
     });
   }
 
+  /// Bind an own-host counter nothing has settled yet (no row, `reserved` or
+  /// `burnPending`) to the payload that covers it. A row that is already
+  /// bound or burned is left untouched, so a burn can never be reopened by a
+  /// racing settlement. Returns whether the row is now bound by this call.
+  Future<bool> bindUnsettledOwnSequenceCounter({
+    required String hostId,
+    required int counter,
+    required String entryId,
+    required SyncSequencePayloadType payloadType,
+    DateTime? now,
+  }) async {
+    final timestamp = now ?? clock.now();
+    return transaction(() async {
+      // `insertReturningOrNull`, not `insert`: an ignored insert still reports
+      // the connection's last rowid, so only a returned row proves one landed.
+      final inserted = await into(syncSequenceLog).insertReturningOrNull(
+        SyncSequenceLogCompanion(
+          hostId: Value(hostId),
+          counter: Value(counter),
+          entryId: Value(entryId),
+          payloadType: Value(payloadType.index),
+          originatingHostId: Value(hostId),
+          status: Value(SyncSequenceStatus.received.index),
+          createdAt: Value(timestamp),
+          updatedAt: Value(timestamp),
+        ),
+        mode: InsertMode.insertOrIgnore,
+      );
+      final bound =
+          inserted != null ||
+          await (update(syncSequenceLog)..where(
+                    (t) =>
+                        t.hostId.equals(hostId) &
+                        t.counter.equals(counter) &
+                        t.status.isIn([
+                          SyncSequenceStatus.reserved.index,
+                          SyncSequenceStatus.burnPending.index,
+                        ]),
+                  ))
+                  .write(
+                    SyncSequenceLogCompanion(
+                      entryId: Value(entryId),
+                      payloadType: Value(payloadType.index),
+                      originatingHostId: Value(hostId),
+                      status: Value(SyncSequenceStatus.received.index),
+                      updatedAt: Value(timestamp),
+                    ),
+                  ) !=
+              0;
+      if (bound) {
+        await _refreshSequenceWatermark(
+          hostId: hostId,
+          counter: counter,
+          status: SyncSequenceStatus.received.index,
+        );
+      }
+      return bound;
+    });
+  }
+
   /// Record an own-host VC reservation before the counter is handed to a
   /// caller that may write to another database. The insert is intentionally
   /// `OR IGNORE`: a catch-up reservation must never clobber an already-bound
   /// sequence row if local state has advanced around a previously observed
   /// counter.
+  ///
+  /// [entryId] and [payloadType] name the payload the counter is for. On a
+  /// `reserved` row they are an intent, not a binding: the row stays
+  /// unresolved until the outbox binds it or it is settled.
   Future<int> recordReservedSequenceCounter({
     required String hostId,
     required int counter,
+    String? entryId,
+    SyncSequencePayloadType? payloadType,
     DateTime? now,
   }) async {
     final timestamp = now ?? clock.now();
@@ -110,8 +176,10 @@ mixin _SyncDbSequenceLog on _$SyncDatabase, _SyncDbSequenceWatermarks {
         SyncSequenceLogCompanion(
           hostId: Value(hostId),
           counter: Value(counter),
-          entryId: const Value(null),
-          payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+          entryId: Value(entryId),
+          payloadType: Value(
+            (payloadType ?? SyncSequencePayloadType.journalEntity).index,
+          ),
           status: Value(SyncSequenceStatus.reserved.index),
           createdAt: Value(timestamp),
           updatedAt: Value(timestamp),
@@ -141,14 +209,18 @@ mixin _SyncDbSequenceLog on _$SyncDatabase, _SyncDbSequenceWatermarks {
     status: SyncSequenceStatus.reserved,
   );
 
-  /// Mark a reservation as an authoritative local burn whose outbound
-  /// unresolvable marker still needs to be durably enqueued. Unlike
-  /// [SyncSequenceStatus.reserved], this status is safe for startup
-  /// reconciliation to retry as `unresolvable`: it is only written when a VC
-  /// reservation is released.
+  /// Mark a released reservation whose settlement is still outstanding.
+  /// Unlike [SyncSequenceStatus.reserved], no live write can still land this
+  /// counter, so startup reconciliation may settle it: bind and resend it if
+  /// its named payload covers the counter, burn it otherwise.
+  ///
+  /// [entryId] and [payloadType] record the reservation's payload when the row
+  /// does not already name one; an existing intent is kept.
   Future<void> markReservedSequenceCounterBurnPending({
     required String hostId,
     required int counter,
+    String? entryId,
+    SyncSequencePayloadType? payloadType,
     DateTime? now,
   }) async {
     final timestamp = now ?? clock.now();
@@ -159,8 +231,10 @@ mixin _SyncDbSequenceLog on _$SyncDatabase, _SyncDbSequenceWatermarks {
           SyncSequenceLogCompanion(
             hostId: Value(hostId),
             counter: Value(counter),
-            entryId: const Value(null),
-            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            entryId: Value(entryId),
+            payloadType: Value(
+              (payloadType ?? SyncSequencePayloadType.journalEntity).index,
+            ),
             status: Value(SyncSequenceStatus.burnPending.index),
             createdAt: Value(timestamp),
             updatedAt: Value(timestamp),
@@ -191,10 +265,15 @@ mixin _SyncDbSequenceLog on _$SyncDatabase, _SyncDbSequenceWatermarks {
               ))
               .write(
                 SyncSequenceLogCompanion(
-                  entryId: const Value(null),
-                  payloadType: Value(
-                    SyncSequencePayloadType.journalEntity.index,
-                  ),
+                  entryId: existing.entryId == null && entryId != null
+                      ? Value(entryId)
+                      : const Value.absent(),
+                  payloadType: existing.entryId == null && entryId != null
+                      ? Value(
+                          (payloadType ?? SyncSequencePayloadType.journalEntity)
+                              .index,
+                        )
+                      : const Value.absent(),
                   status: Value(SyncSequenceStatus.burnPending.index),
                   updatedAt: Value(timestamp),
                 ),
@@ -210,7 +289,7 @@ mixin _SyncDbSequenceLog on _$SyncDatabase, _SyncDbSequenceWatermarks {
   }
 
   /// Return own-host reservations that were explicitly released but whose
-  /// unresolvable marker still needs a durable outbound enqueue.
+  /// settlement (bind-and-resend or burn broadcast) has not completed.
   Future<List<int>> burnPendingSequenceCountersForHost({
     required String hostId,
   }) => _sequenceCountersForHostWithStatus(
@@ -218,18 +297,39 @@ mixin _SyncDbSequenceLog on _$SyncDatabase, _SyncDbSequenceWatermarks {
     status: SyncSequenceStatus.burnPending,
   );
 
+  /// Own-host counters startup reconciliation can settle without the process
+  /// that reserved them: every `burnPending` row, and every `reserved` row
+  /// that names its payload. An unnamed `reserved` row cannot be proven
+  /// either way and is left out. Ascending counter order.
+  Future<List<int>> settleableOwnSequenceCountersForHost({
+    required String hostId,
+  }) async {
+    final burnPending = await burnPendingSequenceCountersForHost(
+      hostId: hostId,
+    );
+    final namedReservations = await _sequenceCountersForHostWithStatus(
+      hostId: hostId,
+      status: SyncSequenceStatus.reserved,
+      namedPayloadOnly: true,
+    );
+    return [...burnPending, ...namedReservations]..sort();
+  }
+
   /// Both audit states are sparse. Prefer sorting that indexed subset over
   /// scanning every historical counter just to obtain counter ordering.
   Future<List<int>> _sequenceCountersForHostWithStatus({
     required String hostId,
     required SyncSequenceStatus status,
+    bool namedPayloadOnly = false,
   }) async {
+    final payloadFilter = namedPayloadOnly ? 'AND entry_id IS NOT NULL' : '';
     final rows = await customSelect(
       '''
       SELECT counter
       FROM sync_sequence_log INDEXED BY idx_sync_sequence_log_host_status
       WHERE host_id = ?
         AND status = ?
+        $payloadFilter
       ORDER BY counter
       ''',
       variables: [
@@ -370,11 +470,19 @@ mixin _SyncDbSequenceLog on _$SyncDatabase, _SyncDbSequenceWatermarks {
   }) async {
     final timestamp = now ?? clock.now();
     return transaction(() async {
+      // Own-host `reserved` and `burnPending` rows name their payload as an
+      // intent, not a binding. Their counter may be ahead of the payload
+      // because the write has not landed yet; clearing the intent would leave
+      // the reservation impossible to settle.
       final rows =
           await (select(syncSequenceLog)..where(
                 (t) =>
                     t.entryId.equals(payloadId) &
-                    t.payloadType.equals(payloadType.index),
+                    t.payloadType.equals(payloadType.index) &
+                    t.status.isNotIn([
+                      SyncSequenceStatus.reserved.index,
+                      SyncSequenceStatus.burnPending.index,
+                    ]),
               ))
               .get();
       final invalid = rows

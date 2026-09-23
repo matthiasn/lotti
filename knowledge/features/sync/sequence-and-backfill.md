@@ -5,17 +5,25 @@ description: Causal accounting over (hostId, counter) pairs, bounded initial-onb
 resource: ../../../lib/features/sync/sequence
 tags: [sync, sequence-log, backfill, gap-detection]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-06T00:00:00Z }
-stale_after: 2026-11-02
+generated: { by: claude-code/opus-5.5, at: 2026-09-23T22:00:00Z }
+stale_after: 2027-01-20
 sources:
+  - id: tla-spec
+    resource: ../../../specs/tla/SyncSequence.tla
+    title: TLA+ model of the sequence log and backfill protocol
+    last_modified: 2026-09-23
+  - id: vc-service
+    resource: ../../../lib/services/vector_clock_service.dart
+    title: VectorClockService reservations, intent and pending map
+    last_modified: 2026-09-23
   - id: sequence
     resource: ../../../lib/features/sync/sequence
     title: SyncSequenceLogService
-    last_modified: 2026-08-06
+    last_modified: 2026-09-23
   - id: sequence-db
     resource: ../../../lib/database/sync_db_sequence.dart
-    title: Sequence-log persistence and mapping repair
-    last_modified: 2026-08-06
+    title: Sequence-log persistence, mapping repair and guarded own binding
+    last_modified: 2026-09-23
   - id: journal-receive
     resource: ../../../lib/features/sync/matrix/sync_event_processor_journal_handlers.dart
     title: Journal receive and sequence mapping
@@ -34,8 +42,8 @@ sources:
     last_modified: 2026-07-05
   - id: backfill-response
     resource: ../../../lib/features/sync/backfill/backfill_response_handler.dart
-    title: Backfill payload proof and response handling
-    last_modified: 2026-08-06
+    title: Backfill payload proof, response handling and own-counter settlement
+    last_modified: 2026-09-23
   - id: status
     resource: ../../../lib/database/sync_sequence_status.dart
     title: SyncSequenceStatus
@@ -86,14 +94,31 @@ events" into "we can prove nothing was lost".
 
 A local write reserves its counter *before* the write path gets it, so a crash
 between reservation and write leaves an auditable row rather than an invisible
-hole.
+hole. The caller names the payload the counter is for — its id and payload
+type — whenever it knows it, and every write path in the app does. The
+`reserved` row records that name as an **intent**: not a binding, but enough
+to prove later whether the write landed, from the payload's own vector clock.
+
+`VectorClockService` also keeps the reservations this process has neither
+bound nor released in a process-local **pending** map. Only a pending counter
+can still land, and a crash forgets the map, so "not pending" means no live
+write will ever settle the counter.
+
+A row becomes `received` only once the payload is durably in the outbox: the
+enqueue writer binds each counter right after its outbox insert, and the write
+paths no longer bind before enqueueing. A crash between the payload commit and
+the enqueue therefore leaves the row `reserved`, where startup finds it —
+before, the early bind hid such a write for good.
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Reserved: reserve VC counter
-  Reserved --> Received: recordSentEntry binds payload
-  Reserved --> BurnPending: release without payload
-  BurnPending --> Burned: own-counter burn marker enqueued
+  [*] --> Reserved: reserve VC counter, naming the payload
+  Reserved --> Received: outbox enqueue binds it
+  Reserved --> BurnPending: reservation released
+  Reserved --> Received: settled, payload clock covers the counter
+  Reserved --> Burned: settled, no live write and payload never landed
+  BurnPending --> Received: settled, payload clock covers the counter
+  BurnPending --> Burned: settled, unresolvable marker enqueued
 
   Missing --> Requested: backfill batch sent
   Requested --> Backfilled: verified payload arrives
@@ -109,24 +134,58 @@ stateDiagram-v2
   Backfilled --> [*]
 ```
 
-Startup reconciliation retries `burnPending` rows by enqueueing the durable
-`unresolvable=true` broadcast and terminalizing the local row to `burned`. It
-deliberately does **not** terminalize plain `reserved` rows: a crash may have
-left a real local payload behind before outbox logging ran, and burning it would
-destroy recoverable data.
-Backfill replies preserve the same distinction: an own-host `reserved` row is
-deferred without sending an unresolvable marker or starting a successful-reply
-cooldown. Once its payload binding succeeds, the next request can send it.
+## Settling an own counter
 
+`BackfillResponseHandler.settleOwnCounter` is the single decision for an own
+counter nothing has bound yet — no row, `reserved`, or `burnPending`. The
+backfill responder, the VC release handler and startup reconciliation all use
+it:
 
-Local persistence records the exact `(host, counter, entry, payload type)`
-binding immediately after its data commit. The outbox records it again as a
-fallback for direct enqueue and re-sync paths. `SyncSequenceCache` remembers a
-successful binding for five minutes and makes the normal second call
-idempotent; a later call reaches the database again in case lifecycle state
-changed. Counted `sequence.recordSent.write` and
+1. If the reservation names its payload — on the row, or in the pending map
+   when the reserved-row insert failed — and that payload's own-host clock
+   covers the counter, the write landed or a later write of the same payload
+   superseded it. The counter is bound (never over a `received` or `burned`
+   row) and the payload is resent.
+2. Otherwise, if the counter is pending, or the payload's store is not wired
+   yet (the agent repository arrives after sync starts), it is deferred.
+   Wiring the store settles the orphans that waited for it.
+3. Otherwise, if a `reserved` row names no payload, nothing can prove it
+   either way and it is deferred until the requester gives up.
+4. Otherwise no payload carries the counter, and it is burned
+   authoritatively.
+
+Pending is read before the payload clock: a counter that is not pending can
+never become pending again, so its payload cannot land between the two reads
+and turn the burn into a false one.
+
+A release — a rejected write, a throwing scope, `commitWhen: false` — first
+marks the row `burnPending` and records the reservation's payload on it, and
+only then leaves the pending map, so a request answered in between still knows
+what to look for. The burn handler then settles the counter, so a release can
+never burn a counter whose payload landed anyway: that happens when a step
+after the commit throws and an outer scope reads the write as failed.
+
+Startup reconciliation settles every `burnPending` row and every `reserved`
+row that names its payload. Unnamed `reserved` rows are still only audited:
+without a name, a crash between the payload write and its binding cannot be
+told apart from a write that never happened.
+
+`SyncSequenceCache` remembers a successful binding for five minutes and makes a
+repeated call idempotent; a later call reaches the database again in case
+lifecycle state changed. Counted `sequence.recordSent.write` and
 `sequence.recordSent.duplicate` diagnostics preserve the ratio between useful
 writes and redundant attempts without logging every binding.
+
+## The formal model
+
+[`specs/tla/SyncSequence.tla`](../../../specs/tla/SyncSequence.tla)
+model-checks this lifecycle with TLC for one originator and its peers, under
+bounded crashes and injected faults. Its four configurations prove that no
+committed payload is ever burned, that a received row is backed by the data,
+and that `burned` is terminal; and, with one crash at any point, that every
+committed write eventually reaches every peer and no backfill request stays
+open forever. [`specs/tla/README.md`](../../../specs/tla/README.md) lists what
+each configuration covers and the one residual it does not.
 
 # `burned` versus `unresolvable`
 
@@ -371,6 +430,11 @@ redundant 250-counter requests on a slow onboarding device.
 | `deleted` | The responder confirms it was purged |
 | `unresolvable` | **Only ever sent by the originating host for its own counter.** The receiving peer classifies an incoming `unresolvable=true` as the terminal `burned` state — the wire flag is unchanged, so old and new peers interoperate |
 | A verified covering payload hint | An exact payload is no longer the best answer |
+
+A request for one of the responder's own counters that nothing has bound yet
+is answered through [settling](#settling-an-own-counter): a covered intent is
+bound and resent, a pending or unnamed reservation is left unanswered without
+starting the cooldown, and anything else is burned.
 
 Responses are rate-limited and cooled down per `(hostId, counter)` — 5-minute
 cooldown, a 1-minute rate window — so repair traffic cannot turn into its own

@@ -637,11 +637,10 @@ class SyncSequenceReceiver {
   ///
   /// Rows returned from [reservedCountersForHost] are diagnostic only and must
   /// not be automatically converted via [markOwnCounterUnresolvable]. A crash
-  /// can happen after the payload commits but before `recordSentEntry`
-  /// replaces the `reserved` row, so treating plain reservations as
-  /// unresolvable could burn a real payload mapping. Only rows in
-  /// [SyncSequenceStatus.burnPending] carry the "released without payload"
-  /// guarantee and are safe for startup reconciliation.
+  /// can happen after the payload commits but before the outbox binds the
+  /// `reserved` row, so treating plain reservations as unresolvable could burn
+  /// a real payload. Startup settles only [settleableOwnCountersForHost],
+  /// which checks each named payload before burning anything.
   Future<List<int>> reservedCountersForHost({
     required String hostId,
   }) async {
@@ -658,19 +657,20 @@ class SyncSequenceReceiver {
     return counters;
   }
 
-  /// Return own-host reservations that were explicitly released without a
-  /// payload, but whose outbound unresolvable marker still needs to be retried.
-  Future<List<int>> burnPendingCountersForHost({
+  /// Return own-host counters no live write can still settle: released
+  /// reservations whose settlement did not finish (`burnPending`), and
+  /// `reserved` rows that name their payload.
+  Future<List<int>> settleableOwnCountersForHost({
     required String hostId,
   }) async {
-    final counters = await _syncDatabase.burnPendingSequenceCountersForHost(
+    final counters = await _syncDatabase.settleableOwnSequenceCountersForHost(
       hostId: hostId,
     );
     if (counters.isNotEmpty) {
       _tracer.trace(
-        'burnPendingCountersForHost hostId=$hostId '
+        'settleableOwnCountersForHost hostId=$hostId '
         'count=${counters.length} counters=$counters',
-        subDomain: 'sequence.burnPendingCounters',
+        subDomain: 'sequence.settleableCounters',
       );
     }
     return counters;

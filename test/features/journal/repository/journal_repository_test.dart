@@ -900,7 +900,9 @@ void main() {
             () => mockJournalDb.entryLinkById(changed.id),
           ).thenAnswer((_) async => testLink);
           when(
-            () => mockVectorClockService.getNextVectorClock(),
+            () => mockVectorClockService.getNextVectorClock(
+              payload: any(named: 'payload'),
+            ),
           ).thenAnswer((_) async => const VectorClock({'node1': 1}));
           // Identical row already on disk: zero rows written.
           when(
@@ -935,7 +937,9 @@ void main() {
             () => mockJournalDb.entryLinkById(changed.id),
           ).thenAnswer((_) async => testLink);
           when(
-            () => mockVectorClockService.getNextVectorClock(),
+            () => mockVectorClockService.getNextVectorClock(
+              payload: any(named: 'payload'),
+            ),
           ).thenAnswer((_) async => const VectorClock({'node1': 1}));
           when(
             () => mockJournalDb.upsertEntryLink(any()),
@@ -981,7 +985,9 @@ void main() {
 
         // Mock VectorClockService
         when(
-          () => mockVectorClockService.getNextVectorClock(),
+          () => mockVectorClockService.getNextVectorClock(
+            payload: any(named: 'payload'),
+          ),
         ).thenAnswer((_) async => const VectorClock({'node1': 1}));
 
         // Mock JournalDb
@@ -1006,7 +1012,11 @@ void main() {
         expect(result, isTrue);
         expect(mockVectorClockService.commits, [true]);
         verify(() => mockJournalDb.entryLinkById(updatedLink.id)).called(1);
-        verify(() => mockVectorClockService.getNextVectorClock()).called(1);
+        verify(
+          () => mockVectorClockService.getNextVectorClock(
+            payload: any(named: 'payload'),
+          ),
+        ).called(1);
         verify(() => mockJournalDb.upsertEntryLink(any())).called(1);
         verify(
           () => mockUpdateNotifications.notify({
@@ -1040,7 +1050,11 @@ void main() {
         // Assert
         expect(result, isFalse);
         verify(() => mockJournalDb.entryLinkById(testLink.id)).called(1);
-        verifyNever(() => mockVectorClockService.getNextVectorClock());
+        verifyNever(
+          () => mockVectorClockService.getNextVectorClock(
+            payload: any(named: 'payload'),
+          ),
+        );
         verifyNever(() => mockJournalDb.upsertEntryLink(any()));
         verifyNever(() => mockUpdateNotifications.notify(any()));
         verifyNever(() => mockOutboxService.enqueueMessage(any()));
@@ -2885,7 +2899,9 @@ void main() {
           () => collapsedMockJournalDb.entryLinkById(updatedLink.id),
         ).thenAnswer((_) async => testLink);
         when(
-          () => collapsedMockVectorClockService.getNextVectorClock(),
+          () => collapsedMockVectorClockService.getNextVectorClock(
+            payload: any(named: 'payload'),
+          ),
         ).thenAnswer((_) async => const VectorClock({'node1': 1}));
         when(
           () => collapsedMockJournalDb.upsertEntryLink(any()),
@@ -2903,7 +2919,9 @@ void main() {
         verify(() => collapsedMockJournalDb.upsertEntryLink(any())).called(1);
         verify(() => collapsedMockUpdateNotifications.notify(any())).called(1);
         verify(
-          () => collapsedMockVectorClockService.getNextVectorClock(),
+          () => collapsedMockVectorClockService.getNextVectorClock(
+            payload: any(named: 'payload'),
+          ),
         ).called(1);
         verify(
           () => collapsedMockOutboxService.enqueueMessage(any()),
@@ -2991,7 +3009,9 @@ void main() {
           () => collapsedMockJournalDb.entryLinkById(incomingLink.id),
         ).thenAnswer((_) async => existingLink);
         when(
-          () => collapsedMockVectorClockService.getNextVectorClock(),
+          () => collapsedMockVectorClockService.getNextVectorClock(
+            payload: any(named: 'payload'),
+          ),
         ).thenAnswer((_) async => const VectorClock({'node1': 1}));
         when(
           () => collapsedMockJournalDb.upsertEntryLink(any()),
@@ -3008,7 +3028,9 @@ void main() {
         expect(result, isTrue);
         verify(() => collapsedMockJournalDb.upsertEntryLink(any())).called(1);
         verify(
-          () => collapsedMockVectorClockService.getNextVectorClock(),
+          () => collapsedMockVectorClockService.getNextVectorClock(
+            payload: any(named: 'payload'),
+          ),
         ).called(1);
         verify(
           () => collapsedMockOutboxService.enqueueMessage(any()),
@@ -3030,7 +3052,9 @@ void main() {
           () => collapsedMockJournalDb.entryLinkById(updatedLink.id),
         ).thenAnswer((_) async => testLink);
         when(
-          () => collapsedMockVectorClockService.getNextVectorClock(),
+          () => collapsedMockVectorClockService.getNextVectorClock(
+            payload: any(named: 'payload'),
+          ),
         ).thenAnswer((_) async => const VectorClock({'node1': 1}));
         when(
           () => collapsedMockJournalDb.upsertEntryLink(any()),
@@ -3077,7 +3101,9 @@ void main() {
           () => collapsedMockJournalDb.entryLinkById(incoming.id),
         ).thenAnswer((_) async => existing);
         when(
-          () => collapsedMockVectorClockService.getNextVectorClock(),
+          () => collapsedMockVectorClockService.getNextVectorClock(
+            payload: any(named: 'payload'),
+          ),
         ).thenAnswer((_) async => const VectorClock({'node1': 1}));
         when(
           () => collapsedMockJournalDb.upsertEntryLink(any()),
@@ -3117,7 +3143,9 @@ void main() {
           () => collapsedMockJournalDb.entryLinkById(incoming.id),
         ).thenAnswer((_) async => existing);
         when(
-          () => collapsedMockVectorClockService.getNextVectorClock(),
+          () => collapsedMockVectorClockService.getNextVectorClock(
+            payload: any(named: 'payload'),
+          ),
         ).thenAnswer((_) async => const VectorClock({'node1': 1}));
         when(
           () => collapsedMockJournalDb.upsertEntryLink(any()),
@@ -3157,7 +3185,9 @@ void main() {
           () => collapsedMockJournalDb.entryLinkById(incoming.id),
         ).thenAnswer((_) async => existing);
         when(
-          () => collapsedMockVectorClockService.getNextVectorClock(),
+          () => collapsedMockVectorClockService.getNextVectorClock(
+            payload: any(named: 'payload'),
+          ),
         ).thenAnswer((_) async => const VectorClock({'node1': 1}));
         when(
           () => collapsedMockJournalDb.upsertEntryLink(any()),
@@ -3197,7 +3227,9 @@ void main() {
           () => collapsedMockJournalDb.entryLinkById(incoming.id),
         ).thenAnswer((_) async => existing);
         when(
-          () => collapsedMockVectorClockService.getNextVectorClock(),
+          () => collapsedMockVectorClockService.getNextVectorClock(
+            payload: any(named: 'payload'),
+          ),
         ).thenAnswer((_) async => const VectorClock({'node1': 1}));
         when(
           () => collapsedMockJournalDb.upsertEntryLink(any()),
@@ -3231,7 +3263,9 @@ void main() {
           () => collapsedMockJournalDb.entryLinkById(incoming.id),
         ).thenAnswer((_) async => existing);
         when(
-          () => collapsedMockVectorClockService.getNextVectorClock(),
+          () => collapsedMockVectorClockService.getNextVectorClock(
+            payload: any(named: 'payload'),
+          ),
         ).thenAnswer((_) async => const VectorClock({'node1': 1}));
         when(
           () => collapsedMockJournalDb.upsertEntryLink(any()),
@@ -3277,7 +3311,9 @@ void main() {
           () => collapsedMockJournalDb.entryLinkById(incoming.id),
         ).thenAnswer((_) async => existing);
         when(
-          () => collapsedMockVectorClockService.getNextVectorClock(),
+          () => collapsedMockVectorClockService.getNextVectorClock(
+            payload: any(named: 'payload'),
+          ),
         ).thenAnswer((_) async => const VectorClock({'node1': 1}));
         when(
           () => collapsedMockJournalDb.upsertEntryLink(any()),
@@ -3319,7 +3355,9 @@ void main() {
             () => collapsedMockJournalDb.entryLinkById(incoming.id),
           ).thenAnswer((_) async => existing);
           when(
-            () => collapsedMockVectorClockService.getNextVectorClock(),
+            () => collapsedMockVectorClockService.getNextVectorClock(
+              payload: any(named: 'payload'),
+            ),
           ).thenAnswer((_) async => const VectorClock({'node1': 1}));
           when(
             () => collapsedMockJournalDb.upsertEntryLink(any()),
@@ -3379,7 +3417,9 @@ void main() {
           () => collapsedMockJournalDb.entryLinkById(link.id),
         ).thenAnswer((_) async => null);
         when(
-          () => collapsedMockVectorClockService.getNextVectorClock(),
+          () => collapsedMockVectorClockService.getNextVectorClock(
+            payload: any(named: 'payload'),
+          ),
         ).thenAnswer((_) async => const VectorClock({'node1': 1}));
         when(
           () => collapsedMockJournalDb.upsertEntryLink(any()),
@@ -3401,7 +3441,9 @@ void main() {
     group('updateLinkType', () {
       void stubSuccessfulUpsert() {
         when(
-          () => collapsedMockVectorClockService.getNextVectorClock(),
+          () => collapsedMockVectorClockService.getNextVectorClock(
+            payload: any(named: 'payload'),
+          ),
         ).thenAnswer((_) async => const VectorClock({'node1': 1}));
         when(
           () => collapsedMockJournalDb.upsertEntryLink(any()),

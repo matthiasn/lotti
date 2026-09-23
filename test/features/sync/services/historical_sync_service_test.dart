@@ -1256,6 +1256,7 @@ void main() {
         when(
           () => vectorClockService.getNextVectorClock(
             previous: any(named: 'previous'),
+            payload: any(named: 'payload'),
           ),
         ).thenAnswer((_) async => stamped);
         await populateAgentDb(
@@ -1342,6 +1343,7 @@ void main() {
         when(
           () => vectorClockService.getNextVectorClock(
             previous: any(named: 'previous'),
+            payload: any(named: 'payload'),
           ),
         ).thenAnswer((_) async => stamped);
 

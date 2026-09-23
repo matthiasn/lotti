@@ -125,6 +125,19 @@ class SyncSequenceLogService {
     required VectorClock vectorClock,
   }) => _sender.recordSentEntryLink(linkId: linkId, vectorClock: vectorClock);
 
+  /// Bind an unsettled own-host counter to the payload proven to cover it.
+  Future<bool> bindOwnCounter({
+    required String hostId,
+    required int counter,
+    required String entryId,
+    required SyncSequencePayloadType payloadType,
+  }) => _sender.bindOwnCounter(
+    hostId: hostId,
+    counter: counter,
+    entryId: entryId,
+    payloadType: payloadType,
+  );
+
   // ── Receive path ──────────────────────────────────────────────────────────
 
   /// Returns the last sent vector clock for [entryId] from this host's
@@ -206,10 +219,11 @@ class SyncSequenceLogService {
   Future<List<int>> reservedCountersForHost({required String hostId}) =>
       _receiver.reservedCountersForHost(hostId: hostId);
 
-  /// Return own-host reservations released without a payload whose outbound
-  /// unresolvable marker still needs to be retried.
-  Future<List<int>> burnPendingCountersForHost({required String hostId}) =>
-      _receiver.burnPendingCountersForHost(hostId: hostId);
+  /// Return own-host counters startup reconciliation can settle: released
+  /// reservations still `burnPending`, and `reserved` rows that name their
+  /// payload.
+  Future<List<int>> settleableOwnCountersForHost({required String hostId}) =>
+      _receiver.settleableOwnCountersForHost(hostId: hostId);
 
   // ── Backfill responses ──────────────────────────────────────────────────
 

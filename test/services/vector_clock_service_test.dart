@@ -576,6 +576,120 @@ void main() {
     );
   });
 
+  group('VectorClockService reservation intent', () {
+    late SyncDatabase syncDb;
+    late String host;
+    const payload = (id: 'entry-1', type: SyncSequencePayloadType.agentEntity);
+
+    setUp(() async {
+      syncDb = SyncDatabase(inMemoryDatabase: true);
+      getIt.registerSingleton<SyncDatabase>(syncDb);
+      addTearDown(syncDb.close);
+      await service.setNextAvailableCounter(50);
+      host = (await service.getHost())!;
+    });
+
+    test(
+      'a named reservation records its payload on the reserved row and stays '
+      'pending until the counter is settled',
+      () async {
+        await service.getNextVectorClock(payload: payload);
+
+        final row = await syncDb.getEntryByHostAndCounter(host, 50);
+        expect(row!.status, SyncSequenceStatus.reserved.index);
+        expect(row.entryId, 'entry-1');
+        expect(row.payloadType, SyncSequencePayloadType.agentEntity.index);
+        expect(service.isPending(hostId: host, counter: 50), isTrue);
+        expect(service.pendingPayload(hostId: host, counter: 50), payload);
+
+        service.settle(hostId: host, counter: 50);
+
+        expect(service.isPending(hostId: host, counter: 50), isFalse);
+        expect(service.pendingPayload(hostId: host, counter: 50), isNull);
+      },
+    );
+
+    test(
+      'an unnamed reservation is pending too, without a payload, and its '
+      'row names none',
+      () async {
+        await service.getNextVectorClock();
+
+        expect(service.isPending(hostId: host, counter: 50), isTrue);
+        expect(service.pendingPayload(hostId: host, counter: 50), isNull);
+        expect(
+          (await syncDb.getEntryByHostAndCounter(host, 50))!.entryId,
+          null,
+        );
+      },
+    );
+
+    test(
+      'release records the payload on the burnPending row before the '
+      'counter stops being pending — the handler sees a row it can settle',
+      () async {
+        SyncSequenceLogItem? rowSeenByHandler;
+        bool? pendingSeenByHandler;
+        service.setBurnHandler((hostId, counter) async {
+          rowSeenByHandler = await syncDb.getEntryByHostAndCounter(
+            hostId,
+            counter,
+          );
+          pendingSeenByHandler = service.isPending(
+            hostId: hostId,
+            counter: counter,
+          );
+        });
+        addTearDown(() => service.setBurnHandler(null));
+
+        final reservation = await service.reserveNextVectorClock(
+          payload: payload,
+        );
+        await reservation.release();
+
+        expect(rowSeenByHandler!.status, SyncSequenceStatus.burnPending.index);
+        expect(rowSeenByHandler!.entryId, 'entry-1');
+        expect(pendingSeenByHandler, isFalse);
+      },
+    );
+
+    test(
+      'release of a reservation whose row insert failed still records the '
+      'payload from memory on the burnPending row',
+      () async {
+        final reservation = await service.reserveNextVectorClock(
+          payload: payload,
+        );
+        // The swallowed reserved-row failure: no row exists at release time.
+        await syncDb.customStatement(
+          'DELETE FROM sync_sequence_log WHERE counter = 50',
+        );
+
+        await reservation.release();
+
+        final row = await syncDb.getEntryByHostAndCounter(host, 50);
+        expect(row!.status, SyncSequenceStatus.burnPending.index);
+        expect(row.entryId, 'entry-1');
+        expect(row.payloadType, SyncSequencePayloadType.agentEntity.index);
+      },
+    );
+
+    test(
+      'burnUnboundVectorClock releases with the payload the pending '
+      'reservation named',
+      () async {
+        final vc = await service.getNextVectorClock(payload: payload);
+
+        await service.burnUnboundVectorClock(vc, reason: 'write rejected');
+
+        final row = await syncDb.getEntryByHostAndCounter(host, 50);
+        expect(row!.status, SyncSequenceStatus.burnPending.index);
+        expect(row.entryId, 'entry-1');
+        expect(service.isPending(hostId: host, counter: 50), isFalse);
+      },
+    );
+  });
+
   group('VectorClockService withVcScope', () {
     test('commits every nested reservation on success', () async {
       await service.setNextAvailableCounter(100);
