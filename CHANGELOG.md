@@ -4,6 +4,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.25]
+
+### Added
+
+- **Accept or reject the task chat's suggestions one at a time.** When the
+  chat proposes several changes, each one now has its own confirm and reject
+  buttons, and "Accept all" and "Dismiss all" act only on what you have not
+  decided yet.
+- **Checklist items show when you approved them in chat.** An item the task
+  chat checked off, renamed or archived on your say-so now reads "Approved by
+  you in chat" with the date, instead of looking like the agent's own edit.
+  Tap it to open that chat.
+
+### Changed
+
+- **The Events page header now works like the Tasks page.** The row of
+  category pills that ran off the edge of the screen is gone. Instead, the
+  filter button beside the search field opens the same category list as the
+  Tasks filter, and you can pick several categories at once. Active categories
+  show as chips under the search field, each removable with one tap, and
+  "Clear all" resets everything. "New event" moved to the floating button in
+  the corner, where the other lists keep their create button.
+
+### Removed
+
+- **The "Ask about this category" chat is gone from the category page for
+  now.** No agent keeps a summary of a whole category, so the chat had nothing
+  category-level to answer from and its replies often made little sense. It
+  will come back once a category can have an agent of its own. Task and
+  project chats are unchanged.
+
+### Fixed
+
+- **Searching events did nothing.** The "Search events" box at the top of the
+  Events page looked like a search field but ignored taps and typing on both
+  desktop and phones. It is now a real search field: typing narrows the page to
+  events whose title or notes contain the text, and the clear button brings
+  everything back.
+- **The task's AI summary no longer looks current while an update is
+  waiting.** After you changed a task, the summary card said nothing until the
+  agent's short update countdown ran out, so an out-of-date summary read as if
+  it were current. The card now shows *Out of date*, with *Update now* beside
+  it, from the moment the change is queued.
+- **The task agent could suggest undoing a rename or archive you approved in
+  chat.** Checking items off in chat was already protected, but a title change
+  or an archived item you accepted there looked like any other edit to the
+  agent, so it could propose renaming the item back or restoring it. Approved
+  titles and archive states are now held to the same rule as check-offs: the
+  agent leaves them alone until you approve something new.
+
 ## [1.1.24]
 
 ### Changed
