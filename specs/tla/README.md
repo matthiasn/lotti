@@ -55,6 +55,33 @@ What the configurations deliberately leave out:
   for one stays open until the requester gives up — which is why
   `SyncSequenceCrashUnnamed` checks safety only.
 
+## `OwnCounterSettlement` — recovery interleavings
+
+This focused safety model expands the atomic settlement and fallback migration
+in `SyncSequence`. It separates the sequence-row read, settings read, migration
+insert/removal, durable enqueue and binding. An earlier answer in the same batch
+may silently fail to enqueue, or enqueue version 2 before version 3 commits.
+
+The configuration checks `TypeOK`, `NoFalseBurn` and `BoundHasQueuedPayload`
+across 160 distinct states. It models one named, inactive reservation and two
+payload versions. No write can still commit the requested counter after the
+settlement reads start. Payload purges, unavailable stores, retries, peers and
+crashes are outside this focused model; it claims safety, not delivery liveness.
+
+Both guards have mutation switches. In a temporary copy of the configuration,
+set one switch to `FALSE` and run TLC against `OwnCounterSettlement.tla`:
+
+| Mutation | Expected counterexample |
+|----------|-------------------------|
+| `RecheckSequence = FALSE` | `NoFalseBurn`: the first row read misses, migration inserts the row and removes the settings fallback, the second read misses, settlement burns the committed counter |
+| `RequireDurableEnqueue = FALSE` | `BoundHasQueuedPayload`: an earlier batch answer attempts a resend, its enqueue fails (or queues an older version), settlement skips its own enqueue and binds |
+
+Keep mutation configurations outside this directory: CI runs every checked-in
+configuration and expects each to pass. The handler suite has deterministic
+regressions for both races, newer payload versions, migrated unnamed/already
+settled rows, and a failed sequence-log recheck. Reverting the Dart guards makes
+all six new regressions fail.
+
 ## `WakeRuntime` — agent wakes
 
 Triggers become queued jobs, the drain dispatches a job when its agent's runner

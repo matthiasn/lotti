@@ -2524,7 +2524,14 @@ void main() {
         );
 
         verify(
-          () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 3),
+          () => mockOutboxService.enqueueMessage(
+            const SyncMessage.backfillResponse(
+              hostId: aliceHostId,
+              counter: 3,
+              deleted: false,
+              unresolvable: true,
+            ),
+          ),
         ).called(1);
         // The boundary-aged entry was replaced by a fresh cooldown stamp.
         expect(handler.recentlyResponded['$aliceHostId:3'], fixedNow);
@@ -4198,6 +4205,198 @@ void main() {
     }
 
     test(
+      'regression: best-effort batch resend cannot satisfy durable settlement',
+      () async {
+        ownRow = _createLogItem(
+          aliceHostId,
+          3,
+          entryId: 'entry-3',
+          status: SyncSequenceStatus.reserved,
+        );
+        stubPending(pending: false);
+        stubJournalPayload(3);
+        when(
+          () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 2),
+        ).thenAnswer(
+          (_) async => _createLogItem(aliceHostId, 2, entryId: 'entry-3'),
+        );
+        // Production enqueueMessage logs and returns normally on an outbox error.
+        // The durable API reports the same outage instead.
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
+        ).thenAnswer((_) async => throw StateError('outbox locked'));
+        await handler.handleBackfillRequest(
+          const SyncBackfillRequest(
+            entries: [
+              BackfillRequestEntry(hostId: aliceHostId, counter: 2),
+              BackfillRequestEntry(hostId: aliceHostId, counter: 3),
+            ],
+            requesterId: requesterId,
+          ),
+        );
+        expect(
+          ownRow!.status,
+          SyncSequenceStatus.reserved.index,
+          reason:
+              'No payload enqueue succeeded, so counter 3 must stay retryable',
+        );
+        verifyPayloadResent();
+        verifyNothingBurned();
+        expect(handler.recentlyResponded, isNot(contains('$aliceHostId:3')));
+      },
+    );
+
+    test(
+      'regression: an older batch resend cannot satisfy a newer settlement',
+      () async {
+        ownRow = _createLogItem(
+          aliceHostId,
+          3,
+          entryId: 'entry-3',
+          status: SyncSequenceStatus.reserved,
+        );
+        stubPending(pending: false);
+        stubJournalPayload(2);
+        when(
+          () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 2),
+        ).thenAnswer(
+          (_) async => _createLogItem(aliceHostId, 2, entryId: 'entry-3'),
+        );
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenAnswer((_) async {
+          // The first answer queued version 2; a later write commits version 3
+          // before the next counter is settled in the same request batch.
+          stubJournalPayload(3);
+        });
+
+        await handler.handleBackfillRequest(
+          const SyncBackfillRequest(
+            entries: [
+              BackfillRequestEntry(hostId: aliceHostId, counter: 2),
+              BackfillRequestEntry(hostId: aliceHostId, counter: 3),
+            ],
+            requesterId: requesterId,
+          ),
+        );
+
+        verifyInOrder([
+          () => mockOutboxService.enqueueMessageOrThrow(
+            any(
+              that: isA<SyncJournalEntity>().having(
+                (message) => message.vectorClock?.vclock[aliceHostId],
+                'queued own counter',
+                3,
+              ),
+            ),
+          ),
+          () => mockSequenceService.bindOwnCounter(
+            hostId: aliceHostId,
+            counter: 3,
+            entryId: 'entry-3',
+            payloadType: SyncSequencePayloadType.journalEntity,
+          ),
+        ]);
+        verifyNothingBurned();
+      },
+    );
+
+    test(
+      'regression: migration between intent reads preserves the saved payload',
+      () async {
+        stubPending(pending: false);
+        stubJournalPayload(3);
+        // The sequence lookup has already returned null when the fallback lookup
+        // runs. Startup migrates the intent into the log and removes the fallback
+        // before that second read completes.
+        when(
+          () => mockVcService.unrecordedReservation(
+            hostId: aliceHostId,
+            counter: 3,
+          ),
+        ).thenAnswer((_) async {
+          ownRow = _createLogItem(
+            aliceHostId,
+            3,
+            entryId: 'entry-3',
+            status: SyncSequenceStatus.reserved,
+          );
+          return null;
+        });
+        final outcome = await handler.settleOwnCounter(
+          hostId: aliceHostId,
+          counter: 3,
+        );
+        expect(outcome, OwnCounterSettlement.bound);
+        expect(ownRow!.status, SyncSequenceStatus.received.index);
+        verifyPayloadResent();
+        verifyNothingBurned();
+      },
+    );
+
+    for (final status in [
+      SyncSequenceStatus.received,
+      SyncSequenceStatus.reserved,
+    ]) {
+      test(
+        'regression: migration preserves a ${status.name} row without a payload name',
+        () async {
+          stubPending(pending: false);
+          when(
+            () => mockVcService.unrecordedReservation(
+              hostId: aliceHostId,
+              counter: 3,
+            ),
+          ).thenAnswer((_) async {
+            ownRow = _createLogItem(aliceHostId, 3, status: status);
+            return null;
+          });
+
+          final outcome = await handler.settleOwnCounter(
+            hostId: aliceHostId,
+            counter: 3,
+          );
+
+          expect(
+            outcome,
+            status == SyncSequenceStatus.received
+                ? OwnCounterSettlement.alreadySettled
+                : OwnCounterSettlement.deferred,
+          );
+          verifyNothingBurned();
+        },
+      );
+    }
+
+    test(
+      'regression: a failed migration recheck leaves the counter retryable',
+      () async {
+        when(
+          () => mockVcService.unrecordedReservation(
+            hostId: aliceHostId,
+            counter: 3,
+          ),
+        ).thenAnswer((_) async {
+          when(
+            () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 3),
+          ).thenAnswer(
+            (_) async => throw StateError('sequence log unavailable'),
+          );
+          return null;
+        });
+
+        await expectLater(
+          handler.settleOwnCounter(hostId: aliceHostId, counter: 3),
+          throwsStateError,
+        );
+        verifyNothingBurned();
+      },
+    );
+
+    test(
       'regression: a request for a named reservation a crashed process left '
       'behind is answered with its landed payload instead of deferred forever',
       () async {
@@ -4421,8 +4620,7 @@ void main() {
     );
 
     test(
-      'a request for a counter bound concurrently is answered from the row '
-      'as it now stands',
+      'a durable resend that binds the counter is not enqueued again',
       () async {
         ownRow = _createLogItem(
           aliceHostId,
@@ -4432,7 +4630,12 @@ void main() {
         );
         stubPending(pending: false);
         stubJournalPayload(3);
-        // The outbox bound the counter between our read and our bind.
+        // Production's durable enqueue records the sent entry before returning.
+        when(
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
+        ).thenAnswer((_) async {
+          ownRow = _createLogItem(aliceHostId, 3, entryId: 'entry-3');
+        });
         when(
           () => mockSequenceService.bindOwnCounter(
             hostId: any(named: 'hostId'),
@@ -4440,16 +4643,21 @@ void main() {
             entryId: any(named: 'entryId'),
             payloadType: any(named: 'payloadType'),
           ),
-        ).thenAnswer((_) async {
-          ownRow = _createLogItem(aliceHostId, 3, entryId: 'entry-3');
-          return false;
-        });
+        ).thenAnswer(
+          (_) async => ownRow!.status != SyncSequenceStatus.received.index,
+        );
 
         await handler.handleBackfillRequest(request);
 
         verify(
           () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 3),
         ).called(2);
+        verifyPayloadResent();
+        verifyNever(
+          () => mockOutboxService.enqueueMessage(
+            any(that: isA<SyncJournalEntity>()),
+          ),
+        );
         verifyNothingBurned();
         expect(handler.recentlyResponded, contains('$aliceHostId:3'));
       },

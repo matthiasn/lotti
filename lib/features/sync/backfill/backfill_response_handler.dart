@@ -36,7 +36,7 @@ enum OwnCounterSettlement {
   /// not name the payload, or the payload's store is not wired yet.
   deferred,
 
-  /// Something else already bound or burned it; nothing was done.
+  /// Already bound or burned, possibly by the resend's outbox writer.
   alreadySettled,
 }
 
@@ -139,20 +139,20 @@ class BackfillResponseHandler {
   /// counter that is not pending cannot become pending again, so its payload
   /// cannot land between the two reads and turn a burn into a false one.
   ///
-  /// [sentPayloads] deduplicates resends within one request batch.
+  /// Settlement always durably resends the current payload before binding.
+  /// A previous batch response may have failed silently or sent an older version.
   Future<OwnCounterSettlement> settleOwnCounter({
     required String hostId,
     required int counter,
-    Set<String>? sentPayloads,
   }) async => _settleOwnCounter(
     hostId: hostId,
     counter: counter,
     row: await _sequenceLogService.getEntryByHostAndCounter(hostId, counter),
-    sentPayloads: sentPayloads,
   );
 
   /// [settleOwnCounter] for a caller that has already read the counter's
-  /// sequence [row].
+  /// sequence [row]. Successful resends extend [sentPayloads] for ordinary
+  /// batch responses; existing keys never suppress a settlement enqueue.
   Future<OwnCounterSettlement> _settleOwnCounter({
     required String hostId,
     required int counter,
@@ -178,6 +178,24 @@ class BackfillResponseHandler {
             counter: counter,
           )
         : null;
+    if (row == null && fallback == null) {
+      // Startup migration inserts the sequence row before removing the settings
+      // fallback. It can run between our two reads, so two misses do not prove
+      // there was no intent. Re-read the destination after the fallback miss.
+      final migratedRow = await _sequenceLogService.getEntryByHostAndCounter(
+        hostId,
+        counter,
+      );
+      if (migratedRow != null) {
+        // A non-null row skips the fallback lookup, bounding this retry to once.
+        return _settleOwnCounter(
+          hostId: hostId,
+          counter: counter,
+          row: migratedRow,
+          sentPayloads: sentPayloads,
+        );
+      }
+    }
     final reserved = status == SyncSequenceStatus.reserved || fallback != null;
     final rowEntryId = row?.entryId;
     final payload = rowEntryId != null
@@ -212,6 +230,7 @@ class BackfillResponseHandler {
         // the next request or startup instead of hiding behind `received`.
         // A crash in between at worst sends the payload twice.
         final now = clock.now();
+        final durablePayloads = <String>{};
         await _answerFromEntry(
           hostId: hostId,
           counter: counter,
@@ -226,9 +245,14 @@ class BackfillResponseHandler {
             updatedAt: now,
             requestCount: 0,
           ),
-          sentPayloads: sentPayloads ?? <String>{},
+          // Batch deduplication is only evidence of an attempted resend. Even
+          // an earlier durable resend may predate the payload version we bind.
+          sentPayloads: durablePayloads,
           durable: true,
         );
+        // The outbox can bind the row itself. If our guarded bind then loses,
+        // the ordinary response path must not enqueue this payload again.
+        sentPayloads?.addAll(durablePayloads);
         final bound = await _sequenceLogService.bindOwnCounter(
           hostId: hostId,
           counter: counter,
@@ -287,13 +311,11 @@ class BackfillResponseHandler {
     if (counters.isEmpty) return;
 
     final outcomes = <OwnCounterSettlement, int>{};
-    final sentPayloads = <String>{};
     for (final counter in counters) {
       try {
         final outcome = await settleOwnCounter(
           hostId: hostId,
           counter: counter,
-          sentPayloads: sentPayloads,
         );
         outcomes[outcome] = (outcomes[outcome] ?? 0) + 1;
       } catch (error, stackTrace) {
