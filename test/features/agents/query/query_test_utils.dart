@@ -23,7 +23,10 @@ class QueryPersistenceBench extends QueryTestBench {
     final vc = MockVectorClockService();
     when(vc.getHost).thenAnswer((_) async => 'device');
     when(
-      () => vc.getNextVectorClock(previous: any(named: 'previous')),
+      () => vc.getNextVectorClock(
+        previous: any(named: 'previous'),
+        payload: any(named: 'payload'),
+      ),
     ).thenAnswer((_) async => const VectorClock({'device': 1}));
     when(() => outbox.enqueueMessage(any())).thenAnswer((_) async {});
     store = QueryChatStore(

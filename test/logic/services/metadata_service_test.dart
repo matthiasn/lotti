@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
@@ -25,10 +26,13 @@ void main() {
       when(
         () => mockVectorClockService.getNextVectorClock(
           previous: any(named: 'previous'),
+          payload: any(named: 'payload'),
         ),
       ).thenAnswer((_) async => const VectorClock({'test-host': 1}));
       when(
-        () => mockVectorClockService.getNextVectorClock(),
+        () => mockVectorClockService.getNextVectorClock(
+          payload: any(named: 'payload'),
+        ),
       ).thenAnswer((_) async => const VectorClock({'test-host': 1}));
       when(
         () => mockVectorClockService.getHost(),
@@ -100,13 +104,24 @@ void main() {
       test('creates metadata with vector clock from service', () async {
         const expectedVectorClock = VectorClock({'test-host': 42});
         when(
-          () => mockVectorClockService.getNextVectorClock(),
+          () => mockVectorClockService.getNextVectorClock(
+            payload: any(named: 'payload'),
+          ),
         ).thenAnswer((_) async => expectedVectorClock);
 
         final metadata = await metadataService.createMetadata();
 
         expect(metadata.vectorClock, equals(expectedVectorClock));
-        verify(() => mockVectorClockService.getNextVectorClock()).called(1);
+        // The reservation names the entry it is for — the id minted for it —
+        // so a crash before the outbox binds the counter stays recoverable.
+        verify(
+          () => mockVectorClockService.getNextVectorClock(
+            payload: (
+              id: metadata.id,
+              type: SyncSequencePayloadType.journalEntity,
+            ),
+          ),
+        ).called(1);
       });
 
       test('creates metadata with default timestamps (now)', () async {
@@ -257,6 +272,7 @@ void main() {
         when(
           () => mockVectorClockService.getNextVectorClock(
             previous: any(named: 'previous'),
+            payload: any(named: 'payload'),
           ),
         ).thenAnswer((_) async => newVectorClock);
 
@@ -266,6 +282,10 @@ void main() {
         verify(
           () => mockVectorClockService.getNextVectorClock(
             previous: originalMetadata.vectorClock,
+            payload: (
+              id: 'original-id',
+              type: SyncSequencePayloadType.journalEntity,
+            ),
           ),
         ).called(1);
       });
@@ -448,6 +468,7 @@ void main() {
           when(
             () => mockVectorClockService.getNextVectorClock(
               previous: any(named: 'previous'),
+              payload: any(named: 'payload'),
             ),
           ).thenAnswer((_) async => newVectorClock);
 

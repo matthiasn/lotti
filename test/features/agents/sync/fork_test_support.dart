@@ -29,7 +29,10 @@ ForkBench makeForkBench({String host = 'h1'}) {
   final vc = MockVectorClockService();
   var counter = 0;
   when(
-    () => vc.getNextVectorClock(previous: any(named: 'previous')),
+    () => vc.getNextVectorClock(
+      previous: any(named: 'previous'),
+      payload: any(named: 'payload'),
+    ),
   ).thenAnswer((_) async => VectorClock({host: ++counter}));
   final outbox = MockOutboxService();
   when(() => outbox.enqueueMessage(any())).thenAnswer((_) async {});

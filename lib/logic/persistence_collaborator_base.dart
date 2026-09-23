@@ -1,7 +1,5 @@
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart' show PersistenceLogic;
 import 'package:lotti/logic/persistence_logic_contract.dart';
@@ -29,34 +27,4 @@ abstract class PersistenceCollaboratorBase {
   DomainLogger get loggingService => getIt<DomainLogger>();
   UpdateNotifications get updateNotifications => getIt<UpdateNotifications>();
   OutboxService get outboxService => getIt<OutboxService>();
-  SyncSequenceLogService? get sequenceLogService =>
-      getIt.isRegistered<SyncSequenceLogService>()
-      ? getIt<SyncSequenceLogService>()
-      : null;
-
-  /// Records that [entity] was sent, so the sync sequence log can detect gaps.
-  ///
-  /// No-op when the sequence log service is unregistered or the entity has no
-  /// vector clock. Shared by the create and update DB writers.
-  Future<void> recordJournalSequence(
-    JournalEntity entity, {
-    required String subDomain,
-  }) async {
-    final vectorClock = entity.meta.vectorClock;
-    final service = sequenceLogService;
-    if (service == null || vectorClock == null) return;
-    try {
-      await service.recordSentEntry(
-        entryId: entity.meta.id,
-        vectorClock: vectorClock,
-      );
-    } catch (exception, stackTrace) {
-      loggingService.error(
-        LogDomain.sync,
-        exception,
-        stackTrace: stackTrace,
-        subDomain: subDomain,
-      );
-    }
-  }
 }

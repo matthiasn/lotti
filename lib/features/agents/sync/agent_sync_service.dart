@@ -8,7 +8,6 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/projection/derived_agent_state.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -19,7 +18,6 @@ import 'package:uuid/uuid.dart';
 /// concurrent transaction chains each have their own isolated buffer.
 class _TransactionContext {
   final List<SyncMessage> pendingMessages = [];
-  final List<Future<void> Function()> pendingSequenceBindings = [];
 }
 
 /// Zone key used to look up the active [_TransactionContext].
@@ -58,13 +56,11 @@ class AgentSyncService {
     required this._repository,
     required this._outboxService,
     required this._vectorClockService,
-    this.sequenceLogService,
   });
 
   final AgentRepository _repository;
   final OutboxService _outboxService;
   final VectorClockService _vectorClockService;
-  final SyncSequenceLogService? sequenceLogService;
 
   static const _uuid = Uuid();
 
@@ -87,12 +83,6 @@ class AgentSyncService {
   /// `null` when called outside [runInTransaction].
   static _TransactionContext? get _currentTxContext =>
       Zone.current[_txKey] as _TransactionContext?;
-
-  SyncSequenceLogService? get _sequenceLog =>
-      sequenceLogService ??
-      (getIt.isRegistered<SyncSequenceLogService>()
-          ? getIt<SyncSequenceLogService>()
-          : null);
 
   /// Upsert an [AgentDomainEntity] and enqueue a sync message unless
   /// [fromSync] is `true`.
@@ -302,6 +292,10 @@ class AgentSyncService {
         stamped = entityToWrite.copyWith(
           vectorClock: await _vectorClockService.getNextVectorClock(
             previous: entityToWrite.vectorClock,
+            payload: (
+              id: entityToWrite.id,
+              type: SyncSequencePayloadType.agentEntity,
+            ),
           ),
         );
         await _repository.upsertEntity(stamped);
@@ -329,12 +323,8 @@ class AgentSyncService {
       );
       final txCtx = _currentTxContext;
       if (txCtx != null) {
-        txCtx.pendingSequenceBindings.add(
-          () => _recordAgentEntitySequence(stamped),
-        );
         txCtx.pendingMessages.add(message);
       } else {
-        await _recordAgentEntitySequence(stamped);
         await _enqueueOrBufferPostWrite(
           message,
           subDomain: 'upsertEntity.enqueue',
@@ -447,6 +437,7 @@ class AgentSyncService {
       final stamped = link.copyWith(
         vectorClock: await _vectorClockService.getNextVectorClock(
           previous: link.vectorClock,
+          payload: (id: link.id, type: SyncSequencePayloadType.agentLink),
         ),
       );
       await _repository.upsertLink(stamped);
@@ -458,12 +449,8 @@ class AgentSyncService {
       );
       final txCtx = _currentTxContext;
       if (txCtx != null) {
-        txCtx.pendingSequenceBindings.add(
-          () => _recordAgentLinkSequence(stamped),
-        );
         txCtx.pendingMessages.add(message);
       } else {
-        await _recordAgentLinkSequence(stamped);
         await _enqueueOrBufferPostWrite(
           message,
           subDomain: 'upsertLink.enqueue',
@@ -518,23 +505,18 @@ class AgentSyncService {
     final existingCtx = _currentTxContext;
     if (existingCtx != null) {
       // Nested: piggyback on the outermost chain's zone/buffer.
-      // Snapshot the buffer lengths so that if the inner savepoint rolls
+      // Snapshot the buffer length so that if the inner savepoint rolls
       // back (throws) but the caller catches and continues, we discard
-      // only the messages and sequence bindings added by this inner scope.
-      // Without truncating bindings on rollback, the outer commit would
-      // record a sent sequence row for a write that was rolled back.
+      // only the messages added by this inner scope. Without truncating on
+      // rollback, the outer commit would enqueue — and so bind — a sent
+      // sequence row for a write that was rolled back.
       final messageSnapshot = existingCtx.pendingMessages.length;
-      final sequenceSnapshot = existingCtx.pendingSequenceBindings.length;
       try {
         return await _repository.runInTransaction(action);
       } catch (_) {
         existingCtx.pendingMessages.removeRange(
           messageSnapshot,
           existingCtx.pendingMessages.length,
-        );
-        existingCtx.pendingSequenceBindings.removeRange(
-          sequenceSnapshot,
-          existingCtx.pendingSequenceBindings.length,
         );
         rethrow;
       }
@@ -560,9 +542,6 @@ class AgentSyncService {
         // rethrow OUTSIDE the VC scope so a transient enqueue error does
         // not trigger the scope's catch-and-release path and re-hand the
         // same counter to another entity on the next write.
-        for (final bindSequence in ctx.pendingSequenceBindings) {
-          await bindSequence();
-        }
         for (final msg in ctx.pendingMessages) {
           try {
             await _outboxService.enqueueMessage(msg);
@@ -582,7 +561,6 @@ class AgentSyncService {
       return result;
     } finally {
       ctx.pendingMessages.clear();
-      ctx.pendingSequenceBindings.clear();
     }
   }
 
@@ -701,55 +679,5 @@ class AgentSyncService {
       );
     }
     return messages.last.id;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Sequence-log recording helpers: append received (hostId, counter) marks for
-  // entities and links. (Previously the `_AgentSyncSequenceRecording`
-  // part-file extension.)
-  // ---------------------------------------------------------------------------
-
-  Future<void> _recordAgentEntitySequence(AgentDomainEntity entity) async {
-    final service = _sequenceLog;
-    final vectorClock = entity.vectorClock;
-    if (service == null || vectorClock == null) return;
-    try {
-      await service.recordSentEntry(
-        entryId: entity.id,
-        vectorClock: vectorClock,
-        payloadType: SyncSequencePayloadType.agentEntity,
-      );
-    } catch (exception, stackTrace) {
-      getIt<DomainLogger>().error(
-        LogDomain.sync,
-        exception,
-        message:
-            'sequence record failed after agent entity write; VC already committed',
-        stackTrace: stackTrace,
-        subDomain: 'agentSync.recordEntity',
-      );
-    }
-  }
-
-  Future<void> _recordAgentLinkSequence(AgentLink link) async {
-    final service = _sequenceLog;
-    final vectorClock = link.vectorClock;
-    if (service == null || vectorClock == null) return;
-    try {
-      await service.recordSentEntry(
-        entryId: link.id,
-        vectorClock: vectorClock,
-        payloadType: SyncSequencePayloadType.agentLink,
-      );
-    } catch (exception, stackTrace) {
-      getIt<DomainLogger>().error(
-        LogDomain.sync,
-        exception,
-        message:
-            'sequence record failed after agent link write; VC already committed',
-        stackTrace: stackTrace,
-        subDomain: 'agentSync.recordLink',
-      );
-    }
   }
 }

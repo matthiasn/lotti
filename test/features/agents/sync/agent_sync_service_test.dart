@@ -538,6 +538,7 @@ void main() {
     when(
       () => mockVectorClockService.getNextVectorClock(
         previous: any(named: 'previous'),
+        payload: any(named: 'payload'),
       ),
     ).thenAnswer((_) async => testClock);
 
@@ -650,104 +651,35 @@ void main() {
           ),
         ).called(1);
         verify(
-          () => mockVectorClockService.getNextVectorClock(),
+          () => mockVectorClockService.getNextVectorClock(
+            payload: any(named: 'payload'),
+          ),
         ).called(1);
       });
 
-      test('awaits the agent entity sequence before enqueuing', () {
-        fakeAsync((async) {
-          final recorded = Completer<void>();
-          final sequenceLog = MockSyncSequenceLogService();
-          when(
-            () => sequenceLog.recordSentEntry(
-              entryId: any(named: 'entryId'),
-              vectorClock: any(named: 'vectorClock'),
-              payloadType: any(named: 'payloadType'),
-            ),
-          ).thenAnswer((_) => recorded.future);
-          final service = AgentSyncService(
-            repository: mockRepository,
-            outboxService: mockOutboxService,
-            vectorClockService: mockVectorClockService,
-            sequenceLogService: sequenceLog,
-          );
-
-          var completed = false;
-          unawaited(
-            service.upsertEntity(testEntity).then((_) => completed = true),
-          );
-          async.flushMicrotasks();
-          verify(() => mockRepository.upsertEntity(any())).called(1);
-          expect(completed, isFalse);
-          verifyNever(() => mockOutboxService.enqueueMessage(any()));
-
-          recorded.complete();
-          async.flushMicrotasks();
-          expect(completed, isTrue);
-
-          verifyInOrder([
-            () => sequenceLog.recordSentEntry(
-              entryId: testEntity.id,
-              vectorClock: testClock,
-              payloadType: SyncSequencePayloadType.agentEntity,
-            ),
-            () => mockOutboxService.enqueueMessage(any<SyncMessage>()),
-          ]);
-        });
-      });
-
       test(
-        'falls back to getIt-registered SyncSequenceLogService when '
-        'constructor arg is null',
+        'names the entity as the reservation payload and leaves binding the '
+        'sequence log to the outbox',
         () async {
           final sequenceLog = MockSyncSequenceLogService();
-          when(
-            () => sequenceLog.recordSentEntry(
-              entryId: any(named: 'entryId'),
-              vectorClock: any(named: 'vectorClock'),
-              payloadType: any(named: 'payloadType'),
-            ),
-          ).thenAnswer((_) async {});
           getIt.registerSingleton<SyncSequenceLogService>(sequenceLog);
           addTearDown(() => getIt.unregister<SyncSequenceLogService>());
 
-          // syncService was constructed without sequenceLogService; should
-          // resolve via getIt on first use.
           await syncService.upsertEntity(testEntity);
 
           verify(
-            () => sequenceLog.recordSentEntry(
-              entryId: testEntity.id,
-              vectorClock: testClock,
-              payloadType: SyncSequencePayloadType.agentEntity,
+            () => mockVectorClockService.getNextVectorClock(
+              previous: any(named: 'previous'),
+              payload: (
+                id: testEntity.id,
+                type: SyncSequencePayloadType.agentEntity,
+              ),
             ),
           ).called(1);
-        },
-      );
-
-      test(
-        'swallows sequence-log error after entity is saved — sequence is '
-        'a best-effort post-write record; the VC is already on disk',
-        () async {
-          final sequenceLog = MockSyncSequenceLogService();
-          when(
-            () => sequenceLog.recordSentEntry(
-              entryId: any(named: 'entryId'),
-              vectorClock: any(named: 'vectorClock'),
-              payloadType: any(named: 'payloadType'),
-            ),
-          ).thenAnswer((_) async => throw StateError('sequence ledger boom'));
-          final service = AgentSyncService(
-            repository: mockRepository,
-            outboxService: mockOutboxService,
-            vectorClockService: mockVectorClockService,
-            sequenceLogService: sequenceLog,
-          );
-
-          // Must NOT rethrow; outbox enqueue must still occur.
-          await service.upsertEntity(testEntity);
-
           verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+          // Binding before the enqueue is durable would mark the counter
+          // `received` while nothing would ever send it after a crash.
+          verifyZeroInteractions(sequenceLog);
         },
       );
 
@@ -762,6 +694,7 @@ void main() {
         verifyNever(
           () => mockVectorClockService.getNextVectorClock(
             previous: any(named: 'previous'),
+            payload: any(named: 'payload'),
           ),
         );
       });
@@ -1011,70 +944,27 @@ void main() {
         ).called(1);
       });
 
-      test('awaits the agent link sequence before enqueuing', () {
-        fakeAsync((async) {
-          final recorded = Completer<void>();
-          final sequenceLog = MockSyncSequenceLogService();
-          when(
-            () => sequenceLog.recordSentEntry(
-              entryId: any(named: 'entryId'),
-              vectorClock: any(named: 'vectorClock'),
-              payloadType: any(named: 'payloadType'),
-            ),
-          ).thenAnswer((_) => recorded.future);
-          final service = AgentSyncService(
-            repository: mockRepository,
-            outboxService: mockOutboxService,
-            vectorClockService: mockVectorClockService,
-            sequenceLogService: sequenceLog,
-          );
-
-          var completed = false;
-          unawaited(
-            service.upsertLink(testBasicLink).then((_) => completed = true),
-          );
-          async.flushMicrotasks();
-          verify(() => mockRepository.upsertLink(any())).called(1);
-          expect(completed, isFalse);
-          verifyNever(() => mockOutboxService.enqueueMessage(any()));
-
-          recorded.complete();
-          async.flushMicrotasks();
-          expect(completed, isTrue);
-
-          verifyInOrder([
-            () => sequenceLog.recordSentEntry(
-              entryId: testBasicLink.id,
-              vectorClock: testClock,
-              payloadType: SyncSequencePayloadType.agentLink,
-            ),
-            () => mockOutboxService.enqueueMessage(any<SyncMessage>()),
-          ]);
-        });
-      });
-
       test(
-        'swallows sequence-log error after link is saved — best-effort '
-        'record must not cascade into the upsertLink flow',
+        'names the link as the reservation payload and leaves binding the '
+        'sequence log to the outbox',
         () async {
           final sequenceLog = MockSyncSequenceLogService();
-          when(
-            () => sequenceLog.recordSentEntry(
-              entryId: any(named: 'entryId'),
-              vectorClock: any(named: 'vectorClock'),
-              payloadType: any(named: 'payloadType'),
+          getIt.registerSingleton<SyncSequenceLogService>(sequenceLog);
+          addTearDown(() => getIt.unregister<SyncSequenceLogService>());
+
+          await syncService.upsertLink(testBasicLink);
+
+          verify(
+            () => mockVectorClockService.getNextVectorClock(
+              previous: any(named: 'previous'),
+              payload: (
+                id: testBasicLink.id,
+                type: SyncSequencePayloadType.agentLink,
+              ),
             ),
-          ).thenAnswer((_) async => throw StateError('sequence ledger boom'));
-          final service = AgentSyncService(
-            repository: mockRepository,
-            outboxService: mockOutboxService,
-            vectorClockService: mockVectorClockService,
-            sequenceLogService: sequenceLog,
-          );
-
-          await service.upsertLink(testBasicLink);
-
+          ).called(1);
           verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+          verifyZeroInteractions(sequenceLog);
         },
       );
 
@@ -1089,6 +979,7 @@ void main() {
         verifyNever(
           () => mockVectorClockService.getNextVectorClock(
             previous: any(named: 'previous'),
+            payload: any(named: 'payload'),
           ),
         );
       });
@@ -1228,78 +1119,16 @@ void main() {
       });
     });
 
-    group('sequence record error paths', () {
-      late MockSyncSequenceLogService sequenceLog;
-      late AgentSyncService service;
-      late StateError failure;
-
-      setUp(() {
-        sequenceLog = MockSyncSequenceLogService();
-        failure = StateError('sequence log down');
-        when(
-          () => sequenceLog.recordSentEntry(
-            entryId: any(named: 'entryId'),
-            vectorClock: any(named: 'vectorClock'),
-            payloadType: any(named: 'payloadType'),
-          ),
-        ).thenAnswer((_) async => throw failure);
-        service = AgentSyncService(
-          repository: mockRepository,
-          outboxService: mockOutboxService,
-          vectorClockService: mockVectorClockService,
-          sequenceLogService: sequenceLog,
-        );
-      });
-
-      test(
-        'swallows and logs a recordSentEntry failure after an entity write',
-        () async {
-          // Must not throw — the VC is already committed on disk.
-          await service.upsertEntity(testEntity);
-
-          verify(() => mockRepository.upsertEntity(any())).called(1);
-          verify(() => mockOutboxService.enqueueMessage(any())).called(1);
-          final logger = getIt<DomainLogger>() as MockDomainLogger;
-          verify(
-            () => logger.error(
-              LogDomain.sync,
-              failure,
-              message: any(named: 'message'),
-              stackTrace: any(named: 'stackTrace'),
-              subDomain: 'agentSync.recordEntity',
-            ),
-          ).called(1);
-        },
-      );
-
-      test(
-        'swallows and logs a recordSentEntry failure after a link write',
-        () async {
-          await service.upsertLink(testBasicLink);
-
-          verify(() => mockRepository.upsertLink(any())).called(1);
-          verify(() => mockOutboxService.enqueueMessage(any())).called(1);
-          final logger = getIt<DomainLogger>() as MockDomainLogger;
-          verify(
-            () => logger.error(
-              LogDomain.sync,
-              failure,
-              message: any(named: 'message'),
-              stackTrace: any(named: 'stackTrace'),
-              subDomain: 'agentSync.recordLink',
-            ),
-          ).called(1);
-        },
-      );
-    });
-
     test(
       'runInTransaction rethrows a deferred outbox-flush failure after the '
       'VC scope commits',
       () async {
         final clocks = _RecordingVectorClockService();
         when(
-          () => clocks.getNextVectorClock(previous: any(named: 'previous')),
+          () => clocks.getNextVectorClock(
+            previous: any(named: 'previous'),
+            payload: any(named: 'payload'),
+          ),
         ).thenAnswer((_) async => testClock);
         final service = AgentSyncService(
           repository: mockRepository,
@@ -1326,52 +1155,6 @@ void main() {
     );
 
     group('runInTransaction', () {
-      test(
-        'a caught inner rollback truncates its pending sequence bindings — '
-        'the outer commit records only the surviving writes',
-        () async {
-          final sequenceLog = MockSyncSequenceLogService();
-          final recordedIds = <String>[];
-          when(
-            () => sequenceLog.recordSentEntry(
-              entryId: any(named: 'entryId'),
-              vectorClock: any(named: 'vectorClock'),
-              payloadType: any(named: 'payloadType'),
-            ),
-          ).thenAnswer((invocation) async {
-            recordedIds.add(invocation.namedArguments[#entryId] as String);
-          });
-          final service = AgentSyncService(
-            repository: mockRepository,
-            outboxService: mockOutboxService,
-            vectorClockService: mockVectorClockService,
-            sequenceLogService: sequenceLog,
-          );
-
-          final outerA = testEntity.copyWith(id: 'outer-a');
-          final inner = testEntity.copyWith(id: 'inner-rolled-back');
-          final outerB = testEntity.copyWith(id: 'outer-b');
-
-          await service.runInTransaction(() async {
-            await service.upsertEntity(outerA);
-            try {
-              await service.runInTransaction(() async {
-                await service.upsertEntity(inner);
-                throw StateError('inner boom');
-              });
-            } catch (_) {
-              // Caught: the outer transaction continues and commits.
-            }
-            await service.upsertEntity(outerB);
-          });
-
-          // Sequence rows exist for exactly the surviving outer writes —
-          // the inner scope's binding was truncated alongside its outbox
-          // message, so no sent-sequence row points at a rolled-back write.
-          expect(recordedIds, ['outer-a', 'outer-b']);
-        },
-      );
-
       glados.Glados(
         glados.any.syncTransactionScenario,
         glados.ExploreConfig(numRuns: 160),
@@ -1490,6 +1273,7 @@ void main() {
         when(
           () => generatedVectorClockService.getNextVectorClock(
             previous: any(named: 'previous'),
+            payload: any(named: 'payload'),
           ),
         ).thenAnswer((_) async {
           reservedVectorClocks++;
@@ -1746,66 +1530,6 @@ void main() {
       });
 
       test(
-        'inner TX rollback caught by outer truncates buffered sequence '
-        'bindings so the outer commit does not record sent-sequence rows '
-        'for inner writes that were rolled back by the savepoint',
-        () async {
-          final sequenceLog = MockSyncSequenceLogService();
-          when(
-            () => sequenceLog.recordSentEntry(
-              entryId: any(named: 'entryId'),
-              vectorClock: any(named: 'vectorClock'),
-              payloadType: any(named: 'payloadType'),
-            ),
-          ).thenAnswer((_) async {});
-          final service = AgentSyncService(
-            repository: mockRepository,
-            outboxService: mockOutboxService,
-            vectorClockService: mockVectorClockService,
-            sequenceLogService: sequenceLog,
-          );
-
-          await service.runInTransaction(() async {
-            await service.upsertEntity(testEntity);
-
-            try {
-              await service.runInTransaction(() async {
-                await service.upsertLink(testBasicLink);
-                await service.upsertEntity(testStateEntity);
-                throw Exception('inner rollback');
-              });
-            } on Exception {
-              // Caught — outer TX continues.
-            }
-          });
-
-          // Only the outer entity's sequence binding survived; the inner
-          // link + state entity bindings were truncated on inner rollback.
-          verify(
-            () => sequenceLog.recordSentEntry(
-              entryId: testEntity.id,
-              vectorClock: any(named: 'vectorClock'),
-              payloadType: SyncSequencePayloadType.agentEntity,
-            ),
-          ).called(1);
-          verifyNever(
-            () => sequenceLog.recordSentEntry(
-              entryId: testBasicLink.id,
-              vectorClock: any(named: 'vectorClock'),
-              payloadType: any(named: 'payloadType'),
-            ),
-          );
-          verifyNever(
-            () => sequenceLog.recordSentEntry(
-              entryId: testStateEntity.id,
-              vectorClock: any(named: 'vectorClock'),
-              payloadType: any(named: 'payloadType'),
-            ),
-          );
-        },
-      );
-
-      test(
         'inner TX rollback caught by outer — only outer messages flushed',
         () async {
           await syncService.runInTransaction(() async {
@@ -1851,23 +1575,6 @@ void main() {
               final releaseCommit = Completer<void>();
               final failure = StateError('chain A rollback');
               final enqueued = <SyncMessage>[];
-              final bindings =
-                  <(String, VectorClock?, SyncSequencePayloadType)>[];
-              final sequenceLog = MockSyncSequenceLogService();
-              when(
-                () => sequenceLog.recordSentEntry(
-                  entryId: any(named: 'entryId'),
-                  vectorClock: any(named: 'vectorClock'),
-                  payloadType: any(named: 'payloadType'),
-                ),
-              ).thenAnswer((invocation) async {
-                bindings.add((
-                  invocation.namedArguments[#entryId] as String,
-                  invocation.namedArguments[#vectorClock] as VectorClock?,
-                  invocation.namedArguments[#payloadType]
-                      as SyncSequencePayloadType,
-                ));
-              });
               when(
                 () => mockOutboxService.enqueueMessage(any()),
               ).thenAnswer((invocation) async {
@@ -1879,7 +1586,6 @@ void main() {
                 repository: mockRepository,
                 outboxService: mockOutboxService,
                 vectorClockService: mockVectorClockService,
-                sequenceLogService: sequenceLog,
               );
 
               // The repository boundary lets both callbacks overlap. SQLite's
@@ -1916,19 +1622,11 @@ void main() {
                 expect(rollbackObserved, isFalse);
                 expect(committedResult, isNull);
                 expect(enqueued, isEmpty);
-                expect(bindings, isEmpty);
 
                 final expectedMessages = [
                   SyncMessage.agentLink(
                     agentLink: testBasicLink.copyWith(vectorClock: testClock),
                     status: SyncEntryStatus.update,
-                  ),
-                ];
-                final expectedBindings = [
-                  (
-                    testBasicLink.id,
-                    testClock,
-                    SyncSequencePayloadType.agentLink,
                   ),
                 ];
                 if (rollbackFirst) {
@@ -1937,7 +1635,6 @@ void main() {
                   expect(rollbackObserved, isTrue);
                   expect(committedResult, isNull);
                   expect(enqueued, isEmpty);
-                  expect(bindings, isEmpty);
                   releaseCommit.complete();
                 } else {
                   releaseCommit.complete();
@@ -1945,14 +1642,12 @@ void main() {
                   expect(committedResult, 'chain B committed');
                   expect(rollbackObserved, isFalse);
                   expect(enqueued, expectedMessages);
-                  expect(bindings, expectedBindings);
                   releaseRollback.complete();
                 }
                 async.flushMicrotasks();
                 expect(rollbackObserved, isTrue);
                 expect(committedResult, 'chain B committed');
                 expect(enqueued, expectedMessages);
-                expect(bindings, expectedBindings);
                 verify(
                   () => mockRepository.upsertEntity(
                     testEntity.copyWith(vectorClock: testClock),
@@ -2343,6 +2038,7 @@ void main() {
       when(
         () => vectorClockService.getNextVectorClock(
           previous: any(named: 'previous'),
+          payload: any(named: 'payload'),
         ),
       ).thenAnswer((_) async => testClock);
       final service = AgentSyncService(
@@ -2411,6 +2107,7 @@ void main() {
       when(
         () => vectorClockService.getNextVectorClock(
           previous: any(named: 'previous'),
+          payload: any(named: 'payload'),
         ),
       ).thenAnswer((_) async => testClock);
       final service = AgentSyncService(

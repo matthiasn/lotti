@@ -19,6 +19,7 @@ import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -212,7 +213,9 @@ void main() {
       () => mockDb.getProjectLinkForTask(any()),
     ).thenAnswer((_) async => null);
     when(
-      mockVectorClockService.getNextVectorClock,
+      () => mockVectorClockService.getNextVectorClock(
+        payload: any(named: 'payload'),
+      ),
     ).thenAnswer((_) async => const VectorClock({'d': 1}));
     when(
       () => mockDb.journalEntityById('project-001'),
@@ -1250,7 +1253,9 @@ void main() {
         () => mockDb.getProjectLinkForTask('task-001'),
       ).thenAnswer((_) async => null);
       when(
-        mockVectorClockService.getNextVectorClock,
+        () => mockVectorClockService.getNextVectorClock(
+          payload: any(named: 'payload'),
+        ),
       ).thenAnswer((_) async => const VectorClock({'d': 1}));
 
       final result = await repository.linkTaskToProject(
@@ -1339,7 +1344,9 @@ void main() {
         () => mockDb.getProjectLinkForTask('task-explicitly-public'),
       ).thenAnswer((_) async => null);
       when(
-        mockVectorClockService.getNextVectorClock,
+        () => mockVectorClockService.getNextVectorClock(
+          payload: any(named: 'payload'),
+        ),
       ).thenAnswer((_) async => const VectorClock({'d': 1}));
 
       final result = await repository.linkTaskToProject(
@@ -1406,7 +1413,9 @@ void main() {
       ).thenAnswer((_) async => null);
       when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 0);
       when(
-        mockVectorClockService.getNextVectorClock,
+        () => mockVectorClockService.getNextVectorClock(
+          payload: any(named: 'payload'),
+        ),
       ).thenAnswer((_) async => const VectorClock({'d': 1}));
 
       final result = await repository.linkTaskToProject(
@@ -1442,7 +1451,9 @@ void main() {
           () => trackingDb.upsertEntryLink(any()),
         ).thenAnswer((_) async => 1);
         when(
-          mockVectorClockService.getNextVectorClock,
+          () => mockVectorClockService.getNextVectorClock(
+            payload: any(named: 'payload'),
+          ),
         ).thenAnswer((_) async => const VectorClock({'d': 1}));
         final trackingRepository = ProjectRepository(
           journalDb: trackingDb,
@@ -1502,7 +1513,9 @@ void main() {
           () => mockDb.getProjectLinkForTask('task-001'),
         ).thenAnswer((_) async => oldLink);
         when(
-          mockVectorClockService.getNextVectorClock,
+          () => mockVectorClockService.getNextVectorClock(
+            payload: any(named: 'payload'),
+          ),
         ).thenAnswer((_) async => const VectorClock({'d': 1}));
 
         final result = await repository.linkTaskToProject(
@@ -1559,7 +1572,9 @@ void main() {
         // Soft-delete upsert returns 0 (failure)
         when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 0);
         when(
-          mockVectorClockService.getNextVectorClock,
+          () => mockVectorClockService.getNextVectorClock(
+            payload: any(named: 'payload'),
+          ),
         ).thenAnswer((_) async => const VectorClock({'d': 1}));
 
         final result = await repository.linkTaskToProject(
@@ -1607,7 +1622,9 @@ void main() {
           return callCount == 1 ? 1 : 0;
         });
         when(
-          mockVectorClockService.getNextVectorClock,
+          () => mockVectorClockService.getNextVectorClock(
+            payload: any(named: 'payload'),
+          ),
         ).thenAnswer((_) async => const VectorClock({'d': 1}));
 
         final rollbackRepository = ProjectRepository(
@@ -1758,7 +1775,9 @@ void main() {
         () => mockDb.getProjectLinkForTask('task-001'),
       ).thenAnswer((_) async => existingLink);
       when(
-        mockVectorClockService.getNextVectorClock,
+        () => mockVectorClockService.getNextVectorClock(
+          payload: any(named: 'payload'),
+        ),
       ).thenAnswer((_) async => const VectorClock({'d': 2}));
 
       final result = await repository.unlinkTaskFromProject('task-001');
@@ -1802,7 +1821,9 @@ void main() {
       ).thenAnswer((_) async => existingLink);
       when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 0);
       when(
-        mockVectorClockService.getNextVectorClock,
+        () => mockVectorClockService.getNextVectorClock(
+          payload: any(named: 'payload'),
+        ),
       ).thenAnswer((_) async => const VectorClock({'d': 2}));
 
       final result = await repository.unlinkTaskFromProject('task-001');
@@ -1815,44 +1836,38 @@ void main() {
     });
   });
 
-  group('sequence-log integration', () {
+  group('reservation intent', () {
     late MockSyncSequenceLogService mockSequenceLog;
-    late MockDomainLogger mockDomainLogger;
 
-    // These mocks are swapped into getIt via `reRegister` (unregister-if-
-    // present + registerSingleton). No inner tearDown is needed: the outer
-    // `tearDownTestGetIt()` performs a full `getIt.reset()` after every test,
-    // so these registrations never outlive the test that created them. The
-    // central helper owns cleanup; per-key teardown here would be redundant.
+    // Every link write names the link its counter is for, so a crash before
+    // the outbox binds the counter can be settled from the link's own clock.
+    // The repository never binds the sequence log itself: the outbox does,
+    // once the message is durable. The outer `tearDownTestGetIt()` resets the
+    // `reRegister`ed mock after every test.
     setUp(() {
       mockSequenceLog = MockSyncSequenceLogService();
-      mockDomainLogger = MockDomainLogger();
-      when(
-        () => mockSequenceLog.recordSentEntryLink(
-          linkId: any(named: 'linkId'),
-          vectorClock: any(named: 'vectorClock'),
-        ),
-      ).thenAnswer((_) async {});
-      when(
-        () => mockDomainLogger.error(
-          any<LogDomain>(),
-          any<Object>(),
-          message: any<String>(named: 'message'),
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
-          subDomain: any<String>(named: 'subDomain'),
-        ),
-      ).thenReturn(null);
       reRegister<SyncSequenceLogService>(mockSequenceLog);
-      reRegister<DomainLogger>(mockDomainLogger);
+      when(
+        () => mockVectorClockService.getNextVectorClock(
+          payload: any(named: 'payload'),
+        ),
+      ).thenAnswer((_) async => const VectorClock({'d': 1}));
     });
 
-    test('linkTaskToProject records the new link sequence', () async {
+    List<EntryLink> upsertedLinks() => verify(
+      () => mockDb.upsertEntryLink(captureAny()),
+    ).captured.cast<EntryLink>();
+
+    void verifyNamed(String linkId) => verify(
+      () => mockVectorClockService.getNextVectorClock(
+        payload: (id: linkId, type: SyncSequencePayloadType.entryLink),
+      ),
+    ).called(1);
+
+    test('linkTaskToProject names the new link', () async {
       when(
         () => mockDb.getProjectLinkForTask('task-001'),
       ).thenAnswer((_) async => null);
-      when(
-        mockVectorClockService.getNextVectorClock,
-      ).thenAnswer((_) async => const VectorClock({'d': 1}));
 
       final result = await repository.linkTaskToProject(
         projectId: 'project-001',
@@ -1860,113 +1875,55 @@ void main() {
       );
 
       expect(result, isTrue);
-      verify(
-        () => mockSequenceLog.recordSentEntryLink(
-          linkId: any(named: 'linkId'),
-          vectorClock: const VectorClock({'d': 1}),
-        ),
-      ).called(1);
+      verifyNamed(upsertedLinks().single.id);
+      verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+      verifyZeroInteractions(mockSequenceLog);
     });
 
-    test(
-      'relinkTask records both the soft-delete and the new link sequence',
-      () async {
-        final oldLink = EntryLink.project(
-          id: 'link-old',
-          fromId: 'project-old',
-          toId: 'task-001',
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
-        );
-        when(
-          () => mockDb.getProjectLinkForTask('task-001'),
-        ).thenAnswer((_) async => oldLink);
-        when(
-          mockVectorClockService.getNextVectorClock,
-        ).thenAnswer((_) async => const VectorClock({'d': 1}));
+    test('relinkTask names both the tombstone and the new link', () async {
+      final oldLink = EntryLink.project(
+        id: 'link-old',
+        fromId: 'project-old',
+        toId: 'task-001',
+        createdAt: testDate,
+        updatedAt: testDate,
+        vectorClock: null,
+      );
+      when(
+        () => mockDb.getProjectLinkForTask('task-001'),
+      ).thenAnswer((_) async => oldLink);
 
-        await repository.linkTaskToProject(
-          projectId: 'project-001',
-          taskId: 'task-001',
-        );
+      await repository.linkTaskToProject(
+        projectId: 'project-001',
+        taskId: 'task-001',
+      );
 
-        verify(
-          () => mockSequenceLog.recordSentEntryLink(
-            linkId: any(named: 'linkId'),
-            vectorClock: any(named: 'vectorClock'),
-          ),
-        ).called(2);
-      },
-    );
+      final links = upsertedLinks();
+      expect(links.map((link) => link.id), contains('link-old'));
+      for (final link in links) {
+        verifyNamed(link.id);
+      }
+      verifyZeroInteractions(mockSequenceLog);
+    });
 
-    test(
-      'unlinkTaskFromProject records the soft-deleted link sequence',
-      () async {
-        final existingLink = EntryLink.project(
-          id: 'link-001',
-          fromId: 'project-001',
-          toId: 'task-001',
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
-        );
-        when(
-          () => mockDb.getProjectLinkForTask('task-001'),
-        ).thenAnswer((_) async => existingLink);
-        when(
-          mockVectorClockService.getNextVectorClock,
-        ).thenAnswer((_) async => const VectorClock({'d': 2}));
+    test('unlinkTaskFromProject names the soft-deleted link', () async {
+      final existingLink = EntryLink.project(
+        id: 'link-001',
+        fromId: 'project-001',
+        toId: 'task-001',
+        createdAt: testDate,
+        updatedAt: testDate,
+        vectorClock: null,
+      );
+      when(
+        () => mockDb.getProjectLinkForTask('task-001'),
+      ).thenAnswer((_) async => existingLink);
 
-        await repository.unlinkTaskFromProject('task-001');
+      await repository.unlinkTaskFromProject('task-001');
 
-        verify(
-          () => mockSequenceLog.recordSentEntryLink(
-            linkId: 'link-001',
-            vectorClock: const VectorClock({'d': 2}),
-          ),
-        ).called(1);
-      },
-    );
-
-    test(
-      'sequence-record failure is swallowed and routed through DomainLogger; '
-      'the link write is still considered successful and sync still enqueues',
-      () async {
-        when(
-          () => mockSequenceLog.recordSentEntryLink(
-            linkId: any(named: 'linkId'),
-            vectorClock: any(named: 'vectorClock'),
-          ),
-        ).thenThrow(StateError('sequence ledger boom'));
-        when(
-          () => mockDb.getProjectLinkForTask('task-001'),
-        ).thenAnswer((_) async => null);
-        when(
-          mockVectorClockService.getNextVectorClock,
-        ).thenAnswer((_) async => const VectorClock({'d': 1}));
-
-        final result = await repository.linkTaskToProject(
-          projectId: 'project-001',
-          taskId: 'task-001',
-        );
-
-        expect(result, isTrue);
-        verify(
-          () => mockDomainLogger.error(
-            LogDomain.sync,
-            any<Object>(),
-            message: any<String>(
-              named: 'message',
-              that: contains('sequence record failed after project link'),
-            ),
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
-            subDomain: 'linkTaskToProject.recordSent',
-          ),
-        ).called(1);
-        verify(() => mockOutboxService.enqueueMessage(any())).called(1);
-      },
-    );
+      verifyNamed('link-001');
+      verifyZeroInteractions(mockSequenceLog);
+    });
   });
 
   group('updateStream', () {
@@ -2226,7 +2183,9 @@ void main() {
           () => mockDb.getProjectLinkForTask('task-001'),
         ).thenAnswer((_) async => null);
         when(
-          mockVectorClockService.getNextVectorClock,
+          () => mockVectorClockService.getNextVectorClock(
+            payload: any(named: 'payload'),
+          ),
         ).thenAnswer((_) async => const VectorClock({'d': 1}));
 
         // The operation should still return true — commit-on-write invariant.
@@ -2271,7 +2230,9 @@ void main() {
           () => mockDb.getProjectLinkForTask('task-001'),
         ).thenAnswer((_) async => oldLink);
         when(
-          mockVectorClockService.getNextVectorClock,
+          () => mockVectorClockService.getNextVectorClock(
+            payload: any(named: 'payload'),
+          ),
         ).thenAnswer((_) async => const VectorClock({'d': 2}));
 
         // The relink should succeed (link rows persisted) but log the error.
@@ -2316,7 +2277,9 @@ void main() {
           () => mockDb.getProjectLinkForTask('task-001'),
         ).thenAnswer((_) async => existingLink);
         when(
-          mockVectorClockService.getNextVectorClock,
+          () => mockVectorClockService.getNextVectorClock(
+            payload: any(named: 'payload'),
+          ),
         ).thenAnswer((_) async => const VectorClock({'d': 3}));
 
         // The unlink should succeed — link row already soft-deleted on disk.
@@ -2371,7 +2334,9 @@ void main() {
         () => mockDb.getProjectLinkForTask('new-task'),
       ).thenAnswer((_) async => null);
       when(
-        mockVectorClockService.getNextVectorClock,
+        () => mockVectorClockService.getNextVectorClock(
+          payload: any(named: 'payload'),
+        ),
       ).thenAnswer((_) async => const VectorClock({'d': 5}));
 
       final result = await repository.inheritProjectFromTask(

@@ -10,6 +10,7 @@ import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/blocks_cycle_guard.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -422,7 +423,9 @@ class JournalRepository {
     return getIt<VectorClockService>().withVcScope<bool>(() async {
       final updated = link.copyWith(
         updatedAt: DateTime.now(),
-        vectorClock: await getIt<VectorClockService>().getNextVectorClock(),
+        vectorClock: await getIt<VectorClockService>().getNextVectorClock(
+          payload: (id: link.id, type: SyncSequencePayloadType.entryLink),
+        ),
       );
 
       final res = await journalDb.upsertEntryLink(updated);

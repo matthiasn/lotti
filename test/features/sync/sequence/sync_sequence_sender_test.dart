@@ -189,6 +189,54 @@ void main() {
       );
     },
   );
+
+  test(
+    'binding an own counter ends its pending reservation, also when the '
+    'binding is a cached duplicate — foreign counters are left alone',
+    () async {
+      const clock = VectorClock({myHost: 4, otherHost: 9});
+      await sender.recordSentEntry(entryId: 'e1', vectorClock: clock);
+      await sender.recordSentEntry(entryId: 'e1', vectorClock: clock);
+
+      verify(() => vc.settle(hostId: myHost, counter: 4)).called(2);
+      verifyNever(
+        () => vc.settle(
+          hostId: otherHost,
+          counter: any(named: 'counter'),
+        ),
+      );
+      // The duplicate did not reach the database a second time.
+      verify(() => db.recordSequenceEntry(any())).called(1);
+    },
+  );
+
+  test(
+    'bindOwnCounter binds through the guarded database write and ends the '
+    'pending reservation whether or not the row was still unsettled',
+    () async {
+      for (final bound in [true, false]) {
+        when(
+          () => db.bindUnsettledOwnSequenceCounter(
+            hostId: myHost,
+            counter: 7,
+            entryId: 'agent-1',
+            payloadType: SyncSequencePayloadType.agentEntity,
+          ),
+        ).thenAnswer((_) async => bound);
+
+        final result = await sender.bindOwnCounter(
+          hostId: myHost,
+          counter: 7,
+          entryId: 'agent-1',
+          payloadType: SyncSequencePayloadType.agentEntity,
+        );
+
+        expect(result, bound);
+      }
+      verify(() => vc.settle(hostId: myHost, counter: 7)).called(2);
+      verifyNever(() => db.recordSequenceEntry(any()));
+    },
+  );
 }
 
 Matcher _hasHost(String hostId) => predicate<SyncSequenceLogCompanion>(

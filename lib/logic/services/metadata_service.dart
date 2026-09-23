@@ -1,4 +1,5 @@
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/timezone.dart';
 import 'package:uuid/uuid.dart';
@@ -40,14 +41,17 @@ class MetadataService {
     EntryFlag? flag,
   }) async {
     final now = DateTime.now();
-    final vc = await _vectorClockService.getNextVectorClock();
+    final id = generateId(uuidV5Input: uuidV5Input);
+    final vc = await _vectorClockService.getNextVectorClock(
+      payload: (id: id, type: SyncSequencePayloadType.journalEntity),
+    );
 
     return Metadata(
       createdAt: now,
       updatedAt: now,
       dateFrom: dateFrom ?? now,
       dateTo: dateTo ?? now,
-      id: generateId(uuidV5Input: uuidV5Input),
+      id: id,
       vectorClock: vc,
       private: private,
       labelIds: labelIds,
@@ -92,6 +96,7 @@ class MetadataService {
     updatedAt: DateTime.now(),
     vectorClock: await _vectorClockService.getNextVectorClock(
       previous: metadata.vectorClock,
+      payload: (id: metadata.id, type: SyncSequencePayloadType.journalEntity),
     ),
     dateFrom: dateFrom ?? metadata.dateFrom,
     dateTo: dateTo ?? metadata.dateTo,

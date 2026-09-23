@@ -5,6 +5,7 @@ import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -220,6 +221,7 @@ class NotificationRepository {
               : entity.meta.vectorClock);
       final vectorClock = await _vectorClockService.getNextVectorClock(
         previous: previousClock,
+        payload: (id: entity.id, type: SyncSequencePayloadType.notification),
       );
       final enriched = entity.copyWithMeta(
         entity.meta.copyWith(
@@ -325,6 +327,10 @@ class NotificationRepository {
 
       final vectorClock = await _vectorClockService.getNextVectorClock(
         previous: existing.meta.vectorClock,
+        payload: (
+          id: id,
+          type: SyncSequencePayloadType.notificationStateUpdate,
+        ),
       );
       final result = await _notificationsDb.mergeState(
         id: id,

@@ -42,6 +42,7 @@ void main() {
     when(
       () => vectorClockService.getNextVectorClock(
         previous: any(named: 'previous'),
+        payload: any(named: 'payload'),
       ),
     ).thenAnswer((_) async => const VectorClock({'host-a': 1}));
     when(
@@ -339,7 +340,10 @@ void main() {
         );
 
         verify(
-          () => vectorClockService.getNextVectorClock(previous: null),
+          () => vectorClockService.getNextVectorClock(
+            previous: null,
+            payload: any(named: 'payload'),
+          ),
         ).called(1);
         verify(() => outboxService.enqueueNotification(entity)).called(1);
         verify(() => scheduler.schedule(entity, now: fixedNow)).called(1);
@@ -432,6 +436,7 @@ void main() {
         verify(
           () => vectorClockService.getNextVectorClock(
             previous: const VectorClock({'host-a': 5}),
+            payload: any(named: 'payload'),
           ),
         ).called(1);
       },
@@ -470,6 +475,7 @@ void main() {
         when(
           () => vectorClockService.getNextVectorClock(
             previous: any(named: 'previous'),
+            payload: any(named: 'payload'),
           ),
         ).thenAnswer((_) async => const VectorClock({'host-a': 2}));
 
@@ -688,7 +694,10 @@ void main() {
       commitClock = CommitEvaluatingVectorClockService();
       when(() => commitClock.getHost()).thenAnswer((_) async => 'host-a');
       when(
-        () => commitClock.getNextVectorClock(previous: any(named: 'previous')),
+        () => commitClock.getNextVectorClock(
+          previous: any(named: 'previous'),
+          payload: any(named: 'payload'),
+        ),
       ).thenAnswer((_) async => const VectorClock({'host-a': 1}));
       commitRepository = NotificationRepository(
         notificationsDb: notificationsDb,

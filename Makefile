@@ -107,6 +107,12 @@ mermaid_check:
 .PHONY: knowledge_check
 knowledge_check: okf_check mermaid_check
 
+# Model-checks every TLA+ spec configuration under specs/tla with TLC. Needs
+# Java 11+; the pinned tla2tools.jar is fetched and checksum-verified once.
+.PHONY: tla_check
+tla_check:
+	specs/tla/tlc.sh
+
 .PHONY: junit_test
 junit_test:
 	$(FLUTTER_CMD) test --coverage --reporter json > TEST-report.jsonl

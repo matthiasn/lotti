@@ -2,7 +2,6 @@ import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -26,21 +25,13 @@ class ConsumptionSyncService {
     required this._repository,
     required this._outboxService,
     required this._vectorClockService,
-    this._sequenceLogService,
     this._updateNotifications,
   });
 
   final ConsumptionRepository _repository;
   final OutboxService _outboxService;
   final VectorClockService _vectorClockService;
-  final SyncSequenceLogService? _sequenceLogService;
   final UpdateNotifications? _updateNotifications;
-
-  SyncSequenceLogService? get _sequenceLog =>
-      _sequenceLogService ??
-      (getIt.isRegistered<SyncSequenceLogService>()
-          ? getIt<SyncSequenceLogService>()
-          : null);
 
   UpdateNotifications? get _notifications =>
       _updateNotifications ??
@@ -61,8 +52,9 @@ class ConsumptionSyncService {
 
   /// Records a consumption event locally and enqueues it for sync.
   ///
-  /// Stamps the next vector clock, persists, records the send in the sequence
-  /// log, and enqueues a [SyncMessage.consumptionEvent]. When [fromSync] is
+  /// Stamps the next vector clock, persists, and enqueues a
+  /// [SyncMessage.consumptionEvent]; the outbox binds the counter in the
+  /// sequence log once the message is durable. When [fromSync] is
   /// true, writes the repository directly without enqueuing (used only for test
   /// flexibility — the production inbound path calls the repository directly).
   Future<void> recordEvent(
@@ -78,14 +70,17 @@ class ConsumptionSyncService {
       final stamped = event.copyWith(
         vectorClock: await _vectorClockService.getNextVectorClock(
           previous: event.vectorClock,
+          payload: (
+            id: event.id,
+            type: SyncSequencePayloadType.consumptionEvent,
+          ),
         ),
       );
       await _repository.upsertEvent(stamped);
-      // The DB write committed the stamped VC, so it MUST commit. Record +
-      // enqueue failures are swallowed so the VC scope's
+      // The DB write committed the stamped VC, so it MUST commit. Enqueue
+      // failures are swallowed so the VC scope's
       // default-commit-on-normal-return still fires.
       _notifyWrite(stamped);
-      await _recordSequence(stamped);
       await _enqueuePostWrite(
         SyncMessage.consumptionEvent(
           event: stamped,
@@ -93,29 +88,6 @@ class ConsumptionSyncService {
         ),
       );
     });
-  }
-
-  Future<void> _recordSequence(AiConsumptionEvent event) async {
-    final service = _sequenceLog;
-    final vectorClock = event.vectorClock;
-    if (service == null || vectorClock == null) return;
-    try {
-      await service.recordSentEntry(
-        entryId: event.id,
-        vectorClock: vectorClock,
-        payloadType: SyncSequencePayloadType.consumptionEvent,
-      );
-    } catch (exception, stackTrace) {
-      getIt<DomainLogger>().error(
-        LogDomain.sync,
-        exception,
-        message:
-            'sequence record failed after consumption write; VC already '
-            'committed',
-        stackTrace: stackTrace,
-        subDomain: 'consumptionSync.record',
-      );
-    }
   }
 
   Future<bool> _enqueuePostWrite(SyncMessage message) async {

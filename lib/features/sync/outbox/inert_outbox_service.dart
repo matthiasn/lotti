@@ -25,6 +25,7 @@ class InertOutboxService implements OutboxService {
   Future<void> enqueueNotification(
     NotificationEntity entity, {
     String? originatingHostId,
+    bool rethrowFailure = false,
   }) async {
     enqueueAttempts++;
   }
@@ -37,6 +38,7 @@ class InertOutboxService implements OutboxService {
     DateTime? seenAt,
     DateTime? actedOnAt,
     DateTime? deletedAt,
+    bool rethrowFailure = false,
   }) async {
     enqueueAttempts++;
   }

@@ -26,6 +26,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/utils.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -1886,11 +1887,14 @@ void main() {
         () => outboxService.enqueueMessage(any<SyncMessage>()),
       ).thenAnswer((_) async {});
       when(
-        () => vectorClockService.getNextVectorClock(),
+        () => vectorClockService.getNextVectorClock(
+          payload: any(named: 'payload'),
+        ),
       ).thenAnswer((_) async => const VectorClock({'host': 1}));
       when(
         () => vectorClockService.getNextVectorClock(
           previous: any<VectorClock?>(named: 'previous'),
+          payload: any(named: 'payload'),
         ),
       ).thenAnswer((_) async => const VectorClock({'host': 1}));
       when(
@@ -1932,7 +1936,9 @@ void main() {
     /// catch block right where `createMetadata(...)` is awaited.
     void stubCreateMetadataThrows() {
       when(
-        () => vectorClockService.getNextVectorClock(),
+        () => vectorClockService.getNextVectorClock(
+          payload: any(named: 'payload'),
+        ),
       ).thenThrow(StateError(boom));
     }
 
@@ -2222,6 +2228,7 @@ void main() {
       when(
         () => vectorClockService.getNextVectorClock(
           previous: any<VectorClock?>(named: 'previous'),
+          payload: any(named: 'payload'),
         ),
       ).thenThrow(StateError(boom));
 
@@ -2293,57 +2300,6 @@ void main() {
         ).thenAnswer((_) async {});
         getIt.registerSingleton<SyncSequenceLogService>(sequenceLog);
       });
-
-      test(
-        'createDbEntity swallows and logs recordSentEntry failure',
-        () async {
-          when(
-            () => journalDb.updateJournalEntity(
-              any<JournalEntity>(),
-              overrideComparison: any<bool>(named: 'overrideComparison'),
-              overwrite: any<bool>(named: 'overwrite'),
-            ),
-          ).thenAnswer((_) async => JournalUpdateResult.applied());
-          when(
-            () => sequenceLog.recordSentEntry(
-              entryId: any(named: 'entryId'),
-              vectorClock: any(named: 'vectorClock'),
-            ),
-          ).thenThrow(StateError(boom));
-
-          final saved = await logic.createDbEntity(
-            buildEntry(clock: const VectorClock({'host': 7})),
-            shouldAddGeolocation: false,
-          );
-
-          // The sequence-record failure is swallowed; the write still commits.
-          expect(saved, isTrue);
-          verifyLogged(LogDomain.sync, 'createDbEntity.recordSent');
-        },
-      );
-
-      test(
-        'createLink swallows and logs recordSentEntryLink failure',
-        () async {
-          when(
-            () => journalDb.upsertEntryLink(any<EntryLink>()),
-          ).thenAnswer((_) async => 1);
-          when(
-            () => sequenceLog.recordSentEntryLink(
-              linkId: any(named: 'linkId'),
-              vectorClock: any(named: 'vectorClock'),
-            ),
-          ).thenThrow(StateError(boom));
-
-          final created = await logic.createLink(
-            fromId: 'from-id',
-            toId: 'to-id',
-          );
-
-          expect(created, isTrue);
-          verifyLogged(LogDomain.sync, 'createLink.recordSent');
-        },
-      );
 
       test(
         'createLink returns false when upsertEntryLink reports no row changed',
@@ -2762,11 +2718,14 @@ void main() {
         () => outboxService.enqueueMessage(any<SyncMessage>()),
       ).thenAnswer((_) async {});
       when(
-        () => vectorClockService.getNextVectorClock(),
+        () => vectorClockService.getNextVectorClock(
+          payload: any(named: 'payload'),
+        ),
       ).thenAnswer((_) async => const VectorClock({'host': 1}));
       when(
         () => vectorClockService.getNextVectorClock(
           previous: any<VectorClock?>(named: 'previous'),
+          payload: any(named: 'payload'),
         ),
       ).thenAnswer((_) async => const VectorClock({'host': 1}));
       when(
@@ -3797,149 +3756,58 @@ void main() {
       );
     });
 
-    group('sequence-log integration', () {
+    group('sequence-log binding is left to the outbox', () {
       late MockSyncSequenceLogService sequenceLog;
 
       setUpAll(() => registerFallbackValue(const VectorClock({'host': 0})));
 
       setUp(() {
         sequenceLog = MockSyncSequenceLogService();
-        when(
-          () => sequenceLog.recordSentEntry(
-            entryId: any(named: 'entryId'),
-            vectorClock: any(named: 'vectorClock'),
-          ),
-        ).thenAnswer((_) async {});
-        when(
-          () => sequenceLog.recordSentEntryLink(
-            linkId: any(named: 'linkId'),
-            vectorClock: any(named: 'vectorClock'),
-          ),
-        ).thenAnswer((_) async {});
         getIt.registerSingleton<SyncSequenceLogService>(sequenceLog);
       });
 
+      // Binding a counter before its payload is durably in the outbox would
+      // mark it `received` while a crash could still stop it from ever being
+      // sent. The outbox binds after its insert; the writers must not.
       test(
-        'updateDbEntity records the journal entity sequence after applied write',
+        'updateDbEntity enqueues an applied write without binding its counter',
         () async {
           stubUpdateResult(JournalUpdateResult.applied());
 
-          final entry = buildEntry();
-          final result = await logic.updateDbEntity(entry);
+          final result = await logic.updateDbEntity(buildEntry());
 
           expect(result, isTrue);
           verify(
-            () => sequenceLog.recordSentEntry(
-              entryId: entry.meta.id,
-              vectorClock: entry.meta.vectorClock!,
-            ),
+            () => outboxService.enqueueMessage(any<SyncMessage>()),
           ).called(1);
+          verifyZeroInteractions(sequenceLog);
         },
       );
 
       test(
-        'updateDbEntity does not record when the write is skipped',
-        () async {
-          stubUpdateResult(
-            JournalUpdateResult.skipped(
-              reason: JournalUpdateSkipReason.olderOrEqual,
-            ),
-          );
-
-          await logic.updateDbEntity(buildEntry());
-
-          verifyNever(
-            () => sequenceLog.recordSentEntry(
-              entryId: any(named: 'entryId'),
-              vectorClock: any(named: 'vectorClock'),
-            ),
-          );
-        },
-      );
-
-      test('updateDbEntity sequence-record failure is swallowed and logged via '
-          'LoggingService; outbox is still enqueued', () async {
-        stubUpdateResult(JournalUpdateResult.applied());
-        when(
-          () => sequenceLog.recordSentEntry(
-            entryId: any(named: 'entryId'),
-            vectorClock: any(named: 'vectorClock'),
-          ),
-        ).thenThrow(StateError('sequence ledger boom'));
-
-        final result = await logic.updateDbEntity(buildEntry());
-
-        expect(result, isTrue);
-        verify(
-          () => loggingService.error(
-            LogDomain.sync,
-            any<Object>(),
-            stackTrace: any<StackTrace?>(named: 'stackTrace'),
-            subDomain: 'updateDbEntity.recordSent',
-          ),
-        ).called(1);
-        verify(
-          () => outboxService.enqueueMessage(any<SyncMessage>()),
-        ).called(1);
-      });
-
-      test(
-        'createDbEntity records the journal entity sequence after saved write',
+        'createDbEntity enqueues a saved write without binding its counter',
         () async {
           stubUpdateResult(JournalUpdateResult.applied());
           when(
             () => journalDb.parentLinkedEntityIds(any<String>()),
           ).thenReturn(MockSelectable<String>([]));
 
-          final entity = buildEntry(clock: const VectorClock({'host': 7}));
           final saved = await logic.createDbEntity(
-            entity,
+            buildEntry(clock: const VectorClock({'host': 7})),
             shouldAddGeolocation: false,
           );
 
           expect(saved, isTrue);
           verify(
-            () => sequenceLog.recordSentEntry(
-              entryId: entity.meta.id,
-              vectorClock: entity.meta.vectorClock!,
-            ),
+            () => outboxService.enqueueMessage(any<SyncMessage>()),
           ).called(1);
+          verifyZeroInteractions(sequenceLog);
         },
       );
 
-      test('createDbEntity sequence-record failure is swallowed and logged via '
-          'LoggingService', () async {
-        stubUpdateResult(JournalUpdateResult.applied());
-        when(
-          () => journalDb.parentLinkedEntityIds(any<String>()),
-        ).thenReturn(MockSelectable<String>([]));
-        when(
-          () => sequenceLog.recordSentEntry(
-            entryId: any(named: 'entryId'),
-            vectorClock: any(named: 'vectorClock'),
-          ),
-        ).thenThrow(StateError('sequence ledger boom'));
-
-        final entity = buildEntry(clock: const VectorClock({'host': 8}));
-        final saved = await logic.createDbEntity(
-          entity,
-          shouldAddGeolocation: false,
-        );
-
-        expect(saved, isTrue);
-        verify(
-          () => loggingService.error(
-            LogDomain.sync,
-            any<Object>(),
-            stackTrace: any<StackTrace?>(named: 'stackTrace'),
-            subDomain: 'createDbEntity.recordSent',
-          ),
-        ).called(1);
-      });
-
       test(
-        'createLink records the entry-link sequence after the upsert returns >0 '
-        'rows',
+        'createLink names the new link as the reservation payload and leaves '
+        'binding to the outbox',
         () async {
           when(
             () => journalDb.upsertEntryLink(any<EntryLink>()),
@@ -3951,42 +3819,22 @@ void main() {
           );
 
           expect(created, isTrue);
+          final persisted =
+              verify(
+                    () => journalDb.upsertEntryLink(captureAny<EntryLink>()),
+                  ).captured.single
+                  as EntryLink;
           verify(
-            () => sequenceLog.recordSentEntryLink(
-              linkId: any(named: 'linkId'),
-              vectorClock: const VectorClock({'host': 1}),
+            () => vectorClockService.getNextVectorClock(
+              payload: (
+                id: persisted.id,
+                type: SyncSequencePayloadType.entryLink,
+              ),
             ),
           ).called(1);
+          verifyZeroInteractions(sequenceLog);
         },
       );
-
-      test('createLink sequence-record failure is swallowed and routed through '
-          'LoggingService.captureException', () async {
-        when(
-          () => journalDb.upsertEntryLink(any<EntryLink>()),
-        ).thenAnswer((_) async => 1);
-        when(
-          () => sequenceLog.recordSentEntryLink(
-            linkId: any(named: 'linkId'),
-            vectorClock: any(named: 'vectorClock'),
-          ),
-        ).thenThrow(StateError('sequence ledger boom'));
-
-        final created = await logic.createLink(
-          fromId: 'from-id',
-          toId: 'to-id',
-        );
-
-        expect(created, isTrue);
-        verify(
-          () => loggingService.error(
-            LogDomain.sync,
-            any<Object>(),
-            stackTrace: any<StackTrace?>(named: 'stackTrace'),
-            subDomain: 'createLink.recordSent',
-          ),
-        ).called(1);
-      });
     });
 
     group('updateEvent - orElse path', () {

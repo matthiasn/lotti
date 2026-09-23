@@ -6,6 +6,7 @@ import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/blocks_cycle_guard.dart';
 import 'package:lotti/logic/persistence_collaborator_base.dart';
@@ -25,28 +26,6 @@ import 'package:lotti/utils/file_utils.dart';
 /// create-ops builders), [createLink] and the core [createDbEntity] writer.
 class PersistenceEntries extends PersistenceCollaboratorBase {
   PersistenceEntries(super.logic);
-
-  Future<void> _recordEntryLinkSequence(
-    EntryLink link, {
-    required String subDomain,
-  }) async {
-    final vectorClock = link.vectorClock;
-    final service = sequenceLogService;
-    if (service == null || vectorClock == null) return;
-    try {
-      await service.recordSentEntryLink(
-        linkId: link.id,
-        vectorClock: vectorClock,
-      );
-    } catch (exception, stackTrace) {
-      loggingService.error(
-        LogDomain.sync,
-        exception,
-        stackTrace: stackTrace,
-        subDomain: subDomain,
-      );
-    }
-  }
 
   /// Creates a [Metadata] object with either a random UUID v1 ID or a
   /// deterministic UUID v5 ID.
@@ -198,23 +177,22 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
       () async {
         final now = DateTime.now();
 
+        final linkId = uuid.v1();
         final link = linkType.buildLink(
-          id: uuid.v1(),
+          id: linkId,
           fromId: fromId,
           toId: toId,
           createdAt: now,
           updatedAt: now,
           hidden: hidden,
           collapsed: collapsed,
-          vectorClock: await vectorClockService.getNextVectorClock(),
+          vectorClock: await vectorClockService.getNextVectorClock(
+            payload: (id: linkId, type: SyncSequencePayloadType.entryLink),
+          ),
         );
 
         final res = await journalDb.upsertEntryLink(link);
         if (res == 0) return false;
-        await _recordEntryLinkSequence(
-          link,
-          subDomain: 'createLink.recordSent',
-        );
         updateNotifications.notify({
           link.fromId,
           link.toId,
@@ -295,13 +273,6 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
             await vectorClockService.burnUnboundVectorClock(
               withContext.meta.vectorClock,
               reason: 'createDbEntity write rejected id=${withContext.id}',
-            );
-          }
-
-          if (saved) {
-            await recordJournalSequence(
-              withContext,
-              subDomain: 'createDbEntity.recordSent',
             );
           }
 

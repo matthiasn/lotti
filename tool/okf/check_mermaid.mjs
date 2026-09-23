@@ -225,6 +225,26 @@ export function phantomNodes(diagram) {
     .filter((id) => id.includes(';'));
 }
 
+/// State ids that are built without a shape, which GitHub's renderer rejects
+/// with "No such shape: undefined".
+///
+/// A `note right of X` that comes before any line declaring `X` creates the
+/// state from the note alone, and a state created that way never gets its
+/// shape: the block parses clean and the checker saw nothing, while GitHub
+/// showed an error box. Declaring the state first — a transition, or a `state`
+/// line — fixes it.
+export function shapelessNodes(diagram) {
+  let data;
+  try {
+    data = diagram.db?.getData?.();
+  } catch {
+    return [];
+  }
+  return (data?.nodes ?? [])
+    .filter((n) => !n.isGroup && n.shape === undefined)
+    .map((n) => String(n.id ?? n.label ?? ''));
+}
+
 let failed = 0;
 for (const block of blocks) {
   const where = `${block.file}:${block.line}`;
@@ -249,6 +269,16 @@ for (const block of blocks) {
         `\nFAIL ${where}\n      a \`;\` split a statement: this parses but ` +
           `renders phantom node(s) ${phantoms.map((p) => `\`${p}\``).join(', ')}` +
           `\n      Use a comma. A semicolon terminates the statement.`,
+      );
+    }
+    const shapeless = shapelessNodes(diagram);
+    if (shapeless.length > 0) {
+      failed++;
+      console.error(
+        `\nFAIL ${where}\n      state(s) ` +
+          `${shapeless.map((s) => `\`${s}\``).join(', ')} have no shape, ` +
+          `which GitHub renders as "No such shape: undefined"` +
+          `\n      A note must come after a line that declares its state.`,
       );
     }
   } catch {
