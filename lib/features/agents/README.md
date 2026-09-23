@@ -55,10 +55,10 @@ applied until the user confirms it.
 
 ## What it owns
 
-The persisted agent runtime: agent identities and state, wake scheduling and
-throttling, the agent's own memory log, change proposals and the review gates in
-front of them, template and personality versioning, and the operator surfaces
-under *Settings → Agents*. Shared conversation UI and voice-input state also
+The persisted agent runtime: agent identities and state, wake scheduling,
+throttling and crash recovery, the agent's own memory log, change proposals and
+the review gates in front of them, template and personality versioning, and the
+operator surfaces under *Settings → Agents*. Shared conversation UI and voice-input state also
 live here; batch transcription is supplied by the AI feature.
 
 It does **not** implement inference. Providers, models, prompts and profiles
@@ -70,7 +70,7 @@ and agents read them on demand.
 
 ```text
 lib/features/agents/
-├── wake/         # orchestrator, queue, runner, scheduling
+├── wake/         # orchestrator, queue, runner, scheduling, durable wake intents
 ├── workflow/     # one per agent kind, plus evolution and improver
 ├── service/      # creation, change-set confirmation, souls, templates
 ├── query/        # scoped conversations, retrieval, evidence and shared conclusions

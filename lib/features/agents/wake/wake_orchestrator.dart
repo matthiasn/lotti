@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/wake/run_key_factory.dart';
+import 'package:lotti/features/agents/wake/wake_intent_store.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/agents/wake/wake_suppression_tracker.dart';
@@ -257,7 +258,18 @@ class WakeOrchestrator with AgentErrorLogging {
     this.syncAgentStateUpdater,
     this.onWakeStart,
     this.maxConcurrentWakes = _defaultMaxConcurrentWakes,
+    this.intentStore,
   }) {
+    queue
+      ..onEnqueued = _recordIntent
+      ..onMerged = (job, tokens) => intentStore?.record(
+        runKey: job.runKey,
+        agentId: job.agentId,
+        workspaceKey: job.workspaceKey,
+        reason: job.reason,
+        initiator: job.initiator,
+        tokens: tokens,
+      );
     _throttle = WakeThrottleCoordinator(
       repository: repository,
       throttleWindow: throttleWindow,
@@ -270,6 +282,10 @@ class WakeOrchestrator with AgentErrorLogging {
   final AgentRepository repository;
   final WakeQueue queue;
   final WakeRunner runner;
+
+  /// Durable record of the wakes still owed, restored after a process death.
+  /// Absent in tests and worlds that do not persist wakes.
+  final WakeIntentStore? intentStore;
 
   /// Reads the current global concurrency limit whenever the dispatcher has
   /// capacity. This makes a persisted settings change effective without
@@ -321,8 +337,16 @@ class WakeOrchestrator with AgentErrorLogging {
   final _activeExecutors =
       <
         String,
-        ({String agentId, String? workspaceKey, Future<void> settled})
+        ({
+          String agentId,
+          String? workspaceKey,
+          Future<void> settled,
+          DateTime startedAt,
+        })
       >{};
+
+  /// Executors already reported as hung, so the report is made once.
+  final _reportedHungExecutors = <String>{};
   late final WakeThrottleCoordinator _throttle;
 
   final _runCompletions = StreamController<WakeRunCompletion>.broadcast();
@@ -357,16 +381,112 @@ class WakeOrchestrator with AgentErrorLogging {
     );
   }
 
+  void _recordIntent(WakeJob job) => intentStore?.record(
+    runKey: job.runKey,
+    agentId: job.agentId,
+    workspaceKey: job.workspaceKey,
+    reason: job.reason,
+    initiator: job.initiator,
+    tokens: job.triggerTokens,
+  );
+
+  /// Settles [job]'s wake intent: its run settled, or the job was dropped
+  /// for good.
+  void _settleIntent(WakeJob job) => intentStore?.settle(job.runKey);
+
+  /// Startup, after subscriptions are restored: re-queues every wake intent a
+  /// previous process left unsettled — jobs it lost and runs it interrupted.
+  /// The intents of one agent and workspace become one job, which merges
+  /// into a job already queued for them if there is one. Returns how many
+  /// intents were restored.
+  Future<int> restoreWakeIntents() async {
+    final store = intentStore;
+    if (store == null) return 0;
+    final intents = store.takeRestorable();
+    // One job per agent and workspace: two manual wakes enqueued in the same
+    // tick would share a run key, and the queue would drop the second.
+    final groups = <(String, String?), List<WakeIntent>>{};
+    for (final intent in intents) {
+      (groups[(intent.agentId, intent.workspaceKey)] ??= []).add(intent);
+    }
+    for (final MapEntry(key: (agentId, workspaceKey), value: group)
+        in groups.entries) {
+      final tokens = {for (final intent in group) ...intent.tokens};
+      final queued = queue.queuedJobFor(agentId, workspaceKey: workspaceKey);
+      final String runKey;
+      if (queued != null) {
+        queue.mergeTokens(agentId, tokens, workspaceKey: workspaceKey);
+        runKey = queued.runKey;
+      } else {
+        runKey = enqueueManualWake(
+          agentId: agentId,
+          reason: group.first.reason,
+          triggerTokens: tokens,
+          workspaceKey: workspaceKey,
+          supersede: false,
+          // A user's wake must not become automation that disabling
+          // automatic updates would drop.
+          initiator:
+              group.any((intent) => intent.initiator == WakeInitiator.user)
+              ? WakeInitiator.user
+              : WakeInitiator.automation,
+        );
+      }
+      for (final intent in group) {
+        store.adopt(intent, runKey: runKey);
+      }
+    }
+    if (intents.isNotEmpty) {
+      _log(
+        'restored ${intents.length} unsettled wake intent(s)',
+        subDomain: 'intents',
+      );
+    }
+    return intents.length;
+  }
+
+  /// Whether an executor of [agentId] still blocks a new run of it: any
+  /// executor still running — including one an abort, the run timeout or a
+  /// stuck-drain reset detached from its lease — until it has run for
+  /// [hungExecutorAfter]. A future that never settles would otherwise wedge
+  /// its agent until the next launch; past that point it is reported as hung
+  /// and stops blocking (`specs/tla/WakeRuntime.tla`, `DeclareHung`).
+  bool _hasLiveExecutor(String agentId) {
+    final now = clock.now();
+    var blocking = false;
+    for (final entry in _activeExecutors.entries) {
+      final execution = entry.value;
+      if (execution.agentId != agentId) continue;
+      if (now.difference(execution.startedAt) < hungExecutorAfter) {
+        blocking = true;
+      } else if (_reportedHungExecutors.add(entry.key)) {
+        logError(
+          'wake executor still running after '
+          '${hungExecutorAfter.inMinutes} min; no longer blocking '
+          '${DomainLogger.sanitizeId(agentId)}',
+          error: StateError('hung wake executor'),
+          stackTrace: StackTrace.current,
+        );
+      }
+    }
+    return blocking;
+  }
+
   void _trackExecutor(WakeJob job, Future<Map<String, VectorClock>?> future) {
     final settled = Completer<void>();
     _activeExecutors[job.runKey] = (
       agentId: job.agentId,
       workspaceKey: job.workspaceKey,
       settled: settled.future,
+      startedAt: clock.now(),
     );
     void complete() {
       _activeExecutors.remove(job.runKey);
+      _reportedHungExecutors.remove(job.runKey);
       settled.complete();
+      _settleIntent(job);
+      // A job held back because this executor was still live can run now.
+      if (queue.hasQueuedJobForAgent(job.agentId)) unawaited(processNext());
     }
 
     unawaited(
@@ -423,6 +543,9 @@ class WakeOrchestrator with AgentErrorLogging {
     required String reason,
   }) {
     for (final job in jobs) {
+      // Cancelled or superseded on purpose: the next launch must not bring
+      // it back.
+      _settleIntent(job);
       if (_persistedWakeRunKeys.remove(job.runKey)) {
         unawaited(
           _safeUpdateStatus(
@@ -529,6 +652,10 @@ class WakeOrchestrator with AgentErrorLogging {
   /// result is ignored and its mutations are treated like any other DB
   /// write — i.e. they may surface as new notifications.
   static const wakeRunMaxDuration = Duration(minutes: 10);
+
+  /// How long an executor may run before it stops blocking new runs of its
+  /// agent — three run caps, far past anything a healthy wake takes.
+  static const hungExecutorAfter = Duration(minutes: 30);
 
   /// Hard cap for the pre-wake [onWakeStart] hook (fork healing). The hook runs
   /// before the executor's [wakeRunMaxDuration] race is armed, so it gets its
@@ -906,6 +1033,10 @@ class WakeOrchestrator with AgentErrorLogging {
       _notificationSub = null;
       await oldSub.cancel();
     }
+    // Load before listening, so no trigger is recorded into a store that is
+    // then replaced. Without a store, subscribe synchronously as before.
+    final store = intentStore;
+    if (store != null) await store.load();
     _notificationSub = notificationStream.listen(_onBatch);
     _startSafetyNet();
   }

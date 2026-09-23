@@ -28,6 +28,7 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/sync/fork_healer.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
+import 'package:lotti/features/agents/wake/wake_intent_store.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
@@ -287,6 +288,14 @@ WakeOrchestrator wakeOrchestrator(Ref ref) {
     syncAgentStateUpdater: (agentId, update) =>
         ref.read(agentSyncServiceProvider).updateAgentState(agentId, update),
     onWakeStart: onWakeStart,
+    // Device-local, like the throttle deadline; guest worlds without a
+    // settings database simply do not persist wake intents.
+    intentStore: getIt.isRegistered<SettingsDb>()
+        ? WakeIntentStore(
+            settingsDb: getIt<SettingsDb>(),
+            domainLogger: ref.watch(domainLoggerProvider),
+          )
+        : null,
     taskContentChecker: (taskId) async {
       final journalDb = ref.read(journalDbProvider);
 
@@ -622,6 +631,10 @@ Future<void> agentInitialization(Ref ref) async {
         maintenance.restoreSubscriptions(),
       ref.read(projectAgentServiceProvider).restoreSubscriptions(),
     ]);
+    // Wakes a previous process owed but never finished — lost jobs and
+    // interrupted runs. After the passes above, so their restored jobs only
+    // merge.
+    await orchestrator.restoreWakeIntents();
   } catch (error, stackTrace) {
     ref
         .read(domainLoggerProvider)

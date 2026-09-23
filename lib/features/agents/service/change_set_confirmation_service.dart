@@ -152,10 +152,23 @@ class ChangeSetConfirmationService {
         ? await _syncService.localHost()
         : null;
 
-    // 1. Mark the item as confirmed and persist the decision BEFORE
-    //    dispatching the tool. This ensures that if the process dies after
-    //    a successful dispatch but before persistence, the item will not
-    //    remain pending and be re-executed on retry.
+    // 1. Claim the item — an atomic pending -> confirmed compare-and-swap —
+    //    and persist the decision BEFORE dispatching the tool. Of two
+    //    concurrent confirms only one claims the item; the other stops here
+    //    instead of applying the change a second time. And if the process
+    //    dies after a successful dispatch, the item is not left pending to
+    //    be re-executed on retry.
+    final confirmedSet = await _resolution.claimChangeSetItem(
+      current,
+      itemIndex,
+    );
+    if (confirmedSet == null) {
+      return const ToolExecutionResult(
+        success: false,
+        output: 'Change item is no longer pending',
+        errorMessage: 'Concurrent change set update detected',
+      );
+    }
     final decision = await _resolution.persistDecision(
       changeSet: current,
       itemIndex: itemIndex,
@@ -164,18 +177,6 @@ class ChangeSetConfirmationService {
       humanSummary: item.humanSummary,
       args: item.args,
     );
-    final confirmedSet = await _resolution.updateChangeSetItemStatus(
-      current,
-      itemIndex,
-      ChangeItemStatus.confirmed,
-    );
-    if (confirmedSet == null) {
-      return const ToolExecutionResult(
-        success: false,
-        output: 'Change item could not be updated',
-        errorMessage: 'Concurrent change set update detected',
-      );
-    }
 
     // 2. Execute the tool call. If dispatch fails, either revert the status
     //    back to pending so the user can retry, or retract non-retryable stale
@@ -300,24 +301,18 @@ class ChangeSetConfirmationService {
           decision: decision,
         );
       } catch (e, s) {
+        // The change has already been applied. Reverting the item to
+        // pending would invite a retry that applies it a second time, so it
+        // stays confirmed and the bookkeeping failure is only logged.
         _domainLogger?.error(
           LogDomain.agentWorkflow,
           e,
           message:
               'Post-confirmation handling failed for item $itemIndex '
-              '(${item.toolName}) — reverting to pending',
+              '(${item.toolName}) — the change was applied and stays '
+              'confirmed',
           subDomain: _sub,
           stackTrace: s,
-        );
-        await _resolution.updateChangeSetItemStatus(
-          current,
-          itemIndex,
-          ChangeItemStatus.pending,
-        );
-        return ToolExecutionResult(
-          success: false,
-          output: 'Error: failed to persist confirmed action state',
-          errorMessage: 'Post-confirmation handling failed (${e.runtimeType})',
         );
       }
     }

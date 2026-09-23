@@ -1490,7 +1490,35 @@ void main() {
                 level: any(named: 'level'),
               ),
             ).called(1);
+            // Single flight: the aborted executor is still running, so the
+            // follow-up waits — until the executor has run long enough to
+            // count as hung, when the safety net dispatches it after all.
+            expect(executedAgentIds, equals(['stuck-agent']));
+            // Step minute by minute so the replacement's own run timer has not
+            // fired by the time the assertions below look at it.
+            var waited = Duration.zero;
+            while (executedAgentIds.length < 2 &&
+                waited <= WakeOrchestrator.hungExecutorAfter) {
+              async
+                ..elapse(const Duration(minutes: 1))
+                ..flushMicrotasks();
+              waited += const Duration(minutes: 1);
+            }
+            // Held back past the stale-drain reset, up to the hung threshold.
+            expect(waited, greaterThan(const Duration(minutes: 10)));
             expect(executedAgentIds, equals(['stuck-agent', 'stuck-agent']));
+            // Reported once, not on every drain that skips past it.
+            verify(
+              () => logger.error(
+                any(),
+                any(that: isA<StateError>()),
+                message: any(
+                  named: 'message',
+                  that: contains('wake executor still running after 30 min'),
+                ),
+                stackTrace: any(named: 'stackTrace'),
+              ),
+            ).called(1);
             expect(stuckRunner.isRunning('stuck-agent'), isTrue);
 
             // Now release the hung aborted write so the old (superseded) drain
@@ -1635,6 +1663,15 @@ void main() {
           ).called(1);
           unawaited(orchestrator.processNext());
           async.flushMicrotasks();
+          // Its lease is released, but its executor still runs: single flight
+          // holds the follow-up until that executor settles.
+          expect(
+            executedAgentIds,
+            equals(['stuck-agent', 'healthy-agent', 'replacement-agent']),
+          );
+
+          healthyExecutionGate.complete(null);
+          async.flushMicrotasks();
           expect(
             executedAgentIds,
             equals([
@@ -1646,7 +1683,6 @@ void main() {
           );
 
           retainedStatusGate.complete();
-          healthyExecutionGate.complete(null);
           abortedStatusGate.complete();
           async.flushMicrotasks();
         });

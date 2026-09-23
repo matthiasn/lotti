@@ -80,8 +80,10 @@ statement about the design, not a proof that every line of code matches it;
 [the specs](specs/tla/README.md) say exactly what is covered. The code is held
 to it the ordinary way, too: over 35,000 tests at 99.9% line coverage,
 including more than 900 property-based tests that generate about 130,000 inputs
-and run over half a million assertions on every CI run. More models are coming,
-starting with the agent runtime.
+and run over half a million assertions on every CI run. The agent runtime has
+since followed: [models](specs/tla/README.md) of how agent wakes are scheduled
+and survive a crash, and of how a suggestion you confirm is applied, are
+checked the same way, and the cases they leave open are written down.
 
 **You choose the brain, and you can see what it cost.** Route each category of
 your life to the compute you are willing to stand behind: a local model for the

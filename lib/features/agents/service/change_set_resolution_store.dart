@@ -194,6 +194,37 @@ class ChangeSetResolutionStore {
     return decision;
   }
 
+  /// Claims the item at [itemIndex] for confirmation: moves it from
+  /// `pending` to `confirmed` in one transaction, or returns `null` when it
+  /// is no longer pending — another confirm, a rejection or a retraction got
+  /// there first. Drift serializes transactions, so of two concurrent
+  /// claimants exactly one wins; the loser must not dispatch
+  /// (`specs/tla/ChangeSetConfirm.tla`, `AtMostOnceApply`).
+  Future<ChangeSetEntity?> claimChangeSetItem(
+    ChangeSetEntity changeSet,
+    int itemIndex,
+  ) => _syncService.runInTransaction(() async {
+    // Same fallback as [updateChangeSetItemStatus]: an unpersisted set is
+    // judged by the caller's snapshot, a deleted chat set is gone.
+    final latest = await _syncService.repository.getEntity(changeSet.id);
+    if (latest is! ChangeSetEntity && changeSet.id.startsWith('query-chat:')) {
+      return null;
+    }
+    final current = latest is ChangeSetEntity ? latest : changeSet;
+    if (itemIndex < 0 ||
+        itemIndex >= current.items.length ||
+        current.items[itemIndex].status != ChangeItemStatus.pending) {
+      return null;
+    }
+    final updated = _withItemStatus(
+      current,
+      itemIndex,
+      ChangeItemStatus.confirmed,
+    );
+    await _syncService.upsertEntity(updated);
+    return updated;
+  });
+
   /// Sets the status of the item at [itemIndex] to [newStatus] on the latest
   /// persisted state of [changeSet], derives the new set status and
   /// `resolvedAt`, and upserts the result.
@@ -216,25 +247,32 @@ class ChangeSetResolutionStore {
       return null;
     }
 
+    final updated = _withItemStatus(current, itemIndex, newStatus);
+    await _syncService.upsertEntity(updated);
+    return updated;
+  }
+
+  /// [current] with the item at [itemIndex] set to [newStatus] and the set
+  /// status and `resolvedAt` derived from it.
+  static ChangeSetEntity _withItemStatus(
+    ChangeSetEntity current,
+    int itemIndex,
+    ChangeItemStatus newStatus,
+  ) {
     final updatedItems = List<ChangeItem>.from(current.items);
     updatedItems[itemIndex] = updatedItems[itemIndex].copyWith(
       status: newStatus,
     );
-
     final newSetStatus = ChangeItem.deriveSetStatus(updatedItems);
-    final resolvedAt = ChangeItem.deriveResolvedAt(
-      newStatus: newSetStatus,
-      existingResolvedAt: current.resolvedAt,
-      now: clock.now(),
-    );
-
-    final updated = current.copyWith(
+    return current.copyWith(
       items: updatedItems,
       status: newSetStatus,
-      resolvedAt: resolvedAt,
+      resolvedAt: ChangeItem.deriveResolvedAt(
+        newStatus: newSetStatus,
+        existingResolvedAt: current.resolvedAt,
+        now: clock.now(),
+      ),
     );
-    await _syncService.upsertEntity(updated);
-    return updated;
   }
 
   /// Invokes [callback] with the freshest persisted state of [fallback].

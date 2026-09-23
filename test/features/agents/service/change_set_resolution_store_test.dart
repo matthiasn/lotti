@@ -540,6 +540,138 @@ void main() {
     }
   });
 
+  group('claimChangeSetItem', () {
+    /// Serializes transactions the way Drift does, and makes the repository
+    /// return the last upserted version of [initial].
+    void serializeOver(ChangeSetEntity initial) {
+      var stored = initial;
+      var tail = Future<void>.value();
+      mockSyncService.transactionDelegate = <T>(action) {
+        final run = tail.then((_) => action());
+        tail = run.then<void>((_) {}, onError: (_) {});
+        return run;
+      };
+      when(
+        () => mockRepository.getEntity(initial.id),
+      ).thenAnswer((_) async => stored);
+      when(() => mockSyncService.upsertEntity(any())).thenAnswer((
+        invocation,
+      ) async {
+        stored = invocation.positionalArguments.first as ChangeSetEntity;
+      });
+    }
+
+    test(
+      'moves a pending item to confirmed inside one transaction',
+      () async {
+        final changeSet = makeTestChangeSet(
+          items: [
+            _migrationItem(id: 'cl-1', status: ChangeItemStatus.rejected),
+            _migrationItem(id: 'cl-2'),
+          ],
+        );
+        var inTransaction = false;
+        mockSyncService.transactionDelegate = <T>(action) async {
+          inTransaction = true;
+          try {
+            return await action();
+          } finally {
+            inTransaction = false;
+          }
+        };
+        when(() => mockRepository.getEntity(changeSet.id)).thenAnswer((
+          _,
+        ) async {
+          expect(inTransaction, isTrue, reason: 'check and set are atomic');
+          return changeSet;
+        });
+
+        final claimed = await withClock(
+          testClock,
+          () => store.claimChangeSetItem(changeSet, 1),
+        );
+
+        expect(claimed!.items[1].status, ChangeItemStatus.confirmed);
+        expect(claimed.status, ChangeSetStatus.resolved);
+        expect(claimed.resolvedAt, testClock.now());
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured.single;
+        expect(captured, same(claimed));
+      },
+    );
+
+    for (final status in [
+      ChangeItemStatus.confirmed,
+      ChangeItemStatus.rejected,
+      ChangeItemStatus.retracted,
+    ]) {
+      test(
+        'loses without writing when the persisted item is ${status.name}',
+        () async {
+          final snapshot = makeTestChangeSet(items: [_migrationItem(id: 'a')]);
+          when(() => mockRepository.getEntity(snapshot.id)).thenAnswer(
+            (_) async => snapshot.copyWith(
+              items: [_migrationItem(id: 'a', status: status)],
+            ),
+          );
+
+          final claimed = await store.claimChangeSetItem(snapshot, 0);
+
+          expect(claimed, isNull);
+          verifyNever(() => mockSyncService.upsertEntity(any()));
+        },
+      );
+    }
+
+    test('judges an unpersisted set by the caller snapshot', () async {
+      final snapshot = makeTestChangeSet(items: [_migrationItem(id: 'a')]);
+
+      final claimed = await store.claimChangeSetItem(snapshot, 0);
+
+      expect(claimed!.items.single.status, ChangeItemStatus.confirmed);
+    });
+
+    test('refuses a deleted query-chat set', () async {
+      final snapshot = makeTestChangeSet(
+        id: 'query-chat:question:actions',
+        items: [_migrationItem(id: 'a')],
+      );
+
+      final claimed = await store.claimChangeSetItem(snapshot, 0);
+
+      expect(claimed, isNull);
+      verifyNever(() => mockSyncService.upsertEntity(any()));
+    });
+
+    for (final index in [-1, 1]) {
+      test('refuses out-of-range index $index', () async {
+        final snapshot = makeTestChangeSet(items: [_migrationItem(id: 'a')]);
+
+        expect(await store.claimChangeSetItem(snapshot, index), isNull);
+        verifyNever(() => mockSyncService.upsertEntity(any()));
+      });
+    }
+
+    test('of two concurrent claims on one item exactly one wins', () async {
+      // Regression for ChangeSetConfirm.tla AtMostOnceApply: both confirms
+      // read "pending" before either wrote, and both dispatched the tool.
+      final changeSet = makeTestChangeSet(items: [_migrationItem(id: 'a')]);
+      serializeOver(changeSet);
+
+      final results = await withClock(
+        testClock,
+        () => Future.wait([
+          store.claimChangeSetItem(changeSet, 0),
+          store.claimChangeSetItem(changeSet, 0),
+        ]),
+      );
+
+      expect(results.whereType<ChangeSetEntity>(), hasLength(1));
+      verify(() => mockSyncService.upsertEntity(any())).called(1);
+    });
+  });
+
   group('notifyChangeSetResolved', () {
     test(
       'invokes the callback with the freshest persisted change set',

@@ -5,7 +5,7 @@ description: The primary agent workflow — inference setup resolution, the auto
 resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
 tags: [agents, task-agent, tools, proposals, inference]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-22T18:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T01:00:00Z }
 stale_after: 2026-12-22
 sources:
   - id: report-policy
@@ -952,12 +952,16 @@ sequenceDiagram
   User->>Card: confirm, reject, or Confirm all
   Card->>Confirm: confirm or reject pending item(s)
   Confirm->>Store: reload persisted change set
-  Confirm->>Store: persist ChangeDecisionEntity first
+  Confirm->>Store: claim item, pending to confirmed, in one transaction
+  alt item no longer pending
+    Store-->>Confirm: claim lost, nothing dispatched
+  end
+  Confirm->>Store: persist ChangeDecisionEntity
   Confirm->>Dispatch: dispatch confirmed tool
   Dispatch->>Journal: apply mutation
   Journal-->>Confirm: ToolExecutionResult
   alt success
-    Confirm->>Store: finalize item status
+    Confirm->>Confirm: post-confirm hook, a throw is only logged
   else deterministic non-retryable failure
     Confirm->>Store: persist auto-retraction decision
     Confirm->>Store: mark item retracted
@@ -968,12 +972,27 @@ sequenceDiagram
 ```
 
 `ChangeSetConfirmationService` applies one item at a time: re-read the persisted
-change set (avoiding stale UI snapshots), **persist the decision first**, mark
-the item confirmed, dispatch, revert retryable failures to `pending`, and
-auto-retract deterministic failures the dispatcher marks non-retryable. This
-includes an `update_time_entry` whose arguments alone can never apply and
-version-fenced goal revisions whose base version is stale or whose legacy
-contract cannot be applied safely. Nothing is special-cased by tool name.
+change set (avoiding stale UI snapshots), **claim the item** —
+`ChangeSetResolutionStore.claimChangeSetItem` moves it from `pending` to
+`confirmed` in one transaction, and a caller that finds it no longer pending
+stops without dispatching — then persist the decision, dispatch, revert
+retryable failures to `pending`, and auto-retract deterministic failures the
+dispatcher marks non-retryable. This includes an `update_time_entry` whose
+arguments alone can never apply and version-fenced goal revisions whose base
+version is stale or whose legacy contract cannot be applied safely. Nothing is
+special-cased by tool name.
+
+The claim is what makes a double tap, or a "Confirm all" racing a single
+confirm, apply a change once: before it, both callers could read `pending` and
+both dispatch. Once a dispatch has succeeded the item stays `confirmed` even if
+the post-confirm hook throws — reverting it would invite a retry that applies
+the change a second time. `specs/tla/ChangeSetConfirm.tla` model-checks both
+rules (`AtMostOnceApply`, `ConfirmedMeansApplied`), and a Glados trace in the
+service's suite drives the real service through generated interleavings of
+the same shape. Two cases remain open by design, and the spec's README names
+them: a tool that throws *after* its effect landed is reverted to `pending` and
+can be applied again on retry, and a crash between the claim and the dispatch
+leaves the item `confirmed` without its effect.
 
 For [chat-owned approvals](query-chat.md#task-actions-and-inline-approval), a
 missing persisted set is terminal: the resolution store returns an empty
@@ -1104,6 +1123,8 @@ stateDiagram-v2
   pending --> rejected: user swipe-reject
   pending --> deferred: user defers the decision
   pending --> retracted: agent retract_suggestions
+  confirmed --> pending: dispatch failed, retryable
+  confirmed --> retracted: dispatch failed, non-retryable
   confirmed --> [*]
   rejected --> [*]
   deferred --> [*]
