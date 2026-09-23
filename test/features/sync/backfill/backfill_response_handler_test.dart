@@ -9,12 +9,16 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/notification_entity.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
+import 'package:lotti/features/sync/utils.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -24,6 +28,8 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_utils.dart';
 import '../../ai_consumption/test_utils.dart';
+
+part 'backfill_response_handler_model_conformance.dart';
 
 // ---------------------------------------------------------------------------
 // Declarations moved from backfill_response_handler_generated_test.dart
@@ -4757,6 +4763,8 @@ void main() {
       },
     );
   });
+
+  _registerModelConformance();
 }
 
 SyncSequenceLogItem _createLogItem(

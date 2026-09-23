@@ -55,6 +55,21 @@ What the configurations deliberately leave out:
   for one stays open until the requester gives up — which is why
   `SyncSequenceCrashUnnamed` checks safety only.
 
+## From the model to the code
+
+TLC checks the design, not the Dart that implements it. The gap is narrowed by
+a generated conformance test,
+`test/features/sync/backfill/backfill_response_handler_model_conformance.dart`
+(a part of the handler's suite). It drives the real `VectorClockService`,
+sequence log and `BackfillResponseHandler` over in-memory databases through
+Glados-generated traces of reservations, commits, outbox binds, releases,
+crashes (a fresh service stack over the same stores), backfill requests and
+outbox outages, and checks `NoFalseBurn`, `BoundRowsHavePayload` and
+`BurnedIsTerminal` after every step, and after a final restart, that every
+committed write was bound and actually reached the outbox. Reverting the
+settlement fix, or binding before the resend is durably queued, makes it fail
+with a shrunk trace of four or five steps.
+
 ## Changing a spec
 
 Keep the header's action-to-code map current. When a change is meant to fix a
