@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -17,7 +18,12 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-JournalEvent _event(String id, {String? categoryId = 'cat-1'}) {
+JournalEvent _event(
+  String id, {
+  String? categoryId = 'cat-1',
+  String title = 'Event',
+  String? note,
+}) {
   final now = DateTime(2026, 5, 12);
   return JournalEvent(
     meta: Metadata(
@@ -28,11 +34,12 @@ JournalEvent _event(String id, {String? categoryId = 'cat-1'}) {
       dateTo: now,
       categoryId: categoryId,
     ),
-    data: const EventData(
-      title: 'Event',
+    data: EventData(
+      title: title,
       stars: 0,
       status: EventStatus.completed,
     ),
+    entryText: note == null ? null : EntryText(plainText: note),
   );
 }
 
@@ -140,7 +147,9 @@ void main() {
 
     expect(state.events, hasLength(eventsPageSize));
     expect(state.hasMore, isTrue);
-    expect(state.categoryId, isNull);
+    expect(state.categoryIds, isEmpty);
+    expect(state.query, isEmpty);
+    expect(state.isFiltered, isFalse);
   });
 
   test('hasMore is false when the first page is not full', () async {
@@ -167,10 +176,11 @@ void main() {
     expect(state.hasMore, isFalse);
   });
 
-  test('setCategory reloads filtered from the first page', () async {
+  test('setCategoryIds reloads filtered to every selected category', () async {
     stubPaged([
       _event('a1', categoryId: 'cat-a'),
       _event('b1', categoryId: 'cat-b'),
+      _event('c1', categoryId: 'cat-c'),
       _event('a2', categoryId: 'cat-a'),
     ]);
     final container = ProviderContainer();
@@ -179,11 +189,321 @@ void main() {
 
     await container
         .read(eventsOverviewControllerProvider.notifier)
-        .setCategory('cat-a');
+        .setCategoryIds({'cat-a', 'cat-c'});
 
     final state = container.read(eventsOverviewControllerProvider).value!;
-    expect(state.categoryId, 'cat-a');
-    expect(state.events.map((e) => e.event.meta.id), ['a1', 'a2']);
+    expect(state.categoryIds, {'cat-a', 'cat-c'});
+    expect(state.isFiltered, isTrue);
+    expect(state.events.map((e) => e.event.meta.id), ['a1', 'c1', 'a2']);
+  });
+
+  test('setQuery narrows to events whose title or note matches', () async {
+    stubPaged([
+      _event('gala', title: 'Launch Gala'),
+      _event('summit', title: 'Sardine summit'),
+      _event('noted', title: 'Roll call', note: 'An unexpected gala after'),
+    ]);
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    await container.read(eventsOverviewControllerProvider.future);
+
+    await container
+        .read(eventsOverviewControllerProvider.notifier)
+        .setQuery('GALA ');
+
+    final state = container.read(eventsOverviewControllerProvider).value!;
+    // Kept verbatim for the field; matched trimmed and case-insensitively.
+    expect(state.query, 'GALA ');
+    expect(state.isFiltered, isTrue);
+    expect(state.events.map((e) => e.event.meta.id), ['gala', 'noted']);
+    expect(state.hasMore, isFalse);
+  });
+
+  test('query and categories narrow together', () async {
+    stubPaged([
+      _event('a-gala', categoryId: 'cat-a', title: 'Gala A'),
+      _event('b-gala', categoryId: 'cat-b', title: 'Gala B'),
+      _event('a-other', categoryId: 'cat-a', title: 'Other'),
+    ]);
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    await container.read(eventsOverviewControllerProvider.future);
+    final controller = container.read(
+      eventsOverviewControllerProvider.notifier,
+    );
+
+    await controller.setQuery('gala');
+    await controller.setCategoryIds({'cat-a'});
+
+    final state = container.read(eventsOverviewControllerProvider).value!;
+    expect(state.query, 'gala');
+    expect(state.events.map((e) => e.event.meta.id), ['a-gala']);
+  });
+
+  test('clearFilters restores the full archive', () async {
+    stubPaged([
+      _event('a1', categoryId: 'cat-a', title: 'Gala'),
+      _event('b1', categoryId: 'cat-b'),
+    ]);
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    await container.read(eventsOverviewControllerProvider.future);
+    final controller = container.read(
+      eventsOverviewControllerProvider.notifier,
+    );
+    await controller.setQuery('gala');
+    await controller.setCategoryIds({'cat-a'});
+
+    await controller.clearFilters();
+
+    final state = container.read(eventsOverviewControllerProvider).value!;
+    expect(state.isFiltered, isFalse);
+    expect(state.events.map((e) => e.event.meta.id), ['a1', 'b1']);
+  });
+
+  test('a superseded keystroke cannot overwrite a newer result', () async {
+    final events = [
+      _event('ga', title: 'Gala'),
+      _event('gar', title: 'Garden'),
+    ];
+    final slowFirst = Completer<void>();
+    var searchCalls = 0;
+    when(
+      () => db.getJournalEntities(
+        types: any(named: 'types'),
+        ids: any(named: 'ids'),
+        starredStatuses: any(named: 'starredStatuses'),
+        privateStatuses: any(named: 'privateStatuses'),
+        flaggedStatuses: any(named: 'flaggedStatuses'),
+        categoryIds: any(named: 'categoryIds'),
+        limit: any(named: 'limit'),
+        offset: any(named: 'offset'),
+      ),
+    ).thenAnswer((invocation) async {
+      // The first search call ("ga") is held until the second ("gar") has
+      // already landed, as a slow keystroke would be.
+      if (invocation.namedArguments[#limit] != eventsPageSize &&
+          searchCalls++ == 0) {
+        await slowFirst.future;
+      }
+      return events;
+    });
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    await container.read(eventsOverviewControllerProvider.future);
+    final controller = container.read(
+      eventsOverviewControllerProvider.notifier,
+    );
+
+    final stale = controller.setQuery('ga');
+    await controller.setQuery('gar');
+    slowFirst.complete();
+    await stale;
+
+    final state = container.read(eventsOverviewControllerProvider).value!;
+    expect(state.query, 'gar');
+    expect(state.events.map((e) => e.event.meta.id), ['gar']);
+  });
+
+  group('overlapping filter changes', () {
+    /// Pages over [all] like [stubPaged], but holds every call for which
+    /// [hold] returns a future until that future completes.
+    void stubHeld(
+      List<JournalEvent> all, {
+      required Future<void>? Function(Invocation) hold,
+    }) {
+      when(
+        () => db.getJournalEntities(
+          types: any(named: 'types'),
+          ids: any(named: 'ids'),
+          starredStatuses: any(named: 'starredStatuses'),
+          privateStatuses: any(named: 'privateStatuses'),
+          flaggedStatuses: any(named: 'flaggedStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+        ),
+      ).thenAnswer((invocation) async {
+        final gate = hold(invocation);
+        if (gate != null) await gate;
+        final limit = invocation.namedArguments[#limit] as int;
+        final offset = invocation.namedArguments[#offset] as int;
+        final categoryIds =
+            invocation.namedArguments[#categoryIds] as Set<String>?;
+        final filtered = categoryIds == null
+            ? all
+            : all
+                  .where((e) => categoryIds.contains(e.meta.categoryId))
+                  .toList();
+        if (offset >= filtered.length) return <JournalEntity>[];
+        final end = (offset + limit).clamp(0, filtered.length);
+        return filtered.sublist(offset, end);
+      });
+    }
+
+    bool isSearch(Invocation invocation) =>
+        invocation.namedArguments[#limit] != eventsPageSize;
+
+    test('clearing before the typed query lands restores everything', () async {
+      final typed = Completer<void>();
+      var held = false;
+      stubHeld(
+        [
+          _event('gala', title: 'Gala'),
+          _event('summit', title: 'Summit'),
+        ],
+        hold: (invocation) {
+          if (!isSearch(invocation) || held) return null;
+          held = true;
+          return typed.future;
+        },
+      );
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await container.read(eventsOverviewControllerProvider.future);
+      final controller = container.read(
+        eventsOverviewControllerProvider.notifier,
+      );
+
+      final pending = controller.setQuery('g');
+      // The committed query is still '' here; the clear must not be
+      // mistaken for a no-op.
+      await controller.setQuery('');
+      typed.complete();
+      await pending;
+
+      final state = container.read(eventsOverviewControllerProvider).value!;
+      expect(state.query, isEmpty);
+      expect(state.events.map((e) => e.event.meta.id), ['gala', 'summit']);
+    });
+
+    test('a category picked while a query loads keeps the query', () async {
+      final typed = Completer<void>();
+      var held = false;
+      stubHeld(
+        [
+          _event('a-gala', categoryId: 'cat-a', title: 'Gala A'),
+          _event('b-gala', categoryId: 'cat-b', title: 'Gala B'),
+          _event('a-other', categoryId: 'cat-a', title: 'Other'),
+        ],
+        hold: (invocation) {
+          if (!isSearch(invocation) || held) return null;
+          held = true;
+          return typed.future;
+        },
+      );
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await container.read(eventsOverviewControllerProvider.future);
+      final controller = container.read(
+        eventsOverviewControllerProvider.notifier,
+      );
+
+      final pending = controller.setQuery('gala');
+      await controller.setCategoryIds({'cat-a'});
+      typed.complete();
+      await pending;
+
+      final state = container.read(eventsOverviewControllerProvider).value!;
+      expect(state.query, 'gala');
+      expect(state.categoryIds, {'cat-a'});
+      expect(state.events.map((e) => e.event.meta.id), ['a-gala']);
+    });
+
+    test('a page loaded during a filter change cannot revert it', () async {
+      final nextPage = Completer<void>();
+      final all = [
+        for (var i = 0; i < eventsPageSize + 5; i++)
+          _event('e$i', title: i == 0 ? 'Gala' : 'Event'),
+      ];
+      stubHeld(
+        all,
+        hold: (invocation) =>
+            invocation.namedArguments[#offset] != 0 ? nextPage.future : null,
+      );
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final first = await container.read(
+        eventsOverviewControllerProvider.future,
+      );
+      expect(first.hasMore, isTrue);
+      final controller = container.read(
+        eventsOverviewControllerProvider.notifier,
+      );
+
+      // The filter reload starts, the user scrolls, the filter lands, and
+      // only then does the unfiltered next page arrive.
+      final filtering = controller.setQuery('gala');
+      final paging = controller.loadMore();
+      await filtering;
+      nextPage.complete();
+      await paging;
+
+      final state = container.read(eventsOverviewControllerProvider).value!;
+      expect(state.query, 'gala');
+      expect(state.events.map((e) => e.event.meta.id), ['e0']);
+    });
+
+    test(
+      'a sync refresh during a filter change carries the new filter',
+      () async {
+        final typed = Completer<void>();
+        var held = false;
+        final master = [
+          _event('gala', title: 'Gala'),
+          _event('summit', title: 'Summit'),
+        ];
+        stubHeld(
+          master,
+          hold: (invocation) {
+            if (!isSearch(invocation) || held) return null;
+            held = true;
+            return typed.future;
+          },
+        );
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+        await container.read(eventsOverviewControllerProvider.future);
+        final controller = container.read(
+          eventsOverviewControllerProvider.notifier,
+        );
+
+        final pending = controller.setQuery('gala');
+        updates.add({eventNotification});
+        await pumpEventQueue();
+        typed.complete();
+        await pending;
+
+        final state = container.read(eventsOverviewControllerProvider).value!;
+        expect(state.query, 'gala');
+        expect(state.events.map((e) => e.event.meta.id), ['gala']);
+      },
+    );
+  });
+
+  test('re-applying the current filter does not reload', () async {
+    stubPaged([_event('e1')]);
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    await container.read(eventsOverviewControllerProvider.future);
+    clearInteractions(db);
+
+    await container
+        .read(eventsOverviewControllerProvider.notifier)
+        .setCategoryIds(const {});
+
+    verifyNever(
+      () => db.getJournalEntities(
+        types: any(named: 'types'),
+        ids: any(named: 'ids'),
+        starredStatuses: any(named: 'starredStatuses'),
+        privateStatuses: any(named: 'privateStatuses'),
+        flaggedStatuses: any(named: 'flaggedStatuses'),
+        categoryIds: any(named: 'categoryIds'),
+        limit: any(named: 'limit'),
+        offset: any(named: 'offset'),
+      ),
+    );
   });
 
   test('an event notification refreshes the loaded window', () async {
@@ -363,7 +683,8 @@ void main() {
       events: [],
       hasMore: true,
       isLoadingMore: true,
-      categoryId: 'cat-x',
+      categoryIds: {'cat-x'},
+      query: 'gala',
     );
 
     final copy = base.copyWith(hasMore: false);
@@ -373,6 +694,7 @@ void main() {
     expect(copy.hasMore, isFalse);
     expect(copy.isLoadingMore, isTrue);
     expect(copy.events, same(base.events));
-    expect(copy.categoryId, 'cat-x');
+    expect(copy.categoryIds, {'cat-x'});
+    expect(copy.query, 'gala');
   });
 }

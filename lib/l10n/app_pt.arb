@@ -2880,7 +2880,7 @@
   "eventsAddLabel": "Adicionar",
   "eventsChangeCover": "Alterar capa",
   "eventsDeleteEvent": "Excluir evento",
-  "eventsFilterAll": "Todos",
+  "eventsFilterTooltip": "Filtrar eventos",
   "eventsMetricPhotos": "{count, plural, =1{1 foto} other{{count} fotos}}",
   "@eventsMetricPhotos": {
     "placeholders": {
@@ -2898,6 +2898,7 @@
     }
   },
   "eventsNewEvent": "Novo evento",
+  "eventsNoResults": "Nenhum evento correspondente",
   "eventsPageTitle": "Eventos",
   "eventsPhotosSection": "Fotos",
   "eventsRecapAwaitingContent": "Adicione uma foto ou nota e a recapitulação aparecerá aqui.",

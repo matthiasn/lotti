@@ -6296,7 +6296,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get eventsDeleteEvent => 'Smazat událost';
 
   @override
-  String get eventsFilterAll => 'Vše';
+  String get eventsFilterTooltip => 'Filtrovat události';
+
+  @override
+  String get eventsNoResults => 'Žádné odpovídající události';
 
   @override
   String eventsMetricPhotos(int count) {

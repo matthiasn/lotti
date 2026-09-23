@@ -33,18 +33,29 @@ class ResolvedEvent {
 const eventsPageSize = 60;
 
 /// Loads one page of (non-deleted) events for the overview — newest first,
-/// [limit] rows from [offset], optionally restricted to [categoryId] — and
-/// resolves each one's category styling and cover image. Pure-ish glue: all
-/// side effects go through `getIt`, so it is straightforward to test with mocked
-/// services.
+/// [limit] rows from [offset] — and resolves each one's category styling and
+/// cover image. Pure-ish glue: all side effects go through `getIt`, so it is
+/// straightforward to test with mocked services.
+///
+/// [categoryIds] narrows to those categories when non-empty; `''` stands for
+/// events without a category, matching the Tasks filter's "Unassigned".
+///
+/// A non-blank [query] narrows to events whose title or note text contains it
+/// (see [eventMatchesQuery]). The full-text index does not carry event titles,
+/// so the match runs here over the whole category scope and is paged
+/// afterwards — events are few enough that this stays cheap, and only the
+/// returned page resolves covers.
 Future<List<ResolvedEvent>> loadResolvedEventsPage({
   required int limit,
   required int offset,
-  String? categoryId,
+  Set<String> categoryIds = const {},
+  String query = '',
 }) async {
   final db = getIt<JournalDb>();
   final cache = getIt<EntitiesCacheService>();
   final showPrivate = cache.showPrivateEntries;
+  final trimmedQuery = query.trim();
+  final searching = trimmedQuery.isNotEmpty;
 
   final entities = await db.getJournalEntities(
     types: const ['JournalEvent'],
@@ -52,12 +63,34 @@ Future<List<ResolvedEvent>> loadResolvedEventsPage({
     starredStatuses: const [true, false],
     privateStatuses: showPrivate ? const [true, false] : const [false],
     flaggedStatuses: const [1, 0],
-    categoryIds: categoryId == null ? null : {categoryId},
-    limit: limit,
-    offset: offset,
+    categoryIds: categoryIds.isEmpty ? null : categoryIds,
+    limit: searching ? _searchScopeLimit : limit,
+    offset: searching ? 0 : offset,
   );
-  final events = entities.whereType<JournalEvent>().toList();
-  return _resolveEventCovers(db, cache, events);
+  var events = entities.whereType<JournalEvent>();
+  if (searching) {
+    events = events
+        .where((event) => eventMatchesQuery(event, trimmedQuery))
+        .skip(offset)
+        .take(limit);
+  }
+  return _resolveEventCovers(db, cache, events.toList());
+}
+
+/// Upper bound on the events a search scans. Far above any real archive of
+/// meaningful moments; it exists so a pathological database cannot turn one
+/// keystroke into an unbounded read.
+const _searchScopeLimit = 10000;
+
+/// Whether [event] matches the overview search [query]: a case-insensitive
+/// substring of its title or its note text, so typing "gal" finds
+/// "Launch gala" before the word is finished.
+bool eventMatchesQuery(JournalEvent event, String query) {
+  final needle = query.trim().toLowerCase();
+  if (needle.isEmpty) return true;
+  if (event.data.title.toLowerCase().contains(needle)) return true;
+  final text = event.entryText?.plainText;
+  return text != null && text.toLowerCase().contains(needle);
 }
 
 /// Resolves category styling and a cover [ImageProvider] for each of [events]:

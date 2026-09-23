@@ -60,6 +60,12 @@ typedef DesignSystemFilterStateRefresh =
 /// child page. The root and child pages edit one [ValueNotifier] draft, so
 /// navigation never stacks a second barrier or flashes while initializing a
 /// page. Closing discards the draft; Apply commits once and closes.
+///
+/// A flow with exactly one field and nothing else to set — no sort, priority,
+/// agent, search-mode or toggle controls, no save flow — skips the overview:
+/// its one navigation row would be a hop that only leads to the field's page.
+/// That page then opens directly under the flow's title, carrying the
+/// Clear/Apply bar itself.
 Future<void> showDesignSystemFilterModal({
   required BuildContext context,
   required DesignSystemTaskFilterState initialState,
@@ -86,6 +92,16 @@ Future<void> showDesignSystemFilterModal({
     for (final section in DesignSystemTaskFilterSection.values)
       if (initialState.fieldFor(section) != null) section,
   ];
+  final soleSection =
+      sections.length == 1 &&
+          onCreateSavedFilter == null &&
+          !initialState.hasSortSection &&
+          !initialState.hasPrioritySection &&
+          !initialState.hasAgentFilter &&
+          !initialState.hasSearchMode &&
+          initialState.toggles.isEmpty
+      ? sections.single
+      : null;
   final pageIndexForSection = {
     for (final (index, section) in sections.indexed) section: index + 1,
   };
@@ -184,32 +200,53 @@ Future<void> showDesignSystemFilterModal({
       final overviewFooterClearance =
           DesignSystemFilterActionBar.stickyClearance(modalContext);
 
+      Widget applyBar() => ValueListenableBuilder(
+        valueListenable: stateNotifier,
+        builder: (context, state, _) {
+          return DesignSystemTaskFilterActionBar(
+            state: state,
+            onChanged: (next) => stateNotifier.value = next,
+            onApplyPressed: (next) {
+              onApplied(next);
+              Navigator.of(context).pop();
+            },
+            onClearAllPressed: (next) => stateNotifier.value = next,
+            onSavePressed: hasSaveFlow ? openSaveFlow : null,
+            canSave:
+                hasSaveFlow &&
+                ((canCreateSavedFilter?.call(state) ?? true) ||
+                    (hasUpdateChoice &&
+                        (canUpdateSavedFilter?.call(state) ?? true))),
+          );
+        },
+      );
+
+      if (soleSection != null) {
+        return [
+          ModalUtils.modalSheetPage(
+            context: modalContext,
+            title: initialState.title,
+            showCloseButton: true,
+            padding: selectionPagePadding,
+            stickyActionBar: applyBar(),
+            child: DesignSystemFilterSelectionPage(
+              stateNotifier: stateNotifier,
+              section: soleSection,
+              config:
+                  fieldPageConfigs[soleSection] ??
+                  const DesignSystemFilterFieldPageConfig(),
+            ),
+          ),
+        ];
+      }
+
       return [
         ModalUtils.modalSheetPage(
           context: modalContext,
           title: initialState.title,
           showCloseButton: true,
           padding: pagePadding,
-          stickyActionBar: ValueListenableBuilder(
-            valueListenable: stateNotifier,
-            builder: (context, state, _) {
-              return DesignSystemTaskFilterActionBar(
-                state: state,
-                onChanged: (next) => stateNotifier.value = next,
-                onApplyPressed: (next) {
-                  onApplied(next);
-                  Navigator.of(context).pop();
-                },
-                onClearAllPressed: (next) => stateNotifier.value = next,
-                onSavePressed: hasSaveFlow ? openSaveFlow : null,
-                canSave:
-                    hasSaveFlow &&
-                    ((canCreateSavedFilter?.call(state) ?? true) ||
-                        (hasUpdateChoice &&
-                            (canUpdateSavedFilter?.call(state) ?? true))),
-              );
-            },
-          ),
+          stickyActionBar: applyBar(),
           child: ValueListenableBuilder(
             valueListenable: stateNotifier,
             builder: (context, state, _) {

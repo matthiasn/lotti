@@ -2881,7 +2881,7 @@
   "eventsAddLabel": "Lägg till",
   "eventsChangeCover": "Byt omslag",
   "eventsDeleteEvent": "Ta bort händelsen",
-  "eventsFilterAll": "Alla",
+  "eventsFilterTooltip": "Filtrera evenemang",
   "eventsMetricPhotos": "{count, plural, =1{1 foto} other{{count} foton}}",
   "@eventsMetricPhotos": {
     "placeholders": {
@@ -2899,12 +2899,13 @@
     }
   },
   "eventsNewEvent": "Nytt evenemang",
+  "eventsNoResults": "Inga matchande evenemang",
   "eventsPageTitle": "Evenemang",
   "eventsPhotosSection": "Foton",
   "eventsRecapAwaitingContent": "Lägg till ett foto eller en notis så visas sammanfattningen här.",
   "eventsRecapUnavailable": "Kunde inte ladda sammanfattningen.",
   "eventsRegenerateSummary": "Regenereringssammanfattning",
-  "eventsSearchHint": "Sökhändelser",
+  "eventsSearchHint": "Sök evenemang",
   "eventsSectionUpcoming": "Kommande",
   "eventsStatusCancelled": "Nedlagd",
   "eventsStatusCompleted": "Färdigställd",

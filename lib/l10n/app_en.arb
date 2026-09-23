@@ -3438,7 +3438,7 @@
   "eventsAddLabel": "Add",
   "eventsChangeCover": "Change cover",
   "eventsDeleteEvent": "Delete event",
-  "eventsFilterAll": "All",
+  "eventsFilterTooltip": "Filter events",
   "eventsMetricPhotos": "{count, plural, =1{1 photo} other{{count} photos}}",
   "@eventsMetricPhotos": {
     "placeholders": {
@@ -3456,6 +3456,7 @@
     }
   },
   "eventsNewEvent": "New event",
+  "eventsNoResults": "No matching events",
   "eventsPageTitle": "Events",
   "eventsPhotosSection": "Photos",
   "eventsRecapAwaitingContent": "Add a photo or note and the recap will appear here.",

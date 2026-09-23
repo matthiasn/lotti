@@ -6337,7 +6337,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get eventsDeleteEvent => 'Ștergeți evenimentul';
 
   @override
-  String get eventsFilterAll => 'Toate';
+  String get eventsFilterTooltip => 'Filtrați evenimentele';
+
+  @override
+  String get eventsNoResults => 'Niciun eveniment corespunzător';
 
   @override
   String eventsMetricPhotos(int count) {

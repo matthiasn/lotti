@@ -8,7 +8,7 @@ import 'package:lotti/services/db_notification.dart';
 
 /// Paged, filterable state for the Events overview: the events loaded so far
 /// (newest first), whether more pages remain, the in-flight flag for the next
-/// page, and the active category filter.
+/// page, and the active search query and category filter.
 ///
 /// The overview appends pages as the user scrolls rather than loading the whole
 /// archive up front, so an account with hundreds of events doesn't query — or
@@ -19,16 +19,25 @@ class EventsOverviewState {
     required this.events,
     required this.hasMore,
     this.isLoadingMore = false,
-    this.categoryId,
+    this.categoryIds = const {},
+    this.query = '',
   });
 
   final List<ResolvedEvent> events;
   final bool hasMore;
   final bool isLoadingMore;
 
-  /// Active category filter (null = all). Applied server-side so filtering is
-  /// correct across the whole archive, not just the pages already loaded.
-  final String? categoryId;
+  /// Selected categories (empty = all; `''` = events without a category).
+  /// Applied at load time so filtering is correct across the whole archive,
+  /// not just the pages already loaded.
+  final Set<String> categoryIds;
+
+  /// The search text as typed. Matching trims it; keeping it verbatim lets the
+  /// search field round-trip exactly what the user entered.
+  final String query;
+
+  /// Whether a query or a category narrows the list below the full archive.
+  bool get isFiltered => categoryIds.isNotEmpty || query.trim().isNotEmpty;
 
   EventsOverviewState copyWith({
     List<ResolvedEvent>? events,
@@ -39,7 +48,8 @@ class EventsOverviewState {
       events: events ?? this.events,
       hasMore: hasMore ?? this.hasMore,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
-      categoryId: categoryId,
+      categoryIds: categoryIds,
+      query: query,
     );
   }
 }
@@ -50,13 +60,25 @@ final eventsOverviewControllerProvider =
     );
 
 class EventsOverviewController extends AsyncNotifier<EventsOverviewState> {
-  /// Bumped whenever a reload supersedes in-flight work (a category switch or a
-  /// sync refresh), so a late `loadMore` page-append can't overwrite the newer
-  /// state with a stale list.
+  /// Bumped whenever a reload supersedes in-flight work (a query or category
+  /// change, or a sync refresh) and again when a reload commits, so a late
+  /// page — from `loadMore`, from an earlier keystroke, or from a refresh —
+  /// can't overwrite the newer state with a stale list.
   int _generation = 0;
+
+  /// The filter the user last asked for, which runs ahead of the committed
+  /// state while a reload is in flight. Filter changes merge and dedupe
+  /// against this, not against [state], so overlapping edits (typing, then
+  /// picking a category before the query's load lands) never drop one
+  /// dimension, and a clear typed before the load lands is never mistaken
+  /// for a no-op.
+  String _requestedQuery = '';
+  Set<String> _requestedCategoryIds = const {};
 
   @override
   Future<EventsOverviewState> build() async {
+    _requestedQuery = '';
+    _requestedCategoryIds = const {};
     final sub = getIt<UpdateNotifications>().updateStream.listen((affected) {
       final loadedEventIds = state.value?.events
           .map((resolved) => resolved.event.meta.id)
@@ -70,19 +92,24 @@ class EventsOverviewController extends AsyncNotifier<EventsOverviewState> {
       }
     });
     ref.onDispose(sub.cancel);
-    return _loadFirstPage(null);
+    return _loadFirstPage(categoryIds: const {}, query: '');
   }
 
-  Future<EventsOverviewState> _loadFirstPage(String? categoryId) async {
+  Future<EventsOverviewState> _loadFirstPage({
+    required Set<String> categoryIds,
+    required String query,
+  }) async {
     final page = await loadResolvedEventsPage(
       limit: eventsPageSize,
       offset: 0,
-      categoryId: categoryId,
+      categoryIds: categoryIds,
+      query: query,
     );
     return EventsOverviewState(
       events: page,
       hasMore: page.length == eventsPageSize,
-      categoryId: categoryId,
+      categoryIds: categoryIds,
+      query: query,
     );
   }
 
@@ -98,9 +125,10 @@ class EventsOverviewController extends AsyncNotifier<EventsOverviewState> {
       final next = await loadResolvedEventsPage(
         limit: eventsPageSize,
         offset: current.events.length,
-        categoryId: current.categoryId,
+        categoryIds: current.categoryIds,
+        query: current.query,
       );
-      // Drop a page that arrived after a category switch / refresh, or after the
+      // Drop a page that arrived after a filter change / refresh, or after the
       // notifier was disposed — it would otherwise clobber newer state.
       if (!ref.mounted || generation != _generation) return;
       state = AsyncData(
@@ -119,13 +147,40 @@ class EventsOverviewController extends AsyncNotifier<EventsOverviewState> {
     }
   }
 
-  /// Switches the category filter and reloads from the first page. The previous
-  /// data stays on screen during the (fast, local) reload, so there's no
-  /// full-screen spinner flash.
-  Future<void> setCategory(String? categoryId) async {
-    if (state.value?.categoryId == categoryId) return;
+  /// Replaces the search query and reloads from the first page. Called on
+  /// every keystroke, like the Tasks search; the generation guard drops the
+  /// result of any keystroke a later one has already superseded.
+  Future<void> setQuery(String query) => _applyFilters(query: query);
+
+  /// Replaces the selected categories and reloads from the first page.
+  Future<void> setCategoryIds(Set<String> categoryIds) =>
+      _applyFilters(categoryIds: categoryIds);
+
+  /// Drops the query and every category, restoring the full archive.
+  Future<void> clearFilters() =>
+      _applyFilters(query: '', categoryIds: const {});
+
+  /// Reloads the first page for the merged filter. The previous data stays on
+  /// screen during the (fast, local) reload, so there is no full-screen
+  /// spinner flash while typing.
+  Future<void> _applyFilters({String? query, Set<String>? categoryIds}) async {
+    final nextQuery = query ?? _requestedQuery;
+    final nextCategories = categoryIds ?? _requestedCategoryIds;
+    if (nextQuery == _requestedQuery &&
+        setEquals(nextCategories, _requestedCategoryIds)) {
+      return;
+    }
+    _requestedQuery = nextQuery;
+    _requestedCategoryIds = nextCategories;
+    final generation = ++_generation;
+    final next = await AsyncValue.guard(
+      () => _loadFirstPage(categoryIds: nextCategories, query: nextQuery),
+    );
+    if (!ref.mounted || generation != _generation) return;
+    state = next;
+    // A `loadMore` that started while this load was in flight read the old
+    // list and the old filter; its page must not land on the new one.
     _generation++;
-    state = await AsyncValue.guard(() => _loadFirstPage(categoryId));
   }
 
   /// Re-fetches the currently-loaded window after a sync/db change, so new or
@@ -137,20 +192,27 @@ class EventsOverviewController extends AsyncNotifier<EventsOverviewState> {
     final count = current.events.length < eventsPageSize
         ? eventsPageSize
         : current.events.length;
+    // The requested filter, not the committed one: a refresh that lands while
+    // a filter change is in flight supersedes it, so it must carry it.
+    final query = _requestedQuery;
+    final categoryIds = _requestedCategoryIds;
     try {
       final reloaded = await loadResolvedEventsPage(
         limit: count,
         offset: 0,
-        categoryId: current.categoryId,
+        categoryIds: categoryIds,
+        query: query,
       );
       if (!ref.mounted || generation != _generation) return;
       state = AsyncData(
         EventsOverviewState(
           events: reloaded,
           hasMore: reloaded.length == count,
-          categoryId: current.categoryId,
+          categoryIds: categoryIds,
+          query: query,
         ),
       );
+      _generation++;
     } catch (_) {
       // A background refresh failure keeps the current list rather than
       // flashing an error over established content.

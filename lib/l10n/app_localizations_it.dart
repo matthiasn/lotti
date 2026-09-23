@@ -6304,7 +6304,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get eventsDeleteEvent => 'Elimina evento';
 
   @override
-  String get eventsFilterAll => 'Tutti';
+  String get eventsFilterTooltip => 'Filtra eventi';
+
+  @override
+  String get eventsNoResults => 'Nessun evento corrispondente';
 
   @override
   String eventsMetricPhotos(int count) {
@@ -6348,7 +6351,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get eventsRegenerateSummary => 'Riepilogo rigenerante';
 
   @override
-  String get eventsSearchHint => 'Eventi di ricerca';
+  String get eventsSearchHint => 'Cerca eventi';
 
   @override
   String get eventsSectionUpcoming => 'Prossimo';

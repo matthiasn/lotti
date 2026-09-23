@@ -25,7 +25,10 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/state/event_agent_providers.dart';
 import 'package:lotti/features/demo/seed/demo_ids.dart';
+import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/icon_tokens.dart';
 import 'package:lotti/features/events/state/events_controller.dart';
 import 'package:lotti/features/events/state/events_overview_controller.dart';
 import 'package:lotti/features/events/ui/pages/event_detail_page.dart';
@@ -67,22 +70,43 @@ class _ManualEventsOverviewController extends EventsOverviewController {
 
   final List<ResolvedEvent> _events;
 
-  EventsOverviewState _snapshot(String? categoryId) => EventsOverviewState(
-    events: categoryId == null
-        ? _events
-        : _events
-              .where((event) => event.event.meta.categoryId == categoryId)
-              .toList(),
+  EventsOverviewState _snapshot({
+    Set<String> categoryIds = const {},
+    String query = '',
+  }) => EventsOverviewState(
+    events: _events
+        .where(
+          (event) =>
+              categoryIds.isEmpty ||
+              categoryIds.contains(event.event.meta.categoryId),
+        )
+        .where((event) => eventMatchesQuery(event.event, query))
+        .toList(),
     hasMore: false,
-    categoryId: categoryId,
+    categoryIds: categoryIds,
+    query: query,
   );
 
   @override
-  Future<EventsOverviewState> build() async => _snapshot(null);
+  Future<EventsOverviewState> build() async => _snapshot();
 
   @override
-  Future<void> setCategory(String? categoryId) async {
-    state = AsyncData(_snapshot(categoryId));
+  Future<void> setQuery(String query) async {
+    state = AsyncData(
+      _snapshot(categoryIds: state.value?.categoryIds ?? {}, query: query),
+    );
+  }
+
+  @override
+  Future<void> setCategoryIds(Set<String> categoryIds) async {
+    state = AsyncData(
+      _snapshot(categoryIds: categoryIds, query: state.value?.query ?? ''),
+    );
+  }
+
+  @override
+  Future<void> clearFilters() async {
+    state = AsyncData(_snapshot());
   }
 }
 
@@ -506,6 +530,79 @@ void main() {
         await captureScreenshot(
           tester,
           'events_overview_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+
+      testWidgets('$viewport events search — $theme', (tester) async {
+        await pumpSurface(
+          tester,
+          device: device,
+          brightness: brightness,
+          home: const EventsOverviewPage(),
+          overrides: overviewOverrides(),
+        );
+        await tester.enterText(find.byType(TextField), _t('gala', 'gala'));
+        await settleFrames(tester, 6);
+        expect(
+          find.text(
+            _t('Project Waddle launch gala', 'Project-Waddle-Startgala'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            _t(
+              'Europa sardine futures summit',
+              'Europa-Sardinen-Futures-Gipfel',
+            ),
+          ),
+          findsNothing,
+        );
+        await captureScreenshot(
+          tester,
+          'events_search_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+
+      testWidgets('$viewport events filtered — $theme', (tester) async {
+        await pumpSurface(
+          tester,
+          device: device,
+          brightness: brightness,
+          home: const EventsOverviewPage(),
+          overrides: overviewOverrides(),
+        );
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(EventsOverviewView)),
+        );
+        await container
+            .read(eventsOverviewControllerProvider.notifier)
+            .setCategoryIds({categories[0].id, categories[1].id});
+        await settleFrames(tester, 6);
+        expect(find.byType(ActiveFilterChip), findsNWidgets(2));
+        await captureScreenshot(
+          tester,
+          'events_filtered_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+
+      testWidgets('$viewport events filter modal — $theme', (tester) async {
+        await pumpSurface(
+          tester,
+          device: device,
+          brightness: brightness,
+          home: const EventsOverviewPage(),
+          overrides: overviewOverrides(),
+        );
+        await tester.tap(find.byIcon(LottiIcons.filter));
+        await settleFrames(tester, 12);
+        expect(find.byType(DesignSystemFilterSelectionPage), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'events_filter_modal_${viewport}_$theme',
           subdir: _subdir,
         );
       });

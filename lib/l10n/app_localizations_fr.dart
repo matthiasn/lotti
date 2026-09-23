@@ -6330,7 +6330,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get eventsDeleteEvent => 'Supprimer l\'événement';
 
   @override
-  String get eventsFilterAll => 'Tous';
+  String get eventsFilterTooltip => 'Filtrer les événements';
+
+  @override
+  String get eventsNoResults => 'Aucun événement correspondant';
 
   @override
   String eventsMetricPhotos(int count) {

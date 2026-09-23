@@ -6228,7 +6228,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get eventsDeleteEvent => 'Slet-begivenhed';
 
   @override
-  String get eventsFilterAll => 'Alle';
+  String get eventsFilterTooltip => 'Filtrer begivenheder';
+
+  @override
+  String get eventsNoResults => 'Ingen matchende begivenheder';
 
   @override
   String eventsMetricPhotos(int count) {
@@ -6272,7 +6275,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get eventsRegenerateSummary => 'Regenereringsresumé';
 
   @override
-  String get eventsSearchHint => 'Søgebegivenheder';
+  String get eventsSearchHint => 'Søg i begivenheder';
 
   @override
   String get eventsSectionUpcoming => 'Kommende';

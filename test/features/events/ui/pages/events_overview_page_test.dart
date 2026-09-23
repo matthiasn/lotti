@@ -9,6 +9,10 @@ import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/pages/events_overview_page.dart';
 import 'package:lotti/get_it.dart';
@@ -218,35 +222,136 @@ void main() {
     expect(find.text('2020'), findsOneWidget);
     expect(find.text('Event future'), findsOneWidget);
     expect(find.text('Event past'), findsOneWidget);
-    // Chips come from all active categories (+ "All"), not just loaded events.
-    expect(find.text('All'), findsOneWidget);
-    expect(find.text('Friends'), findsWidgets);
-    expect(find.text('Work'), findsWidgets);
+    // Nothing narrows the list yet: no filter chips, a resting funnel.
+    expect(find.byType(ActiveFilterChip), findsNothing);
   });
 
-  testWidgets('selecting a category chip filters server-side', (tester) async {
+  testWidgets('typing in the search field narrows the list', (tester) async {
     stubPaged([
-      _event('future', DateTime(2099, 7), title: 'Event future'),
-      _event(
-        'past',
-        DateTime(2020, 3),
-        title: 'Event past',
-        categoryId: 'work',
-      ),
+      _event('future', DateTime(2099, 7), title: 'Marathon'),
+      _event('past', DateTime(2020, 3), title: 'Launch gala'),
     ]);
 
     await pumpPage(tester);
-    expect(find.text('Event future'), findsOneWidget);
-    expect(find.text('Event past'), findsOneWidget);
-
-    await tester.tap(find.text('Work').first);
+    await tester.enterText(find.byType(TextField), 'GALA');
     await tester.pump();
     await tester.pump();
 
-    // Only the Work (past) event remains; the unfiltered future event is gone.
-    expect(find.text('Event past'), findsOneWidget);
-    expect(find.text('Event future'), findsNothing);
-    expect(find.text('Upcoming'), findsNothing);
+    expect(find.text('Launch gala'), findsOneWidget);
+    expect(find.text('Marathon'), findsNothing);
+
+    await tester.tap(find.byIcon(LottiIcons.closeCircled));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Marathon'), findsOneWidget);
+    expect(find.text('Launch gala'), findsOneWidget);
+  });
+
+  testWidgets('a search matching nothing offers to clear it', (tester) async {
+    stubPaged([_event('past', DateTime(2020, 3), title: 'Launch gala')]);
+
+    await pumpPage(tester);
+    await tester.enterText(find.byType(TextField), 'wedding');
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('No matching events'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Clear all'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Launch gala'), findsOneWidget);
+    expect(find.text('No matching events'), findsNothing);
+    // The field follows the cleared query rather than keeping stale text.
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller?.text,
+      isEmpty,
+    );
+  });
+
+  testWidgets(
+    'the filter narrows by category, and its chip removes the narrowing',
+    (tester) async {
+      stubPaged([
+        _event('future', DateTime(2099, 7), title: 'Event future'),
+        _event(
+          'past',
+          DateTime(2020, 3),
+          title: 'Event past',
+          categoryId: 'work',
+        ),
+      ]);
+
+      await pumpPage(tester);
+      await tester.tap(find.byIcon(LottiIcons.filter));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      tester
+          .widget<DesignSystemSelectionRow>(
+            find.byKey(
+              const ValueKey('design-system-filter-selection-option-work'),
+            ),
+          )
+          .onTap!();
+      await tester.pump();
+      tester
+          .widget<DesignSystemButton>(
+            find.byKey(const ValueKey('design-system-task-filter-apply')),
+          )
+          .onPressed!();
+      await tester.pumpAndSettle();
+
+      // Only the Work (past) event remains; the chip names the narrowing.
+      expect(find.text('Event past'), findsOneWidget);
+      expect(find.text('Event future'), findsNothing);
+      final chip = tester.widget<ActiveFilterChip>(
+        find.byType(ActiveFilterChip),
+      );
+      expect(chip.label, 'Work');
+      expect(chip.accentColor, const Color(0xFF2196F3));
+
+      await tester.tap(find.byType(ActiveFilterChip));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(ActiveFilterChip), findsNothing);
+      expect(find.text('Event future'), findsOneWidget);
+    },
+  );
+
+  testWidgets('filtering to Unassigned shows an Unassigned chip', (
+    tester,
+  ) async {
+    stubPaged([
+      _event('loose', DateTime(2020, 3), title: 'Loose', categoryId: ''),
+      _event('work', DateTime(2020, 4), title: 'Filed', categoryId: 'work'),
+    ]);
+
+    await pumpPage(tester);
+    await tester.tap(find.byIcon(LottiIcons.filter));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    tester
+        .widget<DesignSystemSelectionRow>(
+          find.byKey(const ValueKey('design-system-filter-selection-option-')),
+        )
+        .onTap!();
+    await tester.pump();
+    tester
+        .widget<DesignSystemButton>(
+          find.byKey(const ValueKey('design-system-task-filter-apply')),
+        )
+        .onPressed!();
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.widget<ActiveFilterChip>(find.byType(ActiveFilterChip)).label,
+      'Unassigned',
+    );
+    expect(find.text('Loose'), findsOneWidget);
+    expect(find.text('Filed'), findsNothing);
   });
 
   testWidgets('opening an event card beams to its detail route', (
@@ -281,7 +386,7 @@ void main() {
     );
 
     await pumpPage(tester);
-    await tester.tap(find.text('New event'));
+    await tester.tap(find.byType(DesignSystemFloatingActionButton));
     await tester.pump();
     await tester.pump();
 
@@ -294,5 +399,36 @@ void main() {
       ),
     ).called(1);
     expect(beamed, ['/events/new-1']);
+  });
+
+  testWidgets('the launcher dock action creates an event and beams to it', (
+    tester,
+  ) async {
+    final beamed = <String>[];
+    beamToNamedOverride = beamed.add;
+    stubPaged(const []);
+    when(
+      () => persistence.createEventEntry(
+        data: any(named: 'data'),
+        entryText: any(named: 'entryText'),
+        linkedId: any(named: 'linkedId'),
+        categoryId: any(named: 'categoryId'),
+      ),
+    ).thenAnswer(
+      (_) async => _event('new-2', DateTime(2026), title: 'New'),
+    );
+
+    await pumpPage(tester);
+    final action = eventsTabDockAction(
+      tester.element(find.byType(EventsOverviewPage)),
+    );
+    // A bare glyph: the page's title already says what it adds.
+    expect(action.worded, isFalse);
+    expect(action.label, 'New event');
+    action.onPressed();
+    await tester.pump();
+    await tester.pump();
+
+    expect(beamed, ['/events/new-2']);
   });
 }

@@ -84,7 +84,8 @@ class EventSection {
   final bool featured;
 }
 
-/// A category choice in the overview filter row.
+/// A category narrowing the overview, shown as a removable chip under the
+/// header.
 @immutable
 class EventCategoryFilter {
   const EventCategoryFilter({
@@ -93,7 +94,8 @@ class EventCategoryFilter {
     required this.color,
   });
 
-  final String? id; // null = "All"
+  /// The category id; `''` stands for events without a category.
+  final String id;
   final String label;
   final Color color;
 }

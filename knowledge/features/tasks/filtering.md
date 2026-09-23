@@ -5,7 +5,7 @@ description: The browse page's shared query stack, the adaptive filter modal, sa
 resource: ../../../lib/features/tasks/state/saved_filters
 tags: [tasks, filters, saved-filters, keyboard]
 status: stable
-generated: { by: claude-code/fable-5.1, at: 2026-09-15T17:40:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-23T12:00:00Z }
 stale_after: 2027-03-15
 sources:
   - id: saved-filters
@@ -56,6 +56,14 @@ draft is committed only through Apply and every other close route — the close
 button, the barrier, Escape, system back — discards it. The transition
 coordinates the content fade with the Wolt page-size animation, and returning
 **restores keyboard focus to the field that opened the child page**.
+
+**A flow with a single field skips the overview.** When the state carries exactly
+one field and nothing else to set — no sort, priority, agent, search-mode or
+toggle controls, and no save flow — the overview would be one navigation row
+leading to that field's page. The route then opens directly on the field's
+selection page under the flow's title, and that page carries the Clear / Apply
+bar itself: open, pick, Apply. The Events filter (category only) takes this
+path; Tasks and Projects, with more than one field, keep the overview.
 
 Project choices use a **stale-while-revalidate catalog**: the route opens from the
 last snapshot immediately, refreshes after its first frame, and updates the draft

@@ -48,12 +48,6 @@ void main() {
     );
   });
 
-  test('EventCategoryFilter with null id represents "All"', () {
-    const all = EventCategoryFilter(id: null, label: 'All', color: eventPink);
-    expect(all.id, isNull);
-    expect(all.label, 'All');
-  });
-
   test('EventPhoto defaults cropX to centre', () {
     expect(EventPhoto(testImage()).cropX, 0.5);
     expect(EventPhoto(testImage(), cropX: 0.2).cropX, 0.2);

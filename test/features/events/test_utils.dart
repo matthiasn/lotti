@@ -123,7 +123,10 @@ Future<void> pumpEventScreen(
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
   await tester.pumpWidget(
-    makeTestableWidget2(child, mediaQueryData: MediaQueryData(size: size)),
+    makeTestableWidgetNoScroll(
+      child,
+      mediaQueryData: MediaQueryData(size: size),
+    ),
   );
   await tester.pump();
 }

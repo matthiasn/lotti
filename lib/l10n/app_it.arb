@@ -2881,7 +2881,7 @@
   "eventsAddLabel": "Aggiungi",
   "eventsChangeCover": "Cambia la copertina",
   "eventsDeleteEvent": "Elimina evento",
-  "eventsFilterAll": "Tutti",
+  "eventsFilterTooltip": "Filtra eventi",
   "eventsMetricPhotos": "{count, plural, =1{1 foto} other{{count} foto}}",
   "@eventsMetricPhotos": {
     "placeholders": {
@@ -2899,12 +2899,13 @@
     }
   },
   "eventsNewEvent": "Nuovo evento",
+  "eventsNoResults": "Nessun evento corrispondente",
   "eventsPageTitle": "Eventi",
   "eventsPhotosSection": "Fotografie",
   "eventsRecapAwaitingContent": "Aggiungi una foto o una nota e il recap apparirà qui.",
   "eventsRecapUnavailable": "Non ho potuto caricare il recap.",
   "eventsRegenerateSummary": "Riepilogo rigenerante",
-  "eventsSearchHint": "Eventi di ricerca",
+  "eventsSearchHint": "Cerca eventi",
   "eventsSectionUpcoming": "Prossimo",
   "eventsStatusCancelled": "Annullamento",
   "eventsStatusCompleted": "Completo",

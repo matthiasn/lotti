@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/beamer/beamer_app.dart';
+import 'package:lotti/beamer/locations/events_location.dart';
 import 'package:lotti/beamer/locations/goals_location.dart';
 import 'package:lotti/beamer/locations/habits_location.dart';
 import 'package:lotti/beamer/locations/journal_location.dart';
@@ -887,7 +888,7 @@ void main() {
         5: (label: null, worded: false),
         6: (label: messages.relationshipCreateTitle, worded: true),
         7: (label: messages.createEntryLabel, worded: false),
-        8: (label: null, worded: false),
+        8: (label: messages.eventsNewEvent, worded: false),
         9: (label: null, worded: false),
       };
 
@@ -957,6 +958,37 @@ void main() {
 
     test('no location at all is not', () {
       expect(isLogbookEntryDetailRoute(null), isFalse);
+    });
+  });
+
+  group('isEventDetailRoute', () {
+    BeamLocation<dynamic> eventsAt(String path) =>
+        EventsLocation(RouteInformation(uri: Uri.parse(path)));
+
+    test('the events overview is not an event page', () {
+      expect(isEventDetailRoute(eventsAt('/events')), isFalse);
+    });
+
+    test('an event id is', () {
+      expect(
+        isEventDetailRoute(eventsAt('/events/${const Uuid().v4()}')),
+        isTrue,
+      );
+    });
+
+    test("another tab's location is not", () {
+      expect(
+        isEventDetailRoute(
+          JournalLocation(
+            RouteInformation(uri: Uri.parse('/journal/${const Uuid().v4()}')),
+          ),
+        ),
+        isFalse,
+      );
+    });
+
+    test('no location at all is not', () {
+      expect(isEventDetailRoute(null), isFalse);
     });
   });
 

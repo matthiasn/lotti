@@ -53,6 +53,7 @@ void main() {
     DesignSystemFilterSavePredicate? canCreateSavedFilter,
     DesignSystemFilterSavePredicate? canUpdateSavedFilter,
     String? existingSavedFilterName,
+    DesignSystemTaskFilterState? initialState,
     Size size = const Size(900, 900),
     TextScaler textScaler = TextScaler.noScaling,
   }) async {
@@ -68,7 +69,7 @@ void main() {
                 key: const ValueKey('trigger'),
                 onPressed: () => showDesignSystemFilterModal(
                   context: context,
-                  initialState: buildState(),
+                  initialState: initialState ?? buildState(),
                   onApplied: onApplied,
                   onCreateSavedFilter: onCreateSavedFilter,
                   onUpdateSavedFilter: onUpdateSavedFilter,
@@ -116,6 +117,93 @@ void main() {
     expect(find.byType(DesignSystemTaskFilterActionBar), findsOneWidget);
     expect(find.text('Due date'), findsOneWidget);
     expect(find.text('Apply'), findsOneWidget);
+  });
+
+  group('a flow with a single field', () {
+    DesignSystemTaskFilterState soleStatusState() =>
+        DesignSystemTaskFilterState(
+          title: 'Filter tasks',
+          clearAllLabel: 'Clear all',
+          applyLabel: 'Apply',
+          statusField: const DesignSystemTaskFilterFieldState(
+            label: 'Status',
+            options: [
+              DesignSystemTaskFilterOption(id: 'open', label: 'Open'),
+              DesignSystemTaskFilterOption(id: 'blocked', label: 'Blocked'),
+            ],
+            selectedIds: {'open'},
+          ),
+        );
+
+    Finder applyButton() =>
+        find.byKey(const ValueKey('design-system-task-filter-apply'));
+
+    testWidgets('opens directly on the field page under the flow title', (
+      tester,
+    ) async {
+      await openModal(
+        tester,
+        onApplied: (_) {},
+        initialState: soleStatusState(),
+      );
+
+      // The overview's one navigation row would only lead here, so it is
+      // skipped: the options and the Clear/Apply bar are on the first page.
+      expect(find.byType(DesignSystemTaskFilterSheet), findsNothing);
+      expect(find.byType(DesignSystemFilterSelectionPage), findsOneWidget);
+      expect(find.text('Filter tasks'), findsOneWidget);
+      expect(option('blocked'), findsOneWidget);
+      expect(find.byType(DesignSystemTaskFilterActionBar), findsOneWidget);
+      expect(find.byIcon(LottiIcons.back), findsNothing);
+    });
+
+    testWidgets('picks and applies without leaving the page', (tester) async {
+      DesignSystemTaskFilterState? applied;
+      await openModal(
+        tester,
+        onApplied: (state) => applied = state,
+        initialState: soleStatusState(),
+      );
+
+      tester.widget<DesignSystemSelectionRow>(option('blocked')).onTap!();
+      await tester.pump();
+      tester.widget<DesignSystemButton>(applyButton()).onPressed!();
+      await tester.pump(const Duration(milliseconds: 900));
+
+      await tester.pumpAndSettle();
+
+      expect(applied!.statusField!.selectedIds, {'open', 'blocked'});
+      expect(find.byType(DesignSystemFilterSelectionPage), findsNothing);
+    });
+
+    testWidgets('Clear empties the selection in place', (tester) async {
+      DesignSystemTaskFilterState? applied;
+      await openModal(
+        tester,
+        onApplied: (state) => applied = state,
+        initialState: soleStatusState(),
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey('design-system-task-filter-clear')),
+      );
+      await tester.pump();
+      tester.widget<DesignSystemButton>(applyButton()).onPressed!();
+      await tester.pump(const Duration(milliseconds: 900));
+
+      expect(applied!.statusField!.selectedIds, isEmpty);
+    });
+
+    testWidgets('a save flow keeps the overview', (tester) async {
+      await openModal(
+        tester,
+        onApplied: (_) {},
+        initialState: soleStatusState(),
+        onCreateSavedFilter: (_, _) async {},
+      );
+
+      expect(find.byType(DesignSystemTaskFilterSheet), findsOneWidget);
+    });
   });
 
   testWidgets('selection pages stay in one route and persist into Apply', (
