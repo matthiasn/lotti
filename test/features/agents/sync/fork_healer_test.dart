@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -7,15 +8,22 @@ import 'package:lotti/features/agents/projection/agent_event_adapter.dart';
 import 'package:lotti/features/agents/projection/agent_projection.dart';
 import 'package:lotti/features/agents/projection/canonical_order.dart';
 import 'package:lotti/features/agents/projection/join_plan.dart';
+import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
+import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/sync/fork_healer.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../test_data/entity_factories.dart';
 import 'fork_test_support.dart';
 import 'in_memory_agent_repository.dart';
+
+part 'agent_message_log_model_conformance.dart';
 
 const _agentId = 'agent-1';
 
@@ -231,6 +239,123 @@ void main() {
     },
   );
 
+  // ADR 0071, specs/tla/AgentMessageLog.tla NoJoinOverNonTip: a row whose own
+  // edge has not synced projects as a root, so its parent reads as a head.
+  test('defers while a message has synced ahead of its own edge', () async {
+    // TLC trace: b1 is a root; a1 was chained off it elsewhere and its row
+    // arrived here without its edge. Heads read {a1, b1}, but b1 is a1's
+    // parent — a join now would link a parent and its child.
+    seedAgent(head: 'b1');
+    seedMessage('b1');
+    repo.seed([
+      makeTestMessage(
+        id: 'a1',
+        agentId: _agentId,
+        createdAt: DateTime(2024, 1, 2),
+        prevMessageId: 'b1',
+        metadata: const AgentMessageMetadata(),
+      ),
+    ]);
+    expect(headsOf().toSet(), {'a1', 'b1'});
+
+    expect(await heal(), isNull);
+    expect(repo.messages.length, 2);
+
+    await edge('a1', 'b1');
+    expect(headsOf(), ['a1']);
+  });
+
+  test('a prevMessageId naming an absent row does not hold healing back — '
+      'the observation sweep deletes the edges into what it prunes', () async {
+    seedAgent(head: 'b');
+    repo.seed([
+      makeTestMessage(
+        id: 'a',
+        agentId: _agentId,
+        prevMessageId: 'pruned',
+        metadata: const AgentMessageMetadata(),
+      ),
+    ]);
+    seedMessage('b');
+
+    final joinId = await heal();
+    expect(joinId, computeJoinId(['a', 'b']));
+    expect(headsOf(), [joinId]);
+  });
+
+  test(
+    'defers while a join that already has a child misses its edges',
+    () async {
+      // TLC trace: another device joined {a1, b1}; its join row and its state
+      // row (head = join) arrived here, the join's edges did not, and this
+      // device appended a2 off the join. The join is no head any more, yet a1
+      // and b1 still read as heads.
+      final joinId = computeJoinId(['a1', 'b1']);
+      seedAgent(head: 'a2');
+      seedMessage('a1');
+      seedMessage('b1');
+      seedMessage(joinId, kind: AgentMessageKind.system);
+      repo.seed([
+        makeTestMessage(
+          id: 'a2',
+          agentId: _agentId,
+          createdAt: DateTime(2024, 1, 3),
+          prevMessageId: joinId,
+          metadata: const AgentMessageMetadata(),
+        ),
+      ]);
+      await edge('a2', joinId);
+      expect(headsOf().toSet(), {'a1', 'a2', 'b1'});
+
+      expect(await heal(), isNull);
+      expect(repo.messages.length, 4);
+    },
+  );
+
+  test('defers while a join with two arrived edges misses a third', () async {
+    final joinId = computeJoinId(['a', 'b', 'c']);
+    seedAgent(head: joinId);
+    ['a', 'b', 'c'].forEach(seedMessage);
+    seedMessage(joinId, kind: AgentMessageKind.system);
+    await edge(joinId, 'a');
+    await edge(joinId, 'b');
+    expect(headsOf().toSet(), {'c', joinId});
+
+    expect(await heal(), isNull);
+    expect(repo.messages.length, 4);
+  });
+
+  test('a join missing the edge to an absent parent does not hold healing '
+      'back (README residual)', () async {
+    // The row does not name its parents, so this cannot be told from a
+    // parent the observation sweep deleted; waiting could block for ever.
+    final joinId = computeJoinId(['a', 'gone']);
+    seedAgent(head: 'c');
+    seedMessage('a');
+    seedMessage('c');
+    seedMessage(joinId, kind: AgentMessageKind.system);
+    await edge(joinId, 'a');
+
+    final healed = await heal();
+    expect(healed, computeJoinId(['c', joinId]));
+    expect(headsOf(), [healed]);
+  });
+
+  test('with more than twelve other heads a join missing edges is not '
+      'searched for, and healing goes ahead', () async {
+    final joinId = computeJoinId(['a', 'b']);
+    seedAgent(head: 'a');
+    ['a', 'b', for (var i = 0; i < 12; i++) 'x$i'].forEach(seedMessage);
+    seedMessage(joinId, kind: AgentMessageKind.system);
+    final before = headsOf();
+    expect(before, hasLength(15));
+
+    final healed = await heal();
+
+    expect(healed, computeJoinId(before));
+    expect(headsOf(), [healed]);
+  });
+
   test('different local arrival orders produce the same join id', () async {
     Future<void> seedForkInOrder(
       InMemoryAgentRepository target, {
@@ -431,4 +556,6 @@ void main() {
       },
     );
   });
+
+  _registerModelConformance();
 }
