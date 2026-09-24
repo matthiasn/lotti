@@ -5,7 +5,7 @@ description: How causal order is represented, why coveredVectorClocks is separat
 resource: ../../../lib/features/sync/vector_clock.dart
 tags: [sync, vector-clock, conflicts, causality]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T15:00:00Z }
 stale_after: 2026-12-24
 sources:
   - id: vector-clock
@@ -312,6 +312,16 @@ A write built on a stale snapshot therefore loses locally exactly where it
 loses on every peer — an edit older than a retraction cannot revive it — and
 a successor never sorts before its predecessor, whatever the writing device's
 clock says. Append-only variants are written as given.
+
+The flip side: a writer that *means* to replace the row must build on it. A
+write with `vectorClock: null` over an existing id is resolved as concurrent,
+and one that moves the row against the resolver's order — an earlier
+deadline under the scheduled-wake override, a new report at the instant the
+standing head was stamped, a new version while a peer's clock runs ahead —
+is handed the row back, here and on every peer. So report heads, soul and
+template heads and goal-progress registers carry the clock
+of the row they read in the same transaction (ADR 0068 addendum;
+`AgentReplication.tla`'s `Intend` write and `LocalWriteTakesEffect`).
 
 The scheduling fields (`nextWakeAt`, `sleepUntil`, `scheduledWakeAt`) are
 device-local: the receive path overlays this device's values onto every

@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
@@ -31,6 +32,7 @@ import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
 import 'package:lotti/features/goals/workflow/goal_criterion_names.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -2853,6 +2855,63 @@ void main() {
     expect(retryToolChoice, isNull);
     expect(retryToolNames, [GoalAgentToolNames.updateGoalReport]);
     expect(result.reportUpdated, isTrue);
+  });
+
+  test('the head move carries the head it replaces, so a head stamped by a '
+      'clock running ahead still moves — ADR 0068 addendum', () async {
+    stubSpec();
+    stubGlmResolution();
+    final existingHead =
+        AgentDomainEntity.agentReportHead(
+              id: 'head-existing',
+              agentId: agentId,
+              scope: AgentReportScopes.current,
+              reportId: 'report-previous',
+              updatedAt: DateTime.utc(2099),
+              vectorClock: const VectorClock({'peer': 4}),
+            )
+            as AgentReportHeadEntity;
+    when(
+      () => repository.getReportHead(agentId, AgentReportScopes.current),
+    ).thenAnswer((_) async => existingHead);
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          await (strategy! as GoalAgentStrategy).processToolCalls(
+            toolCalls: [
+              toolCall(GoalAgentToolNames.updateGoalReport, {
+                'status': 'insufficientData',
+                'oneLiner': 'Too little data yet.',
+                'tldr': 'Not enough days recorded to judge the week.',
+              }),
+            ],
+            manager: conversationManager,
+          );
+          return null;
+        };
+
+    final result = await run(
+      triggerTokens: const {goalReportRefreshTriggerToken},
+    );
+    expect(result.success, isTrue);
+
+    final head = upserts.whereType<AgentReportHeadEntity>().single;
+    expect(head.id, 'head-existing');
+    // What AgentSyncService persists for this write over the stored head.
+    final resolved =
+        resolveLocalAgentWrite(persisted: existingHead, write: head)
+            as AgentReportHeadEntity;
+    expect(resolved.reportId, head.reportId);
+    expect(resolved.reportId, isNot('report-previous'));
   });
 
   test('a report rendered while a watched category timer is active remains '

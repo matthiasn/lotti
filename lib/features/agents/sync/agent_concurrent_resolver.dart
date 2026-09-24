@@ -290,8 +290,8 @@ ConcurrentWinner? resolveConcurrentAgentEntityOverride({
     return byCreated < 0 ? ConcurrentWinner.local : ConcurrentWinner.incoming;
   }
   if (local is GoalSpecHeadEntity && incoming is GoalSpecHeadEntity) {
-    final localVersion = _specVersionNumber(local.versionId);
-    final incomingVersion = _specVersionNumber(incoming.versionId);
+    final localVersion = specVersionOrdinal(local.versionId);
+    final incomingVersion = specVersionOrdinal(incoming.versionId);
     if (localVersion != null &&
         incomingVersion != null &&
         localVersion != incomingVersion) {
@@ -315,8 +315,8 @@ ConcurrentWinner? resolveConcurrentAgentEntityOverride({
     // evaluation and a v2 evaluation of the same day collide on one row.
     // The row computed under the NEWER spec version wins — timestamp LWW
     // could otherwise let the superseded evaluation hide current health.
-    final localVersion = _specVersionNumber(local.specVersionId);
-    final incomingVersion = _specVersionNumber(incoming.specVersionId);
+    final localVersion = specVersionOrdinal(local.specVersionId);
+    final incomingVersion = specVersionOrdinal(incoming.specVersionId);
     if (localVersion != null &&
         incomingVersion != null &&
         localVersion != incomingVersion) {
@@ -405,8 +405,9 @@ ConcurrentWinner? resolveConcurrentNudgeLifecycle({
 }
 
 /// The ordinal in a spec version id (`agent:spec-v3-9f2c1a08` → 3), or
-/// null for foreign id shapes — those fall back to LWW.
-int? _specVersionNumber(String specVersionId) {
+/// null for foreign id shapes — those fall back to LWW. Shared with the
+/// goal-progress recompute, which must not build on a newer spec's row.
+int? specVersionOrdinal(String specVersionId) {
   final match = RegExp(r'spec-v(\d+)').firstMatch(specVersionId);
   return match == null ? null : int.tryParse(match.group(1)!);
 }
