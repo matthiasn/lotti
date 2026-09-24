@@ -123,7 +123,8 @@ class PersistenceLogic implements PersistenceLogicContract {
     comment: comment,
   );
 
-  /// Creates a task, optionally using a stable [id] supplied by its caller.
+  /// Creates a task, optionally using a stable [id] supplied by its caller,
+  /// or one derived from [uuidV5Input] (see `MetadataService.generateId`).
   /// Existing identities are never overwritten by this insert-only path.
   Future<Task?> createTaskEntry({
     required TaskData data,
@@ -133,6 +134,7 @@ class PersistenceLogic implements PersistenceLogicContract {
     List<String>? labelIds,
     bool? private,
     String? id,
+    String? uuidV5Input,
   }) => _entries.createTaskEntry(
     data: data,
     entryText: entryText,
@@ -141,6 +143,7 @@ class PersistenceLogic implements PersistenceLogicContract {
     labelIds: labelIds,
     private: private,
     id: id,
+    uuidV5Input: uuidV5Input,
   );
 
   Future<AiResponseEntry?> createAiResponseEntry({
@@ -250,6 +253,7 @@ class PersistenceLogic implements PersistenceLogicContract {
     List<String>? labelIds,
     bool? private,
     String? id,
+    String? uuidV5Input,
   }) => _create.createTaskEntryImpl(
     data: data,
     entryText: entryText,
@@ -258,6 +262,7 @@ class PersistenceLogic implements PersistenceLogicContract {
     labelIds: labelIds,
     private: private,
     id: id,
+    uuidV5Input: uuidV5Input,
   );
 
   @override

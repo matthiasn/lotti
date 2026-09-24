@@ -718,6 +718,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
+          journalDbProvider.overrideWithValue(MockJournalDb()),
           journalRepositoryProvider.overrideWithValue(MockJournalRepository()),
           labelsRepositoryProvider.overrideWithValue(MockLabelsRepository()),
           domainLoggerProvider.overrideWithValue(MockDomainLogger()),
@@ -758,6 +759,7 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             agentSyncServiceProvider.overrideWithValue(mockSyncService),
+            journalDbProvider.overrideWithValue(MockJournalDb()),
             journalRepositoryProvider.overrideWithValue(
               MockJournalRepository(),
             ),

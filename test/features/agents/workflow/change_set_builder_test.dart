@@ -292,11 +292,14 @@ class _GeneratedBuildScenario {
     final otherItems = <ChangeItem>[];
     for (final spec in existingSets) {
       if (spec.id == survivorSpec.id) continue;
-      for (final item in spec.currentSet.items) {
+      for (final (index, item) in spec.currentSet.items.indexed) {
         // Only pending items move; a decided one stays where it was decided.
+        // A copy keeps the effect key of the item it copies.
         if (item.status == ChangeItemStatus.pending &&
             knownFingerprints.add(ChangeItem.fingerprint(item))) {
-          otherItems.add(item);
+          otherItems.add(
+            item.copyWith(effectKey: item.effectKey ?? '${spec.id}:$index'),
+          );
         }
       }
     }
@@ -3097,6 +3100,72 @@ void main() {
         expect(appended.items.take(2), original.items);
         expect(appended.items.last.args, {'minutes': 45});
         expect(stored.keys, [original.id]);
+      },
+    );
+
+    test(
+      'a consolidated copy keeps the effect of the item it copies',
+      () async {
+        // ADR 0075: confirming the copy here and the original on a device
+        // that has not seen the consolidation must create one entity — so
+        // the copy derives its effect from the original's key, and a copy of
+        // a copy from the first original's.
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 45},
+          humanSummary: 'Set estimate to 45 min',
+        );
+        final older = makeTestChangeSet(
+          id: 'cs-older',
+          createdAt: DateTime(2024, 3, 15, 10),
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_title',
+              args: {'title': 'Already confirmed'},
+              humanSummary: 'Set title',
+              status: ChangeItemStatus.confirmed,
+            ),
+            ChangeItem(
+              toolName: 'create_follow_up_task',
+              args: {'title': 'Book the venue'},
+              humanSummary: 'Create follow-up task',
+            ),
+            ChangeItem(
+              toolName: 'add_checklist_item',
+              args: {'title': 'Send invites'},
+              humanSummary: 'Add checklist item',
+              effectKey: 'cs-oldest:4',
+            ),
+          ],
+          status: ChangeSetStatus.partiallyResolved,
+        );
+        final newer = makeTestChangeSet(
+          id: 'cs-newer',
+          createdAt: DateTime(2024, 3, 15, 11),
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_status',
+              args: {'status': 'IN_PROGRESS'},
+              humanSummary: 'Set status',
+            ),
+          ],
+        );
+
+        final result = await builder.build(
+          mockSyncService,
+          existingPendingSets: [older, newer],
+        );
+
+        final keys = {
+          for (final (index, item) in result!.items.indexed)
+            item.toolName: item.effectKeyIn(result.id, index),
+        };
+        expect(keys, {
+          'set_task_status': 'cs-newer:0',
+          'create_follow_up_task': 'cs-older:1',
+          'add_checklist_item': 'cs-oldest:4',
+          'update_task_estimate': 'cs-newer:3',
+        });
       },
     );
 

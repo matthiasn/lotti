@@ -3896,8 +3896,9 @@ void main() {
           );
 
           // Redundancy check + always-fresh auto-apply check + post-
-          // invalidation redundancy re-check.
-          expect(resolverCalls, 3);
+          // invalidation redundancy re-check + the fresh read of the value
+          // the queued proposal is made against.
+          expect(resolverCalls, 4);
 
           // First estimate proposal was suppressed as redundant.
           verify(
@@ -3913,6 +3914,9 @@ void main() {
             builder.items.single.toolName,
             TaskAgentToolNames.updateTaskEstimate,
           );
+          // Confirming it applies only while the estimate is still the one
+          // the proposal saw.
+          expect(builder.items.single.base, {'estimateMinutes': 999});
           verify(
             () => mockManager.addToolResponse(
               toolCallId: 'call-est-2',

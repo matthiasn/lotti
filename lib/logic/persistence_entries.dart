@@ -118,6 +118,7 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
     List<String>? labelIds,
     bool? private,
     String? id,
+    String? uuidV5Input,
   }) => logic.createTaskEntryImpl(
     data: data,
     entryText: entryText,
@@ -126,6 +127,7 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
     labelIds: labelIds,
     private: private,
     id: id,
+    uuidV5Input: uuidV5Input,
   );
 
   Future<AiResponseEntry?> createAiResponseEntry({

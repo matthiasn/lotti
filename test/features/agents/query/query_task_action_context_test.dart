@@ -4,6 +4,7 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_task_action_context.dart';
+import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -49,6 +50,9 @@ void main() {
       expect(context.dependencies.map((e) => e.id), isNot(contains('private')));
       expect(context.dependencies.map((e) => e.id), isNot(contains('foreign')));
       expect(context.input.containsKey('reports'), isFalse);
+      // What a field proposal records as its base (ADR 0075).
+      final home = bench.entries['task']! as Task;
+      expect(context.metadata, ChangeProposalFilter.taskMetadataOf(home));
     },
   );
 

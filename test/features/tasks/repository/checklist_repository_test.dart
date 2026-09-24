@@ -863,6 +863,91 @@ void main() {
     });
   });
 
+  group('derivedChecklistFor', () {
+    Checklist checklistRow(String id, {bool deleted = false}) => Checklist(
+      meta: Metadata(
+        id: id,
+        createdAt: testDate,
+        updatedAt: testDate,
+        dateFrom: testDate,
+        dateTo: testDate,
+        deletedAt: deleted ? testDate : null,
+      ),
+      data: const ChecklistData(
+        title: 'Todos',
+        linkedChecklistItems: [],
+        linkedTasks: ['task-1'],
+      ),
+    );
+
+    test('reports nothing when the task is gone', () async {
+      when(
+        () => mockJournalDb.journalEntityMapForIdsIncludingDeleted(any()),
+      ).thenAnswer((inv) async {
+        final id = (inv.positionalArguments.first as List<String>).single;
+        return {id: checklistRow(id)};
+      });
+      when(
+        () => mockJournalDb.journalEntityById('task-1'),
+      ).thenAnswer((_) async => null);
+
+      expect(
+        await repository.derivedChecklistFor(
+          taskId: 'task-1',
+          uuidV5Input: 'k',
+        ),
+        isNull,
+      );
+      verifyNever(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: any(named: 'journalEntityId'),
+          taskData: any(named: 'taskData'),
+          entryText: any(named: 'entryText'),
+        ),
+      );
+    });
+
+    test(
+      'falls back to a random id past eight deleted generations',
+      () async {
+        when(
+          () => mockJournalDb.journalEntityMapForIdsIncludingDeleted(any()),
+        ).thenAnswer((inv) async {
+          final id = (inv.positionalArguments.first as List<String>).single;
+          return {id: checklistRow(id, deleted: true)};
+        });
+        when(
+          () => mockJournalDb.journalEntityById(testTask.id),
+        ).thenAnswer((_) async => testTask);
+        when(
+          () => mockPersistenceLogic.createMetadata(),
+        ).thenAnswer((_) async => testTask.meta.copyWith(id: 'random-id'));
+        when(
+          () => mockPersistenceLogic.createDbEntity(any()),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockPersistenceLogic.updateTask(
+            journalEntityId: any(named: 'journalEntityId'),
+            entryText: any(named: 'entryText'),
+            taskData: any(named: 'taskData'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        expect(
+          await repository.derivedChecklistFor(
+            taskId: testTask.id,
+            uuidV5Input: 'k',
+          ),
+          'random-id',
+        );
+        verify(
+          () => mockJournalDb.journalEntityMapForIdsIncludingDeleted(any()),
+        ).called(8);
+        verify(() => mockPersistenceLogic.createMetadata()).called(1);
+      },
+    );
+  });
+
   group('addItemToChecklist', () {
     test(
       'successfully creates item and updates checklist atomically',
@@ -959,6 +1044,62 @@ void main() {
           capturedChecklist.data.linkedChecklistItems,
           equals(['existing-item-1', 'existing-item-2', 'new-item-id']),
         );
+      },
+    );
+
+    test(
+      'derives the id from uuidV5Input and lists an id the checklist holds '
+      'only once',
+      () async {
+        // A confirmed agent change applied on two devices adds the same
+        // derived id twice (ADR 0075).
+        const checklistId = 'checklist-id';
+        const uuidV5Input = 'change-effect:set-1:0:checklist-item:0';
+        final meta = Metadata(
+          id: 'derived-item-id',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+        );
+        final checklist = Checklist(
+          meta: meta.copyWith(id: checklistId),
+          data: const ChecklistData(
+            title: 'Todos',
+            linkedChecklistItems: ['derived-item-id'],
+            linkedTasks: ['task-1'],
+          ),
+        );
+        when(
+          () => mockPersistenceLogic.createMetadata(uuidV5Input: uuidV5Input),
+        ).thenAnswer((_) async => meta);
+        when(
+          () => mockPersistenceLogic.createDbEntity(any()),
+        ).thenAnswer((_) async => false);
+        when(
+          () => mockJournalDb.journalEntityById(checklistId),
+        ).thenAnswer((_) async => checklist);
+        // A rewrite of the checklist would go through here.
+        when(
+          () => mockPersistenceLogic.updateMetadata(any()),
+        ).thenAnswer((_) async => checklist.meta);
+        when(
+          () => mockPersistenceLogic.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
+
+        final result = await repository.addItemToChecklist(
+          checklistId: checklistId,
+          title: 'Send invites',
+          isChecked: false,
+          categoryId: null,
+          uuidV5Input: uuidV5Input,
+        );
+
+        expect(result?.id, 'derived-item-id');
+        verify(
+          () => mockPersistenceLogic.createMetadata(uuidV5Input: uuidV5Input),
+        ).called(1);
+        verifyNever(() => mockPersistenceLogic.updateDbEntity(any()));
       },
     );
 

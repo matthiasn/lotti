@@ -70,11 +70,14 @@ class MetadataService {
   ///
   /// If [uuidV5Input] is null, returns a random UUID v1.
   String generateId({String? uuidV5Input}) {
-    if (uuidV5Input != null) {
-      return _uuid.v5(Namespace.nil.value, uuidV5Input);
-    }
+    if (uuidV5Input != null) return deterministicId(uuidV5Input);
     return _uuid.v1();
   }
+
+  /// The id [generateId] derives from [uuidV5Input]: the same on every device,
+  /// so a caller can look the entity up before it creates it.
+  static String deterministicId(String uuidV5Input) =>
+      const Uuid().v5(Namespace.nil.value, uuidV5Input);
 
   /// Updates existing [Metadata] with a new vector clock and optional field changes.
   ///

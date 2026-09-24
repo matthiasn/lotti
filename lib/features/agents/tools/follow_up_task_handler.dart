@@ -6,6 +6,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/tools/task_link_tool_definitions.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/tasks/model/directed_relation.dart';
@@ -54,10 +55,16 @@ class FollowUpTaskHandler {
   ///
   /// Returns a [ToolExecutionResult] with `mutatedEntityId` set to the new
   /// task's ID on success.
+  ///
+  /// With an [effect] — a confirmed change item — the task's id is derived
+  /// from the item, so the same item confirmed on two devices creates one
+  /// task: when it already exists (written here, synced from the other
+  /// device, or deleted since), nothing is written and its id is returned.
   Future<ToolExecutionResult> handle(
     String sourceTaskId,
-    Map<String, dynamic> args,
-  ) async {
+    Map<String, dynamic> args, {
+    ChangeEffect? effect,
+  }) async {
     final title = args['title'];
     if (title is! String || title.trim().isEmpty) {
       return const ToolExecutionResult(
@@ -116,6 +123,11 @@ class FollowUpTaskHandler {
     }
     final description = args['description'];
 
+    if (await _createdBefore(effect, title)
+        case final ToolExecutionResult existing) {
+      return existing;
+    }
+
     // Look up category defaults for profile inheritance.
     final category = categoryId != null
         ? getIt<EntitiesCacheService>().getCategoryById(categoryId)
@@ -146,9 +158,16 @@ class FollowUpTaskHandler {
       data: taskData,
       entryText: entryText,
       categoryId: categoryId,
+      uuidV5Input: effect?.entityInput(_taskRole),
     );
 
     if (newTask == null) {
+      // The insert refuses an id that exists: the other device's task can
+      // have arrived between the check above and the write.
+      if (await _createdBefore(effect, title)
+          case final ToolExecutionResult existing) {
+        return existing;
+      }
       return const ToolExecutionResult(
         success: false,
         output: 'Error: failed to create follow-up task',
@@ -238,6 +257,33 @@ class FollowUpTaskHandler {
       success: true,
       output: output.toString(),
       mutatedEntityId: newTaskId,
+    );
+  }
+
+  /// The role of the task in its [ChangeEffect]'s derived ids.
+  static const _taskRole = 'task';
+
+  /// The result for a task an earlier application of [effect] created, or
+  /// `null` when there is none (or no effect). Its link, project and agent
+  /// were written by that application, so nothing more is done here.
+  Future<ToolExecutionResult?> _createdBefore(
+    ChangeEffect? effect,
+    String title,
+  ) async {
+    if (effect == null || !await effect.created(_journalDb, _taskRole)) {
+      return null;
+    }
+    final taskId = effect.entityId(_taskRole);
+    _domainLogger?.log(
+      LogDomain.agentWorkflow,
+      'Follow-up task ${DomainLogger.sanitizeId(taskId)} already created by '
+      'this change — nothing to apply',
+      subDomain: _sub,
+    );
+    return ToolExecutionResult(
+      success: true,
+      output: 'Follow-up task "$title" already exists ($taskId)',
+      mutatedEntityId: taskId,
     );
   }
 

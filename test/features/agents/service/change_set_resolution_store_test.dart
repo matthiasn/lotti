@@ -699,6 +699,58 @@ void main() {
       },
     );
 
+    test(
+      'claims with the resolved target as one change, which the sibling '
+      'rewrite then leaves alone',
+      () async {
+        // ChangeSetLifecycle.tla, ClaimResolvesTarget.
+        final createItem = _createFollowUpItem(
+          status: ChangeItemStatus.confirmed,
+        );
+        final initial = makeTestChangeSet(
+          items: [
+            createItem,
+            _migrationItem(id: 'cl-1'),
+          ],
+        );
+        serializeOver(initial);
+
+        final claimed = (await withClock(
+          testClock,
+          () => store.claimChangeSetItem(
+            initial,
+            1,
+            args: {'id': 'cl-1', 'targetTaskId': 'task-actual-1'},
+          ),
+        ))!;
+        await withClock(
+          testClock,
+          () => store.persistResolvedIdToSiblings(
+            createItem,
+            _successResult,
+            initial,
+          ),
+        );
+        final reverted = await withClock(
+          testClock,
+          () => store.transitionChangeSetItem(
+            initial,
+            1,
+            from: const {ChangeItemStatus.confirmed},
+            to: ChangeItemStatus.pending,
+            observed: claimed.items[1],
+          ),
+        );
+
+        expect(claimed.items[1].revision, 1);
+        expect(claimed.items[1].args['targetTaskId'], 'task-actual-1');
+        // Only the claim wrote the set before the revert.
+        verify(() => mockSyncService.upsertEntity(any())).called(2);
+        expect(reverted!.items[1].status, ChangeItemStatus.pending);
+        expect(reverted.items[1].args['targetTaskId'], 'task-actual-1');
+      },
+    );
+
     for (final status in [
       ChangeItemStatus.confirmed,
       ChangeItemStatus.rejected,
