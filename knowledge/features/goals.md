@@ -16,9 +16,9 @@ sources:
     resource: ../../lib/features/goals/service/goal_off_track_alert_service.dart
     title: GoalOffTrackAlertService — the OS-alert projection of a slip
     last_modified: 2026-09-16
-  - id: adr-0065
-    resource: ../../docs/adr/0065-goal-off-track-alerts-on-the-os-channel.md
-    title: ADR 0065 — Goal off-track alerts on the OS channel
+  - id: adr-0073
+    resource: ../../docs/adr/0073-goal-off-track-alerts-on-the-os-channel.md
+    title: ADR 0073 — Goal off-track alerts on the OS channel
     last_modified: 2026-09-16
   - id: phase-a
     resource: ../../lib/features/goals/runtime/goal_agent_phase_a.dart
@@ -216,7 +216,7 @@ flowchart TD
     COMPACT --> FACTS[GoalFactsRenderer\nJSON fence: goal, evaluation,\nreporting, ads, personaTone,\nrecent dialogue + userVoice\ntarget ≤6k tokens, never transcripts]
     FACTS --> CONV[one bounded conversation\nexplicit setup, Settings fallback,\ntemperature 0, 8-tool contract]
     CONV --> OUT[one transaction:\nreport+head, goalNudge writes,\nobservations, revision ChangeSet,\nvisible reply_to_user carrier]
-    OUT --> REWORD[AgentAlertCopy.restate — after the txn,\nonly for a banner this wake created:\nthe armed alert in the banner's words,\nopt-in, ADR 0066]
+    OUT --> REWORD[AgentAlertCopy.restate — after the txn,\nonly for a banner this wake created:\nthe armed alert in the banner's words,\nopt-in, ADR 0074]
     OUT --> FRESH{current report head advanced\nand no watched timer active?}
     FRESH -- yes --> REPORTDONE[clear report-stale watermark]
     FRESH -- no --> STAY[keep report stale]
@@ -231,7 +231,7 @@ See [profile resolution](ai/profile-resolution.md) for failure and precedence ru
 ## The OS alert for a slipped goal
 
 The banner dock is the goal's primary attention channel (ADR 0055) and needs
-the app open. ADR 0065 adds the case it cannot cover — the device the user is
+the app open. ADR 0073 adds the case it cannot cover — the device the user is
 not holding — the way ADR 0059 did for people: a durable inbox row that the
 notifications feature projects to an OS alarm, produced by the deterministic
 tier on the [producer contract](notifications.md#producers-share-one-episode-contract).
@@ -254,7 +254,7 @@ tier on the [producer contract](notifications.md#producers-share-one-episode-con
 - **Copy is deterministic and content-minimal by default**: the goal's title
   and a fixed line, from the ARB catalogs, baked in the arming device's
   locale. With `notify_agent_copy` on, the wake that created the banner may
-  restate the armed row in the banner's own words afterwards (ADR 0066, the
+  restate the armed row in the banner's own words afterwards (ADR 0074, the
   `REWORD` step above); the deterministic row is what exists until then and
   what stays when the switch is off.
 

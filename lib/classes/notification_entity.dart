@@ -79,7 +79,7 @@ sealed class NotificationEntity with _$NotificationEntity {
   }) = HabitAutoCompletedNotification;
 
   /// A goal that has slipped — off track, or at risk and worsening — as its
-  /// deterministic tier judged it (ADR 0065).
+  /// deterministic tier judged it (ADR 0073).
   ///
   /// One row per slip: the episode is the day the goal transitioned into
   /// that state, armed for the next alert hour by the goal agent's Phase A

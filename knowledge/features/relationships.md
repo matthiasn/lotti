@@ -1882,7 +1882,7 @@ choreography below is the
 Phase B touches the reminder in one way only: once its transaction has
 committed a banner, `AgentAlertCopy` may re-word the armed reminder with that
 banner's brief, if the user allows it — never arm or retract one
-([ADR 0066](../../docs/adr/0066-agent-worded-alerts-restate-an-armed-episode.md),
+([ADR 0074](../../docs/adr/0074-agent-worded-alerts-restate-an-armed-episode.md),
 [the notifications concept](notifications.md#the-agent-may-re-word-an-armed-alert)).
 
 ```mermaid

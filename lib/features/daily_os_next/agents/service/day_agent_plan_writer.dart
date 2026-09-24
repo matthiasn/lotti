@@ -198,7 +198,7 @@ class DayAgentPlanWriter {
           taskCategoryIds: taskCategoryIds,
         );
       }
-      updatedItems[index] = item.copyWith(status: newItemStatus);
+      updatedItems[index] = item.withStatus(newItemStatus);
       decisions.add(
         AgentDomainEntity.changeDecision(
               id: '${changeSet.id}:decision:$index',

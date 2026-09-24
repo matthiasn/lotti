@@ -296,7 +296,6 @@ DaySummaryEntity makeTestDaySummary({
   String text = 'Client emergency ate the evening; gym dropped.',
   DateTime? createdAt,
   DateTime? updatedAt,
-  VectorClock? vectorClock,
   DateTime? deletedAt,
 }) {
   return AgentDomainEntity.daySummary(
@@ -306,7 +305,7 @@ DaySummaryEntity makeTestDaySummary({
         text: text,
         createdAt: createdAt ?? kAgentTestDate,
         updatedAt: updatedAt ?? kAgentTestDate,
-        vectorClock: vectorClock,
+        vectorClock: null,
         deletedAt: deletedAt,
       )
       as DaySummaryEntity;

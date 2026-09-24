@@ -1068,8 +1068,12 @@ class MockGoalCheckInDigestService extends Mock
     implements GoalCheckInDigestService {}
 
 class MockAgentRepository extends Mock implements AgentRepository {
+  /// Optional transaction boundary hook for concurrency regression tests.
+  Future<T> Function<T>(Future<T> Function() action)? transactionDelegate;
+
   @override
-  Future<T> runInTransaction<T>(Future<T> Function() action) => action();
+  Future<T> runInTransaction<T>(Future<T> Function() action) =>
+      transactionDelegate?.call<T>(action) ?? action();
 }
 
 class MockConsumptionRepository extends Mock implements ConsumptionRepository {}

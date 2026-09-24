@@ -16,7 +16,7 @@ import 'package:lotti/l10n/device_messages.dart';
 const goalOffTrackAlertHour = 9;
 
 /// Turns the goal agent's deterministic slip verdict into a durable alert row
-/// (ADR 0065) — the half of the goal's attention story the banner dock
+/// (ADR 0073) — the half of the goal's attention story the banner dock
 /// structurally cannot cover: the device the user is not holding.
 ///
 /// It owns no judgement of its own. Whether the goal has slipped is decided

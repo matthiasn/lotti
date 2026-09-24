@@ -604,7 +604,7 @@ void main() {
             ..registerSingleton<AiConfigRepository>(MockAiConfigRepository())
             ..registerSingleton<MatrixService>(MockMatrixService())
             // The goal agent service carries the off-track alert sink
-            // (ADR 0065), whose producer takes the repository from GetIt.
+            // (ADR 0073), whose producer takes the repository from GetIt.
             ..registerSingleton<NotificationRepository>(
               MockNotificationRepository(),
             );

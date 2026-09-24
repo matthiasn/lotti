@@ -6,7 +6,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 
 /// The agent's own words on an alert the deterministic tier armed — the LLM
-/// tier's one contribution to the OS channel, and an opt-in one (ADR 0066).
+/// tier's one contribution to the OS channel, and an opt-in one (ADR 0074).
 ///
 /// A wake that authored a banner brief hands it here once the brief is
 /// persisted. When the user allows agent-worded alerts, the brief's headline

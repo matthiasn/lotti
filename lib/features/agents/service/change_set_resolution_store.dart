@@ -65,6 +65,12 @@ class ChangeSetResolutionStore {
   /// `targetTaskId` args point to the actual task ID instead of the
   /// placeholder. This persists the mapping into the DB so it survives
   /// service disposal / app restart.
+  ///
+  /// Re-reads the set and writes it in one transaction, changing nothing but
+  /// those arguments: a write of an earlier read would put back whatever a
+  /// concurrent claim changed in between — a migration confirmed and applied
+  /// meanwhile would read `pending` again and could be applied a second time
+  /// (`specs/tla/ChangeSetLifecycle.tla`, `AppliedStaysDecided`).
   Future<void> persistResolvedIdToSiblings(
     ChangeItem item,
     ToolExecutionResult result,
@@ -79,25 +85,28 @@ class ChangeSetResolutionStore {
       return;
     }
 
-    // Re-read the change set to get the latest item statuses.
-    final fresh = await freshChangeSet(changeSet);
-    var changed = false;
-    final updatedItems = fresh.items.map((i) {
-      if (i.toolName == TaskAgentToolNames.migrateChecklistItem &&
-          i.args['targetTaskId'] == placeholderId) {
-        changed = true;
-        return i.copyWith(args: {...i.args, 'targetTaskId': actualId});
-      }
-      return i;
-    }).toList();
-
-    if (changed) {
+    final persisted = await _syncService.runInTransaction(() async {
+      final fresh = await freshChangeSet(changeSet);
+      var changed = false;
+      final updatedItems = fresh.items.map((i) {
+        if (i.toolName == TaskAgentToolNames.migrateChecklistItem &&
+            i.args['targetTaskId'] == placeholderId) {
+          changed = true;
+          return i.withArgs({...i.args, 'targetTaskId': actualId});
+        }
+        return i;
+      }).toList();
+      if (!changed) return null;
       await _syncService.upsertEntity(fresh.copyWith(items: updatedItems));
+      return fresh;
+    });
+
+    if (persisted != null) {
       _domainLogger?.log(
         LogDomain.agentWorkflow,
         'Persisted resolved targetTaskId '
         '(${DomainLogger.sanitizeId(actualId)}) to sibling migration items '
-        'in change set ${DomainLogger.sanitizeId(fresh.id)}',
+        'in change set ${DomainLogger.sanitizeId(persisted.id)}',
         subDomain: _subDomain,
       );
     }
@@ -107,6 +116,11 @@ class ChangeSetResolutionStore {
   /// pending `migrate_checklist_item` siblings whose `targetTaskId` matches
   /// the placeholder. Without the target task, those migrations can never
   /// succeed.
+  ///
+  /// Each sibling is claimed like a user rejection — `pending` to `rejected`
+  /// together with its decision, in one transaction — so the cascade neither
+  /// overwrites a sibling decided meanwhile nor writes back a stale copy of
+  /// the rest of the set.
   Future<void> cascadeRejectMigrationItems(
     ChangeSetEntity changeSet,
     String placeholderId,
@@ -118,27 +132,31 @@ class ChangeSetResolutionStore {
       if (sibling.toolName == TaskAgentToolNames.migrateChecklistItem &&
           sibling.status == ChangeItemStatus.pending &&
           sibling.args['targetTaskId'] == placeholderId) {
-        _domainLogger?.log(
-          LogDomain.agentWorkflow,
-          'Cascade-rejecting migration item $i — target task rejected',
-          subDomain: _subDomain,
-        );
-
-        await persistDecision(
-          changeSet: fresh,
-          itemIndex: i,
-          toolName: sibling.toolName,
-          verdict: ChangeDecisionVerdict.rejected,
-          rejectionReason: reason ?? 'Target follow-up task was rejected',
-          humanSummary: sibling.humanSummary,
-          args: sibling.args,
-        );
-
-        await updateChangeSetItemStatus(
-          fresh,
-          i,
-          ChangeItemStatus.rejected,
-        );
+        final rejected = await _syncService.runInTransaction(() async {
+          final claimed = await claimChangeSetItem(
+            fresh,
+            i,
+            decided: ChangeItemStatus.rejected,
+          );
+          if (claimed == null) return null;
+          await persistDecision(
+            changeSet: fresh,
+            itemIndex: i,
+            toolName: sibling.toolName,
+            verdict: ChangeDecisionVerdict.rejected,
+            rejectionReason: reason ?? 'Target follow-up task was rejected',
+            humanSummary: sibling.humanSummary,
+            args: sibling.args,
+          );
+          return claimed;
+        });
+        if (rejected != null) {
+          _domainLogger?.log(
+            LogDomain.agentWorkflow,
+            'Cascade-rejected migration item $i — target task rejected',
+            subDomain: _subDomain,
+          );
+        }
       }
     }
   }
@@ -206,9 +224,43 @@ class ChangeSetResolutionStore {
     ChangeSetEntity changeSet,
     int itemIndex, {
     ChangeItemStatus decided = ChangeItemStatus.confirmed,
+  }) => transitionChangeSetItem(
+    changeSet,
+    itemIndex,
+    from: const {ChangeItemStatus.pending},
+    to: decided,
+  );
+
+  /// Moves the item at [itemIndex] from one of the statuses in [from] to
+  /// [to], on the latest persisted state of [changeSet], and derives the set
+  /// status and `resolvedAt` — all in one transaction. Returns the updated
+  /// entity, or `null` when the item is out of range or no longer in a
+  /// [from] status, in which case nothing is written.
+  ///
+  /// Every status change of a stored set goes through here, and changes
+  /// only its own item: a read of the set followed by a later write of all
+  /// of it would put back whatever another writer changed in between — a
+  /// failed dispatch reverting its own item would revert a sibling confirmed
+  /// meanwhile to `pending`, inviting a second apply
+  /// (`specs/tla/ChangeSetLifecycle.tla`, `AppliedStaysDecided`). Checking
+  /// [from] keeps a writer from undoing a decision it did not make: a failed
+  /// dispatch reverts only an item still `confirmed`.
+  ///
+  /// A writer that acts on a decision it made or read earlier passes that
+  /// version of the item as [observed]: the move then also requires the
+  /// item's [ChangeItem.revision] to be unchanged. The status alone cannot
+  /// tell the decision apart from a later one with the same status — an item
+  /// reopened and confirmed again while the first dispatch ran is
+  /// `confirmed` again, and that dispatch's failure must not revert it.
+  Future<ChangeSetEntity?> transitionChangeSetItem(
+    ChangeSetEntity changeSet,
+    int itemIndex, {
+    required Set<ChangeItemStatus> from,
+    required ChangeItemStatus to,
+    ChangeItem? observed,
   }) => _syncService.runInTransaction(() async {
-    // Same fallback as [updateChangeSetItemStatus]: an unpersisted set is
-    // judged by the caller's snapshot, a deleted chat set is gone.
+    // An unpersisted set is judged by the caller's snapshot, a deleted chat
+    // set is gone.
     final latest = await _syncService.repository.getEntity(changeSet.id);
     if (latest is! ChangeSetEntity && changeSet.id.startsWith('query-chat:')) {
       return null;
@@ -216,40 +268,15 @@ class ChangeSetResolutionStore {
     final current = latest is ChangeSetEntity ? latest : changeSet;
     if (itemIndex < 0 ||
         itemIndex >= current.items.length ||
-        current.items[itemIndex].status != ChangeItemStatus.pending) {
+        !from.contains(current.items[itemIndex].status) ||
+        (observed != null &&
+            current.items[itemIndex].revision != observed.revision)) {
       return null;
     }
-    final updated = _withItemStatus(current, itemIndex, decided);
+    final updated = _withItemStatus(current, itemIndex, to);
     await _syncService.upsertEntity(updated);
     return updated;
   });
-
-  /// Sets the status of the item at [itemIndex] to [newStatus] on the latest
-  /// persisted state of [changeSet], derives the new set status and
-  /// `resolvedAt`, and upserts the result.
-  ///
-  /// Returns the updated entity, or `null` when [itemIndex] is out of range
-  /// for the latest persisted state.
-  Future<ChangeSetEntity?> updateChangeSetItemStatus(
-    ChangeSetEntity changeSet,
-    int itemIndex,
-    ChangeItemStatus newStatus,
-  ) async {
-    // Re-read the latest entity to avoid overwriting concurrent updates.
-    final latest = await _syncService.repository.getEntity(changeSet.id);
-    if (latest is! ChangeSetEntity && changeSet.id.startsWith('query-chat:')) {
-      return null;
-    }
-    final current = latest is ChangeSetEntity ? latest : changeSet;
-
-    if (itemIndex < 0 || itemIndex >= current.items.length) {
-      return null;
-    }
-
-    final updated = _withItemStatus(current, itemIndex, newStatus);
-    await _syncService.upsertEntity(updated);
-    return updated;
-  }
 
   /// [current] with the item at [itemIndex] set to [newStatus] and the set
   /// status and `resolvedAt` derived from it.
@@ -259,9 +286,7 @@ class ChangeSetResolutionStore {
     ChangeItemStatus newStatus,
   ) {
     final updatedItems = List<ChangeItem>.from(current.items);
-    updatedItems[itemIndex] = updatedItems[itemIndex].copyWith(
-      status: newStatus,
-    );
+    updatedItems[itemIndex] = updatedItems[itemIndex].withStatus(newStatus);
     final newSetStatus = ChangeItem.deriveSetStatus(updatedItems);
     return current.copyWith(
       items: updatedItems,

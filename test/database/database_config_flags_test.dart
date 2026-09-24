@@ -91,7 +91,7 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   // The per-kind switches narrow what the master flag lets through, so they
-  // seed on; the wording switch seeds off (ADR 0066).
+  // seed on; the wording switch seeds off (ADR 0074).
   const ConfigFlag(
     name: notifyTaskSuggestionsFlag,
     description: 'Notify about task suggestions?',

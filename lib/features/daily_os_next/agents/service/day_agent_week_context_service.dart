@@ -571,10 +571,7 @@ class DayAgentWeekContextService {
 
     final id = dayAgentSummaryEntityId(dayId);
     final existing = await agentRepository.getEntity(id);
-    final priorSummary = existing is DaySummaryEntity ? existing : null;
-    final prior = priorSummary != null && priorSummary.deletedAt == null
-        ? priorSummary
-        : null;
+    final prior = existing is DaySummaryEntity ? existing : null;
     final entity = prior != null
         ? prior.copyWith(
             agentId: agentId,
@@ -588,12 +585,7 @@ class DayAgentWeekContextService {
             text: text,
             createdAt: now,
             updatedAt: now,
-            // Seed from a tombstoned prior register (if any) so the sync
-            // layer's next-clock stamp causally DOMINATES the tombstone:
-            // judged concurrent instead, the earliest-createdAt rule would
-            // let the tombstone win on peers while this device keeps the
-            // rewrite — permanent divergence.
-            vectorClock: priorSummary?.vectorClock,
+            vectorClock: null,
           );
     await syncService.upsertEntity(entity);
     onPersistedStateChanged?.call(agentId);

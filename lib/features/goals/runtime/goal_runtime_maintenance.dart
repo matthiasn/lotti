@@ -180,7 +180,7 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
         _goalAgentService.removeSignalSubscriptions(identity.agentId);
         _checkInNotifier?.unwatch(identity.agentId);
         // No later tick will retract an alert the goal armed while active:
-        // a paused or archived goal must not notify (ADR 0065).
+        // a paused or archived goal must not notify (ADR 0073).
         await _goalAgentService.offTrackAlerts?.clearFor(identity.agentId);
         return;
       }

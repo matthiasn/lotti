@@ -98,7 +98,7 @@ void main() {
       ).called(1);
     });
 
-    group('a re-worded row arriving from a peer (ADR 0066)', () {
+    group('a re-worded row arriving from a peer (ADR 0074)', () {
       // Pinned between the template's 10:00 and a 12:00 alarm, so a row can
       // be "still ahead" or "already fired" by its scheduledFor alone.
       final now = DateTime.utc(2026, 5, 17, 11);

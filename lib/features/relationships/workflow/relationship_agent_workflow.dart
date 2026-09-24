@@ -216,7 +216,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
   final CategoryProfileLookup? _categoryProfileLookup;
 
   /// Re-words the check-in reminder Phase A armed with the banner this wake
-  /// authors, when the user allows it (ADR 0066). Optional: without it the
+  /// authors, when the user allows it (ADR 0074). Optional: without it the
   /// reminder keeps its template copy, which is where the app stood before.
   final AgentAlertCopy? _alertCopy;
 
@@ -998,7 +998,11 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
               scope: AgentReportScopes.current,
               reportId: reportId,
               updatedAt: _headTimestamp(derivation.dueDayUtc, now),
-              vectorClock: null,
+              // Carry the head this write replaces (ADR 0068 addendum): a
+              // second briefing for the same overdue due day stamps the same
+              // instant, and built on no clock it would be resolved as
+              // concurrent with the head and lose the tie.
+              vectorClock: existingHead?.vectorClock,
             ),
           );
           reportHeadAdvanced = true;

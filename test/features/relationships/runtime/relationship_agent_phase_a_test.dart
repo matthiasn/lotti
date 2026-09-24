@@ -1470,7 +1470,7 @@ class _RecordingReminderSink implements RelationshipReminderSink {
     _events.add('arm');
   }
 
-  /// Phase A never re-words: the seam belongs to Phase B (ADR 0066), so a
+  /// Phase A never re-words: the seam belongs to Phase B (ADR 0074), so a
   /// call landing here would be a wrong-tier defect.
   @override
   Future<void> restate(

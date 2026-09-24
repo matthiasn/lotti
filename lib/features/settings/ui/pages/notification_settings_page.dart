@@ -187,7 +187,7 @@ class NotificationSettingsBody extends StatelessWidget {
               ],
               // The agent's own words on an alert: opt-in, because a banner
               // brief can carry details and an alert lands on the lock
-              // screen (ADR 0066). Greyed with the kinds while the master
+              // screen (ADR 0074). Greyed with the kinds while the master
               // switch is off.
               if (flags[notifyAgentCopyFlag] case final wording?) ...[
                 SizedBox(height: tokens.spacing.sectionGap),

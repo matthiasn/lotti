@@ -169,7 +169,7 @@ class NotificationRepository {
 
   /// Re-words the open, not-yet-fired rows of [kind] linked to
   /// [linkedEntityId] — the agent's own voice on an alert the deterministic
-  /// tier armed (ADR 0066). [title] replaces the row's title; [body] its body
+  /// tier armed (ADR 0074). [title] replaces the row's title; [body] its body
   /// when given, else the body stays.
   ///
   /// A row already due keeps its words: its alert went out, and rescheduling

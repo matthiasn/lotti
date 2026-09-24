@@ -1,5 +1,5 @@
 /// The narrower seam the LLM tier gets: it may re-word an alert the
-/// deterministic tier has armed, and nothing else (ADR 0066). Every
+/// deterministic tier has armed, and nothing else (ADR 0074). Every
 /// [NotificationEpisodeSink] is one, so a producer serves both tiers.
 abstract interface class NotificationEpisodeRestater {
   /// Re-words every open, not-yet-fired episode of [subjectId]: [title]
@@ -19,7 +19,7 @@ abstract interface class NotificationEpisodeRestater {
 /// depend on the contract without importing the module that fulfils it: the
 /// producer implements this and imports the runtime, never the other way
 /// round — the direction the relationship reminder established (ADR 0039,
-/// amendment 1; ADR 0064).
+/// amendment 1; ADR 0072).
 ///
 /// [TSubject] is the entity the alert is about. [TDerivation] is the tier's
 /// own verdict type, in whatever shape it already has: the producer, not the

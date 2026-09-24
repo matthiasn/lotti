@@ -29,7 +29,7 @@ extension _NotificationHandlers on SyncEventProcessor {
           (await db.notificationById(notification.meta.id))?.meta.vectorClock;
       if (saved != null) {
         // A full row for one this device already holds is a content change —
-        // an agent re-wording an alert (ADR 0066), or a peer's own bake of
+        // an agent re-wording an alert (ADR 0074), or a peer's own bake of
         // the same episode. If that row's alarm already fired here, the
         // scheduler would show it again: `schedule` announces a due row on
         // the spot. The bell carries the new words either way. A row that

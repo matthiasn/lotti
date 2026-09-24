@@ -16,6 +16,7 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
+import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
@@ -27,6 +28,7 @@ import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.
 import 'package:lotti/features/relationships/workflow/relationship_agent_contract.dart';
 import 'package:lotti/features/relationships/workflow/relationship_agent_workflow.dart';
 import 'package:lotti/features/relationships/workflow/relationship_facts_renderer.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -1068,6 +1070,44 @@ void main() {
       // The report ROW still publishes — it is history, not the head.
       expect(upserts.whereType<AgentReportEntity>(), hasLength(1));
       expect(upserts.whereType<AgentReportHeadEntity>(), isEmpty);
+    });
+
+    test('a second briefing for the same overdue due day replaces the head '
+        'despite the equal stamp — it carries the head it replaces (ADR 0068 '
+        'addendum)', () async {
+      final published = publishedReport('2026-08-08');
+      final stored =
+          AgentDomainEntity.agentReportHead(
+                id: 'head-1',
+                agentId: agentId,
+                scope: AgentReportScopes.current,
+                reportId: published.id,
+                // The first briefing for this due day stamped the same
+                // instant this one will.
+                updatedAt: DateTime.utc(2026, 8, 8, 23, 59, 59),
+                vectorClock: const VectorClock({'peer': 4}),
+              )
+              as AgentReportHeadEntity;
+      when(
+        () => repository.getReportHead(any(), any()),
+      ).thenAnswer((_) async => stored);
+      when(
+        () => repository.getEntity(published.id),
+      ).thenAnswer((_) async => published);
+
+      final result = await publishBriefing();
+      expect(result.reportUpdated, isTrue);
+
+      final head = upserts.whereType<AgentReportHeadEntity>().single;
+      expect(head.updatedAt, stored.updatedAt);
+      // What AgentSyncService persists for this write over the stored head.
+      final resolved =
+          resolveLocalAgentWrite(persisted: stored, write: head)
+              as AgentReportHeadEntity;
+      expect(
+        resolved.reportId,
+        upserts.whereType<AgentReportEntity>().single.id,
+      );
     });
 
     test('advances over an OLDER published due day', () async {
@@ -2797,7 +2837,7 @@ void main() {
       expect(upserts.whereType<AgentReportEntity>(), hasLength(1));
     });
   });
-  group("the armed reminder in the agent's words (ADR 0066)", () {
+  group("the armed reminder in the agent's words (ADR 0074)", () {
     late MockAgentAlertCopy alertCopy;
 
     setUp(() {

@@ -15,7 +15,7 @@ const notifySyncConflictsFlag = 'notify_sync_conflicts';
 const showTaskBadgeFlag = 'show_task_badge';
 
 /// Whether an agent may re-word an armed alert with its banner's own copy —
-/// off by default, because that copy lands on a lock screen (ADR 0066).
+/// off by default, because that copy lands on a lock screen (ADR 0074).
 const notifyAgentCopyFlag = 'notify_agent_copy';
 const recordLocationFlag = 'record_location';
 const enableMatrixFlag = 'enable_matrix';

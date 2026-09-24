@@ -6,9 +6,11 @@ import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
+import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/event_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/event_agent_workflow.dart';
@@ -16,6 +18,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -436,6 +439,38 @@ void main() {
         () => mockJournalRepository.getJournalEntityById(eventId),
       ).thenAnswer((_) async => eventEntity());
       stubProviderResolution();
+    });
+
+    test('the head move carries the head it replaces, so a head stamped by a '
+        'clock running ahead still moves — ADR 0068 addendum', () async {
+      stubReportPublishingRun();
+      final existingHead =
+          AgentDomainEntity.agentReportHead(
+                id: 'existing-head-id',
+                agentId: agentId,
+                scope: AgentReportScopes.current,
+                reportId: 'old-report-id',
+                updatedAt: DateTime(2099),
+                vectorClock: const VectorClock({'peer': 4}),
+              )
+              as AgentReportHeadEntity;
+      when(
+        () => mockAgentRepository.getReportHead(agentId, 'current'),
+      ).thenAnswer((_) async => existingHead);
+
+      final result = await run();
+      expect(result.success, isTrue);
+
+      final head = verify(
+        () => mockSyncService.upsertEntity(captureAny()),
+      ).captured.whereType<AgentReportHeadEntity>().single;
+      expect(head.id, 'existing-head-id');
+      // What AgentSyncService persists for this write over the stored head.
+      final resolved =
+          resolveLocalAgentWrite(persisted: existingHead, write: head)
+              as AgentReportHeadEntity;
+      expect(resolved.reportId, isNot('old-report-id'));
+      expect(resolved.reportId, head.reportId);
     });
 
     test(

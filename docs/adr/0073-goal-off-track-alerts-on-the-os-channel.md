@@ -1,4 +1,4 @@
-# ADR 0065: Goal Off-Track Alerts on the OS Channel
+# ADR 0073: Goal Off-Track Alerts on the OS Channel
 
 - Status: Accepted — implemented. `NotificationEntity.goalOffTrack`,
   `GoalOffTrackAlertService` in `lib/features/goals/service/`, and the
@@ -10,7 +10,7 @@
 ADR 0055 made the goal agent's attention channel banner-only and named the
 condition for revisiting push: tap routing, and the synced notification inbox
 as the substrate. Both now exist — taps open the screen a notification is
-about, and every kind arms rows through one producer contract (ADR 0064).
+about, and every kind arms rows through one producer contract (ADR 0072).
 ADR 0059 Decision 4 already took the same step for people: the banner stays
 the primary channel, and an OS alert covers the one case a banner cannot —
 the device the user is not holding.
@@ -57,7 +57,7 @@ the nag that trains people to switch notifications off.
 
 - The goal gained an OS channel for four hooks and one call: the producer
   subclass supplies kind, subject, episode key, instant and copy; Phase A
-  calls the sink after its transaction. No repository change (ADR 0064's
+  calls the sink after its transaction. No repository change (ADR 0072's
   promise, kept).
 - Older peers cannot decode the new variant and drop the row with a log
   (`UnrecoverableSyncPayloadException`), the documented mixed-fleet rule.
@@ -79,5 +79,5 @@ the nag that trains people to switch notifications off.
 
 - [ADR 0055: The Banner-Nudge Attention Channel](./0055-banner-nudge-attention-channel.md) — the banner-only stance this extends
 - [ADR 0059: Relationship Agents on the Shared Runtime](./0059-relationship-agent-runtime-and-nudge-generalization.md) — Decision 4, the same step for people
-- [ADR 0064: Notification Producers — One Episode Contract](./0064-notification-producers-one-episode-contract.md) — the contract this rides on
+- [ADR 0072: Notification Producers — One Episode Contract](./0072-notification-producers-one-episode-contract.md) — the contract this rides on
 - [ADR 0039: Relationship Check-In Reminders](./0039-relationship-check-in-reminders.md) — the content-minimal copy rule

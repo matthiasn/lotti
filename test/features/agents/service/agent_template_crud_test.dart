@@ -6,6 +6,8 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_template_crud.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -88,10 +90,16 @@ void main() {
   });
 
   group('createVersion', () {
-    test('archives non-archived versions and advances the head', () async {
+    test('archives non-archived versions and advances the head, carrying its '
+        'clock so the move survives a head stamped by a clock running ahead '
+        '— ADR 0068 addendum', () async {
       final template = makeTestTemplate();
       final activeVersion = makeTestTemplateVersion(id: 'v-active');
-      final head = makeTestTemplateHead(versionId: 'v-active');
+      final head = makeTestTemplateHead(
+        versionId: 'v-active',
+        updatedAt: DateTime(2099),
+        vectorClock: const VectorClock({'peer': 4}),
+      );
 
       when(
         () => mockRepo.getEntity(kTestTemplateId),
@@ -130,6 +138,11 @@ void main() {
       final updatedHead = captured[2] as AgentTemplateHeadEntity;
       expect(updatedHead.id, head.id); // reused head id
       expect(updatedHead.versionId, newVersion.id);
+      // What AgentSyncService persists for this move over the stored head.
+      final resolved =
+          resolveLocalAgentWrite(persisted: head, write: updatedHead)
+              as AgentTemplateHeadEntity;
+      expect(resolved.versionId, newVersion.id);
     });
 
     test('throws when the template does not exist', () async {

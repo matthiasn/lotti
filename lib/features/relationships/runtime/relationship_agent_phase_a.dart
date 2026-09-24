@@ -79,7 +79,7 @@ typedef RelationshipCadenceDerivation = ({
 /// Named here, next to the derivation it consumes, so the dependency runs one
 /// way: `RelationshipReminderService` implements this and imports Phase A,
 /// while Phase A stays unaware of `features/notifications` entirely — the
-/// contract itself lives in `lib/classes` (ADR 0064). Phase A decides *when*
+/// contract itself lives in `lib/classes` (ADR 0072). Phase A decides *when*
 /// a person is due; what that means for the OS notification layer is not its
 /// concern. `arm` is called only for a person who passed the eligibility
 /// gate; `clearFor` for one who should no longer be nudged.

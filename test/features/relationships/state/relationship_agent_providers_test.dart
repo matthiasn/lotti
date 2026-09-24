@@ -395,7 +395,7 @@ void main() {
           MockUpdateNotifications(),
         ),
         // The workflow's alert re-wording reads the user's say from the
-        // journal database (ADR 0066), so the graph now needs one.
+        // journal database (ADR 0074), so the graph now needs one.
         journalDbProvider.overrideWithValue(MockJournalDb()),
       ],
     );

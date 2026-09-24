@@ -71,7 +71,7 @@ final goalSignalReaderProvider = Provider<GoalSignalReader>(
   name: 'goalSignalReaderProvider',
 );
 
-/// The OS-alert projection of the goal's slip verdict (ADR 0065) — durable
+/// The OS-alert projection of the goal's slip verdict (ADR 0073) — durable
 /// inbox rows first, OS alarms second.
 final goalOffTrackAlertServiceProvider = Provider<GoalOffTrackAlertService>(
   (ref) => GoalOffTrackAlertService(

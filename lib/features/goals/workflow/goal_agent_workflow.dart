@@ -133,7 +133,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
   final GoalFactsRenderer _factsRenderer;
 
   /// Re-words the off-track alert Phase A armed with the banner this wake
-  /// authors, when the user allows it (ADR 0066). Optional: without it the
+  /// authors, when the user allows it (ADR 0074). Optional: without it the
   /// alert keeps its template copy, which is where the app stood before.
   final AgentAlertCopy? _alertCopy;
 
@@ -1719,7 +1719,11 @@ class GoalAgentWorkflow with AgentErrorLogging {
               // on this timestamp then prefers the NEWER period no matter
               // which device finished last.
               updatedAt: _headTimestamp(derivation.periodKey, now),
-              vectorClock: null,
+              // Carry the head this write replaces (ADR 0068 addendum): a
+              // second report for the same overdue period stamps the same
+              // period end, and built on no clock it would be resolved as
+              // concurrent with the head and lose the tie.
+              vectorClock: existingHead?.vectorClock,
             ),
           );
           reportHeadAdvanced = true;

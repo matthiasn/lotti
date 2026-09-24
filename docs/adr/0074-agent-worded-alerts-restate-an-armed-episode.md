@@ -1,4 +1,4 @@
-# ADR 0066: Agent-Worded Alerts Restate an Armed Episode
+# ADR 0074: Agent-Worded Alerts Restate an Armed Episode
 
 - Status: Accepted — implemented. `NotificationEpisodeRestater` in
   `lib/classes/notification_producer.dart`,
@@ -10,7 +10,7 @@
 
 ## Context
 
-ADR 0064 and ADR 0065 kept model-authored copy off the OS channel: a
+ADR 0072 and ADR 0073 kept model-authored copy off the OS channel: a
 notification's words are baked at write time and land on a lock screen, and
 ADR 0039 Decision 6 keeps them content-minimal — a name, nothing more.
 
@@ -45,7 +45,7 @@ template line is not an agent speaking.
    workflow calls the helper once its output transaction has committed, and
    only for a banner this wake created: a re-run banner keeps the alert as it
    is, a fenced or rolled-back wake re-words nothing. Every failure is logged,
-   never surfaced as a failed wake — the sink contract of ADR 0064.
+   never surfaced as a failed wake — the sink contract of ADR 0072.
 5. **Same row, same id, on the wire whole.** The repository bumps `updatedAt`
    and the vector clock, re-schedules under the unchanged OS id — the alarm
    is replaced, not doubled — and enqueues the full row. Peers converge
@@ -80,5 +80,5 @@ template line is not an agent speaking.
 
 - [ADR 0039: Relationship Check-In Reminders](./0039-relationship-check-in-reminders.md) — Decision 6, the content-minimal rule this makes opt-out
 - [ADR 0055: Banner Nudge Attention Channel](./0055-banner-nudge-attention-channel.md) — the banner brief this borrows
-- [ADR 0064: Notification Producers, One Episode Contract](./0064-notification-producers-one-episode-contract.md) — the sink this extends
-- [ADR 0065: Goal Off-Track Alerts on the OS Channel](./0065-goal-off-track-alerts-on-the-os-channel.md) — the alert this re-words
+- [ADR 0072: Notification Producers, One Episode Contract](./0072-notification-producers-one-episode-contract.md) — the sink this extends
+- [ADR 0073: Goal Off-Track Alerts on the OS Channel](./0073-goal-off-track-alerts-on-the-os-channel.md) — the alert this re-words

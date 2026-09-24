@@ -53,7 +53,7 @@ It does **not** decide when an alert is warranted. Producers own that — the
 change-set builder for task suggestions, the relationship agent's deterministic
 tier for check-in reminders. What a producer arms an alert *through* is this
 module's: one sink contract, one choreography, per-episode identity
-(ADR 0064).
+(ADR 0072).
 
 ## Where the code lives
 

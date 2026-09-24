@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -395,6 +397,72 @@ void main() {
     ).thenAnswer((_) async => sets);
   }
 
+  test(
+    'applyStaged keeps a sibling claimed between its read and its write',
+    () async {
+      // ChangeSetLifecycle.tla, AppliedStaysDecided: the retraction read the
+      // set, a claim confirmed the other item, and the retraction wrote its
+      // stale copy back — the confirmed item read pending again.
+      var stored = setWith([priorityItem, titleItem]);
+      final gate = Completer<void>();
+      var gateNextRead = true;
+      var tail = Future<void>.value();
+      mockSyncService.transactionDelegate = <T>(action) {
+        if (Zone.current[#retractTx] == true) return action();
+        final run = tail.then(
+          (_) => runZoned(action, zoneValues: {#retractTx: true}),
+        );
+        tail = run.then<void>((_) {}, onError: (_) {});
+        return run;
+      };
+      when(() => mockRepository.getEntity(stored.id)).thenAnswer((_) async {
+        final snapshot = stored;
+        if (gateNextRead) {
+          gateNextRead = false;
+          await gate.future;
+        }
+        return snapshot;
+      });
+      when(() => mockSyncService.upsertEntity(any())).thenAnswer((
+        invocation,
+      ) async {
+        final entity = invocation.positionalArguments.first;
+        if (entity is ChangeSetEntity) stored = entity;
+      });
+
+      await withClock(testClock, () async {
+        final retraction = service.applyStaged([
+          StagedRetraction(
+            changeSet: stored,
+            itemIndex: 0,
+            item: priorityItem,
+            reason: 'stale',
+          ),
+        ]);
+        await pumpEventQueue();
+        // A user claim of item 1, as ChangeSetResolutionStore makes it.
+        final claim = mockSyncService.runInTransaction(() async {
+          final current =
+              (await mockRepository.getEntity(stored.id))! as ChangeSetEntity;
+          await mockSyncService.upsertEntity(
+            current.copyWith(
+              items: [
+                current.items[0],
+                current.items[1].withStatus(ChangeItemStatus.confirmed),
+              ],
+            ),
+          );
+        });
+        await pumpEventQueue();
+        gate.complete();
+        await Future.wait([retraction, claim]);
+      });
+
+      expect(stored.items[0].status, ChangeItemStatus.retracted);
+      expect(stored.items[1].status, ChangeItemStatus.confirmed);
+    },
+  );
+
   group('SuggestionRetractionService.plan + applyStaged', () {
     glados.Glados(
       glados.any.retractionScenario,
@@ -615,9 +683,7 @@ void main() {
               items = List<ChangeItem>.from(items);
               changed = true;
             }
-            items[index] = existing.copyWith(
-              status: ChangeItemStatus.retracted,
-            );
+            items[index] = existing.withStatus(ChangeItemStatus.retracted);
           }
           if (!changed) continue;
 

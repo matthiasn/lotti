@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_lww_timestamp.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -111,7 +114,8 @@ AgentDomainEntity resolveAgentEntityVersions({
 /// the type's override ([resolveConcurrentAgentEntityOverride]), then
 /// [resolveConcurrent], with the per-type convergent fields joined — agent
 /// state's G-counters ([mergeAgentStateCounters]) and the nudge
-/// accumulators ([mergeNudgeAccumulators]). A missing clock counts as empty.
+/// accumulators ([mergeNudgeAccumulators]) — and change sets merged item by
+/// item ([mergeConcurrentChangeSets]). A missing clock counts as empty.
 AgentDomainEntity mergeConcurrentAgentEntities({
   required AgentDomainEntity local,
   required AgentDomainEntity incoming,
@@ -144,6 +148,8 @@ AgentDomainEntity mergeConcurrentAgentEntities({
         local: l,
         incoming: i,
       ),
+    (final ChangeSetEntity l, final ChangeSetEntity i) =>
+      mergeConcurrentChangeSets(local: l, incoming: i) ?? winner,
     // A cross-variant pair (a goal nudge and a relationship nudge sharing an
     // id) is unreachable — their id shapes are disjoint at mint time — and
     // keeps the plain winner rather than joining histories across kinds.
@@ -284,8 +290,8 @@ ConcurrentWinner? resolveConcurrentAgentEntityOverride({
     return byCreated < 0 ? ConcurrentWinner.local : ConcurrentWinner.incoming;
   }
   if (local is GoalSpecHeadEntity && incoming is GoalSpecHeadEntity) {
-    final localVersion = _specVersionNumber(local.versionId);
-    final incomingVersion = _specVersionNumber(incoming.versionId);
+    final localVersion = specVersionOrdinal(local.versionId);
+    final incomingVersion = specVersionOrdinal(incoming.versionId);
     if (localVersion != null &&
         incomingVersion != null &&
         localVersion != incomingVersion) {
@@ -309,8 +315,8 @@ ConcurrentWinner? resolveConcurrentAgentEntityOverride({
     // evaluation and a v2 evaluation of the same day collide on one row.
     // The row computed under the NEWER spec version wins — timestamp LWW
     // could otherwise let the superseded evaluation hide current health.
-    final localVersion = _specVersionNumber(local.specVersionId);
-    final incomingVersion = _specVersionNumber(incoming.specVersionId);
+    final localVersion = specVersionOrdinal(local.specVersionId);
+    final incomingVersion = specVersionOrdinal(incoming.specVersionId);
     if (localVersion != null &&
         incomingVersion != null &&
         localVersion != incomingVersion) {
@@ -399,8 +405,9 @@ ConcurrentWinner? resolveConcurrentNudgeLifecycle({
 }
 
 /// The ordinal in a spec version id (`agent:spec-v3-9f2c1a08` → 3), or
-/// null for foreign id shapes — those fall back to LWW.
-int? _specVersionNumber(String specVersionId) {
+/// null for foreign id shapes — those fall back to LWW. Shared with the
+/// goal-progress recompute, which must not build on a newer spec's row.
+int? specVersionOrdinal(String specVersionId) {
   final match = RegExp(r'spec-v(\d+)').firstMatch(specVersionId);
   return match == null ? null : int.tryParse(match.group(1)!);
 }
@@ -425,6 +432,116 @@ int compareClocksCanonically(VectorClock a, VectorClock b) {
     if (counterA != counterB) return counterA > counterB ? 1 : -1;
   }
   return 0;
+}
+
+/// Merges two **concurrent** versions of one change set item by item — the
+/// change-set case of [mergeConcurrentAgentEntities] (ADR 0067).
+///
+/// A change set is edited on every device that shows it, and a whole-row
+/// winner would drop the other device's decisions: an item confirmed and
+/// applied there would read `pending` again everywhere and could be applied
+/// a second time. For each index:
+///
+/// - the version that changed the item last wins — the higher
+///   [ChangeItem.revision];
+/// - at the same revision, or when either side carries no revision (an
+///   older build wrote it, and drops the field), the more final status wins
+///   ([ChangeItem.statusRank]): a confirm took effect, so it beats a
+///   concurrent rejection or retraction, and any decision beats `pending`;
+/// - on a status tie, the side that has a revision, which changed the item,
+///   beats an older build's copy without one;
+/// - otherwise a fixed order on the item's content decides.
+///
+/// Items one version appended beyond the other's are kept. The set status is
+/// derived from the merged items — two closed versions (`resolved`,
+/// `expired`) stay closed, so a row retired before retirement retracted its
+/// items is not reopened — and `resolvedAt` is the later of the two (the
+/// set's `createdAt` when neither had resolved it). The vector clock is the
+/// join of both, so the merged row covers both versions: a later write on
+/// either device dominates it, and a version that succeeds only one side is
+/// concurrent with it and merges again.
+///
+/// Nothing here depends on the clocks' canonical order, only on the two
+/// rows' contents, so the merged row does not depend on the order in which a
+/// replica received the versions — the trap ADR 0068 names for a joined
+/// clock under a clock tiebreak.
+///
+/// Returns `null` when the versions cannot be merged item by item — either
+/// is a tombstone, or they disagree on which proposal an index holds — and
+/// the whole-row winner decides.
+ChangeSetEntity? mergeConcurrentChangeSets({
+  required ChangeSetEntity local,
+  required ChangeSetEntity incoming,
+}) {
+  if (local.deletedAt != null || incoming.deletedAt != null) return null;
+  final common = local.items.length < incoming.items.length
+      ? local.items.length
+      : incoming.items.length;
+  for (var i = 0; i < common; i++) {
+    final a = local.items[i];
+    final b = incoming.items[i];
+    if (a.toolName != b.toolName || a.humanSummary != b.humanSummary) {
+      return null;
+    }
+  }
+  final longer = local.items.length >= incoming.items.length ? local : incoming;
+  final items = [
+    for (var i = 0; i < longer.items.length; i++)
+      if (i < common)
+        _mergeChangeItem(local.items[i], incoming.items[i])
+      else
+        longer.items[i],
+  ];
+  final bothClosed =
+      !_isOpenChangeSetStatus(local.status) &&
+      !_isOpenChangeSetStatus(incoming.status);
+  final status = bothClosed
+      ? (local.status.index >= incoming.status.index
+            ? local.status
+            : incoming.status)
+      : ChangeItem.deriveSetStatus(items);
+  final resolvedAt = status == ChangeSetStatus.resolved
+      ? _latestInstant(local.resolvedAt, incoming.resolvedAt) ?? local.createdAt
+      : null;
+  return local.copyWith(
+    items: items,
+    status: status,
+    resolvedAt: resolvedAt,
+    vectorClock: VectorClock.merge(local.vectorClock, incoming.vectorClock),
+  );
+}
+
+bool _isOpenChangeSetStatus(ChangeSetStatus status) =>
+    status == ChangeSetStatus.pending ||
+    status == ChangeSetStatus.partiallyResolved;
+
+ChangeItem _mergeChangeItem(ChangeItem local, ChangeItem incoming) {
+  final localRevision = local.revision;
+  final incomingRevision = incoming.revision;
+  // An item without a revision was last written by an older build, which
+  // drops the field: its revision says nothing about order, so only the
+  // status can decide.
+  if (localRevision != null &&
+      incomingRevision != null &&
+      localRevision != incomingRevision) {
+    return localRevision > incomingRevision ? local : incoming;
+  }
+  final byRank =
+      ChangeItem.statusRank(local.status) -
+      ChangeItem.statusRank(incoming.status);
+  if (byRank != 0) return byRank > 0 ? local : incoming;
+  // Same status, and only one side counted its change: that side changed
+  // the item — a follow-up task's target rewrite, say — while the older
+  // build's copy is the item as it was.
+  if ((localRevision == null) != (incomingRevision == null)) {
+    return localRevision != null ? local : incoming;
+  }
+  // A fixed order on content, not on clocks: the same pair gives the same
+  // item on every replica, however the replica came to hold it.
+  return jsonEncode(local.toJson()).compareTo(jsonEncode(incoming.toJson())) >=
+          0
+      ? local
+      : incoming;
 }
 
 /// Merges the convergent (per-host G-counter) fields of two **concurrent**

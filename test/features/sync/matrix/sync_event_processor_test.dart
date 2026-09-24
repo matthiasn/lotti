@@ -892,7 +892,7 @@ void main() {
     verify(() => journalDb.upsertConfigFlag(flag)).called(1);
   });
 
-  group('a synced notification preference (ADR 0065, the settings page)', () {
+  group('a synced notification preference (ADR 0073, the settings page)', () {
     late MockNotificationPreferenceEffects effects;
 
     const stored = ConfigFlag(

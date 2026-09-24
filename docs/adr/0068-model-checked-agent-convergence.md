@@ -113,6 +113,50 @@ model-checked them with TLC. The holes came back as concrete traces:
     next edit. Every read resolves the active version through the head.
   - `consecutiveFailureCount` across devices stays last-writer-wins.
 
+## Addendum (2026-09-24): writes meant to move the row back
+
+Decision 3 resolves a local write built on a null or stale clock as if it
+were concurrent with the persisted row. Under plain last-writer-wins that is
+harmless — the clamped, newer `updatedAt` wins — but a write whose whole
+point is to move the row *against* the resolver's order is then handed the
+row back: under a type override (a pre-warm moved to an earlier deadline,
+fixed with ADR 0069), or under last-writer-wins on an equal or skewed
+timestamp. An audit of every local writer of the override types and of the
+version-head registers found:
+
+- **Report heads** (task, project, event, goal and relationship agents) were
+  written with `vectorClock: null` over the head they had just read. A
+  second report for the same overdue period stamps the same instant, and a
+  head stamped by a peer whose clock runs ahead is newer still; in both the
+  new report never became the standing one, on this device or any other.
+- **Soul and template heads** moved to a new version the same way, so under
+  clock skew an edit created its version but left the head — and every
+  prompt — on the old one.
+- **Goal-progress registers** carried the row the derivation read, which a
+  report refresh reads before its inference; a same-ordinal twin's row that
+  synced in meanwhile was judged concurrent, and the goal-progress resolver's
+  id order could put the twin's evaluation back until the next tick.
+
+Every one of them now carries the clock of the row it replaces, read in the
+same transaction: the write is that row's causal successor, keeps its fields
+and still never moves `updatedAt` back. The register is the one exception by
+design: a row computed under a *newer* spec ordinal is the next spec arriving
+before its head, so the recompute does not build on it and the resolver's
+higher-ordinal rule keeps it. The day-summary writer's branch that seeded a
+rewrite from a tombstoned prior was unreachable — reads filter tombstones,
+and day summaries are never soft-deleted — and is removed. The other writers of override types —
+knowledge, day summaries, nudge lifecycle and interactions, goal spec heads,
+the scheduled-wake writers outside ADR 0069 — already build on the row they
+read, or only move forward in the resolver's order.
+
+`AgentReplication.tla` gains the class as a write kind, `Intend`: a write
+built on the row that moves it out of the terminal status, or to new fields
+at the row's own timestamp. `LocalWriteTakesEffect` holds when it carries the
+row's clock (`IntentCarriesClock`) and fails without it. A successor that
+leaves a terminal status still ranks below its predecessor, so the terminal
+configuration claims only that property; convergence there remains the
+`RankDrop` residual above.
+
 ## Related
 
 - `specs/tla/AgentReplication.tla`, `specs/tla/AgentStateWrites.tla`,

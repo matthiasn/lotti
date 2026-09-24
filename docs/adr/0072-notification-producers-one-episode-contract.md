@@ -1,4 +1,4 @@
-# ADR 0064: Notification Producers — One Episode Contract per Agent Kind
+# ADR 0072: Notification Producers — One Episode Contract per Agent Kind
 
 - Status: Accepted — implemented. `NotificationEpisodeSink` in
   `lib/classes/notification_producer.dart`, `NotificationEpisodeProducer` in
@@ -34,7 +34,7 @@ one kind only by accident.
 1. **One sink contract, in `lib/classes`.**
    `NotificationEpisodeSink<TSubject, TDerivation>` has two members of its
    own, `arm({subject, derivation})` and `clearFor(subjectId)`, and since
-   ADR 0066 inherits a third, `restate(subjectId, {title, body})`, from
+   ADR 0074 inherits a third, `restate(subjectId, {title, body})`, from
    `NotificationEpisodeRestater`; when a restatement is permitted is that
    ADR's policy, not this contract's. A runtime names
    its own alias beside its derivation — `RelationshipReminderSink` is
@@ -83,7 +83,7 @@ one kind only by accident.
 - `NotificationRepository` stops growing with the union. What is per kind is
   what only that kind knows.
 - Nothing on the wire changes for the kinds that exist: their discriminators,
-  ids and message families are as before. A kind adopted later (ADR 0065's
+  ids and message families are as before. A kind adopted later (ADR 0073's
   goal alert) adds its own discriminator, as any new variant does; the
   contract itself carries nothing new over the wire.
 
@@ -92,7 +92,7 @@ one kind only by accident.
 - Model-authored copy at arming time. What a producer arms is baked at write
   time and lands on lock screens; ADR 0039 Decision 6's content-minimal rule
   stands. Whether an agent may later re-word a row it armed, in its own
-  voice, is a separate decision — ADR 0066 — layered on top of this
+  voice, is a separate decision — ADR 0074 — layered on top of this
   contract, not part of it.
 - Recurring reminders. The episode key moves only with the subject's own
   state, which is what keeps an ignored subject alerted once.

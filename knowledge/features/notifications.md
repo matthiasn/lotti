@@ -52,9 +52,9 @@ sources:
     resource: ../../lib/features/notifications/repository/notification_repository.dart
     title: NotificationRepository — armEpisode and retractOpenRows
     last_modified: 2026-09-16
-  - id: adr-0064
-    resource: ../../docs/adr/0064-notification-producers-one-episode-contract.md
-    title: ADR 0064 — Notification producers, one episode contract per agent kind
+  - id: adr-0072
+    resource: ../../docs/adr/0072-notification-producers-one-episode-contract.md
+    title: ADR 0072 — Notification producers, one episode contract per agent kind
     last_modified: 2026-09-16
   - id: adr-0039
     resource: ../../docs/adr/0039-relationship-check-in-reminders.md
@@ -583,7 +583,7 @@ Every producer that arms an alert ahead of time faces the same four questions
 — which row is *this* episode, what to do when the row already exists, what to
 do with the episode it supersedes, and what a failure may cost the caller —
 and answering them per kind is how the repository grew one create, one retract
-and one id helper per variant. ADR 0064 collapses that into one contract with
+and one id helper per variant. ADR 0072 collapses that into one contract with
 three layers:
 
 ```mermaid
@@ -637,7 +637,7 @@ What stays per kind is the union variant itself. A generic route-carrying row
 would have been shorter, but the exhaustive switches over the union are what
 force a new kind to decide its inbox behaviour and its tap route rather than
 inherit one. A new kind is a variant, a subclass, and a call from its tier —
-which is exactly what the slipped-goal alert (ADR 0065) added, and nothing
+which is exactly what the slipped-goal alert (ADR 0073) added, and nothing
 else: `GoalOffTrackAlertService` supplies the kind, the agent as subject, the
 transition day as episode key, the next 09:00 as instant and the copy, and
 `GoalAgentPhaseA` calls the sink after its transaction on a status
@@ -684,7 +684,7 @@ allows it — the next section.
 The goal and relationship agents' LLM tier authors a banner brief on an
 escalation wake — `create_goal_ad`, `create_relationship_ad` — and that wake
 follows the deterministic tier that armed an alert for the same subject. ADR
-0066 lets the brief lend the alert its words: the headline becomes the title,
+0074 lets the brief lend the alert its words: the headline becomes the title,
 the tagline (or else the call to action) the body, fitted to one line each
 within lock-screen room. Nothing is minted and nothing is decided: *whether*
 and *when* an alert exists stays the deterministic tier's.
