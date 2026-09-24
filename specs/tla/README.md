@@ -174,7 +174,10 @@ claimed with its resolved target), `DerivedIds` (a create-style tool derives
 its entity's id from the item's effect key and does nothing when the entity
 exists), `CopyCarriesKey` (a consolidated copy carries its original's key) and
 `CasGuard` (a set-style tool writes only while the field holds the value the
-proposal was made against). `RaceFree` restricts the environment: no item is
+proposal was made against) and `ReuseLive` (where a created entity and its
+link to a parent sync apart — a checklist and the task update listing it — a
+device holding the entity without its link reuses and links it; switched on
+by `SeparateAttach`). `RaceFree` restricts the environment: no item is
 decided on two devices before they have synced. `UserRestoresBase` lets the
 user's edit restore the base value, the ABA a value compare-and-set cannot
 see.
@@ -191,6 +194,7 @@ see.
 | `NoClobber` | invariant | no dispatch overwrites a value the user wrote into the field |
 | `EffectsConverge` | invariant | once everything, entities and fields included, is delivered, every replica holds the same entities, the field agrees unless a `Conflict` row holds a concurrent version, and a change's entity exists exactly when the change was applied somewhere |
 | `SucceededClaimStands` | invariant | an item whose latest claim's dispatch succeeded reads `confirmed` |
+| `EffectsLinked` | invariant | with `SeparateAttach`: once everything is delivered, every created entity is linked to its parent on every device |
 
 | Configuration | Devices | Items | Checks | Distinct states |
 |---------------|---------|-------|--------|-----------------|
@@ -202,6 +206,7 @@ see.
 | `ChangeSetLifecycleRaceSet` | 2 | one set-style item decided on both devices, one user edit per device, retryable failures | `Converged`, `NoClobber`, `EffectsConverge` | 852,966 |
 | `ChangeSetLifecycleReopen` | 1 | one item, two confirms, one reopen, both failure kinds | `SucceededClaimStands`, `NoDuplicateEffects` | 90 |
 | `ChangeSetLifecycleConsolidateSync` | 2 | an item consolidated on one device while confirmed on the other, `RaceFree` | `NoDuplicateEffects`, `EffectsConverge` | 147,557 |
+| `ChangeSetLifecycleRaceLink` | 2 | one create-style item decided on both devices, whose entity and link to its parent sync apart | `Converged`, `NoDuplicateEffects`, `EffectsConverge`, `EffectsLinked` | 233 |
 
 Every configuration also checks `TypeOK`. Each switch set to `FALSE` fails a
 configuration with a short trace (kept outside this directory, as for
@@ -219,6 +224,7 @@ configuration with a short trace (kept outside this directory, as for
 | `DerivedIds = FALSE` | `ChangeSetLifecycleRace` | `NoDuplicateEffects` (6 states): both devices confirm and dispatch the item; each mints its own id |
 | `DerivedIds = FALSE` | `ChangeSetLifecycleReopen` | `NoDuplicateEffects` (6 states): confirm, apply, reopen, confirm, apply — two entities |
 | `CopyCarriesKey = FALSE` | `ChangeSetLifecycleConsolidateSync` | `NoDuplicateEffects` (7 states): one device confirms and applies the original, the other consolidates it into a copy of its own key; the copy is confirmed and creates a second entity |
+| `ReuseLive = FALSE` | `ChangeSetLifecycleRaceLink` | `NoDuplicateEffects` (6 states): one device confirms, creates the checklist and lists it; the other receives the checklist but not the task update listing it, confirms, and creates a second checklist |
 | `CasGuard = FALSE` | `ChangeSetLifecycleRaceSet` | `NoClobber` (4 states): the change is confirmed, the user edits the field, and the dispatch overwrites the edit |
 
 What stays open — the residuals, each confirmed by TLC:

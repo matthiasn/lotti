@@ -1354,21 +1354,6 @@ void main() {
   group('with the effect of a confirmed item (ADR 0075)', () {
     const effect = ChangeEffect(key: 'set-1:1');
     final copyId = effect.entityId('checklist-item');
-    final checklistIdOfEffect = effect.entityId('checklist');
-    final createdChecklist = JournalEntity.checklist(
-      meta: Metadata(
-        id: 'fresh-checklist',
-        dateFrom: DateTime(2024, 3, 15),
-        dateTo: DateTime(2024, 3, 15),
-        createdAt: DateTime(2024, 3, 15),
-        updatedAt: DateTime(2024, 3, 15),
-      ),
-      data: const ChecklistData(
-        title: 'Todos',
-        linkedChecklistItems: [],
-        linkedTasks: [],
-      ),
-    );
 
     void stubTaken(Set<String> taken) =>
         when(
@@ -1387,16 +1372,11 @@ void main() {
       stubSourceTask();
       stubArchiveUpdate();
       when(
-        () => mockChecklistRepository.createChecklist(
+        () => mockChecklistRepository.derivedChecklistFor(
           taskId: any(named: 'taskId'),
           uuidV5Input: any(named: 'uuidV5Input'),
         ),
-      ).thenAnswer(
-        (_) async => (
-          checklist: createdChecklist,
-          createdItems: <({String id, String title, bool isChecked})>[],
-        ),
-      );
+      ).thenAnswer((_) async => 'derived-checklist');
       when(
         () => mockChecklistRepository.addItemToChecklist(
           checklistId: any(named: 'checklistId'),
@@ -1426,14 +1406,14 @@ void main() {
         expect((await migrate()).success, isTrue);
 
         verify(
-          () => mockChecklistRepository.createChecklist(
+          () => mockChecklistRepository.derivedChecklistFor(
             taskId: targetTaskId,
             uuidV5Input: effect.entityInput('checklist'),
           ),
         ).called(1);
         final input = verify(
           () => mockChecklistRepository.addItemToChecklist(
-            checklistId: 'fresh-checklist',
+            checklistId: 'derived-checklist',
             title: any(named: 'title'),
             isChecked: any(named: 'isChecked'),
             categoryId: any(named: 'categoryId'),
@@ -1447,20 +1427,21 @@ void main() {
       },
     );
 
-    test(
-      "takes a fresh checklist id when the effect's is taken by a checklist "
-      'the user deleted',
-      () async {
-        stubTargetTask(checklistIds: const []);
-        stubTaken({checklistIdOfEffect});
+    test('fails when the derived checklist cannot be created', () async {
+      stubTargetTask(checklistIds: const []);
+      stubTaken(const {});
+      when(
+        () => mockChecklistRepository.derivedChecklistFor(
+          taskId: any(named: 'taskId'),
+          uuidV5Input: any(named: 'uuidV5Input'),
+        ),
+      ).thenAnswer((_) async => null);
 
-        expect((await migrate()).success, isTrue);
+      final result = await migrate();
 
-        verify(
-          () => mockChecklistRepository.createChecklist(taskId: targetTaskId),
-        ).called(1);
-      },
-    );
+      expect(result.success, isFalse);
+      expect(result.errorMessage, 'Target checklist creation failed');
+    });
 
     test('only archives the source when the copy already exists', () async {
       stubTargetTask();

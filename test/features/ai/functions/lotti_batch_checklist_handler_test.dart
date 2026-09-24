@@ -1411,19 +1411,12 @@ void main() {
             };
           });
 
-      void stubCreateChecklist(Checklist? created) =>
-          when(
-            () => mockChecklistRepository.createChecklist(
-              taskId: any(named: 'taskId'),
-              title: any(named: 'title'),
-              uuidV5Input: any(named: 'uuidV5Input'),
-            ),
-          ).thenAnswer(
-            (_) async => (
-              checklist: created,
-              createdItems: <({String id, String title, bool isChecked})>[],
-            ),
-          );
+      void stubDerivedChecklist(String? id) => when(
+        () => mockChecklistRepository.derivedChecklistFor(
+          taskId: any(named: 'taskId'),
+          uuidV5Input: any(named: 'uuidV5Input'),
+        ),
+      ).thenAnswer((_) async => id);
 
       setUp(() {
         bareTask = ChecklistTestDataFactory.createTask(checklistIds: const []);
@@ -1464,14 +1457,13 @@ void main() {
         'its derived id',
         () async {
           stubTaken(const {});
-          stubCreateChecklist(checklist(checklistId));
+          stubDerivedChecklist(checklistId);
 
           expect(await handler.createBatchItems(result), 1);
 
           verify(
-            () => mockChecklistRepository.createChecklist(
+            () => mockChecklistRepository.derivedChecklistFor(
               taskId: bareTask.meta.id,
-              title: 'Todos',
               uuidV5Input: checklistInput,
             ),
           ).called(1);
@@ -1492,27 +1484,9 @@ void main() {
         },
       );
 
-      test(
-        'takes a fresh checklist id when the derived one belongs to a '
-        'checklist the user deleted',
-        () async {
-          stubTaken({checklistId});
-          stubCreateChecklist(checklist('fresh'));
-
-          expect(await handler.createBatchItems(result), 1);
-
-          verify(
-            () => mockChecklistRepository.createChecklist(
-              taskId: bareTask.meta.id,
-              title: 'Todos',
-            ),
-          ).called(1);
-        },
-      );
-
       test('fails every item when the checklist cannot be created', () async {
         stubTaken(const {});
-        stubCreateChecklist(null);
+        stubDerivedChecklist(null);
 
         expect(await handler.createBatchItems(result), 0);
 

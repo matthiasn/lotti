@@ -189,24 +189,25 @@ class ChecklistMigrationHandler {
 
     if (targetChecklistIds.isEmpty) {
       // Create a checklist on the target task directly — we bypass
-      // AutoChecklistService because it rejects empty suggestions. A derived
-      // id already taken — a checklist the user deleted — gets a fresh one.
-      final checklistTaken =
-          effect != null && await effect.created(_journalDb, _checklistRole);
-      final createResult = await _checklistRepository.createChecklist(
-        taskId: targetTask.meta.id,
-        uuidV5Input: checklistTaken
-            ? null
-            : effect?.entityInput(_checklistRole),
-      );
-      if (createResult.checklist == null) {
+      // AutoChecklistService because it rejects empty suggestions. With an
+      // effect, the derived checklist — reused when another device's copy has
+      // arrived before the task update listing it.
+      final created = effect == null
+          ? (await _checklistRepository.createChecklist(
+              taskId: targetTask.meta.id,
+            )).checklist?.meta.id
+          : await _checklistRepository.derivedChecklistFor(
+              taskId: targetTask.meta.id,
+              uuidV5Input: effect.entityInput(_checklistRole),
+            );
+      if (created == null) {
         return const ToolExecutionResult(
           success: false,
           output: 'Error: failed to create checklist on target task',
           errorMessage: 'Target checklist creation failed',
         );
       }
-      targetChecklistId = createResult.checklist!.meta.id;
+      targetChecklistId = created;
     } else {
       targetChecklistId = targetChecklistIds.first;
     }

@@ -1096,10 +1096,15 @@ flowchart TD
   `migrate_checklist_item(s)` (the copy and the target's first checklist; the
   source is archived either way) and the event agent's
   `suggest_follow_up_task`. An entity deleted since counts as created: a late
-  application must not bring back what the user removed.
+  application must not bring back what the user removed. The first checklist
+  is the exception, since items need somewhere to go:
+  `ChecklistRepository.derivedChecklistFor` reuses a live one under the
+  derived id — listing it on the task, whose update can arrive after the
+  checklist — and steps past a deleted one to the next derived id.
 - **Set-style tools compare and set.** When the task agent queues a proposal
   to set the title, status, priority, estimate, due date or language, it
-  records the value the task holds, read fresh, in `ChangeItem.base`. The
+  records the value the task holds, read fresh, in `ChangeItem.base`; the
+  task's query chat records it from the task it loaded for the answer. The
   dispatcher applies the change only while the task still holds it. A field
   that moved on — applied already on another device, or edited since — is
   left alone and the dispatch reports success: a failure would revert or

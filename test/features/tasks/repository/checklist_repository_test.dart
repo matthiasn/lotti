@@ -863,6 +863,91 @@ void main() {
     });
   });
 
+  group('derivedChecklistFor', () {
+    Checklist checklistRow(String id, {bool deleted = false}) => Checklist(
+      meta: Metadata(
+        id: id,
+        createdAt: testDate,
+        updatedAt: testDate,
+        dateFrom: testDate,
+        dateTo: testDate,
+        deletedAt: deleted ? testDate : null,
+      ),
+      data: const ChecklistData(
+        title: 'Todos',
+        linkedChecklistItems: [],
+        linkedTasks: ['task-1'],
+      ),
+    );
+
+    test('reports nothing when the task is gone', () async {
+      when(
+        () => mockJournalDb.journalEntityMapForIdsIncludingDeleted(any()),
+      ).thenAnswer((inv) async {
+        final id = (inv.positionalArguments.first as List<String>).single;
+        return {id: checklistRow(id)};
+      });
+      when(
+        () => mockJournalDb.journalEntityById('task-1'),
+      ).thenAnswer((_) async => null);
+
+      expect(
+        await repository.derivedChecklistFor(
+          taskId: 'task-1',
+          uuidV5Input: 'k',
+        ),
+        isNull,
+      );
+      verifyNever(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: any(named: 'journalEntityId'),
+          taskData: any(named: 'taskData'),
+          entryText: any(named: 'entryText'),
+        ),
+      );
+    });
+
+    test(
+      'falls back to a random id past eight deleted generations',
+      () async {
+        when(
+          () => mockJournalDb.journalEntityMapForIdsIncludingDeleted(any()),
+        ).thenAnswer((inv) async {
+          final id = (inv.positionalArguments.first as List<String>).single;
+          return {id: checklistRow(id, deleted: true)};
+        });
+        when(
+          () => mockJournalDb.journalEntityById(testTask.id),
+        ).thenAnswer((_) async => testTask);
+        when(
+          () => mockPersistenceLogic.createMetadata(),
+        ).thenAnswer((_) async => testTask.meta.copyWith(id: 'random-id'));
+        when(
+          () => mockPersistenceLogic.createDbEntity(any()),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockPersistenceLogic.updateTask(
+            journalEntityId: any(named: 'journalEntityId'),
+            entryText: any(named: 'entryText'),
+            taskData: any(named: 'taskData'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        expect(
+          await repository.derivedChecklistFor(
+            taskId: testTask.id,
+            uuidV5Input: 'k',
+          ),
+          'random-id',
+        );
+        verify(
+          () => mockJournalDb.journalEntityMapForIdsIncludingDeleted(any()),
+        ).called(8);
+        verify(() => mockPersistenceLogic.createMetadata()).called(1);
+      },
+    );
+  });
+
   group('addItemToChecklist', () {
     test(
       'successfully creates item and updates checklist atomically',

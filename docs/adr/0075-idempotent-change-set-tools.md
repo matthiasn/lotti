@@ -46,7 +46,15 @@ user's reopen. TLC found:
    capture and that transaction request run in one continuation, so no
    confirm can be claimed in between — the model's steps are coarser than
    the code's. The design should not depend on that.
-5. **The reopen ABA is now model-checked.** Each user decision runs in its
+5. **A derived checklist was taken as spent when its link had not
+   arrived.** A checklist and the task update that lists it sync apart. A
+   device that held the other device's checklist, but not the task update,
+   found the derived id taken and created a second checklist
+   (`NoDuplicateEffects`, 6 states, with the entity and its link to the
+   parent modelled as separate writes; found in review).
+6. **Field proposals from the task's query chat recorded no base,** so they
+   applied unconditionally on a late confirmation (found in review).
+7. **The reopen ABA is now model-checked.** Each user decision runs in its
    own attempt slot, and `Reopen` puts a decided item back to pending. With
    the revision guard removed, a first confirm's failure reverts a second
    confirm of the reopened item, whose dispatch then succeeds on a pending
@@ -81,12 +89,19 @@ since the two versions differ in their creation timestamps.
    timer starts), `add_checklist_item(s)` (one id per position, and the
    checklist of a task that has none), `migrate_checklist_item(s)` (the copy,
    and the target's checklist when it has none; the source is still
-   archived) and the event agent's `suggest_follow_up_task`.
+   archived) and the event agent's `suggest_follow_up_task`. The checklist
+   of a task that has none comes from
+   `ChecklistRepository.derivedChecklistFor`: a live checklist under the
+   derived id is reused and listed on the task, and one the user deleted
+   moves on to the next generation's derived id, the same on every device
+   that knows the same deletions.
 3. **A set-style tool applies only while the field holds the value the
    proposal was made against.** The task agent records it when it queues a
    proposal to set the title, status, priority, estimate, due date or
    language (`ChangeItem.base`, read fresh rather than from the wake's cached
-   snapshot). The dispatcher compares it with the task before any handler
+   snapshot), and so does the task's query chat, from the task it loaded for
+   the answer (`QueryTaskActionContext.metadata`). No other proposal source
+   builds these task-field items. The dispatcher compares it with the task before any handler
    runs; a field that moved on — applied already on another device, or
    edited since — is left alone, and the dispatch reports success, because a
    failure would revert or retract the item over a confirm that landed
@@ -100,11 +115,11 @@ since the two versions differ in their creation timestamps.
    restart.
 6. As in ADR 0065–0067, the model gates the code. `ChangeSetLifecycle` gains
    attempt slots, `Reopen`, entities and the field register, and the switches
-   `RevisionGuard`, `ClaimResolvesTarget`, `DerivedIds`, `CopyCarriesKey` and
-   `CasGuard` as mutation points; `ChangeSetLifecycleRace` now checks
-   `NoDuplicateEffects` and `EffectsConverge` instead of `AtMostOnceApply`,
-   and three configurations are added (`RaceSet`, `Reopen`,
-   `ConsolidateSync`). A Glados trace over a real journal database applies
+   `RevisionGuard`, `ClaimResolvesTarget`, `DerivedIds`, `CopyCarriesKey`,
+   `CasGuard` and `ReuseLive` as mutation points; `ChangeSetLifecycleRace` now
+   checks `NoDuplicateEffects` and `EffectsConverge` instead of
+   `AtMostOnceApply`, and four configurations are added (`RaceSet`,
+   `Reopen`, `ConsolidateSync`, `RaceLink`). A Glados trace over a real journal database applies
    five confirmed items any number of times with the user's edits in
    between, and after every step the journal must equal applying each once.
 

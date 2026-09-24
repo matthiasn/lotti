@@ -11,6 +11,7 @@ import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// Keep-alive provider exposing the singleton [ChecklistRepository].
@@ -152,6 +153,63 @@ class ChecklistRepository {
         createdItems: <({String id, String title, bool isChecked})>[],
       );
     }
+  }
+
+  /// How many deleted generations of a derived checklist
+  /// [derivedChecklistFor] steps past before it gives up on a derived id.
+  static const _derivedChecklistGenerations = 8;
+
+  /// The checklist of the task [taskId] that every device derives from
+  /// [uuidV5Input], for a caller that must end up with one checklist however
+  /// many devices apply its change — a confirmed agent change applied on two
+  /// devices before they sync (ADR 0075). Returns its id, or `null` when the
+  /// task is gone or the checklist could not be created.
+  ///
+  /// The checklist and the task update that lists it sync apart, so another
+  /// device's checklist can be here while the task does not list it yet. A
+  /// live checklist under the derived id is therefore reused, and listed on
+  /// the task if it is not. One the user deleted moves on to the next
+  /// generation's id — `$uuidV5Input:1`, then `:2` — which every device that
+  /// knows the same deletions derives alike. Otherwise it is created.
+  Future<String?> derivedChecklistFor({
+    required String taskId,
+    required String uuidV5Input,
+    String title = 'Todos',
+  }) async {
+    for (
+      var generation = 0;
+      generation < _derivedChecklistGenerations;
+      generation++
+    ) {
+      final input = generation == 0 ? uuidV5Input : '$uuidV5Input:$generation';
+      final id = MetadataService.deterministicId(input);
+      final existing = (await _journalDb.journalEntityMapForIdsIncludingDeleted(
+        [id],
+      ))[id];
+      if (existing == null) {
+        final created = await createChecklist(
+          taskId: taskId,
+          title: title,
+          uuidV5Input: input,
+        );
+        return created.checklist?.meta.id;
+      }
+      if (existing is Checklist && existing.meta.deletedAt == null) {
+        final task = await _journalDb.journalEntityById(taskId);
+        if (task is! Task) return null;
+        final listed = task.data.checklistIds ?? const <String>[];
+        if (!listed.contains(id)) {
+          await _persistenceLogic.updateTask(
+            journalEntityId: task.id,
+            entryText: task.entryText,
+            taskData: task.data.copyWith(checklistIds: [...listed, id]),
+          );
+        }
+        return id;
+      }
+    }
+    final created = await createChecklist(taskId: taskId, title: title);
+    return created.checklist?.meta.id;
   }
 
   /// Creates a standalone [ChecklistItem] linked back to [checklistId].

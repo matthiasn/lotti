@@ -28,6 +28,7 @@ on:
       - "lib/features/agents/workflow/task_tool_handlers.dart"
       - "lib/features/agents/workflow/event_tool_dispatcher.dart"
       - "lib/features/ai/functions/lotti_batch_checklist_handler.dart"
+      - "lib/features/tasks/repository/checklist_repository.dart"
       - "lib/database/database_entity_ops.dart"
       - "lib/features/agents/sync/agent_concurrent_resolver.dart"
       - "lib/features/agents/state/agent_providers.dart"

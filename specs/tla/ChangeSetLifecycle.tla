@@ -102,6 +102,13 @@
 (*                      still holds the value the proposal was based on;   *)
 (*                      without it, a late second application overwrites   *)
 (*                      whatever the field holds                           *)
+(*   ReuseLive          with SeparateAttach, where a created entity and    *)
+(*                      its link to a parent sync apart (a checklist and   *)
+(*                      the task update listing it: tasks/repository/      *)
+(*                      checklist_repository.dart derivedChecklistFor), a  *)
+(*                      device that holds the entity but not its link      *)
+(*                      reuses and links it; without it, it takes the id   *)
+(*                      as spent and creates another                       *)
 (*                                                                         *)
 (* UserRestoresBase is not a fix: it lets the user's edit restore the base *)
 (* value, the ABA a value compare-and-set cannot see.                      *)
@@ -130,7 +137,9 @@ CONSTANTS
     UserRestoresBase,
     RaceFree,      \* no item is decided on two devices before they synced
     AtomicWrites, AtomicReceive, ItemMerge, PendingCopiesOnly,
-    RevisionGuard, ClaimResolvesTarget, DerivedIds, CopyCarriesKey, CasGuard
+    RevisionGuard, ClaimResolvesTarget, DerivedIds, CopyCarriesKey, CasGuard,
+    SeparateAttach, \* a created entity and its link to its parent sync apart
+    ReuseLive
 
 ASSUME
     /\ Faults \subseteq {"dispatchFails", "nonRetryable"}
@@ -138,7 +147,7 @@ ASSUME
     /\ MaxUserEdits \in {0, 1}
     /\ {UserRestoresBase, RaceFree, AtomicWrites, AtomicReceive, ItemMerge,
         PendingCopiesOnly, RevisionGuard, ClaimResolvesTarget, DerivedIds,
-        CopyCarriesKey, CasGuard} \subseteq BOOLEAN
+        CopyCarriesKey, CasGuard, SeparateAttach, ReuseLive} \subseteq BOOLEAN
 
 \* The older set is row 2, the surviving set row 1.
 Rows == IF CopyDst # NoItem THEN {1, 2} ELSE {1}
@@ -190,6 +199,9 @@ VARIABLES
     reopens,   \* reopens[d]: reopens run
     ents,      \* ents[d]: the entity ids device d's journal holds
     emsgs,     \* entity sync messages in flight
+    atts,      \* atts[d]: the entity ids device d's journal links to their
+               \* parent (a checklist in its task's checklistIds)
+    amsgs,     \* link sync messages in flight
     reg,       \* reg[d]: device d's version of the set-style field
     rhc,       \* rhc[d]: the last counter device d stamped on the field
     rmsgs,     \* field sync messages in flight
@@ -201,7 +213,8 @@ VARIABLES
     conflict,  \* ghost: the field landed as a Conflict row somewhere
     clobbered  \* ghost: a dispatch overwrote a value the user wrote
 
-effVars == <<ents, emsgs, reg, rhc, rmsgs, userEdits, conflict, clobbered>>
+entVars == <<ents, emsgs, atts, amsgs>>
+effVars == <<entVars, reg, rhc, rmsgs, userEdits, conflict, clobbered>>
 claimVars == <<obs, latest, lastOk, reopens>>
 
 vars == <<rows, hc, msgs, pc, snap, recv, mem, attempts, agentOps,
@@ -223,6 +236,8 @@ Init ==
     /\ reopens = [d \in Devices |-> 0]
     /\ ents = [d \in Devices |-> {}]
     /\ emsgs = {}
+    /\ atts = [d \in Devices |-> {}]
+    /\ amsgs = {}
     /\ reg = [d \in Devices |-> [val |-> "base", user |-> FALSE, vc |-> ZeroVc]]
     /\ rhc = [d \in Devices |-> 0]
     /\ rmsgs = {}
@@ -327,6 +342,31 @@ Create(d, i, k) ==
        THEN UNCHANGED <<ents, emsgs>>
        ELSE /\ ents' = [ents EXCEPT ![d] = @ \cup {id}]
             /\ emsgs' = emsgs \cup {[to |-> e, id |-> id] : e \in Devices \ {d}}
+    /\ UNCHANGED <<atts, amsgs, reg, rhc, rmsgs, userEdits, conflict,
+                   clobbered>>
+
+\* ... and link it to its parent: two writes that sync apart, so a device
+\* can hold the entity another device created without its link. A device
+\* that holds the entity reuses it and writes the link (ReuseLive); as
+\* first written, it took the id as spent and created the entity afresh.
+Link(d, id) ==
+    /\ atts' = [atts EXCEPT ![d] = @ \cup {id}]
+    /\ amsgs' = amsgs \cup {[to |-> e, id |-> id] : e \in Devices \ {d}}
+
+CreateLinked(d, i, k) ==
+    LET id == EntityId(d, i, k)
+        fresh == <<i, d, k>>
+        new(x) == /\ ents' = [ents EXCEPT ![d] = @ \cup {x}]
+                  /\ emsgs' = emsgs \cup
+                        {[to |-> e, id |-> x] : e \in Devices \ {d}}
+    IN
+    /\ IF id \in atts[d]
+       THEN UNCHANGED <<ents, emsgs, atts, amsgs>>
+       ELSE IF id \notin ents[d]
+       THEN new(id) /\ Link(d, id)
+       ELSE IF ReuseLive \/ ~DerivedIds
+       THEN Link(d, id) /\ UNCHANGED <<ents, emsgs>>
+       ELSE new(fresh) /\ Link(d, fresh)
     /\ UNCHANGED <<reg, rhc, rmsgs, userEdits, conflict, clobbered>>
 
 \* Device d writes the field: its next counter on the clock it holds.
@@ -347,7 +387,7 @@ SetField(d) ==
           THEN /\ RegPut(d, "target", FALSE)
                /\ clobbered' = (clobbered \/ r.user)
           ELSE UNCHANGED <<reg, rhc, rmsgs, clobbered>>
-       /\ UNCHANGED <<ents, emsgs, userEdits, conflict>>
+       /\ UNCHANGED <<entVars, userEdits, conflict>>
 
 -----------------------------------------------------------------------------
 (* Confirming and rejecting *)
@@ -384,7 +424,9 @@ DispatchOk(d, i, k) ==
                 IF i = FollowUp /\ Migration # NoItem THEN "sib" ELSE "idle"]
     /\ lastOk' = IF latest[d][i] = k THEN [lastOk EXCEPT ![d][i] = TRUE]
                  ELSE lastOk
-    /\ IF i \in SetItems THEN SetField(d) ELSE Create(d, i, k)
+    /\ IF i \in SetItems THEN SetField(d)
+       ELSE IF SeparateAttach THEN CreateLinked(d, i, k)
+       ELSE Create(d, i, k)
     /\ UNCHANGED <<rows, hc, msgs, snap, recv, attempts, agentOps, obs,
                    latest, reopens>>
 
@@ -572,7 +614,7 @@ UserEdit(d) ==
     /\ RegPut(d, UserVal(d), TRUE)
     /\ userEdits' = [userEdits EXCEPT ![d] = @ + 1]
     /\ UNCHANGED <<rows, hc, msgs, pc, snap, recv, mem, attempts, agentOps,
-                   applied, early, ents, emsgs, conflict, clobbered,
+                   applied, early, entVars, conflict, clobbered,
                    claimVars>>
 
 -----------------------------------------------------------------------------
@@ -616,8 +658,18 @@ ReceiveEnt(d) ==
           /\ ents' = [ents EXCEPT ![d] = @ \cup {m.id}]
           /\ emsgs' = emsgs \ {m}
     /\ UNCHANGED <<rows, hc, msgs, pc, snap, recv, mem, attempts, agentOps,
-                   applied, early, reg, rhc, rmsgs, userEdits, conflict,
-                   clobbered, claimVars>>
+                   applied, early, atts, amsgs, reg, rhc, rmsgs, userEdits,
+                   conflict, clobbered, claimVars>>
+
+\* A link arrives: the parent's update that lists the entity.
+ReceiveLink(d) ==
+    /\ \E m \in amsgs :
+          /\ m.to = d
+          /\ atts' = [atts EXCEPT ![d] = @ \cup {m.id}]
+          /\ amsgs' = amsgs \ {m}
+    /\ UNCHANGED <<rows, hc, msgs, pc, snap, recv, mem, attempts, agentOps,
+                   applied, early, ents, emsgs, reg, rhc, rmsgs, userEdits,
+                   conflict, clobbered, claimVars>>
 
 \* updateJournalEntity: an older or equal version is dropped, a newer one
 \* taken, and a concurrent one — equal content or not — is kept aside as a
@@ -636,7 +688,7 @@ ReceiveReg(d) ==
                      /\ UNCHANGED reg
           /\ rmsgs' = rmsgs \ {m}
     /\ UNCHANGED <<rows, hc, msgs, pc, snap, recv, mem, attempts, agentOps,
-                   applied, early, ents, emsgs, rhc, userEdits, clobbered,
+                   applied, early, entVars, rhc, userEdits, clobbered,
                    claimVars>>
 
 -----------------------------------------------------------------------------
@@ -644,7 +696,8 @@ ReceiveReg(d) ==
 Next ==
     \/ \E d \in Devices :
           \/ ReceiveAtomic(d) \/ ReceiveRead(d) \/ ReceiveWrite(d)
-          \/ ReceiveEnt(d) \/ ReceiveReg(d) \/ UserEdit(d)
+          \/ ReceiveEnt(d) \/ ReceiveLink(d) \/ ReceiveReg(d)
+          \/ UserEdit(d)
           \/ Consolidate(d)
           \/ \E i \in Items :
                 \/ Confirm(d, i) \/ Reject(d, i) \/ Retract(d, i)
@@ -693,7 +746,7 @@ Quiescent ==
     /\ \A d \in Devices, i \in Items : Idle(d, i)
 
 \* ... and every journal write delivered as well.
-QuiescentAll == Quiescent /\ emsgs = {} /\ rmsgs = {}
+QuiescentAll == Quiescent /\ emsgs = {} /\ amsgs = {} /\ rmsgs = {}
 
 \* A confirmed change is dispatched at most once, on any device. It holds
 \* only where no item is decided on two devices before they sync; where
@@ -733,7 +786,8 @@ MigrationAfterTarget == ~early
 SucceededClaimStands ==
     \A d \in Devices, i \in Items : lastOk[d][i] => Item(d, i).st = "confirmed"
 
-AllIds == UNION {ents[d] : d \in Devices} \cup {m.id : m \in emsgs}
+AllIds == UNION {ents[d] \cup atts[d] : d \in Devices}
+              \cup {m.id : m \in emsgs \cup amsgs}
 
 \* However often a change is dispatched, and wherever, it creates at most
 \* one entity.
@@ -753,4 +807,9 @@ EffectsConverge ==
         /\ ~conflict => \A d, e \in Devices : reg[d].val = reg[e].val
         /\ \A d \in Devices, x \in CreateEffects :
               (\E id \in ents[d] : EffOf(id) = x) <=> (Total(x) >= 1)
+\* Once everything has been delivered, every entity a change created is
+\* linked to its parent on every device — the checklist a task lists — and
+\* nothing is linked that no device created.
+EffectsLinked ==
+    SeparateAttach /\ QuiescentAll => \A d \in Devices : atts[d] = ents[d]
 =============================================================================

@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/model/retired_tool_calls.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/tasks/model/directed_relation.dart';
 
@@ -19,6 +20,7 @@ class QueryTaskActionContext {
     this.timeEntryIds = const {},
     this.taskIds = const {},
     this.runningTimerId,
+    this.metadata,
   });
 
   final String taskId;
@@ -38,6 +40,12 @@ class QueryTaskActionContext {
   /// The entry of the timer running for this task, whose range cannot change
   /// while it runs: only its text may be proposed.
   final String? runningTimerId;
+
+  /// The task's fields as a field proposal records them in `ChangeItem.base`
+  /// — the values a late confirmation on another device must still find
+  /// before it applies (ADR 0075). `null` when unknown: such a proposal then
+  /// applies unconditionally.
+  final TaskMetadataSnapshot? metadata;
 }
 
 /// Creates reviewable task-tool arguments. It has no mutation capability.
@@ -266,6 +274,7 @@ class QueryTaskActionPlanner {
           toolName: name,
           args: args,
           humanSummary: summary,
+          base: ChangeProposalFilter.proposalBase(name, context.metadata),
         );
       }
       if (builder.items.length > 12) {

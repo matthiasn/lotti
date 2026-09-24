@@ -182,8 +182,10 @@ Do NOT recreate the items that were already successful.''';
   /// item whose id is already in the journal — added by an earlier
   /// application of the same change, here or on another device, or deleted
   /// since — is left alone and counted as added. A task without a checklist
-  /// gets one under the derived checklist id first, so that two devices
-  /// adding to it create one checklist.
+  /// gets the derived one first — reused when another device's copy has
+  /// arrived before the task update listing it
+  /// ([ChecklistRepository.derivedChecklistFor]) — so that two devices adding
+  /// to it end up with one checklist.
   ///
   /// Returns the number of successfully created items.
   Future<int> createBatchItems(FunctionCallResult result) async {
@@ -212,10 +214,9 @@ Do NOT recreate the items that were already successful.''';
       if (derivedIds != null) {
         final checklistId = checklistIds.isNotEmpty
             ? checklistIds.first
-            : await _createDerivedChecklist(
-                currentTask,
-                derivedIds.checklist,
-                journalDb,
+            : await checklistRepository.derivedChecklistFor(
+                taskId: currentTask.id,
+                uuidV5Input: derivedIds.checklist,
               );
         if (checklistId == null) {
           _failAll(items, 'Checklist creation failed');
@@ -380,25 +381,6 @@ Do NOT recreate the items that were already successful.''';
       }
     }
     return successCount;
-  }
-
-  /// Creates the first checklist of [currentTask] under the id derived from
-  /// [uuidV5Input] and returns its id, or `null` when that fails. An id
-  /// already taken — a checklist the user deleted — gets a fresh one instead,
-  /// as a checklist created outside a change would.
-  Future<String?> _createDerivedChecklist(
-    Task currentTask,
-    String uuidV5Input,
-    JournalDb journalDb,
-  ) async {
-    final id = MetadataService.deterministicId(uuidV5Input);
-    final taken = await journalDb.journalEntityMapForIdsIncludingDeleted([id]);
-    final created = await checklistRepository.createChecklist(
-      taskId: currentTask.id,
-      title: 'Todos',
-      uuidV5Input: taken.containsKey(id) ? null : uuidV5Input,
-    );
-    return created.checklist?.meta.id;
   }
 
   /// Records every item of [items] as failed for [reason].

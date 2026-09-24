@@ -175,6 +175,78 @@ void _registerIdempotency(_Db Function() fixture) {
       },
     );
 
+    group('the derived checklist of a task without one', () {
+      const key = 'set-1:0';
+      final input = const ChangeEffect(key: key).entityInput('checklist');
+
+      /// A checklist under [id], as sync delivers the other device's —
+      /// without the task update that lists it.
+      Future<void> deliverChecklist(
+        String id,
+        String taskId, {
+        bool? deleted,
+      }) => getIt<PersistenceLogic>().createDbEntity(
+        Checklist(
+          meta: f.task.meta.copyWith(
+            id: id,
+            deletedAt: deleted == true ? DateTime(2026, 3, 17) : null,
+          ),
+          data: ChecklistData(
+            title: 'Todos',
+            linkedChecklistItems: const [],
+            linkedTasks: [taskId],
+          ),
+        ),
+      );
+
+      test(
+        "reuses the other device's checklist that arrived before the task "
+        'update listing it, and lists it',
+        () async {
+          final taskId = await bareTask('bare-task');
+          final derived = MetadataService.deterministicId(input);
+          await deliverChecklist(derived, taskId);
+
+          final result = await apply(
+            TaskAgentToolNames.addChecklistItem,
+            const {'title': 'Book the pen test'},
+            taskId: taskId,
+          );
+
+          expect(result.success, isTrue, reason: result.output);
+          expect((await storedTask(taskId)).data.checklistIds, [derived]);
+          final checklist = (await f.db.journalEntityById(derived))!;
+          expect(
+            (checklist as Checklist).data.linkedChecklistItems,
+            hasLength(1),
+          );
+        },
+      );
+
+      test(
+        'moves on to the next derived id past a checklist the user deleted, '
+        'the same one on every device',
+        () async {
+          final taskId = await bareTask('bare-task');
+          await deliverChecklist(
+            MetadataService.deterministicId(input),
+            taskId,
+            deleted: true,
+          );
+
+          await apply(
+            TaskAgentToolNames.addChecklistItem,
+            const {'title': 'Book the pen test'},
+            taskId: taskId,
+          );
+
+          expect((await storedTask(taskId)).data.checklistIds, [
+            MetadataService.deterministicId('$input:1'),
+          ]);
+        },
+      );
+    });
+
     test(
       'migrate_checklist_item copies once when the other device copied '
       'before its archive of the source arrived',
