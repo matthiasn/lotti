@@ -1015,6 +1015,53 @@ void main() {
       }
     });
 
+    test('an unclocked version applies, but never moves the head back', () {
+      final clocked = state(
+        head: 'a2',
+        vc: {'local': 1},
+        updatedAt: DateTime(2026, 9, 1, 12),
+      );
+      for (final head in ['a1', null]) {
+        final legacy = state(
+          head: head,
+          vc: const {},
+          updatedAt: DateTime(2026, 9, 1, 9),
+          revision: 2,
+        ).copyWith(vectorClock: null);
+
+        final resolved =
+            resolveAgentEntityVersions(
+                  local: clocked,
+                  incoming: legacy,
+                  isAncestor: dag,
+                )
+                as AgentStateEntity;
+
+        expect(resolved.recentHeadMessageId, 'a2', reason: 'head $head');
+        // Every other field is still the unclocked version's.
+        expect(resolved.revision, 2);
+        expect(resolved.vectorClock, isNull);
+      }
+
+      // And an unclocked local row takes a descendant head with the
+      // incoming version.
+      final legacyLocal = state(
+        head: 'a1',
+        vc: const {},
+        updatedAt: DateTime(2026, 9, 1, 9),
+      ).copyWith(vectorClock: null);
+      expect(
+        headOf(
+          resolveAgentEntityVersions(
+            local: legacyLocal,
+            incoming: clocked,
+            isAncestor: dag,
+          ),
+        ),
+        'a2',
+      );
+    });
+
     test('without an ancestry oracle a concurrent pair falls back to the id '
         'order', () {
       final local = state(

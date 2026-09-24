@@ -46,8 +46,10 @@ should have and checked the code as it stood. TLC found three holes:
    depends only on the pair, never on clocks or arrival order (the lesson of
    ADR 0067's joined clocks). A dominating version keeps the local head when
    that head is known to descend from its own, or its own is unset.
-   Otherwise it brings its own head. Every other field of the row is
-   resolved as before.
+   Otherwise it brings its own head. A version with no clock on either
+   side (an older build's) still applies, as ADR 0068 has it, but with
+   the heads merged the same way. Every other field of the row is resolved
+   as before.
 2. **The resolver stays pure; the caller reads the order.**
    `resolveAgentEntityVersions` takes an `isAncestor` oracle. The sync
    processor fills it from `AgentMessageDag.ancestryOf`: a forward walk over

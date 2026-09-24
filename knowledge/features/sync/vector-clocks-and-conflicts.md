@@ -273,7 +273,7 @@ row:
 
 | Comparison | Behaviour |
 |------------|-----------|
-| a clock missing on either side | Apply the incoming version |
+| a clock missing on either side | Apply the incoming version — for agent state with the heads merged (below) |
 | `a_gt_b` / `equal` (local wins) | Skip the upsert, restore the local JSON cache when the message came via `jsonPath`, but still record the sequence-log receipt so backfill stops asking |
 | `b_gt_a` (incoming wins) | Apply — with agent state's G-counters and report watermarks joined in from the local row, and the local head kept when it is known to descend from the incoming one (below) |
 | `concurrent` | The type's override, then last-writer-wins on `updatedAt`, then the canonical clock tiebreak; agent-state G-counters and nudge accumulators merge, the agent head follows the message DAG (below), and change sets merge item by item |
@@ -412,8 +412,10 @@ merged apart from the other fields, as a register over the message DAG
 | one known here to descend from the other | the descendant, whichever version wins the other fields |
 | no order known here — a true fork, or messages and edges still in flight | the greater id: the same on every device, never the clock or arrival order |
 
-On dominance the incoming head stands unless the local one is known to descend
-from it, or the incoming one is unset: a concurrent merge keeps the winner's
+A version with no clock on either side — an older build's — still applies,
+with the heads merged the same way. On dominance the incoming head stands
+unless the local one is known to descend from it, or the incoming one is
+unset: a concurrent merge keeps the winner's
 clock, so a replica can hold a head its successor's writer never saw.
 
 The resolver stays pure. `SyncEventProcessor` reads the order of the two heads

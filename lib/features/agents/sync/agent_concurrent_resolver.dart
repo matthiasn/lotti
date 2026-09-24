@@ -100,7 +100,8 @@ String? mergeAgentHeads({
 /// `SyncEventProcessor` and the local write path in `AgentSyncService` so the
 /// two can never resolve the same pair differently (ADR 0068).
 ///
-/// - A missing clock on either side applies [incoming], as does a known
+/// - A missing clock on either side applies [incoming] — for agent state
+///   with the two heads merged ([mergeAgentHeads]) — as does a known
 ///   variant arriving over a payload-less [AgentUnknownEntity] stub (unless
 ///   that would resurrect the stub's tombstone).
 /// - Causal dominance decides next; a dominating [incoming] still has
@@ -120,7 +121,21 @@ AgentDomainEntity resolveAgentEntityVersions({
 }) {
   final localVc = local.vectorClock;
   final incomingVc = incoming.vectorClock;
-  if (localVc == null || incomingVc == null) return incoming;
+  if (localVc == null || incomingVc == null) {
+    // An unclocked (legacy) version still applies, but its head is merged
+    // like any other: an old build's row must not move the head back.
+    if (local is! AgentStateEntity || incoming is! AgentStateEntity) {
+      return incoming;
+    }
+    final head = mergeAgentHeads(
+      local: local.recentHeadMessageId,
+      incoming: incoming.recentHeadMessageId,
+      isAncestor: isAncestor,
+    );
+    return head == incoming.recentHeadMessageId
+        ? incoming
+        : incoming.copyWith(recentHeadMessageId: head);
+  }
   // A local row that decodes as the forward-compat `unknown` fallback is a
   // payload-less stub: an older build received a variant it did not know,
   // kept only the envelope fields, and re-serialized the row as `unknown`

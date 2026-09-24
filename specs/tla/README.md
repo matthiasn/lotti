@@ -487,7 +487,7 @@ advances past it, which `SettledHead` covers.
 | Configuration | Appends | Other state writes | Joins | Crashes | Checks | Distinct states |
 |---------------|---------|--------------------|-------|---------|--------|-----------------|
 | `AgentMessageLog` | 2 + 1 | 0 | 1 per device | 0 | safety | 1,922,129 |
-| `AgentMessageLogStale` | 2 + 1 | 1, on the fast device | 0 | 0 | safety | 33,879 |
+| `AgentMessageLogStale` | 2 + 1 | 1, on the fast device, possibly from an older build with no clock | 0 | 0 | safety | 72,446 |
 | `AgentMessageLogLiveness` | 1 + 1 | 1, on the fast device | 1 per device | 1 | all | 688,421 |
 
 Each fix has a switch that is `TRUE` in the checked-in configurations. Set to
@@ -500,6 +500,7 @@ Each fix has a switch that is `TRUE` in the checked-in configurations. Set to
 | `JoinEdgeGate` | `AgentMessageLog` | `NoJoinOverNonTip`, ten steps: a join of `{a1, b1}` and its device's state row reach the other device without the join's edges; that device appends `a2` off the join, so the join is no longer a head, and joins `{a1, a2, b1}` |
 | `HeadMerge` | `AgentMessageLogStale` | `HeadNeverRegresses`, four steps: the fast device appends a root `b1`; the other device receives `b1`, chains `a1` off it, and receives the fast device's state row, concurrent with its own and later on the skewed clock: last-writer-wins moves the head back to `b1` |
 | `TipAppend` | `AgentMessageLogStale` | `AppendsOffTips`, six steps: one device appends `a1` and `a2`; the other receives `a2` and its edge to `a1`, then the state version naming `a1`, and appends `b1` off `a1`, which already has a child there |
+| — (`HeadMerge` off only for a version with no clock) | `AgentMessageLogStale` | `HeadNeverRegresses`, five steps: the fast device appends `b1`, and an older build there writes its state row with no clock; the other device receives `b1`, chains `a1` off it, then receives that row, which applies whatever the clocks — and with it the head `b1` |
 | `AtomicReceive` | `AgentMessageLogStale` | `HeadNeverRegresses`, five steps: a device reads its state row (no head yet) and resolves the fast device's version (head `b1`) against it; its executor appends `a1` off `b1`; the receive then writes the row it resolved, moving the head back to `b1` |
 
 `appendJoin`'s head guard — move the head onto the join only while it sits

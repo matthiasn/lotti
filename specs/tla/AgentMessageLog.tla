@@ -20,6 +20,8 @@
 (*   StateWrite    every other local agent-state write (updateAgentState,  *)
 (*                 _upsertAgentStatePreservingHead): keeps the persisted   *)
 (*                 head, bumps the clock and updatedAt (floored, ADR 0068) *)
+(*                 — or, from an older build, writes the row with no clock *)
+(*                 at all (`by` 0), which every replica then applies        *)
 (*   HealPlan      ForkHealer.maybeHealFork: reads the log outside any     *)
 (*                 transaction, projects the heads and plans a join when   *)
 (*                 the view is complete (planJoin, the projection's        *)
@@ -70,7 +72,8 @@ CONSTANTS
                       \* at heads defers a heal
     HeadMerge,        \* a received state version's head is merged by ancestry
     TipAppend,        \* an append chains off a tip at or beyond the head
-    AtomicReceive     \* a state version is read, resolved and written at once
+    AtomicReceive,    \* a state version is read, resolved and written at once
+    LegacyStateWrites \* a state write may come from an older build: no clock
 
 None == [k |-> "none", d |-> 0, n |-> 0, p |-> {}]
 Msg(d, n) == [k |-> "m", d |-> d, n |-> n, p |-> {}]
@@ -283,11 +286,19 @@ Append(d) ==
     /\ now' = now + 1
     /\ UNCHANGED <<plan, sw, heals, crashes, badJoin, rcv>>
 
+\* An older build's write: no clock, so no device's version is compared with
+\* it (`by` 0 marks it; `vc` is left as it was and never read).
+Unclocked(row) == row.by = 0
+
 StateWrite(d) ==
     /\ sw[d] < StateWrites(d)
-    /\ LET row == Bump(d, st[d], st[d].head, Stamp(d, now + 1))
-       IN /\ st' = [st EXCEPT ![d] = row]
-          /\ Emit(d, {StateItem(d, row)})
+    /\ \E legacy \in (IF LegacyStateWrites THEN BOOLEAN ELSE {FALSE}) :
+        LET ts == Stamp(d, now + 1)
+            row == IF legacy
+                   THEN [st[d] EXCEPT !.ts = Max(ts, st[d].ts), !.by = 0]
+                   ELSE Bump(d, st[d], st[d].head, ts)
+        IN /\ st' = [st EXCEPT ![d] = row]
+           /\ Emit(d, {StateItem(d, row)})
     /\ sw' = [sw EXCEPT ![d] = @ + 1]
     /\ now' = now + 1
     /\ UNCHANGED <<nodes, edges, ctOf, prevOf, plan, cnt, heals, crashes,
@@ -355,11 +366,16 @@ MergeHead(d, l, i) ==
     ELSE IF Below(d, i, l) THEN l
     ELSE CHOOSE x \in {l, i} : TRUE
 
-\* resolveAgentEntityVersions for the state row. A dominating version keeps
-\* the local head only when that head is known to descend from its own (or
-\* its own is unset); a concurrent pair merges the heads.
+\* resolveAgentEntityVersions for the state row. A version with no clock on
+\* either side applies, its head merged; a dominating version keeps the
+\* local head only when that head is known to descend from its own (or its
+\* own is unset); a concurrent pair merges the heads. (A device that holds no
+\* row yet holds NoRow, unclocked too: it takes the incoming version.)
 ResolveState(d, local, in) ==
-    IF Dominates(in.vc, local.vc) THEN
+    IF Unclocked(local) \/ Unclocked(in) THEN
+        IF HeadMerge THEN [in EXCEPT !.head = MergeHead(d, local.head, in.head)]
+        ELSE in
+    ELSE IF Dominates(in.vc, local.vc) THEN
         IF HeadMerge /\ (in.head = None \/ Below(d, in.head, local.head))
         THEN [in EXCEPT !.head = local.head]
         ELSE in

@@ -457,6 +457,29 @@ void main() {
       );
 
       test(
+        'an unclocked version from an older build does not move the head '
+        'back',
+        () async {
+          storeLog(
+            state(head: 'a1', clock: {'local': 1}, at: DateTime(2026, 9, 1, 9)),
+          );
+          final legacy = state(
+            head: 'b1',
+            clock: const {},
+            at: DateTime(2026, 9, 1, 12),
+          ).copyWith(vectorClock: null);
+          receive(legacy);
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          expect(stored().recentHeadMessageId, 'a1');
+          // The unclocked version still applies otherwise.
+          expect(stored().vectorClock, isNull);
+          expect(stored().updatedAt, legacy.updatedAt);
+        },
+      );
+
+      test(
         'a dominating version keeps a local head that descends from its own',
         () async {
           // A concurrent merge kept the winner's clock and took `a1` from the
