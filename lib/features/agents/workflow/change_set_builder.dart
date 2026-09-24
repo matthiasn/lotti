@@ -496,8 +496,14 @@ class ChangeSetBuilder {
 
       final survivor = currentExistingSetsById[staleWinner.id] ?? staleWinner;
 
-      // Gather items from non-survivor sets that aren't already in the
-      // survivor or in the new deduped items.
+      // Gather the pending items of non-survivor sets that aren't already in
+      // the survivor or in the new deduped items. A decided item stays where
+      // it was decided: a copy would not follow what happens to the original
+      // later — a confirm whose dispatch is still running can fail and revert
+      // the original to pending, leaving a copy that claims a change applied
+      // that never was (`specs/tla/ChangeSetLifecycle.tla`,
+      // `StatusMatchesEffect`). Only pending items are shown, so the card
+      // looks the same either way.
       final knownFingerprints = {
         ...survivor.items.map(ChangeItem.fingerprint),
         ...deduped.map(ChangeItem.fingerprint),
@@ -508,7 +514,8 @@ class ChangeSetBuilder {
         if (cs.id != survivor.id) {
           final current = currentExistingSetsById[cs.id] ?? cs;
           for (final item in current.items) {
-            if (knownFingerprints.add(ChangeItem.fingerprint(item))) {
+            if (item.status == ChangeItemStatus.pending &&
+                knownFingerprints.add(ChangeItem.fingerprint(item))) {
               otherItems.add(item);
             }
           }
