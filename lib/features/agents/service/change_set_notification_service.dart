@@ -3,12 +3,13 @@ import 'dart:ui' as ui;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
-/// Keeps task-suggestion inbox rows aligned with the backing change set.
+/// Keeps task-suggestion inbox rows aligned with all pending change sets for a task.
 ///
 /// Agent proposals are persisted in the agent database, while inbox rows live
 /// in the notifications database. This service is the explicit bridge between
@@ -20,10 +21,12 @@ class ChangeSetNotificationService {
   const ChangeSetNotificationService({
     required this._notificationRepository,
     required this._journalDb,
+    required this._agentRepository,
   });
 
   final NotificationRepository _notificationRepository;
   final JournalDb _journalDb;
+  final AgentRepository _agentRepository;
 
   /// Reflects a user confirm/reject decision in the task-suggestion inbox.
   Future<void> syncAfterUserDecision(ChangeSetEntity changeSet) {
@@ -41,12 +44,32 @@ class ChangeSetNotificationService {
     );
   }
 
+  /// Raises one fresh alert at the end of a wake, counting retained sets too.
+  Future<void> notifyTaskNeedsAttention(ChangeSetEntity changeSet) => _sync(
+    changeSet,
+    onResolved: (_) async => const [],
+    reuseOpenRow: false,
+  );
+
   Future<void> _sync(
     ChangeSetEntity changeSet, {
     required Future<List<NotificationEntity>> Function(String linkedTaskId)
     onResolved,
+    bool reuseOpenRow = true,
   }) async {
-    final pendingCount = changeSet.items
+    // A follow-up and its unresolved migrations may stay in an older set.
+    // Query without a page limit: every retained group contributes to the bell.
+    final pendingSets = await _agentRepository.getPendingChangeSets(
+      changeSet.agentId,
+      taskId: changeSet.taskId,
+      limit: -1,
+    );
+    final sets = {
+      for (final set in pendingSets) set.id: set,
+      changeSet.id: changeSet,
+    };
+    final pendingCount = sets.values
+        .expand((set) => set.items)
         .where((item) => item.status == ChangeItemStatus.pending)
         .length;
 
@@ -71,6 +94,7 @@ class ChangeSetNotificationService {
       body: body,
       category: task is Task ? task.meta.categoryId : null,
       idSeed: changeSet.id,
+      reuseOpenRow: reuseOpenRow,
     );
   }
 }
