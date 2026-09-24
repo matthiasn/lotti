@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
@@ -464,6 +465,9 @@ void main() {
       ).thenAnswer((_) async => []);
     });
 
+    ScheduledWakeEntity upsertedRecord() =>
+        upserts.whereType<ScheduledWakeEntity>().single;
+
     void completeWakesWith(WakeRunStatus status) =>
         when(
           () => orchestrator.enqueueManualWake(
@@ -524,6 +528,69 @@ void main() {
       expect(armed.triggerTokens, [goalChatMessageTriggerToken(message.id)]);
       expect(records.last.status, ScheduledWakeStatus.consumed);
       expect(records, hasLength(2));
+    });
+
+    test(
+      'a recovery write that fails does not cost the turn its answer',
+      () async {
+        completeWakesWith(WakeRunStatus.completed);
+        when(() => syncService.upsertEntity(any())).thenAnswer((inv) async {
+          final entity = inv.positionalArguments.first as AgentDomainEntity;
+          if (entity is ScheduledWakeEntity) {
+            throw StateError('outbox flush failed');
+          }
+          upserts.add(entity);
+          stored[entity.id] = entity;
+        });
+
+        await withClock(
+          Clock.fixed(now),
+          () => service.sendMessage(agentId: 'goal-1', text: 'Still answer me'),
+        );
+
+        final message = upserts.whereType<AgentMessageEntity>().single;
+        final tokens =
+            verify(
+                  () => orchestrator.enqueueManualWake(
+                    agentId: 'goal-1',
+                    reason: WakeReason.userMessage.name,
+                    triggerTokens: captureAny(named: 'triggerTokens'),
+                    supersede: false,
+                    initiator: WakeInitiator.user,
+                  ),
+                ).captured.single
+                as Set<String>;
+        expect(goalChatMessageIdFromTriggerTokens(tokens), message.id);
+      },
+    );
+
+    test('over a tombstoned record, the new one carries its clock and so '
+        'replaces it', () async {
+      final tombstone = recovery(
+        status: ScheduledWakeStatus.pending,
+        scheduledAt: DateTime.utc(2026, 9),
+      ).copyWith(deletedAt: DateTime(2026, 8, 18, 11));
+      stored[recordId] = tombstone;
+
+      expect(
+        await withClock(
+          Clock.fixed(now),
+          () => service.restoreOldestPendingMessage('goal-1'),
+        ),
+        isTrue,
+      );
+
+      final written = upsertedRecord();
+      expect(written.vectorClock, tombstone.vectorClock);
+      // The local write path resolves it against the tombstone (ADR 0068):
+      // it is the tombstone's successor, so the new record stands. From a
+      // null clock the tombstone's later deadline would have kept it deleted.
+      final persisted =
+          resolveLocalAgentWrite(persisted: tombstone, write: written)
+              as ScheduledWakeEntity;
+      expect(persisted.deletedAt, isNull);
+      expect(persisted.status, ScheduledWakeStatus.pending);
+      expect(persisted.scheduledAt, now.toUtc().add(goalChatRecoveryGrace));
     });
 
     test('a failed wake leaves the recovery pending for the lease', () async {

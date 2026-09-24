@@ -185,7 +185,7 @@ NextWindow(r) ==
 
 \* The scheduledAt an arm writes. Before ADR 0069 every goal arm wrote the
 \* period's instant; now a window armed over a consumed row is due one
-\* microsecond after it, which every device computes alike.
+\* millisecond after it, which every device computes alike.
 ArmAt(r) == IF ArmMode = "carry" /\ r.st = "consumed" THEN r.at + 1 ELSE 1
 
 Arm(d) ==
@@ -211,7 +211,7 @@ Arm(d) ==
                  \* A pending row is this window already: left as it is,
                  \* claim and all. A consumed row is carried forward, so
                  \* the new window causally follows the consumption, and it
-                 \* is due a microsecond later, so it also outranks every
+                 \* is due a millisecond later, so it also outranks every
                  \* version of the consumed window a peer still holds.
                  IF r.st = "pending"
                  THEN UNCHANGED <<rep, ctr, net, consumedSeen, created>>

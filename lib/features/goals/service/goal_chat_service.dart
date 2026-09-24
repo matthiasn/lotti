@@ -146,15 +146,23 @@ class GoalChatService {
     _notifications.notifyUiOnly({agentId, agentNotification});
 
     // Before the wake, so a process that dies while answering still leaves
-    // the turn a way to be answered — by the lease, after the grace.
-    await _syncService.upsertEntity(
-      _recoveryRecord(
-        agentId: agentId,
-        messageId: messageId,
-        dueAt: now.toUtc().add(goalChatRecoveryGrace),
-        now: now,
-      ),
-    );
+    // the turn a way to be answered — by the lease, after the grace. A
+    // failure here — a write that committed and then failed to flush the
+    // sync outbox, or one that did not commit — must not cost the turn its
+    // own answer: the record is only the fallback, and maintenance arms a
+    // missing one for the oldest unanswered turn on its next pass.
+    try {
+      await _syncService.upsertEntity(
+        _recoveryRecord(
+          agentId: agentId,
+          messageId: messageId,
+          dueAt: now.toUtc().add(goalChatRecoveryGrace),
+          now: now,
+        ),
+      );
+    } on Object {
+      // Deliberately swallowed; see above.
+    }
 
     await retryMessage(agentId: agentId, messageId: messageId);
   }
@@ -214,13 +222,21 @@ class GoalChatService {
       );
       if (existing is! ScheduledWakeEntity || existing.deletedAt != null) {
         // A turn whose author died before arming it, or one sent before
-        // recovery records existed: the grace runs from now.
+        // recovery records existed: the grace runs from now. Over a
+        // tombstone, the write carries its clock: built from a null clock
+        // it would be concurrent with the tombstone, and the local write
+        // path (ADR 0068) would keep the deleted row whenever its deadline
+        // is the later one.
         await _syncService.upsertEntity(
           _recoveryRecord(
             agentId: agentId,
             messageId: messageId,
             dueAt: now.toUtc().add(goalChatRecoveryGrace),
             now: now,
+          ).copyWith(
+            vectorClock: existing is ScheduledWakeEntity
+                ? existing.vectorClock
+                : null,
           ),
         );
         armed = true;
