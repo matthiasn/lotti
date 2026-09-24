@@ -398,7 +398,8 @@ class WakeOrchestrator with AgentErrorLogging {
       await intentStore?.owes(window) ?? false;
 
   /// Completes once every wake intent recorded so far has been written, so a
-  /// caller can make a later write depend on the wake being durable.
+  /// caller can make a later write depend on the wake being durable. Throws
+  /// if persistence fails; a later call retries the latest intent snapshot.
   Future<void> flushWakeIntents() async => intentStore?.flush();
 
   /// The run key of a wake carrying [token] that has not settled: queued,

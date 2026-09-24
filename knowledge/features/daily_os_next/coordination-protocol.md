@@ -402,7 +402,9 @@ databases:
 1. `enqueueManualWake` queues the wake and records its intent in memory.
 2. `flushWakeIntents` waits until that intent is on disk in the settings
    database. Consuming first would let a crash keep the consume and lose the
-   intent — the window gone on every device.
+   intent — the window gone on every device. A failed flush leaves the record
+   pending. The already-owed paths also flush before consuming, so a later
+   scan cannot mistake an in-memory intent for a durable one.
 3. The consume re-reads the row in a transaction and flips it only while it is
    still the fired window and pending, carrying the current row's clock. The
    due-query snapshot it used to write back could regress a replica to a window

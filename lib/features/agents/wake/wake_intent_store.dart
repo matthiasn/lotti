@@ -108,6 +108,7 @@ class WakeIntentStore {
   var _isLoaded = false;
   Future<void>? _writing;
   var _dirty = false;
+  ({Object error, StackTrace stackTrace})? _writeFailure;
 
   /// Loads the persisted intents, once: a second call — a restarted
   /// orchestrator, a re-run initialization — waits for the same read and
@@ -247,10 +248,17 @@ class WakeIntentStore {
     _persistSoon();
   }
 
-  /// Completes once every write requested so far has been attempted.
+  /// Completes once the latest snapshot is durable, or throws the write error.
+  /// Background writes still log failures; a later flush retries a failed
+  /// snapshot even when no new intent has changed.
   Future<void> flush() async {
+    if (_writing == null && _writeFailure != null) _persistSoon();
     while (_writing != null) {
       await _writing;
+    }
+    final failure = _writeFailure;
+    if (failure != null) {
+      Error.throwWithStackTrace(failure.error, failure.stackTrace);
     }
   }
 
@@ -278,7 +286,9 @@ class WakeIntentStore {
             jsonEncode(snapshot),
           );
         }
+        _writeFailure = null;
       } catch (error, stackTrace) {
+        _writeFailure = (error: error, stackTrace: stackTrace);
         _logError('failed to persist wake intents', error, stackTrace);
       }
     }

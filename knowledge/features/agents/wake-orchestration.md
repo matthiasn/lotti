@@ -443,7 +443,9 @@ settling per agent with a sequence cutoff lost a trigger queued in a second
 job of the same agent.
 
 Two queries let other writers depend on the store. `flushWakeIntents`
-completes once every intent recorded so far is on disk, and `owesWake` says
+completes once every intent recorded so far is on disk. Background write
+failures are logged, but this durability barrier throws; a later flush retries
+the current snapshot even without another mutation. `owesWake` says
 whether the wake firing one scheduled-wake window is owed — queued, running,
 or left by the previous process for startup to restore; it waits for the
 store's read, so a restorable intent is never missed. The window — the record

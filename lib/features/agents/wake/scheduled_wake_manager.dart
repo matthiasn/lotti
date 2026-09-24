@@ -480,6 +480,7 @@ class ScheduledWakeManager with AgentErrorLogging {
         // and the record would then fire a second run of the same window.
         if (await _alreadyOwed(record)) {
           handled.recordIds.add(record.id);
+          await _orchestrator.flushWakeIntents();
           await _consumeFiredRecord(record, clock.now());
           continue;
         }
@@ -490,10 +491,12 @@ class ScheduledWakeManager with AgentErrorLogging {
         // the provider has already rebuilt one, both instances would fire the
         // same record — the duplicate the lease exists to prevent.
         if (generation != _generation) continue;
-        // Again after the lease wait: startup restores owed wakes only once the
+        // Flush owed intents too: a prior failed flush can leave a live wake
+        // only in memory. Again after the lease wait: startup restores wakes once the
         // first scan has run, so one can have been restored meanwhile.
         if (await _alreadyOwed(approved)) {
           handled.recordIds.add(record.id);
+          await _orchestrator.flushWakeIntents();
           await _consumeFiredRecord(approved, clock.now());
           continue;
         }
