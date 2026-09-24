@@ -293,6 +293,265 @@ void main() {
       );
     });
 
+    group('agent-state head (AgentMessageLog.tla, ADR 0076)', () {
+      // `b1` came from the device whose clock runs ahead; this device
+      // received it, chained `a1` off it and moved its head to `a1`.
+      late Map<String, AgentDomainEntity> entities;
+      late List<AgentLink> links;
+
+      AgentStateEntity state({
+        required String? head,
+        required Map<String, int> clock,
+        required DateTime at,
+      }) => makeTestState(
+        id: 'state-head',
+        agentId: 'agent-1',
+        updatedAt: at,
+        vectorClock: VectorClock(clock),
+      ).copyWith(recentHeadMessageId: head);
+
+      AgentLink edge(String child, String parent) => AgentLink.messagePrev(
+        id: 'msgprev-$child',
+        fromId: child,
+        toId: parent,
+        createdAt: DateTime(2026, 9),
+        updatedAt: DateTime(2026, 9),
+        vectorClock: null,
+      );
+
+      AgentStateEntity stored() => entities['state-head']! as AgentStateEntity;
+
+      /// The repository as storage for one agent's log and state row, with
+      /// Drift-like serialized transactions; [gate] holds the first read of
+      /// the state row until it completes.
+      void storeLog(AgentStateEntity local, {Completer<void>? gate}) {
+        entities = {
+          for (final message in [
+            makeTestMessage(
+              id: 'b1',
+              agentId: 'agent-1',
+              createdAt: DateTime(2026, 9, 1, 12),
+            ),
+            makeTestMessage(
+              id: 'a1',
+              agentId: 'agent-1',
+              createdAt: DateTime(2026, 9, 1, 9),
+              prevMessageId: 'b1',
+            ),
+          ])
+            message.id: message,
+          local.id: local,
+        };
+        links = [edge('a1', 'b1')];
+        var gated = gate != null;
+        var tail = Future<void>.value();
+        mockAgentRepo.transactionDelegate = <T>(action) {
+          if (Zone.current[#agentTx] == true) return action();
+          final run = tail.then(
+            (_) => runZoned(action, zoneValues: {#agentTx: true}),
+          );
+          tail = run.then<void>((_) {}, onError: (_) {});
+          return run;
+        };
+        when(() => mockAgentRepo.getEntity(any())).thenAnswer((
+          invocation,
+        ) async {
+          final id = invocation.positionalArguments.first as String;
+          final snapshot = entities[id];
+          if (gated && id == local.id) {
+            gated = false;
+            await gate!.future;
+          }
+          return snapshot;
+        });
+        when(() => mockAgentRepo.getEntitiesByIds(any())).thenAnswer((
+          invocation,
+        ) async {
+          final ids = invocation.positionalArguments.first as Iterable<String>;
+          return {
+            for (final id in ids)
+              if (entities[id] != null) id: entities[id]!,
+          };
+        });
+        when(
+          () => mockAgentRepo.getLinksToMultiple(
+            any(),
+            type: any(named: 'type'),
+          ),
+        ).thenAnswer((invocation) async {
+          final toIds = (invocation.positionalArguments.first as List<String>)
+              .toSet();
+          final result = <String, List<AgentLink>>{};
+          for (final link in links) {
+            if (toIds.contains(link.toId)) {
+              (result[link.toId] ??= []).add(link);
+            }
+          }
+          return result;
+        });
+        when(() => mockAgentRepo.upsertEntity(any())).thenAnswer((
+          invocation,
+        ) async {
+          final entity =
+              invocation.positionalArguments.first as AgentDomainEntity;
+          entities[entity.id] = entity;
+        });
+      }
+
+      void receive(AgentStateEntity incoming) {
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentEntity(
+              agentEntity: incoming,
+              status: SyncEntryStatus.update,
+            ),
+          ),
+        );
+      }
+
+      test(
+        'a concurrent version with an older head does not move the head back '
+        '(TLC: HeadNeverRegresses)',
+        () async {
+          // The trace: the fast device's state row still points at `b1` and
+          // wins last-writer-wins on its skewed `updatedAt`.
+          storeLog(
+            state(head: 'a1', clock: {'local': 1}, at: DateTime(2026, 9, 1, 9)),
+          );
+          final incoming = state(
+            head: 'b1',
+            clock: {'peer': 1},
+            at: DateTime(2026, 9, 1, 12),
+          );
+          receive(incoming);
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          expect(stored().recentHeadMessageId, 'a1');
+          // Every other field is still the last writer's.
+          expect(stored().updatedAt, incoming.updatedAt);
+          expect(stored().vectorClock, incoming.vectorClock);
+        },
+      );
+
+      test(
+        'a concurrent version whose head descends from the local one moves it '
+        'forward',
+        () async {
+          storeLog(
+            state(
+              head: 'b1',
+              clock: {'local': 1},
+              at: DateTime(2026, 9, 1, 12),
+            ),
+          );
+          receive(
+            state(head: 'a1', clock: {'peer': 1}, at: DateTime(2026, 9, 1, 9)),
+          );
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          expect(stored().recentHeadMessageId, 'a1');
+          expect(stored().vectorClock, const VectorClock({'local': 1}));
+        },
+      );
+
+      test(
+        'an unclocked version from an older build does not move the head '
+        'back',
+        () async {
+          storeLog(
+            state(head: 'a1', clock: {'local': 1}, at: DateTime(2026, 9, 1, 9)),
+          );
+          final legacy = state(
+            head: 'b1',
+            clock: const {},
+            at: DateTime(2026, 9, 1, 12),
+          ).copyWith(vectorClock: null);
+          receive(legacy);
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          expect(stored().recentHeadMessageId, 'a1');
+          // The unclocked version still applies otherwise.
+          expect(stored().vectorClock, isNull);
+          expect(stored().updatedAt, legacy.updatedAt);
+        },
+      );
+
+      test(
+        'a dominating version keeps a local head that descends from its own',
+        () async {
+          // A concurrent merge kept the winner's clock and took `a1` from the
+          // other side; the winner's successor still names `b1`.
+          storeLog(
+            state(head: 'a1', clock: {'peer': 1}, at: DateTime(2026, 9, 1, 12)),
+          );
+          final incoming = state(
+            head: 'b1',
+            clock: {'peer': 2},
+            at: DateTime(2026, 9, 1, 13),
+          );
+          receive(incoming);
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          expect(stored().recentHeadMessageId, 'a1');
+          expect(stored().vectorClock, incoming.vectorClock);
+        },
+      );
+
+      test(
+        'a local append that commits during the receive is not overwritten '
+        '(TLC: AtomicReceive)',
+        () async {
+          // The receive read the row (head `a1`), the executor appended `a2`
+          // and moved the head, and the receive then wrote the row it had
+          // resolved from its stale read: the head went back to `a1`.
+          final gate = Completer<void>();
+          storeLog(
+            state(head: 'a1', clock: {'local': 1}, at: DateTime(2026, 9, 1, 9)),
+            gate: gate,
+          );
+          receive(
+            state(head: 'b1', clock: {'peer': 1}, at: DateTime(2026, 9, 1, 12)),
+          );
+
+          final received = processor.process(
+            event: event,
+            journalDb: journalDb,
+          );
+          await pumpEventQueue();
+          final append = mockAgentRepo.runInTransaction(() async {
+            final current =
+                (await mockAgentRepo.getEntity('state-head'))!
+                    as AgentStateEntity;
+            entities['a2'] = makeTestMessage(
+              id: 'a2',
+              agentId: 'agent-1',
+              createdAt: DateTime(2026, 9, 1, 10),
+              prevMessageId: current.recentHeadMessageId,
+            );
+            links.add(edge('a2', current.recentHeadMessageId!));
+            await mockAgentRepo.upsertEntity(
+              current.copyWith(
+                recentHeadMessageId: 'a2',
+                vectorClock: VectorClock({
+                  ...current.vectorClock!.vclock,
+                  'local': 2,
+                }),
+              ),
+            );
+          });
+          await pumpEventQueue();
+          gate.complete();
+          await Future.wait([received, append]);
+
+          expect(stored().recentHeadMessageId, 'a2');
+        },
+      );
+    });
+
     test('processes agent identity entity', () async {
       final entity = AgentDomainEntity.agent(
         id: 'agent-1',
@@ -1295,35 +1554,35 @@ void main() {
       () async {
         const localVc = VectorClock({'host-A': 2});
         const incomingVc = VectorClock({'host-A': 1});
-        final localOne = AgentDomainEntity.agentState(
+        final localOne = AgentDomainEntity.agentReportHead(
           id: 'state-bulk-1',
           agentId: 'agent-1',
-          revision: 2,
-          slots: const AgentSlots(),
+          scope: 'current',
+          reportId: 'report-1',
           updatedAt: DateTime(2024, 3, 16),
           vectorClock: localVc,
         );
-        final localTwo = AgentDomainEntity.agentState(
+        final localTwo = AgentDomainEntity.agentReportHead(
           id: 'state-bulk-2',
           agentId: 'agent-2',
-          revision: 2,
-          slots: const AgentSlots(),
+          scope: 'current',
+          reportId: 'report-1',
           updatedAt: DateTime(2024, 3, 16),
           vectorClock: localVc,
         );
-        final incomingOne = AgentDomainEntity.agentState(
+        final incomingOne = AgentDomainEntity.agentReportHead(
           id: 'state-bulk-1',
           agentId: 'agent-1',
-          revision: 1,
-          slots: const AgentSlots(),
+          scope: 'current',
+          reportId: 'report-1',
           updatedAt: DateTime(2024, 3, 15),
           vectorClock: incomingVc,
         );
-        final incomingTwo = AgentDomainEntity.agentState(
+        final incomingTwo = AgentDomainEntity.agentReportHead(
           id: 'state-bulk-2',
           agentId: 'agent-2',
-          revision: 1,
-          slots: const AgentSlots(),
+          scope: 'current',
+          reportId: 'report-1',
           updatedAt: DateTime(2024, 3, 15),
           vectorClock: incomingVc,
         );
@@ -1363,27 +1622,27 @@ void main() {
     test(
       'refreshes prefetched agent entity cache after same-bundle upsert',
       () async {
-        final localInitial = AgentDomainEntity.agentState(
+        final localInitial = AgentDomainEntity.agentReportHead(
           id: 'state-cache-refresh',
           agentId: 'agent-cache-refresh',
-          revision: 1,
-          slots: const AgentSlots(),
+          scope: 'current',
+          reportId: 'report-1',
           updatedAt: DateTime(2024, 3, 15),
           vectorClock: const VectorClock({'host-A': 1}),
         );
-        final incomingNewer = AgentDomainEntity.agentState(
+        final incomingNewer = AgentDomainEntity.agentReportHead(
           id: 'state-cache-refresh',
           agentId: 'agent-cache-refresh',
-          revision: 3,
-          slots: const AgentSlots(),
+          scope: 'current',
+          reportId: 'report-1',
           updatedAt: DateTime(2024, 3, 17),
           vectorClock: const VectorClock({'host-A': 3}),
         );
-        final incomingOlder = AgentDomainEntity.agentState(
+        final incomingOlder = AgentDomainEntity.agentReportHead(
           id: 'state-cache-refresh',
           agentId: 'agent-cache-refresh',
-          revision: 2,
-          slots: const AgentSlots(),
+          scope: 'current',
+          reportId: 'report-1',
           updatedAt: DateTime(2024, 3, 16),
           vectorClock: const VectorClock({'host-A': 2}),
         );
@@ -1416,43 +1675,43 @@ void main() {
     test(
       'keeps outbox bundle agent prefetch caches isolated across overlaps',
       () async {
-        final dominantLocal = AgentDomainEntity.agentState(
+        final dominantLocal = AgentDomainEntity.agentReportHead(
           id: 'shared-state',
           agentId: 'agent-shared',
-          revision: 5,
-          slots: const AgentSlots(),
+          scope: 'current',
+          reportId: 'report-1',
           updatedAt: DateTime(2024, 3, 19),
           vectorClock: const VectorClock({'host-A': 5}),
         );
-        final staleShared = AgentDomainEntity.agentState(
+        final staleShared = AgentDomainEntity.agentReportHead(
           id: 'shared-state',
           agentId: 'agent-shared',
-          revision: 1,
-          slots: const AgentSlots(),
+          scope: 'current',
+          reportId: 'report-1',
           updatedAt: DateTime(2024, 3, 15),
           vectorClock: const VectorClock({'host-A': 1}),
         );
-        final otherShared = AgentDomainEntity.agentState(
+        final otherShared = AgentDomainEntity.agentReportHead(
           id: 'shared-state',
           agentId: 'agent-shared',
-          revision: 2,
-          slots: const AgentSlots(),
+          scope: 'current',
+          reportId: 'report-1',
           updatedAt: DateTime(2024, 3, 16),
           vectorClock: const VectorClock({'host-A': 2}),
         );
-        final blockerOne = AgentDomainEntity.agentState(
+        final blockerOne = AgentDomainEntity.agentReportHead(
           id: 'bundle-one-blocker',
           agentId: 'agent-blocker',
-          revision: 1,
-          slots: const AgentSlots(),
+          scope: 'current',
+          reportId: 'report-1',
           updatedAt: DateTime(2024, 3, 15),
           vectorClock: null,
         );
-        final blockerTwo = AgentDomainEntity.agentState(
+        final blockerTwo = AgentDomainEntity.agentReportHead(
           id: 'bundle-two-blocker',
           agentId: 'agent-blocker',
-          revision: 1,
-          slots: const AgentSlots(),
+          scope: 'current',
+          reportId: 'report-1',
           updatedAt: DateTime(2024, 3, 15),
           vectorClock: null,
         );
@@ -4213,9 +4472,11 @@ void main() {
           final slotsJson = entityJson['slots'] as Map<String, dynamic>;
           slotsJson.remove('pendingProjectActivityAt');
 
+          // A state row is read inside its receive transaction, not from the
+          // bundle prefetch.
           when(
-            () => mockAgentRepo.getEntitiesByIds(any()),
-          ).thenAnswer((_) async => {local.id: local});
+            () => mockAgentRepo.getEntity(local.id),
+          ).thenAnswer((_) async => local);
           when(() => event.text).thenReturn(
             base64.encode(utf8.encode(json.encode(bundleJson))),
           );

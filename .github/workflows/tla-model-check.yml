@@ -53,6 +53,7 @@ on:
       - "lib/features/agents/workflow/project_agent_execute.dart"
       - "lib/features/agents/sync/fork_healer.dart"
       - "lib/features/agents/sync/agent_log_compactor.dart"
+      - "lib/features/agents/sync/agent_message_dag.dart"
       - "lib/features/agents/projection/join_plan.dart"
       - "lib/features/agents/projection/canonical_order.dart"
       - "lib/features/agents/projection/agent_projection.dart"

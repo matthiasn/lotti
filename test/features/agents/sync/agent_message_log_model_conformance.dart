@@ -6,7 +6,9 @@ part of 'fork_healer_test.dart';
 // model-checks. TLC proves the design; this trace checks that the Dart code
 // behaves like it. Every row a device writes lands in its outbox and reaches
 // the other device once, in whatever order the trace picks; the receiving
-// side applies the sync processor's rule — vector clock first, then
+// side applies the sync processor's rule — for the state row the shared
+// decision (`resolveAgentEntityVersions`, its head ordered by the local DAG
+// through `AgentMessageDag.ancestryOf`), for an edge vector clock first, then
 // last-writer-wins on (updatedAt, canonical clock). The second device's clock
 // runs an hour ahead, so createdAt order can disagree with causal order.
 
@@ -114,17 +116,38 @@ class _LogBench {
   Future<void> run(_LogStep step) async {
     final replica = replicas[step.device];
     final other = replicas[1 - step.device];
+    final before = [
+      for (final r in replicas)
+        (
+          head: (await r.repo.getAgentState(_agentId))?.recentHeadMessageId,
+          dag: _presentEdges(r.repo),
+        ),
+    ];
     switch (step.op) {
       case _LogOp.append:
         if (replica.appends >= 3) return;
         replica.appends++;
+        final id = '${replica.host}-m${replica.appends}';
         await replica.service.upsertEntity(
           makeTestMessage(
-            id: '${replica.host}-m${replica.appends}',
+            id: id,
             agentId: _agentId,
             createdAt: nowOn(replica),
             metadata: const AgentMessageMetadata(),
           ),
+        );
+        // AppendsOffTips: the append chained off a row with no child here.
+        final parent =
+            ((await replica.repo.getEntity(id))! as AgentMessageEntity)
+                .prevMessageId;
+        final dag = before[step.device].dag;
+        expect(
+          [
+            for (final MapEntry(key: child, value: parents) in dag.entries)
+              if (parents.contains(parent)) child,
+          ],
+          isEmpty,
+          reason: 'AppendsOffTips: $id chained off non-tip $parent',
         );
       case _LogOp.stateWrite:
         // A wake outcome or scheduling write: keeps the persisted head.
@@ -149,6 +172,43 @@ class _LogBench {
         await _receive(replica.repo, other.outbox[index]);
     }
     _recordEdges();
+    // HeadNeverRegresses: no step moves a head pointer back to a row the
+    // device knew, before the step, to be an ancestor of the old one.
+    for (var i = 0; i < replicas.length; i++) {
+      final old = before[i].head;
+      if (old == null) continue;
+      final head = (await replicas[i].repo.getAgentState(
+        _agentId,
+      ))?.recentHeadMessageId;
+      expect(
+        _ancestors(before[i].dag, old),
+        isNot(contains(head)),
+        reason: 'HeadNeverRegresses on ${replicas[i].host}: $old -> $head',
+      );
+    }
+  }
+
+  /// The `messagePrev` edges of present rows, child → parents: the edges the
+  /// projection folds.
+  static Map<String, Set<String>> _presentEdges(InMemoryAgentRepository repo) {
+    final present = {for (final m in repo.messages) m.id};
+    final result = <String, Set<String>>{};
+    for (final link in repo.links.whereType<MessagePrevLink>()) {
+      if (present.contains(link.fromId)) {
+        (result[link.fromId] ??= <String>{}).add(link.toId);
+      }
+    }
+    return result;
+  }
+
+  static Set<String> _ancestors(Map<String, Set<String>> dag, String id) {
+    final seen = <String>{};
+    final pending = [...?dag[id]];
+    while (pending.isNotEmpty) {
+      final next = pending.removeLast();
+      if (seen.add(next)) pending.addAll(dag[next] ?? const {});
+    }
+    return seen;
   }
 
   Future<void> _heal(_Replica replica) async {
@@ -213,20 +273,22 @@ class _LogBench {
   ) async {
     switch (message) {
       case SyncAgentEntity(:final agentEntity?):
-        final local = agentEntity is AgentStateEntity
-            ? await repo.getAgentState(agentEntity.agentId)
-            : await repo.getEntity(agentEntity.id);
-        if (local == null ||
-            (local is! AgentMessageEntity &&
-                _incomingWins(
-                  localVc: local.vectorClock,
-                  incomingVc: agentEntity.vectorClock,
-                  localAt: local is AgentStateEntity ? local.updatedAt : null,
-                  incomingAt: agentEntity is AgentStateEntity
-                      ? agentEntity.updatedAt
-                      : null,
-                ))) {
+        final local = await repo.getEntity(agentEntity.id);
+        if (local == null) {
           await repo.upsertEntity(agentEntity);
+        } else if (local is AgentStateEntity &&
+            agentEntity is AgentStateEntity) {
+          final resolved = resolveAgentEntityVersions(
+            local: local,
+            incoming: agentEntity,
+            isAncestor: await AgentMessageDag(repo).ancestryOf(
+              local.recentHeadMessageId,
+              agentEntity.recentHeadMessageId,
+            ),
+          );
+          if (!identical(resolved, local)) await repo.upsertEntity(resolved);
+        } else if (local is! AgentMessageEntity) {
+          fail('unexpected agent entity $agentEntity');
         }
       case SyncAgentLink(:final agentLink?):
         final local = await repo.getLinkById(agentLink.id);
@@ -306,10 +368,21 @@ class _LogBench {
       reason: 'Converged: $trace',
     );
     for (final replica in replicas) {
+      final heads = headsOfLog(replica.repo.messages, replica.repo.links);
       expect(
-        headsOfLog(replica.repo.messages, replica.repo.links).length,
+        heads.length,
         lessThanOrEqualTo(1),
         reason: 'EventuallySingleHead on ${replica.host}: $trace',
+      );
+      // SettledHead: the next append chains off that one head.
+      final pointer = (await replica.repo.getAgentState(
+        _agentId,
+      ))?.recentHeadMessageId;
+      if (heads.isEmpty || pointer == null) continue;
+      expect(
+        await AgentMessageDag(replica.repo).tipFrom(pointer),
+        heads.single,
+        reason: 'SettledHead on ${replica.host}: $trace',
       );
     }
   }
@@ -322,7 +395,8 @@ void _registerModelConformance() {
       glados.ExploreConfig(numRuns: 300),
     ).test(
       'generated appends, state writes, heals and deliveries keep Acyclic, '
-      'EdgesImmutable and NoJoinOverNonTip, and settle to one head',
+      'EdgesImmutable, NoJoinOverNonTip, HeadNeverRegresses and '
+      'AppendsOffTips, and settle to one head every append chains off',
       (trace) async {
         final bench = _LogBench();
         for (final step in trace) {
