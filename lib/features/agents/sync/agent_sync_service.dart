@@ -664,8 +664,10 @@ class AgentSyncService {
   /// does not mean a legacy log. When the log already
   /// carries DAG evidence (any `messagePrev` edge, a message minted with a
   /// `prevMessageId`, or a join), its edges are left alone and the head is a
-  /// head of the projected log; the last in canonical order, so any other
-  /// head stays a fork the healer joins. Only a log with no such evidence gets
+  /// head of the projected log — the last in canonical order that no present
+  /// row names as its `prevMessageId` (a child whose edge is still in flight
+  /// makes its parent look like a head) — so any other head stays a fork the
+  /// healer joins. Only a log with no such evidence gets
   /// the legacy spine ([_backfillMessageChain]): rewriting the edges of a
   /// chained log would give an edge id a second parent, and under clock skew
   /// close a cycle. A log that no longer projects (a cycle or duplicate id
@@ -691,7 +693,17 @@ class AgentSyncService {
       final heads = project(
         canonicalOrder(agentEventsFromLog(messages, links)),
       ).headIds;
-      return heads.last;
+      // A head that a present row names as its prevMessageId is a parent
+      // whose child's edge is still in flight, not a tip: chaining off it
+      // would fork the log once that edge lands.
+      final named = {
+        for (final message in messages) ?message.prevMessageId,
+      };
+      final tips = [
+        for (final head in heads)
+          if (!named.contains(head)) head,
+      ];
+      return tips.isNotEmpty ? tips.last : heads.last;
     } catch (exception, stackTrace) {
       getIt<DomainLogger>().error(
         LogDomain.sync,

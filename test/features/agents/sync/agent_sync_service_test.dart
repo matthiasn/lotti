@@ -2676,6 +2676,53 @@ void main() {
       expect((await bench.repo.getLinkById('msgprev-m1'))!.toId, joinId);
     });
 
+    test(
+      'does not chain off a parent whose child synced ahead of its edge',
+      () async {
+        // `a-child` names `z-parent` but its edge has not arrived, so both
+        // project as heads and `z-parent` sorts last. Chaining off it would
+        // fork the log the moment the edge lands.
+        final bench = makeForkBench();
+        bench.repo.seed([
+          makeTestState(agentId: 'agent-1'),
+          makeTestMessage(id: 'z-parent', agentId: 'agent-1'),
+          makeTestMessage(
+            id: 'a-child',
+            agentId: 'agent-1',
+            prevMessageId: 'z-parent',
+          ),
+        ]);
+        expect(headsOfLog(bench.repo.messages, bench.repo.links), [
+          'a-child',
+          'z-parent',
+        ]);
+
+        await bench.service.upsertEntity(append('m1'));
+
+        expect((await bench.repo.getLinkById('msgprev-m1'))!.toId, 'a-child');
+        await bench.repo.upsertLink(edge('a-child', 'z-parent'));
+        expect(headsOfLog(bench.repo.messages, bench.repo.links), ['m1']);
+      },
+    );
+
+    test(
+      'falls back to the last head when every head is named as a parent',
+      () async {
+        // Two rows naming each other with no edge synced: no head qualifies
+        // as a tip, so the canonical last head is taken.
+        final bench = makeForkBench();
+        bench.repo.seed([
+          makeTestState(agentId: 'agent-1'),
+          makeTestMessage(id: 'x', agentId: 'agent-1', prevMessageId: 'y'),
+          makeTestMessage(id: 'y', agentId: 'agent-1', prevMessageId: 'x'),
+        ]);
+
+        await bench.service.upsertEntity(append('m1'));
+
+        expect((await bench.repo.getLinkById('msgprev-m1'))!.toId, 'y');
+      },
+    );
+
     test('a corrupt log starts the message as a root and logs', () async {
       final logger = MockDomainLogger();
       getIt

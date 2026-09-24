@@ -233,7 +233,9 @@ Recovery(d) ==
     IF h0 # None \/ nodes[d] = {} THEN {[head |-> h0, spine |-> {}]}
     ELSE IF ~SafeRecovery \/ Legacy(d)
          THEN {[head |-> Newest(d), spine |-> SpineEdges(d)]}
-    \* A head of the local projection; a root on a corrupt (cyclic) log.
+    \* A head of the local projection; a root on a corrupt (cyclic) log. The
+    \* code prefers a head no present row names as its prevMessageId; any
+    \* head here over-approximates that choice.
     ELSE IF Cyclic(d) THEN {[head |-> None, spine |-> {}]}
     ELSE {[head |-> h, spine |-> {}] : h \in Heads(d)}
 

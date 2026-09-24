@@ -360,7 +360,9 @@ ADR 0071). An unset pointer over a non-empty log goes through `_recoverHead`:
 only a log with no DAG evidence at all — no `messagePrev` edge, no message
 minted with a `prevMessageId`, no join — gets the one-time legacy spine by
 `createdAt`; any other log keeps its edges and the append chains off the last
-head of the projection. Re-chaining a synced log would reuse `msgprev-<id>`
+head of the projection that no present row names as its `prevMessageId` (a
+child whose edge is still in flight makes its parent look like a head).
+Re-chaining a synced log would reuse `msgprev-<id>`
 ids with new parents, and with clocks apart close a cycle.
 
 ```mermaid
@@ -384,7 +386,8 @@ as a root while its parent reads as a head, so the view is incomplete while
   (one naming an absent row does not count: the observation sweep deletes the
   edges into what it prunes);
 - any join — head or not — misses edges its content-addressed id says lead to
-  present heads.
+  present heads (searched only while at most twelve other heads exist; above
+  that, healing goes ahead over all heads).
 
 A join row does not name its parents, so a join missing the edge to a parent
 that is not a head here goes unnoticed, and the healer may join over that

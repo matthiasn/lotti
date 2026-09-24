@@ -59,7 +59,8 @@ holes came back as concrete traces:
    `AgentSyncService._recoverHead` keeps the legacy spine for logs with no
    DAG evidence at all (no `messagePrev` edge, no message minted with a
    `prevMessageId`, no join); any other log keeps its edges, and the append
-   chains off the last head of the projected log. A log that no longer
+   chains off the last head of the projected log that no present row names
+   as its `prevMessageId`. A log that no longer
    projects starts the message as a root and logs the failure.
 2. **The healer waits for every edge it can prove is missing.**
    `ForkHealer._hasUnsyncedEdge` treats the view as incomplete while a
