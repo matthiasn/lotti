@@ -223,47 +223,66 @@ void _registerIdempotency(_Db Function() fixture) {
         },
       );
 
-      test(
-        'makes no new checklist when the item already exists, though the '
-        'user deleted its checklist since',
-        () async {
-          final taskId = await bareTask('bare-task');
-          const args = {'title': 'Book the pen test'};
-          await apply(
-            TaskAgentToolNames.addChecklistItem,
-            args,
-            taskId: taskId,
-          );
-          final derived = MetadataService.deterministicId(input);
-          // The user deletes the checklist, which also takes it off the task.
-          expect(
-            await JournalRepository().deleteJournalEntity(derived),
-            isTrue,
-          );
-          final withChecklist = await storedTask(taskId);
-          await JournalRepository().updateJournalEntity(
-            withChecklist.copyWith(
-              data: withChecklist.data.copyWith(checklistIds: const []),
-            ),
-          );
-          expect(await idsOf('Checklist', 'bare-task'), isEmpty);
+      for (final itemDeleted in [false, true]) {
+        test(
+          'makes no new checklist when the item '
+          '${itemDeleted ? 'was deleted' : 'already exists'}, though the '
+          'user deleted its checklist since',
+          () async {
+            final taskId = await bareTask('bare-task');
+            const args = {'title': 'Book the pen test'};
+            await apply(
+              TaskAgentToolNames.addChecklistItem,
+              args,
+              taskId: taskId,
+            );
+            final itemId = (await idsOf(
+              'ChecklistItem',
+              'Book the pen test',
+            )).single;
+            if (itemDeleted) {
+              // Its tombstone counts as the item existing: the replay
+              // neither brings it back nor gives it a new checklist.
+              expect(
+                await JournalRepository().deleteJournalEntity(itemId),
+                isTrue,
+              );
+            }
+            final derived = MetadataService.deterministicId(input);
+            // The user deletes the checklist, which also takes it off the task.
+            expect(
+              await JournalRepository().deleteJournalEntity(derived),
+              isTrue,
+            );
+            final withChecklist = await storedTask(taskId);
+            await JournalRepository().updateJournalEntity(
+              withChecklist.copyWith(
+                data: withChecklist.data.copyWith(checklistIds: const []),
+              ),
+            );
+            expect(await idsOf('Checklist', 'bare-task'), isEmpty);
 
-          final late = await apply(
-            TaskAgentToolNames.addChecklistItem,
-            args,
-            taskId: taskId,
-          );
+            final late = await apply(
+              TaskAgentToolNames.addChecklistItem,
+              args,
+              taskId: taskId,
+            );
 
-          expect(late.success, isTrue);
-          expect(await idsOf('Checklist', 'bare-task'), isEmpty);
-          expect(
-            await f.db.journalEntityById(
-              MetadataService.deterministicId('$input:1'),
-            ),
-            isNull,
-          );
-        },
-      );
+            expect(late.success, isTrue);
+            expect(await idsOf('Checklist', 'bare-task'), isEmpty);
+            expect(
+              await f.db.journalEntityById(
+                MetadataService.deterministicId('$input:1'),
+              ),
+              isNull,
+            );
+            expect(
+              await idsOf('ChecklistItem', 'Book the pen test'),
+              itemDeleted ? isEmpty : [itemId],
+            );
+          },
+        );
+      }
 
       test(
         'moves on to the next derived id past a checklist the user deleted, '
