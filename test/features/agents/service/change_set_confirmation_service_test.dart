@@ -4,11 +4,14 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
+import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -326,6 +329,89 @@ void main() {
   }
 
   group('ChangeSetConfirmationService', () {
+    for (final reject in [false, true]) {
+      test('committed ${reject ? 'rejection' : 'confirmation'} survives '
+          'an outbox flush failure', () async {
+        final db = AgentDatabase(inMemoryDatabase: true);
+        addTearDown(db.close);
+        final repository = AgentRepository(db);
+        final outbox = MockOutboxService();
+        final vectorClock = MockVectorClockService();
+        when(
+          () => vectorClock.getNextVectorClock(
+            previous: any(named: 'previous'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) async => const VectorClock({'test-host': 1}));
+        when(() => outbox.enqueueMessage(any())).thenAnswer(
+          (_) async => throw StateError('outbox unavailable after commit'),
+        );
+        when(
+          () => mockLabelsRepository.suppressLabelOnTask(
+            taskId: any(named: 'taskId'),
+            labelId: any(named: 'labelId'),
+          ),
+        ).thenAnswer((_) async => true);
+        final changeSet = makeChangeSetWith(
+          items: const [
+            ChangeItem(
+              toolName: TaskAgentToolNames.assignTaskLabel,
+              args: {'id': 'label-1'},
+              humanSummary: 'Assign label',
+            ),
+          ],
+        );
+        await repository.upsertEntity(changeSet);
+        var dispatches = 0;
+        final resolved = <ChangeSetEntity>[];
+        final realService = ChangeSetConfirmationService(
+          syncService: AgentSyncService(
+            repository: repository,
+            outboxService: outbox,
+            vectorClockService: vectorClock,
+          ),
+          toolDispatcher: (_, _, _) async {
+            dispatches++;
+            return const ToolExecutionResult(success: true, output: 'applied');
+          },
+          labelsRepository: mockLabelsRepository,
+          domainLogger: mockDomainLogger,
+          onChangeSetResolved: (set) async => resolved.add(set),
+        );
+        await withClock(testClock, () async {
+          if (reject) {
+            expect(await realService.rejectItem(changeSet, 0), isTrue);
+            expect(await realService.rejectItem(changeSet, 0), isFalse);
+          } else {
+            expect(
+              (await realService.confirmItem(changeSet, 0)).success,
+              isTrue,
+            );
+            expect(
+              (await realService.confirmItem(changeSet, 0)).success,
+              isFalse,
+            );
+          }
+        });
+        final stored =
+            (await repository.getEntity(changeSet.id))! as ChangeSetEntity;
+        expect(
+          stored.items.single.status,
+          reject ? ChangeItemStatus.rejected : ChangeItemStatus.confirmed,
+        );
+        expect(dispatches, reject ? 0 : 1);
+        expect(resolved.single.status, ChangeSetStatus.resolved);
+        if (reject) {
+          verify(
+            () => mockLabelsRepository.suppressLabelOnTask(
+              taskId: changeSet.taskId,
+              labelId: 'label-1',
+            ),
+          ).called(1);
+        }
+        verify(() => outbox.enqueueMessage(any())).called(2);
+      });
+    }
     for (final mode in ChecklistApprovalMode.values) {
       test(
         'chat confirmation dispatches trusted ${mode.name} approval',
@@ -1235,6 +1321,28 @@ void main() {
           });
         },
       );
+
+      test('a completed transaction body is not proof of commit', () async {
+        final changeSet = makeChangeSetWith();
+        final error = StateError('commit failed');
+        mockSyncService.transactionDelegate = <T>(action) async {
+          if (Zone.current[_inTransaction] == true) return action();
+          await runZoned(action, zoneValues: {_inTransaction: true});
+          // The body finished, but the transaction did not commit. The
+          // repository's default null read means its decision did not survive.
+          throw error;
+        };
+        await expectLater(
+          service.confirmItem(changeSet, 0),
+          throwsA(same(error)),
+        );
+        verifyNever(() => mockToolDispatcher.dispatch(any(), any(), any()));
+        final writes = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        final decision = writes.whereType<ChangeDecisionEntity>().single;
+        verify(() => mockRepository.getEntity(decision.id)).called(1);
+      });
 
       test('a failed decision write rolls the claim back', () async {
         // Regression: the claim committed on its own, so a decision write

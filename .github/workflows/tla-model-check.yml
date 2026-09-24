@@ -29,12 +29,41 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  tlc:
-    name: TLC
+  configurations:
+    name: Discover TLC configurations
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    outputs:
+      configurations: ${{ steps.discover.outputs.configurations }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: discover
+        name: Discover every checked-in configuration
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          configurations = sorted(path.stem for path in Path("specs/tla").glob("*.cfg"))
+          if not configurations:
+              raise SystemExit("No TLC configurations found")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write(f"configurations={json.dumps(configurations)}\n")
+          PY
+
+  model-check:
+    name: TLC (${{ matrix.configuration }})
+    needs: configurations
     permissions:
       contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: ${{ fromJSON(needs.configurations.outputs.configurations) }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-java@v4
@@ -47,5 +76,24 @@ jobs:
         with:
           path: ~/.cache/lotti-tla
           key: tla2tools-${{ hashFiles('specs/tla/tlc.sh') }}
-      - name: Model-check every configuration
-        run: specs/tla/tlc.sh
+      - name: Model-check configuration
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+        run: specs/tla/tlc.sh "$CONFIGURATION"
+
+  tlc:
+    # Keep the stable aggregate check for branch protection. A failed,
+    # cancelled or skipped shard must never turn this check green.
+    name: TLC
+    if: always()
+    needs: [configurations, model-check]
+    permissions: {}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every configuration to pass
+        env:
+          DISCOVERY_RESULT: ${{ needs.configurations.result }}
+          MODEL_CHECK_RESULT: ${{ needs.model-check.result }}
+        run: |
+          test "$DISCOVERY_RESULT" = success
+          test "$MODEL_CHECK_RESULT" = success

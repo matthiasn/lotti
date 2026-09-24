@@ -31,6 +31,11 @@ typedef ConfirmedDecisionCallback =
 typedef ChangeSetResolvedCallback =
     Future<void> Function(ChangeSetEntity changeSet);
 
+typedef _ClaimedDecision = ({
+  ChangeSetEntity changeSet,
+  ChangeDecisionEntity decision,
+});
+
 /// Handles user confirmation and rejection of individual change items
 /// within a [ChangeSetEntity].
 ///
@@ -160,19 +165,12 @@ class ChangeSetConfirmationService {
     //    instead of applying the change a second time. And if the process
     //    dies after a successful dispatch, the item is not left pending to
     //    be re-executed on retry.
-    final claim = await _syncService.runInTransaction(() async {
-      final claimed = await _resolution.claimChangeSetItem(current, itemIndex);
-      if (claimed == null) return null;
-      final decision = await _resolution.persistDecision(
-        changeSet: current,
-        itemIndex: itemIndex,
-        toolName: item.toolName,
-        verdict: ChangeDecisionVerdict.confirmed,
-        humanSummary: item.humanSummary,
-        args: item.args,
-      );
-      return (confirmedSet: claimed, decision: decision);
-    });
+    final claim = await _claimDecision(
+      current,
+      itemIndex,
+      decided: ChangeItemStatus.confirmed,
+      verdict: ChangeDecisionVerdict.confirmed,
+    );
     if (claim == null) {
       return const ToolExecutionResult(
         success: false,
@@ -180,7 +178,7 @@ class ChangeSetConfirmationService {
         errorMessage: 'Concurrent change set update detected',
       );
     }
-    final (:confirmedSet, :decision) = claim;
+    final (changeSet: confirmedSet, :decision) = claim;
 
     // 2. Execute the tool call. If dispatch fails, either revert the status
     //    back to pending so the user can retry, or retract non-retryable stale
@@ -332,6 +330,60 @@ class ChangeSetConfirmationService {
     );
 
     return result;
+  }
+
+  /// Claims and records a decision atomically. A transaction can throw after
+  /// committing when its sync outbox flush fails. The newly minted decision ID
+  /// is this caller's commit witness: only if it survived may this caller
+  /// continue dispatch or rejection side-effects. Another caller's confirmed
+  /// status alone would not prove ownership. A rollback leaves no witness and
+  /// propagates the original failure without applying anything.
+  Future<_ClaimedDecision?> _claimDecision(
+    ChangeSetEntity current,
+    int itemIndex, {
+    required ChangeItemStatus decided,
+    required ChangeDecisionVerdict verdict,
+    String? rejectionReason,
+  }) async {
+    _ClaimedDecision? candidate;
+    try {
+      return await _syncService.runInTransaction(() async {
+        final claimed = await _resolution.claimChangeSetItem(
+          current,
+          itemIndex,
+          decided: decided,
+        );
+        if (claimed == null) return null;
+        final item = current.items[itemIndex];
+        final decision = await _resolution.persistDecision(
+          changeSet: current,
+          itemIndex: itemIndex,
+          toolName: item.toolName,
+          verdict: verdict,
+          rejectionReason: rejectionReason,
+          humanSummary: item.humanSummary,
+          args: item.args,
+        );
+        return candidate = (changeSet: claimed, decision: decision);
+      });
+    } catch (error, stackTrace) {
+      final claim = candidate;
+      if (claim == null ||
+          await _syncService.repository.getEntity(claim.decision.id)
+              is! ChangeDecisionEntity) {
+        rethrow;
+      }
+      _domainLogger?.error(
+        LogDomain.agentWorkflow,
+        error,
+        message:
+            'Decision committed despite a post-commit failure; '
+            'continuing item $itemIndex (${verdict.name})',
+        subDomain: _sub,
+        stackTrace: stackTrace,
+      );
+      return claim;
+    }
   }
 
   static String _failedConfirmationRetractionReason(
@@ -530,24 +582,14 @@ class ChangeSetConfirmationService {
     //    one transaction (no tool dispatch for rejections). A confirm that
     //    claimed the item after this method read it wins: the rejection
     //    must not overwrite a change that was applied.
-    final rejectedSet = await _syncService.runInTransaction(() async {
-      final claimed = await _resolution.claimChangeSetItem(
-        current,
-        itemIndex,
-        decided: ChangeItemStatus.rejected,
-      );
-      if (claimed == null) return null;
-      await _resolution.persistDecision(
-        changeSet: current,
-        itemIndex: itemIndex,
-        toolName: item.toolName,
-        verdict: ChangeDecisionVerdict.rejected,
-        rejectionReason: reason,
-        humanSummary: item.humanSummary,
-        args: item.args,
-      );
-      return claimed;
-    });
+    final claim = await _claimDecision(
+      current,
+      itemIndex,
+      decided: ChangeItemStatus.rejected,
+      verdict: ChangeDecisionVerdict.rejected,
+      rejectionReason: reason,
+    );
+    final rejectedSet = claim?.changeSet;
     if (rejectedSet == null) {
       _domainLogger?.log(
         LogDomain.agentWorkflow,

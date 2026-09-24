@@ -994,6 +994,13 @@ arguments alone can never apply and version-fenced goal revisions whose base
 version is stale or whose legacy contract cannot be applied safely. Nothing is
 special-cased by tool name.
 
+`AgentSyncService.runInTransaction` can throw after commit when the sync
+outbox flush fails. `_claimDecision` checks whether this caller's newly minted
+decision ID survived before continuing dispatch or rejection side-effects.
+A completed transaction body or another caller's confirmed status is not proof
+of ownership. If the decision is absent, the error propagates without applying
+the change; a failed decision write still rolls back the claim.
+
 The claim is what makes a double tap, or a "Confirm all" racing a single
 confirm, apply a change once: before it, both callers could read `pending` and
 both dispatch. Once a dispatch has succeeded the item stays `confirmed` even if
