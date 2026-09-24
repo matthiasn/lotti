@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_automation_policy.dart';
@@ -262,14 +263,7 @@ class WakeOrchestrator with AgentErrorLogging {
   }) {
     queue
       ..onEnqueued = _recordIntent
-      ..onMerged = (job, tokens) => intentStore?.record(
-        runKey: job.runKey,
-        agentId: job.agentId,
-        workspaceKey: job.workspaceKey,
-        reason: job.reason,
-        initiator: job.initiator,
-        tokens: tokens,
-      );
+      ..onMerged = (job, _) => _recordIntent(job);
     _throttle = WakeThrottleCoordinator(
       repository: repository,
       throttleWindow: throttleWindow,
@@ -381,14 +375,26 @@ class WakeOrchestrator with AgentErrorLogging {
     );
   }
 
-  void _recordIntent(WakeJob job) => intentStore?.record(
-    runKey: job.runKey,
-    agentId: job.agentId,
-    workspaceKey: job.workspaceKey,
-    reason: job.reason,
-    initiator: job.initiator,
-    tokens: job.triggerTokens,
-  );
+  /// Daily OS processing jobs already have a durable outbox that owns retry,
+  /// cancellation, job boundaries and artifact run-key provenance. Replaying
+  /// them here would bypass that owner and could merge incompatible job IDs.
+  static bool _hasProcessingJob(Set<String> tokens) =>
+      tokens.any((token) => token.startsWith(dayAgentProcessingJobPrefix));
+
+  void _recordIntent(WakeJob job) {
+    if (_hasProcessingJob(job.triggerTokens)) {
+      _settleIntent(job);
+      return;
+    }
+    intentStore?.record(
+      runKey: job.runKey,
+      agentId: job.agentId,
+      workspaceKey: job.workspaceKey,
+      reason: job.reason,
+      initiator: job.initiator,
+      tokens: job.triggerTokens,
+    );
+  }
 
   /// Settles [job]'s wake intent: its run settled, or the job was dropped
   /// for good.
@@ -398,12 +404,20 @@ class WakeOrchestrator with AgentErrorLogging {
   /// previous process left unsettled — jobs it lost and runs it interrupted.
   /// The intents of one agent and workspace become one job, which merges
   /// into a job already queued for them if there is one. Returns how many
-  /// intents were restored.
+  /// intents were restored. Legacy copies of outbox-owned processing jobs
+  /// are discarded: their outbox is the sole recovery authority.
   Future<int> restoreWakeIntents() async {
     final store = intentStore;
     if (store == null) return 0;
     await store.load();
-    final intents = store.takeRestorable();
+    final intents = <WakeIntent>[];
+    for (final intent in store.takeRestorable()) {
+      if (_hasProcessingJob(intent.tokens)) {
+        store.settle(intent.runKey);
+      } else {
+        intents.add(intent);
+      }
+    }
     // One job per agent and workspace: two manual wakes enqueued in the same
     // tick would share a run key, and the queue would drop the second.
     final groups = <(String, String?), List<WakeIntent>>{};
@@ -423,6 +437,7 @@ class WakeOrchestrator with AgentErrorLogging {
       final queued = queue.queuedJobFor(agentId, workspaceKey: workspaceKey);
       final String runKey;
       if (queued != null &&
+          !_hasProcessingJob(queued.triggerTokens) &&
           (initiator == WakeInitiator.automation ||
               queued.initiator == WakeInitiator.user)) {
         queue.mergeTokens(agentId, tokens, workspaceKey: workspaceKey);

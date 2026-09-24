@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/agents/wake/wake_intent_store.dart';
 
 import 'wake_orchestrator_test_harness.dart';
@@ -93,6 +94,113 @@ void main() {
       for (final intent in jsonDecode(raw) as List<dynamic>)
         ...((intent as Map<String, dynamic>)['tokens'] as List).cast<String>(),
     };
+  }
+
+  test('outbox-owned wakes execute without a second durable intent', () {
+    fakeAsync((async) {
+      final gate = Completer<Map<String, VectorClock>?>();
+      final current = boot(async, (_, _, _, _) => gate.future);
+      final tokens = {
+        dayAgentDraftingToken('dayplan-2026-09-24'),
+        dayAgentProcessingJobToken(
+          'draft-1',
+          requestedAt: DateTime(2026, 9, 24),
+        ),
+      };
+      current.enqueueManualWake(
+        agentId: 'planner',
+        reason: dayAgentDraftingReason,
+        triggerTokens: tokens,
+        workspaceKey: dayAgentWorkspaceKey('dayplan-2026-09-24'),
+      );
+      async.flushMicrotasks();
+      expect(executed.single.triggers, tokens);
+      expect(
+        owedTokens(),
+        isEmpty,
+        reason: 'the processing outbox owns recovery',
+      );
+      gate.complete(const {});
+      async.flushMicrotasks();
+    });
+  });
+
+  test('restoration keeps ordinary work separate from a queued outbox job', () {
+    fakeAsync((async) {
+      final first = boot(async, noOpExecutor);
+      unawaited(runner.tryAcquire('planner'));
+      async.flushMicrotasks();
+      first.enqueueManualWake(
+        agentId: 'planner',
+        reason: 'reanalysis',
+        triggerTokens: {'ordinary'},
+      );
+      async.flushMicrotasks();
+
+      final second = boot(async, noOpExecutor);
+      unawaited(runner.tryAcquire('planner'));
+      async.flushMicrotasks();
+      final outboxTokens = {
+        dayAgentProcessingJobToken(
+          'draft-1',
+          requestedAt: DateTime(2026, 9, 24),
+        ),
+      };
+      second.enqueueManualWake(
+        agentId: 'planner',
+        reason: dayAgentDraftingReason,
+        triggerTokens: outboxTokens,
+      );
+      async.flushMicrotasks();
+      unawaited(second.restoreWakeIntents());
+      async.flushMicrotasks();
+
+      expect(queue.length, 2);
+      expect(queue.dequeue()!.triggerTokens, outboxTokens);
+      expect(queue.dequeue()!.triggerTokens, {'ordinary'});
+      expect(owedTokens(), {'ordinary'});
+    });
+  });
+
+  for (final count in [1, 2]) {
+    test('startup retires $count legacy outbox intents without replay', () {
+      fakeAsync((async) {
+        final jobTokens = {
+          for (var i = 0; i < count; i++)
+            dayAgentProcessingJobToken(
+              'refine-$i',
+              requestedAt: DateTime(2026, 9, 24),
+            ),
+        };
+        settings[WakeIntentStore.settingsKey] = jsonEncode([
+          for (final (index, token) in jobTokens.indexed)
+            {
+              'runKey': 'old-$index',
+              'agentId': 'planner',
+              'workspaceKey': dayAgentWorkspaceKey('dayplan-2026-09-24'),
+              'reason': dayAgentRefineReason,
+              'initiator': 'user',
+              'tokens': [token, dayAgentRefineToken('dayplan-2026-09-24')],
+            },
+          {
+            'runKey': 'ordinary',
+            'agentId': 'task-agent',
+            'workspaceKey': null,
+            'reason': 'reanalysis',
+            'initiator': 'user',
+            'tokens': ['task-1'],
+          },
+        ]);
+        final current = boot(async, noOpExecutor);
+        var restored = -1;
+        unawaited(current.restoreWakeIntents().then((n) => restored = n));
+        async.flushMicrotasks();
+        expect(restored, 1, reason: 'only the ordinary wake is restored');
+        expect(executed.map((run) => run.agentId), ['task-agent']);
+        expect(executed.single.triggers, {'task-1'});
+        expect(owedTokens(), isEmpty);
+      });
+    });
   }
 
   test('a queued wake lost to a process death runs at the next start', () {
