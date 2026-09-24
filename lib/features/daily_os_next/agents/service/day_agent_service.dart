@@ -59,8 +59,8 @@ class DayAgentService {
   /// Structured logger.
   final DomainLogger domainLogger;
 
-  /// Live coordinator-work probe used to avoid treating queued, running, or
-  /// detached digest execution as an interrupted run.
+  /// Live coordinator-work probe used to avoid treating queued, drain-held,
+  /// running, or detached digest execution as an interrupted run.
   final bool Function() _hasCoordinatorWork;
 
   /// Callback fired when persisted state changes.
@@ -1012,6 +1012,10 @@ class DayAgentService {
   ///   fired — not by `scheduledAt`, which an overdue catch-up keeps from the
   ///   day it was armed for even though the workflow re-anchors it to today.
   /// * **No watermark.** See [_digestRanIn].
+  ///
+  /// This record is the digest's only crash recovery: digest wakes are never
+  /// `WakeIntentStore` intents, so startup cannot replay the interrupted run
+  /// beside this retry (`specs/tla/DigestRecovery.tla`).
   Future<_DigestRecovery> _digestRecovery(
     AgentDomainEntity? existing,
     DateTime now,
@@ -1092,21 +1096,27 @@ class DayAgentService {
     }
   }
 
-  /// Whether a digest committed its watermark between [ranAt] and [now].
+  /// Whether a digest committed its watermark on [ranAt]'s local day, no
+  /// later than [now].
   ///
-  /// The crash can land *between* the milestone and the re-arm, and that run
-  /// did digest the day — retrying it would bill a second inference for a
-  /// briefing the user already has.
+  /// A record can read `consumed` over a digest that did finish: the run can
+  /// commit its milestone and re-arm before the wake manager's consume write
+  /// lands, and that write replaces the re-armed row. Retrying then would bill
+  /// a second inference for a briefing the user already has.
   ///
   /// Bounded at both ends. Synced history can carry a *future-dated*
   /// `dailyWakeCompleted` from a peer with a skewed clock, which an open-ended
   /// "at or after" test would read as proof that today's run finished — and
-  /// suppress the very retry this exists for. Only a watermark inside the
-  /// window the interrupted run occupied is evidence about that run.
+  /// suppress the very retry this exists for. The lower bound is the start of
+  /// the day, not [ranAt] itself: the run stamps its milestone from its own
+  /// clock, and a backward step between the fire and the run puts a finished
+  /// digest's milestone just before `consumedAt` (`specs/tla/DigestRecovery.tla`,
+  /// `WindowFromDayStart`). Any digest of the day is the day's briefing.
   ///
   /// An unreadable log returns `null`: the caller preserves the consumed row,
   /// because neither retrying nor advancing shared evidence is justified.
   Future<bool?> _digestRanIn(DateTime ranAt, DateTime now) async {
+    final dayStart = localDay(ranAt);
     try {
       final milestones = await repository.getMessagesByKind(
         dailyOsPlannerAgentId,
@@ -1115,7 +1125,7 @@ class DayAgentService {
       return milestones.any(
         (m) =>
             m.metadata.milestone == AgentMilestone.dailyWakeCompleted &&
-            !m.createdAt.isBefore(ranAt) &&
+            !m.createdAt.isBefore(dayStart) &&
             !m.createdAt.isAfter(now),
       );
     } catch (e, s) {

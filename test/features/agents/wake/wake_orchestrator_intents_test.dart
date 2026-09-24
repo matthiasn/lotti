@@ -125,6 +125,56 @@ void main() {
     });
   });
 
+  test('a coordinator digest leaves no intent for startup to replay', () {
+    // Regression for DigestRecovery.tla NoInferenceAfterBriefing: the digest
+    // wake was also a wake intent, so a crash after the run completed but
+    // before its settle reached disk replayed a digest the user already had,
+    // and a crash mid-run replayed it beside the digest record's own retry.
+    fakeAsync((async) {
+      final gate = Completer<Map<String, VectorClock>?>();
+      final tokens = {dayAgentDigestToken('dayplan-2026-09-24')};
+      boot(async, (_, _, _, _) => gate.future).enqueueManualWake(
+        agentId: 'daily_os_planner',
+        reason: dayAgentDigestReason,
+        triggerTokens: tokens,
+        workspaceKey: coordinatorDigestWorkspaceKey,
+      );
+      async.flushMicrotasks();
+      expect(executed.single.triggers, tokens);
+      expect(owedTokens(), isEmpty, reason: 'the digest record owns recovery');
+
+      // The process dies mid-digest; the next start replays nothing.
+      final second = boot(async, noOpExecutor);
+      var restored = -1;
+      unawaited(second.restoreWakeIntents().then((n) => restored = n));
+      async.flushMicrotasks();
+      expect(restored, 0);
+      expect(executed, hasLength(1));
+    });
+  });
+
+  test('startup retires a legacy digest intent without replay', () {
+    fakeAsync((async) {
+      settings[WakeIntentStore.settingsKey] = jsonEncode([
+        {
+          'runKey': 'old-digest',
+          'agentId': 'daily_os_planner',
+          'workspaceKey': coordinatorDigestWorkspaceKey,
+          'reason': dayAgentDigestReason,
+          'initiator': 'automation',
+          'tokens': [dayAgentDigestToken('dayplan-2026-09-24')],
+        },
+      ]);
+      final current = boot(async, noOpExecutor);
+      var restored = -1;
+      unawaited(current.restoreWakeIntents().then((n) => restored = n));
+      async.flushMicrotasks();
+      expect(restored, 0);
+      expect(executed, isEmpty);
+      expect(owedTokens(), isEmpty);
+    });
+  });
+
   test('restoration keeps ordinary work separate from a queued outbox job', () {
     fakeAsync((async) {
       final first = boot(async, noOpExecutor);

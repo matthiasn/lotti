@@ -5,13 +5,21 @@ description: Two durable synced entities instead of RPC — binding day directiv
 resource: ../../../lib/features/daily_os_next/agents/service/day_agent_directive_service.dart
 tags: [daily-os, coordination, directives, digest, rollups]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T04:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T09:00:00Z }
 stale_after: 2026-12-24
 sources:
+  - id: digest-recovery-spec
+    resource: ../../../specs/tla/DigestRecovery.tla
+    title: TLA+ model of the digest's crash recovery
+    last_modified: 2026-09-24
+  - id: adr-0070
+    resource: ../../../docs/adr/0070-model-checked-digest-recovery-and-processing-jobs.md
+    title: ADR 0070 — Model-checked digest recovery and processing jobs
+    last_modified: 2026-09-24
   - id: agents
     resource: ../../../lib/features/daily_os_next/agents
     title: Directive, status and digest services
-    last_modified: 2026-08-07
+    last_modified: 2026-09-24
   - id: runtime-maintenance
     resource: ../../../lib/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart
     title: DailyOsRuntimeMaintenance — the beforeWakeScan contributor
@@ -275,7 +283,9 @@ this in-flight handoff; an independent later scan starts clean.
 
 The lease recovers the **claim**, not the run — the run is recovered separately.
 Both completion paths re-arm a *pending* record, on success and on failure
-alike, so a **consumed** record means the process died mid-digest.
+alike, so a **consumed** record means the process died mid-digest — or that
+the consume write landed after a fast run's re-arm, which the watermark check
+below tells apart.
 `ensureCoordinatorDigestWake` then re-arms the slot it already passed rather
 than tomorrow's, which makes the record due immediately.
 
@@ -297,9 +307,12 @@ Five bounds keep the retry from costing more than it saves:
   history, not authority to restart scheduled work.
 - **No digest work is live locally.** The consumed row is written before
   inference begins, so its missing completion watermark is expected while the
-  digest is queued, holds the runner lock, or continues as an uncancellable
+  digest is queued, is held by a drain pass that took it out of the queue but
+  has not started it, holds the runner lock, or continues as an uncancellable
   executor after an abort released that lock. The workspace-scoped
-  `WakeOrchestrator.hasPendingOrActiveWake` probe covers all three states.
+  `WakeOrchestrator.hasPendingOrActiveWake` probe covers all four states; it
+  used to miss the drain-held one, and a retry landing there digested the day
+  twice.
 - **This device ran it.** On a peer, the consumed row can arrive before the
   milestone that followed it, so an absent local watermark there means "not
   synced yet", not "interrupted". Only the host in `leaseHostId` may read its
@@ -311,11 +324,41 @@ Five bounds keep the retry from costing more than it saves:
   lease work, so a long pass crossing midnight records the day the digest
   actually fires. This is a local-calendar comparison only; a backward
   wall-clock adjustment within that day does not invalidate the evidence.
-- **No `dailyWakeCompleted` watermark inside `[consumedAt, now]`.** The crash
-  can land between the milestone and the re-arm, and that run did digest the
-  day. The window is bounded at *both* ends because synced history can carry a
-  future-dated milestone from a skewed peer clock, which an open-ended test
-  would read as proof today's run finished.
+- **No `dailyWakeCompleted` watermark between the start of `consumedAt`'s
+  local day and `now`.** A record can read `consumed` over a digest that did
+  finish: the run commits its milestone and re-arm in one transaction, and the
+  wake manager's consume write — issued right after the enqueue — can land
+  after it and replace the re-armed row. The window is bounded above because
+  synced history can carry a future-dated milestone from a skewed peer clock,
+  which an open-ended test would read as proof today's run finished. It starts
+  at the day, not at `consumedAt`, because the run stamps its milestone from
+  its own clock: a backward step between the fire and the run put a finished
+  digest's milestone just before `consumedAt`, and the retry billed it again.
+
+The consumed record is the digest's **only** crash recovery. Digest wakes are
+never `WakeIntentStore` intents (see
+[wake orchestration](../agents/wake-orchestration.md)): with both, a crash
+mid-digest ran the record's retry and the restored intent, and an intent whose
+settle had not reached disk replayed a digest that had completed. TLC checks
+the single-path design in `specs/tla/DigestRecovery.tla` — at least one
+digest a day across crashes, at most one, and no inference once the day's
+briefing exists (ADR 0070).
+
+```mermaid
+stateDiagram-v2
+  [*] --> Pending: bootstrap or re-arm
+  Pending --> Pending: lease claim, settle, takeover
+  Pending --> Consumed: this device fires it
+  Consumed --> Pending: the run completes or fails, next slot
+  Consumed --> Pending: retry, interrupted here today
+  Consumed --> Pending: advance, watermark today or an older day
+  Consumed --> Consumed: preserve, live work or another claimant
+  note right of Consumed
+    The run re-arms in its own transaction,
+    so a late consume write can hide a
+    finished digest; the watermark reveals it.
+  end note
+```
 
 The retry is the consumed record carried forward by `copyWith`, not a fresh
 row. It keeps the same `scheduledAt`, and consumption is **terminal** for a
@@ -370,6 +413,13 @@ out a settle in
 which the restored run can finish, settle its intent and let the record fire
 the window a second time. The startup scan runs before `restoreWakeIntents`,
 which is what lets it see the owed wake first.
+
+None of this applies to the digest. Its wake is never an intent, so the flush
+has nothing to wait for, the window tag lands nowhere, and `owesWake` is
+always false for it: its consumed record is its single recovery path, as
+above. The owed-wake guard covers the records whose wakes are intents — goal
+and relationship escalations, goal chat recovery, and the per-day agents'
+device-local records.
 
 A later window of the same record id — a second goal escalation the same day
 — causally follows the consumed one and is due a millisecond after it; see

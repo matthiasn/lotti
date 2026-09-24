@@ -138,6 +138,21 @@ extension WakeDrainEngine on WakeOrchestrator {
     _drainOwnedJobs[job.runKey] = job;
   }
 
+  /// Holds [job] back in this pass's [heldBack] list, visible to the
+  /// pending-work probes until [_requeueHeldBack] returns it to the queue.
+  void _holdBack(List<WakeJob> heldBack, WakeJob job) {
+    heldBack.add(job);
+    _heldBackJobs[job.runKey] = job;
+  }
+
+  void _requeueHeldBack(List<WakeJob> heldBack) {
+    for (final job in heldBack) {
+      _heldBackJobs.remove(job.runKey);
+      queue.requeue(job);
+    }
+    heldBack.clear();
+  }
+
   void _forgetDrainOwnedJob(WakeJob job) {
     _drainOwnedJobs.remove(job.runKey);
     _cancelledDrainOwnedRunReasons.remove(job.runKey);
@@ -304,7 +319,7 @@ extension WakeDrainEngine on WakeOrchestrator {
             // active wake uses queue visibility to decide whether to arm its
             // existing follow-up throttle deadline.
             _forgetDrainOwnedJob(job);
-            deferred.add(job);
+            _holdBack(deferred, job);
             continue;
           }
           _trackDrainLease(generation, lease);
@@ -346,7 +361,7 @@ extension WakeDrainEngine on WakeOrchestrator {
               );
               _forgetDrainOwnedJob(job);
               _releaseDrainLease(generation, lease);
-              deferred.add(job);
+              _holdBack(deferred, job);
               continue;
             }
           }
@@ -407,9 +422,7 @@ extension WakeDrainEngine on WakeOrchestrator {
 
         // Requeue skipped busy/throttled jobs before waiting. Active wakes use
         // these queued follow-ups to preserve existing throttle semantics.
-        deferred
-          ..forEach(queue.requeue)
-          ..clear();
+        _requeueHeldBack(deferred);
 
         if (activeExecutions.isEmpty) break;
 
@@ -447,7 +460,7 @@ extension WakeDrainEngine on WakeOrchestrator {
       }
 
       // Re-enqueue deferred jobs without dedup checks.
-      deferred.forEach(queue.requeue);
+      _requeueHeldBack(deferred);
 
       // A stale generation can supersede this scheduler while several wakes
       // are still active. Keep awaiting those futures so this drain never

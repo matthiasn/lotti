@@ -107,6 +107,11 @@ retry at a later instant, check clean.
   death.
 - A message whose author could not answer it is answered half an hour later,
   not at the next scan; a failed recovery is retried when its lease lapses.
+- Decisions 2 and 3 cover the records whose wakes are wake intents. The
+  coordinator digest's wake is not one
+  ([ADR 0070](./0070-model-checked-digest-recovery-and-processing-jobs.md)):
+  for it `owesWake` is always false and its consumed record is the single
+  recovery path.
 - Residuals, documented in `specs/tla/README.md` rather than closed:
   - **A device back from a crash or from sleep acts on its replica before sync
     catches up.** It can confirm its own settled claim, or answer a message
