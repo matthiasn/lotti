@@ -185,7 +185,9 @@ Do NOT recreate the items that were already successful.''';
   /// gets the derived one first — reused when another device's copy has
   /// arrived before the task update listing it
   /// ([ChecklistRepository.derivedChecklistFor]) — so that two devices adding
-  /// to it end up with one checklist.
+  /// to it end up with one checklist. If every derived item was deleted, a
+  /// replay leaves a task without a checklist as it is, rather than creating
+  /// an empty replacement.
   ///
   /// Returns the number of successfully created items.
   Future<int> createBatchItems(FunctionCallResult result) async {
@@ -212,6 +214,29 @@ Do NOT recreate the items that were already successful.''';
 
       final derivedIds = this.derivedIds;
       if (derivedIds != null) {
+        // A replay of a fully deleted batch has no remaining items to house.
+        // Check before creating the next checklist generation, otherwise a
+        // late confirmation brings back an empty container the user removed.
+        if (checklistIds.isEmpty) {
+          final ids = [
+            for (var index = 0; index < items.length; index++)
+              MetadataService.deterministicId(derivedIds.item(index)),
+          ];
+          final existing = await journalDb
+              .journalEntityMapForIdsIncludingDeleted(
+                ids,
+              );
+          if (ids.every((id) => existing[id]?.meta.deletedAt != null)) {
+            for (final (index, item) in items.indexed) {
+              _createdDetails.add({
+                'id': ids[index],
+                'title': item['title'],
+                'isChecked': (item['isChecked'] as bool?) ?? false,
+              });
+            }
+            return items.length;
+          }
+        }
         final checklistId = checklistIds.isNotEmpty
             ? checklistIds.first
             : await checklistRepository.derivedChecklistFor(

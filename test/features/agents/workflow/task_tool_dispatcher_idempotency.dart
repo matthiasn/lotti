@@ -175,6 +175,53 @@ void _registerIdempotency(_Db Function() fixture) {
       },
     );
 
+    test(
+      'replaying a deleted batch does not recreate an empty checklist',
+      () async {
+        final taskId = await bareTask('deleted-batch-task');
+        const args = {'title': 'Retired checklist entry'};
+        final first = await apply(
+          TaskAgentToolNames.addChecklistItem,
+          args,
+          taskId: taskId,
+        );
+        expect(first.success, isTrue, reason: first.output);
+        final itemId = (await idsOf(
+          'ChecklistItem',
+          'Retired checklist entry',
+        )).single;
+        final checklistId = (await storedTask(
+          taskId,
+        )).data.checklistIds!.single;
+        final journal = JournalRepository();
+        expect(await journal.deleteJournalEntity(itemId), isTrue);
+        expect(await journal.deleteJournalEntity(checklistId), isTrue);
+        final current = await storedTask(taskId);
+        expect(
+          await journal.updateJournalEntity(
+            current.copyWith(
+              data: current.data.copyWith(checklistIds: const []),
+            ),
+          ),
+          isTrue,
+        );
+
+        final replay = await apply(
+          TaskAgentToolNames.addChecklistItem,
+          args,
+          taskId: taskId,
+        );
+
+        expect(replay.success, isTrue, reason: replay.output);
+        expect((await storedTask(taskId)).data.checklistIds, isEmpty);
+        expect(await idsOf('Checklist', taskId), isEmpty);
+        expect(
+          await idsOf('ChecklistItem', 'Retired checklist entry'),
+          isEmpty,
+        );
+      },
+    );
+
     group('the derived checklist of a task without one', () {
       const key = 'set-1:0';
       final input = const ChangeEffect(key: key).entityInput('checklist');

@@ -1101,7 +1101,9 @@ flowchart TD
   is the exception, since items need somewhere to go:
   `ChecklistRepository.derivedChecklistFor` reuses a live one under the
   derived id — listing it on the task, whose update can arrive after the
-  checklist — and steps past a deleted one to the next derived id.
+  checklist — and steps past a deleted one to the next derived id. A batch
+  whose derived items are all tombstoned needs no replacement container:
+  replaying it leaves a task without a checklist unchanged.
 - **Set-style tools compare and set.** When the task agent queues a proposal
   to set the title, status, priority, estimate, due date or language, it
   records the value the task holds, read fresh, in `ChangeItem.base`; the
