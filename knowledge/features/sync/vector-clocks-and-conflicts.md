@@ -5,7 +5,7 @@ description: How causal order is represented, why coveredVectorClocks is separat
 resource: ../../../lib/features/sync/vector_clock.dart
 tags: [sync, vector-clock, conflicts, causality]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T15:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T18:00:00Z }
 stale_after: 2026-12-24
 sources:
   - id: vector-clock
@@ -51,6 +51,18 @@ sources:
   - id: adr-0067
     resource: ../../../docs/adr/0067-model-checked-change-set-lifecycle.md
     title: ADR 0067 — Model-checked change-set lifecycle
+    last_modified: 2026-09-24
+  - id: message-dag
+    resource: ../../../lib/features/agents/sync/agent_message_dag.dart
+    title: AgentMessageDag — the head order read before a merge, and the tip an append chains off
+    last_modified: 2026-09-24
+  - id: message-log-spec
+    resource: ../../../specs/tla/AgentMessageLog.tla
+    title: AgentMessageLog — the agent's message DAG and head pointer, model-checked
+    last_modified: 2026-09-24
+  - id: adr-0076
+    resource: ../../../docs/adr/0076-model-checked-agent-head.md
+    title: ADR 0076 — The agent head is a register over the message DAG
     last_modified: 2026-09-24
 ---
 
@@ -263,8 +275,8 @@ row:
 |------------|-----------|
 | a clock missing on either side | Apply the incoming version |
 | `a_gt_b` / `equal` (local wins) | Skip the upsert, restore the local JSON cache when the message came via `jsonPath`, but still record the sequence-log receipt so backfill stops asking |
-| `b_gt_a` (incoming wins) | Apply — with agent state's G-counters and report watermarks joined in from the local row |
-| `concurrent` | The type's override, then last-writer-wins on `updatedAt`, then the canonical clock tiebreak; agent-state G-counters and nudge accumulators merge, and change sets merge item by item (below) |
+| `b_gt_a` (incoming wins) | Apply — with agent state's G-counters and report watermarks joined in from the local row, and the local head kept when it is known to descend from the incoming one (below) |
+| `concurrent` | The type's override, then last-writer-wins on `updatedAt`, then the canonical clock tiebreak; agent-state G-counters and nudge accumulators merge, the agent head follows the message DAG (below), and change sets merge item by item |
 
 The concurrent case picks the strictly-newer `updatedAt`, falling back to a
 replica-independent canonical clock comparison on ties. Type overrides run
@@ -383,6 +395,42 @@ cannot close: an item decided on two devices before they sync is applied on
 both (the rows still converge), and a consolidation on one device racing a
 decision on another leaves a pending copy of an applied change — see
 [ADR 0067](../../../docs/adr/0067-model-checked-change-set-lifecycle.md).
+
+## The agent head follows the message DAG
+
+An agent-state row carries the agent's head pointer, `recentHeadMessageId`:
+the message the next append chains off. Taken from the last writer like the
+other fields, it went back whenever an older head won on `updatedAt` — a
+version from a device whose clock runs ahead, say — and the next append then
+forked the log off the old head (ADR 0071's residual). The head is therefore
+merged apart from the other fields, as a register over the message DAG
+(ADR 0076, `mergeAgentHeads`):
+
+| Heads | Kept |
+|-------|------|
+| one unset | the other |
+| one known here to descend from the other | the descendant, whichever version wins the other fields |
+| no order known here — a true fork, or messages and edges still in flight | the greater id: the same on every device, never the clock or arrival order |
+
+On dominance the incoming head stands unless the local one is known to descend
+from it, or the incoming one is unset: a concurrent merge keeps the winner's
+clock, so a replica can hold a head its successor's writer never saw.
+
+The resolver stays pure. `SyncEventProcessor` reads the order of the two heads
+in the local DAG first (`AgentMessageDag.ancestryOf`, a forward walk over the
+`messagePrev` edges of present rows) and passes it in as `isAncestor`; the
+local write path needs none, since every local head writer reads the row in
+its own transaction. An agent-state row is also read, resolved and written in
+one transaction, as change sets are, and never from the bundle's prefetched
+snapshot: a local append committing in between was otherwise overwritten and
+the head moved back past it.
+
+What the merge cannot know — an order whose rows have not arrived yet — the
+append path settles: `_appendMessage` advances the head to a tip past it
+before chaining (`AgentMessageDag.tipFrom`), so a pointer left on a row that
+has since received a child never forks the log.
+`specs/tla/AgentMessageLog.tla` model-checks both (`HeadNeverRegresses`,
+`AppendsOffTips`, `SettledHead`).
 
 ## Residuals
 

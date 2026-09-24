@@ -61,6 +61,39 @@ ConcurrentWinner resolveConcurrent({
       : ConcurrentWinner.local;
 }
 
+/// Whether message [ancestorId] is a proper ancestor of [descendantId] in
+/// the replica's local `messagePrev` DAG. `false` also means "not known
+/// here": the rows that would show it may not have synced yet.
+typedef MessageAncestry = bool Function(String ancestorId, String descendantId);
+
+/// A [MessageAncestry] that knows no order at all.
+bool noKnownAncestry(String ancestorId, String descendantId) => false;
+
+/// The agent's head pointer after merging two state versions' heads
+/// (ADR 0076). The head is a register over the message DAG, not a
+/// last-writer-wins field:
+///
+/// - an unset head carries no information, so the other one stands;
+/// - of two heads, the one that descends from the other wins, so a merge
+///   never moves the head back to an ancestor of the one it replaces;
+/// - two heads with no order known here — a true fork, or messages and
+///   edges still in flight — go by id, the greater first: the same pair
+///   gives the same head on every replica, never by clock or arrival order.
+///   The fork healer joins a true fork; an append chains off a tip past
+///   whichever head this leaves (`AgentMessageDag.tipFrom`), so a head left
+///   on a row whose child arrives later forks nothing.
+String? mergeAgentHeads({
+  required String? local,
+  required String? incoming,
+  required MessageAncestry isAncestor,
+}) {
+  if (incoming == null || incoming == local) return local;
+  if (local == null) return incoming;
+  if (isAncestor(local, incoming)) return incoming;
+  if (isAncestor(incoming, local)) return local;
+  return local.compareTo(incoming) >= 0 ? local : incoming;
+}
+
 /// The row a replica holding [local] persists after receiving [incoming]:
 /// [local] itself (identical) when the local row stands, otherwise the row
 /// to write in its place. This is the whole receive-path decision, shared by
@@ -71,14 +104,19 @@ ConcurrentWinner resolveConcurrent({
 ///   variant arriving over a payload-less [AgentUnknownEntity] stub (unless
 ///   that would resurrect the stub's tombstone).
 /// - Causal dominance decides next; a dominating [incoming] still has
-///   [local]'s convergent fields joined in ([joinConvergentAgentFields]).
+///   [local]'s convergent fields joined in ([joinConvergentAgentFields]),
+///   and keeps [local]'s agent head when that head is known ([isAncestor])
+///   to descend from its own, or its own is unset (ADR 0076).
 /// - A concurrent pair goes to [mergeConcurrentAgentEntities].
 ///
-/// Pure: the same pair yields the same row on every device. Throws
-/// [VclockException] for a malformed clock, which the caller handles.
+/// [isAncestor] answers for the local message DAG; the caller reads it
+/// before the merge (`AgentMessageDag.ancestryOf`), so this stays pure: the
+/// same pair and the same answers yield the same row on every device.
+/// Throws [VclockException] for a malformed clock, which the caller handles.
 AgentDomainEntity resolveAgentEntityVersions({
   required AgentDomainEntity local,
   required AgentDomainEntity incoming,
+  MessageAncestry isAncestor = noKnownAncestry,
 }) {
   final localVc = local.vectorClock;
   final incomingVc = incoming.vectorClock;
@@ -98,27 +136,53 @@ AgentDomainEntity resolveAgentEntityVersions({
   }
   final resolved = switch (VectorClock.compare(localVc, incomingVc)) {
     VclockStatus.a_gt_b || VclockStatus.equal => local,
-    VclockStatus.b_gt_a => joinConvergentAgentFields(
-      winner: incoming,
-      other: local,
+    VclockStatus.b_gt_a => _keepDescendantHead(
+      joinConvergentAgentFields(winner: incoming, other: local),
+      local: local,
+      isAncestor: isAncestor,
     ),
     VclockStatus.concurrent => mergeConcurrentAgentEntities(
       local: local,
       incoming: incoming,
+      isAncestor: isAncestor,
     ),
   };
   return resolved == local ? local : resolved;
 }
 
+/// [dominating] — a received agent-state version that causally dominates
+/// [local] — with [local]'s head kept when that head is known to descend
+/// from the dominating one's, or the dominating one has none. A replica can
+/// hold a head newer than the version that succeeds its row: a merge of a
+/// concurrent pair keeps the winner's clock, and a head it took from the
+/// other side is not covered by that clock. Other variants come back as
+/// they are.
+AgentDomainEntity _keepDescendantHead(
+  AgentDomainEntity dominating, {
+  required AgentDomainEntity local,
+  required MessageAncestry isAncestor,
+}) {
+  if (dominating is! AgentStateEntity || local is! AgentStateEntity) {
+    return dominating;
+  }
+  final localHead = local.recentHeadMessageId;
+  final head = dominating.recentHeadMessageId;
+  if (localHead == null || localHead == head) return dominating;
+  if (head != null && !isAncestor(head, localHead)) return dominating;
+  return dominating.copyWith(recentHeadMessageId: localHead);
+}
+
 /// Resolves two **concurrent** versions of one entity into the row to keep:
 /// the type's override ([resolveConcurrentAgentEntityOverride]), then
 /// [resolveConcurrent], with the per-type convergent fields joined — agent
-/// state's G-counters ([mergeAgentStateCounters]) and the nudge
-/// accumulators ([mergeNudgeAccumulators]) — and change sets merged item by
-/// item ([mergeConcurrentChangeSets]). A missing clock counts as empty.
+/// state's G-counters ([mergeAgentStateCounters]) and head
+/// ([mergeAgentHeads], ordered by [isAncestor]), and the nudge accumulators
+/// ([mergeNudgeAccumulators]) — and change sets merged item by item
+/// ([mergeConcurrentChangeSets]). A missing clock counts as empty.
 AgentDomainEntity mergeConcurrentAgentEntities({
   required AgentDomainEntity local,
   required AgentDomainEntity incoming,
+  MessageAncestry isAncestor = noKnownAncestry,
 }) {
   final winnerSide =
       resolveConcurrentAgentEntityOverride(local: local, incoming: incoming) ??
@@ -135,6 +199,12 @@ AgentDomainEntity mergeConcurrentAgentEntities({
         winner: winner as AgentStateEntity,
         local: l,
         incoming: i,
+      ).copyWith(
+        recentHeadMessageId: mergeAgentHeads(
+          local: l.recentHeadMessageId,
+          incoming: i.recentHeadMessageId,
+          isAncestor: isAncestor,
+        ),
       ),
     (final GoalNudgeEntity l, final GoalNudgeEntity i) =>
       mergeGoalNudgeAccumulators(
@@ -182,7 +252,10 @@ AgentDomainEntity joinConvergentAgentFields({
 ///   [persisted]; its fields are resolved against it as if the two were
 ///   concurrent, so a stale write can neither revive a retraction nor beat
 ///   a newer timestamp it never saw.
-/// - Agent state never lowers a G-counter or a report watermark.
+/// - Agent state never lowers a G-counter or a report watermark. Its head
+///   needs no ancestry here: every local head writer reads [persisted] in
+///   the same transaction and builds on its head, so a write that moves the
+///   head always covers [persisted] (ADR 0076).
 /// - `updatedAt` never moves backwards, so the successor sorts after the row
 ///   it replaces on every replica, whatever the writer's clock says.
 ///

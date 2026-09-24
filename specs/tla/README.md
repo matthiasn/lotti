@@ -458,11 +458,14 @@ row, the fork healer's join planned from one read and committed in a later
 transaction (an append may run in between — the wake-start hook timed out
 and the executor went ahead), a crash between the two, and sync delivering
 every message, edge and state version once, in any order. The head is a
-field of the state row, resolved by vector clock and then last-writer-wins.
-The runtime is described in
+field of the state row: the other fields of a state version are resolved by
+vector clock and then last-writer-wins, the head by the local message DAG,
+and an append first advances the head to a tip past it. The runtime is
+described in
 [Agent memory and log compaction](../../knowledge/features/agents/memory-and-compaction.md)
-and the decision in
-[ADR 0071](../../docs/adr/0071-model-checked-agent-message-log.md).
+and the decisions in
+[ADR 0071](../../docs/adr/0071-model-checked-agent-message-log.md) and
+[ADR 0076](../../docs/adr/0076-model-checked-agent-head.md).
 
 | Property | Kind | Says |
 |----------|------|------|
@@ -470,14 +473,22 @@ and the decision in
 | `EdgesImmutable` | invariant | an edge id names one parent, whoever writes it |
 | `NoJoinOverNonTip` | invariant | a join is planned only over rows with no child on that device (short of the residual below) |
 | `Converged` | invariant | once every row is delivered, both devices hold the same edges |
+| `SettledHead` | invariant | once every row is delivered and the log has one head, that head is what each device's next append chains off |
 | `LocalHeadAdvances` | action | a device's own write moves its head only to a descendant of the old one |
+| `HeadNeverRegresses` | action | no step — a delivered state version above all — moves a head pointer to a known ancestor of the one it replaces |
+| `AppendsOffTips` | action | an append never chains off a row that already has a child on that device |
 | `EventuallySingleHead` | liveness | with fair delivery and healing, every device ends with one head |
+
+`PointersConverge` — the head pointers themselves agree once sync settles —
+is written down but not claimed: a merge made before the rows that order two
+heads arrived leaves a pointer on the older head until the next append
+advances past it, which `SettledHead` covers.
 
 | Configuration | Appends | Other state writes | Joins | Crashes | Checks | Distinct states |
 |---------------|---------|--------------------|-------|---------|--------|-----------------|
-| `AgentMessageLog` | 2 + 1 | 0 | 1 per device | 0 | safety | 1,523,825 |
-| `AgentMessageLogStale` | 2 + 1 | 1, on the fast device | 0 | 0 | safety | 22,051 |
-| `AgentMessageLogLiveness` | 1 + 1 | 1, on the fast device | 1 per device | 1 | all | 544,627 |
+| `AgentMessageLog` | 2 + 1 | 0 | 1 per device | 0 | safety | 1,922,129 |
+| `AgentMessageLogStale` | 2 + 1 | 1, on the fast device | 0 | 0 | safety | 33,879 |
+| `AgentMessageLogLiveness` | 1 + 1 | 1, on the fast device | 1 per device | 1 | all | 688,421 |
 
 Each fix has a switch that is `TRUE` in the checked-in configurations. Set to
 `FALSE` in a temporary copy, TLC reproduces the hole:
@@ -487,6 +498,9 @@ Each fix has a switch that is `TRUE` in the checked-in configurations. Set to
 | `SafeRecovery` | `AgentMessageLogStale` | `Acyclic`, six steps: the fast device writes its state row with no head, appends a root `b1`; the other device receives `b1`, chains `a1` off it (older `createdAt`), receives the headless state row, which wins last-writer-wins, and its next append re-chains the log by `createdAt`: `msgprev-b1 → a1` closes a cycle |
 | `ChainEdgeGate` | `AgentMessageLog` | `NoJoinOverNonTip`, five steps: `a1` is chained off `b1`; the other device receives `a1` but not its edge and joins `{a1, b1}` |
 | `JoinEdgeGate` | `AgentMessageLog` | `NoJoinOverNonTip`, ten steps: a join of `{a1, b1}` and its device's state row reach the other device without the join's edges; that device appends `a2` off the join, so the join is no longer a head, and joins `{a1, a2, b1}` |
+| `HeadMerge` | `AgentMessageLogStale` | `HeadNeverRegresses`, four steps: the fast device appends a root `b1`; the other device receives `b1`, chains `a1` off it, and receives the fast device's state row, concurrent with its own and later on the skewed clock: last-writer-wins moves the head back to `b1` |
+| `TipAppend` | `AgentMessageLogStale` | `AppendsOffTips`, six steps: one device appends `a1` and `a2`; the other receives `a2` and its edge to `a1`, then the state version naming `a1`, and appends `b1` off `a1`, which already has a child there |
+| `AtomicReceive` | `AgentMessageLogStale` | `HeadNeverRegresses`, five steps: a device reads its state row (no head yet) and resolves the fast device's version (head `b1`) against it; its executor appends `a1` off `b1`; the receive then writes the row it resolved, moving the head back to `b1` |
 
 `appendJoin`'s head guard — move the head onto the join only while it sits
 on a joined parent — was already right; it is what the timed-out heal needs.
@@ -494,15 +508,21 @@ Dropping it from `HealCommit` fails `LocalHeadAdvances` in six steps: the
 healer plans `{a1, b1}`, the executor appends `a2` off `a1`, and the join
 commits and moves the head back, orphaning `a2`.
 
+Without `TipAppend` the settled state is wrong too: with every row
+delivered and one head in the log, a device's pointer can still sit on a row
+with a child, and `SettledHead` fails (nine steps; eight with all three
+switches `FALSE`, the receive and append paths before ADR 0076). The merge
+alone cannot settle it: it orders two heads only as far as the rows it holds
+show.
+
 Residuals:
 
-- **The head pointer can still move back.** A state version from another
-  device can win last-writer-wins with an ancestor of the local head. A
-  temporary configuration checking `HeadNeverRegresses` fails in six steps;
-  the next append forks off the old head, and the next wake that heals joins
-  the fork. Fork healing is off by default, so the fork can stay. Closing it
-  needs a DAG-aware merge of the head on receive, or a check on every append
-  that the head has no child yet.
+- **A child ahead of its own edge.** The tip walk follows `messagePrev`
+  edges, so a message whose own edge has not synced yet is not seen as its
+  parent's child, and an append in that window forks off the parent — the
+  same window the fork healer's chain-edge gate waits out. The message and
+  its edge are written in one transaction and travel together in practice.
+  `AppendsOffTips` counts children by edges, as the code does.
 - **A join row does not name its parents.** A join still missing the edge
   to a parent that is not a head on this device — not arrived, or with
   another child — cannot be told from one whose parent the observation sweep
@@ -664,12 +684,20 @@ For the message log, `test/features/agents/sync/agent_message_log_model_conforma
 (a part of the fork healer's suite) drives two real `AgentSyncService` and
 `ForkHealer` replicas over in-memory stores, the second an hour ahead,
 through generated appends, other state writes, heals and deliveries of
-single outbox rows in any order, received by vector clock and then
-last-writer-wins. After every step it checks `Acyclic`, `EdgesImmutable` and
-`NoJoinOverNonTip`; after delivering everything and healing, `Converged` and
-one head. Reverting head recovery fails it in six steps (the second device's
+single outbox rows in any order — a state version through the shared
+`resolveAgentEntityVersions` with its head ordered by
+`AgentMessageDag.ancestryOf`, an edge by vector clock and then
+last-writer-wins. After every step it checks `Acyclic`, `EdgesImmutable`,
+`NoJoinOverNonTip`, `HeadNeverRegresses` and `AppendsOffTips`; after
+delivering everything and healing, `Converged`, one head and `SettledHead`.
+Reverting head recovery fails it in six steps (the second device's
 first append over a partly synced chain rewrites `msgprev-h1-m3`), removing
-the chain-edge gate in eight. The join gate's interleaving is too specific for
+the chain-edge gate in eight. Dropping the head merge on a concurrent or a
+dominating version fails `HeadNeverRegresses` (`h1-m1 -> h2-m1`), and
+dropping the tip walk fails `AppendsOffTips` (`h1-m2` chained off `h1-m1`,
+which already had a child there). The receive transaction is covered by an
+example in the sync processor's suite, since the trace delivers one row at
+a time. The join gate's interleaving is too specific for
 random traces; its regressions are examples in the same suite. In
 `test/features/agents/projection/compaction_summary_test.dart`, generated
 histories of versions on two devices, a fold over what the folding device

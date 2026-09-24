@@ -5,7 +5,7 @@ description: "A pure, deterministic fold over an event *set* — proving that pr
 resource: ../../../lib/features/agents/projection
 tags: [agents, projection, determinism, convergence]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T18:00:00Z }
 stale_after: 2026-12-24
 sources:
   - id: sync-service
@@ -19,6 +19,14 @@ sources:
   - id: adr-0071
     resource: ../../../docs/adr/0071-model-checked-agent-message-log.md
     title: ADR 0071 — Model-checked agent message log and compaction
+    last_modified: 2026-09-24
+  - id: message-dag
+    resource: ../../../lib/features/agents/sync/agent_message_dag.dart
+    title: AgentMessageDag — head order and tip walks over the local message DAG
+    last_modified: 2026-09-24
+  - id: adr-0076
+    resource: ../../../docs/adr/0076-model-checked-agent-head.md
+    title: ADR 0076 — The agent head is a register over the message DAG
     last_modified: 2026-09-24
   - id: src
     resource: ../../../lib/features/agents/projection
@@ -88,6 +96,14 @@ Both depend on the log staying acyclic — on a cycle `canonicalOrder` throws, t
 healer skips the agent and the recovery starts a new root. That the append,
 join and sync paths keep it acyclic, and every `msgprev-<id>` bound to one
 parent, is model-checked in `specs/tla/AgentMessageLog.tla`.
+
+The head pointer a set head appends from is kept moving forward without the
+projection. `AgentMessageDag` walks the same edges forward from one head —
+the `messagePrev` edges of present, live rows, which is all the fold sees —
+to order two synced heads before a state merge and to advance a pointer that
+trails the log to a tip before an append (ADR 0076). A walk from a head that
+is still a tip reads one batch of links and stops, so an append pays one
+indexed query for it.
 
 # Above the kernel: `DerivedAgentState`
 

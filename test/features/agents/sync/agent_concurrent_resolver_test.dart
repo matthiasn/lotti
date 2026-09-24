@@ -753,4 +753,285 @@ void main() {
       });
     },
   );
+
+  group('the agent head is a register over the message DAG (ADR 0076)', () {
+    // r ← a1 ← a2 on one branch, r ← b1 on the other.
+    const parents = {
+      'a1': {'r'},
+      'a2': {'a1'},
+      'b1': {'r'},
+    };
+    bool dag(String ancestorId, String descendantId) {
+      final pending = [...?parents[descendantId]];
+      while (pending.isNotEmpty) {
+        final next = pending.removeLast();
+        if (next == ancestorId) return true;
+        pending.addAll(parents[next] ?? const {});
+      }
+      return false;
+    }
+
+    AgentStateEntity state({
+      required String? head,
+      required Map<String, int> vc,
+      required DateTime updatedAt,
+      int revision = 1,
+    }) =>
+        (AgentDomainEntity.agentState(
+                  id: 'state-1',
+                  agentId: 'agent-1',
+                  revision: revision,
+                  slots: const AgentSlots(),
+                  updatedAt: updatedAt,
+                  vectorClock: VectorClock(vc),
+                )
+                as AgentStateEntity)
+            .copyWith(recentHeadMessageId: head);
+
+    String? headOf(AgentDomainEntity entity) =>
+        (entity as AgentStateEntity).recentHeadMessageId;
+
+    test('mergeAgentHeads: the descendant wins in both directions', () {
+      expect(
+        mergeAgentHeads(local: 'a2', incoming: 'r', isAncestor: dag),
+        'a2',
+      );
+      expect(
+        mergeAgentHeads(local: 'r', incoming: 'a2', isAncestor: dag),
+        'a2',
+      );
+    });
+
+    test('mergeAgentHeads: an unset head never wins', () {
+      expect(
+        mergeAgentHeads(local: null, incoming: 'a1', isAncestor: dag),
+        'a1',
+      );
+      expect(
+        mergeAgentHeads(local: 'a1', incoming: null, isAncestor: dag),
+        'a1',
+      );
+      expect(
+        mergeAgentHeads(local: null, incoming: null, isAncestor: dag),
+        isNull,
+      );
+    });
+
+    test('mergeAgentHeads: a true fork, or an unknown order, goes by id — '
+        'the same head whichever side receives', () {
+      expect(
+        mergeAgentHeads(local: 'a2', incoming: 'b1', isAncestor: dag),
+        'b1',
+      );
+      expect(
+        mergeAgentHeads(local: 'b1', incoming: 'a2', isAncestor: dag),
+        'b1',
+      );
+      // Rows not synced yet: `r` descends from nothing known here.
+      expect(
+        mergeAgentHeads(
+          local: 'r',
+          incoming: 'a2',
+          isAncestor: noKnownAncestry,
+        ),
+        'r',
+      );
+      expect(
+        mergeAgentHeads(
+          local: 'a2',
+          incoming: 'r',
+          isAncestor: noKnownAncestry,
+        ),
+        'r',
+      );
+    });
+
+    test('mergeAgentHeads over every pair: symmetric, one of the two, never '
+        'a known ancestor of the other (HeadNeverRegresses)', () {
+      const heads = [null, 'r', 'a1', 'a2', 'b1'];
+      for (final local in heads) {
+        for (final incoming in heads) {
+          final merged = mergeAgentHeads(
+            local: local,
+            incoming: incoming,
+            isAncestor: dag,
+          );
+          final reason = 'local $local, incoming $incoming';
+          expect(
+            merged,
+            mergeAgentHeads(local: incoming, incoming: local, isAncestor: dag),
+            reason: reason,
+          );
+          expect([local, incoming], contains(merged), reason: reason);
+          for (final other in [local, incoming]) {
+            if (merged != null && other != null) {
+              expect(dag(merged, other), isFalse, reason: reason);
+            }
+          }
+        }
+      }
+    });
+
+    test('a concurrent version that wins last-writer-wins with an ancestor '
+        'of the local head keeps the local head (TLC: HeadNeverRegresses)', () {
+      final local = state(
+        head: 'a1',
+        vc: {'local': 1},
+        updatedAt: DateTime(2026, 9, 1, 9),
+      );
+      final incoming = state(
+        head: 'r',
+        vc: {'peer': 1},
+        updatedAt: DateTime(2026, 9, 1, 12),
+        revision: 2,
+      );
+
+      final resolved =
+          resolveAgentEntityVersions(
+                local: local,
+                incoming: incoming,
+                isAncestor: dag,
+              )
+              as AgentStateEntity;
+
+      expect(resolved.recentHeadMessageId, 'a1');
+      // Every other field is still the last writer's.
+      expect(resolved.revision, 2);
+      expect(resolved.vectorClock, incoming.vectorClock);
+    });
+
+    test('a concurrent version that loses last-writer-wins still carries '
+        'its head forward when that head descends from the local one', () {
+      final local = state(
+        head: 'r',
+        vc: {'local': 1},
+        updatedAt: DateTime(2026, 9, 1, 12),
+      );
+      final incoming = state(
+        head: 'a2',
+        vc: {'peer': 1},
+        updatedAt: DateTime(2026, 9, 1, 9),
+        revision: 2,
+      );
+
+      final resolved =
+          resolveAgentEntityVersions(
+                local: local,
+                incoming: incoming,
+                isAncestor: dag,
+              )
+              as AgentStateEntity;
+
+      expect(resolved.recentHeadMessageId, 'a2');
+      expect(resolved.revision, 1);
+      expect(resolved.vectorClock, local.vectorClock);
+    });
+
+    test('two replicas holding a concurrent pair settle on one head', () {
+      final a = state(
+        head: 'a2',
+        vc: {'A': 1},
+        updatedAt: DateTime(2026, 9, 1, 12),
+      );
+      final b = state(
+        head: 'b1',
+        vc: {'B': 1},
+        updatedAt: DateTime(2026, 9, 1, 9),
+      );
+
+      for (final isAncestor in [dag, noKnownAncestry]) {
+        final onA = resolveAgentEntityVersions(
+          local: a,
+          incoming: b,
+          isAncestor: isAncestor,
+        );
+        final onB = resolveAgentEntityVersions(
+          local: b,
+          incoming: a,
+          isAncestor: isAncestor,
+        );
+        expect(headOf(onA), 'b1');
+        expect(headOf(onB), headOf(onA));
+      }
+    });
+
+    test('a dominating version keeps a local head known to descend from its '
+        'own, or when it has none', () {
+      final local = state(
+        head: 'a2',
+        vc: {'peer': 1},
+        updatedAt: DateTime(2026, 9, 1, 12),
+      );
+      for (final head in ['a1', null]) {
+        final successor = state(
+          head: head,
+          vc: {'peer': 2},
+          updatedAt: DateTime(2026, 9, 1, 13),
+          revision: 2,
+        );
+
+        final resolved =
+            resolveAgentEntityVersions(
+                  local: local,
+                  incoming: successor,
+                  isAncestor: dag,
+                )
+                as AgentStateEntity;
+
+        expect(resolved.recentHeadMessageId, 'a2', reason: 'head $head');
+        expect(resolved.revision, 2);
+        expect(resolved.vectorClock, successor.vectorClock);
+      }
+    });
+
+    test('a dominating version otherwise brings its own head — a descendant, '
+        'another branch, or one whose order is not known here', () {
+      final local = state(
+        head: 'a1',
+        vc: {'peer': 1},
+        updatedAt: DateTime(2026, 9, 1, 12),
+      );
+      for (final (head, isAncestor) in [
+        ('a2', dag),
+        ('b1', dag),
+        ('r', noKnownAncestry),
+      ]) {
+        final successor = state(
+          head: head,
+          vc: {'peer': 2},
+          updatedAt: DateTime(2026, 9, 1, 13),
+        );
+
+        expect(
+          headOf(
+            resolveAgentEntityVersions(
+              local: local,
+              incoming: successor,
+              isAncestor: isAncestor,
+            ),
+          ),
+          head,
+        );
+      }
+    });
+
+    test('without an ancestry oracle a concurrent pair falls back to the id '
+        'order', () {
+      final local = state(
+        head: 'a1',
+        vc: {'local': 1},
+        updatedAt: DateTime(2026, 9, 1, 9),
+      );
+      final incoming = state(
+        head: 'r',
+        vc: {'peer': 1},
+        updatedAt: DateTime(2026, 9, 1, 12),
+      );
+
+      expect(
+        headOf(resolveAgentEntityVersions(local: local, incoming: incoming)),
+        'r',
+      );
+    });
+  });
 }

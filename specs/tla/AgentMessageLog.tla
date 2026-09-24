@@ -9,9 +9,11 @@
 (* What is modelled, and where it lives in the Dart code:                  *)
 (*                                                                         *)
 (*   Append        AgentSyncService._appendMessage: one transaction reads  *)
-(*                 the state row's recentHeadMessageId, chains the message *)
-(*                 off it (prevMessageId + edge `msgprev-<id>`) and moves  *)
-(*                 the head. A null head over a non-empty log goes through *)
+(*                 the state row's recentHeadMessageId, advances it past   *)
+(*                 any child it already has here to a tip beyond it        *)
+(*                 (AgentMessageDag.tipFrom), chains the message off that  *)
+(*                 (prevMessageId + edge `msgprev-<id>`) and moves the     *)
+(*                 head. A null head over a non-empty log goes through     *)
 (*                 _recoverHead: the legacy spine (_backfillMessageChain)  *)
 (*                 only for a log with no DAG evidence, otherwise a head   *)
 (*                 of the local projection, writing no edge                *)
@@ -30,8 +32,14 @@
 (*   Deliver       the sync receive path: rows are keyed by id; an edge or *)
 (*                 state version is resolved by vector clock, then last-   *)
 (*                 writer-wins on (updatedAt, host)                        *)
-(*                 (resolveAgentEntityVersions); the head is a plain field *)
-(*                 of the state row                                        *)
+(*                 (resolveAgentEntityVersions). The head is merged apart  *)
+(*                 from the other fields (mergeAgentHeads, ADR 0076): of   *)
+(*                 two heads the one that descends from the other here     *)
+(*                 wins, and two heads with no known order go by id. A     *)
+(*                 state version is read, resolved and written in one      *)
+(*                 transaction (_applyAgentStateMessage)                   *)
+(*   ReceiveWrite  only with AtomicReceive FALSE: the write of a state     *)
+(*                 version resolved against a local row read earlier       *)
 (*   Crash         process death: a planned, uncommitted join is lost;     *)
 (*                 committed rows and their outbox entries survive (the    *)
 (*                 sequence log re-delivers them, SyncSequence.tla)        *)
@@ -39,8 +47,9 @@
 (* A join's identity is its parent set, as computeJoinId's digest is. A    *)
 (* row's createdAt is the minting device's clock; the device with the      *)
 (* highest id runs `Skew` ticks ahead, so createdAt order can disagree     *)
-(* with causal order. The three switches are TRUE in the code; setting one *)
-(* FALSE restores the behaviour before ADR 0071. `badJoin`, `ctOf` and     *)
+(* with causal order. The six switches are TRUE in the code; setting one   *)
+(* FALSE restores the behaviour before ADR 0071 (the first three) or ADR    *)
+(* 0076 (the last three). `badJoin`, `ctOf` and                            *)
 (* `prevOf` are ghosts: what the minting device knew, which no other       *)
 (* device's rows need to show.                                             *)
 (***************************************************************************)
@@ -57,8 +66,11 @@ CONSTANTS
     Skew,             \* how far the highest device's clock runs ahead
     SafeRecovery,     \* a null head never rewrites an existing DAG
     ChainEdgeGate,    \* a message whose own edge has not synced defers a heal
-    JoinEdgeGate      \* any join (not only a head) whose missing edges point
+    JoinEdgeGate,     \* any join (not only a head) whose missing edges point
                       \* at heads defers a heal
+    HeadMerge,        \* a received state version's head is merged by ancestry
+    TipAppend,        \* an append chains off a tip at or beyond the head
+    AtomicReceive     \* a state version is read, resolved and written at once
 
 None == [k |-> "none", d |-> 0, n |-> 0, p |-> {}]
 Msg(d, n) == [k |-> "m", d |-> d, n |-> n, p |-> {}]
@@ -89,10 +101,12 @@ VARIABLES
     heals,     \* committed joins per device
     now,       \* global mint counter
     crashes,
-    badJoin    \* ghost: a join was planned over a non-tip
+    badJoin,   \* ghost: a join was planned over a non-tip
+    rcv        \* per device: a resolved state row not yet written ({} or
+               \* one row; only with AtomicReceive FALSE)
 
 vars == <<nodes, edges, st, ctOf, prevOf, sent, got, plan, cnt, sw, heals,
-          now, crashes, badJoin>>
+          now, crashes, badJoin, rcv>>
 
 Max(a, b) == IF a >= b THEN a ELSE b
 
@@ -226,11 +240,20 @@ Init ==
     /\ now = 0
     /\ crashes = 0
     /\ badJoin = FALSE
+    /\ rcv = [d \in Devices |-> {}]
+
+\* The tips at or beyond head `h` (AgentMessageDag.tipFrom): `h` itself
+\* when nothing here descends from it. The code follows one child at a
+\* time, the lowest id first; any tip here over-approximates that choice.
+Advance(d, h) ==
+    LET beyond == {t \in Heads(d) : h \in Ancestors(d, t)}
+    IN IF TipAppend /\ beyond # {} THEN beyond ELSE {h}
 
 \* The head an append chains off, and the edges recovering it writes.
 Recovery(d) ==
     LET h0 == st[d].head IN
-    IF h0 # None \/ nodes[d] = {} THEN {[head |-> h0, spine |-> {}]}
+    IF h0 # None THEN {[head |-> h, spine |-> {}] : h \in Advance(d, h0)}
+    ELSE IF nodes[d] = {} THEN {[head |-> None, spine |-> {}]}
     ELSE IF ~SafeRecovery \/ Legacy(d)
          THEN {[head |-> Newest(d), spine |-> SpineEdges(d)]}
     \* A head of the local projection; a root on a corrupt (cyclic) log. The
@@ -258,7 +281,7 @@ Append(d) ==
                           \cup EdgeItems(d, r.spine \cup own))
     /\ cnt' = [cnt EXCEPT ![d] = @ + 1]
     /\ now' = now + 1
-    /\ UNCHANGED <<plan, sw, heals, crashes, badJoin>>
+    /\ UNCHANGED <<plan, sw, heals, crashes, badJoin, rcv>>
 
 StateWrite(d) ==
     /\ sw[d] < StateWrites(d)
@@ -268,7 +291,7 @@ StateWrite(d) ==
     /\ sw' = [sw EXCEPT ![d] = @ + 1]
     /\ now' = now + 1
     /\ UNCHANGED <<nodes, edges, ctOf, prevOf, plan, cnt, heals, crashes,
-                   badJoin>>
+                   badJoin, rcv>>
 
 HealPlan(d) ==
     /\ plan[d] = {}
@@ -279,7 +302,7 @@ HealPlan(d) ==
     /\ plan' = [plan EXCEPT ![d] = Heads(d)]
     /\ badJoin' = (badJoin \/ (NonTip(d, Heads(d)) /\ ~BlindJoin(d)))
     /\ UNCHANGED <<nodes, edges, st, ctOf, prevOf, sent, got, cnt, sw, heals,
-                   now, crashes>>
+                   now, crashes, rcv>>
 
 HealCommit(d) ==
     /\ plan[d] # {}
@@ -300,7 +323,7 @@ HealCommit(d) ==
     /\ plan' = [plan EXCEPT ![d] = {}]
     /\ heals' = [heals EXCEPT ![d] = @ + 1]
     /\ now' = now + 1
-    /\ UNCHANGED <<prevOf, cnt, sw, crashes, badJoin>>
+    /\ UNCHANGED <<prevOf, cnt, sw, crashes, badJoin, rcv>>
 
 Crash(d) ==
     /\ crashes < MaxCrashes
@@ -308,7 +331,7 @@ Crash(d) ==
     /\ plan' = [plan EXCEPT ![d] = {}]
     /\ crashes' = crashes + 1
     /\ UNCHANGED <<nodes, edges, st, ctOf, prevOf, sent, got, cnt, sw, heals,
-                   now, badJoin>>
+                   now, badJoin, rcv>>
 
 -----------------------------------------------------------------------------
 (* Receiving.                                                              *)
@@ -316,11 +339,35 @@ Crash(d) ==
 Dominates(a, b) == (\A e \in Devices : a[e] >= b[e]) /\ a # b
 Later(a, b) == a[1] > b[1] \/ (a[1] = b[1] /\ a[2] > b[2])
 
-ResolveState(local, in) ==
-    IF Dominates(in.vc, local.vc) THEN in
+\* Head `a` is an ancestor of `b` here: the question the caller answers from
+\* the local DAG before the merge (AgentMessageDag.ancestryOf).
+Below(d, a, b) == a \in Ancestors(d, b)
+
+\* mergeAgentHeads: an unset head carries no information; of two heads the
+\* one that descends from the other wins; two heads with no order known
+\* here — a true fork, or rows not yet delivered — go by a fixed order on
+\* ids, never by clock or arrival. TLC's value order stands in for the
+\* code's id order.
+MergeHead(d, l, i) ==
+    IF i = None \/ i = l THEN l
+    ELSE IF l = None THEN i
+    ELSE IF Below(d, l, i) THEN i
+    ELSE IF Below(d, i, l) THEN l
+    ELSE CHOOSE x \in {l, i} : TRUE
+
+\* resolveAgentEntityVersions for the state row. A dominating version keeps
+\* the local head only when that head is known to descend from its own (or
+\* its own is unset); a concurrent pair merges the heads.
+ResolveState(d, local, in) ==
+    IF Dominates(in.vc, local.vc) THEN
+        IF HeadMerge /\ (in.head = None \/ Below(d, in.head, local.head))
+        THEN [in EXCEPT !.head = local.head]
+        ELSE in
     ELSE IF Dominates(local.vc, in.vc) \/ local.vc = in.vc THEN local
-    ELSE IF Later(<<in.ts, in.by>>, <<local.ts, local.by>>) THEN in
-    ELSE local
+    ELSE LET w == IF Later(<<in.ts, in.by>>, <<local.ts, local.by>>)
+                  THEN in ELSE local
+         IN IF HeadMerge THEN [w EXCEPT !.head = MergeHead(d, local.head, in.head)]
+            ELSE w
 
 \* Every edge version is concurrent with every other one (each link write
 \* starts from a null clock), so last-writer-wins decides.
@@ -330,25 +377,41 @@ ResolveEdges(E, in) ==
     ELSE LET cur == CHOOSE e \in same : TRUE IN
          IF Later(in.ver, cur.ver) THEN (E \ same) \cup {in} ELSE E
 
+\* The processor handles one row at a time, so nothing is delivered to a
+\* device while it holds a resolved state row it has not written.
 Deliver(d, i) ==
+    /\ rcv[d] = {}
     /\ i \in sent \ got[d]
     /\ got' = [got EXCEPT ![d] = @ \cup {i}]
     /\ CASE i.t = "node" ->
               /\ nodes' = [nodes EXCEPT ![d] = @ \cup {i.id}]
-              /\ UNCHANGED <<edges, st>>
+              /\ UNCHANGED <<edges, st, rcv>>
          [] i.t = "edge" ->
               /\ edges' = [edges EXCEPT ![d] = ResolveEdges(@, i.e)]
-              /\ UNCHANGED <<nodes, st>>
+              /\ UNCHANGED <<nodes, st, rcv>>
          [] OTHER ->
-              /\ st' = [st EXCEPT ![d] = ResolveState(@, i.s)]
+              /\ IF AtomicReceive
+                 THEN /\ st' = [st EXCEPT ![d] = ResolveState(d, @, i.s)]
+                      /\ UNCHANGED rcv
+                 ELSE /\ rcv' = [rcv EXCEPT ![d] = {ResolveState(d, st[d], i.s)}]
+                      /\ UNCHANGED st
               /\ UNCHANGED <<nodes, edges>>
     /\ UNCHANGED <<ctOf, prevOf, sent, plan, cnt, sw, heals, now, crashes,
                    badJoin>>
 
+\* The write of a state row resolved against the row read before it: any
+\* local write in between is lost.
+ReceiveWrite(d) ==
+    /\ rcv[d] # {}
+    /\ st' = [st EXCEPT ![d] = CHOOSE r \in rcv[d] : TRUE]
+    /\ rcv' = [rcv EXCEPT ![d] = {}]
+    /\ UNCHANGED <<nodes, edges, ctOf, prevOf, sent, got, plan, cnt, sw, heals,
+                   now, crashes, badJoin>>
+
 Next ==
     \/ \E d \in Devices :
           \/ Append(d) \/ StateWrite(d) \/ HealPlan(d) \/ HealCommit(d)
-          \/ Crash(d)
+          \/ Crash(d) \/ ReceiveWrite(d)
     \/ \E d \in Devices, i \in sent : Deliver(d, i)
 
 \* Sync delivers everything eventually; a wake that finds a fork over a
@@ -358,6 +421,7 @@ Fairness ==
         /\ WF_vars(HealPlan(d))
         /\ WF_vars(HealCommit(d))
         /\ WF_vars(\E i \in sent : Deliver(d, i))
+        /\ WF_vars(ReceiveWrite(d))
 
 Spec == Init /\ [][Next]_vars /\ Fairness
 
@@ -422,10 +486,35 @@ LocalHeadAdvances ==
           /\ st'[d].head # st[d].head)
             => st[d].head \in (Ancestors(d, st[d].head))']_vars
 
-\* Not claimed (README: residuals): a delivered state row never moves the
-\* head pointer back to an ancestor of the one it replaces. (It can clear the
-\* pointer; the next append then recovers a head from the log.)
+\* No state write — a delivered version above all — moves the head pointer
+\* back to an ancestor of the one it replaces (ADR 0076). A version whose
+\* head is not known here to be older can still move it sideways, onto
+\* another fork's tip, or onto a row still in flight; `AppendsOffTips` is
+\* what keeps that from forking the log.
 HeadNeverRegresses ==
     [][\A d \in Devices :
          st[d].head # None => st'[d].head \notin Ancestors(d, st[d].head)]_vars
+
+\* An append never chains off a row that already has a child here: the log
+\* forks only when two devices append concurrently, never because one of
+\* them holds a stale head pointer.
+AppendsOffTips ==
+    [][\A d \in Devices :
+         \A m \in nodes'[d] \ nodes[d] :
+             (m.k = "m" /\ m.d = d /\ prevOf'[m] # None)
+                 => ~\E e \in LocalEdges(d) : e.to = prevOf'[m]]_vars
+
+\* Once sync settles on one head, every device's next append chains off it,
+\* whatever its head pointer says.
+SettledHead ==
+    \A d \in Devices :
+        (AllDelivered /\ rcv[d] = {} /\ Cardinality(Heads(d)) = 1)
+            => {r.head : r \in Recovery(d)} = Heads(d)
+
+\* Not claimed: the head pointers themselves agree once sync settles. A
+\* pointer left on an ancestor by a merge made before the rows arrived
+\* stays there until the next append advances past it.
+PointersConverge ==
+    (AllDelivered /\ \A d \in Devices : Cardinality(Heads(d)) = 1)
+        => \A d, e \in Devices : st[d].head = st[e].head
 =============================================================================

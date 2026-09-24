@@ -203,6 +203,24 @@ class InMemoryAgentRepository extends MockAgentRepository {
   }
 
   @override
+  Future<Map<String, List<AgentLink>>> getLinksToMultiple(
+    List<String> toIds, {
+    required String type,
+  }) async {
+    recordRead();
+    final ids = toIds.toSet();
+    final result = <String, List<AgentLink>>{};
+    for (final link in _links.values) {
+      if (ids.contains(link.toId) &&
+          link.deletedAt == null &&
+          AgentDbConversions.linkType(link) == type) {
+        (result[link.toId] ??= []).add(link);
+      }
+    }
+    return result;
+  }
+
+  @override
   Future<Map<String, List<AgentLink>>> getLinksFromMultiple(
     List<String> fromIds, {
     required String type,
