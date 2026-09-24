@@ -704,13 +704,14 @@ void main() {
   group('SyncEventProcessor - superseded link versions', () {
     late JournalDb realJournalDb;
 
-    // Removed on device B after it had device A's version {device-a: 5}.
+    // Removed on device B after it had device A's version {device-a: 5}. A's
+    // clock ran ahead, so B's tombstone keeps A's stamp (linkEditTimestamp).
     final removed = EntryLink.basic(
       id: 'removed-link',
       fromId: 'entry-id',
       toId: 'other-entry',
       createdAt: DateTime(2024, 6, 1),
-      updatedAt: DateTime(2024, 6, 2),
+      updatedAt: DateTime(2100),
       vectorClock: const VectorClock({'device-a': 5, 'device-b': 1}),
       hidden: true,
       deletedAt: DateTime(2024, 6, 2),

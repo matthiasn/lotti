@@ -3675,10 +3675,9 @@ void main() {
             ..registerSingleton<VectorClockService>(VectorClockService());
         },
       );
+      // A fresh device: its first counter is 0, which VectorClock.compare
+      // reads the same as an absent host — the link order must not.
       await getIt<VectorClockService>().initialized;
-      // This device has written before. Its first counter, 0, would compare
-      // equal to an absent entry and leave the clocks tied.
-      await getIt<VectorClockService>().getNextVectorClock();
     });
 
     tearDown(() async {
@@ -3712,7 +3711,7 @@ void main() {
         final host = (await getIt<VectorClockService>().getHost())!;
         // The edit extends the clock of the version it replaced, and is not
         // stamped earlier than that version.
-        expect(edited.vectorClock?.vclock, {'device-a': 5, host: 1});
+        expect(edited.vectorClock?.vclock, {'device-a': 5, host: 0});
         expect(edited.updatedAt, DateTime(2100));
 
         // Device A's next journal-entity message embeds its snapshot of the

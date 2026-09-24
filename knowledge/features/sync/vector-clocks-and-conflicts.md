@@ -311,33 +311,35 @@ badges.
 A link has no conflict UI: every device keeps one version, and it must be the
 same one. Versions arrive as `entryLink` messages, as backfill answers and
 inside every journal-entity message, which embeds a snapshot of the entry's
-links. `JournalDb.upsertEntryLink` orders them in its transaction, for sync
-and local writers alike, and refuses a version older than the stored one:
+links. `JournalDb.upsertEntryLink` orders them by one key in its
+transaction, for sync and local writers alike, and refuses a version older
+than the stored one:
 
 ```mermaid
 flowchart TD
     In[incoming version of a stored link] --> Same{serialized the same?}
     Same -->|yes| Skip[no write]
-    Same -->|no| Clocks{both clocks present?}
-    Clocks -->|yes| Cmp{VectorClock.compare stored, incoming}
-    Cmp -->|stored dominates| Refuse[refuse: rows = 0]
-    Cmp -->|incoming dominates| Apply[upsert]
-    Cmp -->|equal or concurrent| Ts{same updatedAt?}
-    Clocks -->|no| Ts
+    Same -->|no| Ts{same updatedAt?}
     Ts -->|no| Later[the later updatedAt wins]
-    Ts -->|yes| Canon{compareClocksCanonically decides?}
-    Canon -->|yes| Larger[the canonically larger clock wins]
-    Canon -->|no| Content[the larger serialized version wins]
+    Ts -->|yes| Clock{clocks differ host by host?}
+    Clock -->|yes| Larger[the larger counter at the first differing host wins; absent ranks below 0]
+    Clock -->|no| Content[the larger serialized version wins]
 ```
 
-It is the order `resolveAgentEntityVersions` applies to agent entities (below),
-with no type override and no counters to join. It converges only because the
-writers keep it consistent with the clocks, exactly as `AgentReplication.tla`
-requires of agent writes (`IntentCarriesClock`, `ClampTimestamp`): an edit
-reserves with the stored link's clock as `previous`, and `linkEditTimestamp`
-never stamps it earlier than the version it replaces, even when a peer's wall
-clock ran ahead. A refused version is still recorded as received in the
-sequence log. The stored clock covers its counter.
+A single lexicographic key is transitive for any mix of versions, clockless
+legacy copies included. A dominance check with a timestamp fallback, the order
+agent entities use (below), can form a cycle on such a mix. The key agrees
+with causality because of the writers, as `AgentReplication.tla` requires of
+agent writes (`IntentCarriesClock`, `ClampTimestamp`). An edit reserves with
+the stored link's clock as `previous`, so its clock is its predecessor's plus
+this host's next counter. `linkEditTimestamp` never stamps it earlier than the
+version it replaces, even when a peer's wall clock ran ahead. An absent host
+ranks below counter 0 because a new host's first counter *is* 0:
+`VectorClock.compare` reads that edit as equal to its predecessor, and the link
+order must not. Journal entries and agent entities still have that equality
+([ADR 0078](../../../docs/adr/0078-entry-link-versions-are-ordered.md),
+Consequences). A refused version is still recorded as received in the sequence
+log. The stored clock covers its counter.
 
 Links written before ADR 0078 have clocks without their predecessor's entries.
 Pairs of those are concurrent and ordered by `updatedAt` until the link's next

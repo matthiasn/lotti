@@ -31,15 +31,23 @@ two holes:
    responder could not answer an older counter from the current row, because
    that row's clock no longer covered it.
 
-`AgentReplication.tla` (ADR 0068) already checks the order this needs, for
-agent entities: causal dominance, then the later `updatedAt`, then a canonical
-clock order, with two fixes on the writing side. `IntentCarriesClock` and
-`ResolveLocalWrites`: a write carries the clock of the row it replaces.
-`ClampTimestamp`: a successor is never stamped earlier than its predecessor.
-With either switch off, TLC finds `Converged` or `LocalWriteTakesEffect`
-violated in a few steps. An entry link is that model's `"state"` register
-without G-counters and without a type override. No separate spec is needed.
-The links now follow the same rules as the modelled design.
+`AgentReplication.tla` (ADR 0068) checks the writer-side half of this for
+agent entities. `IntentCarriesClock` and `ResolveLocalWrites`: a write
+carries the clock of the row it replaces. `ClampTimestamp`: a successor is
+never stamped earlier than its predecessor. With either switch off, TLC finds
+`Converged` or `LocalWriteTakesEffect` violated in a few steps. The agent
+receive rule puts causal dominance first and falls back to `updatedAt`. For
+links we use a single lexicographic key instead (Decision 1). Such a rule is
+transitive for any mix of versions, including clockless legacy copies. A
+dominance check followed by a timestamp fallback is not: a clock-dominant
+version stamped earlier than its predecessor, plus a clockless copy stamped
+in between, form a cycle. Given the two writer-side rules, the two orders
+agree on every history the writers produce. No separate spec is needed.
+
+Review found one more edge. A new host's first counter is 0, and
+`VectorClock.compare` reads an absent host as 0. So a fresh device's first
+edit, `{…, host: 0}`, compares *equal* to the version it extends. The link
+order therefore reads an absent host as lower than any counter, 0 included.
 
 The same audit found `JournalRepository.createTextEntry` taking a
 `required String id` and ignoring it. Every caller passed a fresh `uuid.v1()`
@@ -48,23 +56,25 @@ on the parameter. It only suggested a way to choose the id that did not exist.
 
 ## Decision
 
-1. **The receive orders versions.** `JournalDb.upsertEntryLink` refuses a
-   version older than the stored one: the stored clock dominates it, or the
-   two are concurrent (or clockless) and it has the earlier `updatedAt`, or
-   the same `updatedAt` and the canonically smaller clock
-   (`compareClocksCanonically`). When even the canonical clocks tie, which
-   happens only with equal clocks, the serialized versions decide. The check
-   runs in the upsert's transaction, for every caller: both sync handlers and
-   the local writers.
+1. **The receive orders versions by one key.** `JournalDb.upsertEntryLink`
+   refuses any version that is older than the stored one under a single
+   ordering:
+   - the later `updatedAt` wins;
+   - on a tie, the clocks are compared host by host in sorted order, and the
+     first counter that differs decides. A host absent from a clock ranks
+     below every counter, 0 included;
+   - if the clocks tie too, the serialized version decides.
+
+   The check runs in the upsert's transaction for every caller: both sync
+   handlers and the local writers.
 2. **An edit succeeds its predecessor.** A local update reserves its clock
    with the stored link's clock as `previous` (`updateLink` merges the stored
-   and the caller's copy), and stamps `updatedAt` with `linkEditTimestamp`: now,
-   or the predecessor's stamp when a peer's clock ran ahead. Dominance then
-   implies a stamp at least as late, so the fallback order never contradicts
-   the clocks.
-3. **The canonical clock order is shared.** `compareClocksCanonically` moves
-   from the agents' resolver to `lib/features/sync/vector_clock.dart`.
-4. **`createTextEntry` loses its `id` parameter.** The id is minted with the
+   copy and the caller's). It stamps `updatedAt` with `linkEditTimestamp`:
+   now, or the predecessor's stamp when a peer's clock ran ahead. The edit
+   therefore has the later stamp, or ties on it. On a tie it ranks higher on
+   the clock: the edit's clock is its predecessor's plus this host's next
+   counter, which is either larger than before or new.
+3. **`createTextEntry` loses its `id` parameter.** The id is minted with the
    metadata, where the reservation names it, as ADR 0077 requires.
 
 ## Consequences
@@ -81,6 +91,16 @@ on the parameter. It only suggested a way to choose the id that did not exist.
   causally again after its next edit.
 - A local edit that loses a race with a sync arrival between its read and its
   write is refused like any older version. `updateLink` reports false.
+- A version that dominates by clock but is stamped *earlier* than the stored
+  one loses. The writers never produce one (Decision 2). A version like that
+  can only come from a device whose clock runs behind and which predates
+  this change, and it can then be ordered by timestamp alone.
+- The zero-counter equality reaches beyond links. Journal entries
+  (`JournalDb.updateJournalEntity` applies only `b_gt_a`) and agent entities
+  (the resolver and the dominance pre-check keep local on `equal`) read a new
+  host's first update of an existing row as equal to that row and keep the
+  row. That is a separate fix, in `VectorClockService` or in
+  `VectorClock.compare`, and it is left open here.
 - Residual, not addressed here: `JournalRepository.removeLink` and
   `removeTypedLink` hard-delete the row on this device and send nothing. Peers
   keep the link, and the next journal-entity message from a peer that embeds
@@ -92,8 +112,7 @@ on the parameter. It only suggested a way to choose the id that did not exist.
 
 - [ADR 0068](./0068-model-checked-agent-convergence.md) — the order and the
   writer-side fixes, model-checked for agent entities
-- [ADR 0077](./0077-a-reservation-names-the-id-written.md) (PR #4464) — a reservation
-  names the id that is written
+- ADR 0077, "A reservation names the id that is written" (in PR #4464)
 - `specs/tla/AgentReplication.tla`, `specs/tla/README.md`
 - [Vector clocks and conflicts](../../knowledge/features/sync/vector-clocks-and-conflicts.md)
 - [Entry links](../../knowledge/domain/entry-links.md)

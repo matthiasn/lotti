@@ -318,8 +318,8 @@ mixin _JournalDbLinksRatings
   /// of its entry's links. So a version the stored row already supersedes is
   /// refused (see [_entryLinkIsStale]) — otherwise a late snapshot of a link
   /// taken before its removal would bring the removed link back. Local
-  /// updates reserve their clock with the stored one as `previous`, so they
-  /// always dominate what they replace.
+  /// updates extend the stored version's clock and are not stamped earlier
+  /// than it, so they always rank above what they replace.
   ///
   /// The equality pre-read, the recency check, the `(from_id, to_id, type)`
   /// duplicate check, the tombstone replacement and the upsert run in one
@@ -389,38 +389,48 @@ mixin _JournalDbLinksRatings
 
 /// Whether [incoming] is older than the [than] version of the same link.
 ///
-/// The vector clocks decide when they are ordered: a stored clock that
-/// dominates the incoming one means the incoming version is superseded.
-/// Concurrent clocks — and a legacy link without a clock — fall back to the
-/// later `updatedAt`, then to [compareClocksCanonically], then to the
-/// serialized versions, so every device keeps the same version whatever
-/// order the versions arrive in. That order agrees with the clocks because a
-/// local edit never stamps an `updatedAt` older than the version it replaces
-/// ([linkEditTimestamp]).
+/// One total order, the same on every device, so every device keeps the same
+/// version whatever order the versions arrive in: the later `updatedAt`, then
+/// the larger clock under [_compareLinkClocks], then the larger serialized
+/// version. A single lexicographic key is transitive for any mix of versions,
+/// clockless legacy copies included, which a dominance check followed by a
+/// timestamp fallback is not.
+///
+/// It agrees with causality because of how a link is edited
+/// (`JournalRepository.updateLink`, the project-link tombstone): the edit's
+/// clock is the replaced version's plus this host's next counter, and
+/// [linkEditTimestamp] never stamps it earlier than the replaced version. So
+/// an edit either has the later `updatedAt` or ties on it and ranks higher on
+/// the clock.
 bool _entryLinkIsStale(EntryLink incoming, {required EntryLink than}) {
-  final storedClock = than.vectorClock;
-  final incomingClock = incoming.vectorClock;
-  if (storedClock != null && incomingClock != null) {
-    switch (VectorClock.compare(storedClock, incomingClock)) {
-      case VclockStatus.a_gt_b:
-        return true;
-      case VclockStatus.b_gt_a:
-        return false;
-      case VclockStatus.equal:
-      case VclockStatus.concurrent:
-        break;
-    }
-  }
   if (incoming.updatedAt != than.updatedAt) {
     return incoming.updatedAt.isBefore(than.updatedAt);
   }
-  final canonical = storedClock == null || incomingClock == null
-      ? 0
-      : compareClocksCanonically(incomingClock, storedClock);
-  if (canonical != 0) return canonical < 0;
-  // Nothing orders the two — equal clocks, or none, at the same instant — so
-  // pick by content: arbitrary, but the same on every device.
+  final byClock = _compareLinkClocks(incoming.vectorClock, than.vectorClock);
+  if (byClock != 0) return byClock < 0;
+  // Nothing orders the two — the same clock, or none, at the same instant —
+  // so pick by content: arbitrary, but the same on every device.
   return jsonEncode(incoming).compareTo(jsonEncode(than)) < 0;
+}
+
+/// Orders two link clocks host by host, in sorted host order, by the first
+/// counter that differs. A host absent from a clock ranks below every counter
+/// it could carry, 0 included.
+///
+/// That is where this differs from [VectorClock.compare], which reads an
+/// absent host as 0: a new host's first counter is 0, so an edit made there
+/// extends its predecessor's clock by `host: 0`, and must still rank above
+/// it.
+int _compareLinkClocks(VectorClock? a, VectorClock? b) {
+  final countersA = a?.vclock ?? const <String, int>{};
+  final countersB = b?.vclock ?? const <String, int>{};
+  final hosts = <String>{...countersA.keys, ...countersB.keys}.toList()..sort();
+  for (final host in hosts) {
+    final counterA = countersA[host] ?? -1;
+    final counterB = countersB[host] ?? -1;
+    if (counterA != counterB) return counterA > counterB ? 1 : -1;
+  }
+  return 0;
 }
 
 /// In-flight coalescing wave for `basicLinksForEntryIds`. Concurrent callers

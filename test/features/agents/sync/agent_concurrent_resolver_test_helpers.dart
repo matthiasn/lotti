@@ -51,6 +51,14 @@ extension AnyResolver on glados.Any {
         ),
       );
 
+  glados.Generator<VectorClock> get smallVectorClock =>
+      glados.CombinableAny(this).combine3(
+        glados.IntAnys(this).intInRange(0, 4),
+        glados.IntAnys(this).intInRange(0, 4),
+        glados.IntAnys(this).intInRange(0, 4),
+        (a, b, c) => VectorClock({'h0': a, 'h1': b, 'h2': c}),
+      );
+
   glados.Generator<GCounter> get gCounter => glados.ListAnys(this)
       .listWithLengthInRange(
         0,

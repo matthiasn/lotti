@@ -1253,6 +1253,7 @@ void main() {
 
     group('upsertEntryLink recency -', () {
       final early = DateTime(2024, 11, 10, 10);
+      final middle = DateTime(2024, 11, 10, 10, 30);
       final late = DateTime(2024, 11, 10, 11);
 
       EntryLink version({
@@ -1273,47 +1274,36 @@ void main() {
       Future<EntryLink> stored() async =>
           (await db!.entryLinkById('recency-link'))!;
 
-      test(
-        'refuses a version the stored clock dominates, however late its '
-        'updatedAt — a removed link is not brought back by an old snapshot',
-        () async {
-          final removed = version(
-            clock: const VectorClock({'a': 5, 'b': 1}),
-            updatedAt: early,
-            hidden: true,
-          );
-          await db!.upsertEntryLink(removed);
+      /// Delivers [versions] in every order, from an empty table each time,
+      /// and expects [winner] stored at the end of each.
+      Future<void> expectWinnerInEveryOrder(
+        List<EntryLink> versions,
+        EntryLink winner,
+      ) async {
+        Iterable<List<EntryLink>> orders(List<EntryLink> rest) sync* {
+          if (rest.isEmpty) {
+            yield [];
+            return;
+          }
+          for (final head in rest) {
+            for (final tail in orders([...rest]..remove(head))) {
+              yield [head, ...tail];
+            }
+          }
+        }
 
-          final snapshot = version(
-            clock: const VectorClock({'a': 5}),
-            updatedAt: late,
-          );
-          expect(await db!.upsertEntryLink(snapshot), 0);
-          expect(await stored(), removed);
-        },
-      );
-
-      test(
-        'applies a version whose clock dominates the stored one, however '
-        'early its updatedAt',
-        () async {
-          await db!.upsertEntryLink(
-            version(clock: const VectorClock({'a': 5}), updatedAt: late),
-          );
-
-          final removed = version(
-            clock: const VectorClock({'a': 5, 'b': 1}),
-            updatedAt: early,
-            hidden: true,
-          );
-          expect(await db!.upsertEntryLink(removed), isNot(0));
-          expect(await stored(), removed);
-        },
-      );
+        for (final order in orders(versions)) {
+          await clearAllTables(db!);
+          for (final link in order) {
+            await db!.upsertEntryLink(link);
+          }
+          expect(await stored(), winner, reason: '$order');
+        }
+      }
 
       test(
-        'with concurrent clocks keeps the later updatedAt in either '
-        'arrival order',
+        'keeps the later updatedAt in either arrival order, and refuses the '
+        'older one',
         () async {
           final older = version(
             clock: const VectorClock({'a': 5}),
@@ -1324,24 +1314,61 @@ void main() {
             clock: const VectorClock({'b': 1}),
             updatedAt: late,
           );
+          await expectWinnerInEveryOrder([older, newer], newer);
 
-          await db!.upsertEntryLink(older);
-          expect(await db!.upsertEntryLink(newer), isNot(0));
-          expect(await stored(), newer);
-
-          await clearAllTables(db!);
-          await db!.upsertEntryLink(newer);
           expect(await db!.upsertEntryLink(older), 0);
-          expect(await stored(), newer);
         },
       );
 
       test(
-        'with concurrent clocks and the same updatedAt keeps the canonically '
-        'larger clock in either arrival order',
+        "an edit stamped at its predecessor's instant outranks it: a removed "
+        'link is not brought back by the snapshot it replaced',
         () async {
-          // Two devices edited a link whose stamp lay ahead of both their
-          // clocks, so both edits carry that same stamp.
+          final live = version(
+            clock: const VectorClock({'a': 5}),
+            updatedAt: late,
+          );
+          final removed = version(
+            clock: const VectorClock({'a': 5, 'b': 1}),
+            updatedAt: late,
+            hidden: true,
+          );
+          await expectWinnerInEveryOrder([live, removed], removed);
+
+          expect(await db!.upsertEntryLink(live), 0);
+        },
+      );
+
+      test(
+        "a new host's first edit, at counter 0, outranks its predecessor",
+        () async {
+          // VectorClock.compare reads an absent host as 0, so these two
+          // clocks compare equal; the link order must still rank the edit
+          // above the version it extends.
+          final predecessor = version(
+            clock: const VectorClock({'a': 5}),
+            updatedAt: late,
+          );
+          final firstEdit = version(
+            clock: const VectorClock({'a': 5, 'b': 0}),
+            updatedAt: late,
+            hidden: true,
+          );
+          expect(
+            VectorClock.compare(
+              predecessor.vectorClock!,
+              firstEdit.vectorClock!,
+            ),
+            VclockStatus.equal,
+          );
+          await expectWinnerInEveryOrder([predecessor, firstEdit], firstEdit);
+        },
+      );
+
+      test(
+        'concurrent clocks at the same instant: the first differing host in '
+        'sorted order decides, in either arrival order',
+        () async {
           final fromB = version(
             clock: const VectorClock({'a': 5, 'b': 1}),
             updatedAt: late,
@@ -1351,69 +1378,50 @@ void main() {
             updatedAt: late,
             hidden: true,
           );
-
-          await db!.upsertEntryLink(fromC);
-          expect(await db!.upsertEntryLink(fromB), isNot(0));
-          expect(await stored(), fromB);
-
-          await clearAllTables(db!);
-          await db!.upsertEntryLink(fromB);
-          expect(await db!.upsertEntryLink(fromC), 0);
-          expect(await stored(), fromB);
+          await expectWinnerInEveryOrder([fromB, fromC], fromB);
         },
       );
 
       test(
-        'without a clock on either side falls back to updatedAt',
+        'mixed clocked and clockless versions converge in every arrival '
+        'order — the order is transitive',
         () async {
-          final newer = version(clock: null, updatedAt: late);
-          await db!.upsertEntryLink(newer);
-
-          expect(
-            await db!.upsertEntryLink(
-              version(clock: const VectorClock({'a': 9}), updatedAt: early),
-            ),
-            0,
-          );
-          expect(await stored(), newer);
-
-          final newest = version(
-            clock: null,
-            updatedAt: late.add(const Duration(minutes: 1)),
-            hidden: true,
-          );
-          expect(await db!.upsertEntryLink(newest), isNot(0));
-          expect(await stored(), newest);
-        },
-      );
-
-      test(
-        'with nothing left to order two versions — equal clocks at the same '
-        'instant — keeps the same one in either arrival order',
-        () async {
-          // A host's first counter is 0, which compares equal to an absent
-          // entry: an edit stamped at its predecessor's instant ties with it.
+          // A clock-dominant version stamped earlier than its predecessor,
+          // and a legacy clockless copy in between: a dominance-first rule
+          // with an updatedAt fallback orders these three in a cycle.
           final predecessor = version(
-            clock: const VectorClock({'a': 5}),
+            clock: const VectorClock({'a': 1}),
             updatedAt: late,
           );
-          final edit = version(
-            clock: const VectorClock({'a': 5, 'b': 0}),
-            updatedAt: late,
+          final dominant = version(
+            clock: const VectorClock({'a': 1, 'b': 1}),
+            updatedAt: early,
             hidden: true,
           );
-          final kept = jsonEncode(edit).compareTo(jsonEncode(predecessor)) > 0
-              ? edit
-              : predecessor;
+          final legacy = version(clock: null, updatedAt: middle);
+          await expectWinnerInEveryOrder(
+            [predecessor, dominant, legacy],
+            predecessor,
+          );
+        },
+      );
 
-          await db!.upsertEntryLink(predecessor);
-          await db!.upsertEntryLink(edit);
-          expect(await stored(), kept);
+      test(
+        'at the same instant a clocked version outranks a clockless one, and '
+        'two clockless ones are ordered by content',
+        () async {
+          final clocked = version(
+            clock: const VectorClock({'a': 0}),
+            updatedAt: late,
+          );
+          final clockless = version(clock: null, updatedAt: late, hidden: true);
+          await expectWinnerInEveryOrder([clocked, clockless], clocked);
 
-          await clearAllTables(db!);
-          await db!.upsertEntryLink(edit);
-          await db!.upsertEntryLink(predecessor);
-          expect(await stored(), kept);
+          final shown = version(clock: null, updatedAt: late);
+          final kept = jsonEncode(shown).compareTo(jsonEncode(clockless)) > 0
+              ? shown
+              : clockless;
+          await expectWinnerInEveryOrder([shown, clockless], kept);
         },
       );
     });

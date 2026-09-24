@@ -2568,10 +2568,9 @@ void main() {
       db = JournalDb(inMemoryDatabase: true);
       // The real service: the tombstone's clock is what is under test.
       vectorClockService = VectorClockService();
+      // A fresh device: its first counter is 0, which VectorClock.compare
+      // reads the same as an absent host — the link order must not.
       await vectorClockService.initialized;
-      // This device has written before. Its first counter, 0, would compare
-      // equal to an absent entry and leave the clocks tied.
-      await vectorClockService.getNextVectorClock();
       repository = ProjectRepository(
         journalDb: db,
         entitiesCacheService: mockEntitiesCacheService,
@@ -2604,7 +2603,7 @@ void main() {
         final host = (await vectorClockService.getHost())!;
         // The tombstone extends the clock of the link it deletes, and is not
         // stamped earlier than that link; the deletion time is this device's.
-        expect(tombstone.vectorClock?.vclock, {'device-a': 5, host: 1});
+        expect(tombstone.vectorClock?.vclock, {'device-a': 5, host: 0});
         expect(tombstone.updatedAt, DateTime(2100));
         expect(tombstone.deletedAt!.isBefore(DateTime(2100)), isTrue);
 

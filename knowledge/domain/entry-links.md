@@ -109,8 +109,8 @@ with a fresh vector clock. Links are their own `SyncMessage` family
 journal-entity message also embeds a snapshot of its entry's links.
 
 So the same link arrives many times, in any order. `JournalDb.upsertEntryLink`
-keeps the newest version and refuses older ones: causal dominance first, then
-`updatedAt`, then a canonical clock order. An edit — `updateLink`, or the
+keeps the newest version and refuses older ones: the later `updatedAt`, then
+the larger clock, then the serialized version. An edit — `updateLink`, or the
 tombstone of a project unlink — extends the stored link's clock and is never
 stamped earlier than it (`linkEditTimestamp`), so it outranks every copy of
 what it replaced

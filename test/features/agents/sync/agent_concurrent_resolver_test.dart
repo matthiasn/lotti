@@ -111,6 +111,101 @@ void main() {
     });
   });
 
+  group('compareClocksCanonically', () {
+    glados.Glados2(
+      glados.any.smallVectorClock,
+      glados.any.smallVectorClock,
+      glados.ExploreConfig(numRuns: 150),
+    ).test('is antisymmetric', (a, b) {
+      expect(
+        compareClocksCanonically(a, b),
+        -compareClocksCanonically(b, a),
+        reason: 'a=${a.vclock} b=${b.vclock}',
+      );
+    }, tags: 'glados');
+
+    glados.Glados3(
+      glados.any.smallVectorClock,
+      glados.any.smallVectorClock,
+      glados.any.smallVectorClock,
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'is transitive (sort-comparator contract on the sync hot path)',
+      (
+        a,
+        b,
+        c,
+      ) {
+        final ab = compareClocksCanonically(a, b);
+        final bc = compareClocksCanonically(b, c);
+        final ac = compareClocksCanonically(a, c);
+        if (ab > 0 && bc > 0) {
+          expect(
+            ac,
+            greaterThan(0),
+            reason: 'a=${a.vclock} b=${b.vclock} c=${c.vclock}',
+          );
+        }
+        if (ab < 0 && bc < 0) {
+          expect(
+            ac,
+            lessThan(0),
+            reason: 'a=${a.vclock} b=${b.vclock} c=${c.vclock}',
+          );
+        }
+        if (ab == 0 && bc == 0) {
+          expect(
+            ac,
+            0,
+            reason: 'a=${a.vclock} b=${b.vclock} c=${c.vclock}',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
+    test('orders by the first differing host counter', () {
+      expect(
+        compareClocksCanonically(
+          const VectorClock({'h0': 2}),
+          const VectorClock({'h0': 1}),
+        ),
+        1,
+      );
+      expect(
+        compareClocksCanonically(
+          const VectorClock({'h0': 1}),
+          const VectorClock({'h0': 2}),
+        ),
+        -1,
+      );
+    });
+
+    test('treats an absent host as counter 0', () {
+      expect(
+        compareClocksCanonically(
+          const VectorClock({'h0': 1}),
+          const VectorClock({'h1': 1}),
+        ),
+        1,
+      );
+    });
+
+    test('returns 0 for identical and for empty clocks', () {
+      expect(
+        compareClocksCanonically(
+          const VectorClock({'h0': 3, 'h1': 1}),
+          const VectorClock({'h0': 3, 'h1': 1}),
+        ),
+        0,
+      );
+      expect(
+        compareClocksCanonically(const VectorClock({}), const VectorClock({})),
+        0,
+      );
+    });
+  });
+
   group('mergeAgentStateCounters', () {
     AgentStateEntity stateWith({
       GCounter wakeCounter = const GCounter.empty(),
