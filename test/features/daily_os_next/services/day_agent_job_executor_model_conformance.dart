@@ -71,7 +71,12 @@ class _JobProcess {
       now: () => alive ? bench.now : throw _ProcessDied(),
     );
     final executor = DayAgentJobExecutor(
-      resolveAgentId: (_) async => 'day_agent:dayplan-2026-07-22',
+      // A real read, as the day-agent lookup is: it gives the other lane's
+      // attempt room to interleave with this one.
+      resolveAgentId: (_) async {
+        await repository.getById(bench.jobId);
+        return 'day_agent:dayplan-2026-07-22';
+      },
       enqueueWake: (request) {
         if (!alive) throw _ProcessDied();
         return bench.enqueue(request.job);
@@ -223,7 +228,14 @@ class _JobBench {
           if (step.arg.isEven) artifacts.add(wake.runKey);
         }
       case _JobOp.retryNow:
+        // Odd args race the tap between two lanes' claims, unsettled, so the
+        // attempts' pre-enqueue reads interleave.
         unawaited(process.repository.retryNow(jobId));
+        if (step.arg.isOdd) {
+          process.claim(0);
+          unawaited(process.repository.retryNow(jobId));
+          process.claim(1);
+        }
       case _JobOp.crash:
         process.alive = false;
         for (final wake in wakes) {

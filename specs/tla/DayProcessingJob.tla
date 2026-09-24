@@ -19,9 +19,11 @@
 (*                  picks a queued row, or a running row whose lease       *)
 (*                  expired, and stamps a fresh claim_token                *)
 (*   LeaseExpires   time passing lease_until                               *)
-(*   Check          DayAgentJobExecutor.execute: the artifact pre-check,   *)
-(*                  then (after ADR 0070) attaching to a live wake of the  *)
-(*                  same request, else enqueueWake                         *)
+(*   Check          DayAgentJobExecutor.execute: the live-wake look and   *)
+(*                  the artifact pre-check (after ADR 0070 it attaches to  *)
+(*                  a live wake of the same request)                       *)
+(*   Enqueue        after the remaining reads, the live-wake look again    *)
+(*                  and enqueueWake, with nothing awaited in between       *)
 (*   Record         recordRunKey — deliberately unfenced                   *)
 (*   Hear           a WakeRunCompletion for the awaited run key            *)
 (*   Timeout        the wakeTimeout on that wait                           *)
@@ -41,6 +43,9 @@
 (*                     queued or running awaits that wake instead of       *)
 (*                     enqueueing another, and a wait that times out on a  *)
 (*                     live wake defers without counting an attempt        *)
+(*   RecheckBeforeEnqueue  the live-wake look is repeated with nothing      *)
+(*                     awaited before the enqueue, so it and the enqueue   *)
+(*                     are atomic                                          *)
 (* Timing assumption (FALSE in the checked-in configurations):             *)
 (*   ProvenanceRace    a wake may commit its artifact before the attempt   *)
 (*                     that enqueued it has recorded its run key           *)
@@ -55,6 +60,7 @@ CONSTANTS
     MaxCrashes,
     MaxUser,           \* bound on cancel / retryNow taps
     AttachToLiveWake,
+    RecheckBeforeEnqueue,
     ProvenanceRace
 
 Wakes == 1..MaxWakes
@@ -75,7 +81,8 @@ VARIABLES
     attempts,
     failedOnce, \* lastFailureClass was set at least once
     runKeys,    \* run keys recorded for the request
-    pc,         \* per worker: "idle" | "claimed" | "enqueued" | "waiting"
+    pc,         \* per worker: "idle" | "claimed" | "checked" | "enqueued"
+                \*             | "waiting"
                 \*             | "ok" | "fail" | "defer"
     tok,        \* per worker: the claim token it holds
     wk,         \* per worker: the wake it awaits
@@ -167,13 +174,28 @@ LeaseExpires ==
     /\ UNCHANGED <<status, claim, attempts, failedOnce, runKeys, workerVars,
                    wakeVars, sup, crashes, user, stale>>
 
+\* The artifact pre-check and the first live-wake look.
 Check(w) ==
     /\ pc[w] = "claimed"
     /\ heard' = [heard EXCEPT ![w] = "none"]
     /\ IF Satisfied({})
        THEN /\ pc' = [pc EXCEPT ![w] = "ok"]
-            /\ UNCHANGED <<wk, wake, nextWake>>
+            /\ UNCHANGED wk
        ELSE IF AttachToLiveWake /\ LiveWakes # {}
+       THEN \E k \in LiveWakes :
+               /\ pc' = [pc EXCEPT ![w] = "waiting"]
+               /\ wk' = [wk EXCEPT ![w] = k]
+       ELSE /\ pc' = [pc EXCEPT ![w] = "checked"]
+            /\ UNCHANGED wk
+    /\ UNCHANGED <<jobVars, tok, wakeVars, sup, crashes, user, stale>>
+
+\* After the remaining reads (the refine's plan check, the agent lookup):
+\* look again and enqueue with nothing awaited in between, so the pair is
+\* atomic against another attempt that enqueued meanwhile.
+Enqueue(w) ==
+    /\ pc[w] = "checked"
+    /\ UNCHANGED <<heard>>
+    /\ IF AttachToLiveWake /\ RecheckBeforeEnqueue /\ LiveWakes # {}
        THEN \E k \in LiveWakes :
                /\ pc' = [pc EXCEPT ![w] = "waiting"]
                /\ wk' = [wk EXCEPT ![w] = k]
@@ -261,8 +283,13 @@ WakeStart(k) ==
 Recorded(k) ==
     ProvenanceRace \/ ~\E w \in Workers : pc[w] = "enqueued" /\ wk[w] = k
 
+\* Nor can a whole model call fit inside another attempt's pre-enqueue
+\* reads: a wake does not start and commit while an attempt sits between
+\* its pre-check and its enqueue.
+NoneChecking == \A w \in Workers : pc[w] # "checked"
+
 WakeCommit(k) ==
-    /\ wake[k] = "running" /\ Recorded(k)
+    /\ wake[k] = "running" /\ Recorded(k) /\ NoneChecking
     /\ wake' = [wake EXCEPT ![k] = "done"]
     /\ artifact' = artifact \cup {k}
     /\ Emit(k, "completed")
@@ -285,7 +312,7 @@ WakeAbort(k) ==
                    sup, crashes, user, stale>>
 
 AbortedSettles(k) ==
-    /\ wake[k] = "aborted" /\ Recorded(k)
+    /\ wake[k] = "aborted" /\ Recorded(k) /\ NoneChecking
     /\ wake' = [wake EXCEPT ![k] = "done"]
     /\ \E commits \in BOOLEAN :
           artifact' = IF commits THEN artifact \cup {k} ELSE artifact
@@ -329,7 +356,7 @@ Crash ==
 
 Next ==
     \/ \E w \in Workers :
-          Claim(w) \/ Check(w) \/ Record(w) \/ Hear(w) \/ Timeout(w)
+          Claim(w) \/ Check(w) \/ Enqueue(w) \/ Record(w) \/ Hear(w) \/ Timeout(w)
           \/ Report(w)
     \/ LeaseExpires
     \/ \E k \in Wakes :
@@ -341,7 +368,8 @@ Next ==
 \* forced. A run settles one way or another.
 Fairness ==
     /\ \A w \in Workers :
-          /\ WF_vars(Check(w)) /\ WF_vars(Record(w)) /\ WF_vars(Hear(w))
+          /\ WF_vars(Check(w)) /\ WF_vars(Enqueue(w))
+          /\ WF_vars(Record(w)) /\ WF_vars(Hear(w))
           /\ WF_vars(Timeout(w)) /\ WF_vars(Report(w))
     /\ WF_vars(\E w \in Workers : Claim(w))
     /\ WF_vars(LeaseExpires)
@@ -360,7 +388,7 @@ TypeOK ==
     /\ runKeys \subseteq Wakes
     /\ artifact \subseteq Wakes
     /\ \A w \in Workers :
-          pc[w] \in {"idle", "claimed", "enqueued", "waiting", "ok", "fail",
+          pc[w] \in {"idle", "claimed", "checked", "enqueued", "waiting", "ok", "fail",
                      "defer"}
 
 \* At most one inference of the request is queued or running at a time.

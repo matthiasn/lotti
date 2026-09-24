@@ -199,14 +199,15 @@ fails at once, so the bound cannot block progress.
 
 | Configuration | Kind | Lanes | Crashes | User taps | Distinct states |
 |---------------|------|-------|---------|-----------|-----------------|
-| `DayProcessingJob` | refine | 2 | 1 | 1 | 6,377,091 |
-| `DayProcessingJobDraft` | draft | 2 | 1 | 1 | 6,377,091 |
+| `DayProcessingJob` | refine | 2 | 1 | 1 | 6,585,351 |
+| `DayProcessingJobDraft` | draft | 2 | 1 | 1 | 6,585,351 |
 
-Each takes about two and a half minutes. Mutations, in a temporary copy:
+Each takes about three and a half minutes. An attempt looks for a live wake before its reads and again, atomically with the enqueue, after them; the model assumes a whole model call cannot fit inside those reads (`NoneChecking`). Mutations, in a temporary copy:
 
 | Mutation | Counterexample |
 |----------|----------------|
 | `AttachToLiveWake = FALSE` (the code before ADR 0070) | `AtMostOneLiveWake`: lane 1 claims, enqueues and records its wake, its lease lapses while it waits, lane 2 re-claims and enqueues a second. With a retry tap the trace is claim, `retryNow`, claim; a timed-out wait followed by the retry is the same length |
+| `RecheckBeforeEnqueue = FALSE` | `AtMostOneLiveWake`: lane 1 claims and finds no live wake, a retry tap re-queues, lane 2 claims and finds none, and both enqueue |
 | the `claim_token` check removed from `Report` | `Fenced`: a lane times out, a retry tap re-queues, the other lane claims, and the first lane's failure lands on the new claim |
 | `ProvenanceRace = TRUE` | `NoInferenceAfterArtifact` — a residual, below |
 
@@ -261,7 +262,7 @@ steps that lapse the lease and the wait together, wake starts, commits,
 failures and aborts, retry taps and crashes (a fresh process whose predecessor
 can no longer write). After every step it checks `AtMostOneLiveWake`,
 `NoInferenceAfterArtifact` and `AtMostOneArtifact`. Making the executor ignore
-the live wake fails it with the trace `claimA, retryNow, claimB`. The digest's
+the live wake fails it with the trace `claimA, retryNow, claimB`, and dropping the look-again before the enqueue fails it on a retry tap raced between the two lanes' claims. The digest's
 two recovery fixes have direct regressions instead: the digest wake leaves no
 intent across a simulated restart in the wake-intent suite, and the drain-held
 and held-back windows are probed in the orchestrator suite.

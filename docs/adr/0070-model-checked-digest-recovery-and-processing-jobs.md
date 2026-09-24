@@ -70,7 +70,11 @@ fence holds — no stale claimant's write lands (`Fenced`).
 4. **A processing job attaches to its request's live wake.** Before enqueueing,
    the executor asks `WakeOrchestrator.liveRunKeyWithToken` for a wake carrying
    the job's `processing_job:<jobId>@<requestedAt>` token that is queued,
-   drain-held, running, or running on after an abort, and awaits that wake. A
+   drain-held, running, or running on after an abort, and awaits that wake.
+   It asks before its reads and again after them, with nothing awaited
+   between that second answer and the enqueue, so two attempts racing
+   after a retry tap cannot both enqueue (found in review, then by TLC
+   with `RecheckBeforeEnqueue = FALSE`). A
    wait that times out while the wake is still live defers without counting an
    attempt; a timeout on a wake no longer live counts and is capped by
    `maxAttempts` like any other retryable failure.

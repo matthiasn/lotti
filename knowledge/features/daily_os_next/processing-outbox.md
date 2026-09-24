@@ -222,7 +222,10 @@ sequenceDiagram
   enqueueing, it asks `WakeOrchestrator.liveRunKeyWithToken` for a wake
   carrying the job's `processing_job:` token that is still queued, held by the
   drain, running, or running on after an abort, and awaits that one instead.
-  See [one inference per request](#one-inference-per-request).
+  It looks again after its remaining reads, with nothing awaited between
+  that look and the enqueue, so two attempts racing after a retry tap
+  cannot both enqueue. See
+  [one inference per request](#one-inference-per-request).
 - Otherwise enqueues the wake and awaits `WakeOrchestrator.runCompletions` —
   the broadcast stream of `WakeRunCompletion { runKey, agentId, status, error }`
   emitted at every finalization point. It subscribes before looking for a live

@@ -768,6 +768,42 @@ void main() {
       });
     });
 
+    test('enqueued by another attempt during the reads is awaited too', () {
+      // A retry tap revoked this attempt's claim after its live-wake check,
+      // and the new claim's attempt enqueued run-1 while this one awaited
+      // the artifact read and the agent lookup.
+      fakeAsync((async) {
+        final completions = StreamController<WakeRunCompletion>.broadcast();
+        String? live;
+        final enqueued = <String>[];
+        final executor = buildExecutor(
+          runCompletions: completions.stream,
+          liveWakeRunKey: (job) => live,
+          resolveAgentId: (dayId) async {
+            live = 'run-1';
+            return agentId;
+          },
+          enqueueWake: (request) {
+            enqueued.add(request.job.id);
+            return 'run-2';
+          },
+          hasCompletedCaptureParse: (_) async => false,
+        );
+
+        DayAgentJobOutcome? outcome;
+        unawaited(
+          executor.execute(parseJob()).then((value) => outcome = value),
+        );
+        async.flushMicrotasks();
+        expect(enqueued, isEmpty);
+        expect(outcome, isNull, reason: 'awaiting run-1');
+        completions.add(completed('run-1'));
+        async.flushMicrotasks();
+        expect(outcome, isA<DayAgentJobFailed>());
+        unawaited(completions.close());
+      });
+    });
+
     test('whose artifact already landed satisfies the job at once', () {
       fakeAsync((async) {
         final executor = buildExecutor(

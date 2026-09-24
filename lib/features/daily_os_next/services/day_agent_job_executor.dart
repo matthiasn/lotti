@@ -169,15 +169,25 @@ class DayAgentJobExecutor {
           // treated as a terminal setup problem.
           return _classifyFailure(job, e);
         }
-        runKey = enqueueWake((
-          agentId: agentId,
-          dayId: job.dayId,
-          job: job,
-        ));
-        // Persist provenance before awaiting: if the process dies mid-wake,
-        // the re-claim's artifact pre-check can still attribute the wake's
-        // output.
-        await recordRunKey(job.id, runKey);
+        // Asked again with nothing awaited between the answer and the
+        // enqueue, which makes the pair atomic: a second attempt for the
+        // request (a retry tap revoked this claim, or a lapsed claim was
+        // taken over) may have enqueued its wake while this one awaited the
+        // reads above, and must be awaited, not joined by a second wake.
+        final enqueuedMeanwhile = liveWakeRunKey(job);
+        if (enqueuedMeanwhile != null) {
+          runKey = enqueuedMeanwhile;
+        } else {
+          runKey = enqueueWake((
+            agentId: agentId,
+            dayId: job.dayId,
+            job: job,
+          ));
+          // Persist provenance before awaiting: if the process dies
+          // mid-wake, the re-claim's artifact pre-check can still attribute
+          // the wake's output.
+          await recordRunKey(job.id, runKey);
+        }
       }
 
       final WakeRunCompletion completion;
