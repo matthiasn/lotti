@@ -301,12 +301,15 @@ loses on every peer — an edit older than a retraction cannot revive it — and
 a successor never sorts before its predecessor, whatever the writing device's
 clock says. Append-only variants are written as given.
 
-Device-local scheduling fields (`nextWakeAt`, `sleepUntil`,
-`scheduledWakeAt`) are written straight to the repository without a clock,
-without a sync message and without touching `updatedAt`: a local timestamp
+The scheduling fields (`nextWakeAt`, `sleepUntil`, `scheduledWakeAt`) are
+device-local: the receive path overlays this device's values onto every
+incoming state row. Maintenance writes that change only those fields go
+straight to the repository without a clock or a sync message and leave
+`updatedAt` alone — the throttle's `nextWakeAt`, and the project and
+scheduled-wake cleanups of `scheduledWakeAt` — because a local timestamp
 peers never see would let this device keep a row that every other device
-rejects. The receive path overlays the local values onto an incoming state
-row.
+rejects. Workflow outcome writes that also set `scheduledWakeAt` (the day
+and project agents) go through `AgentSyncService` like any other state write.
 
 ## Residuals
 
