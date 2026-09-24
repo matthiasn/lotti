@@ -534,6 +534,14 @@ void main() {
     when(
       () => mockRepository.getLinksFrom(any()),
     ).thenAnswer((_) async => <AgentLink>[]);
+    // Head recovery (an unset head over a non-empty log) reads the log's
+    // messagePrev edges; default to none (a legacy, edge-less log).
+    when(
+      () => mockRepository.getLinksFromMultiple(
+        any(),
+        type: any(named: 'type'),
+      ),
+    ).thenAnswer((_) async => <String, List<AgentLink>>{});
     // The append path's idempotency guard looks the message up first; default
     // to "not yet persisted" so a plain append proceeds to chaining.
     when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
@@ -2586,5 +2594,183 @@ void main() {
         expect(headsOfLog(b.repo.messages, b.repo.links), [joinId]);
       },
     );
+  });
+
+  // ADR 0071, specs/tla/AgentMessageLog.tla (AgentMessageLogStale): the head
+  // pointer is a field of the last-writer-wins state row, so a synced version
+  // written before its device saw any head can clear it on a device whose log
+  // is already chained. The next append used to re-run the legacy spine over
+  // that log, rewriting `msgprev-<id>` edges an append wrote.
+  group('AgentSyncService.upsertEntity — head recovery', () {
+    AgentLink edge(String child, String parent, {String? id}) =>
+        AgentLink.messagePrev(
+          id: id ?? 'msgprev-$child',
+          fromId: child,
+          toId: parent,
+          createdAt: DateTime(2024, 3),
+          updatedAt: DateTime(2024, 3),
+          vectorClock: null,
+        );
+
+    AgentMessageEntity append(String id, {DateTime? at}) => makeTestMessage(
+      id: id,
+      agentId: 'agent-1',
+      createdAt: at ?? DateTime(2024, 3, 20),
+    );
+
+    test('a cleared head over a chained log recovers the projected head and '
+        'rewrites no edge (TLC: Acyclic)', () async {
+      // The trace: b1 from the device whose clock runs ahead (createdAt
+      // 03-10), a1 chained off it on this device (createdAt 03-05), then a
+      // state version without a head wins last-writer-wins here.
+      final bench = makeForkBench();
+      bench.repo.seed([
+        makeTestState(agentId: 'agent-1'),
+        makeTestMessage(
+          id: 'b1',
+          agentId: 'agent-1',
+          createdAt: DateTime(2024, 3, 10),
+        ),
+        makeTestMessage(
+          id: 'a1',
+          agentId: 'agent-1',
+          createdAt: DateTime(2024, 3, 5),
+          prevMessageId: 'b1',
+        ),
+      ]);
+      await bench.repo.upsertLink(edge('a1', 'b1'));
+
+      await bench.service.upsertEntity(append('a2'));
+
+      // The spine would have written msgprev-b1 → a1, closing a1 ⇄ b1.
+      expect(await bench.repo.getLinkById('msgprev-b1'), isNull);
+      final a2 = await bench.repo.getEntity('a2');
+      expect((a2! as AgentMessageEntity).prevMessageId, 'a1');
+      expect(
+        (await bench.repo.getLinkById('msgprev-a2'))!.toId,
+        'a1',
+      );
+      expect(headsOfLog(bench.repo.messages, bench.repo.links), ['a2']);
+      expect(
+        (await bench.repo.getAgentState('agent-1'))!.recentHeadMessageId,
+        'a2',
+      );
+    });
+
+    test('a log holding only a join row and roots is not legacy: no spine '
+        'edge is written', () async {
+      // A join whose edges have not synced yet is DAG evidence too; chaining
+      // the join into a createdAt spine would contradict its own edges.
+      final joinId = computeJoinId(['r1', 'r2']);
+      final bench = makeForkBench();
+      bench.repo.seed([
+        makeTestState(agentId: 'agent-1'),
+        makeTestMessage(
+          id: 'r1',
+          agentId: 'agent-1',
+          createdAt: DateTime(2024, 3, 2),
+        ),
+        makeTestMessage(
+          id: joinId,
+          agentId: 'agent-1',
+          kind: AgentMessageKind.system,
+          createdAt: DateTime(2024, 3),
+        ),
+      ]);
+
+      await bench.service.upsertEntity(append('m1'));
+
+      expect(
+        bench.repo.links.map((l) => l.id),
+        ['msgprev-m1'],
+        reason: 'only the new message is chained',
+      );
+      // Both rows are heads; the canonical order's last one is taken.
+      expect((await bench.repo.getLinkById('msgprev-m1'))!.toId, joinId);
+    });
+
+    test(
+      'does not chain off a parent whose child synced ahead of its edge',
+      () async {
+        // `a-child` names `z-parent` but its edge has not arrived, so both
+        // project as heads and `z-parent` sorts last. Chaining off it would
+        // fork the log the moment the edge lands.
+        final bench = makeForkBench();
+        bench.repo.seed([
+          makeTestState(agentId: 'agent-1'),
+          makeTestMessage(id: 'z-parent', agentId: 'agent-1'),
+          makeTestMessage(
+            id: 'a-child',
+            agentId: 'agent-1',
+            prevMessageId: 'z-parent',
+          ),
+        ]);
+        expect(headsOfLog(bench.repo.messages, bench.repo.links), [
+          'a-child',
+          'z-parent',
+        ]);
+
+        await bench.service.upsertEntity(append('m1'));
+
+        expect((await bench.repo.getLinkById('msgprev-m1'))!.toId, 'a-child');
+        await bench.repo.upsertLink(edge('a-child', 'z-parent'));
+        expect(headsOfLog(bench.repo.messages, bench.repo.links), ['m1']);
+      },
+    );
+
+    test(
+      'falls back to the last head when every head is named as a parent',
+      () async {
+        // Two rows naming each other with no edge synced: no head qualifies
+        // as a tip, so the canonical last head is taken.
+        final bench = makeForkBench();
+        bench.repo.seed([
+          makeTestState(agentId: 'agent-1'),
+          makeTestMessage(id: 'x', agentId: 'agent-1', prevMessageId: 'y'),
+          makeTestMessage(id: 'y', agentId: 'agent-1', prevMessageId: 'x'),
+        ]);
+
+        await bench.service.upsertEntity(append('m1'));
+
+        expect((await bench.repo.getLinkById('msgprev-m1'))!.toId, 'y');
+      },
+    );
+
+    test('a corrupt log starts the message as a root and logs', () async {
+      final logger = MockDomainLogger();
+      getIt
+        ..unregister<DomainLogger>()
+        ..registerSingleton<DomainLogger>(logger);
+      final bench = makeForkBench();
+      bench.repo.seed([
+        makeTestState(agentId: 'agent-1'),
+        makeTestMessage(id: 'x', agentId: 'agent-1', prevMessageId: 'y'),
+        makeTestMessage(id: 'y', agentId: 'agent-1', prevMessageId: 'x'),
+      ]);
+      await bench.repo.upsertLink(edge('x', 'y'));
+      await bench.repo.upsertLink(edge('y', 'x'));
+
+      await bench.service.upsertEntity(append('m1'));
+
+      expect(await bench.repo.getLinkById('msgprev-m1'), isNull);
+      expect(
+        ((await bench.repo.getEntity('m1'))! as AgentMessageEntity)
+            .prevMessageId,
+        isNull,
+      );
+      expect(
+        (await bench.repo.getAgentState('agent-1'))!.recentHeadMessageId,
+        'm1',
+      );
+      verify(
+        () => logger.error(
+          any(),
+          any(),
+          message: any(named: 'message'),
+          subDomain: 'agentSync.recoverHead',
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).called(1);
+    });
   });
 }

@@ -522,6 +522,37 @@ void main() {
     expect(view.checkpoint!.coveredSources.keys, contains('e-late'));
   });
 
+  // ADR 0071, specs/tla/LogCompaction.tla NoLostContext: the checkpoint keyed
+  // coverage by source alone, so another device's edit of a covered source,
+  // captured before this fold and synced after it, stayed hidden for good.
+  test('a late-arriving edit of a folded source before the cutoff re-expands '
+      'the tail instead of vanishing', () async {
+    await captureAll([src('e1', 'alpha', day: 1)], 1);
+    await captureAll([
+      src('e1', 'alpha', day: 1),
+      src('e2', 'beta', day: 2),
+      src('e3', 'gamma', day: 3),
+    ], 10);
+    await compact(budget: 0); // covers {e1, e2}, cutoff at day 10
+    expect(await compactor.assembleContext(_agentId), contains('SUMMARY(2)'));
+
+    // The other device edited e1 at day 8 — after the folded version (day 1),
+    // before the cutoff — and it syncs in now.
+    await capture.captureWakeInputs(
+      agentId: _agentId,
+      sources: [
+        src('e1', 'alpha edited elsewhere', day: 1),
+        src('e2', 'beta', day: 2),
+        src('e3', 'gamma', day: 3),
+      ],
+      at: DateTime.utc(2024, 3, 8),
+    );
+
+    final reExpanded = await compactor.assembleContext(_agentId);
+    expect(reExpanded, isNot(contains('SUMMARY(2)')));
+    expect(reExpanded, contains('alpha edited elsewhere'));
+  });
+
   test('assembleContextAsOf re-derives a past view byte-identically after '
       'later appends and folds', () async {
     // Wake 1's view: a fold covering {e1,e2}, tail [e3].
@@ -878,6 +909,70 @@ void main() {
         expect(active, isNotNull);
       },
     );
+
+    // ADR 0071, specs/tla/LogCompaction.tla NoDeadCheckpoint: an event whose
+    // content has not resolved yet (not synced) cannot be covered, so a fold
+    // past it wrote a checkpoint its own log rejected, and every later wake
+    // summarized the same tail again.
+    test('a fold stops before the first event whose content did not resolve '
+        'and its checkpoint is active', () async {
+      Future<Map<String, Object?>?> resolver(String id) async => id == 'c2'
+          ? null
+          : <String, Object?>{'entryType': 'capture', 'text': 'body $id'};
+      final events = [
+        for (var day = 1; day <= 4; day++) deferredCapture('c$day', day: day),
+      ];
+      final c = AgentLogCompactor(
+        syncService: sync,
+        inlineEvents: events,
+        resolveInlineContent: resolver,
+      );
+
+      final summaryId = await c.maybeCompact(
+        agentId: _agentId,
+        budget: 0,
+        summarize: stubSummarize,
+        at: DateTime.utc(2024, 3, 20),
+      );
+
+      expect(summaryId, isNotNull);
+      expect(summarizeCalls.single.count, 1, reason: 'only c1 is folded');
+      final active = selectActiveSummary(
+        summaries: await c.loadSummaries(_agentId),
+        log: projectInputEvents(
+          messages: repo.messages,
+          links: repo.links,
+          inlineEvents: events,
+        ),
+      );
+      expect(active?.id, summaryId);
+      expect(active!.cutoff, events.first.position);
+      expect(active.coveredSources.keys, ['c1']);
+    });
+
+    test('no fold when the oldest tail event did not resolve', () async {
+      Future<Map<String, Object?>?> resolver(String id) async => id == 'c1'
+          ? null
+          : <String, Object?>{'entryType': 'capture', 'text': 'body $id'};
+      final c = AgentLogCompactor(
+        syncService: sync,
+        inlineEvents: [
+          for (var day = 1; day <= 3; day++) deferredCapture('c$day', day: day),
+        ],
+        resolveInlineContent: resolver,
+      );
+
+      final summaryId = await c.maybeCompact(
+        agentId: _agentId,
+        budget: 0,
+        summarize: stubSummarize,
+        at: DateTime.utc(2024, 3, 20),
+      );
+
+      expect(summaryId, isNull);
+      expect(summarizeCalls, isEmpty);
+      expect(summaryMessages(), isEmpty);
+    });
 
     test(
       'a late-arriving deferred capture BEFORE the cutoff invalidates the '

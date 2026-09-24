@@ -189,6 +189,85 @@ void main() {
       tags: 'glados',
     );
 
+    // Model conformance with specs/tla/LogCompaction.tla NoLostContext: a
+    // history of versions of three sources, captured on two devices; the
+    // folding device held some of the other device's captures when it folded
+    // a prefix of its log; the device that later holds the checkpoint holds
+    // any subset of the history. Whenever it selects the checkpoint, every
+    // event is after the cutoff, folded, or superseded by a newer version
+    // that is folded or after the cutoff.
+    glados.Glados3(
+      glados.any.eventSpecs,
+      glados.IntAnys(glados.any).intInRange(0, 1 << 8),
+      glados.CombinableAny(glados.any).combine2(
+        glados.IntAnys(glados.any).intInRange(0, 1 << 8),
+        glados.IntAnys(glados.any).intInRange(0, 12),
+        (heldMask, cutoff) => (heldMask, cutoff),
+      ),
+      glados.ExploreConfig(numRuns: 400),
+    ).test('an active checkpoint never hides an event (NoLostContext)', (
+      specs,
+      foldedFromPeerMask,
+      observer,
+    ) {
+      // Event i is a version of source e(entry % 3) at position i; odd
+      // entries were captured on the other device.
+      final history = [
+        for (var i = 0; i < specs.length; i++)
+          (
+            event: _event('e${specs[i].$1 % 3}', i, digest: 'd$i'),
+            peer: specs[i].$1.isOdd,
+          ),
+      ];
+      final (heldMask, cutoff) = observer;
+      // The folding device's log: its own captures and the peer captures it
+      // had received; it folds everything at or before the cutoff.
+      final folded = [
+        for (var i = 0; i < history.length; i++)
+          if (i <= cutoff &&
+              (!history[i].peer || foldedFromPeerMask & (1 << i) != 0))
+            history[i].event,
+      ];
+      if (folded.isEmpty) return;
+      final checkpoint = _summary(
+        'fold',
+        cutoff: folded.last.position.at.difference(_pos(0).at).inMinutes,
+        covers: {
+          for (final event in folded)
+            event.contentEntryId: event.contentDigest!,
+        },
+      );
+      final held = [
+        for (var i = 0; i < history.length; i++)
+          if (heldMask & (1 << i) != 0) history[i].event,
+      ];
+
+      final active = selectActiveSummary(
+        summaries: [checkpoint],
+        log: _log(events: held),
+      );
+      if (active == null) return;
+      final shown = [
+        ...folded,
+        for (final event in held)
+          if (event.position.isAfter(active.cutoff!)) event,
+      ];
+      for (final event in held) {
+        expect(
+          shown.any(
+            (f) =>
+                f.contentEntryId == event.contentEntryId &&
+                !event.position.isAfter(f.position),
+          ),
+          isTrue,
+          reason:
+              'hidden ${event.contentEntryId}@${event.position.key} '
+              '(specs $specs, folded ${folded.map((e) => e.position.key)}, '
+              'held ${held.map((e) => e.position.key)})',
+        );
+      }
+    }, tags: 'glados');
+
     // ── examples ─────────────────────────────────────────────────────────────
 
     test('no summaries → no active checkpoint', () {
@@ -270,15 +349,68 @@ void main() {
     });
 
     test('a late-arriving superseded version of a COVERED source does not '
-        'invalidate (key containment, not digest match)', () {
+        'invalidate', () {
       final active = selectActiveSummary(
         summaries: [
           _summary('s1', cutoff: 5, covers: {'e0': 'd-new'}),
         ],
-        // An older version of e0 (different digest) lands pre-cutoff: its
-        // information is superseded by the covered version — keep the
-        // checkpoint.
-        log: _log(events: [_event('e0', 2, digest: 'd-old')]),
+        // An older version of e0 (different digest) lands pre-cutoff, before
+        // the folded one: its information is superseded by the covered
+        // version — keep the checkpoint.
+        log: _log(
+          events: [
+            _event('e0', 2, digest: 'd-old'),
+            _event('e0', 4, digest: 'd-new'),
+          ],
+        ),
+      );
+      expect(active!.id, 's1');
+    });
+
+    // ADR 0071 / specs/tla/LogCompaction.tla NoLostContext: a device folds
+    // e0@1 with cutoff 3; another device's edit of e0 at 2 syncs in later.
+    // Keyed by source alone, the checkpoint stayed active and the edit was
+    // in neither the prose nor the tail.
+    test('a late-arriving NEWER version of a covered source before the '
+        'cutoff invalidates the checkpoint', () {
+      final active = selectActiveSummary(
+        summaries: [
+          _summary('s1', cutoff: 3, covers: {'e0': 'd-1', 'e1': 'd'}),
+        ],
+        log: _log(
+          events: [
+            _event('e0', 1, digest: 'd-1'),
+            _event('e0', 2, digest: 'd-2'),
+            _event('e1', 3),
+          ],
+        ),
+      );
+      expect(active, isNull);
+    });
+
+    test('a pre-cutoff version the checkpoint did not fold invalidates it '
+        'while the folded version has not arrived', () {
+      // The peer holding the checkpoint but not the folded e0@1: its own e0@2
+      // may be the newer edit, so the checkpoint cannot prove it covers it.
+      final active = selectActiveSummary(
+        summaries: [
+          _summary('s1', cutoff: 3, covers: {'e0': 'd-1'}),
+        ],
+        log: _log(events: [_event('e0', 2, digest: 'd-2')]),
+      );
+      expect(active, isNull);
+    });
+
+    test('an inline event is covered by its id alone', () {
+      final active = selectActiveSummary(
+        summaries: [
+          _summary(
+            's1',
+            cutoff: 3,
+            covers: {'retraction|e0|m1': 'any-digest'},
+          ),
+        ],
+        log: _log(events: [_inlineRetraction('e0', 2, 'm1')]),
       );
       expect(active!.id, 's1');
     });
