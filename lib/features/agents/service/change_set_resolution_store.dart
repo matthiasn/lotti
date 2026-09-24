@@ -245,11 +245,19 @@ class ChangeSetResolutionStore {
   /// (`specs/tla/ChangeSetLifecycle.tla`, `AppliedStaysDecided`). Checking
   /// [from] keeps a writer from undoing a decision it did not make: a failed
   /// dispatch reverts only an item still `confirmed`.
+  ///
+  /// A writer that acts on a decision it made or read earlier passes that
+  /// version of the item as [observed]: the move then also requires the
+  /// item's [ChangeItem.revision] to be unchanged. The status alone cannot
+  /// tell the decision apart from a later one with the same status — an item
+  /// reopened and confirmed again while the first dispatch ran is
+  /// `confirmed` again, and that dispatch's failure must not revert it.
   Future<ChangeSetEntity?> transitionChangeSetItem(
     ChangeSetEntity changeSet,
     int itemIndex, {
     required Set<ChangeItemStatus> from,
     required ChangeItemStatus to,
+    ChangeItem? observed,
   }) => _syncService.runInTransaction(() async {
     // An unpersisted set is judged by the caller's snapshot, a deleted chat
     // set is gone.
@@ -260,7 +268,9 @@ class ChangeSetResolutionStore {
     final current = latest is ChangeSetEntity ? latest : changeSet;
     if (itemIndex < 0 ||
         itemIndex >= current.items.length ||
-        !from.contains(current.items[itemIndex].status)) {
+        !from.contains(current.items[itemIndex].status) ||
+        (observed != null &&
+            current.items[itemIndex].revision != observed.revision)) {
       return null;
     }
     final updated = _withItemStatus(current, itemIndex, to);

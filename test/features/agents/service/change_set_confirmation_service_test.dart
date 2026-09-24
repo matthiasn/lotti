@@ -492,6 +492,75 @@ void main() {
     }
 
     group('confirmItem', () {
+      for (final nonRetryable in [false, true]) {
+        test(
+          'a failed dispatch leaves a later confirm of the same item alone '
+          '(nonRetryable: $nonRetryable)',
+          () async {
+            // ABA: the first confirm's dispatch was running when the user
+            // reopened the item and confirmed it again. The first dispatch
+            // then failed and found the item `confirmed` — the second
+            // confirm's decision, not its own — and reverted it, so the
+            // change the second dispatch applied read pending again.
+            var stored = makeChangeSetWith();
+            when(
+              () => mockRepository.getEntity(stored.id),
+            ).thenAnswer((_) async => stored);
+            when(() => mockSyncService.upsertEntity(any())).thenAnswer((
+              invocation,
+            ) async {
+              final entity = invocation.positionalArguments.first;
+              if (entity is ChangeSetEntity) stored = entity;
+            });
+            mockSyncService.transactionDelegate = driftLikeTransactions(
+              save: () => stored,
+              restore: (snapshot) => stored = snapshot,
+            );
+            when(
+              () => mockRepository.getEntitiesByAgentId(
+                any(),
+                type: any(named: 'type'),
+                limit: any(named: 'limit'),
+              ),
+            ).thenAnswer((_) async => const []);
+            final dispatches = <Completer<ToolExecutionResult>>[];
+            when(
+              () => mockToolDispatcher.dispatch(any(), any(), any()),
+            ).thenAnswer((_) {
+              final dispatch = Completer<ToolExecutionResult>();
+              dispatches.add(dispatch);
+              return dispatch.future;
+            });
+
+            await withClock(testClock, () async {
+              final first = service.confirmItem(stored, 0);
+              await pumpEventQueue();
+              expect(
+                await service.reopenItem(stored, 0, revert: () async => true),
+                isTrue,
+              );
+              final second = service.confirmItem(stored, 0);
+              await pumpEventQueue();
+              expect(dispatches, hasLength(2));
+              dispatches[0].complete(
+                ToolExecutionResult(
+                  success: false,
+                  output: 'failed',
+                  nonRetryable: nonRetryable,
+                ),
+              );
+              await first;
+              dispatches[1].complete(
+                const ToolExecutionResult(success: true, output: 'ok'),
+              );
+              await second;
+            });
+
+            expect(stored.items[0].status, ChangeItemStatus.confirmed);
+          },
+        );
+      }
+
       test(
         'a non-retryable failure records no retraction for an item reopened '
         'while its dispatch ran',

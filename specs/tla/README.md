@@ -210,6 +210,12 @@ What stays open — the residuals, each confirmed by TLC:
   to know its original — a provenance link checked before the copy is
   claimed — or consolidation that groups sets for display instead of copying
   rows.
+- **An item reopened and confirmed again while its first dispatch runs.**
+  The model runs one operation per device and item, and has no Undo, so it
+  cannot express this ABA: the first dispatch's failure found the item
+  `confirmed` again and reverted the second confirm. The code closes it —
+  a delayed transition also compares the item revision its caller observed
+  — and a regression in the confirmation service's suite covers it.
 - **Concurrent sets whose items do not align** — different proposals at one
   index — fall back to the whole-row winner, as before. The model's items
   are fixed, so it does not cover this.

@@ -521,6 +521,44 @@ void main() {
     );
 
     test(
+      'with an observed item, leaves an item alone whose revision moved on '
+      'even though its status matches again',
+      () async {
+        final observed = _migrationItem(
+          id: 'cl-1',
+        ).withStatus(ChangeItemStatus.confirmed);
+        // Reopened and confirmed again since: confirmed, two revisions later.
+        final changeSet = makeTestChangeSet(
+          items: [
+            observed
+                .withStatus(ChangeItemStatus.pending)
+                .withStatus(ChangeItemStatus.confirmed),
+          ],
+        );
+
+        expect(
+          await store.transitionChangeSetItem(
+            changeSet,
+            0,
+            from: const {ChangeItemStatus.confirmed},
+            to: ChangeItemStatus.pending,
+            observed: observed,
+          ),
+          isNull,
+        );
+        final same = await store.transitionChangeSetItem(
+          changeSet,
+          0,
+          from: const {ChangeItemStatus.confirmed},
+          to: ChangeItemStatus.pending,
+          observed: changeSet.items.single,
+        );
+        expect(same!.items.single.status, ChangeItemStatus.pending);
+        verify(() => mockSyncService.upsertEntity(any())).called(1);
+      },
+    );
+
+    test(
       'leaves an item alone that is no longer in a from status, so a failed '
       'dispatch cannot undo a decision it did not make',
       () async {

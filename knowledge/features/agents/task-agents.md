@@ -1031,7 +1031,7 @@ that changes only what it owns:
 | Writer | Transition |
 |--------|------------|
 | confirm / reject (`claimChangeSetItem`) | `pending` → `confirmed` / `rejected` |
-| failed dispatch | `confirmed` → `pending` (retryable) or `retracted` (non-retryable), only if still `confirmed`; the agent retraction decision is written in the same transaction, and only when the move happens |
+| failed dispatch | `confirmed` → `pending` (retryable) or `retracted` (non-retryable), only if still the `confirmed` it claimed (same revision, so an item reopened and confirmed again meanwhile is left alone); the agent retraction decision is written in the same transaction, and only when the move happens |
 | reopen (the user's Undo) | the decision it read → `pending`, with the verdict neutralised in the same transaction; a refused revert puts it back only from `pending` |
 | migration cascade | each matching migration claimed like a user rejection |
 | sibling rewrite (`persistResolvedIdToSiblings`) | the migrations' `targetTaskId`, status untouched |

@@ -245,6 +245,7 @@ class ChangeSetConfirmationService {
             itemIndex,
             from: const {ChangeItemStatus.confirmed},
             to: ChangeItemStatus.retracted,
+            observed: confirmedSet.items[itemIndex],
           );
           if (retracted == null) return null;
           await _resolution.persistDecision(
@@ -286,6 +287,7 @@ class ChangeSetConfirmationService {
           itemIndex,
           from: const {ChangeItemStatus.confirmed},
           to: ChangeItemStatus.pending,
+          observed: confirmedSet.items[itemIndex],
         );
         if (revertedSet == null) {
           _domainLogger?.error(
@@ -463,6 +465,7 @@ class ChangeSetConfirmationService {
         itemIndex,
         from: {item.status},
         to: ChangeItemStatus.pending,
+        observed: item,
       );
       if (reopened == null) return null;
       final ChangeDecisionEntity decision;
@@ -482,7 +485,7 @@ class ChangeSetConfirmationService {
         );
         await _syncService.upsertEntity(decision);
       }
-      return decision;
+      return (decision: decision, item: reopened.items[itemIndex]);
     });
     if (reopenedWith == null) return false;
     if (revert == null) return true;
@@ -514,10 +517,11 @@ class ChangeSetConfirmationService {
         itemIndex,
         from: const {ChangeItemStatus.pending},
         to: item.status,
+        observed: reopenedWith.item,
       );
       if (restored == null) return;
       await _syncService.upsertEntity(
-        reopenedWith.copyWith(
+        reopenedWith.decision.copyWith(
           verdict: item.status == ChangeItemStatus.confirmed
               ? ChangeDecisionVerdict.confirmed
               : ChangeDecisionVerdict.rejected,
