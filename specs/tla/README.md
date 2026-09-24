@@ -141,6 +141,121 @@ checking `ConfirmedMeansApplied` with a crash breaks it when the process dies
 between the claim and the dispatch. Closing either needs an `applying` status
 that sync and the UI understand, or tools that are idempotent per decision id.
 
+## `AgentReplication` — converging synced agent entities
+
+Three replicas of one synced agent entity. Local writes build on the
+persisted row, on a wake-start snapshot, or on no clock at all
+(`vectorClock: null`); a write's `updatedAt` may lag the wall clock, as
+another device's can; the throttle coordinator writes device-local
+bookkeeping; and the network delivers every write to every replica in any
+order, any number of times. The receive path is
+`resolveAgentEntityVersions` in `agent_concurrent_resolver.dart`, which
+`SyncEventProcessor` applies; the local write path is
+`AgentSyncService._upsertEntityRaw` with `resolveLocalAgentWrite`. `Kind`
+picks the entity family: `"state"` is `AgentStateEntity` (whole-row
+last-writer-wins plus per-host G-counters), `"terminal"` a type whose status
+override outranks the timestamp (retracted knowledge, a consumed wake window,
+a dismissed nudge). The decision is
+[ADR 0068](../../docs/adr/0068-model-checked-agent-convergence.md).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `Converged` | invariant | once every write has reached every replica, all hold the same row |
+| `NoLostSuccessor` | invariant | a row is never a version that a write it received causally replaced |
+| `OwnCountKept` | invariant | a host always sees all of its own G-counter increments |
+| `NoLostIncrement` | invariant | once everything is delivered, every replica sees every increment |
+
+| Configuration | Kind | Replicas | Writes | Clock skew | Checks | Distinct states |
+|---------------|------|----------|--------|------------|--------|-----------------|
+| `AgentReplication` | state | 3 | 3 | 1 tick | all four | 17,318,265 |
+| `AgentReplicationTerminal` | terminal | 3 | 3 | 1 tick | `Converged`, `NoLostSuccessor` | 9,544,635 |
+
+The four design switches are the fixes, and each has a counterexample when
+set to `FALSE` (run a copy of the configuration outside this directory):
+
+| Switch | Old behaviour | Counterexample |
+|--------|---------------|----------------|
+| `ThrottleKeepsTimestamp` | the throttle stamped `updatedAt` on a row it never syncs | `Converged`: A writes v1 at t0, its throttle stamps t2 locally, B writes v2 at t1; A keeps v1 against v2 for ever, B and C keep v2 |
+| `CountersJoinAlways` | G-counters were joined only on a concurrent conflict | `OwnCountKept`: B increments, merges A's v1 keeping both counts under v1's clock, then A's successor of v1 — which never saw B's count — replaces the row by causal dominance |
+| `ResolveLocalWrites` | a write replaced the row whatever it was built on, under the clock it was built on | terminal: `Converged` — B receives A's retraction, then writes an edit from a stale snapshot or a null clock; B keeps the edit, A and C the retraction. state: `OwnCountKept` — a snapshot write drops the host's own increment |
+| `ClampTimestamp` | a successor's `updatedAt` could be older than its predecessor's | `Converged`: a successor written on a lagging clock loses to a third concurrent version that its predecessor beat, so arrival order decides |
+
+What the model leaves out, deliberately or as a residual:
+
+- **`RankDrop` — a successor that leaves the terminal status it built on.**
+  The day agent's digest retry re-arms its own consumed window as `pending`
+  at the same instant; `_resumeConfiguredEscalations` moves a pending
+  relationship retry to an earlier instant. The resolver ranks those
+  successors below their predecessors, so a third concurrent version can
+  beat the successor but not the predecessor, and arrival order decides:
+  with `RankDrop = TRUE` TLC finds `Converged` violated (A consumes, A
+  re-arms the same instant, B consumes concurrently: B keeps its consume, A
+  and C the retry). Closing it needs the rank to grow along every causal
+  edge — a generation field that sync carries and older clients preserve, or
+  re-arming under a new record id — which is a protocol decision.
+- **Nudges on an exact `updatedAt` tie.** The nudge merge stores the join of
+  both clocks, and the canonical-clock tiebreak then compares a history-
+  dependent clock: two concurrent nudge versions with the same `updatedAt`
+  can resolve differently on different replicas. Agent state keeps the
+  winner's own clock and joins its G-counters on every delivery instead,
+  which is what this model checks; the nudge variant is not modelled.
+- Links (`AgentLink`) keep plain last-writer-wins and are not modelled.
+
+## `AgentStateWrites` — the writers of one agent-state row
+
+One agent's state row on one device: a single-flight wake that records its
+outcome when it ends, and the report-freshness watermarks that subscription
+events and finished refreshes move while it runs.
+
+| Property | Kind | Says |
+|----------|------|------|
+| `NoLostWatermark` | invariant | every recorded event survives in `reportStaleAt` |
+| `FreshIsHonest` | invariant | a report refreshed before the newest event never reads as fresh |
+| `FailureStreakExact` | invariant | `consecutiveFailureCount` counts the failures since the last success |
+| `NoLostWake` | invariant | the wake counter counts every successful wake |
+
+| Configuration | Wakes | Events | Distinct states |
+|---------------|-------|--------|-----------------|
+| `AgentStateWrites` | 3 | 3 | 604 |
+
+With `TransformWrites = FALSE` — the outcome written as a copy of the row the
+wake started from, as the task agent did — TLC breaks `NoLostWatermark` in
+four steps (event, wake start, event, wake end) and `FreshIsHonest` in
+three. The failure streak itself is never lost on one device, because wakes
+are single-flight; across devices it is a last-writer-wins value, which is
+what this model leaves out.
+
+## `VersionHeads` — version rows and the head that names one
+
+A versioned document on two devices that edit it offline, two edits each:
+its version rows, each with a status, and the head row, each resolved as its
+own synced entity. `"soul"` is soul documents and agent templates (a new
+version archives every non-archived version, a rollback reactivates its
+target, the head is last-writer-wins); `"goal"` is goal specs (a revision
+supersedes and mints the next ordinal, the head resolver prefers the higher
+ordinal).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `Converged` | invariant | both devices end with the same rows |
+| `HeadResolves` | invariant | the head names a version the device has |
+| `SettlesAfterCleanEdit` | invariant | after an edit made with everything received, exactly one version is active and the head names it |
+| `OneActive` | invariant (residual) | the same, unconditionally |
+
+| Configuration | Kind | Edits | Rollback | Distinct states |
+|---------------|------|-------|----------|-----------------|
+| `VersionHeadsSoul` | soul | 2 per device | yes | 8,713,361 |
+| `VersionHeadsGoal` | goal | 2 per device | no | 754,881 |
+
+`SupersedeAll = FALSE` — a goal revision superseding only the head's version,
+as it did — breaks `SettlesAfterCleanEdit`: two devices each mint an active
+v2, the head keeps one, and the other stays active through every later
+revision. `OneActive` is violated by concurrent edits in both kinds (twin
+v2s; a head that names a version another device concurrently archived), and
+stays a residual: the active version is defined by the head, every read
+resolves through it (`getActiveSoulDocumentVersion`, the goal workflow's
+fences), and the next edit settles the statuses.
+
 ## From the model to the code
 
 TLC checks the design, not the Dart that implements it. The gap is narrowed by
@@ -177,6 +292,20 @@ unique persisted decision. Changing that transition to `done` reproduces the
 stranded confirmation as a `ConfirmedMeansApplied` counterexample. Service
 regressions exercise the real sync service and Drift transactions with a
 throwing outbox, for both confirmation and rejection.
+
+Convergence has its own trace. In
+`test/features/agents/sync/agent_replication_model_conformance.dart` (a part
+of the `AgentSyncService` suite), three replicas — each a real
+`AgentSyncService` over its own store — write agent state and planner
+knowledge on their rows, on wake-start snapshots and on null clocks, with a
+lagging clock, and exchange the writes in generated orders through
+`resolveAgentEntityVersions`. After every step no replica holds a version a
+received write causally replaced, and each host sees its own increments;
+after everything is delivered, all three rows are equal and every increment
+is counted. Joining counters only on concurrency, writing without resolving
+against the persisted row, or not clamping `updatedAt` each fail it within
+three or four steps; dropping the counter join of a covered write is caught
+by the resolver's unit regression instead.
 
 ## Changing a spec
 

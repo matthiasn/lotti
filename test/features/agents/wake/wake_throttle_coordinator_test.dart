@@ -424,8 +424,10 @@ void main() {
       ).called(1);
     });
 
-    test('setDeadline persists next wake timestamp and notifies', () {
-      final now = DateTime(2024, 3, 15, 10, 30);
+    test('setDeadline persists next wake timestamp, keeps the synced '
+        'updatedAt, and notifies', () {
+      // A day after the persisted row's updatedAt (kAgentTestDate).
+      final now = DateTime(2024, 3, 16, 10, 30);
       final persistedAgentIds = <String>[];
 
       fakeAsync((async) {
@@ -448,7 +450,14 @@ void main() {
 
           expect(captured.agentId, 'agent-1');
           expect(captured.nextWakeAt, now.add(_generatedThrottleWindow));
-          expect(captured.updatedAt, now);
+          // The deadline is device-local. Stamping the synced LWW timestamp
+          // would let this device keep the row in a concurrent conflict that
+          // every peer resolves the other way (ADR 0068, AgentReplication).
+          expect(
+            captured.updatedAt,
+            makeTestState(agentId: 'agent-1').updatedAt,
+          );
+          expect(captured.updatedAt, isNot(now));
           expect(persistedAgentIds, ['agent-1']);
         } finally {
           coordinator.dispose();
@@ -1253,15 +1262,13 @@ void main() {
             return;
           }
 
-          expectedStates[agentId] = state.copyWith(
-            nextWakeAt: nextWakeAt,
-            updatedAt: now,
-          );
+          // Device-local: the synced updatedAt is left as it was.
+          expectedStates[agentId] = state.copyWith(nextWakeAt: nextWakeAt);
           expectedWrites.add(
             _GeneratedThrottlePersistenceWrite(
               agentId: agentId,
               nextWakeAt: nextWakeAt,
-              updatedAt: now,
+              updatedAt: state.updatedAt,
             ),
           );
           expectedChangedAgentIds.add(agentId);

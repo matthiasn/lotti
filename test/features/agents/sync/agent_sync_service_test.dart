@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/projection/join_plan.dart';
+import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -22,6 +23,9 @@ import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../test_data/entity_factories.dart';
 import 'fork_test_support.dart';
+import 'in_memory_agent_repository.dart';
+
+part 'agent_replication_model_conformance.dart';
 
 /// Records whether the scope accepts or releases a reservation, without
 /// pretending that a repository call proves the scope committed successfully.
@@ -375,6 +379,7 @@ extension _AnyGeneratedAgentSyncServiceScenario on glados.Any {
 }
 
 void main() {
+  _registerReplicationModelConformance();
   late MockAgentRepository mockRepository;
   late MockOutboxService mockOutboxService;
   late MockVectorClockService mockVectorClockService;
@@ -1189,6 +1194,10 @@ void main() {
         // this test isn't about head preservation, so no prior state exists.
         when(
           () => generatedRepository.getAgentState(any()),
+        ).thenAnswer((_) async => null);
+        // Nor is it about resolving a write against the persisted row.
+        when(
+          () => generatedRepository.getEntity(any()),
         ).thenAnswer((_) async => null);
         final generatedOutboxService = MockOutboxService();
         final generatedVectorClockService = MockVectorClockService();
@@ -2094,13 +2103,17 @@ void main() {
           invocation.positionalArguments.single as AgentDomainEntity,
         );
       });
-      when(() => repository.getAgentState('agent-1')).thenAnswer(
-        (_) async => scenario.persistedStateExists
-            ? makeTestState(
-                agentId: 'agent-1',
-              ).copyWith(recentHeadMessageId: scenario.persistedHead)
-            : null,
-      );
+      AgentStateEntity? persisted() => scenario.persistedStateExists
+          ? makeTestState(
+              agentId: 'agent-1',
+            ).copyWith(recentHeadMessageId: scenario.persistedHead)
+          : null;
+      when(
+        () => repository.getAgentState('agent-1'),
+      ).thenAnswer((_) async => persisted());
+      when(
+        () => repository.getEntity(any()),
+      ).thenAnswer((_) async => persisted());
       final outboxService = MockOutboxService();
       when(() => outboxService.enqueueMessage(any())).thenAnswer((_) async {});
       final vectorClockService = MockVectorClockService();

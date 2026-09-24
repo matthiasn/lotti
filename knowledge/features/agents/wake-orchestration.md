@@ -5,7 +5,7 @@ description: How a local change becomes an agent wake — subscription matching,
 resource: ../../../lib/features/agents/wake
 tags: [agents, wake, scheduling, concurrency]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-24T00:15:55Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T12:00:00Z }
 stale_after: 2026-12-24
 sources:
   - id: wake
@@ -39,6 +39,10 @@ sources:
   - id: adr-0066
     resource: ../../../docs/adr/0066-model-checked-agent-wakes-and-confirmations.md
     title: ADR 0066 — Model-checked agent wakes and confirmations
+    last_modified: 2026-09-24
+  - id: adr-0068
+    resource: ../../../docs/adr/0068-model-checked-agent-convergence.md
+    title: ADR 0068 — Model-checked convergence of synced agent entities
     last_modified: 2026-09-24
 ---
 
@@ -192,7 +196,10 @@ paid inference.
 Persisted throttle set/clear operations read and write state inside the same
 repository transaction as other partial state writers. This keeps the
 local `nextWakeAt` mutation from restoring a consumed project marker or
-erasing activity persisted by the project monitor concurrently.
+erasing activity persisted by the project monitor concurrently. The write
+leaves `updatedAt` alone: it is the synced last-writer-wins timestamp, and a
+local stamp peers never see would let this device keep a row in a concurrent
+conflict that every other device resolves the other way (ADR 0068).
 
 Clear requests made in the same synchronous burst share one transaction. A
 single-agent batch uses its direct state lookup; a multi-agent batch uses the

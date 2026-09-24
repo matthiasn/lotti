@@ -243,14 +243,18 @@ class WakeOutputWriter {
         rejectedDisplayKeys: ledger.rejectedDisplayKeys,
       );
 
-      // 11. Persist state.
+      // 11. Persist state. A transform of the row as it is now, not a copy
+      // of the wake-start `state`: the report watermarks, the throttle and
+      // sync all write the row while the wake runs, and a copy would put
+      // their older values back (ADR 0068).
       final hostId = await _sync.localHost();
-      await _sync.upsertEntity(
-        state.copyWith(
+      await _sync.updateAgentState(
+        agentId,
+        (current) => current.copyWith(
           lastWakeAt: now,
           updatedAt: now,
           consecutiveFailureCount: 0,
-          wakeCounter: state.wakeCounter.increment(hostId),
+          wakeCounter: current.wakeCounter.increment(hostId),
         ),
       );
 

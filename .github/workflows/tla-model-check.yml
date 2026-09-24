@@ -16,6 +16,15 @@ on:
       - "lib/features/agents/wake/**"
       - "lib/features/agents/service/change_set_confirmation_service.dart"
       - "lib/features/agents/service/change_set_resolution_store.dart"
+      - "lib/features/agents/sync/agent_concurrent_resolver.dart"
+      - "lib/features/agents/sync/agent_lww_timestamp.dart"
+      - "lib/features/agents/sync/agent_sync_service.dart"
+      - "lib/features/sync/matrix/sync_event_processor_agent_handlers.dart"
+      - "lib/features/agents/workflow/wake_output_writer.dart"
+      - "lib/features/agents/workflow/task_agent_execute.dart"
+      - "lib/features/agents/service/soul_version_ops.dart"
+      - "lib/features/agents/service/agent_template_crud.dart"
+      - "lib/features/goals/service/goal_spec_revision_service.dart"
       - ".github/workflows/tla-model-check.yml"
 
 concurrency:

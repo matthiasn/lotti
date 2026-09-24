@@ -150,6 +150,7 @@ void configureDayAgentWorkflowTestSuite() {
     });
     stubAppendMilestone(syncService);
     stubReconciledAgentState(syncService, repository);
+    stubUpdateAgentState(syncService, repository);
   });
 }
 
