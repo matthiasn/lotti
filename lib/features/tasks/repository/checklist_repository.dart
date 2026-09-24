@@ -171,10 +171,15 @@ class ChecklistRepository {
   /// the task if it is not. One the user deleted moves on to the next
   /// generation's id — `$uuidV5Input:1`, then `:2` — which every device that
   /// knows the same deletions derives alike. Otherwise it is created.
+  /// With [createIfMissing] false, only reuse/list an existing live checklist:
+  /// inspect the bounded generations even across missing rows (partial sync),
+  /// then return null without creating a container. A replay whose items were
+  /// all deleted uses this to preserve unrelated items in a live checklist.
   Future<String?> derivedChecklistFor({
     required String taskId,
     required String uuidV5Input,
     String title = 'Todos',
+    bool createIfMissing = true,
   }) async {
     for (
       var generation = 0;
@@ -187,6 +192,7 @@ class ChecklistRepository {
         [id],
       ))[id];
       if (existing == null) {
+        if (!createIfMissing) continue;
         final created = await createChecklist(
           taskId: taskId,
           title: title,
@@ -208,6 +214,7 @@ class ChecklistRepository {
         return id;
       }
     }
+    if (!createIfMissing) return null;
     final created = await createChecklist(taskId: taskId, title: title);
     return created.checklist?.meta.id;
   }

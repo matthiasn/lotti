@@ -227,6 +227,22 @@ Do NOT recreate the items that were already successful.''';
                 ids,
               );
           if (ids.every((id) => existing[id]?.meta.deletedAt != null)) {
+            // A live container can hold unrelated items and arrive before
+            // the task update listing it. Repair that link without creating.
+            final liveChecklist = await checklistRepository.derivedChecklistFor(
+              taskId: currentTask.id,
+              uuidV5Input: derivedIds.checklist,
+              createIfMissing: false,
+            );
+            if (liveChecklist != null) {
+              return await _addItems(
+                liveChecklist,
+                items,
+                currentTask,
+                journalDb,
+                idInput: derivedIds.item,
+              );
+            }
             for (final (index, item) in items.indexed) {
               _createdDetails.add({
                 'id': ids[index],

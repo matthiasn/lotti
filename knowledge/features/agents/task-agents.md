@@ -1103,7 +1103,8 @@ flowchart TD
   derived id — listing it on the task, whose update can arrive after the
   checklist — and steps past a deleted one to the next derived id. A batch
   whose derived items are all tombstoned needs no replacement container:
-  replaying it leaves a task without a checklist unchanged.
+  replaying it creates no checklist. It still relists an existing live derived
+  checklist (which may hold unrelated items) if its task link has not synced.
 - **Set-style tools compare and set.** When the task agent queues a proposal
   to set the title, status, priority, estimate, due date or language, it
   records the value the task holds, read fresh, in `ChangeItem.base`; the

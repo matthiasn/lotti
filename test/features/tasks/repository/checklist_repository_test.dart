@@ -11,6 +11,7 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -878,6 +879,80 @@ void main() {
         linkedChecklistItems: [],
         linkedTasks: ['task-1'],
       ),
+    );
+
+    for (final deleted in [false, true]) {
+      test(
+        'reuse only creates nothing across ${deleted ? "deleted" : "missing"} generations',
+        () async {
+          when(
+            () => mockJournalDb.journalEntityMapForIdsIncludingDeleted(any()),
+          ).thenAnswer((inv) async {
+            final id = (inv.positionalArguments.first as List<String>).single;
+            return deleted ? {id: checklistRow(id, deleted: true)} : {};
+          });
+
+          when(
+            () => mockJournalDb.journalEntityById('task-1'),
+          ).thenAnswer((_) async => testTask);
+
+          expect(
+            await repository.derivedChecklistFor(
+              taskId: 'task-1',
+              uuidV5Input: 'k',
+              createIfMissing: false,
+            ),
+            isNull,
+          );
+          verify(
+            () => mockJournalDb.journalEntityMapForIdsIncludingDeleted(any()),
+          ).called(8);
+          verifyZeroInteractions(mockPersistenceLogic);
+        },
+      );
+    }
+
+    test(
+      'reuse only finds a live generation after a missing sync row',
+      () async {
+        final liveId = MetadataService.deterministicId('k:1');
+        when(
+          () => mockJournalDb.journalEntityMapForIdsIncludingDeleted(any()),
+        ).thenAnswer((inv) async {
+          final id = (inv.positionalArguments.first as List<String>).single;
+          return id == liveId ? {id: checklistRow(id)} : {};
+        });
+        when(
+          () => mockJournalDb.journalEntityById(testTask.id),
+        ).thenAnswer((_) async => testTask);
+        when(
+          () => mockPersistenceLogic.updateTask(
+            journalEntityId: any(named: 'journalEntityId'),
+            entryText: any(named: 'entryText'),
+            taskData: any(named: 'taskData'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        expect(
+          await repository.derivedChecklistFor(
+            taskId: testTask.id,
+            uuidV5Input: 'k',
+            createIfMissing: false,
+          ),
+          liveId,
+        );
+        final data =
+            verify(
+                  () => mockPersistenceLogic.updateTask(
+                    journalEntityId: testTask.id,
+                    entryText: testTask.entryText,
+                    taskData: captureAny(named: 'taskData'),
+                  ),
+                ).captured.single
+                as TaskData;
+        expect(data.checklistIds, contains(liveId));
+        verifyNever(() => mockPersistenceLogic.createDbEntity(any()));
+      },
     );
 
     test('reports nothing when the task is gone', () async {

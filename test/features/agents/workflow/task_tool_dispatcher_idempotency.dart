@@ -175,52 +175,76 @@ void _registerIdempotency(_Db Function() fixture) {
       },
     );
 
-    test(
-      'replaying a deleted batch does not recreate an empty checklist',
-      () async {
-        final taskId = await bareTask('deleted-batch-task');
-        const args = {'title': 'Retired checklist entry'};
-        final first = await apply(
-          TaskAgentToolNames.addChecklistItem,
-          args,
-          taskId: taskId,
-        );
-        expect(first.success, isTrue, reason: first.output);
-        final itemId = (await idsOf(
-          'ChecklistItem',
-          'Retired checklist entry',
-        )).single;
-        final checklistId = (await storedTask(
-          taskId,
-        )).data.checklistIds!.single;
-        final journal = JournalRepository();
-        expect(await journal.deleteJournalEntity(itemId), isTrue);
-        expect(await journal.deleteJournalEntity(checklistId), isTrue);
-        final current = await storedTask(taskId);
-        expect(
-          await journal.updateJournalEntity(
-            current.copyWith(
-              data: current.data.copyWith(checklistIds: const []),
+    for (final keepLiveChecklist in [false, true]) {
+      test(
+        'replaying a deleted batch ${keepLiveChecklist ? "relists a live checklist" : "does not recreate an empty checklist"}',
+        () async {
+          final taskId = await bareTask('deleted-batch-task');
+          const args = {'title': 'Retired checklist entry'};
+          final first = await apply(
+            TaskAgentToolNames.addChecklistItem,
+            args,
+            taskId: taskId,
+          );
+          expect(first.success, isTrue, reason: first.output);
+          final itemId = (await idsOf(
+            'ChecklistItem',
+            'Retired checklist entry',
+          )).single;
+          final checklistId = (await storedTask(
+            taskId,
+          )).data.checklistIds!.single;
+          final journal = JournalRepository();
+          expect(await journal.deleteJournalEntity(itemId), isTrue);
+          if (keepLiveChecklist) {
+            final unrelated = await ChecklistRepository().addItemToChecklist(
+              checklistId: checklistId,
+              title: 'Unrelated live entry',
+              isChecked: false,
+              categoryId: f.task.meta.categoryId,
+            );
+            expect(unrelated, isNotNull);
+          } else {
+            expect(await journal.deleteJournalEntity(checklistId), isTrue);
+          }
+          final current = await storedTask(taskId);
+          expect(
+            await journal.updateJournalEntity(
+              current.copyWith(
+                data: current.data.copyWith(checklistIds: const []),
+              ),
             ),
-          ),
-          isTrue,
-        );
+            isTrue,
+          );
 
-        final replay = await apply(
-          TaskAgentToolNames.addChecklistItem,
-          args,
-          taskId: taskId,
-        );
+          final replay = await apply(
+            TaskAgentToolNames.addChecklistItem,
+            args,
+            taskId: taskId,
+          );
 
-        expect(replay.success, isTrue, reason: replay.output);
-        expect((await storedTask(taskId)).data.checklistIds, isEmpty);
-        expect(await idsOf('Checklist', taskId), isEmpty);
-        expect(
-          await idsOf('ChecklistItem', 'Retired checklist entry'),
-          isEmpty,
-        );
-      },
-    );
+          expect(replay.success, isTrue, reason: replay.output);
+          final expectedChecklists = keepLiveChecklist
+              ? [checklistId]
+              : <String>[];
+          expect(
+            (await storedTask(taskId)).data.checklistIds,
+            expectedChecklists,
+          );
+          expect(await idsOf('Checklist', taskId), expectedChecklists);
+          if (keepLiveChecklist) {
+            expect(
+              await idsOf('ChecklistItem', 'Unrelated live entry'),
+              hasLength(1),
+            );
+          }
+          expect(
+            await idsOf('ChecklistItem', 'Retired checklist entry'),
+            isEmpty,
+          );
+        },
+      );
+    }
 
     group('the derived checklist of a task without one', () {
       const key = 'set-1:0';
