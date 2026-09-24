@@ -1,5 +1,3 @@
-import 'dart:ui' as ui;
-
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -8,13 +6,13 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger_status.dart';
+import 'package:lotti/features/agents/service/change_set_notification_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/change_item_dedup.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/string_utils.dart' as string_utils;
 import 'package:uuid/uuid.dart';
@@ -547,7 +545,7 @@ class ChangeSetBuilder {
       _persistedSet = merged;
       if (!incremental) {
         _notified = true;
-        await notifyTaskNeedsAttention(merged);
+        await notifyTaskNeedsAttention(merged, syncService);
       }
       return merged;
     }
@@ -572,7 +570,7 @@ class ChangeSetBuilder {
     _persistedSet = entity;
     if (!incremental) {
       _notified = true;
-      await notifyTaskNeedsAttention(entity);
+      await notifyTaskNeedsAttention(entity, syncService);
     }
     return entity;
   }
@@ -622,12 +620,9 @@ class ChangeSetBuilder {
     _notified = true;
 
     try {
-      // The failure path alerts without consolidating, so other sets may still
-      // hold actionable proposals. `createTaskSuggestion` retracts every other
-      // open row for the task, so alerting from this set alone would drop
-      // those older suggestions out of the inbox. Their existing row is still
-      // open and still accurate — leave it, and let the next wake's
-      // consolidated alert cover everything.
+      // A failed wake has not consolidated its proposals with earlier sets.
+      // Preserve their existing alert until the next successful wake has
+      // removed duplicates and can publish a complete count.
       for (final other in unconsolidatedSets) {
         if (other.id == persisted.id) continue;
         final latest = await _reReadOrNull(syncService, other.id);
@@ -648,7 +643,7 @@ class ChangeSetBuilder {
       // makes the same call per item via its pending count.
       if (!isPendingLike(current.status)) return persisted;
 
-      await notifyTaskNeedsAttention(current);
+      await notifyTaskNeedsAttention(current, syncService);
     } catch (e) {
       // Alerting is fire-and-forget (see [notifyTaskNeedsAttention]) and must
       // never fail a wake — least of all the failure path, where throwing here
@@ -686,18 +681,16 @@ class ChangeSetBuilder {
   /// for the same task so the bell still exposes at most one active row per
   /// task.
   ///
-  /// Fired only by the end-of-wake build, never by an incremental flush. Two
-  /// reasons, both consequences of a flush writing its own set: the count
-  /// would come from that set alone while `createTaskSuggestion` retracts the
-  /// pre-wake row, so the bell would undercount still-actionable suggestions
-  /// until consolidation; and a second flush appending to the same set reuses
-  /// its id as the `idSeed`, so once the user has opened or dismissed the
-  /// first row, `upsertNotification` preserves `seenAt`/`deletedAt` and the
-  /// later suggestions could never raise the badge. One alert per wake, on the
-  /// consolidated set, keeps both properties intact — the card itself still
-  /// updates live, which is what the incremental flush is for.
+  /// Fired only by the end-of-wake build, never by an incremental flush.
+  /// The count includes retained dependency groups. A flush reuses its set id,
+  /// so alerting then could consume that row before later suggestions arrive:
+  /// the monotonic lifecycle marks cannot be cleared to raise another badge.
+  /// One alert per wake keeps the count complete while cards update live.
   ///
-  Future<void> notifyTaskNeedsAttention(ChangeSetEntity entity) async {
+  Future<void> notifyTaskNeedsAttention(
+    ChangeSetEntity entity,
+    AgentSyncService syncService,
+  ) async {
     // Count only the items the user actually needs to act on; previously
     // confirmed/rejected/retracted items don't warrant a fresh alert.
     final pendingCount = entity.items
@@ -709,25 +702,11 @@ class ChangeSetBuilder {
     if (!getIt.isRegistered<JournalDb>()) return;
 
     try {
-      final task = await getIt<JournalDb>().journalEntityById(taskId);
-      final taskTitle = task is Task ? task.data.title : null;
-      // No BuildContext here — the builder runs from agent wake. Pull the
-      // current platform locale and resolve a synchronous AppLocalizations
-      // instance so the inbox row honors the user's language.
-      final messages = lookupAppLocalizations(
-        ui.PlatformDispatcher.instance.locale,
-      );
-      final body = taskTitle == null || taskTitle.trim().isEmpty
-          ? messages.notificationSuggestionAttentionBodyFallback
-          : taskTitle;
-      await getIt<NotificationRepository>().createTaskSuggestion(
-        linkedTaskId: taskId,
-        suggestionCount: pendingCount,
-        title: messages.notificationSuggestionAttentionTitle(pendingCount),
-        body: body,
-        category: task is Task ? task.meta.categoryId : null,
-        idSeed: entity.id,
-      );
+      await ChangeSetNotificationService(
+        notificationRepository: getIt<NotificationRepository>(),
+        journalDb: getIt<JournalDb>(),
+        agentRepository: syncService.repository,
+      ).notifyTaskNeedsAttention(entity);
     } catch (e, st) {
       domainLogger?.error(
         LogDomain.agentWorkflow,

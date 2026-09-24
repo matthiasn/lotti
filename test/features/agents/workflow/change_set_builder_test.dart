@@ -689,6 +689,13 @@ void main() {
   setUp(() {
     mockSyncService = MockAgentSyncService();
     mockRepository = MockAgentRepository();
+    when(
+      () => mockRepository.getPendingChangeSets(
+        any(),
+        taskId: any(named: 'taskId'),
+        limit: -1,
+      ),
+    ).thenAnswer((_) async => []);
     builder = ChangeSetBuilder(
       agentId: 'agent-001',
       taskId: 'task-001',
@@ -905,6 +912,51 @@ void main() {
 
     tearDown(tearDownTestGetIt);
 
+    test('wake alert includes suggestions retained in an older set', () async {
+      final retained = makeTestChangeSet(
+        id: 'retained',
+        items: const [
+          ChangeItem(
+            humanSummary: 'Migration group',
+            toolName: TaskAgentToolNames.createFollowUpTask,
+            args: {'_placeholderTaskId': 'placeholder'},
+          ),
+          ChangeItem(
+            humanSummary: 'Migration group',
+            toolName: TaskAgentToolNames.migrateChecklistItem,
+            args: {'targetTaskId': 'placeholder'},
+          ),
+        ],
+      );
+      when(
+        () => mockRepository.getPendingChangeSets(
+          'agent-001',
+          taskId: 'task-001',
+          limit: -1,
+        ),
+      ).thenAnswer((_) async => [retained]);
+      await builder.addItem(
+        toolName: 'update_task_estimate',
+        args: {'minutes': 30},
+        humanSummary: 'Set estimate',
+      );
+      final result = await builder.build(
+        mockSyncService,
+        existingPendingSets: [retained],
+      );
+      expect(result!.items, hasLength(1));
+      verify(
+        () => notificationRepository.createTaskSuggestion(
+          linkedTaskId: 'task-001',
+          suggestionCount: 3,
+          title: '3 suggestions need your attention',
+          body: any(named: 'body'),
+          category: any(named: 'category'),
+          idSeed: result.id,
+        ),
+      ).called(1);
+    });
+
     test(
       'fires one createTaskSuggestion per build with the pending count, task '
       'title in the body, and the change-set id as the inbox row seed',
@@ -1109,7 +1161,7 @@ void main() {
           ],
         );
 
-        await builder.notifyTaskNeedsAttention(resolvedSet);
+        await builder.notifyTaskNeedsAttention(resolvedSet, mockSyncService);
 
         verifyNever(
           () => notificationRepository.createTaskSuggestion(

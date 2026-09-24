@@ -25,10 +25,12 @@ void main() {
   late MockUpdateNotifications updateNotifications;
   late MockNotificationScheduler scheduler;
   late NotificationRepository repository;
+  late DateTime now;
 
   final fixedNow = DateTime.utc(2026, 5, 17, 10);
 
   setUp(() {
+    now = fixedNow;
     notificationsDb = NotificationsDb(
       inMemoryDatabase: true,
       background: false,
@@ -74,7 +76,7 @@ void main() {
       outboxService: outboxService,
       updateNotifications: updateNotifications,
       scheduler: scheduler,
-      now: () => fixedNow,
+      now: () => now,
     );
   });
 
@@ -83,6 +85,92 @@ void main() {
   });
 
   group('NotificationRepository.create', () {
+    test(
+      'refresh converges multiple synced open rows onto the newest seed',
+      () async {
+        // Sync can supply multiple open rows without going through local create.
+        for (final id in ['a-old', 'c-new', 'b-new']) {
+          await notificationsDb.upsertNotification(
+            _entityForCreate(
+              id: id,
+              linkedTaskId: 'task-X',
+              createdAt: id == 'a-old'
+                  ? fixedNow.subtract(const Duration(days: 1))
+                  : fixedNow,
+              updatedAt: fixedNow,
+              scheduledFor: fixedNow,
+              vectorClock: const VectorClock({'host-a': 1}),
+              originatingHostId: 'host-a',
+            ),
+          );
+        }
+        now = fixedNow.add(const Duration(seconds: 1));
+        final refreshed = await repository.createTaskSuggestion(
+          linkedTaskId: 'task-X',
+          suggestionCount: 1,
+          title: 'Remaining',
+          body: 'b',
+          idSeed: 'retained-set',
+          reuseOpenRow: true,
+        );
+        expect(refreshed!.id, 'b-new');
+        final rows = await notificationsDb.forLinkedEntity('task-X');
+        expect(
+          rows.where((row) => row.meta.deletedAt == null).map((row) => row.id),
+          ['b-new'],
+        );
+        expect((refreshed as TaskSuggestionNotification).suggestionCount, 1);
+      },
+    );
+
+    test('refreshing a retained set preserves the current open row', () async {
+      var tick = 0;
+      when(
+        () => vectorClockService.getNextVectorClock(
+          previous: any(named: 'previous'),
+          payload: any(named: 'payload'),
+        ),
+      ).thenAnswer((_) async => VectorClock({'host-a': ++tick}));
+      final old = await repository.createTaskSuggestion(
+        linkedTaskId: 'task-X',
+        suggestionCount: 2,
+        title: 'Old',
+        body: 'b',
+        idSeed: 'old-set',
+      );
+      final current = await repository.createTaskSuggestion(
+        linkedTaskId: 'task-X',
+        suggestionCount: 3,
+        title: 'Current',
+        body: 'b',
+        idSeed: 'current-set',
+      );
+      await repository.markSeen(current!.id);
+      now = fixedNow.add(const Duration(seconds: 1));
+      final refreshed = await repository.createTaskSuggestion(
+        linkedTaskId: 'task-X',
+        suggestionCount: 1,
+        title: 'Remaining',
+        body: 'b',
+        idSeed: 'old-set',
+        reuseOpenRow: true,
+      );
+      expect(refreshed!.id, current.id);
+      final rows = await notificationsDb.forLinkedEntity('task-X');
+      final open = rows
+          .where(
+            (row) => row.meta.deletedAt == null && row.meta.actedOnAt == null,
+          )
+          .toList();
+      expect(open, hasLength(1));
+      expect((open.single as TaskSuggestionNotification).suggestionCount, 1);
+      expect(open.single.meta.seenAt, fixedNow);
+      expect(
+        (await notificationsDb.notificationById(old!.id))!.meta.deletedAt,
+        fixedNow,
+      );
+    });
+
     test(
       'createTaskSuggestion uses linkedTaskId-derived id by default',
       () async {
@@ -705,7 +793,7 @@ void main() {
         outboxService: outboxService,
         updateNotifications: updateNotifications,
         scheduler: scheduler,
-        now: () => fixedNow,
+        now: () => now,
       );
     });
 

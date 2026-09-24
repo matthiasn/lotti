@@ -224,6 +224,7 @@ ChangeSetConfirmationService changeSetConfirmationService(Ref ref) {
   final notificationService = getIt.isRegistered<NotificationRepository>()
       ? ChangeSetNotificationService(
           notificationRepository: getIt<NotificationRepository>(),
+          agentRepository: ref.watch(agentRepositoryProvider),
           journalDb: ref.watch(journalDbProvider),
         )
       : null;

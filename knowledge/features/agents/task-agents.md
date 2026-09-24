@@ -1056,10 +1056,13 @@ tombstone and refuses status writes instead of reviving the caller's snapshot.
 It also resolves follow-up-task placeholder ids across later migration items and
 suppresses rejected label assignments so the same label is not immediately
 re-proposed. After a decision it hands the fresh change set to
-`ChangeSetNotificationService`: pending items left → refresh the seeded
-suggestion notification with the new count and retract older open rows for the
-task; none left → mark every open suggestion notification acted-on so it leaves
-the inbox and syncs that lifecycle to other devices.
+`ChangeSetNotificationService`: it counts pending items across every retained
+change set for the task agent. While any remain, it refreshes the current open
+inbox row, even when the decision belongs to an older set whose notification
+was already retired. Only when no pending items remain does it mark every open
+suggestion notification acted-on (or retract them after an agent retraction),
+syncing that lifecycle to other devices. End-of-wake alerts use the same total
+count with the wake’s change-set seed.
 
 ## Time-entry text proposals follow the entry, not the timer
 
