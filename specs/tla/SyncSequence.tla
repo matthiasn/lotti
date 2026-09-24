@@ -41,6 +41,13 @@
 (* still land it, the counter is burned. `IntentChoices` says whether a    *)
 (* caller may reserve without naming the payload.                          *)
 (*                                                                         *)
+(* The name is an id, `named`, and settlement only ever looks at that id.  *)
+(* It must be the id the write lands under: MetadataService.createMetadata *)
+(* chooses the id — a caller's explicit one included — before it reserves  *)
+(* the clock. `MisnamedReservations` lets a reservation name some other    *)
+(* entity, which is what swapping the id in with copyWith(id:) after the   *)
+(* reservation did; every checked-in configuration sets it FALSE.          *)
+(*                                                                         *)
 (* A row becomes `received` only once the payload is durably in the        *)
 (* outbox, or when an intent is proven covered and the payload is resent.  *)
 (* That is what makes a crash between the payload commit and the enqueue   *)
@@ -60,7 +67,8 @@ CONSTANTS
     MaxCrashes,     \* bound on originator crashes
     FaultBudget,    \* bound on injected faults of the kinds in `Faults`
     Faults,         \* subset of FaultKinds this configuration tolerates
-    IntentChoices   \* {TRUE}, or {TRUE, FALSE} when a caller may omit it
+    IntentChoices,  \* {TRUE}, or {TRUE, FALSE} when a caller may omit it
+    MisnamedReservations \* TRUE: a reservation may name another entity
 
 FaultKinds == {
     "rowWrite",         \* the reserved-row insert throws; the reservation
@@ -78,6 +86,7 @@ FaultKinds == {
 
 ASSUME Faults \subseteq FaultKinds
 ASSUME IntentChoices \subseteq BOOLEAN /\ IntentChoices # {}
+ASSUME MisnamedReservations \in BOOLEAN
 ASSUME MaxCounter \in Nat /\ MaxCrashes \in Nat /\ FaultBudget \in Nat
 
 Counters == 1..MaxCounter
@@ -108,6 +117,9 @@ VARIABLES
     wm,         \* persisted watermark: counters 1..wm have been handed out
     pc,         \* per counter: progress of the write that reserved it
     ent,        \* per counter: the entity that write targets
+    named,      \* per counter: the payload id the reservation names, which
+                \* the reserved row and the pending map record until the
+                \* outbox binds the counter to the id it actually sent
     intent,     \* per counter: whether the reservation names its payload
     pending,    \* counters this process reserved and has not settled
     oLog,       \* per counter: the originator's own sequence-log row
@@ -122,8 +134,8 @@ VARIABLES
     faults,     \* faults injected so far
     crashes     \* crashes so far
 
-vars == <<wm, pc, ent, intent, pending, oLog, oIntent, store, committed,
-          outbox, net, reqs, pLog, pVer, faults, crashes>>
+vars == <<wm, pc, ent, named, intent, pending, oLog, oIntent, store,
+          committed, outbox, net, reqs, pLog, pVer, faults, crashes>>
 
 Max(S) == CHOOSE x \in S : \A y \in S : y <= x
 
@@ -147,9 +159,17 @@ ToRoom(m) == [p \in Peers |-> net[p] \cup {m}]
 
 CanFault(kind) == kind \in Faults /\ faults < FaultBudget
 
-\* The intended payload's clock covers the counter: the write landed, or a
-\* later write of the same payload superseded it.
-Covered(c) == store[ent[c]] >= c
+\* The named payload's clock covers the counter: the write landed, or a
+\* later write of the same payload superseded it. Settlement can only look
+\* the payload up by the name the reservation recorded.
+Covered(c) == store[named[c]] >= c
+
+\* The write that reserved the counter landed, or a later write of the same
+\* entity superseded it — the truth `Covered` is meant to prove.
+Landed(c) == store[ent[c]] >= c
+
+\* The ids a reservation for a write of `e` may name.
+Names(e) == IF MisnamedReservations THEN Entities ELSE {e}
 
 \* The originator knows which payload `c` was reserved for.
 KnownIntent(c) == oIntent[c] \/ (c \in pending /\ intent[c])
@@ -208,6 +228,7 @@ Init ==
     /\ wm = 0
     /\ pc = [c \in Counters |-> "unused"]
     /\ ent = [c \in Counters |-> NoEntity]
+    /\ named = [c \in Counters |-> NoEntity]
     /\ intent = [c \in Counters |-> FALSE]
     /\ pending = {}
     /\ oLog = [c \in Counters |-> "none"]
@@ -235,7 +256,7 @@ Init ==
 \* with nothing sent.
 BindAndResend(c) ==
     /\ oLog' = [oLog EXCEPT ![c] = "received"]
-    /\ outbox' = [outbox EXCEPT ![ent[c]] = @ \cup {c}]
+    /\ outbox' = [outbox EXCEPT ![named[c]] = @ \cup {c}]
 
 \* Tell the room the counter carries no payload and terminalize the own
 \* row. A bound row is skipped.
@@ -258,12 +279,14 @@ Settle(c) ==
 
 \* Persist-first reservation. The reserve lock is held until the reserved
 \* row is written, so the next reservation cannot start before that.
-Reserve(e, i) ==
+Reserve(e, i, n) ==
     /\ wm < MaxCounter
     /\ \A c \in Counters : pc[c] # "reserving"
+    /\ n \in Names(e)
     /\ wm' = wm + 1
     /\ pc' = [pc EXCEPT ![wm + 1] = "reserving"]
     /\ ent' = [ent EXCEPT ![wm + 1] = e]
+    /\ named' = [named EXCEPT ![wm + 1] = n]
     /\ intent' = [intent EXCEPT ![wm + 1] = i]
     /\ pending' = pending \cup {wm + 1}
     /\ UNCHANGED <<oLog, oIntent, store, committed, outbox, net, reqs, pLog,
@@ -277,8 +300,8 @@ WriteReservedRow(c) ==
        THEN /\ oLog' = [oLog EXCEPT ![c] = "reserved"]
             /\ oIntent' = [oIntent EXCEPT ![c] = intent[c]]
        ELSE UNCHANGED <<oLog, oIntent>>
-    /\ UNCHANGED <<wm, ent, intent, pending, store, committed, outbox, net,
-                   reqs, pLog, pVer, faults, crashes>>
+    /\ UNCHANGED <<wm, ent, named, intent, pending, store, committed, outbox,
+                   net, reqs, pLog, pVer, faults, crashes>>
 
 \* The sequence-log insert fails; the reservation, with its intent, is
 \* recorded in the settings database instead.
@@ -291,8 +314,8 @@ WriteReservedRowFails(c) ==
             /\ oIntent' = [oIntent EXCEPT ![c] = intent[c]]
        ELSE UNCHANGED <<oLog, oIntent>>
     /\ faults' = faults + 1
-    /\ UNCHANGED <<wm, ent, intent, pending, store, committed, outbox, net,
-                   reqs, pLog, pVer, crashes>>
+    /\ UNCHANGED <<wm, ent, named, intent, pending, store, committed, outbox,
+                   net, reqs, pLog, pVer, crashes>>
 
 \* Neither store takes the reservation: reserving throws, no write follows,
 \* and the counter is left with no row at all — truthfully, no payload.
@@ -302,8 +325,8 @@ ReservationFails(c) ==
     /\ pc' = [pc EXCEPT ![c] = "finished"]
     /\ pending' = pending \ {c}
     /\ faults' = faults + 1
-    /\ UNCHANGED <<wm, ent, intent, oLog, oIntent, store, committed, outbox,
-                   net, reqs, pLog, pVer, crashes>>
+    /\ UNCHANGED <<wm, ent, named, intent, oLog, oIntent, store, committed,
+                   outbox, net, reqs, pLog, pVer, crashes>>
 
 \* The payload write lands only if its clock dominates the stored one.
 Commit(c) ==
@@ -312,15 +335,15 @@ Commit(c) ==
     /\ store' = [store EXCEPT ![ent[c]] = c]
     /\ committed' = committed \cup {c}
     /\ pc' = [pc EXCEPT ![c] = "committed"]
-    /\ UNCHANGED <<wm, ent, intent, pending, oLog, oIntent, outbox, net, reqs,
-                   pLog, pVer, faults, crashes>>
+    /\ UNCHANGED <<wm, ent, named, intent, pending, oLog, oIntent, outbox, net,
+                   reqs, pLog, pVer, faults, crashes>>
 
 \* The write is rejected or throws before landing; the scope releases.
 Abort(c) ==
     /\ pc[c] = "reserved"
     /\ pc' = [pc EXCEPT ![c] = "releasing"]
-    /\ UNCHANGED <<wm, ent, intent, pending, oLog, oIntent, store, committed,
-                   outbox, net, reqs, pLog, pVer, faults, crashes>>
+    /\ UNCHANGED <<wm, ent, named, intent, pending, oLog, oIntent, store,
+                   committed, outbox, net, reqs, pLog, pVer, faults, crashes>>
 
 \* A post-commit step throws and an outer scope reads the write as failed.
 ThrowAfterCommit(c) ==
@@ -328,18 +351,20 @@ ThrowAfterCommit(c) ==
     /\ pc[c] = "committed"
     /\ pc' = [pc EXCEPT ![c] = "releasing"]
     /\ faults' = faults + 1
-    /\ UNCHANGED <<wm, ent, intent, pending, oLog, oIntent, store, committed,
-                   outbox, net, reqs, pLog, pVer, crashes>>
+    /\ UNCHANGED <<wm, ent, named, intent, pending, oLog, oIntent, store,
+                   committed, outbox, net, reqs, pLog, pVer, crashes>>
 
-\* The outbox inserts (or merges into) the entity's pending row, then binds.
+\* The outbox inserts (or merges into) the entity's pending row, then binds
+\* the counter to the id it sent, overwriting the reservation's name.
 Enqueue(c) ==
     /\ pc[c] = "committed"
     /\ pc' = [pc EXCEPT ![c] = "finished"]
     /\ oLog' = [oLog EXCEPT ![c] = "received"]
     /\ pending' = pending \ {c}
     /\ outbox' = [outbox EXCEPT ![ent[c]] = @ \cup {c}]
-    /\ UNCHANGED <<wm, ent, intent, oIntent, store, committed, net, reqs,
-                   pLog, pVer, faults, crashes>>
+    /\ named' = [named EXCEPT ![c] = ent[c]]
+    /\ UNCHANGED <<wm, ent, intent, oIntent, store, committed, net, reqs, pLog,
+                   pVer, faults, crashes>>
 
 \* The outbox row is written but the bind after it fails.
 EnqueueBindFails(c) ==
@@ -348,16 +373,16 @@ EnqueueBindFails(c) ==
     /\ pc' = [pc EXCEPT ![c] = "finished"]
     /\ outbox' = [outbox EXCEPT ![ent[c]] = @ \cup {c}]
     /\ faults' = faults + 1
-    /\ UNCHANGED <<wm, ent, intent, pending, oLog, oIntent, store, committed,
-                   net, reqs, pLog, pVer, crashes>>
+    /\ UNCHANGED <<wm, ent, named, intent, pending, oLog, oIntent, store,
+                   committed, net, reqs, pLog, pVer, crashes>>
 
 EnqueueFails(c) ==
     /\ CanFault("enqueue")
     /\ pc[c] = "committed"
     /\ pc' = [pc EXCEPT ![c] = "finished"]
     /\ faults' = faults + 1
-    /\ UNCHANGED <<wm, ent, intent, pending, oLog, oIntent, store, committed,
-                   outbox, net, reqs, pLog, pVer, crashes>>
+    /\ UNCHANGED <<wm, ent, named, intent, pending, oLog, oIntent, store,
+                   committed, outbox, net, reqs, pLog, pVer, crashes>>
 
 \* The reservation leaves the pending map and an unsettled row becomes
 \* burnPending, recording the reservation's intent. Whether the counter is
@@ -371,7 +396,7 @@ Release(c) ==
        THEN /\ oLog' = [oLog EXCEPT ![c] = "burnPending"]
             /\ oIntent' = [oIntent EXCEPT ![c] = @ \/ intent[c]]
        ELSE UNCHANGED <<oLog, oIntent>>
-    /\ UNCHANGED <<wm, ent, intent, store, committed, outbox, net, reqs,
+    /\ UNCHANGED <<wm, ent, named, intent, store, committed, outbox, net, reqs,
                    pLog, pVer, faults, crashes>>
 
 \* The burn handler, invoked by the release.
@@ -379,16 +404,16 @@ Broadcast(c) ==
     /\ pc[c] = "broadcasting"
     /\ pc' = [pc EXCEPT ![c] = "finished"]
     /\ Settle(c)
-    /\ UNCHANGED <<wm, ent, intent, pending, oIntent, store, committed, reqs,
-                   pLog, pVer, faults, crashes>>
+    /\ UNCHANGED <<wm, ent, named, intent, pending, oIntent, store, committed,
+                   reqs, pLog, pVer, faults, crashes>>
 
 BroadcastFails(c) ==
     /\ CanFault("broadcast")
     /\ pc[c] = "broadcasting"
     /\ pc' = [pc EXCEPT ![c] = "finished"]
     /\ faults' = faults + 1
-    /\ UNCHANGED <<wm, ent, intent, pending, oLog, oIntent, store, committed,
-                   outbox, net, reqs, pLog, pVer, crashes>>
+    /\ UNCHANGED <<wm, ent, named, intent, pending, oLog, oIntent, store,
+                   committed, outbox, net, reqs, pLog, pVer, crashes>>
 
 \* Startup: a burnPending row whose burn handler never finished.
 ReconcileBurn(c) ==
@@ -396,15 +421,15 @@ ReconcileBurn(c) ==
     /\ c \notin pending
     /\ pc[c] \notin InFlight
     /\ Settle(c)
-    /\ UNCHANGED <<wm, pc, ent, intent, pending, oIntent, store, committed,
-                   reqs, pLog, pVer, faults, crashes>>
+    /\ UNCHANGED <<wm, pc, ent, named, intent, pending, oIntent, store,
+                   committed, reqs, pLog, pVer, faults, crashes>>
 
 \* Startup: a settings-database reservation moves into the sequence log.
 MigrateFallback(c) ==
     /\ oLog[c] = "fallback"
     /\ oLog' = [oLog EXCEPT ![c] = "reserved"]
-    /\ UNCHANGED <<wm, pc, ent, intent, pending, oIntent, store, committed,
-                   outbox, net, reqs, pLog, pVer, faults, crashes>>
+    /\ UNCHANGED <<wm, pc, ent, named, intent, pending, oIntent, store,
+                   committed, outbox, net, reqs, pLog, pVer, faults, crashes>>
 
 \* Startup: a named reservation an earlier process left behind.
 ResolveOrphan(c) ==
@@ -412,8 +437,8 @@ ResolveOrphan(c) ==
     /\ oIntent[c]
     /\ c \notin pending
     /\ Settle(c)
-    /\ UNCHANGED <<wm, pc, ent, intent, pending, oIntent, store, committed,
-                   reqs, pLog, pVer, faults, crashes>>
+    /\ UNCHANGED <<wm, pc, ent, named, intent, pending, oIntent, store,
+                   committed, reqs, pLog, pVer, faults, crashes>>
 
 \* The process dies: in-flight writes and the pending map are gone.
 Crash ==
@@ -422,8 +447,8 @@ Crash ==
     /\ pc' = [c \in Counters |-> IF pc[c] \in InFlight THEN "dead" ELSE pc[c]]
     /\ pending' = {}
     /\ crashes' = crashes + 1
-    /\ UNCHANGED <<wm, ent, intent, oLog, oIntent, store, committed, outbox,
-                   net, reqs, pLog, pVer, faults>>
+    /\ UNCHANGED <<wm, ent, named, intent, oLog, oIntent, store, committed,
+                   outbox, net, reqs, pLog, pVer, faults>>
 
 \* Send the entity's pending outbox row. The file is read at send time.
 OutboxSend(e) ==
@@ -431,7 +456,7 @@ OutboxSend(e) ==
     /\ LET a == Max(outbox[e]) IN
        net' = ToRoom(PayloadMsg(e, a, store[e], outbox[e] \ {a}))
     /\ outbox' = [outbox EXCEPT ![e] = {}]
-    /\ UNCHANGED <<wm, pc, ent, intent, pending, oLog, oIntent, store,
+    /\ UNCHANGED <<wm, pc, ent, named, intent, pending, oLog, oIntent, store,
                    committed, reqs, pLog, pVer, faults, crashes>>
 
 \* A request the originator must leave open: this process may still land
@@ -448,18 +473,19 @@ Respond(p, c) ==
     /\ ~Deferred(c)
     /\ reqs' = reqs \ {<<p, c>>}
     /\ CASE oLog[c] = "received" ->
-              /\ net' = ToRoom(HintMsg(ent[c], store[ent[c]], c))
+              /\ net' = ToRoom(HintMsg(named[c], store[named[c]], c))
               /\ UNCHANGED oLog
          [] Bindable(c) ->
               /\ oLog' = [oLog EXCEPT ![c] = "received"]
-              /\ net' = ToRoom(HintMsg(ent[c], store[ent[c]], c))
+              /\ net' = ToRoom(HintMsg(named[c], store[named[c]], c))
          [] OTHER ->
               BurnOwn(c)
-    /\ UNCHANGED <<wm, pc, ent, intent, pending, oIntent, store, committed,
-                   outbox, pLog, pVer, faults, crashes>>
+    /\ UNCHANGED <<wm, pc, ent, named, intent, pending, oIntent, store,
+                   committed, outbox, pLog, pVer, faults, crashes>>
 
 OriginatorStep ==
-    \/ \E e \in Entities, i \in IntentChoices : Reserve(e, i)
+    \/ \E e \in Entities, i \in IntentChoices, n \in Entities :
+          Reserve(e, i, n)
     \/ \E e \in Entities : OutboxSend(e)
     \/ \E c \in Counters :
           \/ WriteReservedRow(c) \/ WriteReservedRowFails(c)
@@ -483,7 +509,7 @@ Deliver(p, m) ==
                     [] m.type = "burn" -> ApplyBurn(@, m.c)]
     /\ pVer' = IF m.type \in {"payload", "hint"} /\ m.v > pVer[p][m.e]
                THEN [pVer EXCEPT ![p][m.e] = m.v] ELSE pVer
-    /\ UNCHANGED <<wm, pc, ent, intent, pending, oLog, oIntent, store,
+    /\ UNCHANGED <<wm, pc, ent, named, intent, pending, oLog, oIntent, store,
                    committed, outbox, reqs, faults, crashes>>
 
 \* The inbound queue abandons an event for good.
@@ -492,7 +518,7 @@ Lose(p, m) ==
     /\ m \in net[p]
     /\ net' = [net EXCEPT ![p] = @ \ {m}]
     /\ faults' = faults + 1
-    /\ UNCHANGED <<wm, pc, ent, intent, pending, oLog, oIntent, store,
+    /\ UNCHANGED <<wm, pc, ent, named, intent, pending, oLog, oIntent, store,
                    committed, outbox, reqs, pLog, pVer, crashes>>
 
 \* BackfillRequestService: ask (again) for a missing or requested counter.
@@ -501,7 +527,7 @@ Request(p, c) ==
     /\ <<p, c>> \notin reqs
     /\ reqs' = reqs \cup {<<p, c>>}
     /\ pLog' = [pLog EXCEPT ![p][c] = "requested"]
-    /\ UNCHANGED <<wm, pc, ent, intent, pending, oLog, oIntent, store,
+    /\ UNCHANGED <<wm, pc, ent, named, intent, pending, oLog, oIntent, store,
                    committed, outbox, net, pVer, faults, crashes>>
 
 \* Retry exhaustion or amnesty. Never forced by fairness: giving up must
@@ -509,14 +535,14 @@ Request(p, c) ==
 GiveUp(p, c) ==
     /\ pLog[p][c] \in {"missing", "requested"}
     /\ pLog' = [pLog EXCEPT ![p][c] = "unresolvable"]
-    /\ UNCHANGED <<wm, pc, ent, intent, pending, oLog, oIntent, store,
+    /\ UNCHANGED <<wm, pc, ent, named, intent, pending, oLog, oIntent, store,
                    committed, outbox, net, reqs, pVer, faults, crashes>>
 
 \* "Ask peers again for unresolvable".
 AskAgain(p, c) ==
     /\ pLog[p][c] = "unresolvable"
     /\ pLog' = [pLog EXCEPT ![p][c] = "missing"]
-    /\ UNCHANGED <<wm, pc, ent, intent, pending, oLog, oIntent, store,
+    /\ UNCHANGED <<wm, pc, ent, named, intent, pending, oLog, oIntent, store,
                    committed, outbox, net, reqs, pVer, faults, crashes>>
 
 PeerStep ==
@@ -552,6 +578,7 @@ TypeOK ==
     /\ wm \in 0..MaxCounter
     /\ pc \in [Counters -> PcStates]
     /\ ent \in [Counters -> Entities \cup {NoEntity}]
+    /\ named \in [Counters -> Entities \cup {NoEntity}]
     /\ intent \in [Counters -> BOOLEAN]
     /\ pending \subseteq Counters
     /\ oLog \in [Counters -> OwnStatus]
@@ -576,9 +603,10 @@ ReceivedIsReal ==
     \A p \in Peers, c \in Counters :
         pLog[p][c] \in {"received", "backfilled"} => pVer[p][ent[c]] >= c
 
-\* The originator never answers from a row whose payload is not on disk.
+\* The originator never answers from a row whose payload is not on disk:
+\* the write that reserved the counter, not whatever the row names.
 BoundRowsHavePayload ==
-    \A c \in Counters : oLog[c] = "received" => Covered(c)
+    \A c \in Counters : oLog[c] = "received" => Landed(c)
 
 \* `burned` has no outgoing edge, on any device.
 BurnedIsTerminal ==

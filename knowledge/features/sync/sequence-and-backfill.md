@@ -5,8 +5,8 @@ description: Causal accounting over (hostId, counter) pairs, bounded initial-onb
 resource: ../../../lib/features/sync/sequence
 tags: [sync, sequence-log, backfill, gap-detection]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-23T23:37:12Z }
-stale_after: 2027-01-20
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T16:30:00Z }
+stale_after: 2026-12-24
 sources:
   - id: tla-spec
     resource: ../../../specs/tla/SyncSequence.tla
@@ -20,6 +20,18 @@ sources:
     resource: ../../../lib/services/vector_clock_service.dart
     title: VectorClockService reservations, intent and pending map
     last_modified: 2026-09-23
+  - id: metadata-service
+    resource: ../../../lib/logic/services/metadata_service.dart
+    title: Journal entry ids chosen before the clock is reserved
+    last_modified: 2026-09-24
+  - id: adr-0065
+    resource: ../../../docs/adr/0065-model-checked-sync-sequence-reservations.md
+    title: ADR 0065 — model-checked sync sequence reservations
+    last_modified: 2026-09-23
+  - id: adr-0077
+    resource: ../../../docs/adr/0077-a-reservation-names-the-id-written.md
+    title: ADR 0077 — a reservation names the id that is written
+    last_modified: 2026-09-24
   - id: sequence
     resource: ../../../lib/features/sync/sequence
     title: SyncSequenceLogService
@@ -102,6 +114,19 @@ hole. The caller names the payload the counter is for — its id and payload
 type — whenever it knows it, and every write path in the app does. The
 `reserved` row records that name as an **intent**: not a binding, but enough
 to prove later whether the write landed, from the payload's own vector clock.
+
+The name must be the id the write lands under, because settlement only ever
+looks at the name. For journal entries `MetadataService.createMetadata` picks
+the id — a caller's explicit `id`, a uuidV5 of `uuidV5Input`, or a fresh v1 —
+and reserves the clock naming it, so a create path with a caller-chosen id
+passes that id in. Replacing the id afterwards with `copyWith(id: ...)` is a
+defect: the counter would be settled by an id that was never written, burned
+although its entry is on disk, or bound to an unrelated entity whose clock
+happens to cover it
+([ADR 0077](../../../docs/adr/0077-a-reservation-names-the-id-written.md)).
+The outbox bind overwrites the name with the id it actually sent, so the
+mismatch only surfaces after a crash, or a swallowed enqueue failure, before
+that bind.
 
 If the sequence-log insert fails, the reservation — intent included — is
 recorded in the settings database instead, next to the watermark, and startup
@@ -211,7 +236,10 @@ writes and redundant attempts without logging every binding.
 model-checks this lifecycle with TLC for one originator and its peers, under
 bounded crashes and injected faults. Within its configured bounds, it checks
 that committed payloads are never burned, received rows are backed by data,
-and `burned` is terminal. Its liveness configurations additionally check that
+and `burned` is terminal. It records each reservation's name separately from
+the entity its write targets; letting the two differ (`MisnamedReservations`)
+reproduces both the false burn and the wrong-entity bind, so every checked-in
+configuration keeps them equal. Its liveness configurations additionally check that
 committed writes reach every peer and requests eventually settle, under the
 model's fairness and fault assumptions.
 

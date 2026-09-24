@@ -21,11 +21,19 @@ class MetadataService {
   final VectorClockService _vectorClockService;
   final _uuid = const Uuid();
 
-  /// Creates a [Metadata] object with either a random UUID v1 ID or a
-  /// deterministic UUID v5 ID.
+  /// Creates a [Metadata] object with a caller-chosen [id], or else with
+  /// either a random UUID v1 ID or a deterministic UUID v5 ID.
   ///
-  /// If [uuidV5Input] is provided, it will be used as the basis for the UUID v5 ID.
-  /// This is useful for deduplicating entries (e.g., health data imports).
+  /// If [id] is provided it is the entry's id, and [uuidV5Input] is ignored.
+  /// Otherwise, if [uuidV5Input] is provided, it will be used as the basis for
+  /// the UUID v5 ID. This is useful for deduplicating entries (e.g., health
+  /// data imports).
+  ///
+  /// The id is chosen here, before the vector clock is reserved, because the
+  /// reservation names it: after a crash, settlement looks that id up to prove
+  /// whether the write landed. Never replace the returned id with
+  /// `copyWith(id: ...)` — the reservation would name an entry that is never
+  /// written, and settlement would burn a counter whose entry is on disk.
   ///
   /// The [dateFrom] and [dateTo] parameters are optional and will default to
   /// the current date and time if not provided. They can differ when importing
@@ -39,11 +47,12 @@ class MetadataService {
     String? categoryId,
     bool? starred,
     EntryFlag? flag,
+    String? id,
   }) async {
     final now = DateTime.now();
-    final id = generateId(uuidV5Input: uuidV5Input);
+    final entryId = id ?? generateId(uuidV5Input: uuidV5Input);
     final vc = await _vectorClockService.getNextVectorClock(
-      payload: (id: id, type: SyncSequencePayloadType.journalEntity),
+      payload: (id: entryId, type: SyncSequencePayloadType.journalEntity),
     );
 
     return Metadata(
@@ -51,7 +60,7 @@ class MetadataService {
       updatedAt: now,
       dateFrom: dateFrom ?? now,
       dateTo: dateTo ?? now,
-      id: id,
+      id: entryId,
       vectorClock: vc,
       private: private,
       labelIds: labelIds,

@@ -181,9 +181,12 @@ class RelationshipRepository {
       dateFrom: started,
       dateTo: started,
       categoryId: categoryId,
+      // Chosen before the clock is reserved: the reservation must name the id
+      // the person is written under, or crash recovery burns their counter.
+      id: id,
     );
     final relationship = RelationshipEntry(
-      meta: id == null ? meta : meta.copyWith(id: id),
+      meta: meta,
       data: data.withClampedImageFraming,
       entryText: entryText,
     );

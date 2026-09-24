@@ -22,6 +22,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
+import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
@@ -627,6 +628,125 @@ void main() {
         contains(updatedTestText),
       );
       _verifyAndResetBadge(mockNotificationService);
+    });
+
+    // A crash after an entry commits but before the outbox binds its counter
+    // leaves the reservation `reserved`. Startup settles it by looking up the
+    // payload the reservation names: covered, it is resent and bound;
+    // anything else is burned for every device. A caller-chosen id used to be
+    // swapped in after the reservation named the payload-derived id, so
+    // settlement found nothing under that name and burned a counter whose
+    // entry was on disk — the entry never reached the other devices.
+    group('an explicit id survives a crash before the outbox binds', () {
+      Future<void> expectResentNotBurned({
+        required String id,
+        required VectorClock? vectorClock,
+      }) async {
+        final host = (await getIt<VectorClockService>().getHost())!;
+        final counter = vectorClock!.vclock[host]!;
+        final reserved = await syncDb.getEntryByHostAndCounter(host, counter);
+        expect(
+          SyncSequenceStatus.values[reserved!.status],
+          SyncSequenceStatus.reserved,
+        );
+
+        // The next process: a fresh reservation service (no pending map) over
+        // the surviving stores, then startup settlement.
+        final restarted = VectorClockService();
+        await restarted.initialized;
+        final logger = getIt<DomainLogger>();
+        final handler = BackfillResponseHandler(
+          journalDb: journalDb,
+          sequenceLogService: SyncSequenceLogService(
+            syncDatabase: syncDb,
+            vectorClockService: restarted,
+            loggingService: logger,
+          ),
+          outboxService: mockOutboxService,
+          loggingService: logger,
+          vectorClockService: restarted,
+          responseCooldown: Duration.zero,
+        );
+        when(
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
+        ).thenAnswer((_) async {});
+        clearInteractions(mockOutboxService);
+
+        await handler.settleOrphanedOwnCounters();
+
+        final settled = await syncDb.getEntryByHostAndCounter(host, counter);
+        expect(
+          SyncSequenceStatus.values[settled!.status],
+          SyncSequenceStatus.received,
+        );
+        expect(settled.entryId, id);
+        final sent = [
+          ...verify(
+            () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
+          ).captured,
+          ...verify(
+            () => mockOutboxService.enqueueMessage(captureAny()),
+          ).captured,
+        ];
+        // Resent under its own id (a later geolocation write of the same
+        // entry may be settled and resent alongside it), and never burned.
+        expect(
+          sent.whereType<SyncJournalEntity>().map((message) => message.id),
+          everyElement(id),
+        );
+        expect(sent.whereType<SyncJournalEntity>(), isNotEmpty);
+        expect(
+          sent.whereType<SyncBackfillResponse>().where(
+            (response) => response.unresolvable ?? false,
+          ),
+          isEmpty,
+        );
+      }
+
+      test('a task created under a caller-chosen id', () async {
+        final now = DateTime(2024, 3, 15, 11);
+        final task = await getIt<PersistenceLogic>().createTaskEntry(
+          id: 'relationship-commitment-task',
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status-id',
+              createdAt: now,
+              utcOffset: 60,
+            ),
+            title: 'Pack the fish',
+            statusHistory: [],
+            dateTo: now,
+            dateFrom: now,
+          ),
+          entryText: const EntryText(plainText: 'Pack the fish'),
+        );
+
+        expect(task?.id, 'relationship-commitment-task');
+        await expectResentNotBurned(
+          id: 'relationship-commitment-task',
+          vectorClock: task!.meta.vectorClock,
+        );
+      });
+
+      test('an AI response created under a caller-chosen id', () async {
+        final response = await getIt<PersistenceLogic>().createAiResponseEntry(
+          id: 'skill-response-id',
+          data: const AiResponseData(
+            model: 'model',
+            systemMessage: 'system',
+            prompt: 'prompt',
+            thoughts: '',
+            response: 'response',
+          ),
+          dateFrom: DateTime(2024, 3, 15, 11),
+        );
+
+        expect(response?.id, 'skill-response-id');
+        await expectResentNotBurned(
+          id: 'skill-response-id',
+          vectorClock: response!.meta.vectorClock,
+        );
+      });
     });
 
     test('create and retrieve task', () async {

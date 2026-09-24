@@ -35,7 +35,7 @@ and the decision in [ADR 0065](../../docs/adr/0065-model-checked-sync-sequence-r
 |----------|------|------|
 | `NoFalseBurn` | invariant | no device ever burns a counter whose payload committed |
 | `ReceivedIsReal` | invariant | a peer's `received`/`backfilled` row is backed by that data or newer |
-| `BoundRowsHavePayload` | invariant | the originator only answers from rows whose payload is on disk |
+| `BoundRowsHavePayload` | invariant | the originator only answers from rows whose payload is on disk — the write that reserved the counter, not merely whatever the row names |
 | `BurnedIsTerminal` | action | `burned` has no outgoing edge on any device |
 | `EventuallyDelivered` | liveness | every committed write reaches every peer |
 | `NoStuckRequest` | liveness | every backfill request is settled by the protocol, not by giving up |
@@ -49,7 +49,23 @@ and the decision in [ADR 0065](../../docs/adr/0065-model-checked-sync-sequence-r
 | `SyncSequenceFaults` | 0 | any two of: reserved-row insert (settings fallback taken), reserved-row insert and fallback both, bind, post-commit throw, enqueue, burn broadcast, event loss | no | safety |
 
 All five pass with two entities, three counters and one peer — between 0.8 and
-4.4 million distinct states each, a few minutes in total.
+4.4 million distinct states each (`SyncSequence` 1,015,081,
+`SyncSequenceCrash` 777,611, `SyncSequenceCrashUnnamed` 3,022,767,
+`SyncSequenceCrashFault` 4,357,689, `SyncSequenceFaults` 3,015,653), a few
+minutes in total.
+
+The name a reservation records is modelled separately from the entity its
+write targets (`named` versus `ent`), because settlement can only look the
+payload up by the name. `MisnamedReservations = TRUE` lets a reservation name
+another entity — what `createTaskEntry`, `createAiResponseEntry` and
+`createRelationship` did when they swapped a caller's id in after reserving
+([ADR 0077](../../docs/adr/0077-a-reservation-names-the-id-written.md)). With
+one crash, TLC breaks `NoFalseBurn` in five steps (reserve counter 1 for `e1`
+naming `e2`, commit, crash, settle: `e2` does not cover 1, so the committed
+counter is burned) and `BoundRowsHavePayload` in seven (counter 2 of `e2`
+commits, so settlement binds counter 1 to `e2` although `e1` never landed).
+Every checked-in configuration sets it `FALSE`; the naming rule is what the
+code now guarantees.
 
 What the configurations deliberately leave out:
 
@@ -775,6 +791,15 @@ outbox outages, and checks `NoFalseBurn`, `BoundRowsHavePayload` and
 committed write was bound and actually reached the outbox. Reverting the
 settlement fix, or binding before the resend is durably queued, makes it fail
 with a shrunk trace of four or five steps.
+
+The name itself is checked end to end in `test/logic/persistence_logic_test.dart`
+("an explicit id survives a crash before the outbox binds"): a task and an AI
+response are created under a caller-chosen id through the real
+`PersistenceLogic`, `MetadataService`, `VectorClockService`, journal and
+sequence-log databases, the outbox never binds, and a fresh reservation service
+runs startup settlement. The counter must end `received` under that id and be
+resent, never burned. With the id swapped in after the reservation, as before
+ADR 0077, it ends `burned`.
 
 The agent specs have the same kind of check. In
 `test/features/agents/wake/wake_orchestrator_intents_test.dart`, generated

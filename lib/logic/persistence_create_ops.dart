@@ -322,12 +322,15 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
         labelIds: labelIds,
         starred: false,
         private: private,
+        // Chosen before the clock is reserved, so the reservation names the
+        // id this task is written under (see MetadataService.createMetadata).
+        id: id,
       );
       final task = Task(
         data: data,
         entryText: entryText,
         // With a linked parent, createDbEntity applies the parent's privacy.
-        meta: id == null ? metadata : metadata.copyWith(id: id),
+        meta: metadata,
       );
 
       // The write's own verdict, not just the absence of a throw.
@@ -365,11 +368,9 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
         uuidV5Input: json.encode(data),
         categoryId: categoryId,
         starred: false,
+        id: id,
       );
-      final aiResponse = AiResponseEntry(
-        data: data,
-        meta: id == null ? metadata : metadata.copyWith(id: id),
-      );
+      final aiResponse = AiResponseEntry(data: data, meta: metadata);
 
       final persisted = await logic.createDbEntity(
         aiResponse,
