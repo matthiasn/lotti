@@ -1000,6 +1000,31 @@ void main() {
         ),
         ConcurrentWinner.local,
       );
+
+      // The local write path resolves a write against the persisted row
+      // (ADR 0068). The re-arm saw the consumed row, so it is written as
+      // given; the pre-0069 row, rebuilt from a null clock at the period's
+      // instant, would be resolved into the consumed row and never pend.
+      final written = resolveLocalAgentWrite(
+        persisted: consumed,
+        write: rearmed,
+      );
+      expect(written, isA<ScheduledWakeEntity>());
+      expect(
+        (written as ScheduledWakeEntity).status,
+        ScheduledWakeStatus.pending,
+      );
+      expect(written.scheduledAt, rearmed.scheduledAt);
+      final nullClockRearm = rearmed.copyWith(
+        vectorClock: null,
+        scheduledAt: consumed.scheduledAt,
+      );
+      expect(
+        (resolveLocalAgentWrite(persisted: consumed, write: nullClockRearm)
+                as ScheduledWakeEntity)
+            .status,
+        ScheduledWakeStatus.consumed,
+      );
     });
 
     test('over a pending first window, it joins it and writes nothing — the '

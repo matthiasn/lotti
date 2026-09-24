@@ -107,6 +107,12 @@ retry at a later instant, check clean.
   death.
 - A message whose author could not answer it is answered half an hour later,
   not at the next scan; a failed recovery is retried when its lease lapses.
+- Every scheduled-wake write this ADR introduces carries the clock of the
+  row it replaces, so the local write path of
+  [ADR 0068](./0068-model-checked-agent-convergence.md), which resolves a
+  write against the persisted row, keeps its fields. Under that path alone
+  the old null-clock re-arm would not even have pended locally: it is
+  resolved into the consumed row it never saw.
 - Decisions 2 and 3 cover the records whose wakes are wake intents. The
   coordinator digest's wake is not one
   ([ADR 0070](./0070-model-checked-digest-recovery-and-processing-jobs.md)):
