@@ -54,6 +54,7 @@ class DayAgentJobExecutor {
     required this.recordRunKey,
     required this.hasCompletedCaptureParse,
     required this.hasPendingDraftWork,
+    required this.liveWakeRunKey,
     this.wakeTimeout = const Duration(minutes: 3),
     this.maxAttempts = 5,
   });
@@ -111,6 +112,17 @@ class DayAgentJobExecutor {
   /// counts an attempt, so deferring unconditionally would loop forever).
   final Future<bool> Function(String dayId) hasPendingDraftWork;
 
+  /// The run key of a wake already enqueued for the job's request that has
+  /// not settled — queued, running, or running on after an abort — or `null`.
+  ///
+  /// An attempt that finds one awaits it instead of enqueueing another. The
+  /// claim's lease and the wait are both three minutes and the lease is never
+  /// renewed, while a wake can sit behind its agent's single flight, or run
+  /// on after the ten-minute cap, for far longer: a timed-out retry, a lapsed
+  /// claim taken over, or a retry tap would otherwise bill a second inference
+  /// for one request (`specs/tla/DayProcessingJob.tla`).
+  final String? Function(DayProcessingJob job) liveWakeRunKey;
+
   /// Upper bound on how long one attempt waits for its wake to finish.
   final Duration wakeTimeout;
 
@@ -120,53 +132,11 @@ class DayAgentJobExecutor {
   final int maxAttempts;
 
   Future<DayAgentJobOutcome> execute(DayProcessingJob job) async {
-    final preCheck = await _artifactOutcome(job);
-    if (preCheck != null) return preCheck;
-
-    if (job.payload case RefinePlanPayload()) {
-      final draftPending = await draftPlanUpdatedAt(
-        await _safeResolve(job.dayId),
-        job.dayId,
-      );
-      if (draftPending == null) {
-        if (await hasPendingDraftWork(job.dayId)) {
-          // No plan to refine yet, but a draft job for this day is still in
-          // flight. Defer briefly rather than spending a wake on a refine
-          // that has nothing to act on.
-          return const DayAgentJobFailed(
-            failureClass: DayProcessingFailureClass.local,
-            error: 'No plan to refine yet',
-            retryAfter: Duration(seconds: 5),
-          );
-        }
-        // No plan exists and nothing will produce one: the day's draft job
-        // is absent, terminally failed, or waiting on the user. Fail
-        // deterministically instead of deferring forever.
-        return const DayAgentJobFailed(
-          failureClass: DayProcessingFailureClass.deterministic,
-          error:
-              'No plan to refine — the day has no drafted plan and no '
-              'pending draft job',
-        );
-      }
-    }
-
-    final String agentId;
-    try {
-      agentId = await resolveAgentId(job.dayId);
-    } on Object catch (e) {
-      // Routed through the same classifier as a wake failure rather than a
-      // blanket `setupRequired`: a transient lookup/I/O failure here should
-      // still get the outbox's retry behavior instead of being treated as a
-      // terminal setup problem.
-      return _classifyFailure(job, e);
-    }
-
-    // Subscribe BEFORE enqueueing (the orchestrator's documented contract):
-    // a fast wake can complete while provenance is being persisted below,
-    // and a completion emitted before `firstWhere` subscribes would be lost
-    // on the broadcast stream. The plain controller buffers events until
-    // the waiter attaches.
+    // Subscribe BEFORE looking for a live wake or enqueueing one (the
+    // orchestrator's documented contract): a wake can complete while this
+    // attempt reads the store or persists provenance, and a completion
+    // emitted before `firstWhere` subscribes would be lost on the broadcast
+    // stream. The plain controller buffers events until the waiter attaches.
     final buffered = StreamController<WakeRunCompletion>();
     final completionEvents = runCompletions.listen(
       buffered.add,
@@ -174,15 +144,41 @@ class DayAgentJobExecutor {
     );
 
     try {
-      final runKey = enqueueWake((
-        agentId: agentId,
-        dayId: job.dayId,
-        job: job,
-      ));
-      // Persist provenance before awaiting: if the process dies mid-wake,
-      // the re-claim's artifact pre-check can still attribute the wake's
-      // output.
-      await recordRunKey(job.id, runKey);
+      // Asked before the artifact pre-check: a wake no longer live has
+      // settled, so whatever it committed is visible to the pre-check.
+      final attached = liveWakeRunKey(job);
+      final preCheck = await _artifactOutcome(job, extraRunKey: attached);
+      if (preCheck != null) return preCheck;
+
+      String? agentId;
+      final String runKey;
+      if (attached != null) {
+        // This request's inference is already under way — the wake of an
+        // attempt that timed out, or of a claim that lapsed. Await it rather
+        // than paying for a second one beside it.
+        runKey = attached;
+      } else {
+        final noPlan = await _refineWithoutPlan(job);
+        if (noPlan != null) return noPlan;
+        try {
+          agentId = await resolveAgentId(job.dayId);
+        } on Object catch (e) {
+          // Routed through the same classifier as a wake failure rather than
+          // a blanket `setupRequired`: a transient lookup/I/O failure here
+          // should still get the outbox's retry behavior instead of being
+          // treated as a terminal setup problem.
+          return _classifyFailure(job, e);
+        }
+        runKey = enqueueWake((
+          agentId: agentId,
+          dayId: job.dayId,
+          job: job,
+        ));
+        // Persist provenance before awaiting: if the process dies mid-wake,
+        // the re-claim's artifact pre-check can still attribute the wake's
+        // output.
+        await recordRunKey(job.id, runKey);
+      }
 
       final WakeRunCompletion completion;
       try {
@@ -190,9 +186,19 @@ class DayAgentJobExecutor {
             .firstWhere((event) => event.runKey == runKey)
             .timeout(wakeTimeout);
       } on TimeoutException {
-        return const DayAgentJobFailed(
-          failureClass: DayProcessingFailureClass.timeout,
-          error: 'Wake did not complete in time',
+        if (liveWakeRunKey(job) != null) {
+          // Still queued behind the agent's single flight, or running on
+          // after an abort. Come back without counting an attempt: no new
+          // inference was spent, and the next attempt attaches to it again.
+          return const DayAgentJobFailed(
+            failureClass: DayProcessingFailureClass.local,
+            error: 'Wake still running',
+          );
+        }
+        return _cappedRetryableFailure(
+          job,
+          DayProcessingFailureClass.timeout,
+          'Wake did not complete in time',
         );
       }
 
@@ -218,9 +224,41 @@ class DayAgentJobExecutor {
 
       return _classifyFailure(job, completion.error);
     } finally {
-      await completionEvents.cancel();
+      // Not awaited: nothing depends on the cancel settling, and awaiting it
+      // costs a hop through the root zone's microtask queue.
+      unawaited(completionEvents.cancel());
       unawaited(buffered.close());
     }
+  }
+
+  /// A refine job's answer when the day has no plan to refine, or `null`
+  /// when there is one.
+  Future<DayAgentJobOutcome?> _refineWithoutPlan(DayProcessingJob job) async {
+    if (job.payload is! RefinePlanPayload) return null;
+    final draft = await draftPlanUpdatedAt(
+      await _safeResolve(job.dayId),
+      job.dayId,
+    );
+    if (draft != null) return null;
+    if (await hasPendingDraftWork(job.dayId)) {
+      // No plan to refine yet, but a draft job for this day is still in
+      // flight. Defer briefly rather than spending a wake on a refine that
+      // has nothing to act on.
+      return const DayAgentJobFailed(
+        failureClass: DayProcessingFailureClass.local,
+        error: 'No plan to refine yet',
+        retryAfter: Duration(seconds: 5),
+      );
+    }
+    // No plan exists and nothing will produce one: the day's draft job is
+    // absent, terminally failed, or waiting on the user. Fail
+    // deterministically instead of deferring forever.
+    return const DayAgentJobFailed(
+      failureClass: DayProcessingFailureClass.deterministic,
+      error:
+          'No plan to refine — the day has no drafted plan and no '
+          'pending draft job',
+    );
   }
 
   Future<String> _safeResolve(String dayId) async {

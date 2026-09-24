@@ -271,6 +271,10 @@ class WakeQueue {
   bool hasJobWhere(bool Function(WakeJob job) predicate) =>
       _queue.any(predicate);
 
+  /// The first queued job accepted by [predicate], left in the queue.
+  WakeJob? firstJobWhere(bool Function(WakeJob job) predicate) =>
+      _queue.where(predicate).firstOrNull;
+
   /// Number of pending jobs.
   int get length => _queue.length;
 

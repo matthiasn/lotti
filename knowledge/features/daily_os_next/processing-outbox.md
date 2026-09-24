@@ -5,9 +5,17 @@ description: A device-local job table with viewer-relative claim priority, atomi
 resource: ../../../lib/features/daily_os_next/database/day_processing_db.drift
 tags: [daily-os, outbox, jobs, durability, adr-0044]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-01T12:00:00Z }
-stale_after: 2026-11-01
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T09:00:00Z }
+stale_after: 2026-12-24
 sources:
+  - id: job-spec
+    resource: ../../../specs/tla/DayProcessingJob.tla
+    title: TLA+ model of one agent job, its claims and its wakes
+    last_modified: 2026-09-24
+  - id: adr-0070
+    resource: ../../../docs/adr/0070-model-checked-digest-recovery-and-processing-jobs.md
+    title: ADR 0070 — Model-checked digest recovery and processing jobs
+    last_modified: 2026-09-24
   - id: schema
     resource: ../../../lib/features/daily_os_next/database/day_processing_db.drift
     title: Outbox schema and indexes
@@ -19,11 +27,11 @@ sources:
   - id: executor
     resource: ../../../lib/features/daily_os_next/services/day_agent_job_executor.dart
     title: DayAgentJobExecutor
-    last_modified: 2026-07-29
+    last_modified: 2026-09-24
   - id: job-wiring
     resource: ../../../lib/features/daily_os_next/state/day_agent_job_wiring.dart
     title: Durable job wake tokens
-    last_modified: 2026-07-29
+    last_modified: 2026-09-24
   - id: adr-0044
     resource: ../../../docs/adr/0044-day-processing-outbox-storage.md
     title: ADR 0044 — Day processing outbox storage
@@ -210,9 +218,19 @@ sequenceDiagram
   anything.
 - **Runs an artifact pre-check before spending any tokens.** A re-claim after a
   crash sees the already-written plan or diff and succeeds without re-inferring.
-- Enqueues the wake and awaits `WakeOrchestrator.runCompletions` — the broadcast
-  stream of `WakeRunCompletion { runKey, agentId, status, error }` emitted at
-  every finalization point.
+- **Attaches to its request's wake while that wake is live.** Before
+  enqueueing, it asks `WakeOrchestrator.liveRunKeyWithToken` for a wake
+  carrying the job's `processing_job:` token that is still queued, held by the
+  drain, running, or running on after an abort, and awaits that one instead.
+  See [one inference per request](#one-inference-per-request).
+- Otherwise enqueues the wake and awaits `WakeOrchestrator.runCompletions` —
+  the broadcast stream of `WakeRunCompletion { runKey, agentId, status, error }`
+  emitted at every finalization point. It subscribes before looking for a live
+  wake, so a completion that lands in between is buffered, not lost.
+- **A wait that times out on a live wake defers without counting an attempt**
+  (`local`, `Wake still running`): no new inference was spent, and the next
+  attempt attaches again. A timeout on a wake that is no longer live counts
+  and is capped by `maxAttempts` like any retryable failure.
 - **Defers a refine job behind an in-flight draft** with a short retry rather
   than racing it.
 - Maps the workflow's forced-tool-retry and output-ceiling exceptions to
@@ -238,6 +256,53 @@ succeeds. `attempts` still counts failed provider requests, and a new user
 request that re-arms the deterministic job clears all three fields. This makes
 a successful eval row explain that it recovered from a classified timeout
 instead of hiding the first attempt.
+
+## One inference per request
+
+The claim fence protects the **row**, not the inference. A claim's lease is
+three minutes and is never renewed, and the executor waits three minutes for
+its wake — but a wake can sit behind its agent's single flight, or run on after
+the ten-minute run cap aborted it, for up to `hungExecutorAfter` (30 minutes).
+Three paths used to re-claim the job while its wake was still live and enqueue
+a second one for the same request: the attempt's own timeout followed by a
+retry, a lapsed lease taken over by another lane (a provider rebuild leaves the
+old runtime's drain running), and a `retryNow` tap. Both inferences ran; a
+refine produced two ChangeSets. `specs/tla/DayProcessingJob.tla` found all
+three; attaching to the live wake closes them (ADR 0070).
+
+The live wake is found by the request's token, not by recorded run keys, so a
+wake whose run key has not been persisted yet is found too. Two cases stay
+open, both documented in `specs/tla/README.md`: an executor past
+`hungExecutorAfter` no longer counts as live, so its request can run again;
+and a wake that commits its artifact before `recordRunKey` lands, followed by a
+crash, leaves a never-attempted refine without provenance, so its re-claim runs
+the refine again.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Queued
+  Queued --> Running: fenced claim
+  Running --> Running: lease lapsed, another lane re-claims
+  Running --> Succeeded: artifact of this request found
+  Running --> Queued: retryable failure, or wake still running
+  Running --> WaitingForNetwork: offline
+  WaitingForNetwork --> Queued: connectivity restored
+  Running --> WaitingForUser: inference setup required
+  Running --> Failed: deterministic, or maxAttempts reached
+  Queued --> Cancelled: user cancels
+  Running --> Cancelled: user cancels
+  Failed --> Queued: retryNow or a re-armed request
+  WaitingForUser --> Queued: retryNow
+  Succeeded --> Queued: re-armed draft or parse request
+  Cancelled --> Queued: re-armed draft or parse request
+  Succeeded --> [*]
+  Cancelled --> [*]
+  note right of Running
+    Every write of a claim holder is fenced
+    on claim_token; a revoked holder's
+    outcome is dropped.
+  end note
+```
 
 ## Two independent drain lanes
 
