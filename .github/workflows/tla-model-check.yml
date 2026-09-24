@@ -16,6 +16,15 @@ on:
       - "lib/features/agents/wake/**"
       - "lib/features/agents/service/change_set_confirmation_service.dart"
       - "lib/features/agents/service/change_set_resolution_store.dart"
+      - "lib/features/agents/sync/agent_sync_service.dart"
+      - "lib/features/agents/sync/fork_healer.dart"
+      - "lib/features/agents/sync/agent_log_compactor.dart"
+      - "lib/features/agents/projection/join_plan.dart"
+      - "lib/features/agents/projection/canonical_order.dart"
+      - "lib/features/agents/projection/agent_projection.dart"
+      - "lib/features/agents/projection/compaction_summary.dart"
+      - "lib/features/agents/projection/compaction_plan.dart"
+      - "lib/features/agents/projection/input_events.dart"
       - ".github/workflows/tla-model-check.yml"
 
 concurrency:

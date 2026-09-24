@@ -64,9 +64,11 @@ class SummaryCheckpoint extends Equatable {
 ///   landing after this device folded); it is in neither the prose nor the
 ///   post-cutoff tail, so the checkpoint must die and the tail re-expand —
 ///   the same wake's fold then re-covers everything including the late
-///   arrival. Coverage is checked by entry id, not digest, so a
-///   late-arriving *superseded* version of an already-covered source does
-///   not invalidate (its information is superseded anyway).
+///   arrival. A late-arriving *superseded* version of an already-covered
+///   source (one sorting before the folded version) does not invalidate —
+///   its information is superseded anyway — but a late *newer* version at
+///   or before the cutoff does: the covered digest must be the source's
+///   latest before the cutoff ([_coversPrefix]).
 ///
 /// The active one covers the longest log prefix (greatest cutoff); ties —
 /// concurrent folds over the same region — break by lowest
@@ -79,15 +81,7 @@ SummaryCheckpoint? selectActiveSummary({
   for (final summary in summaries) {
     final cutoff = summary.cutoff;
     if (cutoff == null) continue;
-    var incomplete = false;
-    for (final event in log.events) {
-      if (event.position.isAfter(cutoff)) break;
-      if (!summary.coveredSources.containsKey(event.contentEntryId)) {
-        incomplete = true;
-        break;
-      }
-    }
-    if (incomplete) continue;
+    if (!_coversPrefix(summary, log, cutoff)) continue;
     if (active == null ||
         cutoff.compareTo(active.cutoff!) > 0 ||
         (cutoff.compareTo(active.cutoff!) == 0 &&
@@ -100,6 +94,32 @@ SummaryCheckpoint? selectActiveSummary({
 
 String _tieKey(SummaryCheckpoint summary) =>
     '${summary.contentDigest}|${summary.id}';
+
+/// Whether [summary] folded every event of [log] at or before [cutoff]: each
+/// event's source is covered, and for a payload-backed source the covered
+/// digest is that of its **latest** version at or before the cutoff (ADR
+/// 0071). An older version arriving late sorts before the folded one and is
+/// superseded by it; a newer one — an edit made on another device before
+/// this fold, delivered after it — is neither in the prose nor in the tail.
+bool _coversPrefix(
+  SummaryCheckpoint summary,
+  InputEventLog log,
+  EventPosition cutoff,
+) {
+  final latestDigest = <String, String>{};
+  for (final event in log.events) {
+    if (event.position.isAfter(cutoff)) break;
+    if (!summary.coveredSources.containsKey(event.contentEntryId)) {
+      return false;
+    }
+    final digest = event.contentDigest;
+    if (digest != null) latestDigest[event.contentEntryId] = digest;
+  }
+  for (final MapEntry(key: source, value: digest) in latestDigest.entries) {
+    if (summary.coveredSources[source] != digest) return false;
+  }
+  return true;
+}
 
 /// One rendered line of the verbatim tail: a captured source plus whether the
 /// event superseded an earlier one (rendered as an `edited` tag).

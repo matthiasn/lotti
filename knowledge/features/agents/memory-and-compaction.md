@@ -5,13 +5,29 @@ description: The append-only input event log, LLM-distilled summary checkpoints,
 resource: ../../../lib/features/agents/projection
 tags: [agents, memory, compaction, event-log, prefix-cache]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-12T20:00:00Z }
-stale_after: 2026-10-12
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T12:00:00Z }
+stale_after: 2026-12-24
 sources:
   - id: projection
     resource: ../../../lib/features/agents/projection
     title: Event log, input capture, checkpoint selection, the pure fold
-    last_modified: 2026-08-07
+    last_modified: 2026-09-24
+  - id: sync
+    resource: ../../../lib/features/agents/sync
+    title: Append path, head recovery, fork healer, log compactor
+    last_modified: 2026-09-24
+  - id: spec-message-log
+    resource: ../../../specs/tla/AgentMessageLog.tla
+    title: TLA+ model of the message DAG, appends, joins and sync
+    last_modified: 2026-09-24
+  - id: spec-compaction
+    resource: ../../../specs/tla/LogCompaction.tla
+    title: TLA+ model of summary checkpoints under late delivery
+    last_modified: 2026-09-24
+  - id: adr-0071
+    resource: ../../../docs/adr/0071-model-checked-agent-message-log.md
+    title: ADR 0071 — Model-checked agent message log and compaction
+    last_modified: 2026-09-24
   - id: summarizer
     resource: ../../../lib/features/agents/service/agent_log_llm_summarizer.dart
     title: Summary checkpoint writer
@@ -178,12 +194,24 @@ in the summary prose and are never reloaded.
   discarded, the tail re-expands, and the same wake's fold re-covers everything
   including the late arrival.
 
-  Completeness is checked **by event id**, so a late-arriving *superseded*
-  version of a covered source does not invalidate. Edits and retractions after
-  the cutoff just append tail events that supersede or qualify the stale prose,
-  keeping the prompt prefix byte-stable.
+  Completeness is checked **per version** (ADR 0071): every event at or before
+  the cutoff must belong to a covered source, and for a payload-backed source
+  the covered digest must be that of its *latest* version at or before the
+  cutoff. A late-arriving *older* version sorts before the folded one and does
+  not invalidate; a late *newer* one — an edit made on another device after
+  the folded version and before the fold, delivered after it — does, since it
+  is in neither the prose nor the tail. A device holding the checkpoint but
+  not yet the version it folded cannot tell its own version older from newer,
+  so it drops the checkpoint until that version arrives. Inline events
+  (verdicts, retractions, day captures) have one version each and are covered
+  by id. Edits and retractions after the cutoff just append tail events that
+  supersede or qualify the stale prose, keeping the prompt prefix byte-stable.
 - **`planCompaction`** decides, against a token budget, which oldest event prefix
-  to fold so the most-recent suffix fits.
+  to fold so the most-recent suffix fits. The compactor then stops the fold
+  before the first tail event whose content has not resolved (a payload not
+  synced yet): the checkpoint could not cover it, so it would be dead on
+  arrival and the next wake would summarize the same tail again. When that
+  event is the oldest, nothing is folded.
 - **`AgentLogLlmSummarizer`** distils the folded events into rolling summary
   prose with a one-shot generation call, using the **wake's resolved
   model/provider** — the agent summarizes its own memory with the brain it thinks
@@ -322,11 +350,24 @@ The cost of an *unhealed* fork is only that the on-device prefix never re-warms 
 each branch is a distinct prefix — and context fans out across a widening head
 set.
 
+**Appends chain off a synced pointer.** `AgentSyncService._appendMessage` chains
+each local message off `recentHeadMessageId` and moves it, in one transaction.
+The pointer is a field of the agent-state row, which sync resolves by vector
+clock and then last-writer-wins, so it can lag behind the messages that synced
+in, be cleared by a version written on a device that had not seen any head yet,
+or move back to an ancestor (then the next append forks off it — a residual of
+ADR 0071). An unset pointer over a non-empty log goes through `_recoverHead`:
+only a log with no DAG evidence at all — no `messagePrev` edge, no message
+minted with a `prevMessageId`, no join — gets the one-time legacy spine by
+`createdAt`; any other log keeps its edges and the append chains off the last
+head of the projection. Re-chaining a synced log would reuse `msgprev-<id>`
+ids with new parents, and with clocks apart close a cycle.
+
 ```mermaid
 stateDiagram-v2
   [*] --> SingleHead
-  SingleHead --> Forked: two devices append off the same head (concurrent messagePrev children)
-  Forked --> Forked: local view still settling (dangling parent or pending join edges) — defer
+  SingleHead --> Forked: two devices append off the same head, or an append follows a head pointer a synced state row moved back
+  Forked --> Forked: local view still settling (a dangling parent, a message ahead of its own edge, a join missing edges to heads) — defer
   Forked --> Joining: a wake starts and observes ≥2 heads over a complete view
   Joining --> SingleHead: appendJoin (messagePrev → all heads), recentHeadMessageId becomes joinId, prefix re-warms
   Joining --> SingleHead: peer emitted the same joinId concurrently → set-union merges to one node
@@ -334,9 +375,24 @@ stateDiagram-v2
 
 `ForkHealer.maybeHealFork` folds the agent's full log at wake start, and
 `planJoin` emits a **join-by-continuation** node when there are two or more heads
-over a *complete* view — no dangling parents, and no pending join head whose
-edges are still syncing. `AgentSyncService.appendJoin` writes a canonical
-`system` message linking to **every** head and advances `recentHeadMessageId`.
+over a *complete* view. A row can sync before its own edge, and then projects
+as a root while its parent reads as a head, so the view is incomplete while
+(`_hasUnsyncedEdge`, ADR 0071):
+
+- an edge points at a row that has not arrived (a dangling parent);
+- a message's `prevMessageId` names a present row but its edge has not arrived
+  (one naming an absent row does not count: the observation sweep deletes the
+  edges into what it prunes);
+- any join — head or not — misses edges its content-addressed id says lead to
+  present heads.
+
+A join row does not name its parents, so a join missing the edge to a parent
+that is not a head here goes unnoticed, and the healer may join over that
+join's parents again — a redundant node, never a cycle.
+`AgentSyncService.appendJoin` writes a canonical `system` message linking to
+**every** head and advances `recentHeadMessageId` only while it still sits on
+a joined parent (or is unset): a heal that timed out while the executor
+appended must not move the head back.
 
 - **Content-addressed and deterministic.** The join id is
   `computeJoinId(headIds) = ContentDigest.of({'_tag':'join-v1','parents':sortedHeads})`,
@@ -347,8 +403,8 @@ edges are still syncing. `AgentSyncService.appendJoin` writes a canonical
 - **Eager at wake start, no cross-wake state.** A fork seen at wake start was
   created by a *prior* cycle, so healing it is faithful to ADR 0018's "≥2 heads
   survive past one wake cycle". Forks never self-resolve, so there is nothing to
-  wait out beyond a partially-synced view, which the complete-view and
-  pending-join gates cover. The decision is a pure function of the current
+  wait out beyond a partially-synced view, which the complete-view gates
+  cover. The decision is a pure function of the current
   projection; no marker is persisted.
 - **Wiring.** The four wake workflows share no base class but all dispatch
   through `WakeOrchestrator`, which fires one optional `onWakeStart` hook just
