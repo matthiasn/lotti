@@ -183,13 +183,16 @@ class SoulVersionOps {
               as SoulDocumentVersionEntity;
       await syncService.upsertEntity(newVersion);
 
+      // Carry the head this move replaces (ADR 0068 addendum): built on no
+      // clock it would be resolved as concurrent with that head and lose on
+      // an equal or skewed timestamp, leaving the new version unused.
       final headId = currentHead?.id ?? _uuid.v4();
       final updatedHead = AgentDomainEntity.soulDocumentHead(
         id: headId,
         agentId: soulId,
         versionId: newVersionId,
         updatedAt: now,
-        vectorClock: null,
+        vectorClock: currentHead?.vectorClock,
       );
       await syncService.upsertEntity(updatedHead);
 
@@ -273,13 +276,16 @@ class SoulVersionOps {
               as SoulDocumentVersionEntity;
       await syncService.upsertEntity(newVersion);
 
+      // Carry the head this move replaces (ADR 0068 addendum): built on no
+      // clock it would be resolved as concurrent with that head and lose on
+      // an equal or skewed timestamp, leaving the new version unused.
       final headId = currentHead?.id ?? _uuid.v4();
       final updatedHead = AgentDomainEntity.soulDocumentHead(
         id: headId,
         agentId: soulId,
         versionId: newVersionId,
         updatedAt: now,
-        vectorClock: null,
+        vectorClock: currentHead?.vectorClock,
       );
       await syncService.upsertEntity(updatedHead);
 

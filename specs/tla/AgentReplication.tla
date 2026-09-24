@@ -33,8 +33,13 @@
 (*             tiebreak, and agent state joins its G-counters              *)
 (*   Tick      the wall clock                                              *)
 (*                                                                         *)
-(* The four design switches are the fixes of ADR 0068; setting one to      *)
+(* The five design switches are the fixes of ADR 0068; setting one to      *)
 (* FALSE restores the old behaviour and its counterexample (README).       *)
+(* `Intend` (the ADR 0068 addendum) is a write meant to move the row       *)
+(* against the resolver's order -- out of the terminal status, or to new  *)
+(* fields at the row's own timestamp. `IntentCarriesClock` is its fix: a  *)
+(* writer built on no clock was judged concurrent with the row it meant   *)
+(* to replace and handed that row back (`LocalWriteTakesEffect`).         *)
 (* `RankDrop` lets a write leave the terminal status it built on -- a      *)
 (* digest retry re-arming its consumed window at the same instant -- which *)
 (* is a documented residual, not a checked configuration.                  *)
@@ -54,11 +59,14 @@ CONSTANTS
     ThrottleKeepsTimestamp,  \* device-local writes leave updatedAt alone
     CountersJoinAlways,      \* G-counters join on every delivery
     ResolveLocalWrites,      \* a write succeeds the row it replaces
-    ClampTimestamp           \* ...and its updatedAt is not older
+    ClampTimestamp,          \* ...and its updatedAt is not older
+    IntentWrites,            \* are there writes meant to move the row back?
+    IntentCarriesClock       \* ...carrying the row's clock (0068 addendum)
 
 ASSUME Kind \in {"state", "terminal"}
 ASSUME \A b \in {StaleWrites, Throttle, RankDrop, ThrottleKeepsTimestamp,
-                 CountersJoinAlways, ResolveLocalWrites, ClampTimestamp} :
+                 CountersJoinAlways, ResolveLocalWrites, ClampTimestamp,
+                 IntentWrites, IntentCarriesClock} :
             b \in BOOLEAN
 
 R == 1..N
@@ -83,9 +91,10 @@ VARIABLES
     delivered,  \* per replica: the writes it has received or made
     now,        \* the wall clock
     hc,         \* per replica: the last counter VectorClockService issued
-    incs        \* ghost: G-counter increments made by each host
+    incs,       \* ghost: G-counter increments made by each host
+    intentLost  \* ghost: a local write lost to the row it meant to move
 
-vars == <<row, snap, sent, delivered, now, hc, incs>>
+vars == <<row, snap, sent, delivered, now, hc, incs, intentLost>>
 
 Init ==
     /\ row = [r \in R |-> V0]
@@ -95,6 +104,7 @@ Init ==
     /\ now = 0
     /\ hc = [r \in R |-> 0]
     /\ incs = [r \in R |-> 0]
+    /\ intentLost = FALSE
 
 \* The concurrent winner: the type's override, then updatedAt, then the
 \* canonical clock tiebreak (resolveConcurrent).
@@ -142,41 +152,70 @@ Incs(b) == IF Kind = "state" /\ b = "row" THEN BOOLEAN ELSE {FALSE}
 \* the persisted row, so the write succeeds it on every replica; a write
 \* whose base did not cover the row keeps the fields that would have won had
 \* the two been concurrent, and a write never lowers a G-counter.
+Fields(r, B, t, tm, inc) ==
+    [B EXCEPT !.ts = t, !.term = tm,
+              !.g = IF inc THEN [B.g EXCEPT ![r] = @ + 1] ELSE B.g]
+
+\* The local write resolution judges the base concurrent with the row.
+Resolved(r, B) == ResolveLocalWrites /\ ~Leq(row[r].vc, B.vc)
+
+NewVersion(r, B, t, tm, inc) ==
+    LET P == row[r]
+        base == Fields(r, B, t, tm, inc)
+        fields == IF Resolved(r, B) THEN MergeConcurrent(P, base) ELSE base
+        vc == [(IF ResolveLocalWrites THEN Join(B.vc, P.vc) ELSE B.vc)
+                 EXCEPT ![r] = hc[r] + 1]
+        ts == IF ClampTimestamp /\ Before(P.vc, vc)
+              THEN Max(fields.ts, P.ts) ELSE fields.ts
+        \* A merge may have joined counters into P without moving its
+        \* clock, so a base that covers P's clock can still lack them.
+        g == IF ResolveLocalWrites THEN Join(fields.g, P.g) ELSE fields.g
+    IN [id |-> Cardinality(sent) + 1, vc |-> vc, ts |-> ts,
+        term |-> fields.term, g |-> g]
+
+Commit(r, w, inc) ==
+    /\ sent' = sent \cup {w}
+    /\ delivered' = [delivered EXCEPT ![r] = @ \cup {w}]
+    /\ row' = [row EXCEPT ![r] = w]
+    /\ hc' = [hc EXCEPT ![r] = @ + 1]
+    /\ incs' = IF inc THEN [incs EXCEPT ![r] = @ + 1] ELSE incs
+
 Write(r) ==
     /\ Cardinality(sent) < MaxWrites
     /\ \E b \in Bases, t \in (IF now > Skew THEN now - Skew ELSE 0)..now,
           tm \in BOOLEAN, inc \in BOOLEAN :
         LET B == BaseRow(r, b)
-            P == row[r]
-            base == [B EXCEPT !.ts = t, !.term = tm,
-                              !.g = IF inc THEN [B.g EXCEPT ![r] = @ + 1]
-                                    ELSE B.g]
-            fields == IF ResolveLocalWrites /\ ~Leq(P.vc, B.vc)
-                      THEN MergeConcurrent(P, base)
-                      ELSE base
-            vc == [(IF ResolveLocalWrites THEN Join(B.vc, P.vc) ELSE B.vc)
-                     EXCEPT ![r] = hc[r] + 1]
-            ts == IF ClampTimestamp /\ Before(P.vc, vc)
-                  THEN Max(fields.ts, P.ts) ELSE fields.ts
-            \* A merge may have joined counters into P without moving its
-            \* clock, so a base that covers P's clock can still lack them.
-            g == IF ResolveLocalWrites THEN Join(fields.g, P.g) ELSE fields.g
-            w == [id |-> Cardinality(sent) + 1, vc |-> vc, ts |-> ts,
-                  term |-> fields.term, g |-> g]
         IN /\ tm \in Terms(B)
            /\ inc \in Incs(b)
-           /\ sent' = sent \cup {w}
-           /\ delivered' = [delivered EXCEPT ![r] = @ \cup {w}]
-           /\ row' = [row EXCEPT ![r] = w]
-           /\ hc' = [hc EXCEPT ![r] = @ + 1]
-           /\ incs' = IF inc THEN [incs EXCEPT ![r] = @ + 1] ELSE incs
+           /\ Commit(r, NewVersion(r, B, t, tm, inc), inc)
+    /\ UNCHANGED <<snap, now, intentLost>>
+
+\* A write whose whole point is to move the row against the resolver's
+\* order, built on the row it read: on the terminal kind it leaves the
+\* terminal status (a pre-warm moved earlier, a consumed window re-armed);
+\* on the state kind it keeps the row's own timestamp (a report head moved
+\* at the instant the head it replaces was stamped). After the ADR 0068
+\* addendum such writers carry the row's clock; built on none, the local
+\* write resolution judged them concurrent with the row and handed the row
+\* back.
+Intend(r) ==
+    /\ IntentWrites
+    /\ Cardinality(sent) < MaxWrites
+    /\ Kind = "state" \/ row[r].term
+    /\ LET P == row[r]
+           B == [P EXCEPT !.vc = IF IntentCarriesClock THEN P.vc ELSE Zero]
+           t == IF Kind = "state" THEN P.ts ELSE now
+       IN /\ Commit(r, NewVersion(r, B, t, FALSE, FALSE), FALSE)
+          /\ intentLost' =
+                \/ intentLost
+                \/ Resolved(r, B) /\ Winner(P, Fields(r, B, t, FALSE, FALSE)) = P
     /\ UNCHANGED <<snap, now>>
 
 Snapshot(r) ==
     /\ StaleWrites
     /\ snap[r] # row[r]
     /\ snap' = [snap EXCEPT ![r] = row[r]]
-    /\ UNCHANGED <<row, sent, delivered, now, hc, incs>>
+    /\ UNCHANGED <<row, sent, delivered, now, hc, incs, intentLost>>
 
 \* The throttle persists nextWakeAt, which sync never carries. The old code
 \* also stamped updatedAt with the local clock.
@@ -185,22 +224,23 @@ ThrottleDeadline(r) ==
     /\ ~ThrottleKeepsTimestamp
     /\ row[r].ts < now
     /\ row' = [row EXCEPT ![r].ts = now]
-    /\ UNCHANGED <<snap, sent, delivered, now, hc, incs>>
+    /\ UNCHANGED <<snap, sent, delivered, now, hc, incs, intentLost>>
 
 Deliver(r) ==
     /\ \E m \in sent :
         /\ row' = [row EXCEPT ![r] = Merge(@, m)]
         /\ delivered' = [delivered EXCEPT ![r] = @ \cup {m}]
-    /\ UNCHANGED <<snap, sent, now, hc, incs>>
+    /\ UNCHANGED <<snap, sent, now, hc, incs, intentLost>>
 
 Tick ==
     /\ now < MaxTime
     /\ now' = now + 1
-    /\ UNCHANGED <<row, snap, sent, delivered, hc, incs>>
+    /\ UNCHANGED <<row, snap, sent, delivered, hc, incs, intentLost>>
 
 Next ==
     \/ Tick
-    \/ \E r \in R : Write(r) \/ Snapshot(r) \/ ThrottleDeadline(r) \/ Deliver(r)
+    \/ \E r \in R : \/ Write(r) \/ Intend(r) \/ Snapshot(r)
+                   \/ ThrottleDeadline(r) \/ Deliver(r)
 
 Spec == Init /\ [][Next]_vars
 
@@ -232,4 +272,7 @@ OwnCountKept == Kind = "state" => \A r \in R : row[r].g[r] = incs[r]
 NoLostIncrement ==
     (Kind = "state" /\ Quiescent) =>
         \A r, h \in R : row[r].g[h] = incs[h]
+
+\* A write meant to move the row keeps its fields on the writing device.
+LocalWriteTakesEffect == ~intentLost
 =============================================================================

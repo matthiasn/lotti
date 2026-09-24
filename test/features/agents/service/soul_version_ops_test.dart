@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/soul_version_ops.dart';
+import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -91,10 +93,15 @@ void main() {
 
   group('createVersion', () {
     test('archives the active version, creates a new one, and reuses the '
-        'head id', () async {
+        'head id and clock, so the head moves even past a clock running '
+        'ahead — ADR 0068 addendum', () async {
       final soul = makeTestSoulDocument();
       final activeVersion = makeTestSoulDocumentVersion(id: 'v-active');
-      final head = makeTestSoulDocumentHead(versionId: 'v-active');
+      final head = makeTestSoulDocumentHead(
+        versionId: 'v-active',
+        updatedAt: DateTime(2099),
+        vectorClock: const VectorClock({'peer': 4}),
+      );
 
       when(
         () => mockRepo.getSoulDocument(kTestSoulId),
@@ -133,6 +140,55 @@ void main() {
         SoulDocumentVersionStatus.archived,
       );
       expect((captured[2] as SoulDocumentHeadEntity).id, head.id);
+      // What AgentSyncService persists for this move over the stored head.
+      final resolved =
+          resolveLocalAgentWrite(persisted: head, write: captured[2])
+              as SoulDocumentHeadEntity;
+      expect(resolved.versionId, newVersion.id);
+    });
+
+    test('updateSoulAndCreateVersion moves the head carrying its clock, so '
+        'the move survives a head stamped by a clock running ahead — ADR 0068 '
+        'addendum', () async {
+      final soul = makeTestSoulDocument();
+      final head = makeTestSoulDocumentHead(
+        versionId: 'v-active',
+        updatedAt: DateTime(2099),
+        vectorClock: const VectorClock({'peer': 4}),
+      );
+      when(
+        () => mockRepo.getSoulDocument(kTestSoulId),
+      ).thenAnswer((_) async => soul);
+      when(
+        () => mockRepo.getSoulDocumentHead(kTestSoulId),
+      ).thenAnswer((_) async => head);
+      when(
+        () => mockRepo.getSoulDocumentVersions(
+          kTestSoulId,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer(
+        (_) async => [makeTestSoulDocumentVersion(id: 'v-active')],
+      );
+      when(
+        () => mockRepo.getNextSoulDocumentVersionNumber(kTestSoulId),
+      ).thenAnswer((_) async => 2);
+
+      final newVersion = await versionOps.updateSoulAndCreateVersion(
+        soulId: kTestSoulId,
+        displayName: soul.displayName,
+        voiceDirective: 'New voice.',
+        authoredBy: 'user',
+      );
+
+      final moved = verify(
+        () => mockSync.upsertEntity(captureAny()),
+      ).captured.whereType<SoulDocumentHeadEntity>().single;
+      // What AgentSyncService persists for this move over the stored head.
+      final resolved =
+          resolveLocalAgentWrite(persisted: head, write: moved)
+              as SoulDocumentHeadEntity;
+      expect(resolved.versionId, newVersion.id);
     });
 
     test('throws when the soul is missing', () async {

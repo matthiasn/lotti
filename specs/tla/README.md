@@ -164,13 +164,16 @@ a dismissed nudge). The decision is
 | `NoLostSuccessor` | invariant | a row is never a version that a write it received causally replaced |
 | `OwnCountKept` | invariant | a host always sees all of its own G-counter increments |
 | `NoLostIncrement` | invariant | once everything is delivered, every replica sees every increment |
+| `LocalWriteTakesEffect` | invariant | a write meant to move the row against the resolver's order keeps its fields on the writing device |
 
 | Configuration | Kind | Replicas | Writes | Clock skew | Checks | Distinct states |
 |---------------|------|----------|--------|------------|--------|-----------------|
 | `AgentReplication` | state | 3 | 3 | 1 tick | all four | 17,318,265 |
 | `AgentReplicationTerminal` | terminal | 3 | 3 | 1 tick | `Converged`, `NoLostSuccessor` | 9,544,635 |
+| `AgentReplicationIntent` | state, with `Intend` writes | 3 | 3 | 1 tick | all five | 17,959,029 |
+| `AgentReplicationIntentTerminal` | terminal, with `Intend` writes | 3 | 3 | 1 tick | `LocalWriteTakesEffect` | 16,350,444 |
 
-The four design switches are the fixes, and each has a counterexample when
+The five design switches are the fixes, and each has a counterexample when
 set to `FALSE` (run a copy of the configuration outside this directory):
 
 | Switch | Old behaviour | Counterexample |
@@ -179,6 +182,15 @@ set to `FALSE` (run a copy of the configuration outside this directory):
 | `CountersJoinAlways` | G-counters were joined only on a concurrent conflict | `OwnCountKept`: B increments, merges A's v1 keeping both counts under v1's clock, then A's successor of v1 — which never saw B's count — replaces the row by causal dominance |
 | `ResolveLocalWrites` | a write replaced the row whatever it was built on, under the clock it was built on | terminal: `Converged` — B receives A's retraction, then writes an edit from a stale snapshot or a null clock; B keeps the edit, A and C the retraction. state: `OwnCountKept` — a snapshot write drops the host's own increment |
 | `ClampTimestamp` | a successor's `updatedAt` could be older than its predecessor's | `Converged`: a successor written on a lagging clock loses to a third concurrent version that its predecessor beat, so arrival order decides |
+| `IntentCarriesClock` | a writer meant to replace the row built on `vectorClock: null` | `LocalWriteTakesEffect`, two steps: A writes a row, then moves it — out of the terminal status (terminal), or to new fields at the row's own timestamp (state) — and the local write resolution, judging the clockless write concurrent, hands the row back |
+
+`Intend` (ADR 0068's addendum) is the class the local write resolution
+opened: a write built on the row whose point is to move it against the
+resolver — a pre-warm moved earlier, a report head moved at the stamp of the
+head it replaces, a soul or template head moved past a peer's clock that
+runs ahead. The terminal configuration claims only `LocalWriteTakesEffect`:
+such a write is a successor that ranks below its predecessor, the `RankDrop`
+residual below.
 
 What the model leaves out, deliberately or as a residual:
 

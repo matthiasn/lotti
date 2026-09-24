@@ -224,14 +224,17 @@ class AgentTemplateCrud {
               as AgentTemplateVersionEntity;
       await syncService.upsertEntity(newVersion);
 
-      // Update head pointer (reuse existing head ID if present).
+      // Update head pointer (reuse existing head ID if present), carrying the
+      // head's clock (ADR 0068 addendum): built on no clock the move would be
+      // resolved as concurrent with that head and lose on an equal or skewed
+      // timestamp, leaving the new version unused.
       final headId = currentHead?.id ?? _uuid.v4();
       final updatedHead = AgentDomainEntity.agentTemplateHead(
         id: headId,
         agentId: templateId,
         versionId: newVersionId,
         updatedAt: now,
-        vectorClock: null,
+        vectorClock: currentHead?.vectorClock,
       );
       await syncService.upsertEntity(updatedHead);
 

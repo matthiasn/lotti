@@ -18,6 +18,7 @@ import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
+import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/project_agent_context_builder.dart';
@@ -27,6 +28,7 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -2779,15 +2781,18 @@ void main() {
         expect(result.success, isTrue);
       });
 
-      test('uses existing report head ID when updating', () async {
+      test('uses existing report head ID when updating, and carries its clock '
+          'so a head stamped by a clock running ahead still moves — ADR 0068 '
+          'addendum', () async {
         final existingHead =
             AgentDomainEntity.agentReportHead(
                   id: 'existing-head-id',
                   agentId: agentId,
                   scope: AgentReportScopes.current,
                   reportId: 'old-report-id',
-                  updatedAt: DateTime(2024, 5),
-                  vectorClock: null,
+                  // A peer whose clock runs ahead stamped the stored head.
+                  updatedAt: DateTime(2099),
+                  vectorClock: const VectorClock({'peer': 4}),
                 )
                 as AgentReportHeadEntity;
 
@@ -2855,6 +2860,12 @@ void main() {
         final heads = captured.whereType<AgentReportHeadEntity>().toList();
         expect(heads, hasLength(1));
         expect(heads.first.id, 'existing-head-id');
+        // What AgentSyncService persists for this write over the stored head.
+        final resolved =
+            resolveLocalAgentWrite(persisted: existingHead, write: heads.first)
+                as AgentReportHeadEntity;
+        expect(resolved.reportId, heads.first.reportId);
+        expect(resolved.reportId, isNot('old-report-id'));
       });
 
       test('includes project description in user message', () async {

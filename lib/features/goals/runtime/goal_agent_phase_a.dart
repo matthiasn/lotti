@@ -448,6 +448,13 @@ class GoalAgentPhaseA {
     required GoalProgressEntity? existing,
   }) async {
     final id = goalProgressId(agentId, periodKey);
+    // The derivation's row can be minutes old (a report refresh derives
+    // before its inference). Re-read it in this transaction: a same-ordinal
+    // twin's row that synced in since would otherwise be judged concurrent
+    // with this recompute, and the goal-progress resolver's id order could
+    // put the twin's evaluation back (ADR 0068 addendum).
+    final current = await _repository.getEntity(id);
+    final base = current is GoalProgressEntity ? current : existing;
     await _syncService.upsertEntity(
       AgentDomainEntity.goalProgress(
         id: id,
@@ -458,12 +465,12 @@ class GoalAgentPhaseA {
         dataCoverage: evaluation.dataCoverage,
         satisfied: evaluation.satisfied,
         specVersionId: version.id,
-        createdAt: existing?.createdAt ?? now,
+        createdAt: base?.createdAt ?? now,
         updatedAt: now,
         // Carry the row we read: dropping it would make this recompute
         // causally CONCURRENT with the peer value it is based on, letting
         // wall-clock LWW revert fresh progress.
-        vectorClock: existing?.vectorClock,
+        vectorClock: base?.vectorClock,
         criterionResults: [
           for (final result in evaluation.results.values)
             GoalCriterionProgress(

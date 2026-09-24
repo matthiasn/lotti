@@ -988,7 +988,11 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
               scope: AgentReportScopes.current,
               reportId: reportId,
               updatedAt: _headTimestamp(derivation.dueDayUtc, now),
-              vectorClock: null,
+              // Carry the head this write replaces (ADR 0068 addendum): a
+              // second briefing for the same overdue due day stamps the same
+              // instant, and built on no clock it would be resolved as
+              // concurrent with the head and lose the tie.
+              vectorClock: existingHead?.vectorClock,
             ),
           );
           reportHeadAdvanced = true;

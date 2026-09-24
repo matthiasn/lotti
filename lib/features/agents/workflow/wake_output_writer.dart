@@ -179,7 +179,10 @@ class WakeOutputWriter {
             scope: AgentReportScopes.current,
             reportId: persistedReportId,
             updatedAt: now,
-            vectorClock: null,
+            // Carry the head this write replaces (ADR 0068 addendum): built on
+            // no clock it would be resolved as concurrent with that head, and
+            // lose to it on an equal or skewed timestamp.
+            vectorClock: existingHead?.vectorClock,
           ),
         );
 

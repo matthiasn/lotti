@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
@@ -848,6 +849,43 @@ void main() {
       expect(register.trackStatus, GoalTrackStatus.achieved);
     },
   );
+
+  test('the register recompute builds on the row as it is when it writes — a '
+      "same-ordinal twin's row that synced in after the derivation does not "
+      'take the day back (ADR 0068 addendum)', () async {
+    stubSpec();
+    // A disconnected device minted its own v1-ordinal spec and evaluated the
+    // day under it; its row lands between this derivation and the write.
+    final twinRow =
+        AgentDomainEntity.goalProgress(
+              id: goalProgressId(agentId, '2026-08-08'),
+              agentId: agentId,
+              periodKey: '2026-08-08',
+              trackStatus: GoalTrackStatus.offTrack,
+              attainment: 0.2,
+              dataCoverage: 1,
+              satisfied: false,
+              specVersionId: '$agentId:spec-v1-zzzzzzzz',
+              createdAt: DateTime(2026, 8, 8, 6),
+              updatedAt: DateTime(2026, 8, 8, 6),
+              vectorClock: const VectorClock({'peer': 3}),
+            )
+            as GoalProgressEntity;
+    var reads = 0;
+    when(
+      () => repository.getEntity(goalProgressId(agentId, '2026-08-08')),
+    ).thenAnswer((_) async => reads++ == 0 ? null : twinRow);
+
+    await run(onTrackSignals());
+
+    final register = upserts.whereType<GoalProgressEntity>().single;
+    // What AgentSyncService persists for this write over the twin's row.
+    final resolved =
+        resolveLocalAgentWrite(persisted: twinRow, write: register)
+            as GoalProgressEntity;
+    expect(resolved.specVersionId, '$agentId:spec-v1');
+    expect(resolved.trackStatus, register.trackStatus);
+  });
 
   test('re-running the SAME day with an unchanged status is a no-op — the '
       'escalation wake cannot re-arm itself forever', () async {

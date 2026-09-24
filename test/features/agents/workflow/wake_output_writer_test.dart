@@ -7,11 +7,13 @@ import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
+import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/workflow/wake_output_writer.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/sync/g_counter.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
@@ -321,6 +323,38 @@ void main() {
       expect(decoded!.finalAuthorRoute.modelName, 'Qwen 3.5 Plus');
       expect(decoded.finalAuthorRoute.publisherName, 'Alibaba');
       expect(decoded.finalAuthorRoute.servingProviderName, 'Alibaba Cloud');
+    });
+
+    test('the head move carries the head it replaces, so the local write '
+        'resolution keeps the new report on an equal timestamp — ADR 0068 '
+        'addendum', () async {
+      // Another device's clock ran ahead: the persisted head is stamped with
+      // this wake's own instant.
+      final persisted =
+          AgentDomainEntity.agentReportHead(
+                id: 'head-existing',
+                agentId: _agentId,
+                scope: AgentReportScopes.current,
+                reportId: 'report-previous',
+                updatedAt: _now,
+                vectorClock: const VectorClock({'peer': 4}),
+              )
+              as AgentReportHeadEntity;
+      when(
+        () => repo.getReportHead(_agentId, AgentReportScopes.current),
+      ).thenAnswer((_) async => persisted);
+
+      await run(
+        reportContent: '# Status\nAll good.',
+        uuid: _SequentialUuid(['report-new']),
+      );
+
+      final head = capturedUpserts().whereType<AgentReportHeadEntity>().single;
+      // What AgentSyncService persists for this write over the stored head.
+      final resolved =
+          resolveLocalAgentWrite(persisted: persisted, write: head)
+              as AgentReportHeadEntity;
+      expect(resolved.reportId, 'report-new');
     });
 
     test('non-empty content writes report + head, reuses existing head id, '
