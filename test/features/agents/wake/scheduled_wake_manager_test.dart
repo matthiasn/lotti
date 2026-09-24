@@ -3212,6 +3212,73 @@ void main() {
       });
     });
 
+    for (final alreadyOwed in [false, true]) {
+      test(
+        'failed intent flush leaves the window pending (owed=$alreadyOwed)',
+        () {
+          fakeAsync((async) {
+            withClock(Clock.fixed(now), () {
+              final due = escalation();
+              if (alreadyOwed) {
+                orchestrator.owedWindows.add(scheduledWakeWindow(due));
+              }
+              orchestrator.onFlushWakeIntents = () =>
+                  throw StateError('disk full');
+              final manager = start(due);
+              async.flushMicrotasks();
+              verifyNever(() => syncService.upsertEntity(any()));
+
+              // A later scan sees the queued wake. It must retry its durability
+              // barrier before consuming, without queueing the same window again.
+              orchestrator.owedWindows.add(scheduledWakeWindow(due));
+              orchestrator.onFlushWakeIntents = null;
+              async.elapse(const Duration(minutes: 1));
+              expect(writes().single.status, ScheduledWakeStatus.consumed);
+              if (alreadyOwed) {
+                expectNotFired();
+              } else {
+                verify(
+                  () => orchestrator.enqueueManualWake(
+                    agentId: any(named: 'agentId'),
+                    reason: any(named: 'reason'),
+                    triggerTokens: any(named: 'triggerTokens'),
+                    workspaceKey: any(named: 'workspaceKey'),
+                  ),
+                ).called(1);
+              }
+              manager.stop();
+            });
+          });
+        },
+      );
+    }
+
+    test(
+      'a wake restored during the lease wait must also flush before consume',
+      () {
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            final claimed = escalation(
+              leaseHostId: 'host-a',
+              leaseUntil: now.toUtc().add(const Duration(minutes: 26)),
+            );
+            orchestrator.onFlushWakeIntents = () =>
+                throw StateError('disk full');
+            final manager = start(
+              claimed,
+              leased: true,
+              duringHostLookup: () =>
+                  orchestrator.owedWindows.add(scheduledWakeWindow(claimed)),
+            );
+            async.flushMicrotasks();
+            expectNotFired();
+            verifyNever(() => syncService.upsertEntity(any()));
+            manager.stop();
+          });
+        });
+      },
+    );
+
     test('a window is its record and deadline — the next one differs', () {
       final first = escalation();
       expect(

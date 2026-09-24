@@ -303,6 +303,11 @@ outside this directory, set it to the old behaviour and run TLC against
 | `OwedCheck = FALSE` | `ScheduledWakeLeaseCrash` | `NoDeviceRunsTwice`: A fires, flushes the intent and crashes before consuming; after the restart the record fires again beside the restored wake |
 | `ConsumeCurrentRow = FALSE` | `ScheduledWakeLeaseCrashRearm` | `Converged`: a restarted device consumes the window it fired from its snapshot over the next window that had synced in |
 
+`FlushIntent` represents a successful settings write. A failed write leaves
+the intent pending, so `FlushBeforeConsume` also requires failures to propagate
+through the Dart durability barrier; every consume of an owed wake waits for
+that barrier. The store and scheduler regression tests cover failure and retry.
+
 Two residuals are properties the design does not claim, each shown by a
 configuration kept out of this directory:
 

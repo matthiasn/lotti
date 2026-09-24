@@ -155,7 +155,28 @@ void main() {
         expect(await next.owes(window1), isTrue);
 
         next.settle('run-2');
+        expect(await next.owes(window1), isTrue);
+        next.acknowledgeWindow(window1);
         expect(await next.owes(window1), isFalse);
+      },
+    );
+
+    test(
+      'acknowledging a running window does not leave a receipt on settle',
+      () async {
+        final store = newStore();
+        await store.load();
+        record(store);
+        store
+          ..markWindow('run-1', window1)
+          ..acknowledgeWindow(window1);
+        await store.flush();
+        expect(await store.owes(window1), isFalse);
+        expect((await persisted()).single['tokens'], ['entry-1']);
+        store.settle('run-1');
+        await store.flush();
+        expect(await store.owes(window1), isFalse);
+        expect(await persisted(), isEmpty);
       },
     );
 
@@ -456,17 +477,55 @@ void main() {
       );
     });
 
-    test('a failed write is logged, not thrown', () async {
-      when(
-        () => mockDb.saveSettingsItem(any(), any()),
-      ).thenThrow(StateError('disk full'));
-      final store = newStore(mockDb);
-      await store.load();
+    for (final removing in [false, true]) {
+      test(
+        'flush rejects failed persistence and retries (removing=$removing)',
+        () async {
+          var fail = false;
+          final writeError = StateError('disk full');
+          when(() => mockDb.saveSettingsItem(any(), any())).thenAnswer((
+            inv,
+          ) async {
+            if (fail) throw writeError;
+            return settingsDb.saveSettingsItem(
+              inv.positionalArguments[0] as String,
+              inv.positionalArguments[1] as String,
+            );
+          });
+          when(() => mockDb.removeSettingsItem(any())).thenAnswer((inv) async {
+            if (fail) throw writeError;
+            await settingsDb.removeSettingsItem(
+              inv.positionalArguments.single as String,
+            );
+          });
+          final store = newStore(mockDb);
+          await store.load();
+          if (removing) {
+            record(store);
+            await store.flush();
+          }
+          fail = true;
+          if (removing) {
+            store.settle('run-1');
+          } else {
+            record(store);
+          }
+          await expectLater(store.flush(), throwsA(same(writeError)));
+          expect(await persisted(), removing ? hasLength(1) : isEmpty);
+          verifyLogged('failed to persist wake intents');
 
-      record(store);
-      await store.flush();
-
-      verifyLogged('failed to persist wake intents');
-    });
+          // No new record/settle call is needed to retry the latest snapshot.
+          fail = false;
+          await store.flush();
+          final rows = await persisted();
+          if (removing) {
+            expect(rows, isEmpty);
+          } else {
+            expect(rows.single['runKey'], 'run-1');
+            expect(rows.single['tokens'], ['entry-1']);
+          }
+        },
+      );
+    }
   });
 }
