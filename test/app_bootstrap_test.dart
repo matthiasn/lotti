@@ -22,6 +22,7 @@ import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maint
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/goals/runtime/goal_runtime_maintenance.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
@@ -601,7 +602,12 @@ void main() {
             ..registerSingleton<SyncDatabase>(MockSyncDatabase())
             ..registerSingleton<OutboxService>(MockOutboxService())
             ..registerSingleton<AiConfigRepository>(MockAiConfigRepository())
-            ..registerSingleton<MatrixService>(MockMatrixService());
+            ..registerSingleton<MatrixService>(MockMatrixService())
+            // The goal agent service carries the off-track alert sink
+            // (ADR 0073), whose producer takes the repository from GetIt.
+            ..registerSingleton<NotificationRepository>(
+              MockNotificationRepository(),
+            );
         },
       );
     });

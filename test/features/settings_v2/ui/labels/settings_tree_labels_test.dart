@@ -80,6 +80,7 @@ void main() {
       expect(resolve('definitions/dashboards').title, 'Dashboards');
       expect(resolve('definitions/measurables').title, 'Measurables');
       expect(resolve('preferences').title, 'Preferences');
+      expect(resolve('preferences/notifications').title, 'Notifications');
       expect(resolve('preferences/recording-style').title, 'Recording Style');
       expect(resolve('preferences/theming').title, 'Theming');
       expect(resolve('advanced/flags').title, 'Config Flags');
@@ -129,7 +130,8 @@ void main() {
       expect(resolve('preferences').title, 'Preferences');
       expect(
         resolve('preferences').desc,
-        'Theming, animations, recording style, speech, and shortcuts',
+        'Theming, animations, notifications, recording style, speech, and '
+        'shortcuts',
       );
     });
 
@@ -146,6 +148,17 @@ void main() {
       );
       expect(resolve('preferences/recording-style').title, 'Recording Style');
       expect(resolve('preferences/speech').title, 'Speech');
+    });
+
+    testWidgets('the notifications leaf carries its own copy', (
+      tester,
+    ) async {
+      final resolve = await _buildResolver(tester);
+      expect(resolve('preferences/notifications').title, 'Notifications');
+      expect(
+        resolve('preferences/notifications').desc,
+        'Which alerts reach you as notifications',
+      );
     });
 
     testWidgets('animations resolves under its new preferences id', (

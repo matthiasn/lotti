@@ -173,6 +173,10 @@ final AiConfig fallbackAiConfig = AiConfig.inferenceProvider(
   inferenceProviderType: InferenceProviderType.openAi,
 );
 
+/// A row builder, for `any(named: 'build')` on `NotificationRepository.armEpisode`.
+NotificationEntity fallbackNotificationBuild(NotificationMeta meta) =>
+    fallbackNotificationEntity;
+
 final NotificationEntity fallbackNotificationEntity =
     NotificationEntity.taskSuggestion(
       meta: NotificationMeta(
@@ -258,6 +262,13 @@ void registerAllFallbackValues() {
   registerFallbackValue(fallbackJournalEntity);
   registerFallbackValue(fallbackProjectEntry);
   registerFallbackValue(fallbackRelationshipEntry);
+  registerFallbackValue(
+    const NudgeBrief(
+      headline: '',
+      tone: NudgeTone.nudge,
+      animation: NudgeBannerAnimation.steady,
+    ),
+  );
   registerFallbackValue(fallbackRelationshipData);
   registerFallbackValue(fallbackCheckInEntry);
   registerFallbackValue(fallbackCheckInData);
@@ -267,6 +278,7 @@ void registerAllFallbackValues() {
   registerFallbackValue(fallbackAiConfig);
   registerFallbackValue(fallbackSavedTaskFilter);
   registerFallbackValue(fallbackNotificationEntity);
+  registerFallbackValue(fallbackNotificationBuild);
   registerFallbackValue(fallbackConfigFlag);
   registerFallbackValue(fallbackSurveyData);
   registerFallbackValue(fallbackQuantitativeData);

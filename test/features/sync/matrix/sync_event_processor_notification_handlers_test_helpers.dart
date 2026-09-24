@@ -28,6 +28,7 @@ void hStubRecordReceived(MockSyncSequenceLogService log) {
 NotificationEntity hNotification({
   required String id,
   required String linkedTaskId,
+  DateTime? scheduledFor,
 }) {
   final timestamp = DateTime.utc(2026, 5, 17, 10);
   return NotificationEntity.taskSuggestion(
@@ -35,7 +36,7 @@ NotificationEntity hNotification({
       id: id,
       createdAt: timestamp,
       updatedAt: timestamp,
-      scheduledFor: timestamp,
+      scheduledFor: scheduledFor ?? timestamp,
       vectorClock: const VectorClock({'local-host': 1}),
       originatingHostId: 'local-host',
     ),

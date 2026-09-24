@@ -92,6 +92,68 @@ Map<String, dynamic> _$HabitAutoCompletedNotificationToJson(
   'runtimeType': instance.$type,
 };
 
+GoalOffTrackNotification _$GoalOffTrackNotificationFromJson(
+  Map<String, dynamic> json,
+) => GoalOffTrackNotification(
+  meta: NotificationMeta.fromJson(json['meta'] as Map<String, dynamic>),
+  linkedGoalAgentId: json['linkedGoalAgentId'] as String,
+  title: json['title'] as String,
+  body: json['body'] as String,
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$GoalOffTrackNotificationToJson(
+  GoalOffTrackNotification instance,
+) => <String, dynamic>{
+  'meta': instance.meta,
+  'linkedGoalAgentId': instance.linkedGoalAgentId,
+  'title': instance.title,
+  'body': instance.body,
+  'runtimeType': instance.$type,
+};
+
+DayPlanOutcomeNotification _$DayPlanOutcomeNotificationFromJson(
+  Map<String, dynamic> json,
+) => DayPlanOutcomeNotification(
+  meta: NotificationMeta.fromJson(json['meta'] as Map<String, dynamic>),
+  dayId: json['dayId'] as String,
+  succeeded: json['succeeded'] as bool,
+  title: json['title'] as String,
+  body: json['body'] as String,
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$DayPlanOutcomeNotificationToJson(
+  DayPlanOutcomeNotification instance,
+) => <String, dynamic>{
+  'meta': instance.meta,
+  'dayId': instance.dayId,
+  'succeeded': instance.succeeded,
+  'title': instance.title,
+  'body': instance.body,
+  'runtimeType': instance.$type,
+};
+
+SyncConflictNotification _$SyncConflictNotificationFromJson(
+  Map<String, dynamic> json,
+) => SyncConflictNotification(
+  meta: NotificationMeta.fromJson(json['meta'] as Map<String, dynamic>),
+  conflictCount: (json['conflictCount'] as num).toInt(),
+  title: json['title'] as String,
+  body: json['body'] as String,
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$SyncConflictNotificationToJson(
+  SyncConflictNotification instance,
+) => <String, dynamic>{
+  'meta': instance.meta,
+  'conflictCount': instance.conflictCount,
+  'title': instance.title,
+  'body': instance.body,
+  'runtimeType': instance.$type,
+};
+
 _NotificationMeta _$NotificationMetaFromJson(Map<String, dynamic> json) =>
     _NotificationMeta(
       id: json['id'] as String,

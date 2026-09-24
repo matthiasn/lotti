@@ -70,6 +70,7 @@ void main() {
   late GoalRuntimeMaintenance maintenance;
   late MockGoalMirrorService mirror;
   late MockGoalCheckInNotifier notifier;
+  late MockGoalOffTrackSink offTrackAlerts;
   late List<AgentDomainEntity> upserts;
 
   void stubSpec(String agentId) {
@@ -106,6 +107,8 @@ void main() {
     chatService = MockGoalChatService();
     mirror = MockGoalMirrorService();
     notifier = MockGoalCheckInNotifier();
+    offTrackAlerts = MockGoalOffTrackSink();
+    when(() => offTrackAlerts.clearFor(any())).thenAnswer((_) async {});
     when(() => notifier.watch(any())).thenReturn(null);
     when(() => notifier.unwatch(any())).thenReturn(null);
     when(() => notifier.start(any())).thenReturn(null);
@@ -124,6 +127,7 @@ void main() {
         repository: repository,
         syncService: syncService,
         orchestrator: orchestrator,
+        offTrackAlerts: offTrackAlerts,
       ),
       goalChatService: chatService,
       goalMirrorService: mirror,
@@ -455,6 +459,9 @@ void main() {
       goalIdentity('goal-a', lifecycle: AgentLifecycle.dormant),
     );
     verify(() => orchestrator.removeSubscriptions('goal-a')).called(1);
+    // No later tick will retract an alert armed while the goal was active:
+    // a paused or archived goal must not notify.
+    verify(() => offTrackAlerts.clearFor('goal-a')).called(1);
 
     when(
       () => repository.getEntity(goalSpecHeadId('goal-a')),
@@ -464,6 +471,15 @@ void main() {
       completes,
     );
     verifyNever(() => orchestrator.addSubscription(any()));
+  });
+
+  test('an active identity leaves its armed alert alone', () async {
+    when(() => orchestrator.addSubscription(any())).thenReturn(null);
+    stubSpec('goal-a');
+
+    await maintenance.onIdentityReceived(goalIdentity('goal-a'));
+
+    verifyNever(() => offTrackAlerts.clearFor(any()));
   });
 
   test('beforeWakeScan heals a missing cadence record', () async {

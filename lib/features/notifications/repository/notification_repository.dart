@@ -28,7 +28,7 @@ class NotificationRepository {
   final NotificationScheduler _scheduler;
   final DateTime Function() _now;
   final Uuid _uuid = const Uuid();
-  final Map<String, Future<void>> _taskSuggestionMutationTails = {};
+  final Map<String, Future<void>> _mutationTails = {};
 
   /// Creates (or refreshes) a `taskSuggestion` row in the synced inbox.
   ///
@@ -51,7 +51,7 @@ class NotificationRepository {
     String? category,
     String? idSeed,
     bool reuseOpenRow = false,
-  }) => _withTaskSuggestionMutation(linkedTaskId, () async {
+  }) => _withKeyedMutation('task:$linkedTaskId', () async {
     // A decision on a retained set must refresh the current alert, not its
     // already-retracted historical seed. Select inside the task mutation lock.
     final openRows =
@@ -62,17 +62,12 @@ class NotificationRepository {
             final byDate = b.meta.createdAt.compareTo(a.meta.createdAt);
             return byDate != 0 ? byDate : a.id.compareTo(b.id);
           });
-    final now = _now();
     final placeholder = NotificationEntity.taskSuggestion(
-      meta: NotificationMeta(
+      meta: _pendingMeta(
         id: openRows.isNotEmpty
             ? openRows.first.id
             : notificationIdForTaskSuggestion(idSeed ?? linkedTaskId),
-        createdAt: now,
-        updatedAt: now,
-        scheduledFor: scheduledFor ?? now,
-        vectorClock: const VectorClock({}),
-        originatingHostId: '',
+        scheduledFor: scheduledFor ?? _now(),
         category: category,
       ),
       linkedTaskId: linkedTaskId,
@@ -83,60 +78,41 @@ class NotificationRepository {
     return _create(placeholder);
   });
 
-  /// Creates a check-in reminder row for a tracked person (ADR 0039
-  /// Decision 1), scheduled for the cadence's due day.
+  /// Creates the row [build] describes for the episode [id] — unless a row
+  /// with that id already exists, in which case it is left exactly as it is
+  /// and `null` is returned.
   ///
-  /// The id is derived from `(relationshipId, dueDayKey)` rather than the
-  /// relationship alone, so each cadence episode is its own row: two devices
-  /// arming the same episode converge on one row, and a check-in that moves
-  /// the due day mints a new one instead of rewriting a row the user may
-  /// already have dismissed (the three lifecycle marks are monotonic and
-  /// cannot be cleared).
+  /// **Idempotent by episode**, which is what makes it safe for a producer
+  /// that re-derives its verdict on every tick and every write: a plain
+  /// upsert would bump `updatedAt`, enqueue an outbox message and re-notify
+  /// listeners every single tick — and would resurrect a row the user had
+  /// already dismissed, since a create merges content while the three
+  /// lifecycle marks stay monotonic. Because the episode key is part of [id],
+  /// everything derived from it is already pinned by it; only baked copy
+  /// could drift mid-episode, and the next episode picks that up.
   ///
-  /// Retracting the superseded episodes is the caller's job — see
-  /// [retractRelationshipCheckIns].
-  ///
-  /// **Idempotent by episode**: an existing row for the same episode is left
-  /// exactly as it is and `null` is returned. The producer is the agent's
-  /// deterministic tier, which re-derives this on every daily tick and every
-  /// check-in write, so a plain upsert would bump `updatedAt`, enqueue an
-  /// outbox message and re-notify listeners every single tick — and would
-  /// resurrect the row a user had already dismissed, since a create merges
-  /// content while the three lifecycle marks stay monotonic. Because the
-  /// episode key *is* the due day, everything derived from it is already
-  /// pinned; only [title] would drift, if the person were renamed
-  /// mid-episode, and the next episode picks that up.
-  Future<NotificationEntity?> createRelationshipCheckIn({
-    required String linkedRelationshipId,
-    required String dueDayKey,
-    required String title,
-    required String body,
+  /// [build] receives the pending [NotificationMeta] — the id, both timestamps,
+  /// [scheduledFor], the empty clock — and returns the kind's own variant
+  /// around it. It is invoked only when a row is actually written. Retracting
+  /// the episodes the new one supersedes is the caller's job — see
+  /// [retractOpenRows].
+  Future<NotificationEntity?> armEpisode({
+    required String id,
     required DateTime scheduledFor,
+    required NotificationEntity Function(NotificationMeta meta) build,
     String? category,
-  }) async {
-    final id = notificationIdForRelationshipCheckIn(
-      linkedRelationshipId: linkedRelationshipId,
-      dueDayKey: dueDayKey,
-    );
-    if (await _notificationsDb.notificationById(id) != null) return null;
-
-    final now = _now();
-    return create(
-      NotificationEntity.relationshipCheckIn(
-        meta: NotificationMeta(
-          id: id,
-          createdAt: now,
-          updatedAt: now,
-          scheduledFor: scheduledFor,
-          vectorClock: const VectorClock({}),
-          originatingHostId: '',
-          category: category,
+  }) {
+    // Check and write under one per-episode chain: a cadence tick racing a
+    // write-driven wake for the same subject would otherwise both read "no
+    // row" and both write, enqueue, schedule and notify.
+    return _withKeyedMutation('episode:$id', () async {
+      if (await _notificationsDb.notificationById(id) != null) return null;
+      return create(
+        build(
+          _pendingMeta(id: id, scheduledFor: scheduledFor, category: category),
         ),
-        linkedRelationshipId: linkedRelationshipId,
-        title: title,
-        body: body,
-      ),
-    );
+      );
+    });
   }
 
   /// Deterministic id for the auto-completion row of [dayKey] covering
@@ -152,64 +128,161 @@ class NotificationRepository {
   }
 
   /// Records that the engine checked [linkedHabitIds] off on [dayKey], due
-  /// immediately. The scheduler projects it to an OS banner on write.
+  /// immediately. The scheduler projects it to an OS banner on write; one
+  /// import that completes the same batch twice writes one row.
   Future<NotificationEntity?> createHabitAutoCompletion({
     required List<String> linkedHabitIds,
     required String dayKey,
     required String title,
     required String body,
-  }) async {
-    final id = notificationIdForHabitAutoCompletion(
+  }) => armEpisode(
+    id: notificationIdForHabitAutoCompletion(
       dayKey: dayKey,
       linkedHabitIds: linkedHabitIds,
-    );
-    if (await _notificationsDb.notificationById(id) != null) return null;
+    ),
+    scheduledFor: _now(),
+    build: (meta) => NotificationEntity.habitAutoCompleted(
+      meta: meta,
+      linkedHabitIds: linkedHabitIds,
+      dayKey: dayKey,
+      title: title,
+      body: body,
+    ),
+  );
 
-    final now = _now();
-    return create(
-      NotificationEntity.habitAutoCompleted(
-        meta: NotificationMeta(
-          id: id,
-          createdAt: now,
-          updatedAt: now,
-          scheduledFor: now,
-          vectorClock: const VectorClock({}),
-          originatingHostId: '',
-        ),
-        linkedHabitIds: linkedHabitIds,
-        dayKey: dayKey,
-        title: title,
-        body: body,
-      ),
-    );
-  }
-
-  /// Retracts every still-open check-in reminder for [linkedRelationshipId],
-  /// optionally sparing [exceptId] (the episode currently armed).
+  /// Retracts every still-open row of [kind] for [linkedEntityId], sparing
+  /// [exceptId] (the episode currently armed).
   ///
   /// Used both to drop superseded episodes — a logged check-in moves the due
   /// day, so the old alarm is about a date that no longer means anything —
-  /// and to clear the lot when the person stops being eligible or is
+  /// and to clear the lot when the subject stops being eligible or is
   /// deleted. Retraction is what cancels the OS-level alert: the scheduler
   /// cancels for any row carrying a lifecycle mark.
-  Future<List<NotificationEntity>> retractRelationshipCheckIns(
-    String linkedRelationshipId, {
+  ///
+  /// Open means not acted on and not deleted. `seenAt` deliberately does not
+  /// disqualify a row the way it does for scheduling: a seen row has already
+  /// had its OS alert cancelled, but it is still in the inbox, and a
+  /// superseded episode must leave it. Kind-scoped because `forLinkedEntity`
+  /// is not: a task row linked to the same id is left alone.
+  Future<List<NotificationEntity>> retractOpenRows({
+    required String linkedEntityId,
+    required String kind,
     String? exceptId,
   }) async {
-    final rows = await _openRelationshipCheckInsFor(linkedRelationshipId);
+    final rows = await _notificationsDb.forLinkedEntity(linkedEntityId);
     final retracted = <NotificationEntity>[];
     for (final row in rows) {
-      if (row.id == exceptId) continue;
+      if (row.type != kind || row.id == exceptId) continue;
+      if (row.meta.actedOnAt != null || row.meta.deletedAt != null) continue;
       final result = await retract(row.id);
       if (result != null) retracted.add(result);
     }
     return retracted;
   }
 
+  /// Re-words the open, not-yet-fired rows of [kind] linked to
+  /// [linkedEntityId] — the agent's own voice on an alert the deterministic
+  /// tier armed (ADR 0074). [title] replaces the row's title; [body] its body
+  /// when given, else the body stays.
+  ///
+  /// A row already due keeps its words: its alert went out, and rescheduling
+  /// it would announce it a second time. A row whose words already read this
+  /// way is left alone, so a re-run wake writes nothing. The re-worded row
+  /// syncs as a full row — content converges last-writer-wins on `updatedAt`
+  /// (`NotificationMerge`), which is what lets it overtake the template copy
+  /// on every peer whatever order the two events arrive in — and is
+  /// re-armed under its unchanged OS id, so the alarm is replaced, not
+  /// doubled.
+  Future<List<NotificationEntity>> restateOpenRows({
+    required String linkedEntityId,
+    required String kind,
+    required String title,
+    String? body,
+  }) async {
+    final now = _now();
+    final rows = await _notificationsDb.forLinkedEntity(linkedEntityId);
+    final restated = <NotificationEntity>[];
+    for (final row in rows) {
+      if (row.type != kind) continue;
+      final meta = row.meta;
+      if (meta.seenAt != null ||
+          meta.actedOnAt != null ||
+          meta.deletedAt != null ||
+          !meta.scheduledFor.isAfter(now)) {
+        continue;
+      }
+      final newBody = body ?? row.body;
+      if (row.title == title && row.body == newBody) continue;
+      final result = await _restate(row, title: title, body: newBody);
+      if (result != null) restated.add(result);
+    }
+    return restated;
+  }
+
+  Future<NotificationEntity?> _restate(
+    NotificationEntity row, {
+    required String title,
+    required String body,
+  }) {
+    return _vectorClockService.withVcScope<NotificationEntity?>(() async {
+      final host = await _vectorClockService.getHost();
+      if (host == null) return null;
+
+      final now = _now();
+      // Re-checked against the clock this write carries: the row was ahead
+      // when `restateOpenRows` read it, and one that came due in between has
+      // had its alert go out — re-arming it would announce it twice.
+      if (!row.meta.scheduledFor.isAfter(now)) return null;
+      // Bound to the row, like every other reservation here: a crash between
+      // the upsert and the enqueue must leave a counter backfill can resolve.
+      final vectorClock = await _vectorClockService.getNextVectorClock(
+        previous: row.meta.vectorClock,
+        payload: (id: row.id, type: SyncSequencePayloadType.notification),
+      );
+      final reworded = row
+          .copyWithCopy(title: title, body: body)
+          .copyWithMeta(
+            row.meta.copyWith(
+              updatedAt: now,
+              vectorClock: vectorClock,
+              originatingHostId: host,
+            ),
+          );
+      final saved = await _notificationsDb.upsertNotification(reworded);
+      if (saved == null) return null;
+
+      if (!saved.isDeviceLocal) {
+        await _outboxService.enqueueNotification(saved);
+      }
+      await _scheduler.schedule(saved, now: now);
+      _notify(saved, fromSync: false);
+      return saved;
+    }, commitWhen: (result) => result != null);
+  }
+
+  /// The meta a brand-new row carries into [create]: both timestamps at now,
+  /// no lifecycle marks, and an empty clock and host for [_create] to fill.
+  NotificationMeta _pendingMeta({
+    required String id,
+    required DateTime scheduledFor,
+    String? category,
+  }) {
+    final now = _now();
+    return NotificationMeta(
+      id: id,
+      createdAt: now,
+      updatedAt: now,
+      scheduledFor: scheduledFor,
+      vectorClock: const VectorClock({}),
+      originatingHostId: '',
+      category: category,
+    );
+  }
+
   Future<NotificationEntity?> create(NotificationEntity entity) {
     if (entity is TaskSuggestionNotification) {
-      return _withTaskSuggestionMutation(
-        entity.linkedTaskId,
+      return _withKeyedMutation(
+        'task:${entity.linkedTaskId}',
         () => _create(entity),
       );
     }
@@ -257,7 +330,12 @@ class NotificationRepository {
         );
       }
 
-      await _outboxService.enqueueNotification(saved);
+      // A device-local row never leaves this device — see
+      // `NotificationEntityFields.isDeviceLocal` for why its marks must not
+      // either.
+      if (!saved.isDeviceLocal) {
+        await _outboxService.enqueueNotification(saved);
+      }
       await _scheduler.schedule(saved, now: now);
       _notify(saved, fromSync: false);
       return saved;
@@ -271,8 +349,8 @@ class NotificationRepository {
   Future<List<NotificationEntity>> markTaskSuggestionsActedOn(
     String linkedTaskId,
   ) {
-    return _withTaskSuggestionMutation(
-      linkedTaskId,
+    return _withKeyedMutation(
+      'task:$linkedTaskId',
       () => _applyOpenTaskSuggestionStateUnlocked(
         linkedTaskId: linkedTaskId,
         actedOnAt: _now(),
@@ -287,8 +365,8 @@ class NotificationRepository {
   Future<List<NotificationEntity>> retractTaskSuggestionsForTask(
     String linkedTaskId,
   ) {
-    return _withTaskSuggestionMutation(
-      linkedTaskId,
+    return _withKeyedMutation(
+      'task:$linkedTaskId',
       () => _applyOpenTaskSuggestionStateUnlocked(
         linkedTaskId: linkedTaskId,
         deletedAt: _now(),
@@ -300,20 +378,6 @@ class NotificationRepository {
     return _uuid.v5(
       Namespace.nil.value,
       jsonEncode(['taskSuggestion', linkedTaskId]),
-    );
-  }
-
-  /// Deterministic id of one relationship's check-in reminder for one cadence
-  /// episode — the same uuid-v5-over-canonical-JSON scheme as
-  /// [notificationIdForTaskSuggestion], so devices converge without
-  /// coordinating.
-  String notificationIdForRelationshipCheckIn({
-    required String linkedRelationshipId,
-    required String dueDayKey,
-  }) {
-    return _uuid.v5(
-      Namespace.nil.value,
-      jsonEncode(['relationshipCheckIn', linkedRelationshipId, dueDayKey]),
     );
   }
 
@@ -356,14 +420,16 @@ class NotificationRepository {
       final updated = result.entity;
       if (updated == null || !result.changed) return null;
 
-      await _outboxService.enqueueNotificationStateUpdate(
-        id: id,
-        seenAt: seenAt,
-        actedOnAt: actedOnAt,
-        deletedAt: deletedAt,
-        vectorClock: vectorClock,
-        originatingHostId: host,
-      );
+      if (!updated.isDeviceLocal) {
+        await _outboxService.enqueueNotificationStateUpdate(
+          id: id,
+          seenAt: seenAt,
+          actedOnAt: actedOnAt,
+          deletedAt: deletedAt,
+          vectorClock: vectorClock,
+          originatingHostId: host,
+        );
+      }
       await _scheduler.schedule(updated);
       _notifyStateChange(updated);
       return updated;
@@ -382,13 +448,17 @@ class NotificationRepository {
         (deletedAt != null && meta.deletedAt == null);
   }
 
-  Future<T> _withTaskSuggestionMutation<T>(
-    String linkedTaskId,
+  /// Runs [mutation] after every earlier mutation chained under [key] has
+  /// settled. Keys are namespaced (`task:<linkedTaskId>`, `episode:<id>`) so
+  /// the two families never wait on each other — and never on themselves,
+  /// which is what would deadlock if a chained call re-entered its own key.
+  Future<T> _withKeyedMutation<T>(
+    String key,
     Future<T> Function() mutation,
   ) async {
-    final previous = _taskSuggestionMutationTails[linkedTaskId];
+    final previous = _mutationTails[key];
     final completer = Completer<void>();
-    _taskSuggestionMutationTails[linkedTaskId] = completer.future;
+    _mutationTails[key] = completer.future;
 
     try {
       if (previous != null) {
@@ -397,11 +467,8 @@ class NotificationRepository {
       return await mutation();
     } finally {
       completer.complete();
-      if (identical(
-        _taskSuggestionMutationTails[linkedTaskId],
-        completer.future,
-      )) {
-        await _taskSuggestionMutationTails.remove(linkedTaskId);
+      if (identical(_mutationTails[key], completer.future)) {
+        await _mutationTails.remove(key);
       }
     }
   }
@@ -433,21 +500,6 @@ class NotificationRepository {
   ) async {
     final rows = await _notificationsDb.forLinkedEntity(linkedTaskId);
     return rows.whereType<TaskSuggestionNotification>().where((row) {
-      final meta = row.meta;
-      return meta.actedOnAt == null && meta.deletedAt == null;
-    }).toList();
-  }
-
-  /// Reminder rows for a person that still have an alarm to cancel.
-  ///
-  /// `seenAt` deliberately does not disqualify a row here the way it does for
-  /// scheduling: a seen row has already had its OS alert cancelled, but it is
-  /// still in the inbox, and a superseded episode must leave it.
-  Future<List<RelationshipCheckInNotification>> _openRelationshipCheckInsFor(
-    String linkedRelationshipId,
-  ) async {
-    final rows = await _notificationsDb.forLinkedEntity(linkedRelationshipId);
-    return rows.whereType<RelationshipCheckInNotification>().where((row) {
       final meta = row.meta;
       return meta.actedOnAt == null && meta.deletedAt == null;
     }).toList();

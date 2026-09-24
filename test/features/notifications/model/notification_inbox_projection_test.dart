@@ -260,6 +260,19 @@ void main() {
       expect(showsBeforeScheduledTime(_checkInRow(id: 'c')), isFalse);
     });
 
+    test('a plan outcome and a sync conflict are due on arrival', () {
+      // Both are written the moment the thing happened; hiding them until a
+      // clock-skewed scheduledFor caught up would make them vanish.
+      expect(showsBeforeScheduledTime(_dayPlanOutcomeRow(id: 'p')), isTrue);
+      expect(showsBeforeScheduledTime(_syncConflictRow(id: 's')), isTrue);
+    });
+
+    test('a slipped-goal alert waits for its alert hour', () {
+      // Armed on the tick that saw the slip for the next alert hour; the
+      // bell would otherwise say "off track" hours before the alert does.
+      expect(showsBeforeScheduledTime(_goalOffTrackRow(id: 'g')), isFalse);
+    });
+
     test('an auto-completion row is due on arrival', () {
       final base = DateTime.utc(2026, 5, 17, 8);
       final row = NotificationEntity.habitAutoCompleted(
@@ -280,6 +293,61 @@ void main() {
       expect(showsBeforeScheduledTime(row), isTrue);
     });
   });
+}
+
+DayPlanOutcomeNotification _dayPlanOutcomeRow({required String id}) {
+  final base = DateTime.utc(2026, 5, 17, 8);
+  return NotificationEntity.dayPlanOutcome(
+        meta: NotificationMeta(
+          id: id,
+          createdAt: base,
+          updatedAt: base,
+          scheduledFor: base.add(const Duration(minutes: 5)),
+          vectorClock: const VectorClock({'host': 1}),
+          originatingHostId: 'host',
+        ),
+        dayId: 'dayplan-2026-05-17',
+        succeeded: true,
+        title: 'Your day plan is ready',
+        body: 'The draft is waiting for your review.',
+      )
+      as DayPlanOutcomeNotification;
+}
+
+SyncConflictNotification _syncConflictRow({required String id}) {
+  final base = DateTime.utc(2026, 5, 17, 8);
+  return NotificationEntity.syncConflict(
+        meta: NotificationMeta(
+          id: id,
+          createdAt: base,
+          updatedAt: base,
+          scheduledFor: base.add(const Duration(minutes: 5)),
+          vectorClock: const VectorClock({'host': 1}),
+          originatingHostId: 'host',
+        ),
+        conflictCount: 1,
+        title: 'Sync needs your review',
+        body: '1 entry was edited on two devices',
+      )
+      as SyncConflictNotification;
+}
+
+GoalOffTrackNotification _goalOffTrackRow({required String id}) {
+  final base = DateTime.utc(2026, 5, 17, 8);
+  return NotificationEntity.goalOffTrack(
+        meta: NotificationMeta(
+          id: id,
+          createdAt: base,
+          updatedAt: base,
+          scheduledFor: base.add(const Duration(hours: 3)),
+          vectorClock: const VectorClock({'host': 1}),
+          originatingHostId: 'host',
+        ),
+        linkedGoalAgentId: 'goal-agent-1',
+        title: 'Daily steps is off track',
+        body: 'A good moment to get back on it.',
+      )
+      as GoalOffTrackNotification;
 }
 
 RelationshipCheckInNotification _checkInRow({required String id}) {

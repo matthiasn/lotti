@@ -7057,6 +7057,14 @@ abstract class _$JournalDb extends GeneratedDatabase {
     ).asyncMap(habitDefinitions.mapFromRow);
   }
 
+  Selectable<HabitDefinitionDbEntity> allHabitDefinitionsAllPrivate() {
+    return customSelect(
+      'SELECT * FROM habit_definitions WHERE deleted = FALSE',
+      variables: [],
+      readsFrom: {habitDefinitions},
+    ).asyncMap(habitDefinitions.mapFromRow);
+  }
+
   Selectable<HabitDefinitionDbEntity> habitById(String id) {
     return customSelect(
       'SELECT * FROM habit_definitions WHERE deleted = FALSE AND id = ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',

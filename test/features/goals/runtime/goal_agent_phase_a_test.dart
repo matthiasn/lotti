@@ -15,6 +15,7 @@ import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
+import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -104,11 +105,16 @@ void main() {
   late List<AgentDomainEntity> upserts;
   late List<String> refreshRequests;
 
+  /// What the tick did, in order: transaction boundaries and alert calls.
+  late List<String> events;
+  late _RecordingOffTrackSink alerts;
+
   GoalAgentPhaseA phaseA(GoalSignalWindow signals) => GoalAgentPhaseA(
     repository: repository,
     syncService: syncService,
     signalReader: _FakeSignalReader(signals),
     onReportRefreshNeeded: (id) async => refreshRequests.add(id),
+    offTrackAlerts: alerts,
   );
 
   setUp(() {
@@ -116,6 +122,14 @@ void main() {
     syncService = MockAgentSyncService();
     upserts = [];
     refreshRequests = [];
+    events = [];
+    alerts = _RecordingOffTrackSink(events);
+    syncService.transactionDelegate = <T>(action) async {
+      events.add('tx:begin');
+      final result = await action();
+      events.add('tx:commit');
+      return result;
+    };
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
     when(
       () => repository.getEntitiesByAgentId(
@@ -791,6 +805,168 @@ void main() {
     expect(refreshRequests, isEmpty);
   });
 
+  // The OS alert is a projection of the register this tick writes: a slip
+  // arms it once per slip, anything else clears it, and nothing happens on a
+  // tick whose status did not change. Eligibility is the banner's predicate.
+  group('the OS alert projection', () {
+    GoalSignalWindow badWeek() => GoalSignalWindow(
+      quantitativeDailySums: {
+        'cumulative_step_count': {
+          for (var day = 2; day <= 8; day++) DateTime.utc(2026, 8, day): 6000,
+        },
+      },
+    );
+
+    void stubYesterday(GoalTrackStatus status, double attainment) {
+      when(
+        () => repository.getEntity(goalProgressId(agentId, '2026-08-07')),
+      ).thenAnswer(
+        (_) async => progressRow(
+          periodKey: '2026-08-07',
+          status: status,
+          attainment: attainment,
+        ),
+      );
+    }
+
+    test(
+      'a first-ever slipping evaluation arms the alert after the transaction '
+      'commits',
+      () async {
+        stubSpec();
+
+        await run(badWeek());
+
+        // No priors: at risk qualifies on its first evaluation, the banner's
+        // own rule, so the alert channel agrees with the dock.
+        final armed = alerts.armed.single;
+        expect(armed.agentId, agentId);
+        expect(armed.goalTitle, 'Daily steps');
+        expect(armed.derivation.periodKey, '2026-08-08');
+        expect(armed.derivation.facts.trackStatus, GoalTrackStatus.atRisk);
+        expect(alerts.cleared, isEmpty);
+        // After the register's transaction, never inside it: the alert row
+        // lives in another store behind its own vector-clock scope.
+        expect(events, contains('tx:commit'));
+        expect(
+          events.indexOf('arm'),
+          greaterThan(events.lastIndexOf('tx:commit')),
+        );
+      },
+    );
+
+    test(
+      'a transition into off track arms the alert, keyed by the day',
+      () async {
+        stubSpec();
+        stubYesterday(GoalTrackStatus.atRisk, 0.62);
+
+        await run(badWeek());
+
+        final armed = alerts.armed.single;
+        expect(armed.derivation.facts.trackStatus, GoalTrackStatus.offTrack);
+        expect(armed.derivation.periodKey, '2026-08-08');
+        expect(alerts.cleared, isEmpty);
+      },
+    );
+
+    test('a goal that stays behind is not alerted again', () async {
+      stubSpec();
+      stubYesterday(GoalTrackStatus.offTrack, 0.6);
+
+      await run(badWeek());
+
+      // Off track yesterday, off track today: no transition, no new episode
+      // — the anti-nag ceiling is one alert per slip.
+      expect(alerts.armed, isEmpty);
+      expect(alerts.cleared, isEmpty);
+    });
+
+    test('a goal back on track clears its alert', () async {
+      stubSpec();
+      stubYesterday(GoalTrackStatus.offTrack, 0.6);
+
+      await run(onTrackSignals());
+
+      expect(alerts.cleared, [agentId]);
+      expect(alerts.armed, isEmpty);
+      expect(
+        events.indexOf('clear'),
+        greaterThan(events.lastIndexOf('tx:commit')),
+      );
+    });
+
+    test('at risk without a worsening trend is not a slip', () async {
+      stubSpec();
+      stubYesterday(GoalTrackStatus.onTrack, 1);
+      final softWeek = GoalSignalWindow(
+        quantitativeDailySums: {
+          'cumulative_step_count': {
+            for (var day = 2; day <= 8; day++) DateTime.utc(2026, 8, day): 8500,
+          },
+        },
+      );
+
+      await run(softWeek);
+
+      // 0.85 is at risk, but one prior point is no trend, so the banner
+      // would not run either — and a transition that is not a slip clears.
+      expect(
+        upserts.whereType<GoalProgressEntity>().single.trackStatus,
+        GoalTrackStatus.atRisk,
+      );
+      expect(alerts.armed, isEmpty);
+      expect(alerts.cleared, [agentId]);
+    });
+
+    test('a fenced write projects nothing', () async {
+      stubSpec();
+      var headReads = 0;
+      when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer((
+        _,
+      ) async {
+        headReads++;
+        return AgentDomainEntity.goalSpecHead(
+          id: goalSpecHeadId(agentId),
+          agentId: agentId,
+          versionId: headReads == 1 ? '$agentId:spec-v1' : '$agentId:spec-v2',
+          updatedAt: DateTime(2026),
+          vectorClock: null,
+        );
+      });
+
+      await run(badWeek());
+
+      // The revision's own tick will judge again; projecting a verdict the
+      // register never recorded would alert about a spec that is gone.
+      expect(alerts.armed, isEmpty);
+      expect(alerts.cleared, isEmpty);
+    });
+
+    test('a tier without a sink runs unchanged', () async {
+      stubSpec();
+      final unwired = GoalAgentPhaseA(
+        repository: repository,
+        syncService: syncService,
+        signalReader: _FakeSignalReader(badWeek()),
+      );
+
+      final result = await withClock(
+        fixedClock,
+        () => unwired.execute(
+          agentIdentity: identity,
+          runKey: 'run-1',
+          triggerTokens: const {'cumulative_step_count'},
+          threadId: 'thread-1',
+        ),
+      );
+
+      expect(result.success, isTrue);
+      expect(upserts.whereType<GoalProgressEntity>(), hasLength(1));
+      expect(alerts.armed, isEmpty);
+    });
+  });
+
   test('prior bad register rows feed the grace check into offTrack', () async {
     stubSpec();
     when(
@@ -1407,5 +1583,53 @@ class _OrderRecordingSyncService extends MockAgentSyncService {
   Future<T> runInTransaction<T>(Future<T> Function() action) {
     order.add('transaction');
     return action();
+  }
+}
+
+/// Records what Phase A projected onto the alert channel, and when.
+///
+/// A hand-rolled fake rather than a mock: the assertions are about call
+/// *ordering* relative to the agent transaction, which a shared `events`
+/// list expresses directly (the relationship Phase A suite's pattern).
+class _RecordingOffTrackSink implements GoalOffTrackSink {
+  _RecordingOffTrackSink(this._events);
+
+  final List<String> _events;
+  final List<
+    ({String agentId, String goalTitle, GoalWakeDerivation derivation})
+  >
+  armed = [];
+  final List<String> cleared = [];
+
+  @override
+  Future<void> arm({
+    required GoalOffTrackSubject subject,
+    required GoalWakeDerivation derivation,
+  }) async {
+    armed.add(
+      (
+        agentId: subject.agentId,
+        goalTitle: subject.goalTitle,
+        derivation: derivation,
+      ),
+    );
+    _events.add('arm');
+  }
+
+  /// Phase A never re-words: the seam belongs to Phase B (ADR 0074), so a
+  /// call landing here would be a wrong-tier defect.
+  @override
+  Future<void> restate(
+    String subjectId, {
+    required String title,
+    String? body,
+  }) async {
+    throw StateError('Phase A must not restate ($subjectId)');
+  }
+
+  @override
+  Future<void> clearFor(String subjectId) async {
+    cleared.add(subjectId);
+    _events.add('clear');
   }
 }

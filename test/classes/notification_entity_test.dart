@@ -127,6 +127,117 @@ void main() {
       expect(updated.meta.seenAt, DateTime.utc(2026, 5, 17, 16));
     });
 
+    test('a goalOffTrack row links the goal agent', () {
+      final entity = _goalOffTrack(
+        id: 'go-1',
+        linkedGoalAgentId: 'goal-agent-7',
+        title: 'Daily steps is off track',
+        body: 'A good moment to get back on it.',
+      );
+
+      expect(entity.id, 'go-1');
+      expect(entity.type, 'goalOffTrack');
+      expect(entity.title, 'Daily steps is off track');
+      expect(entity.body, 'A good moment to get back on it.');
+      // The agent, not a journal goal id: the goal detail route is keyed by
+      // the agent, and so is every register and banner the alert reflects.
+      expect(entity.linkedEntityId, 'goal-agent-7');
+    });
+
+    test('copyWithMeta preserves the goalOffTrack variant', () {
+      final entity = _goalOffTrack(
+        id: 'go-2',
+        linkedGoalAgentId: 'goal-agent-8',
+        title: 'Title',
+        body: 'Body',
+      );
+      final replacement = entity.meta.copyWith(
+        actedOnAt: DateTime.utc(2026, 5, 17, 16),
+      );
+
+      final updated = entity.copyWithMeta(replacement);
+
+      expect(updated, isA<GoalOffTrackNotification>());
+      final updatedGoal = updated as GoalOffTrackNotification;
+      expect(updatedGoal.linkedGoalAgentId, 'goal-agent-8');
+      expect(updatedGoal.title, 'Title');
+      expect(updatedGoal.body, 'Body');
+      expect(updated.meta.actedOnAt, DateTime.utc(2026, 5, 17, 16));
+    });
+
+    test('a dayPlanOutcome row links the day it planned', () {
+      final entity = _dayPlanOutcome(id: 'dp-1', dayId: 'dayplan-2026-07-22');
+
+      expect(entity.type, 'dayPlanOutcome');
+      expect(entity.title, 'Title');
+      expect(entity.body, 'Body');
+      // The day is the subject: a later outcome for the same day retracts an
+      // earlier one by this id.
+      expect(entity.linkedEntityId, 'dayplan-2026-07-22');
+    });
+
+    test('copyWithMeta preserves the dayPlanOutcome variant', () {
+      final entity = _dayPlanOutcome(
+        id: 'dp-2',
+        dayId: 'dayplan-2026-07-22',
+        succeeded: false,
+      );
+      final replacement = entity.meta.copyWith(
+        seenAt: DateTime.utc(2026, 5, 17, 16),
+      );
+
+      final updated = entity.copyWithMeta(replacement);
+
+      expect(updated, isA<DayPlanOutcomeNotification>());
+      final updatedOutcome = updated as DayPlanOutcomeNotification;
+      expect(updatedOutcome.dayId, 'dayplan-2026-07-22');
+      expect(updatedOutcome.succeeded, isFalse);
+      expect(updatedOutcome.title, 'Title');
+      expect(updated.meta.seenAt, DateTime.utc(2026, 5, 17, 16));
+    });
+
+    test('a syncConflict row links the conflicts list, not an entry', () {
+      final entity = _syncConflict(id: 'sc-1', conflictCount: 3);
+
+      expect(entity.type, 'syncConflict');
+      // No entry of its own — the pseudo subject is what lets a later burst
+      // retract the earlier row.
+      expect(entity.linkedEntityId, syncConflictsSubjectId);
+    });
+
+    test('copyWithMeta preserves the syncConflict variant', () {
+      final entity = _syncConflict(id: 'sc-2', conflictCount: 3);
+      final replacement = entity.meta.copyWith(
+        deletedAt: DateTime.utc(2026, 5, 17, 16),
+      );
+
+      final updated = entity.copyWithMeta(replacement);
+
+      expect(updated, isA<SyncConflictNotification>());
+      expect((updated as SyncConflictNotification).conflictCount, 3);
+      expect(updated.meta.deletedAt, DateTime.utc(2026, 5, 17, 16));
+    });
+
+    test("only rows about this device's own processing stay local", () {
+      // Exhaustive over the union: a peer that receives a lifecycle mark for
+      // a row it never got keeps the event pending forever, so the choice is
+      // load-bearing for every variant.
+      final local = <String>{
+        for (final entity in <NotificationEntity>[
+          _suggestion(id: 'a', linkedTaskId: 't', title: 'x', body: 'y'),
+          _overdue(id: 'b', linkedTaskId: 't', title: 'x', body: 'y'),
+          _checkIn(id: 'c', linkedRelationshipId: 'r', title: 'x', body: 'y'),
+          _habitAuto(id: 'd', linkedHabitIds: ['h']),
+          _goalOffTrack(id: 'e', linkedGoalAgentId: 'g', title: 'x', body: 'y'),
+          _dayPlanOutcome(id: 'f', dayId: 'day'),
+          _syncConflict(id: 'g', conflictCount: 1),
+        ])
+          if (entity.isDeviceLocal) entity.type,
+      };
+
+      expect(local, {'dayPlanOutcome', 'syncConflict'});
+    });
+
     test('copyWithMeta preserves the overdue variant', () {
       final entity = _overdue(
         id: 'od-2',
@@ -146,6 +257,92 @@ void main() {
       expect(updatedOverdue.title, 'Hello');
       expect(updatedOverdue.body, 'World');
       expect(updated.meta.deletedAt, DateTime.utc(2026, 5, 17, 12));
+    });
+  });
+
+  group('NotificationKinds', () {
+    test('names the wire discriminator of every variant', () {
+      // A producer derives its episode ids from a kind and retracts rows by
+      // it, so the constants and `type` must never disagree — and the strings
+      // are the sync wire format, so neither may move.
+      final meta = NotificationMeta(
+        id: 'k',
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+        scheduledFor: DateTime(2026),
+        vectorClock: const VectorClock({}),
+        originatingHostId: '',
+      );
+      final byVariant = <String, NotificationEntity>{
+        'taskSuggestion': NotificationEntity.taskSuggestion(
+          meta: meta,
+          linkedTaskId: 't',
+          suggestionCount: 1,
+          title: 'a',
+          body: 'b',
+        ),
+        'taskOverdue': NotificationEntity.taskOverdue(
+          meta: meta,
+          linkedTaskId: 't',
+          title: 'a',
+          body: 'b',
+        ),
+        'relationshipCheckIn': NotificationEntity.relationshipCheckIn(
+          meta: meta,
+          linkedRelationshipId: 'r',
+          title: 'a',
+          body: 'b',
+        ),
+        'habitAutoCompleted': NotificationEntity.habitAutoCompleted(
+          meta: meta,
+          linkedHabitIds: const ['h'],
+          dayKey: '2026-01-01',
+          title: 'a',
+          body: 'b',
+        ),
+        'goalOffTrack': NotificationEntity.goalOffTrack(
+          meta: meta,
+          linkedGoalAgentId: 'g',
+          title: 'a',
+          body: 'b',
+        ),
+        'dayPlanOutcome': NotificationEntity.dayPlanOutcome(
+          meta: meta,
+          dayId: 'day',
+          succeeded: true,
+          title: 'a',
+          body: 'b',
+        ),
+        'syncConflict': NotificationEntity.syncConflict(
+          meta: meta,
+          conflictCount: 2,
+          title: 'a',
+          body: 'b',
+        ),
+      };
+
+      expect(
+        byVariant['taskSuggestion']!.type,
+        NotificationKinds.taskSuggestion,
+      );
+      expect(byVariant['taskOverdue']!.type, NotificationKinds.taskOverdue);
+      expect(
+        byVariant['relationshipCheckIn']!.type,
+        NotificationKinds.relationshipCheckIn,
+      );
+      expect(
+        byVariant['habitAutoCompleted']!.type,
+        NotificationKinds.habitAutoCompleted,
+      );
+      expect(byVariant['goalOffTrack']!.type, NotificationKinds.goalOffTrack);
+      expect(
+        byVariant['dayPlanOutcome']!.type,
+        NotificationKinds.dayPlanOutcome,
+      );
+      expect(byVariant['syncConflict']!.type, NotificationKinds.syncConflict);
+      for (final entry in byVariant.entries) {
+        expect(entry.value.type, entry.key);
+      }
     });
   });
 
@@ -239,6 +436,14 @@ void main() {
           body: 'y',
         ): 'relationshipCheckIn',
         _habitAuto(id: 'd', linkedHabitIds: ['h1', 'h2']): 'habitAutoCompleted',
+        _goalOffTrack(
+          id: 'e',
+          linkedGoalAgentId: 'g',
+          title: 'x',
+          body: 'y',
+        ): 'goalOffTrack',
+        _dayPlanOutcome(id: 'f', dayId: 'd'): 'dayPlanOutcome',
+        _syncConflict(id: 'g', conflictCount: 1): 'syncConflict',
       };
 
       for (final row in rows.entries) {
@@ -269,6 +474,108 @@ void main() {
 
       expect(() => NotificationEntity.fromJson(json), throwsA(isA<Object>()));
     });
+  });
+
+  group('NotificationEntityFields.copyWithCopy', () {
+    final meta = NotificationMeta(
+      id: 'row',
+      createdAt: DateTime.utc(2026, 9, 16),
+      updatedAt: DateTime.utc(2026, 9, 16),
+      scheduledFor: DateTime.utc(2026, 9, 17, 9),
+      vectorClock: const VectorClock({'host-a': 1}),
+      originatingHostId: 'host-a',
+    );
+
+    /// Every variant with its own fields, so a re-wording that dropped one
+    /// would show up as a changed variant or a lost field.
+    final variants = <(String, NotificationEntity)>[
+      (
+        'taskSuggestion',
+        NotificationEntity.taskSuggestion(
+          meta: meta,
+          linkedTaskId: 'task-1',
+          suggestionCount: 3,
+          title: 'old',
+          body: 'old body',
+        ),
+      ),
+      (
+        'taskOverdue',
+        NotificationEntity.taskOverdue(
+          meta: meta,
+          linkedTaskId: 'task-1',
+          title: 'old',
+          body: 'old body',
+        ),
+      ),
+      (
+        'relationshipCheckIn',
+        NotificationEntity.relationshipCheckIn(
+          meta: meta,
+          linkedRelationshipId: 'rel-1',
+          title: 'old',
+          body: 'old body',
+        ),
+      ),
+      (
+        'habitAutoCompleted',
+        NotificationEntity.habitAutoCompleted(
+          meta: meta,
+          linkedHabitIds: const ['h-1', 'h-2'],
+          dayKey: '2026-09-16',
+          title: 'old',
+          body: 'old body',
+        ),
+      ),
+      (
+        'goalOffTrack',
+        NotificationEntity.goalOffTrack(
+          meta: meta,
+          linkedGoalAgentId: 'agent-1',
+          title: 'old',
+          body: 'old body',
+        ),
+      ),
+      (
+        'dayPlanOutcome',
+        NotificationEntity.dayPlanOutcome(
+          meta: meta,
+          dayId: 'day-1',
+          succeeded: false,
+          title: 'old',
+          body: 'old body',
+        ),
+      ),
+      (
+        'syncConflict',
+        NotificationEntity.syncConflict(
+          meta: meta,
+          conflictCount: 4,
+          title: 'old',
+          body: 'old body',
+        ),
+      ),
+    ];
+
+    for (final (name, entity) in variants) {
+      test('$name keeps everything but its words', () {
+        final reworded = entity.copyWithCopy(title: 'new', body: 'new body');
+
+        expect(reworded.title, 'new');
+        expect(reworded.body, 'new body');
+        expect(reworded.runtimeType, entity.runtimeType);
+        expect(reworded.meta, meta);
+        // Same row, same fields, different words: the JSON differs in the
+        // two copy keys and nowhere else.
+        final before = entity.toJson()
+          ..remove('title')
+          ..remove('body');
+        final after = reworded.toJson()
+          ..remove('title')
+          ..remove('body');
+        expect(after, before);
+      });
+    }
   });
 }
 
@@ -311,9 +618,9 @@ class _GeneratedEntity {
       category: _category(categorySlot),
     );
 
-    // Modulo four, so the generator reaches every variant of the union
-    // rather than only the two it had when it was written.
-    return switch (variantSlot % 4) {
+    // Modulo the number of variants, so the generator reaches every one of
+    // them — the round trip is only a property of the union if it does.
+    return switch (variantSlot % 7) {
       0 => NotificationEntity.taskSuggestion(
         meta: meta,
         linkedTaskId: 'task-$idSlot',
@@ -330,6 +637,25 @@ class _GeneratedEntity {
       2 => NotificationEntity.relationshipCheckIn(
         meta: meta,
         linkedRelationshipId: 'rel-$idSlot',
+        title: 'Title $idSlot',
+        body: 'Body $idSlot',
+      ),
+      3 => NotificationEntity.goalOffTrack(
+        meta: meta,
+        linkedGoalAgentId: 'goal-$idSlot',
+        title: 'Title $idSlot',
+        body: 'Body $idSlot',
+      ),
+      4 => NotificationEntity.dayPlanOutcome(
+        meta: meta,
+        dayId: 'dayplan-2026-05-${10 + idSlot}',
+        succeeded: suggestionCountSlot.isEven,
+        title: 'Title $idSlot',
+        body: 'Body $idSlot',
+      ),
+      5 => NotificationEntity.syncConflict(
+        meta: meta,
+        conflictCount: suggestionCountSlot + 1,
         title: 'Title $idSlot',
         body: 'Body $idSlot',
       ),
@@ -450,6 +776,70 @@ NotificationEntity _checkIn({
       originatingHostId: 'host-a',
     ),
     linkedRelationshipId: linkedRelationshipId,
+    title: title,
+    body: body,
+  );
+}
+
+NotificationEntity _dayPlanOutcome({
+  required String id,
+  required String dayId,
+  bool succeeded = true,
+}) {
+  final timestamp = DateTime.utc(2026, 5, 17, 8);
+  return NotificationEntity.dayPlanOutcome(
+    meta: NotificationMeta(
+      id: id,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      scheduledFor: timestamp,
+      vectorClock: const VectorClock({'host-a': 1}),
+      originatingHostId: 'host-a',
+    ),
+    dayId: dayId,
+    succeeded: succeeded,
+    title: 'Title',
+    body: 'Body',
+  );
+}
+
+NotificationEntity _syncConflict({
+  required String id,
+  required int conflictCount,
+}) {
+  final timestamp = DateTime.utc(2026, 5, 17, 8);
+  return NotificationEntity.syncConflict(
+    meta: NotificationMeta(
+      id: id,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      scheduledFor: timestamp,
+      vectorClock: const VectorClock({'host-a': 1}),
+      originatingHostId: 'host-a',
+    ),
+    conflictCount: conflictCount,
+    title: 'Title',
+    body: 'Body',
+  );
+}
+
+NotificationEntity _goalOffTrack({
+  required String id,
+  required String linkedGoalAgentId,
+  required String title,
+  required String body,
+}) {
+  final timestamp = DateTime.utc(2026, 5, 17, 8);
+  return NotificationEntity.goalOffTrack(
+    meta: NotificationMeta(
+      id: id,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      scheduledFor: timestamp,
+      vectorClock: const VectorClock({'host-a': 1}),
+      originatingHostId: 'host-a',
+    ),
+    linkedGoalAgentId: linkedGoalAgentId,
     title: title,
     body: body,
   );

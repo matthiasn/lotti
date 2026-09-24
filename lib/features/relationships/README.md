@@ -63,7 +63,8 @@ Phones open `/people/<id>/chat`; on desktop the chat opens as a sidebar beside
 the person's page, which stays in view.
 Check-in banners use the shared nudge system and open the person page.
 Cadence reminders also have an OS-notification projection for when the app
-is closed. The deterministic cadence tier does not require an AI model.
+is closed; with the wording switch on, that reminder takes the words of the
+agent's banner. The deterministic cadence tier does not require an AI model.
 
 ## Capturing and linking
 

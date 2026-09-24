@@ -47,8 +47,8 @@ class ListRowDivider {
 /// colour, so hovering never adds/removes a 1&nbsp;px divider and the layout
 /// never shifts.
 ///
-/// Consumers: the shared config-flag list (`ConfigFlagToggleList`, behind
-/// both Config Flags and Sections), the Advanced →
+/// Consumers: the shared settings toggle card (`SettingsToggleList`, behind
+/// Config Flags, Sections and Notifications), the Advanced →
 /// Maintenance list (`MaintenanceBody`), the Matrix sync maintenance list
 /// (`MatrixSyncMaintenanceBody`), the "Add" sheet
 /// (`_CreateEntryMenuList`), and `DefinitionsListPage` — which owns

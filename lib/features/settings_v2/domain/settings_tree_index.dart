@@ -70,6 +70,7 @@ const Map<String, String> settingsNodeUrls = {
   // releases keep resolving. The greedy URL → id resolver picks these
   // up regardless of which branch they hang from.
   'preferences/theming': '/settings/theming',
+  'preferences/notifications': '/settings/notifications',
   'preferences/recording-style': '/settings/recording-style',
   'preferences/speech': '/settings/speech',
   'preferences/keyboard-shortcuts': '/settings/keyboard-shortcuts',

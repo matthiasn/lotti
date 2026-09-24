@@ -3009,6 +3009,7 @@ void main() {
           expectHides([
             '/settings/flags',
             '/settings/theming',
+            '/settings/notifications',
             '/settings/recording-style',
             '/settings/daily-os',
             '/settings/speech',

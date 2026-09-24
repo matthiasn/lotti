@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/logging_types.dart';
+import 'package:lotti/features/notifications/routing/notification_tap_router.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
@@ -14,13 +18,7 @@ import 'package:timezone/timezone.dart';
 
 abstract final class NotificationConstants {
   static const int badgeNotificationId = 1;
-  static const int taskThreshold = 5;
   static const String defaultActionName = 'Open notification';
-  static const String taskSingular = 'task';
-  static const String taskPlural = 'tasks';
-  static const String inProgressSuffix = ' in progress';
-  static const String encouragementLow = 'Nice';
-  static const String encouragementHigh = "Let's get that number down";
 }
 
 final JournalDb _db = getIt<JournalDb>();
@@ -28,6 +26,27 @@ final JournalDb _db = getIt<JournalDb>();
 bool get _skipNotificationsOnCurrentPlatform =>
     defaultTargetPlatform == TargetPlatform.windows ||
     defaultTargetPlatform == TargetPlatform.linux;
+
+/// The production tap handler: hands the payload to the registered
+/// [NotificationTapRouter].
+///
+/// Resolved at tap time rather than bound at construction. The service is
+/// registered lazily and ahead of the router, and `registerSingletons`
+/// rebuilds the router for every profile generation, so a tap has to find the
+/// router that is live *now*. A tap with nowhere to go is logged, never
+/// thrown: this runs inside the plugin's channel handler.
+void _routeTapThroughRegistry(String payload) {
+  if (!getIt.isRegistered<NotificationTapRouter>()) {
+    getIt<DomainLogger>().log(
+      LogDomain.notifications,
+      'a notification tap arrived before the tap router was registered',
+      subDomain: 'tap',
+      level: InsightLevel.warn,
+    );
+    return;
+  }
+  unawaited(getIt<NotificationTapRouter>().handleTap(payload));
+}
 
 /// Whether the platform has an app-icon badge Lotti drives.
 ///
@@ -121,14 +140,34 @@ class NotificationService {
   NotificationService({
     AppLocalizations Function()? messages,
     Future<String> Function()? timezoneLookup,
+    void Function(String payload)? onNotificationTap,
   }) : _messages = messages ?? deviceMessages,
-       _timezoneLookup = timezoneLookup ?? getLocalTimezone {
+       _timezoneLookup = timezoneLookup ?? getLocalTimezone,
+       _onNotificationTap = onNotificationTap ?? _routeTapThroughRegistry {
     initialized = _initializePlugin();
   }
+
+  /// Whether Lotti drives OS notifications on this platform at all.
+  ///
+  /// Linux and Windows have no notification surface Lotti uses, so nothing
+  /// there is worth a database read — or, for a caller deciding whether to
+  /// materialise this lazily registered service, worth constructing it.
+  static bool get notifiesOnCurrentPlatform =>
+      !_skipNotificationsOnCurrentPlatform;
+
+  /// Whether the current platform puts a count on the app icon. The
+  /// Notifications settings page offers the badge switch only where it does.
+  static bool get supportsIconBadge => _supportsIconBadge;
 
   /// Resolves the device IANA zone; injectable to exercise DST independently
   /// of the host timezone.
   final Future<String> Function() _timezoneLookup;
+
+  /// Receives the payload of a tapped notification while the app is running.
+  ///
+  /// Called with the payload exactly as it was handed to the plugin, so the
+  /// receiver decodes it; see `NotificationTapPayload`.
+  final void Function(String payload) _onNotificationTap;
 
   int badgeCount = 0;
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -151,16 +190,14 @@ class NotificationService {
   /// Completes when the constructor's fire-and-forget plugin initialization
   /// has finished.
   ///
-  /// A test seam. Construction cannot be `async`, so `initialize` is started
-  /// and left to run; nothing in the app waits for it. A test asserting on what
-  /// `initialize` handed to the platform does need to know when it got there.
+  /// Construction cannot be `async`, so `initialize` is started and left to
+  /// run. Nothing that *posts* a notification waits for it, but reading the
+  /// launch details does — see [launchNotificationPayload] — and so does a
+  /// test asserting on what `initialize` handed to the platform.
   ///
   /// It is deliberately *not* what handles failure — [_initializePlugin]
   /// catches around its own `await` for that, which is the part a `try`/`catch`
   /// around the bare call used to miss.
-  @visibleForTesting
-  // Awaited by notification tests outside DCM's `lib`-only usage graph.
-  // ignore: unused-code
   late final Future<void> initialized;
 
   /// Memoized permission request — see [_requestPermissions].
@@ -197,6 +234,7 @@ class NotificationService {
           macOS: _silentDarwinInitialization,
           iOS: _silentDarwinInitialization,
         ),
+        onDidReceiveNotificationResponse: _onNotificationResponse,
       );
     } catch (exception, stackTrace) {
       getIt<DomainLogger>().error(
@@ -206,6 +244,57 @@ class NotificationService {
         subDomain: 'initialization',
       );
     }
+  }
+
+  /// The plugin's response callback: a tap while the Dart side is up.
+  ///
+  /// Every platform delivers a tap here once `initialize` has run — Android
+  /// through `onNewIntent`, iOS and macOS through the notification-center
+  /// delegate. A tap from *before* that is the launch case, which
+  /// [launchNotificationPayload] covers.
+  void _onNotificationResponse(NotificationResponse response) {
+    final payload = _tapPayloadOf(response);
+    if (payload == null) return;
+    _onNotificationTap(payload);
+  }
+
+  /// The routable payload of [response], or null when it carries none.
+  ///
+  /// Only a tap on the notification itself routes. Lotti defines no action
+  /// buttons, so the other response types cannot occur today; when one is
+  /// added it must decide for itself where it leads rather than inherit the
+  /// body tap's destination.
+  static String? _tapPayloadOf(NotificationResponse response) {
+    if (response.notificationResponseType !=
+        NotificationResponseType.selectedNotification) {
+      return null;
+    }
+    final payload = response.payload;
+    if (payload == null || payload.isEmpty) return null;
+    return payload;
+  }
+
+  /// The payload of the notification that launched this process, if a
+  /// notification did.
+  ///
+  /// A tap that arrives before the Dart side of the plugin is initialised is
+  /// never replayed to [_onNotificationResponse]: Android answers from the
+  /// launching intent and iOS/macOS park the response natively, and both hand
+  /// it out only through `getNotificationAppLaunchDetails`. Read once at boot
+  /// by `routeNotificationLaunch`.
+  ///
+  /// Not gated on [enableNotificationsFlag]: the alert already exists and the
+  /// user already tapped it. Platforms Lotti does not notify on are skipped
+  /// before the plugin is touched.
+  Future<String?> launchNotificationPayload() async {
+    if (_skipNotificationsOnCurrentPlatform) return null;
+    await initialized;
+    final details = await flutterLocalNotificationsPlugin
+        .getNotificationAppLaunchDetails();
+    if (details == null || !details.didNotificationLaunchApp) return null;
+    final response = details.notificationResponse;
+    if (response == null) return null;
+    return _tapPayloadOf(response);
   }
 
   /// Resolves the local [Location] for scheduling, degrading to [local]
@@ -307,22 +396,26 @@ class NotificationService {
         ?.requestNotificationsPermission();
   }
 
-  /// Badge presentation. iOS never alerts for the badge — the number on the
-  /// icon is the whole message there — while macOS alerts for a non-zero count
-  /// so the "N tasks in progress" text is actually delivered.
-  NotificationDetails _badgeDetails({required bool presentAlertOnDesktop}) =>
-      NotificationDetails(
-        iOS: DarwinNotificationDetails(
-          presentAlert: false,
-          presentBadge: true,
-          badgeNumber: badgeCount,
-        ),
-        macOS: DarwinNotificationDetails(
-          presentAlert: presentAlertOnDesktop,
-          presentBadge: true,
-          badgeNumber: badgeCount,
-        ),
-      );
+  /// Badge presentation: the number on the icon and nothing else, on both
+  /// Darwin platforms.
+  ///
+  /// macOS used to alert for a non-zero count so that a "3 tasks in
+  /// progress" line was delivered with it — which made every entry write
+  /// that changed the count post a notification, in hard-coded English,
+  /// about a number the icon already shows. The badge is a count, not an
+  /// alert; the alerts are the inbox rows.
+  NotificationDetails _badgeDetails() => NotificationDetails(
+    iOS: DarwinNotificationDetails(
+      presentAlert: false,
+      presentBadge: true,
+      badgeNumber: badgeCount,
+    ),
+    macOS: DarwinNotificationDetails(
+      presentAlert: false,
+      presentBadge: true,
+      badgeNumber: badgeCount,
+    ),
+  );
 
   /// Android presentation, or null where it would be discarded.
   ///
@@ -404,7 +497,8 @@ class NotificationService {
         : null,
   );
 
-  /// Reflects the number of tasks in progress on the app icon.
+  /// Reflects the number of tasks in progress on the app icon — silently:
+  /// the count is the whole message, on both Darwin platforms.
   ///
   /// Runs after every entry write, which makes it the first thing to resolve
   /// the lazily registered service — and therefore the first thing that could
@@ -416,7 +510,10 @@ class NotificationService {
     if (!_supportsIconBadge) {
       return;
     }
-    if (!await _notificationsAllowed()) {
+    // The badge has its own switch beneath the master one; either off means
+    // the icon shows nothing.
+    if (!await _notificationsAllowed() ||
+        !await _db.getConfigFlag(showTaskBadgeFlag)) {
       await _clearBadge();
       return;
     }
@@ -441,17 +538,14 @@ class NotificationService {
       id: NotificationConstants.badgeNotificationId,
     );
 
-    final label = badgeCount == 1
-        ? NotificationConstants.taskSingular
-        : NotificationConstants.taskPlural;
-
+    // Empty title and body: a notification whose only content is its badge
+    // updates the icon and shows nothing, in the foreground or the
+    // background — the same shape [_zeroBadge] relies on to clear it.
     await flutterLocalNotificationsPlugin.show(
       id: NotificationConstants.badgeNotificationId,
-      title: '$badgeCount $label${NotificationConstants.inProgressSuffix}',
-      body: badgeCount < NotificationConstants.taskThreshold
-          ? NotificationConstants.encouragementLow
-          : NotificationConstants.encouragementHigh,
-      notificationDetails: _badgeDetails(presentAlertOnDesktop: true),
+      title: '',
+      body: '',
+      notificationDetails: _badgeDetails(),
     );
   }
 
@@ -504,7 +598,7 @@ class NotificationService {
       id: NotificationConstants.badgeNotificationId,
       title: '',
       body: '',
-      notificationDetails: _badgeDetails(presentAlertOnDesktop: false),
+      notificationDetails: _badgeDetails(),
     );
   }
 
@@ -518,6 +612,12 @@ class NotificationService {
     );
 
     if (alertAtTime != null) {
+      if (!await _db.getConfigFlag(notifyHabitRemindersFlag)) {
+        // Habit reminders are switched off: drop the alarm this habit may
+        // still hold rather than let it fire once more.
+        await cancelNotification(habitDefinition.id.hashCode);
+        return;
+      }
       final location = _resolveLocation(await _timezoneLookup());
       final now = TZDateTime.from(clock.now(), location);
       // Construct a calendar date: adding 24 hours can skip or repeat a day
@@ -550,12 +650,20 @@ class NotificationService {
         showOnDesktop: false,
         notifyAt: notifyAt,
         notificationId: habitDefinition.id.hashCode,
+        // The habits page rather than the habit: there is no habit detail
+        // route, and the page is where the day's completions are recorded.
+        deepLink: '/habits',
       );
     }
   }
 
   /// Schedules the requested calendar date and wall-clock time in the device
   /// zone. Use [scheduleNotificationAt] when [notifyAt] represents an instant.
+  ///
+  /// [deepLink] is the tap payload, handed back verbatim by the OS when the
+  /// user taps: a bare route for a notification without an inbox row, or an
+  /// encoded `NotificationTapPayload` for one that projects a row. The same
+  /// holds for [scheduleNotificationAt] and [showNotificationNow].
   Future<void> scheduleNotification({
     required String title,
     required String body,
@@ -667,5 +775,17 @@ class NotificationService {
     }
 
     await flutterLocalNotificationsPlugin.cancel(id: notificationId);
+  }
+
+  /// Drops every alarm and delivered alert this app holds with the OS — what
+  /// switching notifications off means for alarms already armed weeks ahead.
+  /// The rows they projected stay in the inbox; switching back on re-arms the
+  /// ones still ahead through `NotificationScheduler.reconcile`.
+  Future<void> cancelAllNotifications() async {
+    if (_skipNotificationsOnCurrentPlatform) {
+      return;
+    }
+
+    await flutterLocalNotificationsPlugin.cancelAll();
   }
 }

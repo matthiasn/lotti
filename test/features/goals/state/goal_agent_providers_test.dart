@@ -27,10 +27,12 @@ import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_runtime_maintenance.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
 import 'package:lotti/features/goals/service/goal_chat_service.dart';
+import 'package:lotti/features/goals/service/goal_off_track_alert_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/sync/goal_signal_sync_dispatcher.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_dock.dart';
@@ -60,8 +62,14 @@ void main() {
 
   setUp(() async {
     await setUpTestGetIt(
-      additionalSetup: () =>
-          getIt.registerSingleton<TimeService>(MockTimeService()),
+      additionalSetup: () => getIt
+        ..registerSingleton<TimeService>(MockTimeService())
+        // `goalOffTrackAlertServiceProvider` resolves the notification
+        // repository straight from the registry, the way the relationship
+        // reminder does.
+        ..registerSingleton<NotificationRepository>(
+          MockNotificationRepository(),
+        ),
     );
     syncStream = StreamController<Set<String>>.broadcast();
     addTearDown(syncStream.close);
@@ -156,6 +164,10 @@ void main() {
     expect(container.read(goalSignalReaderProvider), isA<GoalSignalReader>());
     expect(container.read(goalAgentPhaseAProvider), isA<GoalAgentPhaseA>());
     expect(container.read(goalAgentServiceProvider), isA<GoalAgentService>());
+    expect(
+      container.read(goalOffTrackAlertServiceProvider),
+      isA<GoalOffTrackAlertService>(),
+    );
     expect(container.read(goalChatServiceProvider), isA<GoalChatService>());
     expect(
       container.read(goalRuntimeMaintenanceProvider),

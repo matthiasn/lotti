@@ -37,6 +37,7 @@ import 'package:lotti/features/settings/ui/pages/health_import_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
+import 'package:lotti/features/settings/ui/pages/notification_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/recording_style_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/sections_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
@@ -175,6 +176,7 @@ void main() {
         '/settings/daily-os',
         '/settings/sections',
         '/settings/flags',
+        '/settings/notifications',
         '/settings/recording-style',
         '/settings/theming',
         '/settings/keyboard-shortcuts',
@@ -1604,6 +1606,13 @@ void main() {
       expectPreferenceLeafStack(
         '/settings/recording-style',
         isA<RecordingStyleSettingsPage>(),
+      );
+    });
+
+    test('buildPages builds NotificationSettingsPage under the hub', () {
+      expectPreferenceLeafStack(
+        '/settings/notifications',
+        isA<NotificationSettingsPage>(),
       );
     });
 

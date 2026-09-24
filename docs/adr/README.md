@@ -139,4 +139,7 @@ Each ADR should contain:
 - [`0069-model-checked-scheduled-wake-leases.md`](./0069-model-checked-scheduled-wake-leases.md)
 - [`0070-model-checked-digest-recovery-and-processing-jobs.md`](./0070-model-checked-digest-recovery-and-processing-jobs.md)
 - [`0071-model-checked-agent-message-log.md`](./0071-model-checked-agent-message-log.md)
+- [`0072-notification-producers-one-episode-contract.md`](./0072-notification-producers-one-episode-contract.md)
+- [`0073-goal-off-track-alerts-on-the-os-channel.md`](./0073-goal-off-track-alerts-on-the-os-channel.md)
+- [`0074-agent-worded-alerts-restate-an-armed-episode.md`](./0074-agent-worded-alerts-restate-an-armed-episode.md)
 - [`0076-model-checked-agent-head.md`](./0076-model-checked-agent-head.md)

@@ -150,6 +150,11 @@ SettingsTreeLabelResolver settingsTreeLabelsFor(BuildContext context) {
           title: m.settingsCelebrationsTitle,
           desc: m.settingsCelebrationsSubtitle,
         );
+      case 'preferences/notifications':
+        return (
+          title: m.settingsNotificationsTitle,
+          desc: m.settingsNotificationsSubtitle,
+        );
       case 'preferences/recording-style':
         return (
           title: m.settingsRecordingStyleTitle,

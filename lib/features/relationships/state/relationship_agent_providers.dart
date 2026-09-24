@@ -16,6 +16,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/features/notifications/producer/agent_alert_copy.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
@@ -156,6 +157,11 @@ final relationshipAgentWorkflowProvider = Provider<RelationshipAgentWorkflow>(
     aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
     domainLogger: ref.watch(domainLoggerProvider),
     categoryProfileLookup: ref.watch(relationshipCategoryProfileLookupProvider),
+    alertCopy: AgentAlertCopy.fromFlags(
+      alerts: ref.watch(relationshipReminderServiceProvider),
+      journalDb: ref.watch(journalDbProvider),
+      logger: ref.watch(domainLoggerProvider),
+    ),
   ),
   name: 'relationshipAgentWorkflowProvider',
 );

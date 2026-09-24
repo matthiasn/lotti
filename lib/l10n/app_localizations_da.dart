@@ -3613,9 +3613,6 @@ class AppLocalizationsDa extends AppLocalizations {
       'Erstat Naviger-knappen med en menuknap øverst, der åbner et sidepanel med alle sektioner og dine seneste søgninger.';
 
   @override
-  String get configFlagEnableNotifications => 'Aktivere notifikationer?';
-
-  @override
   String get configFlagEnableNotificationsDescription =>
       'Modtag notifikationer om påmindelser, opdateringer og vigtige begivenheder.';
 
@@ -6231,9 +6228,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get eventsFilterTooltip => 'Filtrer begivenheder';
 
   @override
-  String get eventsNoResults => 'Ingen matchende begivenheder';
-
-  @override
   String eventsMetricPhotos(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6257,6 +6251,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get eventsNewEvent => 'Ny begivenhed';
+
+  @override
+  String get eventsNoResults => 'Ingen matchende begivenheder';
 
   @override
   String get eventsPageTitle => 'Begivenheder';
@@ -7201,6 +7198,15 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalNudgeStatusSuperseded => 'Erstattet';
+
+  @override
+  String get goalOffTrackNotificationBody =>
+      'Et godt tidspunkt at komme tilbage på sporet.';
+
+  @override
+  String goalOffTrackNotificationTitle(String goal) {
+    return '$goal er bagud';
+  }
 
   @override
   String goalPatternBusiestHour(String hour) {
@@ -13660,6 +13666,97 @@ class AppLocalizationsDa extends AppLocalizations {
   String get settingsMeasurableValueKindNumber => 'Tal';
 
   @override
+  String get settingsNotificationsAgentCopyDescription =>
+      'En mål- eller kontaktadvarsel bruger ordene fra agentens banner i stedet for en fast linje. Den kan nævne detaljer og vises på låseskærmen.';
+
+  @override
+  String get settingsNotificationsAgentCopyTitle =>
+      'Advarsler med agentens egne ord';
+
+  @override
+  String get settingsNotificationsAllowTitle => 'Tillad notifikationer';
+
+  @override
+  String get settingsNotificationsBadgeDescription =>
+      'Viser på appikonet, hvor mange opgaver der er i gang.';
+
+  @override
+  String get settingsNotificationsBadgeTitle => 'Antal opgaver på appikonet';
+
+  @override
+  String get settingsNotificationsCheckInRemindersDescription =>
+      'Når det er tid til at kontakte nogen.';
+
+  @override
+  String get settingsNotificationsCheckInRemindersTitle => 'Kontaktpåmindelser';
+
+  @override
+  String get settingsNotificationsDayPlanOutcomesDescription =>
+      'Når en dagsplan udarbejdet i baggrunden er klar eller ikke blev færdig.';
+
+  @override
+  String get settingsNotificationsDayPlanOutcomesTitle =>
+      'Resultater af dagsplanen';
+
+  @override
+  String get settingsNotificationsExplanation =>
+      'Advarsler kommer via din enheds notifikationer. Vælg, hvilke der er en notifikation værd. Alt undtagen vanepåmindelser havner også under Notifikationer i Lotti.';
+
+  @override
+  String get settingsNotificationsGoalAlertsDescription =>
+      'Når et mål kommer ud af kurs.';
+
+  @override
+  String get settingsNotificationsGoalAlertsTitle => 'Måladvarsler';
+
+  @override
+  String get settingsNotificationsHabitAutoCompletionsDescription =>
+      'Når Lotti afkrydser en vane for dig ud fra dine data.';
+
+  @override
+  String get settingsNotificationsHabitAutoCompletionsTitle =>
+      'Automatisk afkrydsede vaner';
+
+  @override
+  String get settingsNotificationsHabitRemindersDescription =>
+      'På det tidspunkt, du har sat for en vane.';
+
+  @override
+  String get settingsNotificationsHabitRemindersTitle => 'Vanepåmindelser';
+
+  @override
+  String get settingsNotificationsKindsHeading => 'Giv mig besked om';
+
+  @override
+  String get settingsNotificationsKindsNote =>
+      'Slår du en type fra, stopper kun dens advarsler. Dens poster bliver under Notifikationer, undtagen vanepåmindelser, som ikke har nogen post der.';
+
+  @override
+  String get settingsNotificationsSubtitle =>
+      'Hvilke advarsler der når dig som notifikationer';
+
+  @override
+  String get settingsNotificationsSyncConflictsDescription =>
+      'Når en post er redigeret på to enheder og kræver din gennemgang.';
+
+  @override
+  String get settingsNotificationsSyncConflictsTitle =>
+      'Synkroniseringskonflikter';
+
+  @override
+  String get settingsNotificationsTaskSuggestionsDescription =>
+      'Når en agent har forslag til en opgave, eller en opgave er forsinket.';
+
+  @override
+  String get settingsNotificationsTaskSuggestionsTitle => 'Opgaveforslag';
+
+  @override
+  String get settingsNotificationsTitle => 'Notifikationer';
+
+  @override
+  String get settingsNotificationsWordingHeading => 'Formulering';
+
+  @override
   String get settingsOnboardingActionSubtitle =>
       'Genopblæs velkomstflowet — forbind din AI-hjerne og skab en opgave';
 
@@ -13716,7 +13813,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get settingsPreferencesSubtitle =>
-      'Tematisering, animationer, indspilningsstil, tale og genveje';
+      'Tematisering, animationer, notifikationer, indspilningsstil, tale og genveje';
 
   @override
   String get settingsPreferencesTitle => 'Præferencer';

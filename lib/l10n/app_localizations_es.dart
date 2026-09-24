@@ -3661,9 +3661,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Sustituye el botón Navegar por un botón de menú arriba que abre una barra lateral con todas las secciones y tus búsquedas recientes.';
 
   @override
-  String get configFlagEnableNotifications => '¿Habilitar notificaciones?';
-
-  @override
   String get configFlagEnableNotificationsDescription =>
       'Recibir notificaciones de recordatorios, actualizaciones y eventos importantes.';
 
@@ -6314,9 +6311,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventsFilterTooltip => 'Filtrar eventos';
 
   @override
-  String get eventsNoResults => 'No hay eventos que coincidan';
-
-  @override
   String eventsMetricPhotos(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6340,6 +6334,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get eventsNewEvent => 'Nuevo evento';
+
+  @override
+  String get eventsNoResults => 'No hay eventos que coincidan';
 
   @override
   String get eventsPageTitle => 'Eventos';
@@ -7299,6 +7296,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get goalNudgeStatusSuperseded => 'Reemplazado';
+
+  @override
+  String get goalOffTrackNotificationBody => 'Un buen momento para retomarlo.';
+
+  @override
+  String goalOffTrackNotificationTitle(String goal) {
+    return '$goal: vas con retraso';
+  }
 
   @override
   String goalPatternBusiestHour(String hour) {
@@ -13835,6 +13840,101 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsMeasurableValueKindNumber => 'Número';
 
   @override
+  String get settingsNotificationsAgentCopyDescription =>
+      'Un aviso de objetivo o de contacto usa las palabras del banner del agente en lugar de una línea fija. Puede mencionar detalles y se muestra en la pantalla de bloqueo.';
+
+  @override
+  String get settingsNotificationsAgentCopyTitle =>
+      'Avisos con las palabras del agente';
+
+  @override
+  String get settingsNotificationsAllowTitle => 'Permitir notificaciones';
+
+  @override
+  String get settingsNotificationsBadgeDescription =>
+      'Muestra en el icono de la app cuántas tareas hay en curso.';
+
+  @override
+  String get settingsNotificationsBadgeTitle =>
+      'Número de tareas en el icono de la app';
+
+  @override
+  String get settingsNotificationsCheckInRemindersDescription =>
+      'Cuando toca ponerte en contacto con alguien.';
+
+  @override
+  String get settingsNotificationsCheckInRemindersTitle =>
+      'Recordatorios de contacto';
+
+  @override
+  String get settingsNotificationsDayPlanOutcomesDescription =>
+      'Cuando un plan del día preparado en segundo plano está listo o no se completó.';
+
+  @override
+  String get settingsNotificationsDayPlanOutcomesTitle =>
+      'Resultados del plan del día';
+
+  @override
+  String get settingsNotificationsExplanation =>
+      'Los avisos llegan por las notificaciones de tu dispositivo. Elige cuáles merecen una notificación. Todo, salvo los recordatorios de hábitos, queda también en la campana de Lotti.';
+
+  @override
+  String get settingsNotificationsGoalAlertsDescription =>
+      'Cuando un objetivo se desvía del rumbo.';
+
+  @override
+  String get settingsNotificationsGoalAlertsTitle => 'Avisos de objetivos';
+
+  @override
+  String get settingsNotificationsHabitAutoCompletionsDescription =>
+      'Cuando Lotti marca un hábito por ti a partir de tus datos.';
+
+  @override
+  String get settingsNotificationsHabitAutoCompletionsTitle =>
+      'Hábitos marcados automáticamente';
+
+  @override
+  String get settingsNotificationsHabitRemindersDescription =>
+      'A la hora que fijaste en un hábito.';
+
+  @override
+  String get settingsNotificationsHabitRemindersTitle =>
+      'Recordatorios de hábitos';
+
+  @override
+  String get settingsNotificationsKindsHeading => 'Avisarme sobre';
+
+  @override
+  String get settingsNotificationsKindsNote =>
+      'Desactivar un tipo solo detiene sus avisos. Sus entradas siguen apareciendo en la campana, salvo los recordatorios de hábitos, que no tienen entrada allí.';
+
+  @override
+  String get settingsNotificationsSubtitle =>
+      'Qué avisos te llegan como notificación';
+
+  @override
+  String get settingsNotificationsSyncConflictsDescription =>
+      'Cuando una entrada se editó en dos dispositivos y necesita tu revisión.';
+
+  @override
+  String get settingsNotificationsSyncConflictsTitle =>
+      'Conflictos de sincronización';
+
+  @override
+  String get settingsNotificationsTaskSuggestionsDescription =>
+      'Cuando un agente tiene sugerencias sobre una tarea o una tarea está atrasada.';
+
+  @override
+  String get settingsNotificationsTaskSuggestionsTitle =>
+      'Sugerencias de tareas';
+
+  @override
+  String get settingsNotificationsTitle => 'Notificaciones';
+
+  @override
+  String get settingsNotificationsWordingHeading => 'Redacción';
+
+  @override
   String get settingsOnboardingActionSubtitle =>
       'Vuelve a abrir el flujo de bienvenida: conecta tu cerebro de IA y crea una tarea';
 
@@ -13891,7 +13991,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsPreferencesSubtitle =>
-      'Temas, animaciones, estilo de grabación, voz y atajos';
+      'Temas, animaciones, notificaciones, estilo de grabación, voz y atajos';
 
   @override
   String get settingsPreferencesTitle => 'Preferencias';

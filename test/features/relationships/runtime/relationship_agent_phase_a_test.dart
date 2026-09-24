@@ -1463,11 +1463,22 @@ class _RecordingReminderSink implements RelationshipReminderSink {
 
   @override
   Future<void> arm({
-    required RelationshipEntry relationship,
+    required RelationshipEntry subject,
     required RelationshipCadenceDerivation derivation,
   }) async {
-    armed.add((relationshipId: relationship.meta.id, derivation: derivation));
+    armed.add((relationshipId: subject.meta.id, derivation: derivation));
     _events.add('arm');
+  }
+
+  /// Phase A never re-words: the seam belongs to Phase B (ADR 0074), so a
+  /// call landing here would be a wrong-tier defect.
+  @override
+  Future<void> restate(
+    String subjectId, {
+    required String title,
+    String? body,
+  }) async {
+    throw StateError('Phase A must not restate ($subjectId)');
   }
 
   @override

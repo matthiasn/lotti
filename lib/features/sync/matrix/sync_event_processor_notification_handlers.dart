@@ -22,12 +22,25 @@ extension _NotificationHandlers on SyncEventProcessor {
     VectorClock? canonicalVectorClock;
 
     if (db != null && notification != null) {
+      final existed = await db.notificationById(notification.meta.id) != null;
       final saved = await db.upsertNotification(notification);
       canonicalVectorClock =
           saved?.meta.vectorClock ??
           (await db.notificationById(notification.meta.id))?.meta.vectorClock;
       if (saved != null) {
-        await _notificationScheduler?.schedule(saved);
+        // A full row for one this device already holds is a content change —
+        // an agent re-wording an alert (ADR 0074), or a peer's own bake of
+        // the same episode. If that row's alarm already fired here, the
+        // scheduler would show it again: `schedule` announces a due row on
+        // the spot. The bell carries the new words either way. A row that
+        // arrives with a lifecycle mark still schedules, which cancels.
+        final rewordedAfterDue =
+            existed &&
+            !_hasLifecycleMark(saved) &&
+            !saved.meta.scheduledFor.isAfter(clock.now());
+        if (!rewordedAfterDue) {
+          await _notificationScheduler?.schedule(saved);
+        }
         _updateNotifications.notify(
           {
             saved.id,
@@ -64,6 +77,11 @@ extension _NotificationHandlers on SyncEventProcessor {
       canonicalVectorClock: canonicalVectorClock,
     );
   }
+
+  static bool _hasLifecycleMark(NotificationEntity row) =>
+      row.meta.seenAt != null ||
+      row.meta.actedOnAt != null ||
+      row.meta.deletedAt != null;
 
   Future<void> _applyNotificationStateUpdateMessage(
     SyncNotificationStateUpdate msg,

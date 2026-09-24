@@ -35,6 +35,7 @@ import 'package:lotti/features/goals/service/goal_checkin_compactor.dart';
 import 'package:lotti/features/goals/service/goal_checkin_digest_service.dart';
 import 'package:lotti/features/goals/service/goal_checkin_notifier.dart';
 import 'package:lotti/features/goals/service/goal_mirror_service.dart';
+import 'package:lotti/features/goals/service/goal_off_track_alert_service.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/sync/goal_signal_sync_dispatcher.dart';
 import 'package:lotti/features/goals/ui/goal_routes.dart';
@@ -43,6 +44,8 @@ import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
 import 'package:lotti/features/goals/workflow/goal_criterion_names.dart';
 import 'package:lotti/features/goals/workflow/goal_tool_dispatcher.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/notifications/producer/agent_alert_copy.dart';
+import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
@@ -69,11 +72,22 @@ final goalSignalReaderProvider = Provider<GoalSignalReader>(
   name: 'goalSignalReaderProvider',
 );
 
+/// The OS-alert projection of the goal's slip verdict (ADR 0073) — durable
+/// inbox rows first, OS alarms second.
+final goalOffTrackAlertServiceProvider = Provider<GoalOffTrackAlertService>(
+  (ref) => GoalOffTrackAlertService(
+    notificationRepository: getIt<NotificationRepository>(),
+    domainLogger: ref.watch(domainLoggerProvider),
+  ),
+  name: 'goalOffTrackAlertServiceProvider',
+);
+
 final goalAgentPhaseAProvider = Provider<GoalAgentPhaseA>(
   (ref) => GoalAgentPhaseA(
     repository: ref.watch(agentRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     signalReader: ref.watch(goalSignalReaderProvider),
+    offTrackAlerts: ref.watch(goalOffTrackAlertServiceProvider),
     // A locally armed escalation must not wait out the hourly poll.
     onEscalationArmed: () =>
         ref.read(scheduledWakeManagerProvider).requestCheck(),
@@ -130,6 +144,7 @@ final goalAgentServiceProvider = Provider<GoalAgentService>(
     updateNotifications: getIt<UpdateNotifications>(),
     goalMirrorService: ref.watch(goalMirrorServiceProvider),
     checkInNotifier: ref.watch(goalCheckInNotifierProvider),
+    offTrackAlerts: ref.watch(goalOffTrackAlertServiceProvider),
   ),
   name: 'goalAgentServiceProvider',
 );
@@ -213,6 +228,11 @@ final goalAgentWorkflowProvider = Provider<GoalAgentWorkflow>(
     checkInDigestService: ref.watch(goalCheckInDigestServiceProvider),
     criterionNameReader: ref.watch(goalCriterionNameReaderProvider),
     domainLogger: ref.watch(domainLoggerProvider),
+    alertCopy: AgentAlertCopy.fromFlags(
+      alerts: ref.watch(goalOffTrackAlertServiceProvider),
+      journalDb: ref.watch(journalDbProvider),
+      logger: ref.watch(domainLoggerProvider),
+    ),
   ),
   name: 'goalAgentWorkflowProvider',
 );

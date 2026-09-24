@@ -110,6 +110,7 @@ void main() {
       expect(rowIds, [
         'preferences/theming',
         'preferences/animations',
+        'preferences/notifications',
         'preferences/recording-style',
         'preferences/speech',
         'preferences/keyboard-shortcuts',
@@ -154,6 +155,7 @@ void main() {
         'preferences/theming': '/settings/theming',
         // Animations came from Advanced and kept that URL.
         'preferences/animations': '/settings/advanced/animations',
+        'preferences/notifications': '/settings/notifications',
         'preferences/recording-style': '/settings/recording-style',
         'preferences/speech': '/settings/speech',
         'preferences/keyboard-shortcuts': '/settings/keyboard-shortcuts',

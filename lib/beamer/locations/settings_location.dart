@@ -36,6 +36,7 @@ import 'package:lotti/features/settings/ui/pages/health_import_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
+import 'package:lotti/features/settings/ui/pages/notification_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/recording_style_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/sections_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
@@ -121,6 +122,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings/daily-os',
     '/settings/sections',
     '/settings/flags',
+    '/settings/notifications',
     '/settings/recording-style',
     '/settings/theming',
     '/settings/keyboard-shortcuts',
@@ -657,6 +659,14 @@ class SettingsLocation extends BeamLocation<BeamState> {
           child: OnboardingSettingsPage(),
         ),
 
+      // Notifications — a preference leaf like recording style.
+      if (pathContains('notifications'))
+        BeamPage(
+          key: const ValueKey('settings-notifications'),
+          popToNamed: branchHub,
+          child: const NotificationSettingsPage(),
+        ),
+
       // Recording style — top-level leaf, opens directly.
       if (pathContains('recording-style'))
         BeamPage(
@@ -789,6 +799,7 @@ const String _animationsPath = '/settings/advanced/animations';
 const List<String> preferencesLeafPaths = [
   '/settings/theming',
   _animationsPath,
+  '/settings/notifications',
   '/settings/recording-style',
   '/settings/speech',
   '/settings/keyboard-shortcuts',

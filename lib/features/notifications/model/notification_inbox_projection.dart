@@ -56,6 +56,12 @@ bool showsBeforeScheduledTime(NotificationEntity entity) => switch (entity) {
   // Written at the moment of completion, so like the task rows it is due on
   // arrival and only ever "upcoming" through clock skew between devices.
   HabitAutoCompletedNotification() => true,
+  // Armed for the next alert hour on the tick that saw the slip; the bell
+  // would otherwise carry "off track" for hours before the alert says it.
+  GoalOffTrackNotification() => false,
+  // Both written the moment the thing happened, so due on arrival.
+  DayPlanOutcomeNotification() => true,
+  SyncConflictNotification() => true,
 };
 
 String _inboxIdentityKey(NotificationEntity entity) {

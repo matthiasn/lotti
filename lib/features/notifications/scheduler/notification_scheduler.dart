@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/notifications_db.dart';
+import 'package:lotti/features/notifications/model/notification_tap_payload.dart';
 import 'package:lotti/services/notification_service.dart';
 
 class NotificationScheduler {
@@ -13,10 +14,17 @@ class NotificationScheduler {
   NotificationScheduler({
     required this._notificationsDb,
     required this._notificationServiceProvider,
+    required this._isKindEnabled,
   });
 
   final NotificationsDb _notificationsDb;
   final NotificationService Function() _notificationServiceProvider;
+
+  /// Whether the user still wants [NotificationEntity]s of this kind on the
+  /// OS channel — the per-kind switch on the Notifications settings page.
+  /// Consulted on every arm, so a kind switched off stops at the next write
+  /// or reconcile while the row itself stays in the inbox.
+  final Future<bool> Function(NotificationEntity entity) _isKindEnabled;
 
   NotificationService get _notificationService =>
       _notificationServiceProvider();
@@ -44,6 +52,12 @@ class NotificationScheduler {
       await _notificationService.cancelNotification(notificationId);
       return;
     }
+    if (!await _isKindEnabled(entity)) {
+      // The row is the inbox's to keep; the OS must forget the alarm it may
+      // already hold for it.
+      await _notificationService.cancelNotification(notificationId);
+      return;
+    }
 
     final effectiveNow = now ?? DateTime.now();
     if (!entity.meta.scheduledFor.isAfter(effectiveNow)) {
@@ -53,7 +67,7 @@ class NotificationScheduler {
         notificationId: notificationId,
         showOnMobile: true,
         showOnDesktop: true,
-        deepLink: _deepLinkFor(entity),
+        deepLink: _tapPayloadFor(entity),
       );
       return;
     }
@@ -65,7 +79,7 @@ class NotificationScheduler {
       notificationId: notificationId,
       showOnMobile: true,
       showOnDesktop: true,
-      deepLink: _deepLinkFor(entity),
+      deepLink: _tapPayloadFor(entity),
     );
   }
 
@@ -77,14 +91,16 @@ class NotificationScheduler {
   /// without this a reminder armed weeks ahead silently stops existing at the
   /// OS level. The same gap exists for rows written while the
   /// `enable_notifications` flag was off (the platform calls are gated on it),
-  /// which is why flipping that flag on also runs this.
+  /// which is why flipping that flag on also runs this. A per-kind switch runs
+  /// it too: [schedule] re-arms the rows of a kind switched on and cancels
+  /// the alarms of one switched off.
   ///
   /// **Only future rows.** A row that is already due needs no alarm: it is by
   /// definition sitting in the inbox, on the device the user is holding.
   /// Re-announcing it would mean an OS banner *per launch*, forever — showing
-  /// a notification does not mark the row, and with no tap handler wired the
-  /// only way to clear one is the in-app bell. That turns every unacknowledged
-  /// alert into a permanent startup nag.
+  /// a notification does not mark the row; only a tap on it or on the bell
+  /// does. That turns every unacknowledged alert into a permanent startup
+  /// nag.
   ///
   /// The query already filters to unseen/unacted/undeleted rows, so a row the
   /// user dealt with on any device is never revived. [NotificationService] is
@@ -97,17 +113,28 @@ class NotificationScheduler {
     }
   }
 
+  /// What the OS hands back when the notification is tapped: where to land,
+  /// and which row to mark seen once there.
+  String _tapPayloadFor(NotificationEntity entity) => NotificationTapPayload(
+    route: _routeFor(entity),
+    inboxId: entity.id,
+  ).encode();
+
   /// Where tapping the OS notification should land.
   ///
   /// Exhaustive over the union rather than reading `linkedEntityId`: that
   /// getter answers "some entity" for every variant, and routing a
   /// relationship id into `/tasks/` produced a dead route rather than a
   /// visible error.
-  String? _deepLinkFor(NotificationEntity entity) => switch (entity) {
+  String _routeFor(NotificationEntity entity) => switch (entity) {
     TaskSuggestionNotification(:final linkedTaskId) => '/tasks/$linkedTaskId',
     TaskOverdueNotification(:final linkedTaskId) => '/tasks/$linkedTaskId',
     RelationshipCheckInNotification(:final linkedRelationshipId) =>
       '/people/$linkedRelationshipId',
     HabitAutoCompletedNotification() => '/habits',
+    GoalOffTrackNotification(:final linkedGoalAgentId) =>
+      '/goals/details/$linkedGoalAgentId',
+    DayPlanOutcomeNotification() => '/calendar',
+    SyncConflictNotification() => '/settings/advanced/conflicts',
   };
 }

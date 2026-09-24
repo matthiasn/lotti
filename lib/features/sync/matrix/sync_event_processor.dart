@@ -35,6 +35,7 @@ import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 import 'package:lotti/features/ai_consumption/service/attribution_carrier_projector.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_keys.dart';
+import 'package:lotti/features/notifications/preferences/notification_preference_effects.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
@@ -116,6 +117,13 @@ class UnrecoverableSyncPayloadException implements Exception {
 }
 
 /// Decodes timeline events from Matrix and persists them locally.
+/// Where an apply parks work that must run only once the journal
+/// transaction the caller wrapped it in has committed — platform calls and
+/// alarm reconciliation that would otherwise hold the journal writer. The
+/// caller runs every parked action after the commit; an apply invoked without
+/// a sink runs such work inline.
+typedef AfterCommitSink = void Function(Future<void> Function() action);
+
 class SyncEventProcessor {
   SyncEventProcessor({
     required this._loggingService,
@@ -132,6 +140,7 @@ class SyncEventProcessor {
     this._vectorClockService,
     this._notificationsDb,
     this._notificationScheduler,
+    this._notificationPreferenceEffects,
     this._syncNodeProfileRepository,
     this._fts5Db,
   }) : _documentsDirectory =
@@ -144,6 +153,12 @@ class SyncEventProcessor {
 
   final DomainLogger _loggingService;
   final DomainLogger? _domainLogger;
+
+  /// Builds the OS-side consequences of a notification preference for the
+  /// journal database a synced flag lands in (`NotificationPreferenceEffects`);
+  /// null on a device without a notification stack.
+  final NotificationPreferenceEffects Function(JournalDb journalDb)?
+  _notificationPreferenceEffects;
   final UpdateNotifications _updateNotifications;
   final AiConfigRepository _aiConfigRepository;
   final SavedTaskFiltersRepository _savedTaskFiltersRepository;
@@ -392,11 +407,13 @@ class SyncEventProcessor {
   Future<SyncApplyDiagnostics?> apply({
     required PreparedSyncEvent prepared,
     required JournalDb journalDb,
+    AfterCommitSink? afterCommit,
   }) async {
     try {
       final diag = await _applyMessage(
         prepared: prepared,
         journalDb: journalDb,
+        afterCommit: afterCommit,
       );
       if (diag != null) {
         applyObserver?.call(diag);

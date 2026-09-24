@@ -2837,6 +2837,129 @@ void main() {
       expect(upserts.whereType<AgentReportEntity>(), hasLength(1));
     });
   });
+  group("the armed reminder in the agent's words (ADR 0074)", () {
+    late MockAgentAlertCopy alertCopy;
+
+    setUp(() {
+      alertCopy = MockAgentAlertCopy();
+      when(
+        () => alertCopy.restate(
+          subjectId: any(named: 'subjectId'),
+          brief: any(named: 'brief'),
+        ),
+      ).thenAnswer((_) async {});
+      workflow = RelationshipAgentWorkflow(
+        repository: repository,
+        syncService: syncService,
+        phaseA: RelationshipAgentPhaseA(
+          repository: repository,
+          syncService: syncService,
+          relationshipRepository: relationshipRepository,
+        ),
+        relationshipRepository: relationshipRepository,
+        conversationRepository: conversationRepository,
+        cloudInferenceRepository: MockCloudInferenceRepository(),
+        aiConfigRepository: aiConfigRepository,
+        alertCopy: alertCopy,
+      );
+    });
+
+    /// A due-day escalation wake whose model files a briefing and, when
+    /// [withAd], a banner.
+    Future<WakeResult> escalationWake({required bool withAd}) {
+      stubGlmResolution();
+      conversationRepository
+        ..maxDelegateCalls = 1
+        ..sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0,
+              strategy,
+            }) async {
+              await strategy!.processToolCalls(
+                toolCalls: [
+                  toolCall(
+                    RelationshipAgentToolNames.updateRelationshipReport,
+                    briefingArgs(),
+                  ),
+                  if (withAd)
+                    toolCall(
+                      RelationshipAgentToolNames.createRelationshipAd,
+                      {...adArgs(), 'headline': '  Check in with Anna  '},
+                      id: 'call-2',
+                    ),
+                ],
+                manager: conversationManager,
+              );
+              return null;
+            };
+      return run(tokens: {relationshipEscalationWorkspaceKey('2026-08-08')});
+    }
+
+    void verifyNothingRestated() => verifyNever(
+      () => alertCopy.restate(
+        subjectId: any(named: 'subjectId'),
+        brief: any(named: 'brief'),
+      ),
+    );
+
+    test(
+      'the banner this wake created re-words the reminder with the brief '
+      'the banner shows',
+      () async {
+        final result = await escalationWake(withAd: true);
+
+        expect(result.success, isTrue, reason: result.error);
+        final banner = upserts.whereType<RelationshipNudgeEntity>().single;
+        // The persisted brief, sanitised — what the dock renders — keyed by
+        // the person, which is what the reminder rows are linked to.
+        verify(
+          () => alertCopy.restate(
+            subjectId: relationshipId,
+            brief: banner.brief,
+          ),
+        ).called(1);
+      },
+    );
+
+    test('a wake without a banner re-words nothing', () async {
+      final result = await escalationWake(withAd: false);
+
+      expect(result.success, isTrue, reason: result.error);
+      expect(upserts.whereType<RelationshipNudgeEntity>(), isEmpty);
+      verifyNothingRestated();
+    });
+
+    test(
+      'a banner the consent fence discarded re-words nothing either',
+      () async {
+        // Un-marked while the model was thinking: the transaction writes no
+        // banner, so there are no words to lend the reminder — which Phase
+        // A's clearFor is retracting anyway.
+        var reads = 0;
+        when(
+          () => relationshipRepository.getRelationshipByIdUnfiltered(
+            relationshipId,
+          ),
+        ).thenAnswer((_) async {
+          reads++;
+          return reads <= 1 ? relationship() : relationship(important: false);
+        });
+
+        final result = await escalationWake(withAd: true);
+
+        expect(result.success, isTrue, reason: result.error);
+        expect(upserts.whereType<RelationshipNudgeEntity>(), isEmpty);
+        verifyNothingRestated();
+      },
+    );
+  });
 }
 
 /// The agent→relationship link used across the tests.

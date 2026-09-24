@@ -73,6 +73,13 @@ Future<String? Function()> _registerMatrixSyncStack({
     vectorClockService: vectorClockService,
     notificationsDb: notificationsDb,
     notificationScheduler: notificationScheduler,
+    notificationPreferenceEffects: (journalDb) => NotificationPreferenceEffects(
+      journalDb: journalDb,
+      // ignore: unnecessary_lambdas
+      notificationService: () => getIt<NotificationService>(),
+      scheduler: () => notificationScheduler,
+      logger: domainLogger,
+    ),
     syncNodeProfileRepository: syncNodeProfileRepository,
     fts5Db: getIt<Fts5Db>(),
   )..consumptionRepository = consumptionRepository;
