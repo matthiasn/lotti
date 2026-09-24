@@ -1227,7 +1227,26 @@ class MockJournalEntityLoader extends Mock implements SyncJournalEntityLoader {}
 class MockSyncNodeProfileBroadcaster extends Mock
     implements SyncNodeProfileBroadcaster {}
 
-class MockWakeOrchestrator extends Mock implements WakeOrchestrator {}
+class MockWakeOrchestrator extends Mock implements WakeOrchestrator {
+  /// Scheduled-wake windows [owesWake] reports as owed.
+  final owedWindows = <String>{};
+
+  /// Every [markScheduledWindow] call, as `(runKey, window)` pairs.
+  final markedWindows = <(String, String)>[];
+
+  /// Runs on every [flushWakeIntents], so a test can observe its ordering.
+  void Function()? onFlushWakeIntents;
+
+  @override
+  Future<bool> owesWake(String window) async => owedWindows.contains(window);
+
+  @override
+  void markScheduledWindow(String runKey, String window) =>
+      markedWindows.add((runKey, window));
+
+  @override
+  Future<void> flushWakeIntents() async => onFlushWakeIntents?.call();
+}
 
 class MockTaskAgentService extends Mock implements TaskAgentService {}
 

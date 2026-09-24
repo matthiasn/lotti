@@ -98,6 +98,9 @@ void configureDayAgentWorkflowTestSuite() {
     when(
       () => repository.getAgentState(agentId),
     ).thenAnswer((_) async => currentState);
+    // Default: no persisted entity by id (a pre-warm record, a capture).
+    // Tests that need one stub the id after this.
+    when(() => repository.getEntity(any())).thenAnswer((_) async => null);
     when(
       () => repository.getMessagesByKind(
         agentId,

@@ -9,6 +9,13 @@ import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/services/domain_logging.dart';
 
+/// The identity of [record]'s current wake window: its id and deadline. A
+/// later window of the same record — the next goal escalation of a period,
+/// a chat recovery's retry — is due at a later instant, so it never shares
+/// one with the window before it.
+String scheduledWakeWindow(ScheduledWakeEntity record) =>
+    '${record.id}@${record.scheduledAt.toUtc().toIso8601String()}';
+
 /// What one logical check sequence has already acted on, so its coalesced
 /// re-runs and an in-flight restart handoff do not act on the same row twice.
 ///
@@ -466,6 +473,16 @@ class ScheduledWakeManager with AgentErrorLogging {
           await _consumeStaleWakeRecord(record, now);
           continue;
         }
+        // Before the lease: a record whose wake this device already owes was
+        // fired by a process that died before consuming it, and its wake is
+        // queued, running or about to be restored. Claiming it would wait out
+        // a settle in which the restored run can finish and settle its intent,
+        // and the record would then fire a second run of the same window.
+        if (await _alreadyOwed(record)) {
+          handled.recordIds.add(record.id);
+          await _consumeFiredRecord(record, clock.now());
+          continue;
+        }
         final approved = await _leaseApprovedRecord(record, generation);
         if (approved == null) continue;
         // `stop()` can land while the lease check is awaiting the host lookup.
@@ -473,6 +490,13 @@ class ScheduledWakeManager with AgentErrorLogging {
         // the provider has already rebuilt one, both instances would fire the
         // same record — the duplicate the lease exists to prevent.
         if (generation != _generation) continue;
+        // Again after the lease wait: startup restores owed wakes only once the
+        // first scan has run, so one can have been restored meanwhile.
+        if (await _alreadyOwed(approved)) {
+          handled.recordIds.add(record.id);
+          await _consumeFiredRecord(approved, clock.now());
+          continue;
+        }
         // Re-read before firing. `_holdsLease` awaits the host lookup, and
         // sync can apply a `consumed` version in that window — on a
         // cold-start reconnect especially. The concurrent resolver already
@@ -500,20 +524,21 @@ class ScheduledWakeManager with AgentErrorLogging {
         // reaches the enqueue boundary so recovery assigns it to the day whose
         // digest the executor will produce, including a pass crossing midnight.
         final firedAt = clock.now();
-        _orchestrator.enqueueManualWake(
+        final runKey = _orchestrator.enqueueManualWake(
           agentId: record.agentId,
           reason: record.reason,
           triggerTokens: record.triggerTokens.toSet(),
           workspaceKey: record.workspaceKey,
         );
-        await _syncService.upsertEntity(
-          record.copyWith(
-            status: ScheduledWakeStatus.consumed,
-            consumedAt: firedAt,
-            updatedAt: firedAt,
-          ),
-        );
-        onPersistedStateChanged?.call(record.agentId);
+        _orchestrator.markScheduledWindow(runKey, scheduledWakeWindow(record));
+        // The wake's intent must be on disk before the record says the window
+        // is done. The intent goes to the settings database through a
+        // coalesced write and the consume to the agent database, so without
+        // this a crash between the two could keep the consume and lose the
+        // intent: nobody would ever run the window, here or on a peer
+        // (`specs/tla/ScheduledWakeLease.tla`, `NoLostWindow`).
+        await _orchestrator.flushWakeIntents();
+        await _consumeFiredRecord(record, firedAt);
         enqueued++;
       } catch (e, s) {
         logError(
@@ -642,17 +667,49 @@ class ScheduledWakeManager with AgentErrorLogging {
   Future<void> _consumeStaleWakeRecord(
     ScheduledWakeEntity record,
     DateTime now,
+  ) => _consumeFiredRecord(record, now);
+
+  /// Whether the wake firing [record]'s current window is already owed on
+  /// this device.
+  Future<bool> _alreadyOwed(ScheduledWakeEntity record) =>
+      _orchestrator.owesWake(scheduledWakeWindow(record));
+
+  /// Flips [fired] to `consumed` — built from the row as it is now, not from
+  /// the snapshot the due query returned.
+  ///
+  /// Sync can replace the row while a pass awaits: with the next window a
+  /// peer armed, or with a peer's own consumption. Writing the snapshot back
+  /// would regress the replica to the window just fired, and the stale write
+  /// could not win anywhere else, so the replicas would disagree
+  /// (`specs/tla/ScheduledWakeLease.tla`, `Converged`). A row that has moved
+  /// on is left alone. The re-read and the write share a transaction, so a
+  /// sync apply cannot land between them, and the write carries the current
+  /// row's vector clock, so it causally follows whatever the device holds.
+  Future<void> _consumeFiredRecord(
+    ScheduledWakeEntity fired,
+    DateTime at,
   ) async {
-    await _syncService.upsertEntity(
-      record.copyWith(
-        status: ScheduledWakeStatus.consumed,
-        consumedAt: now,
-        updatedAt: now,
-      ),
-    );
+    var consumed = false;
+    await _syncService.runInTransaction(() async {
+      final current = await _repository.getEntity(fired.id);
+      final base = current is ScheduledWakeEntity ? current : fired;
+      if (base.status != ScheduledWakeStatus.pending ||
+          !base.scheduledAt.isAtSameMomentAs(fired.scheduledAt)) {
+        return;
+      }
+      await _syncService.upsertEntity(
+        base.copyWith(
+          status: ScheduledWakeStatus.consumed,
+          consumedAt: at,
+          updatedAt: at,
+        ),
+      );
+      consumed = true;
+    });
+    if (!consumed) return;
     // The pending-wakes surface refreshes from the shared notification, not
     // from the sync write, so without this the record lingers on screen.
-    onPersistedStateChanged?.call(record.agentId);
+    onPersistedStateChanged?.call(fired.agentId);
   }
 
   /// Clears an archived agent's device-local `scheduledWakeAt` so the due

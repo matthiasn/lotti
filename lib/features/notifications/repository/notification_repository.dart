@@ -40,6 +40,8 @@ class NotificationRepository {
   /// task, and after the new row is written every other open `taskSuggestion`
   /// row for [linkedTaskId] is retracted (the new row's id is excluded) so the
   /// bell can never show multiple suggestion rows for the same task.
+  /// [reuseOpenRow] refreshes the current alert after a decision in any set,
+  /// preserving its lifecycle instead of returning to an older retired seed.
   Future<NotificationEntity?> createTaskSuggestion({
     required String linkedTaskId,
     required int suggestionCount,
@@ -48,12 +50,23 @@ class NotificationRepository {
     DateTime? scheduledFor,
     String? category,
     String? idSeed,
-  }) {
+    bool reuseOpenRow = false,
+  }) => _withKeyedMutation('task:$linkedTaskId', () async {
+    // A decision on a retained set must refresh the current alert, not its
+    // already-retracted historical seed. Select inside the task mutation lock.
+    final openRows =
+        (reuseOpenRow
+              ? await _openTaskSuggestionsForTask(linkedTaskId)
+              : <TaskSuggestionNotification>[])
+          ..sort((a, b) {
+            final byDate = b.meta.createdAt.compareTo(a.meta.createdAt);
+            return byDate != 0 ? byDate : a.id.compareTo(b.id);
+          });
     final placeholder = NotificationEntity.taskSuggestion(
       meta: _pendingMeta(
-        id: idSeed == null
-            ? notificationIdForTaskSuggestion(linkedTaskId)
-            : notificationIdForTaskSuggestion(idSeed),
+        id: openRows.isNotEmpty
+            ? openRows.first.id
+            : notificationIdForTaskSuggestion(idSeed ?? linkedTaskId),
         scheduledFor: scheduledFor ?? _now(),
         category: category,
       ),
@@ -62,8 +75,8 @@ class NotificationRepository {
       title: title,
       body: body,
     );
-    return create(placeholder);
-  }
+    return _create(placeholder);
+  });
 
   /// Creates the row [build] describes for the episode [id] — unless a row
   /// with that id already exists, in which case it is left exactly as it is

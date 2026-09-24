@@ -256,15 +256,29 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
         // long-lived planner has several outstanding day wakes, and each must
         // restore with its own workspace + trigger tokens. The deterministic
         // id overwrites a prior pending pre-warm for the same day.
+        //
+        // Overwriting needs the prior row's vector clock. A local write is
+        // resolved against the persisted row (ADR 0068), and one built from
+        // a null clock is concurrent with it: the scheduled-wake resolver
+        // then keeps the LATER deadline, so moving a pre-warm earlier was
+        // resolved straight back to the old time, here and on every peer
+        // (ADR 0069). Carrying the clock makes the new row its successor.
+        final recordId = scheduledWakeRecordId(
+          agentId,
+          workspaceKey: workspaceKey,
+        );
+        final prior = await agentRepository.getEntity(recordId);
         await syncService.upsertEntity(
           AgentDomainEntity.scheduledWake(
-            id: scheduledWakeRecordId(agentId, workspaceKey: workspaceKey),
+            id: recordId,
             agentId: agentId,
             scheduledAt: scheduledAt,
             status: ScheduledWakeStatus.pending,
             reason: WakeReason.scheduled.name,
             updatedAt: now,
-            vectorClock: null,
+            vectorClock: prior is ScheduledWakeEntity
+                ? prior.vectorClock
+                : null,
             triggerTokens: [dayAgentPlanningDayToken(dayId)],
             workspaceKey: workspaceKey,
           ),

@@ -17,11 +17,20 @@ void main() {
 
   late MockNotificationRepository notificationRepository;
   late MockJournalDb journalDb;
+  late MockAgentRepository agentRepository;
   late ChangeSetNotificationService service;
 
   setUp(() {
     notificationRepository = MockNotificationRepository();
     journalDb = MockJournalDb();
+    agentRepository = MockAgentRepository();
+    when(
+      () => agentRepository.getPendingChangeSets(
+        any(),
+        taskId: any(named: 'taskId'),
+        limit: -1,
+      ),
+    ).thenAnswer((_) async => []);
 
     when(
       () => notificationRepository.notificationIdForTaskSuggestion(any()),
@@ -46,6 +55,7 @@ void main() {
         body: any(named: 'body'),
         scheduledFor: any(named: 'scheduledFor'),
         category: any(named: 'category'),
+        reuseOpenRow: true,
         idSeed: any(named: 'idSeed'),
       ),
     ).thenAnswer((_) async => null);
@@ -56,8 +66,129 @@ void main() {
     service = ChangeSetNotificationService(
       notificationRepository: notificationRepository,
       journalDb: journalDb,
+      agentRepository: agentRepository,
     );
   });
+
+  test(
+    'a wake with no pending suggestions leaves the inbox lifecycle alone',
+    () async {
+      final resolved = makeTestChangeSet(
+        items: const [
+          ChangeItem(
+            toolName: 'set_task_title',
+            args: {'title': 'Done'},
+            humanSummary: 'Rename task',
+            status: ChangeItemStatus.confirmed,
+          ),
+        ],
+      );
+      await service.notifyTaskNeedsAttention(resolved);
+      verifyZeroInteractions(notificationRepository);
+    },
+  );
+
+  for (final userDecision in [true, false]) {
+    test(
+      'retained group keeps inbox open after ${userDecision ? 'user decision' : 'agent retraction'}',
+      () async {
+        final retained = makeTestChangeSet(id: 'retained');
+        final current = makeTestChangeSet(id: 'current');
+        when(
+          () => agentRepository.getPendingChangeSets(
+            current.agentId,
+            taskId: current.taskId,
+            limit: -1,
+          ),
+        ).thenAnswer((_) async => [retained, current]);
+        final resolved = current.copyWith(
+          items: [
+            for (final item in current.items)
+              item.copyWith(status: ChangeItemStatus.confirmed),
+          ],
+        );
+        if (userDecision) {
+          await service.syncAfterUserDecision(resolved);
+        } else {
+          await service.syncAfterAgentRetraction(resolved);
+        }
+        verify(
+          () => notificationRepository.createTaskSuggestion(
+            linkedTaskId: current.taskId,
+            suggestionCount: retained.items.length,
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            category: any(named: 'category'),
+            idSeed: current.id,
+            reuseOpenRow: true,
+          ),
+        ).called(1);
+        verifyNever(
+          () => notificationRepository.markTaskSuggestionsActedOn(any()),
+        );
+        verifyNever(
+          () => notificationRepository.retractTaskSuggestionsForTask(any()),
+        );
+
+        // Only deciding the final retained group clears the task's inbox row.
+        when(
+          () => agentRepository.getPendingChangeSets(
+            current.agentId,
+            taskId: current.taskId,
+            limit: -1,
+          ),
+        ).thenAnswer((_) async => []);
+        final lastResolved = retained.copyWith(
+          items: [
+            for (final item in retained.items)
+              item.copyWith(status: ChangeItemStatus.confirmed),
+          ],
+        );
+        if (userDecision) {
+          await service.syncAfterUserDecision(lastResolved);
+          verify(
+            () => notificationRepository.markTaskSuggestionsActedOn(
+              current.taskId,
+            ),
+          ).called(1);
+        } else {
+          await service.syncAfterAgentRetraction(lastResolved);
+          verify(
+            () => notificationRepository.retractTaskSuggestionsForTask(
+              current.taskId,
+            ),
+          ).called(1);
+        }
+      },
+    );
+  }
+
+  test(
+    'pending count includes all sets and counts the triggering set once',
+    () async {
+      final current = makeTestChangeSet(id: 'current');
+      final retained = makeTestChangeSet(id: 'retained');
+      when(
+        () => agentRepository.getPendingChangeSets(
+          current.agentId,
+          taskId: current.taskId,
+          limit: -1,
+        ),
+      ).thenAnswer((_) async => [current, retained]);
+      await service.syncAfterUserDecision(current);
+      verify(
+        () => notificationRepository.createTaskSuggestion(
+          linkedTaskId: current.taskId,
+          suggestionCount: current.items.length + retained.items.length,
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          category: any(named: 'category'),
+          idSeed: current.id,
+          reuseOpenRow: true,
+        ),
+      ).called(1);
+    },
+  );
 
   test(
     'marks task-suggestion notifications acted-on after user resolution',
@@ -87,6 +218,7 @@ void main() {
           body: any(named: 'body'),
           scheduledFor: any(named: 'scheduledFor'),
           category: any(named: 'category'),
+          reuseOpenRow: true,
           idSeed: any(named: 'idSeed'),
         ),
       );
@@ -162,6 +294,7 @@ void main() {
           title: captureAny(named: 'title'),
           body: 'Design Review for Florian',
           category: any(named: 'category'),
+          reuseOpenRow: true,
           idSeed: 'cs-partial',
         ),
       ).captured;
@@ -195,6 +328,7 @@ void main() {
           title: any(named: 'title'),
           body: captureAny(named: 'body'),
           category: captureAny(named: 'category'),
+          reuseOpenRow: true,
           idSeed: 'cs-missing-task',
         ),
       ).captured;
@@ -232,6 +366,7 @@ void main() {
           title: captureAny(named: 'title'),
           body: captureAny(named: 'body'),
           category: any(named: 'category'),
+          reuseOpenRow: true,
           idSeed: 'cs-unsupported-locale',
         ),
       ).captured;

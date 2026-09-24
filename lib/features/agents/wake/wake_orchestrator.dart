@@ -380,6 +380,27 @@ class WakeOrchestrator with AgentErrorLogging {
     );
   }
 
+  /// Records that the job [runKey] fires scheduled-wake [window], so
+  /// [owesWake] can recognize it — across a process death too. A no-op for a
+  /// job without an intent, or without an [intentStore].
+  void markScheduledWindow(String runKey, String window) =>
+      intentStore?.markWindow(runKey, window);
+
+  /// Whether the wake firing scheduled-wake [window] is already owed —
+  /// queued, running, or left unsettled by a previous process for
+  /// [restoreWakeIntents]. Always false without an [intentStore].
+  ///
+  /// A scheduled-wake record that is still pending although its wake is owed
+  /// was fired by a process that died before consuming it; firing it again
+  /// would run the window twice on this device
+  /// (`specs/tla/ScheduledWakeLease.tla`, `NoDeviceRunsTwice`).
+  Future<bool> owesWake(String window) async =>
+      await intentStore?.owes(window) ?? false;
+
+  /// Completes once every wake intent recorded so far has been written, so a
+  /// caller can make a later write depend on the wake being durable.
+  Future<void> flushWakeIntents() async => intentStore?.flush();
+
   /// The run key of a wake carrying [token] that has not settled: queued,
   /// held by a drain pass, or executing — including an executor an abort
   /// detached from its lease, until it runs past [hungExecutorAfter].

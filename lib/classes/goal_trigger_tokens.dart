@@ -63,6 +63,22 @@ String? goalEscalationPeriodFromTriggerTokens(Set<String> triggerTokens) {
   return null;
 }
 
+/// Prefix of the per-message chat-recovery workspaces.
+const goalChatRecoveryWorkspacePrefix = 'goal-chat';
+
+/// Workspace key of the recovery wake for one user message (ADR 0069).
+///
+/// The author's device answers its own message; this lease-elected record
+/// lets exactly one device answer it instead when that never succeeds.
+String goalChatRecoveryWorkspaceKey(String messageId) =>
+    '$goalChatRecoveryWorkspacePrefix:$messageId';
+
+/// Whether a scheduled-wake workspace is a chat recovery (the lease
+/// predicate's test).
+bool isGoalChatRecoveryWorkspace(String? workspaceKey) =>
+    workspaceKey != null &&
+    workspaceKey.startsWith('$goalChatRecoveryWorkspacePrefix:');
+
 /// Prefix of the baseline token an escalation wake carries: the status
 /// that was PERSISTED BEFORE the transition that armed the wake.
 ///

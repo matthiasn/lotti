@@ -229,6 +229,125 @@ What stays open — the residuals, each confirmed by TLC:
   older build applied — so a newer-build revert racing an older build's
   confirm keeps the confirm.
 
+## `ChangeSetDependency` — consolidation preserves follow-up ownership
+
+A follow-up and its pending migration share one set. Completing the follow-up
+rewrites that set's migration target; rejecting it cascades to that set's
+migration. Moving the migration while either operation is in flight would
+leave the copy pointing at an unresolved placeholder, away from the sibling
+that makes the confirmation service recognize it as a placeholder.
+
+| Configuration | Scope | Checks | Distinct states |
+|---------------|-------|--------|-----------------|
+| `ChangeSetDependency` | one device, pending/claimed/rejected follow-up, completion/cascade and consolidation into a newer set | `MigrationAfterTarget`, `DependencyOwned`, `CompletionReachesMigration` | 14 |
+
+`KeepDependenciesTogether = TRUE` keeps the group at its original set id until
+its pending migration has a resolved target. Setting it to `FALSE` restores
+moving the migration away and violates `DependencyOwned`; the mutation config
+is run outside the checked-in CI configuration set. This is one-device
+dependency ownership, not a fix for the cross-device duplicate-application
+residual above.
+
+The builder's Dart regressions cover pending, claimed and rejected follow-ups,
+the placeholder guard, completion's durable target rewrite, later
+consolidation and successful migration, and incremental appends that keep the
+original set id. Restoring consolidation of unresolved groups fails all three
+parent-status regressions.
+
+## `ScheduledWakeLease` — one device per scheduled window
+
+One scheduled-wake record that must run on exactly one device — a goal or
+relationship escalation, the coordinator digest, a goal chat recovery —
+replicated on every device as a vector-clocked register. A device claims the
+due record, waits out the settle, confirms its claim survived, queues the wake
+and consumes the record; a lapsed claim may be taken over. The model carries
+wall-clock time (a message is delivered within `MaxDelay` of being sent to a
+running device, and the manager's timers act as soon as they can), the
+resolver's scheduled-wake rule, the wake's intent in the settings database,
+crashes with restart, and devices that never return. A window is ordinal:
+arming over a consumed row of window k opens k + 1. The decision is
+[ADR 0069](../../docs/adr/0069-model-checked-scheduled-wake-leases.md); the
+runtime is described in
+[the coordination protocol](../../knowledge/features/daily_os_next/coordination-protocol.md#one-device-per-window-elected-by-the-register-itself).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `AtMostOnce` | invariant | no window runs to completion twice |
+| `NoDeviceRunsTwice` | invariant | no device runs a window twice |
+| `WindowTerminal` | invariant | a replica that held a window consumed never holds it pending again |
+| `Converged` | invariant | once every write is delivered, the live replicas agree |
+| `NoLostWindow` | liveness | every armed window is run to completion by some device |
+
+| Configuration | Devices | Arms | Crashes | Deaths | Arm | Checks | Distinct states |
+|---------------|---------|------|---------|--------|-----|--------|-----------------|
+| `ScheduledWakeLease` | 2 | 2 | 0 | 1 | goal | all | 414,857 |
+| `ScheduledWakeLeaseCrash` | 2 | 1 | 1 | 0 | goal | all but `AtMostOnce` | 192,707 |
+| `ScheduledWakeLeaseCrashRearm` | 2 | 2 | 1 | 0 | goal | safety but `AtMostOnce` | 6,640,286 |
+| `ScheduledWakeLeaseThree` | 3 | 2 | 0 | 1 | relationship (if absent) | safety | 4,202,509 |
+
+The settle is three time units, the lease five and the sync delay one: the
+settle must exceed twice the delay — a crossing claim sent just before the
+first claim arrives lands one delay later — as three minutes exceed any
+connected sync. Each fix has a switch; in a temporary copy of a configuration
+outside this directory, set it to the old behaviour and run TLC against
+`ScheduledWakeLease.tla`:
+
+| Mutation | Configuration | Counterexample |
+|----------|---------------|----------------|
+| `ArmMode = "fresh"` (a null clock at the period's instant) | `ScheduledWakeLease` | `NoLostWindow`: B arms, claims, runs and consumes window 1; A re-arms window 2 from a null clock, which is concurrent with B's consumed copy, so B keeps it; A claims and dies — window 2 never runs. `Converged` fails on the way |
+| carried clock, same instant (`ArmAt(r) == 1`, a spec copy) | `ScheduledWakeLeaseCrashRearm` | `WindowTerminal`: B is down across A's lease; A runs and consumes window 1 and arms window 2; B restarts, takes window 1 over on its stale replica, and its claim, concurrent with window 2 and newer, wins on A |
+| `FlushBeforeConsume = FALSE` | `ScheduledWakeLeaseCrash` | `NoLostWindow`: A fires and consumes, then crashes before the intent write lands |
+| `OwedCheck = FALSE` | `ScheduledWakeLeaseCrash` | `NoDeviceRunsTwice`: A fires, flushes the intent and crashes before consuming; after the restart the record fires again beside the restored wake |
+| `ConsumeCurrentRow = FALSE` | `ScheduledWakeLeaseCrashRearm` | `Converged`: a restarted device consumes the window it fired from its snapshot over the next window that had synced in |
+
+Two residuals are properties the design does not claim, each shown by a
+configuration kept out of this directory:
+
+- **`AtMostOnce` across a crash.** A device back from a crash acts on its own
+  replica before sync has caught up: it confirms its settled claim and runs a
+  window a peer took over and ran while it was down. That is ADR 0048's
+  partition case, and a device resuming from sleep is the same. It is why the
+  crash configurations check `NoDeviceRunsTwice` instead.
+- **A run that settles before its own consume commits.** With
+  `RunOutlastsConsume = FALSE`, a crash in between leaves the record pending
+  and nothing owed, and the window runs again on the same device. The checked
+  configurations assume an inference outlasts a local write.
+
+A fencing token (ADR 0018 rule 2) was a suspected gap and is not one TLC can
+show: with the settle above twice the sync delay a late confirmation cannot
+fire beside a takeover, and where a device is suspended or offline across the
+lease, what it spends is a model call, which has no side that could reject a
+stale token.
+
+## `GoalChatReply` — who answers a goal chat message
+
+One message typed on its author device and synced to its peers. The author's
+own wake answers it; a synced recovery record, due a grace later and elected
+by the lease above (taken as given here), lets one device answer instead if
+that never succeeds. Runs commit within `RunCap` unless their device is paused.
+
+| Property | Kind | Says |
+|----------|------|------|
+| `AtMostOneReply` | invariant | the message is answered at most once |
+| `Answered` | liveness | while a device lives, the message is answered |
+
+| Configuration | Devices | Failed runs | Deaths | Distinct states |
+|---------------|---------|-------------|--------|-----------------|
+| `GoalChatReply` | 2 | 1 | 1 | 5,148 |
+| `GoalChatReplyThree` | 3 | 1 | 1 | 99,268 |
+
+`Recovery = "eager"` models the code before ADR 0069 — every device's
+maintenance enqueued the oldest unanswered message, and any goal wake answered
+it — and breaks `AtMostOneReply` in four steps: the author starts answering,
+the peer's maintenance queues the same message, both commit. A first draft of
+the fix re-armed the next recovery window at the last deadline plus the grace,
+which can already be past; TLC found the second window firing while the first
+recovery's run was still in flight on another device. The next window is now
+due when the last one's lease lapses. The residuals mirror the lease's: a device
+paused past the run cap (`MaxPauses = 1`), or one that crashes and restarts
+before sync delivers the reply it missed (`MaxCrashes = 1`), answers beside
+the device that took over.
+
 ## `AgentReplication` — converging synced agent entities
 
 Three replicas of one synced agent entity. Local writes build on the
@@ -604,6 +723,21 @@ unique persisted decision. Changing that transition to `done` reproduces the
 stranded confirmation as a `ConfirmedMeansApplied` counterexample. Service
 regressions exercise the real sync service and Drift transactions with a
 throwing outbox, for both confirmation and rejection.
+
+The lease and chat models have no generated trace yet; their counterexamples
+are pinned as deterministic regressions instead, each failing with its fix
+reverted. `scheduled_wake_manager_test.dart` (group *firing and consuming a
+record*) checks that the intent is flushed before the consume, that an owed
+record is consumed rather than claimed or fired — before the claim and after
+the lease wait — and that the consume carries the current row and leaves a
+newer window alone. `goal_agent_phase_a_test.dart` checks that a second
+escalation carries the consumed clock at a later deadline, outranking a late
+takeover claim of the first window, and leaves a pending one untouched.
+`goal_chat_service_test.dart` and `goal_agent_providers_test.dart` check that a
+sent turn arms its recovery before its wake and the answering wake consumes it,
+that maintenance arms records and enqueues nothing, that the next window waits
+for the last lease to lapse, and that a goal wake not for a message leaves it
+alone.
 
 `ChangeSetLifecycle` has two. In
 `test/features/agents/service/change_set_confirmation_service_lifecycle_conformance.dart`,

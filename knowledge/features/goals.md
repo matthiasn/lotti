@@ -5,7 +5,7 @@ description: Goal-driven agents — the deterministic Phase A tier evaluating cr
 resource: ../../lib/features/goals
 tags: [goals, agents, runtime, wake, evaluation]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T14:00:00Z }
 stale_after: 2027-02-22
 sources:
   - id: goals-src
@@ -68,6 +68,18 @@ sources:
     resource: ../../lib/features/goals/workflow/goal_facts_renderer.dart
     title: GoalFactsRenderer — the JSON fence Phase B consumes
     last_modified: 2026-08-30
+  - id: chat-service
+    resource: ../../lib/features/goals/service/goal_chat_service.dart
+    title: GoalChatService — durable turns and lease-elected recovery
+    last_modified: 2026-09-24
+  - id: tla-chat
+    resource: ../../specs/tla/GoalChatReply.tla
+    title: TLA+ model of who answers a goal chat message
+    last_modified: 2026-09-24
+  - id: adr-0069
+    resource: ../../docs/adr/0069-model-checked-scheduled-wake-leases.md
+    title: ADR 0069 — Model-checked scheduled-wake leases and chat recovery
+    last_modified: 2026-09-24
   - id: chat-history
     resource: ../../lib/features/goals/service/goal_chat_history_service.dart
     title: GoalChatHistoryService — bounded dialogue and orphan recovery
@@ -174,6 +186,8 @@ flowchart TD
         CAD[cadence ScheduledWakeEntity\nworkspace goal-cadence,\ndaily at 06:00 local] --> MGR[ScheduledWakeManager]
         CHAT[Goal chat composer] --> STORE[persist user message + payload]
         STORE --> USERWAKE[manual userMessage wake\nmessage id trigger token]
+        STORE --> RECOVER[recovery record goal-chat:messageId\ndue in 30 min, lease-elected,\nconsumed by the answering wake]
+        RECOVER --> MGR
         STORE --> OFFER{explicit linked\nmeasurable quantity?}
         OFFER -- yes --> REVIEW[editable record offer\naccept rows or dismiss]
         REVIEW -- accept --> MEASURE[existing MeasurementEntry path]
@@ -189,6 +203,7 @@ flowchart TD
     SYNCROUTE -- bounded --> PA
     SYNCROUTE -- tracked time --> STALE
     MGR --> PA
+    MGR -- unanswered chat recovery,\none elected device --> PB
     PA --> HEAD[spec head → active version\nno head = clean no-op]
     HEAD --> REARM[re-arm cadence\nrecurrence by re-arm]
     REARM --> READ[GoalSignalReader\njournal → GoalSignalWindow]
@@ -353,6 +368,18 @@ handler would retract it; that wiring is a follow-up.
   escalation writes an identical record and the concurrent resolver's
   later-deadline preference cannot resurrect a consumed wake. The scheduled
   wake's existing lease still elects the single device that spends inference.
+  The record id is per period, so a second escalation the same day finds the
+  first one's row (ADR 0069). Over a *pending* row it writes nothing — that
+  escalation has not run yet, and rewriting it would drop a peer's claim and
+  the baseline token. Over a *consumed* row it opens the next window: the
+  consumed row's vector clock carried forward, due one millisecond after it.
+  Both halves matter. A row rebuilt from a null clock at the period's fixed
+  instant was concurrent with the peers' consumed copy and lost to it on every
+  one of them, so the second escalation ran on the arming device alone, and on
+  none if that device died; and a carried clock alone, at the same instant,
+  still lost to a peer's late takeover claim of the first window, which is
+  concurrent with it — the later deadline is what outranks every version of
+  the consumed window (`specs/tla/ScheduledWakeLease.tla`).
 - **Grace history is a consecutive, same-spec-version streak**: prior-row
   collection stops at the first missing day and at the first row computed
   under a superseded spec version.
@@ -532,16 +559,28 @@ handler would retract it; that wiring is a follow-up.
   it enqueues: the chat projection refreshes on the agent's notifications, and
   the wake sends one only after the reply is written, so waiting for it showed
   the user's own words late. Visible reply rows name
-  that source through `AgentMessageMetadata.operationId`. On startup, sync
-  arrival and every pre-wake scan, runtime maintenance re-enqueues the oldest
-  source turn without a linked reply; the router also checks for one before it
-  dispatches any otherwise unrelated goal wake. Recovery scans the complete
+  that source through `AgentMessageMetadata.operationId`. Only the typing
+  device answers a turn on sight (ADR 0069, `specs/tla/GoalChatReply.tla`).
+  Before its wake it arms the turn's recovery record — a lease-elected
+  `goal-chat:<messageId>` scheduled wake due `goalChatRecoveryGrace` (30
+  minutes, three run caps) later — and the wake that answers the turn consumes
+  it. If none does — the wake failed, the device died — the record falls due
+  and the lease picks one device to answer. On startup, sync arrival and every
+  pre-wake scan, runtime maintenance only makes sure the oldest source turn
+  without a linked reply has such a record: it arms a missing one, or, after
+  a recovery that did not answer, the next window, due when the last one's
+  lease lapses (the same UTC instant on every replica) or a grace past a
+  deadline the author consumed. It enqueues nothing itself, and the router
+  answers a turn only on a wake carrying that turn's own
+  `goal-chat-message:` token. Before this, maintenance on every device
+  re-enqueued the turn and every goal wake answered the oldest pending one, so
+  a peer's cadence tick answered a turn its author was still answering, with a
+  second reply. Recovery scans the complete
   durable user/reply conversation rather than independently capped kind
-  slices, which cannot omit only one side of an old pair. An explicit queued
-  chat wake rechecks that its selected source remains pending before inference;
-  if an earlier cadence wake answered it, the later wake cannot bill or mutate
-  for the same turn again. That recovery state is durable even though the
-  original waiter and queue were in memory. Only content-bearing reply actions
+  slices, which cannot omit only one side of an old pair. A chat wake whose
+  turn is already answered does nothing — no inference and no writes — so a
+  queued duplicate, or a recovery that fires after the reply synced in,
+  cannot bill or mutate for the same turn again. Only content-bearing reply actions
   count as answers; payload-less `reply_to_user` tool traces remain internal.
   Legacy visible reply rows are paired to the nearest preceding unmatched user
   turn so upgrading does not replay already-answered messages. Update now uses
@@ -809,6 +848,14 @@ handler would retract it; that wiring is a follow-up.
 - **Calendar arithmetic is component-based** (`DateTime(y, m, d ± n)`),
   never `Duration` math, so DST transitions cannot shift the cadence hour,
   skip a prior-day register key, or truncate a 25-hour day's query range.
+- **The cadence re-arm needs no carried clock; the escalation re-arm does.**
+  A local write is resolved against the persisted row (ADR 0068), and one
+  built from a null clock is concurrent with it. The cadence tick is re-armed
+  from `now` after the last one fired, so its deadline is always later than
+  the consumed tick's, and the later deadline wins. The escalation's next
+  window shares the period's id and, before ADR 0069, its instant too — at
+  one instant `consumed` wins, which is why it carries the consumed row's
+  clock and moves one millisecond on.
 
 ## The visible layer (PR 5)
 
