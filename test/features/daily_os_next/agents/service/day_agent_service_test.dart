@@ -749,6 +749,28 @@ void main() {
         expect(upsertedWakes().single.scheduledAt, DateTime(2026, 5, 25, 6));
       });
 
+      test(
+        'a digest whose milestone precedes consumedAt on the same day is '
+        'not retried',
+        () async {
+          // DigestRecovery.tla WindowFromDayStart: the run committed its
+          // milestone and re-arm before the wake manager's consume write
+          // replaced the row, and a backward clock step stamped that
+          // milestone before consumedAt. The day was digested.
+          withDigestWatermarks([digestWatermark(DateTime(2026, 5, 25, 6, 58))]);
+
+          await restoreWithPlanner(
+            existingRecord: consumedTodayAt(
+              DateTime(2026, 5, 25, 6),
+              consumedAt: DateTime(2026, 5, 25, 7),
+              leaseHostId: 'test-host',
+            ),
+          );
+
+          expect(upsertedWakes().single.scheduledAt, DateTime(2026, 5, 26, 6));
+        },
+      );
+
       test('a future-dated watermark does not suppress the retry', () async {
         // Synced history from a peer with a skewed clock. An open-ended "at or
         // after" test would read this as proof today's run finished.
