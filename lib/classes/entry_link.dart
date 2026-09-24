@@ -319,3 +319,18 @@ String entryLinkTypeName(EntryLink link) => link.map(
   supersedes: (_) => 'SupersedesLink',
   relationship: (_) => 'RelationshipLink',
 );
+
+/// The `updatedAt` for a local edit of a link whose stored version is
+/// [replaced]: [now], or [replaced]'s own stamp when a device whose clock
+/// runs ahead wrote that version.
+///
+/// An edit reserves its vector clock with the replaced version's as
+/// `previous`, so it dominates that version; it must not rank below it on
+/// `updatedAt` either. Links that are concurrent are ordered by `updatedAt`
+/// (`JournalDb.upsertEntryLink`), and that order only agrees with the clocks
+/// — so every device keeps the same version — when no successor is stamped
+/// earlier than the version it succeeds.
+DateTime linkEditTimestamp(EntryLink? replaced, DateTime now) {
+  final stamp = replaced?.updatedAt;
+  return stamp != null && stamp.isAfter(now) ? stamp : now;
+}

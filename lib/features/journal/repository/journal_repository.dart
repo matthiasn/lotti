@@ -11,6 +11,7 @@ import 'package:lotti/features/relationships/repository/relationship_repository.
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/blocks_cycle_guard.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -291,10 +292,12 @@ class JournalRepository {
   /// Creates a new text journal entry from `entryText`, optionally linked to
   /// `linkedId` and tagged with `categoryId`. Returns the created entity, or
   /// null on a logged failure.
+  ///
+  /// The entry's id is minted with its metadata, where its vector clock is
+  /// reserved naming that id; callers read it from the returned entity.
   static Future<JournalEntity?> createTextEntry(
     EntryText entryText, {
     required DateTime started,
-    required String id,
     String? linkedId,
     String? categoryId,
   }) async {
@@ -407,6 +410,11 @@ class JournalRepository {
   /// A real change runs inside a vector-clock scope so the bump, the local
   /// notification, and the outbox sync message stay consistent; the VC is only
   /// committed when the upsert wrote a row. Returns true when a row was written.
+  ///
+  /// The edit succeeds the stored version on every device: its clock extends
+  /// that version's, and its `updatedAt` is never older than that version's
+  /// (see [linkEditTimestamp]), so a late copy of the replaced version — a
+  /// peer's journal-entity message embeds its links — cannot undo it.
   Future<bool> updateLink(EntryLink link) async {
     final journalDb = getIt<JournalDb>();
     final existing = await journalDb.entryLinkById(link.id);
@@ -422,8 +430,13 @@ class JournalRepository {
     // via backfill.
     return getIt<VectorClockService>().withVcScope<bool>(() async {
       final updated = link.copyWith(
-        updatedAt: DateTime.now(),
+        updatedAt: linkEditTimestamp(existing, DateTime.now()),
+        // An update carries every counter of the version it replaces, so it
+        // dominates that version on every device: `upsertEntryLink` refuses
+        // a link whose stored clock dominates it, and a clock of this host's
+        // counter alone would merely be concurrent with the stored one.
         vectorClock: await getIt<VectorClockService>().getNextVectorClock(
+          previous: VectorClock.merge(existing?.vectorClock, link.vectorClock),
           payload: (id: link.id, type: SyncSequencePayloadType.entryLink),
         ),
       );

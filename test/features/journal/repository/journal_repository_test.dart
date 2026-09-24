@@ -901,6 +901,7 @@ void main() {
           ).thenAnswer((_) async => testLink);
           when(
             () => mockVectorClockService.getNextVectorClock(
+              previous: any(named: 'previous'),
               payload: any(named: 'payload'),
             ),
           ).thenAnswer((_) async => const VectorClock({'node1': 1}));
@@ -938,6 +939,7 @@ void main() {
           ).thenAnswer((_) async => testLink);
           when(
             () => mockVectorClockService.getNextVectorClock(
+              previous: any(named: 'previous'),
               payload: any(named: 'payload'),
             ),
           ).thenAnswer((_) async => const VectorClock({'node1': 1}));
@@ -986,6 +988,7 @@ void main() {
         // Mock VectorClockService
         when(
           () => mockVectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
             payload: any(named: 'payload'),
           ),
         ).thenAnswer((_) async => const VectorClock({'node1': 1}));
@@ -1014,6 +1017,7 @@ void main() {
         verify(() => mockJournalDb.entryLinkById(updatedLink.id)).called(1);
         verify(
           () => mockVectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
             payload: any(named: 'payload'),
           ),
         ).called(1);
@@ -1052,6 +1056,7 @@ void main() {
         verify(() => mockJournalDb.entryLinkById(testLink.id)).called(1);
         verifyNever(
           () => mockVectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
             payload: any(named: 'payload'),
           ),
         );
@@ -1702,14 +1707,15 @@ void main() {
         final result = await JournalRepository.createTextEntry(
           entryText,
           started: started,
-          id: id,
           linkedId: linkedId,
           categoryId: categoryId,
         );
 
-        // Assert
+        // Assert: the entry is written under the id its metadata minted —
+        // the id the clock reservation names.
         expect(result, isNotNull);
         expect(result, isA<JournalEntry>());
+        expect(result?.meta.id, id);
         expect((result as JournalEntry?)?.entryText, equals(entryText));
         expect(result?.meta.categoryId, equals(categoryId));
 
@@ -1734,7 +1740,6 @@ void main() {
           markdown: 'Test content',
         );
         final started = DateTime(2023);
-        const id = 'test-id';
 
         // Mock the createMetadata call to throw an exception
         when(
@@ -1748,7 +1753,6 @@ void main() {
         final result = await JournalRepository.createTextEntry(
           entryText,
           started: started,
-          id: id,
         );
 
         // Assert
@@ -2900,6 +2904,7 @@ void main() {
         ).thenAnswer((_) async => testLink);
         when(
           () => collapsedMockVectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
             payload: any(named: 'payload'),
           ),
         ).thenAnswer((_) async => const VectorClock({'node1': 1}));
@@ -2920,6 +2925,7 @@ void main() {
         verify(() => collapsedMockUpdateNotifications.notify(any())).called(1);
         verify(
           () => collapsedMockVectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
             payload: any(named: 'payload'),
           ),
         ).called(1);
@@ -3010,6 +3016,7 @@ void main() {
         ).thenAnswer((_) async => existingLink);
         when(
           () => collapsedMockVectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
             payload: any(named: 'payload'),
           ),
         ).thenAnswer((_) async => const VectorClock({'node1': 1}));
@@ -3029,6 +3036,7 @@ void main() {
         verify(() => collapsedMockJournalDb.upsertEntryLink(any())).called(1);
         verify(
           () => collapsedMockVectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
             payload: any(named: 'payload'),
           ),
         ).called(1);
@@ -3053,6 +3061,7 @@ void main() {
         ).thenAnswer((_) async => testLink);
         when(
           () => collapsedMockVectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
             payload: any(named: 'payload'),
           ),
         ).thenAnswer((_) async => const VectorClock({'node1': 1}));
@@ -3102,6 +3111,7 @@ void main() {
         ).thenAnswer((_) async => existing);
         when(
           () => collapsedMockVectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
             payload: any(named: 'payload'),
           ),
         ).thenAnswer((_) async => const VectorClock({'node1': 1}));
@@ -3144,6 +3154,7 @@ void main() {
         ).thenAnswer((_) async => existing);
         when(
           () => collapsedMockVectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
             payload: any(named: 'payload'),
           ),
         ).thenAnswer((_) async => const VectorClock({'node1': 1}));
@@ -3186,6 +3197,7 @@ void main() {
         ).thenAnswer((_) async => existing);
         when(
           () => collapsedMockVectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
             payload: any(named: 'payload'),
           ),
         ).thenAnswer((_) async => const VectorClock({'node1': 1}));
@@ -3228,6 +3240,7 @@ void main() {
         ).thenAnswer((_) async => existing);
         when(
           () => collapsedMockVectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
             payload: any(named: 'payload'),
           ),
         ).thenAnswer((_) async => const VectorClock({'node1': 1}));
@@ -3264,6 +3277,7 @@ void main() {
         ).thenAnswer((_) async => existing);
         when(
           () => collapsedMockVectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
             payload: any(named: 'payload'),
           ),
         ).thenAnswer((_) async => const VectorClock({'node1': 1}));
@@ -3312,6 +3326,7 @@ void main() {
         ).thenAnswer((_) async => existing);
         when(
           () => collapsedMockVectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
             payload: any(named: 'payload'),
           ),
         ).thenAnswer((_) async => const VectorClock({'node1': 1}));
@@ -3356,6 +3371,7 @@ void main() {
           ).thenAnswer((_) async => existing);
           when(
             () => collapsedMockVectorClockService.getNextVectorClock(
+              previous: any(named: 'previous'),
               payload: any(named: 'payload'),
             ),
           ).thenAnswer((_) async => const VectorClock({'node1': 1}));
@@ -3418,6 +3434,7 @@ void main() {
         ).thenAnswer((_) async => null);
         when(
           () => collapsedMockVectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
             payload: any(named: 'payload'),
           ),
         ).thenAnswer((_) async => const VectorClock({'node1': 1}));
@@ -3442,6 +3459,7 @@ void main() {
       void stubSuccessfulUpsert() {
         when(
           () => collapsedMockVectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
             payload: any(named: 'payload'),
           ),
         ).thenAnswer((_) async => const VectorClock({'node1': 1}));
@@ -3635,5 +3653,73 @@ void main() {
         verifyNever(() => collapsedMockJournalDb.upsertEntryLink(any()));
       });
     });
+  });
+
+  group('updateLink across devices', () {
+    late JournalDb db;
+    late MockOutboxService outboxService;
+
+    setUpAll(registerAllFallbackValues);
+
+    setUp(() async {
+      db = JournalDb(inMemoryDatabase: true);
+      outboxService = MockOutboxService();
+      when(() => outboxService.enqueueMessage(any())).thenAnswer((_) async {});
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<JournalDb>()
+            ..registerSingleton<JournalDb>(db)
+            ..registerSingleton<OutboxService>(outboxService)
+            // The real service: the clock it reserves is what is under test.
+            ..registerSingleton<VectorClockService>(VectorClockService());
+        },
+      );
+      // A fresh device: its first counter is 0, which VectorClock.compare
+      // reads the same as an absent host — the link order must not.
+      await getIt<VectorClockService>().initialized;
+    });
+
+    tearDown(() async {
+      await tearDownTestGetIt();
+      await db.close();
+    });
+
+    test(
+      'an edit made here outranks a later-stamped copy of the version it '
+      'replaced, so the edit is not undone when that copy arrives',
+      () async {
+        // Device A created the link; its wall clock runs well ahead of ours.
+        final fromDeviceA = EntryLink.basic(
+          id: 'shared-link',
+          fromId: 'task-id',
+          toId: 'note-id',
+          createdAt: DateTime(2100),
+          updatedAt: DateTime(2100),
+          vectorClock: const VectorClock({'device-a': 5}),
+          collapsed: false,
+        );
+        expect(await db.upsertEntryLink(fromDeviceA), 1);
+
+        expect(
+          await JournalRepository().updateLink(
+            fromDeviceA.copyWith(collapsed: true),
+          ),
+          isTrue,
+        );
+        final edited = (await db.entryLinkById('shared-link'))!;
+        final host = (await getIt<VectorClockService>().getHost())!;
+        // The edit extends the clock of the version it replaced, and is not
+        // stamped earlier than that version.
+        expect(edited.vectorClock?.vclock, {'device-a': 5, host: 0});
+        expect(edited.updatedAt, DateTime(2100));
+
+        // Device A's next journal-entity message embeds its snapshot of the
+        // link as it was; the sync receive upserts it like this.
+        expect(await db.upsertEntryLink(fromDeviceA), 0);
+        expect(await db.entryLinkById('shared-link'), edited);
+        expect(edited.collapsed, isTrue);
+      },
+    );
   });
 }

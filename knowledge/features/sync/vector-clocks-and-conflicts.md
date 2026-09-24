@@ -5,7 +5,7 @@ description: How causal order is represented, why coveredVectorClocks is separat
 resource: ../../../lib/features/sync/vector_clock.dart
 tags: [sync, vector-clock, conflicts, causality]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T23:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T23:30:00Z }
 stale_after: 2026-12-24
 sources:
   - id: vector-clock
@@ -72,6 +72,22 @@ sources:
     resource: ../../../docs/adr/0076-model-checked-agent-head.md
     title: ADR 0076 — The agent head is a register over the message DAG
     last_modified: 2026-09-24
+  - id: link-receive
+    resource: ../../../lib/database/database_links_ratings.dart
+    title: JournalDb.upsertEntryLink — the entry-link receive order
+    last_modified: 2026-09-24
+  - id: link-edit
+    resource: ../../../lib/features/journal/repository/journal_repository.dart
+    title: JournalRepository.updateLink — a link edit succeeds its predecessor
+    last_modified: 2026-09-24
+  - id: link-tombstone
+    resource: ../../../lib/features/projects/repository/project_repository.dart
+    title: ProjectRepository — the project-link tombstone
+    last_modified: 2026-09-24
+  - id: adr-0078
+    resource: ../../../docs/adr/0078-entry-link-versions-are-ordered.md
+    title: ADR 0078 — entry-link versions are ordered, and an edit succeeds its predecessor
+    last_modified: 2026-09-24
 ---
 
 # What a vector clock is here
@@ -85,6 +101,19 @@ counter. For a locally written payload it answers:
 `VectorClockService.getNextVectorClock(previous: ...)` keeps the previous
 entries and advances only the current host's counter. A brand-new local payload
 with no previous clock contains just the current host's counter.
+
+**An update reserves with the entity's current clock as `previous`.** That is
+what makes the new version dominate the one it replaces on every device.
+Without it the update's clock holds only this host's counter, is merely
+concurrent with its predecessor, and a late copy of the predecessor can win or
+raise a conflict. Every update path passes it: `MetadataService.updateMetadata`
+for journal entries, `JournalRepository.updateLink` and the project-link
+tombstone for entry links, the notification repository, the consumption sync,
+`AgentSyncService` for agent entities and links, and the maintenance and
+historical re-stamps. The two link writers were missing it until
+[ADR 0078](../../../docs/adr/0078-entry-link-versions-are-ordered.md).
+Creates pass none. Entity definitions reserve no counter at all: a local edit
+carries the stored clock and moves `updatedAt` past the stored one.
 
 That is a different question from `originatingHostId`:
 
@@ -276,6 +305,48 @@ one. The row is [device-local](../notifications.md#two-rows-never-leave-the-devi
 a conflict is this device's disagreement with a peer, so the row must never
 reach that peer. `unresolvedConflictCountProvider` exposes the live count for
 badges.
+
+# Entry links: one version on every device
+
+A link has no conflict UI: every device keeps one version, and it must be the
+same one. Versions arrive as `entryLink` messages, as backfill answers and
+inside every journal-entity message, which embeds a snapshot of the entry's
+links. `JournalDb.upsertEntryLink` orders them by one key in its
+transaction, for sync and local writers alike, and refuses a version older
+than the stored one:
+
+```mermaid
+flowchart TD
+    In[incoming version of a stored link] --> Same{serialized the same?}
+    Same -->|yes| Skip[no write]
+    Same -->|no| Ts{same updatedAt?}
+    Ts -->|no| Later[the later updatedAt wins]
+    Ts -->|yes| Clock{clocks differ host by host?}
+    Clock -->|yes| Larger[the larger counter at the first differing host wins; absent ranks below 0]
+    Clock -->|no| Content[the larger serialized version wins]
+```
+
+A single lexicographic key is transitive for any mix of versions, clockless
+legacy copies included. A dominance check with a timestamp fallback, the order
+agent entities use (below), can form a cycle on such a mix. The key agrees
+with causality because of the writers, as `AgentReplication.tla` requires of
+agent writes (`IntentCarriesClock`, `ClampTimestamp`). An edit reserves with
+the stored link's clock as `previous`, so its clock is its predecessor's plus
+this host's next counter. `linkEditTimestamp` never stamps it earlier than the
+version it replaces, even when a peer's wall clock ran ahead. An absent host
+ranks below counter 0 because a new host's first counter *is* 0:
+`VectorClock.compare` reads that edit as equal to its predecessor, and the link
+order must not. Journal entries and agent entities still have that equality
+([ADR 0078](../../../docs/adr/0078-entry-link-versions-are-ordered.md),
+Consequences). A refused version is still recorded as received in the sequence
+log. The stored clock covers its counter.
+
+Links written before ADR 0078 have clocks without their predecessor's entries.
+Pairs of those are concurrent and ordered by `updatedAt` until the link's next
+edit. Unlinking through `JournalRepository.removeLink` or `removeTypedLink`
+hard-deletes the row locally and syncs nothing. A peer's next embedded snapshot
+puts the link back, so that removal does not reach other devices. It is the
+open residual in ADR 0078.
 
 # Agent state converges without user involvement
 

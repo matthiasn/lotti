@@ -5,8 +5,8 @@ description: One row per relationship, nine variants sharing one shape, and why 
 resource: ../../lib/classes/entry_link.dart
 tags: [domain, links, relationships]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T16:00:00Z }
-stale_after: 2027-07-12
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T23:30:00Z }
+stale_after: 2026-12-24
 sources:
   - id: entry-link
     resource: ../../lib/classes/entry_link.dart
@@ -16,6 +16,18 @@ sources:
     resource: ../../docs/adr/0042-typed-task-relationship-links.md
     title: ADR 0042 — Typed task relationship links
     last_modified: 2026-07-24
+  - id: link-upsert
+    resource: ../../lib/database/database_links_ratings.dart
+    title: JournalDb.upsertEntryLink — duplicates, tombstones and the version order
+    last_modified: 2026-09-24
+  - id: journal-repository
+    resource: ../../lib/features/journal/repository/journal_repository.dart
+    title: JournalRepository — updateLink, removeLink and removeTypedLink
+    last_modified: 2026-09-24
+  - id: adr-0078
+    resource: ../../docs/adr/0078-entry-link-versions-are-ordered.md
+    title: ADR 0078 — entry-link versions are ordered
+    last_modified: 2026-09-24
 ---
 
 # Nine variants, one shape
@@ -93,7 +105,23 @@ devices can always race one into existence.
 
 Updating a link emits `UpdateNotifications` **and** writes a sync outbox message
 with a fresh vector clock. Links are their own `SyncMessage` family
-(`entryLink`), sequence-tracked like journal entities.
+(`entryLink`), sequence-tracked like journal entities, and every
+journal-entity message also embeds a snapshot of its entry's links.
+
+So the same link arrives many times, in any order. `JournalDb.upsertEntryLink`
+keeps the newest version and refuses older ones: the later `updatedAt`, then
+the larger clock, then the serialized version. An edit — `updateLink`, or the
+tombstone of a project unlink — extends the stored link's clock and is never
+stamped earlier than it (`linkEditTimestamp`), so it outranks every copy of
+what it replaced
+([ADR 0078](../../docs/adr/0078-entry-link-versions-are-ordered.md); the
+order is drawn in
+[vector clocks and conflicts](../features/sync/vector-clocks-and-conflicts.md#entry-links-one-version-on-every-device)).
+
+**Only soft deletion syncs.** The project unlink writes a hidden tombstone and
+sends it. `removeLink` and `removeTypedLink` hard-delete the row on this device
+and send nothing: the peers keep the link, and their next journal-entity
+message re-inserts it here.
 
 # Related
 

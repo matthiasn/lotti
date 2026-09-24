@@ -712,12 +712,19 @@ class ProjectRepository {
   /// Reserves a VC for the soft-deleted link. Callers invoke this inside a
   /// [VectorClockService.withVcScope] so the reservation is bound to the
   /// enclosing write outcome.
+  ///
+  /// The tombstone succeeds the live version it deletes: its clock extends
+  /// the link's own and its `updatedAt` is never older than the link's (see
+  /// [linkEditTimestamp]). Otherwise a late copy of that version — a journal
+  /// entity's embedded link snapshot, say — is merely concurrent with the
+  /// tombstone and can win on `updatedAt`, bringing the link back.
   Future<EntryLink> _prepareDeletedLink(EntryLink link, DateTime now) async {
     return link.copyWith(
       deletedAt: now,
-      updatedAt: now,
+      updatedAt: linkEditTimestamp(link, now),
       hidden: true,
       vectorClock: await _vectorClockService.getNextVectorClock(
+        previous: link.vectorClock,
         payload: (id: link.id, type: SyncSequencePayloadType.entryLink),
       ),
     );

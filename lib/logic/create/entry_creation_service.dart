@@ -10,7 +10,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart' as image_import;
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/utils/file_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Service for creating journal entries with dependency injection support.
@@ -33,7 +32,6 @@ class EntryCreationService {
   }) async {
     final entry = await JournalRepository.createTextEntry(
       const EntryText(plainText: ''),
-      id: uuid.v1(),
       linkedId: linkedId,
       categoryId: categoryId,
       started: DateTime.now(),

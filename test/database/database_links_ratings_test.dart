@@ -1,4 +1,5 @@
 // ignore_for_file: avoid_redundant_argument_values
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart' as drift;
@@ -1246,6 +1247,181 @@ void main() {
           // Tombstone should be gone; fresh link should exist.
           expect(await db!.entryLinkById('tombstone-link-id'), isNull);
           expect(await db!.entryLinkById('fresh-link-id'), isNotNull);
+        },
+      );
+    });
+
+    group('upsertEntryLink recency -', () {
+      final early = DateTime(2024, 11, 10, 10);
+      final middle = DateTime(2024, 11, 10, 10, 30);
+      final late = DateTime(2024, 11, 10, 11);
+
+      EntryLink version({
+        required VectorClock? clock,
+        required DateTime updatedAt,
+        bool hidden = false,
+      }) => EntryLink.basic(
+        id: 'recency-link',
+        fromId: 'recency-from',
+        toId: 'recency-to',
+        createdAt: early,
+        updatedAt: updatedAt,
+        vectorClock: clock,
+        hidden: hidden,
+        deletedAt: hidden ? updatedAt : null,
+      );
+
+      Future<EntryLink> stored() async =>
+          (await db!.entryLinkById('recency-link'))!;
+
+      /// Delivers [versions] in every order, from an empty table each time,
+      /// and expects [winner] stored at the end of each.
+      Future<void> expectWinnerInEveryOrder(
+        List<EntryLink> versions,
+        EntryLink winner,
+      ) async {
+        Iterable<List<EntryLink>> orders(List<EntryLink> rest) sync* {
+          if (rest.isEmpty) {
+            yield [];
+            return;
+          }
+          for (final head in rest) {
+            for (final tail in orders([...rest]..remove(head))) {
+              yield [head, ...tail];
+            }
+          }
+        }
+
+        for (final order in orders(versions)) {
+          await clearAllTables(db!);
+          for (final link in order) {
+            await db!.upsertEntryLink(link);
+          }
+          expect(await stored(), winner, reason: '$order');
+        }
+      }
+
+      test(
+        'keeps the later updatedAt in either arrival order, and refuses the '
+        'older one',
+        () async {
+          final older = version(
+            clock: const VectorClock({'a': 5}),
+            updatedAt: early,
+            hidden: true,
+          );
+          final newer = version(
+            clock: const VectorClock({'b': 1}),
+            updatedAt: late,
+          );
+          await expectWinnerInEveryOrder([older, newer], newer);
+
+          expect(await db!.upsertEntryLink(older), 0);
+        },
+      );
+
+      test(
+        "an edit stamped at its predecessor's instant outranks it: a removed "
+        'link is not brought back by the snapshot it replaced',
+        () async {
+          final live = version(
+            clock: const VectorClock({'a': 5}),
+            updatedAt: late,
+          );
+          final removed = version(
+            clock: const VectorClock({'a': 5, 'b': 1}),
+            updatedAt: late,
+            hidden: true,
+          );
+          await expectWinnerInEveryOrder([live, removed], removed);
+
+          expect(await db!.upsertEntryLink(live), 0);
+        },
+      );
+
+      test(
+        "a new host's first edit, at counter 0, outranks its predecessor",
+        () async {
+          // VectorClock.compare reads an absent host as 0, so these two
+          // clocks compare equal; the link order must still rank the edit
+          // above the version it extends.
+          final predecessor = version(
+            clock: const VectorClock({'a': 5}),
+            updatedAt: late,
+          );
+          final firstEdit = version(
+            clock: const VectorClock({'a': 5, 'b': 0}),
+            updatedAt: late,
+            hidden: true,
+          );
+          expect(
+            VectorClock.compare(
+              predecessor.vectorClock!,
+              firstEdit.vectorClock!,
+            ),
+            VclockStatus.equal,
+          );
+          await expectWinnerInEveryOrder([predecessor, firstEdit], firstEdit);
+        },
+      );
+
+      test(
+        'concurrent clocks at the same instant: the first differing host in '
+        'sorted order decides, in either arrival order',
+        () async {
+          final fromB = version(
+            clock: const VectorClock({'a': 5, 'b': 1}),
+            updatedAt: late,
+          );
+          final fromC = version(
+            clock: const VectorClock({'a': 5, 'c': 1}),
+            updatedAt: late,
+            hidden: true,
+          );
+          await expectWinnerInEveryOrder([fromB, fromC], fromB);
+        },
+      );
+
+      test(
+        'mixed clocked and clockless versions converge in every arrival '
+        'order — the order is transitive',
+        () async {
+          // A clock-dominant version stamped earlier than its predecessor,
+          // and a legacy clockless copy in between: a dominance-first rule
+          // with an updatedAt fallback orders these three in a cycle.
+          final predecessor = version(
+            clock: const VectorClock({'a': 1}),
+            updatedAt: late,
+          );
+          final dominant = version(
+            clock: const VectorClock({'a': 1, 'b': 1}),
+            updatedAt: early,
+            hidden: true,
+          );
+          final legacy = version(clock: null, updatedAt: middle);
+          await expectWinnerInEveryOrder(
+            [predecessor, dominant, legacy],
+            predecessor,
+          );
+        },
+      );
+
+      test(
+        'at the same instant a clocked version outranks a clockless one, and '
+        'two clockless ones are ordered by content',
+        () async {
+          final clocked = version(
+            clock: const VectorClock({'a': 0}),
+            updatedAt: late,
+          );
+          final clockless = version(clock: null, updatedAt: late, hidden: true);
+          await expectWinnerInEveryOrder([clocked, clockless], clocked);
+
+          final shown = version(clock: null, updatedAt: late);
+          final kept = jsonEncode(shown).compareTo(jsonEncode(clockless)) > 0
+              ? shown
+              : clockless;
+          await expectWinnerInEveryOrder([shown, clockless], kept);
         },
       );
     });
