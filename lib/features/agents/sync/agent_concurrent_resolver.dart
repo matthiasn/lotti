@@ -2,6 +2,7 @@ import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/sync/agent_lww_timestamp.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
@@ -55,6 +56,165 @@ ConcurrentWinner resolveConcurrent({
   return compareClocksCanonically(incomingVc, localVc) > 0
       ? ConcurrentWinner.incoming
       : ConcurrentWinner.local;
+}
+
+/// The row a replica holding [local] persists after receiving [incoming]:
+/// [local] itself (identical) when the local row stands, otherwise the row
+/// to write in its place. This is the whole receive-path decision, shared by
+/// `SyncEventProcessor` and the local write path in `AgentSyncService` so the
+/// two can never resolve the same pair differently (ADR 0068).
+///
+/// - A missing clock on either side applies [incoming], as does a known
+///   variant arriving over a payload-less [AgentUnknownEntity] stub (unless
+///   that would resurrect the stub's tombstone).
+/// - Causal dominance decides next; a dominating [incoming] still has
+///   [local]'s convergent fields joined in ([joinConvergentAgentFields]).
+/// - A concurrent pair goes to [mergeConcurrentAgentEntities].
+///
+/// Pure: the same pair yields the same row on every device. Throws
+/// [VclockException] for a malformed clock, which the caller handles.
+AgentDomainEntity resolveAgentEntityVersions({
+  required AgentDomainEntity local,
+  required AgentDomainEntity incoming,
+}) {
+  final localVc = local.vectorClock;
+  final incomingVc = incoming.vectorClock;
+  if (localVc == null || incomingVc == null) return incoming;
+  // A local row that decodes as the forward-compat `unknown` fallback is a
+  // payload-less stub: an older build received a variant it did not know,
+  // kept only the envelope fields, and re-serialized the row as `unknown`
+  // with the incoming clock intact. A known incoming variant strictly refines
+  // it regardless of clock order — keeping the stub would pin the stripped
+  // row forever, because a re-delivery of the version it stubbed compares
+  // `equal`. The one thing a stub carries faithfully is its tombstone, so a
+  // deletion is never resurrected by an older live payload.
+  if (local is AgentUnknownEntity &&
+      incoming is! AgentUnknownEntity &&
+      (local.deletedAt == null || incoming.deletedAt != null)) {
+    return incoming;
+  }
+  final resolved = switch (VectorClock.compare(localVc, incomingVc)) {
+    VclockStatus.a_gt_b || VclockStatus.equal => local,
+    VclockStatus.b_gt_a => joinConvergentAgentFields(
+      winner: incoming,
+      other: local,
+    ),
+    VclockStatus.concurrent => mergeConcurrentAgentEntities(
+      local: local,
+      incoming: incoming,
+    ),
+  };
+  return resolved == local ? local : resolved;
+}
+
+/// Resolves two **concurrent** versions of one entity into the row to keep:
+/// the type's override ([resolveConcurrentAgentEntityOverride]), then
+/// [resolveConcurrent], with the per-type convergent fields joined — agent
+/// state's G-counters ([mergeAgentStateCounters]) and the nudge
+/// accumulators ([mergeNudgeAccumulators]). A missing clock counts as empty.
+AgentDomainEntity mergeConcurrentAgentEntities({
+  required AgentDomainEntity local,
+  required AgentDomainEntity incoming,
+}) {
+  final winnerSide =
+      resolveConcurrentAgentEntityOverride(local: local, incoming: incoming) ??
+      resolveConcurrent(
+        localVc: local.vectorClock ?? _emptyClock,
+        incomingVc: incoming.vectorClock ?? _emptyClock,
+        localUpdatedAt: local.effectiveUpdatedAt,
+        incomingUpdatedAt: incoming.effectiveUpdatedAt,
+      );
+  final winner = winnerSide == ConcurrentWinner.local ? local : incoming;
+  return switch ((local, incoming)) {
+    (final AgentStateEntity l, final AgentStateEntity i) =>
+      mergeAgentStateCounters(
+        winner: winner as AgentStateEntity,
+        local: l,
+        incoming: i,
+      ),
+    (final GoalNudgeEntity l, final GoalNudgeEntity i) =>
+      mergeGoalNudgeAccumulators(
+        winner: winner as GoalNudgeEntity,
+        local: l,
+        incoming: i,
+      ),
+    (final RelationshipNudgeEntity l, final RelationshipNudgeEntity i) =>
+      mergeRelationshipNudgeAccumulators(
+        winner: winner as RelationshipNudgeEntity,
+        local: l,
+        incoming: i,
+      ),
+    // A cross-variant pair (a goal nudge and a relationship nudge sharing an
+    // id) is unreachable — their id shapes are disjoint at mint time — and
+    // keeps the plain winner rather than joining histories across kinds.
+    _ => winner,
+  };
+}
+
+/// [winner] with [other]'s convergent agent-state fields joined in: the
+/// G-counters by element-wise max, the report watermarks by latest instant.
+/// Other variants come back unchanged.
+///
+/// Applied even when [winner] causally dominates [other]. A concurrent merge
+/// joins counters into a row without moving its clock, so a version that
+/// succeeds one side of that merge need not carry the other side's
+/// increments; overwriting the merged row with it would lose them.
+AgentDomainEntity joinConvergentAgentFields({
+  required AgentDomainEntity winner,
+  required AgentDomainEntity other,
+}) => winner is AgentStateEntity && other is AgentStateEntity
+    ? mergeAgentStateCounters(winner: winner, local: other, incoming: winner)
+    : winner;
+
+/// The row a **local** write of [write] persists over [persisted] (ADR
+/// 0068). The caller stamps it with a clock that covers both [write]'s and
+/// [persisted]'s, so every replica takes it as a successor of [persisted];
+/// this function makes the fields match what the replicas then agree on.
+///
+/// - A write built on [persisted]'s clock (or a newer one) keeps its fields.
+///   A write built on an older snapshot, or on no clock at all, did not see
+///   [persisted]; its fields are resolved against it as if the two were
+///   concurrent, so a stale write can neither revive a retraction nor beat
+///   a newer timestamp it never saw.
+/// - Agent state never lowers a G-counter or a report watermark.
+/// - `updatedAt` never moves backwards, so the successor sorts after the row
+///   it replaces on every replica, whatever the writer's clock says.
+///
+/// Append-only variants (last-writer-wins on `createdAt`) and a stub or
+/// different variant in [persisted] keep [write]'s fields unchanged.
+AgentDomainEntity resolveLocalAgentWrite({
+  required AgentDomainEntity persisted,
+  required AgentDomainEntity write,
+}) {
+  if (persisted is AgentUnknownEntity ||
+      persisted.runtimeType != write.runtimeType ||
+      !write.lwwOnUpdatedAt) {
+    return write;
+  }
+  final fields = _covers(write.vectorClock, persisted.vectorClock)
+      ? write
+      : mergeConcurrentAgentEntities(local: persisted, incoming: write);
+  return joinConvergentAgentFields(
+    winner: fields,
+    other: persisted,
+  ).withUpdatedAtNotBefore(persisted.effectiveUpdatedAt);
+}
+
+const _emptyClock = VectorClock(<String, int>{});
+
+/// Whether a write built on [base] saw everything in [seen]. A malformed
+/// clock proves nothing, so it does not cover.
+bool _covers(VectorClock? base, VectorClock? seen) {
+  if (seen == null) return true;
+  if (base == null) return false;
+  try {
+    return switch (VectorClock.compare(base, seen)) {
+      VclockStatus.a_gt_b || VclockStatus.equal => true,
+      VclockStatus.b_gt_a || VclockStatus.concurrent => false,
+    };
+  } on VclockException {
+    return false;
+  }
 }
 
 /// Type-specific **monotonic** resolution for two *concurrent* versions of one

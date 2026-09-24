@@ -5,8 +5,8 @@ description: How causal order is represented, why coveredVectorClocks is separat
 resource: ../../../lib/features/sync/vector_clock.dart
 tags: [sync, vector-clock, conflicts, causality]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T23:00:00Z }
-stale_after: 2026-11-02
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T12:00:00Z }
+stale_after: 2026-12-24
 sources:
   - id: vector-clock
     resource: ../../../lib/features/sync/vector_clock.dart
@@ -26,8 +26,20 @@ sources:
     last_modified: 2026-06-20
   - id: agent-resolver
     resource: ../../../lib/features/agents/sync/agent_concurrent_resolver.dart
-    title: AgentConcurrentResolver — resolveConcurrent and mergeAgentStateCounters
-    last_modified: 2026-08-12
+    title: AgentConcurrentResolver — resolveAgentEntityVersions, resolveLocalAgentWrite, resolveConcurrent and mergeAgentStateCounters
+    last_modified: 2026-09-24
+  - id: agent-sync-service
+    resource: ../../../lib/features/agents/sync/agent_sync_service.dart
+    title: AgentSyncService — the local write path
+    last_modified: 2026-09-24
+  - id: replication-spec
+    resource: ../../../specs/tla/AgentReplication.tla
+    title: TLA+ model of agent entity replication
+    last_modified: 2026-09-24
+  - id: adr-0068
+    resource: ../../../docs/adr/0068-model-checked-agent-convergence.md
+    title: ADR 0068 — model-checked convergence of synced agent entities
+    last_modified: 2026-09-24
 ---
 
 # What a vector clock is here
@@ -230,23 +242,85 @@ count for badges.
 
 # Agent state converges without user involvement
 
-Inbound agent entities and links are guarded by clock comparison before they
-overwrite a local `AgentRepository` row:
+Inbound agent entities are resolved by one pure function,
+`resolveAgentEntityVersions` in `agent_concurrent_resolver.dart`, which
+`SyncEventProcessor` applies before it overwrites a local `AgentRepository`
+row:
 
 | Comparison | Behaviour |
 |------------|-----------|
+| a clock missing on either side | Apply the incoming version |
 | `a_gt_b` / `equal` (local wins) | Skip the upsert, restore the local JSON cache when the message came via `jsonPath`, but still record the sequence-log receipt so backfill stops asking |
-| `b_gt_a` (incoming wins) | Apply |
-| `concurrent` | Deterministic last-writer-wins on non-counter fields; **cumulative per-host G-counters merge element-wise** |
+| `b_gt_a` (incoming wins) | Apply — with agent state's G-counters and report watermarks joined in from the local row |
+| `concurrent` | The type's override, then last-writer-wins on `updatedAt`, then the canonical clock tiebreak; agent-state G-counters and nudge accumulators merge |
 
-The concurrent case is the interesting one. `agent_concurrent_resolver.dart`
-picks the strictly-newer `updatedAt`, falling back to a replica-independent
-canonical clock comparison on ties. But the cumulative counters on
+The concurrent case picks the strictly-newer `updatedAt`, falling back to a
+replica-independent canonical clock comparison on ties. Type overrides run
+first: a retraction is terminal, a scheduled wake with a later target beats
+an earlier one, a day summary keeps its earliest testimony, a goal spec head
+prefers the higher ordinal, and a nudge's dismissal, supersession and higher
+activation outrank the timestamp. The cumulative counters on
 `AgentStateEntity` — `wakeCounter`, `slots.totalSessionsCompleted`,
 `slots.weeklyReviewCount` — are merged as a CRDT join via
-`mergeAgentStateCounters`, so concurrent increments from different devices are
-never lost. The merge is applied only when it actually recovers a counter the
-LWW winner lacked, avoiding a redundant write otherwise.
+`mergeAgentStateCounters`, and so are the report freshness watermarks. The
+join also runs when the incoming version *dominates*: a concurrent merge joins
+counters into a row without moving its clock, so a version that succeeds only
+the merge's winner need not carry the loser's increments. Unlike journal
+entries, agent-derived state never raises a user-facing `Conflict`.
 
-Both devices converge on the same row regardless of arrival order. Unlike
-journal entries, agent-derived state never raises a user-facing `Conflict`.
+Links (`AgentLink`) keep plain dominance plus last-writer-wins.
+
+## A local write succeeds the row it replaces
+
+Convergence is not only about the receive path: a pure pairwise rule still
+diverges when a device keeps something its peers reject. So local writes of
+mutable registers (the variants last-writer-wins orders by `updatedAt`) go
+through the same decision (ADR 0068). `AgentSyncService._upsertEntityRaw`
+reads the persisted row in the write's transaction and stamps the write with a
+clock that covers both — every peer takes it as that row's successor — and
+`resolveLocalAgentWrite` fixes its fields:
+
+```mermaid
+flowchart TD
+  W[local write of a mutable register] --> R[read the persisted row in the transaction]
+  R --> P{persisted row?}
+  P -- no --> S[stamp with the write's own clock]
+  P -- yes --> C{write's clock covers the row's?}
+  C -- yes --> F[keep the write's fields]
+  C -- "no: stale snapshot or vectorClock null" --> M[resolve against the row as if concurrent]
+  F --> J[join agent-state G-counters and watermarks with the row]
+  M --> J
+  J --> T[raise updatedAt to at least the row's]
+  T --> V["stamp with join(write clock, row clock) + own counter"]
+  V --> O[persist and send]
+  S --> O
+```
+
+A write built on a stale snapshot therefore loses locally exactly where it
+loses on every peer — an edit older than a retraction cannot revive it — and
+a successor never sorts before its predecessor, whatever the writing device's
+clock says. Append-only variants are written as given.
+
+The scheduling fields (`nextWakeAt`, `sleepUntil`, `scheduledWakeAt`) are
+device-local: the receive path overlays this device's values onto every
+incoming state row. Maintenance writes that change only those fields go
+straight to the repository without a clock or a sync message and leave
+`updatedAt` alone — the throttle's `nextWakeAt`, and the project and
+scheduled-wake cleanups of `scheduledWakeAt` — because a local timestamp
+peers never see would let this device keep a row that every other device
+rejects. Workflow outcome writes that also set `scheduledWakeAt` (the day
+and project agents) go through `AgentSyncService` like any other state write.
+
+## Residuals
+
+The model `specs/tla/AgentReplication.tla` checks this with three replicas,
+arbitrary arrival orders, stale and unclocked writes and a lagging clock. Two
+cases stay open, recorded in `specs/tla/README.md` and ADR 0068:
+
+- A successor that ranks *below* its predecessor under a type override — the
+  day agent's digest retry re-arming its consumed window at the same instant,
+  a relationship retry moved to an earlier instant — can still let arrival
+  order decide against a third concurrent version.
+- Nudges store the join of both clocks after a concurrent merge, so an exact
+  `updatedAt` tie between two nudge versions is broken on a history-dependent
+  clock.

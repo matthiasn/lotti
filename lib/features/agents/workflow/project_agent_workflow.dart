@@ -231,13 +231,16 @@ class ProjectAgentWorkflow with AgentErrorLogging {
   }) async {
     final hostId = await syncService.localHost();
     await syncService.runInTransaction(() async {
-      await syncService.upsertEntity(
-        state.copyWith(
+      // A transform of the current row, not of the caller's snapshot, so a
+      // write that landed since cannot be overwritten (ADR 0068).
+      await syncService.updateAgentState(
+        state.agentId,
+        (current) => current.copyWith(
           lastWakeAt: now,
           scheduledWakeAt: null,
           updatedAt: now,
           consecutiveFailureCount: 0,
-          wakeCounter: state.wakeCounter.increment(hostId),
+          wakeCounter: current.wakeCounter.increment(hostId),
         ),
       );
 

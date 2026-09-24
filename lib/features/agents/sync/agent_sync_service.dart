@@ -11,9 +11,12 @@ import 'package:lotti/features/agents/projection/agent_projection.dart';
 import 'package:lotti/features/agents/projection/canonical_order.dart';
 import 'package:lotti/features/agents/projection/derived_agent_state.dart';
 import 'package:lotti/features/agents/projection/join_plan.dart';
+import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
+import 'package:lotti/features/agents/sync/agent_lww_timestamp.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -279,6 +282,15 @@ class AgentSyncService {
   /// counter through the normal burn path instead of binding it to a payload
   /// that never committed.
   ///
+  /// A write to a mutable register (a variant that last-writer-wins orders by
+  /// `updatedAt`) is resolved against the persisted row in the same
+  /// transaction (ADR 0068): its clock covers the persisted row's, so every
+  /// replica takes it as that row's successor, and [resolveLocalAgentWrite]
+  /// makes its fields the ones the replicas then agree on — a write built on
+  /// a stale snapshot or on no clock at all cannot keep a row here that its
+  /// peers reject, and never lowers a G-counter or moves `updatedAt` back.
+  /// Append-only variants are written as given.
+  ///
   /// Local capture rewrites preserve an already persisted `dayId` and
   /// `parseCompletedAt` before stamping so the database row and emitted sync
   /// envelope carry the same monotonic capture state.
@@ -293,10 +305,24 @@ class AgentSyncService {
     await _vectorClockService.withVcScope<void>(() async {
       late AgentDomainEntity stamped;
 
-      Future<void> stampAndPersist(AgentDomainEntity entityToWrite) async {
-        stamped = entityToWrite.copyWith(
+      Future<void> stampAndPersist(
+        AgentDomainEntity entityToWrite, {
+        AgentDomainEntity? persisted,
+      }) async {
+        final fields = persisted == null
+            ? entityToWrite
+            : resolveLocalAgentWrite(
+                persisted: persisted,
+                write: entityToWrite,
+              );
+        stamped = fields.copyWith(
           vectorClock: await _vectorClockService.getNextVectorClock(
-            previous: entityToWrite.vectorClock,
+            previous: persisted?.vectorClock == null
+                ? entityToWrite.vectorClock
+                : VectorClock.merge(
+                    entityToWrite.vectorClock,
+                    persisted!.vectorClock,
+                  ),
             payload: (
               id: entityToWrite.id,
               type: SyncSequencePayloadType.agentEntity,
@@ -315,6 +341,13 @@ class AgentSyncService {
             existing: existing is CaptureEntity ? existing : null,
           );
           await stampAndPersist(entityToWrite);
+        });
+      } else if (entity.lwwOnUpdatedAt) {
+        await _repository.runInTransaction(() async {
+          await stampAndPersist(
+            entity,
+            persisted: await _repository.getEntity(entity.id),
+          );
         });
       } else {
         await stampAndPersist(entity);

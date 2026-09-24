@@ -199,40 +199,16 @@ extension _AgentHandlers on SyncEventProcessor {
       return;
     }
     if (agentRepository != null) {
-      // AgentStateEntity carries per-host G-counters that must converge under
-      // concurrent edits: merge them element-wise rather than letting whole-row
-      // LWW drop one side's increments. On a concurrent clock this returns the
-      // merged state to persist (counters joined, non-counter fields from the
-      // LWW winner) and bypasses the keep-local skip below; otherwise it returns
-      // null and the standard dominance path applies (causal dominance already
-      // implies counter-domination, so no merge is needed there).
-      final AgentDomainEntity? mergedState;
-      if (resolvedEntity is AgentStateEntity) {
-        mergedState = await _mergeConcurrentAgentState(
-          incoming: resolvedEntity,
-          prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
-        );
-      } else if (resolvedEntity is GoalNudgeEntity ||
-          resolvedEntity is RelationshipNudgeEntity) {
-        // Nudges accumulate exposure counters and rating history
-        // across years of activations (ADR 0055); like the agent-state
-        // counters, a concurrent conflict must join them element-wise
-        // instead of letting whole-row LWW erase one device's outcomes.
-        // One merge path serves every nudge variant (ADR 0059).
-        mergedState = await _mergeConcurrentNudge(
-          incoming: resolvedEntity,
-          prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
-        );
-      } else {
-        mergedState = null;
-      }
+      // One pure decision (ADR 0068): keep the local row, or the row to write
+      // — the incoming version, or a merge that joins agent-state G-counters
+      // and nudge accumulators so neither side's increments are lost.
+      final resolved = await _resolveIncomingAgentEntity(
+        incoming: resolvedEntity,
+        jsonPath: msg.jsonPath,
+        prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
+      );
 
-      if (mergedState == null &&
-          await _localAgentEntityDominates(
-            incoming: resolvedEntity,
-            jsonPath: msg.jsonPath,
-            prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
-          )) {
+      if (resolved == null) {
         AgentIdentityEntity? projectIdentity;
         if (wakeOrchestrator != null) {
           if (resolvedEntity is AgentIdentityEntity &&
@@ -265,7 +241,7 @@ extension _AgentHandlers on SyncEventProcessor {
         return;
       }
 
-      var entityToApply = mergedState ?? resolvedEntity;
+      var entityToApply = resolved;
       // Scheduling is device-local (PR 4 B4): each device schedules its own
       // wakes, so a remote AgentStateEntity must never overwrite this device's
       // nextWakeAt / sleepUntil / scheduledWakeAt. Overlay the local values onto
@@ -679,184 +655,47 @@ extension _AgentHandlers on SyncEventProcessor {
       ? prefetchedAgentEntitiesById![id]
       : await agentRepository!.getEntity(id);
 
-  Future<bool> _localAgentEntityDominates({
+  /// The row to persist for an [incoming] agent entity, or null when the
+  /// local row stands — in which case the local payload is restored over the
+  /// attachment cache that the incoming descriptor may have overwritten.
+  ///
+  /// The decision is [resolveAgentEntityVersions], the same pure function the
+  /// local write path resolves against (ADR 0068). A malformed clock is
+  /// logged and applies [incoming].
+  Future<AgentDomainEntity?> _resolveIncomingAgentEntity({
     required AgentDomainEntity incoming,
     required String? jsonPath,
     Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
   }) async {
-    final incomingVc = incoming.vectorClock;
-    if (incomingVc == null) return false;
-
     final local = await _localAgentEntityFor(
       incoming.id,
       prefetchedAgentEntitiesById,
     );
-    final localVc = local?.vectorClock;
-    if (local == null || localVc == null) return false;
-
-    // A local row that decodes as the forward-compat `unknown` fallback is a
-    // payload-less stub: an older build received a variant it did not know,
-    // the fallback decode kept only the envelope fields, and the row was
-    // re-serialized as `unknown` — with the incoming vector clock intact. A
-    // known incoming variant strictly refines such a stub regardless of clock
-    // order: keeping the stub would pin the stripped row forever, because a
-    // re-delivery of the very version it stubbed compares `equal`, and equal
-    // keeps local. The one thing a stub does carry faithfully is its
-    // tombstone, so a deletion is never resurrected by an older live payload.
-    if (local is AgentUnknownEntity &&
-        incoming is! AgentUnknownEntity &&
-        (local.deletedAt == null || incoming.deletedAt != null)) {
-      return false;
+    if (local == null) return incoming;
+    final AgentDomainEntity resolved;
+    try {
+      resolved = resolveAgentEntityVersions(local: local, incoming: incoming);
+    } catch (e, st) {
+      _loggingService.error(
+        LogDomain.sync,
+        e,
+        stackTrace: st,
+        subDomain: 'apply.agentEntity.vectorClockCompare',
+      );
+      return incoming;
     }
-
-    return _localAgentPayloadDominates(
-      localVc: localVc,
-      incomingVc: incomingVc,
-      localUpdatedAt: () => local.effectiveUpdatedAt,
-      incomingUpdatedAt: () => incoming.effectiveUpdatedAt,
+    if (!identical(resolved, local)) return resolved;
+    await _restoreDominantAgentCache(
+      jsonPath: jsonPath,
       kind: 'agentEntity',
       id: incoming.id,
-      jsonPath: jsonPath,
-      restoreLocalJson: () => jsonEncode(local.toJson()),
-      // Type-specific monotonic rules (ADR 0022): retraction is terminal;
-      // a future-reschedule beats a past consume. Deferred to LWW otherwise.
-      concurrentOverride: () => resolveConcurrentAgentEntityOverride(
-        local: local,
-        incoming: incoming,
-      ),
+      jsonString: jsonEncode(local.toJson()),
     );
-  }
-
-  /// On a **concurrent** clock conflict, returns the merged [AgentStateEntity]:
-  /// the per-host G-counters joined element-wise (lossless) via
-  /// [mergeAgentStateCounters], with non-counter fields from the deterministic
-  /// [resolveConcurrent] winner. Returns null when there is no comparable local
-  /// state, a clock is missing, or the clocks are **not** concurrent — in those
-  /// cases causal dominance already implies counter-domination, so the standard
-  /// [_localAgentEntityDominates] path is correct.
-  Future<AgentStateEntity?> _mergeConcurrentAgentState({
-    required AgentStateEntity incoming,
-    Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
-  }) async {
-    final incomingVc = incoming.vectorClock;
-    if (incomingVc == null) return null;
-
-    final local = await _localAgentEntityFor(
-      incoming.id,
-      prefetchedAgentEntitiesById,
+    _trace(
+      'apply.agentEntity.skippedLocalWins id=${incoming.id}',
+      subDomain: 'processor.apply',
     );
-    if (local is! AgentStateEntity) return null;
-    final localVc = local.vectorClock;
-    if (localVc == null) return null;
-
-    final VclockStatus status;
-    try {
-      status = VectorClock.compare(localVc, incomingVc);
-    } catch (_) {
-      // Invalid clock — let the standard dominance path log and fall through.
-      return null;
-    }
-    if (status != VclockStatus.concurrent) return null;
-
-    final winner =
-        resolveConcurrent(
-              localVc: localVc,
-              incomingVc: incomingVc,
-              localUpdatedAt: local.effectiveUpdatedAt,
-              incomingUpdatedAt: incoming.effectiveUpdatedAt,
-            ) ==
-            ConcurrentWinner.local
-        ? local
-        : incoming;
-
-    final merged = mergeAgentStateCounters(
-      winner: winner,
-      local: local,
-      incoming: incoming,
-    );
-    // Only diverge from the standard whole-row path when the merge actually
-    // recovers a counter the LWW winner lacked. When the winner already carries
-    // the joined counters, the standard path is correct (keep local / apply
-    // incoming) and we avoid a redundant write — and stay behaviour-compatible
-    // with the non-counter concurrent resolution.
-    return merged == winner ? null : merged;
-  }
-
-  /// The nudge analogue of [_mergeConcurrentAgentState]: on a
-  /// **concurrent** clock conflict, returns the nudge with exposure
-  /// counters joined, ratings unioned and watermarks widened via
-  /// [mergeNudgeAccumulators] (through its per-variant adapters), with
-  /// non-accumulator fields from the deterministic winner — which honours
-  /// the dismissal-terminal override before generic LWW, so a concurrent
-  /// bookkeeping write can never resurrect a dismissed banner. Returns
-  /// null when clocks are missing or not concurrent (causal dominance
-  /// already carries the accumulators). One method serves every nudge
-  /// variant (ADR 0059); a cross-variant id collision defers to the
-  /// standard whole-row path.
-  Future<AgentDomainEntity?> _mergeConcurrentNudge({
-    required AgentDomainEntity incoming,
-    Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
-  }) async {
-    final incomingVc = incoming.vectorClock;
-    if (incomingVc == null) return null;
-
-    final local = await _localAgentEntityFor(
-      incoming.id,
-      prefetchedAgentEntitiesById,
-    );
-    if (local == null) return null;
-    final localVc = local.vectorClock;
-    if (localVc == null) return null;
-
-    final VclockStatus status;
-    try {
-      status = VectorClock.compare(localVc, incomingVc);
-    } catch (_) {
-      return null;
-    }
-    if (status != VclockStatus.concurrent) return null;
-
-    final overrideWinner = resolveConcurrentAgentEntityOverride(
-      local: local,
-      incoming: incoming,
-    );
-    final winnerSide =
-        overrideWinner ??
-        resolveConcurrent(
-          localVc: localVc,
-          incomingVc: incomingVc,
-          localUpdatedAt: local.effectiveUpdatedAt,
-          incomingUpdatedAt: incoming.effectiveUpdatedAt,
-        );
-    final winner = winnerSide == ConcurrentWinner.local ? local : incoming;
-
-    final merged = switch ((local, incoming)) {
-      (final GoalNudgeEntity l, final GoalNudgeEntity i) =>
-        mergeGoalNudgeAccumulators(
-          winner: winner as GoalNudgeEntity,
-          local: l,
-          incoming: i,
-        ),
-      (final RelationshipNudgeEntity l, final RelationshipNudgeEntity i) =>
-        mergeRelationshipNudgeAccumulators(
-          winner: winner as RelationshipNudgeEntity,
-          local: l,
-          incoming: i,
-        ),
-      // A cross-variant pair here means a goal nudge and a relationship nudge
-      // share one id. The id shapes are disjoint at mint time — goal nudges
-      // are `goal_nudge:…`-prefixed strings, relationship nudges are bare
-      // UUIDv5s (`relationshipAdId`) — so this branch is unreachable in
-      // practice; deferring to whole-row LWW (rather than silently joining
-      // accumulators across kinds) keeps a hypothetical id collision from
-      // corrupting either side's history. A third nudge kind must keep its
-      // id shape disjoint from both.
-      _ => null,
-    };
-    if (merged == null) return null;
-    // As with agent state: only diverge from the standard whole-row path
-    // when the join actually recovers something the winner lacked.
-    return merged == winner ? null : merged;
+    return null;
   }
 
   /// Overlays this device's local scheduling fields onto an [incoming]
@@ -957,25 +796,23 @@ extension _AgentHandlers on SyncEventProcessor {
     required String id,
     required String? jsonPath,
     required String Function() restoreLocalJson,
-    ConcurrentWinner? Function()? concurrentOverride,
   }) async {
     try {
       final status = VectorClock.compare(localVc, incomingVc);
       // Causal dominance decides first; the genuinely `concurrent` branch is
-      // resolved by an optional type-specific monotonic rule, then a
-      // deterministic LWW + vector-clock tiebreak so two devices converge
-      // regardless of arrival order (the closures are only evaluated there).
+      // resolved by a deterministic LWW + vector-clock tiebreak so two
+      // devices converge regardless of arrival order (the closures are only
+      // evaluated there).
       final keepLocal = switch (status) {
         VclockStatus.a_gt_b || VclockStatus.equal => true,
         VclockStatus.b_gt_a => false,
         VclockStatus.concurrent =>
-          (concurrentOverride?.call() ??
-                  resolveConcurrent(
-                    localVc: localVc,
-                    incomingVc: incomingVc,
-                    localUpdatedAt: localUpdatedAt(),
-                    incomingUpdatedAt: incomingUpdatedAt(),
-                  )) ==
+          resolveConcurrent(
+                localVc: localVc,
+                incomingVc: incomingVc,
+                localUpdatedAt: localUpdatedAt(),
+                incomingUpdatedAt: incomingUpdatedAt(),
+              ) ==
               ConcurrentWinner.local,
       };
       if (!keepLocal) return false;

@@ -1651,6 +1651,67 @@ void main() {
           contains('test-conv-id'),
         );
       });
+
+      test(
+        'counts the failure on the row as it is when the wake fails, not '
+        'the wake-start snapshot — AgentStateWrites NoLostWatermark',
+        () async {
+          stubPreExecuteDefaults(
+            mockAgentRepository: mockAgentRepository,
+            mockAiInputRepository: mockAiInputRepository,
+            testAgentState: testAgentState,
+            agentId: agentId,
+            taskId: taskId,
+          );
+          when(
+            () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => [geminiModel]);
+          when(
+            () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
+          ).thenAnswer((_) async => geminiProvider);
+          // While the model runs, a subscription event marks the report stale
+          // and another failure is recorded on the row.
+          final staleAt = DateTime(2024, 3, 15, 10, 45);
+          final current = testAgentState.copyWith(
+            reportStaleAt: staleAt,
+            consecutiveFailureCount: testAgentState.consecutiveFailureCount + 2,
+          );
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                when(
+                  () => mockAgentRepository.getAgentState(agentId),
+                ).thenAnswer((_) async => current);
+                throw Exception('Network error');
+              };
+
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isFalse);
+          final updatedState = capturedStateEntities(
+            verify(() => mockSyncService.upsertEntity(captureAny())).captured,
+          ).last;
+          expect(updatedState.reportStaleAt, staleAt);
+          expect(
+            updatedState.consecutiveFailureCount,
+            current.consecutiveFailureCount + 1,
+          );
+        },
+      );
     });
 
     group('_resolveGeminiProvider edge cases', () {

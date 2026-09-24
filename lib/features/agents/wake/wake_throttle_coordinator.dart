@@ -87,13 +87,17 @@ class WakeThrottleCoordinator with AgentErrorLogging {
     // Write directly to repository (bypassing AgentSyncService) because
     // throttle state is per-device and should NOT be synced to other devices.
     // Each device maintains its own wake cooldown window independently.
+    // Nor does it touch `updatedAt`: that is the synced last-writer-wins
+    // timestamp, and a local bump peers never see would let this device keep
+    // a row in a concurrent conflict that every other device rejects — a
+    // permanent split (ADR 0068).
     try {
       var changed = false;
       await repository.runInTransaction(() async {
         final state = await repository.getAgentState(agentId);
         if (state == null) return;
         await repository.upsertEntity(
-          state.copyWith(nextWakeAt: deadline, updatedAt: clock.now()),
+          state.copyWith(nextWakeAt: deadline),
         );
         changed = true;
       });
@@ -193,7 +197,7 @@ class WakeThrottleCoordinator with AgentErrorLogging {
                 continue;
               }
               await repository.upsertEntity(
-                state.copyWith(nextWakeAt: null, updatedAt: clock.now()),
+                state.copyWith(nextWakeAt: null),
               );
               changed.add(agentId);
             }

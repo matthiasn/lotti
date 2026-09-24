@@ -530,6 +530,7 @@ TaskAgentWorkflowTestBench createTaskAgentWorkflowTestBench({
   when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async => {});
   stubAppendMilestone(mockSyncService);
   stubReconciledAgentState(mockSyncService, mockAgentRepository);
+  stubUpdateAgentState(mockSyncService, mockAgentRepository);
 
   // System-prompt persistence checks payload existence by content digest;
   // default to "not present" so the content-addressed write path runs

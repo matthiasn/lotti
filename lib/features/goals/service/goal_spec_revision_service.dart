@@ -348,6 +348,25 @@ class GoalSpecRevisionService {
     await _syncService.upsertEntity(
       current.copyWith(status: GoalSpecVersionStatus.superseded),
     );
+    // Disconnected revisions can each mint an active version; the head
+    // resolver keeps one, and the other would otherwise stay active forever
+    // beside it (its banners never swept). Every revision supersedes all of
+    // them, as a soul or template edit archives every version (ADR 0068).
+    final strayActives =
+        (await _repository.getEntitiesByAgentId(
+          agentId,
+          type: AgentEntityTypes.goalSpecVersion,
+        )).whereType<GoalSpecVersionEntity>().where(
+          (version) =>
+              version.id != current.id &&
+              version.deletedAt == null &&
+              version.status == GoalSpecVersionStatus.active,
+        );
+    for (final version in strayActives) {
+      await _syncService.upsertEntity(
+        version.copyWith(status: GoalSpecVersionStatus.superseded),
+      );
+    }
     await _syncService.upsertEntity(minted);
     await _syncService.upsertEntity(
       head.copyWith(versionId: versionId, updatedAt: now),
