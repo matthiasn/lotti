@@ -314,6 +314,54 @@ void main() {
     verifyNever(() => repository.getEntity(source.id));
   });
 
+  // GoalChatReply.tla: every goal wake on every device used to answer the
+  // oldest pending message, so a peer's cadence tick answered the author's
+  // message while the author's own wake was still answering it.
+  test('a goal wake that is not for a message leaves a pending message '
+      'alone', () async {
+    final pending =
+        AgentDomainEntity.agentMessage(
+              id: 'message-pending',
+              agentId: 'goal-chat',
+              threadId: 'message-pending',
+              kind: AgentMessageKind.user,
+              createdAt: DateTime(2026),
+              vectorClock: null,
+              contentEntryId: 'message-pending:payload',
+              metadata: const AgentMessageMetadata(),
+            )
+            as AgentMessageEntity;
+    when(
+      () => repository.getMessagesByKind(
+        'goal-chat',
+        AgentMessageKind.user,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => [pending]);
+    when(
+      () => repository.getMessagesByKindAndToolName(
+        'goal-chat',
+        AgentMessageKind.action,
+        AgentConversationToolNames.replyToUser,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => []);
+
+    final runner = container.read(
+      goalAgentWakeRunnersProvider,
+    )[AgentKinds.goalAgent]!;
+    final result = await runner(
+      agentIdentity: goalIdentity('goal-chat'),
+      runKey: 'cadence-run',
+      triggerTokens: const {'gym-habit'},
+      threadId: 'cadence-run',
+    );
+
+    // No spec head: the €0 tier's clean no-op, not the chat workflow.
+    expect(result.success, isTrue);
+    verifyNever(() => repository.getEntity(pending.id));
+  });
+
   test('an escalation trigger token routes the wake to Phase B — proven '
       'by it failing on the missing inference provider, which the €0 tier '
       'never touches', () async {

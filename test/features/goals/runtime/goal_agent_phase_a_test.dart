@@ -984,6 +984,164 @@ void main() {
     );
   });
 
+  // ScheduledWakeLease.tla's trace: host-b ran the day's first escalation,
+  // host-a re-arms the period. A row rebuilt from a null clock at the
+  // period's fixed instant was concurrent with host-b's consumed copy and
+  // lost to it there, so the second escalation ran on host-a alone — and on
+  // no device at all if host-a died.
+  group('a second escalation of the same period (ADR 0069)', () {
+    final escalationId = scheduledWakeRecordId(
+      agentId,
+      workspaceKey: goalEscalationWorkspaceKey('2026-08-08'),
+    );
+    const consumedClock = VectorClock({'host-a': 4, 'host-b': 7});
+
+    ScheduledWakeEntity firstWindow(ScheduledWakeStatus status) =>
+        AgentDomainEntity.scheduledWake(
+              id: escalationId,
+              agentId: agentId,
+              scheduledAt: DateTime.utc(2026, 8, 8),
+              status: status,
+              reason: WakeReason.scheduled.name,
+              updatedAt: DateTime(2026, 8, 8, 9),
+              vectorClock: consumedClock,
+              workspaceKey: goalEscalationWorkspaceKey('2026-08-08'),
+              triggerTokens: [
+                goalEscalationWorkspaceKey('2026-08-08'),
+                goalEscalationBaselineToken('atRisk'),
+                goalReportRefreshTriggerToken,
+              ],
+              leaseHostId: 'host-b',
+              leaseUntil: DateTime.utc(2026, 8, 8, 7, 30),
+            )
+            as ScheduledWakeEntity;
+
+    Future<void> runDeferred() => withClock(
+      fixedClock,
+      () => phaseA(onTrackSignals()).execute(
+        agentIdentity: identity,
+        runKey: 'run-deferred',
+        triggerTokens: const {goalDeferredReportRefreshTriggerToken},
+        threadId: 'thread-1',
+      ),
+    );
+
+    test('over a consumed first window, it causally follows the consumption '
+        'and is due just after it', () async {
+      stubSpec();
+      final consumed = firstWindow(ScheduledWakeStatus.consumed);
+      when(
+        () => repository.getEntity(escalationId),
+      ).thenAnswer((_) async => consumed);
+
+      await runDeferred();
+
+      final rearmed = upserts.whereType<ScheduledWakeEntity>().singleWhere(
+        (w) => w.id == escalationId,
+      );
+      expect(rearmed.status, ScheduledWakeStatus.pending);
+      expect(rearmed.vectorClock, consumedClock);
+      expect(
+        rearmed.scheduledAt,
+        DateTime.utc(2026, 8, 8).add(goalEscalationWindowStep),
+      );
+      expect(rearmed.leaseHostId, isNull);
+      expect(rearmed.leaseUntil, isNull);
+
+      // Stamped locally from the carried clock, the re-arm dominates the
+      // consumed copy every peer holds, so each of them applies it and may
+      // take it over.
+      final stamped = rearmed.copyWith(
+        vectorClock: const VectorClock({'host-a': 8, 'host-b': 7}),
+      );
+      expect(
+        VectorClock.compare(consumedClock, stamped.vectorClock!),
+        VclockStatus.b_gt_a,
+      );
+      // And a peer's late takeover claim of the FIRST window — concurrent
+      // with the re-arm — loses to it on the later deadline, instead of
+      // resurrecting a window that already ran.
+      final lateClaim = firstWindow(ScheduledWakeStatus.pending).copyWith(
+        vectorClock: const VectorClock({'host-a': 4, 'host-b': 9}),
+        leaseHostId: 'host-b',
+        updatedAt: DateTime(2026, 8, 8, 23),
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: stamped,
+          incoming: lateClaim,
+        ),
+        ConcurrentWinner.local,
+      );
+
+      // The local write path resolves a write against the persisted row
+      // (ADR 0068). The re-arm saw the consumed row, so it is written as
+      // given; the pre-0069 row, rebuilt from a null clock at the period's
+      // instant, would be resolved into the consumed row and never pend.
+      final written = resolveLocalAgentWrite(
+        persisted: consumed,
+        write: rearmed,
+      );
+      expect(written, isA<ScheduledWakeEntity>());
+      expect(
+        (written as ScheduledWakeEntity).status,
+        ScheduledWakeStatus.pending,
+      );
+      expect(written.scheduledAt, rearmed.scheduledAt);
+      final nullClockRearm = rearmed.copyWith(
+        vectorClock: null,
+        scheduledAt: consumed.scheduledAt,
+      );
+      expect(
+        (resolveLocalAgentWrite(persisted: consumed, write: nullClockRearm)
+                as ScheduledWakeEntity)
+            .status,
+        ScheduledWakeStatus.consumed,
+      );
+    });
+
+    test('over a pending first window, it joins it and writes nothing — the '
+        "peer's claim and the original baseline stay", () async {
+      stubSpec();
+      when(
+        () => repository.getEntity(escalationId),
+      ).thenAnswer((_) async => firstWindow(ScheduledWakeStatus.pending));
+
+      await runDeferred();
+
+      expect(
+        upserts.whereType<ScheduledWakeEntity>().where(
+          (w) => w.id == escalationId,
+        ),
+        isEmpty,
+      );
+    });
+  });
+
+  // The cadence re-arm keeps its null clock: once a tick fired, the next
+  // one is due at a strictly later instant, which outranks the consumed
+  // tick on the resolver's later-deadline rule — including on the local
+  // write path that resolves a write against the persisted row (ADR 0068).
+  test('the next cadence tick stays pending over the consumed one it '
+      'follows', () {
+    final consumedTick =
+        (goalCadenceWake(agentId, DateTime(2026, 8, 8, 5))
+                as ScheduledWakeEntity)
+            .copyWith(
+              status: ScheduledWakeStatus.consumed,
+              vectorClock: const VectorClock({'host-b': 9}),
+            );
+    expect(consumedTick.scheduledAt, DateTime(2026, 8, 8, goalCadenceHour));
+
+    final next = goalCadenceWake(agentId, now) as ScheduledWakeEntity;
+    final written =
+        resolveLocalAgentWrite(persisted: consumedTick, write: next)
+            as ScheduledWakeEntity;
+
+    expect(written.status, ScheduledWakeStatus.pending);
+    expect(written.scheduledAt, DateTime(2026, 8, 9, goalCadenceHour));
+  });
+
   test(
     'a transition escalation encodes the PRE-transition status as a '
     'baseline token — the register write hides it from re-derivation',

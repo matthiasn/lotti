@@ -2501,6 +2501,12 @@ void main() {
         ),
         isTrue,
       );
+      // An unanswered goal chat message is recovered by one device, not
+      // answered once per device (ADR 0069).
+      expect(
+        manager.requiresLease!(recordOn('goal-chat:message-1')),
+        isTrue,
+      );
       expect(
         manager.requiresLease!(recordOn('relationship-cadence')),
         isFalse,
