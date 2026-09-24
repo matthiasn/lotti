@@ -311,12 +311,13 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
     List<String>? labelIds,
     bool? private,
     String? id,
+    String? uuidV5Input,
   }) async {
     try {
       final metadata = await logic.createMetadata(
         dateFrom: data.dateFrom,
         dateTo: data.dateTo,
-        uuidV5Input: json.encode(data),
+        uuidV5Input: uuidV5Input ?? json.encode(data),
         categoryId: categoryId,
         labelIds: labelIds,
         starred: false,

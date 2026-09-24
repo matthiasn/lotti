@@ -45,6 +45,22 @@ abstract class ChangeItem with _$ChangeItem {
     /// by status alone rather than as revision 0, which would lose a
     /// decision an older build made to any newer-build change.
     int? revision,
+
+    /// The identity of this proposal's effect, when it differs from its
+    /// position — see [ChangeItemEffect.effectKeyIn]. Set only on a copy a
+    /// wake consolidates into a newer set, to its original's key, so that
+    /// confirming the copy on one device and the original on another
+    /// creates one entity, not two.
+    String? effectKey,
+
+    /// The task fields this proposal was made against, keyed as in
+    /// `TaskMetadataSnapshot` (`title`, `status`, `priority`,
+    /// `estimateMinutes`, `dueDate`, `languageCode`). Confirming applies the
+    /// change only while the task still holds these values, so a late second
+    /// application — the same item confirmed on two devices — cannot
+    /// overwrite an edit the user made after the first. `null` when nothing
+    /// was recorded; the change then applies unconditionally.
+    Map<String, dynamic>? base,
   }) = _ChangeItem;
 
   factory ChangeItem.fromJson(Map<String, dynamic> json) =>
@@ -172,4 +188,16 @@ extension ChangeItemRevision on ChangeItem {
   /// This item with [newArgs], one [ChangeItem.revision] later.
   ChangeItem withArgs(Map<String, dynamic> newArgs) =>
       copyWith(args: newArgs, revision: (revision ?? 0) + 1);
+}
+
+/// The identity of what confirming a [ChangeItem] does.
+extension ChangeItemEffect on ChangeItem {
+  /// The key every device derives this item's effect from, as the item at
+  /// [index] of the change set [changeSetId]: its [ChangeItem.effectKey]
+  /// when it carries one, otherwise its position. Both are the same on every
+  /// device — the set is one synced row — and neither depends on who
+  /// decided it, so two devices that confirm the item before they sync apply
+  /// one effect (`lib/features/agents/tools/change_effect.dart`).
+  String effectKeyIn(String changeSetId, int index) =>
+      effectKey ?? '$changeSetId:$index';
 }

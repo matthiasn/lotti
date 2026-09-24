@@ -5,8 +5,8 @@ description: The primary agent workflow — inference setup resolution, the auto
 resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
 tags: [agents, task-agent, tools, proposals, inference]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T06:00:00Z }
-stale_after: 2026-12-22
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T20:00:00Z }
+stale_after: 2026-12-24
 sources:
   - id: report-policy
     resource: ../../../lib/features/agents/workflow/task_agent_report_policy.dart
@@ -79,6 +79,18 @@ sources:
   - id: adr-0067
     resource: ../../../docs/adr/0067-model-checked-change-set-lifecycle.md
     title: ADR 0067 — Model-checked change-set lifecycle
+    last_modified: 2026-09-24
+  - id: change-effect
+    resource: ../../../lib/features/agents/tools/change_effect.dart
+    title: ChangeEffect — the effect key, derived entity ids and the field base
+    last_modified: 2026-09-24
+  - id: task-tool-dispatcher
+    resource: ../../../lib/features/agents/workflow/task_tool_dispatcher.dart
+    title: TaskToolDispatcher — the compare-and-set before any handler runs
+    last_modified: 2026-09-24
+  - id: adr-0075
+    resource: ../../../docs/adr/0075-idempotent-change-set-tools.md
+    title: ADR 0075 — Idempotent change-set tools
     last_modified: 2026-09-24
   - id: directed-relation
     resource: ../../../lib/features/tasks/model/directed_relation.dart
@@ -1034,7 +1046,7 @@ that changes only what it owns:
 | failed dispatch | `confirmed` → `pending` (retryable) or `retracted` (non-retryable), only if still the `confirmed` it claimed (same revision, so an item reopened and confirmed again meanwhile is left alone); the agent retraction decision is written in the same transaction, and only when the move happens |
 | reopen (the user's Undo) | the decision it read → `pending`, with the verdict neutralised in the same transaction; a refused revert puts it back only from `pending` |
 | migration cascade | each matching migration claimed like a user rejection |
-| sibling rewrite (`persistResolvedIdToSiblings`) | the migrations' `targetTaskId`, status untouched |
+| sibling rewrite (`persistResolvedIdToSiblings`) | the migrations' `targetTaskId`, status untouched; a migration resolved from the in-memory mapping was claimed with its target already written, so the rewrite passes it by |
 | staged retraction (`applyStaged`) | `pending` → `retracted`, re-validated in its transaction |
 
 `ChangeSetResolutionStore.transitionChangeSetItem` is the one path for a status
@@ -1043,11 +1055,67 @@ what lets sync merge concurrent versions item by item instead of dropping one
 device's decisions — see
 [vector clocks and conflicts](../sync/vector-clocks-and-conflicts.md#change-sets-merge-item-by-item).
 `specs/tla/ChangeSetLifecycle.tla` model-checks the writers and the sync
-together, with two devices and sync delivered in any order. Two cases stay
-open, both needing coordination between devices rather than a local fix: an
-item decided on two devices before they sync is applied on both, and a
-consolidation on one device racing a decision on another leaves a pending copy
-of an applied change (ADR 0067).
+together, with two devices and sync delivered in any order, and the user's
+reopen with each decision in its own attempt slot (ADR 0067).
+
+## Applying an item on two devices
+
+No local transaction stops two devices that have not synced from both
+claiming the same item, and both dispatch. Instead of coordinating them,
+every tool's effect is idempotent across devices (ADR 0075), so the second
+dispatch changes nothing:
+
+```mermaid
+flowchart TD
+  Confirm[claim on this device] --> Key["effect key: item.effectKey, else changeSetId:index"]
+  Key --> Dispatch[dispatch with ChangeEffect: key and base]
+  Dispatch --> Kind{tool}
+  Kind -->|creates an entity| Derived["id = uuidV5 of change-effect:key:role"]
+  Derived --> Exists{"id already in the journal, deleted included?"}
+  Exists -->|yes| Noop[success, nothing written, same id reported]
+  Exists -->|no| Create[create under the derived id]
+  Create -->|insert refused: the other device's entity arrived| Noop
+  Kind -->|sets a task field| Cas{"field still holds the proposal's base?"}
+  Cas -->|yes| Apply[apply]
+  Cas -->|no: applied elsewhere, or edited since| Skip[success, nothing applied]
+```
+
+- **The key is the item, not the decision.** Each device mints its own
+  decision; what both share is the synced row. `ChangeItemEffect.effectKeyIn`
+  is the item's `effectKey` — set only on a copy a wake consolidates, to its
+  original's key — or else `<change set id>:<index>`.
+  `ChangeSetConfirmationService` passes it with the item's `base` as
+  `ChangeEffect`'s reserved dispatch arguments, replacing whatever a
+  proposal carried under those names; `TaskToolDispatcher` strips them before
+  any handler sees its arguments.
+- **Create-style tools derive their ids** through
+  `MetadataService.deterministicId`: `create_follow_up_task` (the task — the
+  late device reports the same id, so its migrations resolve to it),
+  `create_time_entry` (no second timer starts), `add_checklist_item(s)` (one
+  id per position, and the first checklist of a task that has none),
+  `migrate_checklist_item(s)` (the copy and the target's first checklist; the
+  source is archived either way) and the event agent's
+  `suggest_follow_up_task`. An entity deleted since counts as created: a late
+  application must not bring back what the user removed.
+- **Set-style tools compare and set.** When the task agent queues a proposal
+  to set the title, status, priority, estimate, due date or language, it
+  records the value the task holds, read fresh, in `ChangeItem.base`. The
+  dispatcher applies the change only while the task still holds it. A field
+  that moved on — applied already on another device, or edited since — is
+  left alone and the dispatch reports success: a failure would revert or
+  retract the item over a confirm that landed elsewhere. The flip side: a
+  user who edits a field and then confirms the older proposal for it sees
+  the proposal confirmed and the field unchanged.
+
+What stays open, from ADR 0075: both devices creating the entity before
+either has received the other's leaves one id with a journal `Conflict` row
+(their creation timestamps differ); a field restored to the proposal's base
+between the two applications gets the proposed value again; an item whose
+dispatch failed and reverted on one device reads pending though the other
+device applied it (confirming again is a no-op); a consolidated copy stays
+pending beside its applied original. Label assignment, checklist item and
+time entry updates and the project agent's tools carry no key or base, and
+`link_task` needs none — one link per endpoints and type.
 
 For [chat-owned approvals](query-chat.md#task-actions-and-inline-approval), a
 missing persisted set is terminal: the resolution store returns an empty

@@ -3,6 +3,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 
 /// Snapshot of task metadata used for redundancy checks.
@@ -49,8 +50,13 @@ abstract final class ChangeProposalFilter {
     String taskId,
   ) async {
     final entity = await journalDb.journalEntityById(taskId);
-    if (entity is! Task) return null;
-    final data = entity.data;
+    return entity is Task ? taskMetadataOf(entity) : null;
+  }
+
+  /// The [TaskMetadataSnapshot] of [task], with the representations
+  /// [resolveTaskMetadata] documents.
+  static TaskMetadataSnapshot taskMetadataOf(Task task) {
+    final data = task.data;
     return (
       title: data.title,
       status: data.status.toDbString,
@@ -59,6 +65,31 @@ abstract final class ChangeProposalFilter {
       dueDate: formatIsoDate(data.due),
       languageCode: data.languageCode,
     );
+  }
+
+  /// [snapshot] keyed by field name — the keys `ChangeItem.base` records and
+  /// `taskFieldSetBy` returns.
+  static Map<String, Object?> taskMetadataFields(
+    TaskMetadataSnapshot snapshot,
+  ) => {
+    'title': snapshot.title,
+    'status': snapshot.status,
+    'priority': snapshot.priority,
+    'estimateMinutes': snapshot.estimateMinutes,
+    'dueDate': snapshot.dueDate,
+    'languageCode': snapshot.languageCode,
+  };
+
+  /// The `ChangeItem.base` a [toolName] proposal records against
+  /// [snapshot]: the one field it sets, with the value the task holds. `null`
+  /// for a tool that sets no single field, or when the task is unknown.
+  static Map<String, dynamic>? proposalBase(
+    String toolName,
+    TaskMetadataSnapshot? snapshot,
+  ) {
+    final field = taskFieldSetBy(toolName);
+    if (field == null || snapshot == null) return null;
+    return {field: taskMetadataFields(snapshot)[field]};
   }
 
   /// Format the LLM response for a batch tool call result.

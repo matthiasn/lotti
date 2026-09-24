@@ -2,6 +2,7 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
 
@@ -31,10 +32,17 @@ class ChecklistMigrationHandler {
   ///
   /// [sourceTaskId] — the task that currently owns the item.
   /// [args] must contain `id` (item ID), `title`, and `targetTaskId`.
+  ///
+  /// With an [effect] — a confirmed change item — the copy, and the target's
+  /// checklist when it has none, get ids derived from the item, so the same
+  /// migration confirmed on two devices before they sync copies the item
+  /// once: a copy already there (written here, synced from the other device,
+  /// or deleted since) is not written again, and the source is archived.
   Future<ToolExecutionResult> handle(
     String sourceTaskId,
-    Map<String, dynamic> args,
-  ) async {
+    Map<String, dynamic> args, {
+    ChangeEffect? effect,
+  }) async {
     final itemId = args['id'];
     if (itemId is! String || itemId.isEmpty) {
       return const ToolExecutionResult(
@@ -123,51 +131,15 @@ class ChecklistMigrationHandler {
       );
     }
 
-    final targetChecklistIds = targetTask.data.checklistIds ?? [];
-    String targetChecklistId;
-
-    if (targetChecklistIds.isEmpty) {
-      // Create a checklist on the target task directly — we bypass
-      // AutoChecklistService because it rejects empty suggestions.
-      final createResult = await _checklistRepository.createChecklist(
-        taskId: targetTaskId,
-      );
-      if (createResult.checklist == null) {
-        return const ToolExecutionResult(
-          success: false,
-          output: 'Error: failed to create checklist on target task',
-          errorMessage: 'Target checklist creation failed',
-        );
-      }
-      targetChecklistId = createResult.checklist!.meta.id;
-    } else {
-      targetChecklistId = targetChecklistIds.first;
-    }
-
     // Copy the item to the target checklist BEFORE archiving the source,
     // so that a failed copy never leaves the source archived with no target.
-    final newItem = await _checklistRepository.addItemToChecklist(
-      checklistId: targetChecklistId,
-      title: itemEntity.data.title,
-      isChecked: itemEntity.data.isChecked,
-      categoryId: targetTask.meta.categoryId,
-      checkedBy: approval == null
-          ? itemEntity.data.checkedBy
-          : ChangeSource.user,
-      checkedAt: approval?.approvedAt ?? itemEntity.data.checkedAt,
-      approvalHistory: [
-        ...itemEntity.data.approvalHistory,
-        if (approval case final receipt?)
-          receipt.copyWith(isChecked: itemEntity.data.isChecked),
-      ],
-    );
-
-    if (newItem == null) {
-      return const ToolExecutionResult(
-        success: false,
-        output: 'Error: failed to create item copy in target checklist',
-        errorMessage: 'Item copy creation failed',
+    if (effect == null || !await effect.created(_journalDb, _copyRole)) {
+      final copyFailure = await _copyToTarget(
+        itemEntity,
+        targetTask,
+        effect,
       );
+      if (copyFailure != null) return copyFailure;
     }
 
     // Archive the item in the source (after copy succeeded).
@@ -197,5 +169,70 @@ class ChecklistMigrationHandler {
       mutatedEntityId: targetTaskId,
       errorMessage: archived ? null : 'Source item archival failed',
     );
+  }
+
+  /// The roles of the copy and of the target's new checklist in their
+  /// [ChangeEffect]'s derived ids.
+  static const _copyRole = 'checklist-item';
+  static const _checklistRole = 'checklist';
+
+  /// Copies [item] into the first checklist of [targetTask] — creating one
+  /// when it has none — under the ids derived from [effect], if any.
+  /// Returns the failure to report, or `null` once the copy exists.
+  Future<ToolExecutionResult?> _copyToTarget(
+    ChecklistItem item,
+    Task targetTask,
+    ChangeEffect? effect,
+  ) async {
+    final targetChecklistIds = targetTask.data.checklistIds ?? [];
+    String targetChecklistId;
+
+    if (targetChecklistIds.isEmpty) {
+      // Create a checklist on the target task directly — we bypass
+      // AutoChecklistService because it rejects empty suggestions. A derived
+      // id already taken — a checklist the user deleted — gets a fresh one.
+      final checklistTaken =
+          effect != null && await effect.created(_journalDb, _checklistRole);
+      final createResult = await _checklistRepository.createChecklist(
+        taskId: targetTask.meta.id,
+        uuidV5Input: checklistTaken
+            ? null
+            : effect?.entityInput(_checklistRole),
+      );
+      if (createResult.checklist == null) {
+        return const ToolExecutionResult(
+          success: false,
+          output: 'Error: failed to create checklist on target task',
+          errorMessage: 'Target checklist creation failed',
+        );
+      }
+      targetChecklistId = createResult.checklist!.meta.id;
+    } else {
+      targetChecklistId = targetChecklistIds.first;
+    }
+
+    final newItem = await _checklistRepository.addItemToChecklist(
+      checklistId: targetChecklistId,
+      title: item.data.title,
+      isChecked: item.data.isChecked,
+      categoryId: targetTask.meta.categoryId,
+      checkedBy: approval == null ? item.data.checkedBy : ChangeSource.user,
+      checkedAt: approval?.approvedAt ?? item.data.checkedAt,
+      approvalHistory: [
+        ...item.data.approvalHistory,
+        if (approval case final receipt?)
+          receipt.copyWith(isChecked: item.data.isChecked),
+      ],
+      uuidV5Input: effect?.entityInput(_copyRole),
+    );
+
+    if (newItem == null) {
+      return const ToolExecutionResult(
+        success: false,
+        output: 'Error: failed to create item copy in target checklist',
+        errorMessage: 'Item copy creation failed',
+      );
+    }
+    return null;
   }
 }

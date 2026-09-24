@@ -220,15 +220,24 @@ class ChangeSetResolutionStore {
   /// confirm must not dispatch, and a losing reject must not overwrite a
   /// change that was applied (`specs/tla/ChangeSetConfirm.tla`,
   /// `AtMostOnceApply`, `RejectedMeansNotApplied`).
+  ///
+  /// [args], when given, replace the item's arguments in the same write: a
+  /// migration claimed with the target task it was resolved to. Written by
+  /// the claim, the target is not rewritten under a claimed item by the
+  /// follow-up task's sibling update, whose revision bump would make the
+  /// dispatch's failure unable to revert its own claim
+  /// (`specs/tla/ChangeSetLifecycle.tla`, `ClaimResolvesTarget`).
   Future<ChangeSetEntity?> claimChangeSetItem(
     ChangeSetEntity changeSet,
     int itemIndex, {
     ChangeItemStatus decided = ChangeItemStatus.confirmed,
+    Map<String, dynamic>? args,
   }) => transitionChangeSetItem(
     changeSet,
     itemIndex,
     from: const {ChangeItemStatus.pending},
     to: decided,
+    args: args,
   );
 
   /// Moves the item at [itemIndex] from one of the statuses in [from] to
@@ -252,12 +261,16 @@ class ChangeSetResolutionStore {
   /// tell the decision apart from a later one with the same status — an item
   /// reopened and confirmed again while the first dispatch ran is
   /// `confirmed` again, and that dispatch's failure must not revert it.
+  ///
+  /// [args], when given, replace the item's arguments in the same write, as
+  /// one change of the item.
   Future<ChangeSetEntity?> transitionChangeSetItem(
     ChangeSetEntity changeSet,
     int itemIndex, {
     required Set<ChangeItemStatus> from,
     required ChangeItemStatus to,
     ChangeItem? observed,
+    Map<String, dynamic>? args,
   }) => _syncService.runInTransaction(() async {
     // An unpersisted set is judged by the caller's snapshot, a deleted chat
     // set is gone.
@@ -273,20 +286,24 @@ class ChangeSetResolutionStore {
             current.items[itemIndex].revision != observed.revision)) {
       return null;
     }
-    final updated = _withItemStatus(current, itemIndex, to);
+    final updated = _withItemStatus(current, itemIndex, to, args: args);
     await _syncService.upsertEntity(updated);
     return updated;
   });
 
-  /// [current] with the item at [itemIndex] set to [newStatus] and the set
-  /// status and `resolvedAt` derived from it.
+  /// [current] with the item at [itemIndex] set to [newStatus] — and to
+  /// [args], when given — and the set status and `resolvedAt` derived from
+  /// it.
   static ChangeSetEntity _withItemStatus(
     ChangeSetEntity current,
     int itemIndex,
-    ChangeItemStatus newStatus,
-  ) {
+    ChangeItemStatus newStatus, {
+    Map<String, dynamic>? args,
+  }) {
     final updatedItems = List<ChangeItem>.from(current.items);
-    updatedItems[itemIndex] = updatedItems[itemIndex].withStatus(newStatus);
+    final item = updatedItems[itemIndex];
+    updatedItems[itemIndex] = (args == null ? item : item.copyWith(args: args))
+        .withStatus(newStatus);
     final newSetStatus = ChangeItem.deriveSetStatus(updatedItems);
     return current.copyWith(
       items: updatedItems,

@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_task_action_planner.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 
 typedef QueryActionContextReader =
@@ -156,8 +157,13 @@ class QueryChatActionService {
         taskId,
         current.answer.dependencies.map((s) => s.id),
       );
+      // The effect the confirmation names is not a tool argument.
       await QueryTaskActionPlanner.validateItem(
-        ChangeItem(toolName: name, args: args, humanSummary: ''),
+        ChangeItem(
+          toolName: name,
+          args: ChangeEffect.takeFrom(args).args,
+          humanSummary: '',
+        ),
         context,
       );
       // Re-check after asynchronous context reads and immediately before

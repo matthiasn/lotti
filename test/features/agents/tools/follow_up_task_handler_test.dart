@@ -8,6 +8,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/tools/follow_up_task_handler.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -1514,6 +1515,122 @@ void main() {
           expect(result.output, isNot(contains('project')));
         });
       });
+    });
+  });
+
+  group('with the effect of a confirmed item (ADR 0075)', () {
+    const effect = ChangeEffect(key: 'set-1:0');
+    final derivedId = effect.entityId('task');
+
+    void stubCreated(List<bool> answers) {
+      var call = 0;
+      when(
+        () => mockJournalDb.journalEntityMapForIdsIncludingDeleted([
+          derivedId,
+        ]),
+      ).thenAnswer(
+        (_) async => answers[call++]
+            ? {derivedId: makeNewTask(derivedId)}
+            : const <String, JournalEntity>{},
+      );
+    }
+
+    void stubCreate(Task? task) => when(
+      () => mockPersistenceLogic.createTaskEntry(
+        data: any(named: 'data'),
+        entryText: any(named: 'entryText'),
+        categoryId: any(named: 'categoryId'),
+        uuidV5Input: any(named: 'uuidV5Input'),
+      ),
+    ).thenAnswer((_) async => task);
+
+    test('creates the task under the id derived from the item', () async {
+      stubSourceTaskLookup(makeSourceTask());
+      stubCreated([false]);
+      stubCreate(makeNewTask(derivedId));
+      when(
+        () => mockPersistenceLogic.createLink(
+          fromId: any(named: 'fromId'),
+          toId: any(named: 'toId'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      final result = await handler.handle(sourceTaskId, {
+        'title': 'Follow-Up Task',
+      }, effect: effect);
+
+      expect(result.success, isTrue);
+      expect(result.mutatedEntityId, derivedId);
+      final input = verify(
+        () => mockPersistenceLogic.createTaskEntry(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          categoryId: any(named: 'categoryId'),
+          uuidV5Input: captureAny(named: 'uuidV5Input'),
+        ),
+      ).captured.single;
+      expect(input, effect.entityInput('task'));
+    });
+
+    test(
+      'writes nothing — not the link either — when the task exists, even '
+      'deleted since',
+      () async {
+        stubSourceTaskLookup(makeSourceTask());
+        stubCreated([true]);
+
+        final result = await handler.handle(sourceTaskId, {
+          'title': 'Follow-Up Task',
+        }, effect: effect);
+
+        expect(result.success, isTrue);
+        expect(result.mutatedEntityId, derivedId);
+        verifyNever(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+            uuidV5Input: any(named: 'uuidV5Input'),
+          ),
+        );
+        verifyNever(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+          ),
+        );
+      },
+    );
+
+    test(
+      "succeeds when the other device's task lands between the check and "
+      'the write',
+      () async {
+        stubSourceTaskLookup(makeSourceTask());
+        stubCreated([false, true]);
+        // The insert refuses the id the synced task holds.
+        stubCreate(null);
+
+        final result = await handler.handle(sourceTaskId, {
+          'title': 'Follow-Up Task',
+        }, effect: effect);
+
+        expect(result.success, isTrue);
+        expect(result.mutatedEntityId, derivedId);
+      },
+    );
+
+    test('still fails when the write fails and no task exists', () async {
+      stubSourceTaskLookup(makeSourceTask());
+      stubCreated([false, false]);
+      stubCreate(null);
+
+      final result = await handler.handle(sourceTaskId, {
+        'title': 'Follow-Up Task',
+      }, effect: effect);
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, 'Task creation failed');
     });
   });
 }

@@ -962,6 +962,62 @@ void main() {
       },
     );
 
+    test(
+      'derives the id from uuidV5Input and lists an id the checklist holds '
+      'only once',
+      () async {
+        // A confirmed agent change applied on two devices adds the same
+        // derived id twice (ADR 0075).
+        const checklistId = 'checklist-id';
+        const uuidV5Input = 'change-effect:set-1:0:checklist-item:0';
+        final meta = Metadata(
+          id: 'derived-item-id',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+        );
+        final checklist = Checklist(
+          meta: meta.copyWith(id: checklistId),
+          data: const ChecklistData(
+            title: 'Todos',
+            linkedChecklistItems: ['derived-item-id'],
+            linkedTasks: ['task-1'],
+          ),
+        );
+        when(
+          () => mockPersistenceLogic.createMetadata(uuidV5Input: uuidV5Input),
+        ).thenAnswer((_) async => meta);
+        when(
+          () => mockPersistenceLogic.createDbEntity(any()),
+        ).thenAnswer((_) async => false);
+        when(
+          () => mockJournalDb.journalEntityById(checklistId),
+        ).thenAnswer((_) async => checklist);
+        // A rewrite of the checklist would go through here.
+        when(
+          () => mockPersistenceLogic.updateMetadata(any()),
+        ).thenAnswer((_) async => checklist.meta);
+        when(
+          () => mockPersistenceLogic.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
+
+        final result = await repository.addItemToChecklist(
+          checklistId: checklistId,
+          title: 'Send invites',
+          isChecked: false,
+          categoryId: null,
+          uuidV5Input: uuidV5Input,
+        );
+
+        expect(result?.id, 'derived-item-id');
+        verify(
+          () => mockPersistenceLogic.createMetadata(uuidV5Input: uuidV5Input),
+        ).called(1);
+        verifyNever(() => mockPersistenceLogic.updateDbEntity(any()));
+      },
+    );
+
     // Stubs metadata/db-entity creation for the path-terminates-early error
     // cases; only the entity returned for the checklist lookup varies.
     void stubCreateItem({

@@ -147,75 +147,114 @@ that sync and the UI understand, or tools that are idempotent per decision id.
 happens between the items of a set and between its replicas: every writer of
 the set — the claim, a failed dispatch's revert or auto-retraction, the
 follow-up task's rewrite of its migration's `targetTaskId`, the migration
-cascade, a staged retraction, a wake's consolidation of an older set — and
-the sync that carries each write to the other devices as a message delivered
-in any order, applied through the vector-clock comparison and the concurrent
-resolver. The ghost `applied` counts, per device, how often each change took
-effect. The decision is
-[ADR 0067](../../docs/adr/0067-model-checked-change-set-lifecycle.md).
+cascade, a staged retraction, a wake's consolidation of an older set, the
+user's reopen — and the sync that carries each write to the other devices as
+a message delivered in any order, applied through the vector-clock comparison
+and the concurrent resolver. It also models what a confirmed change does to
+the journal on each device: a create-style item creates an entity (modelled
+by id), a set-style item writes one task field (a register the user can edit
+too), and both replicate by message and are received the way the journal
+receives them — a concurrent version is kept aside as a `Conflict` row. Every
+user decision runs in its own attempt slot, so a confirm of an item reopened
+while an earlier dispatch still runs is a second, concurrent operation. The
+ghost `applied` counts, per device, how often each change was dispatched and
+took effect. The decisions are
+[ADR 0067](../../docs/adr/0067-model-checked-change-set-lifecycle.md) and
+[ADR 0075](../../docs/adr/0075-idempotent-change-set-tools.md).
 
-Four switches are the fixes, and each is a mutation point: `AtomicWrites`
-(every local write of a set re-reads it in its transaction and changes only
-its own item), `AtomicReceive` (sync compares and writes a received set in
-one transaction), `ItemMerge` (concurrent versions merge item by item by a
-per-item revision) and `PendingCopiesOnly` (consolidation moves only pending
-items). `RaceFree` restricts the environment: no item is decided on two
-devices before they have synced.
+The switches are the fixes, and each is a mutation point. From ADR 0067:
+`AtomicWrites` (every local write of a set re-reads it in its transaction and
+changes only its own item), `AtomicReceive` (sync compares and writes a
+received set in one transaction), `ItemMerge` (concurrent versions merge item
+by item by a per-item revision), `PendingCopiesOnly` (consolidation moves only
+pending items) and `RevisionGuard` (a failed dispatch moves its item only
+while the item holds the revision its claim wrote). From ADR 0075:
+`ClaimResolvesTarget` (a migration resolved from the in-memory mapping is
+claimed with its resolved target), `DerivedIds` (a create-style tool derives
+its entity's id from the item's effect key and does nothing when the entity
+exists), `CopyCarriesKey` (a consolidated copy carries its original's key) and
+`CasGuard` (a set-style tool writes only while the field holds the value the
+proposal was made against). `RaceFree` restricts the environment: no item is
+decided on two devices before they have synced. `UserRestoresBase` lets the
+user's edit restore the base value, the ABA a value compare-and-set cannot
+see.
 
 | Property | Kind | Says |
 |----------|------|------|
-| `AtMostOnceApply` | invariant | a change takes effect at most once, across all devices |
+| `AtMostOnceApply` | invariant | a change is dispatched and takes effect at most once, across all devices |
 | `AtMostOncePerDevice` | invariant | ... and at most once per device |
 | `AppliedStaysDecided` | invariant | a device that applied a change never shows it pending again — no decided item returns to pending except by its own failed dispatch |
 | `StatusMatchesEffect` | invariant | once everything is delivered, every device shows `confirmed` exactly when the change was applied, and never `pending` or `rejected` for an applied one |
-| `Converged` | invariant | once everything is delivered, the replicas agree |
+| `Converged` | invariant | once everything is delivered, the replicas of the set agree |
 | `MigrationAfterTarget` | invariant | a checklist migration never runs before its follow-up task exists |
+| `NoDuplicateEffects` | invariant | every change creates at most one entity id, across all replicas and the messages in flight |
+| `NoClobber` | invariant | no dispatch overwrites a value the user wrote into the field |
+| `EffectsConverge` | invariant | once everything, entities and fields included, is delivered, every replica holds the same entities, the field agrees unless a `Conflict` row holds a concurrent version, and a change's entity exists exactly when the change was applied somewhere |
+| `SucceededClaimStands` | invariant | an item whose latest claim's dispatch succeeded reads `confirmed` |
 
 | Configuration | Devices | Items | Checks | Distinct states |
 |---------------|---------|-------|--------|-----------------|
-| `ChangeSetLifecycle` | 1 | follow-up, migration, plain; both failure kinds; retraction | all but `Converged` | 2,115 |
-| `ChangeSetLifecycleConsolidate` | 1 | an older set's item and its consolidated copy | all but `Converged`, `MigrationAfterTarget` | 133 |
-| `ChangeSetLifecycleSync` | 2 | two plain items, `RaceFree` | all but `MigrationAfterTarget` | 698,263 |
-| `ChangeSetLifecycleSyncSplit` | 2 | follow-up and migration, `RaceFree` | all | 47,954 |
-| `ChangeSetLifecycleRace` | 2 | one item decided on both devices | `Converged` | 348,513 |
+| `ChangeSetLifecycle` | 1 | follow-up, migration, plain; both failure kinds; retraction | `AtMostOnceApply`, `AppliedStaysDecided`, `StatusMatchesEffect`, `MigrationAfterTarget`, `NoDuplicateEffects` | 2,643 |
+| `ChangeSetLifecycleConsolidate` | 1 | an older set's item and its consolidated copy | as above, without `MigrationAfterTarget` | 133 |
+| `ChangeSetLifecycleSync` | 2 | two plain items, `RaceFree` | as `ChangeSetLifecycle` without `MigrationAfterTarget`, plus `Converged`, `EffectsConverge` | 847,082 |
+| `ChangeSetLifecycleSyncSplit` | 2 | follow-up and migration, `RaceFree` | all but `NoClobber`, `SucceededClaimStands` | 79,082 |
+| `ChangeSetLifecycleRace` | 2 | one create-style item decided on both devices, retryable failures | `Converged`, `NoDuplicateEffects`, `EffectsConverge` | 491,402 |
+| `ChangeSetLifecycleRaceSet` | 2 | one set-style item decided on both devices, one user edit per device, retryable failures | `Converged`, `NoClobber`, `EffectsConverge` | 852,966 |
+| `ChangeSetLifecycleReopen` | 1 | one item, two confirms, one reopen, both failure kinds | `SucceededClaimStands`, `NoDuplicateEffects` | 90 |
+| `ChangeSetLifecycleConsolidateSync` | 2 | an item consolidated on one device while confirmed on the other, `RaceFree` | `NoDuplicateEffects`, `EffectsConverge` | 147,557 |
 
-Each switch set to `FALSE` fails a configuration with a short trace (kept
-outside this directory, as for `OwnCounterSettlement`):
+Every configuration also checks `TypeOK`. Each switch set to `FALSE` fails a
+configuration with a short trace (kept outside this directory, as for
+`OwnCounterSettlement`):
 
 | Mutation | Configuration | Counterexample |
 |----------|---------------|----------------|
-| `AtomicWrites = FALSE` | `ChangeSetLifecycle` | `AppliedStaysDecided`: the follow-up task's dispatch fails non-retryably and its auto-retraction reads the set; the plain item is claimed; the retraction writes its copy back, putting the claimed item to pending; the plain item's dispatch applies it. With every switch off, the same shape through a retryable revert ends with a retry applying the plain item a second time (`AtMostOnceApply`, 9 states) |
-| `AtomicWrites = FALSE` | `ChangeSetLifecycleSyncSplit` | `AppliedStaysDecided`: the sibling rewrite reads the set, the migration is claimed and applied, the rewrite writes the migration back as pending |
-| `PendingCopiesOnly = FALSE` | `ChangeSetLifecycleConsolidate` | `StatusMatchesEffect`: an item is claimed, a wake consolidates and copies it as `confirmed`, the dispatch fails and retracts the original — the copy claims a change that never landed |
-| `ItemMerge = FALSE` | `ChangeSetLifecycleSync` | `AppliedStaysDecided`: each device confirms a different item; the whole-row winner drops one device's confirm, which that device then applies |
-| `AtomicReceive = FALSE` | `ChangeSetLifecycleSync` | `AppliedStaysDecided`: a device reads its row to apply a peer's version, claims an item meanwhile, and writes the peer's version over the claim. With every switch off, the item is confirmed and applied twice (`AtMostOnceApply`, 8 states) |
+| `AtomicWrites = FALSE` | `ChangeSetLifecycle` | `AppliedStaysDecided` (8 states): the follow-up task's dispatch fails and its revert reads the set; the plain item is claimed and applied; the revert writes its copy back, putting the applied item to pending. With every switch off, a retry applies the plain item a second time (`AtMostOnceApply`, 10 states) |
+| `AtomicWrites = FALSE` | `ChangeSetLifecycleSyncSplit` | `AppliedStaysDecided` (7 states): the sibling rewrite reads the set, the migration is claimed and applied, the rewrite writes the migration back as pending |
+| `PendingCopiesOnly = FALSE` | `ChangeSetLifecycleConsolidate` | `StatusMatchesEffect` (5 states): an item is claimed, a wake consolidates and copies it as `confirmed`, the dispatch fails and reverts the original — the copy claims a change that never landed |
+| `ItemMerge = FALSE` | `ChangeSetLifecycleSync` | `AppliedStaysDecided` (5 states): one device rejects an item while the other confirms a different one; receiving the rejecting device's row, the whole-row winner drops the confirm, and the confirming device then applies a change its row shows pending |
+| `AtomicReceive = FALSE` | `ChangeSetLifecycleSync` | `AppliedStaysDecided` (6 states): a device reads its row to apply a peer's version, claims an item meanwhile, and writes the peer's version over the claim |
+| `RevisionGuard = FALSE` | `ChangeSetLifecycleReopen` | `SucceededClaimStands` (7 states): the first confirm's dispatch runs, the item is reopened and confirmed again, the first dispatch fails and reverts the second claim, whose dispatch then succeeds on a pending item |
+| `ClaimResolvesTarget = FALSE` | `ChangeSetLifecycle` | `StatusMatchesEffect` (7 states): the follow-up task is applied and mapped in memory, the migration is claimed through the mapping, the sibling rewrite bumps the claimed item's revision, and the migration's failed dispatch can no longer revert its own claim — confirmed, never applied |
+| `DerivedIds = FALSE` | `ChangeSetLifecycleRace` | `NoDuplicateEffects` (6 states): both devices confirm and dispatch the item; each mints its own id |
+| `DerivedIds = FALSE` | `ChangeSetLifecycleReopen` | `NoDuplicateEffects` (6 states): confirm, apply, reopen, confirm, apply — two entities |
+| `CopyCarriesKey = FALSE` | `ChangeSetLifecycleConsolidateSync` | `NoDuplicateEffects` (7 states): one device confirms and applies the original, the other consolidates it into a copy of its own key; the copy is confirmed and creates a second entity |
+| `CasGuard = FALSE` | `ChangeSetLifecycleRaceSet` | `NoClobber` (4 states): the change is confirmed, the user edits the field, and the dispatch overwrites the edit |
 
 What stays open — the residuals, each confirmed by TLC:
 
-- **The same item decided on two devices before they sync.** Both claims
-  succeed locally, and both devices dispatch: `ChangeSetLifecycleRace`
-  violates `AtMostOnceApply` in 5 states (confirm and apply on each device),
-  and, once one of the dispatches fails and reverts, `AppliedStaysDecided`,
-  `StatusMatchesEffect` and `AtMostOncePerDevice` too. The replicas still
-  converge. No local transaction can close it; it needs coordination — one
-  device that applies a set's changes, a lease on the item, or tools that are
-  idempotent per decision id. A confirm beating a concurrent rejection or
-  retraction (the merge rank) is *not* part of this residual: it is checked.
-- **Consolidation on one device racing a decision on another.** A wake that
-  folds an older set into the survivor retracts the original and copies it as
-  pending; a concurrent confirm of the original on another device wins the
-  original back (the merge rank), but the copy stays pending on both, and
-  applying it applies the change twice (`ChangeSetLifecycleConsolidate` with
-  two devices: `AppliedStaysDecided` in 6 states). Closing it needs the copy
-  to know its original — a provenance link checked before the copy is
-  claimed — or consolidation that groups sets for display instead of copying
-  rows.
-- **An item reopened and confirmed again while its first dispatch runs.**
-  The model runs one operation per device and item, and has no Undo, so it
-  cannot express this ABA: the first dispatch's failure found the item
-  `confirmed` again and reverted the second confirm. The code closes it —
-  a delayed transition also compares the item revision its caller observed
-  — and a regression in the confirmation service's suite covers it.
+- **The same item decided on two devices before they sync** is still
+  dispatched on both — no local transaction can prevent it — but it no longer
+  applies twice. `ChangeSetLifecycleRace` checking `AtMostOnceApply` still
+  fails in 5 states (confirm and dispatch on each device), while
+  `NoDuplicateEffects`, `NoClobber` and `EffectsConverge` hold. What the
+  effects do not cover:
+  - **Both devices create before either has the other's entity.** One id,
+    and the journal keeps the other version as a `Conflict` row for the user,
+    because the two versions differ in their creation timestamps. A silent
+    merge would need identical content and a journal rule that merges
+    identical concurrent versions — a product decision. Two concurrent
+    applications of a field change land as a conflict the same way.
+  - **The field's ABA.** A user who restores the field to the proposal's base
+    between the two applications gets the proposed value again
+    (`ChangeSetLifecycleRaceSet` with `UserRestoresBase = TRUE` violates
+    `NoClobber` in 4 states).
+  - **The status records the dispatch, not the effect.** When one device's
+    dispatch fails and reverts while the other's applied, the merged item
+    reads pending though its change landed; confirming it again applies
+    nothing. `StatusMatchesEffect` and `AppliedStaysDecided` are therefore
+    not checked under the race. A confirm beating a concurrent rejection or
+    retraction (the merge rank) is *not* part of this residual: it is
+    checked.
+  - Tools without an effect key or a base — label assignment (a set-add, so
+    a late add can bring back a label removed in between), checklist item
+    updates, time entry updates, and the project agent's tools — are listed
+    per tool in ADR 0075.
+- **Consolidation on one device racing a decision on another** no longer
+  applies anything twice: the copy carries its original's key. It stays
+  pending beside the original applied elsewhere
+  (`ChangeSetLifecycleConsolidateSync` checking `StatusMatchesEffect` fails in
+  7 states); confirming it is a no-op.
 - **Concurrent sets whose items do not align** — different proposals at one
   index — fall back to the whole-row winner, as before, and with three or
   more versions that fallback can depend on arrival order (the joined clock
@@ -223,11 +262,18 @@ What stays open — the residuals, each confirmed by TLC:
   aligned merge cannot: `MergeItem` breaks an exact tie by content, never by
   the clock order. The model's items are fixed and it runs two devices, so
   it covers neither case.
-- **Clients that predate the item revision** strip it when they rewrite a
-  set. An item without a revision is merged by status alone — never as
-  revision 0, which would let a newer-build target rewrite beat a confirm the
-  older build applied — so a newer-build revert racing an older build's
-  confirm keeps the confirm.
+- **Clients that predate the item revision, `effectKey` and `base`** strip
+  them when they rewrite a set. An item without a revision is merged by
+  status alone — never as revision 0, which would let a newer-build target
+  rewrite beat a confirm the older build applied — so a newer-build revert
+  racing an older build's confirm keeps the confirm. A copy without its key
+  falls back to its own position, and a field change without a base applies
+  unconditionally.
+- **The model's steps are coarser than the code's** in one place TLC used:
+  `ClaimResolvesTarget`'s counterexample needs the sibling rewrite's
+  transaction to start after the migration's claim, which today's scheduling
+  does not allow — the capture and that transaction request run in one
+  continuation. The fix removes the dependence on it.
 
 ## `ScheduledWakeLease` — one device per scheduled window
 
@@ -731,7 +777,21 @@ own regression in the resolution store's suite. In
 `test/features/agents/sync/agent_concurrent_resolver_merge_test.dart`,
 generated concurrent histories of a two-item set on two devices must merge to
 the same row in either direction, keeping the item a device changed last and
-a confirm neither side superseded.
+a confirm neither side superseded. ADR 0075's effects have a third, in
+`test/features/agents/workflow/task_tool_dispatcher_idempotency.dart` (a part
+of the dispatcher's real-database suite): generated sequences apply five
+confirmed items — a follow-up task, a time entry, a checklist item, a title
+and an estimate — any number of times, on a real journal database, with the
+user editing the title and the estimate in between. A second application on a
+replica that already holds the first's writes is what the late device runs,
+so after every step the journal must hold one entity per applied create
+(`NoDuplicateEffects`) and each field must hold the user's latest edit, or
+else the proposed value if applied, or else its base (`NoClobber`). Reverting
+the compare-and-set, or deriving random ids for the follow-up task, the time
+entry or the checklist item, fails it; each tool also has its own regression
+there, and the migration's claim with its resolved target has one in the
+confirmation service's suite that holds the sibling rewrite back until the
+migration is claimed.
 
 Convergence has its own trace. In
 `test/features/agents/sync/agent_replication_model_conformance.dart` (a part

@@ -43,6 +43,9 @@ class ChecklistRepository {
   /// - [taskId]: The task to attach this checklist to
   /// - [items]: Optional items to create with the checklist
   /// - [title]: Optional title for the checklist (defaults to 'Todos')
+  /// - [uuidV5Input]: Optional input the checklist's id is derived from
+  ///   (`MetadataService.generateId`), for a caller that must create the
+  ///   same checklist on every device
   ///
   /// Returns a record containing:
   /// - [checklist]: The created Checklist entity or null if creation failed
@@ -57,6 +60,7 @@ class ChecklistRepository {
     required String? taskId,
     List<ChecklistItemData>? items,
     String? title,
+    String? uuidV5Input,
   }) async {
     try {
       if (taskId == null) {
@@ -76,7 +80,9 @@ class ChecklistRepository {
       }
 
       final categoryId = task.meta.categoryId;
-      final meta = await _persistenceLogic.createMetadata();
+      final meta = await _persistenceLogic.createMetadata(
+        uuidV5Input: uuidV5Input,
+      );
 
       final newChecklist = Checklist(
         meta: meta.copyWith(categoryId: categoryId),
@@ -154,6 +160,8 @@ class ChecklistRepository {
   /// callers that need the bidirectional link should use [addItemToChecklist]
   /// (or update the checklist themselves). [checkedBy] defaults to
   /// [ChangeSource.user]. Approval history is persisted in the same write.
+  /// The item's id is derived from [uuidV5Input] when given
+  /// (`MetadataService.generateId`), and random otherwise.
   /// Returns the created item, or `null` on failure.
   Future<ChecklistItem?> createChecklistItem({
     required String checklistId,
@@ -163,9 +171,12 @@ class ChecklistRepository {
     ChangeSource? checkedBy,
     DateTime? checkedAt,
     List<ChecklistItemProvenance> approvalHistory = const [],
+    String? uuidV5Input,
   }) async {
     try {
-      final meta = await _persistenceLogic.createMetadata();
+      final meta = await _persistenceLogic.createMetadata(
+        uuidV5Input: uuidV5Input,
+      );
       final newChecklistItem = ChecklistItem(
         meta: meta.copyWith(categoryId: categoryId),
         data: ChecklistItemData(
@@ -284,6 +295,8 @@ class ChecklistRepository {
   /// Unlike [createChecklistItem], this re-reads the checklist after creating
   /// the item and appends the new id to `linkedChecklistItems`, keeping the
   /// link bidirectional. Returns the created item, or `null` on any failure.
+  /// [uuidV5Input] derives the item's id, as in [createChecklistItem]; the
+  /// checklist lists an id once however often it is added.
   Future<ChecklistItem?> addItemToChecklist({
     required String checklistId,
     required String title,
@@ -292,6 +305,7 @@ class ChecklistRepository {
     ChangeSource? checkedBy,
     DateTime? checkedAt,
     List<ChecklistItemProvenance> approvalHistory = const [],
+    String? uuidV5Input,
   }) async {
     try {
       // Create the new checklist item first
@@ -303,6 +317,7 @@ class ChecklistRepository {
         checkedBy: checkedBy,
         checkedAt: checkedAt,
         approvalHistory: approvalHistory,
+        uuidV5Input: uuidV5Input,
       );
 
       if (newItem == null) {
@@ -322,15 +337,17 @@ class ChecklistRepository {
         return null;
       }
 
-      await updateChecklist(
-        checklistId: checklistId,
-        data: checklist.data.copyWith(
-          linkedChecklistItems: [
-            ...checklist.data.linkedChecklistItems,
-            newItem.id,
-          ],
-        ),
-      );
+      if (!checklist.data.linkedChecklistItems.contains(newItem.id)) {
+        await updateChecklist(
+          checklistId: checklistId,
+          data: checklist.data.copyWith(
+            linkedChecklistItems: [
+              ...checklist.data.linkedChecklistItems,
+              newItem.id,
+            ],
+          ),
+        );
+      }
 
       return newItem;
     } catch (exception, stackTrace) {

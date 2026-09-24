@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/service/suggestion_retraction_service.dart
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -492,6 +493,144 @@ void main() {
     }
 
     group('confirmItem', () {
+      test(
+        "a migration's failed dispatch reverts it although the follow-up "
+        "task's sibling rewrite landed while it ran",
+        () async {
+          // ChangeSetLifecycle.tla, ClaimResolvesTarget: the follow-up task
+          // is applied and its placeholder mapped in memory; the migration
+          // is claimed, resolved from that mapping; the sibling rewrite then
+          // writes the target into the claimed item — a change of the item,
+          // one revision later — and the migration's failure could no
+          // longer revert its own claim: confirmed, never applied.
+          const placeholder = 'placeholder-task';
+          final stored = persistUpsertedChangeSets(
+            makeChangeSetWith(
+              items: const [
+                ChangeItem(
+                  toolName: TaskAgentToolNames.createFollowUpTask,
+                  args: {
+                    'title': 'Follow-up',
+                    '_placeholderTaskId': placeholder,
+                  },
+                  humanSummary: 'Create follow-up task',
+                ),
+                ChangeItem(
+                  toolName: TaskAgentToolNames.migrateChecklistItem,
+                  args: {'id': 'item-1', 'targetTaskId': placeholder},
+                  humanSummary: 'Move checklist item',
+                ),
+              ],
+            ),
+          );
+          // The sibling rewrite's transaction — the second, after the
+          // follow-up task's claim — starts only once the gate opens: after
+          // the migration's claim.
+          final inner = mockSyncService.transactionDelegate!;
+          final gate = Completer<void>();
+          var transactions = 0;
+          mockSyncService.transactionDelegate = <T>(action) {
+            if (Zone.current[_inTransaction] != true && ++transactions == 2) {
+              return gate.future.then((_) => inner<T>(action));
+            }
+            return inner<T>(action);
+          };
+          final migration = Completer<ToolExecutionResult>();
+          when(
+            () => mockToolDispatcher.dispatch(
+              TaskAgentToolNames.createFollowUpTask,
+              any(),
+              any(),
+            ),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'created',
+              mutatedEntityId: 'created-task',
+            ),
+          );
+          when(
+            () => mockToolDispatcher.dispatch(
+              TaskAgentToolNames.migrateChecklistItem,
+              any(),
+              any(),
+            ),
+          ).thenAnswer((_) => migration.future);
+
+          await withClock(testClock, () async {
+            final followUp = service.confirmItem(stored(), 0);
+            await pumpEventQueue();
+            final migrate = service.confirmItem(stored(), 1);
+            await pumpEventQueue();
+            // Claimed with the target it was resolved to.
+            expect(stored().items[1].status, ChangeItemStatus.confirmed);
+            expect(stored().items[1].args['targetTaskId'], 'created-task');
+
+            gate.complete();
+            await followUp;
+            migration.complete(
+              const ToolExecutionResult(success: false, output: 'failed'),
+            );
+            await migrate;
+          });
+
+          expect(stored().items[1].status, ChangeItemStatus.pending);
+          // And it stays resolved for a retry after a restart.
+          expect(stored().items[1].args['targetTaskId'], 'created-task');
+        },
+      );
+
+      test(
+        "dispatches the proposal's base and a consolidated copy's original "
+        'key, never what the proposal carried under those names',
+        () async {
+          final stored = persistUpsertedChangeSets(
+            makeChangeSetWith(
+              items: const [
+                ChangeItem(
+                  toolName: TaskAgentToolNames.setTaskTitle,
+                  args: {
+                    'title': 'New',
+                    ChangeEffect.keyArg: 'forged',
+                    ChangeEffect.baseArg: {'title': 'Forged'},
+                  },
+                  humanSummary: 'Rename',
+                  effectKey: 'cs-older:2',
+                  base: {'title': 'Old'},
+                ),
+                ChangeItem(
+                  toolName: TaskAgentToolNames.createTimeEntry,
+                  args: {'summary': 'x', ChangeEffect.baseArg: 'forged'},
+                  humanSummary: 'Log time',
+                ),
+              ],
+            ),
+          );
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(success: true, output: ''),
+          );
+
+          await withClock(testClock, () async {
+            await service.confirmItem(stored(), 0);
+            await service.confirmItem(stored(), 1);
+          });
+
+          final dispatched = verify(
+            () => mockToolDispatcher.dispatch(any(), captureAny(), any()),
+          ).captured;
+          expect(dispatched, [
+            {
+              'title': 'New',
+              ChangeEffect.keyArg: 'cs-older:2',
+              ChangeEffect.baseArg: {'title': 'Old'},
+            },
+            {'summary': 'x', ChangeEffect.keyArg: 'cs-001:1'},
+          ]);
+        },
+      );
+
       for (final nonRetryable in [false, true]) {
         test(
           'a failed dispatch leaves a later confirm of the same item alone '
@@ -738,11 +877,12 @@ void main() {
             // happen BEFORE tool dispatch.
             expect(upsertOrder, ['changeSet', 'decision']);
 
-            // Verify tool dispatch was called with the correct args.
+            // Verify tool dispatch was called with the correct args, naming
+            // the item's effect by its position in the set.
             verify(
               () => mockToolDispatcher.dispatch(
                 'update_task_estimate',
-                {'minutes': 120},
+                {'minutes': 120, ChangeEffect.keyArg: 'cs-001:0'},
                 'task-001',
               ),
             ).called(1);
@@ -1326,7 +1466,7 @@ void main() {
       );
 
       test(
-        'dispatches create_time_entry args unchanged',
+        'dispatches create_time_entry args unchanged, with its effect key',
         () async {
           final changeSet = makeChangeSetWith(
             items: const [
@@ -1362,6 +1502,7 @@ void main() {
                   'startTime': '2026-03-17T14:00:00',
                   'endTime': '2026-03-17T15:00:00',
                   'summary': 'Worked on API integration',
+                  ChangeEffect.keyArg: 'cs-001:0',
                 },
                 'task-001',
               ),

@@ -4,6 +4,7 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/functions/function_handler.dart';
 import 'package:lotti/features/ai/functions/lotti_batch_checklist_handler.dart';
+import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
@@ -1365,6 +1366,183 @@ void main() {
           prompt,
           contains('Do NOT recreate the items that were already successful'),
         );
+      });
+    });
+
+    group('with ids derived from a confirmed change', () {
+      const checklistInput = 'change-effect:set-1:0:checklist';
+      String itemInput(int index) => 'change-effect:set-1:0:item:$index';
+      final checklistId = MetadataService.deterministicId(checklistInput);
+      final itemId = MetadataService.deterministicId(itemInput(0));
+      const result = FunctionCallResult(
+        success: true,
+        data: {
+          'items': [
+            {'title': 'Send invites'},
+          ],
+        },
+      );
+      late Task bareTask;
+
+      Checklist checklist(String id) => Checklist(
+        meta: Metadata(
+          id: id,
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+        ),
+        data: const ChecklistData(
+          title: 'Todos',
+          linkedChecklistItems: [],
+          linkedTasks: [],
+        ),
+      );
+
+      void stubTaken(Set<String> taken) =>
+          when(
+            () => mockJournalDb.journalEntityMapForIdsIncludingDeleted(any()),
+          ).thenAnswer((inv) async {
+            final ids = (inv.positionalArguments.first as Iterable<String>)
+                .toList();
+            return {
+              for (final id in ids)
+                if (taken.contains(id)) id: checklist(id),
+            };
+          });
+
+      void stubCreateChecklist(Checklist? created) =>
+          when(
+            () => mockChecklistRepository.createChecklist(
+              taskId: any(named: 'taskId'),
+              title: any(named: 'title'),
+              uuidV5Input: any(named: 'uuidV5Input'),
+            ),
+          ).thenAnswer(
+            (_) async => (
+              checklist: created,
+              createdItems: <({String id, String title, bool isChecked})>[],
+            ),
+          );
+
+      setUp(() {
+        bareTask = ChecklistTestDataFactory.createTask(checklistIds: const []);
+        when(
+          () => mockJournalDb.journalEntityById(bareTask.meta.id),
+        ).thenAnswer((_) async => bareTask);
+        handler = LottiBatchChecklistHandler(
+          task: bareTask,
+          autoChecklistService: mockAutoChecklistService,
+          checklistRepository: mockChecklistRepository,
+          derivedIds: (checklist: checklistInput, item: itemInput),
+        );
+        when(
+          () => mockChecklistRepository.addItemToChecklist(
+            checklistId: any(named: 'checklistId'),
+            title: any(named: 'title'),
+            isChecked: any(named: 'isChecked'),
+            categoryId: any(named: 'categoryId'),
+            checkedBy: any(named: 'checkedBy'),
+            checkedAt: any(named: 'checkedAt'),
+            approvalHistory: any(named: 'approvalHistory'),
+            uuidV5Input: any(named: 'uuidV5Input'),
+          ),
+        ).thenAnswer(
+          (_) async => ChecklistItem(
+            meta: checklist(itemId).meta,
+            data: const ChecklistItemData(
+              title: 'Send invites',
+              isChecked: false,
+              linkedChecklists: [],
+            ),
+          ),
+        );
+      });
+
+      test(
+        'gives a task without a checklist the derived one, and the item '
+        'its derived id',
+        () async {
+          stubTaken(const {});
+          stubCreateChecklist(checklist(checklistId));
+
+          expect(await handler.createBatchItems(result), 1);
+
+          verify(
+            () => mockChecklistRepository.createChecklist(
+              taskId: bareTask.meta.id,
+              title: 'Todos',
+              uuidV5Input: checklistInput,
+            ),
+          ).called(1);
+          verify(
+            () => mockChecklistRepository.addItemToChecklist(
+              checklistId: checklistId,
+              title: 'Send invites',
+              isChecked: false,
+              categoryId: any(named: 'categoryId'),
+              checkedBy: any(named: 'checkedBy'),
+              checkedAt: any(named: 'checkedAt'),
+              approvalHistory: any(named: 'approvalHistory'),
+              uuidV5Input: itemInput(0),
+            ),
+          ).called(1);
+          // The approval-free path never asks the auto-checklist service.
+          verifyZeroInteractions(mockAutoChecklistService);
+        },
+      );
+
+      test(
+        'takes a fresh checklist id when the derived one belongs to a '
+        'checklist the user deleted',
+        () async {
+          stubTaken({checklistId});
+          stubCreateChecklist(checklist('fresh'));
+
+          expect(await handler.createBatchItems(result), 1);
+
+          verify(
+            () => mockChecklistRepository.createChecklist(
+              taskId: bareTask.meta.id,
+              title: 'Todos',
+            ),
+          ).called(1);
+        },
+      );
+
+      test('fails every item when the checklist cannot be created', () async {
+        stubTaken(const {});
+        stubCreateChecklist(null);
+
+        expect(await handler.createBatchItems(result), 0);
+
+        expect(handler.failedItems.single.reason, 'Checklist creation failed');
+      });
+
+      test('adds nothing for an item already created', () async {
+        stubTaken({itemId});
+        handler.task = bareTask.copyWith(
+          data: bareTask.data.copyWith(checklistIds: const ['existing']),
+        );
+        when(
+          () => mockJournalDb.journalEntityById(bareTask.meta.id),
+        ).thenAnswer((_) async => handler.task);
+
+        expect(await handler.createBatchItems(result), 1);
+
+        verifyNever(
+          () => mockChecklistRepository.addItemToChecklist(
+            checklistId: any(named: 'checklistId'),
+            title: any(named: 'title'),
+            isChecked: any(named: 'isChecked'),
+            categoryId: any(named: 'categoryId'),
+            checkedBy: any(named: 'checkedBy'),
+            checkedAt: any(named: 'checkedAt'),
+            approvalHistory: any(named: 'approvalHistory'),
+            uuidV5Input: any(named: 'uuidV5Input'),
+          ),
+        );
+        expect(handler.createToolResponse(result), contains('Send invites'));
       });
     });
   });

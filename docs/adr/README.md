@@ -139,3 +139,4 @@ Each ADR should contain:
 - [`0069-model-checked-scheduled-wake-leases.md`](./0069-model-checked-scheduled-wake-leases.md)
 - [`0070-model-checked-digest-recovery-and-processing-jobs.md`](./0070-model-checked-digest-recovery-and-processing-jobs.md)
 - [`0071-model-checked-agent-message-log.md`](./0071-model-checked-agent-message-log.md)
+- [`0075-idempotent-change-set-tools.md`](./0075-idempotent-change-set-tools.md)
