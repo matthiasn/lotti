@@ -13,6 +13,7 @@ import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -696,6 +697,96 @@ void main() {
         expect(stored, isA<BasicLink>());
         expect(stored!.fromId, 'future-a');
         expect(stored.toId, 'future-b');
+      },
+    );
+  });
+
+  group('SyncEventProcessor - superseded link versions', () {
+    late JournalDb realJournalDb;
+
+    // Removed on device B after it had device A's version {device-a: 5}.
+    final removed = EntryLink.basic(
+      id: 'removed-link',
+      fromId: 'entry-id',
+      toId: 'other-entry',
+      createdAt: DateTime(2024, 6, 1),
+      updatedAt: DateTime(2024, 6, 2),
+      vectorClock: const VectorClock({'device-a': 5, 'device-b': 1}),
+      hidden: true,
+      deletedAt: DateTime(2024, 6, 2),
+    );
+    // Device A's version, stamped by a wall clock running ahead.
+    final liveSnapshot = EntryLink.basic(
+      id: 'removed-link',
+      fromId: 'entry-id',
+      toId: 'other-entry',
+      createdAt: DateTime(2024, 6, 1),
+      updatedAt: DateTime(2100),
+      vectorClock: const VectorClock({'device-a': 5}),
+    );
+
+    late Directory documentsDirectory;
+
+    setUp(() async {
+      // Applying the journal entity writes its JSON sidecar.
+      documentsDirectory = Directory.systemTemp.createTempSync('lotti_test_');
+      getIt.registerSingleton<Directory>(documentsDirectory);
+      realJournalDb = JournalDb(inMemoryDatabase: true);
+      expect(await realJournalDb.upsertEntryLink(removed), isNot(0));
+    });
+
+    tearDown(() async {
+      await realJournalDb.close();
+      getIt.unregister<Directory>();
+      documentsDirectory.deleteSync(recursive: true);
+    });
+
+    test(
+      'an entryLink message carrying the version the removal superseded '
+      'leaves the link removed',
+      () async {
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.entryLink(
+              entryLink: liveSnapshot,
+              status: SyncEntryStatus.update,
+            ),
+          ),
+        );
+
+        await processor.process(event: event, journalDb: realJournalDb);
+
+        expect(await realJournalDb.entryLinkById('removed-link'), removed);
+      },
+    );
+
+    test(
+      'a journal entity embedding a snapshot taken before the removal '
+      'leaves the link removed',
+      () async {
+        when(
+          () => journalEntityLoader.load(jsonPath: '/entry.json'),
+        ).thenAnswer((_) async => fallbackJournalEntity);
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.journalEntity(
+              id: fallbackJournalEntity.meta.id,
+              jsonPath: '/entry.json',
+              vectorClock: null,
+              status: SyncEntryStatus.update,
+              entryLinks: [liveSnapshot],
+            ),
+          ),
+        );
+
+        await processor.process(event: event, journalDb: realJournalDb);
+
+        // The entity itself was applied — only the stale link was refused.
+        expect(
+          await realJournalDb.journalEntityById(fallbackJournalEntity.meta.id),
+          isNotNull,
+        );
+        expect(await realJournalDb.entryLinkById('removed-link'), removed);
       },
     );
   });

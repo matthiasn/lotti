@@ -507,21 +507,6 @@ const Set<NudgeStatus> _terminalNudgeStatuses = {
   NudgeStatus.failed,
 };
 
-/// A total, replica-independent ordering of two vector clocks. Compares each
-/// host's counter (0 when a host is absent) in sorted host order and returns
-/// the sign of the first difference: `1` if [a] is greater, `-1` if [b] is
-/// greater, `0` if the clocks are identical. Independent of map iteration
-/// order, so two devices comparing the same pair agree.
-int compareClocksCanonically(VectorClock a, VectorClock b) {
-  final hosts = <String>{...a.vclock.keys, ...b.vclock.keys}.toList()..sort();
-  for (final host in hosts) {
-    final counterA = a.get(host);
-    final counterB = b.get(host);
-    if (counterA != counterB) return counterA > counterB ? 1 : -1;
-  }
-  return 0;
-}
-
 /// Merges two **concurrent** versions of one change set item by item — the
 /// change-set case of [mergeConcurrentAgentEntities] (ADR 0067).
 ///

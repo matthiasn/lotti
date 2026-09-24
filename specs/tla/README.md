@@ -494,6 +494,15 @@ What the model leaves out, deliberately or as a residual:
   winner's own clock and joins its G-counters on every delivery instead,
   which is what this model checks; the nudge variant is not modelled.
 - Links (`AgentLink`) keep plain last-writer-wins and are not modelled.
+- **Journal entry links** (`JournalDb.upsertEntryLink`) follow this model's
+  `"state"` order without counters or an override: dominance, then
+  `updatedAt`, then the canonical clock
+  ([ADR 0078](../../docs/adr/0078-entry-link-versions-are-ordered.md)). Their
+  writers meet `IntentCarriesClock` (an edit reserves with the stored link's
+  clock as `previous`) and `ClampTimestamp` (`linkEditTimestamp`), so
+  `Converged` and `NoLostSuccessor` carry over without a model of their own.
+  Before that change the receive applied whatever arrived last, and an edit's
+  clock held only its own host's counter.
 
 ## `AgentStateWrites` — the writers of one agent-state row
 

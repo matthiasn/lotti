@@ -1,4 +1,5 @@
 // ignore_for_file: avoid_redundant_argument_values
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart' as drift;
@@ -1246,6 +1247,173 @@ void main() {
           // Tombstone should be gone; fresh link should exist.
           expect(await db!.entryLinkById('tombstone-link-id'), isNull);
           expect(await db!.entryLinkById('fresh-link-id'), isNotNull);
+        },
+      );
+    });
+
+    group('upsertEntryLink recency -', () {
+      final early = DateTime(2024, 11, 10, 10);
+      final late = DateTime(2024, 11, 10, 11);
+
+      EntryLink version({
+        required VectorClock? clock,
+        required DateTime updatedAt,
+        bool hidden = false,
+      }) => EntryLink.basic(
+        id: 'recency-link',
+        fromId: 'recency-from',
+        toId: 'recency-to',
+        createdAt: early,
+        updatedAt: updatedAt,
+        vectorClock: clock,
+        hidden: hidden,
+        deletedAt: hidden ? updatedAt : null,
+      );
+
+      Future<EntryLink> stored() async =>
+          (await db!.entryLinkById('recency-link'))!;
+
+      test(
+        'refuses a version the stored clock dominates, however late its '
+        'updatedAt — a removed link is not brought back by an old snapshot',
+        () async {
+          final removed = version(
+            clock: const VectorClock({'a': 5, 'b': 1}),
+            updatedAt: early,
+            hidden: true,
+          );
+          await db!.upsertEntryLink(removed);
+
+          final snapshot = version(
+            clock: const VectorClock({'a': 5}),
+            updatedAt: late,
+          );
+          expect(await db!.upsertEntryLink(snapshot), 0);
+          expect(await stored(), removed);
+        },
+      );
+
+      test(
+        'applies a version whose clock dominates the stored one, however '
+        'early its updatedAt',
+        () async {
+          await db!.upsertEntryLink(
+            version(clock: const VectorClock({'a': 5}), updatedAt: late),
+          );
+
+          final removed = version(
+            clock: const VectorClock({'a': 5, 'b': 1}),
+            updatedAt: early,
+            hidden: true,
+          );
+          expect(await db!.upsertEntryLink(removed), isNot(0));
+          expect(await stored(), removed);
+        },
+      );
+
+      test(
+        'with concurrent clocks keeps the later updatedAt in either '
+        'arrival order',
+        () async {
+          final older = version(
+            clock: const VectorClock({'a': 5}),
+            updatedAt: early,
+            hidden: true,
+          );
+          final newer = version(
+            clock: const VectorClock({'b': 1}),
+            updatedAt: late,
+          );
+
+          await db!.upsertEntryLink(older);
+          expect(await db!.upsertEntryLink(newer), isNot(0));
+          expect(await stored(), newer);
+
+          await clearAllTables(db!);
+          await db!.upsertEntryLink(newer);
+          expect(await db!.upsertEntryLink(older), 0);
+          expect(await stored(), newer);
+        },
+      );
+
+      test(
+        'with concurrent clocks and the same updatedAt keeps the canonically '
+        'larger clock in either arrival order',
+        () async {
+          // Two devices edited a link whose stamp lay ahead of both their
+          // clocks, so both edits carry that same stamp.
+          final fromB = version(
+            clock: const VectorClock({'a': 5, 'b': 1}),
+            updatedAt: late,
+          );
+          final fromC = version(
+            clock: const VectorClock({'a': 5, 'c': 1}),
+            updatedAt: late,
+            hidden: true,
+          );
+
+          await db!.upsertEntryLink(fromC);
+          expect(await db!.upsertEntryLink(fromB), isNot(0));
+          expect(await stored(), fromB);
+
+          await clearAllTables(db!);
+          await db!.upsertEntryLink(fromB);
+          expect(await db!.upsertEntryLink(fromC), 0);
+          expect(await stored(), fromB);
+        },
+      );
+
+      test(
+        'without a clock on either side falls back to updatedAt',
+        () async {
+          final newer = version(clock: null, updatedAt: late);
+          await db!.upsertEntryLink(newer);
+
+          expect(
+            await db!.upsertEntryLink(
+              version(clock: const VectorClock({'a': 9}), updatedAt: early),
+            ),
+            0,
+          );
+          expect(await stored(), newer);
+
+          final newest = version(
+            clock: null,
+            updatedAt: late.add(const Duration(minutes: 1)),
+            hidden: true,
+          );
+          expect(await db!.upsertEntryLink(newest), isNot(0));
+          expect(await stored(), newest);
+        },
+      );
+
+      test(
+        'with nothing left to order two versions — equal clocks at the same '
+        'instant — keeps the same one in either arrival order',
+        () async {
+          // A host's first counter is 0, which compares equal to an absent
+          // entry: an edit stamped at its predecessor's instant ties with it.
+          final predecessor = version(
+            clock: const VectorClock({'a': 5}),
+            updatedAt: late,
+          );
+          final edit = version(
+            clock: const VectorClock({'a': 5, 'b': 0}),
+            updatedAt: late,
+            hidden: true,
+          );
+          final kept = jsonEncode(edit).compareTo(jsonEncode(predecessor)) > 0
+              ? edit
+              : predecessor;
+
+          await db!.upsertEntryLink(predecessor);
+          await db!.upsertEntryLink(edit);
+          expect(await stored(), kept);
+
+          await clearAllTables(db!);
+          await db!.upsertEntryLink(edit);
+          await db!.upsertEntryLink(predecessor);
+          expect(await stored(), kept);
         },
       );
     });

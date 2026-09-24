@@ -445,4 +445,112 @@ void main() {
       expect(VclockException().toString(), 'Invalid vector clock inputs');
     });
   });
+
+  group('compareClocksCanonically', () {
+    glados.Glados2(
+      glados.any.clockBuckets.map((buckets) => buckets.toClock()),
+      glados.any.clockBuckets.map((buckets) => buckets.toClock()),
+      glados.ExploreConfig(numRuns: 150),
+    ).test('is antisymmetric', (a, b) {
+      expect(
+        compareClocksCanonically(a, b),
+        -compareClocksCanonically(b, a),
+        reason: 'a=${a.vclock} b=${b.vclock}',
+      );
+    }, tags: 'glados');
+
+    glados.Glados3(
+      glados.any.clockBuckets.map((buckets) => buckets.toClock()),
+      glados.any.clockBuckets.map((buckets) => buckets.toClock()),
+      glados.any.clockBuckets.map((buckets) => buckets.toClock()),
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'is transitive (sort-comparator contract on the sync hot path)',
+      (
+        a,
+        b,
+        c,
+      ) {
+        final ab = compareClocksCanonically(a, b);
+        final bc = compareClocksCanonically(b, c);
+        final ac = compareClocksCanonically(a, c);
+        if (ab > 0 && bc > 0) {
+          expect(
+            ac,
+            greaterThan(0),
+            reason: 'a=${a.vclock} b=${b.vclock} c=${c.vclock}',
+          );
+        }
+        if (ab < 0 && bc < 0) {
+          expect(
+            ac,
+            lessThan(0),
+            reason: 'a=${a.vclock} b=${b.vclock} c=${c.vclock}',
+          );
+        }
+        if (ab == 0 && bc == 0) {
+          expect(
+            ac,
+            0,
+            reason: 'a=${a.vclock} b=${b.vclock} c=${c.vclock}',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.clockPair,
+      glados.ExploreConfig(numRuns: 150),
+    ).test('ranks a dominating clock above the one it dominates', (pair) {
+      final a = pair.a.toClock(sparse: true);
+      final b = pair.b.toClock();
+      final status = VectorClock.compare(a, b);
+      final canonical = compareClocksCanonically(a, b);
+      if (status == VclockStatus.a_gt_b) expect(canonical, 1, reason: '$pair');
+      if (status == VclockStatus.b_gt_a) expect(canonical, -1, reason: '$pair');
+      if (status == VclockStatus.equal) expect(canonical, 0, reason: '$pair');
+    }, tags: 'glados');
+
+    test('orders by the first differing host counter', () {
+      expect(
+        compareClocksCanonically(
+          const VectorClock({'h0': 2}),
+          const VectorClock({'h0': 1}),
+        ),
+        1,
+      );
+      expect(
+        compareClocksCanonically(
+          const VectorClock({'h0': 1}),
+          const VectorClock({'h0': 2}),
+        ),
+        -1,
+      );
+    });
+
+    test('treats an absent host as counter 0', () {
+      expect(
+        compareClocksCanonically(
+          const VectorClock({'h0': 1}),
+          const VectorClock({'h1': 1}),
+        ),
+        1,
+      );
+    });
+
+    test('returns 0 for identical and for empty clocks', () {
+      expect(
+        compareClocksCanonically(
+          const VectorClock({'h0': 3, 'h1': 1}),
+          const VectorClock({'h0': 3, 'h1': 1}),
+        ),
+        0,
+      );
+      expect(
+        compareClocksCanonically(const VectorClock({}), const VectorClock({})),
+        0,
+      );
+    });
+  });
 }

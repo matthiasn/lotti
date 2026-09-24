@@ -2559,4 +2559,61 @@ void main() {
       },
     );
   });
+
+  group('unlinkTaskFromProject across devices', () {
+    late JournalDb db;
+    late VectorClockService vectorClockService;
+
+    setUp(() async {
+      db = JournalDb(inMemoryDatabase: true);
+      // The real service: the tombstone's clock is what is under test.
+      vectorClockService = VectorClockService();
+      await vectorClockService.initialized;
+      // This device has written before. Its first counter, 0, would compare
+      // equal to an absent entry and leave the clocks tied.
+      await vectorClockService.getNextVectorClock();
+      repository = ProjectRepository(
+        journalDb: db,
+        entitiesCacheService: mockEntitiesCacheService,
+        persistenceLogic: mockPersistence,
+        updateNotifications: mockNotifications,
+        vectorClockService: vectorClockService,
+      );
+    });
+
+    tearDown(() => db.close());
+
+    test(
+      'a removed project link stays removed when a later-stamped copy of the '
+      'live link arrives from the device that created it',
+      () async {
+        // Device A put the task in the project; its wall clock runs well
+        // ahead of this device's.
+        final fromDeviceA = EntryLink.project(
+          id: 'project-link',
+          fromId: 'project-001',
+          toId: 'task-001',
+          createdAt: DateTime(2100),
+          updatedAt: DateTime(2100),
+          vectorClock: const VectorClock({'device-a': 5}),
+        );
+        expect(await db.upsertEntryLink(fromDeviceA), 1);
+
+        expect(await repository.unlinkTaskFromProject('task-001'), isTrue);
+        final tombstone = (await db.entryLinkById('project-link'))!;
+        final host = (await vectorClockService.getHost())!;
+        // The tombstone extends the clock of the link it deletes, and is not
+        // stamped earlier than that link; the deletion time is this device's.
+        expect(tombstone.vectorClock?.vclock, {'device-a': 5, host: 1});
+        expect(tombstone.updatedAt, DateTime(2100));
+        expect(tombstone.deletedAt!.isBefore(DateTime(2100)), isTrue);
+
+        // Device A's next message for the task embeds its snapshot of the
+        // live link; the sync receive upserts it like this.
+        expect(await db.upsertEntryLink(fromDeviceA), 0);
+        expect(await db.getProjectLinkForTask('task-001'), isNull);
+        expect(await db.entryLinkById('project-link'), tombstone);
+      },
+    );
+  });
 }

@@ -701,6 +701,32 @@ void main() {
       }
     });
   });
+
+  group('linkEditTimestamp', () {
+    final now = DateTime(2026, 9, 24, 12);
+    EntryLink stampedAt(DateTime updatedAt) => EntryLink.basic(
+      id: 'link',
+      fromId: 'from',
+      toId: 'to',
+      createdAt: DateTime(2026),
+      updatedAt: updatedAt,
+      vectorClock: null,
+    );
+
+    test('is now for a new link and for one stamped in the past', () {
+      expect(linkEditTimestamp(null, now), now);
+      expect(linkEditTimestamp(stampedAt(DateTime(2026, 9, 2)), now), now);
+    });
+
+    test(
+      'keeps a stamp from a device whose clock runs ahead, so the edit is '
+      'never older than the version it replaces',
+      () {
+        final ahead = DateTime(2100);
+        expect(linkEditTimestamp(stampedAt(ahead), now), ahead);
+      },
+    );
+  });
 }
 
 enum _GeneratedEntryLinkKind {

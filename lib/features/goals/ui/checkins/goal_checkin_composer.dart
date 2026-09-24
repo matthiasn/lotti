@@ -13,7 +13,6 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:uuid/uuid.dart';
 
 /// The anytime check-in: one tap into the recorder, no typing required.
 ///
@@ -327,7 +326,6 @@ Future<bool> saveCheckInText({
   final created = await JournalRepository.createTextEntry(
     EntryText(plainText: text),
     started: clock.now(),
-    id: const Uuid().v1(),
     linkedId: goalEntryId,
     categoryId: categoryId,
   );

@@ -144,3 +144,4 @@ Each ADR should contain:
 - [`0074-agent-worded-alerts-restate-an-armed-episode.md`](./0074-agent-worded-alerts-restate-an-armed-episode.md)
 - [`0075-idempotent-change-set-tools.md`](./0075-idempotent-change-set-tools.md)
 - [`0076-model-checked-agent-head.md`](./0076-model-checked-agent-head.md)
+- [`0078-entry-link-versions-are-ordered.md`](./0078-entry-link-versions-are-ordered.md)

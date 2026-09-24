@@ -152,3 +152,21 @@ class VectorClock extends Equatable {
   @override
   List<Object?> get props => [vclock];
 }
+
+/// A total, replica-independent ordering of two vector clocks. Compares each
+/// host's counter (0 when a host is absent) in sorted host order and returns
+/// the sign of the first difference: `1` if [a] is greater, `-1` if [b] is
+/// greater, `0` if the clocks are identical. Independent of map iteration
+/// order, so two devices comparing the same pair agree.
+///
+/// Consistent with causality: when [a] dominates [b] the result is `1`, so
+/// ordering concurrent versions by it never contradicts [VectorClock.compare].
+int compareClocksCanonically(VectorClock a, VectorClock b) {
+  final hosts = <String>{...a.vclock.keys, ...b.vclock.keys}.toList()..sort();
+  for (final host in hosts) {
+    final counterA = a.get(host);
+    final counterB = b.get(host);
+    if (counterA != counterB) return counterA > counterB ? 1 : -1;
+  }
+  return 0;
+}

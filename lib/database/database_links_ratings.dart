@@ -310,14 +310,23 @@ mixin _JournalDbLinksRatings
     return entryLinkFromLinkedDbEntry(res);
   }
 
-  /// Inserts or updates [link], refusing self-links and active duplicates.
+  /// Inserts or updates [link], refusing self-links, active duplicates and
+  /// versions older than the stored one.
   ///
-  /// The equality pre-read, the `(from_id, to_id, type)` duplicate check,
-  /// the tombstone replacement and the upsert run in one transaction, so two
-  /// concurrent creations of the same link — a local one racing the same
-  /// link arriving by sync — cannot both pass the duplicate check and then
-  /// collide on the UNIQUE constraint. A failing read propagates; it is a
-  /// database error, not a reason to write blind.
+  /// A link is replicated state: the same id arrives from every device, in
+  /// no guaranteed order, and every journal-entity message embeds a snapshot
+  /// of its entry's links. So a version the stored row already supersedes is
+  /// refused (see [_entryLinkIsStale]) — otherwise a late snapshot of a link
+  /// taken before its removal would bring the removed link back. Local
+  /// updates reserve their clock with the stored one as `previous`, so they
+  /// always dominate what they replace.
+  ///
+  /// The equality pre-read, the recency check, the `(from_id, to_id, type)`
+  /// duplicate check, the tombstone replacement and the upsert run in one
+  /// transaction, so two concurrent creations of the same link — a local one
+  /// racing the same link arriving by sync — cannot both pass the duplicate
+  /// check and then collide on the UNIQUE constraint. A failing read
+  /// propagates; it is a database error, not a reason to write blind.
   Future<int> upsertEntryLink(EntryLink link) async {
     if (link.fromId == link.toId) {
       return 0;
@@ -331,6 +340,10 @@ mixin _JournalDbLinksRatings
       )..where((t) => t.id.equals(link.id))).getSingleOrNull();
       if (existing != null && existing.serialized == jsonEncode(link)) {
         return 0; // no change needed
+      }
+      if (existing != null &&
+          _entryLinkIsStale(link, than: entryLinkFromLinkedDbEntry(existing))) {
+        return 0; // the stored version already supersedes this one
       }
 
       // Guard against secondary UNIQUE(from_id, to_id, type) constraint.
@@ -372,6 +385,42 @@ mixin _JournalDbLinksRatings
       return res;
     });
   }
+}
+
+/// Whether [incoming] is older than the [than] version of the same link.
+///
+/// The vector clocks decide when they are ordered: a stored clock that
+/// dominates the incoming one means the incoming version is superseded.
+/// Concurrent clocks — and a legacy link without a clock — fall back to the
+/// later `updatedAt`, then to [compareClocksCanonically], then to the
+/// serialized versions, so every device keeps the same version whatever
+/// order the versions arrive in. That order agrees with the clocks because a
+/// local edit never stamps an `updatedAt` older than the version it replaces
+/// ([linkEditTimestamp]).
+bool _entryLinkIsStale(EntryLink incoming, {required EntryLink than}) {
+  final storedClock = than.vectorClock;
+  final incomingClock = incoming.vectorClock;
+  if (storedClock != null && incomingClock != null) {
+    switch (VectorClock.compare(storedClock, incomingClock)) {
+      case VclockStatus.a_gt_b:
+        return true;
+      case VclockStatus.b_gt_a:
+        return false;
+      case VclockStatus.equal:
+      case VclockStatus.concurrent:
+        break;
+    }
+  }
+  if (incoming.updatedAt != than.updatedAt) {
+    return incoming.updatedAt.isBefore(than.updatedAt);
+  }
+  final canonical = storedClock == null || incomingClock == null
+      ? 0
+      : compareClocksCanonically(incomingClock, storedClock);
+  if (canonical != 0) return canonical < 0;
+  // Nothing orders the two — equal clocks, or none, at the same instant — so
+  // pick by content: arbitrary, but the same on every device.
+  return jsonEncode(incoming).compareTo(jsonEncode(than)) < 0;
 }
 
 /// In-flight coalescing wave for `basicLinksForEntryIds`. Concurrent callers

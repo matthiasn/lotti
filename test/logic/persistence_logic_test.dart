@@ -591,7 +591,6 @@ void main() {
       // create test entry
       final textEntry = await JournalRepository.createTextEntry(
         const EntryText(plainText: testText),
-        id: uuid.v1(),
         started: testDate,
       );
 
@@ -776,7 +775,6 @@ void main() {
       const updatedTestText = 'updated test comment for task';
       final comment = await JournalRepository.createTextEntry(
         const EntryText(plainText: testText),
-        id: uuid.v1(),
         started: testDate,
         linkedId: task.meta.id,
       );
@@ -1029,7 +1027,6 @@ void main() {
       final testDate = DateTime(2024, 3, 15, 11, 30);
       final textEntry = await JournalRepository.createTextEntry(
         const EntryText(plainText: 'Parent entry'),
-        id: uuid.v1(),
         started: testDate,
       );
 
@@ -1106,13 +1103,11 @@ void main() {
       // Create two entries to link
       final entry1 = await JournalRepository.createTextEntry(
         const EntryText(plainText: 'First entry'),
-        id: uuid.v1(),
         started: testDate,
       );
 
       final entry2 = await JournalRepository.createTextEntry(
         const EntryText(plainText: 'Second entry'),
-        id: uuid.v1(),
         started: testDate,
       );
 
@@ -1158,7 +1153,6 @@ void main() {
       final testDate = DateTime(2024, 3, 15, 13);
       final entry = await JournalRepository.createTextEntry(
         const EntryText(plainText: testText),
-        id: uuid.v1(),
         started: testDate,
         categoryId: categoryMindfulness.id,
       );
@@ -1239,7 +1233,6 @@ void main() {
       // Create parent entry first
       final parent = await JournalRepository.createTextEntry(
         const EntryText(plainText: 'Parent entry'),
-        id: uuid.v1(),
         started: testDate,
       );
 

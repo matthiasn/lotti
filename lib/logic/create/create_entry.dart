@@ -24,7 +24,6 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/screenshots.dart';
 
 Future<JournalEntity?> createTextEntry({
@@ -33,7 +32,6 @@ Future<JournalEntity?> createTextEntry({
 }) async {
   final entry = await JournalRepository.createTextEntry(
     const EntryText(plainText: ''),
-    id: uuid.v1(),
     linkedId: linkedId,
     categoryId: categoryId,
     started: DateTime.now(),
