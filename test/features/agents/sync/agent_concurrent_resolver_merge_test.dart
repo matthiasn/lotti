@@ -1382,6 +1382,43 @@ void main() {
       },
     );
 
+    test(
+      "an older build's confirm survives a newer build's later revision",
+      () {
+        // An older build drops `revision` when it rewrites the set. Here the
+        // newer build rewrote the migration's target (revision 1, still
+        // pending) while the older build confirmed and applied it: compared
+        // as revision 0, the pending rewrite won and the applied migration
+        // was open to be applied again. Without a revision on one side, the
+        // status decides.
+        const migration = ChangeItem(
+          toolName: 'migrate_checklist_item',
+          args: {'id': 'c1', 'targetTaskId': 'placeholder'},
+          humanSummary: 'Move item',
+        );
+        final onNewer = changeSet(
+          [
+            migration.withArgs({'id': 'c1', 'targetTaskId': 'task-1'}),
+          ],
+          {'new': 2},
+        );
+        final onOlder = changeSet(
+          [
+            migration.copyWith(status: ChangeItemStatus.confirmed),
+          ],
+          {'new': 1, 'old': 1},
+        );
+
+        for (final merged in [
+          resolveIncomingChangeSet(local: onNewer, incoming: onOlder)!,
+          resolveIncomingChangeSet(local: onOlder, incoming: onNewer)!,
+        ]) {
+          expect(merged.items.single.status, ChangeItemStatus.confirmed);
+          expect(merged.items.single.revision, isNull);
+        }
+      },
+    );
+
     test('the migration target rewrite travels with its revision', () {
       final rewritten = estimate.withArgs({'minutes': 30, 'extra': true});
       final onA = changeSet([rewritten, title], {'a': 2});
@@ -1571,9 +1608,13 @@ void main() {
           final a = onA.items[i];
           final b = onB.items[i];
           final kept = atA.items[i];
-          // The side that changed the item last wins it outright.
-          if (a.revision != b.revision) {
-            expect(kept, a.revision > b.revision ? a : b);
+          // The side that changed the item last wins it outright. An item
+          // a side never touched carries no revision and is judged by
+          // status.
+          final ra = a.revision;
+          final rb = b.revision;
+          if (ra != null && rb != null && ra != rb) {
+            expect(kept, ra > rb ? a : b);
           } else if (a.status == ChangeItemStatus.confirmed ||
               b.status == ChangeItemStatus.confirmed) {
             expect(kept.status, ChangeItemStatus.confirmed);

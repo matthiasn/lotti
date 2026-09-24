@@ -27,9 +27,14 @@ mixin _$ChangeItem {
 /// by one on top of the version it read, so when two devices change the
 /// set concurrently, the resolver keeps, item by item, the version that
 /// changed the item last (`mergeConcurrentChangeSets`,
-/// `specs/tla/ChangeSetLifecycle.tla`). Absent in rows written before it
-/// existed, which read as `0`.
- int get revision;
+/// `specs/tla/ChangeSetLifecycle.tla`).
+///
+/// `null` for an item no build that knows the field has changed — and
+/// for every item an older build wrote, since it drops the field when it
+/// rewrites a set. Such an item carries no ordering, so a merge judges it
+/// by status alone rather than as revision 0, which would lose a
+/// decision an older build made to any newer-build change.
+ int? get revision;
 /// Create a copy of ChangeItem
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -62,7 +67,7 @@ abstract mixin class $ChangeItemCopyWith<$Res>  {
   factory $ChangeItemCopyWith(ChangeItem value, $Res Function(ChangeItem) _then) = _$ChangeItemCopyWithImpl;
 @useResult
 $Res call({
- String toolName, Map<String, dynamic> args, String humanSummary, ChangeItemStatus status, String? groupId, int revision
+ String toolName, Map<String, dynamic> args, String humanSummary, ChangeItemStatus status, String? groupId, int? revision
 });
 
 
@@ -79,15 +84,15 @@ class _$ChangeItemCopyWithImpl<$Res>
 
 /// Create a copy of ChangeItem
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? toolName = null,Object? args = null,Object? humanSummary = null,Object? status = null,Object? groupId = freezed,Object? revision = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? toolName = null,Object? args = null,Object? humanSummary = null,Object? status = null,Object? groupId = freezed,Object? revision = freezed,}) {
   return _then(_self.copyWith(
 toolName: null == toolName ? _self.toolName : toolName // ignore: cast_nullable_to_non_nullable
 as String,args: null == args ? _self.args : args // ignore: cast_nullable_to_non_nullable
 as Map<String, dynamic>,humanSummary: null == humanSummary ? _self.humanSummary : humanSummary // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as ChangeItemStatus,groupId: freezed == groupId ? _self.groupId : groupId // ignore: cast_nullable_to_non_nullable
-as String?,revision: null == revision ? _self.revision : revision // ignore: cast_nullable_to_non_nullable
-as int,
+as String?,revision: freezed == revision ? _self.revision : revision // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 
@@ -172,7 +177,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String toolName,  Map<String, dynamic> args,  String humanSummary,  ChangeItemStatus status,  String? groupId,  int revision)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String toolName,  Map<String, dynamic> args,  String humanSummary,  ChangeItemStatus status,  String? groupId,  int? revision)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ChangeItem() when $default != null:
 return $default(_that.toolName,_that.args,_that.humanSummary,_that.status,_that.groupId,_that.revision);case _:
@@ -193,7 +198,7 @@ return $default(_that.toolName,_that.args,_that.humanSummary,_that.status,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String toolName,  Map<String, dynamic> args,  String humanSummary,  ChangeItemStatus status,  String? groupId,  int revision)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String toolName,  Map<String, dynamic> args,  String humanSummary,  ChangeItemStatus status,  String? groupId,  int? revision)  $default,) {final _that = this;
 switch (_that) {
 case _ChangeItem():
 return $default(_that.toolName,_that.args,_that.humanSummary,_that.status,_that.groupId,_that.revision);case _:
@@ -213,7 +218,7 @@ return $default(_that.toolName,_that.args,_that.humanSummary,_that.status,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String toolName,  Map<String, dynamic> args,  String humanSummary,  ChangeItemStatus status,  String? groupId,  int revision)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String toolName,  Map<String, dynamic> args,  String humanSummary,  ChangeItemStatus status,  String? groupId,  int? revision)?  $default,) {final _that = this;
 switch (_that) {
 case _ChangeItem() when $default != null:
 return $default(_that.toolName,_that.args,_that.humanSummary,_that.status,_that.groupId,_that.revision);case _:
@@ -228,7 +233,7 @@ return $default(_that.toolName,_that.args,_that.humanSummary,_that.status,_that.
 @JsonSerializable()
 
 class _ChangeItem implements ChangeItem {
-  const _ChangeItem({required this.toolName, required final  Map<String, dynamic> args, required this.humanSummary, this.status = ChangeItemStatus.pending, this.groupId, this.revision = 0}): _args = args;
+  const _ChangeItem({required this.toolName, required final  Map<String, dynamic> args, required this.humanSummary, this.status = ChangeItemStatus.pending, this.groupId, this.revision}): _args = args;
   factory _ChangeItem.fromJson(Map<String, dynamic> json) => _$ChangeItemFromJson(json);
 
 /// The tool name for this mutation (e.g., `add_checklist_item`).
@@ -255,9 +260,14 @@ class _ChangeItem implements ChangeItem {
 /// by one on top of the version it read, so when two devices change the
 /// set concurrently, the resolver keeps, item by item, the version that
 /// changed the item last (`mergeConcurrentChangeSets`,
-/// `specs/tla/ChangeSetLifecycle.tla`). Absent in rows written before it
-/// existed, which read as `0`.
-@override@JsonKey() final  int revision;
+/// `specs/tla/ChangeSetLifecycle.tla`).
+///
+/// `null` for an item no build that knows the field has changed — and
+/// for every item an older build wrote, since it drops the field when it
+/// rewrites a set. Such an item carries no ordering, so a merge judges it
+/// by status alone rather than as revision 0, which would lose a
+/// decision an older build made to any newer-build change.
+@override final  int? revision;
 
 /// Create a copy of ChangeItem
 /// with the given fields replaced by the non-null parameter values.
@@ -292,7 +302,7 @@ abstract mixin class _$ChangeItemCopyWith<$Res> implements $ChangeItemCopyWith<$
   factory _$ChangeItemCopyWith(_ChangeItem value, $Res Function(_ChangeItem) _then) = __$ChangeItemCopyWithImpl;
 @override @useResult
 $Res call({
- String toolName, Map<String, dynamic> args, String humanSummary, ChangeItemStatus status, String? groupId, int revision
+ String toolName, Map<String, dynamic> args, String humanSummary, ChangeItemStatus status, String? groupId, int? revision
 });
 
 
@@ -309,15 +319,15 @@ class __$ChangeItemCopyWithImpl<$Res>
 
 /// Create a copy of ChangeItem
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? toolName = null,Object? args = null,Object? humanSummary = null,Object? status = null,Object? groupId = freezed,Object? revision = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? toolName = null,Object? args = null,Object? humanSummary = null,Object? status = null,Object? groupId = freezed,Object? revision = freezed,}) {
   return _then(_ChangeItem(
 toolName: null == toolName ? _self.toolName : toolName // ignore: cast_nullable_to_non_nullable
 as String,args: null == args ? _self._args : args // ignore: cast_nullable_to_non_nullable
 as Map<String, dynamic>,humanSummary: null == humanSummary ? _self.humanSummary : humanSummary // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as ChangeItemStatus,groupId: freezed == groupId ? _self.groupId : groupId // ignore: cast_nullable_to_non_nullable
-as String?,revision: null == revision ? _self.revision : revision // ignore: cast_nullable_to_non_nullable
-as int,
+as String?,revision: freezed == revision ? _self.revision : revision // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 

@@ -214,7 +214,10 @@ What stays open — the residuals, each confirmed by TLC:
   index — fall back to the whole-row winner, as before. The model's items
   are fixed, so it does not cover this.
 - **Clients that predate the item revision** strip it when they rewrite a
-  set; concurrent merges with such a write fall back to the status rank.
+  set. An item without a revision is merged by status alone — never as
+  revision 0, which would let a newer-build target rewrite beat a confirm the
+  older build applied — so a newer-build revert racing an older build's
+  confirm keeps the confirm.
 
 ## From the model to the code
 

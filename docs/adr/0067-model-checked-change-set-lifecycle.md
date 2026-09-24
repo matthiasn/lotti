@@ -89,9 +89,13 @@ in eight or nine steps with every fix removed.
   follow-up task, its migration and a plain item under every interleaving of
   its writers, and for two devices syncing through messages in any order, as
   long as no item is decided on both devices before they sync.
-- Rows gain an item `revision` field. Older clients ignore it and drop it
-  when they rewrite a set; a concurrent merge with such a write falls back to
-  the status rank.
+- Rows gain an optional item `revision` field. Older clients ignore it and
+  drop it when they rewrite a set, so an item without one carries no order:
+  the merge judges it by status alone rather than as revision 0, which would
+  let any newer-build change of the item — a target rewrite, say — beat a
+  confirm the older build made and applied. The cost is the reverse edge
+  case: a newer-build revert racing an older build's confirm keeps the
+  confirm.
 - Residuals, documented in `specs/tla/README.md` and each confirmed by TLC:
   - **The same item decided on two devices before they sync** is applied on
     both. The replicas converge, but no local transaction can prevent the

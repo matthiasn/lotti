@@ -507,7 +507,7 @@ void main() {
         // status that the stale snapshot did not have.
         expect(updated, isNotNull);
         expect(updated!.items[0].status, ChangeItemStatus.confirmed);
-        expect(updated.items[0].revision, 0);
+        expect(updated.items[0].revision, isNull, reason: 'untouched');
         expect(updated.items[1].status, ChangeItemStatus.retracted);
         expect(updated.items[1].revision, 1);
         expect(updated.status, ChangeSetStatus.resolved);

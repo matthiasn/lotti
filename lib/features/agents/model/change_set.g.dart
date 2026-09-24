@@ -14,7 +14,7 @@ _ChangeItem _$ChangeItemFromJson(Map<String, dynamic> json) => _ChangeItem(
       $enumDecodeNullable(_$ChangeItemStatusEnumMap, json['status']) ??
       ChangeItemStatus.pending,
   groupId: json['groupId'] as String?,
-  revision: (json['revision'] as num?)?.toInt() ?? 0,
+  revision: (json['revision'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$ChangeItemToJson(_ChangeItem instance) =>

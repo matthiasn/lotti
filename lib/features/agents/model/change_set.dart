@@ -37,9 +37,14 @@ abstract class ChangeItem with _$ChangeItem {
     /// by one on top of the version it read, so when two devices change the
     /// set concurrently, the resolver keeps, item by item, the version that
     /// changed the item last (`mergeConcurrentChangeSets`,
-    /// `specs/tla/ChangeSetLifecycle.tla`). Absent in rows written before it
-    /// existed, which read as `0`.
-    @Default(0) int revision,
+    /// `specs/tla/ChangeSetLifecycle.tla`).
+    ///
+    /// `null` for an item no build that knows the field has changed — and
+    /// for every item an older build wrote, since it drops the field when it
+    /// rewrites a set. Such an item carries no ordering, so a merge judges it
+    /// by status alone rather than as revision 0, which would lose a
+    /// decision an older build made to any newer-build change.
+    int? revision,
   }) = _ChangeItem;
 
   factory ChangeItem.fromJson(Map<String, dynamic> json) =>
@@ -162,9 +167,9 @@ abstract class ChangeItem with _$ChangeItem {
 extension ChangeItemRevision on ChangeItem {
   /// This item moved to [newStatus], one [ChangeItem.revision] later.
   ChangeItem withStatus(ChangeItemStatus newStatus) =>
-      copyWith(status: newStatus, revision: revision + 1);
+      copyWith(status: newStatus, revision: (revision ?? 0) + 1);
 
   /// This item with [newArgs], one [ChangeItem.revision] later.
   ChangeItem withArgs(Map<String, dynamic> newArgs) =>
-      copyWith(args: newArgs, revision: revision + 1);
+      copyWith(args: newArgs, revision: (revision ?? 0) + 1);
 }

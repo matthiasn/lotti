@@ -322,7 +322,8 @@ ChangeSetEntity? resolveIncomingChangeSet({
 ///
 /// For each index, the version that changed the item last wins — the higher
 /// [ChangeItem.revision]. At the same revision both devices changed the item
-/// from the same state, and the more final status wins
+/// from the same state, and the more final status wins; so it does when
+/// either side carries no revision (an older build wrote it)
 /// ([ChangeItem.statusRank]): a confirm took effect, so it beats a
 /// concurrent rejection or retraction, and any decision beats `pending`.
 /// Items one version appended beyond the other's are kept. The set status
@@ -390,8 +391,15 @@ ChangeItem _mergeChangeItem(
   ChangeItem incoming,
   ConcurrentWinner winner,
 ) {
-  if (local.revision != incoming.revision) {
-    return local.revision > incoming.revision ? local : incoming;
+  final localRevision = local.revision;
+  final incomingRevision = incoming.revision;
+  // An item without a revision was last written by an older build, which
+  // drops the field: its revision says nothing about order, so only the
+  // status can decide.
+  if (localRevision != null &&
+      incomingRevision != null &&
+      localRevision != incomingRevision) {
+    return localRevision > incomingRevision ? local : incoming;
   }
   final byRank =
       ChangeItem.statusRank(local.status) -
