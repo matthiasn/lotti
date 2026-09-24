@@ -828,6 +828,73 @@ void main() {
     });
   });
 
+  group('isReadableDatabaseFile', () {
+    late Directory testDirectory;
+
+    setUp(() => testDirectory = setupTestDirectory());
+    tearDown(() => testDirectory.deleteSync(recursive: true));
+
+    /// The paths this process still holds open, read from `/proc/self/fd`.
+    Set<String> openPaths() {
+      final paths = <String>{};
+      for (final link in Directory(
+        '/proc/self/fd',
+      ).listSync(followLinks: false)) {
+        try {
+          if (link is Link) paths.add(link.targetSync());
+        } on FileSystemException {
+          // The listing's own descriptor is gone by the time it is read.
+        }
+      }
+      return paths;
+    }
+
+    test(
+      'an unreadable file keeps its -wal and -shm, and no handle outlives '
+      'the probe',
+      () {
+        final file = File(p.join(testDirectory.path, 'db.sqlite'))
+          ..writeAsStringSync('this is not a database');
+        final wal = File('${file.path}-wal')..writeAsStringSync('stale wal');
+        final shm = File('${file.path}-shm')..writeAsStringSync('stale shm');
+
+        expect(isReadableDatabaseFile(file), isFalse);
+
+        // Closing an ordinary connection beside a file that is not a
+        // database deletes both companions, and the WAL holds exactly the
+        // commits a restore keeps beside the damaged file.
+        expect(wal.readAsStringSync(), 'stale wal');
+        expect(shm.readAsStringSync(), 'stale shm');
+        // A connection left to the garbage collector deletes them later, at
+        // whatever moment its finalizer runs — in CI, mid-restore.
+        if (Platform.isLinux) {
+          expect(
+            openPaths().where(
+              (path) => path.startsWith(testDirectory.path),
+            ),
+            isEmpty,
+          );
+        }
+      },
+    );
+
+    test('a WAL database whose rows are only in the WAL is readable, and the '
+        'probe leaves the WAL as it found it', () {
+      final path = p.join(testDirectory.path, 'live.sqlite');
+      final writer = sqlite3.open(path)
+        ..execute('PRAGMA journal_mode = WAL')
+        ..execute('CREATE TABLE t (v TEXT)')
+        ..execute("INSERT INTO t VALUES ('x')");
+      addTearDown(writer.close);
+      final wal = File('$path-wal');
+      final before = wal.readAsBytesSync();
+
+      expect(isReadableDatabaseFile(File(path)), isTrue);
+      expect(wal.readAsBytesSync(), before);
+      expect(writer.select('SELECT v FROM t').single['v'], 'x');
+    });
+  });
+
   group('recoverDatabaseIfUnreadable', () {
     late Directory testDirectory;
 

@@ -415,11 +415,28 @@ LazyDatabase openDbConnection(
 /// not a database at all, or whose header is damaged, reports `false`;
 /// anything else (a lock, a missing file, a permission problem) is not a
 /// corruption verdict and reports `true` so the normal open path surfaces it.
+///
+/// The probe opens the file `immutable`, so SQLite reads the main file and
+/// nothing beside it. An ordinary connection opens the `-wal`, and closing
+/// it beside a file that is not a database deletes that `-wal` and its
+/// `-shm` — the commits a restore keeps next to the damaged file. The
+/// connection is closed before returning, whatever the query did: a probe
+/// that left it to the garbage collector deleted the `-wal` at whatever
+/// moment the finalizer ran, sometimes in the middle of a restore.
 bool isReadableDatabaseFile(File file) {
   if (!file.existsSync()) return true;
   Database? database;
   try {
-    database = sqlite3.open(file.path)..select('PRAGMA schema_version');
+    final opened = sqlite3.open(
+      Uri.file(
+        file.path,
+      ).replace(queryParameters: const {'immutable': '1'}).toString(),
+      uri: true,
+    );
+    // Held before the query runs, not assigned from a cascade with it: a
+    // query that throws would otherwise leave nothing for `finally` to close.
+    database = opened;
+    opened.select('PRAGMA schema_version');
     return true;
   } on SqliteException catch (e) {
     return !_isUnreadableSource(e);
