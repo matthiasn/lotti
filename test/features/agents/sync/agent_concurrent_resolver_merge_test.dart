@@ -1383,6 +1383,41 @@ void main() {
     );
 
     test(
+      "a newer build's target rewrite survives an older build's untouched "
+      'copy of the pending item',
+      () {
+        // Both versions leave the migration pending. The newer build
+        // rewrote its target to the created task; the older build's copy,
+        // without a revision, still names the placeholder. Whichever version
+        // wins the whole row, the rewrite must survive, or the migration
+        // stays blocked behind a placeholder whose task already exists.
+        const migration = ChangeItem(
+          toolName: 'migrate_checklist_item',
+          args: {'id': 'c1', 'targetTaskId': 'placeholder'},
+          humanSummary: 'Move item',
+        );
+        final rewritten = migration.withArgs({
+          'id': 'c1',
+          'targetTaskId': 'task-1',
+        });
+        // Clocks chosen so each side wins the whole-row order once.
+        for (final (newerClock, olderClock) in [
+          ({'new': 2}, {'new': 1, 'old': 1}),
+          ({'a': 1, 'new': 1}, {'a': 2}),
+        ]) {
+          final onNewer = changeSet([rewritten], newerClock);
+          final onOlder = changeSet([migration], olderClock);
+          for (final merged in [
+            resolveIncomingChangeSet(local: onNewer, incoming: onOlder)!,
+            resolveIncomingChangeSet(local: onOlder, incoming: onNewer)!,
+          ]) {
+            expect(merged.items.single, rewritten);
+          }
+        }
+      },
+    );
+
+    test(
       "an older build's confirm survives a newer build's later revision",
       () {
         // An older build drops `revision` when it rewrites the set. Here the

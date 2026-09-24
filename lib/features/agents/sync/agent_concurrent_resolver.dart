@@ -405,6 +405,12 @@ ChangeItem _mergeChangeItem(
       ChangeItem.statusRank(local.status) -
       ChangeItem.statusRank(incoming.status);
   if (byRank != 0) return byRank > 0 ? local : incoming;
+  // Same status, and only one side counted its change: that side changed
+  // the item — a follow-up task's target rewrite, say — while the older
+  // build's copy is the item as it was.
+  if ((localRevision == null) != (incomingRevision == null)) {
+    return localRevision != null ? local : incoming;
+  }
   return winner == ConcurrentWinner.local ? local : incoming;
 }
 

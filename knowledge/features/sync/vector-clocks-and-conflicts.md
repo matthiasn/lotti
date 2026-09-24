@@ -276,7 +276,7 @@ versions item by item:
 | Per item | Kept |
 |----------|------|
 | different `revision` | the version that changed the item last |
-| a side without a `revision` (an older build wrote it, and drops the field) | judged by status, as below — not as revision 0 |
+| a side without a `revision` (an older build wrote it, and drops the field) | judged by status, as below — not as revision 0; on a status tie, the side with a revision, which changed the item |
 | same revision, different status | the more final status: `confirmed` over `rejected` over `retracted` over `pending` — a confirm took effect, a concurrent rejection or retraction did not |
 | same revision and status | the whole-row winner's |
 
