@@ -70,6 +70,24 @@ void main() {
     );
   });
 
+  test(
+    'a wake with no pending suggestions leaves the inbox lifecycle alone',
+    () async {
+      final resolved = makeTestChangeSet(
+        items: const [
+          ChangeItem(
+            toolName: 'set_task_title',
+            args: {'title': 'Done'},
+            humanSummary: 'Rename task',
+            status: ChangeItemStatus.confirmed,
+          ),
+        ],
+      );
+      await service.notifyTaskNeedsAttention(resolved);
+      verifyZeroInteractions(notificationRepository);
+    },
+  );
+
   for (final userDecision in [true, false]) {
     test(
       'retained group keeps inbox open after ${userDecision ? 'user decision' : 'agent retraction'}',
