@@ -121,9 +121,10 @@ typedef ChangeSetRetractionCallback =
 ///    suggestion list never flashes empty between a retraction and its
 ///    replacement.
 ///
-/// The service re-reads the parent [ChangeSetEntity] before mutating it so
-/// concurrent user confirmations are not overwritten — last writer wins,
-/// but both paths leave a decision record.
+/// The service re-reads the parent [ChangeSetEntity] and writes it in one
+/// transaction, so a concurrent user decision is never overwritten: an item
+/// the user confirmed or rejected meanwhile is skipped, and its decision
+/// record stays next to the agent's.
 class SuggestionRetractionService {
   SuggestionRetractionService({
     required this._syncService,
@@ -389,8 +390,21 @@ class SuggestionRetractionService {
   ///
   /// All entries share the same `changeSet.id`. The set is re-read once, every
   /// still-valid target item is flipped to `retracted` in memory, and the set
-  /// is persisted once (only if at least one flip survived validation).
+  /// is persisted once (only if at least one flip survived validation) — the
+  /// read and the write in one transaction, so a claim cannot land between
+  /// them and be written back as `pending`.
   Future<void> _applyRetractionsToChangeSet(
+    List<StagedRetraction> retractions,
+  ) async {
+    final updated = await _syncService.runInTransaction(
+      () => _retractInChangeSet(retractions),
+    );
+    if (updated != null) await _notifyChangeSetRetracted(updated);
+  }
+
+  /// The read and write of [_applyRetractionsToChangeSet]; returns the
+  /// written set, or `null` when no retraction survived validation.
+  Future<ChangeSetEntity?> _retractInChangeSet(
     List<StagedRetraction> retractions,
   ) async {
     final snapshot = retractions.first.changeSet;
@@ -445,10 +459,10 @@ class SuggestionRetractionService {
         items = List<ChangeItem>.from(items);
         changed = true;
       }
-      items[itemIndex] = existing.copyWith(status: ChangeItemStatus.retracted);
+      items[itemIndex] = existing.withStatus(ChangeItemStatus.retracted);
     }
 
-    if (!changed) return;
+    if (!changed) return null;
 
     final newSetStatus = ChangeItem.deriveSetStatus(items);
     final updated = current.copyWith(
@@ -461,7 +475,7 @@ class SuggestionRetractionService {
       ),
     );
     await _syncService.upsertEntity(updated);
-    await _notifyChangeSetRetracted(updated);
+    return updated;
   }
 
   /// Return every `(changeSet, itemIndex, item)` tuple whose item matches

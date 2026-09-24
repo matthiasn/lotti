@@ -290,7 +290,9 @@ class _GeneratedBuildScenario {
     for (final spec in existingSets) {
       if (spec.id == survivorSpec.id) continue;
       for (final item in spec.currentSet.items) {
-        if (knownFingerprints.add(ChangeItem.fingerprint(item))) {
+        // Only pending items move; a decided one stays where it was decided.
+        if (item.status == ChangeItemStatus.pending &&
+            knownFingerprints.add(ChangeItem.fingerprint(item))) {
           otherItems.add(item);
         }
       }
@@ -349,7 +351,7 @@ ChangeSetEntity _expectedRetiredConsolidatedSet(ChangeSetEntity set) {
     items: [
       for (final item in set.items)
         if (item.status == ChangeItemStatus.pending)
-          item.copyWith(status: ChangeItemStatus.retracted)
+          item.withStatus(ChangeItemStatus.retracted)
         else
           item,
     ],
@@ -1925,14 +1927,24 @@ void main() {
           for (final item in finalSet!.items) item.humanSummary: item.status,
         };
         expect(
-          bySummary['Stop the running timer'],
-          ChangeItemStatus.retracted,
+          bySummary.containsKey('Stop the running timer'),
+          isFalse,
           reason: 'the superseded pre-wake proposal is resolved, not carried',
         );
         expect(
           bySummary['Keep the running timer'],
           ChangeItemStatus.pending,
           reason: 'the replacement must not retract itself',
+        );
+        final retired = verify(() => mockSyncService.upsertEntity(captureAny()))
+            .captured
+            .whereType<ChangeSetEntity>()
+            .lastWhere((set) => set.id == 'cs-pre-wake');
+        expect(retired.status, ChangeSetStatus.resolved);
+        expect(
+          retired.items.single.status,
+          ChangeItemStatus.retracted,
+          reason: 'retracted where it was proposed',
         );
       },
     );
@@ -2346,29 +2358,26 @@ void main() {
         expect(statusItem.status, ChangeItemStatus.pending);
         expect(statusItem.args, {'status': 'IN_PROGRESS'});
 
-        // The stale timer item lands in the survivor as retracted, and the
-        // new timer update is appended as pending.
-        final timerItems = result.items
-            .where((i) => i.toolName == TaskAgentToolNames.updateTimeEntry)
-            .toList();
-        expect(timerItems, hasLength(2));
-        expect(
-          timerItems
-              .singleWhere((i) => i.args['summary'] == 'Stale timer text')
-              .status,
-          ChangeItemStatus.retracted,
+        // The stale timer item is retracted in its own set, which is
+        // retired; only the new timer update, pending, is in the survivor.
+        final timerItem = result.items.singleWhere(
+          (i) => i.toolName == TaskAgentToolNames.updateTimeEntry,
         );
-        expect(
-          timerItems
-              .singleWhere((i) => i.args['summary'] == 'Newest timer text')
-              .status,
-          ChangeItemStatus.pending,
-        );
+        expect(timerItem.args['summary'], 'Newest timer text');
+        expect(timerItem.status, ChangeItemStatus.pending);
 
         // A retraction decision is recorded against the original timer set.
         final captured = verify(
           () => mockSyncService.upsertEntity(captureAny()),
         ).captured;
+        final retiredTimerSet = captured
+            .whereType<ChangeSetEntity>()
+            .singleWhere((set) => set.id == 'cs-timer');
+        expect(retiredTimerSet.status, ChangeSetStatus.resolved);
+        expect(
+          retiredTimerSet.items.single.status,
+          ChangeItemStatus.retracted,
+        );
         final decision = captured.whereType<ChangeDecisionEntity>().single;
         expect(decision.changeSetId, 'cs-timer');
         expect(decision.verdict, ChangeDecisionVerdict.retracted);
@@ -2751,6 +2760,72 @@ void main() {
     );
 
     test(
+      'consolidation leaves a confirmed item in its own set, uncopied',
+      () async {
+        // ChangeSetLifecycle.tla, StatusMatchesEffect: the item was claimed
+        // and its dispatch was still running when the wake consolidated. The
+        // copy said `confirmed`; the dispatch then failed and reverted the
+        // original to pending — and the copy went on claiming a change that
+        // never landed, while the original sat in a retired set.
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 45},
+          humanSummary: 'Set estimate to 45 min',
+        );
+        final older = makeTestChangeSet(
+          id: 'cs-older',
+          createdAt: DateTime(2024, 3, 15, 10),
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_title',
+              args: {'title': 'In flight'},
+              humanSummary: 'Set title',
+              status: ChangeItemStatus.confirmed,
+              revision: 1,
+            ),
+            ChangeItem(
+              toolName: 'set_task_status',
+              args: {'status': 'IN_PROGRESS'},
+              humanSummary: 'Set status',
+            ),
+          ],
+          status: ChangeSetStatus.partiallyResolved,
+        );
+        final newer = makeTestChangeSet(
+          id: 'cs-newer',
+          createdAt: DateTime(2024, 3, 15, 11),
+        );
+
+        final result = await builder.build(
+          mockSyncService,
+          existingPendingSets: [older, newer],
+        );
+
+        expect(result!.id, 'cs-newer');
+        expect(
+          result.items.map((item) => item.toolName),
+          isNot(contains('set_task_title')),
+        );
+        expect(
+          result.items
+              .singleWhere((item) => item.toolName == 'set_task_status')
+              .status,
+          ChangeItemStatus.pending,
+          reason: 'the pending item moves',
+        );
+        final retired = verify(() => mockSyncService.upsertEntity(captureAny()))
+            .captured
+            .whereType<ChangeSetEntity>()
+            .singleWhere((set) => set.id == 'cs-older');
+        expect(retired.status, ChangeSetStatus.resolved);
+        expect(retired.items[0].status, ChangeItemStatus.confirmed);
+        expect(retired.items[0].revision, 1, reason: 'left as it was');
+        expect(retired.items[1].status, ChangeItemStatus.retracted);
+        expect(retired.items[1].revision, 1);
+      },
+    );
+
+    test(
       'build uses fresh items from DB, not stale snapshot',
       () async {
         await builder.addItem(
@@ -2874,15 +2949,15 @@ void main() {
 
         expect(result, isNotNull);
         expect(result!.id, 'cs-newer');
+        // The fresh older item was rejected: it stays in its own set and
+        // is not copied into the survivor.
         expect(
           result.items.map((item) => item.args).toList(),
           [
             {'status': 'OPEN'},
-            {'title': 'fresh older title'},
             {'minutes': 45},
           ],
         );
-        expect(result.items[1].status, ChangeItemStatus.rejected);
         expect(
           result.items.any(
             (item) => item.args['title'] == 'stale older title',

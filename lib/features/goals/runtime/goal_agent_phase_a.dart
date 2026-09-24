@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
@@ -483,6 +484,22 @@ class GoalAgentPhaseA {
     required GoalProgressEntity? existing,
   }) async {
     final id = goalProgressId(agentId, periodKey);
+    // The derivation's row can be minutes old (a report refresh derives
+    // before its inference). Re-read it in this transaction: a same-ordinal
+    // twin's row that synced in since would otherwise be judged concurrent
+    // with this recompute, and the goal-progress resolver's id order could
+    // put the twin's evaluation back (ADR 0068 addendum). A row computed
+    // under a NEWER spec ordinal is the next spec arriving before its head:
+    // this recompute must not build on it, so the resolver's higher-ordinal
+    // rule keeps it here and on every peer.
+    final current = await _repository.getEntity(id);
+    final row = current is GoalProgressEntity ? current : existing;
+    final rowOrdinal = row == null
+        ? null
+        : specVersionOrdinal(row.specVersionId);
+    final base = rowOrdinal != null && rowOrdinal > version.version
+        ? null
+        : row;
     await _syncService.upsertEntity(
       AgentDomainEntity.goalProgress(
         id: id,
@@ -493,12 +510,12 @@ class GoalAgentPhaseA {
         dataCoverage: evaluation.dataCoverage,
         satisfied: evaluation.satisfied,
         specVersionId: version.id,
-        createdAt: existing?.createdAt ?? now,
+        createdAt: base?.createdAt ?? now,
         updatedAt: now,
         // Carry the row we read: dropping it would make this recompute
         // causally CONCURRENT with the peer value it is based on, letting
         // wall-clock LWW revert fresh progress.
-        vectorClock: existing?.vectorClock,
+        vectorClock: base?.vectorClock,
         criterionResults: [
           for (final result in evaluation.results.values)
             GoalCriterionProgress(

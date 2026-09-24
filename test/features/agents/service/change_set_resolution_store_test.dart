@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -325,7 +327,8 @@ void main() {
         ).captured;
         expect(captured, hasLength(2));
 
-        final decision = captured[0] as ChangeDecisionEntity;
+        // Claimed like a user rejection: the item, then its decision.
+        final decision = captured[1] as ChangeDecisionEntity;
         expect(decision.changeSetId, fresh.id);
         expect(decision.itemIndex, 1);
         expect(decision.toolName, TaskAgentToolNames.migrateChecklistItem);
@@ -333,8 +336,9 @@ void main() {
         expect(decision.rejectionReason, 'Follow-up task declined');
         expect(decision.args, fresh.items[1].args);
 
-        final updatedSet = captured[1] as ChangeSetEntity;
+        final updatedSet = captured[0] as ChangeSetEntity;
         expect(updatedSet.items[1].status, ChangeItemStatus.rejected);
+        expect(updatedSet.items[1].revision, 1);
         // Already-resolved and non-matching siblings stay untouched.
         expect(updatedSet.items[2].status, ChangeItemStatus.rejected);
         expect(updatedSet.items[3].status, ChangeItemStatus.pending);
@@ -358,11 +362,9 @@ void main() {
         await store.cascadeRejectMigrationItems(fresh, 'placeholder-1', null);
       });
 
-      final decision =
-          verify(
-                () => mockSyncService.upsertEntity(captureAny()),
-              ).captured.first
-              as ChangeDecisionEntity;
+      final decision = verify(
+        () => mockSyncService.upsertEntity(captureAny()),
+      ).captured.whereType<ChangeDecisionEntity>().single;
       expect(decision.rejectionReason, 'Target follow-up task was rejected');
     });
   });
@@ -386,10 +388,11 @@ void main() {
         expect(fresh.items, isEmpty);
         expect(fresh.deletedAt, isNotNull);
         expect(
-          await store.updateChangeSetItemStatus(
+          await store.transitionChangeSetItem(
             fallback,
             0,
-            ChangeItemStatus.pending,
+            from: ChangeItemStatus.values.toSet(),
+            to: ChangeItemStatus.pending,
           ),
           isNull,
         );
@@ -470,21 +473,21 @@ void main() {
     });
   });
 
-  group('updateChangeSetItemStatus', () {
+  group('transitionChangeSetItem', () {
     test(
-      'updates the item on the latest persisted state and derives '
-      'resolution',
+      'moves the item on the latest persisted state, bumps its revision and '
+      'derives resolution',
       () async {
         final stale = makeTestChangeSet(
           items: [
             _migrationItem(id: 'cl-1'),
-            _migrationItem(id: 'cl-2'),
+            _migrationItem(id: 'cl-2', status: ChangeItemStatus.confirmed),
           ],
         );
         final fresh = makeTestChangeSet(
           items: [
             _migrationItem(id: 'cl-1', status: ChangeItemStatus.confirmed),
-            _migrationItem(id: 'cl-2'),
+            _migrationItem(id: 'cl-2', status: ChangeItemStatus.confirmed),
           ],
         );
         when(
@@ -492,10 +495,11 @@ void main() {
         ).thenAnswer((_) async => fresh);
 
         final updated = await withClock(testClock, () {
-          return store.updateChangeSetItemStatus(
+          return store.transitionChangeSetItem(
             stale,
             1,
-            ChangeItemStatus.rejected,
+            from: const {ChangeItemStatus.confirmed},
+            to: ChangeItemStatus.retracted,
           );
         });
 
@@ -503,7 +507,9 @@ void main() {
         // status that the stale snapshot did not have.
         expect(updated, isNotNull);
         expect(updated!.items[0].status, ChangeItemStatus.confirmed);
-        expect(updated.items[1].status, ChangeItemStatus.rejected);
+        expect(updated.items[0].revision, isNull, reason: 'untouched');
+        expect(updated.items[1].status, ChangeItemStatus.retracted);
+        expect(updated.items[1].revision, 1);
         expect(updated.status, ChangeSetStatus.resolved);
         expect(updated.resolvedAt, testClock.now());
 
@@ -513,6 +519,97 @@ void main() {
         expect(captured, same(updated));
       },
     );
+
+    test(
+      'with an observed item, leaves an item alone whose revision moved on '
+      'even though its status matches again',
+      () async {
+        final observed = _migrationItem(
+          id: 'cl-1',
+        ).withStatus(ChangeItemStatus.confirmed);
+        // Reopened and confirmed again since: confirmed, two revisions later.
+        final changeSet = makeTestChangeSet(
+          items: [
+            observed
+                .withStatus(ChangeItemStatus.pending)
+                .withStatus(ChangeItemStatus.confirmed),
+          ],
+        );
+
+        expect(
+          await store.transitionChangeSetItem(
+            changeSet,
+            0,
+            from: const {ChangeItemStatus.confirmed},
+            to: ChangeItemStatus.pending,
+            observed: observed,
+          ),
+          isNull,
+        );
+        final same = await store.transitionChangeSetItem(
+          changeSet,
+          0,
+          from: const {ChangeItemStatus.confirmed},
+          to: ChangeItemStatus.pending,
+          observed: changeSet.items.single,
+        );
+        expect(same!.items.single.status, ChangeItemStatus.pending);
+        verify(() => mockSyncService.upsertEntity(any())).called(1);
+      },
+    );
+
+    test(
+      'leaves an item alone that is no longer in a from status, so a failed '
+      'dispatch cannot undo a decision it did not make',
+      () async {
+        final changeSet = makeTestChangeSet(
+          items: [
+            _migrationItem(id: 'cl-1', status: ChangeItemStatus.rejected),
+          ],
+        );
+
+        final updated = await store.transitionChangeSetItem(
+          changeSet,
+          0,
+          from: const {ChangeItemStatus.confirmed},
+          to: ChangeItemStatus.pending,
+        );
+
+        expect(updated, isNull);
+        verifyNever(() => mockSyncService.upsertEntity(any()));
+      },
+    );
+
+    test('reads and writes inside one transaction', () async {
+      final changeSet = makeTestChangeSet(
+        items: [_migrationItem(id: 'cl-1', status: ChangeItemStatus.confirmed)],
+      );
+      var inTransaction = false;
+      mockSyncService.transactionDelegate = <T>(action) async {
+        inTransaction = true;
+        try {
+          return await action();
+        } finally {
+          inTransaction = false;
+        }
+      };
+      when(() => mockRepository.getEntity(changeSet.id)).thenAnswer((_) async {
+        expect(inTransaction, isTrue, reason: 'read inside the transaction');
+        return changeSet;
+      });
+      when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {
+        expect(inTransaction, isTrue, reason: 'write inside the transaction');
+      });
+
+      final updated = await store.transitionChangeSetItem(
+        changeSet,
+        0,
+        from: const {ChangeItemStatus.confirmed},
+        to: ChangeItemStatus.pending,
+      );
+
+      expect(updated!.items.single.status, ChangeItemStatus.pending);
+    });
 
     for (final index in [-1, 2]) {
       test(
@@ -526,10 +623,11 @@ void main() {
           );
 
           final updated = await withClock(testClock, () {
-            return store.updateChangeSetItemStatus(
+            return store.transitionChangeSetItem(
               changeSet,
               index,
-              ChangeItemStatus.rejected,
+              from: const {ChangeItemStatus.pending},
+              to: ChangeItemStatus.rejected,
             );
           });
 
@@ -717,5 +815,121 @@ void main() {
         ),
       ).called(1);
     });
+  });
+
+  group('writers racing a claim (ChangeSetLifecycle.tla)', () {
+    late ChangeSetEntity stored;
+    late Completer<void> gate;
+
+    /// Storage for [initial] with Drift-like serialized transactions. The
+    /// read number [gatedRead] returns the state as it was when it was made,
+    /// but only once [gate] completes: the await between a writer's read and
+    /// its write, which another writer can slip into.
+    void storeWithGatedRead(ChangeSetEntity initial, {required int gatedRead}) {
+      stored = initial;
+      gate = Completer<void>();
+      var reads = 0;
+      var tail = Future<void>.value();
+      mockSyncService.transactionDelegate = <T>(action) {
+        if (Zone.current[#storeTx] == true) return action();
+        final run = tail.then(
+          (_) => runZoned(action, zoneValues: {#storeTx: true}),
+        );
+        tail = run.then<void>((_) {}, onError: (_) {});
+        return run;
+      };
+      when(() => mockRepository.getEntity(initial.id)).thenAnswer((_) async {
+        final snapshot = stored;
+        reads++;
+        if (reads == gatedRead) await gate.future;
+        return snapshot;
+      });
+      when(() => mockSyncService.upsertEntity(any())).thenAnswer((
+        invocation,
+      ) async {
+        final entity = invocation.positionalArguments.first;
+        if (entity is ChangeSetEntity) stored = entity;
+      });
+    }
+
+    test(
+      'the sibling rewrite keeps a migration claimed while it ran',
+      () async {
+        // The rewrite read the set with the migration pending; the migration
+        // was claimed (and applied) before the rewrite wrote the set back,
+        // which put it back to pending — a retry would apply it again.
+        final createItem = _createFollowUpItem(
+          status: ChangeItemStatus.confirmed,
+        );
+        storeWithGatedRead(
+          makeTestChangeSet(
+            items: [
+              createItem,
+              _migrationItem(id: 'cl-1'),
+            ],
+          ),
+          gatedRead: 1,
+        );
+
+        await withClock(testClock, () async {
+          final rewrite = store.persistResolvedIdToSiblings(
+            createItem,
+            _successResult,
+            stored,
+          );
+          await pumpEventQueue();
+          final claim = store.claimChangeSetItem(stored, 1);
+          await pumpEventQueue();
+          gate.complete();
+          await Future.wait([rewrite, claim]);
+        });
+
+        final migration = stored.items[1];
+        expect(migration.status, ChangeItemStatus.confirmed);
+        expect(migration.args['targetTaskId'], 'task-actual-1');
+        expect(migration.revision, 2, reason: 'rewrite, then claim');
+      },
+    );
+
+    test(
+      'the migration cascade keeps a sibling claimed while it ran',
+      () async {
+        // The cascade read the set to reject the migration; another item was
+        // claimed before the cascade wrote the set back, and went back to
+        // pending.
+        storeWithGatedRead(
+          makeTestChangeSet(
+            items: [
+              _createFollowUpItem(status: ChangeItemStatus.rejected),
+              _migrationItem(id: 'cl-1'),
+              const ChangeItem(
+                toolName: 'update_task_estimate',
+                args: {'minutes': 30},
+                humanSummary: 'Set estimate',
+              ),
+            ],
+          ),
+          // The cascade's first read finds the migration; the second is the
+          // one its write is based on.
+          gatedRead: 2,
+        );
+
+        await withClock(testClock, () async {
+          final cascade = store.cascadeRejectMigrationItems(
+            stored,
+            'placeholder-1',
+            null,
+          );
+          await pumpEventQueue();
+          final claim = store.claimChangeSetItem(stored, 2);
+          await pumpEventQueue();
+          gate.complete();
+          await Future.wait([cascade, claim]);
+        });
+
+        expect(stored.items[1].status, ChangeItemStatus.rejected);
+        expect(stored.items[2].status, ChangeItemStatus.confirmed);
+      },
+    );
   });
 }

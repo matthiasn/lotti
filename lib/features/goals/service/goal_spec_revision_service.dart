@@ -459,7 +459,7 @@ class GoalSpecRevisionService {
               return item;
             }
             changed = true;
-            return item.copyWith(status: ChangeItemStatus.retracted);
+            return item.withStatus(ChangeItemStatus.retracted);
           })
           .toList(growable: false);
       if (!changed) continue;

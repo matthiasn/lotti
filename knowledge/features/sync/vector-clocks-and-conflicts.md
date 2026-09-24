@@ -5,7 +5,7 @@ description: How causal order is represented, why coveredVectorClocks is separat
 resource: ../../../lib/features/sync/vector_clock.dart
 tags: [sync, vector-clock, conflicts, causality]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T15:00:00Z }
 stale_after: 2026-12-24
 sources:
   - id: vector-clock
@@ -26,7 +26,7 @@ sources:
     last_modified: 2026-06-20
   - id: agent-resolver
     resource: ../../../lib/features/agents/sync/agent_concurrent_resolver.dart
-    title: AgentConcurrentResolver — resolveAgentEntityVersions, resolveLocalAgentWrite, resolveConcurrent and mergeAgentStateCounters
+    title: AgentConcurrentResolver — resolveAgentEntityVersions, resolveLocalAgentWrite, resolveConcurrent, mergeAgentStateCounters and mergeConcurrentChangeSets
     last_modified: 2026-09-24
   - id: agent-sync-service
     resource: ../../../lib/features/agents/sync/agent_sync_service.dart
@@ -39,6 +39,18 @@ sources:
   - id: adr-0068
     resource: ../../../docs/adr/0068-model-checked-agent-convergence.md
     title: ADR 0068 — model-checked convergence of synced agent entities
+    last_modified: 2026-09-24
+  - id: agent-handlers
+    resource: ../../../lib/features/sync/matrix/sync_event_processor_agent_handlers.dart
+    title: Inbound agent entities, and change sets applied in one transaction
+    last_modified: 2026-09-24
+  - id: change-set-spec
+    resource: ../../../specs/tla/ChangeSetLifecycle.tla
+    title: ChangeSetLifecycle — change sets across writers and devices, model-checked
+    last_modified: 2026-09-24
+  - id: adr-0067
+    resource: ../../../docs/adr/0067-model-checked-change-set-lifecycle.md
+    title: ADR 0067 — Model-checked change-set lifecycle
     last_modified: 2026-09-24
 ---
 
@@ -252,7 +264,7 @@ row:
 | a clock missing on either side | Apply the incoming version |
 | `a_gt_b` / `equal` (local wins) | Skip the upsert, restore the local JSON cache when the message came via `jsonPath`, but still record the sequence-log receipt so backfill stops asking |
 | `b_gt_a` (incoming wins) | Apply — with agent state's G-counters and report watermarks joined in from the local row |
-| `concurrent` | The type's override, then last-writer-wins on `updatedAt`, then the canonical clock tiebreak; agent-state G-counters and nudge accumulators merge |
+| `concurrent` | The type's override, then last-writer-wins on `updatedAt`, then the canonical clock tiebreak; agent-state G-counters and nudge accumulators merge, and change sets merge item by item (below) |
 
 The concurrent case picks the strictly-newer `updatedAt`, falling back to a
 replica-independent canonical clock comparison on ties. Type overrides run
@@ -301,6 +313,16 @@ loses on every peer — an edit older than a retraction cannot revive it — and
 a successor never sorts before its predecessor, whatever the writing device's
 clock says. Append-only variants are written as given.
 
+The flip side: a writer that *means* to replace the row must build on it. A
+write with `vectorClock: null` over an existing id is resolved as concurrent,
+and one that moves the row against the resolver's order — an earlier
+deadline under the scheduled-wake override, a new report at the instant the
+standing head was stamped, a new version while a peer's clock runs ahead —
+is handed the row back, here and on every peer. So report heads, soul and
+template heads and goal-progress registers carry the clock
+of the row they read in the same transaction (ADR 0068 addendum;
+`AgentReplication.tla`'s `Intend` write and `LocalWriteTakesEffect`).
+
 The scheduling fields (`nextWakeAt`, `sleepUntil`, `scheduledWakeAt`) are
 device-local: the receive path overlays this device's values onto every
 incoming state row. Maintenance writes that change only those fields go
@@ -310,6 +332,57 @@ scheduled-wake cleanups of `scheduledWakeAt` — because a local timestamp
 peers never see would let this device keep a row that every other device
 rejects. Workflow outcome writes that also set `scheduledWakeAt` (the day
 and project agents) go through `AgentSyncService` like any other state write.
+
+## Change sets merge item by item
+
+A change set is one synced row that every device showing it edits — the user
+confirms an item on the phone while a wake on the desktop retracts another.
+Picking one whole version dropped the other device's decisions (a change set's
+last-writer-wins timestamp is its `createdAt`, so the canonical clock order
+decided), and an item confirmed and applied on one device read `pending`
+everywhere again. The receive decision therefore merges two concurrent
+versions item by item — the change-set case of `resolveAgentEntityVersions`'
+concurrent branch (`mergeConcurrentChangeSets`):
+
+| Per item | Kept |
+|----------|------|
+| different `revision` | the version that changed the item last |
+| a side without a `revision` (an older build wrote it, and drops the field) | judged by status, as below — not as revision 0; on a status tie, the side with a revision, which changed the item |
+| same revision, different status | the more final status: `confirmed` over `rejected` over `retracted` over `pending` — a confirm took effect, a concurrent rejection or retraction did not |
+| same revision and status | a fixed order on the item's content — never the clock order |
+
+Every writer bumps an item's `revision` when it changes the item's status or
+arguments (`ChangeItemRevision.withStatus` / `withArgs`). Items only one
+version appended are kept, the set status is derived from the merged items,
+and the merged row carries the join of both clocks, so the two devices compute
+the same row and a later write on either dominates it; a version that
+succeeds only one side is concurrent with the merged row and merges again.
+
+Unlike the nudge residual below, the joined clock is safe here. No step of the
+item merge reads the canonical clock order: each item is the maximum of a
+total order on (revision, status rank, content), so the merged row depends
+only on the versions' contents, not on the order a replica received them in.
+Two cases fall outside that order and keep the whole-row winner's
+history-dependence: versions that disagree on which proposal an index holds
+(or a tombstone), which fall back to the whole-row winner, and items an older
+build wrote without a revision, which are compared by status alone.
+
+Change sets are append-only for last-writer-wins (`createdAt`), so a local
+change-set write is not resolved by `resolveLocalAgentWrite`; every writer
+already re-reads the set and changes its own item in one transaction
+(ADR 0067).
+
+The receive is also one transaction for change sets: the local row is read,
+compared and written together, not compared against the bundle's prefetched
+snapshot. Otherwise a local claim committing between the read and the write
+is overwritten by a peer version that only covered the row as it was before
+the claim.
+
+`specs/tla/ChangeSetLifecycle.tla` model-checks both, and names what they
+cannot close: an item decided on two devices before they sync is applied on
+both (the rows still converge), and a consolidation on one device racing a
+decision on another leaves a pending copy of an applied change — see
+[ADR 0067](../../../docs/adr/0067-model-checked-change-set-lifecycle.md).
 
 ## Residuals
 

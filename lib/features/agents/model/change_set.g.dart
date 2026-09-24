@@ -14,6 +14,7 @@ _ChangeItem _$ChangeItemFromJson(Map<String, dynamic> json) => _ChangeItem(
       $enumDecodeNullable(_$ChangeItemStatusEnumMap, json['status']) ??
       ChangeItemStatus.pending,
   groupId: json['groupId'] as String?,
+  revision: (json['revision'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$ChangeItemToJson(_ChangeItem instance) =>
@@ -23,6 +24,7 @@ Map<String, dynamic> _$ChangeItemToJson(_ChangeItem instance) =>
       'humanSummary': instance.humanSummary,
       'status': _$ChangeItemStatusEnumMap[instance.status]!,
       'groupId': instance.groupId,
+      'revision': instance.revision,
     };
 
 const _$ChangeItemStatusEnumMap = {

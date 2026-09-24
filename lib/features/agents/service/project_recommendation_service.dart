@@ -368,7 +368,7 @@ class ProjectRecommendationService {
           return item;
         }
         changed = true;
-        return item.copyWith(status: ChangeItemStatus.retracted);
+        return item.withStatus(ChangeItemStatus.retracted);
       }).toList();
       if (!changed) continue;
       final status = ChangeItem.deriveSetStatus(items);
