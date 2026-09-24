@@ -380,7 +380,8 @@ class ChangeSetBuilder {
     // A final build must still fold the pre-wake sets that incremental
     // flushes were forbidden to touch — even when every staged item has
     // already been written, which is the common case after a multi-turn wake.
-    // Returning early there would leave the task with two open cards.
+    // Returning early would leave eligible sets unconsolidated and could
+    // strand obsolete edits inside retained dependency sets.
     //
     // Gated on this builder having written a set: a wake that proposed
     // nothing at all must stay a no-op and leave existing sets alone, as it
@@ -455,40 +456,58 @@ class ChangeSetBuilder {
     // build, so an item this flush suppressed against a still-open proposal
     // gets one more chance once that proposal is gone — which is what the
     // end-of-wake-only behavior gave it.
-    // Nothing new to write. Fall through only for the consolidation-only pass
-    // described above, and only when there is a second writable set to fold —
-    // otherwise this is the pre-existing "nothing survived dedup" no-op.
+    // The final pass also retracts obsolete edits in retained dependency sets.
+    // Incremental flushes must still leave all pre-wake sets untouched.
+    final supersessionSets = incremental
+        ? writableSets
+        : [
+            for (final cs in freshExistingSets)
+              if (isPendingLike(cs.status)) cs,
+          ];
+    // A replacement may already have been flushed. Proposals rejected by
+    // dedup must not retract existing work without an accepted replacement.
+    final replacements = [
+      ...deduped,
+      for (final item in _items)
+        if (_flushedFingerprints.contains(ChangeItem.fingerprint(item))) item,
+    ];
+    final supersededItems = locateSupersededTimeEntryEdits(
+      supersessionSets,
+      replacements,
+    );
     final consolidationOnly = mayNeedConsolidation && writableSets.length >= 2;
-    if (deduped.isEmpty && !consolidationOnly) {
+    if (deduped.isEmpty && !consolidationOnly && supersededItems.isEmpty) {
       return incremental ? _persistedSet : raiseInboxAlert(syncService);
     }
 
-    // Keyed on everything this wake proposed, not just what this pass is
-    // writing: on a consolidation-only final build the replacement was
-    // already flushed, so `deduped` is empty and a pre-wake proposal for the
-    // same entry would survive as pending — inflating the ledger and leaving
-    // an obsolete action the UI's supersede filter merely hides.
-    //
-    // This wake's own items never match — they are the replacements being
-    // kept — but one an earlier turn flushed and a later turn replaced does,
-    // even inside this builder's own set.
-    final supersededItems = locateSupersededTimeEntryEdits(
-      writableSets,
-      _items,
-    );
     final currentExistingSets = supersededItems.isEmpty
-        ? writableSets
-        : markItemsRetracted(writableSets, supersededItems);
+        ? supersessionSets
+        : markItemsRetracted(supersessionSets, supersededItems);
     final currentExistingSetsById = {
       for (final cs in currentExistingSets) cs.id: cs,
     };
 
     await _recordSupersededRetractions(syncService, supersededItems);
+    final writableIds = {for (final cs in writableSets) cs.id};
+    for (final cs in supersessionSets) {
+      final updated = currentExistingSetsById[cs.id]!;
+      if (!writableIds.contains(cs.id) && !identical(updated, cs)) {
+        // Preserve the dependency group's owner and positions; only the
+        // superseded edit changes status. The outer transaction also owns
+        // its decision row and the replacement proposal.
+        await syncService.upsertEntity(updated);
+      }
+    }
+    if (deduped.isEmpty && writableSets.isEmpty) {
+      // All sets may be retained while the replacement is already flushed.
+      // Retraction alone must not manufacture an empty survivor.
+      return raiseInboxAlert(syncService);
+    }
 
     if (writableSets.isNotEmpty) {
       // Consolidate: pick the newest set as the survivor, collect all
-      // items from every set, append the new deduplicated items, and
-      // mark all other sets as resolved so the UI shows exactly one card.
+      // items from eligible sets, append the new deduplicated items, and
+      // retire the other eligible sets. Dependency groups keep their cards.
       // On a later flush this collapses to the set this builder already
       // wrote, so the wake keeps appending to one card instead of opening
       // a fresh one per turn.
@@ -550,7 +569,7 @@ class ChangeSetBuilder {
       return merged;
     }
 
-    // No existing set — create a new one.
+    // No eligible existing set — create a new one.
     final entity =
         AgentDomainEntity.changeSet(
               id: _uuid.v4(),

@@ -2269,6 +2269,130 @@ void main() {
       );
     });
 
+    for (final scenario in [
+      (flushFirst: false, ownGroup: false),
+      (flushFirst: true, ownGroup: false),
+      (flushFirst: true, ownGroup: true),
+    ]) {
+      final flushFirst = scenario.flushFirst;
+      test(
+        'retracts superseded edits in retained sets '
+        '${flushFirst ? 'after an incremental flush' : 'on final build'} '
+        '(own group: ${scenario.ownGroup})',
+        () async {
+          final retained = makeTestChangeSet(
+            id: 'retained',
+            items: const [
+              ChangeItem(
+                toolName: TaskAgentToolNames.createFollowUpTask,
+                args: {'_placeholderTaskId': 'placeholder'},
+                humanSummary: 'Create follow-up',
+              ),
+              ChangeItem(
+                toolName: TaskAgentToolNames.migrateChecklistItem,
+                args: {'targetTaskId': 'placeholder', 'id': 'checklist-item'},
+                humanSummary: 'Move checklist item',
+              ),
+              ChangeItem(
+                toolName: TaskAgentToolNames.updateTimeEntry,
+                args: {'entryId': 'entry-1', 'summary': 'Old text'},
+                humanSummary: 'Old entry text',
+              ),
+            ],
+          );
+          final untouched = retained.copyWith(
+            id: 'other-retained',
+            items: retained.items.take(2).toList(),
+          );
+          final stored = {retained.id: retained, untouched.id: untouched};
+          final writes = <AgentDomainEntity>[];
+          when(() => mockRepository.getEntity(any())).thenAnswer(
+            (invocation) async => stored[invocation.positionalArguments.single],
+          );
+          when(() => mockSyncService.upsertEntity(any())).thenAnswer((
+            invocation,
+          ) async {
+            final entity =
+                invocation.positionalArguments.single as AgentDomainEntity;
+            writes.add(entity);
+            if (entity is ChangeSetEntity) stored[entity.id] = entity;
+          });
+          if (scenario.ownGroup) {
+            final placeholder = await builder.addFollowUpTask(
+              args: {'title': 'Own follow-up'},
+              humanSummary: 'Own follow-up',
+            );
+            await builder.addItem(
+              toolName: TaskAgentToolNames.migrateChecklistItem,
+              args: {'targetTaskId': placeholder, 'id': 'own-item'},
+              humanSummary: 'Own migration',
+            );
+            await builder.build(mockSyncService);
+          }
+          await builder.addItem(
+            toolName: TaskAgentToolNames.updateTimeEntry,
+            args: {'entryId': 'entry-1', 'summary': 'New text'},
+            humanSummary: 'New entry text',
+          );
+          ChangeSetEntity? flushed;
+          if (flushFirst) {
+            flushed = await builder.build(
+              mockSyncService,
+              existingPendingSets: [retained, untouched],
+              incremental: true,
+            );
+            expect(
+              stored[retained.id],
+              same(retained),
+              reason: 'incremental writes must leave pre-wake sets intact',
+            );
+            expect(writes.whereType<ChangeDecisionEntity>(), isEmpty);
+          }
+          final result = await builder.build(
+            mockSyncService,
+            existingPendingSets: [retained, untouched],
+          );
+          expect(result!.items.last.args['summary'], 'New text');
+          expect(result.items, hasLength(scenario.ownGroup ? 3 : 1));
+          expect(stored, hasLength(3));
+          if (flushFirst) expect(result.id, flushed!.id);
+          final updated = stored[retained.id]!;
+          expect(
+            updated.items.take(2),
+            retained.items.take(2),
+            reason:
+                'the unresolved dependency group stays at its original owner',
+          );
+          expect(updated.items[2].status, ChangeItemStatus.retracted);
+          expect(updated.status, ChangeSetStatus.pending);
+          expect(stored[untouched.id], same(untouched));
+          expect(
+            writes.whereType<ChangeSetEntity>().where(
+              (set) => set.id == untouched.id,
+            ),
+            isEmpty,
+          );
+          final decision = writes.whereType<ChangeDecisionEntity>().single;
+          expect(decision.changeSetId, retained.id);
+          expect(decision.itemIndex, 2);
+          expect(decision.verdict, ChangeDecisionVerdict.retracted);
+          expect(decision.actor, DecisionActor.agent);
+          expect(decision.args, retained.items[2].args);
+
+          await builder.build(
+            mockSyncService,
+            existingPendingSets: [retained, untouched],
+          );
+          expect(
+            writes.whereType<ChangeDecisionEntity>(),
+            hasLength(1),
+            reason:
+                'a repeated final build must not record the same retraction again',
+          );
+        },
+      );
+    }
+
     test(
       'retracts a pending text update, legacy or not, when newer text is '
       'proposed for the same entry',

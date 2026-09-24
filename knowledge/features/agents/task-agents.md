@@ -868,7 +868,7 @@ sets:
 |  | incremental flush | end-of-wake build |
 | --- | --- | --- |
 | Dedups against | pre-wake sets + own set | same |
-| Writes to | own set only | consolidates everything into one survivor |
+| Writes to | own set only | consolidates eligible sets into one survivor; unresolved follow-up groups stay in place |
 | Split groups | held back | released |
 | Inbox alert | never | always, exactly once |
 | Runs relative to `applyStaged` | before | after |
@@ -903,9 +903,8 @@ Repeated flushes are safe by construction:
   way through cannot leave a superseded-edit `ChangeDecisionEntity` behind for
   the retry to duplicate.
 - **The inbox alert fires once, from the final build only.** An incremental
-  flush must not raise it: the count would come from its own set while
-  `createTaskSuggestion` retracts the pre-wake row, and a second flush
-  appending to the same set reuses its id as the `idSeed`, so a row the user
+  flush must not raise it: a second flush appending to the same set reuses
+  its id as the `idSeed`, so a row the user
   already dismissed could never be revived for the later suggestions. The
   final build alerts even when it has nothing left to persist — otherwise a
   wake whose proposals all landed mid-conversation would never ring the bell.
@@ -916,28 +915,30 @@ Repeated flushes are safe by construction:
   fire-and-forget — a failed re-read skips the alert rather than failing the
   wake.
 - **Superseded time-entry edits are resolved by the final build.** The
-  replacements come from everything the wake proposed, not just what the
-  current pass is writing: on a consolidation-only build the replacement was
+  replacements come from accepted proposals, including those already
+  flushed, not just what the current pass is writing: on a consolidation-only build the replacement was
   already flushed, so keying on the new items alone would leave a pre-wake
   proposal for the same entry pending. The wake's own current items never
   match, so a replacement cannot retract itself — but one an earlier turn
   flushed and a later turn replaced does, even inside the builder's own set.
+  The final build also retracts obsolete edits inside retained dependency
+  sets, records the decisions, and writes those sets back in place. Retraction
+  does not move or retire their unresolved follow-up groups.
 - **A wake that dies after a flush still alerts.** `WakeOutputWriter` never
   runs, so the workflow's failure path calls `raiseInboxAlert` itself;
   otherwise committed, on-screen suggestions would never ring the bell.
   Consolidation is deliberately *not* attempted there — it retires the pre-wake
   sets, and the staged retractions that must land first die with the wake. The
-  surplus card is folded by the next wake's end-of-wake build. Because nothing
-  was consolidated, that alert is **skipped** when a pre-wake set is still
-  pending: `createTaskSuggestion` retracts every other open row for the task,
-  so alerting from the wake's set alone would drop those older suggestions out
-  of the inbox. Their existing row is still open and still accurate.
+  next successful wake consolidates eligible sets. That failure-path alert
+  is **skipped** when a pre-wake set is still pending: the failed wake has not
+  consolidated its duplicates, so it preserves the existing alert until a
+  successful final build can publish the complete count.
 
-A wake with pre-existing proposals therefore shows a second card while it runs,
-which the final build folds into one. That is the deliberate trade for never
-touching a set the retraction step still needs. The end-of-wake build is
-consequently never a no-op when the wake wrote anything: it still has to fold
-the pre-wake sets and raise the alert.
+A wake with pre-existing proposals can therefore show a second card while it
+runs. The final build folds eligible sets into one survivor, while unresolved
+follow-up groups keep their original cards until their dependencies resolve.
+Even when all proposals were flushed earlier, the final build still checks for
+consolidation and supersession and raises the task-wide alert.
 
 Retractions keep their end-of-wake placement for the opposite reason they used
 to: proposals now land *first*, so the suggestion list can never read empty
