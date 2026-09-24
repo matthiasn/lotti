@@ -22,6 +22,15 @@ on:
       - "lib/features/daily_os_next/services/day_processing_outbox_processor.dart"
       - "lib/features/daily_os_next/services/day_processing_runtime.dart"
       - "lib/features/daily_os_next/state/day_agent_job_wiring.dart"
+      - "lib/features/agents/sync/agent_sync_service.dart"
+      - "lib/features/agents/sync/fork_healer.dart"
+      - "lib/features/agents/sync/agent_log_compactor.dart"
+      - "lib/features/agents/projection/join_plan.dart"
+      - "lib/features/agents/projection/canonical_order.dart"
+      - "lib/features/agents/projection/agent_projection.dart"
+      - "lib/features/agents/projection/compaction_summary.dart"
+      - "lib/features/agents/projection/compaction_plan.dart"
+      - "lib/features/agents/projection/input_events.dart"
       - ".github/workflows/tla-model-check.yml"
 
 concurrency:

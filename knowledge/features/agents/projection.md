@@ -5,13 +5,21 @@ description: "A pure, deterministic fold over an event *set* — proving that pr
 resource: ../../../lib/features/agents/projection
 tags: [agents, projection, determinism, convergence]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T23:00:00Z }
-stale_after: 2026-10-12
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T12:00:00Z }
+stale_after: 2026-12-24
 sources:
   - id: sync-service
     resource: ../../../lib/features/agents/sync/agent_sync_service.dart
-    title: reconciledAgentState — the wake-path read cutover
-    last_modified: 2026-06-13
+    title: reconciledAgentState and head recovery
+    last_modified: 2026-09-24
+  - id: spec-message-log
+    resource: ../../../specs/tla/AgentMessageLog.tla
+    title: TLA+ model of the message DAG
+    last_modified: 2026-09-24
+  - id: adr-0071
+    resource: ../../../docs/adr/0071-model-checked-agent-message-log.md
+    title: ADR 0071 — Model-checked agent message log and compaction
+    last_modified: 2026-09-24
   - id: src
     resource: ../../../lib/features/agents/projection
     title: Projection kernel source
@@ -72,6 +80,14 @@ Three properties of that pipeline carry the whole design:
 It is the foundation under [state-as-projection and fork
 healing](memory-and-compaction.md): multi-head tolerance is only safe if
 the fold cannot depend on which head arrived first.
+
+Over an agent's whole message log it has two production callers:
+`ForkHealer.maybeHealFork`, and `AgentSyncService._recoverHead`, which picks the
+head an append chains off while the synced head pointer is unset (ADR 0071).
+Both depend on the log staying acyclic — on a cycle `canonicalOrder` throws, the
+healer skips the agent and the recovery starts a new root. That the append,
+join and sync paths keep it acyclic, and every `msgprev-<id>` bound to one
+parent, is model-checked in `specs/tla/AgentMessageLog.tla`.
 
 # Above the kernel: `DerivedAgentState`
 

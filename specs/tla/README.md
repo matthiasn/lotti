@@ -141,6 +141,104 @@ checking `ConfirmedMeansApplied` with a crash breaks it when the process dies
 between the claim and the dispatch. Closing either needs an `applying` status
 that sync and the UI understand, or tools that are idempotent per decision id.
 
+## `AgentMessageLog` — the agent's message DAG
+
+One agent's causal message log on two devices, one of whose clocks runs
+ahead: appends chained off the head pointer, other writes of the agent-state
+row, the fork healer's join planned from one read and committed in a later
+transaction (an append may run in between — the wake-start hook timed out
+and the executor went ahead), a crash between the two, and sync delivering
+every message, edge and state version once, in any order. The head is a
+field of the state row, resolved by vector clock and then last-writer-wins.
+The runtime is described in
+[Agent memory and log compaction](../../knowledge/features/agents/memory-and-compaction.md)
+and the decision in
+[ADR 0071](../../docs/adr/0071-model-checked-agent-message-log.md).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `Acyclic` | invariant | no device's `messagePrev` graph holds a cycle |
+| `EdgesImmutable` | invariant | an edge id names one parent, whoever writes it |
+| `NoJoinOverNonTip` | invariant | a join is planned only over rows with no child on that device (short of the residual below) |
+| `Converged` | invariant | once every row is delivered, both devices hold the same edges |
+| `LocalHeadAdvances` | action | a device's own write moves its head only to a descendant of the old one |
+| `EventuallySingleHead` | liveness | with fair delivery and healing, every device ends with one head |
+
+| Configuration | Appends | Other state writes | Joins | Crashes | Checks | Distinct states |
+|---------------|---------|--------------------|-------|---------|--------|-----------------|
+| `AgentMessageLog` | 2 + 1 | 0 | 1 per device | 0 | safety | 1,523,825 |
+| `AgentMessageLogStale` | 2 + 1 | 1, on the fast device | 0 | 0 | safety | 22,051 |
+| `AgentMessageLogLiveness` | 1 + 1 | 1, on the fast device | 1 per device | 1 | all | 544,627 |
+
+Each fix has a switch that is `TRUE` in the checked-in configurations. Set to
+`FALSE` in a temporary copy, TLC reproduces the hole:
+
+| Switch | Configuration | Counterexample |
+|--------|---------------|----------------|
+| `SafeRecovery` | `AgentMessageLogStale` | `Acyclic`, six steps: the fast device writes its state row with no head, appends a root `b1`; the other device receives `b1`, chains `a1` off it (older `createdAt`), receives the headless state row, which wins last-writer-wins, and its next append re-chains the log by `createdAt`: `msgprev-b1 → a1` closes a cycle |
+| `ChainEdgeGate` | `AgentMessageLog` | `NoJoinOverNonTip`, five steps: `a1` is chained off `b1`; the other device receives `a1` but not its edge and joins `{a1, b1}` |
+| `JoinEdgeGate` | `AgentMessageLog` | `NoJoinOverNonTip`, ten steps: a join of `{a1, b1}` and its device's state row reach the other device without the join's edges; that device appends `a2` off the join, so the join is no longer a head, and joins `{a1, a2, b1}` |
+
+`appendJoin`'s head guard — move the head onto the join only while it sits
+on a joined parent — was already right; it is what the timed-out heal needs.
+Dropping it from `HealCommit` fails `LocalHeadAdvances` in six steps: the
+healer plans `{a1, b1}`, the executor appends `a2` off `a1`, and the join
+commits and moves the head back, orphaning `a2`.
+
+Residuals:
+
+- **The head pointer can still move back.** A state version from another
+  device can win last-writer-wins with an ancestor of the local head. A
+  temporary configuration checking `HeadNeverRegresses` fails in six steps;
+  the next append forks off the old head, and the next wake that heals joins
+  the fork. Fork healing is off by default, so the fork can stay. Closing it
+  needs a DAG-aware merge of the head on receive, or a check on every append
+  that the head has no child yet.
+- **A join row does not name its parents.** A join still missing the edge
+  to a parent that is not a head on this device — not arrived, or with
+  another child — cannot be told from one whose parent the observation sweep
+  deleted, so waiting for it could block healing for good. The healer goes
+  ahead and may join over that join's parents again: a redundant node, never
+  a cycle. `NoJoinOverNonTip` does not count this case (`BlindJoin`). The
+  healer also stops testing a join against subsets of the other heads once
+  there are more than twelve (one digest per subset). Carrying the sorted
+  parent ids on the join row would close both.
+- **The legacy spine** is written only for a log with no `messagePrev` edge,
+  no message minted with a `prevMessageId` and no join. Two devices whose
+  first appends each met a different set of such roots write different
+  spines; that takes three devices and is not modelled.
+- The observation sweep, which deletes messages and the edges into them, is
+  not modelled; the healer's gates read a `prevMessageId` naming an absent
+  row as a deleted parent rather than an unsynced one for that reason.
+
+## `LogCompaction` — summary checkpoints
+
+Two devices capture versions of two sources — a capture link and its payload
+sync separately — and fold the oldest part of their uncovered tail into a
+checkpoint that extends the active one. Captures, payloads and checkpoints
+arrive late and in any order. A wake shows the active checkpoint's prose and,
+verbatim, every event after its cutoff. The ghost `saw` is what the prose
+actually folded.
+
+| Property | Kind | Says |
+|----------|------|------|
+| `NoLostContext` | invariant | every event is after the active cutoff, folded into the prose, or superseded by a newer version that is one of the two |
+| `NoDeadCheckpoint` | invariant | a device never writes a checkpoint its own log already rejects |
+| `Converged` | invariant | devices holding the same rows select the same checkpoint |
+
+`LogCompaction` (device 1 captures three times and folds twice, device 2
+captures and folds once) passes with 590,909 distinct states.
+
+| Switch | Counterexample |
+|--------|----------------|
+| `DigestCoverage` | `NoLostContext`, six steps: device 1 captures `s1`, device 2 edits `s1`, device 1 captures twice more and folds `s1`'s first version with a cutoff past the edit; the edit arrives and the checkpoint, keyed by source alone, stays active. With `FoldStopsAtGap` also `FALSE` — the code before ADR 0071 — the same trace |
+| `FoldStopsAtGap` | `NoDeadCheckpoint`, five steps: device 1 receives device 2's capture without its payload, captures once more and folds past the unresolved event |
+
+Left out: inline events (retractions, verdicts, day captures) carry unique
+ids and have no versions, so they only exercise the unknown-source path the
+model already covers; a checkpoint whose own payload has not arrived is
+simply not a candidate yet; summarizer failures write nothing.
+
 ## `DigestRecovery` — the coordinator digest across crashes
 
 One device and one day window: the wake manager claims, settles and fires the
@@ -253,6 +351,22 @@ Removing the claim's `pending` check, reverting a confirmed item when the hook
 throws, or letting a reject write its status unconditionally fails it within
 three steps.
 
+For the message log, `test/features/agents/sync/agent_message_log_model_conformance.dart`
+(a part of the fork healer's suite) drives two real `AgentSyncService` and
+`ForkHealer` replicas over in-memory stores, the second an hour ahead,
+through generated appends, other state writes, heals and deliveries of
+single outbox rows in any order, received by vector clock and then
+last-writer-wins. After every step it checks `Acyclic`, `EdgesImmutable` and
+`NoJoinOverNonTip`; after delivering everything and healing, `Converged` and
+one head. Reverting head recovery fails it in six steps (the second device's
+first append over a partly synced chain rewrites `msgprev-h1-m3`), removing
+the chain-edge gate in eight. The join gate's interleaving is too specific for
+random traces; its regressions are examples in the same suite. In
+`test/features/agents/projection/compaction_summary_test.dart`, generated
+histories of versions on two devices, a fold over what the folding device
+held and any subset the observing device holds check `NoLostContext`
+against `selectActiveSummary`; keying coverage by source alone fails it.
+
 The processing job has one too:
 `test/features/daily_os_next/services/day_agent_job_executor_model_conformance.dart`
 (a part of the executor's suite) drives the real outbox repository over an
@@ -262,8 +376,10 @@ steps that lapse the lease and the wait together, wake starts, commits,
 failures and aborts, retry taps and crashes (a fresh process whose predecessor
 can no longer write). After every step it checks `AtMostOneLiveWake`,
 `NoInferenceAfterArtifact` and `AtMostOneArtifact`. Making the executor ignore
-the live wake fails it with the trace `claimA, retryNow, claimB`, and dropping the look-again before the enqueue fails it on a retry tap raced between the two lanes' claims. The digest's
-two recovery fixes have direct regressions instead: the digest wake leaves no
+the live wake fails it with the trace `claimA, retryNow, claimB`, and dropping
+the look-again before the enqueue fails it on a retry tap raced between the
+two lanes' claims. The digest's two recovery fixes have direct regressions
+instead: the digest wake leaves no
 intent across a simulated restart in the wake-intent suite, and the drain-held
 and held-back windows are probed in the orchestrator suite.
 
