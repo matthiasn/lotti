@@ -75,10 +75,13 @@ retry at a later instant, check clean.
    `WakeOrchestrator.flushWakeIntents`, then consumes.
 3. **A record whose wake is already owed is consumed, not fired.** Before the
    claim and again after the lease wait, the manager asks
-   `WakeOrchestrator.owesWake` whether a wake of that agent, workspace and
-   tokens is queued, running or restorable, and if so consumes the record
-   without firing it. The startup scan runs before `restoreWakeIntents`, which
-   is what lets it see a restorable wake first.
+   `WakeOrchestrator.owesWake` whether the wake firing *this window* — the
+   record id and its deadline, tagged onto the job's intent when it fires — is
+   queued, running or restorable, and if so consumes the record without
+   firing it. Matching on the agent, workspace and tokens instead would take
+   the record's next window, which often carries the same ones, for the one
+   before it, and consume it unrun. The startup scan runs before
+   `restoreWakeIntents`, which is what lets it see a restorable wake first.
 4. **The consume is built from the current row.** It re-reads the row in a
    transaction and flips it only while it is still the fired window and
    pending, carrying the current row's clock.

@@ -16,7 +16,9 @@ class WakeIntent {
     required this.initiator,
     required Set<String> tokens,
     this.restores = 0,
-  }) : tokens = {...tokens};
+    Set<String> windows = const {},
+  }) : tokens = {...tokens},
+       windows = {...windows};
 
   factory WakeIntent.fromJson(Map<String, dynamic> json) => WakeIntent(
     runKey: json['runKey'] as String,
@@ -26,6 +28,9 @@ class WakeIntent {
     initiator: WakeInitiator.values.byName(json['initiator'] as String),
     tokens: {...(json['tokens'] as List<dynamic>).cast<String>()},
     restores: json['restores'] as int? ?? 0,
+    windows: {
+      ...(json['windows'] as List<dynamic>? ?? const []).cast<String>(),
+    },
   );
 
   /// The job this intent belongs to.
@@ -41,6 +46,10 @@ class WakeIntent {
   /// Startups that restored this wake without a run of it settling.
   int restores;
 
+  /// The scheduled-wake windows this job fires — see
+  /// [WakeIntentStore.markWindow].
+  final Set<String> windows;
+
   Map<String, dynamic> toJson() => {
     'runKey': runKey,
     'agentId': agentId,
@@ -49,6 +58,7 @@ class WakeIntent {
     'initiator': initiator.name,
     'tokens': tokens.toList()..sort(),
     'restores': restores,
+    if (windows.isNotEmpty) 'windows': windows.toList()..sort(),
   };
 }
 
@@ -135,6 +145,7 @@ class WakeIntentStore {
       return;
     }
     live.tokens.addAll(persisted.tokens);
+    live.windows.addAll(persisted.windows);
     if (live.restores < persisted.restores) live.restores = persisted.restores;
   }
 
@@ -165,22 +176,26 @@ class WakeIntentStore {
     _persistSoon();
   }
 
-  /// Whether a wake of [agentId] in [workspaceKey] carrying every one of
-  /// [tokens] is still owed: a job queued or running in this process, or one
-  /// a previous process left for startup to restore. Waits for the load, so a
-  /// restorable intent is never missed.
-  Future<bool> owes({
-    required String agentId,
-    required String? workspaceKey,
-    required Set<String> tokens,
-  }) async {
+  /// Records that job [runKey] fires the scheduled-wake [window] — a record
+  /// id and deadline, one per window of that record.
+  ///
+  /// The window, not the agent, workspace and tokens, is what [owes] matches:
+  /// the next window of a record carries the same workspace and often the
+  /// same tokens, and while the previous window's run is still owed it would
+  /// otherwise be mistaken for it and consumed without ever running.
+  void markWindow(String runKey, String window) {
+    final intent = _intents[runKey];
+    if (intent == null || !intent.windows.add(window)) return;
+    _persistSoon();
+  }
+
+  /// Whether the wake firing scheduled-wake [window] is still owed: a job
+  /// queued or running in this process, or one a previous process left for
+  /// startup to restore. Waits for the load, so a restorable intent is never
+  /// missed.
+  Future<bool> owes(String window) async {
     await load();
-    return _intents.values.any(
-      (intent) =>
-          intent.agentId == agentId &&
-          intent.workspaceKey == workspaceKey &&
-          intent.tokens.containsAll(tokens),
-    );
+    return _intents.values.any((intent) => intent.windows.contains(window));
   }
 
   /// Forgets the intent of job [runKey]: its run settled, or the job was
@@ -227,6 +242,7 @@ class WakeIntentStore {
     if (target != null && target.restores < intent.restores) {
       target.restores = intent.restores;
     }
+    target?.windows.addAll(intent.windows);
     _intents.remove(intent.runKey);
     _persistSoon();
   }

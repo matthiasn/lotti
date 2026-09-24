@@ -361,8 +361,12 @@ databases:
 
 A process that died between steps 2 and 3 leaves the record pending while its
 wake is owed — restorable at the next start. The scan asks
-`WakeOrchestrator.owesWake` before claiming and again after the lease wait, and
-consumes such a record without firing it: claiming would wait out a settle in
+`WakeOrchestrator.owesWake` for this window — the record id and deadline its
+fire tagged onto the job's intent — before claiming and again after the lease
+wait, and consumes such a record without firing it. The window, not the
+workspace and tokens, is the match: the record's next window often carries the
+same ones, and must not be mistaken for a run still owed. Claiming would wait
+out a settle in
 which the restored run can finish, settle its intent and let the record fire
 the window a second time. The startup scan runs before `restoreWakeIntents`,
 which is what lets it see the owed wake first.

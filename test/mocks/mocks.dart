@@ -1182,18 +1182,21 @@ class MockSyncNodeProfileBroadcaster extends Mock
     implements SyncNodeProfileBroadcaster {}
 
 class MockWakeOrchestrator extends Mock implements WakeOrchestrator {
-  /// Wakes [owesWake] reports as owed, as `(agentId, workspaceKey)` pairs.
-  final owedWakes = <(String, String?)>{};
+  /// Scheduled-wake windows [owesWake] reports as owed.
+  final owedWindows = <String>{};
+
+  /// Every [markScheduledWindow] call, as `(runKey, window)` pairs.
+  final markedWindows = <(String, String)>[];
 
   /// Runs on every [flushWakeIntents], so a test can observe its ordering.
   void Function()? onFlushWakeIntents;
 
   @override
-  Future<bool> owesWake(
-    String agentId, {
-    required String? workspaceKey,
-    required Set<String> tokens,
-  }) async => owedWakes.contains((agentId, workspaceKey));
+  Future<bool> owesWake(String window) async => owedWindows.contains(window);
+
+  @override
+  void markScheduledWindow(String runKey, String window) =>
+      markedWindows.add((runKey, window));
 
   @override
   Future<void> flushWakeIntents() async => onFlushWakeIntents?.call();

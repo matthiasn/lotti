@@ -575,17 +575,19 @@ void main() {
   test('a wake is owed from its flush until its run settles, across a '
       'process death', () {
     const workspace = 'goal-escalation:2026-08-08';
+    const window = 'record@2026-08-08T00:00:00.000Z';
     fakeAsync((async) {
-      final first =
-          boot(
-            async,
-            (_, _, _, _) => Completer<Map<String, VectorClock>?>().future,
-          )..enqueueManualWake(
-            agentId: 'agent-1',
-            reason: 'scheduled',
-            triggerTokens: {workspace},
-            workspaceKey: workspace,
-          );
+      final first = boot(
+        async,
+        (_, _, _, _) => Completer<Map<String, VectorClock>?>().future,
+      );
+      final runKey = first.enqueueManualWake(
+        agentId: 'agent-1',
+        reason: 'scheduled',
+        triggerTokens: {workspace},
+        workspaceKey: workspace,
+      );
+      first.markScheduledWindow(runKey, window);
       Set<String>? onDiskAtFlush;
       unawaited(
         first.flushWakeIntents().then((_) => onDiskAtFlush = owedTokens()),
@@ -598,9 +600,7 @@ void main() {
       final second = boot(async, noOpExecutor);
       bool? owedBeforeRestore;
       unawaited(
-        second
-            .owesWake('agent-1', workspaceKey: workspace, tokens: {workspace})
-            .then((owed) => owedBeforeRestore = owed),
+        second.owesWake(window).then((owed) => owedBeforeRestore = owed),
       );
       async.flushMicrotasks();
       expect(owedBeforeRestore, isTrue);
@@ -609,9 +609,7 @@ void main() {
       async.flushMicrotasks();
       bool? owedAfterRun;
       unawaited(
-        second
-            .owesWake('agent-1', workspaceKey: workspace, tokens: {workspace})
-            .then((owed) => owedAfterRun = owed),
+        second.owesWake(window).then((owed) => owedAfterRun = owed),
       );
       async.flushMicrotasks();
       expect(executed, hasLength(2));
@@ -625,9 +623,10 @@ void main() {
       var flushed = false;
       unawaited(
         orchestrator
-            .owesWake('agent-1', workspaceKey: null, tokens: const {})
+            .owesWake('record@2026-08-08T00:00:00.000Z')
             .then((value) => owed = value),
       );
+      orchestrator.markScheduledWindow('run-1', 'window');
       unawaited(orchestrator.flushWakeIntents().then((_) => flushed = true));
       async.flushMicrotasks();
       expect(owed, isFalse);

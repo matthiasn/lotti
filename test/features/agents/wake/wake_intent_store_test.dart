@@ -108,47 +108,76 @@ void main() {
   });
 
   group('owes', () {
-    test('an intent a previous process left is owed, as its disk has it — '
-        'agent, workspace and every token', () async {
+    const window1 = 'scheduled_wake:agent-1:goal-escalation@2026-08-08T00:00Z';
+    const window2 = 'scheduled_wake:agent-1:goal-escalation@2026-08-08T00:01Z';
+
+    test('the window a job fires stays owed into the next process', () async {
       final store = newStore();
       await store.load();
-      record(store, workspaceKey: 'goal-escalation:2026-08-08', tokens: {'a'});
-      record(store, workspaceKey: 'goal-escalation:2026-08-08', tokens: {'b'});
+      record(store, workspaceKey: 'goal-escalation:2026-08-08');
+      store.markWindow('run-1', window1);
       await store.flush();
 
       // A new process, not loaded yet: owes reads the disk itself.
       final next = newStore();
-      Future<bool> owes(String agent, String? workspace, Set<String> tokens) =>
-          next.owes(agentId: agent, workspaceKey: workspace, tokens: tokens);
-
-      expect(await owes('agent-1', 'goal-escalation:2026-08-08', {'a'}), true);
-      expect(
-        await owes('agent-1', 'goal-escalation:2026-08-08', {'a', 'b'}),
-        isTrue,
-      );
-      expect(
-        await owes('agent-1', 'goal-escalation:2026-08-08', {'a', 'c'}),
-        isFalse,
-        reason: 'a token the job does not carry is work it would not do',
-      );
-      expect(await owes('agent-1', null, {'a'}), isFalse);
-      expect(await owes('agent-2', 'goal-escalation:2026-08-08', {}), isFalse);
+      expect(await next.owes(window1), isTrue);
     });
 
-    test('a settled job is no longer owed', () async {
+    // Codex review on #4451: matching on agent, workspace and tokens took a
+    // second escalation of the day — same workspace, same tokens — for the
+    // first one while that one's run was still owed, and consumed it
+    // without ever running it.
+    test("the next window of a record is not owed while the last one's run "
+        'is', () async {
       final store = newStore();
       await store.load();
-      record(store, workspaceKey: 'ws');
-      expect(
-        await store.owes(agentId: 'agent-1', workspaceKey: 'ws', tokens: {}),
-        isTrue,
-      );
-      store.settle('run-1');
-      expect(
-        await store.owes(agentId: 'agent-1', workspaceKey: 'ws', tokens: {}),
-        isFalse,
-      );
+      record(store, workspaceKey: 'goal-escalation:2026-08-08');
+      store.markWindow('run-1', window1);
+
+      expect(await store.owes(window1), isTrue);
+      expect(await store.owes(window2), isFalse);
     });
+
+    test(
+      'a restored intent hands its window to the job it is adopted by',
+      () async {
+        final store = newStore();
+        await store.load();
+        record(store);
+        store.markWindow('run-1', window1);
+        await store.flush();
+
+        final next = newStore();
+        await next.load();
+        final restored = next.takeRestorable().single;
+        record(next, runKey: 'run-2');
+        next.adopt(restored, runKey: 'run-2');
+        expect(await next.owes(window1), isTrue);
+
+        next.settle('run-2');
+        expect(await next.owes(window1), isFalse);
+      },
+    );
+
+    test(
+      'marking a job without an intent, or a window twice, writes nothing',
+      () async {
+        final store = newStore();
+        await store.load();
+        store.markWindow('unknown', window1);
+        await store.flush();
+        expect(await persisted(), isEmpty);
+
+        record(store);
+        store.markWindow('run-1', window1);
+        await store.flush();
+        final written = await persisted();
+        store.markWindow('run-1', window1);
+        await store.flush();
+        expect(await persisted(), written);
+        expect(written.single['windows'], [window1]);
+      },
+    );
   });
 
   test('settling an unknown job writes nothing', () async {

@@ -3202,9 +3202,28 @@ void main() {
           async.flushMicrotasks();
 
           expect(order, ['enqueue', 'flush', 'consumed']);
+          // The job is tagged with the window it fires, so owesWake can tell
+          // it apart from the record's next window.
+          expect(orchestrator.markedWindows, [
+            ('run-key', scheduledWakeWindow(escalation())),
+          ]);
           manager.stop();
         });
       });
+    });
+
+    test('a window is its record and deadline — the next one differs', () {
+      final first = escalation();
+      expect(
+        scheduledWakeWindow(first),
+        '${first.id}@2026-08-08T00:00:00.000Z',
+      );
+      expect(
+        scheduledWakeWindow(
+          escalation(scheduledAt: DateTime.utc(2026, 8, 8, 0, 0, 0, 1)),
+        ),
+        isNot(scheduledWakeWindow(first)),
+      );
     });
 
     // NoDeviceRunsTwice: a process that died between firing and consuming
@@ -3216,7 +3235,9 @@ void main() {
       () {
         fakeAsync((async) {
           withClock(Clock.fixed(now), () {
-            orchestrator.owedWakes.add((kTestAgentId, escalationWorkspace));
+            orchestrator.owedWindows.add(
+              scheduledWakeWindow(escalation()),
+            );
             final manager = start(escalation(), leased: true);
             async.flushMicrotasks();
 
@@ -3243,9 +3264,8 @@ void main() {
             leased: true,
             // Startup restores the owed wake while the pass is past its
             // first check.
-            duringHostLookup: () => orchestrator.owedWakes.add(
-              (kTestAgentId, escalationWorkspace),
-            ),
+            duringHostLookup: () =>
+                orchestrator.owedWindows.add(scheduledWakeWindow(claimed)),
           );
           async.flushMicrotasks();
 

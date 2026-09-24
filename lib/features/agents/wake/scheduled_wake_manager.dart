@@ -9,6 +9,13 @@ import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/services/domain_logging.dart';
 
+/// The identity of [record]'s current wake window: its id and deadline. A
+/// later window of the same record — the next goal escalation of a period,
+/// a chat recovery's retry — is due at a later instant, so it never shares
+/// one with the window before it.
+String scheduledWakeWindow(ScheduledWakeEntity record) =>
+    '${record.id}@${record.scheduledAt.toUtc().toIso8601String()}';
+
 /// What one logical check sequence has already acted on, so its coalesced
 /// re-runs and an in-flight restart handoff do not act on the same row twice.
 ///
@@ -517,12 +524,13 @@ class ScheduledWakeManager with AgentErrorLogging {
         // reaches the enqueue boundary so recovery assigns it to the day whose
         // digest the executor will produce, including a pass crossing midnight.
         final firedAt = clock.now();
-        _orchestrator.enqueueManualWake(
+        final runKey = _orchestrator.enqueueManualWake(
           agentId: record.agentId,
           reason: record.reason,
           triggerTokens: record.triggerTokens.toSet(),
           workspaceKey: record.workspaceKey,
         );
+        _orchestrator.markScheduledWindow(runKey, scheduledWakeWindow(record));
         // The wake's intent must be on disk before the record says the window
         // is done. The intent goes to the settings database through a
         // coalesced write and the consume to the agent database, so without
@@ -661,13 +669,10 @@ class ScheduledWakeManager with AgentErrorLogging {
     DateTime now,
   ) => _consumeFiredRecord(record, now);
 
-  /// Whether the wake [record] would enqueue is already owed on this device.
+  /// Whether the wake firing [record]'s current window is already owed on
+  /// this device.
   Future<bool> _alreadyOwed(ScheduledWakeEntity record) =>
-      _orchestrator.owesWake(
-        record.agentId,
-        workspaceKey: record.workspaceKey,
-        tokens: record.triggerTokens.toSet(),
-      );
+      _orchestrator.owesWake(scheduledWakeWindow(record));
 
   /// Flips [fired] to `consumed` — built from the row as it is now, not from
   /// the snapshot the due query returned.

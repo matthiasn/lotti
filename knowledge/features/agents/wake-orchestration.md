@@ -409,9 +409,14 @@ job of the same agent.
 
 Two queries let other writers depend on the store. `flushWakeIntents`
 completes once every intent recorded so far is on disk, and `owesWake` says
-whether a wake of an agent and workspace carrying given tokens is owed —
-queued, running, or left by the previous process for startup to restore; it
-waits for the store's read, so a restorable intent is never missed. The
+whether the wake firing one scheduled-wake window is owed — queued, running,
+or left by the previous process for startup to restore; it waits for the
+store's read, so a restorable intent is never missed. The window — the record
+id and its deadline — is tagged onto the job's intent by
+`markScheduledWindow`, survives into the next process and moves with the
+intent when a restored one is adopted by a queued job. Matching on the agent,
+workspace and tokens instead would take the record's next window, which often
+carries the same ones, for the one before it. The
 scheduled-wake manager uses both: it consumes a record only after its wake's
 intent is durable, and consumes rather than re-fires a record whose wake is
 already owed

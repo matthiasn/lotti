@@ -158,7 +158,8 @@ Held(r) == r.host # NoHost /\ r.until > now
 Settled(r) == now >= r.until - Lease + Settle
 
 \* A wake for window w that this device already owes: queued, running or
-\* restorable. Every such job has an intent, in memory or on disk.
+\* restorable. Every such job has an intent, in memory or on disk, tagged
+\* with the window it fires (WakeIntentStore.markWindow).
 Owed(d, w) == w \in pend[d] \cup intents[d]
 
 \* The pending record's window is already owed here: consume it, no lease.
