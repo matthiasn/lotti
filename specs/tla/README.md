@@ -118,7 +118,8 @@ the runtime is described in
 
 One change-set item, confirmed or rejected by concurrent callers — a double
 tap, a "Confirm all" racing a single confirm, a swipe-reject racing either, a
-retry — through the claim, the tool dispatch and the post-confirm hook. A
+retry — through the claim, the post-commit outbox flush, the tool dispatch
+and the post-confirm hook. A
 reject claims the item the same way a confirm does. The ghost `applied` counts
 how often the change actually took effect.
 
@@ -130,8 +131,8 @@ how often the change actually took effect.
 
 | Configuration | Callers | Faults | Crashes | Checks | Distinct states |
 |---------------|---------|--------|---------|--------|-----------------|
-| `ChangeSetConfirm` | 2 | dispatch fails, hook throws | 0 | all three | 97 |
-| `ChangeSetConfirmFaults` | 2 | dispatch fails, hook throws | 1 | all but `ConfirmedMeansApplied` | 184 |
+| `ChangeSetConfirm` | 2 | outbox flush fails, dispatch fails, hook throws | 0 | all three | 117 |
+| `ChangeSetConfirmFaults` | 2 | outbox flush fails, dispatch fails, hook throws | 1 | all but `ConfirmedMeansApplied` | 220 |
 
 Two cases are known residuals rather than checked properties. Adding
 `"failsAfterEffect"` to `Faults` — a tool that throws after its effect landed,

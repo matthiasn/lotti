@@ -5,7 +5,7 @@ description: How a local change becomes an agent wake — subscription matching,
 resource: ../../../lib/features/agents/wake
 tags: [agents, wake, scheduling, concurrency]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-24T12:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-24T00:15:55Z }
 stale_after: 2026-12-24
 sources:
   - id: wake

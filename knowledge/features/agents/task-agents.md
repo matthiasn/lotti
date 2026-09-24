@@ -5,7 +5,7 @@ description: The primary agent workflow — inference setup resolution, the auto
 resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
 tags: [agents, task-agent, tools, proposals, inference]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-24T12:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-24T00:15:55Z }
 stale_after: 2026-12-22
 sources:
   - id: report-policy
