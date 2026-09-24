@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
@@ -452,9 +453,18 @@ class GoalAgentPhaseA {
     // before its inference). Re-read it in this transaction: a same-ordinal
     // twin's row that synced in since would otherwise be judged concurrent
     // with this recompute, and the goal-progress resolver's id order could
-    // put the twin's evaluation back (ADR 0068 addendum).
+    // put the twin's evaluation back (ADR 0068 addendum). A row computed
+    // under a NEWER spec ordinal is the next spec arriving before its head:
+    // this recompute must not build on it, so the resolver's higher-ordinal
+    // rule keeps it here and on every peer.
     final current = await _repository.getEntity(id);
-    final base = current is GoalProgressEntity ? current : existing;
+    final row = current is GoalProgressEntity ? current : existing;
+    final rowOrdinal = row == null
+        ? null
+        : specVersionOrdinal(row.specVersionId);
+    final base = rowOrdinal != null && rowOrdinal > version.version
+        ? null
+        : row;
     await _syncService.upsertEntity(
       AgentDomainEntity.goalProgress(
         id: id,

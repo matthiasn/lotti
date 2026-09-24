@@ -139,7 +139,12 @@ version-head registers found:
 
 Every one of them now carries the clock of the row it replaces, read in the
 same transaction: the write is that row's causal successor, keeps its fields
-and still never moves `updatedAt` back. The other writers of override types —
+and still never moves `updatedAt` back. The register is the one exception by
+design: a row computed under a *newer* spec ordinal is the next spec arriving
+before its head, so the recompute does not build on it and the resolver's
+higher-ordinal rule keeps it. The day-summary writer's branch that seeded a
+rewrite from a tombstoned prior was unreachable — reads filter tombstones,
+and day summaries are never soft-deleted — and is removed. The other writers of override types —
 knowledge, day summaries, nudge lifecycle and interactions, goal spec heads,
 the scheduled-wake writers outside ADR 0069 — already build on the row they
 read, or only move forward in the resolver's order.

@@ -689,35 +689,6 @@ void main() {
         expect(entity.text, 'second take');
       },
     );
-
-    test(
-      'a tombstoned prior summary is replaced by a fresh register that '
-      'causally dominates the tombstone',
-      () async {
-        const tombstoneClock = VectorClock({'host-a': 7});
-        final tombstone = makeTestDaySummary(
-          dayId: 'dayplan-2026-06-10',
-          agentId: _agentId,
-          createdAt: DateTime(2026, 6, 10, 7),
-          deletedAt: DateTime(2026, 6, 10, 7, 30),
-          vectorClock: tombstoneClock,
-        );
-        when(() => repository.getEntity(tombstone.id)).thenAnswer(
-          (_) async => tombstone,
-        );
-
-        final result = await write(dayId: 'dayplan-2026-06-10');
-
-        expect(result.success, isTrue);
-        expect(result.output, contains('"updated": false'));
-        final entity = upserted.whereType<DaySummaryEntity>().single;
-        expect(entity.createdAt, _now);
-        // Seeded from the tombstone so the sync layer's next-clock stamp
-        // dominates it — judged concurrent, the earliest-createdAt rule
-        // would resurrect the tombstone on peers (divergence).
-        expect(entity.vectorClock, tombstoneClock);
-      },
-    );
   });
 
   group('executeTool — text validation', () {

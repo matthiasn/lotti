@@ -887,6 +887,42 @@ void main() {
     expect(resolved.trackStatus, register.trackStatus);
   });
 
+  test('the register recompute does not build on a row computed under a '
+      'NEWER spec — the next spec arriving before its head keeps the day '
+      '(ADR 0068 addendum)', () async {
+    stubSpec();
+    final newerRow =
+        AgentDomainEntity.goalProgress(
+              id: goalProgressId(agentId, '2026-08-08'),
+              agentId: agentId,
+              periodKey: '2026-08-08',
+              trackStatus: GoalTrackStatus.offTrack,
+              attainment: 0.2,
+              dataCoverage: 1,
+              satisfied: false,
+              specVersionId: '$agentId:spec-v2-aaaaaaaa',
+              createdAt: DateTime(2026, 8, 8, 6),
+              updatedAt: DateTime(2026, 8, 8, 6),
+              vectorClock: const VectorClock({'peer': 3}),
+            )
+            as GoalProgressEntity;
+    when(
+      () => repository.getEntity(goalProgressId(agentId, '2026-08-08')),
+    ).thenAnswer((_) async => newerRow);
+
+    await run(onTrackSignals());
+
+    final register = upserts.whereType<GoalProgressEntity>().single;
+    expect(register.specVersionId, '$agentId:spec-v1');
+    expect(register.vectorClock, isNull);
+    // What AgentSyncService persists for this write over the v2 row.
+    final resolved =
+        resolveLocalAgentWrite(persisted: newerRow, write: register)
+            as GoalProgressEntity;
+    expect(resolved.specVersionId, '$agentId:spec-v2-aaaaaaaa');
+    expect(resolved.trackStatus, GoalTrackStatus.offTrack);
+  });
+
   test('re-running the SAME day with an unchanged status is a no-op — the '
       'escalation wake cannot re-arm itself forever', () async {
     stubSpec();
