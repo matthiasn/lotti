@@ -4,6 +4,9 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
+import 'package:lotti/features/agents/service/change_set_resolution_store.dart';
+import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
@@ -689,6 +692,13 @@ void main() {
   setUp(() {
     mockSyncService = MockAgentSyncService();
     mockRepository = MockAgentRepository();
+    when(
+      () => mockRepository.getPendingChangeSets(
+        any(),
+        taskId: any(named: 'taskId'),
+        limit: -1,
+      ),
+    ).thenAnswer((_) async => []);
     builder = ChangeSetBuilder(
       agentId: 'agent-001',
       taskId: 'task-001',
@@ -905,6 +915,51 @@ void main() {
 
     tearDown(tearDownTestGetIt);
 
+    test('wake alert includes suggestions retained in an older set', () async {
+      final retained = makeTestChangeSet(
+        id: 'retained',
+        items: const [
+          ChangeItem(
+            humanSummary: 'Migration group',
+            toolName: TaskAgentToolNames.createFollowUpTask,
+            args: {'_placeholderTaskId': 'placeholder'},
+          ),
+          ChangeItem(
+            humanSummary: 'Migration group',
+            toolName: TaskAgentToolNames.migrateChecklistItem,
+            args: {'targetTaskId': 'placeholder'},
+          ),
+        ],
+      );
+      when(
+        () => mockRepository.getPendingChangeSets(
+          'agent-001',
+          taskId: 'task-001',
+          limit: -1,
+        ),
+      ).thenAnswer((_) async => [retained]);
+      await builder.addItem(
+        toolName: 'update_task_estimate',
+        args: {'minutes': 30},
+        humanSummary: 'Set estimate',
+      );
+      final result = await builder.build(
+        mockSyncService,
+        existingPendingSets: [retained],
+      );
+      expect(result!.items, hasLength(1));
+      verify(
+        () => notificationRepository.createTaskSuggestion(
+          linkedTaskId: 'task-001',
+          suggestionCount: 3,
+          title: '3 suggestions need your attention',
+          body: any(named: 'body'),
+          category: any(named: 'category'),
+          idSeed: result.id,
+        ),
+      ).called(1);
+    });
+
     test(
       'fires one createTaskSuggestion per build with the pending count, task '
       'title in the body, and the change-set id as the inbox row seed',
@@ -1109,7 +1164,7 @@ void main() {
           ],
         );
 
-        await builder.notifyTaskNeedsAttention(resolvedSet);
+        await builder.notifyTaskNeedsAttention(resolvedSet, mockSyncService);
 
         verifyNever(
           () => notificationRepository.createTaskSuggestion(
@@ -2217,6 +2272,130 @@ void main() {
       );
     });
 
+    for (final scenario in [
+      (flushFirst: false, ownGroup: false),
+      (flushFirst: true, ownGroup: false),
+      (flushFirst: true, ownGroup: true),
+    ]) {
+      final flushFirst = scenario.flushFirst;
+      test(
+        'retracts superseded edits in retained sets '
+        '${flushFirst ? 'after an incremental flush' : 'on final build'} '
+        '(own group: ${scenario.ownGroup})',
+        () async {
+          final retained = makeTestChangeSet(
+            id: 'retained',
+            items: const [
+              ChangeItem(
+                toolName: TaskAgentToolNames.createFollowUpTask,
+                args: {'_placeholderTaskId': 'placeholder'},
+                humanSummary: 'Create follow-up',
+              ),
+              ChangeItem(
+                toolName: TaskAgentToolNames.migrateChecklistItem,
+                args: {'targetTaskId': 'placeholder', 'id': 'checklist-item'},
+                humanSummary: 'Move checklist item',
+              ),
+              ChangeItem(
+                toolName: TaskAgentToolNames.updateTimeEntry,
+                args: {'entryId': 'entry-1', 'summary': 'Old text'},
+                humanSummary: 'Old entry text',
+              ),
+            ],
+          );
+          final untouched = retained.copyWith(
+            id: 'other-retained',
+            items: retained.items.take(2).toList(),
+          );
+          final stored = {retained.id: retained, untouched.id: untouched};
+          final writes = <AgentDomainEntity>[];
+          when(() => mockRepository.getEntity(any())).thenAnswer(
+            (invocation) async => stored[invocation.positionalArguments.single],
+          );
+          when(() => mockSyncService.upsertEntity(any())).thenAnswer((
+            invocation,
+          ) async {
+            final entity =
+                invocation.positionalArguments.single as AgentDomainEntity;
+            writes.add(entity);
+            if (entity is ChangeSetEntity) stored[entity.id] = entity;
+          });
+          if (scenario.ownGroup) {
+            final placeholder = await builder.addFollowUpTask(
+              args: {'title': 'Own follow-up'},
+              humanSummary: 'Own follow-up',
+            );
+            await builder.addItem(
+              toolName: TaskAgentToolNames.migrateChecklistItem,
+              args: {'targetTaskId': placeholder, 'id': 'own-item'},
+              humanSummary: 'Own migration',
+            );
+            await builder.build(mockSyncService);
+          }
+          await builder.addItem(
+            toolName: TaskAgentToolNames.updateTimeEntry,
+            args: {'entryId': 'entry-1', 'summary': 'New text'},
+            humanSummary: 'New entry text',
+          );
+          ChangeSetEntity? flushed;
+          if (flushFirst) {
+            flushed = await builder.build(
+              mockSyncService,
+              existingPendingSets: [retained, untouched],
+              incremental: true,
+            );
+            expect(
+              stored[retained.id],
+              same(retained),
+              reason: 'incremental writes must leave pre-wake sets intact',
+            );
+            expect(writes.whereType<ChangeDecisionEntity>(), isEmpty);
+          }
+          final result = await builder.build(
+            mockSyncService,
+            existingPendingSets: [retained, untouched],
+          );
+          expect(result!.items.last.args['summary'], 'New text');
+          expect(result.items, hasLength(scenario.ownGroup ? 3 : 1));
+          expect(stored, hasLength(3));
+          if (flushFirst) expect(result.id, flushed!.id);
+          final updated = stored[retained.id]!;
+          expect(
+            updated.items.take(2),
+            retained.items.take(2),
+            reason:
+                'the unresolved dependency group stays at its original owner',
+          );
+          expect(updated.items[2].status, ChangeItemStatus.retracted);
+          expect(updated.status, ChangeSetStatus.pending);
+          expect(stored[untouched.id], same(untouched));
+          expect(
+            writes.whereType<ChangeSetEntity>().where(
+              (set) => set.id == untouched.id,
+            ),
+            isEmpty,
+          );
+          final decision = writes.whereType<ChangeDecisionEntity>().single;
+          expect(decision.changeSetId, retained.id);
+          expect(decision.itemIndex, 2);
+          expect(decision.verdict, ChangeDecisionVerdict.retracted);
+          expect(decision.actor, DecisionActor.agent);
+          expect(decision.args, retained.items[2].args);
+
+          await builder.build(
+            mockSyncService,
+            existingPendingSets: [retained, untouched],
+          );
+          expect(
+            writes.whereType<ChangeDecisionEntity>(),
+            hasLength(1),
+            reason:
+                'a repeated final build must not record the same retraction again',
+          );
+        },
+      );
+    }
+
     test(
       'retracts a pending text update, legacy or not, when newer text is '
       'proposed for the same entry',
@@ -2759,6 +2938,168 @@ void main() {
           resolved.items.single.status,
           ChangeItemStatus.retracted,
         );
+      },
+    );
+
+    for (final parentStatus in [
+      ChangeItemStatus.pending,
+      ChangeItemStatus.confirmed,
+      ChangeItemStatus.rejected,
+    ]) {
+      test(
+        'consolidation preserves the unresolved migration guard ($parentStatus)',
+        () async {
+          await builder.addItem(
+            toolName: 'update_task_estimate',
+            args: {'minutes': 45},
+            humanSummary: 'Set estimate',
+          );
+          // The follow-up has been claimed, but dispatch has not produced its task.
+          final older = makeTestChangeSet(
+            id: 'cs-older',
+            createdAt: DateTime(2024, 3, 15, 10),
+            status: ChangeSetStatus.partiallyResolved,
+            items: [
+              ChangeItem(
+                toolName: TaskAgentToolNames.createFollowUpTask,
+                args: {
+                  'title': 'Follow-up',
+                  '_placeholderTaskId': 'placeholder',
+                },
+                humanSummary: 'Create follow-up',
+                status: parentStatus,
+                revision: 1,
+              ),
+              const ChangeItem(
+                toolName: TaskAgentToolNames.migrateChecklistItem,
+                args: {'id': 'checklist-item', 'targetTaskId': 'placeholder'},
+                humanSummary: 'Move checklist item',
+              ),
+            ],
+          );
+          final newer = makeTestChangeSet(
+            id: 'cs-newer',
+            createdAt: DateTime(2024, 3, 15, 11),
+          );
+          final stored = <String, AgentDomainEntity>{
+            older.id: older,
+            newer.id: newer,
+          };
+          when(() => mockRepository.getEntity(any())).thenAnswer(
+            (call) async => stored[call.positionalArguments.first],
+          );
+          when(() => mockSyncService.upsertEntity(any())).thenAnswer((
+            call,
+          ) async {
+            final entity = call.positionalArguments.first as AgentDomainEntity;
+            stored[entity.id] = entity;
+          });
+          final merged = (await builder.build(
+            mockSyncService,
+            existingPendingSets: [older, newer],
+          ))!;
+          final dispatched = <Map<String, dynamic>>[];
+          final service = ChangeSetConfirmationService(
+            syncService: mockSyncService,
+            labelsRepository: MockLabelsRepository(),
+            toolDispatcher: (_, args, _) async {
+              dispatched.add(args);
+              return const ToolExecutionResult(
+                success: true,
+                output: 'applied',
+              );
+            },
+          );
+          expect(
+            merged.items.any(
+              (item) =>
+                  item.toolName == TaskAgentToolNames.migrateChecklistItem,
+            ),
+            isFalse,
+            reason: 'the unresolved group stays in its original set',
+          );
+          expect(stored[older.id], older);
+          final result = await service.confirmItem(older, 1);
+          expect(dispatched, isEmpty, reason: 'target task does not exist yet');
+          expect(result.success, isFalse);
+          if (parentStatus != ChangeItemStatus.confirmed) return;
+
+          // The in-flight follow-up completes against its original set. Its
+          // pending migration remains there for the durable target rewrite.
+          final resolution = ChangeSetResolutionStore(
+            syncService: mockSyncService,
+            subDomain: 'test',
+          );
+          await resolution.persistResolvedIdToSiblings(
+            older.items.first,
+            const ToolExecutionResult(
+              success: true,
+              output: 'created',
+              mutatedEntityId: 'real-task',
+            ),
+            older,
+          );
+          final completed = stored[older.id]! as ChangeSetEntity;
+          expect(completed.items[1].args['targetTaskId'], 'real-task');
+          final consolidated = (await builder.build(
+            mockSyncService,
+            existingPendingSets: [completed],
+          ))!;
+          final migrationIndex = consolidated.items.indexWhere(
+            (item) => item.toolName == TaskAgentToolNames.migrateChecklistItem,
+          );
+          expect(migrationIndex, greaterThanOrEqualTo(0));
+          final applied = await service.confirmItem(
+            consolidated,
+            migrationIndex,
+          );
+          expect(applied.success, isTrue);
+          expect(dispatched.single['targetTaskId'], 'real-task');
+          expect(
+            (stored[older.id]! as ChangeSetEntity).status,
+            ChangeSetStatus.resolved,
+          );
+        },
+      );
+    }
+
+    test(
+      'incremental appends keep the wake own unresolved group in place',
+      () async {
+        final stored = <String, AgentDomainEntity>{};
+        when(() => mockRepository.getEntity(any())).thenAnswer(
+          (call) async => stored[call.positionalArguments.first],
+        );
+        when(() => mockSyncService.upsertEntity(any())).thenAnswer((
+          call,
+        ) async {
+          final entity = call.positionalArguments.first as AgentDomainEntity;
+          stored[entity.id] = entity;
+        });
+        await builder.addFollowUpTask(
+          args: {'title': 'Follow-up'},
+          humanSummary: 'Create',
+        );
+        final placeholder = builder.followUpPlaceholderId!;
+        await builder.addItem(
+          toolName: TaskAgentToolNames.migrateChecklistItem,
+          args: {'id': 'item', 'targetTaskId': placeholder},
+          humanSummary: 'Move item',
+        );
+        final original = (await builder.build(mockSyncService))!;
+        await builder.addItem(
+          toolName: TaskAgentToolNames.updateTaskEstimate,
+          args: {'minutes': 45},
+          humanSummary: 'Set estimate',
+        );
+        final appended = (await builder.build(
+          mockSyncService,
+          incremental: true,
+        ))!;
+        expect(appended.id, original.id);
+        expect(appended.items.take(2), original.items);
+        expect(appended.items.last.args, {'minutes': 45});
+        expect(stored.keys, [original.id]);
       },
     );
 

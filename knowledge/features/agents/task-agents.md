@@ -5,7 +5,7 @@ description: The primary agent workflow — inference setup resolution, the auto
 resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
 tags: [agents, task-agent, tools, proposals, inference]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T20:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T22:00:00Z }
 stale_after: 2026-12-24
 sources:
   - id: report-policy
@@ -50,8 +50,8 @@ sources:
     last_modified: 2026-09-22
   - id: proposal-builder
     resource: ../../../lib/features/agents/workflow/change_set_builder.dart
-    title: Live background proposal protection
-    last_modified: 2026-09-22
+    title: Live background proposal protection and dependency-aware consolidation
+    last_modified: 2026-09-24
   - id: workflow
     resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
     title: TaskAgentWorkflow
@@ -880,7 +880,7 @@ sets:
 |  | incremental flush | end-of-wake build |
 | --- | --- | --- |
 | Dedups against | pre-wake sets + own set | same |
-| Writes to | own set only | consolidates everything into one survivor |
+| Writes to | own set only | consolidates eligible sets into one survivor; unresolved follow-up groups stay in place |
 | Split groups | held back | released |
 | Inbox alert | never | always, exactly once |
 | Runs relative to `applyStaged` | before | after |
@@ -915,9 +915,8 @@ Repeated flushes are safe by construction:
   way through cannot leave a superseded-edit `ChangeDecisionEntity` behind for
   the retry to duplicate.
 - **The inbox alert fires once, from the final build only.** An incremental
-  flush must not raise it: the count would come from its own set while
-  `createTaskSuggestion` retracts the pre-wake row, and a second flush
-  appending to the same set reuses its id as the `idSeed`, so a row the user
+  flush must not raise it: a second flush appending to the same set reuses
+  its id as the `idSeed`, so a row the user
   already dismissed could never be revived for the later suggestions. The
   final build alerts even when it has nothing left to persist — otherwise a
   wake whose proposals all landed mid-conversation would never ring the bell.
@@ -928,28 +927,30 @@ Repeated flushes are safe by construction:
   fire-and-forget — a failed re-read skips the alert rather than failing the
   wake.
 - **Superseded time-entry edits are resolved by the final build.** The
-  replacements come from everything the wake proposed, not just what the
-  current pass is writing: on a consolidation-only build the replacement was
+  replacements come from accepted proposals, including those already
+  flushed, not just what the current pass is writing: on a consolidation-only build the replacement was
   already flushed, so keying on the new items alone would leave a pre-wake
   proposal for the same entry pending. The wake's own current items never
   match, so a replacement cannot retract itself — but one an earlier turn
   flushed and a later turn replaced does, even inside the builder's own set.
+  The final build also retracts obsolete edits inside retained dependency
+  sets, records the decisions, and writes those sets back in place. Retraction
+  does not move or retire their unresolved follow-up groups.
 - **A wake that dies after a flush still alerts.** `WakeOutputWriter` never
   runs, so the workflow's failure path calls `raiseInboxAlert` itself;
   otherwise committed, on-screen suggestions would never ring the bell.
   Consolidation is deliberately *not* attempted there — it retires the pre-wake
   sets, and the staged retractions that must land first die with the wake. The
-  surplus card is folded by the next wake's end-of-wake build. Because nothing
-  was consolidated, that alert is **skipped** when a pre-wake set is still
-  pending: `createTaskSuggestion` retracts every other open row for the task,
-  so alerting from the wake's set alone would drop those older suggestions out
-  of the inbox. Their existing row is still open and still accurate.
+  next successful wake consolidates eligible sets. That failure-path alert
+  is **skipped** when a pre-wake set is still pending: the failed wake has not
+  consolidated its duplicates, so it preserves the existing alert until a
+  successful final build can publish the complete count.
 
-A wake with pre-existing proposals therefore shows a second card while it runs,
-which the final build folds into one. That is the deliberate trade for never
-touching a set the retraction step still needs. The end-of-wake build is
-consequently never a no-op when the wake wrote anything: it still has to fold
-the pre-wake sets and raise the alert.
+A wake with pre-existing proposals can therefore show a second card while it
+runs. The final build folds eligible sets into one survivor, while unresolved
+follow-up groups keep their original cards until their dependencies resolve.
+Even when all proposals were flushed earlier, the final build still checks for
+consolidation and supersession and raises the task-wide alert.
 
 Retractions keep their end-of-wake placement for the opposite reason they used
 to: proposals now land *first*, so the suggestion list can never read empty
@@ -1129,10 +1130,13 @@ tombstone and refuses status writes instead of reviving the caller's snapshot.
 It also resolves follow-up-task placeholder ids across later migration items and
 suppresses rejected label assignments so the same label is not immediately
 re-proposed. After a decision it hands the fresh change set to
-`ChangeSetNotificationService`: pending items left → refresh the seeded
-suggestion notification with the new count and retract older open rows for the
-task; none left → mark every open suggestion notification acted-on so it leaves
-the inbox and syncs that lifecycle to other devices.
+`ChangeSetNotificationService`: it counts pending items across every retained
+change set for the task agent. While any remain, it refreshes the current open
+inbox row, even when the decision belongs to an older set whose notification
+was already retired. Only when no pending items remain does it mark every open
+suggestion notification acted-on (or retract them after an agent retraction),
+syncing that lifecycle to other devices. End-of-wake alerts use the same total
+count with the wake’s change-set seed.
 
 ## Time-entry text proposals follow the entry, not the timer
 
@@ -1279,14 +1283,27 @@ is still `pending` or `partiallyResolved` **and** the effective item state is
 still `pending`. Decision rows close stale embedded snapshots before the prompt
 or UI sees them, and retired resolved-set rows with no decision are filtered out.
 
-When several pending change sets are consolidated, the newest becomes the
+A set with a pending migration that still names a sibling follow-up
+placeholder is excluded from consolidation. Its original id remains the
+address for target rewriting and rejection cascading, and its follow-up stays
+beside the migration for the confirmation service's placeholder guard. This
+also protects entirely pending groups and does not depend on `groupId`. An
+incremental flush can still append to the wake's own set. Once the target has
+been rewritten or the migration decided, a later final build can consolidate
+the set. Until then, the task can show more than one pending card.
+
+When eligible pending change sets are consolidated, the newest becomes the
 survivor and pending items in retired sets are marked `retracted` first — so no
 resolved parent row contains an actionable-looking pending child. Only pending
 items move into the survivor; a decided item stays in the set it was decided
 in. A copy would not follow its original: a claimed item whose dispatch is
 still running can fail and revert the original to `pending`, and a copy made
 as `confirmed` would go on claiming a change that never landed. The card lists
-only pending items, so it looks the same.
+only pending items, so it looks the same. A copy keeps its original's
+`effectKey` (see *Applying an item on two devices*), so confirming it on one
+device and the original on another creates one entity. The two rules compose:
+a retained dependency group is never copied, so its items keep their own
+position as their key.
 
 Feedback-extraction heuristics read `rejectionReason` to detect user grievances
 and are explicitly decoupled from `retractionReason`, so agent self-talk never

@@ -1,5 +1,3 @@
-import 'dart:ui' as ui;
-
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -8,13 +6,13 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger_status.dart';
+import 'package:lotti/features/agents/service/change_set_notification_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/change_item_dedup.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/string_utils.dart' as string_utils;
 import 'package:uuid/uuid.dart';
@@ -210,8 +208,8 @@ class ChangeSetBuilder {
 
   /// The change set this builder's flushed items live in, once one exists.
   ///
-  /// Later flushes append into this same entity, so a wake produces exactly
-  /// one card no matter how many turns it took.
+  /// Incremental flushes append into this same entity. A final build may
+  /// leave an unresolved follow-up group in place and write new items elsewhere.
   ChangeSetEntity? _persistedSet;
 
   /// Whether the inbox alert for this wake has been raised.
@@ -332,8 +330,8 @@ class ChangeSetBuilder {
   /// user has resolved — and holds back split groups so a follow-up task and
   /// its checklist migrations stay atomic. The end-of-wake call leaves
   /// [incremental] false: by then staged retractions have been applied, so it
-  /// is safe to consolidate the pre-wake sets and release the held groups,
-  /// leaving the user with exactly one card.
+  /// consolidates eligible pre-wake sets and releases the held groups. Sets
+  /// whose migrations still need a follow-up target stay in place.
   ///
   /// Items that already appear in [existingPendingSets] (matched by
   /// `toolName` + `args`) are silently dropped to avoid showing the user
@@ -354,10 +352,10 @@ class ChangeSetBuilder {
   /// [rejectedDisplayKeys] applies the same sticky rejection rule to
   /// verbatim user-facing summaries whose tool arguments changed shape.
   ///
-  /// When existing pending change sets exist, all their items are
-  /// consolidated into a single set together with the new items. Any
-  /// surplus sets are marked as [ChangeSetStatus.resolved] so they no
-  /// longer appear in the UI or future queries.
+  /// Existing pending sets are consolidated with the new items, except sets
+  /// with unresolved follow-up migrations. Those stay where their follow-up
+  /// completion can rewrite their targets or cascade a rejection. Once the
+  /// dependency is resolved, a later build can consolidate them too.
   ///
   /// Returns the persisted set, or `null` when nothing has ever survived
   /// deduplication.
@@ -388,7 +386,8 @@ class ChangeSetBuilder {
     // A final build must still fold the pre-wake sets that incremental
     // flushes were forbidden to touch — even when every staged item has
     // already been written, which is the common case after a multi-turn wake.
-    // Returning early there would leave the task with two open cards.
+    // Returning early would leave eligible sets unconsolidated and could
+    // strand obsolete edits inside retained dependency sets.
     //
     // Gated on this builder having written a set: a wake that proposed
     // nothing at all must stay a no-op and leave existing sets alone, as it
@@ -425,11 +424,15 @@ class ChangeSetBuilder {
     // A set the user resolved mid-wake is excluded either way: appending
     // pending items to a `resolved` row would persist a proposal that pending
     // queries never return, so it would be invisible in both the UI and the
-    // ledger.
+    // ledger. An unresolved follow-up group also stays in its original set:
+    // completion and rejection cascade still address that id. Incremental
+    // writes can append to it, since they never move or retire the group.
     final ownSetId = _persistedSet?.id;
     final writableSets = [
       for (final cs in freshExistingSets)
-        if (isPendingLike(cs.status) && (!incremental || cs.id == ownSetId)) cs,
+        if (isPendingLike(cs.status) &&
+            (incremental ? cs.id == ownSetId : !_hasUnresolvedMigration(cs)))
+          cs,
     ];
     // Extract items from existing change sets that should block a new
     // identical proposal. Confirmed items were applied; retracted items
@@ -459,40 +462,58 @@ class ChangeSetBuilder {
     // build, so an item this flush suppressed against a still-open proposal
     // gets one more chance once that proposal is gone — which is what the
     // end-of-wake-only behavior gave it.
-    // Nothing new to write. Fall through only for the consolidation-only pass
-    // described above, and only when there is a second writable set to fold —
-    // otherwise this is the pre-existing "nothing survived dedup" no-op.
+    // The final pass also retracts obsolete edits in retained dependency sets.
+    // Incremental flushes must still leave all pre-wake sets untouched.
+    final supersessionSets = incremental
+        ? writableSets
+        : [
+            for (final cs in freshExistingSets)
+              if (isPendingLike(cs.status)) cs,
+          ];
+    // A replacement may already have been flushed. Proposals rejected by
+    // dedup must not retract existing work without an accepted replacement.
+    final replacements = [
+      ...deduped,
+      for (final item in _items)
+        if (_flushedFingerprints.contains(ChangeItem.fingerprint(item))) item,
+    ];
+    final supersededItems = locateSupersededTimeEntryEdits(
+      supersessionSets,
+      replacements,
+    );
     final consolidationOnly = mayNeedConsolidation && writableSets.length >= 2;
-    if (deduped.isEmpty && !consolidationOnly) {
+    if (deduped.isEmpty && !consolidationOnly && supersededItems.isEmpty) {
       return incremental ? _persistedSet : raiseInboxAlert(syncService);
     }
 
-    // Keyed on everything this wake proposed, not just what this pass is
-    // writing: on a consolidation-only final build the replacement was
-    // already flushed, so `deduped` is empty and a pre-wake proposal for the
-    // same entry would survive as pending — inflating the ledger and leaving
-    // an obsolete action the UI's supersede filter merely hides.
-    //
-    // This wake's own items never match — they are the replacements being
-    // kept — but one an earlier turn flushed and a later turn replaced does,
-    // even inside this builder's own set.
-    final supersededItems = locateSupersededTimeEntryEdits(
-      writableSets,
-      _items,
-    );
     final currentExistingSets = supersededItems.isEmpty
-        ? writableSets
-        : markItemsRetracted(writableSets, supersededItems);
+        ? supersessionSets
+        : markItemsRetracted(supersessionSets, supersededItems);
     final currentExistingSetsById = {
       for (final cs in currentExistingSets) cs.id: cs,
     };
 
     await _recordSupersededRetractions(syncService, supersededItems);
+    final writableIds = {for (final cs in writableSets) cs.id};
+    for (final cs in supersessionSets) {
+      final updated = currentExistingSetsById[cs.id]!;
+      if (!writableIds.contains(cs.id) && !identical(updated, cs)) {
+        // Preserve the dependency group's owner and positions; only the
+        // superseded edit changes status. The outer transaction also owns
+        // its decision row and the replacement proposal.
+        await syncService.upsertEntity(updated);
+      }
+    }
+    if (deduped.isEmpty && writableSets.isEmpty) {
+      // All sets may be retained while the replacement is already flushed.
+      // Retraction alone must not manufacture an empty survivor.
+      return raiseInboxAlert(syncService);
+    }
 
     if (writableSets.isNotEmpty) {
       // Consolidate: pick the newest set as the survivor, collect all
-      // items from every set, append the new deduplicated items, and
-      // mark all other sets as resolved so the UI shows exactly one card.
+      // items from eligible sets, append the new deduplicated items, and
+      // retire the other eligible sets. Dependency groups keep their cards.
       // On a later flush this collapses to the set this builder already
       // wrote, so the wake keeps appending to one card instead of opening
       // a fresh one per turn.
@@ -555,12 +576,12 @@ class ChangeSetBuilder {
       _persistedSet = merged;
       if (!incremental) {
         _notified = true;
-        await notifyTaskNeedsAttention(merged);
+        await notifyTaskNeedsAttention(merged, syncService);
       }
       return merged;
     }
 
-    // No existing set — create a new one.
+    // No eligible existing set — create a new one.
     final entity =
         AgentDomainEntity.changeSet(
               id: _uuid.v4(),
@@ -580,9 +601,28 @@ class ChangeSetBuilder {
     _persistedSet = entity;
     if (!incremental) {
       _notified = true;
-      await notifyTaskNeedsAttention(entity);
+      await notifyTaskNeedsAttention(entity, syncService);
     }
     return entity;
+  }
+
+  /// A migration naming a sibling's placeholder still depends on writes to
+  /// this set. Keep the entire set in place: moving even an entirely pending
+  /// group can race a caller that already read its original set id. An
+  /// incremental append to the wake's own set never moves that group.
+  static bool _hasUnresolvedMigration(ChangeSetEntity set) {
+    final placeholders = {
+      for (final item in set.items)
+        if (item.toolName == TaskAgentToolNames.createFollowUpTask &&
+            item.args['_placeholderTaskId'] is String)
+          item.args['_placeholderTaskId'],
+    };
+    return set.items.any(
+      (item) =>
+          item.status == ChangeItemStatus.pending &&
+          item.toolName == TaskAgentToolNames.migrateChecklistItem &&
+          placeholders.contains(item.args['targetTaskId']),
+    );
   }
 
   /// Raises the wake's single inbox alert for whatever has been flushed.
@@ -611,12 +651,9 @@ class ChangeSetBuilder {
     _notified = true;
 
     try {
-      // The failure path alerts without consolidating, so other sets may still
-      // hold actionable proposals. `createTaskSuggestion` retracts every other
-      // open row for the task, so alerting from this set alone would drop
-      // those older suggestions out of the inbox. Their existing row is still
-      // open and still accurate — leave it, and let the next wake's
-      // consolidated alert cover everything.
+      // A failed wake has not consolidated its proposals with earlier sets.
+      // Preserve their existing alert until the next successful wake has
+      // removed duplicates and can publish a complete count.
       for (final other in unconsolidatedSets) {
         if (other.id == persisted.id) continue;
         final latest = await _reReadOrNull(syncService, other.id);
@@ -637,7 +674,7 @@ class ChangeSetBuilder {
       // makes the same call per item via its pending count.
       if (!isPendingLike(current.status)) return persisted;
 
-      await notifyTaskNeedsAttention(current);
+      await notifyTaskNeedsAttention(current, syncService);
     } catch (e) {
       // Alerting is fire-and-forget (see [notifyTaskNeedsAttention]) and must
       // never fail a wake — least of all the failure path, where throwing here
@@ -675,18 +712,16 @@ class ChangeSetBuilder {
   /// for the same task so the bell still exposes at most one active row per
   /// task.
   ///
-  /// Fired only by the end-of-wake build, never by an incremental flush. Two
-  /// reasons, both consequences of a flush writing its own set: the count
-  /// would come from that set alone while `createTaskSuggestion` retracts the
-  /// pre-wake row, so the bell would undercount still-actionable suggestions
-  /// until consolidation; and a second flush appending to the same set reuses
-  /// its id as the `idSeed`, so once the user has opened or dismissed the
-  /// first row, `upsertNotification` preserves `seenAt`/`deletedAt` and the
-  /// later suggestions could never raise the badge. One alert per wake, on the
-  /// consolidated set, keeps both properties intact — the card itself still
-  /// updates live, which is what the incremental flush is for.
+  /// Fired only by the end-of-wake build, never by an incremental flush.
+  /// The count includes retained dependency groups. A flush reuses its set id,
+  /// so alerting then could consume that row before later suggestions arrive:
+  /// the monotonic lifecycle marks cannot be cleared to raise another badge.
+  /// One alert per wake keeps the count complete while cards update live.
   ///
-  Future<void> notifyTaskNeedsAttention(ChangeSetEntity entity) async {
+  Future<void> notifyTaskNeedsAttention(
+    ChangeSetEntity entity,
+    AgentSyncService syncService,
+  ) async {
     // Count only the items the user actually needs to act on; previously
     // confirmed/rejected/retracted items don't warrant a fresh alert.
     final pendingCount = entity.items
@@ -698,25 +733,11 @@ class ChangeSetBuilder {
     if (!getIt.isRegistered<JournalDb>()) return;
 
     try {
-      final task = await getIt<JournalDb>().journalEntityById(taskId);
-      final taskTitle = task is Task ? task.data.title : null;
-      // No BuildContext here — the builder runs from agent wake. Pull the
-      // current platform locale and resolve a synchronous AppLocalizations
-      // instance so the inbox row honors the user's language.
-      final messages = lookupAppLocalizations(
-        ui.PlatformDispatcher.instance.locale,
-      );
-      final body = taskTitle == null || taskTitle.trim().isEmpty
-          ? messages.notificationSuggestionAttentionBodyFallback
-          : taskTitle;
-      await getIt<NotificationRepository>().createTaskSuggestion(
-        linkedTaskId: taskId,
-        suggestionCount: pendingCount,
-        title: messages.notificationSuggestionAttentionTitle(pendingCount),
-        body: body,
-        category: task is Task ? task.meta.categoryId : null,
-        idSeed: entity.id,
-      );
+      await ChangeSetNotificationService(
+        notificationRepository: getIt<NotificationRepository>(),
+        journalDb: getIt<JournalDb>(),
+        agentRepository: syncService.repository,
+      ).notifyTaskNeedsAttention(entity);
     } catch (e, st) {
       domainLogger?.error(
         LogDomain.agentWorkflow,

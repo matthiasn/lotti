@@ -260,7 +260,10 @@ What stays open — the residuals, each confirmed by TLC:
   applies anything twice: the copy carries its original's key. It stays
   pending beside the original applied elsewhere
   (`ChangeSetLifecycleConsolidateSync` checking `StatusMatchesEffect` fails in
-  7 states); confirming it is a no-op.
+  7 states); confirming it is a no-op. A set holding a migration whose follow-up is
+  unresolved is not folded at all (`ChangeSetDependency`), so only plain
+  pending items are ever copied, and a retained group's items keep their
+  position as their effect key.
 - **Concurrent sets whose items do not align** — different proposals at one
   index — fall back to the whole-row winner, as before, and with three or
   more versions that fallback can depend on arrival order (the joined clock
@@ -280,6 +283,31 @@ What stays open — the residuals, each confirmed by TLC:
   transaction to start after the migration's claim, which today's scheduling
   does not allow — the capture and that transaction request run in one
   continuation. The fix removes the dependence on it.
+
+## `ChangeSetDependency` — consolidation preserves follow-up ownership
+
+A follow-up and its pending migration share one set. Completing the follow-up
+rewrites that set's migration target; rejecting it cascades to that set's
+migration. Moving the migration while either operation is in flight would
+leave the copy pointing at an unresolved placeholder, away from the sibling
+that makes the confirmation service recognize it as a placeholder.
+
+| Configuration | Scope | Checks | Distinct states |
+|---------------|-------|--------|-----------------|
+| `ChangeSetDependency` | one device, pending/claimed/rejected follow-up, completion/cascade and consolidation into a newer set | `MigrationAfterTarget`, `DependencyOwned`, `CompletionReachesMigration` | 14 |
+
+`KeepDependenciesTogether = TRUE` keeps the group at its original set id until
+its pending migration has a resolved target. Setting it to `FALSE` restores
+moving the migration away and violates `DependencyOwned`; the mutation config
+is run outside the checked-in CI configuration set. This is one-device
+dependency ownership, not a fix for the cross-device duplicate-application
+residual above.
+
+The builder's Dart regressions cover pending, claimed and rejected follow-ups,
+the placeholder guard, completion's durable target rewrite, later
+consolidation and successful migration, and incremental appends that keep the
+original set id. Restoring consolidation of unresolved groups fails all three
+parent-status regressions.
 
 ## `ScheduledWakeLease` — one device per scheduled window
 

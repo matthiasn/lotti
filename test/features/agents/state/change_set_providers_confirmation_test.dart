@@ -121,6 +121,13 @@ void main() {
         when(
           () => mockNotificationRepository.markTaskSuggestionsActedOn(any()),
         ).thenAnswer((_) async => const []);
+        when(
+          () => mockRepository.getPendingChangeSets(
+            changeSet.agentId,
+            taskId: changeSet.taskId,
+            limit: -1,
+          ),
+        ).thenAnswer((_) async => const []);
 
         final container = ProviderContainer(
           overrides: [

@@ -44,6 +44,13 @@ flowchart LR
   Processor --> DB
 ```
 
+Task-suggestion rows are unique per task. A fresh wake supplies a new seed and
+retires older open rows; decision callbacks use `reuseOpenRow` to refresh the
+current row under the same task mutation lock, preserving its lifecycle marks.
+This prevents a decision in an older retained change set from returning to that
+set's retired notification. The pending-count and clearing rules live in
+[task-agent decision persistence](agents/task-agents.md).
+
 # Why a separate database
 
 An alert is not user content. Keeping it out of `db.sqlite` means notification

@@ -584,7 +584,10 @@ Retract(d, i) ==
 
 \* The final build of a wake folds the older set (row 2) into the
 \* survivor (row 1) and retires it: a pending original is retracted,
-\* because its actionable copy now lives in the survivor.
+\* because its actionable copy now lives in the survivor. A set holding a
+\* migration whose follow-up is unresolved is not folded at all
+\* (ChangeSetDependency.tla), so the copied item is a plain one here, and a
+\* retained group's items keep their position as their effect key.
 Consolidate(d) ==
     /\ CopyDst # NoItem
     /\ agentOps[d] < MaxAgentOps
