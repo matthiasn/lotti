@@ -334,6 +334,7 @@ class WakeOrchestrator with AgentErrorLogging {
         ({
           String agentId,
           String? workspaceKey,
+          Set<String> triggerTokens,
           Future<void> settled,
           DateTime startedAt,
         })
@@ -352,18 +353,22 @@ class WakeOrchestrator with AgentErrorLogging {
   /// key to await a specific wake without polling.
   Stream<WakeRunCompletion> get runCompletions => _runCompletions.stream;
 
-  /// Whether matching work is queued, owns the runner lock, or is still
-  /// executing after an abort released that lock.
+  /// Whether matching work is queued, held by a drain pass, owns the runner
+  /// lock, or is still executing after an abort released that lock.
   ///
   /// The last state matters because Dart futures cannot be cancelled. A timed
   /// out executor may continue mutating data after its wake-run row becomes
   /// terminal, so recovery code must not start replacement work until the
-  /// underlying future has actually settled.
+  /// underlying future has actually settled. A job a drain pass has taken out
+  /// of the queue is just as live: a probe that missed it let the digest
+  /// recovery re-arm a digest whose run was about to start.
   bool hasPendingOrActiveWake(
     String agentId, {
     String? workspaceKey,
   }) {
-    if (queue.hasQueuedJobFor(agentId, workspaceKey: workspaceKey)) return true;
+    bool matches(WakeJob job) =>
+        job.agentId == agentId && job.workspaceKey == workspaceKey;
+    if (queue.hasJobWhere(matches) || _jobsInDrain.any(matches)) return true;
     if (runner.isRunning(agentId) &&
         runner.workspaceKeyFor(agentId) == workspaceKey) {
       return true;
@@ -375,14 +380,53 @@ class WakeOrchestrator with AgentErrorLogging {
     );
   }
 
-  /// Daily OS processing jobs already have a durable outbox that owns retry,
-  /// cancellation, job boundaries and artifact run-key provenance. Replaying
-  /// them here would bypass that owner and could merge incompatible job IDs.
-  static bool _hasProcessingJob(Set<String> tokens) =>
-      tokens.any((token) => token.startsWith(dayAgentProcessingJobPrefix));
+  /// The run key of a wake carrying [token] that has not settled: queued,
+  /// held by a drain pass, or executing — including an executor an abort
+  /// detached from its lease, until it runs past [hungExecutorAfter].
+  ///
+  /// Daily OS processing jobs ask this before enqueueing a wake for their
+  /// request (`specs/tla/DayProcessingJob.tla`): the wake of an attempt that
+  /// timed out, or whose claim lapsed, is still that request's inference.
+  String? liveRunKeyWithToken(String token) {
+    bool carries(WakeJob job) => job.triggerTokens.contains(token);
+    final waiting =
+        queue.firstJobWhere(carries) ?? _jobsInDrain.where(carries).firstOrNull;
+    if (waiting != null) return waiting.runKey;
+    final now = clock.now();
+    for (final MapEntry(key: runKey, value: execution)
+        in _activeExecutors.entries) {
+      if (execution.triggerTokens.contains(token) &&
+          now.difference(execution.startedAt) < hungExecutorAfter) {
+        return runKey;
+      }
+    }
+    return null;
+  }
+
+  /// Jobs a drain pass holds outside [queue]: taken for dispatch but not yet
+  /// executing, or held back until the pass requeues them.
+  Iterable<WakeJob> get _jobsInDrain =>
+      _drainOwnedJobs.values.followedBy(_heldBackJobs.values);
+
+  /// Wakes whose durable record owns their recovery, so they are never wake
+  /// intents.
+  ///
+  /// Daily OS processing jobs have an outbox that owns retry, cancellation,
+  /// job boundaries and artifact run-key provenance; replaying them here would
+  /// bypass that owner and could merge incompatible job IDs. The coordinator
+  /// digest has its scheduled-wake record, which `DayAgentService` retries
+  /// when a crash interrupted the run. A second recovery path beside it
+  /// digested the day twice: the record's retry and the restored intent both
+  /// ran, and an intent whose settle had not reached disk re-ran a digest that
+  /// had already completed (`specs/tla/DigestRecovery.tla`).
+  static bool _ownsItsRecovery(Set<String> tokens) => tokens.any(
+    (token) =>
+        token.startsWith(dayAgentProcessingJobPrefix) ||
+        token.startsWith(dayAgentDigestPrefix),
+  );
 
   void _recordIntent(WakeJob job) {
-    if (_hasProcessingJob(job.triggerTokens)) {
+    if (_ownsItsRecovery(job.triggerTokens)) {
       _settleIntent(job);
       return;
     }
@@ -405,14 +449,15 @@ class WakeOrchestrator with AgentErrorLogging {
   /// The intents of one agent and workspace become one job, which merges
   /// into a job already queued for them if there is one. Returns how many
   /// intents were restored. Legacy copies of outbox-owned processing jobs
-  /// are discarded: their outbox is the sole recovery authority.
+  /// and of coordinator digests are discarded: their outbox, or the digest
+  /// record, is the sole recovery authority.
   Future<int> restoreWakeIntents() async {
     final store = intentStore;
     if (store == null) return 0;
     await store.load();
     final intents = <WakeIntent>[];
     for (final intent in store.takeRestorable()) {
-      if (_hasProcessingJob(intent.tokens)) {
+      if (_ownsItsRecovery(intent.tokens)) {
         store.settle(intent.runKey);
       } else {
         intents.add(intent);
@@ -437,7 +482,7 @@ class WakeOrchestrator with AgentErrorLogging {
       final queued = queue.queuedJobFor(agentId, workspaceKey: workspaceKey);
       final String runKey;
       if (queued != null &&
-          !_hasProcessingJob(queued.triggerTokens) &&
+          !_ownsItsRecovery(queued.triggerTokens) &&
           (initiator == WakeInitiator.automation ||
               queued.initiator == WakeInitiator.user)) {
         queue.mergeTokens(agentId, tokens, workspaceKey: workspaceKey);
@@ -497,6 +542,7 @@ class WakeOrchestrator with AgentErrorLogging {
     _activeExecutors[job.runKey] = (
       agentId: job.agentId,
       workspaceKey: job.workspaceKey,
+      triggerTokens: job.triggerTokens,
       settled: settled.future,
       startedAt: clock.now(),
     );
@@ -738,6 +784,11 @@ class WakeOrchestrator with AgentErrorLogging {
   /// Jobs temporarily owned by the drain while they are outside [queue] but
   /// have not started executor work yet.
   final _drainOwnedJobs = <String, WakeJob>{};
+
+  /// Jobs a drain pass took out of [queue] and holds back — their agent's
+  /// runner was taken, or their agent is throttled — until the pass requeues
+  /// them. Tracked only so pending-work probes can see them.
+  final _heldBackJobs = <String, WakeJob>{};
 
   /// Cancellation reason for drain-owned jobs removed by a newer request or
   /// explicit cancellation while an asynchronous pre-dispatch step was active.

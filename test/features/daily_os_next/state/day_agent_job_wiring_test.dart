@@ -452,6 +452,29 @@ void main() {
       },
     );
 
+    test('liveWakeRunKey looks the wake up by the request, not a run key', () {
+      final job = buildJob(const DraftPlanPayload());
+      final token = dayAgentProcessingJobToken(
+        'job-1',
+        requestedAt: DateTime.utc(2026, 7, 22),
+      );
+      when(() => orchestrator.liveRunKeyWithToken(token)).thenReturn('run-1');
+      when(
+        () => orchestrator.liveRunKeyWithToken(
+          any(that: isNot(token)),
+        ),
+      ).thenReturn(null);
+
+      expect(executor.liveWakeRunKey(job), 'run-1');
+      expect(
+        executor.liveWakeRunKey(
+          job.copyWith(requestedAt: DateTime.utc(2026, 7, 23)),
+        ),
+        isNull,
+        reason: "a re-armed request never adopts the old request's wake",
+      );
+    });
+
     test('recordRunKey delegates to the outbox repository', () async {
       when(
         () => outbox.recordRunKey(

@@ -843,6 +843,151 @@ void main() {
         },
       );
 
+      test('a job the drain holds before its run is still pending work', () {
+        // Regression for DigestRecovery.tla (ProbeSeesLimbo): the drain takes
+        // the job out of the queue and awaits the agent's policy before it
+        // takes the runner lock. The probe saw nothing in that window, so the
+        // digest recovery re-armed a digest whose run was about to start.
+        fakeAsync((async) {
+          const workspaceKey = 'coordinator:digest';
+          final policyRead = Completer<AgentDomainEntity?>();
+          when(
+            () => mockRepository.getEntity('agent-1'),
+          ).thenAnswer((_) => policyRead.future);
+          orchestrator.wakeExecutor = noOpExecutor;
+
+          queue.enqueue(
+            makeJob(workspaceKey: workspaceKey, triggerTokens: {'digest:d1'}),
+          );
+          unawaited(orchestrator.processNext());
+          async.flushMicrotasks();
+
+          expect(queue.isEmpty, isTrue);
+          expect(runner.isRunning('agent-1'), isFalse);
+          expect(
+            orchestrator.hasPendingOrActiveWake(
+              'agent-1',
+              workspaceKey: workspaceKey,
+            ),
+            isTrue,
+          );
+          expect(orchestrator.liveRunKeyWithToken('digest:d1'), 'rk-1');
+
+          policyRead.complete(null);
+          async.flushMicrotasks();
+
+          expect(
+            orchestrator.hasPendingOrActiveWake(
+              'agent-1',
+              workspaceKey: workspaceKey,
+            ),
+            isFalse,
+          );
+          expect(orchestrator.liveRunKeyWithToken('digest:d1'), isNull);
+        });
+      });
+
+      test('a job the drain holds back is still pending work', () {
+        fakeAsync((async) {
+          final policyA = Completer<AgentDomainEntity?>();
+          final policyB = Completer<AgentDomainEntity?>();
+          when(
+            () => mockRepository.getEntity('agent-a'),
+          ).thenAnswer((_) => policyA.future);
+          when(
+            () => mockRepository.getEntity('agent-b'),
+          ).thenAnswer((_) => policyB.future);
+          orchestrator.wakeExecutor = noOpExecutor;
+          queue
+            ..enqueue(makeJob(runKey: 'rk-a', agentId: 'agent-a'))
+            ..enqueue(
+              makeJob(
+                runKey: 'rk-b',
+                agentId: 'agent-b',
+                reason: 'manual',
+                triggerTokens: {'tok-b'},
+              ),
+            );
+          unawaited(orchestrator.processNext());
+          async.flushMicrotasks();
+
+          // agent-a's throttle arms while its policy read is in flight, so the
+          // drain's re-check holds its job back and moves on to agent-b.
+          orchestrator.setThrottleDeadline(
+            'agent-a',
+            clock.now().add(const Duration(minutes: 2)),
+          );
+          policyA.complete(null);
+          async.flushMicrotasks();
+
+          expect(queue.isEmpty, isTrue);
+          expect(runner.isRunning('agent-a'), isFalse);
+          expect(orchestrator.hasPendingOrActiveWake('agent-a'), isTrue);
+          expect(orchestrator.liveRunKeyWithToken('tok-a'), 'rk-a');
+
+          policyB.complete(null);
+          async.flushMicrotasks();
+          expect(queue.firstJobWhere((job) => true)?.runKey, 'rk-a');
+          expect(orchestrator.hasPendingOrActiveWake('agent-a'), isTrue);
+        });
+      });
+
+      test(
+        'a wake carrying a token stays live while queued, running and running '
+        'on after an abort, until it settles or is declared hung',
+        () {
+          fakeAsync((async) {
+            const token = 'processing_job:draft_d1@1';
+            final gates = [
+              Completer<Map<String, VectorClock>?>(),
+              Completer<Map<String, VectorClock>?>(),
+            ];
+            var runs = 0;
+            orchestrator.wakeExecutor = (agentId, runKey, triggers, threadId) =>
+                gates[runs++].future;
+            unawaited(runner.tryAcquire('agent-1'));
+            async.flushMicrotasks();
+
+            queue.enqueue(makeJob(triggerTokens: {token}));
+            expect(orchestrator.liveRunKeyWithToken(token), 'rk-1');
+            expect(orchestrator.liveRunKeyWithToken('other'), isNull);
+
+            runner.release('agent-1');
+            unawaited(orchestrator.processNext());
+            async.flushMicrotasks();
+            expect(runner.isRunning('agent-1'), isTrue);
+            expect(orchestrator.liveRunKeyWithToken(token), 'rk-1');
+
+            // The abort releases the lease; the executor runs on.
+            expect(orchestrator.abortRunningWake('agent-1'), isTrue);
+            async.flushMicrotasks();
+            expect(orchestrator.liveRunKeyWithToken(token), 'rk-1');
+
+            gates[0].complete(const {});
+            async.flushMicrotasks();
+            expect(orchestrator.liveRunKeyWithToken(token), isNull);
+
+            // A second run that never settles stops counting once hung.
+            queue.enqueue(makeJob(runKey: 'rk-2', triggerTokens: {token}));
+            unawaited(orchestrator.processNext());
+            async.flushMicrotasks();
+            expect(orchestrator.abortRunningWake('agent-1'), isTrue);
+            async
+              ..elapse(
+                WakeOrchestrator.hungExecutorAfter - const Duration(seconds: 1),
+              )
+              ..flushMicrotasks();
+            expect(orchestrator.liveRunKeyWithToken(token), 'rk-2');
+            async
+              ..elapse(const Duration(seconds: 1))
+              ..flushMicrotasks();
+            expect(orchestrator.liveRunKeyWithToken(token), isNull);
+            gates[1].complete(const {});
+            async.flushMicrotasks();
+          });
+        },
+      );
+
       test(
         'wakeRunMaxDuration fires an automatic abort when the executor stalls',
         () {

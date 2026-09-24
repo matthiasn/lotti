@@ -323,6 +323,88 @@ ids and have no versions, so they only exercise the unknown-source path the
 model already covers; a checkpoint whose own payload has not arrived is
 simply not a candidate yet; summarizer failures write nothing.
 
+## `DigestRecovery` — the coordinator digest across crashes
+
+One device and one day window: the wake manager claims, settles and fires the
+digest record, the wake runtime runs it, and the process may die anywhere.
+Startup then repairs the record — from the wake manager's pre-check and from
+`restoreSubscriptions` — while `restoreWakeIntents` replays wake intents after
+the subscription passes. The run commits its milestone and next-day re-arm in
+one transaction; the manager's consume write can land after it. The decision
+is [ADR 0070](../../docs/adr/0070-model-checked-digest-recovery-and-processing-jobs.md);
+the protocol is described in
+[the coordination protocol](../../knowledge/features/daily_os_next/coordination-protocol.md).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `AtMostOneDigest` | invariant | the day is digested at most once |
+| `NoInferenceAfterBriefing` | invariant | no digest inference starts once the day's briefing exists |
+| `InferencesBounded` | invariant | every inference beyond the first was paid for a run a crash killed |
+| `EventuallyBriefed` | liveness | the day is digested at least once, across crashes |
+
+| Configuration | Crashes | Lease | Clock steps | Distinct states |
+|---------------|---------|-------|-------------|-----------------|
+| `DigestRecovery` | 1 | claim and settle | 0 | 156 |
+| `DigestRecoveryCrash` | 2 | none (no sync host) | 1 backward | 430 |
+
+Three switches describe the design, `TRUE` in both configurations. Setting one
+to `FALSE` in a temporary copy reproduces the design before ADR 0070:
+
+| Switch `FALSE` | Counterexample |
+|----------------|----------------|
+| `DigestOwnsRecovery` | `NoInferenceAfterBriefing`: the digest completes, the process dies before its wake intent's settle reaches disk, and startup replays it. With the settle made atomic, the next trace is the one the two paths produce: after a crash `restoreSubscriptions` retries the consumed record, the record fires and completes, then `restoreWakeIntents` runs the interrupted digest again |
+| `ProbeSeesLimbo` | `NoInferenceAfterBriefing`: the record fires and is consumed, the drain takes the job out of the queue, the pre-check sees no live work and re-arms the record, which fires again — no crash needed |
+| `WindowFromDayStart` | `NoInferenceAfterBriefing`: the run completes before the consume write lands, stamping its milestone before `consumedAt` after a backward clock step; the pre-check reads that as no digest and retries |
+
+Left out: peers (ADR 0048's lease is a cost bound, and a partitioned peer can
+still fire), transient run failures (which re-arm the next slot), and the
+two-restore poison guard of `WakeIntentStore`.
+
+## `DayProcessingJob` — one request, at most one inference
+
+One `refinePlan` (or `draftPlan`) request in the processing outbox, claimed by
+two agent lanes — the runtime's, and one a provider rebuild left running —
+through the single-statement claim, executed by `DayAgentJobExecutor` through
+agent wakes that keep single flight, can fail, or be aborted and run on. The
+claim's lease lapses only while its holder waits for a wake, since only that
+wait takes three minutes. Users can cancel or retry; the process can crash,
+taking its wakes with it. Past `MaxWakes`, an enqueue stands for a wake that
+fails at once, so the bound cannot block progress.
+
+| Property | Kind | Says |
+|----------|------|------|
+| `AtMostOneLiveWake` | invariant | at most one inference of the request is queued or running |
+| `NoInferenceAfterArtifact` | invariant | no inference starts once the request's plan or ChangeSet exists |
+| `AtMostOneArtifact` | invariant | the request yields at most one artifact |
+| `Fenced` | invariant | no fenced write lands under a revoked claim |
+| `EventuallySettled` | liveness | the job ends succeeded, cancelled or failed |
+
+| Configuration | Kind | Lanes | Crashes | User taps | Distinct states |
+|---------------|------|-------|---------|-----------|-----------------|
+| `DayProcessingJob` | refine | 2 | 1 | 1 | 6,585,351 |
+| `DayProcessingJobDraft` | draft | 2 | 1 | 1 | 6,585,351 |
+
+Each takes about three and a half minutes. An attempt looks for a live wake before its reads and again, atomically with the enqueue, after them; the model assumes a whole model call cannot fit inside those reads (`NoneChecking`). Mutations, in a temporary copy:
+
+| Mutation | Counterexample |
+|----------|----------------|
+| `AttachToLiveWake = FALSE` (the code before ADR 0070) | `AtMostOneLiveWake`: lane 1 claims, enqueues and records its wake, its lease lapses while it waits, lane 2 re-claims and enqueues a second. With a retry tap the trace is claim, `retryNow`, claim; a timed-out wait followed by the retry is the same length |
+| `RecheckBeforeEnqueue = FALSE` | `AtMostOneLiveWake`: lane 1 claims and finds no live wake, a retry tap re-queues, lane 2 claims and finds none, and both enqueue |
+| the `claim_token` check removed from `Report` | `Fenced`: a lane times out, a retry tap re-queues, the other lane claims, and the first lane's failure lands on the new claim |
+| `ProvenanceRace = TRUE` | `NoInferenceAfterArtifact` — a residual, below |
+
+Two cases stay open:
+
+- **A wake that commits before its run key is recorded.** If the artifact lands
+  before `recordRunKey` and the process then crashes, a never-attempted refine
+  has no provenance and no time-window fallback, so its re-claim runs it again
+  (`ProvenanceRace`). The window is one local write against a model call.
+  Closing it means stamping the artifact with the processing-intent id instead
+  of the run key.
+- **A hung executor.** Past `hungExecutorAfter` a wake no longer counts as live,
+  so its request can run again, the boundary `WakeRuntime` accepts for single
+  flight. The model does not declare executors hung.
+
 ## From the model to the code
 
 TLC checks the design, not the Dart that implements it. The gap is narrowed by
@@ -368,6 +450,22 @@ random traces; its regressions are examples in the same suite. In
 histories of versions on two devices, a fold over what the folding device
 held and any subset the observing device holds check `NoLostContext`
 against `selectActiveSummary`; keying coverage by source alone fails it.
+
+The processing job has one too:
+`test/features/daily_os_next/services/day_agent_job_executor_model_conformance.dart`
+(a part of the executor's suite) drives the real outbox repository over an
+in-memory database, the real processor and the real executor, with two lanes
+claiming one refine request, through generated traces of claims, three-minute
+steps that lapse the lease and the wait together, wake starts, commits,
+failures and aborts, retry taps and crashes (a fresh process whose predecessor
+can no longer write). After every step it checks `AtMostOneLiveWake`,
+`NoInferenceAfterArtifact` and `AtMostOneArtifact`. Making the executor ignore
+the live wake fails it with the trace `claimA, retryNow, claimB`, and dropping
+the look-again before the enqueue fails it on a retry tap raced between the
+two lanes' claims. The digest's two recovery fixes have direct regressions
+instead: the digest wake leaves no
+intent across a simulated restart in the wake-intent suite, and the drain-held
+and held-back windows are probed in the orchestrator suite.
 
 The confirmation model separates the committed claim from the post-commit
 outbox flush. `FlushFails` still permits dispatch after the caller verifies its

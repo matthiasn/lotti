@@ -104,6 +104,12 @@ DayAgentJobExecutor buildDayAgentJobExecutor({
       );
     },
     runCompletions: orchestrator.runCompletions,
+    // Keyed by the processing-intent token every wake of this request
+    // carries, not by recorded run keys, so a wake whose run key is not
+    // persisted yet is found too.
+    liveWakeRunKey: (job) => orchestrator.liveRunKeyWithToken(
+      dayAgentProcessingJobToken(job.id, requestedAt: job.requestedAt),
+    ),
     draftPlanUpdatedAt: (agentId, dayId) async {
       final plan = await planService.draftPlanForDay(
         agentId: agentId,
