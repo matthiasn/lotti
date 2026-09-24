@@ -79,5 +79,7 @@ a few steps:
 ## Related
 
 - [ADR 0065](./0065-model-checked-sync-sequence-reservations.md)
+- [ADR 0078](./0078-entry-link-versions-are-ordered.md) — the link-writer
+  holes the same audit found
 - `specs/tla/SyncSequence.tla`, `specs/tla/README.md`
 - [Sequence log and backfill](../../knowledge/features/sync/sequence-and-backfill.md)
