@@ -4,6 +4,169 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.26]
+
+### Added
+
+- **Lotti now tells you when a goal slips.** When a goal agent finds a goal
+  off track, or at risk and getting worse, a notification arrives at nine the
+  next morning — once per slip, not every day — and tapping it opens the
+  goal's page. Getting back on track, reaching the goal or deleting it takes
+  the alert back before it fires.
+- **Choose which notifications reach you.** Settings → Preferences →
+  Notifications holds the switch that turns notifications on, and beneath it
+  one switch per kind: task suggestions, check-in reminders, goal alerts,
+  habit reminders, habits checked off automatically, day plan results and sync
+  conflicts, plus the task count on the app icon on iPhone and Mac. A switch
+  takes effect at once, on every device, and a kind switched off still shows
+  in the bell — only the alert stops.
+- **Alerts in the agent's words.** A further switch on the same page lets a
+  goal or check-in alert use the words of the banner the agent wrote for it,
+  instead of a fixed line. Off unless you turn it on: those words can mention
+  details, and an alert shows on the lock screen.
+
+### Changed
+
+- **The notifications switch has moved.** It lives on the new Notifications
+  page under Preferences rather than among the config flags, and switching it
+  off now also takes down every alert already scheduled instead of letting
+  them fire anyway.
+- **"Your day plan is ready" and "Sync needs your review" now stay in the
+  bell.** Both used to be a banner that was gone once dismissed. They now land
+  in the notifications inbox as well, so a plan that finished while the app
+  was in the background, or a sync conflict that appeared, can still be found
+  after the banner has passed, and tapping either opens the day or the
+  conflicts list. Neither travels to your other devices: a plan job and a
+  conflict are about the device they happened on.
+- **The Mac no longer posts a "tasks in progress" notification after every
+  change.** The number of tasks in progress stays on the Dock icon, silently,
+  as it does on the iPhone.
+
+### Fixed
+
+- **Tapping a notification now opens what it is about.** A tap on a check-in
+  reminder, a task suggestion, a habit reminder, a "your day plan is ready"
+  alert or a sync-conflict alert used to open Lotti wherever it had last been
+  left. It now opens the person, the task, the habits page, the day plan or
+  the conflicts list the alert is about, whether Lotti is already running or
+  the tap is what starts it. A tapped reminder also counts as seen, so it
+  leaves the bell and stops alerting on your other devices.
+- **An edit saved just before the app was closed or killed could never reach
+  your other devices.** If the app stopped in the moment between saving an
+  entry and queueing it for sync, that version stayed on the one device until
+  you edited the entry again, and other devices could keep asking for it for
+  days. The app now records which entry each change belongs to before saving
+  it, and finishes the job the next time it starts: a recorded change that was
+  saved is sent, and one that was not is reported as gone so other devices
+  stop waiting for it. Changes left unfinished by an older version of the app
+  carry no such record and are still only waited out.
+- **Sync could tell other devices to stop waiting for an edit that did
+  exist.** In rare cases where saving an entry hit an internal error after the
+  entry was already stored, the app announced that change as never having
+  happened. It now checks the stored entry first and sends it instead.
+- **A new agent report could stay hidden behind the previous one.** When a
+  report was written for the same overdue day as the one already shown, or
+  another device's clock ran ahead, the new report was saved but the agent
+  kept showing the old one on every device. A new report now replaces the one
+  it was written after.
+- **An edited personality or template could keep using the old version.** When
+  another device's clock ran ahead, saving a new version left the agent on the
+  previous one. The saved version now takes effect.
+- **An agent could miss an edit you made on another device.** When an agent on
+  one device condensed its older memory into a summary before your edit from
+  another device had arrived, the edit then counted as already summarized: the
+  agent saw neither the new text nor a summary of it. The summary is now set
+  aside until it is written again with the edit in it.
+- **An agent could summarize the same memory on every run.** When part of its
+  memory had not finished syncing, the summary it wrote was discarded straight
+  away, and the next run paid for the same summary again. It now summarizes
+  only up to the missing part.
+- **Agent updates you asked for could be lost when the app closed.** A wake
+  that was still waiting — or still running — when the app was closed or
+  killed was gone for good, so an agent could miss the change that should have
+  woken it. The app now remembers every wake it owes and runs the unfinished
+  ones the next time it starts.
+- **Confirming a suggestion twice could apply it twice.** A quick double tap,
+  or "Confirm all" racing a single confirm, could apply the same change twice
+  — two time entries, two checklist items. Only the first confirmation now
+  applies the change; the second one does nothing. Likewise, rejecting a
+  suggestion at the moment it was being confirmed could show an applied change
+  as rejected; whichever comes first now wins.
+- **A suggestion could be applied again after it had already taken effect.**
+  When a follow-up step failed after a confirmed change had been applied, the
+  suggestion went back to pending, and confirming it again applied the change
+  a second time. It now stays confirmed.
+- **An agent could run twice at the same time after a cancelled or timed-out
+  update.** The cancelled run kept working in the background while the next
+  one started. The next update for that agent now waits for it to finish — for
+  up to 30 minutes, after which a run that is still going is treated as stuck
+  and no longer holds the agent back.
+- **Devices could permanently disagree about an agent after syncing.** A
+  change written on one device from an out-of-date view — or a wake's cooldown
+  timer stamped on the agent's state — could stay on that device while every
+  other device kept a different version, and an agent's wake count could lose
+  runs recorded elsewhere. Such out-of-date changes and cooldown timers now
+  resolve the same way on every device, and no device's runs are dropped from
+  the count.
+- **A task report could look up to date although the task changed while it was
+  being written.** Finishing an update put back the agent's state from when
+  the update started, erasing the note that something had changed in the
+  meantime.
+- **An old goal statement could stay marked active beside the current one.**
+  When two devices revised a goal offline, the version that lost stayed active
+  through every later revision; the next revision now retires it.
+- **A confirmed suggestion could come back as open and be applied twice.**
+  When confirming one suggestion failed while you confirmed another in the
+  same card, or while the agent withdrew one or a created follow-up task
+  updated its checklist moves, the second confirmation could be undone on
+  screen after its change had already been made, and confirming it again made
+  the change a second time. Every update of a card now changes only its own
+  suggestion.
+- **Decisions made on two devices at once could be lost.** Confirming a
+  suggestion on one device while another device accepted or dismissed a
+  different one in the same card kept only one device's decisions once they
+  synced, and an applied change could show up as open again. Both devices now
+  keep every decision, and a confirmation always wins over a dismissal of the
+  same suggestion, since only it was actually applied.
+- **A slow day plan or plan change could be worked out twice.** When drafting
+  or refining your day took longer than three minutes — because the planner
+  was still busy with other work — the app gave up waiting and asked again
+  while the first request was still running, so the same request was paid for
+  twice and a refinement could leave two suggested changes. The app now waits
+  for the request already under way instead of starting another.
+- **The morning briefing could be written twice on the same day.** A check
+  that looks for an interrupted briefing could miss one that was just about to
+  start, or one whose finish time a clock correction had moved, and run the
+  briefing again. It now recognises both.
+- **A message to a goal could be answered twice when you use Lotti on more
+  than one device.** While the device you typed on was still answering, your
+  other devices could pick the same message up and answer it as well. Now only
+  the device you typed on answers. If it cannot — the answer failed, or the
+  device went away — one of your other devices answers after half an hour, and
+  only one.
+- **A goal's second report update of the day could run on one device only, or
+  not at all.** When new evidence called for another report refresh after the
+  day's first one, your other devices ignored the request, so it ran only on
+  the device that made it and never if that device was closed for good. Every
+  device now sees it, and whichever one is available runs it.
+- **A scheduled goal, relationship or daily-briefing update could be lost if
+  the app was killed at the wrong moment.** The update was marked done before
+  the app had recorded that it still owed it. The app now records it first,
+  and a device that restarts after such a crash no longer runs the same update
+  twice.
+- **Confirming an agent's suggestion to create a follow-up task, a time entry
+  or a checklist item on two devices no longer creates it twice.** When such a
+  suggestion was confirmed on one device and again on another before the two
+  had synced, both applied it: two follow-up tasks, two time entries, a
+  checklist item added or moved twice. Now both devices create the same entry.
+  A device that has already received it adds nothing — also when you have
+  deleted the entry, or its checklist, in the meantime. If both devices create
+  it before either has received the other's, you get one entry and a sync
+  conflict to resolve, not a duplicate. A suggested change to a task's title,
+  status, priority, estimate, due date or language is also applied only while
+  that field still holds the value the agent saw, so a late confirmation on
+  another device no longer overwrites an edit you made in the meantime.
+
 ## [1.1.25]
 
 ### Added
