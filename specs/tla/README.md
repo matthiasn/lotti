@@ -754,3 +754,18 @@ hole, first reproduce the hole: run the configuration against the spec of the
 old behaviour and keep the counterexample for the pull request. After the fix,
 check that the property fails again when the fix is mutated away — a property
 that cannot fail proves nothing.
+
+## `DayJobPreparation` — an inference finishes between preparation reads
+
+Two attempts can both read an absent artifact before either enqueues. One
+may then finish while the other is still resolving the agent; the final live
+wake probe sees nothing and used to start a second inference. This focused
+model checks `OneInference` with arbitrary preparation delays. Setting
+`Coalesce = FALSE` in a temporary configuration reproduces the duplicate.
+
+`DayAgentJobExecutions` shares the full attempt across the old and rebuilt
+processing runtimes. Executor regression tests pause one lookup while another
+attempt runs, using the same executor and separate executors sharing the
+registry. This removes the runtime timing assumption represented by
+`NoneChecking` in the broader `DayProcessingJob` model; that model retains its
+existing claim, retry and crash exploration.

@@ -190,6 +190,21 @@ because no code path deletes a job file to express intent.
 partial-recovery and quarantine logic the table does not need, and goes when the
 job files are deleted a release later.
 
+# Overlapping attempts share one execution
+
+`DayAgentJobExecutions` coalesces overlapping attempts by job id and UTC
+`requestedAt`. Its provider outlives processing-runtime rebuilds, so a revoked
+claim and its replacement await the same execution and outcome. Each claimant
+still reports through the repository's claim-token fence. Completed or failed
+executions leave the registry, allowing later retries; a new request timestamp
+is independent.
+
+This covers the entire artifact check, agent lookup and wake wait. Checking
+only for a live wake before enqueue was insufficient: another attempt could
+start and finish while the first awaited its reads, leaving neither a live wake
+nor a fresh artifact check. The focused `DayJobPreparation` model checks that
+interleaving without assuming inference takes longer than local reads.
+
 # The job executor
 
 ```mermaid

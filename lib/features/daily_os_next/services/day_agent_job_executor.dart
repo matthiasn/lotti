@@ -36,6 +36,28 @@ typedef DayAgentJobWakeRequest = ({
   DayProcessingJob job,
 });
 
+/// Shares an in-flight attempt for the same durable request across executors.
+///
+/// Kept above the rebuildable processing runtime. Claim holders still report
+/// through the outbox's claim-token fence, but overlapping holders await one
+/// preparation and wake rather than racing their artifact checks and enqueue.
+class DayAgentJobExecutions {
+  final _active = <(String, DateTime), Future<DayAgentJobOutcome>>{};
+
+  Future<DayAgentJobOutcome> run(
+    DayProcessingJob job,
+    Future<DayAgentJobOutcome> Function() execute,
+  ) {
+    final key = (job.id, job.requestedAt.toUtc());
+    return _active.putIfAbsent(
+      key,
+      () => Future<DayAgentJobOutcome>.microtask(execute).whenComplete(() {
+        _active.remove(key);
+      }),
+    );
+  }
+}
+
 /// Runs the agent wake behind a durable `parseCapture`/`draftPlan`/
 /// `refinePlan` job (ADR 0032 phase 1) and reports back a terminal outcome
 /// the outbox processor can persist.
@@ -55,9 +77,12 @@ class DayAgentJobExecutor {
     required this.hasCompletedCaptureParse,
     required this.hasPendingDraftWork,
     required this.liveWakeRunKey,
+    DayAgentJobExecutions? executions,
     this.wakeTimeout = const Duration(minutes: 3),
     this.maxAttempts = 5,
-  });
+  }) : _executions = executions ?? DayAgentJobExecutions();
+
+  final DayAgentJobExecutions _executions;
 
   /// Resolves (and, for draft/parse, lazily creates) the agent that should
   /// execute the given day's work. Called fresh on every attempt — never
@@ -131,7 +156,10 @@ class DayAgentJobExecutor {
   /// free backoff.
   final int maxAttempts;
 
-  Future<DayAgentJobOutcome> execute(DayProcessingJob job) async {
+  Future<DayAgentJobOutcome> execute(DayProcessingJob job) =>
+      _executions.run(job, () => _execute(job));
+
+  Future<DayAgentJobOutcome> _execute(DayProcessingJob job) async {
     // Subscribe BEFORE looking for a live wake or enqueueing one (the
     // orchestrator's documented contract): a wake can complete while this
     // attempt reads the store or persists provenance, and a completion
