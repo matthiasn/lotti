@@ -229,6 +229,31 @@ What stays open — the residuals, each confirmed by TLC:
   older build applied — so a newer-build revert racing an older build's
   confirm keeps the confirm.
 
+## `ChangeSetDependency` — consolidation preserves follow-up ownership
+
+A follow-up and its pending migration share one set. Completing the follow-up
+rewrites that set's migration target; rejecting it cascades to that set's
+migration. Moving the migration while either operation is in flight would
+leave the copy pointing at an unresolved placeholder, away from the sibling
+that makes the confirmation service recognize it as a placeholder.
+
+| Configuration | Scope | Checks | Distinct states |
+|---------------|-------|--------|-----------------|
+| `ChangeSetDependency` | one device, pending/claimed/rejected follow-up, completion/cascade and consolidation into a newer set | `MigrationAfterTarget`, `DependencyOwned`, `CompletionReachesMigration` | 14 |
+
+`KeepDependenciesTogether = TRUE` keeps the group at its original set id until
+its pending migration has a resolved target. Setting it to `FALSE` restores
+moving the migration away and violates `DependencyOwned`; the mutation config
+is run outside the checked-in CI configuration set. This is one-device
+dependency ownership, not a fix for the cross-device duplicate-application
+residual above.
+
+The builder's Dart regressions cover pending, claimed and rejected follow-ups,
+the placeholder guard, completion's durable target rewrite, later
+consolidation and successful migration, and incremental appends that keep the
+original set id. Restoring consolidation of unresolved groups fails all three
+parent-status regressions.
+
 ## `ScheduledWakeLease` — one device per scheduled window
 
 One scheduled-wake record that must run on exactly one device — a goal or

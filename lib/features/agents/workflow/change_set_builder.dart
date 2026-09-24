@@ -210,8 +210,8 @@ class ChangeSetBuilder {
 
   /// The change set this builder's flushed items live in, once one exists.
   ///
-  /// Later flushes append into this same entity, so a wake produces exactly
-  /// one card no matter how many turns it took.
+  /// Incremental flushes append into this same entity. A final build may
+  /// leave an unresolved follow-up group in place and write new items elsewhere.
   ChangeSetEntity? _persistedSet;
 
   /// Whether the inbox alert for this wake has been raised.
@@ -326,8 +326,8 @@ class ChangeSetBuilder {
   /// user has resolved — and holds back split groups so a follow-up task and
   /// its checklist migrations stay atomic. The end-of-wake call leaves
   /// [incremental] false: by then staged retractions have been applied, so it
-  /// is safe to consolidate the pre-wake sets and release the held groups,
-  /// leaving the user with exactly one card.
+  /// consolidates eligible pre-wake sets and releases the held groups. Sets
+  /// whose migrations still need a follow-up target stay in place.
   ///
   /// Items that already appear in [existingPendingSets] (matched by
   /// `toolName` + `args`) are silently dropped to avoid showing the user
@@ -348,10 +348,10 @@ class ChangeSetBuilder {
   /// [rejectedDisplayKeys] applies the same sticky rejection rule to
   /// verbatim user-facing summaries whose tool arguments changed shape.
   ///
-  /// When existing pending change sets exist, all their items are
-  /// consolidated into a single set together with the new items. Any
-  /// surplus sets are marked as [ChangeSetStatus.resolved] so they no
-  /// longer appear in the UI or future queries.
+  /// Existing pending sets are consolidated with the new items, except sets
+  /// with unresolved follow-up migrations. Those stay where their follow-up
+  /// completion can rewrite their targets or cascade a rejection. Once the
+  /// dependency is resolved, a later build can consolidate them too.
   ///
   /// Returns the persisted set, or `null` when nothing has ever survived
   /// deduplication.
@@ -419,11 +419,15 @@ class ChangeSetBuilder {
     // A set the user resolved mid-wake is excluded either way: appending
     // pending items to a `resolved` row would persist a proposal that pending
     // queries never return, so it would be invisible in both the UI and the
-    // ledger.
+    // ledger. An unresolved follow-up group also stays in its original set:
+    // completion and rejection cascade still address that id. Incremental
+    // writes can append to it, since they never move or retire the group.
     final ownSetId = _persistedSet?.id;
     final writableSets = [
       for (final cs in freshExistingSets)
-        if (isPendingLike(cs.status) && (!incremental || cs.id == ownSetId)) cs,
+        if (isPendingLike(cs.status) &&
+            (incremental ? cs.id == ownSetId : !_hasUnresolvedMigration(cs)))
+          cs,
     ];
     // Extract items from existing change sets that should block a new
     // identical proposal. Confirmed items were applied; retracted items
@@ -571,6 +575,25 @@ class ChangeSetBuilder {
       await notifyTaskNeedsAttention(entity);
     }
     return entity;
+  }
+
+  /// A migration naming a sibling's placeholder still depends on writes to
+  /// this set. Keep the entire set in place: moving even an entirely pending
+  /// group can race a caller that already read its original set id. An
+  /// incremental append to the wake's own set never moves that group.
+  static bool _hasUnresolvedMigration(ChangeSetEntity set) {
+    final placeholders = {
+      for (final item in set.items)
+        if (item.toolName == TaskAgentToolNames.createFollowUpTask &&
+            item.args['_placeholderTaskId'] is String)
+          item.args['_placeholderTaskId'],
+    };
+    return set.items.any(
+      (item) =>
+          item.status == ChangeItemStatus.pending &&
+          item.toolName == TaskAgentToolNames.migrateChecklistItem &&
+          placeholders.contains(item.args['targetTaskId']),
+    );
   }
 
   /// Raises the wake's single inbox alert for whatever has been flushed.

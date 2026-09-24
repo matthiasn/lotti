@@ -5,7 +5,7 @@ description: The primary agent workflow — inference setup resolution, the auto
 resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
 tags: [agents, task-agent, tools, proposals, inference]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T06:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-24T06:00:00Z }
 stale_after: 2026-12-22
 sources:
   - id: report-policy
@@ -50,8 +50,8 @@ sources:
     last_modified: 2026-09-22
   - id: proposal-builder
     resource: ../../../lib/features/agents/workflow/change_set_builder.dart
-    title: Live background proposal protection
-    last_modified: 2026-09-22
+    title: Live background proposal protection and dependency-aware consolidation
+    last_modified: 2026-09-24
   - id: workflow
     resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
     title: TaskAgentWorkflow
@@ -1206,7 +1206,16 @@ is still `pending` or `partiallyResolved` **and** the effective item state is
 still `pending`. Decision rows close stale embedded snapshots before the prompt
 or UI sees them, and retired resolved-set rows with no decision are filtered out.
 
-When several pending change sets are consolidated, the newest becomes the
+A set with a pending migration that still names a sibling follow-up
+placeholder is excluded from consolidation. Its original id remains the
+address for target rewriting and rejection cascading, and its follow-up stays
+beside the migration for the confirmation service's placeholder guard. This
+also protects entirely pending groups and does not depend on `groupId`. An
+incremental flush can still append to the wake's own set. Once the target has
+been rewritten or the migration decided, a later final build can consolidate
+the set. Until then, the task can show more than one pending card.
+
+When eligible pending change sets are consolidated, the newest becomes the
 survivor and pending items in retired sets are marked `retracted` first — so no
 resolved parent row contains an actionable-looking pending child. Only pending
 items move into the survivor; a decided item stays in the set it was decided
