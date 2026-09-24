@@ -105,7 +105,9 @@ void main() {
     String? Function(DayProcessingJob job)? liveWakeRunKey,
     Duration wakeTimeout = const Duration(seconds: 1),
     int maxAttempts = 5,
+    DayAgentJobExecutions? executions,
   }) => DayAgentJobExecutor(
+    executions: executions,
     resolveAgentId: resolveAgentId ?? (_) async => agentId,
     enqueueWake: enqueueWake ?? (request) => 'run-key-1',
     runCompletions: runCompletions ?? const Stream.empty(),
@@ -119,6 +121,44 @@ void main() {
     wakeTimeout: wakeTimeout,
     maxAttempts: maxAttempts,
   );
+
+  test('a thrown attempt is evicted so its request can retry', () async {
+    var parsed = false;
+    var enqueued = 0;
+    final executor = buildExecutor(
+      hasCompletedCaptureParse: (_) async => parsed,
+      enqueueWake: (_) {
+        enqueued++;
+        return 'run-1';
+      },
+      recordRunKey: (_, _) async => throw StateError('storage unavailable'),
+    );
+    await expectLater(executor.execute(parseJob()), throwsStateError);
+    parsed = true;
+    expect(await executor.execute(parseJob()), isA<DayAgentJobSucceeded>());
+    expect(enqueued, 1, reason: 'the retry finds the completed artifact');
+  });
+
+  test('a new request timestamp is independent of an older attempt', () async {
+    final executions = DayAgentJobExecutions();
+    final first = Completer<DayAgentJobOutcome>();
+    final job = parseJob();
+    final oldRequest = executions.run(job, () => first.future);
+    final newRequest = executions.run(
+      job.copyWith(requestedAt: requestedAt.add(const Duration(minutes: 1))),
+      () async => const DayAgentJobSucceeded(resultEntityId: 'new-result'),
+    );
+    expect(
+      (await newRequest as DayAgentJobSucceeded).resultEntityId,
+      'new-result',
+      reason: 'a new request must not wait for or adopt the old result',
+    );
+    first.complete(const DayAgentJobSucceeded(resultEntityId: 'old-result'));
+    expect(
+      (await oldRequest as DayAgentJobSucceeded).resultEntityId,
+      'old-result',
+    );
+  });
 
   group('artifact pre-check (idempotency)', () {
     test(
@@ -767,6 +807,57 @@ void main() {
         unawaited(completions.close());
       });
     });
+
+    for (final rebuilt in [false, true]) {
+      test(
+        'overlapping attempts share a wake even if one finishes during reads (rebuilt=$rebuilt)',
+        () {
+          fakeAsync((async) {
+            final completions = StreamController<WakeRunCompletion>.broadcast();
+            final firstLookup = Completer<String>();
+            var lookups = 0;
+            var enqueued = 0;
+            var parsed = false;
+            final executions = DayAgentJobExecutions();
+            DayAgentJobExecutor makeExecutor() => buildExecutor(
+              executions: executions,
+              runCompletions: completions.stream,
+              resolveAgentId: (_) {
+                if (++lookups == 1) return firstLookup.future;
+                return Future.value(agentId);
+              },
+              hasCompletedCaptureParse: (_) async => parsed,
+              enqueueWake: (_) {
+                final key = 'run-${++enqueued}';
+                parsed = true;
+                completions.add(completed(key));
+                return key;
+              },
+            );
+            final executor = makeExecutor();
+            final outcomes = <DayAgentJobOutcome>[];
+            unawaited(executor.execute(parseJob()).then(outcomes.add));
+            async.flushMicrotasks();
+            // A retry/reclaim arrives while the first attempt has passed its
+            // artifact check but is still looking up the agent.
+            final retryExecutor = rebuilt ? makeExecutor() : executor;
+            unawaited(retryExecutor.execute(parseJob()).then(outcomes.add));
+            async.flushMicrotasks();
+            firstLookup.complete(agentId);
+            async.flushMicrotasks();
+
+            expect(outcomes, hasLength(2));
+            expect(outcomes, everyElement(isA<DayAgentJobSucceeded>()));
+            expect(
+              enqueued,
+              1,
+              reason: 'one request must spend only one inference',
+            );
+            unawaited(completions.close());
+          });
+        },
+      );
+    }
 
     test('enqueued by another attempt during the reads is awaited too', () {
       // A retry tap revoked this attempt's claim after its live-wake check,

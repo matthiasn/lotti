@@ -15,15 +15,17 @@
 (* Enqueue: _answerFromEntry with a fresh set and durable: true.            *)
 (*   A thrown enqueue leaves the reservation available to a later retry.  *)
 (*                                                                         *)
-(* The two switches are mutation points: disabling either reproduces the   *)
-(* corresponding pre-fix counterexample. This bounded safety model does    *)
-(* not model peers, retries, crashes, payload deletion or store wiring;    *)
+(* The switches are mutation points: disabling one reproduces its defect. *)
+(* A stale journal sidecar models a swallowed descriptor refresh failure. *)
+(* This safety model excludes peers, retries, crashes, payload deletion   *)
+(* and store wiring;                                                       *)
 (* SyncSequence.tla covers the wider protocol at a coarser granularity.    *)
 (***************************************************************************)
 EXTENDS Naturals
 
-CONSTANTS RecheckSequence, RequireDurableEnqueue
+CONSTANTS RecheckSequence, RequireDurableEnqueue, RequireFreshDescriptor
 ASSUME RecheckSequence \in BOOLEAN /\ RequireDurableEnqueue \in BOOLEAN
+       /\ RequireFreshDescriptor \in BOOLEAN
 
 Rows == {"none", "reserved", "received", "burned"}
 Steps == {"batch", "row", "fallback", "recheck", "decide", "enqueue",
@@ -120,6 +122,9 @@ Enqueue ==
                /\ queuedVersion' = payloadVersion
             \/ /\ pc' = "done" \* Enqueue throws: leave the row retryable.
                /\ UNCHANGED queuedVersion
+            \/ /\ ~RequireFreshDescriptor
+               /\ pc' = "bind"
+               /\ queuedVersion' = 2 \* Failed refresh queues an old sidecar.
     /\ UNCHANGED <<row, fallback, payloadVersion, batchAttempted,
                     rowSeen, fallbackSeen, burnSent>>
 

@@ -5,7 +5,7 @@ description: The agent.sqlite entity and link model, bulk-read chunking, and exa
 resource: ../../../lib/features/agents/database/agent_database.dart
 tags: [agents, persistence, sync, privacy, drift]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T18:00:00Z }
 stale_after: 2026-12-24
 sources:
   - id: error-logging
@@ -94,6 +94,18 @@ sources:
   - id: agent-sync-service
     resource: ../../../lib/features/agents/sync/agent_sync_service.dart
     title: AgentSyncService — stamping, resolution and transactional state updates
+    last_modified: 2026-09-24
+  - id: message-dag
+    resource: ../../../lib/features/agents/sync/agent_message_dag.dart
+    title: AgentMessageDag — head order and tip walks over the local message DAG
+    last_modified: 2026-09-24
+  - id: adr-0076
+    resource: ../../../docs/adr/0076-model-checked-agent-head.md
+    title: ADR 0076 — The agent head is a register over the message DAG
+    last_modified: 2026-09-24
+  - id: message-log-spec
+    resource: ../../../specs/tla/AgentMessageLog.tla
+    title: TLA+ model of the message DAG and head pointer
     last_modified: 2026-09-24
 ---
 
@@ -331,6 +343,21 @@ transaction and applies a field-scoped change, instead of copying the state
 a wake read when it started: a copy would put back a report-stale watermark
 or a merged counter that changed while the wake ran
 (`specs/tla/AgentStateWrites.tla`).
+
+The head pointer, `recentHeadMessageId`, has one local writer —
+`_appendMessage`, plus `appendJoin` for a join — and every other state write
+keeps the persisted head. It is not taken from the last writer on receive
+either (ADR 0076): the sync processor reads, resolves and writes an incoming
+state row in one transaction, never from a bundle's prefetched snapshot, and
+merges the head by the local message DAG — the head that descends from the
+other wins, two heads with no known order go by id. An append first advances
+a head that already has a child here to a tip past it
+(`AgentMessageDag.tipFrom`), so a pointer that trails the messages synced in
+ahead of their state row does not fork the log once their `messagePrev`
+edges are present — the walk follows edges, so a child whose edge is still
+in flight is not seen. Both are model-checked in
+`specs/tla/AgentMessageLog.tla`; the rules are in
+[vector clocks and conflicts](../sync/vector-clocks-and-conflicts.md#the-agent-head-follows-the-message-dag).
 
 Concurrent agent state converges without user involvement — see
 [vector clocks and conflicts](../sync/vector-clocks-and-conflicts.md) for the

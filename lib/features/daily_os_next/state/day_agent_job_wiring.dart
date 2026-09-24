@@ -28,8 +28,10 @@ DayAgentJobExecutor buildDayAgentJobExecutor({
   required DayAgentCaptureService captureService,
   required WakeOrchestrator orchestrator,
   required DayProcessingOutboxRepository outbox,
+  DayAgentJobExecutions? executions,
 }) {
   return DayAgentJobExecutor(
+    executions: executions,
     resolveAgentId: (dayId) async {
       final identity = await dayAgentService.getOrCreateDayAgentForDate(
         dateFromDayAgentId(dayId),

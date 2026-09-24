@@ -5,7 +5,7 @@ description: The append-only input event log, LLM-distilled summary checkpoints,
 resource: ../../../lib/features/agents/projection
 tags: [agents, memory, compaction, event-log, prefix-cache]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T18:00:00Z }
 stale_after: 2026-12-24
 sources:
   - id: projection
@@ -27,6 +27,14 @@ sources:
   - id: adr-0071
     resource: ../../../docs/adr/0071-model-checked-agent-message-log.md
     title: ADR 0071 — Model-checked agent message log and compaction
+    last_modified: 2026-09-24
+  - id: adr-0076
+    resource: ../../../docs/adr/0076-model-checked-agent-head.md
+    title: ADR 0076 — The agent head is a register over the message DAG
+    last_modified: 2026-09-24
+  - id: message-dag
+    resource: ../../../lib/features/agents/sync/agent_message_dag.dart
+    title: AgentMessageDag — head order and tip walks over the local message DAG
     last_modified: 2026-09-24
   - id: summarizer
     resource: ../../../lib/features/agents/service/agent_log_llm_summarizer.dart
@@ -352,11 +360,16 @@ set.
 
 **Appends chain off a synced pointer.** `AgentSyncService._appendMessage` chains
 each local message off `recentHeadMessageId` and moves it, in one transaction.
-The pointer is a field of the agent-state row, which sync resolves by vector
-clock and then last-writer-wins, so it can lag behind the messages that synced
-in, be cleared by a version written on a device that had not seen any head yet,
-or move back to an ancestor (then the next append forks off it — a residual of
-ADR 0071). An unset pointer over a non-empty log goes through `_recoverHead`:
+The pointer is a field of the agent-state row, so it can lag behind the
+messages that synced in, or be cleared by a version written on a device that
+had not seen any head yet. It no longer moves back: sync merges it by the
+message DAG rather than by last writer, in the same transaction that reads
+the row (ADR 0076). A pointer that trails the log — its successor synced in
+ahead of the state row, or a merge made before the rows that order two heads
+arrived — is advanced to a tip past it before the append chains
+(`AgentMessageDag.tipFrom`), so a fork now needs two devices appending before
+either has seen the other's message — or a child that synced in ahead of its
+own edge, which the walk, following edges, does not see. An unset pointer over a non-empty log goes through `_recoverHead`:
 only a log with no DAG evidence at all — no `messagePrev` edge, no message
 minted with a `prevMessageId`, no join — gets the one-time legacy spine by
 `createdAt`; any other log keeps its edges and the append chains off the last
@@ -368,7 +381,7 @@ ids with new parents, and with clocks apart close a cycle.
 ```mermaid
 stateDiagram-v2
   [*] --> SingleHead
-  SingleHead --> Forked: two devices append off the same head, or an append follows a head pointer a synced state row moved back
+  SingleHead --> Forked: two devices append off the same head before either has seen the other's message (or its edge)
   Forked --> Forked: local view still settling (a dangling parent, a message ahead of its own edge, a join missing edges to heads) — defer
   Forked --> Joining: a wake starts and observes ≥2 heads over a complete view
   Joining --> SingleHead: appendJoin (messagePrev → all heads), recentHeadMessageId becomes joinId, prefix re-warms

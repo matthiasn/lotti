@@ -142,3 +142,4 @@ Each ADR should contain:
 - [`0072-notification-producers-one-episode-contract.md`](./0072-notification-producers-one-episode-contract.md)
 - [`0073-goal-off-track-alerts-on-the-os-channel.md`](./0073-goal-off-track-alerts-on-the-os-channel.md)
 - [`0074-agent-worded-alerts-restate-an-armed-episode.md`](./0074-agent-worded-alerts-restate-an-armed-episode.md)
+- [`0076-model-checked-agent-head.md`](./0076-model-checked-agent-head.md)

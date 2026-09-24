@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/day_agent_trigger_tokens.dart';
+import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
 import 'package:lotti/features/agents/wake/wake_intent_store.dart';
 
 import 'wake_orchestrator_test_harness.dart';
@@ -67,8 +68,11 @@ void main() {
     FakeAsync async,
     WakeExecutor executor, {
     int concurrency = 3,
+    MockSettingsDb? settingsDb,
   }) {
-    final store = WakeIntentStore(settingsDb: _memorySettingsDb(settings));
+    final store = WakeIntentStore(
+      settingsDb: settingsDb ?? _memorySettingsDb(settings),
+    );
     queue = WakeQueue();
     runner = WakeRunner();
     orchestrator = WakeOrchestrator(
@@ -646,7 +650,7 @@ void main() {
       expect(onDiskAtFlush, {workspace});
 
       // The process dies mid-run; the next one owes the wake before it
-      // restores it, and no longer once the restored run settles.
+      // restores it, its completion remains recognized until the scheduled record is consumed.
       final second = boot(async, noOpExecutor);
       bool? owedBeforeRestore;
       unawaited(
@@ -663,7 +667,87 @@ void main() {
       );
       async.flushMicrotasks();
       expect(executed, hasLength(2));
+      expect(owedAfterRun, isTrue);
+      second.acknowledgeScheduledWindow(window);
+      unawaited(second.owesWake(window).then((owed) => owedAfterRun = owed));
+      async.flushMicrotasks();
       expect(owedAfterRun, isFalse);
+    });
+  });
+
+  test('a completed wake after a failed flush is not fired on the next scan', () {
+    fakeAsync((async) {
+      final db = _memorySettingsDb(settings);
+      var writesFail = true;
+      when(() => db.saveSettingsItem(any(), any())).thenAnswer((inv) async {
+        if (writesFail) throw StateError('disk full');
+        settings[inv.positionalArguments[0] as String] =
+            inv.positionalArguments[1] as String;
+        return 1;
+      });
+      when(() => db.removeSettingsItem(any())).thenAnswer((inv) async {
+        if (writesFail) throw StateError('disk full');
+        settings.remove(inv.positionalArguments.single);
+      });
+      final execution = Completer<Map<String, VectorClock>?>();
+      final current = boot(
+        async,
+        (_, _, _, _) => execution.future,
+        settingsDb: db,
+      );
+      var record =
+          AgentDomainEntity.scheduledWake(
+                id: 'record-1',
+                agentId: 'agent-1',
+                scheduledAt: DateTime.utc(2024),
+                status: ScheduledWakeStatus.pending,
+                reason: WakeReason.scheduled.name,
+                updatedAt: DateTime.utc(2024),
+                vectorClock: null,
+              )
+              as ScheduledWakeEntity;
+      when(
+        () => mockRepository.getDueScheduledAgentStates(any()),
+      ).thenAnswer((_) async => []);
+      when(() => mockRepository.getDueScheduledWakeRecords(any())).thenAnswer(
+        (_) async =>
+            record.status == ScheduledWakeStatus.pending ? [record] : [],
+      );
+      when(
+        () => mockRepository.getEntity(record.id),
+      ).thenAnswer((_) async => record);
+      when(() => mockRepository.getEntity('agent-1')).thenAnswer(
+        (_) async => makeTestIdentity(
+          id: 'agent-1',
+          agentId: 'agent-1',
+          kind: 'goal_agent',
+        ),
+      );
+      final sync = MockAgentSyncService();
+      when(() => sync.upsertEntity(any())).thenAnswer((inv) async {
+        record = inv.positionalArguments.single as ScheduledWakeEntity;
+      });
+      final manager = ScheduledWakeManager(
+        repository: mockRepository,
+        orchestrator: current,
+        syncService: sync,
+        checkInterval: const Duration(minutes: 1),
+      )..start();
+      async.flushMicrotasks();
+      expect(executed, hasLength(1));
+      expect(record.status, ScheduledWakeStatus.pending);
+      execution.complete(const {});
+      // Persistence is still down, but the completed window must not run again.
+      async
+        ..flushMicrotasks()
+        ..elapse(const Duration(minutes: 1));
+      expect(executed, hasLength(1));
+      expect(record.status, ScheduledWakeStatus.pending);
+      writesFail = false;
+      async.elapse(const Duration(minutes: 1));
+      expect(executed, hasLength(1));
+      expect(record.status, ScheduledWakeStatus.consumed);
+      manager.stop();
     });
   });
 

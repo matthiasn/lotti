@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/projection/derived_agent_state.dart';
 import 'package:lotti/features/agents/projection/join_plan.dart';
 import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/sync/agent_lww_timestamp.dart';
+import 'package:lotti/features/agents/sync/agent_message_dag.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
@@ -613,7 +614,11 @@ class AgentSyncService {
   /// Appends a local [message] to the agent's log, wiring it into the causal
   /// DAG: the message's `prevMessageId` and a `messagePrev` link point at the
   /// agent's current head (`AgentStateEntity.recentHeadMessageId`), and the head
-  /// then advances to the new message.
+  /// then advances to the new message. A head that already has a child here —
+  /// the synced pointer trailing messages that arrived before it — is first
+  /// advanced to a tip past it ([AgentMessageDag.tipFrom], ADR 0076), so a
+  /// stale pointer does not fork the log. The walk follows `messagePrev`
+  /// edges: a child whose edge has not synced yet is not seen.
   ///
   /// Reached from [upsertEntity] for every local message write, so chaining
   /// can't be bypassed. Messages chain *across wakes* into one continuous
@@ -658,6 +663,10 @@ class AgentSyncService {
       // quadratic.
       if (state != null && head == null) {
         head = await _recoverHead(message.agentId);
+      } else if (head != null) {
+        // The synced pointer can trail the log (ADR 0076): chain off the tip
+        // past it, not off a row that already has a child here.
+        head = await AgentMessageDag(_repository).tipFrom(head);
       }
 
       await _upsertEntityRaw(

@@ -542,6 +542,14 @@ void main() {
         type: any(named: 'type'),
       ),
     ).thenAnswer((_) async => <String, List<AgentLink>>{});
+    // An append advances a set head past any child it has here; default to
+    // none, so the head is already the tip.
+    when(
+      () => mockRepository.getLinksToMultiple(
+        any(),
+        type: any(named: 'type'),
+      ),
+    ).thenAnswer((_) async => <String, List<AgentLink>>{});
     // The append path's idempotency guard looks the message up first; default
     // to "not yet persisted" so a plain append proceeds to chaining.
     when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
@@ -2594,6 +2602,85 @@ void main() {
         expect(headsOfLog(b.repo.messages, b.repo.links), [joinId]);
       },
     );
+  });
+
+  // ADR 0076, specs/tla/AgentMessageLog.tla (AppendsOffTips): the head pointer
+  // is a field of the synced state row, so it can trail the messages that
+  // synced in. An append used to chain off it although this device already
+  // held its successor, forking the log.
+  group('AgentSyncService.upsertEntity — a trailing head', () {
+    AgentLink edge(String child, String parent) => AgentLink.messagePrev(
+      id: 'msgprev-$child',
+      fromId: child,
+      toId: parent,
+      createdAt: DateTime(2024, 3),
+      updatedAt: DateTime(2024, 3),
+      vectorClock: null,
+    );
+
+    test('an append chains off the tip past a head whose successors synced '
+        'in ahead of the state row (TLC: AppendsOffTips)', () async {
+      // The trace: the other device appended a1, a2; this device received
+      // both messages and edges but only the state version naming a1.
+      final bench = makeForkBench();
+      bench.repo.seed([
+        makeTestState(agentId: 'agent-1').copyWith(recentHeadMessageId: 'a1'),
+        makeTestMessage(
+          id: 'a1',
+          agentId: 'agent-1',
+          createdAt: DateTime(2024, 3, 2),
+        ),
+        makeTestMessage(
+          id: 'a2',
+          agentId: 'agent-1',
+          createdAt: DateTime(2024, 3, 3),
+          prevMessageId: 'a1',
+        ),
+      ]);
+      await bench.repo.upsertLink(edge('a2', 'a1'));
+
+      await bench.service.upsertEntity(
+        makeTestMessage(
+          id: 'b1',
+          agentId: 'agent-1',
+          createdAt: DateTime(2024, 3, 4),
+        ),
+      );
+
+      expect(
+        ((await bench.repo.getEntity('b1'))! as AgentMessageEntity)
+            .prevMessageId,
+        'a2',
+      );
+      expect((await bench.repo.getLinkById('msgprev-b1'))!.toId, 'a2');
+      expect(headsOfLog(bench.repo.messages, bench.repo.links), ['b1']);
+      expect(
+        (await bench.repo.getAgentState('agent-1'))!.recentHeadMessageId,
+        'b1',
+      );
+    });
+
+    test('a head that is still the tip is chained off as it is', () async {
+      final bench = makeForkBench();
+      bench.repo.seed([
+        makeTestState(agentId: 'agent-1').copyWith(recentHeadMessageId: 'a1'),
+        makeTestMessage(
+          id: 'a1',
+          agentId: 'agent-1',
+          createdAt: DateTime(2024, 3, 2),
+        ),
+      ]);
+
+      await bench.service.upsertEntity(
+        makeTestMessage(
+          id: 'b1',
+          agentId: 'agent-1',
+          createdAt: DateTime(2024, 3, 4),
+        ),
+      );
+
+      expect((await bench.repo.getLinkById('msgprev-b1'))!.toId, 'a1');
+    });
   });
 
   // ADR 0071, specs/tla/AgentMessageLog.tla (AgentMessageLogStale): the head

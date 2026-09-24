@@ -284,7 +284,8 @@ class OutboxEnqueueWriter {
   // ---------------------------------------------------------------------------
 
   /// Enqueues a SyncJournalEntity. Returns true if merge happened (caller
-  /// should not schedule another send request).
+  /// should not schedule another send request). Descriptor refresh failures
+  /// propagate so recovery cannot settle a counter against a stale sidecar.
   Future<bool> enqueueJournalEntity({
     required SyncJournalEntity msg,
     required OutboxCompanion commonFields,
@@ -311,6 +312,7 @@ class OutboxEnqueueWriter {
         stackTrace: stackTrace,
         subDomain: 'enqueueMessage.refreshJson',
       );
+      rethrow;
     }
 
     final fullPath = '${_documentsDirectory.path}${msg.jsonPath}';

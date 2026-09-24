@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/services/audio_transcription_service.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
+import 'package:lotti/features/daily_os_next/services/day_agent_job_executor.dart';
 import 'package:lotti/features/daily_os_next/services/day_audio_review_fence.dart';
 import 'package:lotti/features/daily_os_next/services/day_audio_transcript_writer.dart';
 import 'package:lotti/features/daily_os_next/services/day_plan_ready_notifier.dart';
@@ -27,11 +28,17 @@ dayProcessingOutboxRepositoryProvider = Provider((ref) {
   return getIt<DayProcessingOutboxRepository>();
 });
 
+/// Outlives processor rebuilds so old and new claim holders share one attempt.
+final dayAgentJobExecutionsProvider = Provider<DayAgentJobExecutions>(
+  (_) => DayAgentJobExecutions(),
+);
+
 final Provider<DayProcessingOutboxProcessor>
 dayProcessingOutboxProcessorProvider = Provider((ref) {
   final transcriber = ref.watch(audioTranscriptionServiceProvider);
   final writer = ref.watch(dayAudioTranscriptWriterProvider);
   final executor = buildDayAgentJobExecutor(
+    executions: ref.watch(dayAgentJobExecutionsProvider),
     dayAgentService: ref.watch(dayAgentServiceProvider),
     planService: ref.watch(dayAgentPlanServiceProvider),
     captureService: ref.watch(dayAgentCaptureServiceProvider),

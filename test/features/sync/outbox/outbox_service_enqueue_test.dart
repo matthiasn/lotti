@@ -206,56 +206,89 @@ void main() {
     },
   );
 
-  test('continues when saveJson throws during refresh', () async {
-    const id = 'save-fails';
-    final testDate = DateTime(2024, 3, 15, 10, 30);
-    final entity = JournalEntity.journalEntry(
-      meta: Metadata(
-        id: id,
-        createdAt: testDate,
-        updatedAt: testDate,
-        dateFrom: testDate,
-        dateTo: testDate,
-        vectorClock: const VectorClock({'host': 1}),
-      ),
-      entryText: const EntryText(plainText: 'draft'),
+  for (final durable in [false, true]) {
+    test(
+      'rejects stale descriptor after refresh failure (durable=$durable)',
+      () async {
+        const id = 'save-fails';
+        final testDate = DateTime(2024, 3, 15, 10, 30);
+        final stale = JournalEntity.journalEntry(
+          meta: Metadata(
+            id: id,
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
+            vectorClock: const VectorClock({'host': 1}),
+          ),
+          entryText: const EntryText(plainText: 'draft'),
+        );
+        final fresh = stale.copyWith(
+          meta: stale.meta.copyWith(
+            vectorClock: const VectorClock({'host': 2}),
+          ),
+        );
+        final jsonPath = relativeEntityPath(stale);
+        final file = File('${documentsDirectory.path}$jsonPath')
+          ..parent.createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(stale.toJson()));
+        when(
+          () => journalDb.journalEntityById(id),
+        ).thenAnswer((_) async => fresh);
+        var failRefresh = true;
+        final refreshError = Exception('disk full');
+        final retryableService = buildService(
+          saveJsonHandler: (path, json) async {
+            if (failRefresh) throw refreshError;
+            await File(path).writeAsString(json);
+          },
+        );
+        final message = SyncMessage.journalEntity(
+          id: id,
+          jsonPath: jsonPath,
+          vectorClock: fresh.meta.vectorClock,
+          status: SyncEntryStatus.update,
+        );
+
+        if (durable) {
+          await expectLater(
+            retryableService.enqueueMessageOrThrow(message),
+            throwsA(same(refreshError)),
+          );
+        } else {
+          await retryableService.enqueueMessage(message);
+        }
+        verifyNever(() => syncDatabase.addOutboxItem(any()));
+        verifyNever(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: any(named: 'itemId'),
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        );
+        expect(retryableService.enqueueCalls, 0);
+        expect(await file.readAsString(), jsonEncode(stale.toJson()));
+
+        failRefresh = false;
+        await retryableService.enqueueMessageOrThrow(message);
+        final row =
+            verify(
+                  () => syncDatabase.addOutboxItem(captureAny()),
+                ).captured.single
+                as OutboxCompanion;
+        final queued =
+            SyncMessage.fromJson(
+                  jsonDecode(row.message.value) as Map<String, dynamic>,
+                )
+                as SyncJournalEntity;
+        expect(queued.vectorClock, fresh.meta.vectorClock);
+        expect(await file.readAsString(), jsonEncode(fresh.toJson()));
+        expect(retryableService.enqueueCalls, 1);
+      },
     );
-    final jsonPath = relativeEntityPath(entity);
-    File('${documentsDirectory.path}$jsonPath')
-      ..parent.createSync(recursive: true)
-      ..writeAsStringSync(jsonEncode(entity.toJson()));
-
-    when(() => journalDb.journalEntityById(id)).thenAnswer((_) async => entity);
-
-    final failingGate = MockUserActivityGate();
-    when(failingGate.waitUntilIdle).thenAnswer((_) async {});
-    when(failingGate.dispose).thenAnswer((_) async {});
-
-    final failingService = buildService(
-      activityGate: failingGate,
-      ownsActivityGate: false,
-      saveJsonHandler: (_, _) => Future.error(Exception('disk full')),
-    );
-
-    final message = SyncMessage.journalEntity(
-      id: id,
-      jsonPath: jsonPath,
-      vectorClock: entity.meta.vectorClock,
-      status: SyncEntryStatus.initial,
-    );
-
-    await failingService.enqueueMessage(message);
-
-    verify(
-      () => loggingService.error(
-        LogDomain.sync,
-        any<Object>(),
-        stackTrace: any<StackTrace?>(named: 'stackTrace'),
-        subDomain: 'enqueueMessage.refreshJson',
-      ),
-    ).called(1);
-    verify(() => syncDatabase.addOutboxItem(any())).called(1);
-  });
+  }
 
   test('non-journal messages skip JSON refresh lookup', () async {
     clearInteractions(journalDb);
