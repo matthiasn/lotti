@@ -568,4 +568,70 @@ void main() {
       expect(restored, 0);
     });
   });
+
+  // specs/tla/ScheduledWakeLease.tla: the scheduled-wake manager consumes a
+  // record only once its wake is durable, and consumes rather than re-fires a
+  // record whose wake a dead process left owed.
+  test('a wake is owed from its flush until its run settles, across a '
+      'process death', () {
+    const workspace = 'goal-escalation:2026-08-08';
+    fakeAsync((async) {
+      final first =
+          boot(
+            async,
+            (_, _, _, _) => Completer<Map<String, VectorClock>?>().future,
+          )..enqueueManualWake(
+            agentId: 'agent-1',
+            reason: 'scheduled',
+            triggerTokens: {workspace},
+            workspaceKey: workspace,
+          );
+      Set<String>? onDiskAtFlush;
+      unawaited(
+        first.flushWakeIntents().then((_) => onDiskAtFlush = owedTokens()),
+      );
+      async.flushMicrotasks();
+      expect(onDiskAtFlush, {workspace});
+
+      // The process dies mid-run; the next one owes the wake before it
+      // restores it, and no longer once the restored run settles.
+      final second = boot(async, noOpExecutor);
+      bool? owedBeforeRestore;
+      unawaited(
+        second
+            .owesWake('agent-1', workspaceKey: workspace, tokens: {workspace})
+            .then((owed) => owedBeforeRestore = owed),
+      );
+      async.flushMicrotasks();
+      expect(owedBeforeRestore, isTrue);
+
+      unawaited(second.restoreWakeIntents());
+      async.flushMicrotasks();
+      bool? owedAfterRun;
+      unawaited(
+        second
+            .owesWake('agent-1', workspaceKey: workspace, tokens: {workspace})
+            .then((owed) => owedAfterRun = owed),
+      );
+      async.flushMicrotasks();
+      expect(executed, hasLength(2));
+      expect(owedAfterRun, isFalse);
+    });
+  });
+
+  test('without an intent store no wake is owed and a flush is a no-op', () {
+    fakeAsync((async) {
+      bool? owed;
+      var flushed = false;
+      unawaited(
+        orchestrator
+            .owesWake('agent-1', workspaceKey: null, tokens: const {})
+            .then((value) => owed = value),
+      );
+      unawaited(orchestrator.flushWakeIntents().then((_) => flushed = true));
+      async.flushMicrotasks();
+      expect(owed, isFalse);
+      expect(flushed, isTrue);
+    });
+  });
 }

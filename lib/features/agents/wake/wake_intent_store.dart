@@ -165,6 +165,24 @@ class WakeIntentStore {
     _persistSoon();
   }
 
+  /// Whether a wake of [agentId] in [workspaceKey] carrying every one of
+  /// [tokens] is still owed: a job queued or running in this process, or one
+  /// a previous process left for startup to restore. Waits for the load, so a
+  /// restorable intent is never missed.
+  Future<bool> owes({
+    required String agentId,
+    required String? workspaceKey,
+    required Set<String> tokens,
+  }) async {
+    await load();
+    return _intents.values.any(
+      (intent) =>
+          intent.agentId == agentId &&
+          intent.workspaceKey == workspaceKey &&
+          intent.tokens.containsAll(tokens),
+    );
+  }
+
   /// Forgets the intent of job [runKey]: its run settled, or the job was
   /// dropped for good.
   void settle(String runKey) {

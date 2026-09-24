@@ -19,6 +19,12 @@ import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 /// Local hour at which the daily cadence tick fires.
 const goalCadenceHour = 6;
 
+/// How far after a consumed escalation the next one of the same period is
+/// due. Any positive step orders the windows in the concurrent resolver;
+/// a millisecond keeps the serialized deadline in the same three-digit
+/// form every other one has.
+const goalEscalationWindowStep = Duration(milliseconds: 1);
+
 /// How many prior daily register rows feed the grace-period check.
 const goalPriorLookbackDays = 3;
 
@@ -392,21 +398,50 @@ class GoalAgentPhaseA {
   /// Escalation is a scheduled wake due immediately: the manager's lease
   /// election guarantees exactly one device runs it, and an armer that
   /// dies is picked up remotely within the hourly poll (ADR 0054).
+  ///
+  /// The record id is per period, so a second escalation the same day
+  /// finds the first one's row, and what it writes depends on that row
+  /// (ADR 0069, `specs/tla/ScheduledWakeLease.tla`):
+  ///
+  /// * **Pending** — this escalation has not run yet, so arming again
+  ///   joins it. The row is left alone, claim and all; rewriting it would
+  ///   drop a peer's lease mid-election and the baseline it carries.
+  /// * **Consumed** — this opens the next window. It carries the consumed
+  ///   row's vector clock, so it causally follows the consumption, and is
+  ///   due one millisecond after it, so it outranks any version of the
+  ///   consumed window a peer still holds. A row rebuilt from a null clock
+  ///   at the period's fixed instant was concurrent with the peers'
+  ///   consumed copy, lost to it everywhere but here, and so ran on the
+  ///   arming device only — or on none, if that device died.
   Future<void> _armEscalation(
     String agentId,
     DateTime now,
     String periodKey,
     GoalTrackStatus? previousStatus, {
     bool forceReportRefresh = false,
-  }) => _syncService.upsertEntity(
-    goalEscalationWake(
-      agentId,
-      now,
-      periodKey,
-      baseline: previousStatus,
-      forceReportRefresh: forceReportRefresh,
-    ),
-  );
+  }) async {
+    final wake =
+        goalEscalationWake(
+              agentId,
+              now,
+              periodKey,
+              baseline: previousStatus,
+              forceReportRefresh: forceReportRefresh,
+            )
+            as ScheduledWakeEntity;
+    final existing = await _repository.getEntity(wake.id);
+    if (existing is ScheduledWakeEntity && existing.deletedAt == null) {
+      if (existing.status == ScheduledWakeStatus.pending) return;
+      await _syncService.upsertEntity(
+        wake.copyWith(
+          scheduledAt: existing.scheduledAt.add(goalEscalationWindowStep),
+          vectorClock: existing.vectorClock,
+        ),
+      );
+      return;
+    }
+    await _syncService.upsertEntity(wake);
+  }
 
   /// Most-recent-first register rows for the trailing
   /// [goalPriorLookbackDays] days before the evaluation day.
@@ -517,7 +552,9 @@ AgentDomainEntity goalCadenceWake(String agentId, DateTime now) {
 /// concurrent resolver prefers the later deadline as a newer wake window
 /// — letting a partitioned peer's pending copy resurrect an escalation
 /// another device already consumed. Midnight UTC is always in the past
-/// for the day being evaluated, so the wake is immediately due.
+/// for the day being evaluated, so the wake is immediately due. A later
+/// escalation of the same period, armed over the consumed one, is due
+/// [goalEscalationWindowStep] after it — again the same on every device.
 AgentDomainEntity goalEscalationWake(
   String agentId,
   DateTime now,

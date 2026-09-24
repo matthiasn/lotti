@@ -1,7 +1,8 @@
 import 'dart:async';
 
-import 'package:fake_async/fake_async.dart';
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -10,6 +11,7 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/goals/service/goal_chat_service.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -164,9 +166,9 @@ void main() {
 
       await service.sendMessage(agentId: 'goal-1', text: '  How am I doing?  ');
 
-      expect(upserts, hasLength(2));
       final payload = upserts.first as AgentMessagePayloadEntity;
-      final message = upserts.last as AgentMessageEntity;
+      final message = upserts.whereType<AgentMessageEntity>().single;
+      expect(upserts.indexOf(message), 1);
       expect(payload.content['text'], 'How am I doing?');
       expect(message.kind, AgentMessageKind.user);
       expect(message.contentEntryId, payload.id);
@@ -389,220 +391,243 @@ void main() {
     expect(goalChatMessageIdFromTriggerTokens(tokens), 'message-1');
   });
 
-  test('startup recovery re-enqueues a durable unanswered turn once', () async {
+  // GoalChatReply.tla: recovery used to enqueue a wake for the oldest
+  // unanswered message on every device that ran maintenance — at startup,
+  // hourly and on identity sync — guarded by an in-memory set, so a peer
+  // answered a message its author was still answering. Recovery now goes
+  // through one lease-elected record per message.
+  group('recovery (ADR 0069)', () {
+    final now = DateTime(2026, 8, 18, 12);
+    final recordId = goalChatRecoveryRecordId('goal-1', 'message-orphan');
+    late Map<String, AgentDomainEntity> stored;
+
     final orphan =
         AgentDomainEntity.agentMessage(
               id: 'message-orphan',
               agentId: 'goal-1',
               threadId: 'message-orphan',
               kind: AgentMessageKind.user,
-              createdAt: DateTime(2026, 8, 18, 12),
+              createdAt: now,
               vectorClock: null,
               contentEntryId: 'payload-orphan',
               metadata: const AgentMessageMetadata(),
             )
             as AgentMessageEntity;
-    when(
-      () => repository.getMessagesByKind(
-        'goal-1',
-        AgentMessageKind.user,
-        limit: any(named: 'limit'),
-      ),
-    ).thenAnswer((_) async => [orphan]);
-    when(
-      () => repository.getMessagesByKindAndToolName(
-        'goal-1',
-        AgentMessageKind.action,
-        AgentConversationToolNames.replyToUser,
-        limit: any(named: 'limit'),
-      ),
-    ).thenAnswer((_) async => []);
-    when(
-      () => orchestrator.enqueueManualWake(
-        agentId: 'goal-1',
-        reason: WakeReason.userMessage.name,
-        triggerTokens: any(named: 'triggerTokens'),
-        supersede: false,
-        initiator: WakeInitiator.user,
-      ),
-    ).thenReturn('recovery-run');
 
-    expect(await service.restoreOldestPendingMessage('goal-1'), isTrue);
-    expect(
-      await service.restoreOldestPendingMessage('goal-1'),
-      isFalse,
-      reason: 'the same orphan must not be queued concurrently twice',
-    );
-    final tokens =
-        verify(
-              () => orchestrator.enqueueManualWake(
-                agentId: 'goal-1',
-                reason: WakeReason.userMessage.name,
-                triggerTokens: captureAny(named: 'triggerTokens'),
-                supersede: false,
-                initiator: WakeInitiator.user,
-              ),
-            ).captured.single
-            as Set<String>;
-    expect(goalChatMessageIdFromTriggerTokens(tokens), orphan.id);
-
-    completions.add(
-      const WakeRunCompletion(
-        runKey: 'recovery-run',
-        status: WakeRunStatus.failed,
-      ),
-    );
-    await pumpEventQueue();
-    expect(
-      await service.restoreOldestPendingMessage('goal-1'),
-      isTrue,
-      reason: 'a terminal failure releases the durable turn for a later scan',
-    );
-    completions.add(
-      const WakeRunCompletion(
-        runKey: 'recovery-run',
-        status: WakeRunStatus.completed,
-      ),
-    );
-    await pumpEventQueue();
-  });
-
-  test('failed recovery enqueue releases the durable turn for retry', () async {
-    final orphan =
-        AgentDomainEntity.agentMessage(
-              id: 'message-orphan',
+    ScheduledWakeEntity recovery({
+      required ScheduledWakeStatus status,
+      required DateTime scheduledAt,
+      DateTime? leaseUntil,
+    }) =>
+        AgentDomainEntity.scheduledWake(
+              id: recordId,
               agentId: 'goal-1',
-              threadId: 'message-orphan',
-              kind: AgentMessageKind.user,
-              createdAt: DateTime(2026, 8, 18, 12),
-              vectorClock: null,
-              contentEntryId: 'payload-orphan',
-              metadata: const AgentMessageMetadata(),
+              scheduledAt: scheduledAt,
+              status: status,
+              reason: WakeReason.userMessage.name,
+              updatedAt: now,
+              vectorClock: const VectorClock({'host-b': 4}),
+              workspaceKey: goalChatRecoveryWorkspaceKey('message-orphan'),
+              triggerTokens: const ['goal-chat-message:message-orphan'],
+              leaseHostId: leaseUntil == null ? null : 'host-b',
+              leaseUntil: leaseUntil,
             )
-            as AgentMessageEntity;
-    when(
-      () => repository.getMessagesByKind(
-        'goal-1',
-        AgentMessageKind.user,
-        limit: any(named: 'limit'),
-      ),
-    ).thenAnswer((_) async => [orphan]);
-    when(
-      () => repository.getMessagesByKindAndToolName(
-        'goal-1',
-        AgentMessageKind.action,
-        AgentConversationToolNames.replyToUser,
-        limit: any(named: 'limit'),
-      ),
-    ).thenAnswer((_) async => []);
-    when(
-      () => orchestrator.enqueueManualWake(
-        agentId: 'goal-1',
-        reason: WakeReason.userMessage.name,
-        triggerTokens: any(named: 'triggerTokens'),
-        supersede: false,
-        initiator: WakeInitiator.user,
-      ),
-    ).thenThrow(StateError('queue unavailable'));
+            as ScheduledWakeEntity;
 
-    await expectLater(
-      service.restoreOldestPendingMessage('goal-1'),
-      throwsA(isA<StateError>()),
-    );
-    await expectLater(
-      service.restoreOldestPendingMessage('goal-1'),
-      throwsA(isA<StateError>()),
-    );
-    verify(
-      () => orchestrator.enqueueManualWake(
-        agentId: 'goal-1',
-        reason: WakeReason.userMessage.name,
-        triggerTokens: any(named: 'triggerTokens'),
-        supersede: false,
-        initiator: WakeInitiator.user,
-      ),
-    ).called(2);
-  });
+    setUp(() {
+      stored = {};
+      // Writes land in `stored`, so a later read sees them.
+      when(() => syncService.upsertEntity(any())).thenAnswer((inv) async {
+        final entity = inv.positionalArguments.first as AgentDomainEntity;
+        upserts.add(entity);
+        stored[entity.id] = entity;
+      });
+      when(() => repository.getEntity(any())).thenAnswer((inv) async {
+        final id = inv.positionalArguments.first as String;
+        if (id == 'goal-1') return goalIdentity(AgentLifecycle.active);
+        return stored[id];
+      });
+      when(
+        () => repository.getMessagesByKind(
+          'goal-1',
+          AgentMessageKind.user,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [orphan]);
+      when(
+        () => repository.getMessagesByKindAndToolName(
+          'goal-1',
+          AgentMessageKind.action,
+          AgentConversationToolNames.replyToUser,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => []);
+    });
 
-  test('startup recovery releases an orphan when completion is lost', () {
-    final orphan =
-        AgentDomainEntity.agentMessage(
-              id: 'message-orphan',
-              agentId: 'goal-1',
-              threadId: 'message-orphan',
-              kind: AgentMessageKind.user,
-              createdAt: DateTime(2026, 8, 18, 12),
-              vectorClock: null,
-              contentEntryId: 'payload-orphan',
-              metadata: const AgentMessageMetadata(),
-            )
-            as AgentMessageEntity;
-    when(
-      () => repository.getMessagesByKind(
-        'goal-1',
-        AgentMessageKind.user,
-        limit: any(named: 'limit'),
-      ),
-    ).thenAnswer((_) async => [orphan]);
-    when(
-      () => repository.getMessagesByKindAndToolName(
-        'goal-1',
-        AgentMessageKind.action,
-        AgentConversationToolNames.replyToUser,
-        limit: any(named: 'limit'),
-      ),
-    ).thenAnswer((_) async => []);
-    var enqueueCount = 0;
-    when(
-      () => orchestrator.enqueueManualWake(
-        agentId: 'goal-1',
-        reason: WakeReason.userMessage.name,
-        triggerTokens: any(named: 'triggerTokens'),
-        supersede: false,
-        initiator: WakeInitiator.user,
-      ),
-    ).thenAnswer((_) => 'recovery-${++enqueueCount}');
+    void completeWakesWith(WakeRunStatus status) =>
+        when(
+          () => orchestrator.enqueueManualWake(
+            agentId: 'goal-1',
+            reason: WakeReason.userMessage.name,
+            triggerTokens: any(named: 'triggerTokens'),
+            supersede: false,
+            initiator: WakeInitiator.user,
+          ),
+        ).thenAnswer((_) {
+          scheduleMicrotask(
+            () => completions.add(
+              WakeRunCompletion(runKey: 'run', status: status),
+            ),
+          );
+          return 'run';
+        });
 
-    fakeAsync((async) {
-      bool? first;
-      unawaited(
-        service
-            .restoreOldestPendingMessage('goal-1')
-            .then((value) => first = value),
+    test('a sent turn arms its recovery a grace out, before its wake, and '
+        'the wake that answers it consumes it', () async {
+      completeWakesWith(WakeRunStatus.completed);
+      var recordsAtWake = 0;
+      when(
+        () => orchestrator.enqueueManualWake(
+          agentId: 'goal-1',
+          reason: WakeReason.userMessage.name,
+          triggerTokens: any(named: 'triggerTokens'),
+          supersede: false,
+          initiator: WakeInitiator.user,
+        ),
+      ).thenAnswer((_) {
+        recordsAtWake = upserts.whereType<ScheduledWakeEntity>().length;
+        scheduleMicrotask(
+          () => completions.add(
+            const WakeRunCompletion(
+              runKey: 'run',
+              status: WakeRunStatus.completed,
+            ),
+          ),
+        );
+        return 'run';
+      });
+
+      await withClock(
+        Clock.fixed(now),
+        () => service.sendMessage(agentId: 'goal-1', text: 'How am I doing?'),
       );
-      async.flushMicrotasks();
-      expect(first, isTrue);
 
-      bool? duplicate;
-      unawaited(
-        service
-            .restoreOldestPendingMessage('goal-1')
-            .then((value) => duplicate = value),
+      final message = upserts.whereType<AgentMessageEntity>().single;
+      final records = upserts.whereType<ScheduledWakeEntity>().toList();
+      expect(recordsAtWake, 1, reason: 'armed before the wake runs');
+      final armed = records.first;
+      expect(armed.id, goalChatRecoveryRecordId('goal-1', message.id));
+      expect(armed.status, ScheduledWakeStatus.pending);
+      expect(armed.scheduledAt, now.toUtc().add(goalChatRecoveryGrace));
+      expect(armed.reason, WakeReason.userMessage.name);
+      expect(armed.workspaceKey, goalChatRecoveryWorkspaceKey(message.id));
+      expect(armed.triggerTokens, [goalChatMessageTriggerToken(message.id)]);
+      expect(records.last.status, ScheduledWakeStatus.consumed);
+      expect(records, hasLength(2));
+    });
+
+    test('a failed wake leaves the recovery pending for the lease', () async {
+      completeWakesWith(WakeRunStatus.failed);
+
+      await expectLater(
+        withClock(
+          Clock.fixed(now),
+          () => service.sendMessage(agentId: 'goal-1', text: 'Try me'),
+        ),
+        throwsA(isA<GoalChatTurnException>()),
       );
-      async.flushMicrotasks();
-      expect(duplicate, isFalse);
 
-      async
-        ..elapse(const Duration(minutes: 5))
-        ..flushMicrotasks();
-
-      bool? recovered;
-      unawaited(
-        service
-            .restoreOldestPendingMessage('goal-1')
-            .then((value) => recovered = value),
+      expect(
+        upserts.whereType<ScheduledWakeEntity>().single.status,
+        ScheduledWakeStatus.pending,
       );
-      async.flushMicrotasks();
-      expect(recovered, isTrue);
-      expect(enqueueCount, 2);
+    });
 
-      completions.add(
-        const WakeRunCompletion(
-          runKey: 'recovery-2',
-          status: WakeRunStatus.completed,
+    test('an unanswered turn without a record gets one, and no device '
+        'enqueues a wake of its own', () async {
+      final armed = await withClock(
+        Clock.fixed(now),
+        () => service.restoreOldestPendingMessage('goal-1'),
+      );
+
+      expect(armed, isTrue);
+      final record = upserts.whereType<ScheduledWakeEntity>().single;
+      expect(record.id, recordId);
+      expect(record.status, ScheduledWakeStatus.pending);
+      expect(record.scheduledAt, now.toUtc().add(goalChatRecoveryGrace));
+      verifyNever(
+        () => orchestrator.enqueueManualWake(
+          agentId: any(named: 'agentId'),
+          reason: any(named: 'reason'),
+          triggerTokens: any(named: 'triggerTokens'),
+          supersede: any(named: 'supersede'),
+          initiator: any(named: 'initiator'),
         ),
       );
-      async.flushMicrotasks();
+
+      // Every later scan, on any device, finds it pending and leaves it.
+      expect(await service.restoreOldestPendingMessage('goal-1'), isFalse);
+      expect(upserts.whereType<ScheduledWakeEntity>(), hasLength(1));
+    });
+
+    test('after a recovery that did not answer, the next window is due when '
+        "the last one's lease lapses", () async {
+      final lapse = DateTime.utc(2026, 8, 18, 13, 5);
+      stored[recordId] = recovery(
+        status: ScheduledWakeStatus.consumed,
+        scheduledAt: DateTime.utc(2026, 8, 18, 12, 30),
+        leaseUntil: lapse,
+      );
+
+      expect(
+        await withClock(
+          Clock.fixed(now),
+          () => service.restoreOldestPendingMessage('goal-1'),
+        ),
+        isTrue,
+      );
+
+      final next = upserts.whereType<ScheduledWakeEntity>().single;
+      expect(next.status, ScheduledWakeStatus.pending);
+      expect(next.scheduledAt, lapse);
+      expect(next.vectorClock, const VectorClock({'host-b': 4}));
+      expect(next.leaseHostId, isNull);
+      expect(next.leaseUntil, isNull);
+      expect(next.consumedAt, isNull);
+    });
+
+    test(
+      'a window the author consumed waits a grace past its deadline',
+      () async {
+        final deadline = DateTime.utc(2026, 8, 18, 12, 30);
+        stored[recordId] = recovery(
+          status: ScheduledWakeStatus.consumed,
+          scheduledAt: deadline,
+        );
+
+        await withClock(
+          Clock.fixed(now),
+          () => service.restoreOldestPendingMessage('goal-1'),
+        );
+
+        expect(
+          upserts.whereType<ScheduledWakeEntity>().single.scheduledAt,
+          deadline.add(goalChatRecoveryGrace),
+        );
+      },
+    );
+
+    test('nothing to recover when every turn is answered', () async {
+      when(
+        () => repository.getMessagesByKind(
+          'goal-1',
+          AgentMessageKind.user,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      expect(await service.restoreOldestPendingMessage('goal-1'), isFalse);
+      expect(upserts, isEmpty);
     });
   });
 

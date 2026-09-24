@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -13,7 +14,14 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:uuid/uuid.dart';
 
 const _goalChatMessageTokenPrefix = 'goal-chat-message:';
-const _goalChatRecoveryListenerTimeout = Duration(minutes: 5);
+
+/// How long the device a message was typed on has to answer it before its
+/// recovery record falls due and the lease elects one device to answer it
+/// instead (ADR 0069, `specs/tla/GoalChatReply.tla`).
+///
+/// Thirty minutes is three run caps: a healthy wake of the author's is long
+/// settled, and its reply long synced, by the time any other device looks.
+const goalChatRecoveryGrace = Duration(minutes: 30);
 
 String goalChatMessageTriggerToken(String messageId) =>
     '$_goalChatMessageTokenPrefix$messageId';
@@ -28,8 +36,22 @@ String? goalChatMessageIdFromTriggerTokens(Iterable<String> tokens) {
   return null;
 }
 
+/// The id of [messageId]'s recovery record.
+String goalChatRecoveryRecordId(String agentId, String messageId) =>
+    scheduledWakeRecordId(
+      agentId,
+      workspaceKey: goalChatRecoveryWorkspaceKey(messageId),
+    );
+
 /// Persists one user-authored goal-agent turn, then hands inference to the
 /// shared wake runtime. The conversation UI never owns an inference loop.
+///
+/// The device the turn was typed on answers it. Every turn also gets a
+/// synced, lease-elected recovery record due [goalChatRecoveryGrace] later,
+/// which the author's successful wake consumes; if that never happens — the
+/// wake failed, the device died — the lease picks exactly one device to
+/// answer instead. No device answers a turn it did not type on sight: that
+/// is how two devices used to answer the same message.
 class GoalChatService {
   GoalChatService({
     required AgentRepository repository,
@@ -58,7 +80,6 @@ class GoalChatService {
   final WakeOrchestrator _orchestrator;
   final UpdateNotifications _notifications;
   final GoalChatHistoryService _historyService;
-  final Set<String> _recoveringMessageIds = {};
 
   static const _uuid = Uuid();
 
@@ -124,10 +145,24 @@ class GoalChatService {
     // written — waiting for it made the user's own words appear late.
     _notifications.notifyUiOnly({agentId, agentNotification});
 
+    // Before the wake, so a process that dies while answering still leaves
+    // the turn a way to be answered — by the lease, after the grace.
+    await _syncService.upsertEntity(
+      _recoveryRecord(
+        agentId: agentId,
+        messageId: messageId,
+        dueAt: now.toUtc().add(goalChatRecoveryGrace),
+        now: now,
+      ),
+    );
+
     await retryMessage(agentId: agentId, messageId: messageId);
   }
 
   /// Re-enqueues the already durable source turn after a failed wake.
+  ///
+  /// A wake that completes consumes the turn's recovery record, so no other
+  /// device answers it again.
   Future<void> retryMessage({
     required String agentId,
     required String messageId,
@@ -157,51 +192,101 @@ class GoalChatService {
     } finally {
       await subscription.cancel();
     }
+    await _consumeRecovery(agentId, messageId);
   }
 
-  /// Re-enqueues the oldest durable user turn left unanswered by a process
-  /// death or an outbox failure.
+  /// Makes sure the oldest unanswered turn can still be answered: arms its
+  /// recovery record when it has none, or the next window of it when the
+  /// last recovery ran without answering. Enqueues nothing itself — the
+  /// scheduled-wake manager's lease elects the one device that answers.
   ///
-  /// Runtime maintenance calls this at startup and before scheduled scans.
-  /// The in-flight set prevents two maintenance passes from queuing the same
-  /// turn concurrently; terminal completion or a missing-completion timeout
-  /// releases it for a later retry.
+  /// Runtime maintenance calls this at startup, before every scheduled scan
+  /// and when a goal identity syncs in, on every device. Returns whether it
+  /// wrote a record.
   Future<bool> restoreOldestPendingMessage(String agentId) async {
     final messageId = await _historyService.oldestPendingMessageId(agentId);
-    if (messageId == null || !_recoveringMessageIds.add(messageId)) {
-      return false;
-    }
-
-    StreamSubscription<WakeRunCompletion>? subscription;
-    Timer? timeout;
-    String? runKey;
-    void release() {
-      _recoveringMessageIds.remove(messageId);
-      timeout?.cancel();
-      unawaited(subscription?.cancel());
-    }
-
-    try {
-      subscription = _orchestrator.runCompletions.listen((event) {
-        if (event.runKey != runKey) return;
-        release();
-      });
-      timeout = Timer(_goalChatRecoveryListenerTimeout, release);
-      runKey = _orchestrator.enqueueManualWake(
-        agentId: agentId,
-        reason: WakeReason.userMessage.name,
-        triggerTokens: {goalChatMessageTriggerToken(messageId)},
-        supersede: false,
-        initiator: WakeInitiator.user,
+    if (messageId == null) return false;
+    var armed = false;
+    await _syncService.runInTransaction(() async {
+      final now = clock.now();
+      final existing = await _repository.getEntity(
+        goalChatRecoveryRecordId(agentId, messageId),
       );
-      return true;
-    } on Object {
-      _recoveringMessageIds.remove(messageId);
-      timeout?.cancel();
-      await subscription?.cancel();
-      rethrow;
-    }
+      if (existing is! ScheduledWakeEntity || existing.deletedAt != null) {
+        // A turn whose author died before arming it, or one sent before
+        // recovery records existed: the grace runs from now.
+        await _syncService.upsertEntity(
+          _recoveryRecord(
+            agentId: agentId,
+            messageId: messageId,
+            dueAt: now.toUtc().add(goalChatRecoveryGrace),
+            now: now,
+          ),
+        );
+        armed = true;
+        return;
+      }
+      if (existing.status != ScheduledWakeStatus.consumed) return;
+      // The next window is due when the last one's lease lapses — the same
+      // UTC instant on every replica, so every device re-arming it writes
+      // one window, and a recovery run still in flight has had its time.
+      // A window the author's own wake consumed carries no lease; it waits
+      // a grace past its deadline instead.
+      await _syncService.upsertEntity(
+        existing.copyWith(
+          status: ScheduledWakeStatus.pending,
+          scheduledAt:
+              existing.leaseUntil ??
+              existing.scheduledAt.add(goalChatRecoveryGrace),
+          consumedAt: null,
+          leaseHostId: null,
+          leaseUntil: null,
+          updatedAt: now,
+        ),
+      );
+      armed = true;
+    });
+    return armed;
   }
+
+  /// Flips [messageId]'s recovery record to consumed if it is still pending.
+  Future<void> _consumeRecovery(String agentId, String messageId) =>
+      _syncService.runInTransaction(() async {
+        final record = await _repository.getEntity(
+          goalChatRecoveryRecordId(agentId, messageId),
+        );
+        if (record is! ScheduledWakeEntity ||
+            record.status != ScheduledWakeStatus.pending) {
+          return;
+        }
+        final now = clock.now();
+        await _syncService.upsertEntity(
+          record.copyWith(
+            status: ScheduledWakeStatus.consumed,
+            consumedAt: now,
+            updatedAt: now,
+          ),
+        );
+      });
+
+  static ScheduledWakeEntity _recoveryRecord({
+    required String agentId,
+    required String messageId,
+    required DateTime dueAt,
+    required DateTime now,
+  }) =>
+      AgentDomainEntity.scheduledWake(
+            id: goalChatRecoveryRecordId(agentId, messageId),
+            agentId: agentId,
+            scheduledAt: dueAt,
+            status: ScheduledWakeStatus.pending,
+            reason: WakeReason.userMessage.name,
+            updatedAt: now,
+            vectorClock: null,
+            workspaceKey: goalChatRecoveryWorkspaceKey(messageId),
+            triggerTokens: [goalChatMessageTriggerToken(messageId)],
+          )
+          as ScheduledWakeEntity;
 }
 
 class GoalChatTurnException implements Exception {

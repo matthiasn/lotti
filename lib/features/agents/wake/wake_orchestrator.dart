@@ -375,6 +375,33 @@ class WakeOrchestrator with AgentErrorLogging {
     );
   }
 
+  /// Whether a wake of [agentId] in [workspaceKey] carrying every one of
+  /// [tokens] is already owed — queued, running, or left unsettled by a
+  /// previous process for [restoreWakeIntents]. Always false without an
+  /// [intentStore].
+  ///
+  /// A scheduled-wake record that is still pending although its wake is owed
+  /// was fired by a process that died before consuming it; firing it again
+  /// would run the window twice on this device
+  /// (`specs/tla/ScheduledWakeLease.tla`, `NoDeviceRunsTwice`).
+  Future<bool> owesWake(
+    String agentId, {
+    required String? workspaceKey,
+    required Set<String> tokens,
+  }) async {
+    final store = intentStore;
+    if (store == null) return false;
+    return store.owes(
+      agentId: agentId,
+      workspaceKey: workspaceKey,
+      tokens: tokens,
+    );
+  }
+
+  /// Completes once every wake intent recorded so far has been written, so a
+  /// caller can make a later write depend on the wake being durable.
+  Future<void> flushWakeIntents() async => intentStore?.flush();
+
   /// Daily OS processing jobs already have a durable outbox that owns retry,
   /// cancellation, job boundaries and artifact run-key provenance. Replaying
   /// them here would bypass that owner and could merge incompatible job IDs.

@@ -19,6 +19,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart'
     show WakeRunCompletion;
+import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -233,18 +234,22 @@ final goalAgentWakeRunnersProvider = Provider<Map<String, AgentWakeRunner>>(
           required triggerTokens,
           required threadId,
         }) async {
-          final explicitChatMessageId = goalChatMessageIdFromTriggerTokens(
+          // Only a wake for a message answers it: the typing device's own,
+          // or the one device the recovery lease elected (ADR 0069). Any
+          // other goal wake used to answer the oldest pending message too,
+          // on every device, so two devices answered the same message.
+          final chatMessageId = goalChatMessageIdFromTriggerTokens(
             triggerTokens,
           );
-          final pendingChatMessageIds = await ref
-              .read(goalChatHistoryServiceProvider)
-              .pendingMessageIds(agentIdentity.agentId);
-          final chatMessageId =
-              explicitChatMessageId != null &&
-                  pendingChatMessageIds.contains(explicitChatMessageId)
-              ? explicitChatMessageId
-              : pendingChatMessageIds.firstOrNull;
           if (chatMessageId != null) {
+            final pending = await ref
+                .read(goalChatHistoryServiceProvider)
+                .pendingMessageIds(agentIdentity.agentId);
+            // Answered already — by an earlier wake here, or by the device
+            // whose reply has synced in: nothing to do, and nothing to pay.
+            if (!pending.contains(chatMessageId)) {
+              return const WakeResult(success: true);
+            }
             return ref
                 .read(goalAgentWorkflowProvider)
                 .executeUserMessage(

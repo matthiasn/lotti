@@ -107,6 +107,50 @@ void main() {
     );
   });
 
+  group('owes', () {
+    test('an intent a previous process left is owed, as its disk has it — '
+        'agent, workspace and every token', () async {
+      final store = newStore();
+      await store.load();
+      record(store, workspaceKey: 'goal-escalation:2026-08-08', tokens: {'a'});
+      record(store, workspaceKey: 'goal-escalation:2026-08-08', tokens: {'b'});
+      await store.flush();
+
+      // A new process, not loaded yet: owes reads the disk itself.
+      final next = newStore();
+      Future<bool> owes(String agent, String? workspace, Set<String> tokens) =>
+          next.owes(agentId: agent, workspaceKey: workspace, tokens: tokens);
+
+      expect(await owes('agent-1', 'goal-escalation:2026-08-08', {'a'}), true);
+      expect(
+        await owes('agent-1', 'goal-escalation:2026-08-08', {'a', 'b'}),
+        isTrue,
+      );
+      expect(
+        await owes('agent-1', 'goal-escalation:2026-08-08', {'a', 'c'}),
+        isFalse,
+        reason: 'a token the job does not carry is work it would not do',
+      );
+      expect(await owes('agent-1', null, {'a'}), isFalse);
+      expect(await owes('agent-2', 'goal-escalation:2026-08-08', {}), isFalse);
+    });
+
+    test('a settled job is no longer owed', () async {
+      final store = newStore();
+      await store.load();
+      record(store, workspaceKey: 'ws');
+      expect(
+        await store.owes(agentId: 'agent-1', workspaceKey: 'ws', tokens: {}),
+        isTrue,
+      );
+      store.settle('run-1');
+      expect(
+        await store.owes(agentId: 'agent-1', workspaceKey: 'ws', tokens: {}),
+        isFalse,
+      );
+    });
+  });
+
   test('settling an unknown job writes nothing', () async {
     final mockDb = MockSettingsDb();
     when(() => mockDb.itemByKey(any())).thenAnswer((_) async => null);

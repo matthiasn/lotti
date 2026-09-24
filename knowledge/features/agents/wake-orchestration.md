@@ -5,7 +5,7 @@ description: How a local change becomes an agent wake — subscription matching,
 resource: ../../../lib/features/agents/wake
 tags: [agents, wake, scheduling, concurrency]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-24T00:15:55Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T04:00:00Z }
 stale_after: 2026-12-24
 sources:
   - id: wake
@@ -39,6 +39,10 @@ sources:
   - id: adr-0066
     resource: ../../../docs/adr/0066-model-checked-agent-wakes-and-confirmations.md
     title: ADR 0066 — Model-checked agent wakes and confirmations
+    last_modified: 2026-09-24
+  - id: adr-0069
+    resource: ../../../docs/adr/0069-model-checked-scheduled-wake-leases.md
+    title: ADR 0069 — Model-checked scheduled-wake leases and chat recovery
     last_modified: 2026-09-24
 ---
 
@@ -402,6 +406,17 @@ orchestrator and store through generated triggers, run completions and a
 crash, and checks `NoLostWake` after a final restart; it is what showed that
 settling per agent with a sequence cutoff lost a trigger queued in a second
 job of the same agent.
+
+Two queries let other writers depend on the store. `flushWakeIntents`
+completes once every intent recorded so far is on disk, and `owesWake` says
+whether a wake of an agent and workspace carrying given tokens is owed —
+queued, running, or left by the previous process for startup to restore; it
+waits for the store's read, so a restorable intent is never missed. The
+scheduled-wake manager uses both: it consumes a record only after its wake's
+intent is durable, and consumes rather than re-fires a record whose wake is
+already owed
+([scheduled wakes](../daily_os_next/coordination-protocol.md#one-device-per-window-elected-by-the-register-itself),
+[ADR 0069](../../../docs/adr/0069-model-checked-scheduled-wake-leases.md)).
 
 # Completion signalling
 

@@ -5,8 +5,8 @@ description: Two durable synced entities instead of RPC — binding day directiv
 resource: ../../../lib/features/daily_os_next/agents/service/day_agent_directive_service.dart
 tags: [daily-os, coordination, directives, digest, rollups]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-03T12:35:33Z }
-stale_after: 2026-11-01
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T04:00:00Z }
+stale_after: 2026-12-24
 sources:
   - id: agents
     resource: ../../../lib/features/daily_os_next/agents
@@ -24,6 +24,18 @@ sources:
     resource: ../../../docs/adr/0048-one-device-runs-the-coordinator-digest.md
     title: ADR 0048 — One device runs the coordinator digest
     last_modified: 2026-08-01
+  - id: scheduled-wake-manager
+    resource: ../../../lib/features/agents/wake/scheduled_wake_manager.dart
+    title: ScheduledWakeManager — lease, fire and consume
+    last_modified: 2026-09-24
+  - id: tla-lease
+    resource: ../../../specs/tla/ScheduledWakeLease.tla
+    title: TLA+ model of the scheduled-wake lease
+    last_modified: 2026-09-24
+  - id: adr-0069
+    resource: ../../../docs/adr/0069-model-checked-scheduled-wake-leases.md
+    title: ADR 0069 — Model-checked scheduled-wake leases and chat recovery
+    last_modified: 2026-09-24
   - id: adr-0019
     resource: ../../../docs/adr/0019-attention-negotiation-protocol.md
     title: ADR 0019 — Attention negotiation protocol
@@ -191,13 +203,16 @@ source), so this was spend and battery rather than correctness, but it recurred
 every window forever.
 
 `ScheduledWakeManager` leases any record its `requiresLease` predicate marks as
-shared work; the coordinator digest is the only one today. The cycle is
-claim → settle → confirm:
+shared work: the coordinator digest, goal and relationship escalations, and the
+recovery of an unanswered goal chat message (see
+[goal agents](../goals.md)). The predicate is wired in `agent_providers.dart`.
+The cycle is claim → settle → confirm:
 
 ```mermaid
 stateDiagram-v2
   [*] --> Unclaimed: record due
   Unclaimed --> Claimed: write leaseHostId = me, leaseUntil = now + 30m
+  Unclaimed --> [*]: its wake is already owed here — consumed, not fired
   Claimed --> Claimed: settle not elapsed — wait
   Claimed --> Fires: after 3m, the surviving claim is still mine
   Claimed --> Skips: after 3m, another host survived
@@ -322,7 +337,39 @@ lose the cadence.
 their model providers stay reachable can each hold a locally-consistent claim and
 both fire. That is redundant spend rather than a wrong answer — the digest's
 writes are registers recomputed from source — and closing the window entirely
-would need a consensus round this app has no coordinator for.
+would need a consensus round this app has no coordinator for. A device back
+from a crash, or from sleep, is partitioned in exactly this sense: its first
+scan acts on its own replica before sync has caught up. A fencing token would
+not help either — the resource a stale claimant spends is a model call, which
+has no side that could reject the token.
+
+### Firing, then consuming
+
+The model in `specs/tla/ScheduledWakeLease.tla`
+([ADR 0069](../../../docs/adr/0069-model-checked-scheduled-wake-leases.md))
+fixes the order of the three writes a fire makes, because they land in two
+databases:
+
+1. `enqueueManualWake` queues the wake and records its intent in memory.
+2. `flushWakeIntents` waits until that intent is on disk in the settings
+   database. Consuming first would let a crash keep the consume and lose the
+   intent — the window gone on every device.
+3. The consume re-reads the row in a transaction and flips it only while it is
+   still the fired window and pending, carrying the current row's clock. The
+   due-query snapshot it used to write back could regress a replica to a window
+   a newer one had already replaced.
+
+A process that died between steps 2 and 3 leaves the record pending while its
+wake is owed — restorable at the next start. The scan asks
+`WakeOrchestrator.owesWake` before claiming and again after the lease wait, and
+consumes such a record without firing it: claiming would wait out a settle in
+which the restored run can finish, settle its intent and let the record fire
+the window a second time. The startup scan runs before `restoreWakeIntents`,
+which is what lets it see the owed wake first.
+
+A later window of the same record id — a second goal escalation the same day
+— causally follows the consumed one and is due a millisecond after it; see
+[goal agents](../goals.md).
 
 ## A digest anchors to the day it runs on, not the day it was scheduled for
 

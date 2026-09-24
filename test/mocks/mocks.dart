@@ -1181,7 +1181,23 @@ class MockJournalEntityLoader extends Mock implements SyncJournalEntityLoader {}
 class MockSyncNodeProfileBroadcaster extends Mock
     implements SyncNodeProfileBroadcaster {}
 
-class MockWakeOrchestrator extends Mock implements WakeOrchestrator {}
+class MockWakeOrchestrator extends Mock implements WakeOrchestrator {
+  /// Wakes [owesWake] reports as owed, as `(agentId, workspaceKey)` pairs.
+  final owedWakes = <(String, String?)>{};
+
+  /// Runs on every [flushWakeIntents], so a test can observe its ordering.
+  void Function()? onFlushWakeIntents;
+
+  @override
+  Future<bool> owesWake(
+    String agentId, {
+    required String? workspaceKey,
+    required Set<String> tokens,
+  }) async => owedWakes.contains((agentId, workspaceKey));
+
+  @override
+  Future<void> flushWakeIntents() async => onFlushWakeIntents?.call();
+}
 
 class MockTaskAgentService extends Mock implements TaskAgentService {}
 

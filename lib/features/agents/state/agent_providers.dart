@@ -345,14 +345,16 @@ ScheduledWakeManager scheduledWakeManager(Ref ref) {
     syncService: ref.watch(agentSyncServiceProvider),
     domainLogger: domainLogger,
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),
-    // The coordinator's morning digest is the one scheduled wake whose work
-    // is shared rather than device-local: every device firing it means one
-    // inference billed per device for a single result. Everything else stays
-    // on the unleased path.
-    // Lease-elected records: work that must run on exactly one device.
+    // Lease-elected records: work that is shared rather than device-local,
+    // where every device firing it means one inference billed per device for
+    // a single result — the coordinator's morning digest, goal and
+    // relationship escalations, and the recovery of an unanswered goal chat
+    // message, which would otherwise be answered once per device (ADR 0069).
+    // Everything else stays on the unleased path.
     requiresLease: (record) =>
         record.workspaceKey == coordinatorDigestWorkspaceKey ||
         isGoalEscalationWorkspace(record.workspaceKey) ||
+        isGoalChatRecoveryWorkspace(record.workspaceKey) ||
         isRelationshipEscalationWorkspace(record.workspaceKey),
     // `getHost()` reads a `late` field the service only assigns in `init()`,
     // so a cold start that reaches here first throws

@@ -3105,4 +3105,220 @@ void main() {
       });
     });
   });
+
+  // specs/tla/ScheduledWakeLease.tla, ADR 0069: the traces TLC found in the
+  // fire–consume path, one regression each.
+  group('firing and consuming a record (ScheduledWakeLease.tla)', () {
+    const escalationWorkspace = 'goal-escalation:2026-08-08';
+    final now = DateTime(2026, 8, 8, 14, 30);
+
+    ScheduledWakeEntity escalation({
+      String? leaseHostId,
+      DateTime? leaseUntil,
+      DateTime? scheduledAt,
+      VectorClock? vectorClock,
+    }) =>
+        AgentDomainEntity.scheduledWake(
+              id: 'scheduled_wake:$kTestAgentId:$escalationWorkspace',
+              agentId: kTestAgentId,
+              scheduledAt: scheduledAt ?? DateTime.utc(2026, 8, 8),
+              status: ScheduledWakeStatus.pending,
+              reason: WakeReason.scheduled.name,
+              updatedAt: now,
+              vectorClock: vectorClock,
+              triggerTokens: const [escalationWorkspace],
+              workspaceKey: escalationWorkspace,
+              leaseHostId: leaseHostId,
+              leaseUntil: leaseUntil,
+            )
+            as ScheduledWakeEntity;
+
+    ScheduledWakeManager start(
+      ScheduledWakeEntity due, {
+      bool leased = false,
+      void Function()? duringHostLookup,
+    }) {
+      when(
+        () => repository.getDueScheduledAgentStates(any()),
+      ).thenAnswer((_) async => []);
+      when(
+        () => repository.getDueScheduledWakeRecords(any()),
+      ).thenAnswer((_) async => [due]);
+      when(
+        () => repository.getEntity(due.id),
+      ).thenAnswer((_) async => due);
+      when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
+      return ScheduledWakeManager(
+        repository: repository,
+        orchestrator: orchestrator,
+        syncService: syncService,
+        checkInterval: const Duration(minutes: 1),
+        requiresLease: (_) => leased,
+        localHostId: () async {
+          duringHostLookup?.call();
+          return 'host-a';
+        },
+      )..start();
+    }
+
+    List<ScheduledWakeEntity> writes() => verify(
+      () => syncService.upsertEntity(captureAny()),
+    ).captured.cast<ScheduledWakeEntity>();
+
+    void expectNotFired() => verifyNever(
+      () => orchestrator.enqueueManualWake(
+        agentId: any(named: 'agentId'),
+        reason: any(named: 'reason'),
+        triggerTokens: any(named: 'triggerTokens'),
+        workspaceKey: any(named: 'workspaceKey'),
+      ),
+    );
+
+    // NoLostWindow: the consume used to race the intent's coalesced write to
+    // another database. A crash after the consume committed and before the
+    // intent landed lost the window on every device.
+    test('the wake intent is on disk before the record is consumed', () {
+      fakeAsync((async) {
+        withClock(Clock.fixed(now), () {
+          final order = <String>[];
+          orchestrator.onFlushWakeIntents = () => order.add('flush');
+          final manager = start(escalation());
+          when(
+            () => orchestrator.enqueueManualWake(
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
+              triggerTokens: any(named: 'triggerTokens'),
+              workspaceKey: any(named: 'workspaceKey'),
+            ),
+          ).thenAnswer((_) {
+            order.add('enqueue');
+            return 'run-key';
+          });
+          when(() => syncService.upsertEntity(any())).thenAnswer((inv) async {
+            final written =
+                inv.positionalArguments.single as ScheduledWakeEntity;
+            order.add(written.status.name);
+          });
+          async.flushMicrotasks();
+
+          expect(order, ['enqueue', 'flush', 'consumed']);
+          manager.stop();
+        });
+      });
+    });
+
+    // NoDeviceRunsTwice: a process that died between firing and consuming
+    // leaves the record pending and its wake owed. Claiming it again waits
+    // out a settle in which the restored run can finish and settle its
+    // intent — and the record then fires the window a second time.
+    test(
+      'a due record whose wake is already owed is consumed, not claimed',
+      () {
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            orchestrator.owedWakes.add((kTestAgentId, escalationWorkspace));
+            final manager = start(escalation(), leased: true);
+            async.flushMicrotasks();
+
+            expectNotFired();
+            final written = writes().single;
+            expect(written.status, ScheduledWakeStatus.consumed);
+            expect(written.leaseHostId, isNull, reason: 'no claim was written');
+            manager.stop();
+          });
+        });
+      },
+    );
+
+    test('a wake restored while the claim settled is not fired again', () {
+      fakeAsync((async) {
+        withClock(Clock.fixed(now), () {
+          // This device's own claim, written four minutes ago: settled.
+          final claimed = escalation(
+            leaseHostId: 'host-a',
+            leaseUntil: now.toUtc().add(const Duration(minutes: 26)),
+          );
+          final manager = start(
+            claimed,
+            leased: true,
+            // Startup restores the owed wake while the pass is past its
+            // first check.
+            duringHostLookup: () => orchestrator.owedWakes.add(
+              (kTestAgentId, escalationWorkspace),
+            ),
+          );
+          async.flushMicrotasks();
+
+          expectNotFired();
+          expect(writes().single.status, ScheduledWakeStatus.consumed);
+          manager.stop();
+        });
+      });
+    });
+
+    // Converged: the consume was built from the due-query snapshot, so it
+    // overwrote whatever the replica held by then.
+    test('the consume carries the current row, not the due-query snapshot', () {
+      fakeAsync((async) {
+        withClock(Clock.fixed(now), () {
+          final due = escalation();
+          const currentClock = VectorClock({'host-a': 3, 'host-b': 5});
+          final manager = start(due);
+          when(
+            () => repository.getEntity(due.id),
+          ).thenAnswer((_) async => due.copyWith(vectorClock: currentClock));
+          async.flushMicrotasks();
+
+          final consumed = writes().last;
+          expect(consumed.status, ScheduledWakeStatus.consumed);
+          expect(consumed.vectorClock, currentClock);
+          manager.stop();
+        });
+      });
+    });
+
+    test('a row that moved on to the next window is not consumed', () {
+      fakeAsync((async) {
+        withClock(Clock.fixed(now), () {
+          final due = escalation();
+          final nextWindow = escalation(
+            scheduledAt: DateTime.utc(2026, 8, 8, 0, 0, 0, 1),
+          );
+          var reads = 0;
+          when(
+            () => repository.getDueScheduledAgentStates(any()),
+          ).thenAnswer((_) async => []);
+          when(
+            () => repository.getDueScheduledWakeRecords(any()),
+          ).thenAnswer((_) async => [due]);
+          // The fire path's re-read still sees the fired window; the next
+          // one syncs in before the consume.
+          when(() => repository.getEntity(due.id)).thenAnswer(
+            (_) async => ++reads == 1 ? due : nextWindow,
+          );
+          when(
+            () => syncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+          final manager = ScheduledWakeManager(
+            repository: repository,
+            orchestrator: orchestrator,
+            syncService: syncService,
+            checkInterval: const Duration(minutes: 1),
+          )..start();
+          async.flushMicrotasks();
+
+          verify(
+            () => orchestrator.enqueueManualWake(
+              agentId: kTestAgentId,
+              reason: WakeReason.scheduled.name,
+              triggerTokens: {escalationWorkspace},
+              workspaceKey: escalationWorkspace,
+            ),
+          ).called(1);
+          verifyNever(() => syncService.upsertEntity(any()));
+          manager.stop();
+        });
+      });
+    });
+  });
 }

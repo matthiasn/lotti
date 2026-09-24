@@ -16,6 +16,13 @@ on:
       - "lib/features/agents/wake/**"
       - "lib/features/agents/service/change_set_confirmation_service.dart"
       - "lib/features/agents/service/change_set_resolution_store.dart"
+      - "lib/features/agents/sync/agent_concurrent_resolver.dart"
+      - "lib/features/agents/state/agent_providers.dart"
+      - "lib/features/goals/runtime/goal_agent_phase_a.dart"
+      - "lib/features/goals/service/goal_chat_service.dart"
+      - "lib/features/goals/state/goal_agent_providers.dart"
+      - "lib/features/relationships/runtime/relationship_agent_phase_a.dart"
+      - "lib/classes/goal_trigger_tokens.dart"
       - ".github/workflows/tla-model-check.yml"
 
 concurrency:
