@@ -492,6 +492,65 @@ void main() {
     }
 
     group('confirmItem', () {
+      test(
+        'a non-retryable failure records no retraction for an item reopened '
+        'while its dispatch ran',
+        () async {
+          // The dispatch was running when the user reopened the item. The
+          // auto-retraction found it no longer confirmed and left it alone —
+          // but its decision had already been written, so the pending item
+          // stood beside a record saying the agent retracted it.
+          final changeSet = makeChangeSetWith();
+          var stored = changeSet;
+          final decisions = <ChangeDecisionEntity>[];
+          when(
+            () => mockRepository.getEntity(changeSet.id),
+          ).thenAnswer((_) async => stored);
+          when(() => mockSyncService.upsertEntity(any())).thenAnswer((
+            invocation,
+          ) async {
+            final entity = invocation.positionalArguments.first;
+            if (entity is ChangeDecisionEntity) decisions.add(entity);
+            if (entity is ChangeSetEntity) stored = entity;
+          });
+          mockSyncService.transactionDelegate = driftLikeTransactions(
+            save: () => stored,
+            restore: (snapshot) => stored = snapshot,
+          );
+          final dispatch = Completer<ToolExecutionResult>();
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer((_) => dispatch.future);
+          when(
+            () => mockRepository.getEntitiesByAgentId(
+              any(),
+              type: any(named: 'type'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => const []);
+
+          await withClock(testClock, () async {
+            final confirm = service.confirmItem(changeSet, 0);
+            await pumpEventQueue();
+            expect(await service.reopenItem(stored, 0), isTrue);
+            dispatch.complete(
+              const ToolExecutionResult(
+                success: false,
+                output: 'failed',
+                nonRetryable: true,
+              ),
+            );
+            await confirm;
+          });
+
+          expect(
+            decisions.map((d) => d.verdict),
+            isNot(contains(ChangeDecisionVerdict.retracted)),
+          );
+          expect(stored.items[0].status, ChangeItemStatus.pending);
+        },
+      );
+
       for (final nonRetryable in [false, true]) {
         test(
           'a failed dispatch moves only its own item, never a sibling '
@@ -720,7 +779,7 @@ void main() {
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured;
           expect(captured, hasLength(4));
-          final retractionDecision = captured[2] as ChangeDecisionEntity;
+          final retractionDecision = captured[3] as ChangeDecisionEntity;
           expect(retractionDecision.verdict, ChangeDecisionVerdict.retracted);
           expect(retractionDecision.actor, DecisionActor.agent);
           expect(
@@ -728,7 +787,7 @@ void main() {
             'Confirmed propose_goal_revision_v2 proposal failed while '
             'applying.',
           );
-          final retractedSet = captured[3] as ChangeSetEntity;
+          final retractedSet = captured[2] as ChangeSetEntity;
           expect(retractedSet.items.single.status, ChangeItemStatus.retracted);
           expect(retractedSet.status, ChangeSetStatus.resolved);
         });
@@ -862,7 +921,7 @@ void main() {
               () => mockSyncService.upsertEntity(captureAny()),
             ).captured;
             expect(captured, hasLength(4));
-            final retraction = captured[2] as ChangeDecisionEntity;
+            final retraction = captured[3] as ChangeDecisionEntity;
             expect(retraction.verdict, ChangeDecisionVerdict.retracted);
             expect(retraction.actor, DecisionActor.agent);
             expect(
@@ -870,7 +929,7 @@ void main() {
               'Confirmed update_time_entry proposal failed while applying: '
               'Missing, empty, or too-long summary',
             );
-            final retractedSet = captured[3] as ChangeSetEntity;
+            final retractedSet = captured[2] as ChangeSetEntity;
             expect(
               retractedSet.items.single.status,
               ChangeItemStatus.retracted,

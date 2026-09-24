@@ -236,22 +236,32 @@ class ChangeSetConfirmationService {
         subDomain: _sub,
       );
       if (shouldAutoRetract) {
-        await _resolution.persistDecision(
-          changeSet: current,
-          itemIndex: itemIndex,
-          toolName: item.toolName,
-          verdict: ChangeDecisionVerdict.retracted,
-          actor: DecisionActor.agent,
-          retractionReason: _failedConfirmationRetractionReason(item, result),
-          humanSummary: item.humanSummary,
-          args: item.args,
-        );
-        final retractedSet = await _resolution.transitionChangeSetItem(
-          confirmedSet,
-          itemIndex,
-          from: const {ChangeItemStatus.confirmed},
-          to: ChangeItemStatus.retracted,
-        );
+        // The retraction is recorded only if the item was still ours to
+        // retract — in the same transaction, so an item reopened meanwhile
+        // is not left pending beside a decision saying it was retracted.
+        final retractedSet = await _syncService.runInTransaction(() async {
+          final retracted = await _resolution.transitionChangeSetItem(
+            confirmedSet,
+            itemIndex,
+            from: const {ChangeItemStatus.confirmed},
+            to: ChangeItemStatus.retracted,
+          );
+          if (retracted == null) return null;
+          await _resolution.persistDecision(
+            changeSet: current,
+            itemIndex: itemIndex,
+            toolName: item.toolName,
+            verdict: ChangeDecisionVerdict.retracted,
+            actor: DecisionActor.agent,
+            retractionReason: _failedConfirmationRetractionReason(
+              item,
+              result,
+            ),
+            humanSummary: item.humanSummary,
+            args: item.args,
+          );
+          return retracted;
+        });
         if (retractedSet == null) {
           _domainLogger?.error(
             LogDomain.agentWorkflow,
