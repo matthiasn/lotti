@@ -2,10 +2,15 @@ import 'dart:async';
 
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/projection/agent_event_adapter.dart';
+import 'package:lotti/features/agents/projection/agent_projection.dart';
+import 'package:lotti/features/agents/projection/canonical_order.dart';
 import 'package:lotti/features/agents/projection/derived_agent_state.dart';
+import 'package:lotti/features/agents/projection/join_plan.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
@@ -590,11 +595,11 @@ class AgentSyncService {
   /// self-link (`m → m`, a 1-cycle the projection rejects), for an older message
   /// a back-edge — either way a cycle that corrupts the canonical chain.
   ///
-  /// This is the only place `recentHeadMessageId` is maintained — it is
-  /// otherwise declared-but-unwritten. Concurrent multi-device appends off one
-  /// head produce a fork (≥2 heads), which the projection tolerates; joins are
-  /// deferred (PR 6). Internal writes use [_upsertEntityRaw] to avoid recursing
-  /// back through the [upsertEntity] message router.
+  /// Together with [appendJoin] this is the only place `recentHeadMessageId`
+  /// is written locally. Concurrent multi-device appends off one head produce
+  /// a fork (≥2 heads), which the projection tolerates and [appendJoin] heals.
+  /// Internal writes use [_upsertEntityRaw] to avoid recursing back through
+  /// the [upsertEntity] message router.
   Future<void> _appendMessage(AgentMessageEntity message) async {
     await runInTransaction(() async {
       // Idempotency guard — see the docstring. Preserve the persisted edge so a
@@ -610,14 +615,16 @@ class AgentSyncService {
       final state = await _repository.getAgentState(message.agentId);
       var head = state?.recentHeadMessageId;
 
-      // A legacy agent has a state row whose head pointer was never written; on
-      // the first append, chain its existing prefix into one spine so history is
-      // continuous, then extend it (the head is persisted below, so this never
-      // re-runs). Skip entirely when there is no state row: there is no head to
-      // maintain, and re-scanning every append — the advanced head is never
-      // persisted without a state row — would be quadratic.
+      // A state row without a head pointer: a legacy agent whose head was never
+      // written, a state row lagging behind the messages synced in, or a
+      // synced state version that won last-writer-wins without one. Recover
+      // the head from the log (the head is persisted below, so
+      // this runs once per unset head). Skip entirely when there is no state
+      // row: there is no head to maintain, and re-scanning every append — the
+      // advanced head is never persisted without a state row — would be
+      // quadratic.
       if (state != null && head == null) {
-        head = await _backfillMessageChain(message.agentId);
+        head = await _recoverHead(message.agentId);
       }
 
       await _upsertEntityRaw(
@@ -648,20 +655,80 @@ class AgentSyncService {
     });
   }
 
+  /// The head an append chains off when the state row has none, or null when
+  /// the agent has no messages yet (ADR 0071).
+  ///
+  /// The head pointer is a field of the synced state row: it can lag behind
+  /// the messages that synced in, and last-writer-wins can install a version
+  /// written by a device that had not seen any head yet — so an unset head
+  /// does not mean a legacy log. When the log already
+  /// carries DAG evidence (any `messagePrev` edge, a message minted with a
+  /// `prevMessageId`, or a join), its edges are left alone and the head is a
+  /// head of the projected log — the last in canonical order that no present
+  /// row names as its `prevMessageId` (a child whose edge is still in flight
+  /// makes its parent look like a head) — so any other head stays a fork the
+  /// healer joins. Only a log with no such evidence gets
+  /// the legacy spine ([_backfillMessageChain]): rewriting the edges of a
+  /// chained log would give an edge id a second parent, and under clock skew
+  /// close a cycle. A log that no longer projects (a cycle or duplicate id
+  /// synced from a peer) yields null, so the message starts a new root.
+  Future<String?> _recoverHead(String agentId) async {
+    final messages = await _repository.getAgentMessages(agentId);
+    if (messages.isEmpty) return null;
+    final linksByChild = await _repository.getLinksFromMultiple(
+      [for (final message in messages) message.id],
+      type: AgentLinkTypes.messagePrev,
+    );
+    final links = [for (final group in linksByChild.values) ...group];
+    final chained =
+        links.isNotEmpty ||
+        messages.any(
+          (message) =>
+              message.prevMessageId != null ||
+              (message.kind == AgentMessageKind.system &&
+                  hasJoinIdShape(message.id)),
+        );
+    if (!chained) return _backfillMessageChain(messages);
+    try {
+      final heads = project(
+        canonicalOrder(agentEventsFromLog(messages, links)),
+      ).headIds;
+      // A head that a present row names as its prevMessageId is a parent
+      // whose child's edge is still in flight, not a tip: chaining off it
+      // would fork the log once that edge lands.
+      final named = {
+        for (final message in messages) ?message.prevMessageId,
+      };
+      final tips = [
+        for (final head in heads)
+          if (!named.contains(head)) head,
+      ];
+      return tips.isNotEmpty ? tips.last : heads.last;
+    } catch (exception, stackTrace) {
+      getIt<DomainLogger>().error(
+        LogDomain.sync,
+        exception,
+        message: 'head recovery projection failed for $agentId; root append',
+        stackTrace: stackTrace,
+        subDomain: 'agentSync.recoverHead',
+      );
+      return null;
+    }
+  }
+
   /// One-time migration for a legacy agent: chains its existing (edge-less)
-  /// messages into a single spine ordered by `(createdAt, id)`, creating
+  /// [messages] into a single spine ordered by `(createdAt, id)`, creating
   /// content-addressed `messagePrev` links. Returns the resulting head (the
-  /// last message's id), or null when the agent has no messages yet.
+  /// last message's id).
   ///
   /// Only the links are written (not the messages), so history is **not**
   /// re-stamped or re-synced — just `n-1` new edges. Link ids are derived from
   /// the child id, so two devices backfilling the same agent converge on the
-  /// same edges. Reached only on the first append of an agent whose state row
-  /// has an unset head, so it runs at most once (the append then persists the
-  /// head).
-  Future<String?> _backfillMessageChain(String agentId) async {
-    final messages = await _repository.getAgentMessages(agentId);
-    if (messages.isEmpty) return null;
+  /// same edges. Reached only through [_recoverHead] for a log with no DAG
+  /// evidence, so it never rewrites an edge an append wrote.
+  Future<String> _backfillMessageChain(
+    List<AgentMessageEntity> messages,
+  ) async {
     messages.sort((a, b) {
       final byCreatedAt = a.createdAt.compareTo(b.createdAt);
       return byCreatedAt != 0 ? byCreatedAt : a.id.compareTo(b.id);

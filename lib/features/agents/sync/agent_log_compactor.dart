@@ -561,10 +561,23 @@ class AgentLogCompactor {
 
     // planCompaction folds a clean oldest-first prefix, so the fold set is the
     // first N events and the new cutoff is the last folded event's position.
+    // The fold never passes a tail event whose content did not resolve (a
+    // payload not synced yet): the checkpoint could not cover it, so it would
+    // be dead on arrival and the next wake would summarize the same tail
+    // again (ADR 0071). It stops just before the first such event.
+    final resolvedPositions = {
+      for (final loaded in loadedTail) loaded.event.position,
+    };
+    final gap = visibleTailEvents(log: view.log, cutoff: view.active?.cutoff)
+        .map((event) => event.position)
+        .where((position) => !resolvedPositions.contains(position))
+        .firstOrNull;
     final foldSet = foldPlan.foldIds.toSet();
     final folded = [
       for (final loaded in loadedTail)
-        if (foldSet.contains(loaded.event.position.key)) loaded,
+        if (foldSet.contains(loaded.event.position.key) &&
+            (gap == null || gap.isAfter(loaded.event.position)))
+          loaded,
     ];
     if (folded.isEmpty) return null;
     final cutoff = folded.last.event.position;

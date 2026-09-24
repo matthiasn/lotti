@@ -63,16 +63,15 @@ class ForkHealer {
       final projection = project(
         canonicalOrder(agentEventsFromLog(messages, links)),
       );
-      if (_hasPendingJoinHead(
-        projection: projection,
-        messages: messages,
-        links: links,
-      )) {
-        return null;
-      }
       plan = planJoin(
         headIds: projection.headIds,
-        viewComplete: projection.danglingParentIds.isEmpty,
+        viewComplete:
+            projection.danglingParentIds.isEmpty &&
+            !_hasUnsyncedEdge(
+              messages: messages,
+              links: links,
+              headIds: projection.headIds,
+            ),
       );
     } catch (exception, stackTrace) {
       // A peer may have synced a malformed log (duplicate id / cycle). Healing
@@ -99,72 +98,85 @@ class ForkHealer {
   }
 }
 
-/// True while a join node has synced before all of its `messagePrev` edges.
+/// True while some present row still waits for a `messagePrev` edge that
+/// makes a present parent look like a head (ADR 0071).
 ///
-/// A parentless or partially-parented join is itself a projected head. Without
-/// this guard, the healer would treat `{old heads + pending join}` as a fresh
-/// fork and mint a second-order join. If the join's already-arrived parents plus
-/// any subset of the other current heads reproduce the join's content-addressed
-/// id, the correct action is to wait for the missing edges to arrive.
-bool _hasPendingJoinHead({
-  required AgentProjection projection,
+/// A row whose edge has not synced projects as a root, so its parent — no
+/// longer shown to have a child — reads as a head, and a join planned now
+/// would link a parent and its own descendant. Two shapes tell it from the
+/// rows alone:
+///
+/// - a message minted with a `prevMessageId` naming a present row has an edge
+///   to it, so none arriving means the edge is in flight (one naming an
+///   absent row says nothing: the observation sweep deletes the edges into
+///   what it prunes, and an absent parent is no false head);
+/// - a join — head or not — whose arrived parents do not reproduce its
+///   content-addressed id ([isJoinComplete]) but do together with some of
+///   [headIds] is waiting for the edges to those heads.
+///
+/// A join row does not name its parents, so a join still missing the edge to
+/// a parent that is not a head here (absent, or with another child) goes
+/// unnoticed (README: residuals). A dangling parent (an edge ahead of its
+/// parent node) is the projection's `danglingParentIds`, checked alongside.
+bool _hasUnsyncedEdge({
   required List<AgentMessageEntity> messages,
   required List<AgentLink> links,
+  required List<String> headIds,
 }) {
-  if (projection.headIds.length < 2) return false;
-
-  final messagesById = {
-    for (final message in messages) message.id: message,
-  };
+  final present = {for (final message in messages) message.id};
   final parentsByChild = <String, Set<String>>{};
   for (final link in links) {
     if (link is MessagePrevLink && link.deletedAt == null) {
       (parentsByChild[link.fromId] ??= <String>{}).add(link.toId);
     }
   }
+  for (final message in messages) {
+    final arrived = parentsByChild[message.id] ?? const <String>{};
+    if (arrived.isEmpty && present.contains(message.prevMessageId)) {
+      return true;
+    }
+    if (message.kind == AgentMessageKind.system &&
+        hasJoinIdShape(message.id) &&
+        !isJoinComplete(joinId: message.id, arrivedParentIds: arrived) &&
+        _completedByHeads(
+          joinId: message.id,
+          arrived: arrived,
+          otherHeads: [
+            for (final head in headIds)
+              if (head != message.id && !arrived.contains(head)) head,
+          ],
+        )) {
+      return true;
+    }
+  }
+  return false;
+}
 
-  final headIds = projection.headIds.toSet();
-  for (final headId in projection.headIds) {
-    final message = messagesById[headId];
-    if (message == null || message.kind != AgentMessageKind.system) continue;
+/// Beyond this many other heads the subset search in [_completedByHeads]
+/// (one digest per subset) is skipped rather than run on every wake.
+const _maxJoinSearchHeads = 12;
 
-    final arrivedParents = parentsByChild[headId] ?? const <String>{};
-    if (arrivedParents.length >= 2) continue;
-
-    final otherHeads = [
-      for (final otherHeadId in headIds)
-        if (otherHeadId != headId) otherHeadId,
-    ];
-    if (_hasJoinParentSubset(
-      arrivedParents: arrivedParents,
-      otherHeads: otherHeads,
-      joinId: headId,
+/// Whether [arrived] plus a non-empty subset of [otherHeads] reproduces
+/// [joinId]. With more than [_maxJoinSearchHeads] other heads it answers no,
+/// like any other join the healer cannot place (README: residuals).
+bool _completedByHeads({
+  required String joinId,
+  required Set<String> arrived,
+  required List<String> otherHeads,
+}) {
+  if (otherHeads.length > _maxJoinSearchHeads) return false;
+  final subsetCount = 1 << otherHeads.length;
+  for (var mask = 1; mask < subsetCount; mask++) {
+    if (isJoinComplete(
+      joinId: joinId,
+      arrivedParentIds: {
+        ...arrived,
+        for (var i = 0; i < otherHeads.length; i++)
+          if ((mask & (1 << i)) != 0) otherHeads[i],
+      },
     )) {
       return true;
     }
   }
-
-  return false;
-}
-
-bool _hasJoinParentSubset({
-  required Set<String> arrivedParents,
-  required List<String> otherHeads,
-  required String joinId,
-}) {
-  final subsetCount = 1 << otherHeads.length;
-  for (var mask = 0; mask < subsetCount; mask++) {
-    final candidateParents = <String>{...arrivedParents};
-    for (var i = 0; i < otherHeads.length; i++) {
-      if ((mask & (1 << i)) != 0) {
-        candidateParents.add(otherHeads[i]);
-      }
-    }
-    if (candidateParents.length >= 2 &&
-        computeJoinId(candidateParents) == joinId) {
-      return true;
-    }
-  }
-
   return false;
 }
