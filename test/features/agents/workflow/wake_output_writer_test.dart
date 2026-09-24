@@ -106,6 +106,7 @@ void main() {
   void stubSyncWrites() {
     when(() => sync.upsertEntity(any())).thenAnswer((_) async {});
     stubAppendMilestone(sync);
+    stubUpdateAgentState(sync, repo);
   }
 
   void usePostCommitFailingSync() {
@@ -170,24 +171,33 @@ void main() {
     AgentStateEntity? state,
     Uuid? uuid,
     ReportInferenceProvenance? reportProvenance,
-  }) => writer(uuid: uuid).persist(
-    strategy: strategy,
-    reportContent: reportContent,
-    reportTldr: reportTldr,
-    reportOneLiner: reportOneLiner,
-    observations: observations,
-    retractionService: retraction,
-    changeSetBuilder: builder,
-    ledger: ledger ?? _ledger(const []),
-    pendingSets: const [],
-    state: state ?? _state(),
-    taskId: _taskId,
-    agentId: _agentId,
-    threadId: _threadId,
-    runKey: _runKey,
-    now: _now,
-    reportProvenance: reportProvenance,
-  );
+    AgentStateEntity? persistedState,
+  }) {
+    final wakeState = state ?? _state();
+    // The row as it is when the wake ends: the wake-start state unless a
+    // test has another writer move it in between.
+    when(
+      () => repo.getAgentState(_agentId),
+    ).thenAnswer((_) async => persistedState ?? wakeState);
+    return writer(uuid: uuid).persist(
+      strategy: strategy,
+      reportContent: reportContent,
+      reportTldr: reportTldr,
+      reportOneLiner: reportOneLiner,
+      observations: observations,
+      retractionService: retraction,
+      changeSetBuilder: builder,
+      ledger: ledger ?? _ledger(const []),
+      pendingSets: const [],
+      state: wakeState,
+      taskId: _taskId,
+      agentId: _agentId,
+      threadId: _threadId,
+      runKey: _runKey,
+      now: _now,
+      reportProvenance: reportProvenance,
+    );
+  }
 
   // Drains every captured `upsertEntity` argument, in call order. `verify`
   // consumes the recorded calls, so this must be called at most ONCE per test;
@@ -643,6 +653,34 @@ void main() {
         expect(state.updatedAt, _now);
         // 4 (host-a) + 1 (test-host increment) = 5 total.
         expect(state.wakeCounter.value, 5);
+      },
+    );
+
+    test(
+      'keeps what other writers stored while the wake ran — AgentStateWrites '
+      'NoLostWatermark',
+      () async {
+        // The wake started from `snapshot`; while it ran, a subscription event
+        // marked the report stale and a peer's increment was merged in. The
+        // outcome write must build on that row, not put the snapshot back.
+        final snapshot = _state(wakeCounter: const GCounter({'host-a': 4}));
+        final staleAt = _now.subtract(const Duration(minutes: 3));
+        final current = snapshot.copyWith(
+          reportStaleAt: staleAt,
+          wakeCounter: const GCounter({'host-a': 4, 'host-b': 2}),
+        );
+
+        await run(state: snapshot, persistedState: current);
+
+        final state = verify(() => sync.upsertEntity(captureAny())).captured
+            .cast<AgentDomainEntity>()
+            .whereType<AgentStateEntity>()
+            .single;
+        expect(state.reportStaleAt, staleAt);
+        // 4 (host-a) + 2 (host-b) + 1 (this wake, test-host).
+        expect(state.wakeCounter.value, 7);
+        expect(state.consecutiveFailureCount, 0);
+        expect(state.lastWakeAt, _now);
       },
     );
 

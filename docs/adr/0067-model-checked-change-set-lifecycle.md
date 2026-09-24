@@ -64,16 +64,24 @@ in eight or nine steps with every fix removed.
    counts the item's status and argument changes; every writer uses
    `withStatus` / `withArgs`.
 3. **Concurrent versions of a set merge item by item.**
-   `resolveIncomingChangeSet` keeps, for each index, the version that changed
-   the item last (higher revision); at the same revision the more final
-   status wins — a confirm took effect, so it beats a concurrent rejection or
-   retraction, and any decision beats pending. Items only one version
-   appended are kept, the set status is derived, and the vector clock is the
-   join, so both devices converge on one row without another write. Versions
-   that disagree on which proposal an index holds, or a tombstone, fall back
-   to the whole-row winner.
+   `mergeConcurrentChangeSets` — the change-set case of the shared receive
+   decision `resolveAgentEntityVersions` (ADR 0068) — keeps, for each index,
+   the version that changed the item last (higher revision); at the same
+   revision the more final status wins — a confirm took effect, so it beats
+   a concurrent rejection or retraction, and any decision beats pending — and
+   an exact tie goes to a fixed order on the item's content, never to the
+   clock order. Items only one version appended are kept, the set status is
+   derived, and the vector clock is the join, so both devices converge on one
+   row without another write. Because no step reads the canonical clock
+   order, the joined clock cannot make the result depend on arrival order —
+   the trap ADR 0068 records for nudges. Versions that disagree on which
+   proposal an index holds, or a tombstone, fall back to the whole-row
+   winner. Change sets are append-only for last-writer-wins, so ADR 0068's
+   local-write resolution does not apply to them; every local writer already
+   re-reads the set in its own transaction (decision 1).
 4. **Sync applies a received set in one transaction** over a fresh read of
-   the local row (not the bundle's prefetched snapshot).
+   the local row (not the bundle's prefetched snapshot), through the same
+   `resolveAgentEntityVersions` every other agent entity uses.
 5. **Consolidation moves only pending items.** A decided item stays in the
    set it was decided in; only pending items are shown, so the card looks the
    same.

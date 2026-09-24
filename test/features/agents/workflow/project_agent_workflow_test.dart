@@ -229,6 +229,7 @@ void main() {
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
     stubAppendMilestone(mockSyncService);
     stubReconciledAgentState(mockSyncService, mockAgentRepository);
+    stubUpdateAgentState(mockSyncService, mockAgentRepository);
     when(
       () => mockAgentRepository.getEntity(agentId),
     ).thenAnswer((_) async => testAgentIdentity);

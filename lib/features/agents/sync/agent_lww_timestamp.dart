@@ -57,4 +57,87 @@ extension AgentDomainEntityLwwTimestamp on AgentDomainEntity {
     relationshipHealth: (e) => e.updatedAt,
     unknown: (e) => e.createdAt,
   );
+
+  /// Whether last-writer-wins orders this variant by a mutable `updatedAt`
+  /// (rather than the fixed `createdAt` of an append-only variant).
+  bool get lwwOnUpdatedAt => _updatedAtSetter != null;
+
+  /// This entity with `updatedAt` raised to [floor] when it is older, so a
+  /// local write never sorts before the row it replaces (ADR 0068). Variants
+  /// ordered by `createdAt` come back unchanged.
+  AgentDomainEntity withUpdatedAtNotBefore(DateTime floor) {
+    final setUpdatedAt = _updatedAtSetter;
+    if (setUpdatedAt == null || !effectiveUpdatedAt.isBefore(floor)) {
+      return this;
+    }
+    return setUpdatedAt(floor);
+  }
+
+  /// A copy-with for the variant's `updatedAt`, or null for the variants
+  /// that [effectiveUpdatedAt] orders by `createdAt`. Exhaustive for the same
+  /// reason: a new variant must be classified here before it compiles.
+  AgentDomainEntity Function(DateTime)? get _updatedAtSetter => map(
+    queryChatEvent: (_) => null,
+    agent: (e) =>
+        (t) => e.copyWith(updatedAt: t),
+    agentState: (e) =>
+        (t) => e.copyWith(updatedAt: t),
+    agentMessage: (_) => null,
+    agentMessagePayload: (_) => null,
+    agentReport: (_) => null,
+    agentReportHead: (e) =>
+        (t) => e.copyWith(updatedAt: t),
+    scheduledWake: (e) =>
+        (t) => e.copyWith(updatedAt: t),
+    plannerKnowledge: (e) =>
+        (t) => e.copyWith(updatedAt: t),
+    capture: (_) => null,
+    parsedItem: (_) => null,
+    dayPlan: (e) =>
+        (t) => e.copyWith(updatedAt: t),
+    daySummary: (e) =>
+        (t) => e.copyWith(updatedAt: t),
+    dayDirective: (e) =>
+        (t) => e.copyWith(updatedAt: t),
+    dayStatusEvent: (_) => null,
+    weekRollup: (e) =>
+        (t) => e.copyWith(updatedAt: t),
+    attentionRequest: (_) => null,
+    attentionClaimDisposition: (_) => null,
+    attentionAward: (_) => null,
+    standingAgreement: (e) =>
+        (t) => e.copyWith(updatedAt: t),
+    agentTemplate: (e) =>
+        (t) => e.copyWith(updatedAt: t),
+    agentTemplateVersion: (_) => null,
+    agentTemplateHead: (e) =>
+        (t) => e.copyWith(updatedAt: t),
+    evolutionSession: (e) =>
+        (t) => e.copyWith(updatedAt: t),
+    evolutionSessionRecap: (_) => null,
+    evolutionNote: (_) => null,
+    changeSet: (_) => null,
+    changeDecision: (_) => null,
+    projectRecommendationRun: (_) => null,
+    projectRecommendation: (e) =>
+        (t) => e.copyWith(updatedAt: t),
+    wakeTokenUsage: (_) => null,
+    soulDocument: (e) =>
+        (t) => e.copyWith(updatedAt: t),
+    soulDocumentVersion: (_) => null,
+    soulDocumentHead: (e) =>
+        (t) => e.copyWith(updatedAt: t),
+    goalSpecVersion: (_) => null,
+    goalSpecHead: (e) =>
+        (t) => e.copyWith(updatedAt: t),
+    goalProgress: (e) =>
+        (t) => e.copyWith(updatedAt: t),
+    goalNudge: (e) =>
+        (t) => e.copyWith(updatedAt: t),
+    relationshipNudge: (e) =>
+        (t) => e.copyWith(updatedAt: t),
+    relationshipHealth: (e) =>
+        (t) => e.copyWith(updatedAt: t),
+    unknown: (_) => null,
+  );
 }

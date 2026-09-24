@@ -31,6 +31,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/query/query_chat_action_service.dart';
 import 'package:lotti/features/agents/query/query_chat_store.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
@@ -1154,6 +1155,33 @@ void stubReconciledAgentState(
     (invocation) =>
         repo.getAgentState(invocation.positionalArguments.single as String),
   );
+}
+
+/// Stubs [MockAgentSyncService.updateAgentState] to behave like the real
+/// transform: read the repository's state, apply the update, and hand a
+/// changed row to `upsertEntity` — so tests that capture `upsertEntity` see
+/// the transformed state exactly as they saw a direct write before the
+/// state writers moved to `updateAgentState` (ADR 0068). The real
+/// transaction, head preservation and stamping are covered by the
+/// `AgentSyncService` suite.
+void stubUpdateAgentState(
+  MockAgentSyncService sync,
+  MockAgentRepository repo,
+) {
+  when(() => sync.updateAgentState(any(), any())).thenAnswer((
+    invocation,
+  ) async {
+    final agentId = invocation.positionalArguments[0] as String;
+    final update =
+        invocation.positionalArguments[1]
+            as FutureOr<AgentStateEntity?> Function(AgentStateEntity);
+    final current = await repo.getAgentState(agentId);
+    if (current == null) return false;
+    final next = await update(current);
+    if (next == null || next == current) return false;
+    await sync.upsertEntity(next);
+    return true;
+  });
 }
 
 class MockSoulDocumentService extends Mock implements SoulDocumentService {}

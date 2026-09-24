@@ -135,5 +135,6 @@ Each ADR should contain:
 - [`0065-model-checked-sync-sequence-reservations.md`](./0065-model-checked-sync-sequence-reservations.md)
 - [`0066-model-checked-agent-wakes-and-confirmations.md`](./0066-model-checked-agent-wakes-and-confirmations.md)
 - [`0067-model-checked-change-set-lifecycle.md`](./0067-model-checked-change-set-lifecycle.md)
+- [`0068-model-checked-agent-convergence.md`](./0068-model-checked-agent-convergence.md)
 - [`0070-model-checked-digest-recovery-and-processing-jobs.md`](./0070-model-checked-digest-recovery-and-processing-jobs.md)
 - [`0071-model-checked-agent-message-log.md`](./0071-model-checked-agent-message-log.md)

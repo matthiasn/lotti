@@ -652,6 +652,68 @@ void main() {
     );
   });
 
+  test('a revision supersedes every active version, not only the head — '
+      'VersionHeads SettlesAfterCleanEdit', () async {
+    stubSpec(version: 2);
+    // Two devices each approved a v2 offline; the head resolver kept this
+    // one, and the other still says active.
+    GoalSpecVersionEntity version(
+      String id,
+      int number,
+      GoalSpecVersionStatus status,
+    ) =>
+        AgentDomainEntity.goalSpecVersion(
+              id: id,
+              agentId: agentId,
+              version: number,
+              status: status,
+              authoredBy: 'user',
+              title: 'Steps',
+              statement: 'Average 10,000 steps per day.',
+              criteria: criteria,
+              createdAt: DateTime(2026, 8),
+              vectorClock: null,
+              startDate: DateTime(2026, 8),
+            )
+            as GoalSpecVersionEntity;
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalSpecVersion'),
+    ).thenAnswer(
+      (_) async => [
+        version('$agentId:spec-v1', 1, GoalSpecVersionStatus.superseded),
+        version('$agentId:spec-v2', 2, GoalSpecVersionStatus.active),
+        version('$agentId:spec-v2-twin', 2, GoalSpecVersionStatus.active),
+        version(
+          '$agentId:spec-v2-gone',
+          2,
+          GoalSpecVersionStatus.active,
+        ).copyWith(deletedAt: DateTime(2026, 8, 2)),
+      ],
+    );
+
+    final outcome = await withClock(
+      fixedClock,
+      () => service.reviseFromProposal(
+        agentId: agentId,
+        baseVersionId: '$agentId:spec-v2',
+        changes: {'targetValue': 8000},
+        rationale: 'ease off',
+      ),
+    );
+    expect(outcome, isA<GoalSpecRevisionMinted>());
+    final minted = (outcome as GoalSpecRevisionMinted).version;
+
+    final statuses = {
+      for (final v in upserts.whereType<GoalSpecVersionEntity>())
+        v.id: v.status,
+    };
+    expect(statuses, {
+      '$agentId:spec-v2': GoalSpecVersionStatus.superseded,
+      '$agentId:spec-v2-twin': GoalSpecVersionStatus.superseded,
+      minted.id: GoalSpecVersionStatus.active,
+    });
+  });
+
   test('approval consumes pending old-spec escalations — a stale wake '
       'must not later spend inference against the revised register', () async {
     stubSpec();

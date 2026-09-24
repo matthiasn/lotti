@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/sync/agent_lww_timestamp.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
@@ -56,6 +59,168 @@ ConcurrentWinner resolveConcurrent({
   return compareClocksCanonically(incomingVc, localVc) > 0
       ? ConcurrentWinner.incoming
       : ConcurrentWinner.local;
+}
+
+/// The row a replica holding [local] persists after receiving [incoming]:
+/// [local] itself (identical) when the local row stands, otherwise the row
+/// to write in its place. This is the whole receive-path decision, shared by
+/// `SyncEventProcessor` and the local write path in `AgentSyncService` so the
+/// two can never resolve the same pair differently (ADR 0068).
+///
+/// - A missing clock on either side applies [incoming], as does a known
+///   variant arriving over a payload-less [AgentUnknownEntity] stub (unless
+///   that would resurrect the stub's tombstone).
+/// - Causal dominance decides next; a dominating [incoming] still has
+///   [local]'s convergent fields joined in ([joinConvergentAgentFields]).
+/// - A concurrent pair goes to [mergeConcurrentAgentEntities].
+///
+/// Pure: the same pair yields the same row on every device. Throws
+/// [VclockException] for a malformed clock, which the caller handles.
+AgentDomainEntity resolveAgentEntityVersions({
+  required AgentDomainEntity local,
+  required AgentDomainEntity incoming,
+}) {
+  final localVc = local.vectorClock;
+  final incomingVc = incoming.vectorClock;
+  if (localVc == null || incomingVc == null) return incoming;
+  // A local row that decodes as the forward-compat `unknown` fallback is a
+  // payload-less stub: an older build received a variant it did not know,
+  // kept only the envelope fields, and re-serialized the row as `unknown`
+  // with the incoming clock intact. A known incoming variant strictly refines
+  // it regardless of clock order — keeping the stub would pin the stripped
+  // row forever, because a re-delivery of the version it stubbed compares
+  // `equal`. The one thing a stub carries faithfully is its tombstone, so a
+  // deletion is never resurrected by an older live payload.
+  if (local is AgentUnknownEntity &&
+      incoming is! AgentUnknownEntity &&
+      (local.deletedAt == null || incoming.deletedAt != null)) {
+    return incoming;
+  }
+  final resolved = switch (VectorClock.compare(localVc, incomingVc)) {
+    VclockStatus.a_gt_b || VclockStatus.equal => local,
+    VclockStatus.b_gt_a => joinConvergentAgentFields(
+      winner: incoming,
+      other: local,
+    ),
+    VclockStatus.concurrent => mergeConcurrentAgentEntities(
+      local: local,
+      incoming: incoming,
+    ),
+  };
+  return resolved == local ? local : resolved;
+}
+
+/// Resolves two **concurrent** versions of one entity into the row to keep:
+/// the type's override ([resolveConcurrentAgentEntityOverride]), then
+/// [resolveConcurrent], with the per-type convergent fields joined — agent
+/// state's G-counters ([mergeAgentStateCounters]) and the nudge
+/// accumulators ([mergeNudgeAccumulators]) — and change sets merged item by
+/// item ([mergeConcurrentChangeSets]). A missing clock counts as empty.
+AgentDomainEntity mergeConcurrentAgentEntities({
+  required AgentDomainEntity local,
+  required AgentDomainEntity incoming,
+}) {
+  final winnerSide =
+      resolveConcurrentAgentEntityOverride(local: local, incoming: incoming) ??
+      resolveConcurrent(
+        localVc: local.vectorClock ?? _emptyClock,
+        incomingVc: incoming.vectorClock ?? _emptyClock,
+        localUpdatedAt: local.effectiveUpdatedAt,
+        incomingUpdatedAt: incoming.effectiveUpdatedAt,
+      );
+  final winner = winnerSide == ConcurrentWinner.local ? local : incoming;
+  return switch ((local, incoming)) {
+    (final AgentStateEntity l, final AgentStateEntity i) =>
+      mergeAgentStateCounters(
+        winner: winner as AgentStateEntity,
+        local: l,
+        incoming: i,
+      ),
+    (final GoalNudgeEntity l, final GoalNudgeEntity i) =>
+      mergeGoalNudgeAccumulators(
+        winner: winner as GoalNudgeEntity,
+        local: l,
+        incoming: i,
+      ),
+    (final RelationshipNudgeEntity l, final RelationshipNudgeEntity i) =>
+      mergeRelationshipNudgeAccumulators(
+        winner: winner as RelationshipNudgeEntity,
+        local: l,
+        incoming: i,
+      ),
+    (final ChangeSetEntity l, final ChangeSetEntity i) =>
+      mergeConcurrentChangeSets(local: l, incoming: i) ?? winner,
+    // A cross-variant pair (a goal nudge and a relationship nudge sharing an
+    // id) is unreachable — their id shapes are disjoint at mint time — and
+    // keeps the plain winner rather than joining histories across kinds.
+    _ => winner,
+  };
+}
+
+/// [winner] with [other]'s convergent agent-state fields joined in: the
+/// G-counters by element-wise max, the report watermarks by latest instant.
+/// Other variants come back unchanged.
+///
+/// Applied even when [winner] causally dominates [other]. A concurrent merge
+/// joins counters into a row without moving its clock, so a version that
+/// succeeds one side of that merge need not carry the other side's
+/// increments; overwriting the merged row with it would lose them.
+AgentDomainEntity joinConvergentAgentFields({
+  required AgentDomainEntity winner,
+  required AgentDomainEntity other,
+}) => winner is AgentStateEntity && other is AgentStateEntity
+    ? mergeAgentStateCounters(winner: winner, local: other, incoming: winner)
+    : winner;
+
+/// The row a **local** write of [write] persists over [persisted] (ADR
+/// 0068). The caller stamps it with a clock that covers both [write]'s and
+/// [persisted]'s, so every replica takes it as a successor of [persisted];
+/// this function makes the fields match what the replicas then agree on.
+///
+/// - A write built on [persisted]'s clock (or a newer one) keeps its fields.
+///   A write built on an older snapshot, or on no clock at all, did not see
+///   [persisted]; its fields are resolved against it as if the two were
+///   concurrent, so a stale write can neither revive a retraction nor beat
+///   a newer timestamp it never saw.
+/// - Agent state never lowers a G-counter or a report watermark.
+/// - `updatedAt` never moves backwards, so the successor sorts after the row
+///   it replaces on every replica, whatever the writer's clock says.
+///
+/// Append-only variants (last-writer-wins on `createdAt`) and a stub or
+/// different variant in [persisted] keep [write]'s fields unchanged.
+AgentDomainEntity resolveLocalAgentWrite({
+  required AgentDomainEntity persisted,
+  required AgentDomainEntity write,
+}) {
+  if (persisted is AgentUnknownEntity ||
+      persisted.runtimeType != write.runtimeType ||
+      !write.lwwOnUpdatedAt) {
+    return write;
+  }
+  final fields = _covers(write.vectorClock, persisted.vectorClock)
+      ? write
+      : mergeConcurrentAgentEntities(local: persisted, incoming: write);
+  return joinConvergentAgentFields(
+    winner: fields,
+    other: persisted,
+  ).withUpdatedAtNotBefore(persisted.effectiveUpdatedAt);
+}
+
+const _emptyClock = VectorClock(<String, int>{});
+
+/// Whether a write built on [base] saw everything in [seen]. A malformed
+/// clock proves nothing, so it does not cover.
+bool _covers(VectorClock? base, VectorClock? seen) {
+  if (seen == null) return true;
+  if (base == null) return false;
+  try {
+    return switch (VectorClock.compare(base, seen)) {
+      VclockStatus.a_gt_b || VclockStatus.equal => true,
+      VclockStatus.b_gt_a || VclockStatus.concurrent => false,
+    };
+  } on VclockException {
+    return false;
+  }
 }
 
 /// Type-specific **monotonic** resolution for two *concurrent* versions of one
@@ -268,81 +433,44 @@ int compareClocksCanonically(VectorClock a, VectorClock b) {
   return 0;
 }
 
-/// The change set a device keeps when [incoming] arrives over sync for a set
-/// it holds as [local], or `null` to keep [local] untouched.
+/// Merges two **concurrent** versions of one change set item by item — the
+/// change-set case of [mergeConcurrentAgentEntities] (ADR 0067).
 ///
-/// Causal order decides as for every agent entity: a version the local row
-/// already covers is dropped, one that covers the local row replaces it.
-/// Two **concurrent** versions are merged item by item
-/// ([mergeConcurrentChangeSets]) instead of letting one whole version win:
-/// a change set is edited on every device that shows it, and a whole-row
-/// winner would drop the other device's decisions — an item confirmed and
+/// A change set is edited on every device that shows it, and a whole-row
+/// winner would drop the other device's decisions: an item confirmed and
 /// applied there would read `pending` again everywhere and could be applied
-/// a second time (`specs/tla/ChangeSetLifecycle.tla`, ADR 0067). A clock that
-/// cannot be compared applies [incoming], as the generic path does.
+/// a second time. For each index:
 ///
-/// Pure and symmetric: both devices of a concurrent pair compute the same
-/// row, vector clock included, so they converge without another write.
-ChangeSetEntity? resolveIncomingChangeSet({
-  required ChangeSetEntity local,
-  required ChangeSetEntity incoming,
-}) {
-  final localVc = local.vectorClock;
-  final incomingVc = incoming.vectorClock;
-  if (localVc == null || incomingVc == null) return incoming;
-  final VclockStatus status;
-  try {
-    status = VectorClock.compare(localVc, incomingVc);
-  } catch (_) {
-    return incoming;
-  }
-  switch (status) {
-    case VclockStatus.a_gt_b || VclockStatus.equal:
-      return null;
-    case VclockStatus.b_gt_a:
-      return incoming;
-    case VclockStatus.concurrent:
-      final winner = resolveConcurrent(
-        localVc: localVc,
-        incomingVc: incomingVc,
-        localUpdatedAt: local.createdAt,
-        incomingUpdatedAt: incoming.createdAt,
-      );
-      final merged = mergeConcurrentChangeSets(
-        local: local,
-        incoming: incoming,
-        winner: winner,
-      );
-      if (merged != null) return merged;
-      return winner == ConcurrentWinner.local ? null : incoming;
-  }
-}
-
-/// Merges two **concurrent** versions of one change set item by item.
+/// - the version that changed the item last wins — the higher
+///   [ChangeItem.revision];
+/// - at the same revision, or when either side carries no revision (an
+///   older build wrote it, and drops the field), the more final status wins
+///   ([ChangeItem.statusRank]): a confirm took effect, so it beats a
+///   concurrent rejection or retraction, and any decision beats `pending`;
+/// - on a status tie, the side that has a revision, which changed the item,
+///   beats an older build's copy without one;
+/// - otherwise a fixed order on the item's content decides.
 ///
-/// For each index, the version that changed the item last wins — the higher
-/// [ChangeItem.revision]. At the same revision both devices changed the item
-/// from the same state, and the more final status wins; so it does when
-/// either side carries no revision (an older build wrote it)
-/// ([ChangeItem.statusRank]): a confirm took effect, so it beats a
-/// concurrent rejection or retraction, and any decision beats `pending`.
-/// Items one version appended beyond the other's are kept. The set status
-/// is derived from the merged items, `resolvedAt` is the later of the two
-/// (the set's `createdAt` when neither version had resolved it), and the
-/// vector clock is the join of both, so the merged row covers both versions
-/// and a later write on either device dominates it.
+/// Items one version appended beyond the other's are kept. The set status is
+/// derived from the merged items — two closed versions (`resolved`,
+/// `expired`) stay closed, so a row retired before retirement retracted its
+/// items is not reopened — and `resolvedAt` is the later of the two (the
+/// set's `createdAt` when neither had resolved it). The vector clock is the
+/// join of both, so the merged row covers both versions: a later write on
+/// either device dominates it, and a version that succeeds only one side is
+/// concurrent with it and merges again.
 ///
-/// Two versions both closed — `resolved` or `expired` — keep [winner]'s
-/// status, so a row retired before items were retracted on retirement is
-/// not reopened by merging.
+/// Nothing here depends on the clocks' canonical order, only on the two
+/// rows' contents, so the merged row does not depend on the order in which a
+/// replica received the versions — the trap ADR 0068 names for a joined
+/// clock under a clock tiebreak.
 ///
 /// Returns `null` when the versions cannot be merged item by item — either
 /// is a tombstone, or they disagree on which proposal an index holds — and
-/// the whole-row [winner] decides.
+/// the whole-row winner decides.
 ChangeSetEntity? mergeConcurrentChangeSets({
   required ChangeSetEntity local,
   required ChangeSetEntity incoming,
-  required ConcurrentWinner winner,
 }) {
   if (local.deletedAt != null || incoming.deletedAt != null) return null;
   final common = local.items.length < incoming.items.length
@@ -359,22 +487,22 @@ ChangeSetEntity? mergeConcurrentChangeSets({
   final items = [
     for (var i = 0; i < longer.items.length; i++)
       if (i < common)
-        _mergeChangeItem(local.items[i], incoming.items[i], winner)
+        _mergeChangeItem(local.items[i], incoming.items[i])
       else
         longer.items[i],
   ];
-  final winnerSet = winner == ConcurrentWinner.local ? local : incoming;
   final bothClosed =
       !_isOpenChangeSetStatus(local.status) &&
       !_isOpenChangeSetStatus(incoming.status);
   final status = bothClosed
-      ? winnerSet.status
+      ? (local.status.index >= incoming.status.index
+            ? local.status
+            : incoming.status)
       : ChangeItem.deriveSetStatus(items);
   final resolvedAt = status == ChangeSetStatus.resolved
-      ? _latestInstant(local.resolvedAt, incoming.resolvedAt) ??
-            winnerSet.createdAt
+      ? _latestInstant(local.resolvedAt, incoming.resolvedAt) ?? local.createdAt
       : null;
-  return winnerSet.copyWith(
+  return local.copyWith(
     items: items,
     status: status,
     resolvedAt: resolvedAt,
@@ -386,11 +514,7 @@ bool _isOpenChangeSetStatus(ChangeSetStatus status) =>
     status == ChangeSetStatus.pending ||
     status == ChangeSetStatus.partiallyResolved;
 
-ChangeItem _mergeChangeItem(
-  ChangeItem local,
-  ChangeItem incoming,
-  ConcurrentWinner winner,
-) {
+ChangeItem _mergeChangeItem(ChangeItem local, ChangeItem incoming) {
   final localRevision = local.revision;
   final incomingRevision = incoming.revision;
   // An item without a revision was last written by an older build, which
@@ -411,7 +535,12 @@ ChangeItem _mergeChangeItem(
   if ((localRevision == null) != (incomingRevision == null)) {
     return localRevision != null ? local : incoming;
   }
-  return winner == ConcurrentWinner.local ? local : incoming;
+  // A fixed order on content, not on clocks: the same pair gives the same
+  // item on every replica, however the replica came to hold it.
+  return jsonEncode(local.toJson()).compareTo(jsonEncode(incoming.toJson())) >=
+          0
+      ? local
+      : incoming;
 }
 
 /// Merges the convergent (per-host G-counter) fields of two **concurrent**

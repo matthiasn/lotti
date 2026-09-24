@@ -1249,7 +1249,20 @@ void main() {
     });
   });
 
-  group('resolveIncomingChangeSet — item-level merge (ADR 0067)', () {
+  group('change sets merge item by item on receive (ADR 0067)', () {
+    /// The shared receive decision for a change set: `null` when the local
+    /// row stands, otherwise the row written in its place.
+    ChangeSetEntity? resolveIncomingChangeSet({
+      required ChangeSetEntity local,
+      required ChangeSetEntity incoming,
+    }) {
+      final resolved = resolveAgentEntityVersions(
+        local: local,
+        incoming: incoming,
+      );
+      return identical(resolved, local) ? null : resolved as ChangeSetEntity;
+    }
+
     const estimate = ChangeItem(
       toolName: 'update_task_estimate',
       args: {'minutes': 30},
@@ -1471,7 +1484,7 @@ void main() {
       expect(merged.items[1].status, ChangeItemStatus.confirmed);
     });
 
-    test('equal revision and status: the whole-row winner decides', () {
+    test('equal revision and status: content decides, not the clocks', () {
       final onA = changeSet(
         [
           estimate.withArgs({'minutes': 45}),
@@ -1485,15 +1498,25 @@ void main() {
         {'a': 1, 'b': 1},
       );
 
-      // The canonical clock order picks A (host a, counter 2 > 1).
+      // The canonical clock order would pick A (host a, counter 2 > 1); a
+      // clock-based tie would make a later merge against the joined clock
+      // depend on arrival order (ADR 0068). A fixed order on content picks
+      // the same item however the clocks read.
       expect(
         resolveIncomingChangeSet(local: onA, incoming: onB)!.items.single.args,
-        {'minutes': 45},
+        {'minutes': 60},
       );
       expect(
         resolveIncomingChangeSet(local: onB, incoming: onA)!.items.single.args,
-        {'minutes': 45},
+        {'minutes': 60},
       );
+      final swappedClocks = resolveIncomingChangeSet(
+        local: onA.copyWith(vectorClock: const VectorClock({'b': 2})),
+        incoming: onB.copyWith(
+          vectorClock: const VectorClock({'a': 1, 'b': 1}),
+        ),
+      )!;
+      expect(swappedClocks.items.single.args, {'minutes': 60});
     });
 
     test('keeps items only one version appended', () {
@@ -1511,7 +1534,7 @@ void main() {
       expect(merged.status, ChangeSetStatus.partiallyResolved);
     });
 
-    test('two closed versions keep the winner status', () {
+    test('two closed versions stay closed', () {
       // A row retired before retirement retracted its pending items must not
       // reopen by merging.
       final onA = changeSet(
@@ -1531,6 +1554,17 @@ void main() {
 
       expect(merged.status, ChangeSetStatus.resolved);
       expect(merged.resolvedAt, DateTime(2026, 9, 3), reason: 'the later');
+
+      // Two different closed statuses settle on the same one in either
+      // direction, whatever the clocks say.
+      final expired = onB.copyWith(status: ChangeSetStatus.expired);
+      for (final row in [
+        resolveIncomingChangeSet(local: onA, incoming: expired)!,
+        resolveIncomingChangeSet(local: expired, incoming: onA)!,
+      ]) {
+        expect(row.status, ChangeSetStatus.expired);
+        expect(row.resolvedAt, isNull);
+      }
     });
 
     test('causal order decides before any merge', () {
@@ -1550,7 +1584,8 @@ void main() {
       );
     });
 
-    test('a missing or invalid clock applies the incoming version', () {
+    test('a missing clock applies the incoming version, an invalid one throws '
+        'for the receive path to handle', () {
       final local = changeSet([estimate], {'a': 1});
       final incoming = changeSet([estimate], {'b': 1});
 
@@ -1562,11 +1597,11 @@ void main() {
         same(incoming),
       );
       expect(
-        resolveIncomingChangeSet(
+        () => resolveIncomingChangeSet(
           local: local.copyWith(vectorClock: const VectorClock({'a': -1})),
           incoming: incoming,
         ),
-        same(incoming),
+        throwsA(isA<VclockException>()),
       );
     });
 
@@ -1594,11 +1629,7 @@ void main() {
         );
         expect(resolveIncomingChangeSet(local: onA, incoming: deleted), isNull);
         expect(
-          mergeConcurrentChangeSets(
-            local: onA,
-            incoming: deleted,
-            winner: ConcurrentWinner.local,
-          ),
+          mergeConcurrentChangeSets(local: onA, incoming: deleted),
           isNull,
         );
       },

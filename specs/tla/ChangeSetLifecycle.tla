@@ -182,10 +182,13 @@ CanonGreater(a, b) ==
     /\ diff # {}
     /\ LET e0 == CHOOSE e \in diff : \A f \in diff : e <= f IN a[e0] > b[e0]
 
-MergeItem(a, b, bWins) ==
+\* mergeConcurrentChangeSets: the later revision, then the more final
+\* status, then a fixed order on content (here: a resolved target first) —
+\* never the clock order, so the merge does not depend on arrival order.
+MergeItem(a, b) ==
     IF a.rev # b.rev THEN (IF a.rev > b.rev THEN a ELSE b)
     ELSE IF Rank(a.st) # Rank(b.st) THEN (IF Rank(a.st) > Rank(b.st) THEN a ELSE b)
-    ELSE IF bWins THEN b ELSE a
+    ELSE IF a.res THEN a ELSE b
 
 \* The version a receiving device keeps.
 Resolve(local, incoming) ==
@@ -194,7 +197,7 @@ Resolve(local, incoming) ==
     ELSE LET inWins == CanonGreater(incoming.vc, local.vc) IN
          IF ItemMerge
          THEN [items |-> [i \in DOMAIN local.items |->
-                             MergeItem(local.items[i], incoming.items[i], inWins)],
+                             MergeItem(local.items[i], incoming.items[i])],
                vc |-> Join(local.vc, incoming.vc)]
          ELSE IF inWins THEN incoming ELSE local
 

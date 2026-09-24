@@ -5,8 +5,8 @@ description: The agent.sqlite entity and link model, bulk-read chunking, and exa
 resource: ../../../lib/features/agents/database/agent_database.dart
 tags: [agents, persistence, sync, privacy, drift]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-11T12:00:00Z }
-stale_after: 2026-10-12
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T12:00:00Z }
+stale_after: 2026-12-24
 sources:
   - id: error-logging
     resource: ../../../lib/features/agents/util/agent_error_logging.dart
@@ -79,6 +79,22 @@ sources:
     resource: ../../../docs/adr/0053-goal-driven-agents-per-goal-producers.md
     title: ADR 0053 — Goal-driven agents, per-goal producers
     last_modified: 2026-08-08
+  - id: adr-0068
+    resource: ../../../docs/adr/0068-model-checked-agent-convergence.md
+    title: ADR 0068 — Model-checked convergence of synced agent entities
+    last_modified: 2026-09-24
+  - id: replication-spec
+    resource: ../../../specs/tla/AgentReplication.tla
+    title: TLA+ model of agent entity replication
+    last_modified: 2026-09-24
+  - id: state-writes-spec
+    resource: ../../../specs/tla/AgentStateWrites.tla
+    title: TLA+ model of the writers of one agent-state row
+    last_modified: 2026-09-24
+  - id: agent-sync-service
+    resource: ../../../lib/features/agents/sync/agent_sync_service.dart
+    title: AgentSyncService — stamping, resolution and transactional state updates
+    last_modified: 2026-09-24
 ---
 
 # One database, two shapes
@@ -300,9 +316,26 @@ does not leak sync messages for writes that never committed.
 to `AgentRepository` directly, which is what avoids echo loops. Startup wiring
 attaches the sync event processor when one is registered.
 
+A local write to a mutable register — a variant last-writer-wins orders by
+`updatedAt` — is resolved against the persisted row in the same transaction
+and stamped with a clock covering that row, so every device takes it as the
+row's successor and keeps the same fields the writer keeps (ADR 0068). A write
+built on a stale snapshot or on `vectorClock: null` is resolved as if it were
+concurrent with the row, agent-state G-counters never go down, and
+`updatedAt` never moves backwards. Append-only variants skip the read.
+
+Several writers share an agent's state row — wake outcomes, report
+freshness, the throttle, sync. Outcome writes therefore go through
+`AgentSyncService.updateAgentState`, which re-reads the row in the
+transaction and applies a field-scoped change, instead of copying the state
+a wake read when it started: a copy would put back a report-stale watermark
+or a merged counter that changed while the wake ran
+(`specs/tla/AgentStateWrites.tla`).
+
 Concurrent agent state converges without user involvement — see
 [vector clocks and conflicts](../sync/vector-clocks-and-conflicts.md) for the
-G-counter merge that keeps concurrent wake counters from being lost.
+receive-path decision and the G-counter merge that keeps concurrent wake
+counters from being lost.
 
 Legacy `WeekRollupEntity` JSON can omit `weekStart`. The shared
 `AgentDomainEntity.fromJson` read boundary repairs it only when the entity id is

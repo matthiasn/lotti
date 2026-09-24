@@ -213,6 +213,32 @@ void main() {
       });
 
       test(
+        'a malformed local clock is logged and the peer version applied',
+        () async {
+          storeChangeSet(changeSet([estimate], {'local': -1}));
+          final incoming = changeSet(
+            [
+              estimate.withStatus(ChangeItemStatus.confirmed),
+            ],
+            {'peer': 1},
+          );
+          receive(incoming);
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          expect(stored, incoming);
+          verify(
+            () => loggingService.error(
+              LogDomain.sync,
+              any<Object>(),
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: 'apply.agentEntity.vectorClockCompare',
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
         'a local claim that commits during the receive is not overwritten',
         () async {
           // The receive read the local row, a local claim confirmed the
