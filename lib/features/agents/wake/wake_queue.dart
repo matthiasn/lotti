@@ -90,6 +90,13 @@ class WakeQueue {
   final _queue = <WakeJob>[];
   final _seenRunKeys = <String>{};
 
+  /// Observes every job the queue accepts — the orchestrator records it as a
+  /// durable wake intent.
+  void Function(WakeJob job)? onEnqueued;
+
+  /// Observes tokens merged into a queued [WakeJob].
+  void Function(WakeJob job, Set<String> tokens)? onMerged;
+
   /// Enqueue a wake job.
   ///
   /// Returns `false` and discards the job if its [WakeJob.runKey] has already
@@ -98,6 +105,7 @@ class WakeQueue {
     if (_seenRunKeys.contains(job.runKey)) return false;
     _seenRunKeys.add(job.runKey);
     _queue.add(job);
+    onEnqueued?.call(job);
     return true;
   }
 
@@ -144,6 +152,7 @@ class WakeQueue {
         job.triggerTokens.addAll(tokens);
         if (isDirect) job.hasDirectMatch = true;
         if (markImmediate) job.drainImmediately = true;
+        onMerged?.call(job, tokens);
         return true;
       }
     }
@@ -165,9 +174,26 @@ class WakeQueue {
 
   /// Whether any queued job exists for [agentId] in [workspaceKey], regardless
   /// of provenance.
-  bool hasQueuedJobFor(String agentId, {String? workspaceKey}) => _queue.any(
-    (job) => job.agentId == agentId && job.workspaceKey == workspaceKey,
-  );
+  bool hasQueuedJobFor(String agentId, {String? workspaceKey}) =>
+      queuedJobFor(agentId, workspaceKey: workspaceKey) != null;
+
+  /// The first queued job for [agentId] in [workspaceKey] — the one
+  /// [mergeTokens] merges into.
+  WakeJob? queuedJobFor(String agentId, {String? workspaceKey}) {
+    for (final job in _queue) {
+      if (job.agentId == agentId && job.workspaceKey == workspaceKey) {
+        return job;
+      }
+    }
+    return null;
+  }
+
+  /// Whether [job] itself is queued — for instance handed back by the drain.
+  bool contains(WakeJob job) => _queue.contains(job);
+
+  /// Whether any job for [agentId] is queued, in any workspace.
+  bool hasQueuedJobForAgent(String agentId) =>
+      _queue.any((job) => job.agentId == agentId);
 
   /// Whether a queued job for [agentId] in [workspaceKey] carries the
   /// immediate-drain policy — the post-run path dispatches these at once

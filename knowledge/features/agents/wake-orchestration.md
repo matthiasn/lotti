@@ -5,8 +5,8 @@ description: How a local change becomes an agent wake — subscription matching,
 resource: ../../../lib/features/agents/wake
 tags: [agents, wake, scheduling, concurrency]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-12T20:00:00Z }
-stale_after: 2026-10-12
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T01:00:00Z }
+stale_after: 2026-12-24
 sources:
   - id: wake
     resource: ../../../lib/features/agents/wake
@@ -32,6 +32,14 @@ sources:
     resource: ../../../docs/adr/0022-long-lived-daily-os-planner.md
     title: ADR 0022 — Long-lived Daily OS planner
     last_modified: 2026-06-09
+  - id: tla-spec
+    resource: ../../../specs/tla/WakeRuntime.tla
+    title: TLA+ model of the wake runtime
+    last_modified: 2026-09-24
+  - id: adr-0066
+    resource: ../../../docs/adr/0066-model-checked-agent-wakes-and-confirmations.md
+    title: ADR 0066 — Model-checked agent wakes and confirmations
+    last_modified: 2026-09-24
 ---
 
 # Why the design is this defensive
@@ -43,6 +51,12 @@ the corresponding failure is easy to reach:
 1. **Wake storms** after rapid local edits.
 2. **Self-trigger loops** after an agent writes to the entities it watches.
 3. **Duplicate execution** when an agent is already running.
+
+Two further guarantees are model-checked in `specs/tla/WakeRuntime.tla`
+([ADR 0066](../../../docs/adr/0066-model-checked-agent-wakes-and-confirmations.md)):
+`SingleFlight` — one live run per agent, even across an abort — and
+`NoLostWake` — every trigger is eventually covered by a run that completes,
+across a process death.
 
 # The path from change to wake
 
@@ -235,8 +249,14 @@ Two independent limits apply:
   re-reads it whenever capacity frees up, so tuning takes effect without a
   restart. Setting it to 1 restores the former globally sequential behaviour.
 - **Per agent**: `WakeRunner` enforces single-flight, so two wakes for the same
-  agent cannot hold the runner simultaneously. An aborted executor may outlive
-  its lease; see the execution bound below.
+  agent cannot hold the runner simultaneously. The drain also skips an agent
+  while an earlier executor of it is still live — one an abort, the run
+  timeout or a stale-drain reset detached from its lease — so a follow-up wake
+  cannot overlap it. That hold lasts at most `hungExecutorAfter`
+  (**30 minutes**, three run caps): an executor still running then is reported
+  once as hung and stops blocking, so a future that never settles cannot wedge
+  its agent until the next launch. When a held-back executor does settle, it
+  kicks the drain for the agent's queued work.
 
 Each acquisition carries an ownership lease. Stale-drain recovery releases
 only the superseded generation's individually stale leases before starting its
@@ -279,7 +299,8 @@ A single wake may run for at most **10 minutes**. This cap accommodates slower
 local reasoning models and multi-turn workflows while still releasing a stuck
 runner eventually. Crossing it marks the wake run `aborted` and releases the
 agent lock. Dart cannot cancel the executor's underlying future, so inference
-may continue in the background; its eventual result is ignored by the drain.
+may continue in the background; its eventual result is ignored by the drain,
+and the agent's next wake waits for it (see the per-agent limit above).
 Workflows must therefore continue to treat late writes as normal database
 mutations that can produce a later notification.
 
@@ -321,6 +342,61 @@ includes context and prompt setup; model/tools includes follow-up model calls
 and tool work; persistence covers final output handling. The log is emitted from
 conversation cleanup on success and failure, so a failed inference still exposes
 where time was spent. Memory preparation has separate compaction diagnostics.
+
+# Wake intents survive a process death
+
+The queue lives in memory, so a crash used to drop every queued wake — and
+a wake whose run the crash interrupted was never retried either. The
+device-local `WakeIntentStore` (one JSON list under `AGENT_WAKE_INTENTS` in
+the settings database) closes that: **one intent per queued job**, keyed by
+its run key.
+
+- The queue's `onEnqueued` hook records a job's intent; `onMerged` adds the
+  tokens merged into it while it waits. Tokens merge only into jobs still in
+  the queue, so a run covers exactly its own job's intent — a trigger that
+  arrives mid-run belongs to another job and stays owed.
+- The intent is settled when the job's run settles — for a detached executor,
+  when it actually settles, not when its lease was aborted — or when the job
+  is dropped for good: the content gate or policy drop it, or a cancellation
+  or a superseding manual wake removes it. A job the drain hands back to the
+  queue after a superseded generation stays owed.
+- At startup, after the subscription passes, `restoreWakeIntents` re-queues
+  every intent the previous process left unsettled — only those loaded from
+  disk, once, never the jobs this process has queued since. Intents of one
+  agent and workspace become one job — two manual wakes enqueued in the same
+  tick would share a run key, and the queue would drop the second — which is
+  user-initiated if any of its intents was. It merges into a job already
+  queued there, unless that would put a user's wake on an automation job that
+  disabling automatic updates drops; then it is queued on its own.
+- An intent restored twice without a run of it settling is dropped with an
+  error log: a wake that kills the process every time must not crash every
+  future launch.
+
+```mermaid
+stateDiagram-v2
+  [*] --> queued: enqueue (onEnqueued records)
+  queued --> queued: tokens merged (onMerged)
+  queued --> dispatched: drain dequeues
+  dispatched --> queued: superseded drain hands the job back
+  dispatched --> settled: executor settles
+  dispatched --> settled: gated, dropped or cancelled before it runs
+  queued --> settled: cancelled or superseded
+  queued --> restored: process death, next start
+  dispatched --> restored: process death, next start
+  restored --> queued: restoreWakeIntents (restores + 1)
+  restored --> settled: restored twice already, dropped
+  settled --> [*]
+```
+
+The store reads the settings database once — a re-run initialization reuses
+that read — and every write waits for it, so an early write never replaces the
+persisted intents with a partial snapshot. Writes are coalesced: a burst of
+triggers costs one or two settings writes. A
+Glados trace in `wake_orchestrator_intents_test.dart` drives the real
+orchestrator and store through generated triggers, run completions and a
+crash, and checks `NoLostWake` after a final restart; it is what showed that
+settling per agent with a sequence cutoff lost a trigger queued in a second
+job of the same agent.
 
 # Completion signalling
 

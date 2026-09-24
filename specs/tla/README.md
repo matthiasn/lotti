@@ -82,6 +82,56 @@ regressions for both races, newer payload versions, migrated unnamed/already
 settled rows, and a failed sequence-log recheck. Reverting the Dart guards makes
 all six new regressions fail.
 
+## `WakeRuntime` — agent wakes
+
+Triggers become queued jobs, the drain dispatches a job when its agent's runner
+lease is free, and an executor runs the wake. An abort — a cancel, the
+ten-minute run cap, a stale-drain reset — releases the lease, but a Dart future
+cannot be cancelled, so the executor runs on. Wake intents persist until a run
+covering them completes, and startup restores them. A run covers some of its
+agent's queued triggers, not necessarily all: the queue can hold several jobs
+for one agent. The decision is
+[ADR 0066](../../docs/adr/0066-model-checked-agent-wakes-and-confirmations.md);
+the runtime is described in
+[Wake orchestration](../../knowledge/features/agents/wake-orchestration.md).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `SingleFlight` | invariant | at most one live executor per agent, short of one declared hung |
+| `HungOnlyWhenDetached` | invariant | only an executor that lost its lease is ever declared hung |
+| `NoLostWake` | liveness | every trigger is eventually covered by a run that completes |
+
+| Configuration | Agents | Triggers | Crashes | Aborts | Distinct states |
+|---------------|--------|----------|---------|--------|-----------------|
+| `WakeRuntime` | 2 | 4 | 0 | 2 | 46,073 |
+| `WakeRuntimeCrash` | 2 | 4 | 1 | 1 | 437,257 |
+
+## `ChangeSetConfirm` — confirming a proposed change
+
+One change-set item, confirmed or rejected by concurrent callers — a double
+tap, a "Confirm all" racing a single confirm, a swipe-reject racing either, a
+retry — through the claim, the tool dispatch and the post-confirm hook. A
+reject claims the item the same way a confirm does. The ghost `applied` counts
+how often the change actually took effect.
+
+| Property | Kind | Says |
+|----------|------|------|
+| `AtMostOnceApply` | invariant | a confirmed change takes effect at most once |
+| `RejectedMeansNotApplied` | invariant | an item shown rejected never took effect |
+| `ConfirmedMeansApplied` | invariant | an item shown confirmed, with no confirm in flight, took effect |
+
+| Configuration | Callers | Faults | Crashes | Checks | Distinct states |
+|---------------|---------|--------|---------|--------|-----------------|
+| `ChangeSetConfirm` | 2 | dispatch fails, hook throws | 0 | all three | 97 |
+| `ChangeSetConfirmFaults` | 2 | dispatch fails, hook throws | 1 | all but `ConfirmedMeansApplied` | 184 |
+
+Two cases are known residuals rather than checked properties. Adding
+`"failsAfterEffect"` to `Faults` — a tool that throws after its effect landed,
+which the service reverts to `pending` — breaks `AtMostOnceApply` on retry, and
+checking `ConfirmedMeansApplied` with a crash breaks it when the process dies
+between the claim and the dispatch. Closing either needs an `applying` status
+that sync and the UI understand, or tools that are idempotent per decision id.
+
 ## From the model to the code
 
 TLC checks the design, not the Dart that implements it. The gap is narrowed by
@@ -96,6 +146,21 @@ outbox outages, and checks `NoFalseBurn`, `BoundRowsHavePayload` and
 committed write was bound and actually reached the outbox. Reverting the
 settlement fix, or binding before the resend is durably queued, makes it fail
 with a shrunk trace of four or five steps.
+
+The agent specs have the same kind of check. In
+`test/features/agents/wake/wake_orchestrator_intents_test.dart`, generated
+traces of triggers, run completions and a crash drive the real orchestrator and
+intent store, and after a final restart every trigger must have been covered
+by a run that completed (`NoLostWake`). It found that the first
+implementation, which settled an agent's intents up to a sequence cutoff, lost
+a trigger queued in a second job of the same agent. In
+`test/features/agents/service/change_set_confirmation_service_model_conformance.dart`,
+generated interleavings of confirms, rejects, dispatch outcomes, throwing
+hooks and crashes drive the real confirmation service, which must keep
+`AtMostOnceApply`, `RejectedMeansNotApplied` and `ConfirmedMeansApplied`.
+Removing the claim's `pending` check, reverting a confirmed item when the hook
+throws, or letting a reject write its status unconditionally fails it within
+three steps.
 
 ## Changing a spec
 

@@ -9,6 +9,7 @@ import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
@@ -26,6 +27,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
+import 'package:lotti/features/agents/wake/wake_intent_store.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
@@ -716,11 +718,14 @@ void main() {
         final container = bench.createContainer();
         await bench.initAndSubscribe(container);
 
+        // Owed wakes are restored last, so they merge into the jobs the
+        // subscription passes queued instead of duplicating them.
+        verifyInOrder([
+          () => bench.mockTaskAgentService.restoreSubscriptions(),
+          () => bench.mockOrchestrator.restoreWakeIntents(),
+        ]);
         verify(() => bench.mockOrchestrator.start(any())).called(1);
         verify(() => bench.mockTemplateService.seedDefaults()).called(1);
-        verify(
-          () => bench.mockTaskAgentService.restoreSubscriptions(),
-        ).called(1);
         verify(
           () => bench.mockDayAgentService.restoreSubscriptions(),
         ).called(1);
@@ -1816,6 +1821,37 @@ void main() {
       expect(
         orchestrator.maxConcurrentWakes(),
         defaultAgentWakeConcurrency,
+      );
+      expect(
+        orchestrator.intentStore,
+        isNull,
+        reason: 'no settings database, no durable wake intents',
+      );
+    });
+
+    test('persists wake intents when a settings database exists', () {
+      final runner = WakeRunner();
+      addTearDown(runner.dispose);
+      final settingsDb = MockSettingsDb();
+      getIt.registerSingleton<SettingsDb>(settingsDb);
+      addTearDown(() => getIt.unregister<SettingsDb>());
+
+      final container = ProviderContainer(
+        overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
+          agentRepositoryProvider.overrideWithValue(MockAgentRepository()),
+          wakeQueueProvider.overrideWithValue(WakeQueue()),
+          wakeRunnerProvider.overrideWithValue(runner),
+          domainLoggerProvider.overrideWithValue(
+            DomainLogger(loggingService: LoggingService()),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      expect(
+        container.read(wakeOrchestratorProvider).intentStore,
+        isA<WakeIntentStore>(),
       );
     });
 

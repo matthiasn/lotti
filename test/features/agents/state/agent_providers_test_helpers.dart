@@ -107,6 +107,7 @@ class InitProviderBench {
 
   void _stubDefaults() {
     when(() => mockOrchestrator.start(any())).thenAnswer((_) async {});
+    when(mockOrchestrator.restoreWakeIntents).thenAnswer((_) async => 0);
     when(mockOrchestrator.stop).thenAnswer((_) async {});
     when(mockTaskAgentService.restoreSubscriptions).thenAnswer((_) async {});
     when(mockProjectAgentService.restoreSubscriptions).thenAnswer((_) async {});

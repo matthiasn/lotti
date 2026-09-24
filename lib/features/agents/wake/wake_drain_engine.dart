@@ -155,6 +155,7 @@ extension WakeDrainEngine on WakeOrchestrator {
     WakeRunnerLease? lease,
   }) {
     if (_takeDrainOwnedCancellation(job) == null) return false;
+    _settleIntent(job);
     if (lease != null) _releaseDrainLease(generation, lease);
     if (_drainGeneration != generation) unawaited(processNext());
     return true;
@@ -166,6 +167,7 @@ extension WakeDrainEngine on WakeOrchestrator {
     required bool emitUnpersistedCompletion,
   }) async {
     _forgetDrainOwnedJob(job);
+    _settleIntent(job);
     if (_persistedWakeRunKeys.remove(job.runKey)) {
       await _abortPersistedWake(
         job,
@@ -226,7 +228,13 @@ extension WakeDrainEngine on WakeOrchestrator {
 
           final job = queue.dequeueFirstWhere(
             (candidate) {
-              if (runner.isRunning(candidate.agentId)) return false;
+              // Single flight: neither a lease holder nor an executor an
+              // abort detached from its lease (Dart futures cannot be
+              // cancelled) may overlap a new run of the same agent.
+              if (runner.isRunning(candidate.agentId) ||
+                  _hasLiveExecutor(candidate.agentId)) {
+                return false;
+              }
               if (candidate.reason != WakeReason.subscription.name) {
                 return true;
               }
@@ -874,6 +882,12 @@ extension WakeDrainEngine on WakeOrchestrator {
       }
     } finally {
       _releaseDrainLease(generation, lease);
+      // A started executor settles its intent when it actually settles —
+      // after an abort, that is later than this — and a job handed back to
+      // the queue is still owed. Otherwise the job ended here, without one.
+      if (!_activeExecutors.containsKey(job.runKey) && !queue.contains(job)) {
+        _settleIntent(job);
+      }
     }
   }
 

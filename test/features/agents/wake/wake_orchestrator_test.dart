@@ -14,10 +14,14 @@ void main() {
           final first = Completer<Map<String, VectorClock>?>();
           final second = Completer<Map<String, VectorClock>?>();
           final unrelated = Completer<Map<String, VectorClock>?>();
-          orchestrator.wakeExecutor = (_, runKey, _, _) => switch (runKey) {
-            'first' => first.future,
-            'second' => second.future,
-            _ => unrelated.future,
+          final started = <String>[];
+          orchestrator.wakeExecutor = (_, runKey, _, _) {
+            started.add(runKey);
+            return switch (runKey) {
+              'first' => first.future,
+              'second' => second.future,
+              _ => unrelated.future,
+            };
           };
           queue.enqueue(makeJob(runKey: 'first', workspaceKey: 'day-a'));
           unawaited(orchestrator.processNext());
@@ -29,6 +33,9 @@ void main() {
             ..enqueue(makeJob(runKey: 'unrelated', agentId: 'agent-2'));
           unawaited(orchestrator.processNext());
           async.flushMicrotasks();
+          // The aborted executor still runs: agent-1's other workspace waits
+          // for it (single flight), the other agent does not.
+          expect(started, ['first', 'unrelated']);
           var settled = false;
           unawaited(
             orchestrator
@@ -37,11 +44,10 @@ void main() {
           );
           first.complete(const {});
           async.flushMicrotasks();
-          expect(settled, isFalse);
-          second.complete(const {});
-          async.flushMicrotasks();
           expect(settled, isTrue);
+          expect(started, ['first', 'unrelated', 'second']);
           expect(orchestrator.hasPendingOrActiveWake('agent-2'), isTrue);
+          second.complete(const {});
           unrelated.complete(const {});
           async.flushMicrotasks();
         });
