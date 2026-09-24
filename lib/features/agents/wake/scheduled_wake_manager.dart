@@ -709,6 +709,7 @@ class ScheduledWakeManager with AgentErrorLogging {
       );
       consumed = true;
     });
+    _orchestrator.acknowledgeScheduledWindow(scheduledWakeWindow(fired));
     if (!consumed) return;
     // The pending-wakes surface refreshes from the shared notification, not
     // from the sync write, so without this the record lingers on screen.

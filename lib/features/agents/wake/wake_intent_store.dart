@@ -94,6 +94,11 @@ class WakeIntentStore {
   final DomainLogger? _domainLogger;
   final _intents = <String, WakeIntent>{};
 
+  /// In-process evidence that a fired window finished before its scheduled
+  /// record could be consumed. Retained through write failures, and released
+  /// by the manager after consumption (or observation of a newer window).
+  final _settledWindows = <String>{};
+
   /// Run keys loaded at startup and not yet restored. Only these are owed
   /// by a previous process; what this one recorded since is its own work.
   final _loaded = <String>{};
@@ -193,17 +198,35 @@ class WakeIntentStore {
   /// Whether the wake firing scheduled-wake [window] is still owed: a job
   /// queued or running in this process, or one a previous process left for
   /// startup to restore. Waits for the load, so a restorable intent is never
-  /// missed.
+  /// missed. A run that already settled also counts until the scheduled
+  /// record is acknowledged, preventing a failed flush from firing it again.
   Future<bool> owes(String window) async {
     await load();
-    return _intents.values.any((intent) => intent.windows.contains(window));
+    return _settledWindows.contains(window) ||
+        _intents.values.any((intent) => intent.windows.contains(window));
   }
 
   /// Forgets the intent of job [runKey]: its run settled, or the job was
   /// dropped for good.
   void settle(String runKey) {
     if (!_isLoaded) _settledBeforeLoad.add(runKey);
-    if (_intents.remove(runKey) != null) _persistSoon();
+    final intent = _intents.remove(runKey);
+    if (intent != null) {
+      _settledWindows.addAll(intent.windows);
+      _persistSoon();
+    }
+  }
+
+  /// The scheduled record was consumed or moved past [window]. Forget its
+  /// receipt and detach the tag from a still-running intent so settling that
+  /// run cannot recreate an obsolete receipt. The wake itself remains owed.
+  void acknowledgeWindow(String window) {
+    _settledWindows.remove(window);
+    var changed = false;
+    for (final intent in _intents.values) {
+      changed = intent.windows.remove(window) || changed;
+    }
+    if (changed) _persistSoon();
   }
 
   /// Startup: the intents a previous process left unsettled, each counted as

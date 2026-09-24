@@ -155,7 +155,28 @@ void main() {
         expect(await next.owes(window1), isTrue);
 
         next.settle('run-2');
+        expect(await next.owes(window1), isTrue);
+        next.acknowledgeWindow(window1);
         expect(await next.owes(window1), isFalse);
+      },
+    );
+
+    test(
+      'acknowledging a running window does not leave a receipt on settle',
+      () async {
+        final store = newStore();
+        await store.load();
+        record(store);
+        store
+          ..markWindow('run-1', window1)
+          ..acknowledgeWindow(window1);
+        await store.flush();
+        expect(await store.owes(window1), isFalse);
+        expect((await persisted()).single['tokens'], ['entry-1']);
+        store.settle('run-1');
+        await store.flush();
+        expect(await store.owes(window1), isFalse);
+        expect(await persisted(), isEmpty);
       },
     );
 

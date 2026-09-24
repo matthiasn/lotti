@@ -387,7 +387,7 @@ class WakeOrchestrator with AgentErrorLogging {
       intentStore?.markWindow(runKey, window);
 
   /// Whether the wake firing scheduled-wake [window] is already owed —
-  /// queued, running, or left unsettled by a previous process for
+  /// queued, running, completed before consumption, or left unsettled for
   /// [restoreWakeIntents]. Always false without an [intentStore].
   ///
   /// A scheduled-wake record that is still pending although its wake is owed
@@ -396,6 +396,11 @@ class WakeOrchestrator with AgentErrorLogging {
   /// (`specs/tla/ScheduledWakeLease.tla`, `NoDeviceRunsTwice`).
   Future<bool> owesWake(String window) async =>
       await intentStore?.owes(window) ?? false;
+
+  /// Releases the window's completion receipt after its scheduled record
+  /// was consumed or advanced, while leaving any running wake restorable.
+  void acknowledgeScheduledWindow(String window) =>
+      intentStore?.acknowledgeWindow(window);
 
   /// Completes once every wake intent recorded so far has been written, so a
   /// caller can make a later write depend on the wake being durable. Throws
