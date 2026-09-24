@@ -1,3 +1,6 @@
+import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
+
 import 'day_agent_workflow_test_harness.dart';
 
 void main() {
@@ -359,6 +362,48 @@ void main() {
       );
       // No record was armed — the loop cannot restart.
       expect(upsertedEntities.whereType<ScheduledWakeEntity>(), isEmpty);
+    });
+
+    // ADR 0069: a local write is resolved against the persisted row (ADR
+    // 0068). Built from a null clock, a pre-warm moved EARLIER was
+    // concurrent with the prior one, and the scheduled-wake resolver keeps
+    // the later deadline — the reschedule was resolved straight back.
+    test('moving a pending pre-warm earlier replaces it, as the persisted '
+        'row resolves it', () async {
+      final recordId = scheduledWakeRecordId(
+        agentId,
+        workspaceKey: dayAgentWorkspaceKey(dayId),
+      );
+      final prior =
+          AgentDomainEntity.scheduledWake(
+                id: recordId,
+                agentId: agentId,
+                scheduledAt: DateTime(2026, 5, 25, 14),
+                status: ScheduledWakeStatus.pending,
+                reason: WakeReason.scheduled.name,
+                updatedAt: DateTime(2026, 5, 25, 7),
+                vectorClock: const VectorClock({'host-a': 3}),
+                triggerTokens: [dayAgentPlanningDayToken(dayId)],
+                workspaceKey: dayAgentWorkspaceKey(dayId),
+              )
+              as ScheduledWakeEntity;
+      when(() => repository.getEntity(recordId)).thenAnswer((_) async => prior);
+      conversationRepository.toolCalls = [
+        toolCall(
+          name: DayAgentToolNames.setNextWake,
+          args: const {'at': '2026-05-25T09:00:00', 'reason': 'Sooner.'},
+        ),
+      ];
+
+      final result = await execute(workflow());
+
+      expect(result.success, isTrue);
+      final written = upsertedEntities.whereType<ScheduledWakeEntity>().single;
+      expect(written.vectorClock, prior.vectorClock);
+      final persisted =
+          resolveLocalAgentWrite(persisted: prior, write: written)
+              as ScheduledWakeEntity;
+      expect(persisted.scheduledAt, DateTime(2026, 5, 25, 9));
     });
 
     test(

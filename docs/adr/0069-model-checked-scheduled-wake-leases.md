@@ -113,6 +113,19 @@ retry at a later instant, check clean.
   write against the persisted row, keeps its fields. Under that path alone
   the old null-clock re-arm would not even have pended locally: it is
   resolved into the consumed row it never saw.
+- The other scheduled-wake writers were checked against that path. A write
+  from a null clock is concurrent with the persisted row, so it keeps its
+  fields only when its deadline is later, or when it is later-and-equal at a
+  pending row. The goal and relationship cadence re-arms, the digest re-arms
+  (`nextDigestTime` is strictly after now), and the failure retries of both
+  escalation workflows (due now) always target a later instant than the row
+  they follow, so they stand. Relationship escalations arm only if absent.
+  One did not: the day agent's `set_next_wake` pre-warm, which overwrites the
+  day's pending record. Moved **earlier**, it lost to the later deadline and
+  was resolved straight back to the old time. It now carries the prior
+  record's clock, so the new time is that record's successor on every
+  device. This is the resolver's rule, not a lease property, so it is pinned
+  by a regression through `resolveLocalAgentWrite` rather than in the model.
 - Decisions 2 and 3 cover the records whose wakes are wake intents. The
   coordinator digest's wake is not one
   ([ADR 0070](./0070-model-checked-digest-recovery-and-processing-jobs.md)):

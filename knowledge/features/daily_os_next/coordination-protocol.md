@@ -5,7 +5,7 @@ description: Two durable synced entities instead of RPC — binding day directiv
 resource: ../../../lib/features/daily_os_next/agents/service/day_agent_directive_service.dart
 tags: [daily-os, coordination, directives, digest, rollups]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T09:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T14:00:00Z }
 stale_after: 2026-12-24
 sources:
   - id: digest-recovery-spec
@@ -123,6 +123,12 @@ that record path is the one per-day agents actually use for pre-warms. Since
 checks lifecycle in **both** loops and marks a non-active agent's due record
 consumed. Clearing only the state field would have left retirement doing
 nothing for the path that matters.
+
+A pre-warm overwrites the day's pending record by carrying that record's
+vector clock (ADR 0069). A local write is resolved against the persisted row
+(ADR 0068), and one built from a null clock is concurrent with it; the
+scheduled-wake resolver then keeps the later deadline, so a pre-warm moved
+earlier was resolved straight back to the old time, here and on every peer.
 
 ```mermaid
 sequenceDiagram

@@ -36,6 +36,7 @@ on:
       - "lib/features/agents/workflow/task_agent_execute.dart"
       - "lib/features/agents/workflow/project_agent_workflow.dart"
       - "lib/features/daily_os_next/agents/workflow/day_agent_workflow.dart"
+      - "lib/features/daily_os_next/agents/workflow/day_agent_tool_handlers.dart"
       - "lib/features/sync/matrix/sync_event_processor.dart"
       - "lib/features/agents/service/soul_version_ops.dart"
       - "lib/features/agents/service/agent_template_crud.dart"

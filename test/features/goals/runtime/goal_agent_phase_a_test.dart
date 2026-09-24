@@ -1045,6 +1045,30 @@ void main() {
     });
   });
 
+  // The cadence re-arm keeps its null clock: once a tick fired, the next
+  // one is due at a strictly later instant, which outranks the consumed
+  // tick on the resolver's later-deadline rule — including on the local
+  // write path that resolves a write against the persisted row (ADR 0068).
+  test('the next cadence tick stays pending over the consumed one it '
+      'follows', () {
+    final consumedTick =
+        (goalCadenceWake(agentId, DateTime(2026, 8, 8, 5))
+                as ScheduledWakeEntity)
+            .copyWith(
+              status: ScheduledWakeStatus.consumed,
+              vectorClock: const VectorClock({'host-b': 9}),
+            );
+    expect(consumedTick.scheduledAt, DateTime(2026, 8, 8, goalCadenceHour));
+
+    final next = goalCadenceWake(agentId, now) as ScheduledWakeEntity;
+    final written =
+        resolveLocalAgentWrite(persisted: consumedTick, write: next)
+            as ScheduledWakeEntity;
+
+    expect(written.status, ScheduledWakeStatus.pending);
+    expect(written.scheduledAt, DateTime(2026, 8, 9, goalCadenceHour));
+  });
+
   test(
     'a transition escalation encodes the PRE-transition status as a '
     'baseline token — the register write hides it from re-derivation',

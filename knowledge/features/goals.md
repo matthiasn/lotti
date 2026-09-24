@@ -5,7 +5,7 @@ description: Goal-driven agents — the deterministic Phase A tier evaluating cr
 resource: ../../lib/features/goals
 tags: [goals, agents, runtime, wake, evaluation]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T14:00:00Z }
 stale_after: 2027-02-22
 sources:
   - id: goals-src
@@ -801,6 +801,14 @@ See [profile resolution](ai/profile-resolution.md) for failure and precedence ru
 - **Calendar arithmetic is component-based** (`DateTime(y, m, d ± n)`),
   never `Duration` math, so DST transitions cannot shift the cadence hour,
   skip a prior-day register key, or truncate a 25-hour day's query range.
+- **The cadence re-arm needs no carried clock; the escalation re-arm does.**
+  A local write is resolved against the persisted row (ADR 0068), and one
+  built from a null clock is concurrent with it. The cadence tick is re-armed
+  from `now` after the last one fired, so its deadline is always later than
+  the consumed tick's, and the later deadline wins. The escalation's next
+  window shares the period's id and, before ADR 0069, its instant too — at
+  one instant `consumed` wins, which is why it carries the consumed row's
+  clock and moves one millisecond on.
 
 ## The visible layer (PR 5)
 
