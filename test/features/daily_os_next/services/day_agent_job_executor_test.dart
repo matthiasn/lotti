@@ -1,14 +1,26 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow_models.dart';
+import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/daily_os_next/services/day_agent_job_executor.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_outbox_processor.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
+
+import 'day_processing_test_db.dart';
+
+part 'day_agent_job_executor_model_conformance.dart';
 
 void main() {
+  _registerModelConformance();
+
   final requestedAt = DateTime.utc(2026, 7, 22, 8);
   const dayId = 'dayplan-2026-07-22';
   const agentId = 'day_agent:dayplan-2026-07-22';
@@ -90,6 +102,7 @@ void main() {
     Future<void> Function(String jobId, String runKey)? recordRunKey,
     Future<bool> Function(String captureId)? hasCompletedCaptureParse,
     Future<bool> Function(String dayId)? hasPendingDraftWork,
+    String? Function(DayProcessingJob job)? liveWakeRunKey,
     Duration wakeTimeout = const Duration(seconds: 1),
     int maxAttempts = 5,
   }) => DayAgentJobExecutor(
@@ -102,6 +115,7 @@ void main() {
     recordRunKey: recordRunKey ?? (_, _) async {},
     hasCompletedCaptureParse: hasCompletedCaptureParse ?? (_) async => false,
     hasPendingDraftWork: hasPendingDraftWork ?? (_) async => false,
+    liveWakeRunKey: liveWakeRunKey ?? (_) => null,
     wakeTimeout: wakeTimeout,
     maxAttempts: maxAttempts,
   );
@@ -698,6 +712,165 @@ void main() {
 
       expect(outcome, isA<DayAgentJobSucceeded>());
       expect(wakeEnqueued, isFalse);
+    });
+  });
+
+  // DayProcessingJob.tla: the claim's lease and the wait are both three
+  // minutes and the lease is never renewed, while a wake can wait behind its
+  // agent's single flight far longer. Every attempt that re-claimed the job
+  // then enqueued a second inference for the same request.
+  group('a wake of the same request that is still live', () {
+    WakeRunCompletion completed(String runKey) =>
+        WakeRunCompletion(runKey: runKey, status: WakeRunStatus.completed);
+
+    test('is awaited instead of enqueueing a second inference', () {
+      // The trace: attempt 1 claims, enqueues run-1, records it and waits;
+      // its lease lapses; attempt 2 claims the row and checks.
+      fakeAsync((async) {
+        final completions = StreamController<WakeRunCompletion>.broadcast();
+        final enqueued = <String>[];
+        final checkedRuns = <Set<String>>[];
+        final executor = buildExecutor(
+          runCompletions: completions.stream,
+          draftPlanUpdatedAt: (agentId, dayId) async =>
+              (updatedAt: requestedAt, runKey: null),
+          liveWakeRunKey: (job) => 'run-1',
+          enqueueWake: (request) {
+            enqueued.add(request.job.id);
+            return 'run-2';
+          },
+          pendingDiffForRuns: (agentId, dayId, runKeys) async {
+            checkedRuns.add(runKeys);
+            return checkedRuns.length > 1 && runKeys.contains('run-1')
+                ? 'diff-of-run-1'
+                : null;
+          },
+        );
+
+        DayAgentJobOutcome? outcome;
+        unawaited(
+          executor
+              .execute(refineJob().copyWith(runKeys: const ['run-1']))
+              .then((value) => outcome = value),
+        );
+        async.flushMicrotasks();
+        expect(outcome, isNull, reason: 'still awaiting run-1');
+        completions.add(completed('run-1'));
+        async.flushMicrotasks();
+
+        expect(enqueued, isEmpty);
+        expect(outcome, isA<DayAgentJobSucceeded>());
+        expect(
+          (outcome! as DayAgentJobSucceeded).resultEntityId,
+          'diff-of-run-1',
+        );
+        unawaited(completions.close());
+      });
+    });
+
+    test('enqueued by another attempt during the reads is awaited too', () {
+      // A retry tap revoked this attempt's claim after its live-wake check,
+      // and the new claim's attempt enqueued run-1 while this one awaited
+      // the artifact read and the agent lookup.
+      fakeAsync((async) {
+        final completions = StreamController<WakeRunCompletion>.broadcast();
+        String? live;
+        final enqueued = <String>[];
+        final executor = buildExecutor(
+          runCompletions: completions.stream,
+          liveWakeRunKey: (job) => live,
+          resolveAgentId: (dayId) async {
+            live = 'run-1';
+            return agentId;
+          },
+          enqueueWake: (request) {
+            enqueued.add(request.job.id);
+            return 'run-2';
+          },
+          hasCompletedCaptureParse: (_) async => false,
+        );
+
+        DayAgentJobOutcome? outcome;
+        unawaited(
+          executor.execute(parseJob()).then((value) => outcome = value),
+        );
+        async.flushMicrotasks();
+        expect(enqueued, isEmpty);
+        expect(outcome, isNull, reason: 'awaiting run-1');
+        completions.add(completed('run-1'));
+        async.flushMicrotasks();
+        expect(outcome, isA<DayAgentJobFailed>());
+        unawaited(completions.close());
+      });
+    });
+
+    test('whose artifact already landed satisfies the job at once', () {
+      fakeAsync((async) {
+        final executor = buildExecutor(
+          liveWakeRunKey: (job) => 'run-1',
+          pendingDiffForRuns: (agentId, dayId, runKeys) async =>
+              runKeys.contains('run-1') ? 'diff-of-run-1' : null,
+        );
+
+        DayAgentJobOutcome? outcome;
+        unawaited(
+          executor.execute(refineJob()).then((value) => outcome = value),
+        );
+        async.flushMicrotasks();
+
+        expect(outcome, isA<DayAgentJobSucceeded>());
+      });
+    });
+
+    test('defers a timed-out wait without counting an attempt', () {
+      fakeAsync((async) {
+        final completions = StreamController<WakeRunCompletion>.broadcast();
+        String? live;
+        final executor = buildExecutor(
+          runCompletions: completions.stream,
+          liveWakeRunKey: (job) => live,
+          enqueueWake: (request) => live = 'run-1',
+          wakeTimeout: const Duration(minutes: 3),
+        );
+
+        DayAgentJobOutcome? outcome;
+        unawaited(
+          executor.execute(parseJob()).then((value) => outcome = value),
+        );
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(minutes: 3));
+
+        final failed = outcome! as DayAgentJobFailed;
+        expect(failed.failureClass, DayProcessingFailureClass.local);
+        expect(failed.error, 'Wake still running');
+        unawaited(completions.close());
+      });
+    });
+
+    test('once settled, a timed-out wait counts toward maxAttempts', () {
+      fakeAsync((async) {
+        final completions = StreamController<WakeRunCompletion>.broadcast();
+        final executor = buildExecutor(
+          runCompletions: completions.stream,
+          wakeTimeout: const Duration(minutes: 3),
+        );
+
+        DayAgentJobOutcome? outcome;
+        unawaited(
+          executor
+              .execute(parseJob().copyWith(attempts: 4))
+              .then((value) => outcome = value),
+        );
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(minutes: 3));
+
+        final failed = outcome! as DayAgentJobFailed;
+        expect(failed.failureClass, DayProcessingFailureClass.deterministic);
+        expect(failed.error, contains('Gave up after 5 attempts'));
+        unawaited(completions.close());
+      });
     });
   });
 }

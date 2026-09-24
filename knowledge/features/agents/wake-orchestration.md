@@ -11,7 +11,7 @@ sources:
   - id: wake
     resource: ../../../lib/features/agents/wake
     title: WakeOrchestrator, WakeQueue, WakeRunner, drain engine
-    last_modified: 2026-09-12
+    last_modified: 2026-09-24
   - id: enums
     resource: ../../../lib/features/agents/model/agent_enums.dart
     title: WakeReason
@@ -43,6 +43,10 @@ sources:
   - id: adr-0068
     resource: ../../../docs/adr/0068-model-checked-agent-convergence.md
     title: ADR 0068 — Model-checked convergence of synced agent entities
+    last_modified: 2026-09-24
+  - id: adr-0070
+    resource: ../../../docs/adr/0070-model-checked-digest-recovery-and-processing-jobs.md
+    title: ADR 0070 — Model-checked digest recovery and processing jobs
     last_modified: 2026-09-24
 ---
 
@@ -265,6 +269,18 @@ Two independent limits apply:
   its agent until the next launch. When a held-back executor does settle, it
   kicks the drain for the agent's queued work.
 
+Two probes answer "is this work still live?" for callers that must not start a
+replacement beside it. `hasPendingOrActiveWake(agentId, workspaceKey)` and
+`liveRunKeyWithToken(token)` both count a job that is queued, one a drain pass
+has taken out of the queue — awaiting the policy read before its lease, or held
+back until the pass requeues it — one holding the runner lock, and an executor
+running on after an abort. `liveRunKeyWithToken` stops counting an executor once
+it is past `hungExecutorAfter`, as the drain does. The coordinator digest's
+crash recovery uses the first; Daily OS processing jobs use the second to find
+their request's wake by its `processing_job:` token (ADR 0070). A probe that
+missed the drain-held window let the digest recovery re-arm a digest whose run
+was about to start.
+
 Each acquisition carries an ownership lease. Stale-drain recovery releases
 only the superseded generation's individually stale leases before starting its
 replacement. Healthy concurrent leases retain their agent locks until their
@@ -356,12 +372,24 @@ The queue lives in memory, so a crash used to drop every queued wake — and
 a wake whose run the crash interrupted was never retried either. The
 device-local `WakeIntentStore` (one JSON list under `AGENT_WAKE_INTENTS` in
 the settings database) closes that: **one intent per queued job**, keyed by
-its run key. Wakes carrying a Daily OS `processing_job:` token are excluded:
-the [day processing outbox](../daily_os_next/processing-outbox.md) owns their
-recovery, cancellation, separate job payloads, and artifact run-key provenance.
-Startup discards legacy intent copies of those jobs rather than replaying them
-under unrecorded run keys or merging distinct processing IDs. Ordinary restored
-wakes also stay separate from queued processing jobs.
+its run key. Two kinds of wake are excluded because a durable record of their
+own already owns their recovery, and a second path beside it runs the work
+twice:
+
+- Wakes carrying a Daily OS `processing_job:` token: the
+  [day processing outbox](../daily_os_next/processing-outbox.md) owns their
+  recovery, cancellation, separate job payloads, and artifact run-key
+  provenance.
+- The coordinator's `digest:` wake: its scheduled-wake record is retried by
+  `DayAgentService` when a crash interrupted the run
+  ([coordination protocol](../daily_os_next/coordination-protocol.md)). As an
+  intent too, the digest ran twice — the record's retry and the restored
+  intent both fired, and an intent whose settle had not reached disk replayed
+  a digest that had already completed (`specs/tla/DigestRecovery.tla`,
+  ADR 0070).
+
+Startup discards legacy intent copies of both rather than replaying them, and
+ordinary restored wakes never merge into a queued job of either kind.
 
 - The queue's `onEnqueued` hook records a job's intent; `onMerged` adds the
   tokens merged into it while it waits. Tokens merge only into jobs still in
