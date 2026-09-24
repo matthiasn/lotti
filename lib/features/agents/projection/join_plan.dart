@@ -21,6 +21,19 @@ String computeJoinId(Iterable<String> headIds) => ContentDigest.of({
   'parents': _sortedUnique(headIds),
 });
 
+/// Whether [id] has the shape of a join id — content-addressed
+/// ([ContentDigest]) rather than a minted UUID. Together with the `system`
+/// kind this is what marks a message as a join (ADR 0018 rule 8).
+bool hasJoinIdShape(String id) => id.startsWith('${ContentDigest.version}:');
+
+/// Whether a join's edges have all arrived: its content-addressed [joinId]
+/// is the digest of its full parent set, so the parents that arrived
+/// reproduce it exactly when none is missing (ADR 0071).
+bool isJoinComplete({
+  required String joinId,
+  required Iterable<String> arrivedParentIds,
+}) => computeJoinId(arrivedParentIds) == joinId;
+
 /// The decision to heal a fork: emit a join node with [joinId] linking
 /// [parentIds] (the surviving heads) via `messagePrev`. Produced by [planJoin];
 /// a null plan means "do not join this wake".
@@ -44,11 +57,13 @@ class JoinPlan extends Equatable {
 /// Pure function of the current [headIds] and whether the local DAG view is
 /// complete ([viewComplete]). Returns a [JoinPlan] when **both** hold:
 /// - there are **≥2 heads** — a single head is no fork, nothing to heal; and
-/// - the local view is **complete**, i.e. no dangling parents. A `messagePrev`
-///   edge syncs as a message separate from its endpoint node, so a node can
-///   arrive before the edge that marks its child as the real tip; on that
-///   transient view a non-tip masquerades as a head and healing would mint a
-///   join over the wrong parent set. Defer until the view settles.
+/// - the local view is **complete**. A `messagePrev` edge syncs as a message
+///   separate from its endpoint nodes, so a child can arrive before its edge
+///   or an edge before its parent; on that transient view a non-tip
+///   masquerades as a head and healing would mint a join over the wrong
+///   parent set. The caller decides completeness (`ForkHealer` checks
+///   dangling parents, messages whose own edge is missing and joins missing
+///   an edge); defer until the view settles.
 ///
 /// Returns null otherwise.
 ///
