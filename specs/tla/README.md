@@ -17,6 +17,11 @@ It downloads the pinned `tla2tools.jar` once, verifies its SHA-256, and caches
 it in `TLA_TOOLS_DIR` (default `~/.cache/lotti-tla`). A configuration
 `<Spec><Variant>.cfg` checks `<Spec>.tla`.
 
+CI discovers all checked-in `.cfg` files and runs each on its own runner with
+`fail-fast: false`. Adding a configuration automatically adds a shard. The
+aggregate `TLC` check passes only when discovery and every shard succeed;
+local `make tla_check` still runs all configurations sequentially.
+
 ## `SyncSequence` — the sync sequence log and backfill
 
 One originating device and its peers: counter reservation, the payload write,
@@ -83,6 +88,9 @@ settled rows, and a failed sequence-log recheck. Reverting the Dart guards makes
 all six new regressions fail.
 
 ## `WakeRuntime` — agent wakes
+
+This model covers generic wakes. Daily OS processing jobs are recovered by
+their own durable outbox and never replayed by `WakeIntentStore`.
 
 Triggers become queued jobs, the drain dispatches a job when its agent's runner
 lease is free, and an executor runs the wake. An abort — a cancel, the
@@ -161,6 +169,13 @@ hooks and crashes drive the real confirmation service, which must keep
 Removing the claim's `pending` check, reverting a confirmed item when the hook
 throws, or letting a reject write its status unconditionally fails it within
 three steps.
+
+The confirmation model separates the committed claim from the post-commit
+outbox flush. `FlushFails` still permits dispatch after the caller verifies its
+unique persisted decision. Changing that transition to `done` reproduces the
+stranded confirmation as a `ConfirmedMeansApplied` counterexample. Service
+regressions exercise the real sync service and Drift transactions with a
+throwing outbox, for both confirmation and rejection.
 
 ## Changing a spec
 

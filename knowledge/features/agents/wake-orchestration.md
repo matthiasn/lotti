@@ -5,7 +5,7 @@ description: How a local change becomes an agent wake — subscription matching,
 resource: ../../../lib/features/agents/wake
 tags: [agents, wake, scheduling, concurrency]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T01:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-24T12:00:00Z }
 stale_after: 2026-12-24
 sources:
   - id: wake
@@ -349,7 +349,12 @@ The queue lives in memory, so a crash used to drop every queued wake — and
 a wake whose run the crash interrupted was never retried either. The
 device-local `WakeIntentStore` (one JSON list under `AGENT_WAKE_INTENTS` in
 the settings database) closes that: **one intent per queued job**, keyed by
-its run key.
+its run key. Wakes carrying a Daily OS `processing_job:` token are excluded:
+the [day processing outbox](../daily_os_next/processing-outbox.md) owns their
+recovery, cancellation, separate job payloads, and artifact run-key provenance.
+Startup discards legacy intent copies of those jobs rather than replaying them
+under unrecorded run keys or merging distinct processing IDs. Ordinary restored
+wakes also stay separate from queued processing jobs.
 
 - The queue's `onEnqueued` hook records a job's intent; `onMerged` adds the
   tokens merged into it while it waits. Tokens merge only into jobs still in

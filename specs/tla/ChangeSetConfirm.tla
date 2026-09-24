@@ -10,7 +10,9 @@
 (*   Read          ChangeSetConfirmationService._confirmItem: freshChange- *)
 (*                 Set and the `status == pending` check                   *)
 (*   MarkConfirmed claimChangeSetItem: an atomic pending -> confirmed      *)
-(*                 compare-and-swap                                        *)
+(*                 compare-and-swap with its unique decision in one tx     *)
+(*   Flush*        sync outbox after commit; _claimDecision checks that     *)
+(*                 its decision survived a throw before continuing         *)
 (*   Dispatch*     the tool dispatcher; a failure reverts to pending or    *)
 (*                 retracts                                                *)
 (*   Hook*         _onConfirmedDecision; a throw is logged, the item stays *)
@@ -30,6 +32,7 @@ CONSTANTS
     Faults        \* subset of FaultKinds
 
 FaultKinds == {
+    "outboxFlushFails",   \* transaction committed, sync enqueue throws
     "dispatchFails",      \* the tool reports failure without an effect
     "failsAfterEffect",   \* the tool throws after its effect landed
     "hookThrows"          \* _onConfirmedDecision throws after a dispatch
@@ -38,7 +41,7 @@ FaultKinds == {
 ASSUME Faults \subseteq FaultKinds
 
 Status == {"pending", "confirmed", "rejected", "retracted"}
-Pc == {"idle", "checked", "marked", "dispatched", "done"}
+Pc == {"idle", "checked", "committed", "marked", "dispatched", "done"}
 
 VARIABLES
     status,     \* persisted item status
@@ -71,10 +74,24 @@ MarkConfirmed(c) ==
     /\ pc[c] = "checked"
     /\ IF status = "pending"
        THEN /\ status' = "confirmed"
-            /\ pc' = [pc EXCEPT ![c] = "marked"]
+            /\ pc' = [pc EXCEPT ![c] = "committed"]
        ELSE /\ pc' = [pc EXCEPT ![c] = "done"]
             /\ UNCHANGED status
     /\ UNCHANGED <<applied, attempts, crashes>>
+
+\* The DB claim and decision have committed. Both a successful flush and a
+\* failed flush with this caller's durable decision permit dispatch. Before
+\* the fix, FlushFails moved to "done" and stranded a confirmed item.
+FlushOk(c) ==
+    /\ pc[c] = "committed"
+    /\ pc' = [pc EXCEPT ![c] = "marked"]
+    /\ UNCHANGED <<status, applied, attempts, crashes>>
+
+FlushFails(c) ==
+    /\ "outboxFlushFails" \in Faults
+    /\ pc[c] = "committed"
+    /\ pc' = [pc EXCEPT ![c] = "marked"]
+    /\ UNCHANGED <<status, applied, attempts, crashes>>
 
 DispatchOk(c) ==
     /\ pc[c] = "marked"
@@ -126,14 +143,14 @@ Reject(c) ==
 \* Every in-flight confirm dies; persisted status and effects survive.
 Crash ==
     /\ crashes < MaxCrashes
-    /\ \E c \in Callers : pc[c] \in {"checked", "marked", "dispatched"}
+    /\ \E c \in Callers : pc[c] \in {"checked", "committed", "marked", "dispatched"}
     /\ pc' = [c \in Callers |-> IF pc[c] = "idle" THEN "idle" ELSE "done"]
     /\ crashes' = crashes + 1
     /\ UNCHANGED <<status, applied, attempts>>
 
 Next ==
     \/ \E c \in Callers :
-          \/ Read(c) \/ MarkConfirmed(c)
+          \/ Read(c) \/ MarkConfirmed(c) \/ FlushOk(c) \/ FlushFails(c)
           \/ DispatchOk(c) \/ DispatchFails(c) \/ FailsAfterEffect(c)
           \/ HookOk(c) \/ HookThrows(c) \/ Reject(c)
     \/ Crash
@@ -142,6 +159,7 @@ Next ==
 Fairness ==
     \A c \in Callers :
         /\ WF_vars(MarkConfirmed(c))
+        /\ WF_vars(FlushOk(c) \/ FlushFails(c))
         /\ WF_vars(DispatchOk(c) \/ DispatchFails(c) \/ FailsAfterEffect(c))
         /\ WF_vars(HookOk(c) \/ HookThrows(c))
 
