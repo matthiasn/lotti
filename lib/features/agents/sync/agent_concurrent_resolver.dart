@@ -81,7 +81,7 @@ bool noKnownAncestry(String ancestorId, String descendantId) => false;
 ///   gives the same head on every replica, never by clock or arrival order.
 ///   The fork healer joins a true fork; an append chains off a tip past
 ///   whichever head this leaves (`AgentMessageDag.tipFrom`), so a head left
-///   on a row whose child arrives later forks nothing.
+///   on a row whose child (and its edge) arrives later forks nothing.
 String? mergeAgentHeads({
   required String? local,
   required String? incoming,

@@ -60,8 +60,9 @@ should have and checked the code as it stood. TLC found three holes:
 3. **An append chains off a tip.** `_appendMessage` first moves a set head
    past any child it has on this device (`AgentMessageDag.tipFrom`,
    following the lowest id at each fork). So a pointer that trails the log
-   never forks it. This also settles what the merge could not know yet: a
-   head left on a row whose child arrived later.
+   does not fork it, as long as the child's `messagePrev` edge has arrived:
+   the walk follows edges. This also settles what the merge could not know
+   yet: a head left on a row whose child (and its edge) arrived later.
 4. **A state version is received in one transaction.** The processor reads
    the local state row and its identity inside the transaction that writes
    the result, and never takes a state row from the bundle prefetch. A local
@@ -80,7 +81,9 @@ should have and checked the code as it stood. TLC found three holes:
   delivery and healing. Setting any of the three switches back to `FALSE`
   reproduces its trace.
 - A fork now needs two devices appending before either has seen the other's
-  message. It can no longer come from a stale pointer.
+  message, or an append in the window where a child's row has arrived but
+  its edge has not (the residual below). It can no longer come from a stale
+  pointer whose successor's edge is present.
 - The pointers themselves need not agree once sync settles
   (`PointersConverge` is written down but not claimed). A merge made before
   the rows that order two heads arrived can leave a pointer on the older

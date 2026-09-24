@@ -430,7 +430,8 @@ the head moved back past it.
 What the merge cannot know — an order whose rows have not arrived yet — the
 append path settles: `_appendMessage` advances the head to a tip past it
 before chaining (`AgentMessageDag.tipFrom`), so a pointer left on a row that
-has since received a child never forks the log.
+has since received a child does not fork the log — provided the child's
+`messagePrev` edge has arrived, since the walk follows edges.
 `specs/tla/AgentMessageLog.tla` model-checks both (`HeadNeverRegresses`,
 `AppendsOffTips`, `SettledHead`).
 

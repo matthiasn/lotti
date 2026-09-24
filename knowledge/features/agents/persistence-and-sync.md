@@ -353,7 +353,9 @@ merges the head by the local message DAG — the head that descends from the
 other wins, two heads with no known order go by id. An append first advances
 a head that already has a child here to a tip past it
 (`AgentMessageDag.tipFrom`), so a pointer that trails the messages synced in
-ahead of their state row never forks the log. Both are model-checked in
+ahead of their state row does not fork the log once their `messagePrev`
+edges are present — the walk follows edges, so a child whose edge is still
+in flight is not seen. Both are model-checked in
 `specs/tla/AgentMessageLog.tla`; the rules are in
 [vector clocks and conflicts](../sync/vector-clocks-and-conflicts.md#the-agent-head-follows-the-message-dag).
 

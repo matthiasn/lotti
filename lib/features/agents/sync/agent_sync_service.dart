@@ -617,7 +617,8 @@ class AgentSyncService {
   /// then advances to the new message. A head that already has a child here —
   /// the synced pointer trailing messages that arrived before it — is first
   /// advanced to a tip past it ([AgentMessageDag.tipFrom], ADR 0076), so a
-  /// stale pointer never forks the log.
+  /// stale pointer does not fork the log. The walk follows `messagePrev`
+  /// edges: a child whose edge has not synced yet is not seen.
   ///
   /// Reached from [upsertEntity] for every local message write, so chaining
   /// can't be bypassed. Messages chain *across wakes* into one continuous
