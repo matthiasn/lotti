@@ -5,7 +5,7 @@ description: Goal-driven agents — the deterministic Phase A tier evaluating cr
 resource: ../../lib/features/goals
 tags: [goals, agents, runtime, wake, evaluation]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T04:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T12:00:00Z }
 stale_after: 2027-02-22
 sources:
   - id: goals-src
@@ -144,6 +144,14 @@ sources:
     resource: ../../lib/features/agents/ui/chat/chat_recorder_controller.dart
     title: ChatRecorderController — shared voice recorder
     last_modified: 2026-09-12
+  - id: adr-0068
+    resource: ../../docs/adr/0068-model-checked-agent-convergence.md
+    title: ADR 0068 — Model-checked convergence of synced agent entities
+    last_modified: 2026-09-24
+  - id: version-heads-spec
+    resource: ../../specs/tla/VersionHeads.tla
+    title: TLA+ model of version rows and their head
+    last_modified: 2026-09-24
 ---
 
 # Goal Agents — Runtime
@@ -704,8 +712,9 @@ See [profile resolution](ai/profile-resolution.md) for failure and precedence ru
   `GoalSpecRevisionService`) applies the changes to the criteria tree via
   `applyGoalRevisionChanges` — which REJECTS anything ambiguous (two
   candidate leaves and no name, unparseable period/cadence, free-form
-  `successCriteria` alone) rather than guessing — then supersedes the
-  current version, mints `v(n+1)` with full provenance (`authoredBy:
+  `successCriteria` alone) rather than guessing — then supersedes every
+  version still active (the current one, and any twin a disconnected device
+  minted at the same ordinal), mints `v(n+1)` with full provenance (`authoredBy:
   goal_agent`, `diffFromVersionId`, the proposal's rationale) and moves
   the head in one transaction. Approval refuses the item when that persisted
   base version is no longer the current head, including proposals that arrive

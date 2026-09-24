@@ -5,8 +5,8 @@ description: What an agent does (template skills) versus who it is (soul persona
 resource: ../../../lib/features/agents/workflow/template_evolution_workflow.dart
 tags: [agents, templates, souls, evolution, improver]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T23:30:00Z }
-stale_after: 2026-10-12
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T12:00:00Z }
+stale_after: 2026-12-24
 sources:
   - id: seeding
     resource: ../../../lib/features/agents/service/agent_template_seeding.dart
@@ -36,6 +36,14 @@ sources:
     resource: ../../../lib/features/agents/workflow/task_agent_prompt_builder.dart
     title: TaskAgentPromptBuilder — scaffold constants and effective directives
     last_modified: 2026-08-08
+  - id: version-heads-spec
+    resource: ../../../specs/tla/VersionHeads.tla
+    title: TLA+ model of version rows and their head
+    last_modified: 2026-09-24
+  - id: adr-0068
+    resource: ../../../docs/adr/0068-model-checked-agent-convergence.md
+    title: ADR 0068 — Model-checked convergence of synced agent entities
+    last_modified: 2026-09-24
 ---
 
 # Two axes: skills and personality
@@ -104,9 +112,16 @@ Kit — with three default assignments: Laura soul → Laura task template, Tom 
 available for manual assignment.
 
 `SoulDocumentService` manages the lifecycle: `createSoul()` (entity + initial
-version + head), `createVersion()` (archive old, create new active),
-`assignSoulToTemplate()`, `resolveActiveSoulForTemplate()` (link → head → version
-chain), and `getTemplatesUsingSoul()` for reverse lookup.
+version + head), `createVersion()` (archive every non-archived version, create
+the new active one), `assignSoulToTemplate()`, `resolveActiveSoulForTemplate()`
+(link → head → version chain), and `getTemplatesUsingSoul()` for reverse lookup.
+
+The head is what makes a version active; the status field only mirrors it.
+Two devices editing offline can leave two versions marked active, or a head
+naming a version the other device archived — each row is its own synced
+entity. Every read resolves through the head, so all devices agree on the
+active version, and the next edit archives the rest
+(`specs/tla/VersionHeads.tla`, ADR 0068).
 
 # The evolution session
 

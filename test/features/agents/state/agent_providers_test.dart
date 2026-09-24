@@ -424,6 +424,9 @@ void main() {
       // Verify the outbox service was injected by exercising upsertEntity.
       final entity = makeTestIdentity();
       when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {});
+      // An identity is a mutable register, resolved against its persisted
+      // row; there is none yet.
+      when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
       when(
         () => mockOutboxService.enqueueMessage(any()),
       ).thenAnswer((_) async {});

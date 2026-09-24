@@ -817,10 +817,11 @@ class DayAgentWorkflow {
     } catch (e, s) {
       _logError('day-agent wake failed', error: e, stackTrace: s);
       try {
-        final latestState =
-            await agentRepository.getAgentState(agentId) ?? state;
-        await syncService.upsertEntity(
-          latestState.copyWith(
+        // Read and write in one transaction, so a write that lands in
+        // between is not overwritten (ADR 0068).
+        await syncService.updateAgentState(
+          agentId,
+          (latestState) => latestState.copyWith(
             updatedAt: now,
             consecutiveFailureCount: latestState.consecutiveFailureCount + 1,
             scheduledWakeAt: remainingScheduledWakeAt(latestState, now),

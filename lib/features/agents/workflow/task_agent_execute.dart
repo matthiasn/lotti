@@ -935,12 +935,14 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         unconsolidatedSets: pendingSets,
       );
 
-      // Update failure count in state.
+      // Update failure count in state, over the row as it is now rather than
+      // the wake-start snapshot (ADR 0068).
       try {
-        await syncService.upsertEntity(
-          state.copyWith(
+        await syncService.updateAgentState(
+          agentId,
+          (current) => current.copyWith(
             updatedAt: now,
-            consecutiveFailureCount: state.consecutiveFailureCount + 1,
+            consecutiveFailureCount: current.consecutiveFailureCount + 1,
           ),
         );
       } catch (stateError, s) {

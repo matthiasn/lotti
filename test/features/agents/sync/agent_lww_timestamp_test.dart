@@ -457,4 +457,38 @@ void main() {
       expect(_cases.length, 42);
     });
   });
+
+  group('AgentDomainEntity.withUpdatedAtNotBefore', () {
+    final later = DateTime(2025, 1, 1);
+    final earlier = DateTime(2023, 1, 1);
+
+    for (final c in _cases) {
+      // Exactly the variants ordered by `updatedAt` carry a settable one; a
+      // deleted query event is ordered by its deletion, which is not.
+      final mutable = c.expected == _updated && !c.label.startsWith('deleted');
+
+      test('${c.label}: ${mutable ? 'lifts' : 'leaves'} an older updatedAt '
+          'to the floor', () {
+        expect(c.entity.lwwOnUpdatedAt, mutable, reason: c.label);
+
+        final lifted = c.entity.withUpdatedAtNotBefore(later);
+        if (mutable) {
+          expect(lifted.effectiveUpdatedAt, later, reason: c.label);
+          // Only the timestamp moves.
+          expect(lifted.id, c.entity.id);
+          expect(lifted.vectorClock, c.entity.vectorClock);
+          expect(lifted.runtimeType, c.entity.runtimeType);
+        } else {
+          expect(lifted, same(c.entity), reason: c.label);
+        }
+
+        // A floor below the row's own timestamp changes nothing.
+        expect(
+          c.entity.withUpdatedAtNotBefore(earlier),
+          same(c.entity),
+          reason: c.label,
+        );
+      });
+    }
+  });
 }
