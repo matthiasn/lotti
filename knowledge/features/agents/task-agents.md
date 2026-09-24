@@ -5,7 +5,7 @@ description: The primary agent workflow — inference setup resolution, the auto
 resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
 tags: [agents, task-agent, tools, proposals, inference]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T01:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T06:00:00Z }
 stale_after: 2026-12-22
 sources:
   - id: report-policy
@@ -66,8 +66,20 @@ sources:
     last_modified: 2026-09-22
   - id: resolution-store
     resource: ../../../lib/features/agents/service/change_set_resolution_store.dart
-    title: Shared confirmation state and chat-deletion fence
-    last_modified: 2026-09-13
+    title: Shared confirmation state, one-item transitions and chat-deletion fence
+    last_modified: 2026-09-24
+  - id: retraction
+    resource: ../../../lib/features/agents/service/suggestion_retraction_service.dart
+    title: SuggestionRetractionService — staged retractions in one transaction
+    last_modified: 2026-09-24
+  - id: change-set-lifecycle-spec
+    resource: ../../../specs/tla/ChangeSetLifecycle.tla
+    title: ChangeSetLifecycle — every writer of a set, across devices, model-checked
+    last_modified: 2026-09-24
+  - id: adr-0067
+    resource: ../../../docs/adr/0067-model-checked-change-set-lifecycle.md
+    title: ADR 0067 — Model-checked change-set lifecycle
+    last_modified: 2026-09-24
   - id: directed-relation
     resource: ../../../lib/features/tasks/model/directed_relation.dart
     title: DirectedRelation
@@ -998,6 +1010,38 @@ them: a tool that throws *after* its effect landed is reverted to `pending` and
 can be applied again on retry, and a crash between the claim and the dispatch
 leaves the item `confirmed` without its effect.
 
+## The whole set, and every device showing it
+
+The claim protects one item from its own concurrent confirms. The set has more
+writers than that, and until ADR 0067 only the claim was a transaction: a
+failed dispatch's revert, the non-retryable auto-retraction, the follow-up
+task's rewrite of its migration's `targetTaskId`, the migration cascade and a
+staged retraction each read the whole set, awaited, and wrote the whole set
+back — putting a sibling claimed in between back to `pending` after its
+change was applied. Now every one of them is a transaction over a fresh read
+that changes only what it owns:
+
+| Writer | Transition |
+|--------|------------|
+| confirm / reject (`claimChangeSetItem`) | `pending` → `confirmed` / `rejected` |
+| failed dispatch | `confirmed` → `pending` (retryable) or `retracted` (non-retryable), only if still `confirmed` |
+| reopen (the user's Undo) | the decision it read → `pending`, with the verdict neutralised in the same transaction; a refused revert puts it back only from `pending` |
+| migration cascade | each matching migration claimed like a user rejection |
+| sibling rewrite (`persistResolvedIdToSiblings`) | the migrations' `targetTaskId`, status untouched |
+| staged retraction (`applyStaged`) | `pending` → `retracted`, re-validated in its transaction |
+
+`ChangeSetResolutionStore.transitionChangeSetItem` is the one path for a status
+change of a stored set, and every change bumps the item's `revision`, which is
+what lets sync merge concurrent versions item by item instead of dropping one
+device's decisions — see
+[vector clocks and conflicts](../sync/vector-clocks-and-conflicts.md#change-sets-merge-item-by-item).
+`specs/tla/ChangeSetLifecycle.tla` model-checks the writers and the sync
+together, with two devices and sync delivered in any order. Two cases stay
+open, both needing coordination between devices rather than a local fix: an
+item decided on two devices before they sync is applied on both, and a
+consolidation on one device racing a decision on another leaves a pending copy
+of an applied change (ADR 0067).
+
 For [chat-owned approvals](query-chat.md#task-actions-and-inline-approval), a
 missing persisted set is terminal: the resolution store returns an empty
 tombstone and refuses status writes instead of reviving the caller's snapshot.
@@ -1127,8 +1171,11 @@ stateDiagram-v2
   pending --> rejected: user swipe-reject
   pending --> deferred: user defers the decision
   pending --> retracted: agent retract_suggestions
+  pending --> retracted: consolidated into the survivor, or superseded
   confirmed --> pending: dispatch failed, retryable
   confirmed --> retracted: dispatch failed, non-retryable
+  confirmed --> pending: user Undo (reopenItem)
+  rejected --> pending: user Undo (reopenItem)
   confirmed --> [*]
   rejected --> [*]
   deferred --> [*]
@@ -1154,7 +1201,12 @@ or UI sees them, and retired resolved-set rows with no decision are filtered out
 
 When several pending change sets are consolidated, the newest becomes the
 survivor and pending items in retired sets are marked `retracted` first — so no
-resolved parent row contains an actionable-looking pending child.
+resolved parent row contains an actionable-looking pending child. Only pending
+items move into the survivor; a decided item stays in the set it was decided
+in. A copy would not follow its original: a claimed item whose dispatch is
+still running can fail and revert the original to `pending`, and a copy made
+as `confirmed` would go on claiming a change that never landed. The card lists
+only pending items, so it looks the same.
 
 Feedback-extraction heuristics read `rejectionReason` to detect user grievances
 and are explicitly decoupled from `retractionReason`, so agent self-talk never

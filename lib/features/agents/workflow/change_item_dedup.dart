@@ -147,7 +147,7 @@ List<ChangeSetEntity> markItemsRetracted(
           items: [
             for (var i = 0; i < set.items.length; i++)
               if (indexesBySetId[set.id]!.contains(i))
-                set.items[i].copyWith(status: ChangeItemStatus.retracted)
+                set.items[i].withStatus(ChangeItemStatus.retracted)
               else
                 set.items[i],
           ],
@@ -162,7 +162,7 @@ ChangeSetEntity retireConsolidatedSet(ChangeSetEntity set) {
     items: [
       for (final item in set.items)
         if (item.status == ChangeItemStatus.pending)
-          item.copyWith(status: ChangeItemStatus.retracted)
+          item.withStatus(ChangeItemStatus.retracted)
         else
           item,
     ],

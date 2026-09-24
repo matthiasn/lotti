@@ -5,6 +5,7 @@ import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -1246,5 +1247,340 @@ void main() {
       expect(ab.ratings, ba.ratings);
       expect(ab.ratings.single.rating, 3, reason: 'earliest outcome wins');
     });
+  });
+
+  group('resolveIncomingChangeSet — item-level merge (ADR 0067)', () {
+    const estimate = ChangeItem(
+      toolName: 'update_task_estimate',
+      args: {'minutes': 30},
+      humanSummary: 'Set estimate',
+    );
+    const title = ChangeItem(
+      toolName: 'set_task_title',
+      args: {'title': 'T'},
+      humanSummary: 'Set title',
+    );
+    final created = DateTime(2026, 9);
+
+    ChangeSetEntity changeSet(
+      List<ChangeItem> items,
+      Map<String, int> clock, {
+      ChangeSetStatus? status,
+      DateTime? resolvedAt,
+      DateTime? deletedAt,
+    }) =>
+        AgentDomainEntity.changeSet(
+              id: 'cs',
+              agentId: 'a1',
+              taskId: 't1',
+              threadId: 'th',
+              runKey: 'rk',
+              status: status ?? ChangeItem.deriveSetStatus(items),
+              items: items,
+              createdAt: created,
+              vectorClock: VectorClock(clock),
+              resolvedAt: resolvedAt,
+              deletedAt: deletedAt,
+            )
+            as ChangeSetEntity;
+
+    test(
+      'decisions made concurrently on two devices both survive, on both',
+      () {
+        // Device A confirmed (and applied) the estimate while device B
+        // rejected the title, both from the same pending set. A whole-row
+        // winner dropped one of them: the applied estimate could read
+        // pending again everywhere and be confirmed a second time.
+        final onA = changeSet(
+          [
+            estimate.withStatus(ChangeItemStatus.confirmed),
+            title,
+          ],
+          {'a': 2},
+        );
+        final onB = changeSet(
+          [
+            estimate,
+            title.withStatus(ChangeItemStatus.rejected),
+          ],
+          {'a': 1, 'b': 1},
+        );
+
+        final atA = resolveIncomingChangeSet(local: onA, incoming: onB)!;
+        final atB = resolveIncomingChangeSet(local: onB, incoming: onA)!;
+
+        expect(atA.items.map((i) => i.status), [
+          ChangeItemStatus.confirmed,
+          ChangeItemStatus.rejected,
+        ]);
+        expect(atA.status, ChangeSetStatus.resolved);
+        expect(atA.resolvedAt, created, reason: 'neither had resolved it');
+        expect(atA.vectorClock, const VectorClock({'a': 2, 'b': 1}));
+        expect(atB, atA, reason: 'both devices converge on one row');
+      },
+    );
+
+    test('a confirm beats a concurrent rejection or retraction', () {
+      for (final other in [
+        ChangeItemStatus.rejected,
+        ChangeItemStatus.retracted,
+        ChangeItemStatus.pending,
+      ]) {
+        final confirmed = changeSet(
+          [
+            estimate.withStatus(ChangeItemStatus.confirmed),
+          ],
+          {'a': 2},
+        );
+        final decided = changeSet(
+          [
+            estimate.withStatus(other),
+          ],
+          {'a': 1, 'b': 1},
+        );
+
+        for (final merged in [
+          resolveIncomingChangeSet(local: confirmed, incoming: decided),
+          resolveIncomingChangeSet(local: decided, incoming: confirmed),
+        ]) {
+          expect(merged!.items.single.status, ChangeItemStatus.confirmed);
+        }
+      }
+    });
+
+    test(
+      'the later revision wins: a revert beats the claim a peer carried',
+      () {
+        // A claimed the estimate (revision 1), B received that claim and then
+        // rejected the title; meanwhile A's dispatch failed and reverted the
+        // estimate (revision 2). The revert must win, or the estimate would
+        // read confirmed although it never took effect.
+        final onA = changeSet(
+          [
+            estimate
+                .withStatus(ChangeItemStatus.confirmed)
+                .withStatus(ChangeItemStatus.pending),
+            title,
+          ],
+          {'a': 3},
+        );
+        final onB = changeSet(
+          [
+            estimate.withStatus(ChangeItemStatus.confirmed),
+            title.withStatus(ChangeItemStatus.rejected),
+          ],
+          {'a': 2, 'b': 1},
+        );
+
+        final merged = resolveIncomingChangeSet(local: onA, incoming: onB)!;
+
+        expect(merged.items[0].status, ChangeItemStatus.pending);
+        expect(merged.items[0].revision, 2);
+        expect(merged.items[1].status, ChangeItemStatus.rejected);
+        expect(merged.status, ChangeSetStatus.partiallyResolved);
+        expect(merged.resolvedAt, isNull);
+      },
+    );
+
+    test('the migration target rewrite travels with its revision', () {
+      final rewritten = estimate.withArgs({'minutes': 30, 'extra': true});
+      final onA = changeSet([rewritten, title], {'a': 2});
+      final onB = changeSet(
+        [
+          estimate,
+          title.withStatus(ChangeItemStatus.confirmed),
+        ],
+        {'a': 1, 'b': 1},
+      );
+
+      final merged = resolveIncomingChangeSet(local: onB, incoming: onA)!;
+
+      expect(merged.items[0].args, {'minutes': 30, 'extra': true});
+      expect(merged.items[1].status, ChangeItemStatus.confirmed);
+    });
+
+    test('equal revision and status: the whole-row winner decides', () {
+      final onA = changeSet(
+        [
+          estimate.withArgs({'minutes': 45}),
+        ],
+        {'a': 2},
+      );
+      final onB = changeSet(
+        [
+          estimate.withArgs({'minutes': 60}),
+        ],
+        {'a': 1, 'b': 1},
+      );
+
+      // The canonical clock order picks A (host a, counter 2 > 1).
+      expect(
+        resolveIncomingChangeSet(local: onA, incoming: onB)!.items.single.args,
+        {'minutes': 45},
+      );
+      expect(
+        resolveIncomingChangeSet(local: onB, incoming: onA)!.items.single.args,
+        {'minutes': 45},
+      );
+    });
+
+    test('keeps items only one version appended', () {
+      final onA = changeSet(
+        [
+          estimate.withStatus(ChangeItemStatus.confirmed),
+        ],
+        {'a': 2},
+      );
+      final onB = changeSet([estimate, title], {'a': 1, 'b': 1});
+
+      final merged = resolveIncomingChangeSet(local: onA, incoming: onB)!;
+
+      expect(merged.items, [onA.items.single, title]);
+      expect(merged.status, ChangeSetStatus.partiallyResolved);
+    });
+
+    test('two closed versions keep the winner status', () {
+      // A row retired before retirement retracted its pending items must not
+      // reopen by merging.
+      final onA = changeSet(
+        [estimate],
+        {'a': 2},
+        status: ChangeSetStatus.resolved,
+        resolvedAt: DateTime(2026, 9, 2),
+      );
+      final onB = changeSet(
+        [estimate],
+        {'a': 1, 'b': 1},
+        status: ChangeSetStatus.resolved,
+        resolvedAt: DateTime(2026, 9, 3),
+      );
+
+      final merged = resolveIncomingChangeSet(local: onA, incoming: onB)!;
+
+      expect(merged.status, ChangeSetStatus.resolved);
+      expect(merged.resolvedAt, DateTime(2026, 9, 3), reason: 'the later');
+    });
+
+    test('causal order decides before any merge', () {
+      final older = changeSet([estimate], {'a': 1});
+      final newer = changeSet(
+        [
+          estimate.withStatus(ChangeItemStatus.confirmed),
+        ],
+        {'a': 2},
+      );
+
+      expect(resolveIncomingChangeSet(local: newer, incoming: older), isNull);
+      expect(resolveIncomingChangeSet(local: newer, incoming: newer), isNull);
+      expect(
+        resolveIncomingChangeSet(local: older, incoming: newer),
+        same(newer),
+      );
+    });
+
+    test('a missing or invalid clock applies the incoming version', () {
+      final local = changeSet([estimate], {'a': 1});
+      final incoming = changeSet([estimate], {'b': 1});
+
+      expect(
+        resolveIncomingChangeSet(
+          local: local.copyWith(vectorClock: null),
+          incoming: incoming,
+        ),
+        same(incoming),
+      );
+      expect(
+        resolveIncomingChangeSet(
+          local: local.copyWith(vectorClock: const VectorClock({'a': -1})),
+          incoming: incoming,
+        ),
+        same(incoming),
+      );
+    });
+
+    test(
+      'falls back to the whole-row winner when the versions do not align',
+      () {
+        // Different proposals at one index, or a tombstone: nothing to merge
+        // item by item.
+        final onA = changeSet([estimate], {'a': 2});
+        final misaligned = changeSet([title], {'a': 1, 'b': 1});
+        final deleted = changeSet(
+          [estimate],
+          {'a': 1, 'b': 1},
+          deletedAt: DateTime(2026, 9, 4),
+        );
+
+        // A wins the canonical order: keep local, or apply A as incoming.
+        expect(
+          resolveIncomingChangeSet(local: onA, incoming: misaligned),
+          isNull,
+        );
+        expect(
+          resolveIncomingChangeSet(local: misaligned, incoming: onA),
+          same(onA),
+        );
+        expect(resolveIncomingChangeSet(local: onA, incoming: deleted), isNull);
+        expect(
+          mergeConcurrentChangeSets(
+            local: onA,
+            incoming: deleted,
+            winner: ConcurrentWinner.local,
+          ),
+          isNull,
+        );
+      },
+    );
+
+    glados.Glados2(
+      glados.any.list(glados.any.intInRange(0, 6)),
+      glados.any.list(glados.any.intInRange(0, 6)),
+      glados.ExploreConfig(numRuns: 200),
+    ).test(
+      'merging concurrent histories converges and never loses a confirm the '
+      'other side did not supersede',
+      (opsA, opsB) {
+        // Two devices apply generated status changes to one two-item set
+        // from the same base; each op is (item, target status).
+        final base = changeSet([estimate, title], {'base': 1});
+        const statuses = [
+          ChangeItemStatus.pending,
+          ChangeItemStatus.confirmed,
+          ChangeItemStatus.rejected,
+        ];
+        ChangeSetEntity run(List<int> ops, String host) {
+          var set = base;
+          var counter = 0;
+          for (final op in ops) {
+            final index = op % 2;
+            final items = [...set.items];
+            items[index] = items[index].withStatus(statuses[op ~/ 2]);
+            counter++;
+            set = changeSet(items, {'base': 1, host: counter});
+          }
+          return set;
+        }
+
+        final onA = run(opsA, 'a');
+        final onB = run(opsB, 'b');
+        final atA = resolveIncomingChangeSet(local: onA, incoming: onB) ?? onA;
+        final atB = resolveIncomingChangeSet(local: onB, incoming: onA) ?? onB;
+
+        expect(atA, atB, reason: 'converged');
+        for (var i = 0; i < 2; i++) {
+          final a = onA.items[i];
+          final b = onB.items[i];
+          final kept = atA.items[i];
+          // The side that changed the item last wins it outright.
+          if (a.revision != b.revision) {
+            expect(kept, a.revision > b.revision ? a : b);
+          } else if (a.status == ChangeItemStatus.confirmed ||
+              b.status == ChangeItemStatus.confirmed) {
+            expect(kept.status, ChangeItemStatus.confirmed);
+          }
+        }
+      },
+      tags: 'glados',
+    );
   });
 }

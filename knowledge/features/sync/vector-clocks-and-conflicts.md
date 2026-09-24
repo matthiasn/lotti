@@ -5,8 +5,8 @@ description: How causal order is represented, why coveredVectorClocks is separat
 resource: ../../../lib/features/sync/vector_clock.dart
 tags: [sync, vector-clock, conflicts, causality]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T23:00:00Z }
-stale_after: 2026-11-02
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T06:00:00Z }
+stale_after: 2026-12-22
 sources:
   - id: vector-clock
     resource: ../../../lib/features/sync/vector_clock.dart
@@ -26,8 +26,20 @@ sources:
     last_modified: 2026-06-20
   - id: agent-resolver
     resource: ../../../lib/features/agents/sync/agent_concurrent_resolver.dart
-    title: AgentConcurrentResolver — resolveConcurrent and mergeAgentStateCounters
-    last_modified: 2026-08-12
+    title: AgentConcurrentResolver — resolveConcurrent, mergeAgentStateCounters and resolveIncomingChangeSet
+    last_modified: 2026-09-24
+  - id: agent-handlers
+    resource: ../../../lib/features/sync/matrix/sync_event_processor_agent_handlers.dart
+    title: Inbound agent entities, and change sets applied in one transaction
+    last_modified: 2026-09-24
+  - id: change-set-spec
+    resource: ../../../specs/tla/ChangeSetLifecycle.tla
+    title: ChangeSetLifecycle — change sets across writers and devices, model-checked
+    last_modified: 2026-09-24
+  - id: adr-0067
+    resource: ../../../docs/adr/0067-model-checked-change-set-lifecycle.md
+    title: ADR 0067 — Model-checked change-set lifecycle
+    last_modified: 2026-09-24
 ---
 
 # What a vector clock is here
@@ -250,3 +262,39 @@ LWW winner lacked, avoiding a redundant write otherwise.
 
 Both devices converge on the same row regardless of arrival order. Unlike
 journal entries, agent-derived state never raises a user-facing `Conflict`.
+
+## Change sets merge item by item
+
+A change set is one synced row that every device showing it edits — the user
+confirms an item on the phone while a wake on the desktop retracts another.
+Picking one whole version dropped the other device's decisions (a change set's
+last-writer-wins timestamp is its `createdAt`, so the canonical clock order
+decided), and an item confirmed and applied on one device read `pending`
+everywhere again. `resolveIncomingChangeSet` therefore merges two concurrent
+versions item by item:
+
+| Per item | Kept |
+|----------|------|
+| different `revision` | the version that changed the item last |
+| same revision, different status | the more final status: `confirmed` over `rejected` over `retracted` over `pending` — a confirm took effect, a concurrent rejection or retraction did not |
+| same revision and status | the whole-row winner's |
+
+Every writer bumps an item's `revision` when it changes the item's status or
+arguments (`ChangeItemRevision.withStatus` / `withArgs`). Items only one
+version appended are kept, the set status is derived from the merged items,
+and the merged row carries the join of both clocks, so the two devices compute
+the same row and a later write on either dominates it. Versions that disagree
+on which proposal an index holds, or a tombstone, fall back to the whole-row
+winner.
+
+The receive is also one transaction for change sets: the local row is read,
+compared and written together, not compared against the bundle's prefetched
+snapshot. Otherwise a local claim committing between the read and the write
+is overwritten by a peer version that only covered the row as it was before
+the claim.
+
+`specs/tla/ChangeSetLifecycle.tla` model-checks both, and names what they
+cannot close: an item decided on two devices before they sync is applied on
+both (the rows still converge), and a consolidation on one device racing a
+decision on another leaves a pending copy of an applied change — see
+[ADR 0067](../../../docs/adr/0067-model-checked-change-set-lifecycle.md).

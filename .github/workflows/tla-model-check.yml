@@ -16,6 +16,12 @@ on:
       - "lib/features/agents/wake/**"
       - "lib/features/agents/service/change_set_confirmation_service.dart"
       - "lib/features/agents/service/change_set_resolution_store.dart"
+      - "lib/features/agents/service/suggestion_retraction_service.dart"
+      - "lib/features/agents/workflow/change_set_builder.dart"
+      - "lib/features/agents/workflow/change_item_dedup.dart"
+      - "lib/features/agents/model/change_set.dart"
+      - "lib/features/agents/sync/agent_concurrent_resolver.dart"
+      - "lib/features/sync/matrix/sync_event_processor_agent_handlers.dart"
       - ".github/workflows/tla-model-check.yml"
 
 concurrency:

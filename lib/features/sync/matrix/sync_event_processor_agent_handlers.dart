@@ -199,6 +199,10 @@ extension _AgentHandlers on SyncEventProcessor {
       return;
     }
     if (agentRepository != null) {
+      if (resolvedEntity is ChangeSetEntity &&
+          await _applyChangeSetMessage(msg: msg, incoming: resolvedEntity)) {
+        return;
+      }
       // AgentStateEntity carries per-host G-counters that must converge under
       // concurrent edits: merge them element-wise rather than letting whole-row
       // LWW drop one side's increments. On a concurrent clock this returns the
@@ -425,6 +429,61 @@ extension _AgentHandlers on SyncEventProcessor {
         subDomain: 'processor.apply',
       );
     }
+  }
+
+  /// Applies a received change set against a change set stored locally:
+  /// the local row is read, compared and written in one transaction, and
+  /// concurrent versions are merged item by item
+  /// ([resolveIncomingChangeSet]). Returns `false` — nothing done — when no
+  /// change set is stored under the id yet; the generic path applies it.
+  ///
+  /// The transaction matters as much as the merge. A local claim that
+  /// commits between a read of the local row and the write of the received
+  /// one would be overwritten, and with it the only record that the change
+  /// was applied (`specs/tla/ChangeSetLifecycle.tla`, `AtomicReceive`). The
+  /// prefetched bundle snapshot is neither read nor needed for the same
+  /// reason: every change set of a bundle is read fresh here.
+  Future<bool> _applyChangeSetMessage({
+    required SyncAgentEntity msg,
+    required ChangeSetEntity incoming,
+  }) async {
+    final outcome = await agentRepository!.runInTransaction(() async {
+      final local = await agentRepository!.getEntity(incoming.id);
+      if (local is! ChangeSetEntity) return null;
+      final toWrite = resolveIncomingChangeSet(
+        local: local,
+        incoming: incoming,
+      );
+      if (toWrite != null) await agentRepository!.upsertEntity(toWrite);
+      return (local: local, written: toWrite);
+    });
+    if (outcome == null) return false;
+
+    final written = outcome.written;
+    if (written == null) {
+      await _restoreDominantAgentCache(
+        jsonPath: msg.jsonPath,
+        kind: 'agentEntity',
+        id: incoming.id,
+        jsonString: jsonEncode(outcome.local.toJson()),
+      );
+      _trace(
+        'apply.agentEntity.skippedLocalWins id=${incoming.id}',
+        subDomain: 'processor.apply',
+      );
+    } else {
+      _updateNotifications.notify(
+        {written.agentId, agentNotification},
+        fromSync: true,
+      );
+      _trace(
+        'apply agentEntity id=${written.id}',
+        subDomain: 'processor.apply',
+      );
+    }
+    await _projectAgentAttribution(written ?? incoming);
+    await _recordReceivedAgentEntity(msg: msg, entity: incoming);
+    return true;
   }
 
   Future<void> _projectAgentAttribution(AgentDomainEntity entity) async {

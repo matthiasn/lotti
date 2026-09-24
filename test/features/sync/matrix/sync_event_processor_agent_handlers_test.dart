@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
@@ -62,6 +63,208 @@ void main() {
         ),
       ).thenAnswer((_) async => const []);
       processor.agentRepository = mockAgentRepo;
+    });
+
+    group('change sets (ChangeSetLifecycle.tla)', () {
+      const estimate = ChangeItem(
+        toolName: 'update_task_estimate',
+        args: {'minutes': 30},
+        humanSummary: 'Set estimate',
+      );
+      const title = ChangeItem(
+        toolName: 'set_task_title',
+        args: {'title': 'T'},
+        humanSummary: 'Set title',
+      );
+
+      ChangeSetEntity changeSet(
+        List<ChangeItem> items,
+        Map<String, int> clock,
+      ) =>
+          AgentDomainEntity.changeSet(
+                id: 'cs-sync',
+                agentId: 'agent-1',
+                taskId: 'task-1',
+                threadId: 'thread-1',
+                runKey: 'run-1',
+                status: ChangeItem.deriveSetStatus(items),
+                items: items,
+                createdAt: DateTime(2026, 9),
+                vectorClock: VectorClock(clock),
+              )
+              as ChangeSetEntity;
+
+      late ChangeSetEntity? stored;
+
+      /// The repository as storage for one change set, with Drift-like
+      /// serialized transactions.
+      void storeChangeSet(ChangeSetEntity? initial, {Completer<void>? gate}) {
+        stored = initial;
+        var gated = gate != null;
+        var tail = Future<void>.value();
+        mockAgentRepo.transactionDelegate = <T>(action) {
+          if (Zone.current[#agentTx] == true) return action();
+          final run = tail.then(
+            (_) => runZoned(action, zoneValues: {#agentTx: true}),
+          );
+          tail = run.then<void>((_) {}, onError: (_) {});
+          return run;
+        };
+        when(() => mockAgentRepo.getEntity('cs-sync')).thenAnswer((_) async {
+          final snapshot = stored;
+          if (gated) {
+            gated = false;
+            await gate!.future;
+          }
+          return snapshot;
+        });
+        when(() => mockAgentRepo.upsertEntity(any())).thenAnswer((
+          invocation,
+        ) async {
+          final entity = invocation.positionalArguments.first;
+          if (entity is ChangeSetEntity) stored = entity;
+        });
+      }
+
+      void receive(ChangeSetEntity incoming) {
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentEntity(
+              agentEntity: incoming,
+              status: SyncEntryStatus.update,
+            ),
+          ),
+        );
+      }
+
+      test(
+        'concurrent versions merge item by item: both decisions survive',
+        () async {
+          storeChangeSet(
+            changeSet(
+              [
+                estimate.withStatus(ChangeItemStatus.confirmed),
+                title,
+              ],
+              {'local': 2},
+            ),
+          );
+          receive(
+            changeSet(
+              [
+                estimate,
+                title.withStatus(ChangeItemStatus.rejected),
+              ],
+              {'local': 1, 'peer': 1},
+            ),
+          );
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          expect(stored!.items.map((i) => i.status), [
+            ChangeItemStatus.confirmed,
+            ChangeItemStatus.rejected,
+          ]);
+          expect(stored!.status, ChangeSetStatus.resolved);
+          expect(
+            stored!.vectorClock,
+            const VectorClock({'local': 2, 'peer': 1}),
+          );
+          verify(
+            () => updateNotifications.notify(
+              {'agent-1', 'AGENT_CHANGED'},
+              fromSync: true,
+            ),
+          ).called(1);
+        },
+      );
+
+      test('a version the local row covers is dropped', () async {
+        final local = changeSet(
+          [
+            estimate.withStatus(ChangeItemStatus.confirmed),
+          ],
+          {'local': 2},
+        );
+        storeChangeSet(local);
+        receive(changeSet([estimate], {'local': 1}));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        expect(stored, same(local));
+        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+        verify(
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(that: contains('skippedLocalWins id=cs-sync')),
+            subDomain: 'processor.apply',
+          ),
+        ).called(1);
+      });
+
+      test('a set not stored yet takes the generic path', () async {
+        storeChangeSet(null);
+        final incoming = changeSet([estimate], {'peer': 1});
+        receive(incoming);
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        expect(stored, incoming);
+      });
+
+      test(
+        'a local claim that commits during the receive is not overwritten',
+        () async {
+          // The receive read the local row, a local claim confirmed the
+          // estimate, and the receive then wrote the peer's version over it:
+          // the claim, and the only record that the change was applied, was
+          // gone.
+          final gate = Completer<void>();
+          storeChangeSet(
+            changeSet([estimate, title], {'local': 1}),
+            gate: gate,
+          );
+          receive(
+            changeSet(
+              [
+                estimate,
+                title.withStatus(ChangeItemStatus.rejected),
+              ],
+              {'local': 1, 'peer': 1},
+            ),
+          );
+
+          final received = processor.process(
+            event: event,
+            journalDb: journalDb,
+          );
+          await pumpEventQueue();
+          final claim = mockAgentRepo.runInTransaction(() async {
+            final current =
+                (await mockAgentRepo.getEntity('cs-sync'))! as ChangeSetEntity;
+            await mockAgentRepo.upsertEntity(
+              current.copyWith(
+                items: [
+                  current.items[0].withStatus(ChangeItemStatus.confirmed),
+                  current.items[1],
+                ],
+                vectorClock: VectorClock({
+                  ...current.vectorClock!.vclock,
+                  'local': 2,
+                }),
+              ),
+            );
+          });
+          await pumpEventQueue();
+          gate.complete();
+          await Future.wait([received, claim]);
+
+          expect(stored!.items.map((i) => i.status), [
+            ChangeItemStatus.confirmed,
+            ChangeItemStatus.rejected,
+          ]);
+        },
+      );
     });
 
     test('processes agent identity entity', () async {

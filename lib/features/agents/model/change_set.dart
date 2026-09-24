@@ -31,6 +31,15 @@ abstract class ChangeItem with _$ChangeItem {
     /// operation produces a create + N migrate items sharing the same group).
     /// Used by the approval UI to visually group related items.
     String? groupId,
+
+    /// How many times this item has changed — its status, or its arguments
+    /// when a follow-up task's placeholder is resolved. Every write bumps it
+    /// by one on top of the version it read, so when two devices change the
+    /// set concurrently, the resolver keeps, item by item, the version that
+    /// changed the item last (`mergeConcurrentChangeSets`,
+    /// `specs/tla/ChangeSetLifecycle.tla`). Absent in rows written before it
+    /// existed, which read as `0`.
+    @Default(0) int revision,
   }) = _ChangeItem;
 
   factory ChangeItem.fromJson(Map<String, dynamic> json) =>
@@ -121,6 +130,17 @@ abstract class ChangeItem with _$ChangeItem {
         : ChangeSetStatus.partiallyResolved;
   }
 
+  /// How final [status] is, for two concurrent versions of one item at the
+  /// same [revision]: a confirmed change took effect, so it outranks every
+  /// status that says it did not, and any decision outranks `pending`.
+  static int statusRank(ChangeItemStatus status) => switch (status) {
+    ChangeItemStatus.pending => 0,
+    ChangeItemStatus.deferred => 1,
+    ChangeItemStatus.retracted => 2,
+    ChangeItemStatus.rejected => 3,
+    ChangeItemStatus.confirmed => 4,
+  };
+
   /// Derives the `resolvedAt` timestamp consistent with [newStatus].
   ///
   /// Only `ChangeSetStatus.resolved` carries a non-null value; any other
@@ -136,4 +156,15 @@ abstract class ChangeItem with _$ChangeItem {
     if (newStatus != ChangeSetStatus.resolved) return null;
     return existingResolvedAt ?? now;
   }
+}
+
+/// Writes of a [ChangeItem] that count as a change of it.
+extension ChangeItemRevision on ChangeItem {
+  /// This item moved to [newStatus], one [ChangeItem.revision] later.
+  ChangeItem withStatus(ChangeItemStatus newStatus) =>
+      copyWith(status: newStatus, revision: revision + 1);
+
+  /// This item with [newArgs], one [ChangeItem.revision] later.
+  ChangeItem withArgs(Map<String, dynamic> newArgs) =>
+      copyWith(args: newArgs, revision: revision + 1);
 }

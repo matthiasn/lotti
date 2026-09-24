@@ -2,6 +2,7 @@ import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
@@ -265,6 +266,138 @@ int compareClocksCanonically(VectorClock a, VectorClock b) {
     if (counterA != counterB) return counterA > counterB ? 1 : -1;
   }
   return 0;
+}
+
+/// The change set a device keeps when [incoming] arrives over sync for a set
+/// it holds as [local], or `null` to keep [local] untouched.
+///
+/// Causal order decides as for every agent entity: a version the local row
+/// already covers is dropped, one that covers the local row replaces it.
+/// Two **concurrent** versions are merged item by item
+/// ([mergeConcurrentChangeSets]) instead of letting one whole version win:
+/// a change set is edited on every device that shows it, and a whole-row
+/// winner would drop the other device's decisions — an item confirmed and
+/// applied there would read `pending` again everywhere and could be applied
+/// a second time (`specs/tla/ChangeSetLifecycle.tla`, ADR 0067). A clock that
+/// cannot be compared applies [incoming], as the generic path does.
+///
+/// Pure and symmetric: both devices of a concurrent pair compute the same
+/// row, vector clock included, so they converge without another write.
+ChangeSetEntity? resolveIncomingChangeSet({
+  required ChangeSetEntity local,
+  required ChangeSetEntity incoming,
+}) {
+  final localVc = local.vectorClock;
+  final incomingVc = incoming.vectorClock;
+  if (localVc == null || incomingVc == null) return incoming;
+  final VclockStatus status;
+  try {
+    status = VectorClock.compare(localVc, incomingVc);
+  } catch (_) {
+    return incoming;
+  }
+  switch (status) {
+    case VclockStatus.a_gt_b || VclockStatus.equal:
+      return null;
+    case VclockStatus.b_gt_a:
+      return incoming;
+    case VclockStatus.concurrent:
+      final winner = resolveConcurrent(
+        localVc: localVc,
+        incomingVc: incomingVc,
+        localUpdatedAt: local.createdAt,
+        incomingUpdatedAt: incoming.createdAt,
+      );
+      final merged = mergeConcurrentChangeSets(
+        local: local,
+        incoming: incoming,
+        winner: winner,
+      );
+      if (merged != null) return merged;
+      return winner == ConcurrentWinner.local ? null : incoming;
+  }
+}
+
+/// Merges two **concurrent** versions of one change set item by item.
+///
+/// For each index, the version that changed the item last wins — the higher
+/// [ChangeItem.revision]. At the same revision both devices changed the item
+/// from the same state, and the more final status wins
+/// ([ChangeItem.statusRank]): a confirm took effect, so it beats a
+/// concurrent rejection or retraction, and any decision beats `pending`.
+/// Items one version appended beyond the other's are kept. The set status
+/// is derived from the merged items, `resolvedAt` is the later of the two
+/// (the set's `createdAt` when neither version had resolved it), and the
+/// vector clock is the join of both, so the merged row covers both versions
+/// and a later write on either device dominates it.
+///
+/// Two versions both closed — `resolved` or `expired` — keep [winner]'s
+/// status, so a row retired before items were retracted on retirement is
+/// not reopened by merging.
+///
+/// Returns `null` when the versions cannot be merged item by item — either
+/// is a tombstone, or they disagree on which proposal an index holds — and
+/// the whole-row [winner] decides.
+ChangeSetEntity? mergeConcurrentChangeSets({
+  required ChangeSetEntity local,
+  required ChangeSetEntity incoming,
+  required ConcurrentWinner winner,
+}) {
+  if (local.deletedAt != null || incoming.deletedAt != null) return null;
+  final common = local.items.length < incoming.items.length
+      ? local.items.length
+      : incoming.items.length;
+  for (var i = 0; i < common; i++) {
+    final a = local.items[i];
+    final b = incoming.items[i];
+    if (a.toolName != b.toolName || a.humanSummary != b.humanSummary) {
+      return null;
+    }
+  }
+  final longer = local.items.length >= incoming.items.length ? local : incoming;
+  final items = [
+    for (var i = 0; i < longer.items.length; i++)
+      if (i < common)
+        _mergeChangeItem(local.items[i], incoming.items[i], winner)
+      else
+        longer.items[i],
+  ];
+  final winnerSet = winner == ConcurrentWinner.local ? local : incoming;
+  final bothClosed =
+      !_isOpenChangeSetStatus(local.status) &&
+      !_isOpenChangeSetStatus(incoming.status);
+  final status = bothClosed
+      ? winnerSet.status
+      : ChangeItem.deriveSetStatus(items);
+  final resolvedAt = status == ChangeSetStatus.resolved
+      ? _latestInstant(local.resolvedAt, incoming.resolvedAt) ??
+            winnerSet.createdAt
+      : null;
+  return winnerSet.copyWith(
+    items: items,
+    status: status,
+    resolvedAt: resolvedAt,
+    vectorClock: VectorClock.merge(local.vectorClock, incoming.vectorClock),
+  );
+}
+
+bool _isOpenChangeSetStatus(ChangeSetStatus status) =>
+    status == ChangeSetStatus.pending ||
+    status == ChangeSetStatus.partiallyResolved;
+
+ChangeItem _mergeChangeItem(
+  ChangeItem local,
+  ChangeItem incoming,
+  ConcurrentWinner winner,
+) {
+  if (local.revision != incoming.revision) {
+    return local.revision > incoming.revision ? local : incoming;
+  }
+  final byRank =
+      ChangeItem.statusRank(local.status) -
+      ChangeItem.statusRank(incoming.status);
+  if (byRank != 0) return byRank > 0 ? local : incoming;
+  return winner == ConcurrentWinner.local ? local : incoming;
 }
 
 /// Merges the convergent (per-host G-counter) fields of two **concurrent**

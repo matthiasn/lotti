@@ -185,6 +185,9 @@ class ChangeSetConfirmationService {
     // 2. Execute the tool call. If dispatch fails, either revert the status
     //    back to pending so the user can retry, or retract non-retryable stale
     //    proposals that can never succeed with their immutable arguments.
+    //    Either write moves only this item, and only while it is still the
+    //    `confirmed` this claim made it, so it cannot put back a sibling that
+    //    was decided while the tool ran.
     late final ToolExecutionResult result;
     try {
       final approval = approvalHost == null
@@ -245,10 +248,11 @@ class ChangeSetConfirmationService {
           humanSummary: item.humanSummary,
           args: item.args,
         );
-        final retractedSet = await _resolution.updateChangeSetItemStatus(
+        final retractedSet = await _resolution.transitionChangeSetItem(
           confirmedSet,
           itemIndex,
-          ChangeItemStatus.retracted,
+          from: const {ChangeItemStatus.confirmed},
+          to: ChangeItemStatus.retracted,
         );
         if (retractedSet == null) {
           _domainLogger?.error(
@@ -269,10 +273,11 @@ class ChangeSetConfirmationService {
           _onChangeSetResolved,
         );
       } else {
-        final revertedSet = await _resolution.updateChangeSetItemStatus(
+        final revertedSet = await _resolution.transitionChangeSetItem(
           confirmedSet,
           itemIndex,
-          ChangeItemStatus.pending,
+          from: const {ChangeItemStatus.confirmed},
+          to: ChangeItemStatus.pending,
         );
         if (revertedSet == null) {
           _domainLogger?.error(
@@ -387,29 +392,37 @@ class ChangeSetConfirmationService {
       subDomain: _sub,
     );
     final standing = await _latestUserDecision(current, itemIndex);
-    final ChangeDecisionEntity decision;
-    if (standing == null) {
-      decision = await _resolution.persistDecision(
-        changeSet: current,
-        itemIndex: itemIndex,
-        toolName: item.toolName,
-        verdict: ChangeDecisionVerdict.deferred,
-        humanSummary: item.humanSummary,
-        args: item.args,
+    // The verdict is neutralised in the same transaction that moves the item
+    // back to pending, and only while the item still holds the decision this
+    // method read: a concurrent change leaves both untouched.
+    final reopenedWith = await _syncService.runInTransaction(() async {
+      final reopened = await _resolution.transitionChangeSetItem(
+        current,
+        itemIndex,
+        from: {item.status},
+        to: ChangeItemStatus.pending,
       );
-    } else {
-      decision = standing.copyWith(
-        verdict: ChangeDecisionVerdict.deferred,
-        createdAt: clock.now(),
-      );
-      await _syncService.upsertEntity(decision);
-    }
-    final reopened = await _resolution.updateChangeSetItemStatus(
-      current,
-      itemIndex,
-      ChangeItemStatus.pending,
-    );
-    if (reopened == null) return false;
+      if (reopened == null) return null;
+      final ChangeDecisionEntity decision;
+      if (standing == null) {
+        decision = await _resolution.persistDecision(
+          changeSet: current,
+          itemIndex: itemIndex,
+          toolName: item.toolName,
+          verdict: ChangeDecisionVerdict.deferred,
+          humanSummary: item.humanSummary,
+          args: item.args,
+        );
+      } else {
+        decision = standing.copyWith(
+          verdict: ChangeDecisionVerdict.deferred,
+          createdAt: clock.now(),
+        );
+        await _syncService.upsertEntity(decision);
+      }
+      return decision;
+    });
+    if (reopenedWith == null) return false;
     if (revert == null) return true;
 
     var reverted = false;
@@ -433,19 +446,23 @@ class ChangeSetConfirmationService {
       '${item.status.name}',
       subDomain: _sub,
     );
-    await _syncService.upsertEntity(
-      decision.copyWith(
-        verdict: item.status == ChangeItemStatus.confirmed
-            ? ChangeDecisionVerdict.confirmed
-            : ChangeDecisionVerdict.rejected,
-        createdAt: clock.now(),
-      ),
-    );
-    await _resolution.updateChangeSetItemStatus(
-      current,
-      itemIndex,
-      item.status,
-    );
+    await _syncService.runInTransaction(() async {
+      final restored = await _resolution.transitionChangeSetItem(
+        current,
+        itemIndex,
+        from: const {ChangeItemStatus.pending},
+        to: item.status,
+      );
+      if (restored == null) return;
+      await _syncService.upsertEntity(
+        reopenedWith.copyWith(
+          verdict: item.status == ChangeItemStatus.confirmed
+              ? ChangeDecisionVerdict.confirmed
+              : ChangeDecisionVerdict.rejected,
+          createdAt: clock.now(),
+        ),
+      );
+    });
     return false;
   }
 
