@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/service/change_set_resolution_store.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
 
@@ -130,8 +131,8 @@ class ChangeSetConfirmationService {
 
     // For migration items, resolve the placeholder targetTaskId before
     // dispatch.
-    final dispatchArgs = _resolveArgsIfNeeded(item, current);
-    if (dispatchArgs == null) {
+    final resolvedArgs = _resolveArgsIfNeeded(item, current);
+    if (resolvedArgs == null) {
       // Resolution failed — target task not yet created.
       return const ToolExecutionResult(
         success: false,
@@ -141,12 +142,22 @@ class ChangeSetConfirmationService {
         errorMessage: 'Unresolved placeholder targetTaskId',
       );
     }
+    // The claim below is local: another device that has not synced yet can
+    // claim and dispatch the same item. The dispatch therefore names the
+    // item's effect — the same on every device — so the tool applies it once
+    // however often it runs: a created entity gets an id derived from the
+    // key, and a field is set only while it holds the value the proposal was
+    // made against (ADR 0075).
+    final dispatchArgs = ChangeEffect(
+      key: item.effectKeyIn(current.id, itemIndex),
+      base: item.base,
+    ).addTo(resolvedArgs);
 
     _domainLogger?.log(
       LogDomain.agentWorkflow,
       'Confirming item $itemIndex (${item.toolName}) in change set '
       '${DomainLogger.sanitizeId(current.id)}, '
-      '${describeArgsForLog(dispatchArgs)}',
+      '${describeArgsForLog(resolvedArgs)}',
       subDomain: _sub,
     );
 
@@ -165,11 +176,15 @@ class ChangeSetConfirmationService {
     //    instead of applying the change a second time. And if the process
     //    dies after a successful dispatch, the item is not left pending to
     //    be re-executed on retry.
+    //    A migration resolved from the in-memory placeholder mapping is
+    //    claimed with its resolved target, so the follow-up task's sibling
+    //    rewrite leaves the claimed item alone.
     final claim = await _claimDecision(
       current,
       itemIndex,
       decided: ChangeItemStatus.confirmed,
       verdict: ChangeDecisionVerdict.confirmed,
+      args: identical(resolvedArgs, item.args) ? null : resolvedArgs,
     );
     if (claim == null) {
       return const ToolExecutionResult(
@@ -356,6 +371,7 @@ class ChangeSetConfirmationService {
     required ChangeItemStatus decided,
     required ChangeDecisionVerdict verdict,
     String? rejectionReason,
+    Map<String, dynamic>? args,
   }) async {
     _ClaimedDecision? candidate;
     try {
@@ -364,6 +380,7 @@ class ChangeSetConfirmationService {
           current,
           itemIndex,
           decided: decided,
+          args: args,
         );
         if (claimed == null) return null;
         final item = current.items[itemIndex];

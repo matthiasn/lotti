@@ -9,6 +9,8 @@ import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/change_effect.dart';
+import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart'
     show TaskAgentWorkflow;
 import 'package:lotti/features/agents/workflow/task_tool_handlers.dart';
@@ -78,11 +80,15 @@ class TaskToolDispatcher {
       name: 'TaskToolDispatcher',
     );
 
+    // A confirmed change item names its effect; no handler sees the reserved
+    // arguments that carry it.
+    final (:effect, args: toolArgs) = ChangeEffect.takeFrom(args);
+
     // A retired name is rewritten, not rejected: proposals persisted under it
     // (or synced from an older build) must still apply once confirmed.
     final call = upgradeRetiredTaskAgentToolCall(
       resolveTaskAgentToolAlias(toolName),
-      decodeStringifiedJsonArguments(args),
+      decodeStringifiedJsonArguments(toolArgs),
     );
     final resolvedName = call.toolName;
     final normalizedArgs = call.args;
@@ -104,6 +110,27 @@ class TaskToolDispatcher {
         success: false,
         output: 'Task $taskId not found or is not a Task entity',
         errorMessage: 'Task lookup failed',
+      );
+    }
+
+    // A field proposal applies only while the task still holds the value it
+    // was made against. Anything else means it was applied already — on
+    // another device that confirmed the same item — or edited since, and
+    // either way the newer value stands. That is not a failure: a failure
+    // would put the item back to pending, or retract it over a confirm that
+    // did land elsewhere.
+    final changedField = effect?.changedField(
+      ChangeProposalFilter.taskMetadataFields(
+        ChangeProposalFilter.taskMetadataOf(taskEntity),
+      ),
+    );
+    if (changedField != null) {
+      return ToolExecutionResult(
+        success: true,
+        output:
+            "Nothing applied: the task's $changedField is no longer the "
+            'value this change was proposed against — it was applied '
+            'already, or edited since — so it stays as it is.',
       );
     }
 
@@ -144,6 +171,7 @@ class TaskToolDispatcher {
           },
           taskId,
           approval: approval,
+          effect: effect,
         );
 
       case TaskAgentToolNames.addMultipleChecklistItems:
@@ -153,6 +181,7 @@ class TaskToolDispatcher {
           normalizedArgs,
           taskId,
           approval: approval,
+          effect: effect,
         );
 
       case TaskAgentToolNames.updateChecklistItem:
@@ -194,7 +223,7 @@ class TaskToolDispatcher {
         return handleSetStatus(taskEntity, normalizedArgs, taskId);
 
       case TaskAgentToolNames.createFollowUpTask:
-        return handleCreateFollowUpTask(normalizedArgs, taskId);
+        return handleCreateFollowUpTask(normalizedArgs, taskId, effect: effect);
 
       case TaskAgentToolNames.migrateChecklistItem:
       case TaskAgentToolNames.migrateChecklistItems:
@@ -202,13 +231,14 @@ class TaskToolDispatcher {
           normalizedArgs,
           taskId,
           approval: approval,
+          effect: effect,
         );
 
       case TaskAgentToolNames.linkTask:
         return handleLinkTask(normalizedArgs, taskId);
 
       case TaskAgentToolNames.createTimeEntry:
-        return handleCreateTimeEntry(normalizedArgs, taskId);
+        return handleCreateTimeEntry(normalizedArgs, taskId, effect: effect);
 
       case TaskAgentToolNames.updateTimeEntry:
         return handleUpdateTimeEntry(normalizedArgs, taskId);

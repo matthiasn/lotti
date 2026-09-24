@@ -5,7 +5,7 @@ description: How causal order is represented, why coveredVectorClocks is separat
 resource: ../../../lib/features/sync/vector_clock.dart
 tags: [sync, vector-clock, conflicts, causality]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T18:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T23:00:00Z }
 stale_after: 2026-12-24
 sources:
   - id: vector-clock
@@ -51,6 +51,14 @@ sources:
   - id: adr-0067
     resource: ../../../docs/adr/0067-model-checked-change-set-lifecycle.md
     title: ADR 0067 — Model-checked change-set lifecycle
+    last_modified: 2026-09-24
+  - id: adr-0075
+    resource: ../../../docs/adr/0075-idempotent-change-set-tools.md
+    title: ADR 0075 — Idempotent change-set tools
+    last_modified: 2026-09-24
+  - id: journal-receive
+    resource: ../../../lib/database/database_entity_ops.dart
+    title: updateJournalEntity / detectConflict — the journal receive
     last_modified: 2026-09-24
   - id: message-dag
     resource: ../../../lib/features/agents/sync/agent_message_dag.dart
@@ -395,11 +403,18 @@ snapshot. Otherwise a local claim committing between the read and the write
 is overwritten by a peer version that only covered the row as it was before
 the claim.
 
-`specs/tla/ChangeSetLifecycle.tla` model-checks both, and names what they
-cannot close: an item decided on two devices before they sync is applied on
-both (the rows still converge), and a consolidation on one device racing a
-decision on another leaves a pending copy of an applied change — see
-[ADR 0067](../../../docs/adr/0067-model-checked-change-set-lifecycle.md).
+`specs/tla/ChangeSetLifecycle.tla` model-checks both. An item decided on two
+devices before they sync is still dispatched on both (the rows converge), but
+since [ADR 0075](../../../docs/adr/0075-idempotent-change-set-tools.md) the
+second dispatch of the tools it covers changes nothing: a created entity's id
+is derived from the item, and a task field is set only while it holds the
+value the proposal was made against. The tools without that protection are
+listed in the ADR. When both devices create the entity before either has received the
+other's, the journal receive (see *Conflicts* above) finds the two versions of that one id
+concurrent — their creation timestamps differ — and keeps the second as a
+`Conflict` row: one entity, resolved by the user, not two. See
+[ADR 0067](../../../docs/adr/0067-model-checked-change-set-lifecycle.md) for
+the lifecycle and ADR 0075 for what stays open.
 
 ## The agent head follows the message DAG
 

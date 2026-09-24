@@ -3,6 +3,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/query/query_task_action_planner.dart';
+import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 
 /// Loads bounded, live task metadata for explicit user-requested changes.
 /// No report, transcript, neighbour body or historical instruction is included.
@@ -114,6 +115,7 @@ class QueryTaskActionContextLoader {
       taskIds: tasks.map((t) => t.meta.id).toSet(),
       labelIds: labels.map((l) => l.id).toSet(),
       runningTimerId: timer?.meta.id,
+      metadata: ChangeProposalFilter.taskMetadataOf(home),
       input: {
         'task': {
           'id': taskId,

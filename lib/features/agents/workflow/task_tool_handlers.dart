@@ -5,6 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/attention_request_handler.dart';
+import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/tools/checklist_migration_handler.dart';
 import 'package:lotti/features/agents/tools/follow_up_task_handler.dart';
 import 'package:lotti/features/agents/tools/task_label_handler.dart';
@@ -269,12 +270,16 @@ extension TaskToolHandlers on TaskToolDispatcher {
     );
   }
 
+  /// With an [effect], the items — and the checklist of a task that has
+  /// none — get ids derived from the change item, one per position in
+  /// `items`, so the item applied on two devices adds each entry once.
   Future<ToolExecutionResult> handleBatchChecklist(
     Task task,
     String toolName,
     Map<String, dynamic> args,
     String taskId, {
     ChecklistItemProvenance? approval,
+    ChangeEffect? effect,
   }) async {
     final items = args['items'];
     if (items is! List || items.isEmpty) {
@@ -296,6 +301,12 @@ extension TaskToolHandlers on TaskToolDispatcher {
       approval: approval,
       autoChecklistService: autoChecklistService,
       checklistRepository: checklistRepository,
+      derivedIds: effect == null
+          ? null
+          : (
+              checklist: effect.entityInput('checklist'),
+              item: (index) => effect.entityInput('checklist-item:$index'),
+            ),
     );
 
     final toolCall = ChatCompletionMessageToolCall(
@@ -400,8 +411,9 @@ extension TaskToolHandlers on TaskToolDispatcher {
 
   Future<ToolExecutionResult> handleCreateFollowUpTask(
     Map<String, dynamic> args,
-    String sourceTaskId,
-  ) async {
+    String sourceTaskId, {
+    ChangeEffect? effect,
+  }) async {
     final handler = FollowUpTaskHandler(
       persistenceLogic: persistenceLogic,
       journalDb: journalDb,
@@ -409,13 +421,14 @@ extension TaskToolHandlers on TaskToolDispatcher {
       taskAgentService: taskAgentService,
       projectRepository: projectRepository,
     );
-    return handler.handle(sourceTaskId, args);
+    return handler.handle(sourceTaskId, args, effect: effect);
   }
 
   Future<ToolExecutionResult> handleMigrateChecklistItem(
     Map<String, dynamic> args,
     String sourceTaskId, {
     ChecklistItemProvenance? approval,
+    ChangeEffect? effect,
   }) async {
     final handler = ChecklistMigrationHandler(
       checklistRepository: checklistRepository,
@@ -423,7 +436,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
       journalDb: journalDb,
       domainLogger: domainLogger,
     );
-    return handler.handle(sourceTaskId, args);
+    return handler.handle(sourceTaskId, args, effect: effect);
   }
 
   Future<ToolExecutionResult> handleLinkTask(
@@ -440,15 +453,16 @@ extension TaskToolHandlers on TaskToolDispatcher {
 
   Future<ToolExecutionResult> handleCreateTimeEntry(
     Map<String, dynamic> args,
-    String taskId,
-  ) async {
+    String taskId, {
+    ChangeEffect? effect,
+  }) async {
     final handler = TimeEntryHandler(
       persistenceLogic: persistenceLogic,
       journalDb: journalDb,
       timeService: timeService,
       domainLogger: domainLogger,
     );
-    return handler.handle(taskId, args);
+    return handler.handle(taskId, args, effect: effect);
   }
 
   Future<ToolExecutionResult> handleUpdateTimeEntry(

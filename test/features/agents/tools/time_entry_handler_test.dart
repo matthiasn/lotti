@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/tools/time_entry_handler.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -864,5 +865,112 @@ void main() {
         });
       });
     });
+  });
+
+  group('with the effect of a confirmed item (ADR 0075)', () {
+    const effect = ChangeEffect(key: 'set-1:2');
+    final derivedId = effect.entityId('time-entry');
+
+    void stubCreated(List<bool> answers) {
+      var call = 0;
+      when(
+        () => mockJournalDb.journalEntityMapForIdsIncludingDeleted([
+          derivedId,
+        ]),
+      ).thenAnswer(
+        (_) async => answers[call++]
+            ? {derivedId: makeJournalEntry(derivedId)}
+            : const <String, JournalEntity>{},
+      );
+    }
+
+    void stubMetadata() =>
+        when(
+          () => mockPersistenceLogic.createMetadata(
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+            categoryId: any(named: 'categoryId'),
+            uuidV5Input: any(named: 'uuidV5Input'),
+          ),
+        ).thenAnswer(
+          (_) async => Metadata(
+            id: derivedId,
+            dateFrom: DateTime(2026, 3, 17, 14),
+            dateTo: DateTime(2026, 3, 17, 15),
+            createdAt: testNow,
+            updatedAt: testNow,
+          ),
+        );
+
+    test(
+      'starts no second timer when the running entry already exists',
+      () async {
+        when(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        ).thenAnswer((_) async => makeSourceTask());
+        stubCreated([true]);
+        // The timer the first application started is running here.
+        when(() => mockTimeService.getCurrent()).thenReturn(
+          makeJournalEntry(derivedId),
+        );
+
+        final result = await withClock(
+          Clock.fixed(testNow),
+          () => handler.handle(sourceTaskId, {
+            'summary': 'Running session',
+            'startTime': '2026-03-17T14:00:00',
+          }, effect: effect),
+        );
+
+        expect(result.success, isTrue);
+        expect(result.mutatedEntityId, derivedId);
+        verifyNever(() => mockTimeService.start(any(), any()));
+        verifyNever(
+          () => mockPersistenceLogic.createDbEntity(
+            any(),
+            linkedId: any(named: 'linkedId'),
+          ),
+        );
+      },
+    );
+
+    test(
+      "succeeds when the other device's entry lands between the check and "
+      'the write, and derives the id',
+      () async {
+        when(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        ).thenAnswer((_) async => makeSourceTask());
+        stubCreated([false, true]);
+        stubMetadata();
+        when(
+          () => mockPersistenceLogic.createDbEntity(
+            any(),
+            linkedId: any(named: 'linkedId'),
+          ),
+        ).thenAnswer((_) async => false);
+
+        final result = await withClock(
+          Clock.fixed(testNow),
+          () => handler.handle(sourceTaskId, {
+            'summary': 'Session',
+            'startTime': '2026-03-17T14:00:00',
+            'endTime': '2026-03-17T15:00:00',
+          }, effect: effect),
+        );
+
+        expect(result.success, isTrue);
+        expect(result.mutatedEntityId, derivedId);
+        final input = verify(
+          () => mockPersistenceLogic.createMetadata(
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+            categoryId: any(named: 'categoryId'),
+            uuidV5Input: captureAny(named: 'uuidV5Input'),
+          ),
+        ).captured.single;
+        expect(input, effect.entityInput('time-entry'));
+      },
+    );
   });
 }

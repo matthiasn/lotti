@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/utils/checklist_validation.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Handler for batch checklist item creation in Lotti
@@ -19,9 +20,17 @@ class LottiBatchChecklistHandler extends FunctionHandler {
     required this.checklistRepository,
     this.onTaskUpdated,
     this.approval,
+    this.derivedIds,
   });
 
   final ChecklistItemProvenance? approval;
+
+  /// The `uuidV5Input`s of what a confirmed agent change creates: `checklist`
+  /// for the checklist a task without one gets, `item(index)` for the item at
+  /// that index of the batch. With them, applying the same change twice —
+  /// confirmed on two devices before they sync — adds each item once (see
+  /// [createBatchItems]). `null` outside a confirmed change: ids are random.
+  final ({String checklist, String Function(int index) item})? derivedIds;
 
   Task task;
   final AutoChecklistService autoChecklistService;
@@ -169,6 +178,15 @@ Do NOT recreate the items that were already successful.''';
   /// Uses the improved repository API that returns created items with their IDs,
   /// eliminating the need for fragile index-based mapping.
   ///
+  /// With [derivedIds] every item gets the id derived from its input, and an
+  /// item whose id is already in the journal — added by an earlier
+  /// application of the same change, here or on another device, or deleted
+  /// since — is left alone and counted as added. A task without a checklist
+  /// gets the derived one first — reused when another device's copy has
+  /// arrived before the task update listing it
+  /// ([ChecklistRepository.derivedChecklistFor]) — so that two devices adding
+  /// to it end up with one checklist.
+  ///
   /// Returns the number of successfully created items.
   Future<int> createBatchItems(FunctionCallResult result) async {
     if (!result.success) return 0;
@@ -192,7 +210,23 @@ Do NOT recreate the items that were already successful.''';
       // Check if task has existing checklists
       final checklistIds = currentTask.data.checklistIds ?? [];
 
-      if (checklistIds.isEmpty) {
+      final derivedIds = this.derivedIds;
+      if (derivedIds != null) {
+        // Resolved only once an item needs creating: a repeated application
+        // whose items all exist must not make a checklist for them either.
+        successCount = await _addItems(
+          () async => checklistIds.isNotEmpty
+              ? checklistIds.first
+              : checklistRepository.derivedChecklistFor(
+                  taskId: currentTask.id,
+                  uuidV5Input: derivedIds.checklist,
+                ),
+          items,
+          currentTask,
+          journalDb,
+          idInput: derivedIds.item,
+        );
+      } else if (checklistIds.isEmpty) {
         // Create a new "Todos" checklist with all items (preserve order)
         final checklistItems = <ChecklistItemData>[
           for (final item in items)
@@ -242,70 +276,17 @@ Do NOT recreate the items that were already successful.''';
             }
           } else {
             // Checklist creation failed — record all items as failed.
-            for (final item in checklistItems) {
-              _failedItems.add(
-                FailedItemDetail(
-                  title: item.title,
-                  reason: 'Checklist creation failed',
-                ),
-              );
-            }
+            _failAll(items, 'Checklist creation failed');
           }
         }
       } else {
         // Add items to the first existing checklist
-        final checklistId = checklistIds.first;
-
-        for (final item in items) {
-          final title = item['title'] as String;
-          final isChecked = (item['isChecked'] as bool?) ?? false;
-
-          final newItem = await checklistRepository.addItemToChecklist(
-            checklistId: checklistId,
-            title: title,
-            isChecked: isChecked,
-            categoryId: currentTask.meta.categoryId,
-            checkedBy: approval == null
-                ? ChangeSource.agent
-                : ChangeSource.user,
-            checkedAt: approval?.approvedAt,
-            approvalHistory: [
-              if (approval case final receipt?)
-                receipt.copyWith(isChecked: isChecked, title: title),
-            ],
-          );
-
-          if (newItem != null) {
-            successCount++;
-            _createdDetails.add({
-              'id': newItem.id,
-              'title': title,
-              'isChecked': isChecked,
-            });
-          } else {
-            _failedItems.add(
-              FailedItemDetail(title: title, reason: 'Creation returned null'),
-            );
-          }
-        }
-
-        // Only refresh the task if items were actually added
-        if (successCount > 0) {
-          final refreshedEntity = await journalDb.journalEntityById(
-            currentTask.id,
-          );
-          if (refreshedEntity is Task) {
-            task = refreshedEntity;
-            onTaskUpdated?.call(refreshedEntity);
-          } else if (refreshedEntity == null) {
-            // Task was deleted, stop processing
-            developer.log(
-              'Task ${currentTask.id} was deleted, stopping batch checklist processing',
-              name: 'LottiBatchChecklistHandler',
-            );
-            return successCount;
-          }
-        }
+        successCount = await _addItems(
+          () async => checklistIds.first,
+          items,
+          currentTask,
+          journalDb,
+        );
       }
     } catch (e, s) {
       developer.log(
@@ -318,6 +299,104 @@ Do NOT recreate the items that were already successful.''';
     }
 
     return successCount;
+  }
+
+  /// Adds [items] to the checklist [checklist] resolves for [currentTask] —
+  /// asked once, and only when an item needs creating — each under the id
+  /// derived from `idInput(index)` when given, and returns how many of them
+  /// it holds afterwards. Without a checklist, the items still to create
+  /// fail.
+  Future<int> _addItems(
+    Future<String?> Function() checklist,
+    List<Map<String, dynamic>> items,
+    Task currentTask,
+    JournalDb journalDb, {
+    String Function(int index)? idInput,
+  }) async {
+    var successCount = 0;
+    Future<String?>? checklistId;
+    for (final (index, item) in items.indexed) {
+      final title = item['title'] as String;
+      final isChecked = (item['isChecked'] as bool?) ?? false;
+      final uuidV5Input = idInput?.call(index);
+
+      if (uuidV5Input != null) {
+        final id = MetadataService.deterministicId(uuidV5Input);
+        final existing = await journalDb.journalEntityMapForIdsIncludingDeleted(
+          [id],
+        );
+        if (existing.containsKey(id)) {
+          successCount++;
+          _createdDetails.add({
+            'id': id,
+            'title': title,
+            'isChecked': isChecked,
+          });
+          continue;
+        }
+      }
+
+      final targetChecklist = await (checklistId ??= checklist());
+      if (targetChecklist == null) {
+        _failedItems.add(
+          FailedItemDetail(title: title, reason: 'Checklist creation failed'),
+        );
+        continue;
+      }
+      final newItem = await checklistRepository.addItemToChecklist(
+        checklistId: targetChecklist,
+        title: title,
+        isChecked: isChecked,
+        categoryId: currentTask.meta.categoryId,
+        checkedBy: approval == null ? ChangeSource.agent : ChangeSource.user,
+        checkedAt: approval?.approvedAt,
+        approvalHistory: [
+          if (approval case final receipt?)
+            receipt.copyWith(isChecked: isChecked, title: title),
+        ],
+        uuidV5Input: uuidV5Input,
+      );
+
+      if (newItem != null) {
+        successCount++;
+        _createdDetails.add({
+          'id': newItem.id,
+          'title': title,
+          'isChecked': isChecked,
+        });
+      } else {
+        _failedItems.add(
+          FailedItemDetail(title: title, reason: 'Creation returned null'),
+        );
+      }
+    }
+
+    // Only refresh the task if items were actually added
+    if (successCount > 0) {
+      final refreshedEntity = await journalDb.journalEntityById(
+        currentTask.id,
+      );
+      if (refreshedEntity is Task) {
+        task = refreshedEntity;
+        onTaskUpdated?.call(refreshedEntity);
+      } else if (refreshedEntity == null) {
+        // Task was deleted, stop processing
+        developer.log(
+          'Task ${currentTask.id} was deleted, stopping batch checklist processing',
+          name: 'LottiBatchChecklistHandler',
+        );
+      }
+    }
+    return successCount;
+  }
+
+  /// Records every item of [items] as failed for [reason].
+  void _failAll(List<Map<String, dynamic>> items, String reason) {
+    for (final item in items) {
+      _failedItems.add(
+        FailedItemDetail(title: item['title'] as String, reason: reason),
+      );
+    }
   }
 
   /// Items that failed to be created during [createBatchItems].

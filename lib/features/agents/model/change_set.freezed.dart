@@ -34,7 +34,19 @@ mixin _$ChangeItem {
 /// rewrites a set. Such an item carries no ordering, so a merge judges it
 /// by status alone rather than as revision 0, which would lose a
 /// decision an older build made to any newer-build change.
- int? get revision;
+ int? get revision;/// The identity of this proposal's effect, when it differs from its
+/// position — see [ChangeItemEffect.effectKeyIn]. Set only on a copy a
+/// wake consolidates into a newer set, to its original's key, so that
+/// confirming the copy on one device and the original on another
+/// creates one entity, not two.
+ String? get effectKey;/// The task fields this proposal was made against, keyed as in
+/// `TaskMetadataSnapshot` (`title`, `status`, `priority`,
+/// `estimateMinutes`, `dueDate`, `languageCode`). Confirming applies the
+/// change only while the task still holds these values, so a late second
+/// application — the same item confirmed on two devices — cannot
+/// overwrite an edit the user made after the first. `null` when nothing
+/// was recorded; the change then applies unconditionally.
+ Map<String, dynamic>? get base;
 /// Create a copy of ChangeItem
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -47,16 +59,16 @@ $ChangeItemCopyWith<ChangeItem> get copyWith => _$ChangeItemCopyWithImpl<ChangeI
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ChangeItem&&(identical(other.toolName, toolName) || other.toolName == toolName)&&const DeepCollectionEquality().equals(other.args, args)&&(identical(other.humanSummary, humanSummary) || other.humanSummary == humanSummary)&&(identical(other.status, status) || other.status == status)&&(identical(other.groupId, groupId) || other.groupId == groupId)&&(identical(other.revision, revision) || other.revision == revision));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ChangeItem&&(identical(other.toolName, toolName) || other.toolName == toolName)&&const DeepCollectionEquality().equals(other.args, args)&&(identical(other.humanSummary, humanSummary) || other.humanSummary == humanSummary)&&(identical(other.status, status) || other.status == status)&&(identical(other.groupId, groupId) || other.groupId == groupId)&&(identical(other.revision, revision) || other.revision == revision)&&(identical(other.effectKey, effectKey) || other.effectKey == effectKey)&&const DeepCollectionEquality().equals(other.base, base));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,toolName,const DeepCollectionEquality().hash(args),humanSummary,status,groupId,revision);
+int get hashCode => Object.hash(runtimeType,toolName,const DeepCollectionEquality().hash(args),humanSummary,status,groupId,revision,effectKey,const DeepCollectionEquality().hash(base));
 
 @override
 String toString() {
-  return 'ChangeItem(toolName: $toolName, args: $args, humanSummary: $humanSummary, status: $status, groupId: $groupId, revision: $revision)';
+  return 'ChangeItem(toolName: $toolName, args: $args, humanSummary: $humanSummary, status: $status, groupId: $groupId, revision: $revision, effectKey: $effectKey, base: $base)';
 }
 
 
@@ -67,7 +79,7 @@ abstract mixin class $ChangeItemCopyWith<$Res>  {
   factory $ChangeItemCopyWith(ChangeItem value, $Res Function(ChangeItem) _then) = _$ChangeItemCopyWithImpl;
 @useResult
 $Res call({
- String toolName, Map<String, dynamic> args, String humanSummary, ChangeItemStatus status, String? groupId, int? revision
+ String toolName, Map<String, dynamic> args, String humanSummary, ChangeItemStatus status, String? groupId, int? revision, String? effectKey, Map<String, dynamic>? base
 });
 
 
@@ -84,7 +96,7 @@ class _$ChangeItemCopyWithImpl<$Res>
 
 /// Create a copy of ChangeItem
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? toolName = null,Object? args = null,Object? humanSummary = null,Object? status = null,Object? groupId = freezed,Object? revision = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? toolName = null,Object? args = null,Object? humanSummary = null,Object? status = null,Object? groupId = freezed,Object? revision = freezed,Object? effectKey = freezed,Object? base = freezed,}) {
   return _then(_self.copyWith(
 toolName: null == toolName ? _self.toolName : toolName // ignore: cast_nullable_to_non_nullable
 as String,args: null == args ? _self.args : args // ignore: cast_nullable_to_non_nullable
@@ -92,7 +104,9 @@ as Map<String, dynamic>,humanSummary: null == humanSummary ? _self.humanSummary 
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as ChangeItemStatus,groupId: freezed == groupId ? _self.groupId : groupId // ignore: cast_nullable_to_non_nullable
 as String?,revision: freezed == revision ? _self.revision : revision // ignore: cast_nullable_to_non_nullable
-as int?,
+as int?,effectKey: freezed == effectKey ? _self.effectKey : effectKey // ignore: cast_nullable_to_non_nullable
+as String?,base: freezed == base ? _self.base : base // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>?,
   ));
 }
 
@@ -177,10 +191,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String toolName,  Map<String, dynamic> args,  String humanSummary,  ChangeItemStatus status,  String? groupId,  int? revision)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String toolName,  Map<String, dynamic> args,  String humanSummary,  ChangeItemStatus status,  String? groupId,  int? revision,  String? effectKey,  Map<String, dynamic>? base)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ChangeItem() when $default != null:
-return $default(_that.toolName,_that.args,_that.humanSummary,_that.status,_that.groupId,_that.revision);case _:
+return $default(_that.toolName,_that.args,_that.humanSummary,_that.status,_that.groupId,_that.revision,_that.effectKey,_that.base);case _:
   return orElse();
 
 }
@@ -198,10 +212,10 @@ return $default(_that.toolName,_that.args,_that.humanSummary,_that.status,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String toolName,  Map<String, dynamic> args,  String humanSummary,  ChangeItemStatus status,  String? groupId,  int? revision)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String toolName,  Map<String, dynamic> args,  String humanSummary,  ChangeItemStatus status,  String? groupId,  int? revision,  String? effectKey,  Map<String, dynamic>? base)  $default,) {final _that = this;
 switch (_that) {
 case _ChangeItem():
-return $default(_that.toolName,_that.args,_that.humanSummary,_that.status,_that.groupId,_that.revision);case _:
+return $default(_that.toolName,_that.args,_that.humanSummary,_that.status,_that.groupId,_that.revision,_that.effectKey,_that.base);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -218,10 +232,10 @@ return $default(_that.toolName,_that.args,_that.humanSummary,_that.status,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String toolName,  Map<String, dynamic> args,  String humanSummary,  ChangeItemStatus status,  String? groupId,  int? revision)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String toolName,  Map<String, dynamic> args,  String humanSummary,  ChangeItemStatus status,  String? groupId,  int? revision,  String? effectKey,  Map<String, dynamic>? base)?  $default,) {final _that = this;
 switch (_that) {
 case _ChangeItem() when $default != null:
-return $default(_that.toolName,_that.args,_that.humanSummary,_that.status,_that.groupId,_that.revision);case _:
+return $default(_that.toolName,_that.args,_that.humanSummary,_that.status,_that.groupId,_that.revision,_that.effectKey,_that.base);case _:
   return null;
 
 }
@@ -233,7 +247,7 @@ return $default(_that.toolName,_that.args,_that.humanSummary,_that.status,_that.
 @JsonSerializable()
 
 class _ChangeItem implements ChangeItem {
-  const _ChangeItem({required this.toolName, required final  Map<String, dynamic> args, required this.humanSummary, this.status = ChangeItemStatus.pending, this.groupId, this.revision}): _args = args;
+  const _ChangeItem({required this.toolName, required final  Map<String, dynamic> args, required this.humanSummary, this.status = ChangeItemStatus.pending, this.groupId, this.revision, this.effectKey, final  Map<String, dynamic>? base}): _args = args,_base = base;
   factory _ChangeItem.fromJson(Map<String, dynamic> json) => _$ChangeItemFromJson(json);
 
 /// The tool name for this mutation (e.g., `add_checklist_item`).
@@ -268,6 +282,35 @@ class _ChangeItem implements ChangeItem {
 /// by status alone rather than as revision 0, which would lose a
 /// decision an older build made to any newer-build change.
 @override final  int? revision;
+/// The identity of this proposal's effect, when it differs from its
+/// position — see [ChangeItemEffect.effectKeyIn]. Set only on a copy a
+/// wake consolidates into a newer set, to its original's key, so that
+/// confirming the copy on one device and the original on another
+/// creates one entity, not two.
+@override final  String? effectKey;
+/// The task fields this proposal was made against, keyed as in
+/// `TaskMetadataSnapshot` (`title`, `status`, `priority`,
+/// `estimateMinutes`, `dueDate`, `languageCode`). Confirming applies the
+/// change only while the task still holds these values, so a late second
+/// application — the same item confirmed on two devices — cannot
+/// overwrite an edit the user made after the first. `null` when nothing
+/// was recorded; the change then applies unconditionally.
+ final  Map<String, dynamic>? _base;
+/// The task fields this proposal was made against, keyed as in
+/// `TaskMetadataSnapshot` (`title`, `status`, `priority`,
+/// `estimateMinutes`, `dueDate`, `languageCode`). Confirming applies the
+/// change only while the task still holds these values, so a late second
+/// application — the same item confirmed on two devices — cannot
+/// overwrite an edit the user made after the first. `null` when nothing
+/// was recorded; the change then applies unconditionally.
+@override Map<String, dynamic>? get base {
+  final value = _base;
+  if (value == null) return null;
+  if (_base is EqualUnmodifiableMapView) return _base;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(value);
+}
+
 
 /// Create a copy of ChangeItem
 /// with the given fields replaced by the non-null parameter values.
@@ -282,16 +325,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ChangeItem&&(identical(other.toolName, toolName) || other.toolName == toolName)&&const DeepCollectionEquality().equals(other._args, _args)&&(identical(other.humanSummary, humanSummary) || other.humanSummary == humanSummary)&&(identical(other.status, status) || other.status == status)&&(identical(other.groupId, groupId) || other.groupId == groupId)&&(identical(other.revision, revision) || other.revision == revision));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ChangeItem&&(identical(other.toolName, toolName) || other.toolName == toolName)&&const DeepCollectionEquality().equals(other._args, _args)&&(identical(other.humanSummary, humanSummary) || other.humanSummary == humanSummary)&&(identical(other.status, status) || other.status == status)&&(identical(other.groupId, groupId) || other.groupId == groupId)&&(identical(other.revision, revision) || other.revision == revision)&&(identical(other.effectKey, effectKey) || other.effectKey == effectKey)&&const DeepCollectionEquality().equals(other._base, _base));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,toolName,const DeepCollectionEquality().hash(_args),humanSummary,status,groupId,revision);
+int get hashCode => Object.hash(runtimeType,toolName,const DeepCollectionEquality().hash(_args),humanSummary,status,groupId,revision,effectKey,const DeepCollectionEquality().hash(_base));
 
 @override
 String toString() {
-  return 'ChangeItem(toolName: $toolName, args: $args, humanSummary: $humanSummary, status: $status, groupId: $groupId, revision: $revision)';
+  return 'ChangeItem(toolName: $toolName, args: $args, humanSummary: $humanSummary, status: $status, groupId: $groupId, revision: $revision, effectKey: $effectKey, base: $base)';
 }
 
 
@@ -302,7 +345,7 @@ abstract mixin class _$ChangeItemCopyWith<$Res> implements $ChangeItemCopyWith<$
   factory _$ChangeItemCopyWith(_ChangeItem value, $Res Function(_ChangeItem) _then) = __$ChangeItemCopyWithImpl;
 @override @useResult
 $Res call({
- String toolName, Map<String, dynamic> args, String humanSummary, ChangeItemStatus status, String? groupId, int? revision
+ String toolName, Map<String, dynamic> args, String humanSummary, ChangeItemStatus status, String? groupId, int? revision, String? effectKey, Map<String, dynamic>? base
 });
 
 
@@ -319,7 +362,7 @@ class __$ChangeItemCopyWithImpl<$Res>
 
 /// Create a copy of ChangeItem
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? toolName = null,Object? args = null,Object? humanSummary = null,Object? status = null,Object? groupId = freezed,Object? revision = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? toolName = null,Object? args = null,Object? humanSummary = null,Object? status = null,Object? groupId = freezed,Object? revision = freezed,Object? effectKey = freezed,Object? base = freezed,}) {
   return _then(_ChangeItem(
 toolName: null == toolName ? _self.toolName : toolName // ignore: cast_nullable_to_non_nullable
 as String,args: null == args ? _self._args : args // ignore: cast_nullable_to_non_nullable
@@ -327,7 +370,9 @@ as Map<String, dynamic>,humanSummary: null == humanSummary ? _self.humanSummary 
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as ChangeItemStatus,groupId: freezed == groupId ? _self.groupId : groupId // ignore: cast_nullable_to_non_nullable
 as String?,revision: freezed == revision ? _self.revision : revision // ignore: cast_nullable_to_non_nullable
-as int?,
+as int?,effectKey: freezed == effectKey ? _self.effectKey : effectKey // ignore: cast_nullable_to_non_nullable
+as String?,base: freezed == base ? _self._base : base // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>?,
   ));
 }
 

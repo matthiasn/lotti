@@ -249,10 +249,15 @@ class ChangeSetBuilder {
   /// For `add_checklist_item`, checks against existing titles and returns
   /// a redundancy detail if the title already exists. Returns `null` when
   /// the item was added successfully.
+  ///
+  /// [base] is the task field the proposal was made against
+  /// ([ChangeItem.base]); confirming applies it only while the task still
+  /// holds that value.
   Future<String?> addItem({
     required String toolName,
     required Map<String, dynamic> args,
     required String humanSummary,
+    Map<String, dynamic>? base,
   }) async {
     final protected = await _chatApprovalReversal(toolName, args);
     if (protected != null) return protected;
@@ -284,6 +289,7 @@ class ChangeSetBuilder {
       toolName: toolName,
       args: args,
       humanSummary: humanSummary,
+      base: base,
     );
     _items.removeWhere((item) => supersedesTimeEntryEdit(proposal, item));
 
@@ -530,14 +536,20 @@ class ChangeSetBuilder {
         ...deduped.map(ChangeItem.fingerprint),
       };
 
+      //
+      // A copy keeps its original's effect key: confirming the copy on this
+      // device and the original on another that has not seen the
+      // consolidation yet then creates one entity, not two (ADR 0075).
       final otherItems = <ChangeItem>[];
       for (final cs in writableSets) {
         if (cs.id != survivor.id) {
           final current = currentExistingSetsById[cs.id] ?? cs;
-          for (final item in current.items) {
+          for (final (index, item) in current.items.indexed) {
             if (item.status == ChangeItemStatus.pending &&
                 knownFingerprints.add(ChangeItem.fingerprint(item))) {
-              otherItems.add(item);
+              otherItems.add(
+                item.copyWith(effectKey: item.effectKeyIn(cs.id, index)),
+              );
             }
           }
         }

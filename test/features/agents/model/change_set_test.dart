@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -95,6 +97,57 @@ extension _AnyChangeSetScenarios on glados.Any {
 
 void main() {
   group('ChangeItem', () {
+    group('effectKeyIn', () {
+      test('is the position when the item names no effect of its own', () {
+        const item = ChangeItem(
+          toolName: 'add_checklist_item',
+          args: {'title': 'Send invites'},
+          humanSummary: 'Add checklist item',
+        );
+
+        expect(item.effectKeyIn('cs-1', 2), 'cs-1:2');
+      });
+
+      test("is a consolidated copy's original key wherever it moves", () {
+        const copy = ChangeItem(
+          toolName: 'add_checklist_item',
+          args: {'title': 'Send invites'},
+          humanSummary: 'Add checklist item',
+          effectKey: 'cs-0:4',
+        );
+
+        expect(copy.effectKeyIn('cs-1', 2), 'cs-0:4');
+      });
+
+      test('survives the synced row, with the base the proposal saw', () {
+        const item = ChangeItem(
+          toolName: 'set_task_title',
+          args: {'title': 'New'},
+          humanSummary: 'Rename',
+          effectKey: 'cs-0:1',
+          base: {'title': 'Old', 'dueDate': null},
+        );
+
+        final synced = ChangeItem.fromJson(
+          jsonDecode(jsonEncode(item.toJson())) as Map<String, dynamic>,
+        );
+
+        expect(synced, item);
+        // The fingerprint ignores both: the same proposal from another wake
+        // is still recognised as a duplicate.
+        expect(
+          ChangeItem.fingerprint(synced),
+          ChangeItem.fingerprint(
+            const ChangeItem(
+              toolName: 'set_task_title',
+              args: {'title': 'New'},
+              humanSummary: 'Rename',
+            ),
+          ),
+        );
+      });
+    });
+
     group('displayDuplicateKey', () {
       test('keys two entries given the same text apart', () {
         const first = ChangeItem(

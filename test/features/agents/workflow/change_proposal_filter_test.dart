@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:mocktail/mocktail.dart';
@@ -520,6 +521,50 @@ void main() {
       expect(snapshot.dueDate, '2026-03-15');
       expect(snapshot.languageCode, isNull);
     });
+
+    test(
+      'records, as a proposal base, the one field the proposal sets',
+      () {
+        const snapshot = (
+          title: 'Fix login bug',
+          status: 'OPEN',
+          priority: 'P1',
+          estimateMinutes: 120,
+          dueDate: null,
+          languageCode: 'de',
+        );
+
+        expect(
+          ChangeProposalFilter.proposalBase(
+            TaskAgentToolNames.updateTaskEstimate,
+            snapshot,
+          ),
+          {'estimateMinutes': 120},
+        );
+        // An unset field is a value too: the due date stays unset.
+        expect(
+          ChangeProposalFilter.proposalBase(
+            TaskAgentToolNames.updateTaskDueDate,
+            snapshot,
+          ),
+          {'dueDate': null},
+        );
+        expect(
+          ChangeProposalFilter.proposalBase(
+            TaskAgentToolNames.addChecklistItem,
+            snapshot,
+          ),
+          isNull,
+        );
+        expect(
+          ChangeProposalFilter.proposalBase(
+            TaskAgentToolNames.setTaskTitle,
+            null,
+          ),
+          isNull,
+        );
+      },
+    );
 
     test('returns null for non-Task entity', () async {
       when(

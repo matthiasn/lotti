@@ -4,6 +4,8 @@ import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/tools/checklist_migration_handler.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -1346,6 +1348,134 @@ void main() {
           ),
         );
       });
+    });
+  });
+
+  group('with the effect of a confirmed item (ADR 0075)', () {
+    const effect = ChangeEffect(key: 'set-1:1');
+    final copyId = effect.entityId('checklist-item');
+
+    void stubTaken(Set<String> taken) =>
+        when(
+          () => mockJournalDb.journalEntityMapForIdsIncludingDeleted(any()),
+        ).thenAnswer((inv) async {
+          final ids = (inv.positionalArguments.first as Iterable<String>)
+              .toList();
+          return {
+            for (final id in ids)
+              if (taken.contains(id)) id: makeChecklistItem(id: id),
+          };
+        });
+
+    setUp(() {
+      stubItemLookup(makeChecklistItem());
+      stubSourceTask();
+      stubArchiveUpdate();
+      when(
+        () => mockChecklistRepository.derivedChecklistFor(
+          taskId: any(named: 'taskId'),
+          uuidV5Input: any(named: 'uuidV5Input'),
+        ),
+      ).thenAnswer((_) async => 'derived-checklist');
+      when(
+        () => mockChecklistRepository.addItemToChecklist(
+          checklistId: any(named: 'checklistId'),
+          title: any(named: 'title'),
+          isChecked: any(named: 'isChecked'),
+          categoryId: any(named: 'categoryId'),
+          checkedBy: any(named: 'checkedBy'),
+          checkedAt: any(named: 'checkedAt'),
+          approvalHistory: any(named: 'approvalHistory'),
+          uuidV5Input: any(named: 'uuidV5Input'),
+        ),
+      ).thenAnswer((_) async => makeChecklistItem(id: copyId));
+    });
+
+    Future<ToolExecutionResult> migrate() => handler.handle(sourceTaskId, {
+      'id': itemId,
+      'targetTaskId': targetTaskId,
+    }, effect: effect);
+
+    test(
+      "gives a target without a checklist the effect's checklist, and the "
+      "copy the effect's id",
+      () async {
+        stubTargetTask(checklistIds: const []);
+        stubTaken(const {});
+
+        expect((await migrate()).success, isTrue);
+
+        verify(
+          () => mockChecklistRepository.derivedChecklistFor(
+            taskId: targetTaskId,
+            uuidV5Input: effect.entityInput('checklist'),
+          ),
+        ).called(1);
+        final input = verify(
+          () => mockChecklistRepository.addItemToChecklist(
+            checklistId: 'derived-checklist',
+            title: any(named: 'title'),
+            isChecked: any(named: 'isChecked'),
+            categoryId: any(named: 'categoryId'),
+            checkedBy: any(named: 'checkedBy'),
+            checkedAt: any(named: 'checkedAt'),
+            approvalHistory: any(named: 'approvalHistory'),
+            uuidV5Input: captureAny(named: 'uuidV5Input'),
+          ),
+        ).captured.single;
+        expect(input, effect.entityInput('checklist-item'));
+      },
+    );
+
+    test('fails when the derived checklist cannot be created', () async {
+      stubTargetTask(checklistIds: const []);
+      stubTaken(const {});
+      when(
+        () => mockChecklistRepository.derivedChecklistFor(
+          taskId: any(named: 'taskId'),
+          uuidV5Input: any(named: 'uuidV5Input'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      final result = await migrate();
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, 'Target checklist creation failed');
+    });
+
+    test('only archives the source when the copy already exists', () async {
+      stubTargetTask();
+      stubTaken({copyId});
+
+      final result = await migrate();
+
+      expect(result.success, isTrue);
+      verifyNever(
+        () => mockChecklistRepository.addItemToChecklist(
+          checklistId: any(named: 'checklistId'),
+          title: any(named: 'title'),
+          isChecked: any(named: 'isChecked'),
+          categoryId: any(named: 'categoryId'),
+          checkedBy: any(named: 'checkedBy'),
+          checkedAt: any(named: 'checkedAt'),
+          approvalHistory: any(named: 'approvalHistory'),
+          uuidV5Input: any(named: 'uuidV5Input'),
+        ),
+      );
+      verify(
+        () => mockChecklistRepository.updateChecklistItem(
+          checklistItemId: itemId,
+          data: any(
+            named: 'data',
+            that: isA<ChecklistItemData>().having(
+              (d) => d.isArchived,
+              'isArchived',
+              isTrue,
+            ),
+          ),
+          taskId: sourceTaskId,
+        ),
+      ).called(1);
     });
   });
 }

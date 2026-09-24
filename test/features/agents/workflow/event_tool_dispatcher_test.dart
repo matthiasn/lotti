@@ -5,6 +5,8 @@ import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/event_tool_dispatcher.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -15,6 +17,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
+  late MockJournalDb mockJournalDb;
   late MockJournalRepository mockJournalRepository;
   late MockPersistenceLogic mockPersistenceLogic;
   late MockEntitiesCacheService mockCache;
@@ -79,10 +82,12 @@ void main() {
   });
 
   setUp(() {
+    mockJournalDb = MockJournalDb();
     mockJournalRepository = MockJournalRepository();
     mockPersistenceLogic = MockPersistenceLogic();
     mockCache = MockEntitiesCacheService();
     dispatcher = EventToolDispatcher(
+      journalDb: mockJournalDb,
       journalRepository: mockJournalRepository,
       persistenceLogic: mockPersistenceLogic,
       entitiesCacheService: mockCache,
@@ -92,6 +97,9 @@ void main() {
       () => mockJournalRepository.getJournalEntityById(eventId),
     ).thenAnswer((_) async => eventEntity);
     when(() => mockCache.getCategoryById(categoryId)).thenReturn(category);
+    when(
+      () => mockJournalDb.journalEntityMapForIdsIncludingDeleted(any()),
+    ).thenAnswer((_) async => const {});
   });
 
   test('suggest_follow_up_task creates a task linked to the event', () async {
@@ -134,6 +142,7 @@ void main() {
     'logs the follow-up creation when a domain logger is configured',
     () async {
       final loggingDispatcher = EventToolDispatcher(
+        journalDb: mockJournalDb,
         journalRepository: mockJournalRepository,
         persistenceLogic: mockPersistenceLogic,
         entitiesCacheService: mockCache,
@@ -295,5 +304,103 @@ void main() {
         categoryId: any(named: 'categoryId'),
       ),
     );
+  });
+
+  group('a confirmed proposal (ADR 0075)', () {
+    const effect = ChangeEffect(key: 'event-set:0');
+    final derivedId = effect.entityId('task');
+
+    Future<ToolExecutionResult> accept() => dispatcher.dispatch(
+      EventAgentToolNames.suggestFollowUpTask,
+      effect.addTo({'title': 'Share the album'}),
+      eventId,
+    );
+
+    void stubCreate(Task? created) => when(
+      () => mockPersistenceLogic.createTaskEntry(
+        data: any(named: 'data'),
+        entryText: any(named: 'entryText'),
+        linkedId: any(named: 'linkedId'),
+        categoryId: any(named: 'categoryId'),
+        uuidV5Input: any(named: 'uuidV5Input'),
+      ),
+    ).thenAnswer((_) async => created);
+
+    test('creates the task under the id derived from the item', () async {
+      stubCreate(createdTask.copyWith(meta: meta(derivedId)));
+
+      final result = await accept();
+
+      expect(result.success, isTrue);
+      expect(result.mutatedEntityId, derivedId);
+      final input = verify(
+        () => mockPersistenceLogic.createTaskEntry(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          linkedId: any(named: 'linkedId'),
+          categoryId: any(named: 'categoryId'),
+          uuidV5Input: captureAny(named: 'uuidV5Input'),
+        ),
+      ).captured.single;
+      expect(input, effect.entityInput('task'));
+    });
+
+    test(
+      'creates nothing when the other device accepted it first, and names '
+      'its task',
+      () async {
+        when(
+          () => mockJournalDb.journalEntityMapForIdsIncludingDeleted([
+            derivedId,
+          ]),
+        ).thenAnswer((_) async => {derivedId: createdTask});
+
+        final result = await accept();
+
+        expect(result.success, isTrue);
+        expect(result.mutatedEntityId, derivedId);
+        verifyNever(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+            uuidV5Input: any(named: 'uuidV5Input'),
+          ),
+        );
+      },
+    );
+
+    test(
+      "reports success when the other device's task lands between the "
+      'check and the write',
+      () async {
+        var lookups = 0;
+        when(
+          () => mockJournalDb.journalEntityMapForIdsIncludingDeleted([
+            derivedId,
+          ]),
+        ).thenAnswer(
+          (_) async => lookups++ == 0 ? const {} : {derivedId: createdTask},
+        );
+        // The insert refuses the id the synced task already holds.
+        stubCreate(null);
+
+        final result = await accept();
+
+        expect(result.success, isTrue);
+        expect(result.mutatedEntityId, derivedId);
+        expect(lookups, 2);
+      },
+    );
+
+    test('still fails when the write fails and no task exists', () async {
+      stubCreate(null);
+
+      final result = await accept();
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, 'Task creation failed');
+    });
   });
 }

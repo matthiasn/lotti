@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/tools/task_agent_staged_tool_exposure.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
@@ -149,7 +150,8 @@ class TaskAgentStrategy extends ConversationStrategy {
 
   /// Optional resolver for the current task metadata. Used to detect and
   /// suppress redundant non-batch tool proposals (e.g. setting priority to
-  /// the value it already has).
+  /// the value it already has), and to record the value a field proposal
+  /// was made against (`ChangeItem.base`).
   final ResolveTaskMetadata? resolveTaskMetadata;
 
   /// Optional read-only resolver for sibling-task drill-down context.

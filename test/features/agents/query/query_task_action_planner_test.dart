@@ -88,6 +88,63 @@ void main() {
     },
   );
 
+  test(
+    'records the value a field proposal is made against, and none for a '
+    'create',
+    () async {
+      // ADR 0075: confirmed late on another device, after the user edited
+      // the title, the proposal must not overwrite the edit.
+      final result =
+          await QueryTaskActionPlanner(
+            inference: QueryTextInference(
+              generate: (_, _) => Stream.value(
+                jsonEncode({
+                  'answer': 'Review these changes.',
+                  'actions': [
+                    {
+                      'name': 'set_task_title',
+                      'arguments': {'title': 'Inspect the feeder'},
+                      'summary': 'Rename',
+                    },
+                    {
+                      'name': 'create_time_entry',
+                      'arguments': {
+                        'startTime': '2026-09-13T10:00:00',
+                        'endTime': '2026-09-13T10:30:00',
+                        'summary': 'Habitat maintenance',
+                      },
+                      'summary': 'Habitat maintenance',
+                    },
+                  ],
+                }),
+              ),
+            ),
+          ).plan(
+            context: const QueryTaskActionContext(
+              taskId: 'habitat',
+              input: {},
+              dependencies: [],
+              metadata: (
+                title: 'Inspect orbital penguin habitat',
+                status: 'OPEN',
+                priority: 'P2',
+                estimateMinutes: null,
+                dueDate: null,
+                languageCode: 'en',
+              ),
+            ),
+            question: 'Rename it.',
+            conversation: [],
+            cancellation: QueryCancellation(),
+          );
+
+      expect(result.items.first.base, {
+        'title': 'Inspect orbital penguin habitat',
+      });
+      expect(result.items.last.base, isNull);
+    },
+  );
+
   for (final payload in <Map<String, Object?>>[
     {'actions': <Object?>[]},
     {'answer': ' ', 'actions': <Object?>[]},

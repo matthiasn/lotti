@@ -115,6 +115,7 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
           toolName: toolName,
           args: args,
           humanSummary: _generateHumanSummary(toolName, args),
+          base: await _proposalBase(toolName),
         );
         if (addRedundancy != null) {
           response = 'Skipped: $addRedundancy';
@@ -458,6 +459,22 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
   /// The snapshot is resolved once and cached for the lifetime of this
   /// strategy instance to avoid repeated DB lookups when the LLM proposes
   /// multiple deferred tools in the same wake.
+  /// The task field a [toolName] proposal is made against
+  /// (`ChangeItem.base`), read fresh rather than from the wake's cached
+  /// snapshot: an initial title or language applied earlier in the wake has
+  /// already changed the task. `null` for a tool that sets no single field,
+  /// or when the task cannot be read — the change then applies
+  /// unconditionally, as it did before bases were recorded.
+  Future<Map<String, dynamic>?> _proposalBase(String toolName) async {
+    final resolver = resolveTaskMetadata;
+    if (resolver == null || taskFieldSetBy(toolName) == null) return null;
+    try {
+      return ChangeProposalFilter.proposalBase(toolName, await resolver());
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<String?> _checkTaskMetadataRedundancy(
     String toolName,
     Map<String, dynamic> args,

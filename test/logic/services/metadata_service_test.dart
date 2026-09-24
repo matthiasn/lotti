@@ -70,6 +70,9 @@ void main() {
 
         // UUID format validation
         expect(id1, matches(RegExp(r'^[0-9a-f-]{36}$')));
+        // The same id a caller can derive up front, to look the entity up
+        // before creating it.
+        expect(MetadataService.deterministicId(input), id1);
       });
 
       test('generates different UUIDs for different v5 inputs', () {

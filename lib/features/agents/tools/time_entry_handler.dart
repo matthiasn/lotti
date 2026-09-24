@@ -4,6 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/util/agent_datetime_utils.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -38,10 +39,16 @@ class TimeEntryHandler {
   ///
   /// Returns a [ToolExecutionResult] with `mutatedEntityId` set to the new
   /// entry's ID on success.
+  ///
+  /// With an [effect] — a confirmed change item — the entry's id is derived
+  /// from the item, so the same item confirmed on two devices records one
+  /// session: when the entry already exists (written here, synced from the
+  /// other device, or deleted since), nothing is written and no timer starts.
   Future<ToolExecutionResult> handle(
     String sourceTaskId,
-    Map<String, dynamic> args,
-  ) async {
+    Map<String, dynamic> args, {
+    ChangeEffect? effect,
+  }) async {
     // --- Validate summary ---
     final rawSummary = args['summary'];
     final summary = rawSummary is String ? rawSummary.trim() : null;
@@ -136,6 +143,10 @@ class TimeEntryHandler {
       }
     }
 
+    if (await _createdBefore(effect) case final ToolExecutionResult existing) {
+      return existing;
+    }
+
     // --- Check for active timer when starting a running timer ---
     if (isRunningTimer && _timeService.getCurrent() != null) {
       return const ToolExecutionResult(
@@ -169,6 +180,7 @@ class TimeEntryHandler {
         dateFrom: startTime,
         dateTo: endTime,
         categoryId: categoryId,
+        uuidV5Input: effect?.entityInput(_entryRole),
       ),
     );
 
@@ -178,6 +190,12 @@ class TimeEntryHandler {
     );
 
     if (saved != true) {
+      // The insert refuses an id that exists: the other device's entry can
+      // have arrived between the check above and the write.
+      if (await _createdBefore(effect)
+          case final ToolExecutionResult existing) {
+        return existing;
+      }
       return const ToolExecutionResult(
         success: false,
         output: 'Error: failed to persist time entry',
@@ -232,6 +250,29 @@ class TimeEntryHandler {
           'Created time entry ($timeRange): "$summary" '
           '($createdId)',
       mutatedEntityId: createdId,
+    );
+  }
+
+  /// The role of the entry in its [ChangeEffect]'s derived ids.
+  static const _entryRole = 'time-entry';
+
+  /// The result for an entry an earlier application of [effect] created, or
+  /// `null` when there is none (or no effect).
+  Future<ToolExecutionResult?> _createdBefore(ChangeEffect? effect) async {
+    if (effect == null || !await effect.created(_journalDb, _entryRole)) {
+      return null;
+    }
+    final entryId = effect.entityId(_entryRole);
+    _domainLogger?.log(
+      LogDomain.agentWorkflow,
+      'Time entry ${DomainLogger.sanitizeId(entryId)} already created by '
+      'this change — nothing to apply',
+      subDomain: _sub,
+    );
+    return ToolExecutionResult(
+      success: true,
+      output: 'Time entry already exists ($entryId)',
+      mutatedEntityId: entryId,
     );
   }
 }

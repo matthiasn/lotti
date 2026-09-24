@@ -1,7 +1,9 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -18,14 +20,20 @@ import 'package:uuid/uuid.dart';
 ///
 /// The dispatcher never touches the event's rating or cover — there is no tool
 /// that can, by design.
+///
+/// A confirmed proposal's task gets an id derived from the change item
+/// ([ChangeEffect]), so the same proposal accepted on two devices before
+/// they sync creates one task.
 class EventToolDispatcher {
   EventToolDispatcher({
+    required this.journalDb,
     required this.journalRepository,
     required this.persistenceLogic,
     required this.entitiesCacheService,
     this.domainLogger,
   });
 
+  final JournalDb journalDb;
   final JournalRepository journalRepository;
   final PersistenceLogic persistenceLogic;
   final EntitiesCacheService entitiesCacheService;
@@ -38,9 +46,10 @@ class EventToolDispatcher {
     Map<String, dynamic> args,
     String eventId,
   ) async {
+    final (:effect, args: toolArgs) = ChangeEffect.takeFrom(args);
     switch (toolName) {
       case EventAgentToolNames.suggestFollowUpTask:
-        return _handleSuggestFollowUpTask(args, eventId);
+        return _handleSuggestFollowUpTask(toolArgs, eventId, effect);
       default:
         return ToolExecutionResult(
           success: false,
@@ -53,6 +62,7 @@ class EventToolDispatcher {
   Future<ToolExecutionResult> _handleSuggestFollowUpTask(
     Map<String, dynamic> args,
     String eventId,
+    ChangeEffect? effect,
   ) async {
     final titleValue = args['title'];
     if (titleValue is! String || titleValue.trim().isEmpty) {
@@ -74,6 +84,11 @@ class EventToolDispatcher {
         output: 'Error: event $eventId no longer exists',
         errorMessage: 'Event missing or deleted; follow-up not created',
       );
+    }
+
+    if (await _createdBefore(effect, title)
+        case final ToolExecutionResult existing) {
+      return existing;
     }
 
     final categoryId = event.meta.categoryId;
@@ -101,9 +116,16 @@ class EventToolDispatcher {
       // Links the new task to the event so it shows under the event's tasks.
       linkedId: eventId,
       categoryId: categoryId,
+      uuidV5Input: effect?.entityInput(_taskRole),
     );
 
     if (task == null) {
+      // The insert refuses an id that exists: the other device's task can
+      // have arrived between the check above and the write.
+      if (await _createdBefore(effect, title)
+          case final ToolExecutionResult existing) {
+        return existing;
+      }
       return const ToolExecutionResult(
         success: false,
         output: 'Error: failed to create the follow-up task',
@@ -122,6 +144,27 @@ class EventToolDispatcher {
       success: true,
       output: 'Created follow-up task "$title" (${task.meta.id})',
       mutatedEntityId: task.meta.id,
+    );
+  }
+
+  /// The role of the task in its [ChangeEffect]'s derived ids.
+  static const _taskRole = 'task';
+
+  /// The result for a task an earlier application of [effect] created —
+  /// here, on another device, or deleted since — or `null` when there is
+  /// none (or no effect).
+  Future<ToolExecutionResult?> _createdBefore(
+    ChangeEffect? effect,
+    String title,
+  ) async {
+    if (effect == null || !await effect.created(journalDb, _taskRole)) {
+      return null;
+    }
+    final taskId = effect.entityId(_taskRole);
+    return ToolExecutionResult(
+      success: true,
+      output: 'Follow-up task "$title" already exists ($taskId)',
+      mutatedEntityId: taskId,
     );
   }
 }

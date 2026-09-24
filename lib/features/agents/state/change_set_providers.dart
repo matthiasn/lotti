@@ -132,6 +132,7 @@ final eventChangeSetConfirmationServiceProvider =
       return ChangeSetConfirmationService(
         syncService: ref.watch(agentSyncServiceProvider),
         toolDispatcher: EventToolDispatcher(
+          journalDb: ref.watch(journalDbProvider),
           journalRepository: ref.watch(journalRepositoryProvider),
           persistenceLogic: getIt<PersistenceLogic>(),
           entitiesCacheService: getIt<EntitiesCacheService>(),
