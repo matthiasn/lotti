@@ -76,17 +76,19 @@ converges, the agents' message log, and the Daily OS jobs — are written down a
 [16 TLA+ models](specs/tla/README.md) and model-checked with TLC on every change
 to them: about 114 million distinct states across 42 configurations, under
 crashes, injected failures, clock skew and messages arriving in any order. The
-properties are the ones that matter: no saved change is ever declared lost, even
-with a crash at any point every saved change still reaches every device, a
-change you confirm is not applied twice by a double tap, nor — for the tools
-that create tasks, time entries and checklist items or set task fields — by two
-devices confirming it at once, and devices that have seen the same changes
-agree. Checking them found and closed dozens of real bugs. That is a statement
-about the design, not a proof that every line of code matches it;
-[the specs](specs/tla/README.md) say exactly what is covered and which cases
-remain open, and generated traces drive the real code through the same
-scenarios to check that it follows the models. The code is held to it the
-ordinary way, too: over 35,000 tests at 99.9% line coverage, including more than
+properties are the ones that matter. No saved change is ever declared lost, and
+as long as devices keep reconnecting and a failed send is retried, every saved
+change reaches every device, even with a crash at any point. A double tap never
+applies a confirmed change twice. When two devices confirm the same change
+before they sync, both may apply it, but for the tools that create tasks, time
+entries and checklist items or set task fields, the result is one entry rather
+than two, and a later edit is not overwritten. Synced agent state converges on
+every device, apart from a few cases the specs list. Checking them found and
+closed dozens of real bugs. These are statements about the design, not a proof
+that every line of code matches it; [the specs](specs/tla/README.md) say
+exactly what is covered and which cases remain open, and generated traces drive
+the real code through the same scenarios to check that it follows the models.
+The code is held to them the ordinary way, too: over 35,000 tests at 99.9% line coverage, including more than
 900 property-based tests that generate about 130,000 inputs and run over half a
 million assertions on every CI run.
 
