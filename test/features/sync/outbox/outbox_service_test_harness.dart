@@ -266,6 +266,9 @@ class OutboxServiceTestHarness {
     messageSender = MockOutboxMessageSender();
     processor = MockOutboxProcessor();
     journalDb = MockJournalDb();
+    when(
+      () => journalDb.journalEntityById(any()),
+    ).thenAnswer((_) async => null);
     vectorClockService = MockVectorClockService();
     userActivityService = MockUserActivityService();
     documentsDirectory = Directory.systemTemp.createTempSync(

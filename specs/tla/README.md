@@ -73,19 +73,22 @@ payload versions. No write can still commit the requested counter after the
 settlement reads start. Payload purges, unavailable stores, retries, peers and
 crashes are outside this focused model; it claims safety, not delivery liveness.
 
-Both guards have mutation switches. In a temporary copy of the configuration,
+The recovery guards have mutation switches. In a temporary copy of the configuration,
 set one switch to `FALSE` and run TLC against `OwnCounterSettlement.tla`:
 
 | Mutation | Expected counterexample |
 |----------|-------------------------|
 | `RecheckSequence = FALSE` | `NoFalseBurn`: the first row read misses, migration inserts the row and removes the settings fallback, the second read misses, settlement burns the committed counter |
 | `RequireDurableEnqueue = FALSE` | `BoundHasQueuedPayload`: an earlier batch answer attempts a resend, its enqueue fails (or queues an older version), settlement skips its own enqueue and binds |
+| `RequireFreshDescriptor = FALSE` | `BoundHasQueuedPayload`: journal descriptor refresh fails, enqueue uses an older sidecar and settlement binds the newer counter |
 
 Keep mutation configurations outside this directory: CI runs every checked-in
 configuration and expects each to pass. The handler suite has deterministic
 regressions for both races, newer payload versions, migrated unnamed/already
 settled rows, and a failed sequence-log recheck. Reverting the Dart guards makes
-all six new regressions fail.
+those regressions fail. The outbox enqueue suite also checks that descriptor
+refresh failure prevents both ordinary and durable enqueue, then verifies a
+successful retry queues the refreshed version.
 
 ## `WakeRuntime` — agent wakes
 

@@ -166,7 +166,9 @@ it:
    its key is added to the batch set for ordinary responses. The outbox writer
    may have bound the row itself, in which case the guarded settlement bind
    loses and the ordinary response path re-reads the row without duplicating
-   that resend.
+   that resend. Journal enqueue also propagates descriptor refresh failures:
+   an old sidecar is not durable evidence for a newer database version. The
+   reservation stays retryable until the refreshed payload can be queued.
 2. Otherwise, if the counter is pending, or the payload's store is not wired
    yet (the agent repository arrives after sync starts), it is deferred.
    Wiring the store settles the orphans that waited for it.
