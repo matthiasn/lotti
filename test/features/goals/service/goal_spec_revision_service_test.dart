@@ -15,6 +15,10 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../agents/sync/agent_replica_bench.dart';
+import '../../agents/sync/version_heads_conformance.dart';
+
+part 'goal_spec_revision_service_model_conformance.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -1031,6 +1035,8 @@ void main() {
       startsWith('$agentId:spec-v2-'),
     );
   });
+
+  _registerGoalSpecVersionHeadsConformance();
 }
 
 class _OrderRecordingSyncService extends MockAgentSyncService {

@@ -47,17 +47,31 @@ class AgentRepoEvolution {
   /// and trigger tokens, so a day-scoped wake (e.g. the morning pre-warm)
   /// restores with full day context instead of riding the single, clobberable
   /// `AgentStateEntity.scheduledWakeAt`.
+  ///
+  /// `scheduledAt` is stored as it was written: in UTC with a `Z` for a record
+  /// built from a UTC instant — a chat recovery, an escalation, a relationship
+  /// reminder — and as local wall time for the rest. The two forms do not
+  /// order as strings: compared with a local `now`, a UTC record was due hours
+  /// early east of Greenwich and hours late west of it, so a goal chat's
+  /// recovery fired on sight and a second device answered the message beside
+  /// the one it was typed on (`specs/tla/GoalChatReply.tla`,
+  /// `AtMostOneReply`). The query narrows by a bound neither form of a due
+  /// record can pass — [now] in UTC plus the widest zone offset — and the
+  /// instant decides here.
   Future<List<ScheduledWakeEntity>> getDueScheduledWakeRecords(
     DateTime now,
   ) async {
-    final rows = await _db
-        .getDueScheduledWakeRecords(now.toIso8601String())
-        .get();
+    final bound = now.toUtc().add(_widestZoneOffset).toIso8601String();
+    final rows = await _db.getDueScheduledWakeRecords(bound).get();
     return rows
         .map(AgentDbConversions.fromEntityRow)
         .whereType<ScheduledWakeEntity>()
+        .where((record) => !record.scheduledAt.isAfter(now))
         .toList();
   }
+
+  /// The furthest any local wall clock runs from UTC (UTC+14).
+  static const _widestZoneOffset = Duration(hours: 14);
 
   /// Fetch all still-pending [ScheduledWakeEntity] records regardless of when
   /// they fire, ordered by `scheduledAt`.

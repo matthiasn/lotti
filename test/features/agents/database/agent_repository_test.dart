@@ -5737,6 +5737,49 @@ void main() {
 
       expect(result, isEmpty);
     });
+
+    // specs/tla/GoalChatReply.tla, AtMostOneReply. A chat recovery is written
+    // in UTC and `now` is local: compared as strings, the record was due
+    // hours early east of Greenwich — the peer answered a message the moment
+    // it synced in — and hours late west of it. Each record here is judged
+    // by its instant in every zone: the first is due exactly now (a string
+    // compare misses it in UTC and west of it), the second a minute later
+    // (a string compare fires it east of UTC).
+    test('decides by the instant, whether a record is stored in UTC or in '
+        'local time', () async {
+      final now = DateTime.utc(2026, 4, 1, 12).toLocal();
+      await repo.upsertEntity(
+        makeScheduledWake(
+          id: 'wake-utc-now',
+          scheduledAt: DateTime.utc(2026, 4, 1, 12),
+        ),
+      );
+      await repo.upsertEntity(
+        makeScheduledWake(
+          id: 'wake-utc-next-minute',
+          scheduledAt: DateTime.utc(2026, 4, 1, 12, 1),
+        ),
+      );
+      await repo.upsertEntity(
+        makeScheduledWake(
+          id: 'wake-local-past',
+          scheduledAt: now.subtract(const Duration(minutes: 1)),
+        ),
+      );
+      await repo.upsertEntity(
+        makeScheduledWake(
+          id: 'wake-local-next-minute',
+          scheduledAt: now.add(const Duration(minutes: 1)),
+        ),
+      );
+
+      final result = await repo.getDueScheduledWakeRecords(now);
+
+      expect(
+        result.map((r) => r.id),
+        unorderedEquals(['wake-utc-now', 'wake-local-past']),
+      );
+    });
   });
 
   // ── getPendingScheduledWakeRecords ─────────────────────────────────────────

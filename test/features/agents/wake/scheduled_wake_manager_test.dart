@@ -4,18 +4,30 @@ import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_trigger_tokens.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
+import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
+import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
+import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../sync/agent_replica_bench.dart';
 import '../test_utils.dart';
+import 'wake_device_bench.dart';
+
+part 'scheduled_wake_manager_model_conformance.dart';
 
 enum _GeneratedScheduledWakeStateKind {
   nonProjectNeverWoken,
@@ -3364,6 +3376,43 @@ void main() {
       });
     });
 
+    // The model's `Consume` is one step: a sync apply landing between the
+    // consume's re-read and its write would be overwritten by a consume built
+    // on the row before it. The conformance trace cannot interleave there —
+    // both run in one transaction's microtasks — so this pins the boundary.
+    test('the consume re-reads and writes the row inside one transaction', () {
+      fakeAsync((async) {
+        withClock(Clock.fixed(now), () {
+          final events = <String>[];
+          var inTransaction = false;
+          syncService.transactionDelegate = <T>(action) async {
+            inTransaction = true;
+            try {
+              return await action();
+            } finally {
+              inTransaction = false;
+            }
+          };
+          final manager = start(escalation());
+          when(() => repository.getEntity(any())).thenAnswer((invocation) async {
+            final id = invocation.positionalArguments.single as String;
+            if (id != escalation().id) return makeTestIdentity();
+            events.add('read:$inTransaction');
+            return escalation();
+          });
+          when(() => syncService.upsertEntity(any())).thenAnswer((_) async {
+            events.add('write:$inTransaction');
+          });
+          async.flushMicrotasks();
+
+          // The fire path's own re-read happens outside; the consume's read
+          // and write share the transaction.
+          expect(events, ['read:false', 'read:true', 'write:true']);
+          manager.stop();
+        });
+      });
+    });
+
     test('a row that moved on to the next window is not consumed', () {
       fakeAsync((async) {
         withClock(Clock.fixed(now), () {
@@ -3408,4 +3457,6 @@ void main() {
       });
     });
   });
+
+  _registerLeaseModelConformance();
 }

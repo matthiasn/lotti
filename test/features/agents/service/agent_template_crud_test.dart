@@ -12,10 +12,14 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../sync/agent_replica_bench.dart';
+import '../sync/version_heads_conformance.dart';
 import '../test_data/constants.dart';
 import '../test_data/entity_factories.dart';
 import '../test_data/link_factories.dart';
 import '../test_data/template_factories.dart';
+
+part 'agent_template_crud_model_conformance.dart';
 
 /// Mirror test for the [AgentTemplateCrud] collaborator extracted from
 /// [AgentTemplateService]. Exercises the collaborator directly (constructed
@@ -297,4 +301,6 @@ void main() {
       expect(history.map((v) => v.version), [3, 2, 1]);
     });
   });
+
+  _registerTemplateVersionHeadsConformance();
 }
