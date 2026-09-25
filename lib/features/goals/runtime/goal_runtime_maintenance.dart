@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
@@ -32,6 +34,7 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
     this._goalMirrorService,
     this._checkInNotifier,
     this._domainLogger,
+    this._recomputeProgress,
   });
 
   final AgentService _agentService;
@@ -48,6 +51,18 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
   /// same reason the mirror is.
   final GoalCheckInNotifier? _checkInNotifier;
   final DomainLogger? _domainLogger;
+
+  /// Runs deterministic Phase A once for a goal: the startup recompute.
+  ///
+  /// A synced journal row is evaluated by the sync dispatcher from an
+  /// in-memory queue, so a crash between applying the row and dispatching it
+  /// leaves the row unevaluated — and if the device that wrote it is gone,
+  /// nothing else recomputes that day (`specs/tla/GoalRegister.tla`,
+  /// Restart = "recompute"). Phase A is called directly rather than through
+  /// the wake orchestrator: a manual wake clears the throttle and the
+  /// persisted refresh deadline this restore is about to re-arm. Optional so
+  /// the runtime keeps working without it.
+  final Future<void> Function(AgentIdentityEntity identity)? _recomputeProgress;
 
   @override
   Future<void> restoreSubscriptions() async {
@@ -72,18 +87,18 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
         await _goalChatService.restoreOldestPendingMessage(identity.agentId);
         final criteria = await _headCriteria(identity.agentId);
         if (criteria == null) continue;
-        _goalAgentService
-          ..registerSignalSubscription(
-            identity.agentId,
-            criteria,
-          )
-          // Before the state read below: a failing read must not also cost
-          // the goal its recompute.
-          ..recomputeProgress(identity.agentId)
-          ..restorePendingReportRefresh(
-            identity: identity,
-            state: await _repository.getAgentState(identity.agentId),
-          );
+        _goalAgentService.registerSignalSubscription(
+          identity.agentId,
+          criteria,
+        );
+        // Before the state read below, so a failing read does not also cost
+        // the goal its recompute; not awaited, so startup does not wait on
+        // every goal's evaluation.
+        _startRecompute(identity);
+        _goalAgentService.restorePendingReportRefresh(
+          identity: identity,
+          state: await _repository.getAgentState(identity.agentId),
+        );
       } catch (error, stackTrace) {
         _log('restoreSubscriptions', identity.agentId, error, stackTrace);
       }
@@ -211,6 +226,17 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
     final version = await _repository.getEntity(head.versionId);
     if (version is! GoalSpecVersionEntity) return null;
     return version.criteria;
+  }
+
+  void _startRecompute(AgentIdentityEntity identity) {
+    final recompute = _recomputeProgress;
+    if (recompute == null) return;
+    unawaited(
+      recompute(identity).catchError(
+        (Object error, StackTrace stackTrace) =>
+            _log('recomputeProgress', identity.agentId, error, stackTrace),
+      ),
+    );
   }
 
   void _log(

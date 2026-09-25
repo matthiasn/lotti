@@ -56,9 +56,10 @@ enum GoalPersistOutcome {
   /// head; the revision's own tick judges again.
   fenced,
 
-  /// The day's register row changed since the derivation read it — a peer's
-  /// row synced in mid-run. Writing would build on a row this derivation
-  /// never saw; derive again instead.
+  /// The day's register row or today's report changed since the derivation
+  /// read them — a peer's row synced in mid-run, or a report was published.
+  /// Writing would build on state this derivation never saw; derive again
+  /// instead.
   stale,
 }
 
@@ -356,8 +357,16 @@ class GoalAgentPhaseA {
       final rowNow = await _repository.getEntity(
         goalProgressId(agentId, derivation.periodKey),
       );
+      // The escalation decision read today's report too: one published or
+      // synced since would decide it differently.
       if ((rowNow is GoalProgressEntity ? rowNow : null) !=
-          derivation.existingToday) {
+              derivation.existingToday ||
+          await _reportedStatus(
+                agentId,
+                periodKey: derivation.periodKey,
+                versionId: derivation.version.id,
+              ) !=
+              derivation.facts.reportedStatus) {
         outcome = GoalPersistOutcome.stale;
         return;
       }

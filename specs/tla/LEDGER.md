@@ -18,11 +18,11 @@ As of `main` at `b1bd9ae11` (2026-09-25):
 |---------|-------:|--------------------------------:|
 | TLA+ specs | 16 | 18 |
 | TLC configurations | 42 | 50 |
-| Distinct states explored | 113,735,037 | 144,490,557 |
+| Distinct states explored | 113,735,037 | 145,054,985 |
 | States generated (at `b551bf587`) | 927,744,398 | — |
 | Deepest counterexample-free trace | 53 steps | — |
 | Named safety and liveness properties | about 68 | about 77 |
-| Bugs fixed | 64 | 78 |
+| Bugs fixed | 64 | 81 |
 | of which TLC produced the counterexample | 41 | 47 |
 | Architecture decision records | 11 (ADR 0065–0071, 0075–0078) | 11 |
 | Source paths that re-trigger the TLC workflow | 63 | 63 |
@@ -114,7 +114,7 @@ counterexamples found.
 | `DayJobPreparation` | #4462 | 1 | 12 |
 | **Merged total** | | **42** | **113,735,037** |
 | `HabitDaySettlement` (open) | #4471 | 2 | 174,119 |
-| `GoalRegister` (open) | #4479 | 4 | 3,077,737 |
+| `GoalRegister` (open) | #4479 | 4 | 3,642,165 |
 
 ## How the specs earn their keep
 

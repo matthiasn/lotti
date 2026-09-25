@@ -38,18 +38,20 @@ fault at all, and four holes behind it:
 1. **Runs of one goal take turns on a device.**
    `GoalAgentPhaseA.runExclusive` serializes the orchestrator, the sync
    dispatcher and Phase B's report refresh per goal.
-2. **A commit builds only on the row its derivation read.** When the day's row
-   has changed since the derivation, `persistDerivation` returns
-   `GoalPersistOutcome.stale` and the run derives again, up to
-   `goalPersistAttempts` times. This covers a peer's row that syncs in
-   mid-run, which the lock cannot see.
+2. **A commit builds only on the row and the report its derivation read.**
+   When the day's row, or today's report, has changed since the derivation,
+   `persistDerivation` returns `GoalPersistOutcome.stale` and the run derives
+   again, up to `goalPersistAttempts` times. This covers a peer's row that
+   syncs in mid-run, which the lock cannot see. A Phase B report refresh that
+   exhausts its attempts ends without inference.
 3. **A report for today that states another status escalates.**
    `GoalWakeFacts.needsEscalation` is now `statusTransitioned ||
    reportContradicted`. Only a report written today under the same spec
    counts, so a Phase B that failed to write one is not retried on every tick.
 4. **Startup recomputes every active goal.**
-   `GoalAgentService.recomputeProgress` enqueues an automation wake that
-   supersedes nothing.
+   `GoalRuntimeMaintenance` runs Phase A directly. It does not go through
+   the wake orchestrator, because a manual wake clears the throttle and the
+   pending refresh deadline being restored beside it.
 5. **An escalation commits with its register.** A status the report does not
    state, or an eligible banner expiry, arms the synced escalation in the
    register's transaction. The deadline stays period-derived, so the lease's
@@ -85,7 +87,7 @@ device's *own* recompute, from a journal still missing evidence.
 
 ## Verification
 
-Four TLC configurations check the code as it is now, with 3,077,737 distinct
+Four TLC configurations check the code as it is now, with 3,642,165 distinct
 states in total. `GoalRegisterDeath` claims only `EscalationDurable`.
 Reverting each decision breaks a property in 6 to 17 steps. The Dart
 regressions in `goal_agent_phase_a_test.dart`,

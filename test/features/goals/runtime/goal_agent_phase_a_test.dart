@@ -1020,6 +1020,43 @@ void main() {
       expect(escalations(), hasLength(1));
     });
 
+    test('published between the derivation and its commit, it is seen: the '
+        'run derives again and escalates', () async {
+      // Review of #4479: the commit validated only the register row, so a
+      // run that read no report committed without the escalation a report
+      // landing meanwhile demands — and a synced report triggers nothing.
+      stubSpec();
+      stubToday(GoalTrackStatus.onTrack);
+      var reportReads = 0;
+      when(
+        () => repository.getLatestReport(agentId, AgentReportScopes.current),
+      ).thenAnswer(
+        (_) async => reportReads++ == 0
+            ? null
+            : report(periodKey: '2026-08-08', status: GoalTrackStatus.atRisk),
+      );
+      final reads = <String>[];
+      final reader = _GatedSignalReader(onTrackSignals(), reads)..release();
+
+      await withClock(
+        fixedClock,
+        () =>
+            GoalAgentPhaseA(
+              repository: repository,
+              syncService: syncService,
+              signalReader: reader,
+            ).execute(
+              agentIdentity: identity,
+              runKey: 'run-1',
+              triggerTokens: const {'cumulative_step_count'},
+              threadId: 'thread-1',
+            ),
+      );
+
+      expect(reads, hasLength(2), reason: 'the stale derivation was redone');
+      expect(escalations(), hasLength(1));
+    });
+
     test('is not escalated when it agrees, is from another day, or judged '
         'another spec', () async {
       stubSpec();

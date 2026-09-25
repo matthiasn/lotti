@@ -293,15 +293,19 @@ handler would retract it; that wiring is a follow-up.
     shared by the orchestrator, the sync dispatcher and Phase B's report
     refresh). Interleaved, a run that read the journal first could commit
     last, over a later run that saw a fresh check-off.
-  - **A commit builds only on the row its derivation read.** A peer's row that
-    synced in mid-run makes `persistDerivation` report
-    `GoalPersistOutcome.stale`, and the run derives again (up to
-    `goalPersistAttempts` times, then leaves the write to the next trigger).
+  - **A commit builds only on the row and report its derivation read.** A
+    peer's row that synced in mid-run, or a report published since, makes
+    `persistDerivation` report `GoalPersistOutcome.stale`, and the run derives
+    again (up to `goalPersistAttempts` times, then leaves the write to the next
+    trigger; Phase B's report refresh ends without inference instead of
+    publishing from a snapshot nobody committed).
   - **A run that would reproduce the row writes nothing**, and the cadence
     re-arm skips a record already pending for that tick: an unchanged run
     stamps no clock and syncs nothing.
-  - **Startup recomputes every active goal** (`GoalAgentService.recomputeProgress`,
-    an automation wake that supersedes nothing). The sync dispatcher's queue
+  - **Startup recomputes every active goal**: `GoalRuntimeMaintenance` runs
+    Phase A directly, not through the wake orchestrator, whose manual wake
+    would clear the pending refresh deadline being restored beside it. Not
+    awaited, so startup does not wait on every goal. The sync dispatcher's queue
     lives in memory, so a synced row applied just before a crash is otherwise
     evaluated by nobody that day.
 

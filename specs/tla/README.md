@@ -511,10 +511,10 @@ in [goals](../../knowledge/features/goals.md#invariants).
 
 | Configuration | Devices | Items | Faults | Distinct states |
 |---------------|---------|-------|--------|-----------------|
-| `GoalRegister` | 2 | 2 | none | 125,784 |
-| `GoalRegisterCrash` | 2 | 2 | one restart | 2,333,840 |
-| `GoalRegisterDeath` | 2 | 2 | one device lost (`EscalationDurable` only) | 612,952 |
-| `GoalRegisterDivergent` | 2 | 2, one hidden from device 2 | none (`Bounded`) | 5,161 |
+| `GoalRegister` | 2 | 2 | none | 149,268 |
+| `GoalRegisterCrash` | 2 | 2 | one restart | 2,784,300 |
+| `GoalRegisterDeath` | 2 | 2 | one device lost (`EscalationDurable` only) | 702,372 |
+| `GoalRegisterDivergent` | 2 | 2, one hidden from device 2 | none (`Bounded`) | 6,225 |
 
 Each constant but `Hidden` and `MaxTick` contrasts the code before this spec
 with the code now; reverting one fix at a time breaks a property in a few
@@ -524,7 +524,7 @@ reverted:
 
 | Reverted | Breaks | Trace | Regression |
 |----------|--------|-------|------------|
-| `Lock` and `Validate` | `Complete`, 17 states | a local run reads the journal, a synced check-off is committed by the dispatcher's run, then the local run commits its older snapshot on top: carrying the clock makes it dominate on every device, and nothing re-triggers | `goal_agent_phase_a_test.dart`: a second run of the same goal waits; a register that moved under the run is derived again |
+| `Lock` and `Validate` | `Complete`, 17 states | a local run reads the journal, a synced check-off is committed by the dispatcher's run, then the local run commits its older snapshot on top: carrying the clock makes it dominate on every device, and nothing re-triggers | `goal_agent_phase_a_test.dart`: a second run of the same goal waits; a register that moved under the run is derived again; a report published between derivation and commit is seen; `goal_agent_workflow_test.dart`: a refresh whose register keeps moving ends without inference |
 | `Escalate` | `ReportCurrent`, 12 states | the lease elects a device whose journal is behind; its report states the old status while every register already carries the new one, so no device sees a transition | `goal_agent_phase_a_test.dart`: a report for today that states another status is escalated |
 | `Restart` | `ReportCurrent`, 11 states | a synced row is applied and the process dies before the dispatcher runs; after the restart nothing evaluates it that day | `goal_runtime_maintenance_test.dart`: restoreSubscriptions recomputes every active goal |
 | `ArmAt` | `EscalationDurable`, 6 states | a transition is committed and its refresh parked on the device-local countdown; the device dies, and its peers, holding the synced row with the new status, see no transition | `goal_agent_phase_a_test.dart`, `goal_agent_providers_test.dart`: the transition arms its escalation with the register |
@@ -532,12 +532,12 @@ reverted:
 `Lock` and `Validate` each close the interleaved-lanes trace alone; both
 stay because they differ in cost and reach: the lock keeps a device's own
 lanes from re-deriving at all, validation also covers a peer's row that
-syncs in mid-run.
+syncs in mid-run, and validation re-reads today's report as well, since the escalation decision read it too.
 
 `OnSynced = "recompute"` is the design this spec rejected: a synced register
 row or report owes the receiver a recompute, which would heal a stale row a
 lagging device left behind. Under `Hidden` it never stops — each device answers
-the other's row with its own — and breaks `Bounded` in 25 states, every
+the other's row with its own — and breaks `Bounded` in 24 states, every
 escalating round a paid Phase B run. Damping it (reacting to organic writes
 only) or reacting only to a row that beat this device's own on the timestamp
 bounds the loop but still fails with a death, because the harmful write is the

@@ -346,12 +346,12 @@ class GoalAgentWorkflow with AgentErrorLogging {
     }
     // Derive and persist take their turn with every other Phase A run of
     // this goal on this device (GoalAgentPhaseA.runExclusive).
-    // A register that moved under the derivation is derived again; one
-    // still moving after that is left to the next trigger, and the report
-    // describes the last snapshot. Only a fenced write (a revision landed)
-    // ends the wake.
+    // A register that moved under the derivation is derived again. One
+    // still moving after that ends the wake like a fenced write: a report
+    // must describe the snapshot that was committed, and the next Phase A
+    // tick re-escalates a report that no longer matches the day.
     final evaluatedVersion = version;
-    final (derivation, fenced) = await GoalAgentPhaseA.runExclusive(
+    final (derivation, persisted) = await GoalAgentPhaseA.runExclusive(
       agentId,
       () async {
         late GoalWakeDerivation derivation;
@@ -378,10 +378,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
                 )
               : GoalPersistOutcome.persisted;
         }
-        return (derivation, outcome == GoalPersistOutcome.fenced);
+        return (derivation, outcome == GoalPersistOutcome.persisted);
       },
     );
-    if (fenced) return const WakeResult(success: true);
+    if (!persisted) return const WakeResult(success: true);
     // Phase A persisted the transition's register row BEFORE arming this
     // wake, so re-deriving sees the new status as previousStatus and the
     // transition vanishes. The wake record carries the PRE-transition

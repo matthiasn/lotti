@@ -25,8 +25,9 @@
 (*   Commit    persistDerivation: write a row carrying the clock of the    *)
 (*             row it builds on, unless it would reproduce that row; owe   *)
 (*             an escalation on a transition or a contradicted report      *)
-(*   Stale     persistDerivation's GoalPersistOutcome.stale: the row moved *)
-(*             since the derivation read it, so it derives again           *)
+(*   Stale     persistDerivation's GoalPersistOutcome.stale: the row or    *)
+(*             today's report moved since the derivation read it, so it    *)
+(*             derives again                                               *)
 (*   Arm       the device-local deferred refresh firing (the "deferred"    *)
 (*             arm only): Phase A re-entered arms the escalation           *)
 (*   Run       the escalation's lease elects a live device                 *)
@@ -42,12 +43,13 @@
 (*   Lock      "none": the orchestrator's and the dispatcher's runs of one *)
 (*             goal interleave on a device. "agent": runExclusive.         *)
 (*   Validate  "none": a commit builds on whatever row it re-reads.        *)
-(*             "rederive": a row that moved under the run is re-derived.   *)
+(*             "rederive": a row or report that moved under the run is     *)
+(*             re-derived.                                                 *)
 (*   Escalate  "transition": owed when the status differs from the last   *)
 (*             persisted row. "contradicted": also when a report for today *)
 (*             states another status (reportContradicted).                 *)
-(*   Restart   "restore": durable intents only. "recompute":               *)
-(*             GoalAgentService.recomputeProgress for every active goal.   *)
+(*   Restart   "restore": durable intents only. "recompute": startup      *)
+(*             runs Phase A for every active goal (GoalRuntimeMaintenance) *)
 (*   ArmAt     "deferred": behind a device-local countdown. "commit": in   *)
 (*             the register's transaction.                                 *)
 (*   OnSynced  "ignore": the code. "recompute": a rejected alternative in  *)
@@ -84,7 +86,8 @@ Status(ev) == IF ev = Items THEN "onTrack" ELSE "behind"
 Sees(d, i) == ~(d = N /\ i = Hidden)
 NoReg == [ev |-> {}, st |-> "none", vc |-> [e \in Devices |-> 0], at |-> 0]
 NoRep == [st |-> Yesterday, at |-> 0]
-Idle == [pc |-> "idle", ev |-> {}, prev |-> "none", seen |-> NoReg]
+Idle == [pc |-> "idle", ev |-> {}, prev |-> "none", seen |-> NoReg,
+         seenRep |-> NoRep]
 
 VARIABLES
     written,    \* items some device has written
@@ -154,7 +157,7 @@ Derive(d, l) ==
     /\ lane' = [lane EXCEPT ![d][l] =
          [pc |-> "derived", ev |-> jr[d],
           prev |-> IF reg[d] = NoReg THEN Yesterday ELSE reg[d].st,
-          seen |-> reg[d]]]
+          seen |-> reg[d], seenRep |-> rep[d]]]
     /\ owed' = [owed EXCEPT ![d][l] = FALSE]
     /\ UNCHANGED <<written, jr, reg, refresh, pending, rep, net, tick, lost,
                    alive, crashes, deaths>>
@@ -163,7 +166,7 @@ Stale(d, l) ==
     /\ alive[d]
     /\ Validate = "rederive"
     /\ lane[d][l].pc = "derived"
-    /\ reg[d] # lane[d][l].seen
+    /\ reg[d] # lane[d][l].seen \/ rep[d] # lane[d][l].seenRep
     /\ owed' = [owed EXCEPT ![d][l] = TRUE]
     /\ lane' = [lane EXCEPT ![d][l] = Idle]
     /\ UNCHANGED <<written, jr, reg, refresh, pending, rep, net, tick, lost,
@@ -172,7 +175,8 @@ Stale(d, l) ==
 Commit(d, l) ==
     /\ alive[d]
     /\ lane[d][l].pc = "derived"
-    /\ Validate = "rederive" => reg[d] = lane[d][l].seen
+    /\ Validate = "rederive" =>
+         reg[d] = lane[d][l].seen /\ rep[d] = lane[d][l].seenRep
     /\ tick < MaxTick
     /\ LET run == lane[d][l]
            base == reg[d]
@@ -182,7 +186,7 @@ Commit(d, l) ==
            owes ==
              \/ Status(run.ev) # run.prev
              \/ Escalate = "contradicted"
-                  /\ rep[d] # NoRep /\ Status(run.ev) # rep[d].st
+                  /\ run.seenRep # NoRep /\ Status(run.ev) # run.seenRep.st
        IN /\ IF unchanged
              THEN UNCHANGED <<reg, net, tick>>
              ELSE /\ reg' = [reg EXCEPT ![d] = row]

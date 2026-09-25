@@ -301,24 +301,6 @@ class GoalAgentService {
     );
   }
 
-  /// Runs deterministic Phase A once for [agentId]: no model, no cost.
-  ///
-  /// The startup recompute. A synced journal row is evaluated by the sync
-  /// dispatcher from an in-memory queue, so a crash between applying the row
-  /// and dispatching it leaves the row unevaluated — and if the device that
-  /// wrote it is gone, nothing else recomputes that day
-  /// (`specs/tla/GoalRegister.tla`, Restart = "recompute"). An unchanged
-  /// result writes nothing. It is an automation wake and supersedes nothing,
-  /// so it cannot drop work restored beside it.
-  void recomputeProgress(String agentId) {
-    _orchestrator.enqueueManualWake(
-      agentId: agentId,
-      reason: goalStartupRecomputeReason,
-      supersede: false,
-      initiator: WakeInitiator.automation,
-    );
-  }
-
   /// Cancels only the currently pending automatic refresh. The preference
   /// stays enabled, so the next meaningful evidence change can schedule a new
   /// countdown.
@@ -377,9 +359,6 @@ class GoalAgentService {
     }
   }
 }
-
-/// The wake reason of [GoalAgentService.recomputeProgress].
-const goalStartupRecomputeReason = 'goal startup recompute';
 
 /// Stable subscription id, so repeated `restoreSubscriptions` replace
 /// instead of accumulate.

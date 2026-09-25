@@ -71,6 +71,7 @@ void main() {
   late MockGoalMirrorService mirror;
   late MockGoalCheckInNotifier notifier;
   late MockGoalOffTrackSink offTrackAlerts;
+  late List<String> recomputed;
   late List<AgentDomainEntity> upserts;
 
   void stubSpec(String agentId) {
@@ -100,6 +101,7 @@ void main() {
   }
 
   setUp(() {
+    recomputed = [];
     agentService = MockAgentService();
     repository = MockAgentRepository();
     syncService = MockAgentSyncService();
@@ -112,14 +114,6 @@ void main() {
     when(() => notifier.watch(any())).thenReturn(null);
     when(() => notifier.unwatch(any())).thenReturn(null);
     when(() => notifier.start(any())).thenReturn(null);
-    when(
-      () => orchestrator.enqueueManualWake(
-        agentId: any(named: 'agentId'),
-        reason: any(named: 'reason'),
-        supersede: any(named: 'supersede'),
-        initiator: any(named: 'initiator'),
-      ),
-    ).thenReturn('run');
     when(
       () => chatService.restoreOldestPendingMessage(any()),
     ).thenAnswer((_) async => false);
@@ -140,6 +134,7 @@ void main() {
       goalChatService: chatService,
       goalMirrorService: mirror,
       checkInNotifier: notifier,
+      recomputeProgress: (identity) async => recomputed.add(identity.agentId),
     );
     upserts = [];
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
@@ -296,10 +291,14 @@ void main() {
     ).called(1);
   });
 
-  test('restoreSubscriptions recomputes every active goal once, as an '
-      'automation wake that supersedes nothing', () async {
+  test('restoreSubscriptions recomputes every active goal once, straight '
+      'through Phase A — the pending refresh it restores keeps its '
+      'deadline', () async {
     // GoalRegister.tla, Restart = "recompute": a synced row whose in-memory
     // dispatch died with the process is otherwise never evaluated that day.
+    // A manual orchestrator wake would clear the throttle and the persisted
+    // deadline the restore below re-arms.
+    final dueAt = DateTime(2026, 8, 8, 15);
     when(
       () => agentService.listAgents(lifecycle: AgentLifecycle.active),
     ).thenAnswer(
@@ -311,19 +310,38 @@ void main() {
     when(
       () => repository.getAgentState('goal-a'),
     ).thenThrow(StateError('state gone'));
+    when(() => repository.getAgentState('goal-b')).thenAnswer(
+      (_) async => makeTestState(agentId: 'goal-b', nextWakeAt: dueAt),
+    );
+    when(
+      () => orchestrator.restorePendingWake(
+        agentId: any(named: 'agentId'),
+        dueAt: any(named: 'dueAt'),
+        triggerTokens: any(named: 'triggerTokens'),
+        workspaceKey: any(named: 'workspaceKey'),
+        reasonId: any(named: 'reasonId'),
+      ),
+    ).thenReturn(null);
 
     await maintenance.restoreSubscriptions();
 
-    for (final agentId in ['goal-a', 'goal-b']) {
-      verify(
-        () => orchestrator.enqueueManualWake(
-          agentId: agentId,
-          reason: goalStartupRecomputeReason,
-          supersede: false,
-          initiator: WakeInitiator.automation,
-        ),
-      ).called(1);
-    }
+    expect(recomputed, ['goal-a', 'goal-b']);
+    verifyNever(
+      () => orchestrator.enqueueManualWake(
+        agentId: any(named: 'agentId'),
+        reason: any(named: 'reason'),
+      ),
+    );
+    verifyNever(() => orchestrator.clearThrottle(any()));
+    verify(
+      () => orchestrator.restorePendingWake(
+        agentId: 'goal-b',
+        dueAt: dueAt,
+        triggerTokens: const {goalDeferredReportRefreshTriggerToken},
+        workspaceKey: goalReportRefreshTriggerToken,
+        reasonId: goalDeferredReportRefreshTriggerToken,
+      ),
+    ).called(1);
   });
 
   test('restoreSubscriptions re-arms a report refresh that was pending when '
