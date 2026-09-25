@@ -113,11 +113,35 @@ void main() {
       expect(supersededBy(invalid, valid), isFalse);
     });
 
-    test('a row without a clock is ordered by enqueue order', () {
-      final early = _candidate(_link(null), id: 1);
-      final late = _candidate(_link({'h': 1}), id: 2);
-      expect(newestOf([early, late]), same(late));
-      expect(supersededBy(early, late), isTrue);
+    for (final clock in [
+      null,
+      <String, int>{},
+      {'h': 1},
+    ]) {
+      for (final missing in [null, <String, int>{}]) {
+        test(
+          'missing or empty clocks cannot prove supersession ($clock, $missing)',
+          () {
+            final a = _candidate(_link(clock), id: 1);
+            final b = _candidate(_link(missing), id: 2);
+            expect(supersededBy(a, b), isFalse);
+            expect(supersededBy(b, a), isFalse);
+            expect(supersededBy(a, a), isTrue);
+          },
+        );
+      }
+    }
+
+    test('config flags still collapse by enqueue order', () {
+      final flags = [
+        for (final status in [true, false])
+          _candidate(
+            SyncMessage.configFlag(name: 'f', description: 'd', status: status),
+          ),
+      ];
+      expect(newestOf(flags), same(flags.last));
+      expect(supersededBy(flags.first, flags.last), isTrue);
+      expect(supersededBy(flags.last, flags.first), isFalse);
     });
   });
 

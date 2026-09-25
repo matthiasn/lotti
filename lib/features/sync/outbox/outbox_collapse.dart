@@ -104,16 +104,22 @@ CollapseCandidate newestOf(List<CollapseCandidate> candidates) =>
 /// Whether [older] can be folded into a send of [newest]: its version is
 /// the newest one or one the newest supersedes. A row whose clock is
 /// concurrent with the newest is not: covering it would tell peers they hold
-/// a version they do not.
+/// a version they do not. Missing or empty clocks cannot prove supersession;
+/// only config flags intentionally use enqueue order without a clock.
 bool supersededBy(CollapseCandidate older, CollapseCandidate newest) {
   if (identical(older, newest)) return true;
   final co = older.clock;
   final cn = newest.clock;
-  if (co != null && cn != null) {
+  if (co != null &&
+      cn != null &&
+      co.vclock.isNotEmpty &&
+      cn.vclock.isNotEmpty) {
     final order = _compare(cn, co);
     return order == VclockStatus.a_gt_b || order == VclockStatus.equal;
   }
-  return older.row.id < newest.row.id;
+  return older.message is SyncConfigFlag &&
+      newest.message is SyncConfigFlag &&
+      older.row.id < newest.row.id;
 }
 
 /// The message a collapsed send carries: [newest]'s payload, covering every

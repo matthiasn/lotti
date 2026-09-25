@@ -56,6 +56,11 @@ named properties and 180,826 distinct states to `8428b0a479`. These are
 incremental figures; the historical snapshot above excludes the intervening
 outbox, inbound-queue and journal models.
 
+The `OutboxCausality` follow-up adds one spec, one configuration, five named
+properties and 28,451 distinct states to the configurations present at
+`5ad1095618`. These are incremental figures; the historical snapshot above
+does not include the intervening outbox, inbound-queue and journal models.
+
 ## Timeline
 
 ```mermaid
@@ -118,6 +123,7 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4480](https://github.com/matthiasn/lotti/pull/4480) | 09-25 | agents | — | 2 | 8 (5) | P1×7 P2 | [0081](../../docs/adr/0081-model-checked-evolution-sessions-and-agent-links.md) addendum | A removed agent entity came back from a late copy or a backfill, and a write or re-creation over a removal lost. `AgentReplication` gained a removal kind, lossy delivery and a split receive; an audit of every soft-delete writer found three more |
 
 | [#4491](https://github.com/matthiasn/lotti/pull/4491) | pending | sync | `NotificationReplication`, `SyncSettings` | 4 | 1 (1) | P1 | — | A lifecycle patch changed the content tie-break, so peers retained different same-time notification text. Also models typed recovery and documents untracked settings limits |
+| [#4490](https://github.com/matthiasn/lotti/pull/4490) | pending | sync | `OutboxCausality` | 1 | 1 (0) | P1 | — | Checks concurrent inline versions through append, collapse and receipt after #4489; fixes missing/empty-clock snapshots being folded at send time. A deliberately unsound collapse violates causal coverage. Also restores TLC triggers for startup and profile teardown |
 
 ## Severity
 

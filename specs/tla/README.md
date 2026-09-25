@@ -1061,6 +1061,44 @@ What the model leaves out, deliberately or as a residual:
   The regression for a host's first relink and removal is in the
   `AgentSyncService` suite.
 
+## `OutboxCausality` — a version fork through the send and receive boundary
+
+`Outbox` models a causal chain using scalar versions. `OutboxCausality`
+refines the inline-payload boundary for entry links, agent entities and agent
+links: two concurrent two-host clocks and a successor covering both. A durable
+snapshot is appended unchanged, collapsed at claim, sent, applied, then acknowledged in separate
+steps. Enqueues and deliveries can arrive in any order; an orphaned claim
+replays after a crash, as does an apply whose acknowledgement was interrupted.
+Claim abstracts the processor's successful CAS and sends one collapsed
+message at a time; it does not model races between candidate lookup and CAS.
+The receiver order extends causality and deliberately
+disagrees with enqueue order for the concurrent pair.
+
+| Property | Meaning |
+|---|---|
+| `CoveredIsCausal` | Every covered version is reached by the actual queued/sent payload clock |
+| `NoLostStagedVersion` | Each staged version still has an outbox or wire representation |
+| `NoFalseAcknowledgement` | Acknowledged versions have an applied causal witness |
+| `AcknowledgedWinner` | A peer acknowledging every committed version has the correct payload winner |
+| `EventuallyAcknowledged` | Each committed snapshot eventually reaches the peer under fair processing |
+
+The configuration checks three versions, two peers and one crash: 28,451 distinct
+states. Setting `PreserveConcurrent = FALSE` in a temporary configuration
+breaks `CoveredIsCausal`: a send folds in a concurrent payload
+and promises its clock as coverage. The enqueue-writer suite exercises all
+three inline payload types, both enqueue orders, real outbox claiming and
+bundling, and both receive orders through the durable domain receivers. Removing the send-time
+causality guard makes the concurrent-payload traces fail. Clockless-snapshot
+regressions also assert that the processor sends both payloads; they fail on
+the pre-fix collapse rule from #4489. Config flags retain enqueue-order collapse.
+
+This is a boundary composition, not a proof of the entire sync system.
+Transport loss, gap discovery/backfill, attachment generations, retry
+exhaustion, clockless payloads and payload purges are excluded. Agent-specific
+CRDT joins are checked by the agent models; the receiver abstraction here is
+the whole-version register. `Outbox` retains the detailed retry/mark/prune
+state machine.
+
 ## `Outbox` — append, collapse, claim, send and prune
 
 The outbound queue of one device, which `SyncSequence` treats as a set of

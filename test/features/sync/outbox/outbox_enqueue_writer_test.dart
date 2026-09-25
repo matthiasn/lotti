@@ -8,10 +8,12 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_enqueue_writer.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
@@ -24,6 +26,8 @@ import 'package:path/path.dart' as p;
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
+import '../../agents/agent_test_device.dart';
 import '../../ai_consumption/test_utils.dart';
 
 part 'outbox_model_conformance.dart';
@@ -855,5 +859,236 @@ void main() {
         [true, false],
       );
     });
+    Future<List<SyncMessage>> drain() async {
+      final wire = <SyncMessage>[];
+      final sender = MockOutboxMessageSender();
+      when(() => sender.send(any())).thenAnswer((invocation) async {
+        final message = invocation.positionalArguments.single as SyncMessage;
+        wire.addAll(message is SyncOutboxBundle ? message.children : [message]);
+        return true;
+      });
+      final processor = OutboxProcessor(
+        repository: DatabaseOutboxRepository(db),
+        messageSender: sender,
+        loggingService: MockDomainLogger(),
+      );
+      await processor.processQueue();
+      expect(
+        await db.getOutboxItems(statuses: const [OutboxStatus.pending]),
+        isEmpty,
+      );
+      return wire;
+    }
+
+    for (final kind in ['entryLink', 'agentEntity', 'agentLink']) {
+      for (final reverse in [false, true]) {
+        test(
+          '$kind preserves concurrent payloads (reverse=$reverse)',
+          () async {
+            await setUpTestGetIt();
+            addTearDown(tearDownTestGetIt);
+            final writer = realWriter();
+            const clocks = [
+              VectorClock({'host-A': 2, 'host-B': 1}),
+              VectorClock({'host-A': 1, 'host-B': 2}),
+            ];
+            for (final vc in reverse ? clocks.reversed : clocks) {
+              final msg = switch (kind) {
+                'entryLink' => _entryLinkMessage(vectorClock: vc),
+                'agentEntity' => SyncMessage.agentEntity(
+                  agentEntity: _agentEntity(vectorClock: vc),
+                  status: SyncEntryStatus.update,
+                ),
+                _ => SyncMessage.agentLink(
+                  agentLink: AgentLink.basic(
+                    id: 'agent-link-1',
+                    fromId: 'from-1',
+                    toId: 'to-1',
+                    createdAt: DateTime(2024, 3, 15),
+                    updatedAt: DateTime(2024, 3, 15),
+                    vectorClock: vc,
+                  ),
+                  status: SyncEntryStatus.update,
+                ),
+              };
+              await switch (msg) {
+                final SyncEntryLink m => writer.enqueueEntryLink(
+                  msg: m,
+                  commonFields: _commonFields(m),
+                  host: 'host-A',
+                  hostHash: 'hash',
+                ),
+                final SyncAgentEntity m => writer.enqueueAgentEntity(
+                  msg: m,
+                  commonFields: _commonFields(m),
+                ),
+                final SyncAgentLink m => writer.enqueueAgentLink(
+                  msg: m,
+                  commonFields: _commonFields(m),
+                ),
+                _ => throw StateError('unexpected $msg'),
+              };
+            }
+            final messages = (await db.getOutboxItems()).map(
+              (row) => _decode(row.message),
+            );
+            final payloadClocks = messages.map(
+              (msg) => switch (msg) {
+                final SyncEntryLink m => m.entryLink.vectorClock,
+                final SyncAgentEntity m => m.agentEntity!.vectorClock,
+                final SyncAgentLink m => m.agentLink!.vectorClock,
+                _ => throw StateError('unexpected $msg'),
+              },
+            );
+            expect(payloadClocks, unorderedEquals(clocks));
+            final wire = await drain();
+            expect(wire, hasLength(2));
+            expect(
+              await db.getOutboxItems(statuses: const [OutboxStatus.sent]),
+              hasLength(2),
+            );
+            for (final delivered in [wire, wire.reversed]) {
+              final journal = JournalDb(inMemoryDatabase: true);
+              final peer = AgentTestDevice('peer');
+              addTearDown(journal.close);
+              addTearDown(peer.close);
+              for (final message in delivered) {
+                switch (message) {
+                  case final SyncEntryLink m:
+                    await journal.upsertEntryLink(m.entryLink);
+                  case final SyncAgentEntity m:
+                    await peer.receiveEntity(m.agentEntity!);
+                  case final SyncAgentLink m:
+                    await peer.receiveLink(m.agentLink!);
+                  default:
+                    fail('Unexpected inline payload $message');
+                }
+              }
+              final receivedClock = switch (kind) {
+                'entryLink' => (await journal.entryLinkById(
+                  'link-1',
+                ))?.vectorClock,
+                'agentEntity' => (await peer.repository.getEntity(
+                  'agent-1',
+                ))?.vectorClock,
+                _ => (await peer.repository.getLinkByIdIncludingDeleted(
+                  'agent-link-1',
+                ))?.vectorClock,
+              };
+              // Equal timestamps use canonical clock order: A:2 wins in
+              // both receive orders, including when it was enqueued first.
+              expect(receivedClock, clocks.first);
+            }
+            for (final msg in wire) {
+              final (payload, covered) = switch (msg) {
+                final SyncEntryLink m => (
+                  m.entryLink.vectorClock!,
+                  m.coveredVectorClocks,
+                ),
+                final SyncAgentEntity m => (
+                  m.agentEntity!.vectorClock!,
+                  m.coveredVectorClocks,
+                ),
+                final SyncAgentLink m => (
+                  m.agentLink!.vectorClock!,
+                  m.coveredVectorClocks,
+                ),
+                _ => throw StateError('unexpected $msg'),
+              };
+              expect(
+                covered ?? <VectorClock>[],
+                everyElement(
+                  predicate<VectorClock>(
+                    (vc) =>
+                        VectorClock.compare(payload, vc) !=
+                        VclockStatus.concurrent,
+                  ),
+                ),
+              );
+            }
+          },
+        );
+      }
+    }
+
+    for (final reverse in [false, true]) {
+      test('different inline kinds sharing an id stay separate '
+          '(reverse=$reverse)', () async {
+        final writer = realWriter();
+        const vc = VectorClock({'host-A': 1});
+        final link = _entryLinkMessage(id: 'shared-id', vectorClock: vc);
+        final agent =
+            SyncMessage.agentEntity(
+                  agentEntity: _agentEntity(id: 'shared-id', vectorClock: vc),
+                  status: SyncEntryStatus.update,
+                )
+                as SyncAgentEntity;
+        final enqueues = [
+          () => writer.enqueueEntryLink(
+            msg: link,
+            commonFields: _commonFields(link),
+            host: 'host-A',
+            hostHash: 'hash',
+          ),
+          () => writer.enqueueAgentEntity(
+            msg: agent,
+            commonFields: _commonFields(agent),
+          ),
+        ];
+        for (final enqueue in reverse ? enqueues.reversed : enqueues) {
+          await enqueue();
+        }
+        final wire = await drain();
+        expect(wire, hasLength(2));
+        expect(
+          wire.map(
+            (message) => switch (message) {
+              final SyncEntryLink m => m.entryLink,
+              final SyncAgentEntity m => m.agentEntity,
+              final other => throw StateError('unexpected $other'),
+            },
+          ),
+          unorderedEquals([link.entryLink, agent.agentEntity]),
+        );
+      });
+    }
+
+    for (final pendingClock in [
+      null,
+      const VectorClock({}),
+      const VectorClock({'host-A': 1}),
+    ]) {
+      for (final incomingClock in [null, const VectorClock({})]) {
+        test(
+          'clockless link snapshots stay separate ($pendingClock, $incomingClock)',
+          () async {
+            final writer = realWriter();
+            for (final vc in [pendingClock, incomingClock]) {
+              final msg = _entryLinkMessage(vectorClock: vc);
+              await writer.enqueueEntryLink(
+                msg: msg,
+                commonFields: _commonFields(msg),
+                host: 'host-A',
+                hostHash: 'hash',
+              );
+            }
+            final wire = await drain();
+            expect(wire, hasLength(2));
+            expect(
+              wire.map(
+                (message) => (message as SyncEntryLink).entryLink.vectorClock,
+              ),
+              unorderedEquals([pendingClock, incomingClock]),
+            );
+            expect(
+              wire.map(
+                (message) => (message as SyncEntryLink).coveredVectorClocks,
+              ),
+              everyElement(isNull),
+            );
+          },
+        );
+      }
+    }
   });
 }
