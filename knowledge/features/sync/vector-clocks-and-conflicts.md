@@ -92,6 +92,18 @@ sources:
     resource: ../../../docs/adr/0080-a-present-counter-ranks-above-an-absent-host.md
     title: ADR 0080 — a present counter ranks above an absent host, and new hosts start at 1
     last_modified: 2026-09-25
+  - id: adr-0081
+    resource: ../../../docs/adr/0081-model-checked-evolution-sessions-and-agent-links.md
+    title: ADR 0081 — Model-checked evolution sessions and agent links
+    last_modified: 2026-09-25
+  - id: links-spec
+    resource: ../../../specs/tla/AgentLinks.tla
+    title: TLA+ model of agent link versions, removals and backfill
+    last_modified: 2026-09-25
+  - id: session-spec
+    resource: ../../../specs/tla/EvolutionSession.tla
+    title: TLA+ model of an evolution session and the version it adopts
+    last_modified: 2026-09-25
 ---
 
 # What a vector clock is here
@@ -395,7 +407,10 @@ replica-independent canonical clock comparison on ties
 first: a retraction is terminal, a scheduled wake with a later target beats
 an earlier one, a day summary keeps its earliest testimony, a goal spec head
 prefers the higher ordinal, and a nudge's dismissal, supersession and higher
-activation outrank the timestamp. The cumulative counters on
+activation outrank the timestamp, and an evolution session keeps the more
+final status — completed, then abandoned, then active — so a 1-on-1 whose
+proposal was adopted is never recorded as abandoned by a peer's concurrent
+sweep (ADR 0081). The cumulative counters on
 `AgentStateEntity` — `wakeCounter`, `slots.totalSessionsCompleted`,
 `slots.weeklyReviewCount` — are merged as a CRDT join via
 `mergeAgentStateCounters`, and so are the report freshness watermarks. The
@@ -404,7 +419,44 @@ counters into a row without moving its clock, so a version that succeeds only
 the merge's winner need not carry the loser's increments. Unlike journal
 entries, agent-derived state never raises a user-facing `Conflict`.
 
-Links (`AgentLink`) keep plain dominance plus last-writer-wins.
+## Agent links: a tombstone is a version
+
+Agent links (`AgentLink`) are ordered like any register, by
+`resolveAgentLinkVersions`: dominance, then `updatedAt`, then the canonical
+clock. Three things make that order hold on every replica (ADR 0081,
+`specs/tla/AgentLinks.tla`):
+
+- **The receive reads the stored version with its tombstone**
+  (`AgentRepository.getLinkByIdIncludingDeleted`), and reads and writes it in
+  one transaction. `getLinkById` filters `deleted_at IS NULL`, so a removal
+  used to read as no row, and any late copy of the link it removed replaced
+  it.
+- **Backfill serves a tombstone like any version.** The responder and the
+  verifier read the same way. Answering `deleted` for a removed link settled
+  a lost removal with nothing applied.
+- **A local write succeeds the stored version.** Writers build links afresh
+  (`vectorClock: null`) under reused ids, such as the Daily OS links'
+  deterministic ids. `AgentSyncService.upsertLink` reads the stored version,
+  tombstone included, in the write's transaction, stamps a clock that covers
+  both, and never stamps an `updatedAt` older than the stored one.
+
+```mermaid
+flowchart TD
+  W["upsertLink(link)"] --> R["read the stored version, tombstone included"]
+  R --> P{stored version?}
+  P -- no --> S["stamp with link's clock + own counter"]
+  P -- yes --> T["updatedAt = max(link, stored)"]
+  T --> V["stamp with join(link clock, stored clock) + own counter"]
+  S --> O[persist and send]
+  V --> O
+  O --> X[peer: read stored version, tombstone included, in one transaction]
+  X --> D{resolveAgentLinkVersions}
+  D -- "stored dominates or equal, or wins the concurrent pair" --> K[keep the stored version]
+  D -- otherwise --> A[write the incoming version]
+```
+
+Soul assignments and improver targets are an exception, recorded as a
+residual below.
 
 ## A local write succeeds the row it replaces
 
@@ -567,3 +619,12 @@ cases stay open, recorded in `specs/tla/README.md` and ADR 0068:
 - Nudges store the join of both clocks after a concurrent merge, so an exact
   `updatedAt` tie between two nudge versions is broken on a history-dependent
   clock.
+- A template has at most one live soul assignment, and a template has at most
+  one improver. When a live one arrives, `AgentRepoLinks.upsertLink`
+  tombstones the other locally, without a clock bump or a sync message, so
+  two devices that reassign concurrently swap the assignments (ADR 0081).
+  The fix needs a decision.
+- The entity receive and its backfill read with `getEntity`, which filters
+  tombstones, so a soft-deleted agent entity can still come back when a late
+  copy arrives. That is the link hole of ADR 0081, not yet fixed for
+  entities.

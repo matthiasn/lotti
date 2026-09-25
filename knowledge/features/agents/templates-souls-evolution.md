@@ -5,8 +5,8 @@ description: What an agent does (template skills) versus who it is (soul persona
 resource: ../../../lib/features/agents/workflow/template_evolution_workflow.dart
 tags: [agents, templates, souls, evolution, improver]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T12:00:00Z }
-stale_after: 2026-12-24
+generated: { by: claude-code/opus-5.5, at: 2026-09-25T09:00:00Z }
+stale_after: 2026-12-25
 sources:
   - id: seeding
     resource: ../../../lib/features/agents/service/agent_template_seeding.dart
@@ -44,6 +44,14 @@ sources:
     resource: ../../../docs/adr/0068-model-checked-agent-convergence.md
     title: ADR 0068 — Model-checked convergence of synced agent entities
     last_modified: 2026-09-24
+  - id: adr-0081
+    resource: ../../../docs/adr/0081-model-checked-evolution-sessions-and-agent-links.md
+    title: ADR 0081 — Model-checked evolution sessions and agent links
+    last_modified: 2026-09-25
+  - id: session-spec
+    resource: ../../../specs/tla/EvolutionSession.tla
+    title: TLA+ model of an evolution session and the version it adopts
+    last_modified: 2026-09-25
 ---
 
 # Two axes: skills and personality
@@ -80,7 +88,10 @@ erDiagram
 ```
 
 **Key invariant: one active soul per template.** Multiple templates can share a
-soul. Instances inherit their soul through their template assignment.
+soul. Instances inherit their soul through their template assignment. On one
+device a partial unique index enforces it; two devices that reassign a
+template's soul concurrently can still end with each other's choice, a
+residual recorded in ADR 0081.
 
 At wake time, `TaskAgentWorkflow` and `ProjectAgentWorkflow` resolve the active
 soul and inject personality under `## Your Personality`, while skills go under
@@ -142,13 +153,35 @@ template evolution (skill changes) and soul evolution (personality changes):
 ```mermaid
 stateDiagram-v2
   [*] --> Active: startSession()
-  Active --> Completed: approveProposal() + persist recap
-  Active --> Abandoned: abandon / stale-session cleanup
+  Active --> Completed: approveProposal() / completeSoulSession()
+  Active --> Abandoned: abandonSession() / a stale-session sweep
+  Abandoned --> Completed: the owner approves after a peer's sweep
   Completed --> [*]
   Abandoned --> [*]
+  note right of Completed
+    never left: a concurrent sweep loses to it on every device
+  end note
 ```
 
-**Only one active evolution session per template** at a time.
+**Only one active evolution session per template** at a time, and only on the
+device that started it: the conversation lives in that device's memory, so
+only that device approves. Any device abandons a session it reads as active —
+`startSession` and every approval sweep stale ones
+(`_abandonStaleActiveSessions`), and the chat page abandons its session when
+the user leaves.
+
+**An approval is one transaction.** `approveProposal` and
+`completeSoulSession` create the version, persist the notes and the recap and
+complete the session together. A failure part-way leaves nothing behind, so a
+retry creates exactly one version. An approval of a session that is already
+completed returns the version the row names. That is the case where the
+transaction committed and then the outbox flush failed. Across devices, a
+completed session outranks a concurrent abandonment, and an abandonment
+outranks `active` (`resolveConcurrentAgentEntityOverride`). Without that rule
+a peer's sweep a minute after the approval recorded the adopted proposal as
+abandoned everywhere, and the feedback extraction read it as a negative
+signal. The session row is also received in one transaction
+(`specs/tla/EvolutionSession.tla`, ADR 0081).
 
 **A proposal is a whole rewrite, so the session must be shown what is in
 effect.** `propose_directives` carries complete `general_directive` and

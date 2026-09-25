@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
@@ -70,30 +69,6 @@ class ActiveEvolutionSession {
 
   /// Routes GenUI surface events to evolution chat logic.
   final GenUiEventHandler? eventHandler;
-
-  /// Cached version from a previous approval attempt, keyed by the directives
-  /// text. Reused on retry only if the proposal hasn't changed.
-  String? _approvedDirectives;
-  AgentTemplateVersionEntity? _approvedVersion;
-
-  /// Returns the cached version if [directives] matches, otherwise `null`.
-  AgentTemplateVersionEntity? getCachedVersion(String directives) =>
-      directives == _approvedDirectives ? _approvedVersion : null;
-
-  /// Caches a successfully created version for idempotent retry.
-  void cacheVersion(
-    AgentTemplateVersionEntity version,
-    String directives,
-  ) {
-    _approvedDirectives = directives;
-    _approvedVersion = version;
-  }
-
-  /// Clears any cached approval state (e.g., after rejection).
-  void clearApprovalCache() {
-    _approvedDirectives = null;
-    _approvedVersion = null;
-  }
 }
 
 /// Workflow that uses an LLM to propose improved template directives based on
@@ -223,7 +198,12 @@ class TemplateEvolutionWorkflow {
   }
 
   /// Approve the current proposal: create a new template version, persist
-  /// pending notes, and complete the session.
+  /// pending notes and the recap, and complete the session — in one
+  /// transaction, so a failure part-way leaves no version behind that the
+  /// session does not name (ADR 0081, `specs/tla/EvolutionSession.tla`). A
+  /// session that is already completed — an earlier approval committed and
+  /// then failed flushing the outbox — returns the version it names instead
+  /// of creating another.
   ///
   /// Returns the created [AgentTemplateVersionEntity], or `null` on failure.
   Future<AgentTemplateVersionEntity?> approveProposal({
@@ -247,64 +227,63 @@ class TemplateEvolutionWorkflow {
     }
 
     try {
-      // Create the new template version (idempotent: reuse cached version if
-      // the proposal directives haven't changed since the last attempt).
-      final cacheKey = jsonEncode({
-        'generalDirective': proposal.generalDirective,
-        'reportDirective': proposal.reportDirective,
-      });
-      final newVersion =
-          active.getCachedVersion(cacheKey) ??
-          await _createVersionIdempotent(
-            svc: svc,
-            templateId: active.templateId,
-            generalDirective: proposal.generalDirective,
-            reportDirective: proposal.reportDirective,
-          );
-      active.cacheVersion(newVersion, cacheKey);
-
-      // Persist any pending notes. _persistNotes drains the list as it goes,
-      // so retries only persist notes that weren't written yet, and new notes
-      // added after a failed attempt are included.
-      await _persistNotes(
-        strategy: active.strategy,
-        templateId: active.templateId,
-        sessionId: sessionId,
-        sync: sync,
-      );
-
-      final recap = _buildSessionRecapEntity(
-        active: active,
-        proposal: proposal,
-        categoryRatings: categoryRatings,
-      );
-      if (recap != null) {
-        await sync.upsertEntity(recap);
-      }
-
-      // Complete the session entity.
-      final now = clock.now();
-      final sessionEntity = await _getSessionEntity(sessionId);
-      if (sessionEntity != null) {
-        final normalizedRating =
-            userRating ?? _averageCategoryRating(categoryRatings);
-        final recapTldr = recap?.tldr.trim();
-        final normalizedSummary =
-            feedbackSummary ??
-            ((recapTldr != null && recapTldr.isNotEmpty)
-                ? recapTldr
-                : proposal.rationale);
-        await sync.upsertEntity(
-          sessionEntity.copyWith(
-            status: EvolutionSessionStatus.completed,
-            proposedVersionId: newVersion.id,
-            feedbackSummary: normalizedSummary,
-            userRating: normalizedRating,
-            completedAt: now,
-            updatedAt: now,
-          ),
+      final newVersion = await sync.runInTransaction(() async {
+        final sessionEntity = await _getSessionEntity(sessionId);
+        final adopted = await _versionAdoptedBy<AgentTemplateVersionEntity>(
+          sessionEntity,
+          sessionEntity?.proposedVersionId,
         );
-      }
+        if (adopted != null) return adopted;
+
+        final version = await svc.createVersion(
+          templateId: active.templateId,
+          directives:
+              '${proposal.generalDirective}\n\n${proposal.reportDirective}'
+                  .trim(),
+          generalDirective: proposal.generalDirective,
+          reportDirective: proposal.reportDirective,
+          authoredBy: AgentAuthors.evolutionAgent,
+        );
+
+        await _persistNotes(
+          strategy: active.strategy,
+          templateId: active.templateId,
+          sessionId: sessionId,
+          sync: sync,
+        );
+
+        final recap = _buildSessionRecapEntity(
+          active: active,
+          proposal: proposal,
+          categoryRatings: categoryRatings,
+        );
+        if (recap != null) {
+          await sync.upsertEntity(recap);
+        }
+
+        if (sessionEntity != null) {
+          final now = clock.now();
+          final normalizedRating =
+              userRating ?? _averageCategoryRating(categoryRatings);
+          final recapTldr = recap?.tldr.trim();
+          final normalizedSummary =
+              feedbackSummary ??
+              ((recapTldr != null && recapTldr.isNotEmpty)
+                  ? recapTldr
+                  : proposal.rationale);
+          await sync.upsertEntity(
+            sessionEntity.copyWith(
+              status: EvolutionSessionStatus.completed,
+              proposedVersionId: version.id,
+              feedbackSummary: normalizedSummary,
+              userRating: normalizedRating,
+              completedAt: now,
+              updatedAt: now,
+            ),
+          );
+        }
+        return version;
+      });
 
       // Clean up and notify UI.
       _cleanupSession(sessionId);
@@ -369,7 +348,6 @@ class TemplateEvolutionWorkflow {
 
     final hadProposal = active.strategy.latestProposal != null;
     active.strategy.clearProposal();
-    active.clearApprovalCache();
 
     if (hadProposal) {
       developer.log(

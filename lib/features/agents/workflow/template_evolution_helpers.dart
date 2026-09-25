@@ -70,41 +70,23 @@ extension TemplateEvolutionHelpers on TemplateEvolutionWorkflow {
     }
   }
 
-  /// Creates a template version, handling post-commit sync failures
-  /// idempotently. If `createVersion` throws after the DB transaction has
-  /// committed (e.g., outbox enqueue failure), the version exists in the DB
-  /// but the caller never received it. This method detects that case by
-  /// querying for the active version and checking its directives.
-  Future<AgentTemplateVersionEntity> _createVersionIdempotent({
-    required AgentTemplateService svc,
-    required String templateId,
-    required String generalDirective,
-    required String reportDirective,
-  }) async {
-    try {
-      return await svc.createVersion(
-        templateId: templateId,
-        directives: '$generalDirective\n\n$reportDirective'.trim(),
-        generalDirective: generalDirective,
-        reportDirective: reportDirective,
-        authoredBy: AgentAuthors.evolutionAgent,
-      );
-    } catch (e) {
-      // Check if the version was actually created despite the error
-      // (post-commit sync failure).
-      final activeVersion = await svc.getActiveVersion(templateId);
-      if (activeVersion != null &&
-          activeVersion.generalDirective == generalDirective &&
-          activeVersion.reportDirective == reportDirective &&
-          activeVersion.authoredBy == AgentAuthors.evolutionAgent) {
-        developer.log(
-          'createVersion threw but version was persisted, recovering',
-          name: _logTag,
-        );
-        return activeVersion;
-      }
-      rethrow;
+  /// The version [session] names as the one it adopted, when [session] is
+  /// already completed: an earlier approval committed the version and the
+  /// completion together and then failed flushing the outbox, so a retry
+  /// returns that version instead of creating a second one. `null` when the
+  /// session is not completed or the version is not stored here.
+  Future<T?> _versionAdoptedBy<T extends AgentDomainEntity>(
+    EvolutionSessionEntity? session,
+    String? versionId,
+  ) async {
+    final svc = templateService;
+    if (svc == null ||
+        session?.status != EvolutionSessionStatus.completed ||
+        versionId == null) {
+      return null;
     }
+    final version = await svc.repository.getEntity(versionId);
+    return version is T ? version : null;
   }
 
   Future<EvolutionSessionEntity?> _getSessionEntity(String sessionId) async {

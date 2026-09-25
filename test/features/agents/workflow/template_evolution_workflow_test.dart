@@ -1,9 +1,10 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/workflow/evolution_context_builder.dart';
 import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
@@ -20,6 +21,8 @@ import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
+import '../agent_test_device.dart';
 import '../test_utils.dart';
 
 /// Test mock for ConversationRepository that controls the conversation flow.
@@ -941,68 +944,6 @@ void main() {
       // Session should NOT be cleaned up on error — caller can retry.
     });
 
-    test(
-      'recovers when createVersion throws after the version was committed '
-      '(post-commit sync failure)',
-      () async {
-        // createVersion throws, but the version actually landed: the
-        // active version matches the proposal's directives and the
-        // evolution-agent author, so _createVersionIdempotent must return
-        // it instead of rethrowing.
-        final committedVersion = makeTestTemplateVersion(
-          id: 'committed-ver',
-          version: 2,
-          directives: 'New text',
-          generalDirective: 'New text',
-          authoredBy: AgentAuthors.evolutionAgent,
-        );
-
-        when(
-          () => mockTemplateService.createVersion(
-            templateId: any(named: 'templateId'),
-            directives: any(named: 'directives'),
-            authoredBy: any(named: 'authoredBy'),
-            generalDirective: any(named: 'generalDirective'),
-            reportDirective: any(named: 'reportDirective'),
-          ),
-        ).thenThrow(StateError('post-commit sync failure'));
-        when(
-          () => mockTemplateService.getActiveVersion(kTestTemplateId),
-        ).thenAnswer((_) async => committedVersion);
-        when(
-          () => mockSyncService.upsertEntity(any()),
-        ).thenAnswer((_) async {});
-        when(
-          () => mockRepository.getEntity(any()),
-        ).thenAnswer((_) async => null);
-
-        final (:strategy, :manager) = await _strategyWithProposal();
-
-        final workflow = TemplateEvolutionWorkflow(
-          conversationRepository: _TestConversationRepository(),
-          aiConfigRepository: mockAiConfig,
-          cloudInferenceRepository: mockCloudInference,
-          templateService: mockTemplateService,
-          syncService: mockSyncService,
-        );
-
-        workflow.activeSessions['session-1'] = ActiveEvolutionSession(
-          sessionId: 'session-1',
-          templateId: kTestTemplateId,
-          conversationId: 'test-conv-id',
-          strategy: strategy,
-          modelId: 'model',
-        );
-
-        final result = await workflow.approveProposal(sessionId: 'session-1');
-
-        // Approval succeeds with the already-committed version.
-        expect(result, isNotNull);
-        expect(result!.id, 'committed-ver');
-        expect(workflow.activeSessions, isEmpty);
-      },
-    );
-
     test('completes even when session entity not found in DB', () async {
       final newVersion = makeTestTemplateVersion(
         id: 'new-ver',
@@ -1685,129 +1626,99 @@ void main() {
       ).thenAnswer((_) async => <EvolutionSessionEntity>[]);
     });
 
-    test('retry does not create duplicate version or notes', () async {
-      final newVersion = makeTestTemplateVersion(
-        id: 'v2',
-        version: 2,
-        directives: 'Better directives',
-        authoredBy: 'evolution_agent',
-      );
+    test(
+      'a session already completed returns the version it names and '
+      'creates none',
+      () async {
+        // An earlier approval committed and then failed flushing the outbox:
+        // the row is completed, the in-memory session is still there.
+        final adopted = makeTestTemplateVersion(id: 'v-adopted', version: 2);
+        when(() => mockRepository.getEntity('session-1')).thenAnswer(
+          (_) async => makeTestEvolutionSession(
+            id: 'session-1',
+            status: EvolutionSessionStatus.completed,
+            proposedVersionId: 'v-adopted',
+          ),
+        );
+        when(
+          () => mockRepository.getEntity('v-adopted'),
+        ).thenAnswer((_) async => adopted);
+        final (:strategy, :manager) = await _strategyWithProposal();
+        final workflow = TemplateEvolutionWorkflow(
+          conversationRepository: _TestConversationRepository(),
+          aiConfigRepository: mockAiConfig,
+          cloudInferenceRepository: mockCloudInference,
+          templateService: mockTemplateService,
+          syncService: mockSyncService,
+        );
+        workflow.activeSessions['session-1'] = ActiveEvolutionSession(
+          sessionId: 'session-1',
+          templateId: kTestTemplateId,
+          conversationId: 'test-conv-id',
+          strategy: strategy,
+          modelId: 'model',
+        );
 
-      _stubCreateVersion(mockTemplateService, newVersion);
+        final result = await workflow.approveProposal(sessionId: 'session-1');
 
-      // Track all successfully upserted entities across both attempts.
-      final allUpserted = <AgentDomainEntity>[];
-      var upsertCallCount = 0;
-      when(() => mockSyncService.upsertEntity(any())).thenAnswer((inv) async {
-        upsertCallCount++;
-        // Fail on the second upsert (session completion after note) BEFORE
-        // recording success, simulating a transient DB error.
-        if (upsertCallCount == 2) {
-          throw StateError('Transient DB error');
-        }
-        final entity = inv.positionalArguments.first as AgentDomainEntity;
-        allUpserted.add(entity);
-      });
+        expect(result, adopted);
+        expect(workflow.activeSessions, isEmpty);
+        verifyNever(
+          () => mockTemplateService.createVersion(
+            templateId: any(named: 'templateId'),
+            directives: any(named: 'directives'),
+            authoredBy: any(named: 'authoredBy'),
+            generalDirective: any(named: 'generalDirective'),
+            reportDirective: any(named: 'reportDirective'),
+          ),
+        );
+        verifyNever(() => mockSyncService.upsertEntity(any()));
+      },
+    );
 
-      when(
-        () => mockRepository.getEntity(any()),
-      ).thenAnswer((_) async => makeTestEvolutionSession());
+    test(
+      'a completed session whose version is not stored here gets a new one',
+      () async {
+        final created = makeTestTemplateVersion(id: 'v-new', version: 3);
+        _stubCreateVersion(mockTemplateService, created);
+        when(
+          () => mockSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+        when(() => mockRepository.getEntity('session-1')).thenAnswer(
+          (_) async => makeTestEvolutionSession(
+            id: 'session-1',
+            status: EvolutionSessionStatus.completed,
+            proposedVersionId: 'v-elsewhere',
+          ),
+        );
+        when(
+          () => mockRepository.getEntity('v-elsewhere'),
+        ).thenAnswer((_) async => null);
+        final (:strategy, :manager) = await _strategyWithProposal();
+        final workflow = TemplateEvolutionWorkflow(
+          conversationRepository: _TestConversationRepository(),
+          aiConfigRepository: mockAiConfig,
+          cloudInferenceRepository: mockCloudInference,
+          templateService: mockTemplateService,
+          syncService: mockSyncService,
+        );
+        workflow.activeSessions['session-1'] = ActiveEvolutionSession(
+          sessionId: 'session-1',
+          templateId: kTestTemplateId,
+          conversationId: 'test-conv-id',
+          strategy: strategy,
+          modelId: 'model',
+        );
 
-      final strategy = EvolutionStrategy();
-      final manager = ConversationManager()..initialize();
+        final result = await workflow.approveProposal(sessionId: 'session-1');
 
-      // Add proposal.
-      const proposalCall = ChatCompletionMessageToolCall(
-        id: 'call-1',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'propose_directives',
-          arguments:
-              '{"general_directive":"Better directives","report_directive":"","rationale":"Evidence"}',
-        ),
-      );
-      manager.addAssistantMessage(toolCalls: [proposalCall]);
-      await strategy.processToolCalls(
-        toolCalls: [proposalCall],
-        manager: manager,
-      );
-
-      // Add a note.
-      const noteCall = ChatCompletionMessageToolCall(
-        id: 'call-2',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'record_evolution_note',
-          arguments: '{"kind":"reflection","content":"Tone works well"}',
-        ),
-      );
-      manager.addAssistantMessage(toolCalls: [noteCall]);
-      await strategy.processToolCalls(
-        toolCalls: [noteCall],
-        manager: manager,
-      );
-
-      final convRepo = _TestConversationRepository();
-      final workflow = TemplateEvolutionWorkflow(
-        conversationRepository: convRepo,
-        aiConfigRepository: mockAiConfig,
-        cloudInferenceRepository: mockCloudInference,
-        templateService: mockTemplateService,
-        syncService: mockSyncService,
-      );
-
-      workflow.activeSessions['session-1'] = ActiveEvolutionSession(
-        sessionId: 'session-1',
-        templateId: kTestTemplateId,
-        conversationId: 'test-conv-id',
-        strategy: strategy,
-        modelId: 'model',
-      );
-
-      // First attempt: note persists, then session completion fails.
-      final firstResult = await workflow.approveProposal(
-        sessionId: 'session-1',
-      );
-      expect(firstResult, isNull);
-      expect(workflow.activeSessions, hasLength(1));
-
-      // Second attempt should succeed without duplicating work.
-      final secondResult = await workflow.approveProposal(
-        sessionId: 'session-1',
-      );
-      expect(secondResult, isNotNull);
-      expect(secondResult!.id, 'v2');
-
-      // createVersion should only have been called once across both attempts.
-      verify(
-        () => mockTemplateService.createVersion(
-          templateId: any(named: 'templateId'),
-          directives: any(named: 'directives'),
-          authoredBy: any(named: 'authoredBy'),
-          generalDirective: any(named: 'generalDirective'),
-          reportDirective: any(named: 'reportDirective'),
-        ),
-      ).called(1);
-
-      // Exactly one note entity across both attempts (no duplicate).
-      final noteEntities = allUpserted
-          .whereType<EvolutionNoteEntity>()
-          .toList();
-      expect(noteEntities, hasLength(1));
-      expect(noteEntities.first.content, 'Tone works well');
-
-      // Session entity upserted once for completion (the failed attempt threw
-      // before the session completion upsert could record, so only the
-      // successful retry wrote it).
-      final sessionEntities = allUpserted
-          .whereType<EvolutionSessionEntity>()
-          .toList();
-      expect(sessionEntities, hasLength(1));
-      expect(
-        sessionEntities.first.status,
-        EvolutionSessionStatus.completed,
-      );
-    });
+        expect(result, created);
+        final session = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured.whereType<EvolutionSessionEntity>().single;
+        expect(session.proposedVersionId, 'v-new');
+      },
+    );
 
     test(
       'reject after failed approval then new proposal uses new version',
@@ -3150,171 +3061,122 @@ void main() {
     });
   });
 
-  group('_createVersionIdempotent recovery', () {
-    late MockAgentTemplateService mockTemplateService;
-    late MockAgentSyncService mockSyncService;
-    late MockAgentRepository mockRepository;
+  group('approval is one transaction (EvolutionSession.tla, ADR 0081)', () {
+    late AgentTestDevice device;
+    late AgentTemplateService templates;
+    late TemplateEvolutionWorkflow workflow;
+    final at = DateTime(2026, 9, 24, 9);
 
-    setUp(() {
-      mockTemplateService = MockAgentTemplateService();
-      mockSyncService = MockAgentSyncService();
-      mockRepository = MockAgentRepository();
-      when(() => mockTemplateService.repository).thenReturn(mockRepository);
-      when(
-        () => mockTemplateService.getEvolutionSessions(
-          any(),
-          limit: any(named: 'limit'),
-        ),
-      ).thenAnswer((_) async => <EvolutionSessionEntity>[]);
+    setUp(() async {
+      await setUpTestGetIt();
+      device = AgentTestDevice('host-a');
+      templates = AgentTemplateService(
+        repository: device.repository,
+        syncService: device.sync,
+      );
+      await withClock(Clock.fixed(at), () async {
+        await templates.createTemplate(
+          displayName: 'Laura',
+          kind: AgentTemplateKind.taskAgent,
+          modelId: 'model',
+          directives: 'Old text',
+          generalDirective: 'Old text',
+          authoredBy: 'user',
+          templateId: kTestTemplateId,
+        );
+        await device.sync.upsertEntity(
+          makeTestEvolutionSession(id: 'session-1', createdAt: at),
+        );
+      });
+      final (:strategy, :manager) = await _strategyWithProposal();
+      workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(),
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: templates,
+        syncService: device.sync,
+      );
+      workflow.activeSessions['session-1'] = ActiveEvolutionSession(
+        sessionId: 'session-1',
+        templateId: kTestTemplateId,
+        conversationId: 'test-conv-id',
+        strategy: strategy,
+        modelId: 'model',
+      );
     });
 
+    tearDown(() async {
+      await device.close();
+      await tearDownTestGetIt();
+    });
+
+    Future<EvolutionSessionEntity> session() async =>
+        (await device.repository.getEntity('session-1'))!
+            as EvolutionSessionEntity;
+
+    Future<AgentTemplateVersionEntity?> approve() => withClock(
+      Clock.fixed(at.add(const Duration(minutes: 5))),
+      () => workflow.approveProposal(sessionId: 'session-1'),
+    );
+
     test(
-      'recovers when createVersion throws but version was already persisted',
+      'a failure after the version is created leaves no version behind, and '
+      'the retry adopts exactly one (TLC: OneVersion, AdoptionRecorded)',
       () async {
-        // The version that was persisted despite the throw.
-        final persistedVersion = makeTestTemplateVersion(
-          id: 'v-idempotent',
-          version: 2,
-          directives: 'Recovered directives',
-          authoredBy: 'evolution_agent',
-          generalDirective: 'Recovered directives',
-          // ignore: avoid_redundant_argument_values
-          reportDirective: '',
-        );
+        // The trace: the version commits, the completion of the session
+        // fails, and the user leaves the chat — the adopted directives stay
+        // in effect under a session recorded as abandoned.
+        device.failClockFor = 'session-1';
+        expect(await approve(), isNull);
 
-        // createVersion throws, but getActiveVersion returns the persisted one.
-        when(
-          () => mockTemplateService.createVersion(
-            templateId: any(named: 'templateId'),
-            directives: any(named: 'directives'),
-            authoredBy: any(named: 'authoredBy'),
-            generalDirective: any(named: 'generalDirective'),
-            reportDirective: any(named: 'reportDirective'),
-          ),
-        ).thenThrow(Exception('Post-commit sync failure'));
-        when(
-          () => mockTemplateService.getActiveVersion(any()),
-        ).thenAnswer((_) async => persistedVersion);
-        when(
-          () => mockSyncService.upsertEntity(any()),
-        ).thenAnswer((_) async {});
-        when(
-          () => mockRepository.getEntity(any()),
-        ).thenAnswer((_) async => makeTestEvolutionSession());
+        expect(
+          await templates.getVersionHistory(kTestTemplateId),
+          hasLength(1),
+        );
+        expect(
+          (await templates.getActiveVersion(kTestTemplateId))!.generalDirective,
+          'Old text',
+        );
+        expect((await session()).status, EvolutionSessionStatus.active);
 
-        final strategy = EvolutionStrategy();
-        final manager = ConversationManager()..initialize();
-        const toolCall = ChatCompletionMessageToolCall(
-          id: 'call-idempotent',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'propose_directives',
-            arguments:
-                '{"general_directive":"Recovered directives", '
-                '"report_directive":"", '
-                '"rationale":"R"}',
-          ),
-        );
-        manager.addAssistantMessage(toolCalls: [toolCall]);
-        await strategy.processToolCalls(
-          toolCalls: [toolCall],
-          manager: manager,
-        );
+        device.failClockFor = null;
+        final adopted = await approve();
 
-        final workflow = TemplateEvolutionWorkflow(
-          conversationRepository: _TestConversationRepository(),
-          aiConfigRepository: mockAiConfig,
-          cloudInferenceRepository: mockCloudInference,
-          templateService: mockTemplateService,
-          syncService: mockSyncService,
+        expect(adopted, isNotNull);
+        expect(
+          await templates.getVersionHistory(kTestTemplateId),
+          hasLength(2),
         );
-        workflow.activeSessions['session-idempotent'] = ActiveEvolutionSession(
-          sessionId: 'session-idempotent',
-          templateId: kTestTemplateId,
-          conversationId: 'conv-idempotent',
-          strategy: strategy,
-          modelId: 'model',
+        expect(
+          (await templates.getActiveVersion(kTestTemplateId))!.id,
+          adopted!.id,
         );
-
-        // Should succeed using the recovered version.
-        final result = await workflow.approveProposal(
-          sessionId: 'session-idempotent',
-        );
-        expect(result, isNotNull);
-        expect(result!.id, 'v-idempotent');
+        final completed = await session();
+        expect(completed.status, EvolutionSessionStatus.completed);
+        expect(completed.proposedVersionId, adopted.id);
       },
     );
 
     test(
-      'rethrows when createVersion throws and active version does not match',
+      'an approval that committed before its outbox flush failed returns the '
+      'version it adopted on retry',
       () async {
-        // Active version has different directives — not the right one.
-        final differentVersion = makeTestTemplateVersion(
-          id: 'v-different',
-          version: 2,
-          directives: 'Different directives',
-          // ignore: avoid_redundant_argument_values
-          authoredBy: 'user',
-          generalDirective: 'Different directives',
-          // ignore: avoid_redundant_argument_values
-          reportDirective: '',
-        );
+        device.outboxFails = true;
+        expect(await approve(), isNull);
 
-        when(
-          () => mockTemplateService.createVersion(
-            templateId: any(named: 'templateId'),
-            directives: any(named: 'directives'),
-            authoredBy: any(named: 'authoredBy'),
-            generalDirective: any(named: 'generalDirective'),
-            reportDirective: any(named: 'reportDirective'),
-          ),
-        ).thenThrow(Exception('DB error'));
-        when(
-          () => mockTemplateService.getActiveVersion(any()),
-        ).thenAnswer((_) async => differentVersion);
-        when(
-          () => mockSyncService.upsertEntity(any()),
-        ).thenAnswer((_) async {});
+        final committed = await session();
+        expect(committed.status, EvolutionSessionStatus.completed);
+        expect(workflow.activeSessions, contains('session-1'));
 
-        final strategy = EvolutionStrategy();
-        final manager = ConversationManager()..initialize();
-        const toolCall = ChatCompletionMessageToolCall(
-          id: 'call-rethrow',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'propose_directives',
-            arguments:
-                '{"general_directive":"Proposed directives", '
-                '"report_directive":"", '
-                '"rationale":"R"}',
-          ),
-        );
-        manager.addAssistantMessage(toolCalls: [toolCall]);
-        await strategy.processToolCalls(
-          toolCalls: [toolCall],
-          manager: manager,
-        );
+        device.outboxFails = false;
+        final adopted = await approve();
 
-        final workflow = TemplateEvolutionWorkflow(
-          conversationRepository: _TestConversationRepository(),
-          aiConfigRepository: mockAiConfig,
-          cloudInferenceRepository: mockCloudInference,
-          templateService: mockTemplateService,
-          syncService: mockSyncService,
+        expect(adopted!.id, committed.proposedVersionId);
+        expect(
+          await templates.getVersionHistory(kTestTemplateId),
+          hasLength(2),
         );
-        workflow.activeSessions['session-rethrow'] = ActiveEvolutionSession(
-          sessionId: 'session-rethrow',
-          templateId: kTestTemplateId,
-          conversationId: 'conv-rethrow',
-          strategy: strategy,
-          modelId: 'model',
-        );
-
-        // approveProposal catches the rethrow and returns null.
-        final result = await workflow.approveProposal(
-          sessionId: 'session-rethrow',
-        );
-        expect(result, isNull);
+        expect(workflow.activeSessions, isEmpty);
       },
     );
   });

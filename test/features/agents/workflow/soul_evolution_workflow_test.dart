@@ -1,7 +1,10 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/classified_feedback.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -16,6 +19,8 @@ import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
+import '../agent_test_device.dart';
 import '../test_utils.dart';
 
 /// Test mock for ConversationRepository that controls the conversation flow.
@@ -926,6 +931,51 @@ void main() {
 
       // Session should be cleaned up.
       expect(workflow.activeSessions, isEmpty);
+    });
+
+    test('returns null and creates nothing when the soul has no active '
+        'version', () async {
+      stubSoulContext();
+      when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
+      final workflow = buildSoulWorkflow();
+      await workflow.startSoulSession(soulId: kTestSoulId);
+      final session = workflow.activeSessions.values.first;
+      await session.strategy.processToolCalls(
+        toolCalls: [
+          const ChatCompletionMessageToolCall(
+            id: 'call-1',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'propose_soul_directives',
+              arguments:
+                  '{"voice_directive":"Updated voice.", '
+                  '"rationale":"Warmer tone needed."}',
+            ),
+          ),
+        ],
+        manager: ConversationManager(maxTurns: 1)..initialize(),
+      );
+      when(
+        () => mockSoulService.getActiveSoulVersion(any()),
+      ).thenAnswer((_) async => null);
+
+      final result = await workflow.completeSoulSession(
+        sessionId: session.sessionId,
+      );
+
+      expect(result, isNull);
+      expect(workflow.activeSessions, contains(session.sessionId));
+      verifyNever(
+        () => mockSoulService.createVersion(
+          soulId: any(named: 'soulId'),
+          voiceDirective: any(named: 'voiceDirective'),
+          authoredBy: any(named: 'authoredBy'),
+          toneBounds: any(named: 'toneBounds'),
+          coachingStyle: any(named: 'coachingStyle'),
+          antiSycophancyPolicy: any(named: 'antiSycophancyPolicy'),
+          sourceSessionId: any(named: 'sourceSessionId'),
+        ),
+      );
     });
 
     test('approval takes proposed fields and keeps the current ones the '
@@ -2108,6 +2158,123 @@ void main() {
       },
     );
   });
+
+  group(
+    'soul completion is one transaction (EvolutionSession.tla, ADR 0081)',
+    () {
+      const soulId = 'soul-evolving';
+      late AgentTestDevice device;
+      late SoulDocumentService souls;
+      late TemplateEvolutionWorkflow workflow;
+      final at = DateTime(2026, 9, 24, 9);
+
+      setUp(() async {
+        await setUpTestGetIt();
+        device = AgentTestDevice('host-a');
+        souls = SoulDocumentService(
+          repository: device.repository,
+          syncService: device.sync,
+        );
+        await withClock(Clock.fixed(at), () async {
+          await souls.createSoul(
+            displayName: 'Laura',
+            voiceDirective: 'Warm.',
+            authoredBy: 'user',
+            soulId: soulId,
+          );
+          await device.sync.upsertEntity(
+            makeTestEvolutionSession(
+              id: 'soul-session',
+              agentId: soulId,
+              templateId: soulId,
+              createdAt: at,
+            ),
+          );
+        });
+        workflow = TemplateEvolutionWorkflow(
+          conversationRepository: _TestConversationRepository(),
+          aiConfigRepository: mockAiConfig,
+          cloudInferenceRepository: mockCloudInference,
+          templateService: AgentTemplateService(
+            repository: device.repository,
+            syncService: device.sync,
+          ),
+          syncService: device.sync,
+          soulDocumentService: souls,
+        );
+        workflow.activeSessions['soul-session'] = ActiveEvolutionSession(
+          sessionId: 'soul-session',
+          templateId: soulId,
+          conversationId: 'test-conv-id',
+          strategy: _TestableEvolutionStrategy()
+            ..overrideSoulProposal(
+              const PendingSoulProposal(
+                voiceDirective: 'Direct.',
+                toneBounds: '',
+                coachingStyle: '',
+                antiSycophancyPolicy: '',
+                rationale: 'Asked for brevity',
+              ),
+            ),
+          modelId: 'model',
+        );
+      });
+
+      tearDown(() async {
+        await device.close();
+        await tearDownTestGetIt();
+      });
+
+      Future<EvolutionSessionEntity> session() async =>
+          (await device.repository.getEntity('soul-session'))!
+              as EvolutionSessionEntity;
+
+      Future<SoulDocumentVersionEntity?> complete() => withClock(
+        Clock.fixed(at.add(const Duration(minutes: 5))),
+        () => workflow.completeSoulSession(sessionId: 'soul-session'),
+      );
+
+      test(
+        'a failure after the version is created leaves no version behind, and '
+        'the retry creates exactly one (TLC: OneVersion)',
+        () async {
+          // The trace: the version commits, completing the session fails, and
+          // the retry mints a second version from the same proposal.
+          device.failClockFor = 'soul-session';
+          expect(await complete(), isNull);
+          expect(await souls.getVersionHistory(soulId), hasLength(1));
+          expect((await session()).status, EvolutionSessionStatus.active);
+
+          device.failClockFor = null;
+          final adopted = await complete();
+
+          expect(await souls.getVersionHistory(soulId), hasLength(2));
+          expect((await souls.getActiveSoulVersion(soulId))!.id, adopted!.id);
+          final completed = await session();
+          expect(completed.status, EvolutionSessionStatus.completed);
+          expect(completed.proposedSoulVersionId, adopted.id);
+        },
+      );
+
+      test(
+        'an approval that committed before its outbox flush failed returns the '
+        'version it adopted on retry (TLC: OneVersion)',
+        () async {
+          device.outboxFails = true;
+          expect(await complete(), isNull);
+          final committed = await session();
+          expect(committed.status, EvolutionSessionStatus.completed);
+
+          device.outboxFails = false;
+          final adopted = await complete();
+
+          expect(adopted!.id, committed.proposedSoulVersionId);
+          expect(await souls.getVersionHistory(soulId), hasLength(2));
+          expect(workflow.activeSessions, isEmpty);
+        },
+      );
+    },
+  );
 
   group('_buildSoulSessionRecapEntity null guard', () {
     late MockAgentTemplateService mockTemplateService;

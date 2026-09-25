@@ -130,6 +130,47 @@ class _KnowledgeKind implements _ReplicatedKind {
   }
 }
 
+/// An evolution session: only the owner (`hA`) completes it; any device
+/// abandons a session it read as active, a stale read included. Its status
+/// only ever moves up, so the override (completed, then abandoned, then
+/// active) must keep a completion wherever it arrived — `CompletedStays` in
+/// `specs/tla/EvolutionSession.tla`.
+class _EvolutionSessionKind implements _ReplicatedKind {
+  @override
+  AgentDomainEntity get initial => makeTestEvolutionSession(
+    id: 's',
+    createdAt: _replicaEpoch,
+    updatedAt: _replicaEpoch,
+    vectorClock: const VectorClock({'seed': 1}),
+  );
+
+  @override
+  AgentDomainEntity edit(
+    AgentDomainEntity base, {
+    required DateTime at,
+    required int serial,
+    required int arg,
+    required String host,
+    required bool bump,
+  }) {
+    final session = base as EvolutionSessionEntity;
+    final status = switch (session.status) {
+      EvolutionSessionStatus.completed => EvolutionSessionStatus.completed,
+      _ when host == 'hA' => EvolutionSessionStatus.completed,
+      EvolutionSessionStatus.active => EvolutionSessionStatus.abandoned,
+      EvolutionSessionStatus.abandoned => EvolutionSessionStatus.abandoned,
+    };
+    return session.copyWith(
+      status: status,
+      proposedVersionId: status == EvolutionSessionStatus.completed
+          ? 'v-adopted'
+          : session.proposedVersionId,
+      completedAt: at,
+      updatedAt: at,
+    );
+  }
+}
+
 final _replicaEpoch = DateTime(2026, 9, 24, 9);
 
 class _Replica {
@@ -177,6 +218,9 @@ class _Replica {
   /// The last counter this host issued.
   int counter;
   AgentDomainEntity? snapshot;
+
+  /// Ghost: this replica has held its session row completed.
+  bool heldCompleted = false;
 
   /// Indices into [_ReplicaWorld.sent] this replica wrote or received.
   final delivered = <int>{};
@@ -285,6 +329,15 @@ class _ReplicaWorld {
           reason: 'OwnCountKept on ${replica.host}: $trace',
         );
       }
+      if (row is EvolutionSessionEntity) {
+        final completed = row.status == EvolutionSessionStatus.completed;
+        expect(
+          completed || !replica.heldCompleted,
+          isTrue,
+          reason: 'CompletedStays on ${replica.host}: $trace',
+        );
+        replica.heldCompleted = completed;
+      }
     }
   }
 
@@ -325,6 +378,7 @@ void _registerReplicationModelConformance() {
     for (final (label, kind) in [
       ('agent state (G-counters)', _StateKind()),
       ('planner knowledge (retraction override)', _KnowledgeKind()),
+      ('evolution session (completion override)', _EvolutionSessionKind()),
     ]) {
       glados.Glados(
         glados.any.replicaTrace,

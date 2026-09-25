@@ -470,6 +470,9 @@ class AgentRepository {
 
   Future<model.AgentLink?> getLinkById(String id) => _evolution.getLinkById(id);
 
+  Future<model.AgentLink?> getLinkByIdIncludingDeleted(String id) =>
+      _evolution.getLinkByIdIncludingDeleted(id);
+
   // ── Links: link CRUD, wake-run log, saga log, hard delete ──────────────────
 
   Future<void> upsertLink(model.AgentLink link) => _links.upsertLink(link);

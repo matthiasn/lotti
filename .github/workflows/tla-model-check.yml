@@ -75,6 +75,14 @@ on:
       - "lib/features/agents/projection/compaction_summary.dart"
       - "lib/features/agents/projection/compaction_plan.dart"
       - "lib/features/agents/projection/input_events.dart"
+      - "lib/features/agents/workflow/template_evolution_workflow.dart"
+      - "lib/features/agents/workflow/template_evolution_helpers.dart"
+      - "lib/features/agents/workflow/template_evolution_session.dart"
+      - "lib/features/agents/workflow/soul_evolution_workflow.dart"
+      - "lib/features/agents/database/agent_repo_evolution.dart"
+      - "lib/features/agents/database/agent_repo_links.dart"
+      - "lib/features/agents/model/agent_link.dart"
+      - "lib/features/agents/service/soul_template_ops.dart"
       - ".github/workflows/tla-model-check.yml"
 
 concurrency:

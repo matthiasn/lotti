@@ -334,10 +334,22 @@ class AgentRepoEvolution {
 
   // ── Link CRUD ──────────────────────────────────────────────────────────────
 
-  /// Fetch a single link by its [id], or `null` if not found.
+  /// Fetch a single live link by its [id], or `null` if there is none or it
+  /// is soft-deleted.
   Future<model.AgentLink?> getLinkById(String id) async {
     final rows = await _db.getAgentLinkById(id).get();
     if (rows.isEmpty) return null;
     return AgentDbConversions.fromLinkRow(rows.first);
+  }
+
+  /// Fetch the stored version of link [id], a tombstone included, or `null`
+  /// when there is no row. What sync orders versions against: a tombstone is
+  /// a version like any other, and reading it as no row would let a late
+  /// copy of the live link replace it (ADR 0081).
+  Future<model.AgentLink?> getLinkByIdIncludingDeleted(String id) async {
+    final row = await (_db.select(
+      _db.agentLinks,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    return row == null ? null : AgentDbConversions.fromLinkRow(row);
   }
 }

@@ -212,10 +212,15 @@ extension _AgentHandlers on SyncEventProcessor {
       // An agent-state row is read, resolved and written in one transaction
       // (ADR 0076). A local append that committed between the read and the
       // write would be overwritten, and the head moved back past it; the
-      // append's own transaction now waits instead. The bundle prefetch is a
-      // snapshot from before the transaction, so it is not used for the row
-      // or its identity.
-      final applied = resolvedEntity is AgentStateEntity
+      // append's own transaction now waits instead. An evolution session is
+      // read and written the same way (ADR 0081): an approval that completed
+      // it between the read and the write would otherwise be overwritten by
+      // a peer's abandonment, leaving this device alone with the session
+      // abandoned. The bundle prefetch is a snapshot from before the
+      // transaction, so it is not used for the row or its identity.
+      final applied =
+          resolvedEntity is AgentStateEntity ||
+              resolvedEntity is EvolutionSessionEntity
           ? await agentRepository!.runInTransaction(
               () => _resolveAndPersistAgentEntity(
                 incoming: resolvedEntity,
@@ -523,15 +528,16 @@ extension _AgentHandlers on SyncEventProcessor {
       return;
     }
     if (agentRepository != null) {
-      if (await _localAgentLinkDominates(
-        incoming: resolvedLink,
-        jsonPath: msg.jsonPath,
-      )) {
+      final applied = await agentRepository!.runInTransaction(
+        () => _resolveAndPersistAgentLink(
+          incoming: resolvedLink,
+          jsonPath: msg.jsonPath,
+        ),
+      );
+      if (!applied) {
         await _recordReceivedAgentLink(msg: msg, link: resolvedLink);
         return;
       }
-
-      await agentRepository!.upsertLink(resolvedLink);
       // Mirror remote agent_task and agent_project link lifecycles in the wake
       // orchestrator. A non-deleted link restores the corresponding runtime
       // subscription after the startup snapshot, while a deleted link removes
@@ -888,79 +894,49 @@ extension _AgentHandlers on SyncEventProcessor {
     );
   }
 
-  Future<bool> _localAgentLinkDominates({
+  /// Applies [incoming] against the stored version of its id and reports
+  /// whether it was written. The stored version is read with its tombstone
+  /// ([AgentRepository.getLinkByIdIncludingDeleted]): a removed link is a
+  /// version like any other, and reading it as no row let a late copy of the
+  /// live link bring it back. The decision is [resolveAgentLinkVersions]; a
+  /// malformed clock is logged and applies [incoming]. Called inside a
+  /// transaction, so a local write cannot commit between the read and the
+  /// write and be overwritten (ADR 0081, `specs/tla/AgentLinks.tla`).
+  Future<bool> _resolveAndPersistAgentLink({
     required AgentLink incoming,
     required String? jsonPath,
   }) async {
-    final incomingVc = incoming.vectorClock;
-    if (incomingVc == null) return false;
-
-    final local = await agentRepository!.getLinkById(incoming.id);
-    final localVc = local?.vectorClock;
-    if (local == null || localVc == null) return false;
-
-    return _localAgentPayloadDominates(
-      localVc: localVc,
-      incomingVc: incomingVc,
-      localUpdatedAt: () => local.updatedAt,
-      incomingUpdatedAt: () => incoming.updatedAt,
-      kind: 'agentLink',
-      id: incoming.id,
-      jsonPath: jsonPath,
-      restoreLocalJson: () => jsonEncode(local.toJson()),
+    final local = await agentRepository!.getLinkByIdIncludingDeleted(
+      incoming.id,
     );
-  }
-
-  Future<bool> _localAgentPayloadDominates({
-    required VectorClock localVc,
-    required VectorClock incomingVc,
-    required DateTime Function() localUpdatedAt,
-    required DateTime Function() incomingUpdatedAt,
-    required String kind,
-    required String id,
-    required String? jsonPath,
-    required String Function() restoreLocalJson,
-  }) async {
-    try {
-      final status = VectorClock.compare(localVc, incomingVc);
-      // Causal dominance decides first; the genuinely `concurrent` branch is
-      // resolved by a deterministic LWW + vector-clock tiebreak so two
-      // devices converge regardless of arrival order (the closures are only
-      // evaluated there).
-      final keepLocal = switch (status) {
-        VclockStatus.a_gt_b || VclockStatus.equal => true,
-        VclockStatus.b_gt_a => false,
-        VclockStatus.concurrent =>
-          resolveConcurrent(
-                localVc: localVc,
-                incomingVc: incomingVc,
-                localUpdatedAt: localUpdatedAt(),
-                incomingUpdatedAt: incomingUpdatedAt(),
-              ) ==
-              ConcurrentWinner.local,
-      };
-      if (!keepLocal) return false;
-
-      await _restoreDominantAgentCache(
-        jsonPath: jsonPath,
-        kind: kind,
-        id: id,
-        jsonString: restoreLocalJson(),
-      );
-      _trace(
-        'apply.$kind.skippedLocalWins id=$id status=$status',
-        subDomain: 'processor.apply',
-      );
-      return true;
-    } catch (e, st) {
-      _loggingService.error(
-        LogDomain.sync,
-        e,
-        stackTrace: st,
-        subDomain: 'apply.$kind.vectorClockCompare',
-      );
-      return false;
+    if (local != null) {
+      var kept = incoming;
+      try {
+        kept = resolveAgentLinkVersions(local: local, incoming: incoming);
+      } catch (e, st) {
+        _loggingService.error(
+          LogDomain.sync,
+          e,
+          stackTrace: st,
+          subDomain: 'apply.agentLink.vectorClockCompare',
+        );
+      }
+      if (identical(kept, local)) {
+        await _restoreDominantAgentCache(
+          jsonPath: jsonPath,
+          kind: 'agentLink',
+          id: incoming.id,
+          jsonString: jsonEncode(local.toJson()),
+        );
+        _trace(
+          'apply.agentLink.skippedLocalWins id=${incoming.id}',
+          subDomain: 'processor.apply',
+        );
+        return false;
+      }
     }
+    await agentRepository!.upsertLink(incoming);
+    return true;
   }
 
   Future<void> _restoreDominantAgentCache({
@@ -1040,7 +1016,9 @@ extension _AgentHandlers on SyncEventProcessor {
     try {
       final isExact = msg.attachmentEventId != null;
       final canonicalVectorClock = isExact
-          ? (await agentRepository!.getLinkById(link.id))?.vectorClock
+          ? (await agentRepository!.getLinkByIdIncludingDeleted(
+              link.id,
+            ))?.vectorClock
           : null;
       final gaps = await _sequenceLogService.recordReceivedEntry(
         entryId: link.id,

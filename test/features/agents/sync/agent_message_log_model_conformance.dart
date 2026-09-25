@@ -291,41 +291,18 @@ class _LogBench {
           fail('unexpected agent entity $agentEntity');
         }
       case SyncAgentLink(:final agentLink?):
-        final local = await repo.getLinkById(agentLink.id);
+        // SyncEventProcessor._resolveAndPersistAgentLink.
+        final local = await repo.getLinkByIdIncludingDeleted(agentLink.id);
         if (local == null ||
-            _incomingWins(
-              localVc: local.vectorClock,
-              incomingVc: agentLink.vectorClock,
-              localAt: local.updatedAt,
-              incomingAt: agentLink.updatedAt,
+            !identical(
+              resolveAgentLinkVersions(local: local, incoming: agentLink),
+              local,
             )) {
           await repo.upsertLink(agentLink);
         }
       default:
         fail('unexpected sync message $message');
     }
-  }
-
-  static bool _incomingWins({
-    required VectorClock? localVc,
-    required VectorClock? incomingVc,
-    required DateTime? localAt,
-    required DateTime? incomingAt,
-  }) {
-    final local = localVc ?? const VectorClock(<String, int>{});
-    final incoming = incomingVc ?? const VectorClock(<String, int>{});
-    return switch (VectorClock.compare(local, incoming)) {
-      VclockStatus.b_gt_a => true,
-      VclockStatus.a_gt_b || VclockStatus.equal => false,
-      VclockStatus.concurrent =>
-        resolveConcurrent(
-              localVc: local,
-              incomingVc: incoming,
-              localUpdatedAt: localAt ?? DateTime(2024),
-              incomingUpdatedAt: incomingAt ?? DateTime(2024),
-            ) ==
-            ConcurrentWinner.incoming,
-    };
   }
 
   void checkInvariants(List<_LogStep> trace) {

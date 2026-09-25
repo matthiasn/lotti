@@ -69,6 +69,12 @@ class InMemoryAgentRepository extends MockAgentRepository {
   }
 
   @override
+  Future<AgentLink?> getLinkByIdIncludingDeleted(String id) async {
+    recordRead();
+    return _links[id];
+  }
+
+  @override
   Future<AgentDomainEntity?> getEntity(String id) async {
     recordRead();
     return _entities[id];

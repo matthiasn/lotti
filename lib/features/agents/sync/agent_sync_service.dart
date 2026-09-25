@@ -460,6 +460,15 @@ class AgentSyncService {
   /// Upsert an [AgentLink] and enqueue a sync message unless [fromSync]
   /// is `true`.
   ///
+  /// A local write succeeds the version stored under its id, a tombstone
+  /// included, read in the same transaction (ADR 0081): its clock covers
+  /// that version's and its `updatedAt` is not older. Writers build links
+  /// afresh (`vectorClock: null`) under reused ids — a link removed and
+  /// written again, the Daily OS links' deterministic ids — and a clock of
+  /// this host's counter alone would be concurrent with a peer's version,
+  /// which could then win on every other replica ([resolveAgentLinkVersions])
+  /// while this one kept the write.
+  ///
   /// When called inside [runInTransaction], the outbox enqueue is deferred
   /// until the outermost transaction commits. The reserved vector clock is
   /// also bound to the outer transaction's scope so a rollback rewinds the
@@ -473,13 +482,25 @@ class AgentSyncService {
       return;
     }
     await _vectorClockService.withVcScope<void>(() async {
-      final stamped = link.copyWith(
-        vectorClock: await _vectorClockService.getNextVectorClock(
-          previous: link.vectorClock,
-          payload: (id: link.id, type: SyncSequencePayloadType.agentLink),
-        ),
-      );
-      await _repository.upsertLink(stamped);
+      late AgentLink stamped;
+      await _repository.runInTransaction(() async {
+        final persisted = await _repository.getLinkByIdIncludingDeleted(
+          link.id,
+        );
+        final successor =
+            persisted != null && link.updatedAt.isBefore(persisted.updatedAt)
+            ? link.copyWith(updatedAt: persisted.updatedAt)
+            : link;
+        stamped = successor.copyWith(
+          vectorClock: await _vectorClockService.getNextVectorClock(
+            previous: persisted?.vectorClock == null
+                ? link.vectorClock
+                : VectorClock.merge(link.vectorClock, persisted!.vectorClock),
+            payload: (id: link.id, type: SyncSequencePayloadType.agentLink),
+          ),
+        );
+        await _repository.upsertLink(stamped);
+      });
       // DB write succeeded — commit-on-write invariant: swallow outbox
       // failures so the scope still commits.
       final message = SyncMessage.agentLink(

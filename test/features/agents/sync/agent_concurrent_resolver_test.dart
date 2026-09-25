@@ -3,10 +3,15 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/sync/agent_lww_timestamp.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+
+import '../../../helpers/fallbacks.dart';
+import '../agent_test_device.dart';
+import '../test_utils.dart';
 import 'agent_concurrent_resolver_test_helpers.dart';
 
 void main() {
@@ -1017,6 +1022,258 @@ void main() {
       expect(
         headOf(resolveAgentEntityVersions(local: local, incoming: incoming)),
         'r',
+      );
+    });
+  });
+
+  group('evolution sessions: completed, then abandoned, then active '
+      '(EvolutionSession.tla, ADR 0081)', () {
+    final at = DateTime(2026, 9, 24, 9);
+
+    EvolutionSessionEntity session(
+      EvolutionSessionStatus status, {
+      required Map<String, int> vc,
+      required DateTime updatedAt,
+    }) => makeTestEvolutionSession(
+      id: 's',
+      status: status,
+      updatedAt: updatedAt,
+      vectorClock: VectorClock(vc),
+    );
+
+    for (final (winner, loser) in [
+      (EvolutionSessionStatus.completed, EvolutionSessionStatus.abandoned),
+      (EvolutionSessionStatus.completed, EvolutionSessionStatus.active),
+      (EvolutionSessionStatus.abandoned, EvolutionSessionStatus.active),
+    ]) {
+      test('${winner.name} beats a concurrent, later ${loser.name} on either '
+          'side', () {
+        final win = session(winner, vc: {'a': 2}, updatedAt: at);
+        final lose = session(
+          loser,
+          vc: {'b': 2},
+          updatedAt: at.add(const Duration(hours: 1)),
+        );
+
+        expect(
+          resolveConcurrentAgentEntityOverride(local: win, incoming: lose),
+          ConcurrentWinner.local,
+        );
+        expect(
+          resolveConcurrentAgentEntityOverride(local: lose, incoming: win),
+          ConcurrentWinner.incoming,
+        );
+        expect(resolveAgentEntityVersions(local: lose, incoming: win), win);
+      });
+    }
+
+    test('the same status defers to last-writer-wins', () {
+      final earlier = session(
+        EvolutionSessionStatus.abandoned,
+        vc: {'a': 2},
+        updatedAt: at,
+      );
+      final later = session(
+        EvolutionSessionStatus.abandoned,
+        vc: {'b': 2},
+        updatedAt: at.add(const Duration(minutes: 1)),
+      );
+
+      expect(
+        resolveConcurrentAgentEntityOverride(local: earlier, incoming: later),
+        isNull,
+      );
+      expect(
+        resolveAgentEntityVersions(local: earlier, incoming: later),
+        later,
+      );
+    });
+
+    group('two devices, through AgentSyncService', () {
+      late AgentTestDevice owner;
+      late AgentTestDevice peer;
+
+      setUpAll(registerAllFallbackValues);
+
+      setUp(() async {
+        owner = AgentTestDevice('host-a');
+        peer = AgentTestDevice('host-b');
+        addTearDown(owner.close);
+        addTearDown(peer.close);
+        await owner.sync.upsertEntity(
+          makeTestEvolutionSession(id: 's', createdAt: at, updatedAt: at),
+        );
+        await peer.receiveEntity(owner.sentEntities.single);
+      });
+
+      Future<EvolutionSessionEntity> rowOf(AgentTestDevice device) async =>
+          (await device.repository.getEntity('s'))! as EvolutionSessionEntity;
+
+      Future<void> complete() async {
+        final t = at.add(const Duration(minutes: 1));
+        await owner.sync.upsertEntity(
+          (await rowOf(owner)).copyWith(
+            status: EvolutionSessionStatus.completed,
+            proposedVersionId: 'v2',
+            completedAt: t,
+            updatedAt: t,
+          ),
+        );
+      }
+
+      /// `_abandonStaleActiveSessions`: the peer starts a session of its own
+      /// and abandons every active one it reads, [read] included.
+      Future<void> sweep(EvolutionSessionEntity read) async {
+        final t = at.add(const Duration(minutes: 2));
+        await peer.sync.upsertEntity(
+          read.copyWith(
+            status: EvolutionSessionStatus.abandoned,
+            completedAt: t,
+            updatedAt: t,
+          ),
+        );
+      }
+
+      Future<void> expectCompletedEverywhere() async {
+        for (final device in [owner, peer]) {
+          final row = await rowOf(device);
+          expect(row.status, EvolutionSessionStatus.completed);
+          expect(row.proposedVersionId, 'v2');
+        }
+      }
+
+      test(
+        'an approval and a later concurrent sweep converge on completed '
+        '(TLC: AdoptionRecorded, CompletedStays)',
+        () async {
+          // The trace: the owner approves; the peer, not having heard, starts
+          // a session a minute later and sweeps this one as stale. Last-
+          // writer-wins kept the sweep: the adopted proposal read as
+          // abandoned everywhere, a negative signal for the next ritual.
+          await complete();
+          await sweep(await rowOf(peer));
+
+          await peer.receiveEntity(owner.sentEntities.last);
+          await owner.receiveEntity(peer.sentEntities.last);
+
+          await expectCompletedEverywhere();
+        },
+      );
+
+      test(
+        'a sweep built on a read the completion overtook keeps the completion',
+        () async {
+          final read = await rowOf(peer);
+          await complete();
+          await peer.receiveEntity(owner.sentEntities.last);
+          await sweep(read);
+
+          await owner.receiveEntity(peer.sentEntities.last);
+
+          await expectCompletedEverywhere();
+        },
+      );
+    });
+  });
+
+  group('resolveAgentLinkVersions — the link receive path (ADR 0081)', () {
+    final at = DateTime(2026, 9, 24, 9);
+
+    AgentLink link({
+      required Map<String, int>? vc,
+      DateTime? updatedAt,
+      bool deleted = false,
+    }) => AgentLink.basic(
+      id: 'l',
+      fromId: 'from',
+      toId: 'to',
+      createdAt: at,
+      updatedAt: updatedAt ?? at,
+      vectorClock: vc == null ? null : VectorClock(vc),
+      deletedAt: deleted ? updatedAt ?? at : null,
+    );
+
+    test('a tombstone that dominates is kept against its live ancestor', () {
+      final tombstone = link(vc: {'a': 2}, deleted: true);
+      final ancestor = link(vc: {'a': 1});
+
+      expect(
+        resolveAgentLinkVersions(local: tombstone, incoming: ancestor),
+        same(tombstone),
+      );
+    });
+
+    test('an equal clock keeps the local version', () {
+      final local = link(vc: {'a': 1});
+
+      expect(
+        resolveAgentLinkVersions(
+          local: local,
+          incoming: link(vc: {'a': 1}),
+        ),
+        same(local),
+      );
+    });
+
+    test('a dominating incoming version applies', () {
+      final incoming = link(vc: {'a': 1, 'b': 1}, deleted: true);
+
+      expect(
+        resolveAgentLinkVersions(
+          local: link(vc: {'a': 1}),
+          incoming: incoming,
+        ),
+        same(incoming),
+      );
+    });
+
+    test('a concurrent pair goes to the later updatedAt, on either side', () {
+      final older = link(vc: {'a': 1});
+      final newer = link(
+        vc: {'b': 1},
+        updatedAt: at.add(const Duration(minutes: 1)),
+        deleted: true,
+      );
+
+      expect(
+        resolveAgentLinkVersions(local: older, incoming: newer),
+        same(newer),
+      );
+      expect(
+        resolveAgentLinkVersions(local: newer, incoming: older),
+        same(newer),
+      );
+    });
+
+    test('a concurrent pair at the same instant goes to the canonical '
+        'clock order', () {
+      final greater = link(vc: {'a': 1});
+      final lesser = link(vc: {'b': 1});
+
+      expect(
+        resolveAgentLinkVersions(local: lesser, incoming: greater),
+        same(greater),
+      );
+      expect(
+        resolveAgentLinkVersions(local: greater, incoming: lesser),
+        same(greater),
+      );
+    });
+
+    test('a version without a clock carries no order and applies', () {
+      final unclocked = link(vc: null);
+
+      expect(
+        resolveAgentLinkVersions(
+          local: link(vc: {'a': 5}),
+          incoming: unclocked,
+        ),
+        same(unclocked),
+      );
+      final incoming = link(vc: {'a': 1});
+      expect(
+        resolveAgentLinkVersions(local: unclocked, incoming: incoming),
+        same(incoming),
       );
     });
   });

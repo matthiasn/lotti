@@ -572,7 +572,8 @@ class BackfillResponseHandler {
                 counter: response.counter,
                 payloadId: payloadId,
                 payloadType: payloadType,
-                loadPayload: () => agentRepository!.getLinkById(payloadId),
+                loadPayload: () =>
+                    agentRepository!.getLinkByIdIncludingDeleted(payloadId),
                 getVectorClock: (link) => link.vectorClock,
                 payloadTypeName: 'agentLink',
               );
@@ -976,7 +977,8 @@ class BackfillResponseHandler {
           originatingHostId: originatingHostId,
           sentPayloads: sentPayloads,
           durable: durable,
-          loadPayload: () => agentRepository!.getLinkById(payloadId),
+          loadPayload: () =>
+              agentRepository!.getLinkByIdIncludingDeleted(payloadId),
           getVectorClock: (link) => link.vectorClock,
           buildSyncMessage: (link) => SyncMessage.agentLink(
             status: SyncEntryStatus.update,
