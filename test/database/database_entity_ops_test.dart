@@ -32,21 +32,13 @@ import 'test_utils.dart';
 
 part 'journal_replication_model_conformance.dart';
 
-/// Holds the first sidecar write until released so a later write for the
-/// same entity can overtake it on disk.
-class _SlowFirstSidecarJournalDb extends JournalDb {
-  _SlowFirstSidecarJournalDb() : super(inMemoryDatabase: true);
-
-  final Completer<void> releaseFirst = Completer<void>();
-  int sidecarWrites = 0;
-
-  @override
-  Future<void> persistEntityJson(JournalEntity updated) async {
-    if (++sidecarWrites == 1) {
-      await releaseFirst.future;
-    }
-    await super.persistEntityJson(updated);
-  }
+/// Writes the JSON file an older build kept beside every entry. Nothing
+/// writes one now, but [JournalDb.purgeDeletedFiles] still removes those
+/// left on disk.
+void _leaveLegacyJson(String path) {
+  File(path)
+    ..parent.createSync(recursive: true)
+    ..writeAsStringSync('{}');
 }
 
 enum _ConflictClockRelation {
@@ -206,74 +198,6 @@ void main() {
       await getIt.reset();
     });
 
-    group('JSON persistence -', () {
-      test(
-        'does not rewrite JSON when update skipped by vector clock',
-        () async {
-          const freshClock = VectorClock(<String, int>{'device1': 2});
-          const staleClock = VectorClock(<String, int>{'device1': 1});
-          final freshEntry = createJournalEntryWithVclock(freshClock).copyWith(
-            entryText: const EntryText(plainText: 'fresh text'),
-          );
-          await db!.updateJournalEntity(freshEntry);
-
-          final docDir = getIt<Directory>();
-          final savedPath = entityPath(freshEntry, docDir);
-          final file = File(savedPath);
-          final beforeJson = await file.readAsString();
-
-          final staleEntry =
-              createJournalEntryWithVclock(
-                staleClock,
-                id: freshEntry.meta.id,
-              ).copyWith(
-                entryText: const EntryText(plainText: 'stale text'),
-              );
-
-          final result = await db!.updateJournalEntity(staleEntry);
-          expect(result.applied, isFalse);
-          expect(result.skipReason, JournalUpdateSkipReason.olderOrEqual);
-
-          final savedEntity = JournalEntity.fromJson(
-            jsonDecode(await file.readAsString()) as Map<String, dynamic>,
-          );
-          expect(savedEntity.entryText?.plainText, 'fresh text');
-          expect(savedEntity.meta.vectorClock, freshClock);
-          expect(await file.readAsString(), beforeJson);
-        },
-      );
-
-      test(
-        'does not rewrite JSON when update prevented by overwrite=false',
-        () async {
-          final entry = createJournalEntry('original text');
-          await db!.updateJournalEntity(entry);
-
-          final docDir = getIt<Directory>();
-          final savedPath = entityPath(entry, docDir);
-          final file = File(savedPath);
-          final beforeJson = await file.readAsString();
-
-          final updated = entry.copyWith(
-            entryText: const EntryText(plainText: 'overwrite prevented'),
-          );
-
-          final result = await db!.updateJournalEntity(
-            updated,
-            overwrite: false,
-          );
-
-          expect(result.applied, isFalse);
-          expect(result.skipReason, JournalUpdateSkipReason.overwritePrevented);
-          final savedEntity = JournalEntity.fromJson(
-            jsonDecode(await file.readAsString()) as Map<String, dynamic>,
-          );
-          expect(savedEntity.entryText?.plainText, 'original text');
-          expect(await file.readAsString(), beforeJson);
-        },
-      );
-    });
-
     group('Watch streams -', () {
       test('watchConflicts emits unresolved conflicts and updates', () async {
         final stream = db!
@@ -421,10 +345,10 @@ void main() {
             documentsDirectory: docDir.path,
           );
           // The media file was never written (or is already gone); only the
-          // JSON descriptor exists.
+          // JSON file an older build wrote remains.
           final jsonPath = '$imagePath.json';
+          _leaveLegacyJson(jsonPath);
           expect(File(imagePath).existsSync(), isFalse);
-          expect(File(jsonPath).existsSync(), isTrue);
 
           await db!.purgeDeletedFiles();
 
@@ -453,7 +377,7 @@ void main() {
         await File(imagePath).writeAsBytes(const [1, 2, 3]);
 
         final jsonPath = '$imagePath.json';
-        expect(File(jsonPath).existsSync(), isTrue);
+        _leaveLegacyJson(jsonPath);
 
         await db!.purgeDeletedFiles();
 
@@ -478,7 +402,7 @@ void main() {
         await File(audioPath).writeAsBytes(const [4, 5, 6]);
 
         final jsonPath = '$audioPath.json';
-        expect(File(jsonPath).existsSync(), isTrue);
+        _leaveLegacyJson(jsonPath);
 
         await db!.purgeDeletedFiles();
 
@@ -486,7 +410,7 @@ void main() {
         expect(File(jsonPath).existsSync(), isFalse);
       });
 
-      test('removes JSON for deleted text entries', () async {
+      test('removes legacy JSON for deleted text entries', () async {
         final deletionTime = DateTime(2024, 1, 3, 10);
         final textEntry = buildTextEntry(
           id: 'text-to-delete',
@@ -498,7 +422,7 @@ void main() {
 
         final docDir = getIt<Directory>();
         final jsonPath = entityPath(textEntry, docDir);
-        expect(File(jsonPath).existsSync(), isTrue);
+        _leaveLegacyJson(jsonPath);
 
         await db!.purgeDeletedFiles();
 
@@ -533,7 +457,7 @@ void main() {
 
           final docDir = getIt<Directory>();
           final textJsonPath = entityPath(textEntry, docDir);
-          expect(File(textJsonPath).existsSync(), isTrue);
+          _leaveLegacyJson(textJsonPath);
 
           await db!.purgeDeletedFiles();
 
@@ -629,7 +553,7 @@ void main() {
             await db!.updateJournalEntity(entry);
             paths.add(entityPath(entry, docDir));
           }
-          expect(paths.where((p) => File(p).existsSync()), hasLength(total));
+          paths.forEach(_leaveLegacyJson);
 
           final progress = await db!.purgeDeleted(backup: false).toList();
 
@@ -823,15 +747,13 @@ void main() {
 
     group('Write-path atomicity -', () {
       test(
-        'refused precondition preserves the stored row and JSON sidecar',
+        'refused precondition preserves the stored row',
         () async {
           final entry = createJournalEntryWithVclock(
             const VectorClock({'a': 1}),
             id: 'guarded',
           );
           await db!.updateJournalEntity(entry);
-          final file = File(entityPath(entry, getIt<Directory>()));
-          final before = await file.readAsString();
           final updated = entry.copyWith(
             meta: entry.meta.copyWith(
               vectorClock: const VectorClock({'a': 2}),
@@ -845,7 +767,6 @@ void main() {
           expect(result.applied, isFalse);
           expect(result.skipReason, JournalUpdateSkipReason.overwritePrevented);
           expect(await db!.journalEntityById(entry.id), entry);
-          expect(await file.readAsString(), before);
           expect(await db!.conflictById(entry.id), isNull);
         },
       );
@@ -919,61 +840,22 @@ void main() {
       );
 
       test(
-        'sidecars for one entity land in commit order even when the earlier '
-        'write finishes last',
+        'an applied write stores only the row and writes no JSON file',
         () async {
-          final slowDb = _SlowFirstSidecarJournalDb();
-          addTearDown(slowDb.close);
-          await initConfigFlags(slowDb, inMemoryDatabase: true);
-          const id = 'ordered-sidecar';
-          final first = createJournalEntryWithVclock(
+          final entry = createJournalEntryWithVclock(
             const VectorClock({'a': 1}),
-            id: id,
+            id: 'row-only',
           );
-          final second = createJournalEntryWithVclock(
-            const VectorClock({'a': 2}),
-            id: id,
-          );
+          final result = await db!.updateJournalEntity(entry);
 
-          final firstWrite = slowDb.updateJournalEntity(first);
-          final secondWrite = slowDb.updateJournalEntity(second);
-          // Both rows commit; the first sidecar write is parked. Without
-          // per-entity ordering the second sidecar lands now and the first
-          // overwrites it once released, leaving the older document as the
-          // sync payload for the newer row.
-          await pumpEventQueue();
-          slowDb.releaseFirst.complete();
-          await Future.wait([firstWrite, secondWrite]);
-
-          final sidecar = File(entityPath(second, testDirectory));
-          final onDisk = JournalEntity.fromJson(
-            jsonDecode(sidecar.readAsStringSync()) as Map<String, dynamic>,
+          expect(result.applied, isTrue);
+          expect(await db!.journalEntityById(entry.id), entry);
+          expect(
+            File(entityPath(entry, getIt<Directory>())).existsSync(),
+            isFalse,
           );
-          expect(onDisk.meta.vectorClock?.vclock, {'a': 2});
         },
       );
-
-      test('the JSON sidecar is written only for an applied write', () async {
-        final existing = createJournalEntryWithVclock(
-          const VectorClock({'a': 2}),
-          id: 'sidecar-entry',
-        );
-        await db!.updateJournalEntity(existing);
-        final sidecar = File(entityPath(existing, testDirectory));
-        expect(sidecar.existsSync(), isTrue);
-        final before = sidecar.lastModifiedSync();
-        final beforeContent = sidecar.readAsStringSync();
-
-        final older = createJournalEntryWithVclock(
-          const VectorClock({'a': 1}),
-          id: 'sidecar-entry',
-        );
-        final result = await db!.updateJournalEntity(older);
-
-        expect(result.applied, isFalse);
-        expect(sidecar.lastModifiedSync(), before);
-        expect(sidecar.readAsStringSync(), beforeContent);
-      });
     });
 
     group('Conflict Handling -', () {
@@ -1265,7 +1147,7 @@ void main() {
           final directory = setupTestDirectory();
           directories.add(directory);
           devices.add(
-            JournalDb(inMemoryDatabase: true, documentsDirectory: directory),
+            JournalDb(inMemoryDatabase: true),
           );
         }
       });
@@ -1484,26 +1366,6 @@ void main() {
         expect(created.applied, isTrue);
         expect((await stored())?.meta.deletedAt, isNull);
       });
-
-      test(
-        'restoreSidecar writes the stored row back to its sidecar',
-        () async {
-          final entry = version({'a': 1}, 'stored');
-          await db!.updateJournalEntity(entry);
-          final file = File(entityPath(entry, getIt<Directory>()))
-            ..writeAsStringSync(
-              jsonEncode(version({'b': 1}, 'a refused copy')),
-            );
-
-          expect(await db!.restoreSidecar(id), isTrue);
-
-          final onDisk = JournalEntity.fromJson(
-            jsonDecode(file.readAsStringSync()) as Map<String, dynamic>,
-          );
-          expect(onDisk.entryText?.plainText, 'stored');
-          expect(await db!.restoreSidecar('never-stored'), isFalse);
-        },
-      );
 
       test(
         'a refused precondition writes neither the row nor a conflict',

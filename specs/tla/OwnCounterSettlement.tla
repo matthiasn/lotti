@@ -16,7 +16,8 @@
 (*   A thrown enqueue leaves the reservation available to a later retry.  *)
 (*                                                                         *)
 (* The switches are mutation points: disabling one reproduces its defect. *)
-(* A stale journal sidecar models a swallowed descriptor refresh failure. *)
+(* A stale journal payload models an enqueue that queued an older copy   *)
+(* than the stored row, as the removed JSON sidecar could (ADR 0087).    *)
 (* This safety model excludes peers, retries, crashes, payload deletion   *)
 (* and store wiring;                                                       *)
 (* SyncSequence.tla covers the wider protocol at a coarser granularity.    *)
@@ -124,7 +125,7 @@ Enqueue ==
                /\ UNCHANGED queuedVersion
             \/ /\ ~RequireFreshDescriptor
                /\ pc' = "bind"
-               /\ queuedVersion' = 2 \* Failed refresh queues an old sidecar.
+               /\ queuedVersion' = 2 \* Queues an older copy than the row.
     /\ UNCHANGED <<row, fallback, payloadVersion, batchAttempted,
                     rowSeen, fallbackSeen, burnSent>>
 

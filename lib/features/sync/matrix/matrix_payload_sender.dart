@@ -148,33 +148,11 @@ class MatrixPayloadSender {
     }
   }
 
-  /// Reads the sidecar snapshot, or reconstructs a missing file's payload from
-  /// the authoritative database without recreating it on disk. Only a version
-  /// covering every queued clock can replace that missing snapshot; otherwise
-  /// the outbox must retain the send for retry/recovery.
-  Future<Uint8List> _readJournalPayload(
-    SyncJournalEntity message,
-    String fullPath,
-  ) async {
-    Uint8List sidecar;
-    try {
-      sidecar = await File(fullPath).readAsBytes();
-    } on PathNotFoundException {
-      return _readCanonicalJournalPayload(message);
-    }
-    // A sidecar older than the queued version (two enqueues of the entry
-    // refreshed it out of order) must not be sent: the send would adopt its
-    // older clock and cover the newer counter it does not carry (ADR 0086).
-    final sidecarClock = _sidecarClock(sidecar);
-    if (sidecarClock == null || _coversQueued(sidecarClock, message)) {
-      return sidecar;
-    }
-    return _readCanonicalJournalPayload(message);
-  }
-
-  /// The entry's canonical row, which must cover the queued version and
-  /// every covered clock; otherwise the send fails and is retried.
-  Future<Uint8List> _readCanonicalJournalPayload(
+  /// The entry's stored row. It must cover the queued version and every
+  /// covered clock: a payload older than what was queued would cover a
+  /// counter it does not carry (ADR 0086). Otherwise the send fails and the
+  /// outbox retries it.
+  Future<JournalEntity> _readJournalPayload(
     SyncJournalEntity message,
   ) async {
     final entities = await journalDb.journalEntityMapForIdsIncludingDeleted([
@@ -187,20 +165,7 @@ class MatrixPayloadSender {
     if (!_coversQueued(entity.meta.vectorClock, message)) {
       throw StateError('Database payload does not cover queued version');
     }
-    return Uint8List.fromList(utf8.encode(jsonEncode(entity.toJson())));
-  }
-
-  /// The clock a sidecar's JSON carries, or null when it has none or cannot
-  /// be read. Such a sidecar is sent as before: the send keeps the message's
-  /// clock, and an undecodable one fails the send at its decode step.
-  VectorClock? _sidecarClock(Uint8List bytes) {
-    try {
-      return JournalEntity.fromJson(
-        json.decode(utf8.decode(bytes)) as Map<String, dynamic>,
-      ).meta.vectorClock;
-    } catch (_) {
-      return null;
-    }
+    return entity;
   }
 
   bool _coversQueued(VectorClock? payloadClock, SyncJournalEntity message) {
@@ -229,12 +194,12 @@ class MatrixPayloadSender {
     );
     final jsonFullPath = p.join(documentsDirectory.path, relativeJsonPath);
 
-    late final Uint8List jsonBytes;
+    late final JournalEntity journalEntity;
     try {
-      jsonBytes = await _readJournalPayload(message, jsonFullPath);
+      journalEntity = await _readJournalPayload(message);
     } catch (error, stackTrace) {
       _trace(
-        'EXCEPTION readJsonFile path=$jsonFullPath '
+        'EXCEPTION readJournalPayload id=${message.id} '
         'error=${error.runtimeType}: $error',
         subDomain: 'matrix.send.error',
       );
@@ -251,27 +216,13 @@ class MatrixPayloadSender {
       room: room,
       fullPath: jsonFullPath,
       relativePath: message.jsonPath,
-      bytes: jsonBytes,
+      bytes: Uint8List.fromList(
+        utf8.encode(jsonEncode(journalEntity.toJson())),
+      ),
     );
 
     final attachmentEventId = jsonUpload.eventId;
     if (!jsonUpload.succeeded || attachmentEventId == null) {
-      return null;
-    }
-
-    late final JournalEntity journalEntity;
-    try {
-      final jsonString = utf8.decode(jsonBytes);
-      journalEntity = JournalEntity.fromJson(
-        json.decode(jsonString) as Map<String, dynamic>,
-      );
-    } catch (error, stackTrace) {
-      loggingService.error(
-        LogDomain.sync,
-        error,
-        stackTrace: stackTrace,
-        subDomain: 'sendMatrixMsg.decode',
-      );
       return null;
     }
 

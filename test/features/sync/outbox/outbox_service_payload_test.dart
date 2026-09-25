@@ -104,9 +104,7 @@ void main() {
 
       // Create the JSON file so it can be read
       const jsonPath = '/test/path.json';
-      File('${documentsDirectory.path}$jsonPath')
-        ..createSync(recursive: true)
-        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+      harness.stageRow(journalEntity);
 
       const message = SyncMessage.journalEntity(
         id: entryId,
@@ -199,9 +197,7 @@ void main() {
 
       // Create the JSON file so it can be read
       const jsonPath = '/test/path2.json';
-      File('${documentsDirectory.path}$jsonPath')
-        ..createSync(recursive: true)
-        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+      harness.stageRow(journalEntity);
 
       const message = SyncMessage.journalEntity(
         id: entryId,
@@ -261,9 +257,7 @@ void main() {
 
       // Create the JSON file so it can be read
       const jsonPath = '/test/path3.json';
-      File('${documentsDirectory.path}$jsonPath')
-        ..createSync(recursive: true)
-        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+      harness.stageRow(journalEntity);
 
       const message = SyncMessage.journalEntity(
         id: entryId,
@@ -756,9 +750,7 @@ void main() {
 
       // Create JSON file on disk (required by readEntityFromJson)
       final jsonPath = relativeEntityPath(journalEntity);
-      File('${documentsDirectory.path}$jsonPath')
-        ..parent.createSync(recursive: true)
-        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+      harness.stageRow(journalEntity);
 
       // Mock journalEntityById to return the entity
       when(
@@ -808,9 +800,7 @@ void main() {
 
       // Create JSON file on disk
       final jsonPath = relativeEntityPath(journalEntity);
-      File('${documentsDirectory.path}$jsonPath')
-        ..parent.createSync(recursive: true)
-        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+      harness.stageRow(journalEntity);
 
       when(
         () => journalDb.journalEntityById(entryId),
@@ -856,9 +846,7 @@ void main() {
 
       // Create JSON file on disk
       final jsonPath = relativeEntityPath(journalEntity);
-      File('${documentsDirectory.path}$jsonPath')
-        ..parent.createSync(recursive: true)
-        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+      harness.stageRow(journalEntity);
 
       when(
         () => journalDb.journalEntityById(entryId),
@@ -1270,9 +1258,7 @@ void main() {
       ).thenAnswer((_) async => journalEntity);
 
       const jsonPath = '/test/many-links.json';
-      File('${documentsDirectory.path}$jsonPath')
-        ..createSync(recursive: true)
-        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+      harness.stageRow(journalEntity);
 
       const message = SyncMessage.journalEntity(
         id: entryId,
@@ -1341,9 +1327,7 @@ void main() {
 
         // relativeEntityPath for JournalAudio = audioDir + audioFile + '.json'
         final jsonPath = relativeEntityPath(journalAudio);
-        File('${documentsDirectory.path}$jsonPath')
-          ..parent.createSync(recursive: true)
-          ..writeAsStringSync(jsonEncode(journalAudio.toJson()));
+        harness.stageRow(journalAudio);
 
         // Create a dummy audio file so File.length() succeeds.
         final audioFullPath = '${documentsDirectory.path}$audioDir$audioFile';
@@ -1405,9 +1389,7 @@ void main() {
         ).thenAnswer((_) async => journalAudio);
 
         final jsonPath = relativeEntityPath(journalAudio);
-        File('${documentsDirectory.path}$jsonPath')
-          ..parent.createSync(recursive: true)
-          ..writeAsStringSync(jsonEncode(journalAudio.toJson()));
+        harness.stageRow(journalAudio);
 
         // Use the correct json path matching the entity on disk.
         final message = SyncMessage.journalEntity(

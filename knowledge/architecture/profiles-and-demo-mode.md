@@ -33,7 +33,7 @@ sources:
 # One process, many worlds
 
 A **profile** is a complete world: its own root directory holding every
-database, JSON sidecar, media file, log, and setting. The **real** profile is
+database, media file, log, and setting. The **real** profile is
 the pre-existing documents root — existing installs never move a byte. Each
 **guest** profile (the demo workspace) lives under
 `<realRoot>/guest_profiles/<uuid>/`.
@@ -59,7 +59,7 @@ getIt: getIt is reset on every switch, the registry must survive them.
    the active profile root, and `openDbConnection` falls back to it instead
    of re-deriving the OS documents directory
    ([`lib/database/common.dart`](../../lib/database/common.dart)). Every
-   Drift file, sidecar, media file, and log follows the active root. The
+   Drift file, media file, and log follows the active root. The
    regression tests in
    [`test/database/common_test.dart`](../../test/database/common_test.dart)
    make path_provider throw to prove no code path re-derives the OS root.

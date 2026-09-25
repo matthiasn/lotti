@@ -98,7 +98,7 @@ sources:
     last_modified: 2026-09-25
   - id: journal-replication-spec
     resource: ../../../specs/tla/JournalReplication.tla
-    title: TLA+ model of journal entry replication, conflicts and the sidecar
+    title: TLA+ model of journal entry replication and conflicts
     last_modified: 2026-09-25
   - id: adr-0083
     resource: ../../../docs/adr/0083-model-checked-journal-replication.md
@@ -231,9 +231,9 @@ it:
    its key is added to the batch set for ordinary responses. The outbox writer
    may have bound the row itself, in which case the guarded settlement bind
    loses and the ordinary response path re-reads the row without duplicating
-   that resend. Journal enqueue also propagates descriptor refresh failures:
-   an old sidecar is not durable evidence for a newer database version. The
-   reservation stays retryable until the refreshed payload can be queued.
+   that resend. Journal enqueue also propagates a failed read of the stored
+   row, and refuses a missing one. The reservation stays retryable until the
+   row can be queued.
 2. Otherwise, if the counter is pending, or the payload's store is not wired
    yet (the agent repository arrives after sync starts), it is deferred.
    Wiring the store settles the orphans that waited for it.

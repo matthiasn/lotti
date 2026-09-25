@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:intl/intl.dart';
@@ -81,16 +80,6 @@ String relativeEntityPath(JournalEntity journalEntity) {
       return '/$folder/$dateSubFolder/$fileName';
     },
   );
-}
-
-Future<void> saveJournalEntityJson(
-  JournalEntity journalEntity, {
-  Directory? documentsDirectory,
-}) async {
-  final json = jsonEncode(journalEntity);
-  final docDir = documentsDirectory ?? getDocumentsDirectory();
-  final path = entityPath(journalEntity, docDir);
-  await saveJson(path, json);
 }
 
 /// Resolves a user-provided [jsonPath] against the app's documents directory,
@@ -239,14 +228,4 @@ String relativeOutboxBundlePath(String bundleId) {
 /// including a leading `/`. Uses `/notifications/<id>.json`.
 String relativeNotificationPath(String notificationId) {
   return '$notificationsSegment${Uri.encodeComponent(notificationId)}.json';
-}
-
-Future<JournalEntity> readEntityFromJson(String jsonPath) async {
-  final jsonString = await File(
-    join(getDocumentsDirectory().path, jsonPath),
-  ).readAsString();
-
-  return JournalEntity.fromJson(
-    jsonDecode(jsonString) as Map<String, dynamic>,
-  );
 }

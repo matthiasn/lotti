@@ -108,15 +108,15 @@ set one switch to `FALSE` and run TLC against `OwnCounterSettlement.tla`:
 |----------|-------------------------|
 | `RecheckSequence = FALSE` | `NoFalseBurn`: the first row read misses, migration inserts the row and removes the settings fallback, the second read misses, settlement burns the committed counter |
 | `RequireDurableEnqueue = FALSE` | `BoundHasQueuedPayload`: an earlier batch answer attempts a resend, its enqueue fails (or queues an older version), settlement skips its own enqueue and binds |
-| `RequireFreshDescriptor = FALSE` | `BoundHasQueuedPayload`: journal descriptor refresh fails, enqueue uses an older sidecar and settlement binds the newer counter |
+| `RequireFreshDescriptor = FALSE` | `BoundHasQueuedPayload`: the enqueue queues an older copy than the stored row (as the removed JSON sidecar could, ADR 0087) and settlement binds the newer counter |
 
 Keep mutation configurations outside this directory: CI runs every checked-in
 configuration and expects each to pass. The handler suite has deterministic
 regressions for both races, newer payload versions, migrated unnamed/already
 settled rows, and a failed sequence-log recheck. Reverting the Dart guards makes
-those regressions fail. The outbox enqueue suite also checks that descriptor
-refresh failure prevents both ordinary and durable enqueue, then verifies a
-successful retry queues the refreshed version.
+those regressions fail. The outbox enqueue suite also checks that a failed
+read of the stored row prevents both ordinary and durable enqueue, then
+verifies a successful retry queues the stored version.
 
 ## `WakeRuntime` — agent wakes
 
@@ -1310,11 +1310,11 @@ is `JournalDb.updateJournalEntity` with `detectConflict`
 (`database_entity_ops.dart`): newer applies, equal or older is refused, and a
 concurrent version is stored as the entry's single `Conflict` row for the user
 to decide. Journal entries never merge on their own, so the question is not
-only convergence but whether a divergence is ever silent. The sidecar
-configurations add the JSON sidecar — the payload a device sends — with a
-receive from an older peer, which names only a path, the outbox's refresh, and
-a receive rolled back by a failed embedded link. The decision is
-[ADR 0083](../../docs/adr/0083-model-checked-journal-replication.md).
+only convergence but whether a divergence is ever silent. What a device sends
+is its stored row: the JSON sidecar that once carried the payload, and the two
+configurations that modelled it, were removed with it
+([ADR 0087](../../docs/adr/0087-journal-row-is-the-only-copy.md)). The decision
+is [ADR 0083](../../docs/adr/0083-model-checked-journal-replication.md).
 
 | Property | Kind | Says |
 |----------|------|------|
@@ -1323,16 +1323,13 @@ a receive rolled back by a failed embedded link. The decision is
 | `NothingDropped` | invariant | every version a device received or wrote is kept by its row or by its open conflict — nothing is dropped without the user choosing so (except a conflict displaced from the one-row table, below) |
 | `ConflictNotStale` | invariant | an open conflict never holds a version its row, or a version the device has seen, replaced: a stale copy neither re-opens a resolved conflict nor regresses an open one |
 | `ConflictResolvable` | invariant | an open conflict can be opened and resolved, a deletion made here included |
-| `SidecarMatchesRow` | invariant | once writes and receives have settled, every sidecar describes its device's stored row |
 
 | Configuration | Devices | Writes | Adds | Checks | Distinct states |
 |---------------|---------|--------|------|--------|-----------------|
-| `JournalReplication` | 3 | 3 | stale reads, restores, resolutions | all but `SidecarMatchesRow` | 768,439 |
+| `JournalReplication` | 3 | 3 | stale reads, restores, resolutions | all five | 768,439 |
 | `JournalReplicationLossy` | 2 | 3 | any delivery lost and recovered by backfill | the same | 98,283 |
 | `JournalReplicationLabels` | 2 | 4 | `setLabels` and `suppressLabelOnTask` | the same | 168,713 |
 | `JournalReplicationLegacy` | 2 | 3 | an entry created before clocks, a late copy of it in flight | the same | 35,444 |
-| `JournalReplicationSidecar` | 2 | 3 | path-only receives, the sidecar queue, the outbox refresh; two queued sidecar writes at most | all six | 6,794,107 |
-| `JournalReplicationSidecarRollback` | 2 | 2 | one receive rolled back and retried | all six | 439,585 |
 
 The properties judge the code's decisions, which read clocks, against a ghost
 history of the versions each one causally follows. On one device the last
@@ -1354,8 +1351,6 @@ The design switches are the fixes, and each has a counterexample when set to
 | `KeepNewerConflict` | a concurrent version always replaced the conflict row | `ConflictNotStale`, seven steps: A edits twice; B receives the second as a conflict, then the first, late, which replaces it |
 | `LabelsRebuild` | `setLabels` forced a refused write with `overrideComparison`; `suppressLabelOnTask` wrote under the stored row's own clock, and then forced it | `NothingDropped`, four steps: A receives B's edit while its label editor holds the version before; the label write is refused as concurrent, then forced over B's edit. `Converged`, three steps: A suppresses a label, B refuses the write as equal to what it holds, and the devices differ for good |
 | `RefuseNullClock` | a version without a clock was newer than any row | `NoLostSuccessor`, three steps: A deletes an entry created before clocks, and a late copy of that clockless version replaces the deletion |
-| `RestoreSidecar` | a refused path-only receive left the incoming JSON in the sidecar | `SidecarMatchesRow`: the loader saves A's version over B's sidecar, B refuses it as concurrent, and B's sidecar describes a version B does not hold |
-| `RefreshThroughQueue` | the outbox refreshed the sidecar with `journalEntityById` and saved it beside the sidecar queue | `SidecarMatchesRow`: A's refresh reads v1, A deletes the entry and writes its sidecar, the refresh then saves v1 over it, and the next refresh, finding no live row, saves nothing |
 
 What the model leaves out, deliberately or as a residual:
 
@@ -1383,11 +1378,10 @@ What the model leaves out, deliberately or as a residual:
   false`), as before, under a clock that does not cover the deletion. Peers
   then see an edit concurrent with the deletion, and the user decides. Whether
   a re-creation should win, lose, or ask is a product decision.
-- **The sidecar is written before the receive commits.** `updateJournalEntity`
-  runs nested in the receive's transaction with the embedded links, so a
-  rolled-back receive can leave the sidecar describing a version that is not
-  stored until the event is retried. The rollback configuration shows the retry
-  heals it; a failed `persistEntityJson` is not modelled.
+- **A receive rolled back by a failed embedded link is not an action.** The
+  decision and the links commit together or not at all, and the event is
+  retried, which is the same state as a delivery not yet made. `Deliver`
+  covers it.
 - **Hard deletes** (`purgeDeleted`) remove rows, and backfill then answers
   `deleted`; a device that never received the deletion keeps the entry.
 - **Clockless versions** come only from builds that predate vector clocks;
@@ -1727,7 +1721,7 @@ hold, and after everything, `Converged`. Reading the stored row with
 not merging two concurrent deletions, or letting a late copy replace an open
 conflict each fails it; the last needs the trace's four hundred runs. The
 two-device regressions of every switch — the late copy refused, the edit
-concurrent with a deletion, the clockless copy, the restored sidecar, the
+concurrent with a deletion, the clockless copy, the
 label writes built again on the stored row, the soft-deleted entry served by
 backfill, the conflict page over a deletion — are examples in the suites of
 `database_entity_ops.dart`, `labels_repository.dart`,

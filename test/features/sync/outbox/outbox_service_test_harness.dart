@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -214,6 +215,13 @@ class OutboxServiceTestHarness {
   late MockUserActivityService userActivityService;
   late Directory documentsDirectory;
   late TestableOutboxService service;
+
+  /// Stores [entity] as the row a journal enqueue reads for its id.
+  void stageRow(JournalEntity entity) {
+    when(
+      () => journalDb.journalEntityByIdIncludingDeleted(entity.meta.id),
+    ).thenAnswer((_) async => entity);
+  }
 
   TestableOutboxService buildService({
     UserActivityGate? activityGate,

@@ -78,7 +78,7 @@ sources:
     last_modified: 2026-07-05
   - id: journal-replication-spec
     resource: ../../specs/tla/JournalReplication.tla
-    title: TLA+ model of journal entry replication, conflicts and the sidecar
+    title: TLA+ model of journal entry replication and conflicts
     last_modified: 2026-09-25
   - id: adr-0083
     resource: ../../docs/adr/0083-model-checked-journal-replication.md
@@ -293,8 +293,8 @@ transaction as vector-clock comparison and the entity write. It may read this
 journal’s rows and links through direct queries, but must not perform external
 work or mutations. Shared/coalesced readers can join a wave outside the
 transaction: use `entityById`, not `journalEntityById`, for the guarded snapshot.
-A false result returns `overwritePrevented` without changing the row, conflicts,
-labels or JSON sidecar. The persistence facade burns the unused clock reservation
+A false result returns `overwritePrevented` without changing the row, conflicts
+or labels. The persistence facade burns the unused clock reservation
 and returns before search indexing, notifications, badges, and sync publication.
 Those publication steps also skip other refused updates.
 
@@ -306,7 +306,7 @@ flowchart TD
   Guard -->|Yes| Compare[Compare vector clocks and apply write]
   Compare --> Applied{Write applied?}
   Applied -->|No| RefuseWrite[Return skip reason]
-  Applied -->|Yes| Commit[Commit then publish JSON sidecar]
+  Applied -->|Yes| Commit[Commit]
   Refuse --> Burn[Burn unused clock reservation]
   RefuseWrite --> Burn
   Commit --> Publish[Record sequence, notify, index, enqueue sync]
@@ -421,20 +421,12 @@ between the check and the write.
   row, and reconciles the `labeled` table inside the transaction (the outcomes
   are in [vector clocks and conflicts](../features/sync/vector-clocks-and-conflicts.md#the-journal-write-decision)). Two concurrent writes of one id with
   concurrent clocks therefore end with one applied and one recorded in
-  `conflicts`, never a silent overwrite. The JSON sidecar — the sync payload —
-  is written **after** commit, so it never describes a row that rolled back and
-  the writer lock is never held across file I/O; sidecar writes for one entity
-  are published in commit order, so two accepted writes cannot leave the earlier
-  document on disk for the later row. The sync inbound handler wraps the same
-  call together with the entity's embedded links in an outer transaction; the
-  inner one nests, so a receive rolled back by a failed link can leave the
-  sidecar describing a version that is not stored until the event is retried.
-  The only other sidecar writer is `JournalDb.restoreSidecar`, which rewrites
-  the stored row through the same queue: the receive calls it after refusing a
-  path-only envelope, whose JSON the loader had saved over the sidecar, and the
-  outbox's refresh before it reads the payload is it (ADR 0083). A sidecar write
-  that fails after commit is not yet retried durably — that repair is tracked
-  separately.
+  `conflicts`, never a silent overwrite. **The row is the only stored copy of
+  the entity**: nothing writes it to a JSON file, and sync serializes the
+  payload from the row when it sends (ADR 0087). The sync inbound handler wraps
+  the same call together with the entity's embedded links in an outer
+  transaction; the inner one nests, so a failed link rolls the whole receive
+  back and the event is retried.
 - **`JournalDb.upsertEntryLink`** runs its equality pre-read, the
   `(from_id, to_id, type)` duplicate check, the tombstone replacement and the
   upsert the same way, so a local link creation racing the same link arriving by
@@ -802,8 +794,8 @@ entity operations, which is where to look for it.
 
 Both whole-journal walks are **rowid keyset scans**, not `OFFSET` pages:
 `purgeDeletedFiles` reads soft-deleted rows 500 at a time with
-`WHERE deleted = 1 AND rowid > ?`, deleting each entity's media and JSON
-sidecar as it goes, and `recreateFts5` reads live rows the same way to feed
+`WHERE deleted = 1 AND rowid > ?`, deleting each entity's media, and any JSON
+file an older build wrote beside it, as it goes, and `recreateFts5` reads live rows the same way to feed
 the index (order is irrelevant to FTS). An `OFFSET` page re-scans every
 earlier row, which made a rebuild quadratic in the journal's size. Counts
 come from `COUNT(*)`, progress is reported after each table (purge) or each

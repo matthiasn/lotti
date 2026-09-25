@@ -29,7 +29,6 @@ void main() {
   test('Legacy tasks default to P2 priority when not set', () async {
     final db = JournalDb(
       inMemoryDatabase: true,
-      documentsDirectory: testDirectory,
     );
     final base = DateTime(2024, 10);
 

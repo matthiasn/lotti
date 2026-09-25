@@ -134,7 +134,6 @@ class JournalDb extends _$JournalDb
     Future<Directory> Function()? documentsDirectoryProvider,
     Future<Directory> Function()? tempDirectoryProvider,
     this._loggingService,
-    this._documentsDirectory,
   }) : fileName = overriddenFilename ?? journalDbFileName,
        _documentsDirectoryProvider = documentsDirectoryProvider,
        super(
@@ -162,7 +161,6 @@ class JournalDb extends _$JournalDb
   @override
   final Future<Directory> Function()? _documentsDirectoryProvider;
   final DomainLogger? _loggingService;
-  final Directory? _documentsDirectory;
 
   /// The schema this build writes. A restored backup may carry an
   /// older schema, which Drift migrates, but never a newer one.
@@ -252,15 +250,6 @@ WHERE EXISTS (
     ).get();
     return result.isNotEmpty;
   }
-
-  @override
-  @protected
-  @visibleForTesting
-  Future<void> persistEntityJson(JournalEntity updated) =>
-      saveJournalEntityJson(
-        updated,
-        documentsDirectory: _documentsDirectory,
-      );
 
   @override
   void _captureException(

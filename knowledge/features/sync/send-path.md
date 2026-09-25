@@ -251,20 +251,19 @@ not the mutable `/agent_entities/<id>.json` sidecar. If a newer local update
 overwrites that sidecar after the old row is claimed, the in-flight row still
 uploads its own payload and stamps the event id returned for those exact bytes.
 Legacy rows that contain only `jsonPath` continue to read the sidecar so mixed
-versions remain sendable. Journal and notification senders already snapshot
-their file bytes before upload and reconcile the envelope against that same
-snapshot; outbox bundles use a fresh UUID path and stamp the manifest upload id.
+versions remain sendable. The notification sender snapshots its file bytes
+before upload and reconciles the envelope against that same snapshot; outbox
+bundles use a fresh UUID path and stamp the manifest upload id.
 
-When a standalone journal sidecar is missing, the sender reads the canonical
-journal row, including deletion tombstones. That replacement must cover the
-queued vector clock and every covered clock before upload. The same holds
-when the sidecar exists but is older than the queued version — two enqueues
-refreshed it out of order: the sender sends the canonical row instead of
-adopting the sidecar's older clock, which would cover a newer counter than
-the payload carries. Recovery
-serializes the row in memory and leaves the reclaimed sidecar absent. An absent
-row, an older or concurrent clock, or another filesystem error keeps the outbox
-item retryable; none acknowledges an unsent generation.
+**A journal payload is always the stored row**, deletion tombstones
+included, serialized in memory at send time (ADR 0087). Nothing writes the
+entry to a file, and a JSON file an older build left at `jsonPath` is
+ignored. The row must cover the queued vector clock and every covered clock
+before upload: a payload older than the queued version would cover a newer
+counter than it carries. An absent row or an older or concurrent clock keeps
+the outbox item retryable; neither acknowledges an unsent generation. The
+upload keeps `jsonPath` as its `relativePath`, so older receivers see no
+difference.
 
 # Item lifecycle
 

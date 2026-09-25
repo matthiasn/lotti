@@ -450,11 +450,19 @@ void main() {
   });
 
   late Directory documentsDirectory;
+
   late MockDomainLogger loggingService;
   late MockJournalDb journalDb;
   late MatrixMessageSender sender;
   late MockRoom room;
   late SentEventRegistry sentEventRegistry;
+
+  /// Stores [entity] as the row the sender serializes for its id.
+  void stageRow(JournalEntity entity) {
+    when(
+      () => journalDb.journalEntityMapForIdsIncludingDeleted([entity.meta.id]),
+    ).thenAnswer((_) async => {entity.meta.id: entity});
+  }
 
   setUp(() {
     documentsDirectory = Directory.systemTemp.createTempSync(
@@ -883,9 +891,7 @@ void main() {
       );
       final jsonPath = relativeEntityPath(entity);
       final rawJson = jsonEncode(entity);
-      File('${documentsDirectory.path}$jsonPath')
-        ..parent.createSync(recursive: true)
-        ..writeAsStringSync(rawJson);
+      stageRow(entity);
 
       final result = await sender.sendMatrixMessage(
         message: SyncMessage.journalEntity(
@@ -945,9 +951,7 @@ void main() {
       entryText: const EntryText(plainText: 'payload'),
     );
     final jsonPath = relativeEntityPath(entity);
-    File('${documentsDirectory.path}$jsonPath')
-      ..parent.createSync(recursive: true)
-      ..writeAsStringSync(jsonEncode(entity));
+    stageRow(entity);
 
     final result = await sender.sendMatrixMessage(
       message: SyncMessage.journalEntity(
@@ -1093,11 +1097,7 @@ void main() {
     });
 
     Future<bool> sendQueued425({required int canonical}) {
-      final stale = checklistAt(402);
-      final path = relativeEntityPath(stale);
-      File('${documentsDirectory.path}$path')
-        ..parent.createSync(recursive: true)
-        ..writeAsStringSync(jsonEncode(stale));
+      final path = relativeEntityPath(checklistAt(402));
       when(
         () => journalDb.journalEntityMapForIdsIncludingDeleted(
           any<Iterable<String>>(),
@@ -1145,103 +1145,11 @@ void main() {
     );
   });
 
-  test('uses descriptor snapshot when json changes during send', () async {
-    var capturedPayload = '';
-    MatrixFile? capturedFile;
-    when(
-      () => room.sendTextEvent(
-        any<String>(),
-        msgtype: any<String>(named: 'msgtype'),
-        parseCommands: any<bool>(named: 'parseCommands'),
-        parseMarkdown: any<bool>(named: 'parseMarkdown'),
-      ),
-    ).thenAnswer((invocation) async {
-      capturedPayload = invocation.positionalArguments.first as String;
-      return 'text-id';
-    });
-
-    final baseDate = DateTime(2025, 12, 21, 10, 0, 0);
-    final initialMeta = Metadata(
-      id: 'snapshot-entry',
-      createdAt: baseDate,
-      updatedAt: baseDate,
-      dateFrom: baseDate,
-      dateTo: baseDate,
-      vectorClock: const VectorClock({'hostA': 1}),
-    );
-    final updatedMeta = Metadata(
-      id: 'snapshot-entry',
-      createdAt: baseDate,
-      updatedAt: baseDate,
-      dateFrom: baseDate,
-      dateTo: baseDate,
-      vectorClock: const VectorClock({'hostA': 2}),
-    );
-    final entity = JournalEntity.journalEntry(
-      meta: initialMeta,
-      entryText: const EntryText(plainText: 'Initial'),
-    );
-    final updatedEntity = JournalEntity.journalEntry(
-      meta: updatedMeta,
-      entryText: const EntryText(plainText: 'Updated'),
-    );
-    final jsonPath = relativeEntityPath(entity);
-    final jsonFile = File('${documentsDirectory.path}$jsonPath')
-      ..parent.createSync(recursive: true)
-      ..writeAsStringSync(jsonEncode(entity.toJson()));
-
-    when(
-      () => room.sendFileEvent(
-        any<MatrixFile>(),
-        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
-      ),
-    ).thenAnswer((invocation) async {
-      capturedFile = invocation.positionalArguments.first as MatrixFile;
-      jsonFile.writeAsStringSync(jsonEncode(updatedEntity.toJson()));
-      return 'file-id';
-    });
-
-    final result = await sender.sendMatrixMessage(
-      message: SyncMessage.journalEntity(
-        id: entity.meta.id,
-        jsonPath: jsonPath,
-        vectorClock: const VectorClock({'hostA': 1}),
-        status: SyncEntryStatus.update,
-      ),
-      context: buildContext(),
-      onSent: (_, _) {},
-    );
-
-    expect(result, isTrue);
-    expect(capturedFile, isNotNull);
-    final decodedPayload =
-        json.decode(
-              utf8.decode(base64.decode(capturedPayload)),
-            )
-            as Map<String, dynamic>;
-    expect(decodedPayload['vectorClock'], equals({'hostA': 1}));
-
-    final uploadedJson =
-        json.decode(
-              utf8.decode(gzip.decode(capturedFile!.bytes)),
-            )
-            as Map<String, dynamic>;
-    expect(
-      (uploadedJson['meta'] as Map<String, dynamic>)['vectorClock'],
-      equals({'hostA': 1}),
-    );
-  });
-
   test(
-    'keeps message vector clock when descriptor lacks vector clock',
+    'sends the row read before the upload when it changes during send',
     () async {
-      when(
-        () => room.sendFileEvent(
-          any<MatrixFile>(),
-          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
-        ),
-      ).thenAnswer((_) async => 'file-id');
       var capturedPayload = '';
+      MatrixFile? capturedFile;
       when(
         () => room.sendTextEvent(
           any<String>(),
@@ -1254,51 +1162,74 @@ void main() {
         return 'text-id';
       });
 
-      final meta = Metadata(
-        id: 'no-json-vc',
-        createdAt: DateTime(2024, 3, 15, 10, 31),
-        updatedAt: DateTime(2024, 3, 15, 10, 31),
-        dateFrom: DateTime(2024, 3, 15, 10, 31),
-        dateTo: DateTime(2024, 3, 15, 10, 31),
-        vectorClock: null,
+      final baseDate = DateTime(2025, 12, 21, 10, 0, 0);
+      final initialMeta = Metadata(
+        id: 'snapshot-entry',
+        createdAt: baseDate,
+        updatedAt: baseDate,
+        dateFrom: baseDate,
+        dateTo: baseDate,
+        vectorClock: const VectorClock({'hostA': 1}),
+      );
+      final updatedMeta = Metadata(
+        id: 'snapshot-entry',
+        createdAt: baseDate,
+        updatedAt: baseDate,
+        dateFrom: baseDate,
+        dateTo: baseDate,
+        vectorClock: const VectorClock({'hostA': 2}),
       );
       final entity = JournalEntity.journalEntry(
-        meta: meta,
-        entryText: const EntryText(plainText: 'draft'),
+        meta: initialMeta,
+        entryText: const EntryText(plainText: 'Initial'),
+      );
+      final updatedEntity = JournalEntity.journalEntry(
+        meta: updatedMeta,
+        entryText: const EntryText(plainText: 'Updated'),
       );
       final jsonPath = relativeEntityPath(entity);
-      File('${documentsDirectory.path}$jsonPath')
-        ..parent.createSync(recursive: true)
-        ..writeAsStringSync(jsonEncode(entity.toJson()));
+      stageRow(entity);
 
-      const messageClock = VectorClock({'hostA': 5});
-      final message = SyncMessage.journalEntity(
-        id: entity.meta.id,
-        jsonPath: jsonPath,
-        vectorClock: messageClock,
-        status: SyncEntryStatus.update,
-      );
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedFile = invocation.positionalArguments.first as MatrixFile;
+        stageRow(updatedEntity);
+        return 'file-id';
+      });
 
       final result = await sender.sendMatrixMessage(
-        message: message,
+        message: SyncMessage.journalEntity(
+          id: entity.meta.id,
+          jsonPath: jsonPath,
+          vectorClock: const VectorClock({'hostA': 1}),
+          status: SyncEntryStatus.update,
+        ),
         context: buildContext(),
         onSent: (_, _) {},
       );
 
       expect(result, isTrue);
-      verifyNever(
-        () => loggingService.log(
-          LogDomain.sync,
-          any<String>(),
-          subDomain: 'sendMatrixMsg.vclockAdjusted',
-        ),
-      );
-      final decoded =
+      expect(capturedFile, isNotNull);
+      final decodedPayload =
           json.decode(
                 utf8.decode(base64.decode(capturedPayload)),
               )
               as Map<String, dynamic>;
-      expect(decoded['vectorClock'], messageClock.vclock);
+      expect(decodedPayload['vectorClock'], equals({'hostA': 1}));
+
+      final uploadedJson =
+          json.decode(
+                utf8.decode(gzip.decode(capturedFile!.bytes)),
+              )
+              as Map<String, dynamic>;
+      expect(
+        (uploadedJson['meta'] as Map<String, dynamic>)['vectorClock'],
+        equals({'hostA': 1}),
+      );
     },
   );
 
@@ -1337,9 +1268,7 @@ void main() {
         entryText: const EntryText(plainText: 'descriptor'),
       );
       final jsonPath = relativeEntityPath(entity);
-      File('${documentsDirectory.path}$jsonPath')
-        ..parent.createSync(recursive: true)
-        ..writeAsStringSync(jsonEncode(entity.toJson()));
+      stageRow(entity);
 
       final message = SyncMessage.journalEntity(
         id: entity.meta.id,
@@ -1410,9 +1339,7 @@ void main() {
       entryText: const EntryText(plainText: 'equal'),
     );
     final jsonPath = relativeEntityPath(entity);
-    File('${documentsDirectory.path}$jsonPath')
-      ..parent.createSync(recursive: true)
-      ..writeAsStringSync(jsonEncode(entity.toJson()));
+    stageRow(entity);
 
     final message = SyncMessage.journalEntity(
       id: entity.meta.id,
@@ -1480,9 +1407,7 @@ void main() {
         entryText: const EntryText(plainText: 'json-newer'),
       );
       final jsonPath = relativeEntityPath(entity);
-      File('${documentsDirectory.path}$jsonPath')
-        ..parent.createSync(recursive: true)
-        ..writeAsStringSync(jsonEncode(entity.toJson()));
+      stageRow(entity);
 
       final message = SyncMessage.journalEntity(
         id: entity.meta.id,
@@ -1555,9 +1480,7 @@ void main() {
         entryText: const EntryText(plainText: 'null'),
       );
       final jsonPath = relativeEntityPath(entity);
-      File('${documentsDirectory.path}$jsonPath')
-        ..parent.createSync(recursive: true)
-        ..writeAsStringSync(jsonEncode(entity.toJson()));
+      stageRow(entity);
 
       final message = SyncMessage.journalEntity(
         id: entity.meta.id,
@@ -1692,9 +1615,7 @@ void main() {
     );
 
     const jsonPath = '/entries/test.json';
-    File('${documentsDirectory.path}$jsonPath')
-      ..createSync(recursive: true)
-      ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+    stageRow(journalEntity);
 
     final imagePath =
         '${documentsDirectory.path}${imageData.imageDirectory}${imageData.imageFile}';
@@ -1777,9 +1698,7 @@ void main() {
     );
 
     const jsonPath = '/entries/test.json';
-    File('${documentsDirectory.path}$jsonPath')
-      ..createSync(recursive: true)
-      ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+    stageRow(journalEntity);
 
     final imagePath =
         '${documentsDirectory.path}${imageData.imageDirectory}${imageData.imageFile}';
@@ -1854,9 +1773,7 @@ void main() {
     );
 
     const jsonPath = '/entries/test.json';
-    File('${documentsDirectory.path}$jsonPath')
-      ..createSync(recursive: true)
-      ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+    stageRow(journalEntity);
 
     final result = await sender.sendMatrixMessage(
       message: SyncMessage.journalEntity(
@@ -1913,9 +1830,7 @@ void main() {
     );
 
     const jsonPath = '/entries/test.json';
-    File('${documentsDirectory.path}$jsonPath')
-      ..createSync(recursive: true)
-      ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+    stageRow(journalEntity);
 
     final result = await sender.sendMatrixMessage(
       message: SyncMessage.journalEntity(
@@ -1931,55 +1846,6 @@ void main() {
     expect(result, isTrue);
     expect(capturedFile, isNotNull);
     expect(capturedFile!.name, 'test.json.gz');
-  });
-
-  test('returns false when journal entity json cannot be decoded', () async {
-    when(
-      () => room.sendTextEvent(
-        any<String>(),
-        msgtype: any<String>(named: 'msgtype'),
-        parseCommands: any<bool>(named: 'parseCommands'),
-        parseMarkdown: any<bool>(named: 'parseMarkdown'),
-      ),
-    ).thenAnswer((_) async => 'event-id');
-    when(
-      () => room.sendFileEvent(
-        any<MatrixFile>(),
-        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
-      ),
-    ).thenAnswer((_) async => 'file-id');
-
-    const jsonPath = '/entries/bad.json';
-    File('${documentsDirectory.path}$jsonPath')
-      ..createSync(recursive: true)
-      ..writeAsStringSync('{"invalid": "json"'); // missing closing brace
-
-    final result = await sender.sendMatrixMessage(
-      message: SyncMessage.journalEntity(
-        id: 'entry',
-        jsonPath: jsonPath,
-        vectorClock: VectorClock({'device': 1}),
-        status: SyncEntryStatus.initial,
-      ),
-      context: buildContext(),
-      onSent: (_, _) {},
-    );
-
-    expect(result, isFalse);
-    verify(
-      () => loggingService.error(
-        LogDomain.sync,
-        any<Object>(),
-        stackTrace: any<StackTrace?>(named: 'stackTrace'),
-        subDomain: 'sendMatrixMsg.decode',
-      ),
-    ).called(1);
-    verify(
-      () => room.sendFileEvent(
-        any<MatrixFile>(),
-        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
-      ),
-    ).called(1);
   });
 
   test(
@@ -2025,9 +1891,7 @@ void main() {
       );
 
       const jsonPath = '/entries/audio.json';
-      File('${documentsDirectory.path}$jsonPath')
-        ..createSync(recursive: true)
-        ..writeAsStringSync(jsonEncode(journalAudio.toJson()));
+      stageRow(journalAudio);
 
       final audioPath =
           '${documentsDirectory.path}${audioData.audioDirectory}${audioData.audioFile}';
@@ -2096,9 +1960,7 @@ void main() {
     );
 
     const jsonPath = '/entries/test.json';
-    File('${documentsDirectory.path}$jsonPath')
-      ..createSync(recursive: true)
-      ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+    stageRow(journalEntity);
 
     var callbackCount = 0;
     await expectLater(
@@ -2160,9 +2022,7 @@ void main() {
     );
 
     const jsonPath = '/entries/missing.json';
-    File('${documentsDirectory.path}$jsonPath')
-      ..createSync(recursive: true)
-      ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+    stageRow(journalEntity);
 
     final result = await sender.sendMatrixMessage(
       message: SyncMessage.journalEntity(
@@ -2362,9 +2222,7 @@ void main() {
       );
 
       const jsonPath = '/entries/payload.json';
-      File('${documentsDirectory.path}$jsonPath')
-        ..createSync(recursive: true)
-        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+      stageRow(journalEntity);
 
       final imagePath =
           '${documentsDirectory.path}${imageData.imageDirectory}${imageData.imageFile}';
@@ -2467,9 +2325,7 @@ void main() {
       );
 
       const jsonPath = '/entries/failing.json';
-      File('${documentsDirectory.path}$jsonPath')
-        ..createSync(recursive: true)
-        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+      stageRow(journalEntity);
 
       final imagePath =
           '${documentsDirectory.path}${imageData.imageDirectory}${imageData.imageFile}';
@@ -2531,9 +2387,7 @@ void main() {
       );
 
       const jsonPath = '/entries/failing-audio.json';
-      File('${documentsDirectory.path}$jsonPath')
-        ..createSync(recursive: true)
-        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+      stageRow(journalEntity);
 
       final audioPath =
           '${documentsDirectory.path}${audioData.audioDirectory}'
@@ -4316,9 +4170,7 @@ void main() {
         );
 
         const jsonPath = '/entries/audio-initial.json';
-        File('${documentsDirectory.path}$jsonPath')
-          ..createSync(recursive: true)
-          ..writeAsStringSync(jsonEncode(journalAudio.toJson()));
+        stageRow(journalAudio);
 
         final audioPath =
             '${documentsDirectory.path}${audioData.audioDirectory}${audioData.audioFile}';

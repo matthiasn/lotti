@@ -110,65 +110,63 @@ void main() {
     ).called(1);
   });
 
-  test('enqueueMessage refreshes JSON through the journal before reading '
-      'the descriptor', () async {
-    const id = 'checklist-refresh';
-    final staleMeta = Metadata(
-      id: id,
-      createdAt: DateTime(2025, 10, 22, 23, 18, 48, 935417),
-      updatedAt: DateTime(2025, 10, 22, 23, 18, 49, 201352),
-      dateFrom: DateTime(2025, 10, 22, 23, 18, 48, 935417),
-      dateTo: DateTime(2025, 10, 22, 23, 18, 48, 935417),
-      categoryId: 'category-1',
-      utcOffset: 60,
-      timezone: 'WEST',
-      vectorClock: const VectorClock({'hostA': 402}),
-    );
-    final staleChecklist = JournalEntity.checklist(
-      meta: staleMeta,
-      data: const ChecklistData(
-        title: 'Todos',
-        linkedChecklistItems: <String>[],
-        linkedTasks: <String>['task-1'],
-      ),
-    );
-    final freshChecklist = staleChecklist.copyWith(
-      meta: staleChecklist.meta.copyWith(
-        vectorClock: const VectorClock({'hostA': 425}),
-      ),
-    );
-    final jsonPath = relativeEntityPath(staleChecklist);
-    final file = File('${documentsDirectory.path}$jsonPath')
-      ..parent.createSync(recursive: true)
-      ..writeAsStringSync(jsonEncode(staleChecklist));
+  test(
+    'enqueueMessage reads the stored row, not a JSON file on disk',
+    () async {
+      const id = 'checklist-row';
+      final staleMeta = Metadata(
+        id: id,
+        createdAt: DateTime(2025, 10, 22, 23, 18, 48, 935417),
+        updatedAt: DateTime(2025, 10, 22, 23, 18, 48, 935417),
+        dateFrom: DateTime(2025, 10, 22, 23, 18, 48, 935417),
+        dateTo: DateTime(2025, 10, 22, 23, 18, 48, 935417),
+        categoryId: 'category-1',
+        utcOffset: 60,
+        timezone: 'WEST',
+        vectorClock: const VectorClock({'hostA': 402}),
+      );
+      final staleChecklist = JournalEntity.checklist(
+        meta: staleMeta,
+        data: const ChecklistData(
+          title: 'Todos',
+          linkedChecklistItems: <String>[],
+          linkedTasks: <String>['task-1'],
+        ),
+      );
+      final freshChecklist = staleChecklist.copyWith(
+        meta: staleChecklist.meta.copyWith(
+          vectorClock: const VectorClock({'hostA': 425}),
+        ),
+      );
+      // A file left at the entry's path by an older build describes an older
+      // version. It must neither be read nor rewritten.
+      final jsonPath = relativeEntityPath(staleChecklist);
+      final file = File('${documentsDirectory.path}$jsonPath')
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(staleChecklist));
+      when(
+        () => journalDb.journalEntityByIdIncludingDeleted(id),
+      ).thenAnswer((_) async => freshChecklist);
 
-    // The journal rewrites the sidecar from the stored row, in order with
-    // its own sidecar writes (ADR 0083).
-    when(() => journalDb.restoreSidecar(id)).thenAnswer((_) async {
-      file.writeAsStringSync(jsonEncode(freshChecklist));
-      return true;
-    });
+      await service.enqueueMessage(
+        SyncMessage.journalEntity(
+          id: id,
+          vectorClock: freshChecklist.meta.vectorClock,
+          jsonPath: jsonPath,
+          status: SyncEntryStatus.update,
+        ),
+      );
 
-    final message = SyncMessage.journalEntity(
-      id: id,
-      vectorClock: freshChecklist.meta.vectorClock,
-      jsonPath: jsonPath,
-      status: SyncEntryStatus.update,
-    );
-
-    await service.enqueueMessage(message);
-
-    final stored =
-        jsonDecode(await file.readAsString()) as Map<String, dynamic>;
-    expect(
-      // ignore: avoid_dynamic_calls
-      stored['meta']['vectorClock'],
-      equals({'hostA': 425}),
-    );
-  });
+      final row =
+          verify(() => syncDatabase.addOutboxItem(captureAny())).captured.single
+              as OutboxCompanion;
+      expect(row.subject.value, 'hhash:425');
+      expect(file.readAsStringSync(), jsonEncode(staleChecklist));
+    },
+  );
 
   test(
-    'enqueueMessage logs missing entity when DB lookup returns null',
+    'enqueueMessage logs a missing entity and queues nothing',
     () async {
       const id = 'missing-entity';
       final testDate = DateTime(2024, 3, 15, 10, 30);
@@ -183,21 +181,23 @@ void main() {
         ),
         entryText: const EntryText(plainText: 'draft'),
       );
+      // A leftover file must not stand in for the missing row.
       final jsonPath = relativeEntityPath(entity);
       File('${documentsDirectory.path}$jsonPath')
         ..parent.createSync(recursive: true)
         ..writeAsStringSync(jsonEncode(entity.toJson()));
+      when(
+        () => journalDb.journalEntityByIdIncludingDeleted(id),
+      ).thenAnswer((_) async => null);
 
-      when(() => journalDb.restoreSidecar(id)).thenAnswer((_) async => false);
-
-      final message = SyncMessage.journalEntity(
-        id: id,
-        jsonPath: jsonPath,
-        vectorClock: entity.meta.vectorClock,
-        status: SyncEntryStatus.initial,
+      await service.enqueueMessage(
+        SyncMessage.journalEntity(
+          id: id,
+          jsonPath: jsonPath,
+          vectorClock: entity.meta.vectorClock,
+          status: SyncEntryStatus.initial,
+        ),
       );
-
-      await service.enqueueMessage(message);
 
       verify(
         () => loggingService.log(
@@ -206,88 +206,74 @@ void main() {
           subDomain: 'enqueueMessage',
         ),
       ).called(1);
-      verify(() => syncDatabase.addOutboxItem(any())).called(1);
+      verifyNever(() => syncDatabase.addOutboxItem(any()));
     },
   );
 
   for (final durable in [false, true]) {
     test(
-      'rejects stale descriptor after refresh failure (durable=$durable)',
+      'a failed row read queues nothing and the retry queues the row '
+      '(durable=$durable)',
       () async {
-        const id = 'save-fails';
+        const id = 'read-fails';
         final testDate = DateTime(2024, 3, 15, 10, 30);
-        final stale = JournalEntity.journalEntry(
+        final entry = JournalEntity.journalEntry(
           meta: Metadata(
             id: id,
             createdAt: testDate,
             updatedAt: testDate,
             dateFrom: testDate,
             dateTo: testDate,
-            vectorClock: const VectorClock({'host': 1}),
+            vectorClock: const VectorClock({'hostA': 2}),
           ),
           entryText: const EntryText(plainText: 'draft'),
         );
-        final fresh = stale.copyWith(
-          meta: stale.meta.copyWith(
-            vectorClock: const VectorClock({'host': 2}),
-          ),
+        var failRead = true;
+        final readError = Exception('database locked');
+        when(() => journalDb.journalEntityByIdIncludingDeleted(id)).thenAnswer(
+          (_) async {
+            if (failRead) throw readError;
+            return entry;
+          },
         );
-        final jsonPath = relativeEntityPath(stale);
-        final file = File('${documentsDirectory.path}$jsonPath')
-          ..parent.createSync(recursive: true)
-          ..writeAsStringSync(jsonEncode(stale.toJson()));
-        var failRefresh = true;
-        final refreshError = Exception('disk full');
-        when(() => journalDb.restoreSidecar(id)).thenAnswer((_) async {
-          if (failRefresh) throw refreshError;
-          file.writeAsStringSync(jsonEncode(fresh.toJson()));
-          return true;
-        });
         final retryableService = buildService();
         final message = SyncMessage.journalEntity(
           id: id,
-          jsonPath: jsonPath,
-          vectorClock: fresh.meta.vectorClock,
+          jsonPath: relativeEntityPath(entry),
+          vectorClock: entry.meta.vectorClock,
           status: SyncEntryStatus.update,
         );
 
         if (durable) {
           await expectLater(
             retryableService.enqueueMessageOrThrow(message),
-            throwsA(same(refreshError)),
+            throwsA(same(readError)),
           );
         } else {
           await retryableService.enqueueMessage(message);
         }
         verifyNever(() => syncDatabase.addOutboxItem(any()));
         expect(retryableService.enqueueCalls, 0);
-        expect(await file.readAsString(), jsonEncode(stale.toJson()));
 
-        failRefresh = false;
+        failRead = false;
         await retryableService.enqueueMessageOrThrow(message);
         final row =
             verify(
                   () => syncDatabase.addOutboxItem(captureAny()),
                 ).captured.single
                 as OutboxCompanion;
-        final queued =
-            SyncMessage.fromJson(
-                  jsonDecode(row.message.value) as Map<String, dynamic>,
-                )
-                as SyncJournalEntity;
-        expect(queued.vectorClock, fresh.meta.vectorClock);
-        expect(await file.readAsString(), jsonEncode(fresh.toJson()));
+        expect(row.subject.value, 'hhash:2');
         expect(retryableService.enqueueCalls, 1);
       },
     );
   }
 
-  test('non-journal messages skip JSON refresh lookup', () async {
+  test('non-journal messages never read the journal', () async {
     clearInteractions(journalDb);
 
     await service.enqueueMessage(const SyncMessage.aiConfigDelete(id: 'cfg'));
 
-    verifyNever(() => journalDb.restoreSidecar(any()));
+    verifyNever(() => journalDb.journalEntityByIdIncludingDeleted(any()));
   });
 
   test('enqueueMessageOrThrow propagates an outbox write failure', () async {
@@ -677,9 +663,7 @@ void main() {
         );
 
         const jsonPath = '/entries/test.json';
-        File('${documentsDirectory.path}$jsonPath')
-          ..createSync(recursive: true)
-          ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+        harness.stageRow(journalEntity);
 
         final imagePath =
             '${documentsDirectory.path}${imageData.imageDirectory}${imageData.imageFile}';
@@ -761,9 +745,7 @@ void main() {
       );
 
       final jsonPath = '/entries/$entryId.json';
-      File('${documentsDirectory.path}$jsonPath')
-        ..createSync(recursive: true)
-        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+      harness.stageRow(journalEntity);
       File(
           '${documentsDirectory.path}${imageData.imageDirectory}'
           '${imageData.imageFile}',
@@ -890,9 +872,7 @@ void main() {
       );
 
       const jsonPath = '/entries/payload-test.json';
-      File('${documentsDirectory.path}$jsonPath')
-        ..createSync(recursive: true)
-        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+      harness.stageRow(journalEntity);
 
       const fileSize = 5000;
       final imagePath =
@@ -1052,9 +1032,7 @@ void main() {
           entryText: const EntryText(plainText: 'Fresh text'),
         );
         const jsonPath = '/entries/test.json';
-        File('${documentsDirectory.path}$jsonPath')
-          ..createSync(recursive: true)
-          ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+        harness.stageRow(journalEntity);
 
         await testService.enqueueMessage(
           const SyncMessage.journalEntity(

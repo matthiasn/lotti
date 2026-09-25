@@ -496,7 +496,6 @@ class TutorialAppHarness {
       background: false,
       readPool: 0,
       loggingService: DomainLogger(loggingService: loggingService),
-      documentsDirectory: documentsDirectory,
     );
     final fts5Db = Fts5Db(inMemoryDatabase: true);
     final editorDb = EditorDb(inMemoryDatabase: true);

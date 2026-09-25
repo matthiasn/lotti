@@ -2220,10 +2220,6 @@ Future<void> _stageMediaEntity({
 
     await sourceFile.parent.create(recursive: true);
     await sourceFile.writeAsBytes(bytes, flush: true);
-    await saveJournalEntityJson(
-      entity,
-      documentsDirectory: sender.documentsDirectory,
-    );
     await sender.journalDb.updateJournalEntity(entity);
     await sender.service.enqueueMessage(
       SyncMessage.journalEntity(
@@ -2289,10 +2285,6 @@ Future<List<JournalEntity>> _sendMediaMetadataUpdates({
       };
       updated.add(next);
 
-      await saveJournalEntityJson(
-        next,
-        documentsDirectory: sender.documentsDirectory,
-      );
       await sender.journalDb.updateJournalEntity(next);
       await sender.service.enqueueMessage(
         SyncMessage.journalEntity(
@@ -2368,10 +2360,6 @@ Future<void> _stageTestMessages(int n, {required _DeviceOutbox device}) async {
 
     final jsonPath = relativeEntityPath(entity);
 
-    await saveJournalEntityJson(
-      entity,
-      documentsDirectory: device.documentsDirectory,
-    );
     await device.journalDb.updateJournalEntity(entity);
     await device.service.enqueueMessage(
       SyncMessage.journalEntity(

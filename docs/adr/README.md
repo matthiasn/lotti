@@ -154,3 +154,4 @@ Each ADR should contain:
 - [`0084-model-checked-inbound-queue.md`](./0084-model-checked-inbound-queue.md)
 - [`0085-model-checked-outbox.md`](./0085-model-checked-outbox.md)
 - [`0086-append-only-outbox.md`](./0086-append-only-outbox.md)
+- [`0087-journal-row-is-the-only-copy.md`](./0087-journal-row-is-the-only-copy.md)

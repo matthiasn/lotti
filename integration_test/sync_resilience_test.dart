@@ -197,12 +197,10 @@ void main() {
       // Create fresh databases for each test
       aliceDb = JournalDb(
         overriddenFilename: 'alice_resilience_${uuid.v1()}.sqlite',
-        documentsDirectory: aliceDocumentsDirectory,
         inMemoryDatabase: true,
       );
       bobDb = JournalDb(
         overriddenFilename: 'bob_resilience_${uuid.v1()}.sqlite',
-        documentsDirectory: bobDocumentsDirectory,
         inMemoryDatabase: true,
       );
     });

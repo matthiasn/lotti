@@ -147,11 +147,8 @@ void main() {
         File(p.join(worldRoot.path, 'db.sqlite')).existsSync(),
         isTrue,
       );
-      // JSON sidecar landed under the world root.
-      final sidecars = Directory(
-        p.join(worldRoot.path, 'tasks'),
-      ).listSync(recursive: true).whereType<File>();
-      expect(sidecars, isNotEmpty);
+      // The row is the only copy: no JSON file mirrors the entry.
+      expect(Directory(p.join(worldRoot.path, 'tasks')).existsSync(), isFalse);
       await reopened.close();
 
       // Isolation: the canary tree is byte-identical.
