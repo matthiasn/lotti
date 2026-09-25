@@ -284,6 +284,12 @@ sealed class SyncMessage with _$SyncMessage {
 
     /// The host UUID of the device requesting the backfill
     required String requesterId,
+
+    /// Highest settled own counter, periodically announced even when no
+    /// entries are requested. Peers can discover a lost final payload without
+    /// waiting for a later edit. This is an observation, never a receipt.
+    /// Older clients ignore this optional field and accept empty requests.
+    @JsonKey(includeIfNull: false) int? requesterSequenceHead,
   }) = SyncBackfillRequest;
 
   /// Response to a backfill request.

@@ -782,6 +782,52 @@ void main() {
       sequenceLogService: null,
     );
 
+    test(
+      'head announcements coalesce while pending or leased without mutation',
+      () async {
+        final writer = realWriter();
+        Future<void> announce(int counter) {
+          final message = SyncBackfillRequest(
+            entries: const [],
+            requesterId: 'origin',
+            requesterSequenceHead: counter,
+          );
+          return writer.enqueueBackfillRequest(
+            msg: message,
+            commonFields: _commonFields(message),
+          );
+        }
+
+        await Future.wait([announce(1), announce(2)]);
+        final pending = await db.select(db.outbox).get();
+        expect(pending, hasLength(1));
+        expect(pending.single.subject, 'backfillRequest:head:origin');
+        final immutableMessage = pending.single.message;
+        await db.claimOutboxRows(pending);
+        await announce(3);
+        final leased = await db.select(db.outbox).get();
+        expect(leased, hasLength(1));
+        expect(leased.single.message, immutableMessage);
+        expect(leased.single.status, OutboxStatus.sending.index);
+
+        await db.updateOutboxItem(
+          OutboxCompanion(
+            id: Value(leased.single.id),
+            status: Value(OutboxStatus.sent.index),
+          ),
+        );
+        await announce(4);
+        final all = await db.select(db.outbox).get();
+        expect(all, hasLength(2));
+        final latest =
+            SyncMessage.fromJson(
+                  jsonDecode(all.last.message) as Map<String, dynamic>,
+                )
+                as SyncBackfillRequest;
+        expect(latest.requesterSequenceHead, 4);
+      },
+    );
+
     Future<void> enqueueAgentAt(OutboxEnqueueWriter writer, int counter) {
       final msg =
           SyncMessage.agentEntity(

@@ -91,7 +91,7 @@ their richer state spaces.
 | `NoContentlessState`, `AcknowledgedPayload`, `SettledPeersAgree` | receipts correspond to domain state, lifecycle patches have a base, and fully acknowledged peers agree on the winner/conflict set |
 | `CommittedReachesRoom`, `CommittedReachesPeer` | committed data eventually reaches transport/peer under the stated delivery obligations |
 | `VisibleGapHeals`, `VisiblePayloadsConverge` | observed gaps settle; observing every modeled counter eventually yields the retained payloads |
-| `BurnReachesPeer` | durable burns eventually settle at peers under reliable delivery |
+| `BurnReachesPeer` | durable burns eventually settle under reliable delivery or recurring head announcements |
 
 Every configuration checks all safety invariants. `Consumption` and `Lossy`
 check conditional gap repair and room delivery; the others also require delivery
@@ -109,7 +109,13 @@ at a time; they are not the Cartesian product of all faults and families.
 | `Burn` | one aborted reservation, one enqueue/send failure and one process crash | 112 |
 | `Lossy` | two distinct entry links; one abandoned delivery or failed receipt | 183,515 |
 
-These eight configurations explore **922,564 distinct states** in total.
+The original eight configurations explore **922,564 distinct states** in total.
+`Heads`, `HeadsBurn` and `HeadsCrash` additionally enable periodic origin-head
+announcements for one final counter: respectively one abandoned delivery, an
+aborted reservation with one abandoned delivery, and one process crash. Each
+checks unconditional payload/burn delivery under its configured fault bound.
+Announcements travel through the same outbox, room and inbound actions as data;
+a receiver crash clears its volatile announcement state.
 
 The liveness obligations are explicit:
 
@@ -126,9 +132,13 @@ The liveness obligations are explicit:
 - Fair **recovery opportunities** assume the app eventually runs with usable
   stores and fair timer scheduling. Production retries own settlement
   periodically as well as on release, startup, store wiring or request.
-  Backfill request fairness still assumes retry opportunities continue
-  (including operator retry), beyond automatic retry exhaustion.
-- Lossy profiles do not promise recovery of an unobserved final counter.
+  Without announcements, request fairness assumes retry opportunities continue
+  (including operator retry), beyond automatic retry exhaustion. Head-enabled
+  profiles assume an eventually available origin and fair automatic repair
+  within a fresh announcement window. The runtime bounds and expiry are in
+  [sequence and backfill](../../knowledge/features/sync/sequence-and-backfill.md#discovering-a-lost-final-update);
+  wall-clock expiry, batch budgets and cooldowns are abstracted in this model.
+- Profiles without announcements do not promise recovery of an unobserved final counter.
   Receipt failures now retain a retryable delivery; a dedicated temporal check
   proves eventual receipt with one transient failure, including at the tail.
   This assumes retry succeeds before the real worker exhausts its attempt cap.
@@ -146,9 +156,18 @@ checks. Each guard has a passing control and must fail with only that guard
 removed: durable burn staging, bind-after-enqueue, apply-before-receipt,
 hint verification and exact journal payload preparation. A paired temporal
 check requires tail-receipt recovery to pass with retry and fail when receipt
-errors are swallowed. Unconditional lost-tail delivery still has an expected
-counterexample. A reachable request/answer/hint/receipt path guards against a
+errors are swallowed. Lost-tail delivery passes with announcements and has
+an expected counterexample with only announcements disabled. A reachable request/answer/hint/receipt path guards against a
 vacuous repair claim.
+
+The head conformance scenarios run two and three replicas with real journal and
+sync databases, enqueue writers, outbox claims, receive adapters and backfill
+handlers. They drop the final entry-link payload and an announcement, inject a
+receipt-write failure, and duplicate/reorder recovery deliveries. The outbox
+facade's scheduling/dispatch is replaced by a controlled transport; this does
+not exercise Matrix networking, its SDK, or file-backed attachments. Separate
+tracker checks cover fairness, failed scans, retirement, deduplication and
+onboarding suppression, including generated head/batch combinations.
 
 The burn mutation exposed a production bug: best-effort enqueue swallowed a
 persistence failure before the counter became terminal. The Dart conformance

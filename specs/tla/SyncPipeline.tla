@@ -14,13 +14,13 @@ EXTENDS Naturals, FiniteSets
 (* timer scheduling. See the scope/obligation table in README.             *)
 (* Retained room history is offered fairly to the durable inbound queue;  *)
 (* pagination and floor mechanics refine that interface in InboundQueue.   *)
-(* No purge, missing stores, permanent partitions or exhausted operator   *)
-(* retries. Those conditions cannot satisfy the eventual-delivery claim.  *)
+(* No purge, missing stores or permanent partitions. Head-enabled models *)
+(* assume recurring origin announcements and timely automatic repair.    *)
 (***************************************************************************)
 CONSTANTS Family, Peers, MaxCounter, SeparateEntities, AbortCounters, ConcurrentWriters,
           MaxFaults, MaxCrashes, FaultKinds,
           DurableBurn, BindAfterEnqueue, ReceiptAfterApply, VerifyHints,
-          PrepareExactPayload, RetryReceipts
+          PrepareExactPayload, RetryReceipts, AnnounceHeads
 
 ASSUME /\ Family \in {"journal", "entryLink", "agentEntity", "agentLink",
                        "notification", "consumptionEvent"}
@@ -56,6 +56,7 @@ Message(k, sender, target, v, c, cov) ==
 Data(k, v, c, cov) == Message(k, Origin(c), "all", v, c, cov)
 Request(p, c) == Message("request", p, Origin(c), 0, c, {})
 Hint(p, c) == Message("hint", Origin(c), p, 0, c, {})
+Head(c) == Message("head", Origin(c), "all", 0, c, {})
 Burn(c) == Message("burn", Origin(c), "all", 0, c, {})
 Coverable(v) == {c \in Counters : c # v /\ Covers(v, c)}
 DataCandidates ==
@@ -70,6 +71,7 @@ DataMessages == {m \in DataCandidates : m.covered \subseteq Coverable(m.counter)
 Messages == DataMessages \cup {Request(p, c) : p \in Peers, c \in Counters}
             \cup {Hint(p, c) : p \in Peers, c \in Counters}
             \cup {Burn(c) : c \in Counters}
+            \cup (IF AnnounceHeads THEN {Head(c) : c \in Counters} ELSE {})
 IsData(m) == m.kind \in {"full", "state"}
 Targets(m) == IF m.target = "all" THEN Peers ELSE {m.target}
 Carries(m) == {m.counter} \cup m.covered
@@ -114,6 +116,7 @@ Init == s = [
     received |-> [p \in Peers |-> {}],
     burned |-> [p \in Peers |-> {}],
     head |-> [p \in Peers |-> [o \in Origins |-> 0]],
+    announced |-> [p \in Peers |-> [o \in Origins |-> 0]],
     hints |-> [p \in Peers |-> {}],
     faults |-> 0, crashes |-> 0]
 CanFault(k) == k \in FaultKinds /\ s.faults < MaxFaults
@@ -125,7 +128,7 @@ SourceCovers(c) == LET v == s.source[Origin(c)][Entity(c)] IN
 Resend(c) == Data(Kind(c), s.source[Origin(c)][Entity(c)], s.source[Origin(c)][Entity(c)], {})
 Resolved(p) == s.received[p] \cup s.burned[p]
 
-Observed(p, c) == Counter(c) <= s.head[p][Origin(c)]
+Observed(p, c) == Counter(c) <= Max({s.head[p][Origin(c)], s.announced[p][Origin(c)]})
 Known(p) == {c \in Counters : Observed(p, c)}
 AllKnown(p) == Counters \subseteq Known(p)
 Observe(head, counters) == [o \in Origins |->
@@ -295,20 +298,40 @@ Crash(n) ==
               !.phase = IF n = Origin(s.next) THEN "idle" ELSE @,
               !.out = [m \in Messages |-> IF m.sender = n /\ s.out[m] \in {"claimed", "transmitted"}
                                           THEN "pending" ELSE s.out[m]],
+              !.announced = [p \in Peers |-> IF p = n
+                  THEN [o \in Origins |-> 0] ELSE s.announced[p]],
               !.inbox[n] = [m \in Messages |->
                   IF s.inbox[n][m] = "applied" THEN "queued" ELSE s.inbox[n][m]]]
+
+
+\* Periodic recovery announces a durable settled own head. Announcing only
+\* after finite writes quiesce is sufficient for the eventuality claim and
+\* bounds redundant intermediate announcements. It is never a receipt.
+\* The runtime expires observations; this abstraction assumes an eventually
+\* available origin and a repair pass within a fresh announcement window.
+QueueHead(c) ==
+    /\ AnnounceHeads
+    /\ s.next > MaxCounter /\ s.phase = "idle"
+    /\ s.own[c] \in {"bound", "burned"}
+    /\ ~\E other \in Counters : Origin(other) = Origin(c) /\ Counter(other) > Counter(c)
+    /\ s.out[Head(c)] \in {"absent", "sent"}
+    /\ s' = Enqueue(s, Head(c))
+ReceiveHead(p, m) ==
+    /\ Queued(p, m) /\ m.kind = "head"
+    /\ s' = [s EXCEPT !.announced[p] = Observe(@, {m.counter}),
+                        !.inbox[p][m] = "done"]
 
 Next == Reserve \/ Commit \/ Abort \/ Stage \/ FailStage \/ Bind
         \/ (\E n \in Nodes : Crash(n))
         \/ (\E o \in Origins, e \in Entities : Refresh(o, e))
         \/ (\E c \in Counters : RecoverStage(c) \/ RecoverBind(c)
-                                \/ BurnStage(c) \/ FailBurnStage(c) \/ BurnBind(c))
+                                \/ BurnStage(c) \/ FailBurnStage(c) \/ BurnBind(c) \/ QueueHead(c))
         \/ (\E m \in Messages : Claim(m) \/ Upload(m) \/ Send(m)
                                  \/ MarkSent(m) \/ SendFail(m))
         \/ (\E n \in Nodes, m \in Messages : Deliver(n, m) \/ Abandon(n, m))
         \/ (\E p \in Peers, m \in Messages : Apply(p, m) \/ ApplyFail(p, m)
                         \/ Record(p, m) \/ RecordFail(p, m)
-                        \/ ReceiveBurn(p, m) \/ ReceiveHint(p, m))
+                        \/ ReceiveBurn(p, m) \/ ReceiveHint(p, m) \/ ReceiveHead(p, m))
         \/ (\E p \in Peers, c \in Counters : Download(p, c) \/ VerifyHint(p, c)
                     \/ QueueRequest(p, c) \/ Answer(p, c) \/ AnswerHint(p, c)
                     \/ RetryRequest(p, c))
@@ -317,13 +340,13 @@ Spec == Init /\ [][Next]_vars
         /\ WF_vars(Reserve) /\ WF_vars(Commit) /\ WF_vars(Abort)
         /\ WF_vars(Stage) /\ WF_vars(Bind)
         /\ (\A c \in Counters : WF_vars(RecoverStage(c)) /\ WF_vars(RecoverBind(c))
-                         /\ WF_vars(BurnStage(c)) /\ WF_vars(BurnBind(c)))
+                         /\ WF_vars(BurnStage(c)) /\ WF_vars(BurnBind(c)) /\ WF_vars(QueueHead(c)))
         /\ (\A o \in Origins, e \in Entities : WF_vars(Refresh(o, e)))
         /\ (\A m \in Messages : WF_vars(Claim(m)) /\ WF_vars(Upload(m))
                           /\ WF_vars(Send(m)) /\ WF_vars(MarkSent(m)))
         /\ (\A n \in Nodes, m \in Messages : WF_vars(Deliver(n, m)))
         /\ (\A p \in Peers, m \in Messages : WF_vars(Apply(p, m)) /\ WF_vars(Record(p, m))
-                         /\ WF_vars(ReceiveBurn(p, m)) /\ WF_vars(ReceiveHint(p, m)))
+                         /\ WF_vars(ReceiveBurn(p, m)) /\ WF_vars(ReceiveHint(p, m)) /\ WF_vars(ReceiveHead(p, m)))
         /\ (\A p \in Peers, c \in Counters : WF_vars(Download(p, c))
                   /\ WF_vars(VerifyHint(p, c)) /\ WF_vars(QueueRequest(p, c))
                   /\ WF_vars(Answer(p, c)) /\ WF_vars(AnswerHint(p, c))
@@ -339,6 +362,7 @@ TypeOK == /\ s.next \in 1..(MaxCounter + 1)
           /\ s.applied \in [Peers -> SUBSET Counters]
           /\ s.hints \in [Peers -> SUBSET Counters]
           /\ s.head \in [Peers -> [Origins -> 0..MaxCounter]]
+          /\ s.announced \in [Peers -> [Origins -> 0..MaxCounter]]
           /\ s.downloaded \in [Peers -> SUBSET Counters]
           /\ s.rows \in [Peers -> [Entities ->
                  [version : 0..MaxCounter, content : 0..MaxCounter, conflict : 0..MaxCounter, marked : BOOLEAN]]]

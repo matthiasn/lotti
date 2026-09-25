@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Require targeted counterexamples and document the pipeline's liveness limits.
+"""Require targeted counterexamples and passing recovery controls.
 
 Run after/instead of tlc.sh: a temporary copy uses its pinned, checksummed TLC.
 No intentionally failing configuration is left in the positive CI shard set.
@@ -36,7 +36,8 @@ def check(name, constants, assertion, *, temporal=False, extension="", fails=Tru
         result = subprocess.run(
             ["bash", str(work / "tlc.sh"), "SyncPipeline"],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-            timeout=300, check=False,
+            timeout=600 if constants.get("AnnounceHeads") == "TRUE" else 300,
+            check=False,
             env={**os.environ, "JAVA_TOOL_OPTIONS": "-Xmx2g"},
         )
     expected = (
@@ -68,8 +69,11 @@ def main():
         # for sensitivity to the switch. Only the one guard changes.
         check(name + "-guarded", constants, assertion, fails=False)
         check(name + "-mutated", {**constants, switch: "FALSE"}, assertion)
-    check("lost-unobserved-tail", {"MaxCounter": "1", "MaxFaults": "1",
-          "FaultKinds": '{"receive"}'}, "CommittedReachesPeer", temporal=True)
+    for heads, fails in (("FALSE", True), ("TRUE", False)):
+        check("lost-tail-announcements-" + heads, {
+            "MaxCounter": "1", "MaxFaults": "1",
+            "FaultKinds": '{"receive"}', "AnnounceHeads": heads,
+        }, "CommittedReachesPeer", temporal=True, fails=fails)
     for retry, fails in (("TRUE", False), ("FALSE", True)):
         check("tail-receipt-retry-" + retry, {
             "MaxCounter": "1", "MaxFaults": "1",

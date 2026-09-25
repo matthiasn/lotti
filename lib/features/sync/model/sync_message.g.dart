@@ -405,6 +405,7 @@ SyncBackfillRequest _$SyncBackfillRequestFromJson(Map<String, dynamic> json) =>
           .map((e) => BackfillRequestEntry.fromJson(e as Map<String, dynamic>))
           .toList(),
       requesterId: json['requesterId'] as String,
+      requesterSequenceHead: (json['requesterSequenceHead'] as num?)?.toInt(),
       $type: json['runtimeType'] as String?,
     );
 
@@ -413,6 +414,7 @@ Map<String, dynamic> _$SyncBackfillRequestToJson(
 ) => <String, dynamic>{
   'entries': instance.entries,
   'requesterId': instance.requesterId,
+  'requesterSequenceHead': ?instance.requesterSequenceHead,
   'runtimeType': instance.$type,
 };
 

@@ -11,6 +11,33 @@ import 'sync_db_test_utils.dart';
 void main() {
   SyncDatabase? db;
 
+  for (final status in OutboxStatus.values) {
+    test(
+      'pending head lookup distinguishes host and status ${status.name}',
+      () async {
+        final database = SyncDatabase(inMemoryDatabase: true);
+        addTearDown(database.close);
+        await database.addOutboxItem(
+          buildOutboxCompanion(
+            status: status,
+            createdAt: DateTime.utc(2026, 9, 26),
+            subject: 'backfillRequest:head:origin',
+            message: '{}',
+          ),
+        );
+        expect(
+          await database.hasPendingSequenceHeadAnnouncement('origin'),
+          status == OutboxStatus.pending || status == OutboxStatus.sending,
+        );
+        expect(
+          await database.hasPendingSequenceHeadAnnouncement('other'),
+          isFalse,
+        );
+        expect(await database.getPendingBackfillEntries(), isEmpty);
+      },
+    );
+  }
+
   group('getPendingBackfillEntries Tests', () {
     // Subject prefix that production `_enqueueBackfillRequest` stamps on
     // every backfill outbox row. `getPendingBackfillEntries` filters with a

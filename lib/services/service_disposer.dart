@@ -46,8 +46,8 @@ class ServiceDisposalFailure {
 
 /// Disposes long-running services and databases in dependency-safe order.
 ///
-/// Cleanup failures are guarded independently. Sync recovery first drains
-/// without a deadline so its dependencies cannot close while it uses them;
+/// Cleanup failures are guarded independently. Sync recovery and automatic
+/// backfill first drain without deadlines so their dependencies remain open;
 /// subsequent cleanup steps have individual deadlines. Every failure is
 /// logged and also returned, so a caller that must know the generation
 /// really closed (a backup) can refuse to proceed, while shutdown and profile
@@ -100,9 +100,10 @@ class ServiceDisposer {
       'HabitAutoCompletionService',
     );
 
-    _disposeSyncSafely<BackfillRequestService>(
-      (s) => s.dispose(),
+    await _disposeAsyncSafely<BackfillRequestService>(
+      (s) => s.stopAndDrain(),
       'BackfillRequestService',
+      timeout: null,
     );
 
     await _disposeAsyncSafely<EmbeddingService>(

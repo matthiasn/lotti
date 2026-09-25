@@ -267,6 +267,7 @@ Future<String? Function()> _registerMatrixSyncStack({
   // reservations whose first sequence-log insert failed. The one-time audit
   // stays inside the tracked pass so shutdown also waits for its reads.
   var auditOwnReservations = true;
+  late final BackfillRequestService backfillRequestService;
   final syncRecoveryService = SyncRecoveryService(
     logging: domainLogger,
     recover: () async {
@@ -285,6 +286,7 @@ Future<String? Function()> _registerMatrixSyncStack({
         );
       }
       await backfillResponseHandler.settleOrphanedOwnCounters();
+      await backfillRequestService.announceOwnSequenceHead();
       if (!auditOwnReservations) return;
       final hostId = await vectorClockService.getHost();
       if (hostId == null) return;
@@ -302,8 +304,7 @@ Future<String? Function()> _registerMatrixSyncStack({
       }
     },
   );
-  getIt<StartupTasks>().track(syncRecoveryService.start());
-  final backfillRequestService = BackfillRequestService(
+  backfillRequestService = BackfillRequestService(
     sequenceLogService: syncSequenceLogService,
     syncDatabase: syncDatabase,
     outboxService: outboxService,
@@ -314,6 +315,9 @@ Future<String? Function()> _registerMatrixSyncStack({
     domainLogger: domainLogger,
     onboardingSyncService: onboardingSyncService,
   );
+  backfillResponseHandler.onSequenceHead =
+      backfillRequestService.noteSequenceHead;
+  getIt<StartupTasks>().track(syncRecoveryService.start());
   syncSequenceLogService.onMissingEntriesDetected = () {
     backfillRequestService.nudge();
     // Barren-bridge recovery: when the most recent reconnect bridge
@@ -365,7 +369,10 @@ Future<String? Function()> _registerMatrixSyncStack({
       dispose: (service) => service.dispose(),
     )
     ..registerSingleton<BackfillResponseHandler>(backfillResponseHandler)
-    ..registerSingleton<BackfillRequestService>(backfillRequestService)
+    ..registerSingleton<BackfillRequestService>(
+      backfillRequestService,
+      dispose: (service) => service.stopAndDrain(),
+    )
     ..registerSingleton<OnboardingSyncService>(onboardingSyncService)
     ..registerSingleton<MediaRepairService>(
       mediaRepairService,

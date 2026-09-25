@@ -140,6 +140,24 @@ class SyncSequenceLogService {
 
   // ── Receive path ──────────────────────────────────────────────────────────
 
+  /// Discovers a bounded inclusive head slice without recording any receipt.
+  Future<int> materializeAnnouncedHead({
+    required String hostId,
+    required int head,
+    required int limit,
+    int afterCounter = 0,
+  }) => _gapMaterializer.materializeAnnouncedHead(
+    hostId: hostId,
+    head: head,
+    limit: limit,
+    afterCounter: afterCounter,
+  );
+
+  /// Reopens only unresolved rows after their head-driven request is durable.
+  Future<void> markAnnouncedHeadRequests(
+    List<({String hostId, int counter})> entries,
+  ) => _backfillQueries.markAnnouncedHeadRequests(entries);
+
   /// Record a received entry and detect gaps in the sequence.
   Future<List<({String hostId, int counter})>> recordReceivedEntry({
     required String entryId,

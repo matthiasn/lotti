@@ -238,13 +238,34 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
   Future<void> enqueueBackfillRequest({
     required SyncBackfillRequest msg,
     required OutboxCompanion commonFields,
-  }) => enqueueSimple(
-    commonFields: commonFields,
-    subject: 'backfillRequest:batch:${msg.entries.length}',
-    logMessage:
-        'enqueue type=SyncBackfillRequest '
-        'entries=${msg.entries.length}',
-  );
+  }) async {
+    if (msg.entries.isEmpty && msg.requesterSequenceHead != null) {
+      // Keep at most one pending/in-flight announcement per origin. Never
+      // change a leased row; the next periodic tick can announce a newer head.
+      await _syncDatabase.transaction(() async {
+        if (await _syncDatabase.hasPendingSequenceHeadAnnouncement(
+          msg.requesterId,
+        )) {
+          return;
+        }
+        await enqueueSimple(
+          commonFields: commonFields,
+          subject: 'backfillRequest:head:${msg.requesterId}',
+          logMessage:
+              'enqueue sequenceHead host=${msg.requesterId} '
+              'counter=${msg.requesterSequenceHead}',
+        );
+      });
+      return;
+    }
+    await enqueueSimple(
+      commonFields: commonFields,
+      subject: 'backfillRequest:batch:${msg.entries.length}',
+      logMessage:
+          'enqueue type=SyncBackfillRequest '
+          'entries=${msg.entries.length}',
+    );
+  }
 
   Future<void> enqueueMediaRequest({
     required SyncMediaRequest msg,

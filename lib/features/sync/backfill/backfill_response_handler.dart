@@ -63,6 +63,10 @@ class BackfillResponseHandler {
 
   final JournalDb _journalDb;
   final SyncSequenceLogService _sequenceLogService;
+
+  /// Observes a peer's settled sequence head independently of response limits.
+  /// The periodic request pass decides when to materialize and repair gaps.
+  void Function(String hostId, int counter)? onSequenceHead;
   final OutboxService _outboxService;
   final DomainLogger _loggingService;
   final VectorClockService _vectorClockService;
@@ -397,6 +401,11 @@ class BackfillResponseHandler {
           subDomain: 'backfill.disabled',
         );
         return;
+      }
+
+      final head = request.requesterSequenceHead;
+      if (head != null && head > 0 && request.requesterId.isNotEmpty) {
+        onSequenceHead?.call(request.requesterId, head);
       }
 
       // Clean expired cooldown entries at the start of each batch
