@@ -32,6 +32,10 @@ const relativeAgeDateThreshold = Duration(days: 7);
 
 /// [relativeAgoLabel] for [at] up to [relativeAgeDateThreshold] before [now],
 /// and the date beyond it — "Sep 13", with the year once it is not [now]'s.
+///
+/// The date is the viewer's: both instants are read in local time, so a
+/// timestamp parsed from a `Z`-suffixed string names the day it was on the
+/// reader's calendar, and "this year" is the reader's year.
 String relativeAgeOrDateLabel(
   AppLocalizations messages, {
   required DateTime at,
@@ -39,8 +43,9 @@ String relativeAgeOrDateLabel(
 }) {
   final age = now.difference(at);
   if (age < relativeAgeDateThreshold) return relativeAgoLabel(messages, age);
-  final format = at.year == now.year
+  final localAt = at.toLocal();
+  final format = localAt.year == now.toLocal().year
       ? DateFormat.MMMd(messages.localeName)
       : DateFormat.yMMMd(messages.localeName);
-  return format.format(at);
+  return format.format(localAt);
 }

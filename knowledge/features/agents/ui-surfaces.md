@@ -132,8 +132,9 @@ once it is not this year's) — from `relativeAgeOrDateLabel` over the report's
 `createdAt`. A bare *Up to date* could not tell a summary from this morning
 from one from last month. The check glyph and its tooltip (*Summary is up to
 date*) still carry the state. The row arms one timer for the label's next
-change (`untilNextAgeBucket`), not a tick per second, and none once the label
-is a date. A caller that passes no timestamp still gets *Up to date*; a card
+change (`untilNextAgeBucket`), not a tick per second; a dated label waits for
+the next local midnight, so *Dec 20* gains its year on New Year's Day. Dates are
+the viewer's: `relativeAgeOrDateLabel` reads both instants in local time. A caller that passes no timestamp still gets *Up to date*; a card
 with no report shows the trigger alone, which is how the first summary gets
 written. The strip pays its own bottom inset from the card, because the dense
 trigger and the bare word bring no air of their own.

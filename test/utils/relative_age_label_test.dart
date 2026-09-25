@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/utils/relative_age_label.dart';
 import 'package:material_ui/material_ui.dart';
@@ -84,6 +85,20 @@ void main() {
         );
       },
     );
+
+    test("names the day on the reader's calendar, not UTC's", () {
+      // A `createdAt` parsed from a `Z`-suffixed string stays UTC; the label
+      // must be the one its local reading gives.
+      final utc = DateTime.parse('2026-09-01T23:30:00Z');
+      expect(
+        relativeAgeOrDateLabel(messages, at: utc, now: now),
+        relativeAgeOrDateLabel(messages, at: utc.toLocal(), now: now),
+      );
+      expect(
+        relativeAgeOrDateLabel(messages, at: utc, now: now),
+        DateFormat.MMMd('en').format(utc.toLocal()),
+      );
+    });
 
     test('follows the catalog locale', () async {
       final german = await AppLocalizations.delegate.load(const Locale('de'));

@@ -248,15 +248,21 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
   }
 
   /// One timer for the age label's next change — the next minute, hour or
-  /// day — rather than a tick per second. A dated label never changes, so
-  /// it arms none; neither does a row showing no age.
+  /// day — rather than a tick per second. A dated label waits for the next
+  /// local midnight instead: "Dec 20" must gain its year the moment the
+  /// reader's calendar crosses New Year, and midnight is the only time a
+  /// date label can change. A row showing no age arms none.
   void _scheduleAgeRefresh(DateTime? updatedAt, DateTime now) {
     _ageTimer?.cancel();
     _ageTimer = null;
     if (updatedAt == null) return;
     final age = now.difference(updatedAt);
-    if (age >= relativeAgeDateThreshold) return;
-    _ageTimer = Timer(untilNextAgeBucket(age), () {
+    final local = now.toLocal();
+    final wait = age < relativeAgeDateThreshold
+        ? untilNextAgeBucket(age)
+        : DateTime(local.year, local.month, local.day + 1).difference(local) +
+              const Duration(seconds: 1);
+    _ageTimer = Timer(wait, () {
       if (mounted) setState(() {});
     });
   }

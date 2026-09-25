@@ -314,6 +314,24 @@ void main() {
       });
     });
 
+    testWidgets('a dated label gains its year at New Year, unprompted', (
+      tester,
+    ) async {
+      var current = DateTime(2025, 12, 31, 23, 59, 30);
+      await withClock(Clock(() => current), () async {
+        await pumpRow(
+          tester,
+          compactRow(reportUpdatedAt: DateTime(2025, 12, 20, 9)),
+        );
+        expect(find.text('Dec 20'), findsOneWidget);
+
+        // Nothing rebuilds the row but its own timer.
+        current = DateTime(2026, 1, 1, 0, 0, 31);
+        await tester.pump(const Duration(minutes: 1));
+        expect(find.text('Dec 20, 2025'), findsOneWidget);
+      });
+    });
+
     testWidgets('without a timestamp it still says Up to date', (
       tester,
     ) async {
