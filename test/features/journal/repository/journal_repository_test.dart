@@ -3711,7 +3711,10 @@ void main() {
         final host = (await getIt<VectorClockService>().getHost())!;
         // The edit extends the clock of the version it replaced, and is not
         // stamped earlier than that version.
-        expect(edited.vectorClock?.vclock, {'device-a': 5, host: 0});
+        expect(edited.vectorClock?.vclock, {
+          'device-a': 5,
+          host: firstVectorClockCounter,
+        });
         expect(edited.updatedAt, DateTime(2100));
 
         // Device A's next journal-entity message embeds its snapshot of the

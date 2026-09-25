@@ -5,17 +5,17 @@ description: How causal order is represented, why coveredVectorClocks is separat
 resource: ../../../lib/features/sync/vector_clock.dart
 tags: [sync, vector-clock, conflicts, causality]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T23:30:00Z }
-stale_after: 2026-12-24
+generated: { by: claude-code/opus-5.5, at: 2026-09-25T09:00:00Z }
+stale_after: 2026-12-25
 sources:
   - id: vector-clock
     resource: ../../../lib/features/sync/vector_clock.dart
-    title: VectorClock compare and merge
-    last_modified: 2026-06-16
+    title: VectorClock compare, compareCanonically and merge
+    last_modified: 2026-09-25
   - id: vc-service
     resource: ../../../lib/services/vector_clock_service.dart
-    title: VectorClockService
-    last_modified: 2026-05-31
+    title: VectorClockService — counter numbering starts at firstVectorClockCounter
+    last_modified: 2026-09-25
   - id: conflict-resolution
     resource: ../../../lib/features/sync/state/conflict_resolution_service.dart
     title: ConflictResolutionService
@@ -27,7 +27,7 @@ sources:
   - id: agent-resolver
     resource: ../../../lib/features/agents/sync/agent_concurrent_resolver.dart
     title: AgentConcurrentResolver — resolveAgentEntityVersions, resolveLocalAgentWrite, resolveConcurrent, mergeAgentStateCounters and mergeConcurrentChangeSets
-    last_modified: 2026-09-24
+    last_modified: 2026-09-25
   - id: agent-sync-service
     resource: ../../../lib/features/agents/sync/agent_sync_service.dart
     title: AgentSyncService — the local write path
@@ -35,7 +35,7 @@ sources:
   - id: replication-spec
     resource: ../../../specs/tla/AgentReplication.tla
     title: TLA+ model of agent entity replication
-    last_modified: 2026-09-24
+    last_modified: 2026-09-25
   - id: adr-0068
     resource: ../../../docs/adr/0068-model-checked-agent-convergence.md
     title: ADR 0068 — model-checked convergence of synced agent entities
@@ -75,7 +75,7 @@ sources:
   - id: link-receive
     resource: ../../../lib/database/database_links_ratings.dart
     title: JournalDb.upsertEntryLink — the entry-link receive order
-    last_modified: 2026-09-24
+    last_modified: 2026-09-25
   - id: link-edit
     resource: ../../../lib/features/journal/repository/journal_repository.dart
     title: JournalRepository.updateLink — a link edit succeeds its predecessor
@@ -88,6 +88,10 @@ sources:
     resource: ../../../docs/adr/0078-entry-link-versions-are-ordered.md
     title: ADR 0078 — entry-link versions are ordered, and an edit succeeds its predecessor
     last_modified: 2026-09-24
+  - id: adr-0080
+    resource: ../../../docs/adr/0080-a-present-counter-ranks-above-an-absent-host.md
+    title: ADR 0080 — a present counter ranks above an absent host, and new hosts start at 1
+    last_modified: 2026-09-25
 ---
 
 # What a vector clock is here
@@ -101,6 +105,13 @@ counter. For a locally written payload it answers:
 `VectorClockService.getNextVectorClock(previous: ...)` keeps the previous
 entries and advances only the current host's counter. A brand-new local payload
 with no previous clock contains just the current host's counter.
+
+**A present entry says the host wrote; an absent one says it did not.** A new
+host's first counter is `firstVectorClockCounter`, 1. Hosts that builds before
+[ADR 0080](../../../docs/adr/0080-a-present-counter-ranks-above-an-absent-host.md)
+created started at 0, and their clocks, `{…, host: 0}` included, are on every
+device and keep arriving from devices that have not updated. So counter 0 is a
+real write and must never read as "absent" (below).
 
 **An update reserves with the entity's current clock as `previous`.** That is
 what makes the new version dominate the one it replaces on every device.
@@ -136,17 +147,33 @@ That is a different question from `originatingHostId`:
 
 Implementation facts that decide edge cases:
 
-- A missing host entry compares as `0`.
+- A missing host entry ranks below every counter, 0 included. Only identical
+  clocks are `equal`.
 - A negative counter is invalid and throws `VclockException`.
-- `VectorClock.merge(a, b)` takes the per-host maximum.
+- `VectorClock.merge(a, b)` takes the per-host maximum over the union of hosts.
+- `VectorClock.compareCanonically(a, b)` is a total order for the tiebreaks:
+  the first host, in sorted order, whose counters differ decides, an absent
+  host again below 0. It returns 0 only for identical clocks and ranks a
+  dominating clock higher.
 
 | A | B | `compare(A, B)` | Why |
 |---|---|---|---|
 | `{A: 5}` | `{A: 5}` | `equal` | Same counter everywhere |
 | `{A: 7}` | `{A: 5}` | `a_gt_b` | `A` moved forward |
 | `{A: 5}` | `{A: 7}` | `b_gt_a` | Reverse |
-| `{A: 1, B: 1}` | `{A: 1}` | `a_gt_b` | Missing hosts count as `0`, so `B:1 > 0` |
+| `{A: 1, B: 1}` | `{A: 1}` | `a_gt_b` | `B` is absent from the second clock |
+| `{A: 1, B: 0}` | `{A: 1}` | `a_gt_b` | The same: `B`'s first write, from a host an older build created |
+| `{A: 1, B: 0}` | `{A: 1, C: 0}` | `concurrent` | Two new hosts each extended `{A: 1}` |
 | `{A: 3, B: 1}` | `{A: 1, B: 3}` | `concurrent` | Ahead on one host, behind on another |
+
+Until ADR 0080 a missing host compared as 0. A new host's first edit of an
+existing entry or agent row, `{…, host: 0}`, then compared *equal* to the
+version it extended. On the device that made it the journal write was refused
+as older-or-equal and its counter burned, so the edit never stuck; every peer
+kept its own row; and a concurrent version lacking only the `host: 0` entry
+was taken as newer, so no conflict was raised. `AgentReplication.tla` finds
+`NoLostSuccessor` violated in two steps with the old reading and a first
+counter of 0, and `Converged` with the old canonical tiebreak.
 
 ```text
 merge({A:5, B:1}, {A:3, B:4, C:2}) == {A:5, B:4, C:2}
@@ -333,13 +360,13 @@ with causality because of the writers, as `AgentReplication.tla` requires of
 agent writes (`IntentCarriesClock`, `ClampTimestamp`). An edit reserves with
 the stored link's clock as `previous`, so its clock is its predecessor's plus
 this host's next counter. `linkEditTimestamp` never stamps it earlier than the
-version it replaces, even when a peer's wall clock ran ahead. An absent host
-ranks below counter 0 because a new host's first counter *is* 0:
-`VectorClock.compare` reads that edit as equal to its predecessor, and the link
-order must not. Journal entries and agent entities still have that equality
-([ADR 0078](../../../docs/adr/0078-entry-link-versions-are-ordered.md),
-Consequences). A refused version is still recorded as received in the sequence
-log. The stored clock covers its counter.
+version it replaces, even when a peer's wall clock ran ahead. The clock step
+is `VectorClock.compareCanonically`, in which an absent host ranks below
+counter 0, so an edit from a host that started at 0 still ranks above its
+predecessor ([ADR 0078](../../../docs/adr/0078-entry-link-versions-are-ordered.md);
+since ADR 0080 `compare` reads it the same way). A refused version is still
+recorded as received in the sequence log. The stored clock covers its
+counter.
 
 Links written before ADR 0078 have clocks without their predecessor's entries.
 Pairs of those are concurrent and ordered by `updatedAt` until the link's next
@@ -363,7 +390,8 @@ row:
 | `concurrent` | The type's override, then last-writer-wins on `updatedAt`, then the canonical clock tiebreak; agent-state G-counters and nudge accumulators merge, the agent head follows the message DAG (below), and change sets merge item by item |
 
 The concurrent case picks the strictly-newer `updatedAt`, falling back to a
-replica-independent canonical clock comparison on ties. Type overrides run
+replica-independent canonical clock comparison on ties
+(`VectorClock.compareCanonically`). Type overrides run
 first: a retraction is terminal, a scheduled wake with a later target beats
 an earlier one, a day summary keeps its earliest testimony, a goal spec head
 prefers the higher ordinal, and a nudge's dismissal, supersession and higher

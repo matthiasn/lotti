@@ -5,8 +5,8 @@ description: Causal accounting over (hostId, counter) pairs, bounded initial-onb
 resource: ../../../lib/features/sync/sequence
 tags: [sync, sequence-log, backfill, gap-detection]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T16:30:00Z }
-stale_after: 2026-12-24
+generated: { by: claude-code/opus-5.5, at: 2026-09-25T09:00:00Z }
+stale_after: 2026-12-25
 sources:
   - id: tla-spec
     resource: ../../../specs/tla/SyncSequence.tla
@@ -18,8 +18,8 @@ sources:
     last_modified: 2026-09-24
   - id: vc-service
     resource: ../../../lib/services/vector_clock_service.dart
-    title: VectorClockService reservations, intent and pending map
-    last_modified: 2026-09-23
+    title: VectorClockService reservations, intent, pending map and counter numbering
+    last_modified: 2026-09-25
   - id: metadata-service
     resource: ../../../lib/logic/services/metadata_service.dart
     title: Journal entry ids chosen before the clock is reserved
@@ -84,6 +84,14 @@ sources:
     resource: ../../../lib/features/sync/services/historical_sync_service.dart
     title: Historical sync staging and failed-row retry
     last_modified: 2026-08-05
+  - id: watermarks
+    resource: ../../../lib/database/sync_db_watermarks.dart
+    title: The contiguous-prefix watermark, counted from counter 1
+    last_modified: 2026-09-25
+  - id: adr-0080
+    resource: ../../../docs/adr/0080-a-present-counter-ranks-above-an-absent-host.md
+    title: ADR 0080 — a present counter ranks above an absent host, and new hosts start at 1
+    last_modified: 2026-09-25
 ---
 
 # The accounting layer
@@ -105,6 +113,25 @@ events" into "we can prove nothing was lost".
 | `reserved` | A local vector-clock counter is reserved, not yet written |
 | `burnPending` | A reservation was released without a payload; the broadcast is not out yet |
 | `burned` | Authoritatively confirmed to carry no payload — **terminal** |
+
+## Counters start at 1
+
+A host hands out counters `1, 2, 3, …` (`firstVectorClockCounter`), which is
+what the protocol assumes throughout: a watermark of 0 means "nothing resolved
+yet", gap detection materializes `watermark + 1 .. counter - 1`, and the
+contiguous-prefix watermark counts from 1. `SyncSequence.tla` models the same
+numbering.
+
+Hosts that builds before
+[ADR 0080](../../../docs/adr/0080-a-present-counter-ranks-above-an-absent-host.md)
+created handed out 0 first, and continue from wherever they are. Their counter
+0 sits outside the prefix: the watermark rebuild ignores rows below 1 (reading
+one as the first of the prefix shifted every later row by one, so a contiguous
+run read as 0 and a run with a hole read past it), and gap detection never
+marks it missing. A lost counter 0 of such a host is therefore not backfilled.
+It is usually superseded, being that host's first write, and the next version
+of the same payload carries its clock. A device that never handed out a
+counter moves its watermark from 0 to 1 at startup and skips 0 altogether.
 
 # Own-host reservations
 

@@ -13,10 +13,13 @@ import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/journal_update_result.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
@@ -685,6 +688,75 @@ void main() {
 
           expect(result.applied, isTrue);
           expect(result.rowsWritten, 1);
+        },
+      );
+
+      test(
+        'updateJournalEntity applies a local edit that extends the stored '
+        "clock by the host's counter 0 (ADR 0080)",
+        () async {
+          // A device set up by a build that started counters at 0 edits an
+          // entry it synced from device A: its first edit's clock is A's plus
+          // `device-b: 0`. Read as equal, the edit was refused as older and
+          // its counter burned.
+          final stored = createJournalEntryWithVclock(
+            const VectorClock({'device-a': 1}),
+          );
+          await db!.updateJournalEntity(stored);
+          final edit = createJournalEntryWithVclock(
+            const VectorClock({'device-a': 1, 'device-b': 0}),
+            id: stored.meta.id,
+          ).copyWith(entryText: const EntryText(plainText: 'edited on B'));
+
+          final result = await db!.updateJournalEntity(edit);
+
+          expect(result.applied, isTrue);
+          final row = await db!.journalEntityById(stored.meta.id);
+          expect(row?.entryText?.plainText, 'edited on B');
+          expect(await db!.conflictById(stored.meta.id), isNull);
+        },
+      );
+
+      test(
+        "two devices through the real services: a new device's first edit "
+        'of a synced entry is saved there and applied on the device it came '
+        'from (ADR 0080)',
+        () async {
+          final settingsDb = SettingsDb(inMemoryDatabase: true);
+          getIt.registerSingleton<SettingsDb>(settingsDb);
+          final deviceA = JournalDb(inMemoryDatabase: true);
+          addTearDown(() async {
+            await deviceA.close();
+            getIt.unregister<SettingsDb>();
+            await settingsDb.close();
+          });
+
+          // A wrote the entry; B (db), just set up, received it.
+          final written = createJournalEntryWithVclock(
+            const VectorClock({'device-a': 1}),
+          );
+          await deviceA.updateJournalEntity(written);
+          await db!.updateJournalEntity(written);
+
+          // B edits it the way PersistenceLogic does: a clock reserved from
+          // B's new host with the stored clock as `previous`.
+          final clocks = VectorClockService();
+          await clocks.initialized;
+          final meta = await MetadataService(
+            vectorClockService: clocks,
+          ).updateMetadata(written.meta);
+          final edit = written.copyWith(
+            meta: meta,
+            entryText: const EntryText(plainText: 'edited on B'),
+          );
+
+          expect((await db!.updateJournalEntity(edit)).applied, isTrue);
+          expect((await deviceA.updateJournalEntity(edit)).applied, isTrue);
+          for (final device in [db!, deviceA]) {
+            final row = await device.journalEntityById(written.meta.id);
+            expect(row?.entryText?.plainText, 'edited on B');
+            expect(row?.meta.vectorClock, meta.vectorClock);
+          }
         },
       );
 

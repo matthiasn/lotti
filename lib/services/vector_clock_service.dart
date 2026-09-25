@@ -159,6 +159,16 @@ class _VcScope {
 /// rewound, so a handler exception must not escape the finalizer.
 typedef VcBurnHandler = Future<void> Function(String hostId, int counter);
 
+/// The first counter a host hands out (ADR 0080).
+///
+/// Counter 0 is never issued: in the sequence log a watermark of 0 means
+/// "nothing seen yet", and gap detection and the contiguous-prefix watermark
+/// count from 1. A build that reads an absent host as counter 0 in
+/// [VectorClock.compare] also sees a new host's first write, `host: 1`,
+/// dominate the version it extends. Hosts that older builds created started
+/// at 0 and simply continue from where they are.
+const int firstVectorClockCounter = 1;
+
 class VectorClockService {
   VectorClockService() {
     _initialized = init();
@@ -217,23 +227,28 @@ class VectorClockService {
 
     _host = storedHost;
     final storedCounter = storedValues[nextAvailableCounterKey];
-    if (storedCounter != null) {
-      _persistedCounter = int.parse(storedCounter);
+    final stored = storedCounter == null ? null : int.parse(storedCounter);
+    if (stored != null && stored >= firstVectorClockCounter) {
+      _persistedCounter = stored;
     } else {
-      _persistedCounter = 0;
-      await _persistCounter(0);
+      // Nothing was handed out yet (the watermark is persisted before a
+      // counter is returned), so skipping counter 0 leaves no hole.
+      _persistedCounter = firstVectorClockCounter;
+      await _persistCounter(firstVectorClockCounter);
     }
     _nextAvailableCounter = _persistedCounter;
   }
 
+  /// Gives this device a new host id, whose first counter is
+  /// [firstVectorClockCounter].
   Future<String> setNewHost() async {
     final host = uuid.v4();
 
     await getIt<SettingsDb>().saveSettingsItem(hostKey, host);
     _host = host;
-    _persistedCounter = 0;
-    _nextAvailableCounter = 0;
-    await _persistCounter(0);
+    _persistedCounter = firstVectorClockCounter;
+    _nextAvailableCounter = firstVectorClockCounter;
+    await _persistCounter(firstVectorClockCounter);
     return host;
   }
 

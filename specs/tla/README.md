@@ -75,6 +75,12 @@ What the configurations deliberately leave out:
 - **Unnamed reservations after a crash.** They cannot be settled, so a request
   for one stays open until the requester gives up — which is why
   `SyncSequenceCrashUnnamed` checks safety only.
+- **Counter 0.** Counters start at 1, as `VectorClockService` has since
+  [ADR 0080](../../docs/adr/0080-a-present-counter-ranks-above-an-absent-host.md).
+  Hosts that older builds created handed out a counter 0 first. It lies
+  outside gap detection and the contiguous-prefix watermark, so if its
+  message is lost it is never requested; the next version of the same
+  payload carries its clock.
 
 ## `OwnCounterSettlement` — recovery interleavings
 
@@ -470,9 +476,21 @@ a dismissed nudge). The decision is
 | `AgentReplicationTerminal` | terminal | 3 | 3 | 1 tick | `Converged`, `NoLostSuccessor` | 9,544,635 |
 | `AgentReplicationIntent` | state, with `Intend` writes | 3 | 3 | 1 tick | all five | 17,959,029 |
 | `AgentReplicationIntentTerminal` | terminal, with `Intend` writes | 3 | 3 | 1 tick | `LocalWriteTakesEffect` | 16,350,444 |
+| `AgentReplicationLegacyCounter` | state, with `Intend` writes; every host's first counter is 0 | 3 | 3 | 1 tick | all five | 17,959,029 |
+| `AgentReplicationLegacyReceiver` | terminal; received by a build that reads an absent host as 0 | 3 | 3 | 1 tick | `Converged`, `NoLostSuccessor` | 9,544,635 |
 
-The five design switches are the fixes, and each has a counterexample when
-set to `FALSE` (run a copy of the configuration outside this directory):
+A clock maps each replica to a counter or to `Absent`, and the properties use
+the causal order, in which a present entry, 0 included, ranks above an absent
+one. `FirstCounter` is a new host's first counter: 1 since
+[ADR 0080](../../docs/adr/0080-a-present-counter-ranks-above-an-absent-host.md),
+0 on every host an older build created. The two legacy configurations cover
+the two halves of a fleet in which not every device has updated: this build
+receiving clocks from hosts that started at 0, and an older build receiving
+clocks from hosts that start at 1. The configurations with `FirstCounter = 1`
+have the same state counts as before the clocks could hold `Absent`.
+
+The design switches are the fixes, and each has a counterexample when set to
+`FALSE` (run a copy of the configuration outside this directory):
 
 | Switch | Old behaviour | Counterexample |
 |--------|---------------|----------------|
@@ -481,6 +499,8 @@ set to `FALSE` (run a copy of the configuration outside this directory):
 | `ResolveLocalWrites` | a write replaced the row whatever it was built on, under the clock it was built on | terminal: `Converged` — B receives A's retraction, then writes an edit from a stale snapshot or a null clock; B keeps the edit, A and C the retraction. state: `OwnCountKept` — a snapshot write drops the host's own increment |
 | `ClampTimestamp` | a successor's `updatedAt` could be older than its predecessor's | `Converged`: a successor written on a lagging clock loses to a third concurrent version that its predecessor beat, so arrival order decides |
 | `IntentCarriesClock` | a writer meant to replace the row built on `vectorClock: null` | `LocalWriteTakesEffect`, two steps: A writes a row, then moves it — out of the terminal status (terminal), or to new fields at the row's own timestamp (state) — and the local write resolution, judging the clockless write concurrent, hands the row back |
+| `AbsentBelowZero` (ADR 0080) | `VectorClock.compare` read an absent host as counter 0 | with `FirstCounter = 0`, `NoLostSuccessor` in two steps: B writes its first version, `{B: 0}`; C receives it and keeps the row it had, which it reads as equal |
+| `CanonAbsentBelowZero` (ADR 0080) | the canonical tiebreak read an absent host as 0 | with `FirstCounter = 0`, `Converged`: A and B each write their first version at the same instant, `{A: 0}` and `{B: 0}`; the tiebreak reads both as all zeros, and each replica keeps the one it received first |
 
 `Intend` (ADR 0068's addendum) is the class the local write resolution
 opened: a write built on the row whose point is to move it against the
@@ -510,9 +530,13 @@ What the model leaves out, deliberately or as a residual:
   winner's own clock and joins its G-counters on every delivery instead,
   which is what this model checks; the nudge variant is not modelled.
 - Links (`AgentLink`) keep plain last-writer-wins and are not modelled.
+- **Two devices that have not updated** still read an absent host as 0, so a
+  host that started at 0 has its first write compared equal between them
+  (ADR 0080). No receiver can change that; it ends as they update.
 - **Journal entry links** (`JournalDb.upsertEntryLink`) are ordered by one
-  lexicographic key: `updatedAt`, then the clock host by host (an absent host
-  below counter 0), then the content
+  lexicographic key: `updatedAt`, then the clock under
+  `VectorClock.compareCanonically` (an absent host below counter 0), then the
+  content
   ([ADR 0078](../../docs/adr/0078-entry-link-versions-are-ordered.md)). A
   total order converges in any arrival order. The writers meet
   `IntentCarriesClock` (an edit reserves with the stored link's clock as
@@ -923,7 +947,11 @@ after everything is delivered, all three rows are equal and every increment
 is counted. Joining counters only on concurrency, writing without resolving
 against the persisted row, or not clamping `updatedAt` each fail it within
 three or four steps; dropping the counter join of a covered write is caught
-by the resolver's unit regression instead.
+by the resolver's unit regression instead. One replica's host starts its
+counters at 0, as a host an older build created does
+(`AgentReplicationLegacyCounter`), and the causal check is the model's own
+order rather than `VectorClock.compare`. Reading an absent host as 0 again
+fails both traces.
 
 ## Changing a spec
 

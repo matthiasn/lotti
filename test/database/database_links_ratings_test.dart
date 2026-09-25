@@ -1342,9 +1342,8 @@ void main() {
       test(
         "a new host's first edit, at counter 0, outranks its predecessor",
         () async {
-          // VectorClock.compare reads an absent host as 0, so these two
-          // clocks compare equal; the link order must still rank the edit
-          // above the version it extends.
+          // Every host an older build created starts at counter 0, so its
+          // first edit extends the version it replaces by `b: 0` (ADR 0080).
           final predecessor = version(
             clock: const VectorClock({'a': 5}),
             updatedAt: late,
@@ -1353,13 +1352,6 @@ void main() {
             clock: const VectorClock({'a': 5, 'b': 0}),
             updatedAt: late,
             hidden: true,
-          );
-          expect(
-            VectorClock.compare(
-              predecessor.vectorClock!,
-              firstEdit.vectorClock!,
-            ),
-            VclockStatus.equal,
           );
           await expectWinnerInEveryOrder([predecessor, firstEdit], firstEdit);
         },

@@ -43,8 +43,20 @@
 (* `RankDrop` lets a write leave the terminal status it built on -- a      *)
 (* digest retry re-arming its consumed window at the same instant -- which *)
 (* is a documented residual, not a checked configuration.                  *)
+(*                                                                         *)
+(* A clock maps each replica to a counter or to `Absent`: a host that has  *)
+(* never written the entity has no entry. `FirstCounter` is the first      *)
+(* counter VectorClockService hands a new host -- 1 since ADR 0080, 0 on   *)
+(* every host an older build created, which is the installed base. The     *)
+(* two ADR 0080 switches say how the receive path reads an absent entry:   *)
+(* `AbsentBelowZero` for VectorClock.compare (causal dominance, and the    *)
+(* local write resolution's cover check), `CanonAbsentBelowZero` for       *)
+(* VectorClock.compareCanonically (the concurrent tiebreak). Read as 0, a  *)
+(* host's first counter 0 is invisible: the write that adds it compares    *)
+(* equal to the version it extends. The properties use the causal order    *)
+(* itself, in which a present entry is always above an absent one.        *)
 (***************************************************************************)
-EXTENDS Naturals, FiniteSets
+EXTENDS Integers, FiniteSets
 
 CONSTANTS
     N,            \* replicas 1..N
@@ -61,28 +73,50 @@ CONSTANTS
     ResolveLocalWrites,      \* a write succeeds the row it replaces
     ClampTimestamp,          \* ...and its updatedAt is not older
     IntentWrites,            \* are there writes meant to move the row back?
-    IntentCarriesClock       \* ...carrying the row's clock (0068 addendum)
+    IntentCarriesClock,      \* ...carrying the row's clock (0068 addendum)
+    FirstCounter,            \* a new host's first counter: 1, or 0 (legacy)
+    \* Design switches: TRUE is the code after ADR 0080.
+    AbsentBelowZero,         \* compare ranks an absent host below counter 0
+    CanonAbsentBelowZero     \* ...and so does the canonical tiebreak
 
 ASSUME Kind \in {"state", "terminal"}
 ASSUME \A b \in {StaleWrites, Throttle, RankDrop, ThrottleKeepsTimestamp,
                  CountersJoinAlways, ResolveLocalWrites, ClampTimestamp,
-                 IntentWrites, IntentCarriesClock} :
+                 IntentWrites, IntentCarriesClock, AbsentBelowZero,
+                 CanonAbsentBelowZero} :
             b \in BOOLEAN
+ASSUME FirstCounter \in {0, 1}
 
 R == 1..N
+Absent == -1
+NoClock == [r \in R |-> Absent]
 Zero == [r \in R |-> 0]
 Max(a, b) == IF a > b THEN a ELSE b
+\* VectorClock.merge: the union of the hosts, each at its larger counter.
+\* The same join serves the G-counters.
 Join(a, b) == [r \in R |-> Max(a[r], b[r])]
-Leq(a, b) == \A r \in R : a[r] <= b[r]
-Before(a, b) == Leq(a, b) /\ a # b
 
-\* compareClocksCanonically(a, b) > 0: the first host, in sorted order,
-\* whose counters differ is larger in a.
-CanonGt(a, b) == \E k \in R : a[k] > b[k] /\ \A j \in R : j < k => a[j] = b[j]
+\* The causal order. A present entry, 0 included, says the host wrote.
+CLeq(a, b) == \A r \in R : a[r] <= b[r]
+Before(a, b) == CLeq(a, b) /\ a # b
+
+\* VectorClock.compare(a, b) is `equal` or `b_gt_a`. Before ADR 0080 it
+\* read an absent host as counter 0.
+Read(x) == IF AbsentBelowZero THEN x ELSE Max(x, 0)
+Leq(a, b) == \A r \in R : Read(a[r]) <= Read(b[r])
+
+\* VectorClock.compareCanonically(a, b) > 0: the first host, in sorted
+\* order, whose counters differ is larger in a. Before ADR 0080 it too
+\* read an absent host as counter 0.
+CanonRead(x) == IF CanonAbsentBelowZero THEN x ELSE Max(x, 0)
+CanonGt(a, b) ==
+    \E k \in R : /\ CanonRead(a[k]) > CanonRead(b[k])
+                /\ \A j \in R : j < k => CanonRead(a[j]) = CanonRead(b[j])
 
 \* A version: its write id, clock, updatedAt, override status, G-counter.
-\* A merged row keeps the id of the version whose fields won.
-V0 == [id |-> 0, vc |-> Zero, ts |-> 0, term |-> FALSE, g |-> Zero]
+\* A merged row keeps the id of the version whose fields won. The first
+\* version was written by a host outside R.
+V0 == [id |-> 0, vc |-> NoClock, ts |-> 0, term |-> FALSE, g |-> Zero]
 
 VARIABLES
     row,        \* per replica: the persisted row
@@ -91,6 +125,7 @@ VARIABLES
     delivered,  \* per replica: the writes it has received or made
     now,        \* the wall clock
     hc,         \* per replica: the last counter VectorClockService issued
+                \* (FirstCounter - 1 before the first)
     incs,       \* ghost: G-counter increments made by each host
     intentLost  \* ghost: a local write lost to the row it meant to move
 
@@ -102,7 +137,7 @@ Init ==
     /\ sent = {}
     /\ delivered = [r \in R |-> {}]
     /\ now = 0
-    /\ hc = [r \in R |-> 0]
+    /\ hc = [r \in R |-> FirstCounter - 1]
     /\ incs = [r \in R |-> 0]
     /\ intentLost = FALSE
 
@@ -136,7 +171,7 @@ Bases == {"row"} \cup (IF StaleWrites THEN {"snap", "null"} ELSE {})
 BaseRow(r, b) ==
     CASE b = "row"  -> row[r]
       [] b = "snap" -> snap[r]
-      [] b = "null" -> [row[r] EXCEPT !.vc = Zero]
+      [] b = "null" -> [row[r] EXCEPT !.vc = NoClock]
 
 \* A write keeps the terminal status it built on unless RankDrop.
 Terms(base) ==
@@ -203,7 +238,7 @@ Intend(r) ==
     /\ Cardinality(sent) < MaxWrites
     /\ Kind = "state" \/ row[r].term
     /\ LET P == row[r]
-           B == [P EXCEPT !.vc = IF IntentCarriesClock THEN P.vc ELSE Zero]
+           B == [P EXCEPT !.vc = IF IntentCarriesClock THEN P.vc ELSE NoClock]
            t == IF Kind = "state" THEN P.ts ELSE now
        IN /\ Commit(r, NewVersion(r, B, t, FALSE, FALSE), FALSE)
           /\ intentLost' =
@@ -259,7 +294,7 @@ Content(v) == [id |-> v.id, vc |-> v.vc, term |-> v.term, g |-> v.g]
 Converged ==
     Quiescent => \A a, b \in R : Content(row[a]) = Content(row[b])
 
-VcOf(id) == IF id = 0 THEN Zero ELSE (CHOOSE v \in sent : v.id = id).vc
+VcOf(id) == IF id = 0 THEN NoClock ELSE (CHOOSE v \in sent : v.id = id).vc
 
 \* A row never holds a version that a write it received causally replaced.
 NoLostSuccessor ==

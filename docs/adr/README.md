@@ -146,3 +146,4 @@ Each ADR should contain:
 - [`0076-model-checked-agent-head.md`](./0076-model-checked-agent-head.md)
 - [`0077-a-reservation-names-the-id-written.md`](./0077-a-reservation-names-the-id-written.md)
 - [`0078-entry-link-versions-are-ordered.md`](./0078-entry-link-versions-are-ordered.md)
+- [`0080-a-present-counter-ranks-above-an-absent-host.md`](./0080-a-present-counter-ranks-above-an-absent-host.md)

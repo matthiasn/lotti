@@ -44,7 +44,7 @@ void main() {
       expect(host, isNotEmpty);
 
       final counter = await service.getNextAvailableCounter();
-      expect(counter, 0);
+      expect(counter, firstVectorClockCounter);
     });
 
     test('setNewHost creates new host UUID', () async {
@@ -55,9 +55,9 @@ void main() {
       expect(newHost, isNotEmpty);
       expect(newHost, isNot(originalHost));
 
-      // Counter should be reset to 0
+      // A new host starts at its first counter.
       final counter = await service.getNextAvailableCounter();
-      expect(counter, 0);
+      expect(counter, firstVectorClockCounter);
     });
 
     test('increment increases counter', () async {
@@ -207,7 +207,7 @@ void main() {
 
     test(
       'a stored host without a stored counter keeps the host and starts '
-      'the counter at zero, persisting it',
+      'the counter at the first counter, persisting it',
       () async {
         await settingsDb.saveSettingsItem(hostKey, 'penguin-host');
         await settingsDb.removeSettingsItem(nextAvailableCounterKey);
@@ -216,10 +216,64 @@ void main() {
         await newService.initialized;
 
         expect(await newService.getHost(), 'penguin-host');
-        expect(await newService.getNextAvailableCounter(), 0);
-        expect(await settingsDb.itemByKey(nextAvailableCounterKey), '0');
+        expect(await newService.getNextAvailableCounter(), 1);
+        expect(await settingsDb.itemByKey(nextAvailableCounterKey), '1');
       },
     );
+
+    group('counter numbering (ADR 0080)', () {
+      test(
+        "a new host's first write extends a peer's clock by counter 1, "
+        'which dominates the version it extends',
+        () async {
+          const previous = VectorClock({'device-a': 1});
+          final reservation = await service.reserveNextVectorClock(
+            previous: previous,
+          );
+          await reservation.commit();
+          final host = (await service.getHost())!;
+
+          expect(reservation.vc.vclock, {'device-a': 1, host: 1});
+          expect(
+            VectorClock.compare(previous, reservation.vc),
+            VclockStatus.b_gt_a,
+          );
+        },
+      );
+
+      test(
+        'a host that never handed out a counter skips 0 on its next start',
+        () async {
+          // A build before ADR 0080 persisted watermark 0 for a new host.
+          await settingsDb.saveSettingsItem(hostKey, 'penguin-host');
+          await settingsDb.saveSettingsItem(nextAvailableCounterKey, '0');
+
+          final restarted = VectorClockService();
+          await restarted.initialized;
+          final vc = await restarted.getNextVectorClock();
+
+          expect(vc.vclock, {'penguin-host': 1});
+          expect(await settingsDb.itemByKey(nextAvailableCounterKey), '2');
+        },
+      );
+
+      test(
+        'a host an older build started at 0 continues from its watermark',
+        () async {
+          // Counter 0 was handed out, so the persisted watermark is 1.
+          await settingsDb.saveSettingsItem(hostKey, 'penguin-host');
+          await settingsDb.saveSettingsItem(nextAvailableCounterKey, '1');
+
+          final restarted = VectorClockService();
+          await restarted.initialized;
+          final vc = await restarted.getNextVectorClock(
+            previous: const VectorClock({'penguin-host': 0}),
+          );
+
+          expect(vc.vclock, {'penguin-host': 1});
+        },
+      );
+    });
 
     test('host persists across service instances', () async {
       final originalHost = await service.getHost();

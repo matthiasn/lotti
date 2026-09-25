@@ -120,7 +120,7 @@ Init ==
 
 Leq(a, b) == \A x \in Devices : a[x] <= b[x]
 
-\* A replica-independent total order on clocks (compareClocksCanonically).
+\* A replica-independent total order on clocks (VectorClock.compareCanonically).
 FirstDiff(a, b) ==
     CHOOSE i \in Devices : a[i] # b[i] /\ \A j \in 1..(i - 1) : a[j] = b[j]
 CanonGT(a, b) == a # b /\ a[FirstDiff(a, b)] > b[FirstDiff(a, b)]

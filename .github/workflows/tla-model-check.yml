@@ -12,6 +12,8 @@ on:
       - "lib/features/sync/backfill/**"
       - "lib/features/sync/outbox/**"
       - "lib/database/sync_db_sequence.dart"
+      - "lib/database/sync_db_watermarks.dart"
+      - "lib/features/sync/vector_clock.dart"
       - "lib/services/vector_clock_service.dart"
       - "lib/logic/services/metadata_service.dart"
       - "lib/logic/persistence_create_ops.dart"

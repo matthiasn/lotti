@@ -9,7 +9,9 @@ part of 'agent_sync_service_test.dart';
 // that a write it received causally replaced (NoLostSuccessor); and no
 // G-counter increment is lost (OwnCountKept, NoLostIncrement). Writes build
 // on the persisted row, on a wake-start snapshot, or on no clock at all, and
-// a replica's clock may lag the others'.
+// a replica's clock may lag the others'. One host, hC, was created by a build
+// that started counters at 0 (AgentReplicationLegacyCounter): its first write
+// adds `hC: 0` to the clock it extends (ADR 0080).
 
 enum _ReplicaOp {
   write,
@@ -131,7 +133,12 @@ class _KnowledgeKind implements _ReplicatedKind {
 final _replicaEpoch = DateTime(2026, 9, 24, 9);
 
 class _Replica {
-  _Replica(this.host, this.world, AgentDomainEntity initial) {
+  _Replica(
+    this.host,
+    this.world,
+    AgentDomainEntity initial, {
+    required int firstCounter,
+  }) : counter = firstCounter - 1 {
     repo.seed([initial]);
     when(
       () => clocks.getNextVectorClock(
@@ -142,8 +149,8 @@ class _Replica {
       // VectorClockService.reserveNextVectorClock: this host's next counter,
       // caught up past whatever the previous clock already holds for it.
       final previous = invocation.namedArguments[#previous] as VectorClock?;
-      final own = previous?.vclock[host] ?? 0;
-      counter = (own > counter ? own : counter) + 1;
+      final own = previous?.vclock[host];
+      counter = (own != null && own > counter ? own : counter) + 1;
       return VectorClock({...?previous?.vclock, host: counter});
     });
     when(() => outbox.enqueueMessage(any())).thenAnswer((invocation) async {
@@ -166,7 +173,9 @@ class _Replica {
   final clocks = MockVectorClockService();
   final outbox = MockOutboxService();
   late final AgentSyncService service;
-  int counter = 0;
+
+  /// The last counter this host issued.
+  int counter;
   AgentDomainEntity? snapshot;
 
   /// Indices into [_ReplicaWorld.sent] this replica wrote or received.
@@ -190,7 +199,9 @@ class _Replica {
 class _ReplicaWorld {
   _ReplicaWorld(this.kind) {
     replicas = [
-      for (final host in ['hA', 'hB', 'hC']) _Replica(host, this, kind.initial),
+      _Replica('hA', this, kind.initial, firstCounter: 1),
+      _Replica('hB', this, kind.initial, firstCounter: 1),
+      _Replica('hC', this, kind.initial, firstCounter: 0),
     ];
   }
 
@@ -261,11 +272,9 @@ class _ReplicaWorld {
     for (final replica in replicas) {
       final row = await replica.row();
       for (final index in replica.delivered) {
-        final m = sent[index].vectorClock!;
-        final status = VectorClock.compare(m, row.vectorClock!);
         expect(
-          status,
-          isNot(VclockStatus.a_gt_b),
+          _causallyBefore(row.vectorClock!, sent[index].vectorClock!),
+          isFalse,
           reason: 'NoLostSuccessor on ${replica.host}: $trace',
         );
       }
@@ -301,6 +310,15 @@ class _ReplicaWorld {
     }
   }
 }
+
+/// The causal order the model's `Before` states, independent of
+/// [VectorClock.compare]: every host in [a] is in [b] at a counter at least
+/// as large, and the clocks differ. A present host, at counter 0 too, wrote.
+bool _causallyBefore(VectorClock a, VectorClock b) =>
+    a != b &&
+    a.vclock.entries.every(
+      (e) => b.vclock.containsKey(e.key) && b.vclock[e.key]! >= e.value,
+    );
 
 void _registerReplicationModelConformance() {
   group('model conformance with specs/tla/AgentReplication.tla', () {

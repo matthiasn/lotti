@@ -62,6 +62,11 @@ mixin _SyncDbSequenceWatermarks on _$SyncDatabase {
     // One-time compatibility path for existing rows that predate the
     // persisted watermark. Normal operation advances from the stored value
     // with [_advanceSequenceWatermarkForHost] instead of re-running this CTE.
+    //
+    // The prefix starts at counter 1. Hosts that older builds created handed
+    // out counter 0 first (ADR 0080); numbering a counter-0 row as the first
+    // of the prefix would shift every later row by one, so a contiguous run
+    // read as 0 and a run with one hole read past the hole.
     final row = await customSelect(
       '''
       WITH resolved_prefix AS (
@@ -70,6 +75,7 @@ mixin _SyncDbSequenceWatermarks on _$SyncDatabase {
           ROW_NUMBER() OVER (ORDER BY counter) AS rn
         FROM sync_sequence_log
         WHERE host_id = ?
+          AND counter >= 1
           AND status IN (0, 3, 4, 5, 8)
       )
       SELECT CASE

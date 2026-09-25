@@ -111,101 +111,6 @@ void main() {
     });
   });
 
-  group('compareClocksCanonically', () {
-    glados.Glados2(
-      glados.any.smallVectorClock,
-      glados.any.smallVectorClock,
-      glados.ExploreConfig(numRuns: 150),
-    ).test('is antisymmetric', (a, b) {
-      expect(
-        compareClocksCanonically(a, b),
-        -compareClocksCanonically(b, a),
-        reason: 'a=${a.vclock} b=${b.vclock}',
-      );
-    }, tags: 'glados');
-
-    glados.Glados3(
-      glados.any.smallVectorClock,
-      glados.any.smallVectorClock,
-      glados.any.smallVectorClock,
-      glados.ExploreConfig(numRuns: 150),
-    ).test(
-      'is transitive (sort-comparator contract on the sync hot path)',
-      (
-        a,
-        b,
-        c,
-      ) {
-        final ab = compareClocksCanonically(a, b);
-        final bc = compareClocksCanonically(b, c);
-        final ac = compareClocksCanonically(a, c);
-        if (ab > 0 && bc > 0) {
-          expect(
-            ac,
-            greaterThan(0),
-            reason: 'a=${a.vclock} b=${b.vclock} c=${c.vclock}',
-          );
-        }
-        if (ab < 0 && bc < 0) {
-          expect(
-            ac,
-            lessThan(0),
-            reason: 'a=${a.vclock} b=${b.vclock} c=${c.vclock}',
-          );
-        }
-        if (ab == 0 && bc == 0) {
-          expect(
-            ac,
-            0,
-            reason: 'a=${a.vclock} b=${b.vclock} c=${c.vclock}',
-          );
-        }
-      },
-      tags: 'glados',
-    );
-
-    test('orders by the first differing host counter', () {
-      expect(
-        compareClocksCanonically(
-          const VectorClock({'h0': 2}),
-          const VectorClock({'h0': 1}),
-        ),
-        1,
-      );
-      expect(
-        compareClocksCanonically(
-          const VectorClock({'h0': 1}),
-          const VectorClock({'h0': 2}),
-        ),
-        -1,
-      );
-    });
-
-    test('treats an absent host as counter 0', () {
-      expect(
-        compareClocksCanonically(
-          const VectorClock({'h0': 1}),
-          const VectorClock({'h1': 1}),
-        ),
-        1,
-      );
-    });
-
-    test('returns 0 for identical and for empty clocks', () {
-      expect(
-        compareClocksCanonically(
-          const VectorClock({'h0': 3, 'h1': 1}),
-          const VectorClock({'h0': 3, 'h1': 1}),
-        ),
-        0,
-      );
-      expect(
-        compareClocksCanonically(const VectorClock({}), const VectorClock({})),
-        0,
-      );
-    });
-  });
-
   group('mergeAgentStateCounters', () {
     AgentStateEntity stateWith({
       GCounter wakeCounter = const GCounter.empty(),
@@ -474,6 +379,40 @@ void main() {
         same(local),
       );
     });
+
+    test(
+      "a new host's first write, which adds counter 0 to the clock it "
+      'extends, replaces the row (ADR 0080)',
+      () {
+        // Every host an older build created starts at counter 0.
+        final local = state(vc: {'A': 1});
+        final edit = state(vc: {'A': 1, 'B': 0}, revision: 2);
+
+        final resolved = resolveAgentEntityVersions(
+          local: local,
+          incoming: edit,
+        );
+
+        expect(resolved.vectorClock, edit.vectorClock);
+        expect((resolved as AgentStateEntity).revision, 2);
+      },
+    );
+
+    test(
+      'two new hosts that each extended the row with counter 0 converge on '
+      'one version at the same updatedAt (ADR 0080)',
+      () {
+        final fromB = state(vc: {'A': 1, 'B': 0}, revision: 2);
+        final fromC = state(vc: {'A': 1, 'C': 0}, revision: 3);
+
+        final onB = resolveAgentEntityVersions(local: fromB, incoming: fromC);
+        final onC = resolveAgentEntityVersions(local: fromC, incoming: fromB);
+
+        expect(onB.toJson(), onC.toJson());
+        // B's clock ranks higher: C is absent there, below B's counter 0.
+        expect((onB as AgentStateEntity).revision, 2);
+      },
+    );
 
     test('a merge that equals the local row keeps the local row itself', () {
       // Concurrent, local wins on updatedAt and already holds both counters.

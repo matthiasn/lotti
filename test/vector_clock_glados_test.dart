@@ -32,12 +32,14 @@ extension AnyVectorClock on Any {
 
 // Compare components directly: summing counters can overflow and an empty
 // clock has no values to reduce. This oracle does not call production helpers.
+// An absent node ranks below every counter, 0 included (ADR 0080): a present
+// node says the host wrote.
 bool _dominates(VectorClock a, VectorClock b) {
   final nodes = {...a.vclock.keys, ...b.vclock.keys};
   return nodes.every(
-        (node) => (a.vclock[node] ?? 0) >= (b.vclock[node] ?? 0),
+        (node) => (a.vclock[node] ?? -1) >= (b.vclock[node] ?? -1),
       ) &&
-      nodes.any((node) => (a.vclock[node] ?? 0) > (b.vclock[node] ?? 0));
+      nodes.any((node) => (a.vclock[node] ?? -1) > (b.vclock[node] ?? -1));
 }
 
 void main() {
@@ -96,11 +98,11 @@ void main() {
   );
 
   Glados<VectorClock>(any.sparseVc).test(
-    'adding explicit zero counters preserves causal equality',
+    "a new node's counter 0 dominates the clock it extends (ADR 0080)",
     (clock) {
-      final padded = VectorClock({...clock.vclock, 'unused-node': 0});
-      expect(VectorClock.compare(clock, padded), VclockStatus.equal);
-      expect(VectorClock.compare(padded, clock), VclockStatus.equal);
+      final padded = VectorClock({...clock.vclock, 'new-node': 0});
+      expect(VectorClock.compare(clock, padded), VclockStatus.b_gt_a);
+      expect(VectorClock.compare(padded, clock), VclockStatus.a_gt_b);
     },
     tags: 'glados',
   );
@@ -181,15 +183,7 @@ void main() {
 }
 
 void _expectComparison(VectorClock a, VectorClock b) {
-  Map<String, int> nonZeroCounters(VectorClock clock) => {
-    for (final entry in clock.vclock.entries)
-      if (entry.value != 0) entry.key: entry.value,
-  };
-  final expected =
-      const DeepCollectionEquality().equals(
-        nonZeroCounters(a),
-        nonZeroCounters(b),
-      )
+  final expected = const DeepCollectionEquality().equals(a.vclock, b.vclock)
       ? VclockStatus.equal
       : _dominates(a, b)
       ? VclockStatus.a_gt_b
