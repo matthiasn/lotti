@@ -93,9 +93,20 @@ gap detection would then never request.
   build) and `AgentReplicationLegacyReceiver` (hosts started at 1, received by
   a build that still reads absent as 0). The four existing configurations
   keep their state counts.
-- Residual: two devices that both run a build older than this one still
-  compare a new host's first write equal. Nothing on the receiving side can
-  change that, and it ends as they update.
+- Residual: a device that runs a build older than this one still reads an
+  absent host as 0 when a clock carries a counter 0 from a host an older
+  build created. Two such devices compare that host's first write equal.
+  And an older and a newer device can keep different rows: for
+  `a = {h0: 0, h1: 1}` and `b = {h1: 2}` this build finds the two concurrent
+  and resolves them, while the older one reads `b` as newer and keeps it.
+  The rows agree again at the next write that succeeds both. Nothing on the
+  receiving side can change what an older build does, and it ends as devices
+  update. `AgentReplicationLegacyCounter` and
+  `AgentReplicationLegacyReceiver` each check one half of a mixed fleet;
+  a fleet mixing both readings over counter-0 clocks is not modelled.
+- Watermarks that the pre-ADR-0080 rebuild cached for a host with a
+  counter-0 row may read past a hole. Sync database schema v30 drops those
+  rows once, so they are rebuilt from counter 1 on their next read.
 - Residual: a counter 0 that a host created by an older build handed out is
   outside gap detection, so if its message is lost it is never requested. It
   is that host's first write, usually superseded, and the next version of

@@ -88,6 +88,10 @@ sources:
     resource: ../../../lib/database/sync_db_watermarks.dart
     title: The contiguous-prefix watermark, counted from counter 1
     last_modified: 2026-09-25
+  - id: sync-db-migration
+    resource: ../../../lib/database/sync_db.dart
+    title: Sync database migrations — v30 drops watermarks cached across a counter-0 row
+    last_modified: 2026-09-25
   - id: adr-0080
     resource: ../../../docs/adr/0080-a-present-counter-ranks-above-an-absent-host.md
     title: ADR 0080 — a present counter ranks above an absent host, and new hosts start at 1
@@ -128,7 +132,8 @@ created handed out 0 first, and continue from wherever they are. Their counter
 0 sits outside the prefix: the watermark rebuild ignores rows below 1 (reading
 one as the first of the prefix shifted every later row by one, so a contiguous
 run read as 0 and a run with a hole read past it), and gap detection never
-marks it missing. A lost counter 0 of such a host is therefore not backfilled.
+marks it missing. Sync database schema v30 dropped the watermarks the old
+rebuild had cached for such hosts, so each is rebuilt on its next read. A lost counter 0 of such a host is therefore not backfilled.
 It is usually superseded, being that host's first write, and the next version
 of the same payload carries its clock. A device that never handed out a
 counter moves its watermark from 0 to 1 at startup and skips 0 altogether.

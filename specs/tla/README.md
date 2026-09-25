@@ -530,9 +530,14 @@ What the model leaves out, deliberately or as a residual:
   winner's own clock and joins its G-counters on every delivery instead,
   which is what this model checks; the nudge variant is not modelled.
 - Links (`AgentLink`) keep plain last-writer-wins and are not modelled.
-- **Two devices that have not updated** still read an absent host as 0, so a
-  host that started at 0 has its first write compared equal between them
-  (ADR 0080). No receiver can change that; it ends as they update.
+- **Devices that have not updated** still read an absent host as 0 (ADR
+  0080). Over clocks that carry a counter 0 from a host an older build
+  created, two such devices compare that host's first write equal, and an
+  older and a newer device can keep different rows (`{h0: 0, h1: 1}` against
+  `{h1: 2}`: concurrent here, the second newer there) until a later write
+  succeeds both. The legacy configurations check each half of a mixed fleet;
+  one that mixes both readings over counter-0 clocks is not modelled. No
+  receiver can change what an older build does; it ends as devices update.
 - **Journal entry links** (`JournalDb.upsertEntryLink`) are ordered by one
   lexicographic key: `updatedAt`, then the clock under
   `VectorClock.compareCanonically` (an absent host below counter 0), then the

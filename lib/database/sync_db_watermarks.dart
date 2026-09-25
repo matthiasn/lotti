@@ -200,6 +200,26 @@ mixin _SyncDbSequenceWatermarks on _$SyncDatabase {
     }
   }
 
+  /// Schema v30 (ADR 0080): drops the persisted watermark of every host
+  /// with a counter-0 row, so the next [getLastCounterForHost] rebuilds it
+  /// with the prefix counted from 1. The rebuild before v30 numbered that
+  /// row as the first of the prefix, and the row it cached may read past a
+  /// hole. Only such hosts are affected; sequence rows are never deleted, so
+  /// a host that ever had one still has it. One primary-key probe per
+  /// watermark row, run in the migration before the database is used.
+  Future<void> _dropWatermarksCachedAcrossCounterZero() async {
+    final tables = await customSelect(
+      "SELECT COUNT(*) AS n FROM sqlite_master WHERE type = 'table' "
+      "AND name IN ('sync_sequence_watermarks', 'sync_sequence_log')",
+    ).getSingle();
+    if (tables.read<int>('n') < 2) return;
+    await customStatement(
+      'DELETE FROM sync_sequence_watermarks WHERE EXISTS ( '
+      'SELECT 1 FROM sync_sequence_log l '
+      'WHERE l.host_id = sync_sequence_watermarks.host_id AND l.counter = 0)',
+    );
+  }
+
   Future<void> _rebuildSequenceWatermarksForHosts(
     Iterable<String> hostIds,
   ) async {
