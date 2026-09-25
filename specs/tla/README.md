@@ -17,10 +17,14 @@ It downloads the pinned `tla2tools.jar` once, verifies its SHA-256, and caches
 it in `TLA_TOOLS_DIR` (default `~/.cache/lotti-tla`). A configuration
 `<Spec><Variant>.cfg` checks `<Spec>.tla`.
 
-CI discovers all checked-in `.cfg` files and runs each on its own runner with
-`fail-fast: false`. Adding a configuration automatically adds a shard. The
-aggregate `TLC` check passes only when discovery and every shard succeed;
-local `make tla_check` still runs all configurations sequentially.
+CI packs every checked-in `.cfg` into eight shards (`shards.py`), balanced by
+each configuration's measured runtime, and runs them with `fail-fast: false`.
+A shard checks all of its configurations even after one fails, and lists each
+result in the job summary. A new configuration joins a shard automatically,
+counted at a pessimistic five minutes until its runtime is added to
+`SECONDS`; `python3 specs/tla/shards.py --table` prints the plan. The
+aggregate `TLC` check passes only when planning and every shard succeed; local
+`make tla_check` still runs all configurations sequentially.
 
 ## `SyncSequence` — the sync sequence log and backfill
 
