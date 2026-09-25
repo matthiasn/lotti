@@ -311,7 +311,8 @@ String buildComplexHealthFacts({bool bpMedsBehind = false}) {
           criterionId: 'habit-bp-meds',
           actual: medsActual,
           target: 7,
-          daysToRecover: bpMedsBehind ? 7 : 0,
+          // One more successful day brings the rolling week back to 7/7.
+          daysToRecover: bpMedsBehind ? 1 : 0,
         ),
         habitResult(criterionId: 'habit-weigh', actual: 3, target: 3),
         metricResult(
