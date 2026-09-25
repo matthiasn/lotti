@@ -1141,6 +1141,12 @@ What the model leaves out, deliberately or as a residual:
   collapse lookups only appends (rows the collapse did not read), the
   monitor (guarded by a compare-and-set on status) and pruning (sent rows
   only) can run.
+- A key is one object — payload family and id together. Rows store only the
+  id, which an agent entity and an agent link can share; the code's collapse
+  key qualifies it with the family (`collapseKeyOf`), which is what makes
+  the model's per-key collapse sound. Review caught the bare-id key in the
+  first implementation; the model's keys never shared ids, so TLC could not.
+  The regression is in the processor's suite.
 - Claim order is the row id; priority is fixed per message type, and
   `createdAt` follows the id unless the wall clock steps back.
 - `Teardown` is a profile switch or a closed-generation restart that brings
