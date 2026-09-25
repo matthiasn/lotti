@@ -51,8 +51,11 @@ class HabitAutoCompletion {
 /// - **A day with any completion is never touched.** The latest-per-day
 ///   entry — manual success, an explicit skip, or an earlier auto
 ///   completion — wins; the engine only ever fills an empty day. That is what
-///   makes "manual beats auto" and "skip beats data" hold, and what breaks
-///   the feedback loop of its own writes (which emit the habit's id).
+///   makes "manual beats auto" and "skip beats data" hold on this device, and
+///   what breaks the feedback loop of its own writes (which emit the habit's
+///   id). Across devices the day may look empty here while a person's entry
+///   is still in flight; `compareHabitCompletionPrecedence` settles it in the
+///   person's favour once it lands.
 /// - Completions are written through [PersistenceLogic] like manual ones,
 ///   with [HabitCompletionSource.auto] and a reason naming the leaf that
 ///   fired, so they sync and resolve exactly as user entries do.

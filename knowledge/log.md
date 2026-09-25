@@ -1,5 +1,11 @@
 # Knowledge Bundle Update Log
 
+## 2026-09-25
+* **Addition**: [Success semantics](architecture/success-semantics.md) — the
+  goal evaluator, track policy, habit rules and completion collapse written as
+  definitions, with each theorem linked to the exhaustive, property or directed
+  check that discharges it.
+
 ## 2026-09-22
 * **Addition**: [Device location](architecture/device-location.md) — how a new
   entry gets its geolocation without Google Play Services: CoreLocation via

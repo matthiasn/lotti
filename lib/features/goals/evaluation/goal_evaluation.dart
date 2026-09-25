@@ -46,9 +46,11 @@ class GoalCriterionResult {
   /// days-to-recovery — the fewest days of perfect adherence to bring the
   /// rolling count back to target, SIMULATING the window sliding forward
   /// (each future success day also ages the oldest in-window success out, so
-  /// this can exceed `target - successesInWindow`). `0` means at or above
-  /// rate; `target` means the window is empty (a restart, the warmest
-  /// register). Null for metric/measurable leaves and calendar windows.
+  /// this can exceed `target - successesInWindow`). While the evaluation day
+  /// is still uncredited it is the first day of adherence, so a completion
+  /// today can end the deficit today. `0` means at or above rate; `target`
+  /// means the window is empty (a restart, the warmest register). Null for
+  /// metric/measurable leaves and calendar windows.
   final int? deficit;
 
   /// Rolling-window habit leaves at or above rate (deficit 0): the number of

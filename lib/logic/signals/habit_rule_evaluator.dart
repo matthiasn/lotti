@@ -269,7 +269,8 @@ class HabitRuleEvaluator {
     HabitSignalValueBasis valueBasis,
     List<HabitLeafVerdict> leaves,
   ) {
-    final todayValue = valuesByDay[day];
+    final rawToday = valuesByDay[day];
+    final todayValue = rawToday == null ? null : canonicalSignalValue(rawToday);
     // "Any reading" remains today's presence check. A stored basis only
     // affects bounded rules, so older behavior cannot change invisibly when a
     // threshold is removed.

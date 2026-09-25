@@ -207,7 +207,12 @@ void main() {
         if (inWindow.isEmpty) {
           expect(average, isNull);
         } else {
-          expect(average, inWindow.reduce((a, b) => a + b) / inWindow.length);
+          expect(
+            average,
+            canonicalSignalValue(
+              inWindow.reduce((a, b) => a + b) / inWindow.length,
+            ),
+          );
           expect(
             average,
             inInclusiveRange(
@@ -252,6 +257,91 @@ void main() {
             (key.hour, key.minute, key.second, key.millisecond),
             (0, 0, 0, 0),
           );
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados2(
+      glados.ListAnys(glados.any).listWithLengthInRange(
+        1,
+        60,
+        glados.IntAnys(glados.any).intInRange(-5000, 5000),
+      ),
+      glados.IntAnys(glados.any).intInRange(0, 60),
+      glados.ExploreConfig(numRuns: 400),
+    ).test(
+      'a canonical sum of decimals is the exact decimal total, in any order',
+      (thousandths, rotation) {
+        // What people log: values with at most three decimals. Their binary
+        // sum depends on the order and misses the decimal total; the
+        // canonical value is the total itself.
+        final exact = thousandths.fold<int>(0, (sum, v) => sum + v) / 1000;
+        num sumOf(Iterable<int> values) =>
+            values.fold<num>(0, (sum, v) => sum + v / 1000);
+        for (final order in [
+          thousandths,
+          thousandths.reversed,
+          _rotated(thousandths, rotation),
+        ]) {
+          expect(canonicalSignalValue(sumOf(order)), exact, reason: '$order');
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.doubleInRange(-1000000000, 1000000000),
+      glados.ExploreConfig(numRuns: 400),
+    ).test(
+      'canonicalisation is idempotent and moves a value by at most half a '
+      'unit in its twelfth significant digit',
+      (value) {
+        final canonical = canonicalSignalValue(value);
+        expect(canonicalSignalValue(canonical), canonical);
+        expect(
+          (canonical - value).abs(),
+          lessThanOrEqualTo(value.abs() * 5e-12),
+        );
+      },
+      tags: 'glados',
+    );
+
+    test(
+      'integers and non-finite values pass through, tiny values survive',
+      () {
+        expect(canonicalSignalValue(7), isA<int>());
+        expect(canonicalSignalValue(123456789012345), 123456789012345);
+        expect(canonicalSignalValue(1e-300), 1e-300);
+        expect(canonicalSignalValue(double.infinity), double.infinity);
+        expect(canonicalSignalValue(double.nan).isNaN, isTrue);
+      },
+    );
+
+    glados.Glados2(
+      glados.any.signalReadings,
+      glados.IntAnys(glados.any).intInRange(0, 30),
+      glados.ExploreConfig(numRuns: 300),
+    ).test(
+      'measurement totals in tenths are exact and independent of order',
+      (readings, rotation) {
+        final entities = [
+          for (final (i, (at, value)) in readings.indexed)
+            measurementEntity(at, value / 10, id: 'm$i'),
+        ];
+        final byDay = bucketMeasurableTotalsByDay(entities);
+
+        expect(
+          bucketMeasurableTotalsByDay(_rotated(entities, rotation)),
+          byDay,
+        );
+        expect(bucketMeasurableTotalsByDay(entities.reversed.toList()), byDay);
+        for (final MapEntry(key: bucket, :value) in byDay.entries) {
+          final tenths = [
+            for (final (at, v) in readings)
+              if (signalDayKey(at) == bucket) v,
+          ].fold<int>(0, (sum, v) => sum + v);
+          expect(value, tenths / 10);
         }
       },
       tags: 'glados',

@@ -6,6 +6,7 @@ import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
+import 'package:lotti/logic/signals/signal_day_buckets.dart';
 
 /// Pure fold of a [GoalCriterion] tree over a [GoalSignalWindow].
 ///
@@ -21,6 +22,14 @@ class GoalProgressEvaluator {
   static const trendProjectionHorizonDays = 28;
 
   static const _minimumTrendSamples = 4;
+
+  /// The largest ratio an unmet criterion reports: the double just below 1.
+  ///
+  /// A mean of child ratios can round up to exactly 1.0 (`(1 + (1 - 2^-53))
+  /// / 2 == 1.0`), which would read as full attainment for a composite whose
+  /// children are not all met. Unmet composites are capped here so that
+  /// `ratio == 1` and `satisfied` stay the same statement at every node.
+  static const double maxUnmetRatio = 1 - 1 / (1 << 53);
 
   /// Evaluates [criterion] for the period containing [reference].
   GoalEvaluation evaluate(
@@ -604,11 +613,20 @@ class GoalProgressEvaluator {
     // rolling count back to target, SIMULATING the window sliding forward —
     // each future success day also ages the oldest in-window successes out,
     // so a static `target - creditable` understates it when an old success
-    // sits at the window's left edge.
+    // sits at the window's left edge. Adherence starts today while today is
+    // still uncredited — completing it is the first day of recovery — and
+    // tomorrow otherwise, so after `f` days the window ends on the last of
+    // them.
+    final firstAdherenceOffset = doneOn(today) ? 1 : 0;
     var deficit = 0;
     if (creditable < targetCount) {
       for (var f = 1; f <= targetCount; f++) {
-        final windowStart = today.add(Duration(days: f - window.count + 1));
+        final lastAdherenceDay = today.add(
+          Duration(days: firstAdherenceOffset + f - 1),
+        );
+        final windowStart = lastAdherenceDay.subtract(
+          Duration(days: window.count - 1),
+        );
         final surviving = successDays
             .where((d) => !d.isBefore(windowStart))
             .length;
@@ -667,7 +685,7 @@ class GoalProgressEvaluator {
     final ratios = children.map((c) => c.result.ratio).toList();
     final satisfiedCount = children.where((c) => c.result.satisfied).length;
 
-    final double ratio;
+    double ratio;
     final bool satisfied;
     final num target;
     final bool? pace;
@@ -681,7 +699,8 @@ class GoalProgressEvaluator {
         ratio = ratios.reduce(math.max);
         satisfied = satisfiedCount > 0;
         target = 1;
-        pace = _paceAny(children);
+        // anyOf is atLeastCount(1), pace included.
+        pace = _paceAtLeast(children, 1);
       case _CompositeKind.atLeastCount:
         final sorted = [...ratios]..sort((a, b) => b.compareTo(a));
         final top = sorted.take(math.max(1, successes)).toList();
@@ -690,6 +709,7 @@ class GoalProgressEvaluator {
         target = successes;
         pace = _paceAtLeast(children, successes);
     }
+    if (!satisfied) ratio = math.min(ratio, maxUnmetRatio);
     // Rolling-window routine hints. An `allOf` recovers only when its WORST
     // child recovers (max child deficit), and it holds rate only while EVERY
     // child does — so it loses rate when the first child's buffer runs out
@@ -745,11 +765,13 @@ class GoalProgressEvaluator {
     return sawTrue ? true : null;
   }
 
-  /// atLeastCount pace: the quota is dead only when fewer than [successes]
-  /// children remain *possible* (satisfied, or not ruled out by their own
-  /// pace); it is affirmatively on pace when at least [successes] children
-  /// are already satisfied or affirmatively feasible. One impossible child
-  /// must not sink a "2 of 3" goal whose other two legs are alive.
+  /// atLeastCount (and anyOf, its `successes == 1` case) pace: the quota is
+  /// dead only when fewer than [successes] children remain *possible*
+  /// (satisfied, or not ruled out by their own pace); it is affirmatively on
+  /// pace when at least [successes] children are already satisfied or
+  /// affirmatively feasible. One impossible child must not sink a "2 of 3"
+  /// goal whose other two legs are alive — nor an "either" whose other leg is
+  /// already met, or is a metric that can still be.
   bool? _paceAtLeast(List<_NodeOutcome> children, int successes) {
     var possible = 0;
     var viable = 0;
@@ -763,41 +785,26 @@ class GoalProgressEvaluator {
     return null;
   }
 
-  /// anyOf pace: one feasible child keeps the composite alive; it is only
-  /// infeasible when every child that has an opinion says infeasible.
-  bool? _paceAny(List<_NodeOutcome> children) {
-    var sawFalse = false;
-    for (final child in children) {
-      switch (child.result.paceFeasible) {
-        case true:
-          return true;
-        case false:
-          sawFalse = true;
-        case null:
-          break;
-      }
-    }
-    return sawFalse ? false : null;
-  }
-
+  /// The canonical ([canonicalSignalValue]) aggregate the target is compared
+  /// against — independent of the series' iteration order, and exact for the
+  /// decimals people log.
   num _aggregate(
     Map<DateTime, num> series,
     GoalAggregation aggregation, {
     bool countPositiveValues = false,
   }) {
     if (series.isEmpty) return 0;
-    switch (aggregation) {
-      case GoalAggregation.dailySumThenAverage:
-        return series.values.reduce((a, b) => a + b) / series.length;
-      case GoalAggregation.sum:
-        return series.values.reduce((a, b) => a + b);
-      case GoalAggregation.count:
-        return countPositiveValues
+    final raw = switch (aggregation) {
+      GoalAggregation.dailySumThenAverage =>
+        series.values.reduce((a, b) => a + b) / series.length,
+      GoalAggregation.sum => series.values.reduce((a, b) => a + b),
+      GoalAggregation.count =>
+        countPositiveValues
             ? series.values.where((value) => value > 0).length
-            : series.length;
-      case GoalAggregation.max:
-        return series.values.reduce(math.max);
-    }
+            : series.length,
+      GoalAggregation.max => series.values.reduce(math.max),
+    };
+    return canonicalSignalValue(raw);
   }
 
   (double, bool) _compare(num actual, num target, GoalDirection direction) {

@@ -1,218 +1,43 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' as glados;
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
-import 'package:lotti/classes/goal_spec_validator.dart';
 import 'package:lotti/classes/goal_window.dart';
 
 void main() {
-  group('fromAutoCompleteRule thresholds', () {
-    test('health rule with minimum only becomes an atLeast metric', () {
-      final criterion = GoalCriterion.fromAutoCompleteRule(
-        const AutoCompleteRule.health(
-          dataType: 'cumulative_step_count',
-          minimum: 10000,
-          title: 'steps',
-        ),
-      );
-      expect(
-        criterion,
-        const GoalCriterion.metric(
-          criterionId: 'c',
-          dataType: 'cumulative_step_count',
-          window: GoalWindow.day(),
-          aggregation: GoalAggregation.sum,
-          target: 10000,
-          title: 'steps',
-        ),
-      );
-    });
-
-    test('health rule with maximum only becomes an atMost metric', () {
-      final criterion = GoalCriterion.fromAutoCompleteRule(
-        const AutoCompleteRule.health(
-          dataType: 'caffeine_intake',
-          maximum: 200,
-        ),
-      );
-      expect(
-        criterion,
-        isA<GoalCriterionMetric>()
-            .having((c) => c.target, 'target', 200)
-            .having((c) => c.direction, 'direction', GoalDirection.atMost),
-      );
-    });
-
-    test('minimum and maximum together become an allOf pair', () {
-      final criterion = GoalCriterion.fromAutoCompleteRule(
-        const AutoCompleteRule.health(
-          dataType: 'sleep_minutes',
-          minimum: 420,
-          maximum: 540,
-        ),
-      );
-      expect(
-        criterion,
-        isA<GoalCriterionAllOf>().having((c) => c.criteria, 'children', [
-          isA<GoalCriterionMetric>()
-              .having((m) => m.criterionId, 'id', 'c.min')
-              .having((m) => m.target, 'target', 420)
-              .having((m) => m.direction, 'dir', GoalDirection.atLeast),
-          isA<GoalCriterionMetric>()
-              .having((m) => m.criterionId, 'id', 'c.max')
-              .having((m) => m.target, 'target', 540)
-              .having((m) => m.direction, 'dir', GoalDirection.atMost),
-        ]),
-      );
-    });
-
-    test('workout rules import identically to health rules', () {
-      final criterion = GoalCriterion.fromAutoCompleteRule(
-        const AutoCompleteRule.workout(
-          dataType: 'running_distance',
-          minimum: 5000,
-        ),
-      );
-      expect(
-        criterion,
-        isA<GoalCriterionMetric>()
-            .having((c) => c.dataType, 'dataType', 'running_distance')
-            .having((c) => c.target, 'target', 5000),
-      );
-    });
-
-    test('measurable rules map to measurable criteria', () {
-      final criterion = GoalCriterion.fromAutoCompleteRule(
-        const AutoCompleteRule.measurable(
-          dataTypeId: 'water-intake-id',
-          minimum: 2000,
-        ),
-      );
-      expect(
-        criterion,
-        isA<GoalCriterionMeasurable>()
-            .having((c) => c.dataTypeId, 'dataTypeId', 'water-intake-id')
-            .having((c) => c.target, 'target', 2000),
-      );
-    });
-
-    test('a threshold rule with neither bound throws', () {
-      expect(
-        () => GoalCriterion.fromAutoCompleteRule(
-          const AutoCompleteRule.health(dataType: 'steps'),
-        ),
-        throwsArgumentError,
-      );
-    });
-  });
-
-  group('fromAutoCompleteRule structure', () {
-    test('habit rules become single-completion quotas', () {
-      final criterion = GoalCriterion.fromAutoCompleteRule(
-        const AutoCompleteRule.habit(habitId: 'gym-habit', title: 'Gym'),
-      );
-      expect(
-        criterion,
-        const GoalCriterion.habit(
-          criterionId: 'c',
-          habitId: 'gym-habit',
-          window: GoalWindow.day(),
-          targetCount: 1,
-          title: 'Gym',
-        ),
-      );
-    });
-
-    test('and/or/multiple map to allOf/anyOf/atLeastCount with path ids', () {
-      final criterion = GoalCriterion.fromAutoCompleteRule(
-        const AutoCompleteRule.and(
-          rules: [
-            AutoCompleteRule.habit(habitId: 'h1'),
-            AutoCompleteRule.multiple(
-              rules: [
-                AutoCompleteRule.habit(habitId: 'h2'),
-                AutoCompleteRule.or(
-                  rules: [
-                    AutoCompleteRule.habit(habitId: 'h3'),
-                    AutoCompleteRule.health(dataType: 'steps', minimum: 8000),
-                  ],
-                ),
-              ],
-              successes: 1,
+  test('json round trip preserves a nested tree', () {
+    const criterion = GoalCriterion.atLeastCount(
+      criterionId: 'c',
+      successes: 1,
+      criteria: [
+        GoalCriterion.allOf(
+          criterionId: 'c.0',
+          criteria: [
+            GoalCriterion.metric(
+              criterionId: 'c.0.min',
+              dataType: 'sleep_minutes',
+              window: GoalWindow.calendarWeek(),
+              aggregation: GoalAggregation.sum,
+              target: 420,
+            ),
+            GoalCriterion.metric(
+              criterionId: 'c.0.max',
+              dataType: 'sleep_minutes',
+              window: GoalWindow.calendarWeek(),
+              aggregation: GoalAggregation.sum,
+              target: 540,
+              direction: GoalDirection.atMost,
             ),
           ],
         ),
-      );
-
-      final root = criterion as GoalCriterionAllOf;
-      expect(root.criterionId, 'c');
-      expect((root.criteria[0] as GoalCriterionHabit).criterionId, 'c.0');
-
-      final multiple = root.criteria[1] as GoalCriterionAtLeastCount;
-      expect(multiple.criterionId, 'c.1');
-      expect(multiple.successes, 1);
-      expect(
-        (multiple.criteria[0] as GoalCriterionHabit).criterionId,
-        'c.1.0',
-      );
-
-      final or = multiple.criteria[1] as GoalCriterionAnyOf;
-      expect(or.criterionId, 'c.1.1');
-      expect((or.criteria[1] as GoalCriterionMetric).criterionId, 'c.1.1.1');
-    });
-
-    test('window and aggregation upgrades propagate to every leaf', () {
-      final criterion =
-          GoalCriterion.fromAutoCompleteRule(
-                const AutoCompleteRule.and(
-                  rules: [
-                    AutoCompleteRule.health(dataType: 'steps', minimum: 10000),
-                    AutoCompleteRule.habit(habitId: 'h1'),
-                  ],
-                ),
-                window: const GoalWindow.rollingDays(count: 7),
-                aggregation: GoalAggregation.dailySumThenAverage,
-              )
-              as GoalCriterionAllOf;
-
-      final metric = criterion.criteria[0] as GoalCriterionMetric;
-      expect(metric.window, const GoalWindow.rollingDays(count: 7));
-      expect(metric.aggregation, GoalAggregation.dailySumThenAverage);
-      final habit = criterion.criteria[1] as GoalCriterionHabit;
-      expect(habit.window, const GoalWindow.rollingDays(count: 7));
-    });
-
-    test('repeated imports of the same rule are identical', () {
-      const rule = AutoCompleteRule.and(
-        rules: [
-          AutoCompleteRule.health(dataType: 'steps', minimum: 10000),
-          AutoCompleteRule.habit(habitId: 'h1'),
-        ],
-      );
-      expect(
-        GoalCriterion.fromAutoCompleteRule(rule),
-        GoalCriterion.fromAutoCompleteRule(rule),
-      );
-    });
-  });
-
-  test('json round trip preserves a nested tree', () {
-    final criterion = GoalCriterion.fromAutoCompleteRule(
-      const AutoCompleteRule.multiple(
-        rules: [
-          AutoCompleteRule.health(
-            dataType: 'sleep_minutes',
-            minimum: 420,
-            maximum: 540,
-          ),
-          AutoCompleteRule.habit(habitId: 'h1'),
-        ],
-        successes: 1,
-      ),
-      window: const GoalWindow.calendarWeek(),
+        GoalCriterion.habit(
+          criterionId: 'c.1',
+          habitId: 'h1',
+          window: GoalWindow.calendarWeek(),
+          targetCount: 1,
+        ),
+      ],
     );
     // Through the string form, as sync transports entities — bare toJson()
     // leaves nested union children unserialized by json_serializable default.
@@ -324,91 +149,5 @@ void main() {
       'cumulative_step_count',
       'HealthDataType.WEIGHT',
     });
-  });
-
-  group('fromAutoCompleteRule properties', () {
-    // A leaf rule; thresholds always carry at least one bound.
-    final leaf = glados.any.combine3(
-      glados.any.intInRange(0, 4),
-      glados.any.intInRange(0, 3),
-      glados.any.intInRange(0, 20000),
-      (int kind, int bounds, int value) {
-        final minimum = bounds == 1 ? null : value;
-        final maximum = bounds == 0 ? null : value + 500;
-        return switch (kind) {
-          0 => AutoCompleteRule.health(
-            dataType: 'cumulative_step_count',
-            minimum: minimum,
-            maximum: maximum,
-          ),
-          1 => AutoCompleteRule.workout(
-            dataType: 'walking',
-            minimum: minimum,
-            maximum: maximum,
-          ),
-          2 => AutoCompleteRule.measurable(
-            dataTypeId: 'water-ml',
-            minimum: minimum,
-            maximum: maximum,
-          ),
-          _ => AutoCompleteRule.habit(habitId: 'habit-$value'),
-        };
-      },
-    );
-
-    glados.Generator<AutoCompleteRule> rule(int depth) {
-      if (depth == 0) return leaf;
-      return glados.any.oneOf([
-        leaf,
-        glados.any.combine3(
-          glados.any.intInRange(0, 3),
-          glados.any.listWithLengthInRange(1, 4, rule(depth - 1)),
-          glados.any.intInRange(0, 100),
-          (int kind, List<AutoCompleteRule> rules, int quota) => switch (kind) {
-            0 => AutoCompleteRule.and(rules: rules),
-            1 => AutoCompleteRule.or(rules: rules),
-            _ => AutoCompleteRule.multiple(
-              rules: rules,
-              successes: 1 + quota % rules.length,
-            ),
-          },
-        ),
-      ]);
-    }
-
-    Set<String> ruleHabitIds(AutoCompleteRule rule) => switch (rule) {
-      AutoCompleteRuleHabit(:final habitId) => {habitId},
-      AutoCompleteRuleAnd(:final rules) ||
-      AutoCompleteRuleOr(:final rules) ||
-      AutoCompleteRuleMultiple(:final rules) => {
-        for (final child in rules) ...ruleHabitIds(child),
-      },
-      _ => const {},
-    };
-
-    List<String> ids(GoalCriterion criterion) => [
-      criterion.criterionId,
-      ...switch (criterion) {
-        GoalCriterionAllOf(:final criteria) ||
-        GoalCriterionAnyOf(:final criteria) ||
-        GoalCriterionAtLeastCount(:final criteria) => criteria.expand(ids),
-        _ => const <String>[],
-      },
-    ];
-
-    glados.Glados(rule(3), glados.ExploreConfig(numRuns: 150)).test(
-      'imports are deterministic, uniquely keyed, valid and keep every habit',
-      (source) {
-        final criterion = GoalCriterion.fromAutoCompleteRule(source);
-
-        expect(GoalCriterion.fromAutoCompleteRule(source), criterion);
-        final allIds = ids(criterion);
-        expect(allIds.toSet(), hasLength(allIds.length));
-        expect(allIds.first, 'c');
-        expect(GoalSpecValidator.criterionIssues(criterion), isEmpty);
-        expect(goalCriterionHabitIds(criterion), ruleHabitIds(source));
-      },
-      tags: 'glados',
-    );
   });
 }

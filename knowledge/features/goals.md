@@ -1846,6 +1846,8 @@ Invariants worth not breaking:
 
 ## Related
 
+- [Success semantics](../architecture/success-semantics.md) — the evaluator and
+  policy as definitions, with the theorems they satisfy.
 - [Agents](agents/) — the shared runtime this plugs into.
 - [Daily OS](daily_os_next/) — the reference plug-in implementation.
 - ADRs 0053–0058 in `docs/adr/` — the decision record for this feature.

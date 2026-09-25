@@ -34,8 +34,8 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
   /// [rangeStart]/[rangeEnd] window.
   ///
   /// Raw database rows are converted to journal entities and collapsed with
-  /// [latestHabitCompletionsByDay], so callers get one latest write per day
-  /// instead of every stored completion row.
+  /// [latestHabitCompletionsByDay], so callers get the one completion that
+  /// settles each day instead of every stored completion row.
   Future<List<JournalEntity>> getHabitCompletionsByHabitId({
     required String habitId,
     required DateTime rangeStart,
@@ -70,8 +70,10 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
   /// Latest habit completion per habit/day since [rangeStart], projected to
   /// the five fields consumers actually read.
   ///
-  /// Returns one winning row per habit/day under a last-write-wins contract,
-  /// without ever putting the `serialized` payload on the wire.
+  /// Returns one winning row per habit/day — the order of
+  /// `compareHabitCompletionPrecedence`: a person's entry above an automatic
+  /// one, then the latest write — without ever putting the `serialized`
+  /// payload on the wire.
   ///
   /// That payload is the cost. The 2026-06/07 slow-query logs put the
   /// full-entity version at 636 ms average, while the SQL measures ~29 ms on a
@@ -111,6 +113,8 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
                 json_extract(serialized, '$.data.habitId'),
                 date(date_from, 'unixepoch', 'localtime')
               ORDER BY
+                CASE json_extract(serialized, '$.data.source')
+                  WHEN 'auto' THEN 0 ELSE 1 END DESC,
                 updated_at DESC,
                 created_at DESC,
                 date_to DESC,

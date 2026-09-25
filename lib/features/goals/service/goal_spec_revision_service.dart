@@ -151,7 +151,7 @@ class GoalSpecRevisionService {
         'the persona, goal name, and intention must not be blank',
       );
     }
-    final issues = GoalSpecValidator.criterionIssues(criteria);
+    final issues = GoalSpecValidator.authoringIssues(criteria);
     if (issues.isNotEmpty) {
       return GoalSpecRevisionRefused(
         'the revised criteria fail validation: ${issues.join('; ')}',
@@ -270,7 +270,7 @@ class GoalSpecRevisionService {
       return GoalSpecRevisionRefused(applied.reason);
     }
     final revised = (applied as GoalRevisionApplied).criteria;
-    final issues = GoalSpecValidator.criterionIssues(revised);
+    final issues = GoalSpecValidator.authoringIssues(revised);
     if (issues.isNotEmpty) {
       return GoalSpecRevisionRefused(
         'the revised criteria fail validation: ${issues.join('; ')}',

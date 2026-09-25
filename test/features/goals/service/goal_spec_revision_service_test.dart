@@ -540,6 +540,28 @@ void main() {
     },
   );
 
+  test('an owner edit refuses a quota no schedule can meet', () async {
+    stubSpec();
+    final outcome = await service.reviseFromOwner(
+      agentId: agentId,
+      baseVersionId: '$agentId:spec-v1',
+      displayName: 'Juno',
+      title: 'Movement',
+      statement: 'Move consistently.',
+      criteria: const GoalCriterion.habit(
+        criterionId: 'gym',
+        habitId: 'gym',
+        window: GoalWindow.calendarWeek(),
+        targetCount: 8,
+      ),
+    );
+    expect(
+      (outcome as GoalSpecRevisionRefused).reason,
+      contains('targetCount 8 exceeds the 7 days the window can credit'),
+    );
+    expect(upserts, isEmpty);
+  });
+
   test(
     'an owner edit reconciles a revision committed before sync failed',
     () async {

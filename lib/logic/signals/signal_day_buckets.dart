@@ -17,6 +17,25 @@ import 'package:lotti/features/dashboards/state/health_data.dart';
 /// Calendar-date key of [instant]: its local date as midnight UTC.
 DateTime signalDayKey(DateTime instant) => GoalWindow.dayUtc(instant);
 
+/// Significant digits kept by [canonicalSignalValue].
+const signalValueSignificantDigits = 12;
+
+/// [value] rounded to [signalValueSignificantDigits] significant digits, the
+/// form every aggregate takes before a success threshold is applied to it.
+///
+/// Binary doubles cannot hold the decimals people log: ten 0.1 l entries sum
+/// to 0.9999999999999999, which misses "at least 1 l" by one bit, and the
+/// same values summed in another order can land on a different last bit.
+/// Rounding far below any precision a person enters, but far above the error
+/// a few thousand additions accumulate, makes every decision agree with the
+/// exact decimal arithmetic the user did in their head — and with every other
+/// replica, whatever order it read the journal in. Integers and non-finite
+/// values pass through unchanged.
+num canonicalSignalValue(num value) {
+  if (value is int || !value.isFinite || value == 0) return value;
+  return double.parse(value.toStringAsPrecision(signalValueSignificantDigits));
+}
+
 /// The mean of the recorded daily values in the trailing [days]-day window
 /// ending on [day]. Missing days are gaps, not zeroes; an entirely empty
 /// window has no average.
@@ -40,7 +59,7 @@ num? trailingAverageOn(
     sum += entry.value;
     count++;
   }
-  return count == 0 ? null : sum / count;
+  return count == 0 ? null : canonicalSignalValue(sum / count);
 }
 
 /// One deterministic value per day for a quantitative (health) data type,
@@ -104,7 +123,8 @@ num quantitativeDisplayMultiplier(String dataType) =>
 
 /// Sum of measurement values per day. A day with an entry is present in the
 /// result even when its total is zero, which is how "any entry" rules tell a
-/// recorded zero apart from nothing recorded.
+/// recorded zero apart from nothing recorded. Totals are canonical
+/// ([canonicalSignalValue]), so they do not depend on entry order.
 Map<DateTime, num> bucketMeasurableTotalsByDay(List<JournalEntity> entities) {
   final byDay = <DateTime, num>{};
   for (final entity in entities) {
@@ -116,7 +136,7 @@ Map<DateTime, num> bucketMeasurableTotalsByDay(List<JournalEntity> entities) {
       orElse: () {},
     );
   }
-  return byDay;
+  return byDay.map((day, total) => MapEntry(day, canonicalSignalValue(total)));
 }
 
 /// Workouts grouped by the calendar day they started, keeping the entities

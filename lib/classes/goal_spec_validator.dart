@@ -16,6 +16,9 @@ import 'package:lotti/classes/goal_window.dart';
 ///   impossible quotas (`successes > criteria.length`), non-positive
 ///   counts, non-finite targets.
 ///
+/// Authoring adds a third, stricter layer — [authoringIssues] — that refuses
+/// quotas no schedule can meet; persisted specs are never re-judged by it.
+///
 /// [decodeValidated] is the persistence-path entry: it applies both layers
 /// and throws a [FormatException] naming every issue instead of storing or
 /// evaluating a lie.
@@ -200,6 +203,55 @@ abstract final class GoalSpecValidator {
           _structuralIssues(child, issues, seenIds);
         }
     }
+  }
+
+  /// [criterionIssues] plus the checks that only authoring may enforce: a
+  /// habit quota no schedule can meet, and a rolling window too long to
+  /// evaluate.
+  ///
+  /// Creation and revision refuse these trees. Decoding a persisted spec does
+  /// not: a version minted before a check existed must still load on every
+  /// replica, where the evaluator scores it (an unmeetable quota simply stays
+  /// unmet) instead of the goal vanishing.
+  static List<String> authoringIssues(GoalCriterion criterion) => [
+    ...criterionIssues(criterion),
+    ..._feasibilityIssues(criterion),
+  ];
+
+  static List<String> _feasibilityIssues(GoalCriterion criterion) {
+    final id = criterion.criterionId;
+    final issues = <String>[];
+    switch (criterion) {
+      case GoalCriterionAllOf(:final criteria) ||
+          GoalCriterionAnyOf(:final criteria) ||
+          GoalCriterionAtLeastCount(:final criteria):
+        for (final child in criteria) {
+          issues.addAll(_feasibilityIssues(child));
+        }
+      case GoalCriterionMetric(:final window) ||
+          GoalCriterionMeasurable(:final window) ||
+          GoalCriterionCategoryTime(:final window) ||
+          GoalCriterionLabelTime(:final window) ||
+          GoalCriterionHabit(:final window):
+        if (window case GoalWindowRollingDays(
+          :final count,
+        ) when count > maxGoalRollingDays) {
+          issues.add(
+            '$id: rolling window of $count days exceeds the maximum of '
+            '$maxGoalRollingDays',
+          );
+        }
+        if (criterion case GoalCriterionHabit(:final targetCount)) {
+          final capacity = goalWindowCreditableDays(window);
+          if (targetCount > capacity) {
+            issues.add(
+              '$id: targetCount $targetCount exceeds the $capacity days the '
+              'window can credit — unsatisfiable',
+            );
+          }
+        }
+    }
+    return issues;
   }
 
   /// A blank signal identifier queries an empty namespace and evaluates a

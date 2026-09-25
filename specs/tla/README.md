@@ -439,6 +439,42 @@ paused past the run cap (`MaxPauses = 1`), or one that crashes and restarts
 before sync delivers the reply it missed (`MaxCrashes = 1`), answers beside
 the device that took over.
 
+## `HabitDaySettlement` — who decides a habit day
+
+One habit on one day across devices. A person records the day by hand on any
+device; a signal the habit's rule reads lands on one device and syncs; the
+auto-completion engine on a device that has the signal fills the day if it
+holds no completion; sync delivers every row in any order; each replica
+settles the day to one row. That settled row is what the habits page,
+streaks and every goal habit leaf read. The runtime is described in
+[habits](../../knowledge/features/habits.md#one-settled-completion-per-habitday)
+and [success semantics](../../knowledge/architecture/success-semantics.md).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `Converged` | invariant | replicas holding the same rows settle the day to the same one |
+| `ManualBeatsAuto` | invariant | once a person recorded the day anywhere, no automatic success replaces it |
+| `LatestManualWins` | invariant | among a person's entries, the last one stands |
+| `EventuallyRecorded` | liveness | once the signal exists, every device ends up with the day recorded |
+
+| Configuration | Devices | Moments | Manual entries | Distinct states |
+|---------------|---------|---------|----------------|-----------------|
+| `HabitDaySettlement` | 2 | 3 | 2 | 51,316 |
+| `HabitDaySettlementThree` | 3 | 2 | 1 | 122,803 |
+
+`Order = "recency"` models the code before the settlement order ranked the
+source: newest write first, whatever wrote it. `Converged` holds under it —
+replicas always agreed — but `ManualBeatsAuto` breaks: device 1 records the
+day by hand, the signal lands on device 2 before that row does, device 2's
+engine sees an empty day and writes an automatic success with a later stamp,
+and once it syncs it outranks the person's entry on every replica. With a skip
+that is "skip beats data" broken. Ranking a person's entry above any automatic
+one, in `compareHabitCompletionPrecedence` and the SQL ranking alike, closes
+it; `habit_completion_resolution_test.dart` and
+`database_data_queries_test.dart` pin the counterexample, each failing with
+the rank removed. Not modelled: clock skew between devices, which reorders any
+last-write-wins decision.
+
 ## `AgentReplication` — converging synced agent entities
 
 Three replicas of one synced agent entity. Local writes build on the

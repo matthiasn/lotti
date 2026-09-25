@@ -8,6 +8,7 @@ import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/habits/habit_completion_resolution.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
@@ -280,17 +281,60 @@ void main() {
         },
       );
 
+      test(
+        "getHabitCompletionRecordsInRange settles a day on the person's "
+        'entry over a later automatic one, like the Dart collapse',
+        () async {
+          final day = DateTime(2024, 4, 16, 7);
+          final skip =
+              buildHabitCompletionEntry(
+                    id: 'phone-skip',
+                    habitId: 'race-habit',
+                    timestamp: day,
+                    completionType: HabitCompletionType.skip,
+                  )
+                  as HabitCompletionEntry;
+          final auto = skip.copyWith(
+            meta: skip.meta.copyWith(
+              id: 'desktop-auto',
+              updatedAt: skip.meta.updatedAt.add(const Duration(hours: 1)),
+              createdAt: skip.meta.createdAt.add(const Duration(hours: 1)),
+            ),
+            data: skip.data.copyWith(
+              completionType: HabitCompletionType.success,
+              source: HabitCompletionSource.auto,
+            ),
+          );
+          await db!.upsertJournalDbEntity(toDbEntity(auto));
+          await db!.upsertJournalDbEntity(toDbEntity(skip));
+
+          final result = await db!.getHabitCompletionRecordsInRange(
+            rangeStart: DateTime(2024, 4),
+          );
+          expect(result, hasLength(1));
+          expect(result.single.completionType, HabitCompletionType.skip);
+          expect(result.single.source, HabitCompletionSource.manual);
+          expect(
+            latestHabitCompletionsByDay([auto, skip]).single.meta.id,
+            'phone-skip',
+            reason: 'the SQL ranking and the Dart collapse agree',
+          );
+        },
+      );
+
       for (final tieBreaker in ['dateTo', 'id']) {
         test(
           'winning completion keeps $tieBreaker tie-breaking after ranking',
           () async {
             final day = DateTime(2024, 4, 16, 12);
+            // Both automatic: the tie-breakers order rows of one source.
             final earlier =
                 buildHabitCompletionEntry(
                       id: tieBreaker == 'id' ? 'a' : 'z',
                       habitId: 'tie-habit',
                       timestamp: day,
                       completionType: HabitCompletionType.success,
+                      source: HabitCompletionSource.auto,
                     )
                     as HabitCompletionEntry;
             final winner = earlier.copyWith(

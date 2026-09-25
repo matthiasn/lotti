@@ -19,6 +19,7 @@ HabitCompletionEntry _completion({
   DateTime? createdAt,
   DateTime? updatedAt,
   DateTime? dateTo,
+  HabitCompletionSource source = HabitCompletionSource.manual,
 }) {
   final effectiveDateTo = dateTo ?? day;
   return HabitCompletionEntry(
@@ -35,6 +36,7 @@ HabitCompletionEntry _completion({
       dateTo: effectiveDateTo,
       habitId: habitId,
       completionType: completionType,
+      source: source,
     ),
   );
 }
@@ -48,6 +50,7 @@ class _GeneratedHabitCompletionScenario {
     required this.daySeed,
     required this.statusSeed,
     required this.orderSeed,
+    required this.sourceSeed,
   });
 
   final int habitCountSeed;
@@ -57,6 +60,7 @@ class _GeneratedHabitCompletionScenario {
   final int daySeed;
   final int statusSeed;
   final int orderSeed;
+  final int sourceSeed;
 
   int get habitCount => (habitCountSeed % 4) + 1;
   int get dayCount => (dayCountSeed % 5) + 1;
@@ -79,6 +83,10 @@ class _GeneratedHabitCompletionScenario {
         day: day,
         writtenAt: writtenAt,
         completionType: _completionTypes[statusIndex],
+        // Roughly a third of the writes are the engine's.
+        source: (sourceSeed + index * 13) % 3 == 0
+            ? HabitCompletionSource.auto
+            : HabitCompletionSource.manual,
       );
     });
   }
@@ -96,14 +104,21 @@ class _GeneratedHabitCompletionScenario {
     return orderSeed.isEven ? entries : entries.reversed.toList();
   }
 
+  /// Per habit/day: the person's latest entry, or the latest automatic one
+  /// when the person recorded nothing.
   Map<String, HabitCompletionEntry> get expectedLatestByKey {
-    final expected = <String, HabitCompletionEntry>{};
+    final latestManual = <String, HabitCompletionEntry>{};
+    final latestAny = <String, HabitCompletionEntry>{};
 
     for (final entry in chronologicalEntries) {
-      expected[habitCompletionDayKey(entry)] = entry;
+      final key = habitCompletionDayKey(entry);
+      latestAny[key] = entry;
+      if (entry.data.source == HabitCompletionSource.manual) {
+        latestManual[key] = entry;
+      }
     }
 
-    return expected;
+    return {...latestAny, ...latestManual};
   }
 
   @override
@@ -115,13 +130,15 @@ class _GeneratedHabitCompletionScenario {
         'habitSeed: $habitSeed, '
         'daySeed: $daySeed, '
         'statusSeed: $statusSeed, '
-        'orderSeed: $orderSeed)';
+        'orderSeed: $orderSeed, '
+        'sourceSeed: $sourceSeed)';
   }
 }
 
 extension _AnyGeneratedHabitCompletionScenario on glados.Any {
   glados.Generator<_GeneratedHabitCompletionScenario>
-  get habitCompletionScenario => glados.CombinableAny(this).combine7(
+  get habitCompletionScenario => glados.CombinableAny(this).combine8(
+    glados.IntAnys(this).intInRange(0, 10000),
     glados.IntAnys(this).intInRange(0, 10000),
     glados.IntAnys(this).intInRange(0, 10000),
     glados.IntAnys(this).intInRange(0, 10000),
@@ -137,6 +154,7 @@ extension _AnyGeneratedHabitCompletionScenario on glados.Any {
       int daySeed,
       int statusSeed,
       int orderSeed,
+      int sourceSeed,
     ) => _GeneratedHabitCompletionScenario(
       habitCountSeed: habitCountSeed,
       dayCountSeed: dayCountSeed,
@@ -145,6 +163,7 @@ extension _AnyGeneratedHabitCompletionScenario on glados.Any {
       daySeed: daySeed,
       statusSeed: statusSeed,
       orderSeed: orderSeed,
+      sourceSeed: sourceSeed,
     ),
   );
 }
@@ -299,6 +318,51 @@ void main() {
       expect(result.single.data.completionType, HabitCompletionType.skip);
     });
 
+    test('a skip recorded on one device outranks a later automatic success '
+        'another device wrote before the skip synced', () {
+      // The HabitDaySettlement.tla counterexample: the phone records a skip
+      // at 08:00; the desktop, which has the imported steps but not yet the
+      // skip, sees an empty day and auto-completes it at 09:00. Every replica
+      // must settle the day on the person's skip, whatever arrives first.
+      final day = DateTime(2024, 3, 1, 7);
+      final skip = _completion(
+        id: 'phone-skip',
+        habitId: 'habit-1',
+        day: day,
+        writtenAt: DateTime(2024, 3, 1, 8),
+        completionType: HabitCompletionType.skip,
+      );
+      final auto = _completion(
+        id: 'desktop-auto',
+        habitId: 'habit-1',
+        day: day,
+        writtenAt: DateTime(2024, 3, 1, 9),
+        completionType: HabitCompletionType.success,
+        source: HabitCompletionSource.auto,
+      );
+
+      for (final arrival in [
+        [skip, auto],
+        [auto, skip],
+      ]) {
+        final settled = latestHabitCompletionsByDay(arrival).single;
+        expect(settled.meta.id, 'phone-skip');
+        expect(settled.data.completionType, HabitCompletionType.skip);
+      }
+      // A later entry by the person still replaces an earlier one.
+      final redo = _completion(
+        id: 'phone-redo',
+        habitId: 'habit-1',
+        day: day,
+        writtenAt: DateTime(2024, 3, 1, 10),
+        completionType: HabitCompletionType.success,
+      );
+      expect(
+        latestHabitCompletionsByDay([redo, auto, skip]).single.meta.id,
+        'phone-redo',
+      );
+    });
+
     test('ignores non-habit journal entities', () {
       final writtenAt = DateTime(2024, 3, 15, 22);
       final nonHabit = JournalEntity.journalEntry(
@@ -329,7 +393,8 @@ void main() {
     glados.Glados(
       glados.any.habitCompletionScenario,
       glados.ExploreConfig(numRuns: 160),
-    ).test('returns the latest write for every generated habit/day', (
+    ).test("settles every generated habit/day on the person's latest entry, "
+        'else the latest automatic one', (
       scenario,
     ) {
       final result = latestHabitCompletionsByDay(scenario.shuffledEntries);
@@ -357,14 +422,35 @@ void main() {
         );
       }
     }, tags: 'glados');
+
+    glados.Glados(
+      glados.any.habitCompletionScenario,
+      glados.ExploreConfig(numRuns: 160),
+    ).test('re-delivered writes converge on the same result', (scenario) {
+      // Sync can hand a replica rows it already merged, in any order. The
+      // collapse must be idempotent: folding its own output back together
+      // with every row again changes nothing, which with order independence
+      // makes every replica converge whatever arrives when.
+      final once = latestHabitCompletionsByDay(scenario.shuffledEntries);
+      final again = latestHabitCompletionsByDay([
+        ...scenario.shuffledEntries.reversed,
+        ...once,
+        ...scenario.shuffledEntries,
+      ]);
+      expect(
+        [for (final entry in again) entry.meta.id],
+        [for (final entry in once) entry.meta.id],
+        reason: '$scenario',
+      );
+    }, tags: 'glados');
   });
 
-  // Additive Glados groups for compareHabitCompletionWriteRecency — appended.
+  // Additive Glados groups for compareHabitCompletionPrecedence — appended.
   _runCompareHabitCompletionGladosTests();
 }
 
 // ---------------------------------------------------------------------------
-// Generators and Glados property tests for compareHabitCompletionWriteRecency.
+// Generators and Glados property tests for compareHabitCompletionPrecedence.
 // Antisymmetry and transitivity are the algebraic invariants of a comparator.
 // ---------------------------------------------------------------------------
 
@@ -379,6 +465,7 @@ HabitCompletionEntry _entryFromOffsets({
   required int updatedAtMinutes,
   required int createdAtMinutes,
   required int dateToMinutes,
+  required bool auto,
 }) {
   final updatedAt = _baseDate.add(Duration(minutes: updatedAtMinutes));
   final createdAt = _baseDate.add(Duration(minutes: createdAtMinutes));
@@ -392,6 +479,7 @@ HabitCompletionEntry _entryFromOffsets({
     createdAt: createdAt,
     dateTo: dateTo,
     completionType: HabitCompletionType.success,
+    source: auto ? HabitCompletionSource.auto : HabitCompletionSource.manual,
   );
 }
 
@@ -412,6 +500,8 @@ class _GeneratedComparePair {
     required this.dateToB,
     required this.idA,
     required this.idB,
+    required this.autoA,
+    required this.autoB,
   });
 
   final int updatedA;
@@ -422,12 +512,15 @@ class _GeneratedComparePair {
   final int dateToB;
   final String idA;
   final String idB;
+  final bool autoA;
+  final bool autoB;
 
   HabitCompletionEntry get a => _entryFromOffsets(
     id: idA,
     updatedAtMinutes: updatedA,
     createdAtMinutes: createdA,
     dateToMinutes: dateToA,
+    auto: autoA,
   );
 
   HabitCompletionEntry get b => _entryFromOffsets(
@@ -435,6 +528,7 @@ class _GeneratedComparePair {
     updatedAtMinutes: updatedB,
     createdAtMinutes: createdB,
     dateToMinutes: dateToB,
+    auto: autoB,
   );
 
   @override
@@ -443,7 +537,7 @@ class _GeneratedComparePair {
       'updatedA=$updatedA, updatedB=$updatedB, '
       'createdA=$createdA, createdB=$createdB, '
       'dateToA=$dateToA, dateToB=$dateToB, '
-      'idA=$idA, idB=$idB)';
+      'idA=$idA, idB=$idB, autoA=$autoA, autoB=$autoB)';
 }
 
 class _GeneratedCompareTriple {
@@ -466,7 +560,7 @@ class _GeneratedCompareTriple {
 extension _AnyCompareHabitCompletion on glados.Any {
   /// Generates pairs of entries with independently varying tie-break fields.
   glados.Generator<_GeneratedComparePair> get comparePair =>
-      glados.CombinableAny(this).combine8(
+      glados.CombinableAny(this).combine10(
         glados.IntAnys(this).intInRange(0, 5),
         glados.IntAnys(this).intInRange(0, 5),
         glados.IntAnys(this).intInRange(0, 5),
@@ -475,6 +569,8 @@ extension _AnyCompareHabitCompletion on glados.Any {
         glados.IntAnys(this).intInRange(0, 5),
         glados.AnyUtils(this).choose(<String>['id-a', 'id-b', 'id-c']),
         glados.AnyUtils(this).choose(<String>['id-b', 'id-c', 'id-d']),
+        glados.BoolAny(this).bool,
+        glados.BoolAny(this).bool,
         (
           int uA,
           int uB,
@@ -484,6 +580,8 @@ extension _AnyCompareHabitCompletion on glados.Any {
           int dtB,
           String idA,
           String idB,
+          bool autoA,
+          bool autoB,
         ) => _GeneratedComparePair(
           updatedA: uA,
           updatedB: uB,
@@ -493,6 +591,8 @@ extension _AnyCompareHabitCompletion on glados.Any {
           dateToB: dtB,
           idA: idA,
           idB: idB,
+          autoA: autoA,
+          autoB: autoB,
         ),
       );
 
@@ -508,15 +608,15 @@ extension _AnyCompareHabitCompletion on glados.Any {
 }
 
 void _runCompareHabitCompletionGladosTests() {
-  group('compareHabitCompletionWriteRecency — Glados algebraic properties', () {
+  group('compareHabitCompletionPrecedence — Glados algebraic properties', () {
     glados.Glados<_GeneratedComparePair>(
       glados.any.comparePair,
       glados.ExploreConfig(numRuns: 120),
     ).test(
       'antisymmetry: sign(compare(a,b)) == -sign(compare(b,a))',
       (scenario) {
-        final ab = compareHabitCompletionWriteRecency(scenario.a, scenario.b);
-        final ba = compareHabitCompletionWriteRecency(scenario.b, scenario.a);
+        final ab = compareHabitCompletionPrecedence(scenario.a, scenario.b);
+        final ba = compareHabitCompletionPrecedence(scenario.b, scenario.a);
         expect(
           _sign(ab),
           equals(-_sign(ba)),
@@ -532,7 +632,7 @@ void _runCompareHabitCompletionGladosTests() {
     ).test(
       'compare(a, a) == 0 for the same entry',
       (scenario) {
-        final aa = compareHabitCompletionWriteRecency(scenario.a, scenario.a);
+        final aa = compareHabitCompletionPrecedence(scenario.a, scenario.a);
         expect(
           aa,
           equals(0),
@@ -548,9 +648,9 @@ void _runCompareHabitCompletionGladosTests() {
     ).test(
       'transitivity: if a≤b and b≤c then a≤c',
       (scenario) {
-        final ab = compareHabitCompletionWriteRecency(scenario.a, scenario.b);
-        final bc = compareHabitCompletionWriteRecency(scenario.b, scenario.c);
-        final ac = compareHabitCompletionWriteRecency(scenario.a, scenario.c);
+        final ab = compareHabitCompletionPrecedence(scenario.a, scenario.b);
+        final bc = compareHabitCompletionPrecedence(scenario.b, scenario.c);
+        final ac = compareHabitCompletionPrecedence(scenario.a, scenario.c);
 
         // If a ≤ b (ab ≤ 0) AND b ≤ c (bc ≤ 0), then a ≤ c (ac ≤ 0).
         if (ab <= 0 && bc <= 0) {

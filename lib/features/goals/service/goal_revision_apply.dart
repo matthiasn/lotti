@@ -156,15 +156,9 @@ GoalRevisionResult applyGoalRevisionChanges({
     }
     // The signal reader counts at most ONE success per local day, so a
     // count beyond the window's day capacity mints a goal that can never
-    // succeed (the creation form enforces the same bound).
-    final capacity = switch (habit.window) {
-      GoalWindowDay() => 1,
-      GoalWindowRollingDays(:final count) => count,
-      GoalWindowCalendarWeek() => 7,
-      // The guaranteed minimum: a 29+ target would be unsatisfiable
-      // every February.
-      GoalWindowCalendarMonth() => 28,
-    };
+    // succeed. Checked here, before the authoring validator, for the reason
+    // the model can act on.
+    final capacity = goalWindowCreditableDays(habit.window);
     if (count > capacity) {
       return GoalRevisionRejected(
         'cadence $count exceeds the window capacity of $capacity — one '
