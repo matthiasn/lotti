@@ -341,12 +341,20 @@ class AgentSyncService {
       if (entity is CaptureEntity &&
           (entity.dayId.isEmpty || entity.parseCompletedAt == null)) {
         await _repository.runInTransaction(() async {
-          final existing = await _repository.getEntity(entity.id);
+          // A removal succeeds the stored version, tombstone included, as in
+          // the branch below; any other capture write keeps its live read.
+          final removal = entity.deletedAt != null;
+          final existing = removal
+              ? await _repository.getEntityIncludingDeleted(entity.id)
+              : await _repository.getEntity(entity.id);
           final entityToWrite = AgentRepository.normalizeCaptureForWrite(
             entity,
             existing: existing is CaptureEntity ? existing : null,
           );
-          await stampAndPersist(entityToWrite);
+          await stampAndPersist(
+            entityToWrite,
+            persisted: removal ? existing : null,
+          );
         });
       } else if (entity.lwwOnUpdatedAt || entity.deletedAt != null) {
         await _repository.runInTransaction(() async {

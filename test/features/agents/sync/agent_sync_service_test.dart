@@ -2982,6 +2982,48 @@ void main() {
         }
       },
     );
+
+    test(
+      "removing an unparsed capture built on a snapshot succeeds a peer's edit "
+      'that synced in meanwhile (ADR 0081, addendum)',
+      () async {
+        // An unparsed capture takes the capture-normalizing write path, which
+        // stamped a removal on the snapshot's clock alone: concurrent with the
+        // edit it overwrote.
+        final capture = makeTestCapture();
+        expect(capture.dayId, isEmpty);
+        expect(capture.parseCompletedAt, isNull);
+        await a.sync.upsertEntity(capture);
+        await b.receiveEntity(a.sentEntities.last);
+        final snapshot =
+            (await a.repository.getEntity(capture.id))! as CaptureEntity;
+        final onB =
+            (await b.repository.getEntity(capture.id))! as CaptureEntity;
+        await b.sync.upsertEntity(onB.copyWith(transcript: 'Edited on B'));
+        await a.receiveEntity(b.sentEntities.last);
+
+        final removedAt = DateTime(2026, 9, 25, 10);
+        await a.sync.upsertEntity(snapshot.copyWith(deletedAt: removedAt));
+        await b.receiveEntity(a.sentEntities.last);
+
+        expect(
+          VectorClock.compare(
+            a.sentEntities.last.vectorClock!,
+            b.sentEntities.last.vectorClock!,
+          ),
+          VclockStatus.a_gt_b,
+        );
+        for (final device in [a, b]) {
+          expect(
+            (await device.repository.getEntityIncludingDeleted(
+              capture.id,
+            ))!.deletedAt,
+            removedAt,
+            reason: device.host,
+          );
+        }
+      },
+    );
   });
 
   group('AgentSyncService.upsertLink — a write succeeds the stored version '
