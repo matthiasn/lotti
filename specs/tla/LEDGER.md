@@ -52,7 +52,7 @@ How the figures are counted:
   workflow file itself also triggers it.
 
 The notification/settings follow-up adds two specs, four configurations, ten
-named properties and 148,849 distinct states to `8428b0a479`. These are
+named properties and 180,826 distinct states to `8428b0a479`. These are
 incremental figures; the historical snapshot above excludes the intervening
 outbox, inbound-queue and journal models.
 

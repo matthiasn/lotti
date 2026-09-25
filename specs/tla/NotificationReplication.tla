@@ -22,7 +22,7 @@
 (***************************************************************************)
 EXTENDS Naturals, FiniteSets
 CONSTANTS Peers, MaxLosses, MaxCrashes, LegacyContentTie,
-          RequireBase, AckAfterApply
+          RequireBase, AckAfterApply, AckRepairIndividually
 Events == 1..4
 Requests == Peers \X Events
 RepairCarries(e) == IF e <= 2 THEN Events ELSE {3, 4}
@@ -46,12 +46,17 @@ ApplyRow(row, e) == IF e <= 2 THEN Merge(row, Full(e))
                          !.marks = JoinMarks(@, Marks(e))]
 Projection(row) == <<row.content, row.marks>>
 
-VARIABLES outbox, wire, delivered, inbox, rows, applied, receipts, acked,
-          head, requested, repairing, losses, crashes
-vars == <<outbox, wire, delivered, inbox, rows, applied, receipts, acked,
-          head, requested, repairing, losses, crashes>>
+\* Proof history: counters seen in envelopes or in their own typed repair
+\* response. A snapshot carrying data for other counters is not their receipt.
+\* This is observer history, not a new database field or a decision input.
+\* attempted includes lost envelopes; receivedCounters does not.
+VARIABLES outbox, wire, attempted, inbox, rows, applied, receipts, acked,
+          head, requested, repairing, losses, crashes, receivedCounters
+vars == <<outbox, wire, attempted, inbox, rows, applied, receipts, acked,
+          head, requested, repairing, losses, crashes, receivedCounters>>
 Init == /\ outbox = Events /\ wire = {}
-        /\ delivered = [p \in Peers |-> {}]
+        /\ attempted = [p \in Peers |-> {}]
+        /\ receivedCounters = [p \in Peers |-> {}]
         /\ inbox = [p \in Peers |-> {}]
         /\ rows = [p \in Peers |-> EmptyRow]
         /\ applied = [p \in Peers |-> {}]
@@ -62,64 +67,67 @@ Init == /\ outbox = Events /\ wire = {}
         /\ losses = 0 /\ crashes = 0
 Send(e) == /\ e \in outbox
            /\ outbox' = outbox \ {e} /\ wire' = wire \cup {e}
-           /\ UNCHANGED <<delivered, inbox, rows, applied, receipts, acked,
-                           head, requested, repairing, losses, crashes>>
+           /\ UNCHANGED <<attempted, inbox, rows, applied, receipts, acked,
+                           head, requested, repairing, losses, crashes, receivedCounters>>
 Deliver(p, e) ==
-    /\ e \in wire \ delivered[p]
-    /\ delivered' = [delivered EXCEPT ![p] = @ \cup {e}]
+    /\ e \in wire \ attempted[p]
+    /\ attempted' = [attempted EXCEPT ![p] = @ \cup {e}]
+    /\ receivedCounters' = [receivedCounters EXCEPT ![p] = @ \cup {e}]
     /\ inbox' = [inbox EXCEPT ![p] = @ \cup {e}]
     /\ head' = [head EXCEPT ![p] = IF e > @ THEN e ELSE @]
     /\ UNCHANGED <<outbox, wire, rows, applied, receipts, acked, requested,
                     repairing, losses, crashes>>
 Lose(p, e) ==
-    /\ e \in wire \ delivered[p] /\ losses < MaxLosses
-    /\ delivered' = [delivered EXCEPT ![p] = @ \cup {e}]
+    /\ e \in wire \ attempted[p] /\ losses < MaxLosses
+    /\ attempted' = [attempted EXCEPT ![p] = @ \cup {e}]
     /\ losses' = losses + 1
     /\ UNCHANGED <<outbox, wire, inbox, rows, applied, receipts, acked,
-                    head, requested, repairing, crashes>>
+                    head, requested, repairing, crashes, receivedCounters>>
 Apply(p, e) ==
     /\ e \in inbox[p] \ receipts[p]
     /\ ~RequireBase \/ e <= 2 \/ rows[p].content # 0
     /\ rows' = [rows EXCEPT ![p] = ApplyRow(@, e)]
     /\ applied' = [applied EXCEPT ![p] = @ \cup {e}]
     /\ receipts' = [receipts EXCEPT ![p] = @ \cup {e}]
-    /\ UNCHANGED <<outbox, wire, delivered, inbox, acked, head, requested,
-                    repairing, losses, crashes>>
+    /\ UNCHANGED <<outbox, wire, attempted, inbox, acked, head, requested,
+                    repairing, losses, crashes, receivedCounters>>
 Ack(p, e) ==
     /\ e \in inbox[p]
     /\ ~AckAfterApply \/ e \in receipts[p]
     /\ acked' = [acked EXCEPT ![p] = @ \cup {e}]
     /\ inbox' = [inbox EXCEPT ![p] = @ \ {e}]
-    /\ UNCHANGED <<outbox, wire, delivered, rows, applied, receipts, head,
-                    requested, repairing, losses, crashes>>
+    /\ UNCHANGED <<outbox, wire, attempted, rows, applied, receipts, head,
+                    requested, repairing, losses, crashes, receivedCounters>>
 Request(p, e) ==
     /\ <<p, e>> \notin requested /\ <<p, e>> \notin repairing
     /\ e \in (1..head[p]) \ (acked[p] \cup inbox[p])
     /\ requested' = requested \cup {<<p, e>>}
-    /\ UNCHANGED <<outbox, wire, delivered, inbox, rows, applied, receipts,
-                    acked, head, repairing, losses, crashes>>
+    /\ UNCHANGED <<outbox, wire, attempted, inbox, rows, applied, receipts,
+                    acked, head, repairing, losses, crashes, receivedCounters>>
 Repair(p, e) ==
     /\ <<p, e>> \in requested /\ <<p, e>> \notin repairing
     /\ e <= 2 \/ rows[p].content # 0
     /\ rows' = [rows EXCEPT ![p] = IF e <= 2 THEN Merge(@, Snapshot)
                                   ELSE ApplyRow(@, 4)]
     /\ applied' = [applied EXCEPT ![p] = @ \cup RepairCarries(e)]
+    /\ receivedCounters' = [receivedCounters EXCEPT ![p] = @ \cup {e}]
     /\ repairing' = repairing \cup {<<p, e>>}
-    /\ UNCHANGED <<outbox, wire, delivered, inbox, receipts, acked, head,
+    /\ UNCHANGED <<outbox, wire, attempted, inbox, receipts, acked, head,
                     requested, losses, crashes>>
 AckRepair(p, e) ==
     /\ <<p, e>> \in repairing
-    /\ acked' = [acked EXCEPT ![p] = @ \cup RepairCarries(e)]
+    /\ acked' = [acked EXCEPT ![p] = @ \cup
+                  (IF AckRepairIndividually THEN {e} ELSE RepairCarries(e))]
     /\ requested' = requested \ {<<p, e>>}
     /\ repairing' = repairing \ {<<p, e>>}
-    /\ UNCHANGED <<outbox, wire, delivered, inbox, rows, applied, receipts,
-                    head, losses, crashes>>
+    /\ UNCHANGED <<outbox, wire, attempted, inbox, rows, applied, receipts,
+                    head, losses, crashes, receivedCounters>>
 Crash ==
     /\ crashes < MaxCrashes
     /\ receipts' = [p \in Peers |-> {}] /\ repairing' = {}
     /\ crashes' = crashes + 1
-    /\ UNCHANGED <<outbox, wire, delivered, inbox, rows, applied, acked,
-                    head, requested, losses>>
+    /\ UNCHANGED <<outbox, wire, attempted, inbox, rows, applied, acked,
+                    head, requested, losses, receivedCounters>>
 Next == (\E e \in Events : Send(e)) \/ Crash
         \/ (\E p \in Peers, e \in Events : Deliver(p, e) \/ Lose(p, e)
                  \/ Apply(p, e) \/ Ack(p, e))
@@ -134,14 +142,16 @@ Spec == Init /\ [][Next]_vars
               /\ WF_vars(AckRepair(p, e)))
 TypeOK == /\ outbox \subseteq Events /\ wire \subseteq Events
           /\ \A p \in Peers :
-               /\ delivered[p] \subseteq Events /\ inbox[p] \subseteq Events
+               /\ attempted[p] \subseteq Events /\ inbox[p] \subseteq Events
                /\ applied[p] \subseteq Events /\ receipts[p] \subseteq Events
                /\ acked[p] \subseteq Events /\ head[p] \in 0..4
+               /\ receivedCounters[p] \subseteq Events
                /\ rows[p].content \in 0..2 /\ rows[p].owner \in 0..3
                /\ rows[p].marks \in [Fields -> 0..2]
           /\ requested \subseteq Requests /\ repairing \subseteq Requests
           /\ losses \in 0..MaxLosses /\ crashes \in 0..MaxCrashes
-NoFalseReceipt == \A p \in Peers : acked[p] \subseteq applied[p]
+NoFalseReceipt == \A p \in Peers :
+    acked[p] \subseteq (applied[p] \cap receivedCounters[p])
 NoStateWithoutBase == \A p \in Peers : rows[p].marks # EmptyMarks =>
                                                    rows[p].content # 0
 LifecyclePreserved == \A p \in Peers : \A e \in applied[p] :

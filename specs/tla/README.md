@@ -1728,11 +1728,14 @@ transactional apply and receipt. A state event can arrive before the base;
 a process can die after applying it but before acknowledging it. One event
 may be lost. A visible gap requests the current full snapshot or the current
 lifecycle patch according to the missing payload's type, matching the two
-notification branches in `BackfillResponseHandler`.
+notification branches in `BackfillResponseHandler`. A snapshot can apply data
+for several counters, but each repair response acknowledges only its requested
+counter. Observer history distinguishes received envelopes/responses from
+snapshot coverage and lost transmission attempts.
 
 | Property | Meaning |
 |---|---|
-| `NoFalseReceipt` | A receipt has a durable applied witness |
+| `NoFalseReceipt` | A receipt has both an applied data witness and its own envelope or typed response |
 | `NoStateWithoutBase` | State updates cannot create a contentless notification |
 | `LifecyclePreserved` | Applied seen/acted/deleted marks remain set at the earliest observed time |
 | `ContentConverged` | Receiving both content versions chooses the stable content winner, regardless of interleaved state patches |
@@ -1740,11 +1743,11 @@ notification branches in `BackfillResponseHandler`.
 | `VisibleGapHeals` | Once the final counter is observed, fair processing and typed repair eventually acknowledge all events |
 
 `NotificationReplication.cfg` checks one receiver, four events, one loss and
-one crash: **146,969 distinct states**. Content and lifecycle are compared to
+one crash: **178,946 distinct states**. Content and lifecycle are compared to
 the same fixed reference on every receive order; `originatingHostId` remains
 arrival-dependent state metadata and is excluded from that projection.
 
-Three temporary mutations produce counterexamples:
+Four temporary mutations produce counterexamples:
 
 - `LegacyContentTie = TRUE`: state changes the owner before a competing full
   snapshot arrives. Because canonical metadata sorts before title, the old
@@ -1753,6 +1756,10 @@ Three temporary mutations produce counterexamples:
   (`NoStateWithoutBase`).
 - `AckAfterApply = FALSE`: the inbound queue acknowledges an unapplied event
   (`NoFalseReceipt`).
+- `AckRepairIndividually = FALSE`: a full repair acknowledges counters for
+  which neither an envelope nor their own repair response arrived
+  (`NoFalseReceipt`). This reproduces the over-broad acknowledgement in the
+  first model draft; production already acknowledges individual responses.
 
 The first trace is reproduced both by `notification_merge_test.dart` and by
 `sync_event_processor_notification_log_test.dart` through the actual processor

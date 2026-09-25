@@ -77,7 +77,7 @@ SECONDS = {
     "DigestRecoveryCrash": 1,
     "GoalChatReply": 1,
     "OwnCounterSettlement": 1,
-    "NotificationReplication": 10,
+    "NotificationReplication": 13,
     "SyncSettings": 1,
     "SyncSettingsName": 1,
     "SyncSettingsFlags": 1,
