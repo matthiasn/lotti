@@ -321,11 +321,15 @@ void main() {
         workspaceKey: any(named: 'workspaceKey'),
         reasonId: any(named: 'reasonId'),
       ),
-    ).thenReturn(null);
+    ).thenAnswer((invocation) {
+      recomputed.add('restore:${invocation.namedArguments[#agentId]}');
+    });
 
     await maintenance.restoreSubscriptions();
 
-    expect(recomputed, ['goal-a', 'goal-b']);
+    // Restore first, so a refresh the recompute queues merges into the
+    // restored job instead of standing beside it.
+    expect(recomputed, ['goal-a', 'restore:goal-b', 'goal-b']);
     verifyNever(
       () => orchestrator.enqueueManualWake(
         agentId: any(named: 'agentId'),
@@ -340,6 +344,56 @@ void main() {
         triggerTokens: const {goalDeferredReportRefreshTriggerToken},
         workspaceKey: goalReportRefreshTriggerToken,
         reasonId: goalDeferredReportRefreshTriggerToken,
+      ),
+    ).called(1);
+  });
+
+  test('a recompute that throws for one goal is logged and does not stop the '
+      'next', () async {
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer(
+      (_) async => [goalIdentity('goal-a'), goalIdentity('goal-b')],
+    );
+    stubSpec('goal-a');
+    stubSpec('goal-b');
+    when(
+      () => repository.getAgentState(any()),
+    ).thenAnswer((_) async => null);
+    final logger = MockDomainLogger();
+    final attempted = <String>[];
+    final failing = GoalRuntimeMaintenance(
+      agentService: agentService,
+      repository: repository,
+      syncService: syncService,
+      goalAgentService: GoalAgentService(
+        agentService: agentService,
+        repository: repository,
+        syncService: syncService,
+        orchestrator: orchestrator,
+        offTrackAlerts: offTrackAlerts,
+      ),
+      goalChatService: chatService,
+      goalMirrorService: mirror,
+      checkInNotifier: notifier,
+      domainLogger: logger,
+      recomputeProgress: (identity) async {
+        attempted.add(identity.agentId);
+        if (identity.agentId == 'goal-a') throw StateError('evaluation failed');
+      },
+    );
+
+    await failing.restoreSubscriptions();
+    await pumpEventQueue();
+
+    expect(attempted, ['goal-a', 'goal-b']);
+    verify(
+      () => logger.error(
+        any(),
+        any(that: isA<StateError>()),
+        message: any(named: 'message'),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: any(named: 'subDomain'),
       ),
     ).called(1);
   });

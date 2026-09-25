@@ -472,6 +472,77 @@ void main() {
     expect(phaseA.success, isTrue);
   });
 
+  test('the startup recompute runs Phase A itself and tells the UI — it never '
+      'goes through the wake orchestrator', () async {
+    const agentId = 'goal-start';
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer((_) async => [goalIdentity(agentId)]);
+    when(
+      () => agentService.listAgents(),
+    ).thenAnswer((_) async => [goalIdentity(agentId)]);
+    when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecHead(
+        id: goalSpecHeadId(agentId),
+        agentId: agentId,
+        versionId: '$agentId:spec-v1',
+        updatedAt: DateTime(2026),
+        vectorClock: null,
+      ),
+    );
+    when(() => repository.getEntity('$agentId:spec-v1')).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecVersion(
+        id: '$agentId:spec-v1',
+        agentId: agentId,
+        version: 1,
+        status: GoalSpecVersionStatus.active,
+        authoredBy: 'user',
+        title: 'Gym',
+        statement: 'x',
+        criteria: const GoalCriterion.habit(
+          criterionId: 'gym',
+          habitId: 'gym-habit',
+          window: GoalWindow.calendarWeek(),
+          targetCount: 3,
+        ),
+        createdAt: DateTime(2026),
+        vectorClock: null,
+      ),
+    );
+    when(
+      () => journalDb.getHabitCompletionsByHabitId(
+        habitId: any(named: 'habitId'),
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer((_) async => []);
+    final written = <AgentDomainEntity>[];
+    when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
+      written.add(invocation.positionalArguments.first as AgentDomainEntity);
+    });
+    when(
+      () => repository.getDueScheduledWakeRecords(any()),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.getDueScheduledAgentStates(any()),
+    ).thenAnswer((_) async => []);
+
+    await container.read(goalRuntimeMaintenanceProvider).restoreSubscriptions();
+    await untilCalled(() => updateNotifications.notify({agentId}));
+
+    expect(
+      written.whereType<GoalProgressEntity>().single.agentId,
+      agentId,
+      reason: 'Phase A itself evaluated the goal',
+    );
+    verifyNever(
+      () => wakeOrchestrator.enqueueManualWake(
+        agentId: any(named: 'agentId'),
+        reason: any(named: 'reason'),
+      ),
+    );
+  });
+
   test('a local transition arms its escalation with the register and '
       'nudges the lease manager at once — no device-local countdown', () async {
     // specs/tla/GoalRegister.tla, ArmAt = "commit": a transition parked on a

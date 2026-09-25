@@ -91,14 +91,25 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
           identity.agentId,
           criteria,
         );
-        // Before the state read below, so a failing read does not also cost
-        // the goal its recompute; not awaited, so startup does not wait on
-        // every goal's evaluation.
+        // Restore the pending refresh BEFORE the recompute: a refresh the
+        // recompute queues then merges into the restored job instead of
+        // standing beside it with its deadline overwritten. A failing state
+        // read must not also cost the goal its recompute.
+        try {
+          _goalAgentService.restorePendingReportRefresh(
+            identity: identity,
+            state: await _repository.getAgentState(identity.agentId),
+          );
+        } catch (error, stackTrace) {
+          _log(
+            'restorePendingReportRefresh',
+            identity.agentId,
+            error,
+            stackTrace,
+          );
+        }
+        // Not awaited, so startup does not wait on every goal's evaluation.
         _startRecompute(identity);
-        _goalAgentService.restorePendingReportRefresh(
-          identity: identity,
-          state: await _repository.getAgentState(identity.agentId),
-        );
       } catch (error, stackTrace) {
         _log('restoreSubscriptions', identity.agentId, error, stackTrace);
       }
